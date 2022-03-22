@@ -39,12 +39,10 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/environment.h>
-#include <mono/metadata/environment-internals.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/coree.h>
-#include <mono/metadata/w32process.h>
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-hwcap.h"
 #include "mono/utils/mono-logger-internals.h"
@@ -58,7 +56,7 @@
 #include <mono/mini/debugger-agent-external.h>
 
 #include "mini.h"
-#include "jit.h"
+#include <mono/jit/jit.h>
 #include "aot-compiler.h"
 #include "aot-runtime.h"
 #include "mini-runtime.h"
@@ -253,7 +251,7 @@ static MonoGraphOptions
 mono_parse_graph_options (const char* p)
 {
 	const char *n;
-	int i, len;
+	size_t i, len;
 
 	for (i = 0; i < G_N_ELEMENTS (graph_names); ++i) {
 		n = graph_names [i].name;
@@ -464,7 +462,7 @@ method_should_be_regression_tested (MonoMethod *method, gboolean interp)
 			return FALSE;
 		}
 
-		if ((mono_aot_mode == MONO_AOT_MODE_INTERP_LLVMONLY || mono_aot_mode == MONO_AOT_MODE_LLVMONLY) && !strcmp (utf8_str, "!BITCODE")) {
+		if ((mono_aot_mode == MONO_AOT_MODE_INTERP_LLVMONLY || mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP) && !strcmp (utf8_str, "!BITCODE")) {
 			g_print ("skip %s...\n", method->name);
 			return FALSE;
 		}
@@ -675,13 +673,13 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 		}
 	} else {
 		for (opt = 0; opt < G_N_ELEMENTS (opt_sets); ++opt) {
-			/* builtin-types.cs & aot-tests.cs need OPT_INTRINS enabled */
-			if (!strcmp ("builtin-types", image->assembly_name) || !strcmp ("aot-tests", image->assembly_name))
+			/* aot-tests.cs need OPT_INTRINS enabled */
+			if (!strcmp ("aot-tests", image->assembly_name))
 				if (!(opt_sets [opt] & MONO_OPT_INTRINS))
 					continue;
 
 			//we running in AOT only, it makes no sense to try multiple flags
-			if ((mono_aot_mode == MONO_AOT_MODE_FULL || mono_aot_mode == MONO_AOT_MODE_LLVMONLY) && opt_sets [opt] != DEFAULT_OPTIMIZATIONS) {
+			if ((mono_aot_mode == MONO_AOT_MODE_FULL || mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP) && opt_sets [opt] != DEFAULT_OPTIMIZATIONS) {
 				continue;
 			}
 
@@ -1700,24 +1698,12 @@ mono_get_version_info (void)
 	g_string_append_printf (output, "\tSIGSEGV:       normal\n");
 #endif
 
-#ifdef HAVE_EPOLL
-	g_string_append_printf (output, "\tNotifications: epoll\n");
-#elif defined(HAVE_KQUEUE)
-	g_string_append_printf (output, "\tNotification:  kqueue\n");
-#else
-	g_string_append_printf (output, "\tNotification:  Thread + polling\n");
-#endif
-
 	g_string_append_printf (output, "\tArchitecture:  %s\n", MONO_ARCHITECTURE);
 	g_string_append_printf (output, "\tDisabled:      %s\n", DISABLED_FEATURES);
 
 	g_string_append_printf (output, "\tMisc:          ");
 #ifdef MONO_SMALL_CONFIG
 	g_string_append_printf (output, "smallconfig ");
-#endif
-
-#ifdef MONO_BIG_ARRAYS
-	g_string_append_printf (output, "bigarrays ");
 #endif
 
 #if !defined(DISABLE_SDB)
@@ -1886,11 +1872,7 @@ mono_set_use_smp (int use_smp)
 #if HAVE_SCHED_SETAFFINITY
 	if (!use_smp) {
 		unsigned long proc_mask = 1;
-#ifdef GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY
-		sched_setaffinity (getpid(), (gpointer)&proc_mask);
-#else
 		sched_setaffinity (getpid(), sizeof (unsigned long), (const cpu_set_t *)&proc_mask);
-#endif
 	}
 #endif
 }
@@ -2067,9 +2049,12 @@ mono_main (int argc, char* argv[])
 	MonoDomain *domain;
 	MonoImageOpenStatus open_status;
 	const char* aname, *mname = NULL;
-	int i, count = 1;
-	guint32 opt, action = DO_EXEC, recompilation_times = 1;
+	int i;
+#ifndef DISABLE_JIT
+	int count = 1;
 	MonoGraphOptions mono_graph_options = (MonoGraphOptions)0;
+#endif
+	guint32 opt, action = DO_EXEC, recompilation_times = 1;
 	int mini_verbose_level = 0;
 	char *trace_options = NULL;
 	char *aot_options = NULL;
@@ -2101,20 +2086,6 @@ mono_main (int argc, char* argv[])
 
 	if (g_hasenv ("MONO_NO_SMP"))
 		mono_set_use_smp (FALSE);
-
-#ifdef MONO_JEMALLOC_ENABLED
-
-	gboolean use_jemalloc = FALSE;
-#ifdef MONO_JEMALLOC_DEFAULT
-	use_jemalloc = TRUE;
-#endif
-	if (!use_jemalloc)
-		use_jemalloc = g_hasenv ("MONO_USE_JEMALLOC");
-
-	if (use_jemalloc)
-		mono_init_jemalloc ();
-
-#endif
 
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
@@ -2222,6 +2193,7 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--mixed-mode") == 0) {
 			mixed_mode = TRUE;
 #endif
+#ifndef DISABLE_JIT
 		} else if (strcmp (argv [i], "--ncompile") == 0) {
 			if (i + 1 >= argc){
 				fprintf (stderr, "error: --ncompile requires an argument\n");
@@ -2229,6 +2201,7 @@ mono_main (int argc, char* argv[])
 			}
 			count = atoi (argv [++i]);
 			action = DO_BENCH;
+#endif
 		} else if (strcmp (argv [i], "--trace") == 0) {
 			trace_options = (char*)"";
 		} else if (strncmp (argv [i], "--trace=", 8) == 0) {
@@ -2271,12 +2244,13 @@ mono_main (int argc, char* argv[])
 			g_warning ("--verify-all is obsolete, ignoring");
 		} else if (strcmp (argv [i], "--full-aot") == 0) {
 			mono_jit_set_aot_mode (MONO_AOT_MODE_FULL);
-		} else if (strcmp (argv [i], "--llvmonly") == 0) {
-			mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY);
 		} else if (strcmp (argv [i], "--hybrid-aot") == 0) {
 			mono_jit_set_aot_mode (MONO_AOT_MODE_HYBRID);
 		} else if (strcmp (argv [i], "--full-aot-interp") == 0) {
 			mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP);
+		} else if (strcmp (argv [i], "--llvmonly") == 0) {
+			/* Same as llvmonly-interp */
+			mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY_INTERP);
 		} else if (strcmp (argv [i], "--llvmonly-interp") == 0) {
 			mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY_INTERP);
 		} else if (strcmp (argv [i], "--print-vtable") == 0) {
@@ -2346,6 +2320,7 @@ mono_main (int argc, char* argv[])
 
 			mname = argv [++i];
 			action = DO_BENCH;
+#ifndef DISABLE_JIT
 		} else if (strncmp (argv [i], "--graph=", 8) == 0) {
 			if (i + 1 >= argc){
 				fprintf (stderr, "error: --graph option requires a method name argument\n");
@@ -2364,6 +2339,7 @@ mono_main (int argc, char* argv[])
 			mname = argv [++i];
 			mono_graph_options = MONO_GRAPH_CFG;
 			action = DO_DRAW;
+#endif
 		} else if (strcmp (argv [i], "--debug") == 0) {
 			enable_debugging = TRUE;
 		} else if (strncmp (argv [i], "--debug=", 8) == 0) {
@@ -2486,8 +2462,20 @@ mono_main (int argc, char* argv[])
 				exit (1);
 			}
 
+			int orig_argc = argc;
+
 			mono_parse_response_options (response_options, &argc, &argv, FALSE);
 			g_free (response_content);
+
+			/* Parse newly added options */
+			int n = argc;
+			mono_options_parse_options ((const char**)(argv + orig_argc), argc - orig_argc, &n, error);
+			if (!is_ok (error)) {
+				g_printerr ("%s", mono_error_get_message (error));
+				mono_error_cleanup (error);
+				return 1;
+			}
+			argc -= (argc - orig_argc) - n;
 		} else if (argv [i][0] == '-' && argv [i][1] == '-' && mini_parse_debug_option (argv [i] + 2)) {
 		} else if (strcmp (argv [i], "--use-map-jit") == 0){
 			mono_setmmapjit (TRUE);
@@ -2497,7 +2485,7 @@ mono_main (int argc, char* argv[])
 		}
 	}
 
-#if defined(DISABLE_HW_TRAPS) || defined(MONO_ARCH_DISABLE_HW_TRAPS)
+#if defined(MONO_ARCH_DISABLE_HW_TRAPS)
 	// Signal handlers not available
 	{
 		MonoDebugOptions *opt = mini_get_debug_options ();
@@ -2567,7 +2555,6 @@ mono_main (int argc, char* argv[])
 #endif
 
 	mono_set_defaults (mini_verbose_level, opt);
-	mono_set_os_args (argc, argv);
 
 	domain = mini_init (argv [i], forced_version);
 
@@ -2882,13 +2869,6 @@ mono_runtime_set_execution_mode_full (int mode, gboolean override)
 	memset (&mono_ee_features, 0, sizeof (mono_ee_features));
 
 	switch (mode) {
-	case MONO_AOT_MODE_LLVMONLY:
-		mono_aot_only = TRUE;
-		mono_llvm_only = TRUE;
-
-		mono_ee_features.use_aot_trampolines = TRUE;
-		break;
-
 	case MONO_AOT_MODE_FULL:
 		mono_aot_only = TRUE;
 
@@ -2915,6 +2895,7 @@ mono_runtime_set_execution_mode_full (int mode, gboolean override)
 		mono_ee_features.force_use_interpreter = TRUE;
 		break;
 
+	case MONO_AOT_MODE_LLVMONLY:
 	case MONO_AOT_MODE_LLVMONLY_INTERP:
 		mono_aot_only = TRUE;
 		mono_use_interpreter = TRUE;

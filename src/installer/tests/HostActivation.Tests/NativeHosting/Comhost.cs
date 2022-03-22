@@ -13,6 +13,7 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 {
+    [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
     public class Comhost : IClassFixture<Comhost.SharedTestState>
     {
         private readonly SharedTestState sharedState;
@@ -23,7 +24,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
         [InlineData(1, true)]
         [InlineData(10, true)]
         [InlineData(10, false)]
@@ -49,7 +49,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
         public void ActivateClass_IgnoreAppLocalHostFxr()
         {
             using (var fixture = sharedState.ComLibraryFixture.Copy())
@@ -77,7 +76,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
         public void ActivateClass_ValidateIErrorInfoResult()
         {
             using (var fixture = sharedState.ComLibraryFixture.Copy())
@@ -107,7 +105,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
         public void LoadTypeLibraries()
         {
             using (var fixture = sharedState.ComLibraryFixture.Copy())
@@ -185,7 +182,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     ComHostPath,
                     ClsidMapPath,
                     TypeLibraries);
-
             }
 
             protected override void Dispose(bool disposing)

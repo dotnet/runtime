@@ -597,23 +597,6 @@ if %__BuildNative% EQU 1 (
         goto ExitWithCode
     )
 
-    if /i "%__BuildArch%" == "arm64" goto SkipCopyUcrt
-
-    if not defined UCRTVersion (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Please install Windows 10 SDK.
-        goto ExitWithError
-    )
-
-    set "__UCRTDir=%UniversalCRTSdkDir%Redist\%UCRTVersion%\ucrt\DLLs\%__BuildArch%\"
-
-    xcopy /Y/I/E/D/F "!__UCRTDir!*.dll" "%__BinDir%\Redist\ucrt\DLLs\%__BuildArch%"
-    if not !errorlevel! == 0 (
-        set __exitCode=!errorlevel!
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to copy the Universal CRT to the artifacts directory.
-        goto ExitWithCode
-    )
-
-:SkipCopyUcrt
     if %__EnforcePgo% EQU 1 (
         set PgoCheckCmd="!PYTHON!" "!__ProjectDir!\scripts\pgocheck.py" "!__BinDir!\coreclr.dll" "!__BinDir!\clrjit.dll"
         echo !PgoCheckCmd!

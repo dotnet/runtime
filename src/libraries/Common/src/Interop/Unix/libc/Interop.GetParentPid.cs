@@ -5,9 +5,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class @libc
     {
-        [GeneratedDllImport(Libraries.Libc, EntryPoint = "getppid")]
+        [LibraryImport(Libraries.libc, EntryPoint = "getppid")]
         internal static partial int GetParentPid();
     }
 }

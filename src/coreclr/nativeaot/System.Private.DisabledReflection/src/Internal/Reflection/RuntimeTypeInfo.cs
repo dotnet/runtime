@@ -53,7 +53,7 @@ namespace Internal.Reflection
         {
             get
             {
-                if (RuntimeAugments.TryGetBaseType(_typeHandle, out RuntimeTypeHandle baseTypeHandle))
+                if (RuntimeAugments.TryGetBaseType(_typeHandle, out RuntimeTypeHandle baseTypeHandle) && !baseTypeHandle.Equals(default))
                 {
                     return GetRuntimeTypeInfo(baseTypeHandle);
                 }
@@ -153,7 +153,7 @@ namespace Internal.Reflection
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr) => throw new NotSupportedException(SR.Reflection_Disabled);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters)
+        public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
             => throw new NotSupportedException(SR.Reflection_Disabled);
 
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotSupportedException(SR.Reflection_Disabled);
@@ -204,7 +204,7 @@ namespace Internal.Reflection
             return RuntimeTypeTable.Table.GetOrAdd(new RuntimeTypeHandleKey(typeHandle));
         }
 
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType()
         {
             // We support enough of MakeArrayType to make enum operations work

@@ -17,13 +17,8 @@ namespace System.ServiceModel.Syndication
         // Saves the element in the reader to the buffer (attributes preserved)
         // Type is populated from type attribute on reader
         // Reader must be positioned at an element
-        public XmlSyndicationContent(XmlReader reader)
+        public XmlSyndicationContent(XmlReader reader!!)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             SyndicationFeedFormatter.MoveToStartElement(reader);
             if (reader.HasAttributes)
             {
@@ -65,10 +60,10 @@ namespace System.ServiceModel.Syndication
             Extension = new SyndicationElementExtension(xmlSerializerExtension, serializer);
         }
 
-        public XmlSyndicationContent(string type, SyndicationElementExtension extension)
+        public XmlSyndicationContent(string type, SyndicationElementExtension extension!!)
         {
             _type = string.IsNullOrEmpty(type) ? Atom10Constants.XmlMediaType : type;
-            Extension = extension ?? throw new ArgumentNullException(nameof(extension));
+            Extension = extension;
         }
 
         protected XmlSyndicationContent(XmlSyndicationContent source) : base(source)
@@ -138,13 +133,8 @@ namespace System.ServiceModel.Syndication
         }
 
         // does not write start element or type attribute, writes other attributes and rest of content
-        protected override void WriteContentsTo(XmlWriter writer)
+        protected override void WriteContentsTo(XmlWriter writer!!)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
             if (Extension != null)
             {
                 Extension.WriteTo(writer);

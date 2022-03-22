@@ -22,7 +22,7 @@
     <Compile Include="System\Runtime\InteropServices\CollectionsMarshalTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComAliasNameAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComAwareEventInfoTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComAwareEventInfoTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\ComAwareEventInfoTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\ComCompatibleVersionAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComConversionLossAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComDefaultInterfaceAttributeTests.cs" />
@@ -48,6 +48,7 @@
     <Compile Include="System\Runtime\InteropServices\IDispatchImplAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\InterfaceTypeAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\LCIDConversionAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\LibraryImportAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalAsAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\Copy\ByteArrayTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\Copy\CharArrayTests.cs" />
@@ -61,47 +62,47 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\AllocHGlobalTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\BindToMonikerTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ChangeWrapperHandleStrengthTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\ChangeWrapperHandleStrengthTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ChangeWrapperHandleStrengthTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\CreateAggregatedObjectTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\CreateWrapperOfTypeTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\CreateWrapperOfTypeTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\CreateWrapperOfTypeTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\DestroyStructureTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\FinalReleaseComObjectTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\FinalReleaseComObjectTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\FinalReleaseComObjectTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\FreeBSTRTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\FreeCoTaskMemTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\FreeHGlobalTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\GenerateGuidForTypeTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\GenerateProgIdForTypeTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GenerateGuidForTypeTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GenerateProgIdForTypeTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetComInterfaceForObjectTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\GetComObjectDataTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetComObjectDataTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetDelegateForFunctionPointerTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetExceptionCodeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetExceptionForHRTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetFunctionPointerForDelegateTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetHRForExceptionTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\GetIDispatchForObjectTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetIDispatchForObjectTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetIUnknownForObjectTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\GetNativeVariantForObjectTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetNativeVariantForObjectTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetNativeVariantForObjectTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectForIUnknownTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectForIUnknownTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectForIUnknownTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectForNativeVariantTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectForNativeVariantTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectForNativeVariantTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectsForNativeVariantsTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetStartComSlotTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\GetStartComSlotTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetStartComSlotTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetTypeFromCLSIDTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetTypeInfoNameTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetUniqueObjectForIUnknownTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\GetUniqueObjectForIUnknownTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetUniqueObjectForIUnknownTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\InitHandleTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\IsComObjectTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\IsComObjectTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\IsComObjectTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\LastErrorTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReleaseTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReleaseComObjectTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\ReleaseComObjectTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ReleaseComObjectTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStructureTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringAnsiTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringAutoTests.cs" />
@@ -109,7 +110,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringUniTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringUTF8Tests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\QueryInterfaceTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\QueryInterfaceTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\QueryInterfaceTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReAllocHGlobalTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReAllocCoTaskMemTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\SecureStringToBSTRTests.cs" />
@@ -117,7 +118,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\SecureStringToCoTaskMemUnicodeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\SecureStringToGlobalAllocAnsiTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\SecureStringToGlobalAllocUnicodeTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\SetComObjectDataTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\SetComObjectDataTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\SizeOfTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StringToBSTRTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StringToCoTaskMemAnsiTests.cs" />
@@ -138,7 +139,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeGlobalAllocUnicodeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\Common\CommonTypes.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\Common\COMWrappersImpl.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\Common\CommonTypes.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Common\CommonTypes.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\Common\Variant.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\ByteTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\Int16Tests.cs" />
@@ -171,14 +172,14 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\GenerateProgIdForTypeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetComObjectDataTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetEndComSlotTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\GetEndComSlotTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetEndComSlotTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetExceptionPointersTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetHINSTANCETests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetIDispatchForObjectTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetTypedObjectForIUnknownTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\GetTypedObjectForIUnknownTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetTypedObjectForIUnknownTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\IsTypeVisibleFromComTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\IsTypeVisibleFromComTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\IsTypeVisibleFromComTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\SetComObjectDataTests.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeLibFuncAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeLibImportClassAttributeTests.cs" />
@@ -186,10 +187,10 @@
     <Compile Include="System\Runtime\InteropServices\TypeLibVarAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeLibVersionAttributeTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\Runtime\InteropServices\PosixSignalRegistrationTests.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="System\Runtime\InteropServices\PosixSignalRegistrationTests.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>

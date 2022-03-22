@@ -77,9 +77,9 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_load(host_interface_t* init)
         {
             std::cout << "mock frameworks: "
                 << tostr(init->fx_names.arr[i]).data() << " "
-                << tostr(init->fx_found_versions.arr[i]).data() << " [requested: "
-                << tostr(init->fx_requested_versions.arr[i]).data() << "] [path: "
-                << tostr(init->fx_dirs.arr[i]).data() << "]"
+                << tostr(init->fx_found_versions.arr[i]).data() << " [path: "
+                << tostr(init->fx_dirs.arr[i]).data() << "] [requested: "
+                << tostr(init->fx_requested_versions.arr[i]).data() << "]"
                 << std::endl;
         }
     }

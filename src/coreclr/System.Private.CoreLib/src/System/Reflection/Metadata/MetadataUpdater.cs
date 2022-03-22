@@ -9,10 +9,11 @@ namespace System.Reflection.Metadata
 {
     public static partial class MetadataUpdater
     {
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_ApplyUpdate")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_ApplyUpdate")]
         private static unsafe partial void ApplyUpdate(QCallAssembly assembly, byte* metadataDelta, int metadataDeltaLength, byte* ilDelta, int ilDeltaLength, byte* pdbDelta, int pdbDeltaLength);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_IsApplyUpdateSupported")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_IsApplyUpdateSupported")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool IsApplyUpdateSupported();
 
         /// <summary>
@@ -36,7 +37,7 @@ namespace System.Reflection.Metadata
         {
             if (assembly is not RuntimeAssembly runtimeAssembly)
             {
-                if (assembly is null) throw new ArgumentNullException(nameof(assembly));
+                ArgumentNullException.ThrowIfNull(assembly);
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
             }
 

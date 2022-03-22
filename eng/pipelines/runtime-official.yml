@@ -57,7 +57,7 @@ stages:
   - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
     - template: /eng/common/templates/job/source-index-stage1.yml
       parameters:
-        sourceIndexBuildCommand: build.cmd -subset libs.ref+libs.src -binarylog -os Linux -ci
+        sourceIndexBuildCommand: build.cmd -subset libs.sfx+libs.oob -binarylog -os Linux -ci
 
   #
   # Build CoreCLR
@@ -159,6 +159,8 @@ stages:
       - tvOS_arm64
       - iOS_arm64
       - MacCatalyst_x64
+      jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
 
   #
   # Build Mono release AOT cross-compilers
@@ -380,6 +382,8 @@ stages:
       - windows_x86
       - Linux_x64
       jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        signBinaries: false
         testGroup: innerloop
         pgoType: 'PGO'
 
@@ -392,7 +396,7 @@ stages:
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         liveRuntimeBuildConfig: release
-        liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+        liveLibrariesBuildConfig: Release
         pgoType: 'PGO'
       platforms:
       - windows_x64

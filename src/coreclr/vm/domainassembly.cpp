@@ -353,14 +353,7 @@ OBJECTREF DomainAssembly::GetExposedModuleObject()
 
         GCPROTECT_BEGIN(refClass);
 
-        if (GetPEAssembly()->IsDynamic())
-        {
-            refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE_BUILDER));
-        }
-        else
-        {
-            refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE));
-        }
+        refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE));
         refClass->SetModule(m_pModule);
 
         // Attach the reference to the assembly to keep the LoaderAllocator for this collectible type
@@ -539,14 +532,6 @@ void DomainAssembly::EagerFixups()
     {
         GetModule()->RunEagerFixups();
 
-        PEImageLayout * pLayout = GetModule()->GetReadyToRunInfo()->GetImage();
-
-        TADDR base = dac_cast<TADDR>(pLayout->GetBase());
-
-        ExecutionManager::AddCodeRange(base, base + (TADDR)pLayout->GetVirtualSize(),
-                                        ExecutionManager::GetReadyToRunJitManager(),
-                                         RangeSection::RANGE_SECTION_READYTORUN,
-                                         GetModule() /* (void *)pLayout */);
     }
 #endif // FEATURE_READYTORUN
 }
@@ -672,18 +657,8 @@ OBJECTREF DomainAssembly::GetExposedAssemblyObject()
     {
         ASSEMBLYREF   assemblyObj = NULL;
         MethodTable * pMT;
-        if (GetPEAssembly()->IsDynamic())
-        {
-            // This is unnecessary because the managed InternalAssemblyBuilder object
-            // should have already been created at the time of DefineDynamicAssembly
-            OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-            pMT = CoreLibBinder::GetClass(CLASS__INTERNAL_ASSEMBLY_BUILDER);
-        }
-        else
-        {
-            OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-            pMT = CoreLibBinder::GetClass(CLASS__ASSEMBLY);
-        }
+
+        pMT = CoreLibBinder::GetClass(CLASS__ASSEMBLY);
 
         // Will be TRUE only if LoaderAllocator managed object was already collected and therefore we should
         // return NULL

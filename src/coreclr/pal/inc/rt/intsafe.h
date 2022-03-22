@@ -31,7 +31,7 @@
 #define LODWORD(_qw)    ((ULONG)(_qw))
 
 #if defined(MIDL_PASS) || defined(RC_INVOKED) || defined(_M_CEE_PURE) \
-    || defined(_M_AMD64) || defined(__ARM_ARCH) || defined(_M_S390X)
+    || defined(_M_AMD64) || defined(__ARM_ARCH) || defined(_M_S390X) || defined(_M_LOONGARCH64)
 
 #ifndef UInt32x32To64
 #define UInt32x32To64(a, b) ((unsigned __int64)((ULONG)(a)) * (unsigned __int64)((ULONG)(b)))
@@ -48,8 +48,6 @@
 #error Must define a target architecture.
 
 #endif
-
-#define DWORD_MAX       0xffffffffUL
 
 //
 // It is common for -1 to be used as an error value for various types

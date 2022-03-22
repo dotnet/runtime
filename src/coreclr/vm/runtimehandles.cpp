@@ -807,12 +807,7 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetAttributes, ReflectClassBaseObject *pTypeUN
     TypeHandle typeHandle = refType->GetType();
 
     if (typeHandle.IsTypeDesc()) {
-
-        if (typeHandle.IsGenericVariable()) {
-            return tdPublic;
-        }
-
-        return 0;
+        return tdPublic;
     }
 
 #ifdef FEATURE_COMINTEROP
@@ -1246,7 +1241,7 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::CanCastTo, ReflectClassBaseObject *pType
         FC_RETURN_BOOL((BOOL)r);
     }
 
-    BOOL iRetVal;
+    BOOL iRetVal = FALSE;
     HELPER_METHOD_FRAME_BEGIN_RET_2(refType, refTarget);
     {
         // We allow T to be cast to Nullable<T>

@@ -2592,6 +2592,7 @@ mono_method_metadata_foreach_custom_attr (MonoMethod *method, MonoAssemblyMetada
 	metadata_foreach_custom_attr_from_index (image, idx, func, user_data);
 }
 
+#ifdef ENABLE_WEAK_ATTR
 static void
 init_weak_fields_inner (MonoImage *image, GHashTable *indexes)
 {
@@ -2725,6 +2726,7 @@ init_weak_fields_inner (MonoImage *image, GHashTable *indexes)
 		}
 	}
 }
+#endif
 
 /*
  * mono_assembly_init_weak_fields:
@@ -2734,6 +2736,7 @@ init_weak_fields_inner (MonoImage *image, GHashTable *indexes)
 void
 mono_assembly_init_weak_fields (MonoImage *image)
 {
+#ifdef ENABLE_WEAK_ATTR
 	if (image->weak_fields_inited)
 		return;
 
@@ -2760,6 +2763,7 @@ mono_assembly_init_weak_fields (MonoImage *image)
 		g_hash_table_destroy (indexes);
 	}
 	mono_image_unlock (image);
+#endif
 }
 
 /*
@@ -2771,6 +2775,7 @@ mono_assembly_init_weak_fields (MonoImage *image)
 gboolean
 mono_assembly_is_weak_field (MonoImage *image, guint32 field_idx)
 {
+#ifdef ENABLE_WEAK_ATTR
 	if (image->dynamic)
 		return FALSE;
 
@@ -2778,4 +2783,7 @@ mono_assembly_is_weak_field (MonoImage *image, guint32 field_idx)
 
 	/* The hash is not mutated, no need to lock */
 	return g_hash_table_lookup (image->weak_field_indexes, GINT_TO_POINTER (field_idx)) != NULL;
+#else
+	g_assert_not_reached ();
+#endif
 }

@@ -15,20 +15,14 @@ namespace System.Reflection
         private readonly object? _value;
         private readonly Type _argumentType;
 
-        public CustomAttributeTypedArgument(Type argumentType, object? value)
+        public CustomAttributeTypedArgument(Type argumentType!!, object? value)
         {
-            if (argumentType is null)
-                throw new ArgumentNullException(nameof(argumentType));
-
             _value = CanonicalizeValue(value);
             _argumentType = argumentType;
         }
 
-        public CustomAttributeTypedArgument(object value)
+        public CustomAttributeTypedArgument(object value!!)
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
-
             _value = CanonicalizeValue(value);
             _argumentType = value.GetType();
         }

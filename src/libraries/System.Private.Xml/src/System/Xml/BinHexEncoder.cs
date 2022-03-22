@@ -7,12 +7,8 @@ namespace System.Xml
     {
         private const int CharsChunkSize = 128;
 
-        internal static void Encode(byte[] buffer, int index, int count, XmlWriter writer)
+        internal static void Encode(byte[] buffer!!, int index, int count, XmlWriter writer)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index));

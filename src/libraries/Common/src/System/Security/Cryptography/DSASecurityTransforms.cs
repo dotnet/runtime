@@ -66,11 +66,8 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override byte[] CreateSignature(byte[] rgbHash)
+            public override byte[] CreateSignature(byte[] rgbHash!!)
             {
-                if (rgbHash == null)
-                    throw new ArgumentNullException(nameof(rgbHash));
-
                 SecKeyPair keys = GetKeys();
 
                 if (keys.PrivateKey == null)
@@ -88,18 +85,13 @@ namespace System.Security.Cryptography
                 // are always 160 bits / 20 bytes (the size of SHA-1, and the only legal length for Q).
                 byte[] ieeeFormatSignature = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(
                     derFormatSignature.AsSpan(0, derFormatSignature.Length),
-                    fieldSizeBits: 160);
+                    fieldSizeBits: SHA1.HashSizeInBits);
 
                 return ieeeFormatSignature;
             }
 
-            public override bool VerifySignature(byte[] hash, byte[] signature)
+            public override bool VerifySignature(byte[] hash!!, byte[] signature!!)
             {
-                if (hash == null)
-                    throw new ArgumentNullException(nameof(hash));
-                if (signature == null)
-                    throw new ArgumentNullException(nameof(signature));
-
                 return VerifySignature((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
             }
 
@@ -123,14 +115,14 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
                 }
 
-                return AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
+                return HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
             }
 
             protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-                AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
+                HashOneShotHelpers.HashData(hashAlgorithm, data);
 
             protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-                AsymmetricAlgorithmHelpers.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
+                HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
 
             protected override void Dispose(bool disposing)
             {

@@ -103,6 +103,8 @@ UINT32 STUB_COLLIDE_WRITE_PCT = 100;
 UINT32 STUB_COLLIDE_MONO_PCT  =   0;
 #endif // STUB_LOGGING
 
+FastTable::NumCallStubs_t FastTable::NumCallStubs;
+
 FastTable* BucketTable::dead = NULL;    //linked list of the abandoned buckets
 
 DispatchCache *g_resolveCache = NULL;    //cache of dispatch stubs for in line lookup by resolve stubs.
@@ -693,7 +695,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> indcell_heap_holder(
                                new LoaderHeap(indcell_heap_reserve_size, indcell_heap_commit_size,
                                               initReservedMem, indcell_heap_reserve_size,
-                                              NULL, FALSE));
+                                              NULL, UnlockedLoaderHeap::HeapKind::Data));
 
     initReservedMem += indcell_heap_reserve_size;
 
@@ -701,7 +703,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> cache_entry_heap_holder(
                                new LoaderHeap(cache_entry_heap_reserve_size, cache_entry_heap_commit_size,
                                               initReservedMem, cache_entry_heap_reserve_size,
-                                              &cache_entry_rangeList, FALSE));
+                                              &cache_entry_rangeList, UnlockedLoaderHeap::HeapKind::Data));
 
     initReservedMem += cache_entry_heap_reserve_size;
 
@@ -709,7 +711,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> lookup_heap_holder(
                                new LoaderHeap(lookup_heap_reserve_size, lookup_heap_commit_size,
                                               initReservedMem, lookup_heap_reserve_size,
-                                              &lookup_rangeList, TRUE));
+                                              &lookup_rangeList, UnlockedLoaderHeap::HeapKind::Executable));
 
     initReservedMem += lookup_heap_reserve_size;
 
@@ -717,7 +719,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> dispatch_heap_holder(
                                new LoaderHeap(dispatch_heap_reserve_size, dispatch_heap_commit_size,
                                               initReservedMem, dispatch_heap_reserve_size,
-                                              &dispatch_rangeList, TRUE));
+                                              &dispatch_rangeList, UnlockedLoaderHeap::HeapKind::Executable));
 
     initReservedMem += dispatch_heap_reserve_size;
 
@@ -725,7 +727,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> resolve_heap_holder(
                                new LoaderHeap(resolve_heap_reserve_size, resolve_heap_commit_size,
                                               initReservedMem, resolve_heap_reserve_size,
-                                              &resolve_rangeList, TRUE));
+                                              &resolve_rangeList, UnlockedLoaderHeap::HeapKind::Executable));
 
     initReservedMem += resolve_heap_reserve_size;
 
@@ -733,7 +735,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> vtable_heap_holder(
                                new LoaderHeap(vtable_heap_reserve_size, vtable_heap_commit_size,
                                               initReservedMem, vtable_heap_reserve_size,
-                                              &vtable_rangeList, TRUE));
+                                              &vtable_rangeList, UnlockedLoaderHeap::HeapKind::Executable));
 
     initReservedMem += vtable_heap_reserve_size;
 
@@ -3346,7 +3348,7 @@ void BucketTable::Reclaim()
     while (list)
     {
         size_t next = list->contents[CALL_STUB_DEAD_LINK];
-        delete [] (size_t*)list;
+        delete list;
         list = (FastTable*) next;
     }
 }

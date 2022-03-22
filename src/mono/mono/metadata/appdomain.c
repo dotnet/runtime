@@ -50,7 +50,6 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/marshal-internals.h>
 #include <mono/metadata/monitor.h>
-#include <mono/metadata/w32file.h>
 #include <mono/metadata/lock-tracer.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/tokentype.h>
@@ -65,8 +64,6 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-threads.h>
-#include <mono/metadata/w32handle.h>
-#include <mono/metadata/w32error.h>
 #include <mono/utils/w32api.h>
 #include <mono/metadata/components.h>
 
@@ -634,7 +631,7 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name, const M
 	gchar **path;
 	gchar *filename;
 	const gchar *local_culture;
-	gint len;
+	size_t len;
 
 	if (!culture || *culture == '\0') {
 		local_culture = "";
@@ -773,6 +770,12 @@ ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle,
 
 	MonoAssembly *requesting_assembly = mono_runtime_get_caller_from_stack_mark (stack_mark);
 	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)load_Context;
+
+#if HOST_WASI
+	// On WASI, mono_assembly_get_alc isn't yet supported. However it should be possible to make it work.
+	if (!alc)
+		alc = mono_alc_get_default ();
+#endif
 
 	if (!alc)
 		alc = mono_assembly_get_alc (requesting_assembly);

@@ -50,20 +50,20 @@ namespace System.Reflection
 
             bool isInherited = declaredType != reflectedType;
 
-            IntPtr[]? genericArgumentHandles = null;
-            int genericArgumentCount = 0;
+            Span<IntPtr> genericArgumentHandles = stackalloc IntPtr[0];
             RuntimeType[] genericArguments = declaredType.TypeHandle.GetInstantiationInternal();
             if (genericArguments != null)
             {
-                genericArgumentCount = genericArguments.Length;
-                genericArgumentHandles = new IntPtr[genericArguments.Length];
+                genericArgumentHandles = genericArguments.Length <= 16 ? // arbitrary stackalloc limit
+                    stackalloc IntPtr[genericArguments.Length] :
+                    new IntPtr[genericArguments.Length];
                 for (int i = 0; i < genericArguments.Length; i++)
                 {
                     genericArgumentHandles[i] = genericArguments[i].TypeHandle.Value;
                 }
             }
 
-            RuntimeMethodHandleInternal associateMethodHandle = ModuleHandle.ResolveMethodHandleInternal(RuntimeTypeHandle.GetModule(declaredType), tkMethod, genericArgumentHandles, genericArgumentCount, null, 0);
+            RuntimeMethodHandleInternal associateMethodHandle = ModuleHandle.ResolveMethodHandleInternal(RuntimeTypeHandle.GetModule(declaredType), tkMethod, genericArgumentHandles, default);
             Debug.Assert(!associateMethodHandle.IsNullHandle(), "Failed to resolve associateRecord methodDef token");
 
             if (isInherited)

@@ -8,11 +8,10 @@ using Xunit;
 namespace System.IO.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-    public class Directory_NotifyFilter_Tests : FileSystemWatcherTest
+    public partial class Directory_NotifyFilter_Tests : FileSystemWatcherTest
     {
-        [DllImport("advapi32.dll", EntryPoint = "SetNamedSecurityInfoW",
-            CallingConvention = CallingConvention.Winapi, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
-        private static extern uint SetSecurityInfoByHandle( string name, uint objectType, uint securityInformation,
+        [LibraryImport("advapi32.dll", EntryPoint = "SetNamedSecurityInfoW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        private static partial uint SetSecurityInfoByHandle( string name, uint objectType, uint securityInformation,
             IntPtr owner, IntPtr group, IntPtr dacl, IntPtr sacl);
 
         private const uint ERROR_SUCCESS = 0;

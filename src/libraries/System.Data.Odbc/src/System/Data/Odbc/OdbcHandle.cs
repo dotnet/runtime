@@ -178,19 +178,19 @@ namespace System.Data.Odbc
         internal ODBC32.SQLRETURN GetDiagnosticField(out string sqlState)
         {
             // ODBC (MSDN) documents it expects a buffer large enough to hold 5(+L'\0') unicode characters
-            StringBuilder sb = new StringBuilder(6);
+            char[] buffer = new char[6];
             ODBC32.SQLRETURN retcode = Interop.Odbc.SQLGetDiagFieldW(
                 HandleType,
                 this,
                 (short)1,
                 ODBC32.SQL_DIAG_SQLSTATE,
-                sb,
-                checked((short)(2 * sb.Capacity)), // expects number of bytes, see \\kbinternal\kb\articles\294\1\69.HTM
+                buffer,
+                checked((short)(2 * buffer.Length)), // expects number of bytes, see \\kbinternal\kb\articles\294\1\69.HTM
                 out _);
             ODBC.TraceODBC(3, "SQLGetDiagFieldW", retcode);
             if ((retcode == ODBC32.SQLRETURN.SUCCESS) || (retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO))
             {
-                sqlState = sb.ToString();
+                sqlState = new string(buffer.AsSpan().Slice(0, buffer.AsSpan().IndexOf('\0')));
             }
             else
             {
@@ -199,21 +199,23 @@ namespace System.Data.Odbc
             return retcode;
         }
 
-        internal ODBC32.SQLRETURN GetDiagnosticRecord(short record, out string sqlState, StringBuilder message, out int nativeError, out short cchActual)
+        internal ODBC32.SQLRETURN GetDiagnosticRecord(short record, out string sqlState, StringBuilder messageBuilder, out int nativeError, out short cchActual)
         {
             // ODBC (MSDN) documents it expects a buffer large enough to hold 4(+L'\0') unicode characters
-            StringBuilder sb = new StringBuilder(5);
-            ODBC32.SQLRETURN retcode = Interop.Odbc.SQLGetDiagRecW(HandleType, this, record, sb, out nativeError, message, checked((short)message.Capacity), out cchActual);
+            char[] buffer = new char[5];
+            char[] message = new char[1024];
+            ODBC32.SQLRETURN retcode = Interop.Odbc.SQLGetDiagRecW(HandleType, this, record, buffer, out nativeError, message, checked((short)message.Length), out cchActual);
             ODBC.TraceODBC(3, "SQLGetDiagRecW", retcode);
 
             if ((retcode == ODBC32.SQLRETURN.SUCCESS) || (retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO))
             {
-                sqlState = sb.ToString();
+                sqlState = new string(buffer.AsSpan().Slice(0, buffer.AsSpan().IndexOf('\0')));
             }
             else
             {
                 sqlState = string.Empty;
             }
+            messageBuilder.Append(new string(message.AsSpan().Slice(0, message.AsSpan().IndexOf('\0'))));
             return retcode;
         }
     }

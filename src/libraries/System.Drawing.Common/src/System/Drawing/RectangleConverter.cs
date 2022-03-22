@@ -40,7 +40,7 @@ namespace System.Drawing {
         ///    <para>Gets a value indicating whether this converter can
         ///       convert an object to the given destination type using the context.</para>
         /// </devdoc>
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType) {
+        public override bool CanConvertTo(ITypeDescriptorContext context, [NotNullWhen(true)] Type? destinationType) {
             if (destinationType == typeof(InstanceDescriptor)) {
                 return true;
             }

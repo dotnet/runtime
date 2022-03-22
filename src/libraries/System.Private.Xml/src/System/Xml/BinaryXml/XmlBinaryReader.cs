@@ -655,8 +655,7 @@ namespace System.Xml
             }
             else
             {
-                if (null == name)
-                    throw new ArgumentNullException(nameof(name));
+                ArgumentNullException.ThrowIfNull(name);
                 if (null == ns)
                     ns = string.Empty;
                 int index = LocateAttribute(name, ns);
@@ -706,8 +705,7 @@ namespace System.Xml
             }
             else
             {
-                if (null == name)
-                    throw new ArgumentNullException(nameof(name));
+                ArgumentNullException.ThrowIfNull(name);
                 if (null == ns)
                     ns = string.Empty;
                 int index = LocateAttribute(name, ns);

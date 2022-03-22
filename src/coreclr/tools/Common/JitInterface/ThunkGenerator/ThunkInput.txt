@@ -158,7 +158,7 @@ FUNCTIONS
     void setMethodAttribs(        CORINFO_METHOD_HANDLE       ftn,        CorInfoMethodRuntimeFlags   attribs        );
     void getMethodSig(        CORINFO_METHOD_HANDLE      ftn,        CORINFO_SIG_INFO          *sig,        CORINFO_CLASS_HANDLE      memberParent         );
     bool getMethodInfo(        CORINFO_METHOD_HANDLE   ftn,        CORINFO_METHOD_INFO*    info        );
-    CorInfoInline canInline(        CORINFO_METHOD_HANDLE       callerHnd,        CORINFO_METHOD_HANDLE       calleeHnd,        uint32_t*                      pRestrictions        );
+    CorInfoInline canInline(        CORINFO_METHOD_HANDLE       callerHnd,        CORINFO_METHOD_HANDLE       calleeHnd);
     void reportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd,        CORINFO_METHOD_HANDLE inlineeHnd,        CorInfoInline inlineResult,        const char * reason);
     bool canTailCall(        CORINFO_METHOD_HANDLE   callerHnd,        CORINFO_METHOD_HANDLE   declaredCalleeHnd,        CORINFO_METHOD_HANDLE   exactCalleeHnd,        bool fIsTailPrefix        );
     void reportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd,        CORINFO_METHOD_HANDLE calleeHnd,        bool fIsTailPrefix,        CorInfoTailCall tailCallResult,        const char * reason);
@@ -271,6 +271,7 @@ FUNCTIONS
     unsigned getMethodHash(CORINFO_METHOD_HANDLE       ftn);
     size_t findNameOfToken(CORINFO_MODULE_HANDLE       moduleHandle,mdToken                     token, char * szFQName,size_t FQNameCapacity);
     bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_HANDLE  structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
+    uint32_t getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
     uint32_t getThreadTLSIndex(void                  **ppIndirection);
     const void * getInlinedCallFrameVptr(void **ppIndirection);
     int32_t * getAddrOfCaptureThreadGlobal(void                  **ppIndirection);

@@ -3,17 +3,11 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.Versioning;
-
-#if !FEATURE_GENERIC_MATH
-#error FEATURE_GENERIC_MATH is not defined
-#endif
 
 namespace System
 {
     /// <summary>Defines a number type.</summary>
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
-    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface INumber<TSelf>
         : IAdditionOperators<TSelf, TSelf, TSelf>,
           IAdditiveIdentity<TSelf, TSelf>,
@@ -153,7 +147,6 @@ namespace System
 
     /// <summary>Defines a number that is represented in a base-2 format.</summary>
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
-    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface IBinaryNumber<TSelf>
         : IBitwiseOperators<TSelf, TSelf, TSelf>,
           INumber<TSelf>
@@ -172,7 +165,6 @@ namespace System
 
     /// <summary>Defines a number type which can represent both positive and negative values.</summary>
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
-    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface ISignedNumber<TSelf>
         : INumber<TSelf>
         where TSelf : ISignedNumber<TSelf>
@@ -183,7 +175,6 @@ namespace System
 
     /// <summary>Defines a number type which can only represent positive values, that is it cannot represent negative values.</summary>
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
-    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface IUnsignedNumber<TSelf>
         : INumber<TSelf>
         where TSelf : IUnsignedNumber<TSelf>

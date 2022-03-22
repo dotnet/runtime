@@ -259,6 +259,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <AllCMDsPresent Include="$(_CMDDIR)\**\*.$(TestScriptExtension)" Exclude="$(_CMDDIR)\**\AppBundle\*.$(TestScriptExtension)" />
       <AllCMDsPresent Remove="$(_CMDDIR)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
       <AllCMDsPresent Remove="@(MergedRunnableTestPaths)" />
+      <AllCMDsPresent Remove="@(OutOfProcessTestPaths)" />
     </ItemGroup>
 
     <ItemGroup Condition="'@(AllCMDsPresent)' != ''">

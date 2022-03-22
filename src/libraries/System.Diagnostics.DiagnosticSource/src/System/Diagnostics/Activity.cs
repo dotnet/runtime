@@ -98,6 +98,11 @@ namespace System.Diagnostics
         public string? StatusDescription => _statusDescription;
 
         /// <summary>
+        /// Gets whether the parent context was created from remote propagation.
+        /// </summary>
+        public bool HasRemoteParent { get; private set; }
+
+        /// <summary>
         /// Sets the status code and description on the current activity object.
         /// </summary>
         /// <param name="code">The status code</param>
@@ -1017,13 +1022,14 @@ namespace System.Diagnostics
 
         internal static Activity Create(ActivitySource source, string name, ActivityKind kind, string? parentId, ActivityContext parentContext,
                                         IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links, DateTimeOffset startTime,
-                                        ActivityTagsCollection? samplerTags, ActivitySamplingResult request, bool startIt, ActivityIdFormat idFormat)
+                                        ActivityTagsCollection? samplerTags, ActivitySamplingResult request, bool startIt, ActivityIdFormat idFormat, string? traceState)
         {
             Activity activity = new Activity(name);
 
             activity.Source = source;
             activity.Kind = kind;
             activity.IdFormat = idFormat;
+            activity._traceState = traceState;
 
             if (links != null)
             {
@@ -1074,7 +1080,7 @@ namespace System.Diagnostics
 
                 activity.ActivityTraceFlags = parentContext.TraceFlags;
                 activity._parentTraceFlags = (byte) parentContext.TraceFlags;
-                activity._traceState = parentContext.TraceState;
+                activity.HasRemoteParent = parentContext.IsRemote;
             }
 
             activity.IsAllDataRequested = request == ActivitySamplingResult.AllData || request == ActivitySamplingResult.AllDataAndRecorded;

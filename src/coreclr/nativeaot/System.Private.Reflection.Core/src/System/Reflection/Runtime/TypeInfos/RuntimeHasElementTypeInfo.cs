@@ -159,7 +159,7 @@ namespace System.Reflection.Runtime.TypeInfos
         protected override TypeAttributes GetAttributeFlagsImpl()
         {
             Debug.Assert(IsByRef || IsPointer);
-            return TypeAttributes.AnsiClass;
+            return TypeAttributes.Public;
         }
 
         protected sealed override int InternalGetHashCode()

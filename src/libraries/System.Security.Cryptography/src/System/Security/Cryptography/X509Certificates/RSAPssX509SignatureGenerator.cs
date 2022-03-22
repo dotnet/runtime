@@ -37,17 +37,17 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (hashAlgorithm == HashAlgorithmName.SHA256)
             {
-                cbSalt = 256 / 8;
+                cbSalt = SHA256.HashSizeInBytes;
                 digestOid = Oids.Sha256;
             }
             else if (hashAlgorithm == HashAlgorithmName.SHA384)
             {
-                cbSalt = 384 / 8;
+                cbSalt = SHA384.HashSizeInBytes;
                 digestOid = Oids.Sha384;
             }
             else if (hashAlgorithm == HashAlgorithmName.SHA512)
             {
-                cbSalt = 512 / 8;
+                cbSalt = SHA512.HashSizeInBytes;
                 digestOid = Oids.Sha512;
             }
             else

@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Ole32
     {
-        [DllImport(Interop.Libraries.Ole32, ExactSpelling = true)]
-        internal static extern int CoUninitialize();
+        [LibraryImport(Interop.Libraries.Ole32)]
+        internal static partial int CoUninitialize();
     }
 }

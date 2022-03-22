@@ -376,6 +376,10 @@ void SetThread(Thread* t)
     LIMITED_METHOD_CONTRACT
 
     gCurrentThreadInfo.m_pThread = t;
+    if (t != NULL)
+    {
+        EnsureTlsDestructionMonitor();
+    }
 }
 
 void SetAppDomain(AppDomain* ad)
@@ -2191,7 +2195,7 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
 
     default:
         _ASSERTE(!"Bad stack size bucket");
-        break;
+        FALLTHROUGH;
     case StackSize_Large:
         stackSize = 1024 * 1024;
         break;
@@ -2203,7 +2207,6 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
     HANDLE hThread = CreateThread(NULL, stackSize, start, args, flags, &threadId);
 
     SetThreadName(hThread, pName);
-
 
     if (pThreadId)
         *pThreadId = threadId;
@@ -7934,6 +7937,8 @@ UINT64 Thread::GetTotalThreadPoolCompletionCount()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
+
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPoolForIO());
 
     bool usePortableThreadPool = ThreadpoolMgr::UsePortableThreadPool();
 

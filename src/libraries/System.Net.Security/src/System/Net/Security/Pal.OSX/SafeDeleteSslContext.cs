@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Http;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
@@ -92,6 +91,44 @@ namespace System.Net
                 Dispose();
                 throw;
             }
+
+            if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !sslAuthenticationOptions.IsServer)
+            {
+                Interop.AppleCrypto.SslSetTargetName(_sslContext, sslAuthenticationOptions.TargetHost);
+            }
+
+            if (sslAuthenticationOptions.CertificateContext == null && sslAuthenticationOptions.CertSelectionDelegate != null)
+            {
+                // certificate was not provided but there is user callback. We can break handshake if server asks for certificate
+                // and we can try to get it based on remote certificate and trusted issuers.
+                Interop.AppleCrypto.SslBreakOnCertRequested(_sslContext, true);
+            }
+
+            if (sslAuthenticationOptions.IsServer)
+            {
+                if (sslAuthenticationOptions.RemoteCertRequired)
+                {
+                    Interop.AppleCrypto.SslSetAcceptClientCert(_sslContext);
+                }
+
+                if (sslAuthenticationOptions.CertificateContext?.Trust?._sendTrustInHandshake == true)
+                {
+                    SslCertificateTrust trust = sslAuthenticationOptions.CertificateContext!.Trust!;
+                    X509Certificate2Collection certList = (trust._trustList ?? trust._store!.Certificates);
+
+                    Debug.Assert(certList != null, "certList != null");
+                    Span<IntPtr> handles = certList.Count <= 256
+                        ? stackalloc IntPtr[256]
+                        : new IntPtr[certList.Count];
+
+                    for (int i = 0; i < certList.Count; i++)
+                    {
+                        handles[i] = certList[i].Handle;
+                    }
+
+                    Interop.AppleCrypto.SslSetCertificateAuthorities(_sslContext, handles.Slice(0, certList.Count), true);
+                }
+            }
         }
 
         private static SafeSslHandle CreateSslContext(SafeFreeSslCredentials credential, bool isServer)
@@ -99,11 +136,13 @@ namespace System.Net
             switch (credential.Policy)
             {
                 case EncryptionPolicy.RequireEncryption:
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 case EncryptionPolicy.AllowNoEncryption:
                     // SecureTransport doesn't allow TLS_NULL_NULL_WITH_NULL, but
                     // since AllowNoEncryption intersect OS-supported isn't nothing,
                     // let it pass.
                     break;
+#pragma warning restore SYSLIB0040
                 default:
                     throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, credential.Policy));
             }
@@ -301,8 +340,10 @@ namespace System.Net
             SslProtocols.Ssl2,
             SslProtocols.Ssl3,
 #pragma warning restore 0618
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             SslProtocols.Tls,
             SslProtocols.Tls11,
+#pragma warning restore SYSLIB0039
             SslProtocols.Tls12
         };
 

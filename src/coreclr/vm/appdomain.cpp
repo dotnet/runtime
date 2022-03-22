@@ -710,8 +710,7 @@ void BaseDomain::InitVSD()
 {
     STANDARD_VM_CONTRACT;
 
-    UINT32 startingId = TypeIDMap::STARTING_UNSHARED_DOMAIN_ID;
-    m_typeIDMap.Init(startingId, 2);
+    m_typeIDMap.Init();
 
     GetLoaderAllocator()->InitVirtualCallStubManager(this);
 }
@@ -3177,7 +3176,6 @@ DomainAssembly * AppDomain::FindAssembly(PEAssembly * pPEAssembly, FindAssemblyO
         if (pManifestFile &&
             pManifestFile->Equals(pPEAssembly))
         {
-            // Caller already has PEAssembly, so we can give DomainAssembly away freely without added reference
             return pDomainAssembly.GetValue();
         }
     }

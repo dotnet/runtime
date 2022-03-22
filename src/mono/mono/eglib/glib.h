@@ -28,6 +28,7 @@
 #include <inttypes.h>
 #include <eglib-config.h>
 #include <minipal/utils.h>
+#include <time.h>
 
 // - Pointers should only be converted to or from pointer-sized integers.
 // - Any size integer can be converted to any other size integer.
@@ -321,8 +322,6 @@ gchar *          g_getenv(const gchar *variable);
 G_EXTERN_C // sdks/wasm/driver.c is C and uses this
 gboolean         g_setenv(const gchar *variable, const gchar *value, gboolean overwrite);
 
-void             g_unsetenv(const gchar *variable);
-
 gchar*           g_win32_getlocale(void);
 
 /*
@@ -369,16 +368,11 @@ gchar       *g_strjoin        (const gchar *separator, ...);
 gchar       *g_strjoinv       (const gchar *separator, gchar **str_array);
 gchar       *g_strchug        (gchar *str);
 gchar       *g_strchomp       (gchar *str);
-void         g_strdown        (gchar *string);
 gchar       *g_strnfill       (gsize length, gchar fill_char);
 gsize        g_strnlen        (const char*, gsize);
 char        *g_str_from_file_region (int fd, guint64 offset, gsize size);
 
 void	     g_strdelimit     (char *string, char delimiter, char new_delimiter);
-gchar       *g_strescape      (const gchar *source, const gchar *exceptions);
-
-gchar       *g_filename_to_uri   (const gchar *filename, const gchar *hostname, GError **gerror);
-gchar       *g_filename_from_uri (const gchar *uri, gchar **hostname, GError **gerror);
 
 gint         g_printf          (gchar const *format, ...) G_ATTR_FORMAT_PRINTF(1, 2);
 gint         g_fprintf         (FILE *file, gchar const *format, ...) G_ATTR_FORMAT_PRINTF(2, 3);
@@ -692,12 +686,6 @@ void    g_array_set_size          (GArray *array, gint length);
 //FIXME previous missing parens
 
 /*
- * QSort
-*/
-
-void g_qsort_with_data (gpointer base, size_t nmemb, size_t size, GCompareDataFunc compare, gpointer user_data);
-
-/*
  * Pointer Array
  */
 
@@ -715,7 +703,6 @@ gpointer   g_ptr_array_remove_index       (GPtrArray *array, guint index);
 gboolean   g_ptr_array_remove_fast        (GPtrArray *array, gpointer data);
 gpointer   g_ptr_array_remove_index_fast  (GPtrArray *array, guint index);
 void       g_ptr_array_sort               (GPtrArray *array, GCompareFunc compare_func);
-void       g_ptr_array_sort_with_data     (GPtrArray *array, GCompareDataFunc compare_func, gpointer user_data);
 void       g_ptr_array_set_size           (GPtrArray *array, gint length);
 gpointer  *g_ptr_array_free               (GPtrArray *array, gboolean free_seg);
 void       g_ptr_array_foreach            (GPtrArray *array, GFunc func, gpointer user_data);
@@ -813,94 +800,6 @@ GPrintFunc g_set_printerr_handler    (GPrintFunc func);
 
 gpointer g_convert_error_quark(void);
 
-
-/*
- * Unicode Manipulation: most of this is not used by Mono by default, it is
- * only used if the old collation code is activated, so this is only the
- * bare minimum to build.
- */
-
-typedef enum {
-	G_UNICODE_CONTROL,
-	G_UNICODE_FORMAT,
-	G_UNICODE_UNASSIGNED,
-	G_UNICODE_PRIVATE_USE,
-	G_UNICODE_SURROGATE,
-	G_UNICODE_LOWERCASE_LETTER,
-	G_UNICODE_MODIFIER_LETTER,
-	G_UNICODE_OTHER_LETTER,
-	G_UNICODE_TITLECASE_LETTER,
-	G_UNICODE_UPPERCASE_LETTER,
-	G_UNICODE_COMBINING_MARK,
-	G_UNICODE_ENCLOSING_MARK,
-	G_UNICODE_NON_SPACING_MARK,
-	G_UNICODE_DECIMAL_NUMBER,
-	G_UNICODE_LETTER_NUMBER,
-	G_UNICODE_OTHER_NUMBER,
-	G_UNICODE_CONNECT_PUNCTUATION,
-	G_UNICODE_DASH_PUNCTUATION,
-	G_UNICODE_CLOSE_PUNCTUATION,
-	G_UNICODE_FINAL_PUNCTUATION,
-	G_UNICODE_INITIAL_PUNCTUATION,
-	G_UNICODE_OTHER_PUNCTUATION,
-	G_UNICODE_OPEN_PUNCTUATION,
-	G_UNICODE_CURRENCY_SYMBOL,
-	G_UNICODE_MODIFIER_SYMBOL,
-	G_UNICODE_MATH_SYMBOL,
-	G_UNICODE_OTHER_SYMBOL,
-	G_UNICODE_LINE_SEPARATOR,
-	G_UNICODE_PARAGRAPH_SEPARATOR,
-	G_UNICODE_SPACE_SEPARATOR
-} GUnicodeType;
-
-typedef enum {
-	G_UNICODE_BREAK_MANDATORY,
-	G_UNICODE_BREAK_CARRIAGE_RETURN,
-	G_UNICODE_BREAK_LINE_FEED,
-	G_UNICODE_BREAK_COMBINING_MARK,
-	G_UNICODE_BREAK_SURROGATE,
-	G_UNICODE_BREAK_ZERO_WIDTH_SPACE,
-	G_UNICODE_BREAK_INSEPARABLE,
-	G_UNICODE_BREAK_NON_BREAKING_GLUE,
-	G_UNICODE_BREAK_CONTINGENT,
-	G_UNICODE_BREAK_SPACE,
-	G_UNICODE_BREAK_AFTER,
-	G_UNICODE_BREAK_BEFORE,
-	G_UNICODE_BREAK_BEFORE_AND_AFTER,
-	G_UNICODE_BREAK_HYPHEN,
-	G_UNICODE_BREAK_NON_STARTER,
-	G_UNICODE_BREAK_OPEN_PUNCTUATION,
-	G_UNICODE_BREAK_CLOSE_PUNCTUATION,
-	G_UNICODE_BREAK_QUOTATION,
-	G_UNICODE_BREAK_EXCLAMATION,
-	G_UNICODE_BREAK_IDEOGRAPHIC,
-	G_UNICODE_BREAK_NUMERIC,
-	G_UNICODE_BREAK_INFIX_SEPARATOR,
-	G_UNICODE_BREAK_SYMBOL,
-	G_UNICODE_BREAK_ALPHABETIC,
-	G_UNICODE_BREAK_PREFIX,
-	G_UNICODE_BREAK_POSTFIX,
-	G_UNICODE_BREAK_COMPLEX_CONTEXT,
-	G_UNICODE_BREAK_AMBIGUOUS,
-	G_UNICODE_BREAK_UNKNOWN,
-	G_UNICODE_BREAK_NEXT_LINE,
-	G_UNICODE_BREAK_WORD_JOINER,
-	G_UNICODE_BREAK_HANGUL_L_JAMO,
-	G_UNICODE_BREAK_HANGUL_V_JAMO,
-	G_UNICODE_BREAK_HANGUL_T_JAMO,
-	G_UNICODE_BREAK_HANGUL_LV_SYLLABLE,
-	G_UNICODE_BREAK_HANGUL_LVT_SYLLABLE
-} GUnicodeBreakType;
-
-gunichar       g_unichar_toupper (gunichar c);
-gunichar       g_unichar_tolower (gunichar c);
-gunichar       g_unichar_totitle (gunichar c);
-GUnicodeType   g_unichar_type    (gunichar c);
-gboolean       g_unichar_isspace (gunichar c);
-gboolean       g_unichar_isxdigit (gunichar c);
-gint           g_unichar_xdigit_value (gunichar c);
-GUnicodeBreakType   g_unichar_break_type (gunichar c);
-
 #ifndef MAX
 #define MAX(a,b) (((a)>(b)) ? (a) : (b))
 #endif
@@ -986,8 +885,6 @@ typedef enum {
 	G_CONVERT_ERROR_NO_MEMORY
 } GConvertError;
 
-gchar     *g_utf8_strup (const gchar *str, gssize len);
-gchar     *g_utf8_strdown (const gchar *str, gssize len);
 gint       g_unichar_to_utf8 (gunichar c, gchar *outbuf);
 gunichar  *g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written);
 gunichar  *g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err);
@@ -1043,14 +940,6 @@ void  g_set_prgname            (const gchar *prgname);
 
 gboolean g_ensure_directory_exists (const gchar *filename);
 
-/*
- * Shell
- */
-
-gboolean  g_shell_parse_argv (const gchar *command_line, gint *argcp, gchar ***argvp, GError **gerror);
-gchar    *g_shell_unquote    (const gchar *quoted_string, GError **gerror);
-gchar    *g_shell_quote      (const gchar *unquoted_string);
-
 #ifndef G_OS_WIN32 // Spawn could be implemented but is not.
 
 int eg_getdtablesize (void);
@@ -1079,7 +968,6 @@ typedef enum {
 
 typedef void (*GSpawnChildSetupFunc) (gpointer user_data);
 
-gboolean g_spawn_command_line_sync (const gchar *command_line, gchar **standard_output, gchar **standard_error, gint *exit_status, GError **gerror);
 gboolean g_spawn_async_with_pipes  (const gchar *working_directory, gchar **argv, gchar **envp, GSpawnFlags flags, GSpawnChildSetupFunc child_setup,
 				gpointer user_data, GPid *child_pid, gint *standard_input, gint *standard_output, gint *standard_error, GError **gerror);
 
@@ -1188,9 +1076,9 @@ gboolean   g_file_test (const gchar *filename, GFileTest test);
 #define g_write write
 #endif
 #ifdef G_OS_WIN32
-#define g_read _read
+#define g_read(fd, buffer, buffer_size) _read(fd, buffer, (unsigned)buffer_size)
 #else
-#define g_read read
+#define g_read(fd, buffer, buffer_size) (int)read(fd, buffer, buffer_size)
 #endif
 
 #define g_fopen fopen
@@ -1271,15 +1159,6 @@ g_async_safe_printf (gchar const *format, ...)
 	return ret;
 }
 
-
-/*
- * Pattern matching
- */
-typedef struct _GPatternSpec GPatternSpec;
-GPatternSpec * g_pattern_spec_new (const gchar *pattern);
-void           g_pattern_spec_free (GPatternSpec *pspec);
-gboolean       g_pattern_match_string (GPatternSpec *pspec, const gchar *string);
-
 /*
  * Directory
  */
@@ -1291,78 +1170,6 @@ void         g_dir_close (GDir *dir);
 
 int          g_mkdir_with_parents (const gchar *pathname, int mode);
 #define g_mkdir mkdir
-
-/*
- * GMarkup
- */
-typedef struct _GMarkupParseContext GMarkupParseContext;
-
-typedef enum
-{
-	G_MARKUP_DO_NOT_USE_THIS_UNSUPPORTED_FLAG = 1 << 0,
-	G_MARKUP_TREAT_CDATA_AS_TEXT              = 1 << 1
-} GMarkupParseFlags;
-
-typedef struct {
-	void (*start_element)  (GMarkupParseContext *context,
-				const gchar *element_name,
-				const gchar **attribute_names,
-				const gchar **attribute_values,
-				gpointer user_data,
-				GError **gerror);
-
-	void (*end_element)    (GMarkupParseContext *context,
-				const gchar         *element_name,
-				gpointer             user_data,
-				GError             **gerror);
-
-	void (*text)           (GMarkupParseContext *context,
-				const gchar         *text,
-				gsize                text_len,
-				gpointer             user_data,
-				GError             **gerror);
-
-	void (*passthrough)    (GMarkupParseContext *context,
-				const gchar         *passthrough_text,
-				gsize                text_len,
-				gpointer             user_data,
-				GError             **gerror);
-	void (*error)          (GMarkupParseContext *context,
-				GError              *gerror,
-				gpointer             user_data);
-} GMarkupParser;
-
-GMarkupParseContext *g_markup_parse_context_new   (const GMarkupParser *parser,
-						   GMarkupParseFlags flags,
-						   gpointer user_data,
-						   GDestroyNotify user_data_dnotify);
-void                 g_markup_parse_context_free  (GMarkupParseContext *context);
-gboolean             g_markup_parse_context_parse (GMarkupParseContext *context,
-						   const gchar *text, gssize text_len,
-						   GError **gerror);
-gboolean         g_markup_parse_context_end_parse (GMarkupParseContext *context,
-						   GError **gerror);
-
-/*
- * Character set conversion
- */
-typedef struct _GIConv *GIConv;
-
-gsize g_iconv (GIConv cd, gchar **inbytes, gsize *inbytesleft, gchar **outbytes, gsize *outbytesleft);
-GIConv g_iconv_open (const gchar *to_charset, const gchar *from_charset);
-int g_iconv_close (GIConv cd);
-
-gboolean  g_get_charset        (G_CONST_RETURN char **charset);
-gchar    *g_locale_to_utf8     (const gchar *opsysstring, gssize len,
-				gsize *bytes_read, gsize *bytes_written,
-				GError **gerror);
-gchar    *g_locale_from_utf8   (const gchar *utf8string, gssize len, gsize *bytes_read,
-				gsize *bytes_written, GError **gerror);
-gchar    *g_filename_from_utf8 (const gchar *utf8string, gssize len, gsize *bytes_read,
-				gsize *bytes_written, GError **gerror);
-gchar    *g_convert            (const gchar *str, gssize len,
-				const gchar *to_codeset, const gchar *from_codeset,
-				gsize *bytes_read, gsize *bytes_written, GError **gerror);
 
 /*
  * Unicode manipulation
@@ -1505,5 +1312,14 @@ mono_qsort (void* base, size_t num, size_t size, int (*compare)(const void*, con
 #define g_try_malloc(x) (g_cast (monoeg_try_malloc (x)))
 #define g_try_realloc(obj, size) (g_cast (monoeg_try_realloc ((obj), (size))))
 #define g_memdup(mem, size) (g_cast (monoeg_g_memdup ((mem), (size))))
+
+/*
+ * Clock Nanosleep
+ */
+
+#ifdef HAVE_CLOCK_NANOSLEEP
+gint
+g_clock_nanosleep (clockid_t clockid, gint flags, const struct timespec *request, struct timespec *remain);
+#endif
 
 #endif // __GLIB_H

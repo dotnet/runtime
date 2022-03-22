@@ -181,11 +181,8 @@ namespace System.IO.Compression
         ///     <para>Note that Unicode encodings other than UTF-8 may not be currently used for the <c>entryNameEncoding</c>,
         ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
         /// </param>
-        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, Encoding? entryNameEncoding, bool overwriteFiles)
+        public static void ExtractToDirectory(string sourceArchiveFileName!!, string destinationDirectoryName, Encoding? entryNameEncoding, bool overwriteFiles)
         {
-            if (sourceArchiveFileName == null)
-                throw new ArgumentNullException(nameof(sourceArchiveFileName));
-
             using (ZipArchive archive = Open(sourceArchiveFileName, ZipArchiveMode.Read, entryNameEncoding))
             {
                 archive.ExtractToDirectory(destinationDirectoryName, overwriteFiles);

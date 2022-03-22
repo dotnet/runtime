@@ -521,6 +521,7 @@ void Compiler::fgSwitchToOptimized(const char* reason)
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER0);
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBINSTR);
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_OSR);
+    opts.jitFlags->Set(JitFlags::JIT_FLAG_BBOPT);
 
     // Leave a note for jit diagnostics
     compSwitchedToOptimized = true;
@@ -2996,7 +2997,7 @@ void Compiler::fgSimpleLowering()
                     GenTreeCall* call = tree->AsCall();
                     // Fast tail calls use the caller-supplied scratch
                     // space so have no impact on this method's outgoing arg size.
-                    if (!call->IsFastTailCall())
+                    if (!call->IsFastTailCall() && !call->IsHelperCall(this, CORINFO_HELP_VALIDATE_INDIRECT_CALL))
                     {
                         // Update outgoing arg size to handle this call
                         const unsigned thisCallOutAreaSize = call->fgArgInfo->GetOutArgSize();

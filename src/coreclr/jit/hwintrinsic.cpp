@@ -574,12 +574,11 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
 //    true iff the given instruction set is enabled via configuration (environment variables, etc.).
 bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
 {
-    return compHWIntrinsicDependsOn(isa) && (featureSIMD || HWIntrinsicInfo::isScalarIsa(isa)) &&
-           (
+    return compHWIntrinsicDependsOn(isa) && (
 #ifdef DEBUG
-               JitConfig.EnableIncompleteISAClass() ||
+                                                JitConfig.EnableIncompleteISAClass() ||
 #endif
-               HWIntrinsicInfo::isFullyImplementedIsa(isa));
+                                                HWIntrinsicInfo::isFullyImplementedIsa(isa));
 }
 
 //------------------------------------------------------------------------
@@ -766,18 +765,27 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     var_types              retType         = JITtype2varType(sig->retType);
     CorInfoType            simdBaseJitType = CORINFO_TYPE_UNDEF;
 
-    if ((retType == TYP_STRUCT) && featureSIMD)
+    if (retType == TYP_STRUCT)
     {
         unsigned int sizeBytes;
         simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
-        retType         = getSIMDTypeForSize(sizeBytes);
-        assert(sizeBytes != 0);
 
-        // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
-        // rather than deferring the decision after getting the simdBaseJitType of arg.
-        if (!isSupportedBaseType(intrinsic, simdBaseJitType))
+        if (HWIntrinsicInfo::IsMultiReg(intrinsic))
         {
-            return nullptr;
+            assert(sizeBytes == 0);
+        }
+        else
+        {
+            assert(sizeBytes != 0);
+
+            // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
+            // rather than deferring the decision after getting the simdBaseJitType of arg.
+            if (!isSupportedBaseType(intrinsic, simdBaseJitType))
+            {
+                return nullptr;
+            }
+
+            retType = getSIMDTypeForSize(sizeBytes);
         }
     }
 
@@ -796,7 +804,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
         else
         {
-            assert(featureSIMD);
             unsigned int sizeBytes;
 
             simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
@@ -1188,7 +1195,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             // This operation contains an implicit indirection
-            //   it could point into the gloabal heap or
+            //   it could point into the global heap or
             //   it could throw a null reference exception.
             //
             retNode->gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);

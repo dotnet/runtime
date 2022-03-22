@@ -7,7 +7,8 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "SetVolumeLabelW", CharSet = CharSet.Unicode, SetLastError = true)]
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "SetVolumeLabelW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetVolumeLabel(string driveLetter, string? volumeName);
     }
 }

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
 
@@ -41,13 +42,14 @@ namespace System.Reflection.Emit
         // We capture the creation context so that we can do the checks against the same context,
         // irrespective of when the method gets compiled. Note that the DynamicMethod does not know when
         // it is ready for use since there is not API which indictates that IL generation has completed.
-        private static volatile InternalModuleBuilder? s_anonymouslyHostedDynamicMethodsModule;
+        private static volatile RuntimeModule? s_anonymouslyHostedDynamicMethodsModule;
         private static readonly object s_anonymouslyHostedDynamicMethodsModuleLock = new object();
 
         //
         // class initialization (ctor and init)
         //
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes)
@@ -63,6 +65,7 @@ namespace System.Reflection.Emit
                 true);
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
@@ -79,14 +82,12 @@ namespace System.Reflection.Emit
                 true);
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
-                             Module m)
+                             Module m!!)
         {
-            if (m == null)
-                throw new ArgumentNullException(nameof(m));
-
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
                 CallingConventions.Standard,
@@ -98,15 +99,13 @@ namespace System.Reflection.Emit
                 false);
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
-                             Module m,
+                             Module m!!,
                              bool skipVisibility)
         {
-            if (m == null)
-                throw new ArgumentNullException(nameof(m));
-
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
                 CallingConventions.Standard,
@@ -118,17 +117,15 @@ namespace System.Reflection.Emit
                 false);
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
                              MethodAttributes attributes,
                              CallingConventions callingConvention,
                              Type? returnType,
                              Type[]? parameterTypes,
-                             Module m,
+                             Module m!!,
                              bool skipVisibility)
         {
-            if (m == null)
-                throw new ArgumentNullException(nameof(m));
-
             Init(name,
                 attributes,
                 callingConvention,
@@ -140,14 +137,12 @@ namespace System.Reflection.Emit
                 false);
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
-                             Type owner)
+                             Type owner!!)
         {
-            if (owner == null)
-                throw new ArgumentNullException(nameof(owner));
-
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
                 CallingConventions.Standard,
@@ -159,15 +154,13 @@ namespace System.Reflection.Emit
                 false);
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
-                             Type owner,
+                             Type owner!!,
                              bool skipVisibility)
         {
-            if (owner == null)
-                throw new ArgumentNullException(nameof(owner));
-
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
                 CallingConventions.Standard,
@@ -179,17 +172,15 @@ namespace System.Reflection.Emit
                 false);
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
                              MethodAttributes attributes,
                              CallingConventions callingConvention,
                              Type? returnType,
                              Type[]? parameterTypes,
-                             Type owner,
+                             Type owner!!,
                              bool skipVisibility)
         {
-            if (owner == null)
-                throw new ArgumentNullException(nameof(owner));
-
             Init(name,
                 attributes,
                 callingConvention,
@@ -234,17 +225,16 @@ namespace System.Reflection.Emit
                     return s_anonymouslyHostedDynamicMethodsModule;
 
                 AssemblyName assemblyName = new AssemblyName("Anonymously Hosted DynamicMethods Assembly");
-                StackCrawlMark stackMark = StackCrawlMark.LookForMe;
 
                 AssemblyBuilder assembly = AssemblyBuilder.InternalDefineDynamicAssembly(
                     assemblyName,
                     AssemblyBuilderAccess.Run,
-                    ref stackMark,
+                    typeof(object).Assembly,
                     null,
                     null);
 
                 // this always gets the internal module.
-                s_anonymouslyHostedDynamicMethodsModule = (InternalModuleBuilder)assembly.ManifestModule!;
+                s_anonymouslyHostedDynamicMethodsModule = (RuntimeModule)assembly.ManifestModule!;
             }
 
             return s_anonymouslyHostedDynamicMethodsModule;
@@ -253,17 +243,17 @@ namespace System.Reflection.Emit
         [MemberNotNull(nameof(m_parameterTypes))]
         [MemberNotNull(nameof(m_returnType))]
         [MemberNotNull(nameof(m_dynMethod))]
-        private void Init(string name,
-                                 MethodAttributes attributes,
-                                 CallingConventions callingConvention,
-                                 Type? returnType,
-                                 Type[]? signature,
-                                 Type? owner,
-                                 Module? m,
-                                 bool skipVisibility,
-                                 bool transparentMethod)
+        private void Init(string name!!,
+                          MethodAttributes attributes,
+                          CallingConventions callingConvention,
+                          Type? returnType,
+                          Type[]? signature,
+                          Type? owner,
+                          Module? m,
+                          bool skipVisibility,
+                          bool transparentMethod)
         {
-            DynamicMethod.CheckConsistency(attributes, callingConvention);
+            CheckConsistency(attributes, callingConvention);
 
             // check and store the signature
             if (signature != null)
@@ -329,10 +319,6 @@ namespace System.Reflection.Emit
             m_ilGenerator = null;
             m_fInitLocals = true;
             m_methodHandle = null;
-
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             m_dynMethod = new RTDynamicMethod(this, name, attributes, callingConvention);
         }
 
@@ -638,15 +624,18 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, "this");
             }
 
-            public override object[] GetCustomAttributes(Type attributeType, bool inherit)
+            public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
             {
-                if (attributeType == null)
-                    throw new ArgumentNullException(nameof(attributeType));
+                if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                    throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-                if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
-                    return new object[] { new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags()) };
-                else
-                    return Array.Empty<object>();
+                bool includeMethodImplAttribute = attributeType.IsAssignableFrom(typeof(MethodImplAttribute));
+                object[] result = CustomAttribute.CreateAttributeArrayHelper(attributeRuntimeType, includeMethodImplAttribute ? 1 : 0);
+                if (includeMethodImplAttribute)
+                {
+                    result[0] = new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags());
+                }
+                return result;
             }
 
             public override object[] GetCustomAttributes(bool inherit)
@@ -655,11 +644,8 @@ namespace System.Reflection.Emit
                 return new object[] { new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags()) };
             }
 
-            public override bool IsDefined(Type attributeType, bool inherit)
+            public override bool IsDefined(Type attributeType!!, bool inherit)
             {
-                if (attributeType == null)
-                    throw new ArgumentNullException(nameof(attributeType));
-
                 if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
                     return true;
                 else

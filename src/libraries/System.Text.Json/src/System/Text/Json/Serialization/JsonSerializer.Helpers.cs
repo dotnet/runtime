@@ -23,7 +23,7 @@ namespace System.Text.Json
                 options.InitializeForReflectionSerializer();
             }
 
-            return options.GetOrAddClassForRootType(runtimeType);
+            return options.GetOrAddJsonTypeInfoForRootType(runtimeType);
         }
 
         private static JsonTypeInfo GetTypeInfo(JsonSerializerContext context, Type type)

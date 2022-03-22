@@ -238,10 +238,10 @@ namespace Microsoft.Interop
         public abstract TypeSyntax AsNativeType(TypePositionInfo info);
 
         /// <inheritdoc/>
-        public abstract ParameterSyntax AsParameter(TypePositionInfo info);
+        public abstract SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info);
 
         /// <inheritdoc/>
-        public abstract ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context);
+        public abstract ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context);
 
         /// <inheritdoc/>
         public abstract IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context);
