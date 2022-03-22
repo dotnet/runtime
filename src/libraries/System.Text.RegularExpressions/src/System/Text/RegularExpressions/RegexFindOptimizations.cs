@@ -12,15 +12,12 @@ namespace System.Text.RegularExpressions
     {
         /// <summary>True if the input should be processed right-to-left rather than left-to-right.</summary>
         private readonly bool _rightToLeft;
-        /// <summary>Provides the ToLower routine for lowercasing characters.</summary>
-        private readonly TextInfo _textInfo;
         /// <summary>Lookup table used for optimizing ASCII when doing set queries.</summary>
         private readonly uint[]?[]? _asciiLookups;
 
         public RegexFindOptimizations(RegexNode root, RegexOptions options, CultureInfo culture)
         {
             _rightToLeft = (options & RegexOptions.RightToLeft) != 0;
-            _textInfo = culture.TextInfo;
 
             MinRequiredLength = root.ComputeMinLength();
 
@@ -434,25 +431,6 @@ namespace System.Text.RegularExpressions
                         return false;
                     }
 
-                case FindNextStartingPositionMode.LeadingLiteral_RightToLeft_CaseInsensitive:
-                    {
-                        char ch = FixedDistanceLiteral.Literal;
-                        TextInfo ti = _textInfo;
-
-                        ReadOnlySpan<char> span = textSpan.Slice(0, pos);
-                        for (int i = span.Length - 1; i >= 0; i--)
-                        {
-                            if (ti.ToLower(span[i]) == ch)
-                            {
-                                pos = i + 1;
-                                return true;
-                            }
-                        }
-
-                        pos = 0;
-                        return false;
-                    }
-
                 // There's a set at the beginning of the pattern.  Search for it.
 
                 case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseSensitive:
@@ -486,26 +464,6 @@ namespace System.Text.RegularExpressions
                         return false;
                     }
 
-                case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseInsensitive:
-                    {
-                        ref uint[]? startingAsciiLookup = ref _asciiLookups![0];
-                        string set = FixedDistanceSets![0].Set;
-                        TextInfo ti = _textInfo;
-
-                        ReadOnlySpan<char> span = textSpan.Slice(pos);
-                        for (int i = 0; i < span.Length; i++)
-                        {
-                            if (RegexCharClass.CharInClass(ti.ToLower(span[i]), set, ref startingAsciiLookup))
-                            {
-                                pos += i;
-                                return true;
-                            }
-                        }
-
-                        pos = textSpan.Length;
-                        return false;
-                    }
-
                 case FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseSensitive:
                     {
                         ref uint[]? startingAsciiLookup = ref _asciiLookups![0];
@@ -515,26 +473,6 @@ namespace System.Text.RegularExpressions
                         for (int i = span.Length - 1; i >= 0; i--)
                         {
                             if (RegexCharClass.CharInClass(span[i], set, ref startingAsciiLookup))
-                            {
-                                pos = i + 1;
-                                return true;
-                            }
-                        }
-
-                        pos = 0;
-                        return false;
-                    }
-
-                case FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseInsensitive:
-                    {
-                        ref uint[]? startingAsciiLookup = ref _asciiLookups![0];
-                        string set = FixedDistanceSets![0].Set;
-                        TextInfo ti = _textInfo;
-
-                        ReadOnlySpan<char> span = textSpan.Slice(0, pos);
-                        for (int i = span.Length - 1; i >= 0; i--)
-                        {
-                            if (RegexCharClass.CharInClass(ti.ToLower(span[i]), set, ref startingAsciiLookup))
                             {
                                 pos = i + 1;
                                 return true;
@@ -556,27 +494,6 @@ namespace System.Text.RegularExpressions
                         {
                             pos += i;
                             return true;
-                        }
-
-                        pos = textSpan.Length;
-                        return false;
-                    }
-
-                case FindNextStartingPositionMode.FixedLiteral_LeftToRight_CaseInsensitive:
-                    {
-                        Debug.Assert(FixedDistanceLiteral.Distance <= MinRequiredLength);
-
-                        char ch = FixedDistanceLiteral.Literal;
-                        TextInfo ti = _textInfo;
-
-                        ReadOnlySpan<char> span = textSpan.Slice(pos + FixedDistanceLiteral.Distance);
-                        for (int i = 0; i < span.Length; i++)
-                        {
-                            if (ti.ToLower(span[i]) == ch)
-                            {
-                                pos += i;
-                                return true;
-                            }
                         }
 
                         pos = textSpan.Length;
@@ -612,9 +529,9 @@ namespace System.Text.RegularExpressions
 
                                 for (int i = 1; i < sets.Count; i++)
                                 {
-                                    (_, string nextSet, int nextDistance, bool nextCaseInsensitive) = sets[i];
+                                    (_, string nextSet, int nextDistance, bool _) = sets[i];
                                     char c = textSpan[inputPosition + nextDistance];
-                                    if (!RegexCharClass.CharInClass(nextCaseInsensitive ? _textInfo.ToLower(c) : c, nextSet, ref _asciiLookups![i]))
+                                    if (!RegexCharClass.CharInClass(c, nextSet, ref _asciiLookups![i]))
                                     {
                                         goto Bumpalong;
                                     }
@@ -640,9 +557,9 @@ namespace System.Text.RegularExpressions
 
                                 for (int i = 1; i < sets.Count; i++)
                                 {
-                                    (_, string nextSet, int nextDistance, bool nextCaseInsensitive) = sets[i];
+                                    (_, string nextSet, int nextDistance, bool _) = sets[i];
                                     c = textSpan[inputPosition + nextDistance];
-                                    if (!RegexCharClass.CharInClass(nextCaseInsensitive ? _textInfo.ToLower(c) : c, nextSet, ref _asciiLookups![i]))
+                                    if (!RegexCharClass.CharInClass(c, nextSet, ref _asciiLookups![i]))
                                     {
                                         goto Bumpalong;
                                     }
@@ -653,43 +570,6 @@ namespace System.Text.RegularExpressions
 
                             Bumpalong:;
                             }
-                        }
-
-                        pos = textSpan.Length;
-                        return false;
-                    }
-
-                case FindNextStartingPositionMode.FixedSets_LeftToRight_CaseInsensitive:
-                    {
-                        List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)> sets = FixedDistanceSets!;
-                        (_, string primarySet, int primaryDistance, _) = sets[0];
-
-                        int endMinusRequiredLength = textSpan.Length - Math.Max(1, MinRequiredLength);
-                        TextInfo ti = _textInfo;
-                        ref uint[]? startingAsciiLookup = ref _asciiLookups![0];
-
-                        for (int inputPosition = pos; inputPosition <= endMinusRequiredLength; inputPosition++)
-                        {
-                            char c = textSpan[inputPosition + primaryDistance];
-                            if (!RegexCharClass.CharInClass(ti.ToLower(c), primarySet, ref startingAsciiLookup))
-                            {
-                                goto Bumpalong;
-                            }
-
-                            for (int i = 1; i < sets.Count; i++)
-                            {
-                                (_, string nextSet, int nextDistance, bool nextCaseInsensitive) = sets[i];
-                                c = textSpan[inputPosition + nextDistance];
-                                if (!RegexCharClass.CharInClass(nextCaseInsensitive ? _textInfo.ToLower(c) : c, nextSet, ref _asciiLookups![i]))
-                                {
-                                    goto Bumpalong;
-                                }
-                            }
-
-                            pos = inputPosition;
-                            return true;
-
-                        Bumpalong:;
                         }
 
                         pos = textSpan.Length;

@@ -215,8 +215,7 @@ namespace System.Text.RegularExpressions
         private char Forwardcharnext(ReadOnlySpan<char> inputSpan)
         {
             int i = _rightToLeft ? --runtextpos : runtextpos++;
-            char ch = inputSpan[i];
-            return _caseInsensitive ? _textInfo.ToLower(ch) : ch;
+            return inputSpan[i];
         }
 
         private bool MatchString(string str, ReadOnlySpan<char> inputSpan)
@@ -243,25 +242,11 @@ namespace System.Text.RegularExpressions
                 pos = runtextpos;
             }
 
-            if (!_caseInsensitive)
+            while (c != 0)
             {
-                while (c != 0)
+                if (str[--c] != inputSpan[--pos])
                 {
-                    if (str[--c] != inputSpan[--pos])
-                    {
-                        return false;
-                    }
-                }
-            }
-            else
-            {
-                TextInfo ti = _textInfo;
-                while (c != 0)
-                {
-                    if (str[--c] != ti.ToLower(inputSpan[--pos]))
-                    {
-                        return false;
-                    }
+                    return false;
                 }
             }
 

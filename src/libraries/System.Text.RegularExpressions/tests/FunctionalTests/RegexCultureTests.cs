@@ -117,12 +117,7 @@ namespace System.Text.RegularExpressions.Tests
 
             // same input and regex does match so far so good
             Assert.All(cultInvariantRegex, rex => Assert.True(rex.IsMatch(input)));
-
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/58958")]
-            // when the Regex was created with a turkish locale the lower cased turkish version will
-            // no longer match the input string which contains upper and lower case iiiis hence even the input string
-            // will no longer match
-            Assert.All(turkishRegex, rex => Assert.False(rex.IsMatch(input)));
+            Assert.All(turkishRegex, rex => Assert.True(rex.IsMatch(input)));
 
             // Now comes the tricky part depending on the use locale in ToUpper the results differ
             // Hence the regular expression will not match if different locales were used
@@ -208,10 +203,6 @@ namespace System.Text.RegularExpressions.Tests
             {
                 yield return new object[] { engine, "I\u0131\u0130i", RegexOptions.None, "I\u0131\u0130i" };
                 yield return new object[] { engine, "I\u0131\u0130i", RegexOptions.IgnoreCase, "I\u0131\u0130i" };
-                if (!RegexHelpers.IsNonBacktracking(engine))
-                {
-                    yield return new object[] { engine, "I\u0131\u0130i", RegexOptions.IgnoreCase | RegexOptions.ECMAScript, "" };
-                }
             }
         }
 
@@ -247,12 +238,12 @@ namespace System.Text.RegularExpressions.Tests
                     // Expected answers in the default en-US culture
                     yield return new object[] { "(?i:I)", option, engine, enUS, "xy\u0131ab", "" };
                     yield return new object[] { "(?i:iI+)", option, engine, enUS, "abcIIIxyz", "III" };
-                    yield return new object[] { "(?i:iI+)", option, engine, enUS, "abcIi\u0130xyz", "Ii\u0130" };
-                    yield return new object[] { "(?i:iI+)", option, engine, enUS, "abcI\u0130ixyz", "I\u0130i" };
+                    yield return new object[] { "(?i:iI+)", option, engine, enUS, "abcIi\u0130xyz", "Ii" };
+                    yield return new object[] { "(?i:iI+)", option, engine, enUS, "abcI\u0130ixyz", "\u0130i" };
                     yield return new object[] { "(?i:iI+)", option, engine, enUS, "abc\u0130IIxyz", "\u0130II" };
                     yield return new object[] { "(?i:iI+)", option, engine, enUS, "abc\u0130\u0131Ixyz", "" };
                     yield return new object[] { "(?i:iI+)", option, engine, enUS, "abc\u0130Iixyz", "\u0130Ii" };
-                    yield return new object[] { "(?i:[^IJKLM]I)", option, engine, enUS, "ii\u0130i\u0131ab", "" };
+                    yield return new object[] { "(?i:[^IJKLM]I)", option, engine, enUS, "ii\u0130i\u0131ab", "\u0130i" };
 
                     // Expected answers in the invariant culture
                     yield return new object[] { "(?i:I)", option, engine, invariant, "xy\u0131ab", "" };

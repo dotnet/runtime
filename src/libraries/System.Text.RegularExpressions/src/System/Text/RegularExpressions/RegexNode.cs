@@ -97,25 +97,57 @@ namespace System.Text.RegularExpressions
             {
                 Debug.Assert(culture is not null);
 
-                // If the character is part of a Unicode category that doesn't participate in case conversion,
-                // we can simply strip out the IgnoreCase option and make the node case-sensitive.
-                if (!RegexCharClass.ParticipatesInCaseConversion(ch))
+                // The only characters which may have different case-mappings depending on culture are 'i' | 'I' | '\u0130' | '\u0131'
+                // If the character being converted is one in that set, then we need to check current culture in order to use the right
+                // mappings. This special casing logic is duplicated in RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior
+                // with the reason being that we want to optimize for this case and efficiently return the string class which includes
+                // equivalences for the special case mappings.
+                if ((ch | 0x20) == 'i' || (ch | 0x01) == '\u0131')
                 {
-                    return new RegexNode(RegexNodeKind.One, options & ~RegexOptions.IgnoreCase, ch);
-                }
+                    RegexCaseBehavior mappingBehavior = RegexCaseEquivalences.GetRegexBehavior((options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : culture);
+                    string? stringSet = ch switch
+                    {
+                        // Invariant mappings
+                        'i' or 'I' when mappingBehavior is RegexCaseBehavior.Invariant => "\0\u0004\0IJij",
 
-                // Create a set for the character, trying to include all case-insensitive equivalent characters.
-                // If it's successful in doing so, resultIsCaseInsensitive will be false and we can strip
-                // out RegexOptions.IgnoreCase as part of creating the set.
-                string stringSet = RegexCharClass.OneToStringClass(ch, culture, out bool resultIsCaseInsensitive);
-                if (!resultIsCaseInsensitive)
-                {
+                        // Non-Turkish mappings
+                        'i' when mappingBehavior is RegexCaseBehavior.NonTurkish => "\0\u0006\0IJij\u0130\u0131",
+                        'I' when mappingBehavior is RegexCaseBehavior.NonTurkish => "\0\u0004\0IJij",
+                        '\u0130' when mappingBehavior is RegexCaseBehavior.NonTurkish => "\0\u0004\0ij\u0130\u0131",
+
+                        // Turkish mappings
+                        'I' or '\u0131' when mappingBehavior is RegexCaseBehavior.Turkish => "\0\u0004\0IJ\u0131\u0132",
+                        'i' or '\u0130' when mappingBehavior is RegexCaseBehavior.Turkish => "\0\u0004\0ij\u0130\u0131",
+
+                        // Default
+                        _ => null
+                    };
+
+                    if (string.IsNullOrEmpty(stringSet))
+                    {
+                        // If we reach here, then we know that ch does not participate in case conversion, so we just
+                        // create a One node with it and strip out the IgnoreCase option.
+                        return new RegexNode(RegexNodeKind.One, options & ~RegexOptions.IgnoreCase, ch);
+                    }
+
+                    // If it does participate in case conversion, then transform the Node into a set with
+                    // all possible valid values and remove the IgnoreCase option to make the node case-sensitive.
                     return new RegexNode(RegexNodeKind.Set, options & ~RegexOptions.IgnoreCase, stringSet);
                 }
+                else
+                {
+                    if (!RegexCaseEquivalences.TryFindCaseEquivalencesForChar(ch, out ReadOnlySpan<char> equivalences))
+                    {
+                        // If we reach here, then we know that ch does not participate in case conversion, so we just
+                        // create a One node with it and strip out the IgnoreCase option.
+                        return new RegexNode(RegexNodeKind.One, options & ~RegexOptions.IgnoreCase, ch);
+                    }
 
-                // Otherwise, until we can get rid of ToLower usage at match time entirely (https://github.com/dotnet/runtime/issues/61048),
-                // lowercase the character and proceed to create an IgnoreCase One node.
-                ch = culture.TextInfo.ToLower(ch);
+                    // If it does participate in case conversion, then transform the Node into a set with
+                    // all possible valid values and remove the IgnoreCase option to make the node case-sensitive.
+                    string stringSet = RegexCharClass.CharsToStringClass(equivalences);
+                    return new RegexNode(RegexNodeKind.Set, options & ~RegexOptions.IgnoreCase, stringSet);
+                }
             }
 
             // Create a One node for the character.
@@ -187,6 +219,39 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
+        /// <summary>
+        /// Traverses the RegexTree and ensures that the only nodes with IgnoreCase option set are backreferences.
+        /// </summary>
+        [Conditional("DEBUG")]
+        private void ValidateNoIgnoreCaseNodes()
+        {
+            var toExamine = new Stack<RegexNode>();
+            toExamine.Push(this);
+            while (toExamine.Count > 0)
+            {
+                RegexNode node = toExamine.Pop();
+
+                // Add all children to be examined
+                int childCount = node.ChildCount();
+                for (int i = 0; i < childCount; i++)
+                {
+                    RegexNode child = node.Child(i);
+
+                    toExamine.Push(child);
+                }
+
+                switch (node.Kind)
+                {
+                    case RegexNodeKind.Backreference:
+                        break;
+
+                    default:
+                        Debug.Assert((node.Options & RegexOptions.IgnoreCase) == 0, $"{node.Kind} node should not have RegexOptions.IgnoreCase");
+                        break;
+                }
+            }
+        }
+
         /// <summary>Validate invariants the rest of the implementation relies on for processing fully-built trees.</summary>
         [Conditional("DEBUG")]
         private void ValidateFinalTreeInvariants()
@@ -378,6 +443,7 @@ namespace System.Text.RegularExpressions
             // Done optimizing.  Return the final tree.
 #if DEBUG
             rootNode.ValidateFinalTreeInvariants();
+            rootNode.ValidateNoIgnoreCaseNodes();
 #endif
             return rootNode;
         }
@@ -501,10 +567,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal RegexNode Reduce()
         {
-            // TODO: https://github.com/dotnet/runtime/issues/61048
-            // As part of overhauling IgnoreCase handling, the parser shouldn't produce any nodes other than Backreference
-            // that ever have IgnoreCase set on them.  For now, though, remove IgnoreCase from any nodes for which it
-            // has no behavioral effect.
+            // Remove IgnoreCase option from everything except a Backreference
             switch (Kind)
             {
                 default:
@@ -512,10 +575,6 @@ namespace System.Text.RegularExpressions
                     Options &= ~RegexOptions.IgnoreCase;
                     break;
 
-                case RegexNodeKind.One or RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic:
-                case RegexNodeKind.Notone or RegexNodeKind.Notonelazy or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic:
-                case RegexNodeKind.Set or RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic:
-                case RegexNodeKind.Multi:
                 case RegexNodeKind.Backreference:
                     // Still meaningful
                     break;
@@ -1018,10 +1077,8 @@ namespace System.Text.RegularExpressions
 
                             prev.Kind = RegexNodeKind.Set;
                             prev.Str = prevCharClass.ToStringClass(Options);
-                            if ((prev.Options & RegexOptions.IgnoreCase) != 0 &&
-                                RegexCharClass.MakeCaseSensitiveIfPossible(prev.Str, RegexParser.GetTargetCulture(prev.Options)) is string newSetString)
+                            if ((prev.Options & RegexOptions.IgnoreCase) != 0)
                             {
-                                prev.Str = newSetString;
                                 prev.Options &= ~RegexOptions.IgnoreCase;
                             }
                         }
@@ -1983,13 +2040,6 @@ namespace System.Text.RegularExpressions
                     break;
                 }
 
-                // If the two nodes don't agree on options in any way, don't try to optimize them.
-                // TODO: Remove this once https://github.com/dotnet/runtime/issues/61048 is implemented.
-                if (node.Options != subsequent.Options)
-                {
-                    return false;
-                }
-
                 // If the successor is an alternation, all of its children need to be evaluated, since any of them
                 // could come after this node.  If any of them fail the optimization, then the whole node fails.
                 // This applies to expression conditionals as well, as long as they have both a yes and a no branch (if there's
@@ -2230,9 +2280,9 @@ namespace System.Text.RegularExpressions
                 case RegexNodeKind.Empty:
                 case RegexNodeKind.Nothing:
                 case RegexNodeKind.UpdateBumpalong:
-                    // Nothing to match. In the future, we could potentially use Nothing to say that the min length
-                    // is infinite, but that would require a different structure, as that would only apply if the
-                    // Nothing match is required in all cases (rather than, say, as one branch of an alternation).
+                // Nothing to match. In the future, we could potentially use Nothing to say that the min length
+                // is infinite, but that would require a different structure, as that would only apply if the
+                // Nothing match is required in all cases (rather than, say, as one branch of an alternation).
                 case RegexNodeKind.Beginning:
                 case RegexNodeKind.Bol:
                 case RegexNodeKind.Boundary:
@@ -2245,7 +2295,7 @@ namespace System.Text.RegularExpressions
                 case RegexNodeKind.Start:
                 case RegexNodeKind.NegativeLookaround:
                 case RegexNodeKind.PositiveLookaround:
-                    // Zero-width
+                // Zero-width
                 case RegexNodeKind.Backreference:
                     // Requires matching data available only at run-time.  In the future, we could choose to find
                     // and follow the capture group this aligns with, while being careful not to end up in an
@@ -2415,16 +2465,9 @@ namespace System.Text.RegularExpressions
 
             // Iterate from the child index to the exclusive upper bound.
             int i = childIndex;
-            for ( ; i < exclusiveChildBound; i++)
+            for (; i < exclusiveChildBound; i++)
             {
                 RegexNode child = Child(i);
-                if ((child.Options & RegexOptions.IgnoreCase) != 0)
-                {
-                    // TODO https://github.com/dotnet/runtime/issues/61048: Remove this block once fixed.
-                    // We don't want any nodes that are still IgnoreCase, as they'd no longer be IgnoreCase if
-                    // they were applicable to this optimization.
-                    break;
-                }
 
                 if (child.Kind is RegexNodeKind.One)
                 {

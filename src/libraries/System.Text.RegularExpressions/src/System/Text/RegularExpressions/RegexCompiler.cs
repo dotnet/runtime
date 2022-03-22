@@ -43,7 +43,6 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_cultureInfoGetTextInfoMethod = typeof(CultureInfo).GetMethod("get_TextInfo")!;
         private static readonly MethodInfo s_spanGetItemMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Item", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanGetLengthMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Length")!;
-        private static readonly MethodInfo s_memoryMarshalGetReference = typeof(MemoryMarshal).GetMethod("GetReference", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfChar = typeof(MemoryExtensions).GetMethod("IndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfSpan = typeof(MemoryExtensions).GetMethod("IndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
@@ -968,7 +967,7 @@ namespace System.Text.RegularExpressions
                     }
                     Call(s_spanGetItemMethod);
                     LdindU2();
-                    EmitMatchCharacterClass(sets[setIndex].Set, sets[setIndex].CaseInsensitive);
+                    EmitMatchCharacterClass(sets[setIndex].Set);
                     BrfalseFar(charNotInClassLabel);
                 }
 
@@ -1058,12 +1057,12 @@ namespace System.Text.RegularExpressions
                     Call(s_spanGetLengthMethod);
                     BgeUnFar(returnFalse);
 
-                    // if (!MatchCharacterClass(inputSpan[i], set.Set, set.CaseInsensitive)) goto condition;
+                    // if (!MatchCharacterClass(inputSpan[i], set.Set)) goto condition;
                     Ldloca(inputSpan);
                     Ldloc(pos);
                     Call(s_spanGetItemMethod);
                     LdindU2();
-                    EmitMatchCharacterClass(set.Set, set.CaseInsensitive);
+                    EmitMatchCharacterClass(set.Set);
                     Brfalse(condition);
 
                     // base.runtextpos = pos + 1;
@@ -1165,7 +1164,7 @@ namespace System.Text.RegularExpressions
                 Ldloc(prev);
                 Call(s_spanGetItemMethod);
                 LdindU2();
-                EmitMatchCharacterClass(target.LoopNode.Str!, caseInsensitive: false);
+                EmitMatchCharacterClass(target.LoopNode.Str!);
                 BrtrueFar(innerLoopBody);
                 MarkLabel(innerLoopEnd);
 
@@ -1268,7 +1267,7 @@ namespace System.Text.RegularExpressions
             // We can special case these to do essentially nothing in TryMatchAtCurrentPosition other than emit the capture.
             switch (node.Kind)
             {
-                case RegexNodeKind.Multi or RegexNodeKind.Notone or RegexNodeKind.One or RegexNodeKind.Set when !IsCaseInsensitive(node):
+                case RegexNodeKind.Multi or RegexNodeKind.Notone or RegexNodeKind.One or RegexNodeKind.Set:
                     // This is the case for single and multiple characters, though the whole thing is only guaranteed
                     // to have been validated in TryFindNextPossibleStartingPosition when doing case-sensitive comparison.
                     // base.Capture(0, base.runtextpos, base.runtextpos + node.Str.Length);
@@ -1414,12 +1413,6 @@ namespace System.Text.RegularExpressions
             // Generated code successfully.
             return;
 
-            // Whether the node has RegexOptions.IgnoreCase set.
-            // TODO: https://github.com/dotnet/runtime/issues/61048. We should be able to delete this and all usage sites once
-            // IgnoreCase is erradicated from the tree.  The only place it should possibly be left after that work is in a Backreference,
-            // and that can do this check directly as needed.
-            static bool IsCaseInsensitive(RegexNode node) => (node.Options & RegexOptions.IgnoreCase) != 0;
-
             // Slices the inputSpan starting at pos until end and stores it into slice.
             void SliceInputSpan()
             {
@@ -1458,18 +1451,6 @@ namespace System.Text.RegularExpressions
                 Ldloca(slice);
                 Call(s_spanGetLengthMethod);
                 BgeUnFar(doneLabel);
-            }
-
-            // Emits code to get ref slice[sliceStaticPos]
-            void EmitTextSpanOffset()
-            {
-                Ldloc(slice);
-                Call(s_memoryMarshalGetReference);
-                if (sliceStaticPos > 0)
-                {
-                    Ldc(sliceStaticPos * sizeof(char));
-                    Add();
-                }
             }
 
             // Adds the value of sliceStaticPos into the pos local, zeros out sliceStaticPos,
@@ -1738,7 +1719,7 @@ namespace System.Text.RegularExpressions
                 Add();
                 Call(s_spanGetItemMethod);
                 LdindU2();
-                if (IsCaseInsensitive(node))
+                if ((node.Options & RegexOptions.IgnoreCase) != 0)
                 {
                     CallToLower();
                 }
@@ -1758,7 +1739,7 @@ namespace System.Text.RegularExpressions
                 }
                 Call(s_spanGetItemMethod);
                 LdindU2();
-                if (IsCaseInsensitive(node))
+                if ((node.Options & RegexOptions.IgnoreCase) != 0)
                 {
                     CallToLower();
                 }
@@ -2671,15 +2652,11 @@ namespace System.Text.RegularExpressions
                 // if (loadedChar != ch) goto doneLabel;
                 if (node.IsSetFamily)
                 {
-                    EmitMatchCharacterClass(node.Str!, IsCaseInsensitive(node));
+                    EmitMatchCharacterClass(node.Str!);
                     BrfalseFar(doneLabel);
                 }
                 else
                 {
-                    if (IsCaseInsensitive(node))
-                    {
-                        CallToLower();
-                    }
                     Ldc(node.Ch);
                     if (node.IsOneFamily)
                     {
@@ -2891,10 +2868,10 @@ namespace System.Text.RegularExpressions
             void EmitMultiChar(RegexNode node, bool emitLengthCheck)
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Multi, $"Unexpected type: {node.Kind}");
-                EmitMultiCharString(node.Str!, IsCaseInsensitive(node), emitLengthCheck, (node.Options & RegexOptions.RightToLeft) != 0);
+                EmitMultiCharString(node.Str!, emitLengthCheck, (node.Options & RegexOptions.RightToLeft) != 0);
             }
 
-            void EmitMultiCharString(string str, bool caseInsensitive, bool emitLengthCheck, bool rightToLeft)
+            void EmitMultiCharString(string str, bool emitLengthCheck, bool rightToLeft)
             {
                 Debug.Assert(str.Length >= 2);
 
@@ -2922,10 +2899,6 @@ namespace System.Text.RegularExpressions
                         Ldloc(pos);
                         Call(s_spanGetItemMethod);
                         LdindU2();
-                        if (caseInsensitive)
-                        {
-                            CallToLower();
-                        }
                         Ldc(str[i]);
                         BneFar(doneLabel);
                     }
@@ -2933,38 +2906,14 @@ namespace System.Text.RegularExpressions
                     return;
                 }
 
-                if (caseInsensitive) // StartsWith(..., XxIgnoreCase) won't necessarily be the same as char-by-char comparison
-                {
-                    // This case should be relatively rare.  It will only occur with IgnoreCase and a series of non-ASCII characters.
-
-                    if (emitLengthCheck)
-                    {
-                        EmitSpanLengthCheck(str.Length);
-                    }
-
-                    foreach (char c in str)
-                    {
-                        // if (c != slice[sliceStaticPos++]) goto doneLabel;
-                        EmitTextSpanOffset();
-                        sliceStaticPos++;
-                        LdindU2();
-                        CallToLower();
-                        Ldc(c);
-                        BneFar(doneLabel);
-                    }
-                }
-                else
-                {
-                    // if (!slice.Slice(sliceStaticPos).StartsWith("...") goto doneLabel;
-                    Ldloca(slice);
-                    Ldc(sliceStaticPos);
-                    Call(s_spanSliceIntMethod);
-                    Ldstr(str);
-                    Call(s_stringAsSpanMethod);
-                    Call(s_spanStartsWithSpan);
-                    BrfalseFar(doneLabel);
-                    sliceStaticPos += str.Length;
-                }
+                Ldloca(slice);
+                Ldc(sliceStaticPos);
+                Call(s_spanSliceIntMethod);
+                Ldstr(str);
+                Call(s_stringAsSpanMethod);
+                Call(s_spanStartsWithSpan);
+                BrfalseFar(doneLabel);
+                sliceStaticPos += str.Length;
             }
 
             // Emits the code to handle a backtracking, single-character loop.
@@ -3274,7 +3223,6 @@ namespace System.Text.RegularExpressions
                 if (!rtl &&
                     iterationCount is null &&
                     node.Kind is RegexNodeKind.Notonelazy &&
-                    !IsCaseInsensitive(node) &&
                     subsequent?.FindStartingLiteral(4) is ValueTuple<char, string?, string?> literal && // 5 == max optimized by IndexOfAny, and we need to reserve 1 for node.Ch
                     (literal.Item3 is not null ? !literal.Item3.Contains(node.Ch) : (literal.Item2?[0] ?? literal.Item1) != node.Ch)) // no overlap between node.Ch and the start of the literal
                 {
@@ -3736,10 +3684,10 @@ namespace System.Text.RegularExpressions
                         EmitSingleChar(node, emitLengthChecksIfRequired);
                         return;
 
-                    case <= RegexNode.MultiVsRepeaterLimit when node.IsOneFamily && !IsCaseInsensitive(node):
+                    case <= RegexNode.MultiVsRepeaterLimit when node.IsOneFamily:
                         // This is a repeated case-sensitive character; emit it as a multi in order to get all the optimizations
                         // afforded to a multi, e.g. unrolling the loop with multi-char reads/comparisons at a time.
-                        EmitMultiCharString(new string(node.Ch, iterations), caseInsensitive: false, emitLengthChecksIfRequired, rtl);
+                        EmitMultiCharString(new string(node.Ch, iterations), emitLengthChecksIfRequired, rtl);
                         return;
                 }
 
@@ -3912,15 +3860,11 @@ namespace System.Text.RegularExpressions
                     LdindU2();
                     if (node.IsSetFamily)
                     {
-                        EmitMatchCharacterClass(node.Str!, IsCaseInsensitive(node));
+                        EmitMatchCharacterClass(node.Str!);
                         BrfalseFar(atomicLoopDoneLabel);
                     }
                     else
                     {
-                        if (IsCaseInsensitive(node))
-                        {
-                            CallToLower();
-                        }
                         Ldc(node.Ch);
                         if (node.IsOneFamily)
                         {
@@ -3952,8 +3896,7 @@ namespace System.Text.RegularExpressions
                     }
                 }
                 else if (node.IsNotoneFamily &&
-                    maxIterations == int.MaxValue &&
-                    (!IsCaseInsensitive(node)))
+                    maxIterations == int.MaxValue)
                 {
                     // For Notone, we're looking for a specific character, as everything until we find
                     // it is consumed by the loop.  If we're unbounded, such as with ".*" and if we're case-sensitive,
@@ -3993,7 +3936,6 @@ namespace System.Text.RegularExpressions
                 }
                 else if (node.IsSetFamily &&
                     maxIterations == int.MaxValue &&
-                    !IsCaseInsensitive(node) &&
                     (numSetChars = RegexCharClass.GetSetChars(node.Str!, setChars)) != 0 &&
                     RegexCharClass.IsNegated(node.Str!))
                 {
@@ -4097,15 +4039,11 @@ namespace System.Text.RegularExpressions
                     LdindU2();
                     if (node.IsSetFamily)
                     {
-                        EmitMatchCharacterClass(node.Str!, IsCaseInsensitive(node));
+                        EmitMatchCharacterClass(node.Str!);
                         BrfalseFar(atomicLoopDoneLabel);
                     }
                     else
                     {
-                        if (IsCaseInsensitive(node))
-                        {
-                            CallToLower();
-                        }
                         Ldc(node.Ch);
                         if (node.IsOneFamily)
                         {
@@ -4223,15 +4161,11 @@ namespace System.Text.RegularExpressions
                 LdindU2();
                 if (node.IsSetFamily)
                 {
-                    EmitMatchCharacterClass(node.Str!, IsCaseInsensitive(node));
+                    EmitMatchCharacterClass(node.Str!);
                     BrfalseFar(skipUpdatesLabel);
                 }
                 else
                 {
-                    if (IsCaseInsensitive(node))
-                    {
-                        CallToLower();
-                    }
                     Ldc(node.Ch);
                     if (node.IsOneFamily)
                     {
@@ -4755,7 +4689,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Emits a a check for whether the character is in the specified character class.</summary>
         /// <remarks>The character to be checked has already been loaded onto the stack.</remarks>
-        private void EmitMatchCharacterClass(string charClass, bool caseInsensitive)
+        private void EmitMatchCharacterClass(string charClass)
         {
             // We need to perform the equivalent of calling RegexRunner.CharInClass(ch, charClass),
             // but that call is relatively expensive.  Before we fall back to it, we try to optimize
@@ -4763,8 +4697,7 @@ namespace System.Text.RegularExpressions
             // for which we can call a dedicated method, or a fast-path for ASCII using a lookup table.
 
             // First, see if the char class is a built-in one for which there's a better function
-            // we can just call directly.  Everything in this section must work correctly for both
-            // case-sensitive and case-insensitive modes, regardless of culture.
+            // we can just call directly.
             switch (charClass)
             {
                 case RegexCharClass.AnyClass:
@@ -4810,24 +4743,8 @@ namespace System.Text.RegularExpressions
                     return;
             }
 
-            // If we're meant to be doing a case-insensitive lookup, and if we're not using the invariant culture,
-            // lowercase the input.  If we're using the invariant culture, we may still end up calling ToLower later
-            // on, but we may also be able to avoid it, in particular in the case of our lookup table, where we can
-            // generate the lookup table already factoring in the invariant case sensitivity.  There are multiple
-            // special-code paths between here and the lookup table, but we only take those if invariant is false;
-            // if it were true, they'd need to use CallToLower().
-            bool invariant = false;
-            if (caseInsensitive)
-            {
-                invariant = UseToLowerInvariant;
-                if (!invariant)
-                {
-                    CallToLower();
-                }
-            }
-
             // Next, handle simple sets of one range, e.g. [A-Z], [0-9], etc.  This includes some built-in classes, like ECMADigitClass.
-            if (!invariant && RegexCharClass.TryGetSingleRange(charClass, out char lowInclusive, out char highInclusive))
+            if (RegexCharClass.TryGetSingleRange(charClass, out char lowInclusive, out char highInclusive))
             {
                 if (lowInclusive == highInclusive)
                 {
@@ -4857,7 +4774,7 @@ namespace System.Text.RegularExpressions
             // Next if the character class contains nothing but a single Unicode category, we can calle char.GetUnicodeCategory and
             // compare against it.  It has a fast-lookup path for ASCII, so is as good or better than any lookup we'd generate (plus
             // we get smaller code), and it's what we'd do for the fallback (which we get to avoid generating) as part of CharInClass.
-            if (!invariant && RegexCharClass.TryGetSingleUnicodeCategory(charClass, out UnicodeCategory category, out bool negated))
+            if (RegexCharClass.TryGetSingleUnicodeCategory(charClass, out UnicodeCategory category, out bool negated))
             {
                 // char.GetUnicodeCategory(ch) == category
                 Call(s_charGetUnicodeInfo);
@@ -4879,7 +4796,7 @@ namespace System.Text.RegularExpressions
 
             // Next, if there's only 2 or 3 chars in the set (fairly common due to the sets we create for prefixes),
             // it's cheaper and smaller to compare against each than it is to use a lookup table.
-            if (!invariant && !RegexCharClass.IsNegated(charClass))
+            if (!RegexCharClass.IsNegated(charClass))
             {
                 Span<char> setChars = stackalloc char[3];
                 int numChars = RegexCharClass.GetSetChars(charClass, setChars);
@@ -4928,10 +4845,6 @@ namespace System.Text.RegularExpressions
             void EmitCharInClass()
             {
                 Ldloc(tempLocal);
-                if (invariant)
-                {
-                    CallToLower();
-                }
                 Ldstr(charClass);
                 Call(s_charInClassMethod);
                 Stloc(resultLocal);
@@ -4940,49 +4853,46 @@ namespace System.Text.RegularExpressions
             Label doneLabel = DefineLabel();
             Label comparisonLabel = DefineLabel();
 
-            if (!invariant) // if we're being asked to do a case insensitive, invariant comparison, use the lookup table
+            if (analysis.ContainsNoAscii)
             {
-                if (analysis.ContainsNoAscii)
-                {
-                    // We determined that the character class contains only non-ASCII,
-                    // for example if the class were [\p{IsGreek}\p{IsGreekExtended}], which is
-                    // the same as [\u0370-\u03FF\u1F00-1FFF]. (In the future, we could possibly
-                    // extend the analysis to produce a known lower-bound and compare against
-                    // that rather than always using 128 as the pivot point.)
+                // We determined that the character class contains only non-ASCII,
+                // for example if the class were [\p{IsGreek}\p{IsGreekExtended}], which is
+                // the same as [\u0370-\u03FF\u1F00-1FFF]. (In the future, we could possibly
+                // extend the analysis to produce a known lower-bound and compare against
+                // that rather than always using 128 as the pivot point.)
 
-                    // ch >= 128 && RegexRunner.CharInClass(ch, "...")
-                    Ldloc(tempLocal);
-                    Ldc(128);
-                    Blt(comparisonLabel);
-                    EmitCharInClass();
-                    Br(doneLabel);
-                    MarkLabel(comparisonLabel);
-                    Ldc(0);
-                    Stloc(resultLocal);
-                    MarkLabel(doneLabel);
-                    Ldloc(resultLocal);
-                    return;
-                }
+                // ch >= 128 && RegexRunner.CharInClass(ch, "...")
+                Ldloc(tempLocal);
+                Ldc(128);
+                Blt(comparisonLabel);
+                EmitCharInClass();
+                Br(doneLabel);
+                MarkLabel(comparisonLabel);
+                Ldc(0);
+                Stloc(resultLocal);
+                MarkLabel(doneLabel);
+                Ldloc(resultLocal);
+                return;
+            }
 
-                if (analysis.AllAsciiContained)
-                {
-                    // We determined that every ASCII character is in the class, for example
-                    // if the class were the negated example from case 1 above:
-                    // [^\p{IsGreek}\p{IsGreekExtended}].
+            if (analysis.AllAsciiContained)
+            {
+                // We determined that every ASCII character is in the class, for example
+                // if the class were the negated example from case 1 above:
+                // [^\p{IsGreek}\p{IsGreekExtended}].
 
-                    // ch < 128 || RegexRunner.CharInClass(ch, "...")
-                    Ldloc(tempLocal);
-                    Ldc(128);
-                    Blt(comparisonLabel);
-                    EmitCharInClass();
-                    Br(doneLabel);
-                    MarkLabel(comparisonLabel);
-                    Ldc(1);
-                    Stloc(resultLocal);
-                    MarkLabel(doneLabel);
-                    Ldloc(resultLocal);
-                    return;
-                }
+                // ch < 128 || RegexRunner.CharInClass(ch, "...")
+                Ldloc(tempLocal);
+                Ldc(128);
+                Blt(comparisonLabel);
+                EmitCharInClass();
+                Br(doneLabel);
+                MarkLabel(comparisonLabel);
+                Ldc(1);
+                Stloc(resultLocal);
+                MarkLabel(doneLabel);
+                Ldloc(resultLocal);
+                return;
             }
 
             // Now, our big hammer is to generate a lookup table that lets us quickly index by character into a yes/no
@@ -5000,14 +4910,12 @@ namespace System.Text.RegularExpressions
 
             // Generate the lookup table to store 128 answers as bits. We use a const string instead of a byte[] / static
             // data property because it lets IL emit handle all the details for us.
-            string bitVectorString = string.Create(8, (charClass, invariant), static (dest, state) => // String length is 8 chars == 16 bytes == 128 bits.
+            string bitVectorString = string.Create(8, charClass, static (dest, charClass) => // String length is 8 chars == 16 bytes == 128 bits.
             {
                 for (int i = 0; i < 128; i++)
                 {
                     char c = (char)i;
-                    bool isSet = state.invariant ?
-                        RegexCharClass.CharInClass(char.ToLowerInvariant(c), state.charClass) :
-                        RegexCharClass.CharInClass(c, state.charClass);
+                    bool isSet = RegexCharClass.CharInClass(c, charClass);
                     if (isSet)
                     {
                         dest[i >> 4] |= (char)(1 << (i & 0xF));

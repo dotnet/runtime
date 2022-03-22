@@ -341,20 +341,20 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.One:
                         if (results.Count < MaxFixedResults)
                         {
-                            string setString = RegexCharClass.OneToStringClass(node.Ch, caseInsensitive ? culture : null, out bool resultIsCaseInsensitive);
-                            results.Add((null, setString, distance++, resultIsCaseInsensitive));
+                            string setString = RegexCharClass.OneToStringClass(node.Ch, caseInsensitive ? culture : null);
+                            results.Add((null, setString, distance++, CaseInsensitive: false));
                             return true;
                         }
                         return false;
 
                     case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when node.M > 0:
                         {
-                            string setString = RegexCharClass.OneToStringClass(node.Ch, caseInsensitive ? culture : null, out bool resultIsCaseInsensitive);
+                            string setString = RegexCharClass.OneToStringClass(node.Ch, caseInsensitive ? culture : null);
                             int minIterations = Math.Min(node.M, MaxLoopExpansion);
                             int i = 0;
                             for (; i < minIterations && results.Count < MaxFixedResults; i++)
                             {
-                                results.Add((null, setString, distance++, resultIsCaseInsensitive));
+                                results.Add((null, setString, distance++, CaseInsensitive: false));
                             }
                             return i == node.M && i == node.N;
                         }
@@ -365,8 +365,8 @@ namespace System.Text.RegularExpressions
                             int i = 0;
                             for (; i < s.Length && results.Count < MaxFixedResults; i++)
                             {
-                                string setString = RegexCharClass.OneToStringClass(s[i], caseInsensitive ? culture : null, out bool resultIsCaseInsensitive);
-                                results.Add((null, setString, distance++, resultIsCaseInsensitive));
+                                string setString = RegexCharClass.OneToStringClass(s[i], caseInsensitive ? culture : null);
+                                results.Add((null, setString, distance++, CaseInsensitive: false));
                             }
                             return i == s.Length;
                         }
@@ -546,7 +546,7 @@ namespace System.Text.RegularExpressions
 
             if (fc.CaseInsensitive)
             {
-                fc.AddLowercase(culture);
+                fc.AddCaseEquivalences((root.Options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : culture);
             }
 
             return (fc.GetFirstChars(), fc.CaseInsensitive);
@@ -1139,10 +1139,10 @@ namespace System.Text.RegularExpressions
 
         public bool CaseInsensitive { get; private set; }
 
-        public void AddLowercase(CultureInfo culture)
+        public void AddCaseEquivalences(CultureInfo culture)
         {
             Debug.Assert(CaseInsensitive);
-            _cc.AddLowercase(culture);
+            _cc.AddCaseEquivalences(culture);
         }
 
         public string GetFirstChars() => _cc.ToStringClass();

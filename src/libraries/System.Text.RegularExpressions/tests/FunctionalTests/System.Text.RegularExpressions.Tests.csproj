@@ -30,6 +30,7 @@
     <Compile Include="Regex.UnicodeChar.Tests.cs" />
     <Compile Include="RegexCharacterSetTests.cs" />
     <Compile Include="RegexCultureTests.cs" />
+    <Compile Include="RegexIgnoreCaseTests.cs" />
     <Compile Include="RegexMatchTimeoutExceptionTests.cs" />
     <Compile Include="RegexParserTests.cs" />
   </ItemGroup>

@@ -16,7 +16,6 @@ namespace System.Text.RegularExpressions.Symbolic
     {
         /// <summary>BDDs for all ASCII characters for fast lookup.</summary>
         private readonly BDD[] _charPredTable = new BDD[128];
-        private readonly IgnoreCaseTransformer _ignoreCase;
         internal readonly BDD _nonAscii;
 
         /// <summary>Initialize the solver.</summary>
@@ -24,7 +23,6 @@ namespace System.Text.RegularExpressions.Symbolic
         private CharSetSolver()
         {
             _nonAscii = CreateCharSetFromRange('\x80', '\uFFFF');
-            _ignoreCase = new IgnoreCaseTransformer(this); // do this last in ctor, as IgnoreCaseTransform's ctor uses `this`
         }
 
         /// <summary>Singleton instance of <see cref="CharSetSolver"/>.</summary>
@@ -35,18 +33,11 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         public BDD CharConstraint(char c, bool ignoreCase = false, string? culture = null)
         {
-            if (ignoreCase)
-            {
-                return _ignoreCase.Apply(c, culture);
-            }
-            else
-            {
-                // individual character BDDs are always fixed
-                BDD[] charPredTable = _charPredTable;
-                return c < charPredTable.Length ?
-                    charPredTable[c] ??= CreateBDDFromChar(c) :
-                    CreateBDDFromChar(c);
-            }
+            // individual character BDDs are always fixed
+            BDD[] charPredTable = _charPredTable;
+            return c < charPredTable.Length ?
+                charPredTable[c] ??= CreateBDDFromChar(c) :
+                CreateBDDFromChar(c);
         }
 
         private BDD CreateBDDFromChar(ushort c)
@@ -78,13 +69,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 return CharConstraint(c, ignoreCase, culture);
             }
 
-            BDD res = CreateSetFromRange(c, d, 15);
-            if (ignoreCase)
-            {
-                res = _ignoreCase.Apply(res, culture);
-            }
-
-            return res;
+            return CreateSetFromRange(c, d, 15);
         }
 
 #if DEBUG
