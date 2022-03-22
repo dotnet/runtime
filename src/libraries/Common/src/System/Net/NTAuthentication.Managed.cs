@@ -432,6 +432,7 @@ namespace System.Net
                 {
                     // strangely, user is upper case, domain is not.
                     byte[] blob = Encoding.Unicode.GetBytes(string.Concat(userName.ToUpper(), domain));
+                    hmac.AppendData(blob);
                     hmac.GetHashAndReset(hash);
                 }
             }
@@ -820,56 +821,64 @@ namespace System.Net
             NegState state = NegState.Unknown;
             string? mech = null;
             byte[]? blob = null;
+            byte[]? mechListMIC = null;
 
-            AsnReader reader = new AsnReader(challenge, AsnEncodingRules.DER);
-            AsnReader challengeReader = reader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegotiationToken.NegTokenResp));
-            reader.ThrowIfNotEmpty();
-
-            // NegTokenResp::= SEQUENCE {
-            //    negState[0] ENUMERATED {
-            //        accept - completed(0),
-            //        accept - incomplete(1),
-            //        reject(2),
-            //        request - mic(3)
-            //    } OPTIONAL,
-            // --REQUIRED in the first reply from the target
-            //    supportedMech[1] MechType OPTIONAL,
-            // --present only in the first reply from the target
-            // responseToken[2] OCTET STRING  OPTIONAL,
-            // mechListMIC[3] OCTET STRING  OPTIONAL,
-            // ...
-            // }
-
-            challengeReader = challengeReader.ReadSequence();
-            while (challengeReader.HasData)
+            try
             {
-                Asn1Tag tag = challengeReader.PeekTag();
-                if (tag.TagClass == TagClass.ContextSpecific)
-                {
-                    NegTokenResp dataType = (NegTokenResp)tag.TagValue;
-                    AsnReader specificValue = new AsnReader(challengeReader.PeekContentBytes(), AsnEncodingRules.DER);
+                AsnReader reader = new AsnReader(challenge, AsnEncodingRules.DER);
+                AsnReader challengeReader = reader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegotiationToken.NegTokenResp));
+                reader.ThrowIfNotEmpty();
 
-                    switch (dataType)
-                    {
-                        case NegTokenResp.NegState:
-                            state = specificValue.ReadEnumeratedValue<NegState>();
-                            specificValue.ThrowIfNotEmpty();
-                            break;
-                        case NegTokenResp.SupportedMech:
-                            mech = specificValue.ReadObjectIdentifier();
-                            specificValue.ThrowIfNotEmpty();
-                            break;
-                        case NegTokenResp.ResponseToken:
-                            blob = specificValue.ReadOctetString();
-                            specificValue.ThrowIfNotEmpty();
-                            break;
-                        default:
-                            // Ignore everything else
-                            break;
-                    }
+                // NegTokenResp ::= SEQUENCE {
+                //    negState[0] ENUMERATED {
+                //        accept - completed(0),
+                //        accept - incomplete(1),
+                //        reject(2),
+                //        request - mic(3)
+                //    } OPTIONAL,
+                // --REQUIRED in the first reply from the target
+                //    supportedMech[1] MechType OPTIONAL,
+                // --present only in the first reply from the target
+                // responseToken[2] OCTET STRING  OPTIONAL,
+                // mechListMIC[3] OCTET STRING  OPTIONAL,
+                // ...
+                // }
+
+                challengeReader = challengeReader.ReadSequence();
+
+                if (challengeReader.HasData && challengeReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.NegState)))
+                {
+                    AsnReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.NegState));
+                    state = valueReader.ReadEnumeratedValue<NegState>();
+                    valueReader.ThrowIfNotEmpty();
                 }
 
-                challengeReader.ReadEncodedValue();
+                if (challengeReader.HasData && challengeReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.SupportedMech)))
+                {
+                    AsnReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.SupportedMech));
+                    mech = valueReader.ReadObjectIdentifier();
+                    valueReader.ThrowIfNotEmpty();
+                }
+
+                if (challengeReader.HasData && challengeReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.ResponseToken)))
+                {
+                    AsnReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.ResponseToken));
+                    blob = valueReader.ReadOctetString();
+                    valueReader.ThrowIfNotEmpty();
+                }
+
+                if (challengeReader.HasData && challengeReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.MechListMIC)))
+                {
+                    AsnReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.MechListMIC));
+                    mechListMIC = valueReader.ReadOctetString();
+                    valueReader.ThrowIfNotEmpty();
+                }
+
+                challengeReader.ThrowIfNotEmpty();
+            }
+            catch (AsnContentException e)
+            {
+                throw new Win32Exception(NTE_FAIL, e.Message);
             }
 
             // Mechanism should be set on first message. That means always
@@ -910,6 +919,14 @@ namespace System.Net
                     }
 
                     return writer.Encode();
+                }
+            }
+
+            if (mechListMIC != null)
+            {
+                if (!VerifyMIC(_spnegoMechList, mechListMIC))
+                {
+                    throw new Win32Exception(NTE_FAIL);
                 }
             }
 
