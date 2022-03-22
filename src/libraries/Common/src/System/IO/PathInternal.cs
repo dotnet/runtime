@@ -16,7 +16,7 @@ namespace System.IO
         internal static bool StartsWithDirectorySeparator(ReadOnlySpan<char> path) => path.Length > 0 && IsDirectorySeparator(path[0]);
 
         internal static string EnsureTrailingSeparator(string path)
-            => EndsInDirectorySeparator(path.AsSpan()) ? path : path + DirectorySeparatorCharAsString;
+            => path.Length > 0 && IsDirectorySeparator(path[path.Length - 1]) ? path : path + DirectorySeparatorCharAsString;
 
         internal static bool IsRoot(ReadOnlySpan<char> path)
             => path.Length == GetRootLength(path);
@@ -231,21 +231,9 @@ namespace System.IO
         /// Trims one trailing directory separator beyond the root of the path.
         /// </summary>
         internal static ReadOnlySpan<char> TrimEndingDirectorySeparator(ReadOnlySpan<char> path) =>
-            EndsInDirectorySeparator(path) && !IsRoot(path) ?
+            path.Length > 0 && IsDirectorySeparator(path[path.Length - 1]) && !IsRoot(path) ?
                 path.Slice(0, path.Length - 1) :
                 path;
-
-        /// <summary>
-        /// Returns true if the path ends in a directory separator.
-        /// </summary>
-        internal static bool EndsInDirectorySeparator(ReadOnlySpan<char> path) =>
-            path.Length > 0 && IsDirectorySeparator(path[path.Length - 1]);
-
-        /// <summary>
-        /// Same as <see cref="EndsInDirectorySeparator(string?)"/> but without length check.
-        /// </summary>
-        internal static bool EndsInDirectorySeparatorUnchecked(ReadOnlySpan<char> path) =>
-            IsDirectorySeparator(path[^1]);
 
         internal static string GetLinkTargetFullPath(string path, string pathToTarget)
             => IsPartiallyQualified(pathToTarget.AsSpan()) ?

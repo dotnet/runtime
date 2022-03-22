@@ -942,7 +942,7 @@ namespace System.IO
         /// <summary>
         /// Returns true if the path ends in a directory separator.
         /// </summary>
-        public static bool EndsInDirectorySeparator(ReadOnlySpan<char> path) => PathInternal.EndsInDirectorySeparator(path);
+        public static bool EndsInDirectorySeparator(ReadOnlySpan<char> path) => path.Length > 0 && PathInternal.IsDirectorySeparator(path[path.Length - 1]);
 
         /// <summary>
         /// Returns true if the path ends in a directory separator.

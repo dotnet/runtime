@@ -39,7 +39,7 @@ namespace System.IO
             int length = fullPathSpan.Length;
 
             // We need to trim the trailing slash or the code will try to create 2 directories of the same name.
-            if (length >= 2 && PathInternal.EndsInDirectorySeparatorUnchecked(fullPathSpan))
+            if (length >= 2 && PathInternal.IsDirectorySeparator(fullPathSpan[^1]))
             {
                 length--;
             }
