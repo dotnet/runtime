@@ -2206,6 +2206,21 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/v2.0-beta1/149926/149926/*">
             <Issue>Triggers OOM issue on CI, pass on local test run</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_DefaultMode_R2r/*">
+          <Issue>missing assembly</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_QuickJitForLoopsOff_R2r/*">
+          <Issue>missing assembly</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_QuickJitForLoopsOn_R2r/*">
+          <Issue>missing assembly</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_QuickJitOff_R2r/*">
+          <Issue>missing assembly</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_QuickJitOn_R2r/*">
+          <Issue>missing assembly</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in interpreter runtime mode -->
@@ -3922,9 +3937,6 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_DefaultMode_R2r/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_DefaultMode_R2r/*">
