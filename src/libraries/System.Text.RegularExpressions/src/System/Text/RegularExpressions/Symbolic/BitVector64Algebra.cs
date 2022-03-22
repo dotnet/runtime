@@ -7,20 +7,20 @@ using System.Diagnostics;
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>Provides an <see cref="ICharAlgebra{Int64}"/> over bit vectors up to 64 bits in length.</summary>
-    internal sealed class BitVector64Algebra : ICharAlgebra<ulong>
+    internal sealed class UInt64Algebra : ICharAlgebra<ulong>
     {
         private readonly BDD[] _minterms;
         private readonly MintermGenerator<ulong> _mintermGenerator;
         internal readonly MintermClassifier _classifier;
 
-        public BitVector64Algebra(CharSetSolver solver, BDD[] minterms)
+        public UInt64Algebra(BDD[] minterms)
         {
             Debug.Assert(minterms.Length <= 64);
 
             _minterms = minterms;
 
             _mintermGenerator = new MintermGenerator<ulong>(this);
-            _classifier = new MintermClassifier(solver, minterms);
+            _classifier = new MintermClassifier(minterms);
 
             True = minterms.Length == 64 ? ulong.MaxValue : ulong.MaxValue >> (64 - minterms.Length);
         }

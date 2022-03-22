@@ -678,17 +678,38 @@ private:
 
         // In general we don't know how an exposed struct field address will be used - it may be used to
         // access only that specific field or it may be used to access other fields in the same struct
-        // be using pointer/ref arithmetic. It seems reasonable to make an exception for the "this" arg
-        // of calls - it would be highly unsual for a struct member method to attempt to access memory
+        // by using pointer/ref arithmetic. It seems reasonable to make an exception for the "this" arg
+        // of calls - it would be highly unusual for a struct member method to attempt to access memory
         // beyond "this" instance. And calling struct member methods is common enough that attempting to
         // mark the entire struct as address exposed results in CQ regressions.
-        bool isThisArg = user->IsCall() && (user->AsCall()->gtCallThisArg != nullptr) &&
-                         (val.Node() == user->AsCall()->gtCallThisArg->GetNode());
+        GenTreeCall* callTree  = user->IsCall() ? user->AsCall() : nullptr;
+        bool         isThisArg = (callTree != nullptr) && (callTree->gtCallThisArg != nullptr) &&
+                         (val.Node() == callTree->gtCallThisArg->GetNode());
         bool exposeParentLcl = varDsc->lvIsStructField && !isThisArg;
 
-        m_compiler->lvaSetVarAddrExposed(exposeParentLcl ? varDsc->lvParentLcl
-                                                         : val.LclNum() DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+        bool hasHiddenStructArg = false;
+        if (m_compiler->opts.compJitOptimizeStructHiddenBuffer)
+        {
+            if (varTypeIsStruct(varDsc) && varDsc->lvIsTemp)
+            {
+                // We rely here on the fact that the return buffer, if present, is always first in the arg list.
+                if ((callTree != nullptr) && callTree->HasRetBufArg() &&
+                    (val.Node() == callTree->gtCallArgs->GetNode()))
+                {
+                    assert(!exposeParentLcl);
 
+                    m_compiler->lvaSetHiddenBufferStructArg(val.LclNum());
+                    hasHiddenStructArg = true;
+                    callTree->SetLclRetBufArg(callTree->gtCallArgs);
+                }
+            }
+        }
+
+        if (!hasHiddenStructArg)
+        {
+            m_compiler->lvaSetVarAddrExposed(
+                exposeParentLcl ? varDsc->lvParentLcl : val.LclNum() DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+        }
 #ifdef TARGET_64BIT
         // If the address of a variable is passed in a call and the allocation size of the variable
         // is 32 bits we will quirk the size to 64 bits. Some PInvoke signatures incorrectly specify
@@ -711,7 +732,7 @@ private:
         // Other usages require more changes. For example, a tree like OBJ(ADD(ADDR(LCL_VAR), 4))
         // could be changed to OBJ(LCL_FLD_ADDR) but then DefinesLocalAddr does not recognize
         // LCL_FLD_ADDR (even though it does recognize LCL_VAR_ADDR).
-        if (user->OperIs(GT_CALL, GT_ASG))
+        if (user->OperIs(GT_CALL, GT_ASG) && !hasHiddenStructArg)
         {
             MorphLocalAddress(val);
         }

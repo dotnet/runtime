@@ -143,19 +143,6 @@ namespace LibraryImportGenerator.UnitTests.Verifiers
                             return true;
                         }));
             }
-
-            protected override async Task RunImplAsync(CancellationToken cancellationToken)
-            {
-                try
-                {
-                    await base.RunImplAsync(cancellationToken);
-                }
-                catch (System.Exception e)
-                {
-                    TestUtils.ThrowSkipExceptionIfPackagingException(e);
-                    throw;
-                }
-            }
         }
     }
 }

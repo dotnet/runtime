@@ -529,7 +529,6 @@ PTR_PCODE MethodDesc::GetAddrOfSlot()
     CONTRACTL_END;
 
     // Keep implementations of MethodDesc::GetMethodEntryPoint and MethodDesc::GetAddrOfSlot in sync!
-
     if (HasNonVtableSlot())
     {
         SIZE_T size = GetBaseSize();
@@ -1727,6 +1726,13 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
 
     DWORD maxMethodDescsPerChunk = (DWORD)(MethodDescChunk::MaxSizeOfMethodDescs / oneSize);
 
+    // Limit the maximum MethodDescs per chunk by the number of precodes that can fit to a single memory page,
+    // since we allocate consecutive temporary entry points for all MethodDescs in the whole chunk.
+    DWORD maxPrecodesPerPage = Precode::GetMaxTemporaryEntryPointsCount();
+
+    if (maxPrecodesPerPage < maxMethodDescsPerChunk)
+        maxMethodDescsPerChunk = maxPrecodesPerPage;
+
     if (methodDescCount == 0)
         methodDescCount = maxMethodDescsPerChunk;
 
@@ -2119,7 +2125,20 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
 
     RangeSection* pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
     if (pRS == NULL)
+    {
+        TADDR pInstr = PCODEToPINSTR(entryPoint);
+        if (PrecodeStubManager::g_pManager->GetStubPrecodeRangeList()->IsInRange(entryPoint))
+        {
+            return (MethodDesc*)((StubPrecode*)pInstr)->GetMethodDesc();
+        }
+        
+        if (PrecodeStubManager::g_pManager->GetFixupPrecodeRangeList()->IsInRange(entryPoint))
+        {
+            return (MethodDesc*)((FixupPrecode*)pInstr)->GetMethodDesc();
+        }
+
         return NULL;
+    }
 
     MethodDesc* pMD;
     if (pRS->pjit->JitCodeToMethodInfo(pRS, entryPoint, &pMD, NULL))
@@ -2328,8 +2347,8 @@ BOOL MethodDesc::MayHaveNativeCode()
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END
@@ -2445,7 +2464,7 @@ MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative 
 
     // Otherwise this must be some kind of precode
     //
-    Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(addr, fSpeculative);
+    PTR_Precode pPrecode = Precode::GetPrecodeFromEntryPoint(addr, fSpeculative);
     PREFIX_ASSUME(fSpeculative || (pPrecode != NULL));
     if (pPrecode != NULL)
     {
@@ -3009,7 +3028,6 @@ Precode* MethodDesc::GetOrCreatePrecode()
 
         AllocMemTracker amt;
         Precode* pPrecode = Precode::Allocate(requiredType, this, GetLoaderAllocator(), &amt);
-
 
         if (FastInterlockCompareExchangePointer(pSlot, pPrecode->GetEntryPoint(), tempEntry) == tempEntry)
             amt.SuppressRelease();

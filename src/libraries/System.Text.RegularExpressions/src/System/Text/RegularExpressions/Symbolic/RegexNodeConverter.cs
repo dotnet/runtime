@@ -26,11 +26,11 @@ namespace System.Text.RegularExpressions.Symbolic
         private Dictionary<(bool IgnoreCase, string Set), BDD>? _setBddCache;
 
         /// <summary>Constructs a regex to symbolic finite automata converter</summary>
-        public RegexNodeConverter(CultureInfo culture, Hashtable? captureSparseMapping)
+        public RegexNodeConverter(SymbolicRegexBuilder<BDD> builder, CultureInfo culture, Hashtable? captureSparseMapping)
         {
+            _builder = builder;
             _culture = culture;
             _captureSparseMapping = captureSparseMapping;
-            _builder = new SymbolicRegexBuilder<BDD>(CharSetSolver.Instance);
         }
 
         /// <summary>Converts a <see cref="RegexNode"/> into its corresponding <see cref="SymbolicRegexNode{S}"/>.</summary>

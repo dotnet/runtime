@@ -228,7 +228,7 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayType(const BASEARRAYREF 
     TypeHandle srcTH = pSrcMT->GetArrayElementTypeHandle();
     TypeHandle destTH = pDestMT->GetArrayElementTypeHandle();
     _ASSERTE(srcTH != destTH);  // Handled by fast path
-    
+
     // Value class boxing
     if (srcTH.IsValueType() && !destTH.IsValueType())
     {
@@ -862,7 +862,7 @@ FCIMPL4(Object*, ArrayNative::CreateInstance, ReflectClassBaseObject* pElementTy
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(pElementType);
 
     TypeHandle elementType(pElementType->GetType());
-    
+
     CheckElementType(elementType);
 
     CorElementType CorType = elementType.GetSignatureCorElementType();
@@ -956,7 +956,7 @@ FCIMPL2(Object*, ArrayNative::GetValue, ArrayBase* refThisUNSAFE, INT_PTR flatte
 
     _ASSERTE((SIZE_T)flattenedIndex < refThis->GetNumComponents());
     void* pData = refThis->GetDataPtr() + flattenedIndex * refThis->GetComponentSize();
-    OBJECTREF Obj;
+    OBJECTREF Obj = NULL;
 
     MethodTable* pElementTypeMT = arrayElementType.GetMethodTable();
     if (pElementTypeMT->IsValueType())
@@ -1146,7 +1146,7 @@ FCIMPL3_VVI(void*, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structF
     } gc;
     gc.refField = (REFLECTFIELDREF)ObjectToOBJECTREF(FCALL_RFH_TO_REFLECTFIELD(structField));
     gc.refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(FCALL_RTH_TO_REFLECTCLASS(targetTypeUnsafe));
-    void* data;
+    void* data = NULL;
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
     FieldDesc* pField = (FieldDesc*)gc.refField->GetField();

@@ -1189,6 +1189,7 @@ public:
     void print (int hn, const char* msg="", int* ages=nullptr);
     static void print (region_free_list free_list[count_free_region_kinds], int hn, const char* msg="", int* ages=nullptr);
     void sort_by_committed_and_age();
+    static bool is_on_free_list (heap_segment* region, region_free_list free_list[count_free_region_kinds]);
 };
 #endif
 

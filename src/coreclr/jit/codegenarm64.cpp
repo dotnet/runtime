@@ -1425,7 +1425,14 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     {
         assert(genFuncletInfo.fiFrameType == 5);
 
-        // Nothing to do here; the first SP adjustment will be done by saving the callee-saved registers.
+        if (compiler->opts.IsOSR())
+        {
+            genStackPointerAdjustment(genFuncletInfo.fiSpDelta1, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
+        }
+        else
+        {
+            // Nothing to do here; the first SP adjustment will be done by saving the callee-saved registers.
+        }
     }
 
     int lowestCalleeSavedOffset = genFuncletInfo.fiSP_to_CalleeSave_delta +
@@ -1617,10 +1624,20 @@ void CodeGen::genFuncletEpilog()
         // Same work as fiFrameType==4, but different asserts.
 
         assert(genFuncletInfo.fiSpDelta1 < 0);
-        assert(genFuncletInfo.fiSpDelta1 >= -240);
 
-        // generate add SP,SP,imm
-        genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, REG_NA, nullptr, /* reportUnwindData */ true);
+        // With OSR we may see large values for fiSpDelta1 as the funclet
+        // frame currently must pad with the Tier0 frame size.
+        //
+        if (compiler->opts.IsOSR())
+        {
+            genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
+        }
+        else
+        {
+            // generate add SP,SP,imm
+            assert(genFuncletInfo.fiSpDelta1 >= -240);
+            genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, REG_NA, nullptr, /* reportUnwindData */ true);
+        }
     }
 
     inst_RV(INS_ret, REG_LR, TYP_I_IMPL);

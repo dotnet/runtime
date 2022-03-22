@@ -1205,7 +1205,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_DECLSEC:
 		return hash | ji->data.token->token;
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-		return hash | ji->data.token->token | (ji->data.token->has_context ? (gsize)ji->data.token->context.class_inst : 0);
+		return (guint)(hash | ji->data.token->token | (ji->data.token->has_context ? (gsize)ji->data.token->context.class_inst : 0));
 	case MONO_PATCH_INFO_OBJC_SELECTOR_REF: // Hash on the selector name
 	case MONO_PATCH_INFO_LDSTR_LIT:
 		return g_str_hash (ji->data.name);
@@ -1255,7 +1255,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES_GOT_SLOTS_BASE:
 		return hash;
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
-		return hash | ji->data.uindex;
+		return (guint)(hash | ji->data.uindex);
 	case MONO_PATCH_INFO_JIT_ICALL_ID:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
@@ -1266,7 +1266,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 		return hash | (gssize)ji->data.gsharedvt_method->method;
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
-		return hash | (gsize)ji->data.del_tramp->klass | (gsize)ji->data.del_tramp->method | (gsize)ji->data.del_tramp->is_virtual;
+		return (guint)(hash | (gsize)ji->data.del_tramp->klass | (gsize)ji->data.del_tramp->method | (gsize)ji->data.del_tramp->is_virtual);
 	case MONO_PATCH_INFO_VIRT_METHOD: {
 		MonoJumpInfoVirtMethod *info = ji->data.virt_method;
 
@@ -1667,11 +1667,10 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		break;
 	}
 	case MONO_PATCH_INFO_LDSTR_LIT: {
-		int len;
 		char *s;
+		size_t len = strlen ((const char *)patch_info->data.target);
 
-		len = strlen ((const char *)patch_info->data.target);
-		s = (char *)mono_mem_manager_alloc0 (mem_manager, len + 1);
+		s = (char *)mono_mem_manager_alloc0 (mem_manager, (guint)len + 1);
 		memcpy (s, patch_info->data.target, len);
 		target = s;
 
@@ -4012,12 +4011,11 @@ mini_parse_debug_option (const char *option)
 		mini_debug_options.suspend_on_exception = TRUE;
 	else if (!strcmp (option, "suspend-on-unhandled"))
 		mini_debug_options.suspend_on_unhandled = TRUE;
-	else if (!strcmp (option, "dont-free-domains"))
-		mono_dont_free_domains = TRUE;
 	else if (!strcmp (option, "dyn-runtime-invoke"))
 		mini_debug_options.dyn_runtime_invoke = TRUE;
-	else if (!strcmp (option, "gdb"))
-		fprintf (stderr, "MONO_DEBUG=gdb is deprecated.");
+	else if (!strcmp (option, "dont-free-domains") || !strcmp (option, "gdb") ||
+			 !strcmp (option, "gen-compact-seq-points") || !strcmp (option, "debug-domain-unload"))
+		fprintf (stderr, "MONO_DEBUG=%s is deprecated.", option);
 	else if (!strcmp (option, "lldb"))
 		mini_debug_options.lldb = TRUE;
 	else if (!strcmp (option, "llvm-disable-inlining"))
@@ -4028,8 +4026,6 @@ mini_parse_debug_option (const char *option)
 		mini_debug_options.explicit_null_checks = TRUE;
 	else if (!strcmp (option, "gen-seq-points"))
 		mini_debug_options.gen_sdb_seq_points = TRUE;
-	else if (!strcmp (option, "gen-compact-seq-points"))
-		fprintf (stderr, "Mono Warning: option gen-compact-seq-points is deprecated.\n");
 	else if (!strcmp (option, "no-compact-seq-points"))
 		mini_debug_options.no_seq_points_compact_data = TRUE;
 	else if (!strcmp (option, "single-imm-size"))
@@ -4044,8 +4040,6 @@ mini_parse_debug_option (const char *option)
 		mini_debug_options.check_pinvoke_callconv = TRUE;
 	else if (!strcmp (option, "use-fallback-tls"))
 		mini_debug_options.use_fallback_tls = TRUE;
-	else if (!strcmp (option, "debug-domain-unload"))
-		g_error ("MONO_DEBUG option debug-domain-unload is deprecated.");
 	else if (!strcmp (option, "partial-sharing"))
 		mono_set_partial_sharing_supported (TRUE);
 	else if (!strcmp (option, "align-small-structs"))
@@ -4187,7 +4181,7 @@ class_method_pair_hash (gconstpointer data)
 {
 	const MonoClassMethodPair *pair = (const MonoClassMethodPair *)data;
 
-	return (gsize)pair->klass ^ (gsize)pair->method;
+	return (guint)((gsize)pair->klass ^ (gsize)pair->method);
 }
 
 static void
@@ -4509,10 +4503,8 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_unwind_init ();
 
-	if (mini_debug_options.lldb || g_hasenv ("MONO_LLDB")) {
+	if (mini_debug_options.lldb || g_hasenv ("MONO_LLDB"))
 		mono_lldb_init ("");
-		mono_dont_free_domains = TRUE;
-	}
 
 #ifdef ENABLE_LLVM
 	if (mono_use_llvm)

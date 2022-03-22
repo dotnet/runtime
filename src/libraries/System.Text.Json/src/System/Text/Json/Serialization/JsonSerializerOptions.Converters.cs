@@ -9,6 +9,7 @@ using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 
 namespace System.Text.Json
 {
@@ -29,11 +30,14 @@ namespace System.Text.Json
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         private static void RootReflectionSerializerDependencies()
         {
-            if (s_defaultSimpleConverters is null)
+            // s_typeInfoCreationFunc is the last field assigned.
+            // Use it as the sentinel to ensure that all dependencies are initialized.
+            if (Volatile.Read(ref s_typeInfoCreationFunc) is null)
             {
                 s_defaultSimpleConverters = GetDefaultSimpleConverters();
                 s_defaultFactoryConverters = GetDefaultFactoryConverters();
-                s_typeInfoCreationFunc = CreateJsonTypeInfo;
+                // Explicitly ensure that the previous fields are initialized along with this one.
+                Volatile.Write(ref s_typeInfoCreationFunc, CreateJsonTypeInfo);
             }
 
             [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]

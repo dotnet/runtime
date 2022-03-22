@@ -115,7 +115,7 @@ steps:
       curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/main/NuGet.config'
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
       chmod -R a+rx .
-      ./dotnet-install.sh --channel 6.0.2xx --quality daily --install-dir .
+      ./dotnet-install.sh --channel 6.0.3xx --quality daily --install-dir .
       ./dotnet --info
       ./dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/main.json --configfile NuGet.config
     displayName: Install MAUI workload
@@ -145,7 +145,7 @@ steps:
   - script: |
       set -x
       pwd
-      git clone https://github.com/naricc/dotnet-podcasts.git
+      git clone https://github.com/microsoft/dotnet-podcasts.git -b maui/perf --single-branch
       cd dotnet-podcasts
       cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
       cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets

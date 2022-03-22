@@ -26,7 +26,7 @@ class TestConfig
     }
 
     [Fact]
-    [ConfigProperty("DOTNET_gcServer", "0")]
+    [EnvVar("DOTNET_gcServer", "0")]
     static int Verify_ServerGC_Env_Disable(string[] _)
     {
         return GCSettings.IsServerGC
@@ -95,6 +95,10 @@ class TestConfig
 
     static int RunTests()
     {
+        // clear some environment variables that we will set during the test run
+        Environment.SetEnvironmentVariable("DOTNET_gcServer", null);
+        Environment.SetEnvironmentVariable("COMPlus_gcServer", null);
+
         string corerunPath = GetCorerunPath();
         MethodInfo[] infos = typeof(TestConfig).GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
         foreach (var mi in infos)
