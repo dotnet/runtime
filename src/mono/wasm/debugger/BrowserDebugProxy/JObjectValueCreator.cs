@@ -361,7 +361,7 @@ internal class JObjectValueCreator
     public ValueTypeClass GetValueTypeById(int valueTypeId) => _valueTypes.TryGetValue(valueTypeId, out ValueTypeClass vt) ? vt : null;
     public PointerValue GetPointerValue(int pointerId) => _pointerValues.TryGetValue(pointerId, out PointerValue pv) ? pv : null;
 
-    private JObject CreateJObjectForNumber<T>(T value) => Create(value, "number", Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture), writable: true);
+    private JObject CreateJObjectForNumber<T>(T value) => Create(value, "number", value.ToString(), writable: true);
 
     private JObject CreateJObjectForChar(int value)
     {
