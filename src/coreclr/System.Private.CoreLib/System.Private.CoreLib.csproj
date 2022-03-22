@@ -156,7 +156,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Associates.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ConstructorInfo.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilder.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilderData.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\CustomAttributeBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILGenerator.cs" />
@@ -170,7 +169,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodBuilderInstantiation.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ModuleBuilder.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ModuleBuilderData.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ParameterBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\PropertyBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SignatureHelper.cs" />

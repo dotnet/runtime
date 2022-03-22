@@ -47,10 +47,13 @@ namespace System.Reflection.Emit
 
         #region Internal Data Members
 
-        // _TypeBuilder contains both TypeBuilder and EnumBuilder objects
-        private Dictionary<string, Type> _typeBuilderDict = null!;
-        internal ModuleBuilderData _moduleData = null!;
-        internal RuntimeModule _internalModule;
+        // _typeBuilderDict contains both TypeBuilder and EnumBuilder objects
+        private readonly Dictionary<string, Type> _typeBuilderDict;
+        private readonly TypeBuilder _globalTypeBuilder;
+        internal readonly string _moduleName;
+        private bool _hasGlobalBeenCreated;
+
+        internal readonly RuntimeModule _internalModule;
         // This is the "external" AssemblyBuilder
         // only the "external" ModuleBuilder has this set
         private readonly AssemblyBuilder _assemblyBuilder;
@@ -60,10 +63,14 @@ namespace System.Reflection.Emit
 
         #region Constructor
 
-        internal ModuleBuilder(AssemblyBuilder assemblyBuilder, RuntimeModule internalModule)
+        internal ModuleBuilder(AssemblyBuilder assemblyBuilder, RuntimeModule internalModule, string moduleName)
         {
             _internalModule = internalModule;
             _assemblyBuilder = assemblyBuilder;
+
+            _globalTypeBuilder = new TypeBuilder(this);
+            _moduleName = moduleName;
+            _typeBuilderDict = new Dictionary<string, Type>();
         }
 
         #endregion
@@ -279,12 +286,6 @@ namespace System.Reflection.Emit
             }
 
             return mr;
-        }
-
-        internal void Init(string strModuleName)
-        {
-            _moduleData = new ModuleBuilderData(this, strModuleName);
-            _typeBuilderDict = new Dictionary<string, Type>();
         }
 
         internal object SyncRoot => ContainingAssemblyBuilder.SyncRoot;
@@ -641,19 +642,7 @@ namespace System.Reflection.Emit
             if (baseType == null)
             {
                 // try to find it among the unbaked types.
-                // starting with the current module first of all.
                 baseType = FindTypeBuilderWithName(baseName, ignoreCase);
-                if (baseType == null && Assembly is AssemblyBuilder)
-                {
-                    // now goto Assembly level to find the type.
-                    List<ModuleBuilder> modList = ContainingAssemblyBuilder._assemblyData._moduleBuilderList;
-                    int size = modList.Count;
-                    for (int i = 0; i < size && baseType == null; i++)
-                    {
-                        ModuleBuilder mBuilder = modList[i];
-                        baseType = mBuilder.FindTypeBuilderWithName(baseName, ignoreCase);
-                    }
-                }
                 if (baseType == null)
                 {
                     return null;
@@ -669,7 +658,7 @@ namespace System.Reflection.Emit
         }
 
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
-        public override string FullyQualifiedName => _moduleData._moduleName;
+        public override string FullyQualifiedName => _moduleName;
 
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override byte[] ResolveSignature(int metadataToken)
@@ -881,7 +870,7 @@ namespace System.Reflection.Emit
                 AssemblyBuilder.CheckContext(returnType);
                 AssemblyBuilder.CheckContext(parameterTypes);
 
-                return _moduleData._globalTypeBuilder.DefinePInvokeMethod(name, dllName, entryName, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
+                return _globalTypeBuilder.DefinePInvokeMethod(name, dllName, entryName, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
             }
         }
 
@@ -912,7 +901,7 @@ namespace System.Reflection.Emit
             Type? returnType, Type[]? requiredReturnTypeCustomModifiers, Type[]? optionalReturnTypeCustomModifiers,
             Type[]? parameterTypes, Type[][]? requiredParameterTypeCustomModifiers, Type[][]? optionalParameterTypeCustomModifiers)
         {
-            if (_moduleData._hasGlobalBeenCreated)
+            if (_hasGlobalBeenCreated)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
             }
@@ -927,7 +916,7 @@ namespace System.Reflection.Emit
             AssemblyBuilder.CheckContext(requiredParameterTypeCustomModifiers);
             AssemblyBuilder.CheckContext(optionalParameterTypeCustomModifiers);
 
-            return _moduleData._globalTypeBuilder.DefineMethod(name, attributes, callingConvention,
+            return _globalTypeBuilder.DefineMethod(name, attributes, callingConvention,
                 returnType, requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers,
                 parameterTypes, requiredParameterTypeCustomModifiers, optionalParameterTypeCustomModifiers);
         }
@@ -942,13 +931,13 @@ namespace System.Reflection.Emit
 
         private void CreateGlobalFunctionsNoLock()
         {
-            if (_moduleData._hasGlobalBeenCreated)
+            if (_hasGlobalBeenCreated)
             {
                 // cannot create globals twice
                 throw new InvalidOperationException(SR.InvalidOperation_NotADebugModule);
             }
-            _moduleData._globalTypeBuilder.CreateType();
-            _moduleData._hasGlobalBeenCreated = true;
+            _globalTypeBuilder.CreateType();
+            _hasGlobalBeenCreated = true;
         }
 
         #endregion
@@ -972,12 +961,12 @@ namespace System.Reflection.Emit
             // This method will define an initialized Data in .sdata.
             // We will create a fake TypeDef to represent the data with size. This TypeDef
             // will be the signature for the Field.
-            if (_moduleData._hasGlobalBeenCreated)
+            if (_hasGlobalBeenCreated)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
             }
 
-            return _moduleData._globalTypeBuilder.DefineInitializedData(name, data, attributes);
+            return _globalTypeBuilder.DefineInitializedData(name, data, attributes);
         }
 
         public FieldBuilder DefineUninitializedData(string name, int size, FieldAttributes attributes)
@@ -994,12 +983,12 @@ namespace System.Reflection.Emit
             // We will create a fake TypeDef to represent the data with size. This TypeDef
             // will be the signature for the Field.
 
-            if (_moduleData._hasGlobalBeenCreated)
+            if (_hasGlobalBeenCreated)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
             }
 
-            return _moduleData._globalTypeBuilder.DefineUninitializedData(name, size, attributes);
+            return _globalTypeBuilder.DefineUninitializedData(name, size, attributes);
         }
 
         #endregion
@@ -1092,7 +1081,7 @@ namespace System.Reflection.Emit
                 {
                     refedModuleBuilder = ContainingAssemblyBuilder.GetModuleBuilder((RuntimeModule)refedModule);
                 }
-                referencedModuleFileName = refedModuleBuilder._moduleData._moduleName;
+                referencedModuleFileName = refedModuleBuilder._moduleName;
             }
 
             return GetTypeRefNested(type, refedModule, referencedModuleFileName);
