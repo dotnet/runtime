@@ -1070,8 +1070,7 @@ int fx_muxer_t::handle_cli(
             return StatusCode::Success;
         }
 
-        trace::error(_X("Could not execute because the application was not found or a compatible .NET SDK is not installed."));
-        trace::error(_X("Possible reasons for this include:"));
+        trace::error(_X("The command could not be loaded, possibly because:"));
         trace::error(_X("  * You intended to execute a .NET program:"));
         trace::error(_X("      The application '%s' does not exist."), app_candidate.c_str());
         trace::error(_X("  * You intended to execute a .NET SDK command:"));
