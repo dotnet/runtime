@@ -15,6 +15,8 @@ namespace System.DirectoryServices.Protocols.Tests
         internal static bool IsLdapConfigurationExist => LdapConfiguration.Configuration != null;
         internal static bool IsActiveDirectoryServer => IsLdapConfigurationExist && LdapConfiguration.Configuration.IsActiveDirectoryServer;
 
+        internal static bool IsServerSideSortSupported => IsLdapConfigurationExist && LdapConfiguration.Configuration.SupportsServerSideSort;
+
         [ConditionalFact(nameof(IsLdapConfigurationExist))]
         public void TestInvalidFilter()
         {
@@ -533,6 +535,58 @@ namespace System.DirectoryServices.Protocols.Tests
             }
         }
 
+        [ConditionalFact(nameof(IsServerSideSortSupported))]
+        public void TestSortedSearch()
+        {
+            using (LdapConnection connection = GetConnection())
+            {
+                string ouName = "ProtocolsGroup10";
+                string dn = "ou=" + ouName;
+
+                try
+                {
+                    for (int i=0; i<10; i++)
+                    {
+                        DeleteEntry(connection, "ou=ProtocolsSubGroup10." + i + "," + dn);
+                    }
+                    DeleteEntry(connection, dn);
+
+                    AddOrganizationalUnit(connection, dn);
+                    SearchResultEntry sre = SearchOrganizationalUnit(connection, LdapConfiguration.Configuration.SearchDn, ouName);
+                    Assert.NotNull(sre);
+
+                    for (int i=0; i<10; i++)
+                    {
+                        AddOrganizationalUnit(connection, "ou=ProtocolsSubGroup10." + i + "," + dn);
+                    }
+
+                    string filter = "(objectClass=*)";
+                    SearchRequest searchRequest = new SearchRequest(
+                                                        dn + "," + LdapConfiguration.Configuration.SearchDn,
+                                                        filter,
+                                                        SearchScope.Subtree,
+                                                        null);
+
+                    var sortRequestControl = new SortRequestControl("ou", true);
+                    searchRequest.Controls.Add(sortRequestControl);
+
+                    SearchResponse searchResponse = (SearchResponse) connection.SendRequest(searchRequest);
+                    Assert.Equal(1, searchResponse.Controls.Length);
+                    Assert.True(searchResponse.Controls[0] is SortResponseControl);
+                    Assert.True(searchResponse.Entries.Count > 0);
+                    Assert.Equal("ou=ProtocolsSubGroup10.9," + dn + "," + LdapConfiguration.Configuration.SearchDn, searchResponse.Entries[0].DistinguishedName);
+                }
+                finally
+                {
+                    for (int i=0; i<20; i++)
+                    {
+                        DeleteEntry(connection, "ou=ProtocolsSubGroup10." + i + "," + dn);
+                    }
+                    DeleteEntry(connection, dn);
+                }
+            }
+        }
+        
         private void DeleteAttribute(LdapConnection connection, string entryDn, string attributeName)
         {
             string dn = entryDn + "," + LdapConfiguration.Configuration.SearchDn;
