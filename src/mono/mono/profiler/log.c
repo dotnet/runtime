@@ -133,7 +133,6 @@ static gint32 sync_points_ctr,
               domain_names_ctr,
               context_loads_ctr,
               context_unloads_ctr,
-              sample_ubins_ctr,
               sample_usyms_ctr,
               sample_hits_ctr;
 
@@ -287,16 +286,6 @@ struct _BinaryObject {
 	void *addr;
 	char *name;
 };
-
-typedef struct MonoCounterAgent {
-	MonoCounter *counter;
-	// MonoCounterAgent specific data :
-	void *value;
-	size_t value_size;
-	guint32 index;
-	gboolean emitted;
-	struct MonoCounterAgent *next;
-} MonoCounterAgent;
 
 struct _MonoProfiler {
 	MonoProfilerHandle handle;

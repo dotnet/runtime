@@ -5213,10 +5213,6 @@ mini_get_default_mem_manager (void)
 gpointer
 mini_alloc_generic_virtual_trampoline (MonoVTable *vtable, int size)
 {
-	static int generic_virtual_trampolines_size = 0;
-
-	generic_virtual_trampolines_size += size;
-
 	return mono_mem_manager_code_reserve (m_class_get_mem_manager (vtable->klass), size);
 }
 
