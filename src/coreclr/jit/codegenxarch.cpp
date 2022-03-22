@@ -558,7 +558,7 @@ void CodeGen::genCodeForBswap(GenTree* tree)
     regNumber targetReg  = tree->GetRegNum();
     var_types targetType = tree->TypeGet();
 
-    GenTree*  operand    = tree->gtGetOp1();
+    GenTree* operand = tree->gtGetOp1();
 
     if (operand->isUsedFromReg())
     {
@@ -5146,9 +5146,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         }
         else
         {
-            GetEmitter()->emitInsStoreInd(data->OperIs(GT_BSWAP) && data->isContained()
-                                              ? INS_movbe
-                                              : ins_Store(data->TypeGet()),
+            GetEmitter()->emitInsStoreInd(data->OperIs(GT_BSWAP) && data->isContained() ? INS_movbe
+                                                                                        : ins_Store(data->TypeGet()),
                                           emitTypeSize(tree), tree);
         }
     }

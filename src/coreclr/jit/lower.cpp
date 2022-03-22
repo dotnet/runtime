@@ -418,11 +418,11 @@ GenTree* Lowering::LowerNode(GenTree* node)
         }
         break;
 
-#if defined(TARGET_XARCH)
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         case GT_BSWAP:
             LowerBswapOp(node->AsOp());
             break;
-#endif // TARGET_XARCH
+#endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
 
         default:
             break;
