@@ -39,9 +39,9 @@ C_FUNC(\Name):
         .thumb_func
         .global C_FUNC(\Name\()_End)
 C_FUNC(\Name\()_End):
+        LEAF_END \Name, \Section
         // make sure this symbol gets its own address
         nop
-        LEAF_END \Name, \Section
 .endm
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg

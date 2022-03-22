@@ -51,9 +51,9 @@ C_FUNC(\Name):
 .macro LEAF_END_MARKED Name, Section
 C_FUNC(\Name\()_End):
         .global C_FUNC(\Name\()_End)
+        LEAF_END \Name, \Section
         // make sure this symbol gets its own address
         nop
-        LEAF_END \Name, \Section
 .endm
 
 .macro NOP_6_BYTE
