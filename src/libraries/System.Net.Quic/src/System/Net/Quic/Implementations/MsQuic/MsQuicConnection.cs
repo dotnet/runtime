@@ -255,7 +255,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
 
                 Debug.Assert(state.Connection != null);
-                state.Connection._localEndPoint = MsQuicParameterHelpers.GetSocketAddressParam(MsQuicApi.Api, state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_ADDRESS).GetIPEndPoint();
+                state.Connection._localEndPoint = MsQuicParameterHelpers.GetIPEndPointParam(MsQuicApi.Api, state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_ADDRESS);
                 state.Connection.SetNegotiatedAlpn(connectionEvent.Data.Connected.NegotiatedAlpn, connectionEvent.Data.Connected.NegotiatedAlpnLength);
                 state.Connection = null;
 
@@ -642,9 +642,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_remoteEndPoint is IPEndPoint ipEndPoint)
             {
-                Internals.SocketAddress address = IPEndPointExtensions.Serialize(ipEndPoint);
                 Debug.Assert(!Monitor.IsEntered(_state));
-                MsQuicParameterHelpers.SetSocketAddressParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, address);
+                MsQuicParameterHelpers.SetIPEndPointParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, ipEndPoint);
                 targetHost = _state.TargetHost ?? ((IPEndPoint)_remoteEndPoint).Address.ToString();
                 port = ((IPEndPoint)_remoteEndPoint).Port;
 
@@ -660,9 +659,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (!string.IsNullOrEmpty(_state.TargetHost) && !dnsHost.Equals(_state.TargetHost, StringComparison.InvariantCultureIgnoreCase) && IPAddress.TryParse(dnsHost, out IPAddress? address))
                 {
                     // This is form of IPAddress and _state.TargetHost is set to different string
-                    Internals.SocketAddress quicAddress = IPEndPointExtensions.Serialize(new IPEndPoint(address, port));
                     Debug.Assert(!Monitor.IsEntered(_state));
-                    MsQuicParameterHelpers.SetSocketAddressParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, quicAddress);
+                    MsQuicParameterHelpers.SetIPEndPointParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, new IPEndPoint(address, port));
                     targetHost = _state.TargetHost!;
                 }
                 else

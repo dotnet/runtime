@@ -204,7 +204,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             QuicExceptionHelpers.ThrowIfFailed(status, "ListenerStart failed.");
 
-            return MsQuicParameterHelpers.GetSocketAddressParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.LISTENER, (uint)QUIC_PARAM_LISTENER.LOCAL_ADDRESS).GetIPEndPoint();
+            return MsQuicParameterHelpers.GetIPEndPointParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.LISTENER, (uint)QUIC_PARAM_LISTENER.LOCAL_ADDRESS);
         }
 
         private void Stop()
@@ -243,10 +243,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 ref NewConnectionInfo connectionInfo = ref *evt->Data.NewConnection.Info;
 
-                Span<byte> localAddress = new Span<byte>((byte*)connectionInfo.LocalAddress, Internals.SocketAddress.IPv6AddressSize); // MsQuic always uses storage size as if IPv6
-                IPEndPoint localEndPoint = new Internals.SocketAddress(SocketAddressPal.GetAddressFamily(localAddress), localAddress).GetIPEndPoint();
-                Span<byte> remoteAddress = new Span<byte>((byte*)connectionInfo.RemoteAddress, Internals.SocketAddress.IPv6AddressSize);
-                IPEndPoint remoteEndPoint = new Internals.SocketAddress(SocketAddressPal.GetAddressFamily(remoteAddress), remoteAddress).GetIPEndPoint();
+                IPEndPoint localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(connectionInfo.LocalAddress);
+                IPEndPoint remoteEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(connectionInfo.RemoteAddress);
 
                 string targetHost = string.Empty;   // compat with SslStream
                 if (connectionInfo.ServerNameLength > 0 && connectionInfo.ServerName != IntPtr.Zero)

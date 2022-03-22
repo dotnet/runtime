@@ -3,41 +3,45 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Net.Sockets;
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal static class MsQuicParameterHelpers
     {
-        internal static unsafe Internals.SocketAddress GetSocketAddressParam(MsQuicApi api, SafeHandle nativeObject, QUIC_PARAM_LEVEL level, uint param)
+        internal static unsafe IPEndPoint GetIPEndPointParam(MsQuicApi api, SafeHandle nativeObject, QUIC_PARAM_LEVEL level, uint param)
         {
-            // MsQuic always uses storage size as if IPv6
+            // MsQuic always uses storage size as if IPv6 was used
             uint valueLen = (uint)Internals.SocketAddress.IPv6AddressSize;
             Span<byte> address = stackalloc byte[Internals.SocketAddress.IPv6AddressSize];
 
             fixed (byte* paddress = &MemoryMarshal.GetReference(address))
             {
                 uint status = api.GetParamDelegate(nativeObject, level, param, ref valueLen, paddress);
-                QuicExceptionHelpers.ThrowIfFailed(status, "GetINETParam failed.");
+                QuicExceptionHelpers.ThrowIfFailed(status, "GetIPEndPointParam failed.");
             }
 
             address = address.Slice(0, (int)valueLen);
 
-            return new Internals.SocketAddress(SocketAddressPal.GetAddressFamily(address), address);
+            return new Internals.SocketAddress(SocketAddressPal.GetAddressFamily(address), address)
+                .GetIPEndPoint();
         }
 
-        internal static unsafe void SetSocketAddressParam(MsQuicApi api, SafeHandle nativeObject, QUIC_PARAM_LEVEL level, uint param, Internals.SocketAddress value)
+        internal static unsafe void SetIPEndPointParam(MsQuicApi api, SafeHandle nativeObject, QUIC_PARAM_LEVEL level, uint param, IPEndPoint value)
         {
-            // MsQuic always uses storage size as if IPv6
+            Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(value);
+
+            // MsQuic always reads same amount of memory as if IPv6 was used, so we can't pass pointer to socketAddress.Buffer directly
             Span<byte> address = stackalloc byte[Internals.SocketAddress.IPv6AddressSize];
-            value.Buffer.AsSpan(0, value.Size).CopyTo(address);
-            address.Slice(value.Size).Clear();
+            socketAddress.Buffer.AsSpan(0, socketAddress.Size).CopyTo(address);
+            address.Slice(socketAddress.Size).Clear();
 
             fixed (byte* paddress = &MemoryMarshal.GetReference(address))
             {
                 QuicExceptionHelpers.ThrowIfFailed(
                     api.SetParamDelegate(nativeObject, level, param, (uint)address.Length, paddress),
-                    "Could not set SocketAddress");
+                    "Could not set IPEndPoint");
             }
         }
 

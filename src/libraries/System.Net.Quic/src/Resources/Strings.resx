@@ -165,7 +165,6 @@
   <data name="net_ssl_app_protocols_invalid" xml:space="preserve">
     <value>The application protocol list is invalid.</value>
   </data>
-  <!-- shamelessly copied from System.Net.Sockets's resources, TODO: how to get around that? -->
   <!-- Referenced in shared IPEndPointExtensions.cs-->
   <data name="net_InvalidAddressFamily" xml:space="preserve">
     <value>The AddressFamily {0} is not valid for the {1} end point, use {2} instead.</value>
