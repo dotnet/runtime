@@ -5790,6 +5790,28 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             costSz += tree->AsStoreDynBlk()->gtDynamicSize->GetCostSz();
             break;
 
+        case GT_SELECT:
+        case GT_CEQ:
+        case GT_CNE:
+        case GT_CLT:
+        case GT_CLE:
+        case GT_CGE:
+        case GT_CGT:
+            level  = gtSetEvalOrder(tree->AsConditional()->gtCond);
+            costEx = tree->AsConditional()->gtCond->GetCostEx();
+            costSz = tree->AsConditional()->gtCond->GetCostSz();
+
+            lvl2  = gtSetEvalOrder(tree->AsConditional()->gtOp1);
+            level = max(level, lvl2);
+            costEx += tree->AsConditional()->gtOp1->GetCostEx();
+            costSz += tree->AsConditional()->gtOp1->GetCostSz();
+
+            lvl2  = gtSetEvalOrder(tree->AsConditional()->gtOp2);
+            level = max(level, lvl2);
+            costEx += tree->AsConditional()->gtOp2->GetCostEx();
+            costSz += tree->AsConditional()->gtOp2->GetCostSz();
+            break;
+
         default:
             JITDUMP("unexpected operator in this tree:\n");
             DISPTREE(tree);
@@ -6178,6 +6200,33 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
                     *pUse = &arg.LateNodeRef();
                     return true;
                 }
+            }
+            return false;
+        }
+
+        case GT_SELECT:
+        case GT_CEQ:
+        case GT_CNE:
+        case GT_CLT:
+        case GT_CLE:
+        case GT_CGE:
+        case GT_CGT:
+        {
+            GenTreeConditional* const conditional = this->AsConditional();
+            if (operand == conditional->gtCond)
+            {
+                *pUse = &conditional->gtCond;
+                return true;
+            }
+            if (operand == conditional->gtOp1)
+            {
+                *pUse = &conditional->gtOp1;
+                return true;
+            }
+            if (operand == conditional->gtOp2)
+            {
+                *pUse = &conditional->gtOp2;
+                return true;
             }
             return false;
         }
@@ -8710,6 +8759,19 @@ GenTree* Compiler::gtCloneExpr(
                                    gtCloneExpr(tree->AsStoreDynBlk()->gtDynamicSize, addFlags, deepVarNum, deepVarVal));
             break;
 
+        case GT_SELECT:
+        case GT_CEQ:
+        case GT_CNE:
+        case GT_CLT:
+        case GT_CLE:
+        case GT_CGE:
+        case GT_CGT:
+            copy = new (this, oper)
+                GenTreeConditional(oper, tree->TypeGet(),
+                                   gtCloneExpr(tree->AsConditional()->gtCond, addFlags, deepVarNum, deepVarVal),
+                                   gtCloneExpr(tree->AsConditional()->gtOp1, addFlags, deepVarNum, deepVarVal),
+                                   gtCloneExpr(tree->AsConditional()->gtOp2, addFlags, deepVarNum, deepVarVal));
+            break;
         default:
 #ifdef DEBUG
             gtDispTree(tree);
@@ -9369,6 +9431,18 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             AdvanceCall<CALL_ARGS>();
             return;
 
+        case GT_SELECT:
+        case GT_CEQ:
+        case GT_CNE:
+        case GT_CLT:
+        case GT_CLE:
+        case GT_CGE:
+        case GT_CGT:
+            m_edge = &m_node->AsConditional()->gtCond;
+            assert(*m_edge != nullptr);
+            m_advance = &GenTreeUseEdgeIterator::AdvanceConditional;
+            return;
+
         // Binary nodes
         default:
             assert(m_node->OperIsBinary());
@@ -9499,6 +9573,29 @@ void GenTreeUseEdgeIterator::AdvancePhi()
         m_edge                      = &currentUse->NodeRef();
         m_statePtr                  = currentUse->GetNext();
     }
+}
+
+//------------------------------------------------------------------------
+// GenTreeUseEdgeIterator::AdvanceConditional: produces the next operand of a conditional node and advances the state.
+//
+void GenTreeUseEdgeIterator::AdvanceConditional()
+{
+    GenTreeConditional* const conditional = m_node->AsConditional();
+    switch (m_state)
+    {
+        case 0:
+            m_edge  = &conditional->gtOp1;
+            m_state = 1;
+            break;
+        case 1:
+            m_edge    = &conditional->gtOp2;
+            m_advance = &GenTreeUseEdgeIterator::Terminate;
+            break;
+        default:
+            unreached();
+    }
+
+    assert(*m_edge != nullptr);
 }
 
 //------------------------------------------------------------------------
@@ -10372,6 +10469,13 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             case GT_GT:
             case GT_TEST_EQ:
             case GT_TEST_NE:
+            case GT_SELECT:
+            case GT_CEQ:
+            case GT_CNE:
+            case GT_CLT:
+            case GT_CLE:
+            case GT_CGE:
+            case GT_CGT:
                 if (tree->gtFlags & GTF_RELOP_NAN_UN)
                 {
                     printf("N");
@@ -12017,6 +12121,23 @@ void Compiler::gtDispTree(GenTree*     tree,
             }
             break;
 
+        case GT_SELECT:
+        case GT_CEQ:
+        case GT_CNE:
+        case GT_CLT:
+        case GT_CLE:
+        case GT_CGE:
+        case GT_CGT:
+            gtDispCommonEndLine(tree);
+
+            if (!topOnly)
+            {
+                gtDispChild(tree->AsConditional()->gtCond, indentStack, IIArc, childMsg, topOnly);
+                gtDispChild(tree->AsConditional()->gtOp1, indentStack, IIArc, childMsg, topOnly);
+                gtDispChild(tree->AsConditional()->gtOp2, indentStack, IIArcBottom, childMsg, topOnly);
+            }
+            break;
+
         default:
             printf("<DON'T KNOW HOW TO DISPLAY THIS NODE> :");
             printf(""); // null string means flush
@@ -12390,7 +12511,7 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
     IndentInfo operandArc = IIArcTop;
     for (GenTree* operand : node->Operands())
     {
-        if (!operand->IsValue())
+        if (!operand->IsValue() && (operand->gtFlags & GTF_SET_FLAGS) == 0)
         {
             // Either of these situations may happen with calls.
             continue;

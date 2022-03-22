@@ -10984,6 +10984,34 @@ public:
                 break;
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
+            case GT_SELECT:
+            case GT_CEQ:
+            case GT_CNE:
+            case GT_CLT:
+            case GT_CLE:
+            case GT_CGE:
+            case GT_CGT:
+            {
+                GenTreeConditional* const conditional = node->AsConditional();
+
+                result = WalkTree(&conditional->gtCond, conditional);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                result = WalkTree(&conditional->gtOp1, conditional);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                result = WalkTree(&conditional->gtOp2, conditional);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                break;
+            }
+
             // Binary nodes
             default:
             {

@@ -238,6 +238,16 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_JTRUE:
             return LowerJTrue(node->AsOp());
 
+        case GT_SELECT:
+        case GT_CEQ:
+        case GT_CNE:
+        case GT_CLT:
+        case GT_CLE:
+        case GT_CGE:
+        case GT_CGT:
+            ContainCheckConditional(node->AsConditional());
+            break;
+
         case GT_JMP:
             LowerJmpMethod(node);
             break;
@@ -2836,7 +2846,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             if ((op2Value == 1) && cmp->OperIs(GT_EQ))
             {
                 if (andOp2->IsIntegralConst(1) && (genActualType(op1) == cmp->TypeGet()) &&
-                    BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE))
+                    BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE) &&
+                    !cmpUse.User()->OperIsConditional())
                 {
                     GenTree* next = cmp->gtNext;
 
@@ -3095,49 +3106,53 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
 GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 {
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-    GenTree* relop    = jtrue->gtGetOp1();
-    GenTree* relopOp2 = relop->AsOp()->gtGetOp2();
+    GenTree* relop = jtrue->gtGetOp1();
 
-    if ((relop->gtNext == jtrue) && relopOp2->IsCnsIntOrI())
+    if (relop->OperIsCompare())
     {
-        bool         useJCMP = false;
-        GenTreeFlags flags   = GTF_EMPTY;
+        GenTree* relopOp2 = relop->AsOp()->gtGetOp2();
+
+        if ((relop->gtNext == jtrue) && relopOp2->IsCnsIntOrI())
+        {
+            bool         useJCMP = false;
+            GenTreeFlags flags   = GTF_EMPTY;
 
 #if defined(TARGET_LOONGARCH64)
-        if (relop->OperIs(GT_EQ, GT_NE))
-        {
-            // Codegen will use beq or bne.
-            flags   = relop->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
-            useJCMP = true;
-        }
+            if (relop->OperIs(GT_EQ, GT_NE))
+            {
+                // Codegen will use beq or bne.
+                flags   = relop->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
+                useJCMP = true;
+            }
 #else  // TARGET_ARM64
-        if (relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0))
-        {
-            // Codegen will use cbz or cbnz in codegen which do not affect the flag register
-            flags   = relop->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
-            useJCMP = true;
-        }
-        else if (relop->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(relopOp2->AsIntCon()->IconValue()))
-        {
-            // Codegen will use tbz or tbnz in codegen which do not affect the flag register
-            flags   = GTF_JCMP_TST | (relop->OperIs(GT_TEST_EQ) ? GTF_JCMP_EQ : GTF_EMPTY);
-            useJCMP = true;
-        }
+            if (relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0))
+            {
+                // Codegen will use cbz or cbnz in codegen which do not affect the flag register
+                flags   = relop->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
+                useJCMP = true;
+            }
+            else if (relop->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(relopOp2->AsIntCon()->IconValue()))
+            {
+                // Codegen will use tbz or tbnz in codegen which do not affect the flag register
+                flags   = GTF_JCMP_TST | (relop->OperIs(GT_TEST_EQ) ? GTF_JCMP_EQ : GTF_EMPTY);
+                useJCMP = true;
+            }
 #endif // TARGET_ARM64
 
-        if (useJCMP)
-        {
-            relop->SetOper(GT_JCMP);
-            relop->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ);
-            relop->gtFlags |= flags;
-            relop->gtType = TYP_VOID;
+            if (useJCMP)
+            {
+                relop->SetOper(GT_JCMP);
+                relop->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ);
+                relop->gtFlags |= flags;
+                relop->gtType = TYP_VOID;
 
-            relopOp2->SetContained();
+                relopOp2->SetContained();
 
-            BlockRange().Remove(jtrue);
+                BlockRange().Remove(jtrue);
 
-            assert(relop->gtNext == nullptr);
-            return nullptr;
+                assert(relop->gtNext == nullptr);
+                return nullptr;
+            }
         }
     }
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64
@@ -3164,7 +3179,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 //     It's the caller's responsibility to change `node` such that it only
 //     sets the condition flags, without producing a boolean value.
 //
-GenTreeCC* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
+GenTree* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
 {
     // Skip over a chain of EQ/NE(x, 0) relops. This may be present either
     // because `node` is not a relop and so it cannot be used directly by a
@@ -3198,7 +3213,7 @@ GenTreeCC* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
         }
     }
 
-    GenTreeCC* cc = nullptr;
+    GenTree* cc = nullptr;
 
     // Next may be null if `node` is not used. In that case we don't need to generate a SETCC node.
     if (next != nullptr)
@@ -3215,8 +3230,8 @@ GenTreeCC* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
                 assert(relop->OperIsCompare());
 
                 next->ChangeOper(GT_JCC);
-                cc              = next->AsCC();
-                cc->gtCondition = condition;
+                cc                      = next;
+                cc->AsCC()->gtCondition = condition;
             }
         }
         else
@@ -3227,8 +3242,18 @@ GenTreeCC* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
 
             if (BlockRange().TryGetUse(relop, &use))
             {
-                cc = new (comp, GT_SETCC) GenTreeCC(GT_SETCC, condition, TYP_INT);
-                BlockRange().InsertAfter(node, cc);
+                if (use.User()->OperIsConditional())
+                {
+                    // Don't replace if the use is a conditional (Ideally GTF_SET_FLAGS
+                    // would have been set on the node).
+                    cc           = (GenTreeCC*)node;
+                    node->gtType = TYP_VOID;
+                }
+                else
+                {
+                    cc = new (comp, GT_SETCC) GenTreeCC(GT_SETCC, condition, TYP_INT);
+                    BlockRange().InsertAfter(node, cc);
+                }
                 use.ReplaceWith(cc);
             }
         }
@@ -6814,6 +6839,16 @@ void Lowering::ContainCheckNode(GenTree* node)
             ContainCheckJTrue(node->AsOp());
             break;
 
+        case GT_SELECT:
+        case GT_CEQ:
+        case GT_CNE:
+        case GT_CLT:
+        case GT_CLE:
+        case GT_CGE:
+        case GT_CGT:
+            ContainCheckConditional(node->AsConditional());
+            break;
+
         case GT_ADD:
         case GT_SUB:
 #if !defined(TARGET_64BIT)
@@ -7002,6 +7037,26 @@ void Lowering::ContainCheckJTrue(GenTreeOp* node)
     GenTree* cmp = node->gtGetOp1();
     cmp->gtType  = TYP_VOID;
     cmp->gtFlags |= GTF_SET_FLAGS;
+}
+
+//------------------------------------------------------------------------
+// ContainCheckConditional : determine whether the source of a conditional should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckConditional(GenTreeConditional* node)
+{
+    // The compare does not need to be generated into a register.
+    GenTree* cmp = node->gtCond;
+    assert(cmp->OperIsCompare() || cmp->OperIsConditionalCompare());
+    cmp->gtType = TYP_VOID;
+    cmp->gtFlags |= GTF_SET_FLAGS;
+
+    if (node->gtOper != GT_SELECT)
+    {
+        CheckImmedAndMakeContained(node, node->gtOp2);
+    }
 }
 
 //------------------------------------------------------------------------

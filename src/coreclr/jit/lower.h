@@ -85,7 +85,7 @@ private:
     void ContainCheckLclHeap(GenTreeOp* node);
     void ContainCheckRet(GenTreeUnOp* ret);
     void ContainCheckJTrue(GenTreeOp* node);
-
+    void ContainCheckConditional(GenTreeConditional* node);
     void ContainCheckBitCast(GenTree* node);
     void ContainCheckCallOperands(GenTreeCall* call);
     void ContainCheckIndir(GenTreeIndir* indirNode);
@@ -133,7 +133,7 @@ private:
     GenTree* OptimizeConstCompare(GenTree* cmp);
     GenTree* LowerCompare(GenTree* cmp);
     GenTree* LowerJTrue(GenTreeOp* jtrue);
-    GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
+    GenTree* LowerNodeCC(GenTree* node, GenCondition condition);
     void LowerJmpMethod(GenTree* jmp);
     void LowerRet(GenTreeUnOp* ret);
     void LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
