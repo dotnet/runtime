@@ -28,7 +28,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.Reflection.Metadata">
-      <Version>$(SystemReflectionMetadataStaticVersion)</Version>
+      <Version>$(SystemReflectionMetadataVersion)</Version>
     </PackageReference>
     <PackageReference Condition = "'$(EnableDiaSymReaderUse)' == 'true'" Include="Microsoft.DiaSymReader">
       <Version>1.3.0</Version>

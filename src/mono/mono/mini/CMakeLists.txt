@@ -208,6 +208,13 @@ set(s390x_sources
     tramp-s390x.c
     cpu-s390x.h)
 
+set(powerpc64_sources
+    mini-ppc.c
+    mini-ppc.h
+    exceptions-ppc.c
+    tramp-ppc.c
+    cpu-ppc64.h)
+
 set(wasm_sources
     mini-wasm.c
     tramp-wasm.c
@@ -226,6 +233,8 @@ elseif(TARGET_ARM)
 set(arch_sources ${arm_sources})
 elseif(TARGET_S390X)
 set(arch_sources ${s390x_sources})
+elseif(TARGET_POWERPC)
+set(arch_sources ${powerpc64_sources})
 elseif(TARGET_WASM)
 set(arch_sources ${wasm_sources})
 endif()
@@ -457,6 +466,12 @@ add_custom_command(
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-s390x.h
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_S390X ${CMAKE_CURRENT_SOURCE_DIR} cpu-s390x.h s390x_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-s390x.md
+  VERBATIM
+)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-ppc64.h
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_POWERPC ${CMAKE_CURRENT_SOURCE_DIR} cpu-ppc64.h ppc64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-ppc64.md
   VERBATIM
 )
 

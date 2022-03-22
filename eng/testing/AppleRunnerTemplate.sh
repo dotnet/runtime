@@ -40,8 +40,6 @@ if [[ "$TARGET" == "maccatalyst" ]]; then SCHEME_SDK=$CONFIGURATION-maccatalyst;
 
 if [[ "$TARGET" == "ios-device" || "$TARGET" == "tvos-device" ]]; then SIGNAL_APP_END="--signal-app-end"; fi
 
-if [[ "$TARGET" == "ios-device" || "$TARGET" == "tvos-device" ]]; then SIGNAL_APP_END="--signal-app-end"; fi
-
 cd $EXECUTION_DIR
 
 # it doesn't support parallel execution yet, so, here is a hand-made semaphore:

@@ -156,8 +156,6 @@ public:
                    Object* pException
                   );
 
-    static MethodDesc* QCALLTYPE GetMethodDescFromNativeIP(LPVOID ip);
-
     static void GetStackFramesFromException(OBJECTREF * e, GetStackFramesData *pData, PTRARRAYREF * pDynamicMethodArray = NULL);
 
 #ifndef DACCESS_COMPILE

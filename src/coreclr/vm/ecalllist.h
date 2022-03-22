@@ -97,7 +97,6 @@ FCFuncEnd()
 
 FCFuncStart(gDiagnosticsStackTrace)
     FCFuncElement("GetStackFramesInternal", DebugStackTrace::GetStackFramesInternal)
-    QCFuncElement("GetMethodDescFromNativeIP", DebugStackTrace::GetMethodDescFromNativeIP)
 FCFuncEnd()
 
 FCFuncStart(gEnvironmentFuncs)

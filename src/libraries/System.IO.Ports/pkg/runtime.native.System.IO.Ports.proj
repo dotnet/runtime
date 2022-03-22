@@ -6,8 +6,6 @@
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
     <!-- This is a meta package and doesn't contain any libs. -->
     <NoWarn>$(NoWarn);NU5128</NoWarn>
-    <!-- It doesn't make sense to run package validation on native packages -->
-    <EnablePackageValidation>false</EnablePackageValidation>
   </PropertyGroup>
 
   <ItemGroup>

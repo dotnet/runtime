@@ -18,10 +18,6 @@
     <SkipIndexCheck>true</SkipIndexCheck>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
-    <IsShipping>false</IsShipping>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageIndex Condition="'$(MSBuildProjectExtension)' == '.pkgproj'" Include="$(PackageIndexFile)" />
   </ItemGroup>
@@ -31,9 +27,6 @@
     This is a legacy setting as we tend to use symbol packages for symbol indexing and we don't use
     transport packages to flow dependencies anymore -->
     <CreatePackedPackage Condition="'$(CreatePackedPackage)' == ''">false</CreatePackedPackage>
-
-    <!-- indicates that lib prefix is not added to library names for Unix-like operating systems -->
-    <SkipLibraryPrefixFromUnix>true</SkipLibraryPrefixFromUnix>
 
     <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">windows;OSX;Android;Linux;FreeBSD;NetBSD;illumos;Solaris</SupportedPackageOSGroups>
     <SupportedPackageOSGroups>;$(SupportedPackageOSGroups);</SupportedPackageOSGroups>

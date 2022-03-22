@@ -269,26 +269,6 @@ namespace ComWrappersTests
             }
         }
 
-        static void ValidateAggregatedWeakReference()
-        {
-            Console.WriteLine("Validate weak reference with aggregation.");
-            var (handle, weakRef) = GetWeakReference();
-
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-
-            Assert.IsNull(handle.Target);
-            Assert.IsFalse(weakRef.TryGetTarget(out _));
-
-            static (GCHandle handle, WeakReference<DerivedObject>) GetWeakReference()
-            {
-                DerivedObject obj = new DerivedObject(TestComWrappers.TrackerSupportInstance);
-                // We use an explicit weak GC handle here to enable us to validate that we are using "weak" GCHandle
-                // semantics with the weak reference.
-                return (GCHandle.Alloc(obj, GCHandleType.Weak), new WeakReference<DerivedObject>(obj));
-            }
-        }
-
         static int Main(string[] doNotUse)
         {
             try

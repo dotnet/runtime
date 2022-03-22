@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using System.Reflection;
 
 namespace System.Diagnostics
 {
@@ -11,9 +10,6 @@ namespace System.Diagnostics
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void GetStackFramesInternal(StackFrameHelper sfh, int iSkip, bool fNeedFileInfo, Exception? e);
-
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern RuntimeMethodHandleInternal GetMethodDescFromNativeIP(IntPtr ip);
 
         internal static int CalculateFramesToSkip(StackFrameHelper StackF, int iNumFrames)
         {
