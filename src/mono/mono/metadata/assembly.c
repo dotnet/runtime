@@ -3060,11 +3060,15 @@ mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImage
 MonoAssembly*
 mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status)
 {
+	MonoAssembly *result = NULL;
+	MONO_ENTER_GC_UNSAFE;
 	MonoAssemblyByNameRequest req;
 	mono_assembly_request_prepare_byname (&req, mono_alc_get_default ());
 	req.requesting_assembly = NULL;
 	req.basedir = basedir;
-	return mono_assembly_request_byname (aname, &req, status);
+	result = mono_assembly_request_byname (aname, &req, status);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 /**
