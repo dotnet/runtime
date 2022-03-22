@@ -13,7 +13,7 @@ internal static partial class Interop
         /// </summary>
         [LibraryImport(Libraries.Kernel32, EntryPoint = "GetFileAttributesExW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool GetFileAttributesExPrivate(
+        internal static partial bool GetFileAttributesExPrivate(
             string? name,
             GET_FILEEX_INFO_LEVELS fileInfoLevel,
             ref WIN32_FILE_ATTRIBUTE_DATA lpFileInformation);
@@ -21,11 +21,6 @@ internal static partial class Interop
         internal static bool GetFileAttributesEx(string? name, GET_FILEEX_INFO_LEVELS fileInfoLevel, ref WIN32_FILE_ATTRIBUTE_DATA lpFileInformation)
         {
             name = PathInternal.EnsureExtendedPrefixIfNeeded(name);
-            return GetFileAttributesExPrefixed(name, fileInfoLevel, ref lpFileInformation);
-        }
-
-        internal static bool GetFileAttributesExPrefixed(string? name, GET_FILEEX_INFO_LEVELS fileInfoLevel, ref WIN32_FILE_ATTRIBUTE_DATA lpFileInformation)
-        {
             return GetFileAttributesExPrivate(name, fileInfoLevel, ref lpFileInformation);
         }
     }

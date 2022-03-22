@@ -80,7 +80,7 @@ namespace System.IO
             int errorCode = Interop.Errors.ERROR_SUCCESS;
             string? prefixedString = PathInternal.EnsureExtendedPrefixIfNeeded(path);
 
-            if (!Interop.Kernel32.GetFileAttributesExPrefixed(prefixedString, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
+            if (!Interop.Kernel32.GetFileAttributesExPrivate(prefixedString, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
             {
                 errorCode = Marshal.GetLastWin32Error();
 
