@@ -398,7 +398,7 @@ namespace Wasm.Build.Tests
 
         protected (CommandResult, string) BlazorBuild(BlazorBuildOptions options, params string[] extraArgs)
         {
-            var res = BuildInternal(options.Id, options.Config, publish: false, extraArgs);
+            var res = BuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, extraArgs);
             AssertDotNetNativeFiles(options.ExpectedFileType, options.Config, forPublish: false, targetFramework: options.TargetFramework);
             AssertBlazorBundle(options.Config, isPublish: false, dotnetWasmFromRuntimePack: options.ExpectedFileType == NativeFilesType.FromRuntimePack);
 
@@ -407,7 +407,7 @@ namespace Wasm.Build.Tests
 
         protected (CommandResult, string) BlazorPublish(BlazorBuildOptions options, params string[] extraArgs)
         {
-            var res = BuildInternal(options.Id, options.Config, publish: true, extraArgs);
+            var res = BuildInternal(options.Id, options.Config, publish: true, setWasmDevel: false, extraArgs);
             AssertDotNetNativeFiles(options.ExpectedFileType, options.Config, forPublish: true, targetFramework: options.TargetFramework);
             AssertBlazorBundle(options.Config, isPublish: true, dotnetWasmFromRuntimePack: options.ExpectedFileType == NativeFilesType.FromRuntimePack);
 
@@ -423,7 +423,7 @@ namespace Wasm.Build.Tests
             return res;
         }
 
-        protected (CommandResult, string) BuildInternal(string id, string config, bool publish=false, params string[] extraArgs)
+        protected (CommandResult, string) BuildInternal(string id, string config, bool publish=false, bool setWasmDevel=true, params string[] extraArgs)
         {
             string label = publish ? "publish" : "build";
             Console.WriteLine($"{Environment.NewLine}** {label} **{Environment.NewLine}");
@@ -435,7 +435,7 @@ namespace Wasm.Build.Tests
                 $"-bl:{logPath}",
                 $"-p:Configuration={config}",
                 "-p:BlazorEnableCompression=false",
-                "-p:_WasmDevel=true"
+                setWasmDevel ? "-p:_WasmDevel=true" : string.Empty
             }.Concat(extraArgs).ToArray();
 
             CommandResult res = new DotNetCommand(s_buildEnv)
