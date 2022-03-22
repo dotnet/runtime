@@ -6,6 +6,8 @@
 #error "MONO_API_FUNCTION(ret,name,args) macro not defined before including function declaration header"
 #endif
 
+// WARNING: The functions in this header are no-ops and provided for source compatibility with older versions of mono only.
+
 MONO_API_FUNCTION(void, mono_counters_enable, (int section_mask))
 MONO_API_FUNCTION(void, mono_counters_init, (void))
 
