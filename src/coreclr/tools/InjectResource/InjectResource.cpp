@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <windows.h>
-#include <daccess.h>
 
 char* g_appName;
 
@@ -103,7 +102,7 @@ Usage(void)
     printf("Options are:\n");
     printf("  /bin:<file>   - Binary data to attach to DLL\n");
     printf("  /dll:<file>   - DLL to modify\n");
-    printf("  /name:<name>  - resource name [Optional]\n");
+    printf("  /name:<name>  - resource name\n");
     exit(1);
 }
 
@@ -148,7 +147,7 @@ main(int argc, _In_z_ char** argv)
 
     GetBinFileData(binFile, &resData, &resDataSize);
 
-    AddBinaryResourceToDll(dllFile, resName?resName:DACCESS_TABLE_RESOURCE,
+    AddBinaryResourceToDll(dllFile, resName,
                            resData, resDataSize);
 
     free(resData);
