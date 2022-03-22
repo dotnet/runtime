@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.Formats.Cbor;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -10,8 +11,9 @@ namespace System.Security.Cryptography.Cose
 {
     public abstract class CoseMessage
     {
-        internal const string PreviewFeatureMessage = "COSE is in preview.";
         private const byte EmptyStringByte = 0xa0;
+        internal const int SizeOfArrayOfFour = 1;
+
         // COSE tags https://datatracker.ietf.org/doc/html/rfc8152#page-8 Table 1.
         internal const CborTag Sign1Tag = (CborTag)18;
 
@@ -175,7 +177,7 @@ namespace System.Security.Cryptography.Cose
             return reader.ReadByteString();
         }
 
-        internal static byte[] CreateToBeSigned(string context, ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> content)
+        internal static int CreateToBeSigned(string context, ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> content, Span<byte> destination)
         {
             var writer = new CborWriter();
             writer.WriteStartArray(4);
@@ -184,8 +186,18 @@ namespace System.Security.Cryptography.Cose
             writer.WriteByteString(Span<byte>.Empty); // external_aad
             writer.WriteByteString(content); //payload or content
             writer.WriteEndArray();
-            return writer.Encode();
+            int bytesWritten = writer.Encode(destination);
+
+            Debug.Assert(bytesWritten == writer.BytesWritten && bytesWritten == ComputeToBeSignedEncodedSize(context, encodedProtectedHeader, content));
+            return bytesWritten;
         }
+
+        internal static int ComputeToBeSignedEncodedSize(string context, ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> content)
+            => SizeOfArrayOfFour +
+            CoseHelpers.GetEncodedSize(context) +
+            CoseHelpers.GetEncodedSize(encodedProtectedHeader) +
+            CoseHelpers.GetEncodedSize(Span<byte>.Empty) +
+            CoseHelpers.GetEncodedSize(content);
 
         // Validate duplicate labels https://datatracker.ietf.org/doc/html/rfc8152#section-3.
         internal static void ThrowIfDuplicateLabels(CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders)

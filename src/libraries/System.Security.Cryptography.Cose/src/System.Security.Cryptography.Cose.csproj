@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -14,10 +14,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
-             Link="Common\System\Memory\PointerMemoryManager.cs" />
+    <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs" Link="Common\System\Memory\PointerMemoryManager.cs" />
     <Compile Include="System\Security\Cryptography\Cose\CoseHeaderLabel.cs" />
     <Compile Include="System\Security\Cryptography\Cose\CoseHeaderMap.cs" />
+    <Compile Include="System\Security\Cryptography\Cose\CoseHelpers.cs" />
     <Compile Include="System\Security\Cryptography\Cose\CoseMessage.cs" />
     <Compile Include="System\Security\Cryptography\Cose\CoseSign1Message.cs" />
     <Compile Include="System\Security\Cryptography\Cose\KnownCoseAlgorithms.cs" />
@@ -39,6 +39,7 @@
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Numerics" />
+    <Reference Include="System.Text.Encoding.Extensions" />
   </ItemGroup>
   
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">

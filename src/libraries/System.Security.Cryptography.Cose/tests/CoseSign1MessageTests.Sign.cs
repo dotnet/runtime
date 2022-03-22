@@ -57,6 +57,14 @@ namespace System.Security.Cryptography.Cose.Tests
             Assert.True(CoseMessage.DecodeSign1(message).Verify(key));
         }
 
+        [Fact]
+        public void SignWithNullContent()
+        {
+            Assert.Throws<ArgumentNullException>(() => CoseSign1Message.Sign(null!, DefaultKey, HashAlgorithmName.SHA256));
+            Assert.Throws<ArgumentNullException>(() => CoseSign1Message.Sign(null!, RSAKey, HashAlgorithmName.SHA256));
+            Assert.Throws<ArgumentNullException>(() => CoseSign1Message.Sign(null!, DefaultKey, DefaultHash, GetHeaderMapWithAlgorithm(), GetEmptyHeaderMap()));
+        }
+
         [Theory]
         [InlineData(ContentTestCase.Empty)]
         [InlineData(ContentTestCase.Small)]
@@ -167,10 +175,10 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             ReadOnlySpan<byte> content = GetDummyContent(ContentTestCase.Small);
 
-            ReadOnlySpan<byte> messageEncoded = CoseSign1Message.Sign(content, DefaultKey, DefaultHash, isDetached);
+            ReadOnlySpan<byte> messageEncoded = CoseSign1Message.Sign(content, DefaultKey, DefaultHash, isDetached: isDetached);
             AssertSign1Message(messageEncoded, content, DefaultKey, expectedDetachedContent: isDetached);
 
-            messageEncoded = CoseSign1Message.Sign(content, DefaultKey, DefaultHash, isDetached);
+            messageEncoded = CoseSign1Message.Sign(content, DefaultKey, DefaultHash, isDetached: isDetached);
             AssertSign1Message(messageEncoded, content, DefaultKey, expectedDetachedContent: isDetached);
         }
 
