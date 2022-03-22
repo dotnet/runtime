@@ -3479,9 +3479,13 @@ ep_rt_mono_write_event_exception_thrown (MonoObject *obj)
 			flags |= EXCEPTION_THROWN_FLAGS_IS_CLS_COMPLIANT;
 			if (exception->inner_ex)
 				flags |= EXCEPTION_THROWN_FLAGS_HAS_INNER;
-			exception_message = ep_rt_utf16_to_utf8_string (mono_string_chars_internal (exception->message), mono_string_length_internal (exception->message));
+			if (exception->message)
+				exception_message = ep_rt_utf16_to_utf8_string (mono_string_chars_internal (exception->message), mono_string_length_internal (exception->message));
 			hresult = exception->hresult;
 		}
+
+		if (exception_message == NULL)
+			exception_message = g_strdup ("");
 
 		if (mono_get_eh_callbacks ()->mono_walk_stack_with_ctx)
 			mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (get_exception_ip_func, NULL, MONO_UNWIND_SIGNAL_SAFE, (void *)&ip);
