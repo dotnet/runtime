@@ -464,7 +464,7 @@ const int runtime_config_t::get_compat_major_version_from_tfm() const
 
 bool runtime_config_t::get_is_multilevel_lookup_disabled() const
 {
-    // Starting with .NET 7 multi-level lookup is fully disabled
+    // Starting with .NET 7, multi-level lookup is fully disabled
     int compat_major_version = get_compat_major_version_from_tfm();
     return (compat_major_version >= 7 || compat_major_version == runtime_config_t::unknown_version);
 }

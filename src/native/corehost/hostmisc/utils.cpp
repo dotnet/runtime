@@ -304,8 +304,11 @@ void get_framework_and_sdk_locations(const pal::string_t& dotnet_dir, const bool
         locations->push_back(dotnet_dir_temp);
     }
 
+    if (!multilevel_lookup)
+        return;
+
     std::vector<pal::string_t> global_dirs;
-    if (multilevel_lookup && pal::get_global_dotnet_dirs(&global_dirs))
+    if (pal::get_global_dotnet_dirs(&global_dirs))
     {
         for (pal::string_t dir : global_dirs)
         {
