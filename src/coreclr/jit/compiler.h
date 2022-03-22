@@ -5772,7 +5772,8 @@ protected:
 
     void fgComputeReturnBlocks(); // Initialize fgReturnBlocks to a list of BBJ_RETURN blocks.
 
-    void fgComputeEnterBlocksSet(); // Compute the set of entry blocks, 'fgEnterBlks'.
+    void fgComputeEnterBlocksSet(DEBUG_ARG1(bool renumberingDone = true)); // Compute the set of entry blocks,
+                                                                           // 'fgEnterBlks'.
 
     bool fgRemoveUnreachableBlocks(); // Remove blocks determined to be unreachable by the bbReach sets.
 

@@ -351,7 +351,10 @@ void Compiler::fgComputeReturnBlocks()
 // to avoid creating "retless" calls, since we need the BBJ_ALWAYS for the purpose
 // of unwinding, even if the call doesn't return (due to an explicit throw, for example).
 //
-void Compiler::fgComputeEnterBlocksSet()
+// Arguments:
+//    renumberingDone -- `true` if block renumbering was done.
+//
+void Compiler::fgComputeEnterBlocksSet(DEBUG_ARG1(const bool renumberingDone))
 {
 #ifdef DEBUG
     fgEnterBlksSetValid = false;
@@ -365,7 +368,7 @@ void Compiler::fgComputeEnterBlocksSet()
 
     /* Now set the entry basic block */
     BlockSetOps::AddElemD(this, fgEnterBlks, fgFirstBB->bbNum);
-    assert(fgFirstBB->bbNum == 1);
+    assert(fgFirstBB->bbNum == 1 || !renumberingDone);
 
     if (compHndBBtabCount > 0)
     {
@@ -596,7 +599,7 @@ void Compiler::fgComputeReachability(const bool computeDoms, const bool doRenumb
         // Compute fgEnterBlks
         //
 
-        fgComputeEnterBlocksSet();
+        fgComputeEnterBlocksSet(DEBUG_ARG1(doRenumber));
 
         //
         // Compute bbReach
