@@ -79,10 +79,12 @@ namespace System.Reflection.Emit
         {
             return SymbolType.FormCompoundType("&", this, 0)!;
         }
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType()
         {
             return SymbolType.FormCompoundType("[]", this, 0)!;
         }
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType(int rank)
         {
             if (rank <= 0)
@@ -105,6 +107,11 @@ namespace System.Reflection.Emit
         public override string? Namespace => m_type.Namespace;
         public override string? AssemblyQualifiedName => TypeNameBuilder.ToString(this, TypeNameBuilder.Format.AssemblyQualifiedName);
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+            Justification = "The entire TypeBuilderInstantiation is serving the MakeGenericType implementation. " +
+                            "Currently this is not supported by linker. Once it is supported the outercall (Type.MakeGenericType)" +
+                            "will validate that the types fullfill the necessary requirements of annotations on type parameters." +
+                            "As such the actual internals of the implementation are not interesting.")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:UnrecognizedReflectionPattern",
             Justification = "The entire TypeBuilderInstantiation is serving the MakeGenericType implementation. " +
                             "Currently this is not supported by linker. Once it is supported the outercall (Type.MakeGenericType)" +
                             "will validate that the types fullfill the necessary requirements of annotations on type parameters." +
@@ -251,6 +258,7 @@ namespace System.Reflection.Emit
         public override Type GetGenericTypeDefinition() { return m_type; }
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         public override Type MakeGenericType(params Type[] inst) { throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this)); }
         public override bool IsAssignableFrom([NotNullWhen(true)] Type? c) { throw new NotSupportedException(); }
 

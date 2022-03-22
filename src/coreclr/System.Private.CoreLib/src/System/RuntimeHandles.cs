@@ -40,6 +40,7 @@ namespace System
         internal static extern bool IsInstanceOfType(RuntimeType type, [NotNullWhen(true)] object? o);
 
         [RequiresUnreferencedCode("MakeGenericType cannot be statically analyzed. It's not possible to guarantee the availability of requirements of the generic type.")]
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         internal static Type GetTypeHelper(Type typeStart, Type[]? genericArgs, IntPtr pModifiers, int cModifiers)
         {
             Type type = typeStart;

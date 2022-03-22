@@ -434,6 +434,7 @@ namespace System
                 SR.Format(SR.Format_AttributeUsage, type));
         }
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         private static Attribute[] CreateAttributeArrayHelper(Type elementType, int elementCount) =>
             elementType.ContainsGenericParameters ? new Attribute[elementCount] : (Attribute[])Array.CreateInstance(elementType, elementCount);
         #endregion

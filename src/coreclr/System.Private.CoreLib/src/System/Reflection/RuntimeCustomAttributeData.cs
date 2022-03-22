@@ -557,6 +557,7 @@ namespace System.Reflection
         }
         #endregion
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         internal CustomAttributeTypedArgument(RuntimeModule scope, CustomAttributeEncodedArgument encodedArg)
         {
             CustomAttributeEncoding encodedType = encodedArg.CustomAttributeType.EncodedType;
@@ -1433,6 +1434,7 @@ namespace System.Reflection
             return attributeUsageAttribute ?? AttributeUsageAttribute.Default;
         }
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         internal static object[] CreateAttributeArrayHelper(RuntimeType caType, int elementCount)
         {
             bool useAttributeArray = false;

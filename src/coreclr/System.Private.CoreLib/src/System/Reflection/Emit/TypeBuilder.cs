@@ -55,6 +55,8 @@ namespace System.Reflection.Emit
         #region Public Static Methods
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:UnrecognizedReflectionPattern",
+            Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
         public static MethodInfo GetMethod(Type type, MethodInfo method)
         {
             if (type is not TypeBuilder && type is not TypeBuilderInstantiation)
@@ -89,6 +91,8 @@ namespace System.Reflection.Emit
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+            Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:UnrecognizedReflectionPattern",
             Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
         public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
         {
@@ -1461,6 +1465,8 @@ namespace System.Reflection.Emit
             Justification = "MakeGenericType is only called on a TypeBuilderInstantiation which is not subject to trimming")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "GetConstructor is only called on a TypeBuilderInstantiation which is not subject to trimming")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:UnrecognizedReflectionPattern",
+            Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
         private ConstructorBuilder DefineDefaultConstructorNoLock(MethodAttributes attributes)
         {
             ConstructorBuilder constBuilder;

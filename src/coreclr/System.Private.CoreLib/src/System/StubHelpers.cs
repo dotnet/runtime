@@ -5,6 +5,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.StubHelpers
 {
@@ -1045,6 +1046,7 @@ namespace System.StubHelpers
             }
         }
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         internal void ClearNative(IntPtr pNativeHome)
         {
             if (pNativeHome != IntPtr.Zero)

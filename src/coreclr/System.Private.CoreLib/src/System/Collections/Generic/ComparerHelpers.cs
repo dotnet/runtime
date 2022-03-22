@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using static System.RuntimeTypeHandle;
 
 namespace System.Collections.Generic
@@ -25,6 +26,8 @@ namespace System.Collections.Generic
         /// The logic in this method is replicated in vm/compile.cpp to ensure that NGen saves the right instantiations,
         /// and in vm/jitinterface.cpp so the jit can model the behavior of this method.
         /// </remarks>
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:UnrecognizedReflectionPattern",
+            Justification = "MakeGenericType is safe in this method")]
         internal static object CreateDefaultComparer(Type type)
         {
             Debug.Assert(type != null && type is RuntimeType);
@@ -59,6 +62,8 @@ namespace System.Collections.Generic
         /// Creates the default <see cref="Comparer{T}"/> for a nullable type.
         /// </summary>
         /// <param name="nullableType">The nullable type to create the default comparer for.</param>
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:UnrecognizedReflectionPattern",
+            Justification = "MakeGenericType is safe in this method")]
         private static object? TryCreateNullableComparer(RuntimeType nullableType)
         {
             Debug.Assert(nullableType != null);
@@ -113,6 +118,8 @@ namespace System.Collections.Generic
         /// <remarks>
         /// The logic in this method is replicated in vm/compile.cpp to ensure that NGen saves the right instantiations.
         /// </remarks>
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:UnrecognizedReflectionPattern",
+            Justification = "MakeGenericType is safe in this method")]
         internal static object CreateDefaultEqualityComparer(Type type)
         {
             Debug.Assert(type != null && type is RuntimeType);
@@ -157,6 +164,8 @@ namespace System.Collections.Generic
         /// Creates the default <see cref="EqualityComparer{T}"/> for a nullable type.
         /// </summary>
         /// <param name="nullableType">The nullable type to create the default equality comparer for.</param>
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:UnrecognizedReflectionPattern",
+            Justification = "MakeGenericType is safe in this method")]
         private static object? TryCreateNullableEqualityComparer(RuntimeType nullableType)
         {
             Debug.Assert(nullableType != null);

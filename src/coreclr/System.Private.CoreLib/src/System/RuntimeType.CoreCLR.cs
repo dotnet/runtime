@@ -1015,6 +1015,10 @@ namespace System
                     Justification = "Calls to GetInterfaces technically require all interfaces on ReflectedType" +
                         "But this is not a public API to enumerate reflection items, all the public APIs which do that" +
                         "should be annotated accordingly.")]
+                [UnconditionalSuppressMessage("AotAnalysis", "IL3050:UnrecognizedReflectionPattern",
+                    Justification = "Calls to GetInterfaces technically require all interfaces on ReflectedType" +
+                        "But this is not a public API to enumerate reflection items, all the public APIs which do that" +
+                        "should be annotated accordingly.")]
                 private RuntimeType[] PopulateInterfaces(Filter filter)
                 {
                     ListBuilder<RuntimeType> list = default;
@@ -1601,6 +1605,7 @@ namespace System
                 return m_defaultMemberName;
             }
 
+            [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
             internal object[] GetEmptyArray() => _emptyArray ??= (object[])Array.CreateInstance(m_runtimeType, 0);
             #endregion
 
@@ -3336,6 +3341,7 @@ namespace System
         }
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         public override Type MakeGenericType(Type[] instantiation!!)
         {
             if (!IsGenericTypeDefinition)
@@ -3438,8 +3444,10 @@ namespace System
 
         public override Type MakeByRefType() => new RuntimeTypeHandle(this).MakeByRef();
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType() => new RuntimeTypeHandle(this).MakeSZArray();
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType(int rank)
         {
             if (rank <= 0)
@@ -3860,6 +3868,7 @@ namespace System
             return ret;
         }
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         private static void WrapArgsForInvokeCall(object[] aArgs, int[] aArgsWrapperTypes)
         {
             int cArgs = aArgs.Length;

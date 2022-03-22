@@ -62,6 +62,7 @@ namespace System.Reflection.Emit
         public override bool IsGenericMethodDefinition => m_method.IsGenericMethodDefinition;
         public override bool ContainsGenericParameters => m_method.ContainsGenericParameters;
 
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(params Type[] typeArgs)
         {
