@@ -4384,6 +4384,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
             int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
 
 #if defined(TARGET_64BIT)
+
             // Try to emit rorx if BMI2 is available instead of mov+rol
             // it makes sense only for 64bit integers
             if ((genActualType(targetType) == TYP_LONG) && (tree->GetRegNum() != operandReg) &&
@@ -4403,6 +4404,36 @@ void CodeGen::genCodeForShift(GenTree* tree)
             inst_RV_SH(ins, size, tree->GetRegNum(), shiftByValue);
         }
     }
+#if defined(TARGET_64BIT)
+    else if (compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && tree->OperIs(GT_LSH, GT_RSH, GT_RSZ))
+    {
+        // Try to emit shlx, sarx, shrx if BMI2 is available instead of mov+shl, mov+sar, mov+shr.
+        switch (tree->OperGet())
+        {
+            case GT_LSH:
+                ins = INS_shlx;
+                break;
+
+            case GT_RSH:
+                ins = INS_sarx;
+                break;
+
+            case GT_RSZ:
+                ins = INS_shrx;
+                break;
+
+            default:
+                unreached();
+        }
+
+        regNumber shiftByReg = shiftBy->GetRegNum();
+        emitAttr  size       = emitTypeSize(tree);
+
+        GetEmitter()->emitIns_R_R_R(ins, size, tree->GetRegNum(), operandReg, shiftByReg);
+        genProduceReg(tree);
+        return;
+    }
+#endif
     else
     {
         // We must have the number of bits to shift stored in ECX, since we constrained this node to

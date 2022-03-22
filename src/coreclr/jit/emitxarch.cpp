@@ -749,6 +749,9 @@ bool emitter::TakesRexWPrefix(instruction ins, emitAttr attr)
             case INS_pdep:
             case INS_pext:
             case INS_rorx:
+            case INS_shlx:
+            case INS_sarx:
+            case INS_shrx:
                 return true;
             default:
                 return false;
@@ -987,14 +990,22 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, c
                                 case INS_rorx:
                                 case INS_pdep:
                                 case INS_mulx:
+                                case INS_shrx:
                                 {
                                     vexPrefix |= 0x03;
                                     break;
                                 }
 
                                 case INS_pext:
+                                case INS_sarx:
                                 {
                                     vexPrefix |= 0x02;
+                                    break;
+                                }
+
+                                case INS_shlx:
+                                {
+                                    vexPrefix |= 0x01;
                                     break;
                                 }
 
@@ -1484,6 +1495,9 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_pextrw:
         case INS_pextrw_sse41:
         case INS_rorx:
+        case INS_shlx:
+        case INS_sarx:
+        case INS_shrx:
         {
             // These SSE instructions write to a general purpose integer register.
             return false;
@@ -9519,7 +9533,7 @@ void emitter::emitDispIns(
             assert(IsThreeOperandAVXInstruction(ins));
             regNumber reg2 = id->idReg2();
             regNumber reg3 = id->idReg3();
-            if (ins == INS_bextr || ins == INS_bzhi)
+            if (ins == INS_bextr || ins == INS_bzhi || ins == INS_shrx || ins == INS_shlx || ins == INS_sarx)
             {
                 // BMI bextr and bzhi encodes the reg2 in VEX.vvvv and reg3 in modRM,
                 // which is different from most of other instructions
@@ -10314,6 +10328,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // For this format, moves do not support a third operand, so we only need to handle the binary ops.
     if (TakesVexPrefix(ins))
     {
+
         if (IsDstDstSrcAVXInstruction(ins))
         {
             regNumber src1 = REG_NA;
@@ -16320,6 +16335,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_serialize:
         {
             result.insThroughput = PERFSCORE_THROUGHPUT_50C;
+            break;
+        }
+
+        case INS_shlx:
+        case INS_sarx:
+        case INS_shrx:
+        {
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
         }
 
