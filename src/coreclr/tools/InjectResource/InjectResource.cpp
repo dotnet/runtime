@@ -43,7 +43,7 @@ AddBinaryResourceToDll(_In_z_ char* dllName,
             continue;
         }
 
-        if(!EndUpdateResource(dllUpdate, FALSE))
+        if(!EndUpdateResourceA(dllUpdate, FALSE))
         {
             printf("Unable to write updates to '%s', error=%d\n",
                 dllName, GetLastError());

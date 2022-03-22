@@ -173,19 +173,22 @@ target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} clrjit_static c
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
 if(CLR_CMAKE_TARGET_WIN32)
-    set(CLRDEBUGINFO_RESOURCE_PATH ${CMAKE_CURRENT_BINARY_DIR}/clrDebugResource.bin)
+    set(CLRDEBUGINFO_RESOURCE_PATH ${CMAKE_CURRENT_BINARY_DIR}/clr_debug_resource.bin)
 
     add_custom_target(
         clr_debug_resources
         DEPENDS mscordaccore mscordbi
         # make CLRDEBUGINFO resource
-        COMMAND GenClrDebugResource /dac:$<TARGET_FILE:mscordaccore> /dbi:$<TARGET_FILE:mscordbi> /sku:onecoreclr /out:${CLRDEBUGINFO_RESOURCE_PATH}
+        COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File "${CMAKE_CURRENT_SOURCE_DIR}/GenClrDebugResource.ps1" -dac $<TARGET_FILE:mscordaccore> -dbi $<TARGET_FILE:mscordbi> -out ${CLRDEBUGINFO_RESOURCE_PATH}
     )
 
     configure_file(dump_helper_resource.rc.in ${CMAKE_CURRENT_BINARY_DIR}/dump_helper_resource.rc)
 
+    set(EMBEDDED_MINIDUMP_AUXILIARY_PROVIDER ON)
+    configure_file(dump_helper_resource.rc.in ${CMAKE_CURRENT_BINARY_DIR}/dump_helper_resource_embedded_minidump_provider.rc)
+
     target_sources(coreclr PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/dump_helper_resource.rc)
-    target_sources(coreclr_static PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/dump_helper_resource.rc)
+    target_sources(coreclr_static PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/dump_helper_resource_embedded_minidump_provider.rc)
 
     add_dependencies(coreclr clr_debug_resources)
     add_dependencies(coreclr_static clr_debug_resources)
