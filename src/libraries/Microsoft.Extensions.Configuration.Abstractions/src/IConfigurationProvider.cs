@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Loads configuration values from the source represented by this <see cref="IConfigurationProvider"/>.
         /// </summary>
-        void Load(string separator = ":");
+        void Load();
 
         /// <summary>
         /// Returns the immediate descendant configuration keys for a given parent path based on this

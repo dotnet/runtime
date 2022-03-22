@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.Configuration
         public override string ToString()
             => $"{GetType().Name} for '{Source.Path}' ({(Source.Optional ? "Optional" : "Required")})";
 
-        private void Load(bool reload, string separator)
+        private void Load(bool reload)
         {
             IFileInfo? file = Source.FileProvider?.GetFileInfo(Source.Path ?? string.Empty);
             if (file == null || !file.Exists)
@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.Configuration
                 using Stream stream = OpenRead(file);
                 try
                 {
-                    Load(stream, separator);
+                    Load(stream);
                 }
                 catch (Exception ex)
                 {
@@ -119,19 +119,18 @@ namespace Microsoft.Extensions.Configuration
         /// <exception cref="FileNotFoundException">Optional is <c>false</c> on the source and a
         /// file does not exist at specified Path.</exception>
         /// <exception cref="InvalidDataException">An exception was thrown by the concrete implementation of the
-        /// <see cref="Load(string)"/> method. Use the source <see cref="FileConfigurationSource.OnLoadException"/> callback
+        /// <see cref="Load()"/> method. Use the source <see cref="FileConfigurationSource.OnLoadException"/> callback
         /// if you need more control over the exception.</exception>
-        public override void Load(string separator = ":")
+        public override void Load()
         {
-            Load(reload: false, separator);
+            Load(reload: false);
         }
 
         /// <summary>
         /// Loads this provider's data from a stream.
         /// </summary>
         /// <param name="stream">The stream to read.</param>
-        /// <param name="separator"></param>
-        public abstract void Load(Stream stream, string separator = ":");
+        public abstract void Load(Stream stream);
 
         private void HandleException(ExceptionDispatchInfo info)
         {

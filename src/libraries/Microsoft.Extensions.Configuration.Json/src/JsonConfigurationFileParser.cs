@@ -11,16 +11,16 @@ namespace Microsoft.Extensions.Configuration.Json
 {
     internal sealed class JsonConfigurationFileParser
     {
-        private JsonConfigurationFileParser(string separator)
+        private JsonConfigurationFileParser(string separator = ":")
         {
-            //_keyDelimiter = separator;
-            _keyDelimiter = "`";
+            _separator = separator;
         }
 
         private readonly Dictionary<string, string?> _data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         private readonly Stack<string> _paths = new Stack<string>();
-        private readonly string _keyDelimiter = ":";// ConfigurationPath.KeyDelimiter;
+        private readonly string _separator;// ConfigurationPath.KeyDelimiter;
 
+        //todo: need to pass separator here
         public static IDictionary<string, string?> Parse(Stream input, string separator = ":")
         {
             return new JsonConfigurationFileParser(separator).ParseStream(input);
@@ -107,7 +107,7 @@ namespace Microsoft.Extensions.Configuration.Json
 
         private void EnterContext(string context) =>
             _paths.Push(_paths.Count > 0 ?
-                _paths.Peek() + _keyDelimiter + context :
+                _paths.Peek() + _separator + context :
                 context);
 
         private void ExitContext() => _paths.Pop();

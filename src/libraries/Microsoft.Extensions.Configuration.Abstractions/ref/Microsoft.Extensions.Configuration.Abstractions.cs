@@ -48,9 +48,9 @@ namespace Microsoft.Extensions.Configuration
     public partial interface IConfiguration
     {
         string? this[string key] { get; set; }
-        System.Collections.Generic.IEnumerable<Microsoft.Extensions.Configuration.IConfigurationSection> GetChildren(string separator = ":");
+        System.Collections.Generic.IEnumerable<Microsoft.Extensions.Configuration.IConfigurationSection> GetChildren();
         Microsoft.Extensions.Primitives.IChangeToken GetReloadToken();
-        Microsoft.Extensions.Configuration.IConfigurationSection GetSection(string key, string separator = ":");
+        Microsoft.Extensions.Configuration.IConfigurationSection GetSection(string key);
     }
     public partial interface IConfigurationBuilder
     {
@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.Configuration
     {
         System.Collections.Generic.IEnumerable<string> GetChildKeys(System.Collections.Generic.IEnumerable<string> earlierKeys, string? parentPath);
         Microsoft.Extensions.Primitives.IChangeToken GetReloadToken();
-        void Load(string separator = ":");
+        void Load();
         void Set(string key, string? value);
         bool TryGet(string key, out string? value);
     }

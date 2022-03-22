@@ -348,7 +348,7 @@ namespace Microsoft.Extensions.Configuration
             }
 
             //todo: steve: need separator here somewhere
-            if (config != null && config.GetChildren(options.Separator).Any())
+            if (config != null && config.GetChildren().Any())
             {
                 // If we don't have an instance, try to create one
                 if (instance == null)
@@ -456,7 +456,7 @@ namespace Microsoft.Extensions.Configuration
             }
             MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue")!;
             PropertyInfo setter = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
-            foreach (IConfigurationSection child in config.GetChildren(options.Separator))
+            foreach (IConfigurationSection child in config.GetChildren())
             {
                 try
                 {
@@ -691,11 +691,13 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static object? GetPropertyValue(PropertyInfo property, object instance, IConfiguration config, BinderOptions options)
         {
+            // List<string> separators = config.Select(p => (p as ConfigurationProvider)?.GetDelimiter() ?? ":").Distinct().ToList();
+
             string propertyName = GetPropertyName(property);
             return BindInstance(
                 property.PropertyType,
                 property.GetValue(instance),
-                config.GetSection(propertyName, options.Separator),
+                config.GetSection(propertyName),
                 options);
         }
 

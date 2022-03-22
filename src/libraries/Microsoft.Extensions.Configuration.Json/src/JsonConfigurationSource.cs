@@ -21,6 +21,6 @@ namespace Microsoft.Extensions.Configuration.Json
             return new JsonConfigurationProvider(this);
         }
 
-        public string Separator { get; set; } = "`";
+        public string Separator { get; set; } = ":";
     }
 }

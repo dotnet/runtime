@@ -13,9 +13,9 @@ namespace Microsoft.Extensions.Configuration.Json
     /// </summary>
     public class JsonConfigurationProvider : FileConfigurationProvider
     {
-        private const string _keyDelimiter = "`";
+        private readonly string _separator = "`";
 
-        public override string GetDelimiter() => _keyDelimiter;
+        public override string GetDelimiter() => _separator;
 
         /// <summary>
         /// Initializes a new instance with the specified source.
@@ -23,19 +23,18 @@ namespace Microsoft.Extensions.Configuration.Json
         /// <param name="source">The source settings.</param>
         public JsonConfigurationProvider(JsonConfigurationSource source) : base(source)
         {
-            //_keyDelimiter = source.Separator;
+            _separator = source.Separator;
         }
 
         /// <summary>
         /// Loads the JSON data from a stream.
         /// </summary>
         /// <param name="stream">The stream to read.</param>
-        /// <param name="separator"></param>
-        public override void Load(Stream stream, string separator = ":")
+        public override void Load(Stream stream)
         {
             try
             {
-                Data = JsonConfigurationFileParser.Parse(stream, separator);
+                Data = JsonConfigurationFileParser.Parse(stream, _separator);
             }
             catch (JsonException e)
             {
@@ -62,7 +61,7 @@ namespace Microsoft.Extensions.Configuration.Json
                 {
                     if (kv.Key.Length > parentPath.Length &&
                         kv.Key.StartsWith(parentPath, StringComparison.OrdinalIgnoreCase) &&
-                        kv.Key[parentPath.Length] == _keyDelimiter[0]) //todo: should be char or string?
+                        kv.Key[parentPath.Length] == _separator[0]) //todo: should be char or string?
                     {
                         results.Add(Segment(kv.Key, parentPath.Length + 1));
                     }
@@ -76,9 +75,9 @@ namespace Microsoft.Extensions.Configuration.Json
             return results;
         }
 
-        private static string Segment(string key, int prefixLength)
+        private string Segment(string key, int prefixLength)
         {
-            int indexOf = key.IndexOf(_keyDelimiter, prefixLength, StringComparison.OrdinalIgnoreCase);
+            int indexOf = key.IndexOf(_separator, prefixLength, StringComparison.OrdinalIgnoreCase);
             return indexOf < 0 ? key.Substring(prefixLength) : key.Substring(prefixLength, indexOf - prefixLength);
         }
 

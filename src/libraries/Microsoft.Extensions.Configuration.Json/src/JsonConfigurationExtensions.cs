@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, string path, string separator = ":")
         {
-            return AddJsonFile(builder, provider: null, path: path, optional: false, reloadOnChange: false);
+            return AddJsonFile(builder, provider: null, path: path, optional: false, reloadOnChange: false, separator);
         }
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace Microsoft.Extensions.Configuration
                 s.Optional = optional;
                 s.ReloadOnChange = reloadOnChange;
                 s.ResolveFileProvider();
-                //s.Separator = separator;
+                s.Separator = separator;
             });
         }
 
@@ -89,9 +89,8 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <param name="configureSource">Configures the source.</param>
-        /// <param name="separator"></param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, Action<JsonConfigurationSource>? configureSource, string separator = ":")
+        public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, Action<JsonConfigurationSource>? configureSource)
             => builder.Add(configureSource);
 
         /// <summary>
@@ -103,7 +102,11 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder AddJsonStream(this IConfigurationBuilder builder!!, Stream stream, string separator = ":")
         {
-            return builder.Add<JsonStreamConfigurationSource>(s => s.Stream = stream);
+            return builder.Add<JsonStreamConfigurationSource>(s =>
+            {
+                s.Stream = stream;
+                s.Separator = separator;
+            });
         }
     }
 }

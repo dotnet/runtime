@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Loads (or reloads) the data for this provider.
         /// </summary>
-        public virtual void Load(string separator = ":")
+        public virtual void Load()
         { }
 
         /// <summary>

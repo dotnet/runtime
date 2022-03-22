@@ -15,5 +15,7 @@ namespace Microsoft.Extensions.Configuration.Json
         /// <returns>An <see cref="JsonStreamConfigurationProvider"/></returns>
         public override IConfigurationProvider Build(IConfigurationBuilder builder)
             => new JsonStreamConfigurationProvider(this);
+
+        public string Separator { get; set; } = "`";
     }
 }

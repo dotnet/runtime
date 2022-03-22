@@ -31,13 +31,12 @@ namespace Microsoft.Extensions.Configuration
         /// Load the configuration data from the stream.
         /// </summary>
         /// <param name="stream">The data stream.</param>
-        /// <param name="separator"></param>
-        public abstract void Load(Stream stream, string separator = ":");
+        public abstract void Load(Stream stream);
 
         /// <summary>
         /// Load the configuration data from the stream. Will throw after the first call.
         /// </summary>
-        public override void Load(string separator = ":")
+        public override void Load()
         {
             if (_loaded)
             {
@@ -49,7 +48,7 @@ namespace Microsoft.Extensions.Configuration
                 throw new InvalidOperationException(SR.StreamConfigurationSourceStreamCannotBeNull);
             }
 
-            Load(Source.Stream, separator);
+            Load(Source.Stream);
             _loaded = true;
         }
     }

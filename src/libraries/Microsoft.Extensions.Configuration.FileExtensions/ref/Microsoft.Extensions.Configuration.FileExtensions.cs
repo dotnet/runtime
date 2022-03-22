@@ -20,8 +20,8 @@ namespace Microsoft.Extensions.Configuration
         public Microsoft.Extensions.Configuration.FileConfigurationSource Source { get { throw null; } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
-        public override void Load(string separator = ":") { }
-        public abstract void Load(System.IO.Stream stream, string separator = ":");
+        public override void Load() { }
+        public abstract void Load(System.IO.Stream stream);
         public override string ToString() { throw null; }
     }
     public abstract partial class FileConfigurationSource : Microsoft.Extensions.Configuration.IConfigurationSource

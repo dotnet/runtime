@@ -20,8 +20,7 @@ namespace Microsoft.Extensions.Configuration.Json
         /// Loads json configuration key/values from a stream into a provider.
         /// </summary>
         /// <param name="stream">The json <see cref="Stream"/> to load configuration data from.</param>
-        /// <param name="separator"></param>
-        public override void Load(Stream stream, string separator = ":")
+        public override void Load(Stream stream)
         {
             Data = JsonConfigurationFileParser.Parse(stream);
         }

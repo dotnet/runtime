@@ -59,10 +59,10 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <inheritdoc/>
-        public IConfigurationSection GetSection(string key, string separator = ":") => new ConfigurationSection(this, key, separator);
+        public IConfigurationSection GetSection(string key) => new ConfigurationSection(this, key);
 
         /// <inheritdoc/>
-        public IEnumerable<IConfigurationSection> GetChildren(string separator = ":") => this.GetChildrenImplementation(null, separator);
+        public IEnumerable<IConfigurationSection> GetChildren() => this.GetChildrenImplementation(null); //, separator);
 
         IDictionary<string, object> IConfigurationBuilder.Properties => _properties;
 

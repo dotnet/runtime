@@ -87,20 +87,19 @@ namespace Microsoft.Extensions.Configuration
         /// Gets a configuration sub-section with the specified key.
         /// </summary>
         /// <param name="key">The key of the configuration section.</param>
-        /// <param name="separator"></param>
         /// <returns>The <see cref="IConfigurationSection"/>.</returns>
         /// <remarks>
         ///     This method will never return <c>null</c>. If no matching sub-section is found with the specified key,
         ///     an empty <see cref="IConfigurationSection"/> will be returned.
         /// </remarks>
-        public IConfigurationSection GetSection(string key, string separator = ":") => _root.GetSection(ConfigurationPath.CombineWith(separator, Path, key));
+        public IConfigurationSection GetSection(string key) => _root.GetSection(ConfigurationPath.CombineWith(_separator, Path, key));
 
         //todo: steve - do we need separator here now that we've provided it in the constructo?
         /// <summary>
         /// Gets the immediate descendant configuration sub-sections.
         /// </summary>
         /// <returns>The configuration sub-sections.</returns>
-        public IEnumerable<IConfigurationSection> GetChildren(string separator = ":") => _root.GetChildrenImplementation(Path, separator);
+        public IEnumerable<IConfigurationSection> GetChildren() => _root.GetChildrenImplementation(Path);
 
         /// <summary>
         /// Returns a <see cref="IChangeToken"/> that can be used to observe when this configuration is reloaded.

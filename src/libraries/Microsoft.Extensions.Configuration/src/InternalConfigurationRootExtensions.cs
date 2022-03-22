@@ -17,9 +17,8 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="root">Configuration from which to retrieve sub-sections.</param>
         /// <param name="path">Key of a section of which children to retrieve.</param>
-        /// <param name="pathSeparator">...</param>
         /// <returns>Immediate children sub-sections of section specified by key.</returns>
-        internal static IEnumerable<IConfigurationSection> GetChildrenImplementation(this IConfigurationRoot root, string? path, string pathSeparator = ":")
+        internal static IEnumerable<IConfigurationSection> GetChildrenImplementation(this IConfigurationRoot root, string? path)
         {
             using ReferenceCountedProviders? reference = (root as ConfigurationManager)?.GetProvidersReference();
             IEnumerable<IConfigurationProvider> providers = reference?.Providers ?? root.Providers;
@@ -55,14 +54,14 @@ namespace Microsoft.Extensions.Configuration
             {
                 foreach (string key in l[delim])
                 {
-                    cs.Add(root.GetSection(path == null ? key : ConfigurationPath.CombineWith(delim, path, key), delim));
+                    cs.Add(root.GetSection(path == null ? key : ConfigurationPath.CombineWith(delim, path, key)));
                 }
             }
 
-            IEnumerable<IConfigurationSection> children = providers
-                .Aggregate(Enumerable.Empty<string>(), (seed, source) => source.GetChildKeys(seed, path))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Select(key => root.GetSection(path == null ? key : ConfigurationPath.CombineWith(pathSeparator, path, key), pathSeparator));
+            //IEnumerable<IConfigurationSection> children = providers
+            //    .Aggregate(Enumerable.Empty<string>(), (seed, source) => source.GetChildKeys(seed, path))
+            //    .Distinct(StringComparer.OrdinalIgnoreCase)
+            //    .Select(key => root.GetSection(path == null ? key : ConfigurationPath.CombineWith("`", path, key)));
 
             if (reference is null)
             {
