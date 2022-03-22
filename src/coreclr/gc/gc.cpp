@@ -34695,7 +34695,7 @@ void gc_heap::background_grow_c_mark_list()
         assert (new_c_mark_list);
         memcpy (new_c_mark_list, c_mark_list, c_mark_list_length*sizeof(uint8_t*));
         c_mark_list_length = c_mark_list_length*2;
-        delete c_mark_list;
+        delete[] c_mark_list;
         c_mark_list = new_c_mark_list;
     }
 }

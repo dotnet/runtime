@@ -1567,8 +1567,7 @@ private:
         while (size < numberOfEntries) {size = size<<1;}
 //        if (size == CALL_STUB_MIN_ENTRIES)
 //            size += 3;
-        size_t* bucket = new size_t[(sizeof(FastTable)/sizeof(size_t))+size+CALL_STUB_FIRST_INDEX];
-        FastTable* table = new (bucket) FastTable();
+        FastTable* table = new (NumCallStubs, size) FastTable();
         table->InitializeContents(size);
         return table;
     }
@@ -1592,6 +1591,15 @@ private:
     //we have an unused cell to use as a temp at bucket[CALL_STUB_DEAD_LINK==2],
     //and the table starts at bucket[CALL_STUB_FIRST_INDEX==3],
     size_t contents[0];
+
+    void* operator new(size_t) = delete;
+
+    static struct NumCallStubs_t {} NumCallStubs;
+
+    void* operator new(size_t baseSize, NumCallStubs_t, size_t numCallStubs)
+    {
+        return ::operator new(baseSize + (numCallStubs + CALL_STUB_FIRST_INDEX) * sizeof(size_t));
+    }
 };
 #ifdef _MSC_VER
 #pragma warning(pop)

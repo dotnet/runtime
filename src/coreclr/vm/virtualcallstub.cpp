@@ -103,6 +103,8 @@ UINT32 STUB_COLLIDE_WRITE_PCT = 100;
 UINT32 STUB_COLLIDE_MONO_PCT  =   0;
 #endif // STUB_LOGGING
 
+FastTable::NumCallStubs_t FastTable::NumCallStubs;
+
 FastTable* BucketTable::dead = NULL;    //linked list of the abandoned buckets
 
 DispatchCache *g_resolveCache = NULL;    //cache of dispatch stubs for in line lookup by resolve stubs.
@@ -3346,7 +3348,7 @@ void BucketTable::Reclaim()
     while (list)
     {
         size_t next = list->contents[CALL_STUB_DEAD_LINK];
-        delete [] (size_t*)list;
+        delete list;
         list = (FastTable*) next;
     }
 }
