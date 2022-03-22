@@ -94,7 +94,6 @@ namespace Microsoft.Extensions.Configuration
         /// </remarks>
         public IConfigurationSection GetSection(string key) => _root.GetSection(ConfigurationPath.CombineWith(_separator, Path, key));
 
-        //todo: steve - do we need separator here now that we've provided it in the constructo?
         /// <summary>
         /// Gets the immediate descendant configuration sub-sections.
         /// </summary>

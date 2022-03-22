@@ -347,7 +347,6 @@ namespace Microsoft.Extensions.Configuration
                 return convertedValue;
             }
 
-            //todo: steve: need separator here somewhere
             if (config != null && config.GetChildren().Any())
             {
                 // If we don't have an instance, try to create one
