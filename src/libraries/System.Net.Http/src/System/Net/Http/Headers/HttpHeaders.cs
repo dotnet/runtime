@@ -630,8 +630,9 @@ namespace System.Net.Http.Headers
         private static void CloneAndAddValue(HeaderStoreItemInfo destinationInfo, object source)
         {
             // We only have one value. Clone it and assign it to the store.
-            if (source is not InvalidValue && source is ICloneable cloneableValue)
+            if (source is ICloneable cloneableValue)
             {
+                Debug.Assert(source is not InvalidValue);
                 AddParsedValue(destinationInfo, cloneableValue.Clone());
             }
             else
