@@ -472,7 +472,7 @@ namespace System.Net.Http
         {
             Debug.Assert(HasSyncObjLock);
 
-            if (!_http11RequestQueue.TryPeekRequest(out HttpRequestMessage? request))
+            if (!_http11RequestQueue.TryPeekUncancelledRequest(this, out HttpRequestMessage? request))
             {
                 return;
             }
@@ -694,7 +694,7 @@ namespace System.Net.Http
         {
             Debug.Assert(HasSyncObjLock);
 
-            if (!_http2RequestQueue.TryPeekRequest(out HttpRequestMessage? request))
+            if (!_http2RequestQueue.TryPeekUncancelledRequest(this, out HttpRequestMessage? request))
             {
                 return;
             }
@@ -2272,12 +2272,23 @@ namespace System.Net.Http
                 return false;
             }
 
-            public bool TryPeekRequest([MaybeNullWhen(false)] out HttpRequestMessage request)
+            public bool TryPeekUncancelledRequest(HttpConnectionPool pool, [MaybeNullWhen(false)] out HttpRequestMessage request)
             {
-                if (_queue is not null && _queue.TryPeek(out QueueItem item))
+                if (_queue is not null)
                 {
-                    request = item.Request;
-                    return true;
+                    while (_queue.TryPeek(out QueueItem item))
+                    {
+                        if (item.Waiter.Task.IsCanceled)
+                        {
+                            if (NetEventSource.Log.IsEnabled()) pool.Trace("Discarding canceled request from queue.");
+                            _queue.Dequeue();
+                        }
+                        else
+                        {
+                            request = item.Request;
+                            return true;
+                        }
+                    }
                 }
 
                 request = null;
