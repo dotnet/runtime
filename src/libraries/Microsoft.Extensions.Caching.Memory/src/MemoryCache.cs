@@ -334,17 +334,8 @@ namespace Microsoft.Extensions.Caching.Memory
             long hits = 0, misses = 0;
             lock (_allStats!)
             {
-                if (IntPtr.Size == 4)
-                {
-                    Interlocked.Add(ref hits, Interlocked.Read(ref _accumulatedStats!.Hits));
-                    Interlocked.Add(ref misses, Interlocked.Read(ref _accumulatedStats!.Misses));
-                }
-                else
-                {
-                    hits += _accumulatedStats!.Hits;
-                    misses += _accumulatedStats!.Misses;
-                }
-
+                hits += _accumulatedStats!.Hits;
+                misses += _accumulatedStats!.Misses;
                 foreach (WeakReference<Stats>? wr in _allStats!)
                 {
                     if (wr is not null && wr.TryGetTarget(out Stats? stats))
@@ -411,16 +402,8 @@ namespace Microsoft.Extensions.Caching.Memory
                     }
                 }
 
-                if (IntPtr.Size == 4)
-                {
-                    Interlocked.Add(ref _accumulatedStats!.Hits, Interlocked.Read(ref current!.Hits));
-                    Interlocked.Add(ref _accumulatedStats!.Misses, Interlocked.Read(ref current!.Misses));
-                }
-                else
-                {
-                    _accumulatedStats!.Hits += Interlocked.Read(ref current.Hits);
-                    _accumulatedStats!.Misses += Interlocked.Read(ref current.Misses);
-                }
+                _accumulatedStats!.Hits += Interlocked.Read(ref current.Hits);
+                _accumulatedStats!.Misses += Interlocked.Read(ref current.Misses);
             }
         }
 
