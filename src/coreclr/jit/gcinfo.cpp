@@ -278,6 +278,7 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTree* tgt, GenTree
         case GT_LCL_VAR: /* Definitely not in the managed heap  */
         case GT_LCL_FLD:
         case GT_STORE_LCL_VAR:
+        case GT_CSTORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
             return WBF_NoBarrier;
 

@@ -174,6 +174,7 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
         case GT_STORE_LCL_VAR:
             nextNode = DecomposeStoreLclVar(use);
             break;
+        // case GT_CSTORE_LCL_VAR: Do nothing?
 
         case GT_CAST:
             nextNode = DecomposeCast(use);

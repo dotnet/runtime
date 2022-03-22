@@ -160,7 +160,7 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
         tree->AsHWIntrinsic()->SetOtherReg(reg);
     }
 #endif // FEATURE_HW_INTRINSICS
-    else if (tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
+    else if (tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_CSTORE_LCL_VAR))
     {
         tree->AsLclVar()->SetRegNumByIdx(reg, regIdx);
     }
@@ -6905,7 +6905,7 @@ void LinearScan::resolveRegisters()
             {
                 writeRegisters(currentRefPosition, treeNode);
 
-                if (treeNode->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR) && currentRefPosition->getInterval()->isLocalVar)
+                if (treeNode->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_CSTORE_LCL_VAR) && currentRefPosition->getInterval()->isLocalVar)
                 {
                     resolveLocalRef(block, treeNode->AsLclVar(), currentRefPosition);
                 }

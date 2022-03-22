@@ -1233,6 +1233,7 @@ protected:
     void genCodeForLclFld(GenTreeLclFld* tree);
     void genCodeForStoreLclFld(GenTreeLclFld* tree);
     void genCodeForStoreLclVar(GenTreeLclVar* tree);
+    void genCodeForCStoreLclVar(GenTreeLclVar* tree);
     void genCodeForReturnTrap(GenTreeOp* tree);
     void genCodeForJcc(GenTreeCC* tree);
     void genCodeForSetcc(GenTreeCC* setcc);

@@ -400,6 +400,9 @@ enum GenTreeFlags : unsigned int
     GTF_LATE_ARG    = 0x00010000, // The specified node is evaluated to a temp in the arg list, and this temp is added to gtCallLateArgs.
     GTF_SPILL       = 0x00020000, // Needs to be spilled here
 
+    GTF_CSEL_T   = 0x00040000, // Conditional op should check for True flags
+    GTF_CSEL_F   = 0x00080000, // Conditional op should check for False flags
+
 // The extra flag GTF_IS_IN_CSE is used to tell the consumer of the side effect flags
 // that we are calling in the context of performing a CSE, thus we
 // should allow the run-once side effects of running a class constructor.
@@ -1165,7 +1168,7 @@ public:
     static bool OperIsLocal(genTreeOps gtOper)
     {
         static_assert_no_msg(
-            OpersAreContiguous(GT_PHI_ARG, GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD));
+            OpersAreContiguous(GT_PHI_ARG, GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_CSTORE_LCL_VAR, GT_STORE_LCL_FLD));
         return (GT_PHI_ARG <= gtOper) && (gtOper <= GT_STORE_LCL_FLD);
     }
 
@@ -1186,7 +1189,7 @@ public:
 
     static bool OperIsScalarLocal(genTreeOps gtOper)
     {
-        return (gtOper == GT_LCL_VAR || gtOper == GT_STORE_LCL_VAR);
+        return (gtOper == GT_LCL_VAR || gtOper == GT_STORE_LCL_VAR || gtOper == GT_CSTORE_LCL_VAR);
     }
 
     static bool OperIsNonPhiLocal(genTreeOps gtOper)
@@ -1201,7 +1204,7 @@ public:
 
     static bool OperIsLocalStore(genTreeOps gtOper)
     {
-        return (gtOper == GT_STORE_LCL_VAR || gtOper == GT_STORE_LCL_FLD);
+        return (gtOper == GT_STORE_LCL_VAR || gtOper == GT_STORE_LCL_FLD || gtOper == GT_CSTORE_LCL_VAR);
     }
 
     static bool OperIsAddrMode(genTreeOps gtOper)
@@ -1573,7 +1576,7 @@ public:
 
     static bool OperIsStore(genTreeOps gtOper)
     {
-        return (gtOper == GT_STOREIND || gtOper == GT_STORE_LCL_VAR || gtOper == GT_STORE_LCL_FLD ||
+        return (gtOper == GT_STOREIND || gtOper == GT_STORE_LCL_VAR || gtOper == GT_CSTORE_LCL_VAR || gtOper == GT_STORE_LCL_FLD ||
                 OperIsStoreBlk(gtOper) || OperIsAtomicOp(gtOper));
     }
 
@@ -2934,7 +2937,7 @@ struct GenTreeOp : public GenTreeUnOp
         : GenTreeUnOp(oper, type DEBUGARG(largeNode)), gtOp2(nullptr)
     {
         // Unary operators with optional arguments:
-        assert(oper == GT_NOP || oper == GT_RETURN || oper == GT_RETFILT || OperIsBlk(oper));
+        assert(oper == GT_NOP || oper == GT_RETURN || oper == GT_RETFILT || OperIsBlk(oper) || OperIsLocal(oper) || OperIsLocalAddr(oper));
     }
 
     // returns true if we will use the division by constant optimization for this node.
@@ -3298,8 +3301,8 @@ struct GenTreeStrCon : public GenTree
 };
 
 // Common supertype of LCL_VAR, LCL_FLD, REG_VAR, PHI_ARG
-// This inherits from UnOp because lclvar stores are Unops
-struct GenTreeLclVarCommon : public GenTreeUnOp
+// This inherits from GenTreeOp because CSTORE_LCL_VAR has 2 ops
+struct GenTreeLclVarCommon : public GenTreeOp
 {
 private:
     unsigned _gtLclNum; // The local number. An index into the Compiler::lvaTable array.
@@ -3307,7 +3310,7 @@ private:
 
 public:
     GenTreeLclVarCommon(genTreeOps oper, var_types type, unsigned lclNum DEBUGARG(bool largeNode = false))
-        : GenTreeUnOp(oper, type DEBUGARG(largeNode))
+        : GenTreeOp(oper, type DEBUGARG(largeNode))
     {
         SetLclNum(lclNum);
     }
@@ -3341,7 +3344,7 @@ public:
     }
 
 #if DEBUGGABLE_GENTREE
-    GenTreeLclVarCommon() : GenTreeUnOp()
+    GenTreeLclVarCommon() : GenTreeOp()
     {
     }
 #endif
@@ -8298,7 +8301,7 @@ inline GenTreeFlags GenTree::GetRegSpillFlagByIdx(int regIndex) const
 inline GenTreeFlags GenTree::GetLastUseBit(int regIndex) const
 {
     assert(regIndex < 4);
-    assert(OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_COPY, GT_RELOAD));
+    assert(OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_CSTORE_LCL_VAR, GT_COPY, GT_RELOAD));
     static_assert_no_msg((1 << MULTIREG_LAST_USE_SHIFT) == GTF_VAR_MULTIREG_DEATH0);
     return (GenTreeFlags)(1 << (MULTIREG_LAST_USE_SHIFT + regIndex));
 }
@@ -8317,7 +8320,7 @@ inline GenTreeFlags GenTree::GetLastUseBit(int regIndex) const
 //
 inline bool GenTree::IsLastUse(int regIndex) const
 {
-    assert(OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_COPY, GT_RELOAD));
+    assert(OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_CSTORE_LCL_VAR, GT_COPY, GT_RELOAD));
     return (gtFlags & GetLastUseBit(regIndex)) != 0;
 }
 

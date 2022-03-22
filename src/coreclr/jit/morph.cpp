@@ -15622,7 +15622,7 @@ void Compiler::fgMorphTreeDone(GenTree* tree,
         //
         // But we shouldn't be running local assertion prop on these,
         // as local prop gets disabled when we run global prop.
-        assert(!tree->OperIs(GT_STORE_LCL_VAR, GT_STORE_LCL_FLD));
+        assert(!tree->OperIs(GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_CSTORE_LCL_VAR));
 
         // DefinesLocal can return true for some BLK op uses, so
         // check what gets assigned only when we're at an assignment.

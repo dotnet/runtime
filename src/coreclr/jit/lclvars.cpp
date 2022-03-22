@@ -4537,6 +4537,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
                     case GT_LCL_VAR_ADDR:
                     case GT_LCL_FLD_ADDR:
                     case GT_STORE_LCL_VAR:
+                    case GT_CSTORE_LCL_VAR:
                     case GT_STORE_LCL_FLD:
                     {
                         LclVarDsc* varDsc = lvaGetDesc(node->AsLclVarCommon());

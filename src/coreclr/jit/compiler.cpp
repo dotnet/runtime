@@ -9134,6 +9134,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             case GT_LCL_FLD_ADDR:
             case GT_STORE_LCL_FLD:
             case GT_STORE_LCL_VAR:
+            case GT_CSTORE_LCL_VAR:
                 if (tree->gtFlags & GTF_VAR_DEF)
                 {
                     chars += printf("[VAR_DEF]");

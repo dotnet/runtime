@@ -3174,6 +3174,140 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
     return cmp->gtNext;
 }
 
+
+//------------------------------------------------------------------------
+// Lowering::LowerIfCompares: Merges a if+branch block with a following conditional block
+//
+// Arguments:
+//    block - Block to be lowered
+//
+// Return Value:
+//    Nonev
+//
+
+void Lowering::LowerIfCompares(BasicBlock* block)
+{
+    GenTree* last = block->lastNode();
+    BasicBlock *middle_block = nullptr;
+
+    // Arm only for now.
+#ifdef TARGET_ARM64
+
+    // Does the block ends by branching via a JTRUE after a compare?
+    if (block->bbJumpKind == BBJ_COND && block->NumSucc() == 2 &&
+        last->OperIs(GT_JTRUE) && last->gtGetOp1()->OperIs(GT_EQ, GT_NE))
+    {
+        // Is the false path (next) a diversion which then unconditionally
+        // goes back to the true path (JumpDest)?
+        if (block->bbNext->NumSucc() == 1 && block->bbNext->bbJumpKind == BBJ_NONE &&
+            block->bbNext->bbNext == block->bbJumpDest)
+        {
+            middle_block = block->bbNext;
+        }
+    }
+
+    // middle_block is the diversion block.
+    // Can all the nodes within it be made to conditionally execute?
+    if (middle_block)
+    {
+        GenTree* node = LIR::AsRange(middle_block).FirstNode();
+        while (node != nullptr)
+        {
+            // Check the block only contains certain instructions
+            switch (node->gtOper)
+            {
+                case GT_IL_OFFSET:
+                case GT_CNS_INT:
+                case GT_STORE_LCL_VAR:
+                case GT_LCL_VAR:
+                    // These instructions are allowed.
+                    node = node->gtNext;
+                    break;
+                // TODO: Detect compares to allow chaining of blocks
+                // case GT_EQ:
+                // case GT_NE:
+                default:
+                    // Cannot optimise this block
+                    node = nullptr;
+                    middle_block = nullptr;
+                    break;
+            }
+        }
+    }
+
+    // Conditionally execute the middle block and merge it into the main one.
+    if (middle_block)
+    {
+        GenTree* cmp = last->gtGetOp1();
+
+        // Remove the JTRUE node
+        LIR::AsRange(block).Remove(last);
+        assert(cmp->gtNext == nullptr);
+
+        // The compare generates flags, not a register.
+        cmp->gtType  = TYP_VOID;
+        cmp->gtFlags |= GTF_SET_FLAGS;
+
+        // Iterate over the middle block, rewriting nodes to be conditional
+        GenTreeFlags csel_flag = cmp->OperIs(GT_EQ) ? GTF_CSEL_F : GTF_CSEL_T;
+        GenTree* node = LIR::AsRange(middle_block).FirstNode();
+        while (node != nullptr)
+        {
+            switch (node->gtOper)
+            {
+                case GT_STORE_LCL_VAR:
+                {
+                    // Replace the store with a conditional store.
+                    // Op1, the true path input, is the existing store input.
+                    // Op2, the false path, is the current value of the store output.
+
+                    // Switch to a cstore.
+                    node->SetOper(GT_CSTORE_LCL_VAR);
+                    // ...Alternatively we could keep it as a GT_STORE_LCL_VAR.
+                    // Code elsewhere has already been changed to allow local variable nodes to take 2 args.
+                    // In the codegen for GT_STORE_LCL_VAR, we can check gtFlags, and if a CSEL flag is set
+                    // then assert that Op2 is set, and generate the csel instead of a store.
+                    // Advantage of this is we don't need to create explicit conditional node types
+                    // (there will be a few more conditional node types to add later, eg CEQ)
+
+                    // Mark with the compare type.
+                    node->gtFlags |= csel_flag;
+
+                    // Create a new node for Op2.
+                    GenTree* base = new (comp, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, node->TypeGet(), node->AsLclVarCommon()->GetLclNum());
+                    BlockRange().InsertBefore(node, base);
+                    node->AsOp()->gtOp2 = base;
+
+                    break;
+                }
+
+                // TODO: Replace these with conditional versions to allow chaining.
+                // case GT_EQ:
+                // case GT_NE:
+
+                case GT_IL_OFFSET:
+                case GT_CNS_INT:
+                case GT_LCL_VAR:
+                    // Nothing needs updating here.
+                    break;
+
+                default:
+                    assert(false && "Invalid node found in conditional block.");
+                    break;
+            }
+            node = node->gtNext;
+        }
+
+        // Merge the original and middle blocks.
+        comp->fgRemoveAllRefPreds(block->bbJumpDest, block);
+        block->bbJumpKind = BBJ_NONE;
+        block->bbJumpDest = block->bbNext;
+        comp->fgCompactBlocks(block, block->bbNext);
+    }
+#endif
+}
+
+
 //------------------------------------------------------------------------
 // Lowering::LowerJTrue: Lowers a JTRUE node.
 //
@@ -6404,6 +6538,19 @@ PhaseStatus Lowering::DoPhase()
         comp->lvSetMinOptsDoNotEnreg();
     }
 
+    // Iterate through the blocks lowering any if+branch blocks.
+    // Do this before general lowering so that JCMP nodes have not been created.
+    // TODO: For now this reverse iterates - that may or may not be the best option.
+    // TODO: Is this the best place to do this? Do we need a full phase?
+    // TODO: Do we want to add a reverse block iterator?
+    // TODO: Can JCMP detection be removed once this does everything?
+    BasicBlock* block = comp->fgLastBB;
+    while (block != nullptr)
+    {
+        LowerIfCompares(block);
+        block=block->bbPrev;
+    }
+
     for (BasicBlock* const block : comp->Blocks())
     {
         /* Make the block publicly available */
@@ -6852,6 +6999,7 @@ void Lowering::ContainCheckNode(GenTree* node)
     switch (node->gtOper)
     {
         case GT_STORE_LCL_VAR:
+        case GT_CSTORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
             ContainCheckStoreLoc(node->AsLclVarCommon());
             break;

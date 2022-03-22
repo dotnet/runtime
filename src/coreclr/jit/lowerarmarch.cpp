@@ -132,6 +132,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 #ifdef TARGET_ARM64
             case GT_STORE_LCL_FLD:
             case GT_STORE_LCL_VAR:
+            case GT_CSTORE_LCL_VAR:
                 if (immVal == 0)
                     return true;
                 break;
@@ -158,6 +159,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
     GenTree* op1 = storeLoc->gtGetOp1();
+    assert(storeLoc->gtOper != GT_CSTORE_LCL_VAR);
     if ((storeLoc->gtOper == GT_STORE_LCL_VAR) && (op1->gtOper == GT_CNS_INT))
     {
         // Try to widen the ops if they are going into a local var.

@@ -3460,7 +3460,7 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
 // BuildStoreLoc: Set register requirements for a store of a lclVar
 //
 // Arguments:
-//    storeLoc - the local store (GT_STORE_LCL_FLD or GT_STORE_LCL_VAR)
+//    storeLoc - the local store (GT_STORE_LCL_FLD, GT_STORE_LCL_VAR or GT_CSTORE_LCL_VAR)
 //
 // Notes:
 //    This involves:

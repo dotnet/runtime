@@ -165,6 +165,7 @@ private:
     GenTree* LowerFloatArg(GenTree** pArg, fgArgTabEntry* info);
     GenTree* LowerFloatArgReg(GenTree* arg, regNumber regNum);
 #endif
+    void LowerIfCompares(BasicBlock* block);
 
     void InsertPInvokeCallProlog(GenTreeCall* call);
     void InsertPInvokeCallEpilog(GenTreeCall* call);

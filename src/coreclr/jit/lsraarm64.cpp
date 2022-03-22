@@ -45,7 +45,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 int LinearScan::BuildNode(GenTree* tree)
 {
     assert(!tree->isContained());
-    int       srcCount;
+    int       srcCount      = 0;
     int       dstCount      = 0;
     regMaskTP dstCandidates = RBM_NONE;
     regMaskTP killMask      = RBM_NONE;
@@ -103,6 +103,12 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
+        case GT_CSTORE_LCL_VAR:
+            // Take into account the conditional.
+            BuildUse(tree->gtGetOp2());
+            srcCount++;
+            FALLTHROUGH;
+
         case GT_STORE_LCL_VAR:
             if (tree->IsMultiRegLclVar() && isCandidateMultiRegLclVar(tree->AsLclVar()))
             {
@@ -111,7 +117,7 @@ int LinearScan::BuildNode(GenTree* tree)
             FALLTHROUGH;
 
         case GT_STORE_LCL_FLD:
-            srcCount = BuildStoreLoc(tree->AsLclVarCommon());
+            srcCount += BuildStoreLoc(tree->AsLclVarCommon());
             break;
 
         case GT_FIELD_LIST:

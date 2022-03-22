@@ -24,6 +24,7 @@ GTNODE(PHI_ARG          , GenTreePhiArg      ,0,GTK_LEAF)             // phi(phi
 GTNODE(LCL_VAR          , GenTreeLclVar      ,0,GTK_LEAF)             // local variable
 GTNODE(LCL_FLD          , GenTreeLclFld      ,0,GTK_LEAF)             // field in a non-primitive variable
 GTNODE(STORE_LCL_VAR    , GenTreeLclVar      ,0,GTK_UNOP|GTK_NOVALUE) // store to local variable
+GTNODE(CSTORE_LCL_VAR   , GenTreeLclVar      ,0,GTK_BINOP|GTK_NOVALUE) // conditional store to local variable
 GTNODE(STORE_LCL_FLD    , GenTreeLclFld      ,0,GTK_UNOP|GTK_NOVALUE) // store to a part of the variable
 GTNODE(LCL_VAR_ADDR     , GenTreeLclVar      ,0,GTK_LEAF)             // address of local variable
 GTNODE(LCL_FLD_ADDR     , GenTreeLclFld      ,0,GTK_LEAF)             // address of field in a non-primitive variable

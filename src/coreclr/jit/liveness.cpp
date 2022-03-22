@@ -51,7 +51,7 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
         {
             // If this is an enregisterable variable that is not marked doNotEnregister,
             // we should only see direct references (not ADDRs).
-            assert(varDsc->lvDoNotEnregister || tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
+            assert(varDsc->lvDoNotEnregister || tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_CSTORE_LCL_VAR));
         }
 
         if (isUse && !VarSetOps::IsMember(this, fgCurDefSet, varDsc->lvVarIndex))
@@ -220,6 +220,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
         case GT_LCL_VAR_ADDR:
         case GT_LCL_FLD_ADDR:
         case GT_STORE_LCL_VAR:
+        case GT_CSTORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
             fgMarkUseDef(tree->AsLclVarCommon());
             break;
@@ -2013,6 +2014,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                 break;
 
             case GT_STORE_LCL_VAR:
+            case GT_CSTORE_LCL_VAR:
             case GT_STORE_LCL_FLD:
             {
                 GenTreeLclVarCommon* const lclVarNode = node->AsLclVarCommon();

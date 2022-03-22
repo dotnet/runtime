@@ -9600,6 +9600,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             case GT_LCL_FLD_ADDR:
             case GT_STORE_LCL_FLD:
             case GT_STORE_LCL_VAR:
+            case GT_CSTORE_LCL_VAR:
                 if (tree->gtFlags & GTF_VAR_USEASG)
                 {
                     printf("U");
@@ -9799,7 +9800,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 {
                     layout = tree->AsBlk()->GetLayout();
                 }
-                else if (tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
+                else if (tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_CSTORE_LCL_VAR))
                 {
                     LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVar());
 
@@ -9844,7 +9845,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 }
             }
 
-            if (tree->gtOper == GT_LCL_VAR || tree->gtOper == GT_STORE_LCL_VAR)
+            if (tree->gtOper == GT_LCL_VAR || tree->gtOper == GT_STORE_LCL_VAR || tree->gtOper == GT_CSTORE_LCL_VAR)
             {
                 LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
                 if (varDsc->IsAddressExposed())
@@ -10539,6 +10540,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_LCL_VAR:
         case GT_LCL_VAR_ADDR:
         case GT_STORE_LCL_VAR:
+        case GT_CSTORE_LCL_VAR:
         {
             printf(" ");
             const unsigned   varNum = tree->AsLclVarCommon()->GetLclNum();

@@ -11506,6 +11506,7 @@ public:
 
             // Lclvar unary operators
             case GT_STORE_LCL_VAR:
+            case GT_CSTORE_LCL_VAR:
             case GT_STORE_LCL_FLD:
                 if (TVisitor::DoLclVarsOnly)
                 {

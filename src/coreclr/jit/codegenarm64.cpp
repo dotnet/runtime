@@ -2648,6 +2648,39 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
 }
 
 //------------------------------------------------------------------------
+// genCodeForStoreLclVar: Produce code for a GT_CSTORE_LCL_VAR node.
+//
+// Arguments:
+//    lclNode - the GT_CSTORE_LCL_VAR node
+//
+void CodeGen::genCodeForCStoreLclVar(GenTreeLclVar* lclNode)
+{
+    emitter* emit = GetEmitter();
+
+    insCond cond = ((lclNode->gtFlags & GTF_CSEL_T) != 0) ? INS_COND_EQ : INS_COND_NE;
+
+    emitAttr attr = emitActualTypeSize(lclNode->TypeGet());
+
+    // AHTODO: do we need this?
+    // // TODO-CQ: Currently we cannot do this for all handles because of
+    // // https://github.com/dotnet/runtime/issues/60712
+    // if (con->ImmedValNeedsReloc(compiler))
+    // {
+    //     attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
+    // }
+    // if (targetType == TYP_BYREF)
+    // {
+    //     attr = EA_SET_FLG(attr, EA_BYREF_FLG);
+    // }
+
+    regNumber targetReg = lclNode->GetRegNum();
+    regNumber srcReg = genConsumeReg(lclNode->gtGetOp1());
+
+    emit->emitIns_R_R_R_COND(INS_csel, attr, targetReg, srcReg, targetReg, cond);
+    regSet.verifyRegUsed(targetReg);
+}
+
+//------------------------------------------------------------------------
 // genSimpleReturn: Generates code for simple return statement for arm64.
 //
 // Note: treeNode's and op1's registers are already consumed.
