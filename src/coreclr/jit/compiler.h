@@ -2349,6 +2349,9 @@ public:
                                        FieldSeqNode* fieldSeq,
                                        var_types     type = TYP_I_IMPL);
 
+    GenTreeConditional* gtNewConditionalNode(
+        genTreeOps oper, GenTree* cond, GenTree* op1, GenTree* op2, var_types type);
+
 #ifdef FEATURE_SIMD
     GenTreeSIMD* gtNewSIMDNode(
         var_types type, GenTree* op1, SIMDIntrinsicID simdIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize);
@@ -2781,6 +2784,7 @@ public:
     GenTree* gtFoldExprSpecial(GenTree* tree);
     GenTree* gtFoldBoxNullable(GenTree* tree);
     GenTree* gtFoldExprCompare(GenTree* tree);
+    GenTree* gtFoldExprConditional(GenTree* tree);
     GenTree* gtCreateHandleCompare(genTreeOps             oper,
                                    GenTree*               op1,
                                    GenTree*               op2,
@@ -6045,7 +6049,8 @@ public:
     PhaseStatus optCloneLoops();
     void optCloneLoop(unsigned loopInd, LoopCloneContext* context);
     void optEnsureUniqueHead(unsigned loopInd, weight_t ambientWeight);
-    PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
+    PhaseStatus optUnrollLoops();  // Unrolls loops (needs to have cost info)
+    PhaseStatus optIfConversion(); // If conversion
     void        optRemoveRedundantZeroInits();
 
 protected:
@@ -6426,6 +6431,10 @@ protected:
     static fgWalkResult optInvertCountTreeInfo(GenTree** pTree, fgWalkData* data);
 
     bool optInvertWhileLoop(BasicBlock* block);
+
+    bool optIfConvert(BasicBlock* block);
+    bool optIfConvertSelect(GenTree* original_condition, GenTree* asg_node);
+    bool optIfConvertCCmp(GenTree* original_condition, GenTree* asg_node);
 
 private:
     static bool optIterSmallOverflow(int iterAtExit, var_types incrType);
@@ -7299,6 +7308,7 @@ public:
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
     GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
+    GenTree* optAssertionProp_ConditionalOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
@@ -11009,6 +11019,34 @@ public:
                 }
                 break;
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+
+            case GT_SELECT:
+            case GT_CEQ:
+            case GT_CNE:
+            case GT_CLT:
+            case GT_CLE:
+            case GT_CGE:
+            case GT_CGT:
+            {
+                GenTreeConditional* const conditional = node->AsConditional();
+
+                result = WalkTree(&conditional->gtCond, conditional);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                result = WalkTree(&conditional->gtOp1, conditional);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                result = WalkTree(&conditional->gtOp2, conditional);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                break;
+            }
 
             // Binary nodes
             default:

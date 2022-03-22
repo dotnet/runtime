@@ -136,6 +136,14 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
                 if (immVal == 0)
                     return true;
                 break;
+
+            case GT_CEQ:
+            case GT_CNE:
+            case GT_CLT:
+            case GT_CLE:
+            case GT_CGE:
+            case GT_CGT:
+                return emitter::emitIns_valid_imm_for_ccmp(immVal);
 #endif
 
             default:

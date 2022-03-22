@@ -63,6 +63,7 @@ CompPhaseNameMacro(PHASE_ZERO_INITS,             "Redundant zero Inits",        
 CompPhaseNameMacro(PHASE_FIND_LOOPS,             "Find loops",                     "LOOP-FND", false, -1, false)
 CompPhaseNameMacro(PHASE_CLONE_LOOPS,            "Clone loops",                    "LP-CLONE", false, -1, false)
 CompPhaseNameMacro(PHASE_UNROLL_LOOPS,           "Unroll loops",                   "UNROLL",   false, -1, false)
+CompPhaseNameMacro(PHASE_IF_CONVERSION,          "If conversion",                  "IF_CONV",  false, -1, false)
 CompPhaseNameMacro(PHASE_CLEAR_LOOP_INFO,        "Clear loop info",                "LP-CLEAR", false, -1, false)
 CompPhaseNameMacro(PHASE_HOIST_LOOP_CODE,        "Hoist loop code",                "LP-HOIST", false, -1, false)
 CompPhaseNameMacro(PHASE_MARK_LOCAL_VARS,        "Mark local vars",                "MARK-LCL", false, -1, false)

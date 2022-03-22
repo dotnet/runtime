@@ -5759,6 +5759,28 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             costSz += tree->AsStoreDynBlk()->gtDynamicSize->GetCostSz();
             break;
 
+        case GT_SELECT:
+        case GT_CEQ:
+        case GT_CNE:
+        case GT_CLT:
+        case GT_CLE:
+        case GT_CGE:
+        case GT_CGT:
+            level  = gtSetEvalOrder(tree->AsConditional()->gtCond);
+            costEx = tree->AsConditional()->gtCond->GetCostEx();
+            costSz = tree->AsConditional()->gtCond->GetCostSz();
+
+            lvl2  = gtSetEvalOrder(tree->AsConditional()->gtOp1);
+            level = max(level, lvl2);
+            costEx += tree->AsConditional()->gtOp1->GetCostEx();
+            costSz += tree->AsConditional()->gtOp1->GetCostSz();
+
+            lvl2  = gtSetEvalOrder(tree->AsConditional()->gtOp2);
+            level = max(level, lvl2);
+            costEx += tree->AsConditional()->gtOp2->GetCostEx();
+            costSz += tree->AsConditional()->gtOp2->GetCostSz();
+            break;
+
         default:
             JITDUMP("unexpected operator in this tree:\n");
             DISPTREE(tree);
@@ -6142,6 +6164,33 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
                     *pUse = &arg.LateNodeRef();
                     return true;
                 }
+            }
+            return false;
+        }
+
+        case GT_SELECT:
+        case GT_CEQ:
+        case GT_CNE:
+        case GT_CLT:
+        case GT_CLE:
+        case GT_CGE:
+        case GT_CGT:
+        {
+            GenTreeConditional* const conditional = this->AsConditional();
+            if (operand == conditional->gtCond)
+            {
+                *pUse = &conditional->gtCond;
+                return true;
+            }
+            if (operand == conditional->gtOp1)
+            {
+                *pUse = &conditional->gtOp1;
+                return true;
+            }
+            if (operand == conditional->gtOp2)
+            {
+                *pUse = &conditional->gtOp2;
+                return true;
             }
             return false;
         }
@@ -7222,6 +7271,17 @@ GenTreeLclVar* Compiler::gtNewLclVarAddrNode(unsigned lclNum, var_types type)
 GenTreeLclFld* Compiler::gtNewLclFldAddrNode(unsigned lclNum, unsigned lclOffs, FieldSeqNode* fieldSeq, var_types type)
 {
     GenTreeLclFld* node = new (this, GT_LCL_FLD_ADDR) GenTreeLclFld(GT_LCL_FLD_ADDR, type, lclNum, lclOffs);
+    return node;
+}
+
+GenTreeConditional* Compiler::gtNewConditionalNode(
+    genTreeOps oper, GenTree* cond, GenTree* op1, GenTree* op2, var_types type)
+{
+    assert(GenTree::OperIsConditional(oper));
+    GenTreeConditional* node = new (this, oper) GenTreeConditional(oper, type, cond, op1, op2);
+    node->gtFlags |= (cond->gtFlags & GTF_ALL_EFFECT);
+    node->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
+    node->gtFlags |= (op2->gtFlags & GTF_ALL_EFFECT);
     return node;
 }
 
@@ -9293,6 +9353,18 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             AdvanceCall<CALL_ARGS>();
             return;
 
+        case GT_SELECT:
+        case GT_CEQ:
+        case GT_CNE:
+        case GT_CLT:
+        case GT_CLE:
+        case GT_CGE:
+        case GT_CGT:
+            m_edge = &m_node->AsConditional()->gtCond;
+            assert(*m_edge != nullptr);
+            m_advance = &GenTreeUseEdgeIterator::AdvanceConditional;
+            return;
+
         // Binary nodes
         default:
             assert(m_node->OperIsBinary());
@@ -9423,6 +9495,29 @@ void GenTreeUseEdgeIterator::AdvancePhi()
         m_edge                      = &currentUse->NodeRef();
         m_statePtr                  = currentUse->GetNext();
     }
+}
+
+//------------------------------------------------------------------------
+// GenTreeUseEdgeIterator::AdvanceConditional: produces the next operand of a conditional node and advances the state.
+//
+void GenTreeUseEdgeIterator::AdvanceConditional()
+{
+    GenTreeConditional* const conditional = m_node->AsConditional();
+    switch (m_state)
+    {
+        case 0:
+            m_edge  = &conditional->gtOp1;
+            m_state = 1;
+            break;
+        case 1:
+            m_edge    = &conditional->gtOp2;
+            m_advance = &GenTreeUseEdgeIterator::Terminate;
+            break;
+        default:
+            unreached();
+    }
+
+    assert(*m_edge != nullptr);
 }
 
 //------------------------------------------------------------------------
@@ -10330,6 +10425,13 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             case GT_GT:
             case GT_TEST_EQ:
             case GT_TEST_NE:
+            case GT_SELECT:
+            case GT_CEQ:
+            case GT_CNE:
+            case GT_CLT:
+            case GT_CLE:
+            case GT_CGE:
+            case GT_CGT:
                 if (tree->gtFlags & GTF_RELOP_NAN_UN)
                 {
                     printf("N");
@@ -12000,6 +12102,23 @@ void Compiler::gtDispTree(GenTree*     tree,
             }
             break;
 
+        case GT_SELECT:
+        case GT_CEQ:
+        case GT_CNE:
+        case GT_CLT:
+        case GT_CLE:
+        case GT_CGE:
+        case GT_CGT:
+            gtDispCommonEndLine(tree);
+
+            if (!topOnly)
+            {
+                gtDispChild(tree->AsConditional()->gtCond, indentStack, IIArc, childMsg, topOnly);
+                gtDispChild(tree->AsConditional()->gtOp1, indentStack, IIArc, childMsg, topOnly);
+                gtDispChild(tree->AsConditional()->gtOp2, indentStack, IIArcBottom, childMsg, topOnly);
+            }
+            break;
+
         default:
             printf("<DON'T KNOW HOW TO DISPLAY THIS NODE> :");
             printf(""); // null string means flush
@@ -12373,7 +12492,7 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
     IndentInfo operandArc = IIArcTop;
     for (GenTree* operand : node->Operands())
     {
-        if (!operand->IsValue())
+        if (!operand->IsValue() && (operand->gtFlags & GTF_SET_FLAGS) == 0)
         {
             // Either of these situations may happen with calls.
             continue;
@@ -12483,6 +12602,10 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
 
     if (!(kind & GTK_SMPOP))
     {
+        if (tree->OperIsConditional())
+        {
+            return gtFoldExprConditional(tree);
+        }
         return tree;
     }
 
@@ -12749,6 +12872,131 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
     DISPTREE(cons);
 
     return cons;
+}
+
+/*****************************************************************************
+ *
+ * Some conditionals can be folded:
+ *   SELECT TRUE  X Y  ->  X
+ *   SELECT FALSE X Y  ->  Y
+ *   CCMP TRUE  X Y    ->  CMP X Y
+ *   CCMP FALSE X Y    ->  0
+ *   SELECT COND X X   ->  X
+ *
+ */
+
+GenTree* Compiler::gtFoldExprConditional(GenTree* tree)
+{
+    GenTree* cond = tree->AsConditional()->gtCond;
+    GenTree* op1  = tree->AsConditional()->gtOp1;
+    GenTree* op2  = tree->AsConditional()->gtOp2;
+
+    assert(tree->OperIsConditional());
+
+    // Check for a constant conditional
+    if (cond->OperIsConst())
+    {
+        // Constant conditions must be folded away.
+
+        JITDUMP("\nFolding conditional op with constant condition:\n");
+        DISPTREE(tree);
+
+        assert(cond->TypeGet() == TYP_INT);
+        assert((tree->gtFlags & GTF_SIDE_EFFECT & ~GTF_ASG) == 0);
+        assert((tree->gtFlags & GTF_ORDER_SIDEEFF) == 0);
+
+        GenTree* replacement = nullptr;
+        if (cond->AsIntConCommon()->IntegralValue() == 0)
+        {
+            if (tree->gtOper == GT_SELECT)
+            {
+                JITDUMP("Bashed to false path:\n");
+                replacement = op2;
+            }
+            else
+            {
+                JITDUMP("Bashed to false:\n");
+                replacement = gtNewIconNode(false); /* Folds to GT_CNS_INT(false) */
+            }
+        }
+        else
+        {
+            // Condition should never be a constant other than 0 or 1
+            assert(cond->AsIntConCommon()->IntegralValue() == 1);
+
+            if (tree->gtOper == GT_SELECT)
+            {
+                JITDUMP("Bashed to true path:\n");
+                replacement = op1;
+            }
+            else
+            {
+                JITDUMP("Bashed to non-conditional compare:\n");
+                genTreeOps new_oper = (genTreeOps)(tree->gtOper - GT_CEQ + GT_EQ);
+                replacement         = gtNewOperNode(new_oper, tree->TypeGet(), op1, op2);
+            }
+        }
+
+        if (fgGlobalMorph)
+        {
+            fgMorphTreeDone(replacement);
+        }
+        else
+        {
+            replacement->gtNext = tree->gtNext;
+            replacement->gtPrev = tree->gtPrev;
+        }
+        DISPTREE(replacement);
+        JITDUMP("\n");
+
+        return replacement;
+    }
+
+    assert(cond->OperIsCompare() || cond->OperIsConditionalCompare());
+
+    // For select nodes, fold where both subtrees exactly match everything is side effect free.
+    if (tree->gtOper == GT_SELECT)
+    {
+        if (((tree->gtFlags & GTF_SIDE_EFFECT) != 0) || !GenTree::Compare(op1, op2, true))
+        {
+            // No folding.
+            return tree;
+        }
+
+        // GTF_ORDER_SIDEEFF here may indicate volatile subtrees.
+        // Or it may indicate a non-null assertion prop into an indir subtree.
+        if ((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0)
+        {
+            // If op1 is "volatile" and op2 is not, we can still fold.
+            const bool op1MayBeVolatile = (op1->gtFlags & GTF_ORDER_SIDEEFF) != 0;
+            const bool op2MayBeVolatile = (op2->gtFlags & GTF_ORDER_SIDEEFF) != 0;
+
+            if (!op1MayBeVolatile || op2MayBeVolatile)
+            {
+                // No folding.
+                return tree;
+            }
+        }
+
+        JITDUMP("Bashed to first of two identical paths:\n");
+        GenTree* replacement = op1;
+
+        if (fgGlobalMorph)
+        {
+            fgMorphTreeDone(replacement);
+        }
+        else
+        {
+            replacement->gtNext = tree->gtNext;
+            replacement->gtPrev = tree->gtPrev;
+        }
+        DISPTREE(replacement);
+        JITDUMP("\n");
+
+        return replacement;
+    }
+
+    return tree;
 }
 
 //------------------------------------------------------------------------

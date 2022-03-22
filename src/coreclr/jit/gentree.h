@@ -1096,8 +1096,8 @@ public:
         if (gtType == TYP_VOID)
         {
             // These are the only operators which can produce either VOID or non-VOID results.
-            assert(OperIs(GT_NOP, GT_CALL, GT_COMMA) || OperIsCompare() || OperIsLong() || OperIsSimdOrHWintrinsic() ||
-                   IsCnsVec());
+            assert(OperIs(GT_NOP, GT_CALL, GT_COMMA) || OperIsCompare() || OperIsConditionalCompare() || OperIsLong() ||
+                   OperIsSimdOrHWintrinsic() || IsCnsVec());
             return false;
         }
 
@@ -1359,6 +1359,28 @@ public:
     bool OperIsCompare() const
     {
         return OperIsCompare(OperGet());
+    }
+
+    static bool OperIsConditional(genTreeOps gtOper)
+    {
+        static_assert_no_msg(AreContiguous(GT_SELECT, GT_CEQ, GT_CNE, GT_CLT, GT_CLE, GT_CGE, GT_CGT));
+        return (GT_SELECT <= gtOper) && (gtOper <= GT_CGT);
+    }
+
+    bool OperIsConditional() const
+    {
+        return OperIsConditional(OperGet());
+    }
+
+    static bool OperIsConditionalCompare(genTreeOps gtOper)
+    {
+        static_assert_no_msg(AreContiguous(GT_CEQ, GT_CNE, GT_CLT, GT_CLE, GT_CGE, GT_CGT));
+        return (GT_CEQ <= gtOper) && (gtOper <= GT_CGT);
+    }
+
+    bool OperIsConditionalCompare() const
+    {
+        return OperIsConditionalCompare(OperGet());
     }
 
     static bool OperIsShift(genTreeOps gtOper)
@@ -2758,6 +2780,7 @@ class GenTreeUseEdgeIterator final
     void AdvanceStoreDynBlk();
     void AdvanceFieldList();
     void AdvancePhi();
+    void AdvanceConditional();
 
     template <bool ReverseOperands>
     void           AdvanceBinOp();
@@ -3884,6 +3907,26 @@ struct GenTreeColon : public GenTreeOp
     GenTreeColon(var_types typ, GenTree* thenNode, GenTree* elseNode) : GenTreeOp(GT_COLON, typ, elseNode, thenNode)
     {
     }
+};
+
+// GenTreeConditional -- If condition matches, then output op1, else op2
+
+struct GenTreeConditional : public GenTreeOp
+{
+    GenTree* gtCond;
+
+    GenTreeConditional(
+        genTreeOps oper, var_types type, GenTree* cond, GenTree* op1, GenTree* op2 DEBUGARG(bool largeNode = false))
+        : GenTreeOp(oper, type, op1, op2 DEBUGARG(largeNode)), gtCond(cond)
+    {
+        assert(cond != nullptr);
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeConditional() : GenTreeOp()
+    {
+    }
+#endif
 };
 
 // gtCall   -- method call      (GT_CALL)
@@ -8107,9 +8150,19 @@ public:
 
     static GenCondition FromRelop(GenTree* relop)
     {
-        assert(relop->OperIsCompare());
+        assert(relop->OperIsCompare() || relop->OperIsConditionalCompare());
 
-        if (varTypeIsFloating(relop->gtGetOp1()))
+        GenTree* op1;
+        if (relop->OperIsConditionalCompare())
+        {
+            op1 = relop->AsConditional()->gtOp1;
+        }
+        else
+        {
+            op1 = relop->AsOp()->gtOp1;
+        }
+
+        if (varTypeIsFloating(op1))
         {
             return FromFloatRelop(relop);
         }
@@ -8144,17 +8197,37 @@ public:
 
     static GenCondition FromIntegralRelop(GenTree* relop)
     {
-        assert(!varTypeIsFloating(relop->gtGetOp1()) && !varTypeIsFloating(relop->gtGetOp2()));
+        if (relop->OperIsConditionalCompare())
+        {
+            assert(!varTypeIsFloating(relop->AsConditional()->gtOp1) &&
+                   !varTypeIsFloating(relop->AsConditional()->gtOp2));
+        }
+        else
+        {
+            assert(!varTypeIsFloating(relop->gtGetOp1()) && !varTypeIsFloating(relop->gtGetOp2()));
+        }
 
         return FromIntegralRelop(relop->OperGet(), relop->IsUnsigned());
     }
 
     static GenCondition FromIntegralRelop(genTreeOps oper, bool isUnsigned)
     {
-        assert(GenTree::OperIsCompare(oper));
+        assert(GenTree::OperIsCompare(oper) || GenTree::OperIsConditionalCompare(oper));
 
         // GT_TEST_EQ/NE are special, they need to be mapped as GT_EQ/NE
-        unsigned code = oper - ((oper >= GT_TEST_EQ) ? GT_TEST_EQ : GT_EQ);
+        unsigned code;
+        if (oper >= GT_CEQ)
+        {
+            code = oper - GT_CEQ;
+        }
+        else if (oper >= GT_TEST_EQ)
+        {
+            code = oper - GT_TEST_EQ;
+        }
+        else
+        {
+            code = oper - GT_EQ;
+        }
 
         if (isUnsigned || (code <= 1)) // EQ/NE are treated as unsigned
         {

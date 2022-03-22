@@ -367,6 +367,18 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForCompare(treeNode->AsOp());
             break;
 
+#ifdef TARGET_ARM64
+        case GT_SELECT:
+        case GT_CEQ:
+        case GT_CNE:
+        case GT_CLT:
+        case GT_CLE:
+        case GT_CGE:
+        case GT_CGT:
+            genCodeForConditional(treeNode->AsConditional());
+            break;
+#endif
+
         case GT_JTRUE:
             genCodeForJumpTrue(treeNode->AsOp());
             break;

@@ -353,6 +353,12 @@ static bool isStackRegister(regNumber reg)
     return (reg == REG_ZR) || (reg == REG_FP);
 } // ZR (R31) encodes the SP register
 
+// Returns true if 'value' is a legal unsigned immediate 5 bit encoding (such as for CCMP).
+static bool isValidUimm5(ssize_t value)
+{
+    return (0 <= value) && (value <= 0x1FLL);
+};
+
 // Returns true if 'value' is a legal unsigned immediate 8 bit encoding (such as for fMOV).
 static bool isValidUimm8(ssize_t value)
 {
@@ -484,6 +490,9 @@ static bool emitIns_valid_imm_for_alu(INT64 imm, emitAttr size);
 
 // true if this 'imm' can be encoded as the offset in a ldr/str instruction
 static bool emitIns_valid_imm_for_ldst_offset(INT64 imm, emitAttr size);
+
+// true if this 'imm' can be encoded as a input operand to a ccmp instruction
+static bool emitIns_valid_imm_for_ccmp(INT64 imm);
 
 // true if 'imm' can be encoded as an offset in a ldp/stp instruction
 static bool canEncodeLoadOrStorePairOffset(INT64 imm, emitAttr size);
