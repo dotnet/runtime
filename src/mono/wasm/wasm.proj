@@ -119,7 +119,7 @@
       <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
       <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=&quot;['FS','print','ccall','cwrap','setValue','getValue','UTF8ToString','UTF8ArrayToString','FS_createPath','FS_createDataFile','removeRunDependency','addRunDependency', 'FS_readFile']&quot;"  />
       <!-- _htons,_ntohs,__get_daylight,__get_timezone,__get_tzname are exported temporarily, until the issue is fixed in emscripten, https://github.com/dotnet/runtime/issues/64724  -->
-      <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=_free,_malloc,_memalign,_memset" Condition="$([MSBuild]::VersionGreaterThan('$(_EmccVersion)', '3.0'))" />
+      <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=_free,_malloc,_memalign,_memset,_htons,_ntohs,__get_daylight,__get_timezone,__get_tzname" Condition="$([MSBuild]::VersionGreaterThan('$(_EmccVersion)', '3.0'))" />
       <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=_free,_malloc,_htons,_ntohs,__get_daylight,__get_timezone,__get_tzname,_memalign" Condition="$([MSBuild]::VersionLessThan('$(_EmccVersion)', '3.0'))" />
       <_EmccLinkFlags Include="--source-map-base http://example.com" />
       <_EmccLinkFlags Include="-s STRICT_JS=1" />
