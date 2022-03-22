@@ -37,6 +37,8 @@ LEAF_END_MARKED macro functionName
     endMarkerName TEXTEQU @CatStr(%bareFunctionName, <_End@0>)
     %endMarkerName:
     PUBLIC endMarkerName
+    ; make sure this symbol gets its own address
+    nop
     functionName ENDP
 endm
 
