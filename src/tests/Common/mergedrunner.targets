@@ -1,0 +1,16 @@
+<Project>
+  <Target Name="_ValidateNoTestProjectsDroppedByConflictResolution" AfterTargets="ResolveReferences">
+    <ItemGroup>
+      <_ProjectReferencesUsedByReferencePaths Include="@(ReferencePath->Metadata('ProjectReferenceOriginalItemSpec'))" />
+      <_ProjectAssemblyReferences Include="@(ProjectReference)" Condition="'%(ProjectReference.OutputItemType)' == ''" />
+      <_ProjectReferencesRemovedDueToConflictResolution Include="@(_ProjectAssemblyReferences)" Exclude="@(_ProjectReferencesUsedByReferencePaths)" />
+    </ItemGroup>
+    <!--
+      Produce an error if any project references were removed due to conflict resolution.
+      If a ProjectReference is removed due to conflict resolution, then we're likely losing test coverage as it's probably a test that has the same assembly name and version as another test.
+    -->
+    <Error Text="@(_ProjectReferencesRemovedDueToConflictResolution->'This project has an assembly name identical to another project: %(FullPath)', '&#010;')" Condition="'@(_ProjectReferencesRemovedDueToConflictResolution)' != ''"  />
+  </Target>
+  
+  <Import Project="$(RepoRoot)/src/tests/Common/mergedrunnermobile.targets" Condition="'$(TargetsMobile)' == 'true'" />
+</Project>
