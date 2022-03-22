@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Configuration.Json
 
         private readonly Dictionary<string, string?> _data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         private readonly Stack<string> _paths = new Stack<string>();
-        private readonly string _separator;// ConfigurationPath.KeyDelimiter;
+        private readonly string _separator;
 
         //todo: need to pass separator here
         public static IDictionary<string, string?> Parse(Stream input, string separator = ":")
@@ -44,7 +44,6 @@ namespace Microsoft.Extensions.Configuration.Json
                 VisitElement(doc.RootElement);
             }
 
-            // we need a way to say that our data is delimited by backtick rather than colon here
             return _data;
         }
 
