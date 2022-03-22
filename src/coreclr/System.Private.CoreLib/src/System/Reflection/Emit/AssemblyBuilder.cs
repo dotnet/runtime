@@ -31,22 +31,6 @@ namespace System.Reflection.Emit
 
         private const int AssemblyDefToken = 0x20000001;
 
-        private const string ManifestModuleName = "RefEmit_InMemoryManifestModule";
-
-        internal ModuleBuilder GetModuleBuilder(RuntimeModule module)
-        {
-            Debug.Assert(module != null);
-            Debug.Assert(InternalAssembly == module.Assembly);
-
-            // There is only one module in each dynamic assembly, the manifest module
-            if (_manifestModuleBuilder.InternalModule == module)
-            {
-                return _manifestModuleBuilder;
-            }
-
-            throw new ArgumentException(null, nameof(module));
-        }
-
         internal object SyncRoot => InternalAssembly.SyncRoot;
 
         internal RuntimeAssembly InternalAssembly => _internalAssembly;
@@ -106,7 +90,7 @@ namespace System.Reflection.Emit
             // Note that this ModuleBuilder cannot be used for RefEmit yet
             // because it hasn't been initialized.
             // However, it can be used to set the custom attribute on the Assembly
-            _manifestModuleBuilder = new ModuleBuilder(this, internalModule, ManifestModuleName);
+            _manifestModuleBuilder = new ModuleBuilder(this, internalModule);
 
             if (assemblyAttributes != null)
             {
@@ -337,7 +321,7 @@ namespace System.Reflection.Emit
 
             if (_isManifestModuleUsedAsDefinedModule)
             {
-                if (_manifestModuleBuilder._moduleName.Equals(name))
+                if (ModuleBuilder.ManifestModuleName == name)
                 {
                     return _manifestModuleBuilder;
                 }

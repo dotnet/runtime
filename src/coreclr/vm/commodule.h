@@ -26,7 +26,6 @@ public:
 extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pModule,
                                 LPCWSTR wszFullName,
                                 QCall::ModuleHandle pRefedModule,
-                                LPCWSTR wszRefedModuleFileName,
                                 INT32 tkResolution);
 
 // SetFieldRVAContent

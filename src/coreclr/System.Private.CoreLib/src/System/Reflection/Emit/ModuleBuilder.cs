@@ -50,7 +50,6 @@ namespace System.Reflection.Emit
         // _typeBuilderDict contains both TypeBuilder and EnumBuilder objects
         private readonly Dictionary<string, Type> _typeBuilderDict;
         private readonly TypeBuilder _globalTypeBuilder;
-        internal readonly string _moduleName;
         private bool _hasGlobalBeenCreated;
 
         internal readonly RuntimeModule _internalModule;
@@ -59,17 +58,18 @@ namespace System.Reflection.Emit
         private readonly AssemblyBuilder _assemblyBuilder;
         internal AssemblyBuilder ContainingAssemblyBuilder => _assemblyBuilder;
 
+        internal const string ManifestModuleName = "RefEmit_InMemoryManifestModule";
+
         #endregion
 
         #region Constructor
 
-        internal ModuleBuilder(AssemblyBuilder assemblyBuilder, RuntimeModule internalModule, string moduleName)
+        internal ModuleBuilder(AssemblyBuilder assemblyBuilder, RuntimeModule internalModule)
         {
             _internalModule = internalModule;
             _assemblyBuilder = assemblyBuilder;
 
             _globalTypeBuilder = new TypeBuilder(this);
-            _moduleName = moduleName;
             _typeBuilderDict = new Dictionary<string, Type>();
         }
 
@@ -101,7 +101,7 @@ namespace System.Reflection.Emit
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleBuilder_GetTypeRef", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial int GetTypeRef(QCallModule module, string strFullName, QCallModule refedModule, string? strRefedModuleFileName, int tkResolution);
+        private static partial int GetTypeRef(QCallModule module, string strFullName, QCallModule refedModule, int tkResolution);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleBuilder_GetMemberRef")]
         private static partial int GetMemberRef(QCallModule module, QCallModule refedModule, int tr, int defToken);
@@ -202,7 +202,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        private int GetTypeRefNested(Type type, Module? refedModule, string? strRefedModuleFileName)
+        private int GetTypeRefNested(Type type, Module? refedModule)
         {
             // This function will generate correct TypeRef token for top level type and nested type.
             Type? enclosingType = type.DeclaringType;
@@ -211,7 +211,7 @@ namespace System.Reflection.Emit
 
             if (enclosingType != null)
             {
-                tkResolution = GetTypeRefNested(enclosingType, refedModule, strRefedModuleFileName);
+                tkResolution = GetTypeRefNested(enclosingType, refedModule);
                 typeName = UnmangleTypeName(typeName);
             }
 
@@ -220,7 +220,7 @@ namespace System.Reflection.Emit
 
             ModuleBuilder thisModule = this;
             RuntimeModule refedRuntimeModule = GetRuntimeModuleFromModule(refedModule);
-            return GetTypeRef(new QCallModule(ref thisModule), typeName, new QCallModule(ref refedRuntimeModule), strRefedModuleFileName, tkResolution);
+            return GetTypeRef(new QCallModule(ref thisModule), typeName, new QCallModule(ref refedRuntimeModule), tkResolution);
         }
 
         internal int InternalGetConstructorToken(ConstructorInfo con!!, bool usingRef)
@@ -658,7 +658,7 @@ namespace System.Reflection.Emit
         }
 
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
-        public override string FullyQualifiedName => _moduleName;
+        public override string FullyQualifiedName => ManifestModuleName;
 
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public override byte[] ResolveSignature(int metadataToken)
@@ -1061,30 +1061,10 @@ namespace System.Reflection.Emit
                     return paramBuilder.MetadataToken;
                 }
 
-                return GetTypeRefNested(type, this, string.Empty);
+                return GetTypeRefNested(type, this);
             }
 
-            // After this point, the referenced module is not the same as the referencing
-            // module.
-            ModuleBuilder? refedModuleBuilder = refedModule as ModuleBuilder;
-
-            string referencedModuleFileName = string.Empty;
-            if (refedModule.Assembly.Equals(Assembly))
-            {
-                // if the referenced module is in the same assembly, the resolution
-                // scope of the type token will be a module ref, we will need
-                // the file name of the referenced module for that.
-                // if the refed module is in a different assembly, the resolution
-                // scope of the type token will be an assembly ref. We don't need
-                // the file name of the referenced module.
-                if (refedModuleBuilder == null)
-                {
-                    refedModuleBuilder = ContainingAssemblyBuilder.GetModuleBuilder((RuntimeModule)refedModule);
-                }
-                referencedModuleFileName = refedModuleBuilder._moduleName;
-            }
-
-            return GetTypeRefNested(type, refedModule, referencedModuleFileName);
+            return GetTypeRefNested(type, refedModule);
         }
 
         internal int GetMethodToken(MethodInfo method)
