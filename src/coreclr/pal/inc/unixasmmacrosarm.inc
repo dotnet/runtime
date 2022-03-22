@@ -39,7 +39,7 @@ C_FUNC(\Name):
         .thumb_func
         .global C_FUNC(\Name\()_End)
 C_FUNC(\Name\()_End):
-        ; make sure this symbol gets its own address
+        // make sure this symbol gets its own address
         nop
         LEAF_END \Name, \Section
 .endm
