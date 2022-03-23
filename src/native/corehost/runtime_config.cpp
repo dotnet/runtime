@@ -442,7 +442,7 @@ const int runtime_config_t::get_compat_major_version_from_tfm() const
     if (m_tfm.empty())
         return runtime_config_t::unknown_version;
 
-    int majorVersionStartIndex;
+    size_t majorVersionStartIndex;
     if (m_tfm.rfind(_X("netcoreapp"), 0) == 0) // this is StartsWith("netcoreapp") in std speak
     {
         majorVersionStartIndex = 10;  // "netcoreapp".Length
@@ -455,7 +455,7 @@ const int runtime_config_t::get_compat_major_version_from_tfm() const
     if (majorVersionStartIndex >= m_tfm.length())
         return runtime_config_t::unknown_version;
 
-    int majorVersionEndIndex = index_of_non_numeric (m_tfm, majorVersionStartIndex);
+    size_t majorVersionEndIndex = index_of_non_numeric(m_tfm, majorVersionStartIndex);
     if (majorVersionEndIndex == pal::string_t::npos || majorVersionEndIndex == majorVersionStartIndex)
         return runtime_config_t::unknown_version;
 
