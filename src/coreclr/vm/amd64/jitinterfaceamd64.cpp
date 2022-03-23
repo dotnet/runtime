@@ -281,7 +281,7 @@ PCODE WriteBarrierManager::GetCurrentWriteBarrierCode()
             return GetEEFuncEntryPoint(JIT_WriteBarrier_WriteWatch_SVR64);
 #endif // FEATURE_SVR_GC
         case WRITE_BARRIER_WRITE_WATCH_REGIONS64:
-            return GetEEFuncEntryPoint(JIT_WriteBarrier_Region64);
+            return GetEEFuncEntryPoint(JIT_WriteBarrier_WriteWatch_Region64);
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         default:
             UNREACHABLE_MSG("unexpected m_currentWriteBarrier!");

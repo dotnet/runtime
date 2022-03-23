@@ -11520,6 +11520,7 @@ void gc_heap::init_heap_segment (heap_segment* seg, gc_heap* hp
 #ifdef USE_REGIONS
     int gen_num_for_region = min (gen_num, max_generation);
     set_region_gen_num (seg, gen_num_for_region);
+    heap_segment_plan_gen_num (seg) = gen_num_for_region;
     heap_segment_swept_in_plan (seg) = false;
 #endif //USE_REGIONS
 
