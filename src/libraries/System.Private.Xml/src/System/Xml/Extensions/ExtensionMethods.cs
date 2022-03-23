@@ -6,6 +6,7 @@ namespace System.Xml.Extensions
     internal static class ExtensionMethods
     {
         private static readonly char[] s_trimChars = new char[] { ' ', '\t', '\n', '\r' };
+
         internal static Uri ToUri(string s)
         {
             if (s != null && s.Length > 0)

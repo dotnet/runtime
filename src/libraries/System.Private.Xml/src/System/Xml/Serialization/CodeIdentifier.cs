@@ -271,7 +271,8 @@ namespace System.Xml.Serialization
             }
         }
 
-        private static readonly char[] s_identifierSeparators = new char[] {'.', ',', '<', '>'};
+        private static readonly char[] s_identifierSeparators = new char[] { '.', ',', '<', '>' };
+
         [return: NotNullIfNotNull("identifier")]
         private static string? EscapeKeywords(string? identifier)
         {
