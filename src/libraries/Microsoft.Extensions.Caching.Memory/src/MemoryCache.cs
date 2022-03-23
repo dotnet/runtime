@@ -344,6 +344,8 @@ namespace Microsoft.Extensions.Caching.Memory
                         misses += Interlocked.Read(ref stats.Misses);
                     }
                 }
+
+                _allStats.TrimExcess();
             }
             return (hits, misses);
         }
