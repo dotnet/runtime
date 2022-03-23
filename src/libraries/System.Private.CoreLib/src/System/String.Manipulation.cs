@@ -1609,7 +1609,7 @@ namespace System
             }
 
             // Special-case the common cases of 1, 2, and 3 separators, with manual comparisons against each separator.
-            else if ((uint)separators.Length <= (uint)3)
+            else if (separators.Length <= 3)
             {
                 char sep0, sep1, sep2;
                 sep0 = separators[0];
@@ -1657,10 +1657,14 @@ namespace System
 
         private void MakeSeparatorListVectorized(ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
         {
+            // Redundant test so we won't prejit remainder of this method
+            // on platforms where it is not supported
             if (!Vector128.IsHardwareAccelerated)
             {
                 throw new PlatformNotSupportedException();
             }
+
+            Debug.Assert(Length >= Vector128<ushort>.Count);
 
             nuint offset = 0;
             nuint lengthToExamine = (nuint)(uint)Length;
@@ -1671,7 +1675,7 @@ namespace System
             Vector128<ushort> v2 = Vector128.Create((ushort)c2);
             Vector128<ushort> v3 = Vector128.Create((ushort)c3);
 
-            while (offset <= lengthToExamine - (nuint)Vector128<ushort>.Count)
+            do
             {
                 Vector128<ushort> vector = Vector128.LoadUnsafe(ref source, offset);
                 Vector128<ushort> v1Eq = Vector128.Equals(vector, v1);
@@ -1692,11 +1696,11 @@ namespace System
                 }
 
                 offset += (nuint)Vector128<ushort>.Count;
-            }
+            } while (offset <= lengthToExamine - (nuint)Vector128<ushort>.Count);
 
             while (offset < lengthToExamine)
             {
-                char curr = (char)Unsafe.Add(ref source, (nint)offset);
+                char curr = (char)Unsafe.Add(ref source, offset);
                 if (curr == c || curr == c2 || curr == c3)
                 {
                     sepListBuilder.Append((int)offset);
