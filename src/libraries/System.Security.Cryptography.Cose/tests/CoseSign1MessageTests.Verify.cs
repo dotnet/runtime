@@ -5,7 +5,7 @@ using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 
 namespace System.Security.Cryptography.Cose.Tests
 {
-    public partial class CoseSign1MessageTests
+    public class CoseSign1MessageTests_Verify
     {
         [Theory]
         // https://github.com/cose-wg/Examples/blob/master/RFC8152/Appendix_C_2_1.json

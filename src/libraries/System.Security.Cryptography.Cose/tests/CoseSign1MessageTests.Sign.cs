@@ -9,8 +9,10 @@ using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 
 namespace System.Security.Cryptography.Cose.Tests
 {
-    public partial class CoseSign1MessageTests
+    public abstract class CoseSign1MessageTests_Sign
     {
+        internal abstract byte[] Sign(byte[] content, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false);
+
         [Theory]
         [InlineData(ECDsaAlgorithm.ES256)]
         [InlineData(ECDsaAlgorithm.ES384)]
@@ -53,7 +55,7 @@ namespace System.Security.Cryptography.Cose.Tests
             ECDsa key = ECDsaKeys[algorithm];
             HashAlgorithmName hashAlgorithm = GetHashAlgorithmNameFromCoseAlgorithm((int)algorithm);
 
-            ReadOnlySpan<byte> message = CoseSign1Message.Sign(s_sampleContent, key, hashAlgorithm, protectedHeaders, unprotectedHeaders);
+            ReadOnlySpan<byte> message = Sign(s_sampleContent, key, hashAlgorithm, protectedHeaders, unprotectedHeaders);
             Assert.True(CoseMessage.DecodeSign1(message).Verify(key));
         }
 
@@ -62,7 +64,7 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             Assert.Throws<ArgumentNullException>(() => CoseSign1Message.Sign(null!, DefaultKey, HashAlgorithmName.SHA256));
             Assert.Throws<ArgumentNullException>(() => CoseSign1Message.Sign(null!, RSAKey, HashAlgorithmName.SHA256));
-            Assert.Throws<ArgumentNullException>(() => CoseSign1Message.Sign(null!, DefaultKey, DefaultHash, GetHeaderMapWithAlgorithm(), GetEmptyHeaderMap()));
+            Assert.Throws<ArgumentNullException>(() => Sign(null!, DefaultKey, DefaultHash, GetHeaderMapWithAlgorithm(), GetEmptyHeaderMap()));
         }
 
         [Theory]
@@ -71,15 +73,15 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData(ContentTestCase.Large)]
         public void SignWithValidContent(ContentTestCase @case)
         {
-            ReadOnlySpan<byte> content = GetDummyContent(@case);
+            byte[] content = GetDummyContent(@case);
 
             AssertSign1Message(CoseSign1Message.Sign(content, DefaultKey, DefaultHash), content, DefaultKey);
 
             AssertSign1Message(CoseSign1Message.Sign(content, RSAKey, DefaultHash), content, RSAKey, GetExpectedProtectedHeaders((int)RSAAlgorithm.PS256));
 
-            AssertSign1Message(CoseSign1Message.Sign(content, DefaultKey, DefaultHash, GetHeaderMapWithAlgorithm(), GetEmptyHeaderMap()), content, DefaultKey);
+            AssertSign1Message(Sign(content, DefaultKey, DefaultHash, GetHeaderMapWithAlgorithm(), GetEmptyHeaderMap()), content, DefaultKey);
 
-            AssertSign1Message(CoseSign1Message.Sign(content, DefaultKey, DefaultHash, protectedHeaders: null, unprotectedHeaders: null), content, DefaultKey);
+            AssertSign1Message(Sign(content, DefaultKey, DefaultHash, protectedHeaders: null, unprotectedHeaders: null), content, DefaultKey);
         }
 
         [Fact]
@@ -88,7 +90,7 @@ namespace System.Security.Cryptography.Cose.Tests
             byte[] content = GetDummyContent(ContentTestCase.Small);
             Assert.Throws<ArgumentNullException>(() => CoseSign1Message.Sign(content, (ECDsa)null!, HashAlgorithmName.SHA256));
             Assert.Throws<ArgumentNullException>(() => CoseSign1Message.Sign(content, (RSA)null!, HashAlgorithmName.SHA256));
-            Assert.Throws<ArgumentNullException>(() => CoseSign1Message.Sign(content, (AsymmetricAlgorithm)null!, GetHashAlgorithmNameFromCoseAlgorithm((int)ECDsaAlgorithm.ES256)));
+            Assert.Throws<ArgumentNullException>(() => Sign(content, (AsymmetricAlgorithm)null!, GetHashAlgorithmNameFromCoseAlgorithm((int)ECDsaAlgorithm.ES256)));
         }
 
         [Theory]
@@ -116,7 +118,7 @@ namespace System.Security.Cryptography.Cose.Tests
                 key = RSAKeyWithoutPrivateKey;
             }
 
-            Assert.ThrowsAny<CryptographicException>(() => CoseSign1Message.Sign(content, key, hashAlgorithm, GetHeaderMapWithAlgorithm(algorithm), GetEmptyHeaderMap()));
+            Assert.ThrowsAny<CryptographicException>(() => Sign(content, key, hashAlgorithm, GetHeaderMapWithAlgorithm(algorithm), GetEmptyHeaderMap()));
         }
 
         [Fact]
@@ -124,7 +126,7 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             AsymmetricAlgorithm key = ECDiffieHellman.Create();
             // Header still says that a supported combination of key-algorithm will be used.
-            Assert.Throws<CryptographicException>(() => CoseSign1Message.Sign(GetDummyContent(ContentTestCase.Small), key, DefaultHash, GetHeaderMapWithAlgorithm(), GetEmptyHeaderMap()));
+            Assert.Throws<CryptographicException>(() => Sign(GetDummyContent(ContentTestCase.Small), key, DefaultHash, GetHeaderMapWithAlgorithm(), GetEmptyHeaderMap()));
         }
 
         [Theory]
@@ -136,7 +138,7 @@ namespace System.Security.Cryptography.Cose.Tests
 
             Assert.Throws<CryptographicException>(() => CoseSign1Message.Sign(GetDummyContent(ContentTestCase.Small), DefaultKey, new HashAlgorithmName(hashAlgorithm)));
             Assert.Throws<CryptographicException>(() => CoseSign1Message.Sign(GetDummyContent(ContentTestCase.Small), RSAKey, new HashAlgorithmName(hashAlgorithm)));
-            Assert.Throws<CryptographicException>(() => CoseSign1Message.Sign(GetDummyContent(ContentTestCase.Small), DefaultKey, DefaultHash, GetHeaderMapWithAlgorithm(-47 /*ES256K*/), GetEmptyHeaderMap()));
+            Assert.Throws<CryptographicException>(() => Sign(GetDummyContent(ContentTestCase.Small), DefaultKey, DefaultHash, GetHeaderMapWithAlgorithm(-47 /*ES256K*/), GetEmptyHeaderMap()));
         }
 
         [Theory]
@@ -148,7 +150,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData((int)RSAAlgorithm.PS512)]
         public void SignWithSupportedHashAlgorithm(int algorithm)
         {
-            ReadOnlySpan<byte> content = GetDummyContent(ContentTestCase.Small);
+            byte[] content = GetDummyContent(ContentTestCase.Small);
             HashAlgorithmName hashAlgorithm = GetHashAlgorithmNameFromCoseAlgorithm(algorithm);
             AsymmetricAlgorithm key;
             List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> expectedProtectedHeaders = GetExpectedProtectedHeaders(algorithm);
@@ -165,7 +167,7 @@ namespace System.Security.Cryptography.Cose.Tests
                 AssertSign1Message(CoseSign1Message.Sign(content, RSAKey, hashAlgorithm), content, key, expectedProtectedHeaders);
             }
 
-            AssertSign1Message(CoseSign1Message.Sign(content, key, hashAlgorithm, GetHeaderMapWithAlgorithm(algorithm), GetEmptyHeaderMap()), content, key, expectedProtectedHeaders);
+            AssertSign1Message(Sign(content, key, hashAlgorithm, GetHeaderMapWithAlgorithm(algorithm), GetEmptyHeaderMap()), content, key, expectedProtectedHeaders);
         }
 
         [Theory]
@@ -173,12 +175,12 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData(true)]
         public void SignWithIsDetached(bool isDetached)
         {
-            ReadOnlySpan<byte> content = GetDummyContent(ContentTestCase.Small);
+            byte[] content = GetDummyContent(ContentTestCase.Small);
 
             ReadOnlySpan<byte> messageEncoded = CoseSign1Message.Sign(content, DefaultKey, DefaultHash, isDetached: isDetached);
             AssertSign1Message(messageEncoded, content, DefaultKey, expectedDetachedContent: isDetached);
 
-            messageEncoded = CoseSign1Message.Sign(content, DefaultKey, DefaultHash, isDetached: isDetached);
+            messageEncoded = Sign(content, DefaultKey, DefaultHash, isDetached: isDetached);
             AssertSign1Message(messageEncoded, content, DefaultKey, expectedDetachedContent: isDetached);
         }
 
@@ -188,34 +190,34 @@ namespace System.Security.Cryptography.Cose.Tests
             ReadOnlySpan<byte> content = GetDummyContent(ContentTestCase.Small);
             CoseHeaderMap protectedHeaders = GetEmptyHeaderMap();
 
-            AssertSign1Message(CoseSign1Message.Sign(GetDummyContent(ContentTestCase.Small), DefaultKey, DefaultHash, protectedHeaders, GetEmptyHeaderMap()), content, DefaultKey);
+            AssertSign1Message(Sign(GetDummyContent(ContentTestCase.Small), DefaultKey, DefaultHash, protectedHeaders, GetEmptyHeaderMap()), content, DefaultKey);
             Assert.Equal(0, protectedHeaders.Count());
         }
 
         [Fact]
-        public void SignWithEmptyProtectedHeaderMap()
+        public void SignWith_EmptyProtectedHeaderMap_UnprotectedHeaderMapWithAlgorithm()
         {
             byte[] content = GetDummyContent(ContentTestCase.Small);
             CoseHeaderMap protectedHeaders = GetEmptyHeaderMap();
             CoseHeaderMap unprotectedHeaders = GetHeaderMapWithAlgorithm();
 
-            Assert.Throws<CryptographicException>(() => CoseSign1Message.Sign(content, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders));
+            Assert.Throws<CryptographicException>(() => Sign(content, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders));
         }
 
         [Fact]
-        public void SignWithEmptyUnprotectedHeaderMap()
+        public void SignWith_ProtectedHeaderMapWithAlgorithm_EmptyUnprotectedHeaderMap()
         {
-            ReadOnlySpan<byte> content = GetDummyContent(ContentTestCase.Small);
+            byte[] content = GetDummyContent(ContentTestCase.Small);
             CoseHeaderMap protectedHeaders = GetHeaderMapWithAlgorithm(); 
             CoseHeaderMap unprotectedHeaders = GetEmptyHeaderMap();
 
-            AssertSign1Message(CoseSign1Message.Sign(content, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders), content, DefaultKey);
+            AssertSign1Message(Sign(content, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders), content, DefaultKey);
         }
         [Fact]
         public void SignWithNullHeaderMaps()
         {
             ReadOnlySpan<byte> content = GetDummyContent(ContentTestCase.Small);
-            AssertSign1Message(CoseSign1Message.Sign(GetDummyContent(ContentTestCase.Small), DefaultKey, DefaultHash, null, null), content, DefaultKey);
+            AssertSign1Message(Sign(GetDummyContent(ContentTestCase.Small), DefaultKey, DefaultHash, null, null), content, DefaultKey);
         }
 
         [Fact]
@@ -224,16 +226,16 @@ namespace System.Security.Cryptography.Cose.Tests
             byte[] content = GetDummyContent(ContentTestCase.Small);
             CoseHeaderMap unprotectedHeaders = GetHeaderMapWithAlgorithm();
 
-            Assert.Throws<CryptographicException>(() => CoseSign1Message.Sign(content, DefaultKey, DefaultHash, null, unprotectedHeaders));
+            Assert.Throws<CryptographicException>(() => Sign(content, DefaultKey, DefaultHash, null, unprotectedHeaders));
         }
 
         [Fact]
         public void SignWithNullUnprotectedHeaderMap()
         {
-            ReadOnlySpan<byte> content = GetDummyContent(ContentTestCase.Small);
+            byte[] content = GetDummyContent(ContentTestCase.Small);
             CoseHeaderMap protectedHeaders = GetHeaderMapWithAlgorithm();
 
-            AssertSign1Message(CoseSign1Message.Sign(content, DefaultKey, DefaultHash, protectedHeaders, null), content, DefaultKey);
+            AssertSign1Message(Sign(content, DefaultKey, DefaultHash, protectedHeaders, null), content, DefaultKey);
         }
 
         [Theory]
@@ -241,7 +243,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData(true)]
         public void SignWithCustomHeader(bool useProtectedMap)
         {
-            ReadOnlySpan<byte> content = GetDummyContent(ContentTestCase.Small);
+            byte[] content = GetDummyContent(ContentTestCase.Small);
             CoseHeaderMap protectedHeaders, unprotectedHeaders, mapForCustomHeader;
             List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> expectedProtectedHeaders, expectedUnprotectedHeaders, listForCustomHeader;
 
@@ -252,9 +254,8 @@ namespace System.Security.Cryptography.Cose.Tests
             mapForCustomHeader.SetValue(myLabel, myValue);
             AddEncoded(listForCustomHeader, myLabel, myValue);
 
-            AssertSign1Message(CoseSign1Message.Sign(content, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders),
+            AssertSign1Message(Sign(content, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders),
                 content, DefaultKey, expectedProtectedHeaders, expectedUnprotectedHeaders);
-
 
             Initialize();
             myLabel = new CoseHeaderLabel("42");
@@ -262,7 +263,7 @@ namespace System.Security.Cryptography.Cose.Tests
             mapForCustomHeader.SetValue(myLabel, myValue);
             AddEncoded(listForCustomHeader, myLabel, myValue);
 
-            AssertSign1Message(CoseSign1Message.Sign(content, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders),
+            AssertSign1Message(Sign(content, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders),
                 content, DefaultKey, expectedProtectedHeaders, expectedUnprotectedHeaders);
 
             void Initialize()
@@ -288,27 +289,27 @@ namespace System.Security.Cryptography.Cose.Tests
             InitializeHeaders();
             // @protected.SetValue(CoseHeaderLabel.Algorithm, (int)ECDsaAlgorithm.ES256); // We don't need to Set Algorithm header as InitHeader does it for us.
             unprotectedHeaders.SetValue(CoseHeaderLabel.Algorithm, (int)ECDsaAlgorithm.ES256);
-            Assert.Throws<CryptographicException>(() => CoseSign1Message.Sign(content, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders));
+            Assert.Throws<CryptographicException>(() => Sign(content, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders));
 
             // other known header is duplicate.
             InitializeHeaders();
             protectedHeaders.SetValue(CoseHeaderLabel.ContentType, ContentTypeDummyValue);
             unprotectedHeaders.SetValue(CoseHeaderLabel.ContentType, ContentTypeDummyValue);
-            Assert.Throws<CryptographicException>(() => CoseSign1Message.Sign(content, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders));
+            Assert.Throws<CryptographicException>(() => Sign(content, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders));
 
             // not-known int header is duplicate.
             InitializeHeaders();
             var myLabel = new CoseHeaderLabel(42);
             protectedHeaders.SetValue(myLabel, 42);
             unprotectedHeaders.SetValue(myLabel, 42);
-            Assert.Throws<CryptographicException>(() => CoseSign1Message.Sign(content, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders));
+            Assert.Throws<CryptographicException>(() => Sign(content, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders));
 
             // not-known tstr header is duplicate.
             InitializeHeaders();
             myLabel = new CoseHeaderLabel("42");
             protectedHeaders.SetValue(myLabel, 42);
             unprotectedHeaders.SetValue(myLabel, 42);
-            Assert.Throws<CryptographicException>(() => CoseSign1Message.Sign(content, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders));
+            Assert.Throws<CryptographicException>(() => Sign(content, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders));
 
             void InitializeHeaders()
             {
@@ -332,7 +333,7 @@ namespace System.Security.Cryptography.Cose.Tests
             List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> expectedUnprotectedHeaders = GetEmptyExpectedHeaders();
             (useProtectedMap ? expectedProtectedHeaders : expectedUnprotectedHeaders).Add((myLabel, encodedValue));
 
-            ReadOnlySpan<byte> encodedMessage = CoseSign1Message.Sign(content, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders);
+            ReadOnlySpan<byte> encodedMessage = Sign(content, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders);
             AssertSign1Message(encodedMessage, content, DefaultKey, expectedProtectedHeaders, expectedUnprotectedHeaders);
 
             // Verify it is transported correctly.
@@ -478,7 +479,7 @@ namespace System.Security.Cryptography.Cose.Tests
             CoseHeaderMap protectedHeaders = new CoseHeaderMap();
             protectedHeaders.SetEncodedValue(CoseHeaderLabel.Algorithm, encodedValue);
 
-            Assert.Throws<CryptographicException>(() => CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders));
+            Assert.Throws<CryptographicException>(() => Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders));
         }
 
         [Theory]
@@ -496,7 +497,7 @@ namespace System.Security.Cryptography.Cose.Tests
             CoseHeaderMap protectedHeaders = new CoseHeaderMap();
             protectedHeaders.SetEncodedValue(CoseHeaderLabel.Algorithm, encodedValue);
 
-            Assert.Throws<CryptographicException>(() => CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders));
+            Assert.Throws<CryptographicException>(() => Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders));
         }
 
         [Theory]
@@ -514,7 +515,35 @@ namespace System.Security.Cryptography.Cose.Tests
             CoseHeaderMap protectedHeaders = new CoseHeaderMap();
             protectedHeaders.SetEncodedValue(CoseHeaderLabel.Algorithm, encodedValue);
 
-            Assert.Throws<CryptographicException>(() => CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders));
+            Assert.Throws<CryptographicException>(() => Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders));
+        }
+    }
+
+    public class CoseSign1Message_Sign_ByteArray : CoseSign1MessageTests_Sign
+    {
+        internal override byte[] Sign(byte[] content, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false)
+            => CoseSign1Message.Sign(content, key, hashAlgorithm, protectedHeaders, unprotectedHeaders, isDetached);
+    }
+
+    public class CoseSign1Message_TrySign : CoseSign1MessageTests_Sign
+    {
+        internal override byte[] Sign(byte[] content!!, AsymmetricAlgorithm key!!, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false)
+        {
+            byte[] buffer = new byte[16]; // start small and double size until is big enough.
+
+            int bytesWritten;
+            while (!CoseSign1Message.TrySign(content, buffer, key, hashAlgorithm, out bytesWritten, protectedHeaders, unprotectedHeaders, isDetached))
+            {
+                Assert.Equal(0, bytesWritten);
+                Array.Resize(ref buffer, buffer.Length * 2);
+            }
+
+            ReadOnlySpan<byte> encodedMsg = buffer.AsSpan(0, bytesWritten);
+
+            int nonSpanOverloadLength = CoseSign1Message.Sign(content, key, hashAlgorithm, protectedHeaders, unprotectedHeaders, isDetached).Length;
+            Assert.Equal(nonSpanOverloadLength, bytesWritten);
+
+            return encodedMsg.ToArray();
         }
     }
 }
