@@ -25,6 +25,9 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private readonly MemoryCacheOptions _options;
 
+        private readonly List<WeakReference<Stats>?>? _allStats;
+        private readonly Stats? _accumulatedStats;
+        private ThreadLocal<Stats>? _stats;
         private CoherentState _coherentState;
         private bool _disposed;
         private DateTimeOffset _lastExpirationScan;
@@ -55,8 +58,8 @@ namespace Microsoft.Extensions.Caching.Memory
 
             if (_options.TrackStatistics)
             {
-                _allStats = new();
-                _accumulatedStats = new Stats(this, skipAdd: true);
+                _allStats = new List<WeakReference<Stats>?>();
+                _accumulatedStats = new Stats(this, isAccumulatedStat: true);
                 _stats = new ThreadLocal<Stats>(() => new Stats(this));
             }
 
@@ -325,17 +328,13 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        private readonly List<WeakReference<Stats>?>? _allStats;
-        private readonly Stats? _accumulatedStats;
-        private ThreadLocal<Stats>? _stats;
-
         private (long, long) Sum()
         {
-            long hits = 0, misses = 0;
             lock (_allStats!)
             {
-                hits += _accumulatedStats!.Hits;
-                misses += _accumulatedStats!.Misses;
+                long hits = _accumulatedStats!.Hits;
+                long misses = _accumulatedStats!.Misses;
+
                 foreach (WeakReference<Stats>? wr in _allStats!)
                 {
                     if (wr is not null && wr.TryGetTarget(out Stats? stats))
@@ -345,9 +344,8 @@ namespace Microsoft.Extensions.Caching.Memory
                     }
                 }
 
-                _allStats.TrimExcess();
+                return (hits, misses);
             }
-            return (hits, misses);
         }
 
         private void Hit()
@@ -378,16 +376,18 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             public long Hits;
             public long Misses;
-            private readonly MemoryCache _memoryCache;
-            public Stats(MemoryCache memoryCache, bool skipAdd = false)
+            private readonly MemoryCache? _memoryCache;
+            public Stats(MemoryCache memoryCache, bool isAccumulatedStat = false)
             {
-                _memoryCache = memoryCache;
-                if (!skipAdd)
+                if (!isAccumulatedStat)
+                {
+                    _memoryCache = memoryCache;
                     _memoryCache.AddToStats(this);
+                }
             }
             ~Stats()
             {
-                _memoryCache.RemoveFromStats(this);
+                _memoryCache?.RemoveFromStats(this);
             }
         }
 
@@ -406,6 +406,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
                 _accumulatedStats!.Hits += Interlocked.Read(ref current.Hits);
                 _accumulatedStats!.Misses += Interlocked.Read(ref current.Misses);
+                _allStats.TrimExcess();
             }
         }
 
