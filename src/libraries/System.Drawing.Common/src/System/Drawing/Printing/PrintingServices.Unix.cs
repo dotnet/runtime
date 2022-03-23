@@ -202,7 +202,7 @@ namespace System.Drawing.Printing
 
             settings.PrinterCapabilities.Clear();
 
-            IntPtr dests = IntPtr.Zero, ptr = IntPtr.Zero, ptr_printer, ppd_handle = IntPtr.Zero;
+            IntPtr dests = IntPtr.Zero, ptr, ptr_printer, ppd_handle;
             string name = string.Empty;
             CUPS_DESTS printer_dest;
             PPD_FILE ppd;
@@ -859,11 +859,16 @@ namespace System.Drawing.Printing
             string? name;
             if (!settings.PrintToFile)
             {
-                StringBuilder sb = new StringBuilder(1024);
-                int length = sb.Capacity;
-                LibcupsNative.cupsTempFd(sb, length);
-                name = sb.ToString();
-                tmpfile = name;
+                sbyte[] buffer = new sbyte[1024];
+                int length = buffer.Length;
+                LibcupsNative.cupsTempFd(buffer, length);
+                unsafe
+                {
+                    fixed (sbyte* ptr = buffer)
+                    {
+                        tmpfile = name = new string(ptr);
+                    }
+                }
             }
             else
                 name = settings.PrintFileName!;

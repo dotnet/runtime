@@ -7,6 +7,13 @@
     <ContractDependencyPaths Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))">$(ContractDependencyPaths);$(MicrosoftNetCoreAppRefPackRefDir)</ContractDependencyPaths>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <GenAPIExcludeAttributesList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</GenAPIExcludeAttributesList>
+    <GenAPIHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GenAPIHeaderFile>
+    <GenAPITargetPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).cs'))</GenAPITargetPath>
+    <GenAPILangVersion Condition="'$(LangVersion)' != ''">$(LangVersion)</GenAPILangVersion>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
     <ContractProject Condition="'$(ContractProject)' == ''">$(LibrariesProjectRoot)$(MSBuildProjectName)\ref\$(MSBuildProjectName).csproj</ContractProject>
     <HasMatchingContract Condition="'$(HasMatchingContract)' == '' and Exists('$(ContractProject)')">true</HasMatchingContract>
@@ -28,7 +35,10 @@
           DependsOnTargets="ResolveProjectReferences"
           AfterTargets="GetTargetPathWithTargetPlatformMoniker">
     <ItemGroup>
-      <TargetPathWithTargetPlatformMoniker ReferenceAssembly="@(ResolvedMatchingContract)" />
+      <!-- Allow to point to a different reference project than what GenFacades uses to generate the type forwards. -->
+      <TargetPathWithTargetPlatformMoniker ReferenceAssembly="@(ResolvedMatchingContractOverride)" />
+      <TargetPathWithTargetPlatformMoniker ReferenceAssembly="@(ResolvedMatchingContract)"
+                                           Condition="'@(ResolvedMatchingContractOverride)' == ''" />
     </ItemGroup>
   </Target>
 
@@ -38,18 +48,25 @@
           Condition="'@(ProjectReference)' != '' and '@(_ResolvedProjectReferencePaths)' != ''">
     <!-- If we have a ProjectReference to CoreLib, we need to compile against implementation assemblies. -->
     <PropertyGroup Condition="@(_ResolvedProjectReferencePaths->AnyHaveMetadataValue('MSBuildSourceProjectFile', '$(CoreLibProject)'))">
-      <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
+      <CompileUsingReferenceAssemblies Condition="'$(CompileUsingReferenceAssemblies)' == ''">false</CompileUsingReferenceAssemblies>
     </PropertyGroup>
     <!-- Clear the ReferenceAssembly attribute on resolved P2Ps that set SkipUseReferenceAssembly to true. -->
     <ItemGroup>
-       <_resolvedP2PFiltered Include="@(ProjectReference)">
-        <ProjectReferenceItemSpec>$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)'))</ProjectReferenceItemSpec>
-        <SkipUseReferenceAssembly>%(ProjectReference.SkipUseReferenceAssembly)</SkipUseReferenceAssembly>
-      </_resolvedP2PFiltered>
-      <_ResolvedProjectReferencePaths Update="@(_resolvedP2PFiltered)"
-                                      Condition="'%(_resolvedP2PFiltered.ProjectReferenceItemSpec)' == '%(_resolvedP2PFiltered.MSBuildSourceProjectFile)' and
+      <_resolvedP2PFiltered Include="@(ProjectReference)"
+                            ProjectReferenceItemSpec="$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)'))" 
+                            SkipUseReferenceAssembly="%(ProjectReference.SkipUseReferenceAssembly)" />
+      <_ResolvedProjectReferencePaths Condition="'%(_resolvedP2PFiltered.ProjectReferenceItemSpec)' == '%(_resolvedP2PFiltered.MSBuildSourceProjectFile)' and
                                                  '%(_resolvedP2PFiltered.SkipUseReferenceAssembly)' == 'true'"
                                       ReferenceAssembly="" />
     </ItemGroup>
   </Target>
+  
+  <Target Name="SetGenAPIProperties"
+          BeforeTargets="GenerateReferenceAssemblySource">
+    <PropertyGroup>
+      <GenAPIFollowTypeForwards Condition="'%(ProjectReference.Identity)' == '$(CoreLibProject)'">true</GenAPIFollowTypeForwards>
+    </PropertyGroup>
+  </Target>
+
+  <Import Project="$(RepositoryEngineeringDir)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
 </Project>

@@ -252,7 +252,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 
 	/* setup the frame */
 	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, framesize);
-	
+
 	/* save stuff */
 
 	/* save info */
@@ -294,7 +294,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	/* arg1 == info */
 	amd64_mov_reg_reg (code, MONO_AMD64_ARG_REG1, AMD64_RAX, sizeof (target_mgreg_t));
 	/* arg2 = caller stack area */
-	amd64_lea_membase (code, MONO_AMD64_ARG_REG2, AMD64_RBP, -(framesize - caller_reg_area_offset)); 
+	amd64_lea_membase (code, MONO_AMD64_ARG_REG2, AMD64_RBP, -(framesize - caller_reg_area_offset));
 
 	/* arg3 == callee stack area */
 	amd64_lea_membase (code, MONO_AMD64_ARG_REG3, AMD64_RSP, callee_reg_area_offset);

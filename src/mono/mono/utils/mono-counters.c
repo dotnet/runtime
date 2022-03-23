@@ -211,7 +211,7 @@ register_internal (const char *name, int type, void *addr, int size)
  * It may be a function pointer if \c MONO_COUNTER_CALLBACK is specified:
  * the function should return the value and take no arguments.
  */
-void 
+void
 mono_counters_register (const char* name, int type, void *addr)
 {
 	int size;
@@ -620,7 +620,7 @@ mono_counters_dump_section (int section, int variance, FILE *outfile)
  * mono_counters_dump:
  * \param section_mask The sections to dump counters for
  * \param outfile a FILE to dump the results to; NULL will default to g_print
- * Displays the counts of all the enabled counters registered. 
+ * Displays the counts of all the enabled counters registered.
  * To filter by variance, you can OR one or more variance with the specific section you want.
  * Use \c MONO_COUNTER_SECTION_MASK to dump all categories of a specific variance.
  */
@@ -799,7 +799,7 @@ mono_counters_init (void)
 {
 }
 
-void 
+void
 mono_counters_register (const char* name, int type, void *addr)
 {
 }

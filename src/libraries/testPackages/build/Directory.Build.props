@@ -5,5 +5,5 @@
   </PropertyGroup>
 
   <Import Project="Versions.props" />
-  <Import Project="netfxreference.props" />
+  <Import Project="NetCoreAppLibrary.props" />
 </Project>

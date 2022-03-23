@@ -34,7 +34,7 @@ namespace System.IO.MemoryMappedFiles
             {
                 // Explicitly flush the changes.  The OS will do this for us anyway, but not until after the
                 // MemoryMappedFile object itself is closed.
-                if (disposing && !_view.IsClosed)
+                if (disposing && !_view.IsClosed && CanWrite)
                 {
                     Flush();
                 }

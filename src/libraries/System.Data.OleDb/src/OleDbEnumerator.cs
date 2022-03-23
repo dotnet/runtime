@@ -34,7 +34,7 @@ namespace System.Data.OleDb
 
         private static OleDbDataReader GetEnumeratorReader(object? value)
         {
-            NativeMethods.ISourcesRowset? srcrowset = null;
+            NativeMethods.ISourcesRowset? srcrowset;
 
             try
             {
@@ -48,7 +48,6 @@ namespace System.Data.OleDb
             {
                 throw ODB.ISourcesRowsetNotSupported();
             }
-            value = null; // still held by ISourcesRowset, reused for IRowset
 
             int propCount = 0;
             IntPtr propSets = ADP.PtrZero;

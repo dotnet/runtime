@@ -269,12 +269,8 @@ namespace System.Xml
             writer.WriteSurrogateCharEntity(lowChar, highChar);
         }
 
-        public override void WriteChars(char[] buffer, int index, int count)
+        public override void WriteChars(char[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index));

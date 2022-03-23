@@ -32,11 +32,8 @@ namespace System.Runtime.Serialization
 #endif
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal DataContractSet(DataContractSet dataContractSet)
+        internal DataContractSet(DataContractSet dataContractSet!!)
         {
-            if (dataContractSet == null)
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(dataContractSet)));
-
             //this.dataContractSurrogate = dataContractSet.dataContractSurrogate;
             _referencedTypes = dataContractSet._referencedTypes;
             _referencedCollectionTypes = dataContractSet._referencedCollectionTypes;
@@ -121,7 +118,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void InternalAdd(XmlQualifiedName name, DataContract dataContract)
         {
-            DataContract? dataContractInSet = null;
+            DataContract? dataContractInSet;
             if (Contracts.TryGetValue(name, out dataContractInSet))
             {
                 if (!dataContractInSet.Equals(dataContract))

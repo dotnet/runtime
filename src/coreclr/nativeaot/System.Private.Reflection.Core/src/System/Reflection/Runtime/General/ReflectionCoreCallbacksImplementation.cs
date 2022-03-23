@@ -164,7 +164,6 @@ namespace System.Reflection.Runtime.General
         {
             RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
             NativeFormatRuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers.CastToNativeFormatRuntimeNamedTypeInfo();
-            MetadataReader reader = definingTypeInfo.Reader;
 
             // RuntimeFieldHandles always yield FieldInfo's whose ReflectedType equals the DeclaringType.
             RuntimeTypeInfo reflectedType = contextTypeInfo;
@@ -328,7 +327,9 @@ namespace System.Reflection.Runtime.General
                 if (methodInfo != null && methodInfo.ReturnType.Equals(invokeMethod.ReturnType))
                     return (RuntimeMethodInfo)methodInfo; // This cast is safe since we already verified that containingType is runtime implemented.
 
+#pragma warning disable IL2072 // https://github.com/dotnet/linker/issues/2673
                 containingType = (RuntimeTypeInfo)(containingType.BaseType);
+#pragma warning restore
             }
             return null;
         }

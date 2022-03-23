@@ -33,6 +33,7 @@
 #include <mono/utils/mono-threads-debug.h>
 #include <mono/utils/os-event.h>
 #include <mono/utils/w32api.h>
+#include <glib.h>
 
 #include <errno.h>
 #include <mono/utils/mono-errno.h>
@@ -309,7 +310,7 @@ gboolean
 mono_threads_wait_pending_operations (void)
 {
 	int i;
-	int c = pending_suspends;
+	size_t c = pending_suspends;
 
 	/* Wait threads to park */
 	THREADS_SUSPEND_DEBUG ("[INITIATOR-WAIT-COUNT] %d\n", c);
@@ -1616,8 +1617,13 @@ mono_thread_info_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	if (!*staddr)
 		return;
 
+#ifdef HOST_WASI
+	// TODO: Fix the stack positioning on WASI and re-enable the following check.
+	// Currently it works as a prototype anyway.
+#else
 	/* Sanity check the result */
 	g_assert ((current > *staddr) && (current < *staddr + *stsize));
+#endif
 
 #ifndef TARGET_WASM
 	/* When running under emacs, sometimes staddr is not aligned to a page size */
@@ -1743,7 +1749,7 @@ mono_thread_info_sleep (guint32 ms, gboolean *alerted)
 		}
 
 		do {
-			ret = clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &target, NULL);
+			ret = g_clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &target, NULL);
 		} while (ret != 0);
 #elif HOST_WIN32
 		Sleep (ms);

@@ -88,8 +88,7 @@ namespace System
             if (binder == null)
                 binder = Type.DefaultBinder;
 
-            object state = null;
-            MethodBase invokeMethod = binder.BindToMethod(bindingAttr, matches.ToArray(), ref args, null, culture, null, out state);
+            MethodBase invokeMethod = binder.BindToMethod(bindingAttr, matches.ToArray(), ref args, null, culture, null, out object state);
             if (invokeMethod.GetParametersNoCopy().Length == 0)
             {
                 if (args.Length != 0)

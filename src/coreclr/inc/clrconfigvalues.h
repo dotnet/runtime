@@ -176,7 +176,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_DbgDACSkipVerifyDlls, W("DbgDACSkipVerifyDlls"
 CONFIG_DWORD_INFO(INTERNAL_DbgDelayHelper, W("DbgDelayHelper"), 0, "Varies the wait in the helper thread startup for testing race between threads")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_DbgDisableDynamicSymsCompat, W("DbgDisableDynamicSymsCompat"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_DbgDisableTargetConsistencyAsserts, W("DbgDisableTargetConsistencyAsserts"), 0, "Allows explicitly testing with corrupt targets")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_DbgEnableMixedModeDebugging, W("DbgEnableMixedModeDebuggingInternalOnly"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_DbgExtraThreads, W("DbgExtraThreads"), 0, "Allows extra unmanaged threads to run and throw debug events for stress testing")
 CONFIG_DWORD_INFO(INTERNAL_DbgExtraThreadsCantStop, W("DbgExtraThreadsCantStop"), 0, "Allows extra unmanaged threads in can't stop region to run and throw debug events for stress testing")
 CONFIG_DWORD_INFO(INTERNAL_DbgExtraThreadsIB, W("DbgExtraThreadsIB"), 0, "Allows extra in-band unmanaged threads to run and throw debug events for stress testing")
@@ -281,6 +280,13 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_HeapVerify, W("HeapVerify"), 0, "When set v
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_GCNumaAware, W("GCNumaAware"), 1, "Specifies if to enable GC NUMA aware")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCCpuGroup, W("GCCpuGroup"), 0, "Specifies if to enable GC to support CPU groups")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_GCName, W("GCName"), "")
+/**
+ * This flag allows us to force the runtime to use global allocation context on Windows x86/amd64 instead of thread allocation context just for testing purpose.
+ * The flag is unsafe for a subtle reason. Although the access to the g_global_alloc_context is protected under a lock. The implementation of
+ * that lock in the JIT helpers are not multi-core safe (in particular, it used and inc instruction without using the LOCK prefix). This is
+ * only useful for ad-hoc testing.
+ */
+CONFIG_DWORD_INFO(INTERNAL_GCUseGlobalAllocationContext, W("GCUseGlobalAllocationContext"), 0, "Force using the global allocation context for testing only")
 
 ///
 /// JIT
@@ -303,6 +309,7 @@ RETAIL_CONFIG_STRING_INFO(EXTERNAL_JitName, W("JitName"), "Primary Jit to use")
 #if defined(ALLOW_SXS_JIT)
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_AltJitName, W("AltJitName"), "Alternative Jit to use, will fall back to primary jit.")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_AltJit, W("AltJit"), "Enables AltJit and selectively limits it to the specified methods.")
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_AltJitOs, W("AltJitOS"), "Sets target OS for AltJit or uses native one by default. Only applicable for ARM/AMR64 at the moment.")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_AltJitExcludeAssemblies, W("AltJitExcludeAssemblies"), "Do not use AltJit on this semicolon-delimited list of assemblies.")
 #endif // defined(ALLOW_SXS_JIT)
 
@@ -348,7 +355,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitVNMapSelBudget, W("JitVNMapSelBudget"), 100
 #else // !(defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64))
 #define EXTERNAL_FeatureSIMD_Default 0
 #endif // !(defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64))
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_FeatureSIMD, W("FeatureSIMD"), EXTERNAL_FeatureSIMD_Default, "Enable SIMD intrinsics recognition in System.Numerics.dll and/or System.Numerics.Vectors.dll")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_SIMD16ByteOnly, W("SIMD16ByteOnly"), 0, "Limit maximum SIMD vector length to 16 bytes (used by x64_arm64_altjit)")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TrackDynamicMethodDebugInfo, W("TrackDynamicMethodDebugInfo"), 0, "Specifies whether debug info should be generated and tracked for dynamic methods")
 
@@ -531,6 +537,7 @@ RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_ProcessorCount, W("PROCESSOR_COUNT"), 0, "S
 /// Threadpool
 ///
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UsePortableThreadPool, W("ThreadPool_UsePortableThreadPool"), 1, "Uses the managed portable thread pool implementation instead of the unmanaged one.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UsePortableThreadPoolForIO, W("ThreadPool_UsePortableThreadPoolForIO"), 1, "Uses the managed portable thread pool implementation instead of the unmanaged one for async IO.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_ForceMinWorkerThreads, W("ThreadPool_ForceMinWorkerThreads"), 0, "Overrides the MinThreads setting for the ThreadPool worker pool")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_ForceMaxWorkerThreads, W("ThreadPool_ForceMaxWorkerThreads"), 0, "Overrides the MaxThreads setting for the ThreadPool worker pool")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_DisableStarvationDetection, W("ThreadPool_DisableStarvationDetection"), 0, "Disables the ThreadPool feature that forces new threads to be added when workitems run for too long")
@@ -562,21 +569,36 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_GainExponent,                    
 /// Tiered Compilation
 ///
 #ifdef FEATURE_TIERED_COMPILATION
+#ifdef _DEBUG
+// Use lower values to exercise more paths sooner
+#define TC_BackgroundWorkerTimeoutMs (100)
+#define TC_CallCountThreshold (2)
+#define TC_CallCountingDelayMs (1)
+#define TC_DelaySingleProcMultiplier (2)
+#define TC_DeleteCallCountingStubsAfter (1)
+#else // !_DEBUG
+#define TC_BackgroundWorkerTimeoutMs (4000)
+#define TC_CallCountThreshold (30)
+#define TC_CallCountingDelayMs (100)
+#define TC_DelaySingleProcMultiplier (10)
+#define TC_DeleteCallCountingStubsAfter (4096)
+#endif // _DEBUG
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredCompilation, W("TieredCompilation"), 1, "Enables tiered compilation")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TC_QuickJit, W("TC_QuickJit"), 1, "For methods that would be jitted, enable using quick JIT when appropriate.")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TC_QuickJitForLoops, W("TC_QuickJitForLoops"), 0, "When quick JIT is enabled, quick JIT may also be used for methods that contain loops.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TC_AggressiveTiering, W("TC_AggressiveTiering"), 0, "Transition through tiers aggressively.")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_BackgroundWorkerTimeoutMs, W("TC_BackgroundWorkerTimeoutMs"), 4000, "How long in milliseconds the background worker thread may remain idle before exiting.")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCountThreshold, W("TC_CallCountThreshold"), 30, "Number of times a method must be called in tier 0 after which it is promoted to the next tier.")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCountingDelayMs, W("TC_CallCountingDelayMs"), 100, "A perpetual delay in milliseconds that is applied call counting in tier 0 and jitting at higher tiers, while there is startup-like activity.")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_DelaySingleProcMultiplier, W("TC_DelaySingleProcMultiplier"), 10, "Multiplier for TC_CallCountingDelayMs that is applied on a single-processor machine or when the process is affinitized to a single processor.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_BackgroundWorkerTimeoutMs, W("TC_BackgroundWorkerTimeoutMs"), TC_BackgroundWorkerTimeoutMs, "How long in milliseconds the background worker thread may remain idle before exiting.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCountThreshold, W("TC_CallCountThreshold"), TC_CallCountThreshold, "Number of times a method must be called in tier 0 after which it is promoted to the next tier.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCountingDelayMs, W("TC_CallCountingDelayMs"), TC_CallCountingDelayMs, "A perpetual delay in milliseconds that is applied call counting in tier 0 and jitting at higher tiers, while there is startup-like activity.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_DelaySingleProcMultiplier, W("TC_DelaySingleProcMultiplier"), TC_DelaySingleProcMultiplier, "Multiplier for TC_CallCountingDelayMs that is applied on a single-processor machine or when the process is affinitized to a single processor.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCounting, W("TC_CallCounting"), 1, "Enabled by default (only activates when TieredCompilation is also enabled). If disabled immediately backpatches prestub, and likely prevents any promotion to higher tiers")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_UseCallCountingStubs, W("TC_UseCallCountingStubs"), 1, "Uses call counting stubs for faster call counting.")
-#ifdef _DEBUG
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_DeleteCallCountingStubsAfter, W("TC_DeleteCallCountingStubsAfter"), 1, "Deletes call counting stubs after this many have completed. Zero to disable deleting.")
-#else
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_DeleteCallCountingStubsAfter, W("TC_DeleteCallCountingStubsAfter"), 4096, "Deletes call counting stubs after this many have completed. Zero to disable deleting.")
-#endif
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_DeleteCallCountingStubsAfter, W("TC_DeleteCallCountingStubsAfter"), TC_DeleteCallCountingStubsAfter, "Deletes call counting stubs after this many have completed. Zero to disable deleting.")
+#undef TC_BackgroundWorkerTimeoutMs
+#undef TC_CallCountThreshold
+#undef TC_CallCountingDelayMs
+#undef TC_DelaySingleProcMultiplier
+#undef TC_DeleteCallCountingStubsAfter
 #endif // FEATURE_TIERED_COMPILATION
 
 ///
@@ -790,7 +812,6 @@ CONFIG_DWORD_INFO(INTERNAL_NestedEhOom, W("NestedEhOom"), 0, "")
 #define INTERNAL_NoGuiOnAssert_Default 1
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_NoGuiOnAssert, W("NoGuiOnAssert"), INTERNAL_NoGuiOnAssert_Default, "")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_NoProcedureSplitting, W("NoProcedureSplitting"), 0, "")
-CONFIG_DWORD_INFO(INTERNAL_NoStringInterning, W("NoStringInterning"), 1, "Disallows string interning. I see no value in it anymore.")
 CONFIG_DWORD_INFO(INTERNAL_PauseOnLoad, W("PauseOnLoad"), 0, "Stops in SystemDomain::init. I think it can be removed.")
 CONFIG_DWORD_INFO(INTERNAL_PerfAllocsSizeThreshold, W("PerfAllocsSizeThreshold"), 0x3FFFFFFF, "Log facility LF_GCALLOC logs object allocations. This flag controls which ones also log stacktraces. Predates ClrProfiler.")
 CONFIG_DWORD_INFO(INTERNAL_PerfNumAllocsThreshold, W("PerfNumAllocsThreshold"), 0x3FFFFFFF, "Log facility LF_GCALLOC logs object allocations. This flag controls which ones also log stacktraces. Predates ClrProfiler.")

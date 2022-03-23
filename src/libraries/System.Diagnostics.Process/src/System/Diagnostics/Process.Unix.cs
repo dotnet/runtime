@@ -266,8 +266,7 @@ namespace System.Diagnostics
             {
                 EnsureState(State.HaveNonExitedId);
 
-                int pri = 0;
-                int errno = Interop.Sys.GetPriority(Interop.Sys.PriorityWhich.PRIO_PROCESS, _processId, out pri);
+                int errno = Interop.Sys.GetPriority(Interop.Sys.PriorityWhich.PRIO_PROCESS, _processId, out int pri);
                 if (errno != 0) // Interop.Sys.GetPriority returns GetLastWin32Error()
                 {
                     throw new Win32Exception(errno); // match Windows exception

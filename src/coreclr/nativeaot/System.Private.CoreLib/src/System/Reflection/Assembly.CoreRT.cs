@@ -36,7 +36,7 @@ namespace System.Reflection
             return Load(name);
         }
 
-        [Obsolete("This method has been deprecated. Please use Assembly.Load() instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("Assembly.LoadWithPartialName has been deprecated. Use Assembly.Load() instead.")]
         public static Assembly LoadWithPartialName(string partialName)
         {
             if (partialName == null)

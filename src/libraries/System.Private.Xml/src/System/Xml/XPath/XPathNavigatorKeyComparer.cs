@@ -20,17 +20,13 @@ namespace System.Xml.XPath
             return false;
         }
 
-        int IEqualityComparer.GetHashCode(object obj)
+        int IEqualityComparer.GetHashCode(object obj!!)
         {
             int hashCode;
             XPathNavigator? nav;
             XPathDocumentNavigator? xpdocNav;
 
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-            else if (null != (xpdocNav = obj as XPathDocumentNavigator))
+            if (null != (xpdocNav = obj as XPathDocumentNavigator))
             {
                 hashCode = xpdocNav.GetPositionHashCode();
             }

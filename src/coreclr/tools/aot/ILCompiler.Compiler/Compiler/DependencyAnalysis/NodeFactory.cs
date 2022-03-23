@@ -245,6 +245,10 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new ExternSymbolNode(name);
             });
+            _externIndirectSymbols = new NodeCache<string, ExternSymbolNode>((string name) =>
+            {
+                return new ExternSymbolNode(name, isIndirection: true);
+            });
 
             _pInvokeModuleFixups = new NodeCache<PInvokeModuleData, PInvokeModuleFixupNode>((PInvokeModuleData moduleData) =>
             {
@@ -257,13 +261,6 @@ namespace ILCompiler.DependencyAnalysis
             });
 
             _methodEntrypoints = new NodeCache<MethodDesc, IMethodNode>(CreateMethodEntrypointNode);
-
-            _tentativeMethodEntrypoints = new NodeCache<MethodDesc, IMethodNode>((MethodDesc method) =>
-            {
-                IMethodNode entrypoint = MethodEntrypoint(method, unboxingStub: false);
-                return new TentativeMethodNode(entrypoint is TentativeMethodNode tentative ?
-                    tentative.RealBody : (IMethodBodyNode)entrypoint);
-            });
 
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
 
@@ -741,6 +738,13 @@ namespace ILCompiler.DependencyAnalysis
             return _externSymbols.GetOrAdd(name);
         }
 
+        private NodeCache<string, ExternSymbolNode> _externIndirectSymbols;
+
+        public ISortableSymbolNode ExternIndirectSymbol(string name)
+        {
+            return _externIndirectSymbols.GetOrAdd(name);
+        }
+
         private NodeCache<PInvokeModuleData, PInvokeModuleFixupNode> _pInvokeModuleFixups;
 
         public ISymbolNode PInvokeModuleFixup(PInvokeModuleData moduleData)
@@ -798,15 +802,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return _methodEntrypoints.GetOrAdd(method);
-        }
-
-        protected NodeCache<MethodDesc, IMethodNode> _tentativeMethodEntrypoints;
-
-        public IMethodNode TentativeMethodEntrypoint(MethodDesc method, bool unboxingStub = false)
-        {
-            // Didn't implement unboxing stubs for now. Would need to pass down the flag.
-            Debug.Assert(!unboxingStub);
-            return _tentativeMethodEntrypoints.GetOrAdd(method);
         }
 
         public MethodAssociatedDataNode MethodAssociatedData(IMethodNode methodNode)

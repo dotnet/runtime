@@ -6,8 +6,6 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-using Internal.Runtime.CompilerServices;
-
 namespace System.Runtime.CompilerServices
 {
     internal static unsafe class CastHelpers

@@ -17,7 +17,7 @@ namespace System.Data.SqlTypes
     [StructLayout(LayoutKind.Sequential)]
     [XmlSchemaProvider("GetXsdType")]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct SqlInt16 : INullable, IComparable, IXmlSerializable
+    public struct SqlInt16 : INullable, IComparable, IXmlSerializable, IEquatable<SqlInt16>
     {
         private bool m_fNotNull; // false if null. Do not rename (binary serialization)
         private short m_value; // Do not rename (binary serialization)
@@ -475,26 +475,18 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals([NotNullWhen(true)] object? value)
-        {
-            if (!(value is SqlInt16))
-            {
-                return false;
-            }
+        public override bool Equals([NotNullWhen(true)] object? value) =>
+            value is SqlInt16 other && Equals(other);
 
-            SqlInt16 i = (SqlInt16)value;
-
-            if (i.IsNull || IsNull)
-                return (i.IsNull && IsNull);
-            else
-                return (this == i).Value;
-        }
+        /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
+        /// <param name="other">An instance to compare with this instance.</param>
+        /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+        public bool Equals(SqlInt16 other) =>
+            other.IsNull || IsNull ? other.IsNull && IsNull :
+            (this == other).Value;
 
         // For hashing purpose
-        public override int GetHashCode()
-        {
-            return IsNull ? 0 : Value.GetHashCode();
-        }
+        public override int GetHashCode() => IsNull ? 0 : Value.GetHashCode();
 
         XmlSchema? IXmlSerializable.GetSchema() { return null; }
 

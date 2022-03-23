@@ -16,7 +16,7 @@ namespace System.Drawing
         {
             get
             {
-                IntPtr lineCap = IntPtr.Zero;
+                IntPtr lineCap;
                 int status = Gdip.GdipGetPenCustomStartCap(new HandleRef(this, NativePen), out lineCap);
                 Gdip.CheckStatus(status);
 
@@ -42,7 +42,7 @@ namespace System.Drawing
         {
             get
             {
-                IntPtr lineCap = IntPtr.Zero;
+                IntPtr lineCap;
                 int status = Gdip.GdipGetPenCustomEndCap(new HandleRef(this, NativePen), out lineCap);
                 Gdip.CheckStatus(status);
                 return CustomLineCap.CreateCustomLineCapObject(lineCap);

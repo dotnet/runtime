@@ -527,7 +527,7 @@ namespace System.Xml.Serialization
                     ns = ((XmlSchema)tmp).TargetNamespace;
                 }
             }
-            string? item = null;
+            string? item;
             if (o is XmlSchemaNotation)
             {
                 item = SR.Format(SR.XmlSchemaNamedItem, ns, "notation", ((XmlSchemaNotation)o).Name, details);

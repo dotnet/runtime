@@ -384,7 +384,7 @@ namespace System.Collections.Immutable
                 Requires.Range(index >= 0 && index < this.Count, nameof(index));
                 Debug.Assert(_left != null && _right != null);
 
-                Node result = this;
+                Node result;
                 if (index == _left._count)
                 {
                     // We have a match. If this is a leaf, just remove it
@@ -484,7 +484,7 @@ namespace System.Collections.Immutable
                 Requires.Range(index >= 0 && index < this.Count, nameof(index));
                 Debug.Assert(!this.IsEmpty);
 
-                Node result = this;
+                Node result;
                 if (index == _left!._count)
                 {
                     // We have a match.

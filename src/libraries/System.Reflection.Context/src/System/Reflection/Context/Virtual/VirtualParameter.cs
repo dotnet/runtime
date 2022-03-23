@@ -8,12 +8,12 @@ namespace System.Reflection.Context.Virtual
 {
     internal class VirtualParameter : ParameterInfo
     {
-        public VirtualParameter(MemberInfo member, Type parameterType, string? name, int position)
+        public VirtualParameter(MemberInfo member!!, Type parameterType!!, string? name, int position)
         {
             Debug.Assert(position >= -1);
 
-            ClassImpl = parameterType ?? throw new ArgumentNullException(nameof(parameterType));
-            MemberImpl = member ?? throw new ArgumentNullException(nameof(member));
+            ClassImpl = parameterType;
+            MemberImpl = member;
             NameImpl = name;
             PositionImpl = position;
         }

@@ -25,7 +25,8 @@ namespace System.Reflection
         // This field is set by the VM to atomically transfer the ownership to the managed loader allocator
         internal IntPtr m_nativeLoaderAllocator;
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "LoaderAllocator_Destroy")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "LoaderAllocator_Destroy")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool Destroy(IntPtr nativeLoaderAllocator);
 
         ~LoaderAllocatorScout()

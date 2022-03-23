@@ -1274,7 +1274,7 @@ bool AllocByClassHelper(Object * pBO, void * pv)
     _ASSERTE(pv != NULL);
 
     {
-        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAllocations());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC());
         // Pass along the call
         g_profControlBlock.AllocByClass(
             (ObjectID) pBO,
@@ -5710,7 +5710,7 @@ HRESULT ProfToEEInterfaceImpl::GetAssemblyInfo(AssemblyID    assemblyId,
     // Find the module the manifest lives in.
     if (pModuleId)
     {
-        *pModuleId = (ModuleID) pAssembly->GetManifestModule();
+        *pModuleId = (ModuleID) pAssembly->GetModule();
 
         // This is the case where the profiler has called GetAssemblyInfo
         // on an assembly that has been completely created yet.

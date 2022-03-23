@@ -47,11 +47,8 @@ namespace System.Threading.Tasks.Dataflow
         /// <summary>Initializes the <see cref="JoinBlock{T1,T2}"/>.</summary>
         /// <param name="dataflowBlockOptions">The options with which to configure this <see cref="JoinBlock{T1,T2}"/>.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-        public JoinBlock(GroupingDataflowBlockOptions dataflowBlockOptions)
+        public JoinBlock(GroupingDataflowBlockOptions dataflowBlockOptions!!)
         {
-            // Validate arguments
-            if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
-
             // Ensure we have options that can't be changed by the caller
             dataflowBlockOptions = dataflowBlockOptions.DefaultOrClone();
 
@@ -139,10 +136,8 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
-        void IDataflowBlock.Fault(Exception exception)
+        void IDataflowBlock.Fault(Exception exception!!)
         {
-            if (exception == null) throw new ArgumentNullException(nameof(exception));
-
             Debug.Assert(_sharedResources != null, "_sharedResources not initialized");
             Debug.Assert(_sharedResources._exceptionAction != null, "_sharedResources._exceptionAction not initialized");
 
@@ -269,11 +264,8 @@ namespace System.Threading.Tasks.Dataflow
         /// <summary>Initializes the <see cref="JoinBlock{T1,T2,T3}"/>.</summary>
         /// <param name="dataflowBlockOptions">The options with which to configure this <see cref="JoinBlock{T1,T2}"/>.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-        public JoinBlock(GroupingDataflowBlockOptions dataflowBlockOptions)
+        public JoinBlock(GroupingDataflowBlockOptions dataflowBlockOptions!!)
         {
-            // Validate arguments
-            if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
-
             // Ensure we have options that can't be changed by the caller
             dataflowBlockOptions = dataflowBlockOptions.DefaultOrClone();
 
@@ -361,10 +353,8 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
-        void IDataflowBlock.Fault(Exception exception)
+        void IDataflowBlock.Fault(Exception exception!!)
         {
-            if (exception == null) throw new ArgumentNullException(nameof(exception));
-
             Debug.Assert(_sharedResources != null, "_sharedResources not initialized");
             Debug.Assert(_sharedResources._exceptionAction != null, "_sharedResources._exceptionAction not initialized");
 
@@ -924,10 +914,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
-        void IDataflowBlock.Fault(Exception exception)
+        void IDataflowBlock.Fault(Exception exception!!)
         {
-            if (exception == null) throw new ArgumentNullException(nameof(exception));
-
             CompleteCore(exception, dropPendingMessages: true, releaseReservedMessages: false);
         }
 

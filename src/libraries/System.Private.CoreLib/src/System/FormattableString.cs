@@ -44,10 +44,8 @@ namespace System
         /// </summary>
         public abstract string ToString(IFormatProvider? formatProvider);
 
-        string IFormattable.ToString(string? ignored, IFormatProvider? formatProvider)
-        {
-            return ToString(formatProvider);
-        }
+        string IFormattable.ToString(string? ignored, IFormatProvider? formatProvider) =>
+            ToString(formatProvider);
 
         /// <summary>
         /// Format the given object in the invariant culture. This static method may be
@@ -62,15 +60,8 @@ namespace System
         /// Invariant($"{{ lat = {latitude}; lon = {longitude} }}")
         /// </code>
         /// </summary>
-        public static string Invariant(FormattableString formattable)
-        {
-            if (formattable == null)
-            {
-                throw new ArgumentNullException(nameof(formattable));
-            }
-
-            return formattable.ToString(Globalization.CultureInfo.InvariantCulture);
-        }
+        public static string Invariant(FormattableString formattable!!) =>
+            formattable.ToString(Globalization.CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Format the given object in the current culture. This static method may be
@@ -85,19 +76,10 @@ namespace System
         /// CurrentCulture($"{{ lat = {latitude}; lon = {longitude} }}")
         /// </code>
         /// </summary>
-        public static string CurrentCulture(FormattableString formattable)
-        {
-            if (formattable == null)
-            {
-                throw new ArgumentNullException(nameof(formattable));
-            }
+        public static string CurrentCulture(FormattableString formattable!!) =>
+            formattable.ToString(Globalization.CultureInfo.CurrentCulture);
 
-            return formattable.ToString(Globalization.CultureInfo.CurrentCulture);
-        }
-
-        public override string ToString()
-        {
-            return ToString(Globalization.CultureInfo.CurrentCulture);
-        }
+        public override string ToString() =>
+            ToString(Globalization.CultureInfo.CurrentCulture);
     }
 }

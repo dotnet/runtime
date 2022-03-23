@@ -235,7 +235,9 @@ namespace System.Resources
                         {
                             Debug.Assert(readerTypeName != null, "Reader Type name should be set");
                             Debug.Assert(resSetTypeName != null, "ResourceSet Type name should be set");
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
                             return InternalGetResourceSetFromSerializedData(store, readerTypeName, resSetTypeName, _mediator);
+#pragma warning restore IL2026
                         }
                         else
                         {

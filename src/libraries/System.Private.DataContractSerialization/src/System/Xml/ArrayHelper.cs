@@ -11,7 +11,7 @@ namespace System.Xml
         public TArray[] ReadArray(XmlDictionaryReader reader, TArgument localName, TArgument namespaceUri, int maxArrayLength)
         {
             TArray[][]? arrays = null;
-            TArray[]? array = null;
+            TArray[]? array;
             int arrayCount = 0;
             int totalRead = 0;
             int count;

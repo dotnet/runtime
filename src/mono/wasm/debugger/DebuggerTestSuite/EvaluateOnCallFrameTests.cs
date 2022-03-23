@@ -494,6 +494,8 @@ namespace DebuggerTests
 
 
         [Fact]
+        [Trait("Category", "windows-failing")] // https://github.com/dotnet/runtime/issues/65744
+        [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/65744
         public async Task EvaluateSimpleMethodCallsError() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
@@ -505,7 +507,7 @@ namespace DebuggerTests
                 AssertEqual("Unable to evaluate method 'MyMethodWrong'", res.Error["message"]?.Value<string>(), "wrong error message");
 
                 (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethod(1)", expect_ok: false );
-                AssertEqual("Unable to evaluate method 'MyMethod'", res.Error["message"]?.Value<string>(), "wrong error message");
+                AssertEqual("Unable to evaluate method 'MyMethod'. Too many arguments passed.", res.Error["result"]["description"]?.Value<string>(), "wrong error message");
 
                 (_, res) = await EvaluateOnCallFrame(id, "this.CallMethodWithParm(\"1\")", expect_ok: false );
                 AssertEqual("Unable to evaluate method 'CallMethodWithParm'", res.Error["message"]?.Value<string>(), "wrong error message");
@@ -526,11 +528,12 @@ namespace DebuggerTests
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                await EvaluateOnCallFrameAndCheck(id,
-                   ("this.CallMethod()", TNumber(1)),
-                   ("this.CallMethod()", TNumber(1)),
-                   ("this.ParmToTestObj.MyMethod()", TString("methodOK")),
-                   ("this.ParmToTestObj.ToString()", TString("DebuggerTests.EvaluateMethodTestsClass+ParmToTest")),
-                   ("this.objToTest.MyMethod()", TString("methodOK")));
+                    ("this.CallMethod()", TNumber(1)),
+                    ("this.CallMethod()", TNumber(1)),
+                    ("this.CallMethodReturningChar()", TChar('A')),
+                    ("this.ParmToTestObj.MyMethod()", TString("methodOK")),
+                    ("this.ParmToTestObj.ToString()", TString("DebuggerTests.EvaluateMethodTestsClass+ParmToTest")),
+                    ("this.objToTest.MyMethod()", TString("methodOK")));
            });
 
 
@@ -1050,6 +1053,75 @@ namespace DebuggerTests
                     Id = TGetter("Id", TNumber(123))
                 }, "s#1");
             });
+
+        [Fact]
+        public async Task EvaluateMethodWithDefaultParam() => await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.DefaultParamMethods", "Evaluate", 2, "Evaluate",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.DefaultParamMethods:Evaluate'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                   ("test.GetByte()", TNumber(1)),
+                   ("test.GetSByte()", TNumber(1)),
+                   ("test.GetByteNullable()", TNumber(1)),
+                   ("test.GetSByteNullable()", TNumber(1)),
+
+                   ("test.GetInt16()", TNumber(1)),
+                   ("test.GetUInt16()", TNumber(1)),
+                   ("test.GetInt16Nullable()", TNumber(1)),
+                   ("test.GetUInt16Nullable()", TNumber(1)),
+
+                   ("test.GetInt32()", TNumber(1)),
+                   ("test.GetUInt32()", TNumber(1)),
+                   ("test.GetInt32Nullable()", TNumber(1)),
+                   ("test.GetUInt32Nullable()", TNumber(1)),
+
+                   ("test.GetInt64()", TNumber(1)),
+                   ("test.GetUInt64()", TNumber(1)),
+                   ("test.GetInt64Nullable()", TNumber(1)),
+                   ("test.GetUInt64Nullable()", TNumber(1)),
+
+                   ("test.GetChar()", TChar('T')),
+                   ("test.GetCharNullable()", TChar('T')),
+                   ("test.GetUnicodeChar()", TChar('ą')),
+
+                   ("test.GetString()", TString("1.23")),
+                   ("test.GetUnicodeString()", TString("żółć")),
+                   ("test.GetString(null)", TObject("string", is_null: true)),
+                   ("test.GetStringNullable()", TString("1.23")),
+
+                   ("test.GetSingle()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
+                   ("test.GetDouble()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
+                   ("test.GetSingleNullable()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
+                   ("test.GetDoubleNullable()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
+                   
+                   ("test.GetBool()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),
+                   ("test.GetBoolNullable()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),
+                   ("test.GetNull()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),
+                   
+                   ("test.GetDefaultAndRequiredParam(2)", TNumber(5)),
+                   ("test.GetDefaultAndRequiredParam(3, 2)", TNumber(5)),
+                   ("test.GetDefaultAndRequiredParamMixedTypes(\"a\")", TString("a; -1; False")),
+                   ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23)", TString("a; 23; False")),
+                   ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true)", TString("a; 23; True"))
+                   );
+                
+                var (_, res) = await EvaluateOnCallFrame(id, "test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true, 1.23f)", expect_ok: false );
+                AssertEqual("Unable to evaluate method 'GetDefaultAndRequiredParamMixedTypes'. Too many arguments passed.", res.Error["result"]["description"]?.Value<string>(), "wrong error message");
+           });
+        
+        [Fact]
+        public async Task EvaluateMethodWithLinq() => await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.DefaultParamMethods", "Evaluate", 2, "Evaluate",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.DefaultParamMethods:Evaluate'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                   ("test.listToLinq.ToList()", TObject("System.Collections.Generic.List<int>", description: "Count = 11"))
+                   );
+           });
     }
 
 }

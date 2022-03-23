@@ -2,7 +2,7 @@
   <PropertyGroup>
     <NoWarn>$(NoWarn),0168,0169,0414,0219,0649</NoWarn>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Data\Common\DataColumnMappingTest.cs" />

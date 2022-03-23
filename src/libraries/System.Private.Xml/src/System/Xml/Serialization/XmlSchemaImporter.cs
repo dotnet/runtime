@@ -1849,7 +1849,7 @@ namespace System.Xml.Serialization
         private PrimitiveMapping? ImportNonXsdPrimitiveDataType(XmlSchemaSimpleType dataType, string? ns, TypeFlags flags)
         {
             PrimitiveMapping? mapping = null;
-            TypeDesc? typeDesc = null;
+            TypeDesc? typeDesc;
             if (dataType.Name != null && dataType.Name.Length != 0)
             {
                 typeDesc = Scope.GetTypeDesc(dataType.Name, ns, flags);
@@ -1905,7 +1905,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls FindDataType")]
         private TypeDesc GetDataTypeSource(XmlSchemaSimpleType dataType, TypeFlags flags)
         {
-            TypeDesc? typeDesc = null;
+            TypeDesc? typeDesc;
             if (dataType.Name != null && dataType.Name.Length != 0)
             {
                 typeDesc = Scope.GetTypeDesc(dataType);

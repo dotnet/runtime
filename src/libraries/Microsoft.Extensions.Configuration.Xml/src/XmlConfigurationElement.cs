@@ -31,9 +31,9 @@ namespace Microsoft.Extensions.Configuration.Xml
 
         public List<XmlConfigurationElementAttributeValue> Attributes { get; set; }
 
-        public XmlConfigurationElement(string elementName, string name)
+        public XmlConfigurationElement(string elementName!!, string name)
         {
-            ElementName = elementName ?? throw new ArgumentNullException(nameof(elementName));
+            ElementName = elementName;
             Name = name;
             SiblingName = string.IsNullOrEmpty(Name) ? ElementName : ElementName + ":" + Name;
         }

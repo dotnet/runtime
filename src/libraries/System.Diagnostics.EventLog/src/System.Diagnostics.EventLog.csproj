@@ -17,11 +17,12 @@ System.Diagnostics.EventLog</PackageDescription>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_EventLog</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetPlatformIdentifier)' != 'windows'">SR.PlatformNotSupported_EventLog</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\Diagnostics\EntryWrittenEventArgs.cs" />
     <Compile Include="System\Diagnostics\EntryWrittenEventHandler.cs" />
     <Compile Include="System\Diagnostics\EventData.cs" />
@@ -110,7 +111,10 @@ System.Diagnostics.EventLog</PackageDescription>
     <Compile Include="$(CommonPath)System\Diagnostics\NetFrameworkUtils.cs"
              Link="Common\System\Diagnostics\NetFrameworkUtils.cs" />
   </ItemGroup>
-
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
@@ -148,7 +152,7 @@ System.Diagnostics.EventLog</PackageDescription>
     <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <ProjectReference Include="Messages\System.Diagnostics.EventLog.Messages.csproj"
                       ReferenceOutputAssembly="false"
                       OutputItemType="TfmRuntimeSpecificPackageFile"

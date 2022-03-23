@@ -27,8 +27,8 @@ MONO_PRAGMA_WARNING_DISABLE (4115) // warning C4115: 'IRpcStubBuffer': named typ
 MONO_PRAGMA_WARNING_POP()
 #endif
 
-#include "object.h"
-#include "loader.h"
+#include <mono/metadata/object.h>
+#include <mono/metadata/loader.h>
 #include "cil-coff.h"
 #include "metadata/marshal.h"
 #include "metadata/marshal-internals.h"
@@ -36,8 +36,8 @@ MONO_PRAGMA_WARNING_POP()
 #include "metadata/method-builder.h"
 #include "metadata/method-builder-internals.h"
 #include "metadata/tabledefs.h"
-#include "metadata/exception.h"
-#include "metadata/appdomain.h"
+#include <mono/metadata/exception.h>
+#include <mono/metadata/appdomain.h>
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/class-abi-details.h"
 #include "mono/metadata/debug-helpers.h"
@@ -597,9 +597,9 @@ mono_string_from_byvalwstr_impl (const gunichar2 *data, int max_len, MonoError *
 		return NULL_HANDLE_STRING;
 
 	// FIXME Check max_len while scanning data? mono_string_from_byvalstr does.
-	const int len = g_utf16_len (data);
+	const size_t len = g_utf16_len (data);
 
-	return mono_string_new_utf16_handle (data, MIN (len, max_len), error);
+	return mono_string_new_utf16_handle (data, (gint32)MIN (len, max_len), error);
 }
 
 gpointer
@@ -789,7 +789,7 @@ mono_string_utf16_to_builder_copy (MonoStringBuilderHandle sb, const gunichar2 *
 		g_assert (chunkOffset >= 0);
 		if (maxLength > 0 && chunkOffset < string_len) {
 			// Check that we will not overrun our boundaries.
-			int charsToCopy = MIN (string_len - chunkOffset, maxLength);
+			int charsToCopy = (int)MIN (string_len - chunkOffset, maxLength);
 			memcpy (MONO_HANDLE_RAW (chunkChars)->vector, text + chunkOffset, charsToCopy * sizeof (gunichar2));
 			MONO_HANDLE_SETVAL (chunk, chunkLength, int, charsToCopy);
 		} else {
@@ -809,7 +809,7 @@ mono_string_utf16_to_builder2_impl (const gunichar2 *text, MonoError *error)
 
 	const gsize len = g_utf16_len (text);
 
-	MonoStringBuilderHandle sb = mono_string_builder_new (len, error);
+	MonoStringBuilderHandle sb = mono_string_builder_new ((int)len, error);
 	return_val_if_nok (error, NULL_HANDLE_STRING_BUILDER);
 
 	mono_string_utf16len_to_builder (sb, text, len, error);
@@ -826,7 +826,7 @@ mono_string_utf8len_to_builder (MonoStringBuilderHandle sb, const char *text, gs
 
 	GError *gerror = NULL;
 	glong copied;
-	gunichar2* ut = g_utf8_to_utf16 (text, len, NULL, &copied, &gerror);
+	gunichar2* ut = g_utf8_to_utf16 (text, (glong)len, NULL, &copied, &gerror);
 	int capacity = mono_string_builder_capacity (sb);
 
 	if (copied > capacity)
@@ -857,7 +857,7 @@ mono_string_utf8_to_builder2_impl (const char *text, MonoError *error)
 
 	const gsize len = strlen (text);
 
-	MonoStringBuilderHandle sb = mono_string_builder_new (len, error);
+	MonoStringBuilderHandle sb = mono_string_builder_new ((int)len, error);
 	return_val_if_nok (error, NULL_HANDLE_STRING_BUILDER);
 
 	mono_string_utf8len_to_builder (sb, text, len, error);
@@ -1110,7 +1110,7 @@ mono_string_to_byvalstr_impl (char *dst, MonoStringHandle src, int size, MonoErr
 
 	char *s = mono_string_handle_to_utf8 (src, error);
 	return_if_nok (error);
-	int len = MIN (size, strlen (s));
+	size_t len = MIN (size, strlen (s));
 	len -= (len >= size);
 	memcpy (dst, s, len);
 	dst [len] = 0;
@@ -2985,6 +2985,51 @@ mono_pinvoke_is_unicode (MonoMethodPInvoke *piinfo)
 	}
 }
 
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (disable_runtime_marshalling_attr, "System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute")
+
+/*
+ * runtime_marshalling_enabled:
+ *
+ *   Determine whenever M's assembly has the runtime marshalling subsystem enabled.
+ */
+static gboolean
+runtime_marshalling_enabled (MonoImage *img)
+{
+	ERROR_DECL (error);
+	MonoAssembly *ass = img->assembly;
+	MonoCustomAttrInfo* attrs;
+	MonoClass *klass;
+	int i;
+	gboolean runtime_marshalling_enabled = TRUE;
+
+	g_assert (ass);
+	if (ass->runtime_marshalling_enabled_inited)
+		return ass->runtime_marshalling_enabled;
+
+	klass = mono_class_try_get_disable_runtime_marshalling_attr_class ();
+	attrs = mono_custom_attrs_from_assembly_checked (ass, FALSE, error);
+	mono_error_cleanup (error); /* FIXME don't swallow the error */
+	if (attrs && klass) {
+		for (i = 0; i < attrs->num_attrs; ++i) {
+			MonoCustomAttrEntry *attr = &attrs->attrs [i];
+			if (attr->ctor && attr->ctor->klass == klass) {
+				runtime_marshalling_enabled = FALSE;
+				break;
+			}
+		}
+	}
+
+	if (attrs)
+		mono_custom_attrs_free (attrs);
+
+	ass->runtime_marshalling_enabled = runtime_marshalling_enabled;
+	mono_memory_barrier ();
+	ass->runtime_marshalling_enabled_inited = TRUE;
+
+	return ass->runtime_marshalling_enabled;
+}
+
+
 MonoType*
 mono_marshal_boolean_conv_in_get_local_type (MonoMarshalSpec *spec, guint8 *ldc_op /*out*/)
 {
@@ -3031,6 +3076,76 @@ mono_marshal_boolean_managed_conv_in_get_conv_arg_class (MonoMarshalSpec *spec, 
 	return conv_arg_class;
 }
 
+static int
+mono_emit_disabled_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
+	      MonoMarshalSpec *spec, int conv_arg,
+	      MonoType **conv_arg_type, MarshalAction action)
+{
+	// Some phases like MARSHAL_ACTION_PUSH need to still emit "correct" IL for the IL stack to be valid.
+	// For those phases, we won't emit the exception throw.
+	// In all other phases we'll emit the exception throw.
+	gboolean emit_exception = action == MARSHAL_ACTION_CONV_IN || action == MARSHAL_ACTION_CONV_RESULT;
+
+	if (m_type_is_byref(t)) {
+		if (emit_exception)
+			get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed references when the runtime marshalling system is disabled.");
+		else
+			get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+		return conv_arg;
+	}
+
+	switch (t->type) {
+	case MONO_TYPE_GENERICINST:
+		if (!mono_type_generic_inst_is_valuetype (t))
+			break;
+	// fallthrough
+	case MONO_TYPE_VALUETYPE: {
+		MonoClass* c = mono_class_from_mono_type_internal (t);
+		if (m_class_has_references(c)) {
+			if (emit_exception)
+				get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed types when the runtime marshalling system is disabled.");
+			else
+				get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+			return conv_arg;
+		}
+		if (m_class_any_field_has_auto_layout(c)) {
+			if (emit_exception)
+				get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Structures marked with [StructLayout(LayoutKind.Auto)] cannot be marshaled.");
+			else
+				get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+			return conv_arg;
+		}
+	}
+	// fallthrough
+	case MONO_TYPE_VOID:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_FNPTR:
+		return get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+	default:
+		break;
+	}
+
+	if (emit_exception)
+		get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed types when the runtime marshalling system is disabled.");
+	else
+		get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+	return conv_arg;
+}
+
 int
 mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	      MonoMarshalSpec *spec, int conv_arg,
@@ -3038,6 +3153,9 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 {
 	/* Ensure that we have marshalling info for this param */
 	mono_marshal_load_type_info (mono_class_from_mono_type_internal (t));
+
+	if (!m->runtime_marshalling_enabled)
+		return mono_emit_disabled_marshal (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
 	if (spec && spec->native == MONO_NATIVE_CUSTOM)
 		return get_marshal_cb ()->emit_marshal_custom (m, argnum, t, spec, conv_arg, conv_arg_type, action);
@@ -3480,6 +3598,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	MonoNativeWrapperFlags flags = aot ? EMIT_NATIVE_WRAPPER_AOT : (MonoNativeWrapperFlags)0;
 	flags |= check_exceptions ? EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS : (MonoNativeWrapperFlags)0;
 	flags |= skip_gc_trans ? EMIT_NATIVE_WRAPPER_SKIP_GC_TRANS : (MonoNativeWrapperFlags)0;
+	flags |= runtime_marshalling_enabled (get_method_image (method)) ? EMIT_NATIVE_WRAPPER_RUNTIME_MARSHALLING_ENABLED : (MonoNativeWrapperFlags)0;
 
 	mono_marshal_emit_native_wrapper (get_method_image (mb->method), mb, csig, piinfo, mspecs, piinfo->addr, flags);
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_PINVOKE);
@@ -3521,6 +3640,7 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 	GHashTable *cache;
 	gboolean found;
 	char *name;
+	MonoNativeWrapperFlags flags;
 
 	key.sig = sig;
 	key.pointer = func;
@@ -3536,7 +3656,10 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 	mb->method->save_lmf = 1;
 
-	mono_marshal_emit_native_wrapper (image, mb, sig, piinfo, mspecs, func, EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS);
+	flags = EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS;
+	flags |= runtime_marshalling_enabled (image) ? EMIT_NATIVE_WRAPPER_RUNTIME_MARSHALLING_ENABLED : (MonoNativeWrapperFlags)0;
+
+	mono_marshal_emit_native_wrapper (image, mb, sig, piinfo, mspecs, func, flags);
 
 	csig = mono_metadata_signature_dup_full (image, sig);
 	csig->pinvoke = 0;
@@ -3575,6 +3698,7 @@ mono_marshal_get_native_func_wrapper_aot (MonoClass *klass)
 	MonoMethod *invoke = mono_get_delegate_invoke_internal (klass);
 	MonoImage *image = get_method_image (invoke);
 	int i;
+	MonoNativeWrapperFlags flags;
 
 	// FIXME: include UnmanagedFunctionPointerAttribute info
 
@@ -3599,7 +3723,9 @@ mono_marshal_get_native_func_wrapper_aot (MonoClass *klass)
 	mb = mono_mb_new (invoke->klass, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 	mb->method->save_lmf = 1;
 
-	mono_marshal_emit_native_wrapper (image, mb, sig, piinfo, mspecs, NULL, EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS | EMIT_NATIVE_WRAPPER_FUNC_PARAM);
+	flags = EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS | EMIT_NATIVE_WRAPPER_FUNC_PARAM;
+	flags |= runtime_marshalling_enabled (image) ? EMIT_NATIVE_WRAPPER_RUNTIME_MARSHALLING_ENABLED : (MonoNativeWrapperFlags)0;
+	mono_marshal_emit_native_wrapper (image, mb, sig, piinfo, mspecs, NULL, flags);
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NATIVE_FUNC_AOT);
 	info->d.managed_to_native.method = invoke;
@@ -3677,12 +3803,15 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 	mb->method->save_lmf = 1;
 
 	WrapperInfo *info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT);
-	info->d.managed_to_native.method = NULL;
+	//info->d.managed_to_native.method = NULL;
+	info->d.native_func.klass = caller_class;
+	info->d.native_func.sig = sig;
 
 	MonoMethodPInvoke *piinfo = NULL;
 	MonoMarshalSpec **mspecs = g_new0 (MonoMarshalSpec *, 1 + sig->param_count);
 	MonoNativeWrapperFlags flags = aot ? EMIT_NATIVE_WRAPPER_AOT : (MonoNativeWrapperFlags)0;
 	flags |= EMIT_NATIVE_WRAPPER_FUNC_PARAM | EMIT_NATIVE_WRAPPER_FUNC_PARAM_UNBOXED;
+	flags |= runtime_marshalling_enabled (image) ? EMIT_NATIVE_WRAPPER_RUNTIME_MARSHALLING_ENABLED : (MonoNativeWrapperFlags)0;
 	mono_marshal_emit_native_wrapper (image, mb, sig, piinfo, mspecs, /*func*/NULL, flags);
 	g_free (mspecs);
 
@@ -3745,17 +3874,68 @@ type_is_blittable (MonoType *type)
 }
 
 static gboolean
-method_signature_is_blittable (MonoMethodSignature *sig)
+check_all_types_in_method_signature (MonoMethodSignature *sig, gboolean (*validate) (MonoType *type))
 {
-	if (!type_is_blittable (sig->ret))
+	if (!validate (sig->ret))
 		return FALSE;
 
 	for (int i = 0; i < sig->param_count; ++i) {
 		MonoType *type = sig->params [i];
-		if (!type_is_blittable (type))
+		if (!validate (type))
 			return FALSE;
 	}
 	return TRUE;
+}
+
+static gboolean
+method_signature_is_blittable (MonoMethodSignature *sig)
+{
+	return check_all_types_in_method_signature (sig, &type_is_blittable);
+}
+
+static gboolean
+type_is_usable_when_marshalling_disabled (MonoType *type)
+{
+	switch (type->type) {
+	case MONO_TYPE_GENERICINST:
+		if (!mono_type_generic_inst_is_valuetype (type))
+			return FALSE;
+	// fallthrough
+	case MONO_TYPE_VALUETYPE: {
+		MonoClass* c = mono_class_from_mono_type_internal (type);
+		if (m_class_has_references(c) || (m_class_is_auto_layout(c) && !m_class_is_enumtype(c))) {
+			return FALSE;
+		}
+	}
+	// fallthrough
+	case MONO_TYPE_VOID:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_FNPTR:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+
+static gboolean
+method_signature_is_usable_when_marshalling_disabled (MonoMethodSignature *sig)
+{
+	return check_all_types_in_method_signature (sig, &type_is_usable_when_marshalling_disabled);
 }
 
 /**
@@ -3777,6 +3957,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	GHashTable *cache;
 	int i;
 	EmitMarshalContext m;
+	gboolean marshalling_enabled;
 
 	g_assert (method != NULL);
 	error_init (error);
@@ -3798,30 +3979,44 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 
 	if (G_UNLIKELY (!delegate_klass)) {
 		/* creating a wrapper for a function pointer with UnmanagedCallersOnlyAttribute */
-		if (mono_method_has_marshal_info (method)) {
-			mono_error_set_invalid_program (error, "method %s with UnmanadedCallersOnlyAttribute has marshal specs", mono_method_full_name (method, TRUE));
-			return NULL;
-		}
+		marshalling_enabled = runtime_marshalling_enabled(get_method_image(method));
 		invoke = NULL;
 		invoke_sig = mono_method_signature_internal (method);
 		if (invoke_sig->hasthis) {
-			mono_error_set_invalid_program (error, "method %s with UnamanagedCallersOnlyAttribute is an instance method", mono_method_full_name (method, TRUE));
+			mono_error_set_invalid_program (error, "method %s with UnmanagedCallersOnlyAttribute is an instance method", mono_method_full_name (method, TRUE));
 			return NULL;
 		}
 		if (method->is_generic || method->is_inflated || mono_class_is_ginst (method->klass)) {
-			mono_error_set_invalid_program (error, "method %s with UnamangedCallersOnlyAttribute is generic", mono_method_full_name (method, TRUE));
+			mono_error_set_invalid_program (error, "method %s with UnmanagedCallersOnlyAttribute is generic", mono_method_full_name (method, TRUE));
 			return NULL;
 		}
-		if (!method_signature_is_blittable (invoke_sig)) {
-			mono_error_set_invalid_program (error, "method %s with UnmanagedCallersOnlyAttribute has non-blittable parameters or return type", mono_method_full_name (method, TRUE));
+		if (marshalling_enabled) {
+			if (mono_method_has_marshal_info (method)) {
+				mono_error_set_invalid_program (error, "method %s with UnmanagedCallersOnlyAttribute has marshal specs", mono_method_full_name (method, TRUE));
+				return NULL;
+			}
+			if (!method_signature_is_blittable (invoke_sig)) {
+				mono_error_set_invalid_program (error, "method %s with UnmanagedCallersOnlyAttribute has non-blittable parameters or return type", mono_method_full_name (method, TRUE));
+				return NULL;
+			}
+		} else if (!method_signature_is_usable_when_marshalling_disabled(invoke_sig)) {
+			mono_error_set_invalid_program (error, "method %s with UnmanagedCallersOnlyAttribute has types not usable when marshalling is disabled", mono_method_full_name (method, TRUE));
 			return NULL;
 		}
-		mspecs = g_new0 (MonoMarshalSpec*, invoke_sig->param_count + 1);
 	} else {
 		invoke = mono_get_delegate_invoke_internal (delegate_klass);
 		invoke_sig = mono_method_signature_internal (invoke);
-		mspecs = g_new0 (MonoMarshalSpec*, invoke_sig->param_count + 1);
+	}
+
+	if (invoke_sig->ret->type == MONO_TYPE_GENERICINST) {
+		mono_error_set_generic_error (error, "System.Runtime.InteropServices", "MarshalDirectiveException", "%s", "Cannot marshal 'return value': Non-blittable generic types cannot be marshaled.");
+		return NULL;
+	}
+
+	mspecs = g_new0 (MonoMarshalSpec*, invoke_sig->param_count + 1);
+	if (invoke) {
 		mono_method_get_marshal_info (invoke, mspecs);
+		marshalling_enabled = runtime_marshalling_enabled(m_class_get_image (delegate_klass));
 	}
 
 	sig = mono_method_signature_internal (method);
@@ -3840,6 +4035,9 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	csig->hasthis = 0;
 	csig->pinvoke = 1;
 
+	if (!marshalling_enabled)
+		csig->marshalling_disabled = 1;
+
 	memset (&m, 0, sizeof (m));
 	m.mb = mb;
 	m.sig = sig;
@@ -3847,6 +4045,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	m.retobj_var = 0;
 	m.csig = csig;
 	m.image = get_method_image (method);
+	m.runtime_marshalling_enabled = marshalling_enabled;
 
 	if (invoke)
 		mono_marshal_set_callconv_from_modopt (invoke, csig, TRUE);
@@ -3971,6 +4170,7 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 		MonoMethodSignature *csig;
 		MonoMarshalSpec **mspecs;
 		EmitMarshalContext m;
+		gboolean marshalling_enabled = runtime_marshalling_enabled(image);
 
 		sig = mono_method_signature_internal (method);
 		g_assert (!sig->hasthis);
@@ -3982,6 +4182,8 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 		csig = mono_metadata_signature_dup_full (image, sig);
 		csig->hasthis = 0;
 		csig->pinvoke = 1;
+		if (!marshalling_enabled)
+			csig->marshalling_disabled = 1;
 
 		memset (&m, 0, sizeof (m));
 		m.mb = mb;
@@ -3990,6 +4192,7 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 		m.retobj_var = 0;
 		m.csig = csig;
 		m.image = image;
+		m.runtime_marshalling_enabled = marshalling_enabled;
 
 		mono_marshal_set_callconv_from_modopt (method, csig, TRUE);
 
@@ -5349,7 +5552,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 			size = mono_marshal_type_size (field->type, info->fields [j].mspec,
 						       &align, TRUE, m_class_is_unicode (klass));
 			min_align = MAX (align, min_align);
-			info->fields [j].offset = field->offset - MONO_ABI_SIZEOF (MonoObject);
+			info->fields [j].offset = m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject);
 			info->native_size = MAX (info->native_size, info->fields [j].offset + size);
 			break;
 		}

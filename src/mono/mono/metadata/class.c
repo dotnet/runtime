@@ -39,6 +39,7 @@
 #include <mono/metadata/attrdefs.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-string.h>
 #include <mono/utils/mono-error-internals.h>
@@ -1566,6 +1567,10 @@ mono_class_find_enum_basetype (MonoClass *klass, MonoError *error)
 	 * Fetch all the field information.
 	 */
 	first_field_idx = mono_class_get_first_field_idx (klass);
+	/*
+	 * metadata-update: adding new enum fields isn't supported, so when this code runs, all the
+	 * fields are contiguous in metadata.
+	 */
 	for (i = 0; i < top; i++){
 		const char *sig;
 		guint32 cols [MONO_FIELD_SIZE];
@@ -2401,6 +2406,10 @@ mono_class_get_field_idx (MonoClass *klass, int idx)
 					return &klass_fields [idx - first_field_idx];
 				}
 			}
+			if (G_UNLIKELY (m_class_get_image (klass)->has_updates && mono_class_has_metadata_update_info (klass))) {
+				uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, idx + 1);
+				return mono_metadata_update_get_field (klass, token);
+			}
 		}
 		klass = m_class_get_parent (klass);
 	}
@@ -2463,17 +2472,14 @@ mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoTyp
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	int i;
-
 	mono_class_setup_fields (klass);
 	if (mono_class_has_failure (klass))
 		return NULL;
 
 	while (klass) {
-		int fcount = mono_class_get_field_count (klass);
-		for (i = 0; i < fcount; ++i) {
-			MonoClassField *field = &m_class_get_fields (klass) [i];
-
+		gpointer iter = NULL;
+		MonoClassField *field;
+		while ((field = mono_class_get_fields_internal (klass, &iter))) {
 			if (strcmp (name, mono_field_get_name (field)) != 0)
 				continue;
 
@@ -2521,6 +2527,10 @@ mono_class_get_field_token (MonoClassField *field)
 				return mono_metadata_make_token (MONO_TABLE_FIELD, idx);
 			}
 		}
+		if (G_UNLIKELY (m_class_get_image (klass)->has_updates)) {
+			/* TODO: metadata-update: check if the field was added. */
+			g_assert_not_reached ();
+		}
 		klass = m_class_get_parent (klass);
 	}
 
@@ -2531,6 +2541,7 @@ mono_class_get_field_token (MonoClassField *field)
 static int
 mono_field_get_index (MonoClassField *field)
 {
+	g_assert (!m_field_is_from_update (field));
 	int index = field - m_class_get_fields (m_field_get_parent (field));
 	g_assert (index >= 0 && index < mono_class_get_field_count (m_field_get_parent (field)));
 
@@ -2642,6 +2653,8 @@ mono_class_get_event_token (MonoEvent *event)
 		MonoClassEventInfo *info = mono_class_get_event_info (klass);
 		if (info) {
 			for (i = 0; i < info->count; ++i) {
+				/* TODO: metadata-update: get tokens for added props, too */
+				g_assert (!m_event_is_from_update (&info->events[i]));
 				if (&info->events [i] == event)
 					return mono_metadata_make_token (MONO_TABLE_EVENT, info->first + i + 1);
 			}
@@ -2685,6 +2698,8 @@ mono_class_get_property_token (MonoProperty *prop)
 		gpointer iter = NULL;
 		MonoClassPropertyInfo *info = mono_class_get_property_info (klass);
 		while ((p = mono_class_get_properties (klass, &iter))) {
+			/* TODO: metadata-update: get tokens for added props, too */
+			g_assert (!m_property_is_from_update (p));
 			if (&info->properties [i] == prop)
 				return mono_metadata_make_token (MONO_TABLE_PROPERTY, info->first + i + 1);
 
@@ -3076,7 +3091,7 @@ mono_image_init_name_cache (MonoImage *image)
 	mono_image_unlock (image);
 }
 
-/*FIXME Only dynamic assemblies should allow this operation.*/
+/*FIXME Only dynamic assemblies or metadata-update should allow this operation.*/
 /**
  * mono_image_add_to_name_cache:
  */
@@ -3273,7 +3288,7 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 
 	if ((nested = (char*)strchr (name, '/'))) {
 		int pos = nested - name;
-		int len = strlen (name);
+		size_t len = strlen (name);
 		if (len > 1023)
 			return NULL;
 		memcpy (buf, name, len + 1);
@@ -4621,13 +4636,20 @@ mono_ldtoken_checked (MonoImage *image, guint32 token, MonoClass **handle_class,
 	case MONO_TOKEN_TYPE_REF:
 	case MONO_TOKEN_TYPE_SPEC: {
 		MonoType *type;
+		MonoClass *klass;
 		if (handle_class)
 			*handle_class = mono_defaults.typehandle_class;
 		type = mono_type_get_checked (image, token, context, error);
 		if (!type)
 			return NULL;
 
-		mono_class_init_internal (mono_class_from_mono_type_internal (type));
+		klass = mono_class_from_mono_type_internal (type);
+		mono_class_init_internal (klass);
+		if (mono_class_has_failure (klass)) {
+			mono_error_set_for_class_failure (error, klass);
+			return NULL;
+		}
+
 		/* We return a MonoType* as handle */
 		return type;
 	}
@@ -5018,9 +5040,9 @@ mono_class_get_fields (MonoClass* klass, gpointer *iter)
 MonoClassField*
 mono_class_get_fields_internal (MonoClass *klass, gpointer *iter)
 {
-	MonoClassField* field;
 	if (!iter)
 		return NULL;
+	MonoImage *image = m_class_get_image (klass);
 	if (!*iter) {
 		mono_class_setup_fields (klass);
 		if (mono_class_has_failure (klass))
@@ -5028,18 +5050,27 @@ mono_class_get_fields_internal (MonoClass *klass, gpointer *iter)
 		/* start from the first */
 		if (mono_class_get_field_count (klass)) {
 			MonoClassField *klass_fields = m_class_get_fields (klass);
-			*iter = &klass_fields [0];
+			uint32_t idx = 0;
+			*iter = GUINT_TO_POINTER (idx + 1);
 			return &klass_fields [0];
 		} else {
 			/* no fields */
-			return NULL;
+			if (G_LIKELY (!image->has_updates))
+				return NULL;
+			else
+				*iter = 0;
 		}
 	}
-	field = (MonoClassField *)*iter;
-	field++;
-	if (field < &m_class_get_fields (klass) [mono_class_get_field_count (klass)]) {
-		*iter = field;
+	// invariant: idx is one past the field we previously returned
+	uint32_t idx = GPOINTER_TO_UINT(*iter);
+	if (idx < mono_class_get_field_count (klass)) {
+		MonoClassField *field = &m_class_get_fields (klass) [idx];
+		++idx;
+		*iter = GUINT_TO_POINTER (idx);
 		return field;
+	}
+	if (G_UNLIKELY (image->has_updates)) {
+		return mono_metadata_update_added_fields_iter (klass, FALSE, iter);
 	}
 	return NULL;
 }
@@ -5059,9 +5090,9 @@ mono_class_get_fields_internal (MonoClass *klass, gpointer *iter)
 MonoMethod*
 mono_class_get_methods (MonoClass* klass, gpointer *iter)
 {
-	MonoMethod** method;
 	if (!iter)
 		return NULL;
+	MonoImage *image = m_class_get_image (klass);
 	if (!*iter) {
 		mono_class_setup_methods (klass);
 
@@ -5070,23 +5101,33 @@ mono_class_get_methods (MonoClass* klass, gpointer *iter)
 		 * We can't fail lookup of methods otherwise the runtime will burst in flames on all sort of places.
 		 * FIXME we should better report this error to the caller
 		 */
-		if (!klass_methods)
+		if (!klass_methods && !image->has_updates)
 			return NULL;
+		uint32_t idx = 0;
 		/* start from the first */
 		if (mono_class_get_method_count (klass)) {
-			*iter = &klass_methods [0];
+			// idx is 1 more than the method we just returned
+			*iter = GUINT_TO_POINTER (idx + 1);
 			return klass_methods [0];
 		} else {
 			/* no method */
-			return NULL;
+			if (G_LIKELY (!image->has_updates))
+				return NULL;
+			else
+				*iter = 0;
 		}
 	}
-	method = (MonoMethod **)*iter;
-	method++;
-	if (method < &m_class_get_methods (klass) [mono_class_get_method_count (klass)]) {
-		*iter = method;
-		return *method;
+	// idx is 1 more than the method we returned on the previous iteration
+	uint32_t idx = GPOINTER_TO_UINT (*iter);
+	if (idx < mono_class_get_method_count (klass)) {
+		// if we're still in range, return the next method and advance iter 1 past it.
+		MonoMethod *method = m_class_get_methods (klass) [idx];
+		idx++;
+		*iter = GUINT_TO_POINTER (idx);
+		return method;
 	}
+	if (G_UNLIKELY (image->has_updates))
+		return mono_metadata_update_added_methods_iter (klass, iter);
 	return NULL;
 }
 
@@ -5445,6 +5486,9 @@ mono_field_get_rva (MonoClassField *field, int swizzle)
 
 	g_assert (field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA);
 
+	/* TODO: metadata-update: make this work. */
+	g_assert (!m_field_is_from_update (field));
+
 	def_values = mono_class_get_field_def_values_with_swizzle (klass, swizzle);
 	if (!def_values) {
 		def_values = (MonoFieldDefaultValue *)mono_class_alloc0 (klass, sizeof (MonoFieldDefaultValue) * mono_class_get_field_count (klass));
@@ -5580,7 +5624,7 @@ mono_property_get_parent (MonoProperty *prop)
 guint32
 mono_property_get_flags (MonoProperty *prop)
 {
-	return prop->attrs;
+	return prop->attrs & ~MONO_PROPERTY_META_FLAG_MASK;
 }
 
 /**
@@ -5650,7 +5694,7 @@ mono_event_get_parent (MonoEvent *event)
 guint32
 mono_event_get_flags (MonoEvent *event)
 {
-	return event->attrs;
+	return event->attrs & ~MONO_EVENT_META_FLAG_MASK;
 }
 
 /**
@@ -5712,6 +5756,14 @@ mono_find_method_in_metadata (MonoClass *klass, const char *name, int param_coun
 				res = method;
 				break;
 			}
+		}
+	}
+
+	if (G_UNLIKELY (!res && klass_image->has_updates)) {
+		if (mono_class_has_metadata_update_info (klass)) {
+			ERROR_DECL (error);
+			res = mono_metadata_update_find_method_by_name (klass, name, param_count, flags, error);
+			mono_error_cleanup (error);
 		}
 	}
 
@@ -5777,7 +5829,8 @@ mono_class_get_method_from_name_checked (MonoClass *klass, const char *name,
 		FIXME we should better report this error to the caller
 		 */
 		MonoMethod **klass_methods = m_class_get_methods (klass);
-		if (!klass_methods)
+		gboolean has_updates = m_class_get_image (klass)->has_updates;
+		if (!klass_methods && !has_updates)
 			return NULL;
 		int mcount = mono_class_get_method_count (klass);
 		for (i = 0; i < mcount; ++i) {
@@ -5790,6 +5843,9 @@ mono_class_get_method_from_name_checked (MonoClass *klass, const char *name,
 				res = method;
 				break;
 			}
+		}
+		if (G_UNLIKELY (!res && has_updates && mono_class_has_metadata_update_info (klass))) {
+			res = mono_metadata_update_find_method_by_name (klass, name, param_count, flags, error);
 		}
 	}
 	else {
@@ -6417,11 +6473,18 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 	MonoImage *image = m_class_get_image (klass);
 	MonoClass *gtd = mono_class_is_ginst (klass) ? mono_class_get_generic_type_definition (klass) : NULL;
 	MonoType *ftype;
-	int field_idx = field - m_class_get_fields (klass);
+	int field_idx;
+
+	if (G_UNLIKELY (m_field_is_from_update (field))) {
+		field_idx = -1;
+	} else {
+		field_idx = field - m_class_get_fields (klass);
+	}
 
 	error_init (error);
 
 	if (gtd) {
+		g_assert (field_idx != -1);
 		MonoClassField *gfield = &m_class_get_fields (gtd) [field_idx];
 		MonoType *gtype = mono_field_get_type_checked (gfield, error);
 		if (!is_ok (error)) {
@@ -6440,7 +6503,13 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 		const char *sig;
 		guint32 cols [MONO_FIELD_SIZE];
 		MonoGenericContainer *container = NULL;
-		int idx = mono_class_get_first_field_idx (klass) + field_idx;
+		int idx;
+
+		if (G_UNLIKELY (m_field_is_from_update (field))) {
+			idx = mono_metadata_update_get_field_idx (field) - 1;
+		} else {
+			idx = mono_class_get_first_field_idx (klass) + field_idx;
+		}
 
 		/*FIXME, in theory we do not lazy load SRE fields*/
 		g_assert (!image_is_dynamic (image));
@@ -6475,6 +6544,9 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 static guint32
 mono_field_resolve_flags (MonoClassField *field)
 {
+	/* Fields in metadata updates are pre-resolved, so this method should not be called. */
+	g_assert (!m_field_is_from_update (field));
+
 	MonoClass *klass = m_field_get_parent (field);
 	MonoImage *image = m_class_get_image (klass);
 	MonoClass *gtd = mono_class_is_ginst (klass) ? mono_class_get_generic_type_definition (klass) : NULL;
@@ -6510,9 +6582,9 @@ mono_field_resolve_flags (MonoClassField *field)
 MonoClassField*
 mono_class_get_fields_lazy (MonoClass* klass, gpointer *iter)
 {
-	MonoClassField* field;
 	if (!iter)
 		return NULL;
+	MonoImage *image = m_class_get_image (klass);
 	if (!*iter) {
 		mono_class_setup_basic_field_info (klass);
 		MonoClassField *klass_fields = m_class_get_fields (klass);
@@ -6520,18 +6592,28 @@ mono_class_get_fields_lazy (MonoClass* klass, gpointer *iter)
 			return NULL;
 		/* start from the first */
 		if (mono_class_get_field_count (klass)) {
-			*iter = &klass_fields [0];
-			return (MonoClassField *)*iter;
+			uint32_t idx = 0;
+			*iter = GUINT_TO_POINTER (idx+1);
+			return &klass_fields [0];
 		} else {
 			/* no fields */
-			return NULL;
+			if (G_LIKELY(!image->has_updates))
+				return NULL;
+			else
+				*iter = 0;
 		}
 	}
-	field = (MonoClassField *)*iter;
-	field++;
-	if (field < &m_class_get_fields (klass) [mono_class_get_field_count (klass)]) {
-		*iter = field;
-		return (MonoClassField *)*iter;
+	// invariant: idx is one past the field we previously returned
+	uint32_t idx = GPOINTER_TO_UINT(*iter);
+	if (idx < mono_class_get_field_count (klass)) {
+		MonoClassField *field = &m_class_get_fields (klass) [idx];
+		++idx;
+		*iter = GUINT_TO_POINTER (idx);
+		return field;
+	}
+	if (G_UNLIKELY (image->has_updates)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Lazy iterating added fields %s", m_class_get_name(klass));
+		return mono_metadata_update_added_fields_iter (klass, TRUE, iter);
 	}
 	return NULL;
 }

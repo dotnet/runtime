@@ -667,7 +667,7 @@ namespace System.Net.Sockets
                 handle,
                 SocketOptionLevel.IPv6,
                 optionName,
-                ref ipmr,
+                ipmr,
                 Interop.Winsock.IPv6MulticastRequest.Size);
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
@@ -787,8 +787,6 @@ namespace System.Net.Sockets
 
         public static SocketError GetIPv6MulticastOption(SafeSocketHandle handle, SocketOptionName optionName, out IPv6MulticastOption? optionValue)
         {
-            Interop.Winsock.IPv6MulticastRequest ipmr = default;
-
             int optlen = Interop.Winsock.IPv6MulticastRequest.Size;
 
             // This can throw ObjectDisposedException.
@@ -796,7 +794,7 @@ namespace System.Net.Sockets
                 handle,
                 SocketOptionLevel.IP,
                 optionName,
-                out ipmr,
+                out Interop.Winsock.IPv6MulticastRequest ipmr,
                 ref optlen);
 
             if (errorCode == SocketError.SocketError)
@@ -811,7 +809,6 @@ namespace System.Net.Sockets
 
         public static SocketError GetLingerOption(SafeSocketHandle handle, out LingerOption? optionValue)
         {
-            Interop.Winsock.Linger lngopt = default;
             int optlen = 4;
 
             // This can throw ObjectDisposedException.
@@ -819,7 +816,7 @@ namespace System.Net.Sockets
                 handle,
                 SocketOptionLevel.Socket,
                 SocketOptionName.Linger,
-                out lngopt,
+                out Interop.Winsock.Linger lngopt,
                 ref optlen);
 
             if (errorCode == SocketError.SocketError)

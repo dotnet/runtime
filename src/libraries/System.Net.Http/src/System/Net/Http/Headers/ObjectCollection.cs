@@ -9,12 +9,8 @@ namespace System.Net.Http.Headers
 {
     internal sealed class UnvalidatedObjectCollection<T> : ObjectCollection<T> where T : class
     {
-        public override void Validate(T item)
+        public override void Validate(T item!!)
         {
-            if (item is null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
         }
     }
 
@@ -196,7 +192,7 @@ namespace System.Net.Http.Headers
         {
             private readonly ObjectCollection<T> _collection;
 
-            public DebugView(ObjectCollection<T> collection) => _collection = collection ?? throw new ArgumentNullException(nameof(collection));
+            public DebugView(ObjectCollection<T> collection!!) => _collection = collection;
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
             public T[] Items

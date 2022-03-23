@@ -14,7 +14,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    public struct SessionId
+    public struct SessionId : IEquatable<SessionId>
     {
         public readonly string sessionId;
 
@@ -26,7 +26,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         // hashset treats 0 as unset
         public override int GetHashCode() => sessionId?.GetHashCode() ?? -1;
 
-        public override bool Equals(object obj) => (obj is SessionId) ? ((SessionId)obj).sessionId == sessionId : false;
+        public override bool Equals(object obj) => obj is SessionId other && Equals(other);
+
+        public bool Equals(SessionId other) => other.sessionId == sessionId;
 
         public static bool operator ==(SessionId a, SessionId b) => a.sessionId == b.sessionId;
 
@@ -37,7 +39,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public override string ToString() => $"session-{sessionId}";
     }
 
-    public struct MessageId
+    public struct MessageId : IEquatable<MessageId>
     {
         public readonly string sessionId;
         public readonly int id;
@@ -54,7 +56,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public override int GetHashCode() => (sessionId?.GetHashCode() ?? 0) ^ id.GetHashCode();
 
-        public override bool Equals(object obj) => (obj is MessageId) ? ((MessageId)obj).sessionId == sessionId && ((MessageId)obj).id == id : false;
+        public override bool Equals(object obj) => obj is MessageId other && Equals(other);
+
+        public bool Equals(MessageId other) => other.sessionId == sessionId && other.id == id;
     }
 
     internal class DotnetObjectId
@@ -125,42 +129,42 @@ namespace Microsoft.WebAssembly.Diagnostics
         public JObject Value { get; private set; }
         public JObject Error { get; private set; }
 
-        public bool IsOk => Value != null;
-        public bool IsErr => Error != null;
+        public bool IsOk => Error == null;
 
-        private Result(JObject result, JObject error)
+        private Result(JObject resultOrError, bool isError)
         {
-            if (result != null && error != null)
-                throw new ArgumentException($"Both {nameof(result)} and {nameof(error)} arguments cannot be non-null.");
-
-            bool resultHasError = string.Equals((result?["result"] as JObject)?["subtype"]?.Value<string>(), "error");
-            if (result != null && resultHasError)
+            bool resultHasError = isError || string.Equals((resultOrError?["result"] as JObject)?["subtype"]?.Value<string>(), "error");
+            if (resultHasError)
             {
-                this.Value = null;
-                this.Error = result;
+                Value = null;
+                Error = resultOrError;
             }
             else
             {
-                this.Value = result;
-                this.Error = error;
+                Value = resultOrError;
+                Error = null;
             }
         }
-
         public static Result FromJson(JObject obj)
         {
-            //Log ("protocol", $"from result: {obj}");
-            return new Result(obj["result"] as JObject, obj["error"] as JObject);
+            var error = obj["error"] as JObject;
+            if (error != null)
+                return new Result(error, true);
+            var result = obj["result"] as JObject;
+            return new Result(result, false);
         }
 
-        public static Result Ok(JObject ok) => new Result(ok, null);
+        public static Result Ok(JObject ok) => new Result(ok, false);
 
         public static Result OkFromObject(object ok) => Ok(JObject.FromObject(ok));
 
-        public static Result Err(JObject err) => new Result(null, err);
+        public static Result Err(JObject err) => new Result(err, true);
 
-        public static Result Err(string msg) => new Result(null, JObject.FromObject(new { message = msg }));
+        public static Result Err(string msg) => new Result(JObject.FromObject(new { message = msg }), true);
 
-        public static Result Exception(Exception e) => new Result(null, JObject.FromObject(new { message = e.Message }));
+        public static Result UserVisibleErr(JObject result) => new Result { Value = result };
+
+        public static Result Exception(Exception e) => new Result(JObject.FromObject(new { message = e.Message }), true);
 
         public JObject ToJObject(MessageId target)
         {
@@ -186,7 +190,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public override string ToString()
         {
-            return $"[Result: IsOk: {IsOk}, IsErr: {IsErr}, Value: {Value?.ToString()}, Error: {Error?.ToString()} ]";
+            return $"[Result: IsOk: {IsOk}, IsErr: {!IsOk}, Value: {Value?.ToString()}, Error: {Error?.ToString()} ]";
         }
     }
 
@@ -316,6 +320,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public TaskCompletionSource<DebugStore> ready;
         public bool IsRuntimeReady => ready != null && ready.Task.IsCompleted;
         public bool IsSkippingHiddenMethod { get; set; }
+        public bool IsSteppingThroughMethod { get; set; }
+        public bool IsResumedAfterBp { get; set; }
         public int ThreadId { get; set; }
         public int Id { get; set; }
         public object AuxData { get; set; }
@@ -330,6 +336,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public TaskCompletionSource<DebugStore> Source { get; } = new TaskCompletionSource<DebugStore>();
 
         private Dictionary<int, PerScopeCache> perScopeCaches { get; } = new Dictionary<int, PerScopeCache>();
+
+        internal int TempBreakpointForSetNextIP { get; set; }
 
         public DebugStore Store
         {

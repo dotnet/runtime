@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -11,7 +12,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -81,11 +81,8 @@ namespace System
         [DynamicDependency("Ctor(System.Char[],System.Int32,System.Int32)")]
         public extern String(char[] value, int startIndex, int length);
 
-        private static string Ctor(char[] value, int startIndex, int length)
+        private static string Ctor(char[] value!!, int startIndex, int length)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             if (startIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
 
@@ -201,7 +198,7 @@ namespace System
                 if (length == 0)
                     return Empty;
 
-                throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.Throw(nameof(value));
             }
 
             byte* pStart = (byte*)(value + startIndex);
@@ -261,7 +258,7 @@ namespace System
                 if (length == 0)
                     return Empty;
 
-                throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.Throw(nameof(value));
             }
 
             byte* pStart = (byte*)(value + startIndex);
@@ -308,11 +305,8 @@ namespace System
             return result;
         }
 
-        public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
+        public static string Create<TState>(int length, TState state, SpanAction<char, TState> action!!)
         {
-            if (action == null)
-                throw new ArgumentNullException(nameof(action));
-
             if (length <= 0)
             {
                 if (length == 0)
@@ -340,6 +334,7 @@ namespace System
         public static string Create(IFormatProvider? provider, Span<char> initialBuffer, [InterpolatedStringHandlerArgument("provider", "initialBuffer")] ref DefaultInterpolatedStringHandler handler) =>
             handler.ToStringAndClear();
 
+        [Intrinsic] // When input is a string literal
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator ReadOnlySpan<char>(string? value) =>
             value != null ? new ReadOnlySpan<char>(ref value.GetRawStringData(), value.Length) : default;
@@ -371,11 +366,10 @@ namespace System
             return this;
         }
 
-        public static unsafe string Copy(string str)
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("This API should not be used to create mutable strings. See https://go.microsoft.com/fwlink/?linkid=2084035 for alternatives.")]
+        public static unsafe string Copy(string str!!)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
-
             string result = FastAllocateString(str.Length);
 
             Buffer.Memmove(
@@ -391,10 +385,8 @@ namespace System
         // sourceIndex + count - 1 to the character array buffer, beginning
         // at destinationIndex.
         //
-        public unsafe void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
+        public unsafe void CopyTo(int sourceIndex, char[] destination!!, int destinationIndex, int count)
         {
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
             if (sourceIndex < 0)

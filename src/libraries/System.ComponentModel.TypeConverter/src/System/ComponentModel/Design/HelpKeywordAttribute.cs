@@ -59,21 +59,16 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Creates a HelpKeywordAttribute with the value being the given keyword string.
         /// </summary>
-        public HelpKeywordAttribute(string keyword)
+        public HelpKeywordAttribute(string keyword!!)
         {
-            HelpKeyword = keyword ?? throw new ArgumentNullException(nameof(keyword));
+            HelpKeyword = keyword;
         }
 
         /// <summary>
         /// Creates a HelpKeywordAttribute with the value being the full name of the given type.
         /// </summary>
-        public HelpKeywordAttribute(Type t)
+        public HelpKeywordAttribute(Type t!!)
         {
-            if (t == null)
-            {
-                throw new ArgumentNullException(nameof(t));
-            }
-
             HelpKeyword = t.FullName;
         }
 

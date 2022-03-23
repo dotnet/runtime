@@ -113,7 +113,7 @@ namespace System.Net.Http.Headers
                     value = null;
                 }
 
-                if ((value != null) && (HttpRuleParser.GetHostLength(value, 0, false, out string? _) != value.Length))
+                if ((value != null) && (HttpRuleParser.GetHostLength(value, 0, false) != value.Length))
                 {
                     throw new FormatException(SR.net_http_headers_invalid_host_header);
                 }

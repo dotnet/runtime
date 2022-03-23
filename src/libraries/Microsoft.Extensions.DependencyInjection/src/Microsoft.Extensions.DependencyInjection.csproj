@@ -1,10 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <Nullable>enable</Nullable>
     <!-- Debug IL generation -->
     <ILEmitBackendSaveAssemblies>false</ILEmitBackendSaveAssemblies>
-    <Nullable>Annotations</Nullable>
     <!-- Type 'Microsoft.Extensions.DependencyInjection.ServiceCollection' has been forwaded down.-->
     <NoWarn>$(NoWarn);CP0001</NoWarn>
     <IsPackable>true</IsPackable>
@@ -55,8 +55,6 @@
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
-    <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

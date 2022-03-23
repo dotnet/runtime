@@ -15,9 +15,8 @@ namespace System.Configuration
         }
 
         // Do not check for null type here to handle the callback attribute case
-        internal CallbackValidator(ValidatorCallback callback)
+        internal CallbackValidator(ValidatorCallback callback!!)
         {
-            if (callback == null) throw new ArgumentNullException(nameof(callback));
             _type = null;
             _callback = callback;
         }

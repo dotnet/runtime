@@ -49,11 +49,8 @@ namespace System.IO.Compression
         /// Internal constructor to check stream validity and call the correct initialization function depending on
         /// the value of the CompressionMode given.
         /// </summary>
-        internal DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen, int windowBits, long uncompressedSize = -1)
+        internal DeflateStream(Stream stream!!, CompressionMode mode, bool leaveOpen, int windowBits, long uncompressedSize = -1)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
             switch (mode)
             {
                 case CompressionMode.Decompress:
@@ -78,11 +75,8 @@ namespace System.IO.Compression
         /// <summary>
         /// Internal constructor to specify the compressionlevel as well as the windowbits
         /// </summary>
-        internal DeflateStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen, int windowBits)
+        internal DeflateStream(Stream stream!!, CompressionLevel compressionLevel, bool leaveOpen, int windowBits)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
             InitializeDeflater(stream, leaveOpen, windowBits, compressionLevel);
         }
 
@@ -592,8 +586,7 @@ namespace System.IO.Compression
                 bool finished;
                 do
                 {
-                    int compressedBytes;
-                    finished = _deflater.Finish(_buffer, out compressedBytes);
+                    finished = _deflater.Finish(_buffer, out _);
                 } while (!finished);
             }
         }
@@ -640,8 +633,7 @@ namespace System.IO.Compression
                 bool finished;
                 do
                 {
-                    int compressedBytes;
-                    finished = _deflater.Finish(_buffer, out compressedBytes);
+                    finished = _deflater.Finish(_buffer, out _);
                 } while (!finished);
             }
         }

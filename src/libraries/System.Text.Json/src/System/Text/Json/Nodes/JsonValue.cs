@@ -61,13 +61,8 @@ namespace System.Text.Json.Nodes
         /// <param name="jsonTypeInfo">The <see cref="JsonTypeInfo"/> that will be used to serialize the value.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
-        public static JsonValue? Create<T>(T? value, JsonTypeInfo<T> jsonTypeInfo, JsonNodeOptions? options = null)
+        public static JsonValue? Create<T>(T? value, JsonTypeInfo<T> jsonTypeInfo!!, JsonNodeOptions? options = null)
         {
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
             if (value == null)
             {
                 return null;

@@ -6,7 +6,7 @@
 #define HEADER_LENGTH 11
 #define REPLY_PACKET 0x80
 
-/* 
+/*
  * Wire Protocol definitions
  */
 
@@ -35,7 +35,8 @@ typedef enum {
 	MDBGPROT_CMD_VM_STOP_BUFFERING = 15,
 	MDBGPROT_CMD_VM_READ_MEMORY = 16,
 	MDBGPROT_CMD_VM_WRITE_MEMORY = 17,
-	MDBGPROT_CMD_GET_ASSEMBLY_BY_NAME = 18
+	MDBGPROT_CMD_GET_ASSEMBLY_BY_NAME = 18,
+	MDBGPROT_CMD_GET_MODULE_BY_GUID = 19
 } MdbgProtCmdVM;
 
 typedef enum {
@@ -150,7 +151,7 @@ typedef enum {
 
 typedef enum {
 	MDBGPROT_CMD_MODULE_GET_INFO = 1,
-	MDBGPROT_CMD_MODULE_APPLY_CHANGES = 2,
+	MDBGPROT_CMD_MODULE_APPLY_CHANGES = 2
 } MdbgProtCmdModule;
 
 typedef enum {

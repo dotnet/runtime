@@ -20,10 +20,8 @@ namespace System.Runtime.Versioning
         private string? _frameworkDisplayName;
 
         // The frameworkName parameter is intended to be the string form of a FrameworkName instance.
-        public TargetFrameworkAttribute(string frameworkName)
+        public TargetFrameworkAttribute(string frameworkName!!)
         {
-            if (frameworkName == null)
-                throw new ArgumentNullException(nameof(frameworkName));
             _frameworkName = frameworkName;
         }
 

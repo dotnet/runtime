@@ -130,7 +130,7 @@ namespace System.Net.Http.Headers
             {
                 // Note that the RFC requires decimal '.' regardless of the culture. I.e. using ',' as decimal
                 // separator is considered invalid (even if the current culture would allow it).
-                double qualityValue = 0;
+                double qualityValue;
                 if (double.TryParse(qualityParameter.Value, NumberStyles.AllowDecimalPoint,
                     NumberFormatInfo.InvariantInfo, out qualityValue))
                 {
@@ -162,7 +162,7 @@ namespace System.Net.Http.Headers
                 throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
             }
 
-            int length = 0;
+            int length;
             if ((HttpRuleParser.GetCommentLength(value, 0, out length) != HttpParseResult.Parsed) ||
                 (length != value.Length)) // no trailing spaces allowed
             {
@@ -177,7 +177,7 @@ namespace System.Net.Http.Headers
                 throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
             }
 
-            int length = 0;
+            int length;
             if ((HttpRuleParser.GetQuotedStringLength(value, 0, out length) != HttpParseResult.Parsed) ||
                 (length != value.Length)) // no trailing spaces allowed
             {

@@ -1458,8 +1458,7 @@ namespace Internal.Runtime.TypeLoader
             int typesToRegisterCount = 0;
             for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
             {
-                DefType typeAsDefType;
-                if ((typeAsDefType = _typesThatNeedTypeHandles[i] as DefType) != null)
+                if (_typesThatNeedTypeHandles[i] is DefType)
                     typesToRegisterCount++;
             }
 
@@ -1637,8 +1636,6 @@ namespace Internal.Runtime.TypeLoader
 
         internal bool TryComputeFieldOffset(DefType declaringType, uint fieldOrdinal, out int fieldOffset)
         {
-            fieldOffset = int.MinValue;
-
             TypeLoaderLogger.WriteLine("Computing offset of field #" + fieldOrdinal.LowLevelToString() + " on type " + declaringType.ToString());
 
             // Get the computed field offset result
@@ -2217,9 +2214,8 @@ namespace Internal.Runtime.TypeLoader
             DefType delegateType = (DefType)context.ResolveRuntimeTypeHandle(delegateTypeHandle);
             Debug.Assert(delegateType.HasInstantiation);
 
-            NativeLayoutInfoLoadContext loadContext;
             NativeLayoutInfo universalLayoutInfo;
-            NativeParser parser = delegateType.GetOrCreateTypeBuilderState().GetParserForUniversalNativeLayoutInfo(out loadContext, out universalLayoutInfo);
+            NativeParser parser = delegateType.GetOrCreateTypeBuilderState().GetParserForUniversalNativeLayoutInfo(out _, out universalLayoutInfo);
             if (!parser.IsNull)
             {
                 NativeParser sigParser = parser.GetParserForBagElementKind(BagElementKind.DelegateInvokeSignature);

@@ -1,14 +1,9 @@
 <Project>
-  <PropertyGroup Condition="'$(BuildAllProjects)' == 'true' and
-                            !$(BuildTargetFramework.StartsWith('netstandard')) and
-                            !$(BuildTargetFramework.StartsWith('net4'))">
-    <AdditionalBuildTargetFrameworks>$(AdditionalBuildTargetFrameworks);netstandard2.0;netstandard2.1</AdditionalBuildTargetFrameworks>
-
-    <!-- Reference assemblies are special and don't initialize fields or have empty finalizers, etc. -->
-    <RunAnalyzers>false</RunAnalyzers>
-  </PropertyGroup>
 
   <PropertyGroup>
+    <!-- Reference assemblies are special and don't initialize fields or have empty finalizers, etc. -->
+    <RunAnalyzers>false</RunAnalyzers>
+
     <!-- disable warnings about unused fields -->
     <NoWarn>$(NoWarn);CS0169;CS0649;CS8618</NoWarn>
 
@@ -22,10 +17,13 @@
     <NoWarn>$(NoWarn);CS8617</NoWarn>
   </PropertyGroup>
 
+  <!-- All reference assemblies should have a ReferenceAssemblyAttribute and the 0x70 flag which prevents them from loading. -->
   <ItemGroup>
-    <!-- All reference assemblies should have the 0x70 flag which prevents them from loading
-         and the ReferenceAssemblyAttribute. -->
-    <AssemblyInfoLines Include="[assembly:System.Runtime.CompilerServices.ReferenceAssembly]" />
-    <AssemblyInfoLines Include="[assembly:System.Reflection.AssemblyFlags((System.Reflection.AssemblyNameFlags)0x70)]" />
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.ReferenceAssemblyAttribute" />
+    <AssemblyAttribute Include="System.Reflection.AssemblyFlags">
+      <_Parameter1>(System.Reflection.AssemblyNameFlags)0x70</_Parameter1>
+      <_Parameter1_IsLiteral>true</_Parameter1_IsLiteral>
+    </AssemblyAttribute>
   </ItemGroup>
+
 </Project>

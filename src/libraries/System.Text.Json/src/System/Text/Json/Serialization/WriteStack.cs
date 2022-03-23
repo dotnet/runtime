@@ -12,9 +12,11 @@ using System.Threading.Tasks;
 
 namespace System.Text.Json
 {
-    [DebuggerDisplay("Path:{PropertyPath()} Current: ConverterStrategy.{ConverterStrategy.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy}, {Current.JsonTypeInfo.Type.Name}")]
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct WriteStack
     {
+        public int CurrentDepth => _count;
+
         /// <summary>
         /// Exposes the stackframe that is currently active.
         /// </summary>
@@ -77,9 +79,9 @@ namespace System.Text.Json
         public bool SupportContinuation;
 
         /// <summary>
-        /// Stores a reference id that has been calculated by a polymorphic converter handling a newly encountered boxed struct.
+        /// Stores a reference id that has been calculated for a newly serialized object.
         /// </summary>
-        public string? BoxedStructReferenceId;
+        public string? NewReferenceId;
 
         private void EnsurePushCapacity()
         {
@@ -98,16 +100,15 @@ namespace System.Text.Json
         /// </summary>
         public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
-            JsonTypeInfo jsonTypeInfo = options.GetOrAddClassForRootType(type);
-            Debug.Assert(options == jsonTypeInfo.Options);
+            JsonTypeInfo jsonTypeInfo = options.GetOrAddJsonTypeInfoForRootType(type);
             return Initialize(jsonTypeInfo, supportContinuation);
         }
 
         internal JsonConverter Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation)
         {
             Current.JsonTypeInfo = jsonTypeInfo;
-            Current.DeclaredJsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
-            Current.NumberHandling = Current.DeclaredJsonPropertyInfo.NumberHandling;
+            Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
+            Current.NumberHandling = Current.JsonPropertyInfo.NumberHandling;
 
             JsonSerializerOptions options = jsonTypeInfo.Options;
             if (options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None)
@@ -127,12 +128,14 @@ namespace System.Text.Json
             {
                 if (_count == 0)
                 {
-                    // The first stack frame is held in Current.
+                    // Performance optimization: reuse the first stackframe on the first push operation.
+                    // NB need to be careful when making writes to Current _before_ the first `Push`
+                    // operation is performed.
                     _count = 1;
                 }
                 else
                 {
-                    JsonTypeInfo jsonTypeInfo = Current.GetPolymorphicJsonPropertyInfo().RuntimeTypeInfo;
+                    JsonTypeInfo jsonTypeInfo = Current.GetNestedJsonTypeInfo();
                     JsonNumberHandling? numberHandling = Current.NumberHandling;
 
                     EnsurePushCapacity();
@@ -141,9 +144,9 @@ namespace System.Text.Json
                     _count++;
 
                     Current.JsonTypeInfo = jsonTypeInfo;
-                    Current.DeclaredJsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
+                    Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
                     // Allow number handling on property to win over handling on type.
-                    Current.NumberHandling = numberHandling ?? Current.DeclaredJsonPropertyInfo.NumberHandling;
+                    Current.NumberHandling = numberHandling ?? Current.JsonPropertyInfo.NumberHandling;
                 }
             }
             else
@@ -347,7 +350,7 @@ namespace System.Text.Json
             static void AppendStackFrame(StringBuilder sb, ref WriteStackFrame frame)
             {
                 // Append the property name.
-                string? propertyName = frame.DeclaredJsonPropertyInfo?.ClrName;
+                string? propertyName = frame.JsonPropertyInfo?.ClrName;
                 if (propertyName == null)
                 {
                     // Attempt to get the JSON property name from the property name specified in re-entry.
@@ -375,5 +378,8 @@ namespace System.Text.Json
                 }
             }
         }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private string DebuggerDisplay => $"Path:{PropertyPath()} Current: ConverterStrategy.{Current.JsonPropertyInfo?.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
     }
 }

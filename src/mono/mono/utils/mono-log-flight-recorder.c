@@ -63,7 +63,7 @@ handle_command (gpointer state, gpointer payload, gboolean at_shutdown)
 
 #if 0
 		// Dump all messages on each append. This is an aggressive, slow
-		// debugging method. 
+		// debugging method.
 
 		LogMessage messages [MAX_RECORDER_LOG_LEN];
 		LogQueueDumpRequest dump;
@@ -100,8 +100,8 @@ static MonoUtilityThread *logger_thread;
  * mono_log_open_recorder:
  * \param path Unused
  * \param userData Unused
- * Open access to recorder 
- */   
+ * Open access to recorder
+ */
 void
 mono_log_open_recorder (const char *path, void *userData)
 {
@@ -150,7 +150,7 @@ mono_log_write_recorder (const char *log_domain, GLogLevelFlags level, mono_bool
 /**
  * mono_log_close_recorder
  *
- * 	Close access to recorder 
+ * 	Close access to recorder
  */
 void
 mono_log_close_recorder (void)

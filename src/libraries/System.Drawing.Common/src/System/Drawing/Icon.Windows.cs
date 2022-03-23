@@ -82,13 +82,8 @@ namespace System.Drawing
         {
         }
 
-        public Icon(Icon original, int width, int height) : this()
+        public Icon(Icon original!!, int width, int height) : this()
         {
-            if (original == null)
-            {
-                throw new ArgumentNullException(nameof(original));
-            }
-
             _iconData = original._iconData;
 
             if (_iconData == null)
@@ -102,11 +97,8 @@ namespace System.Drawing
             }
         }
 
-        public Icon(Type type, string resource) : this()
+        public Icon(Type type, string resource!!) : this()
         {
-            if (resource == null)
-                throw new ArgumentNullException(nameof(resource));
-
             Stream? stream = type.Module.Assembly.GetManifestResourceStream(type, resource);
             if (stream == null)
             {
@@ -126,13 +118,8 @@ namespace System.Drawing
         {
         }
 
-        public Icon(Stream stream, int width, int height) : this()
+        public Icon(Stream stream!!, int width, int height) : this()
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
             _iconData = new byte[(int)stream.Length];
             stream.Read(_iconData, 0, _iconData.Length);
             Initialize(width, height);
@@ -163,13 +150,8 @@ namespace System.Drawing
 
         public static Icon? ExtractAssociatedIcon(string filePath) => ExtractAssociatedIcon(filePath, 0);
 
-        private static unsafe Icon? ExtractAssociatedIcon(string filePath, int index)
+        private static unsafe Icon? ExtractAssociatedIcon(string filePath!!, int index)
         {
-            if (filePath == null)
-            {
-                throw new ArgumentNullException(nameof(filePath));
-            }
-
             if (string.IsNullOrEmpty(filePath))
                 throw new ArgumentException(SR.NullOrEmptyPath, nameof(filePath));
 
@@ -314,8 +296,8 @@ namespace System.Drawing
             int imageHeight;
             int targetX = 0;
             int targetY = 0;
-            int targetWidth = 0;
-            int targetHeight = 0;
+            int targetWidth;
+            int targetHeight;
 
             Size cursorSize = Size;
 
@@ -398,7 +380,6 @@ namespace System.Drawing
             if (result > 0)
             {
                 hSaveRgn = hTempRgn;
-                hTempRgn = IntPtr.Zero;
             }
             else
             {
@@ -811,7 +792,7 @@ namespace System.Drawing
 
                 Size size = Size;
                 bitmap = new Bitmap(size.Width, size.Height); // initialized to transparent
-                Graphics? graphics = null;
+                Graphics? graphics;
                 using (graphics = Graphics.FromImage(bitmap))
                 {
                     try

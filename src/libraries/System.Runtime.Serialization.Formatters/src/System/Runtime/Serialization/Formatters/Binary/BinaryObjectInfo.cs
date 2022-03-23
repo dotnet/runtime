@@ -94,8 +94,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             InvokeSerializationBinder(binder);
             objectWriter.ObjectManager.RegisterObject(obj);
 
-            ISurrogateSelector surrogateSelectorTemp;
-            if (surrogateSelector != null && (_serializationSurrogate = surrogateSelector.GetSurrogate(_objectType, context, out surrogateSelectorTemp)) != null)
+            if (surrogateSelector != null && (_serializationSurrogate = surrogateSelector.GetSurrogate(_objectType, context, out _)) != null)
             {
                 _si = new SerializationInfo(_objectType, converter);
                 if (!_objectType.IsPrimitive)
@@ -158,7 +157,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             if (surrogateSelector != null)
             {
-                _serializationSurrogate = surrogateSelector.GetSurrogate(objectType, context, out ISurrogateSelector surrogateSelectorTemp);
+                _serializationSurrogate = surrogateSelector.GetSurrogate(objectType, context, out _);
             }
 
             if (_serializationSurrogate != null)
@@ -185,11 +184,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private void InitSiWrite()
         {
-            SerializationInfoEnumerator? siEnum = null;
+            SerializationInfoEnumerator? siEnum;
             _isSi = true;
             Debug.Assert(_si != null);
-            siEnum = _si.GetEnumerator();
-            int infoLength = 0;
+            int infoLength;
 
             infoLength = _si.MemberCount;
 
@@ -452,10 +450,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 return;
             }
 
-            ISurrogateSelector? surrogateSelectorTemp = null;
             if (surrogateSelector != null)
             {
-                _serializationSurrogate = surrogateSelector.GetSurrogate(objectType, context, out surrogateSelectorTemp);
+                _serializationSurrogate = surrogateSelector.GetSurrogate(objectType, context, out _);
             }
 
             if (_serializationSurrogate != null)
@@ -690,7 +687,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
 
             Type[] outMemberTypes = new Type[_cache._memberInfos.Length];
-            bool isFound = false;
+            bool isFound;
             for (int i = 0; i < _cache._memberInfos.Length; i++)
             {
                 if (!memberMissing && inMemberNames[i].Equals(_cache._memberInfos[i].Name))

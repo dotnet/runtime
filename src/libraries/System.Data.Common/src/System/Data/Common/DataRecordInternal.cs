@@ -104,7 +104,7 @@ namespace System.Data.Common
 
         public override long GetBytes(int i, long dataIndex, byte[]? buffer, int bufferIndex, int length)
         {
-            int cbytes = 0;
+            int cbytes;
             int ndataIndex;
 
             byte[] data = (byte[])_values[i];

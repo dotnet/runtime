@@ -53,13 +53,13 @@ internal static partial class Interop
             HasBirthTime = 1,
         }
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FStat", SetLastError = true)]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FStat", SetLastError = true)]
         internal static partial int FStat(SafeHandle fd, out FileStatus output);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Stat", CharSet = CharSet.Ansi, SetLastError = true)]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Stat", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static partial int Stat(string path, out FileStatus output);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_LStat", CharSet = CharSet.Ansi, SetLastError = true)]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LStat", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static partial int LStat(string path, out FileStatus output);
     }
 }

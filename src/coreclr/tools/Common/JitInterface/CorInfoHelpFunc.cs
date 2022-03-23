@@ -229,7 +229,6 @@ namespace Internal.JitInterface
         CORINFO_HELP_ARE_TYPES_EQUIVALENT, // Check whether two TypeHandles (native structure pointers) are equivalent
 
         CORINFO_HELP_VIRTUAL_FUNC_PTR,      // look up a virtual method at run-time
-                                            //CORINFO_HELP_VIRTUAL_FUNC_PTR_LOG,  // look up a virtual method at run-time, with IBC logging
 
         // Not a real helpers. Instead of taking handle arguments, these helpers point to a small stub that loads the handle argument and calls the static helper.
         CORINFO_HELP_READYTORUN_NEW,
@@ -241,16 +240,6 @@ namespace Internal.JitInterface
         CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
         CORINFO_HELP_READYTORUN_DELEGATE_CTOR,
         CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE,
-
-        CORINFO_HELP_EE_PRESTUB,            // Not real JIT helper. Used in native images.
-
-        CORINFO_HELP_EE_PRECODE_FIXUP,      // Not real JIT helper. Used for Precode fixup in native images.
-        CORINFO_HELP_EE_PINVOKE_FIXUP,      // Not real JIT helper. Used for PInvoke target fixup in native images.
-        CORINFO_HELP_EE_VSD_FIXUP,          // Not real JIT helper. Used for VSD cell fixup in native images.
-        CORINFO_HELP_EE_EXTERNAL_FIXUP,     // Not real JIT helper. Used for to fixup external method thunks in native images.
-        CORINFO_HELP_EE_VTABLE_FIXUP,       // Not real JIT helper. Used for inherited vtable slot fixup in native images.
-
-        CORINFO_HELP_EE_REMOTING_THUNK,     // Not real JIT helper. Used for remoting precode in native images.
 
         CORINFO_HELP_EE_PERSONALITY_ROUTINE,// Not real JIT helper. Used in native images.
         CORINFO_HELP_EE_PERSONALITY_ROUTINE_FILTER_FUNCLET,// Not real JIT helper. Used in native images to detect filter funclets.
@@ -294,6 +283,14 @@ namespace Internal.JitInterface
         CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and runtime method handle
 
         CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
+
+        CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
+        CORINFO_HELP_CLASSPROFILE32,            // Update 32-bit class profile for a call site
+        CORINFO_HELP_CLASSPROFILE64,            // Update 64-bit class profile for a call site
+        CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT,  // Notify runtime that code has reached a part of the method that wasn't originally jitted.
+
+        CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
+        CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
 
         CORINFO_HELP_COUNT,
     }

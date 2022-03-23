@@ -21,7 +21,7 @@ namespace System.Reflection.Runtime.General
         {
             NamespaceDefinition currentNamespaceDefinition = innerMostNamespaceHandle.GetNamespaceDefinition(reader);
             ConstantStringValueHandle currentNameHandle = currentNamespaceDefinition.Name;
-            Handle currentNamespaceHandle = innerMostNamespaceHandle.ToHandle(reader);
+            Handle currentNamespaceHandle;
             LowLevelList<string> names = new LowLevelList<string>();
             for (;;)
             {

@@ -231,16 +231,13 @@ namespace System
             return isGenericCOM ? false : IsComObject(new QCallTypeHandle(ref type));
         }
 
-        internal static bool IsContextful(RuntimeType type)
-        {
-            return false;
-        }
-
+#pragma warning disable IDE0060
         internal static bool IsEquivalentTo(RuntimeType rtType1, RuntimeType rtType2)
         {
             // refence check is done earlier and we don't recognize anything else
             return false;
         }
+#pragma warning restore IDE0060
 
         internal static bool IsInterface(RuntimeType type)
         {
@@ -364,8 +361,7 @@ namespace System
         private static extern void internal_from_name(IntPtr name, ref StackCrawlMark stackMark, ObjectHandleOnStack res, bool throwOnError, bool ignoreCase);
 
         [RequiresUnreferencedCode("Types might be removed")]
-        internal static RuntimeType? GetTypeByName(string typeName, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark,
-                                                  bool loadTypeFromPartialName)
+        internal static RuntimeType? GetTypeByName(string typeName, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
         {
             if (typeName == null)
                 throw new ArgumentNullException(nameof(typeName));

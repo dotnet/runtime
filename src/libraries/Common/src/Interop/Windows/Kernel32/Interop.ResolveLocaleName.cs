@@ -9,7 +9,7 @@ internal static partial class Interop
     {
         internal const int LOCALE_NAME_MAX_LENGTH = 85;
 
-        [GeneratedDllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int ResolveLocaleName(string lpNameToResolve, char* lpLocaleName, int cchLocaleName);
     }
 }

@@ -62,10 +62,8 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
 
         private static string GetTypeFullNameFromTypeRef(TypeReferenceHandle typeReferenceHandle, MetadataReader reader, List<int> genericParameterOffsets)
         {
-            string s = "";
-
             TypeReference typeReference = typeReferenceHandle.GetTypeReference(reader);
-            s = typeReference.TypeName.GetString(reader);
+            string s = typeReference.TypeName.GetString(reader);
             Handle parentHandle = typeReference.ParentNamespaceOrType;
             HandleType parentHandleType = parentHandle.HandleType;
             if (parentHandleType == HandleType.TypeReference)
@@ -135,7 +133,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
 
         private static string GetTypeFullNameFromTypeDef(TypeDefinitionHandle typeDefinitionHandle, MetadataReader reader, List<int> genericParameterOffsets)
         {
-            string s = "";
+            string s;
 
             TypeDefinition typeDefinition = typeDefinitionHandle.GetTypeDefinition(reader);
             s = typeDefinition.Name.GetString(reader);

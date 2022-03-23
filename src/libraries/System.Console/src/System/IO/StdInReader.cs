@@ -391,12 +391,11 @@ namespace System.IO
             }
 
             // Check if we can match Esc + combination and guess if alt was pressed.
-            isAlt = isCtrl = isShift = false;
             if (_unprocessedBufferToBeRead[_startIndex] == (char)0x1B && // Alt is send as an escape character
                 _endIndex - _startIndex >= 2) // We have at least two characters to read
             {
                 _startIndex++;
-                if (MapBufferToConsoleKey(out key, out ch, out isShift, out isAlt, out isCtrl))
+                if (MapBufferToConsoleKey(out key, out ch, out isShift, out _, out isCtrl))
                 {
                     isAlt = true;
                     return true;
@@ -416,7 +415,7 @@ namespace System.IO
             // Try reading the first char in the buffer and interpret it as a key.
             ch = _unprocessedBufferToBeRead[_startIndex++];
             key = GetKeyFromCharValue(ch, out isShift, out isCtrl);
-
+            isAlt = false;
             return key != default(ConsoleKey);
         }
 

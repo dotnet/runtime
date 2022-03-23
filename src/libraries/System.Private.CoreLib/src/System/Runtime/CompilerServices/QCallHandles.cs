@@ -4,8 +4,6 @@
 // Wrappers used to pass objects to and from QCalls.
 
 using System.Threading;
-using Internal.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.CompilerServices
 {

@@ -10,9 +10,8 @@ namespace System.Runtime.CompilerServices
     {
         private readonly string typeName;
 
-        public TypeDependencyAttribute(string typeName)
+        public TypeDependencyAttribute(string typeName!!)
         {
-            if (typeName == null) throw new ArgumentNullException(nameof(typeName));
             this.typeName = typeName;
         }
     }

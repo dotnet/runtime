@@ -579,7 +579,7 @@ namespace System.Xml
             }
 
             // get schema decl for element
-            SchemaElementDecl? elementDecl = null;
+            SchemaElementDecl? elementDecl;
             XmlQualifiedName name = GetNameQualified(true);
 
             if (_schemaInfo.ElementDecls.TryGetValue(name, out elementDecl))
@@ -629,7 +629,7 @@ namespace System.Xml
                             }
                         case Token.None:
                             {
-                                ParticleContentValidator? pcv = null;
+                                ParticleContentValidator? pcv;
                                 pcv = new ParticleContentValidator(XmlSchemaContentType.ElementOnly);
                                 pcv.Start();
                                 pcv.OpenGroup();
@@ -839,7 +839,7 @@ namespace System.Xml
         private async Task ParseEntityDeclAsync()
         {
             bool isParamEntity = false;
-            SchemaEntity? entity = null;
+            SchemaEntity? entity;
 
             // get entity name and type
             switch (await GetTokenAsync(true).ConfigureAwait(false))

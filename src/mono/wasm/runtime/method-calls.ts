@@ -464,6 +464,8 @@ export function wrap_error(is_exception: Int32Ptr | null, ex: any): MonoString {
             else
                 res += "\n" + stack;
         }
+
+        res = INTERNAL.mono_wasm_symbolicate_string(res);
     }
     if (is_exception) {
         Module.setValue(is_exception, 1, "i32");

@@ -345,6 +345,9 @@ for /f "delims=" %%a in ("-%__RequestedBuildComponents%-") do (
     if not "!string:-nativeaot-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! nativeaot
     )
+    if not "!string:-spmi-=!"=="!string!" (
+        set __CMakeTarget=!__CMakeTarget! spmi
+    )
 )
 if [!__CMakeTarget!] == [] (
     set __CMakeTarget=install
@@ -594,23 +597,6 @@ if %__BuildNative% EQU 1 (
         goto ExitWithCode
     )
 
-    if /i "%__BuildArch%" == "arm64" goto SkipCopyUcrt
-
-    if not defined UCRTVersion (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Please install Windows 10 SDK.
-        goto ExitWithError
-    )
-
-    set "__UCRTDir=%UniversalCRTSdkDir%Redist\%UCRTVersion%\ucrt\DLLs\%__BuildArch%\"
-
-    xcopy /Y/I/E/D/F "!__UCRTDir!*.dll" "%__BinDir%\Redist\ucrt\DLLs\%__BuildArch%"
-    if not !errorlevel! == 0 (
-        set __exitCode=!errorlevel!
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to copy the Universal CRT to the artifacts directory.
-        goto ExitWithCode
-    )
-
-:SkipCopyUcrt
     if %__EnforcePgo% EQU 1 (
         set PgoCheckCmd="!PYTHON!" "!__ProjectDir!\scripts\pgocheck.py" "!__BinDir!\coreclr.dll" "!__BinDir!\clrjit.dll"
         echo !PgoCheckCmd!
@@ -745,7 +731,7 @@ echo -all: Builds all configurations and platforms.
 echo Build architecture: one of -x64, -x86, -arm, -arm64 ^(default: -x64^).
 echo Build type: one of -Debug, -Checked, -Release ^(default: -Debug^).
 echo -component ^<name^> : specify this option one or more times to limit components built to those specified.
-echo                     Allowed ^<name^>: hosts jit alljits runtime paltests iltools
+echo                     Allowed ^<name^>: hosts jit alljits runtime paltests iltools nativeaot spmi
 echo -enforcepgo: verify after the build that PGO was used for key DLLs, and fail the build if not
 echo -pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
 echo -cmakeargs: user-settable additional arguments passed to CMake.

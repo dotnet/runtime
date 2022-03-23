@@ -405,11 +405,17 @@ mono_seq_point_data_read (SeqPointData *data, char *path)
 		fclose (f);
 		return FALSE;
 	}
-	
+
 	fseek(f, 0, SEEK_SET);
 
 	buffer_orig = buffer = (guint8 *)g_malloc (fsize + 1);
-	fread(buffer_orig, fsize, 1, f);
+	size_t len = fread(buffer_orig, fsize, 1, f);
+	if (ferror(f)) {
+		fclose(f);
+		return FALSE;
+	}
+	g_assert (len == fsize || (len < fsize && feof(f)));
+
 	fclose(f);
 
 	entry_count = decode_var_int (buffer, &buffer);

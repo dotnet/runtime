@@ -158,9 +158,6 @@
   <data name="SharedMemoryGhosted" xml:space="preserve">
     <value>Cannot access shared memory, AppDomain has been unloaded.</value>
   </data>
-  <data name="SetSecurityDescriptionFailed" xml:space="preserve">
-    <value>Cannot initialize security descriptor initialized.</value>
-  </data>
   <data name="CantCreateFileMapping" xml:space="preserve">
     <value>Cannot create file mapping.</value>
   </data>
@@ -322,7 +319,7 @@
   </data>
   <data name="Perflib_InvalidOperation_CounterSetContainsNoCounter" xml:space="preserve">
     <value>CounterSet '{0}' does not include any counters.</value>
-  </data>  
+  </data>
   <data name="Perflib_Argument_CounterSetAlreadyRegister" xml:space="preserve">
     <value>CounterSet '{0}' already registered.</value>
   </data>

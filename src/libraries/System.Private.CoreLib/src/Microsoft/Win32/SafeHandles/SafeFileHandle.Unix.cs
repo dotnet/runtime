@@ -57,6 +57,12 @@ namespace Microsoft.Win32.SafeHandles
 
         internal void EnsureThreadPoolBindingInitialized() { /* nop */ }
 
+        internal bool TryGetCachedLength(out long cachedLength)
+        {
+            cachedLength = -1;
+            return false;
+        }
+
         private static SafeFileHandle Open(string path, Interop.Sys.OpenFlags flags, int mode,
                                            Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException)
         {
@@ -178,9 +184,7 @@ namespace Microsoft.Win32.SafeHandles
                                             Interop.Sys.Permissions openPermissions = DefaultOpenPermissions,
                                             Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException = null)
         {
-            long fileLength;
-            Interop.Sys.Permissions filePermissions;
-            return Open(fullPath, mode, access, share, options, preallocationSize, openPermissions, out fileLength, out filePermissions, null);
+            return Open(fullPath, mode, access, share, options, preallocationSize, openPermissions, out _, out _, createOpenException);
         }
 
         private static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize,
@@ -311,7 +315,7 @@ namespace Microsoft.Win32.SafeHandles
             if ((access & FileAccess.Write) == 0)
             {
                 // Stat the file descriptor to avoid race conditions.
-                FStatCheckIO(this, path, ref status, ref statusHasValue);
+                FStatCheckIO(path, ref status, ref statusHasValue);
 
                 if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
                 {
@@ -361,7 +365,7 @@ namespace Microsoft.Win32.SafeHandles
             if (_isLocked && ((options & FileOptions.DeleteOnClose) != 0) &&
                 share == FileShare.None && mode == FileMode.OpenOrCreate)
             {
-                FStatCheckIO(this, path, ref status, ref statusHasValue);
+                FStatCheckIO(path, ref status, ref statusHasValue);
 
                 Interop.Sys.FileStatus pathStatus;
                 if (Interop.Sys.Stat(path, out pathStatus) < 0)
@@ -476,7 +480,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private void FStatCheckIO(SafeFileHandle handle, string path, ref Interop.Sys.FileStatus status, ref bool statusHasValue)
+        private void FStatCheckIO(string path, ref Interop.Sys.FileStatus status, ref bool statusHasValue)
         {
             if (!statusHasValue)
             {
@@ -502,6 +506,13 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return canSeek == NullableBool.True;
+        }
+
+        internal long GetFileLength()
+        {
+            int result = Interop.Sys.FStat(this, out Interop.Sys.FileStatus status);
+            FileStreamHelpers.CheckFileCall(result, Path);
+            return status.Size;
         }
 
         private enum NullableBool

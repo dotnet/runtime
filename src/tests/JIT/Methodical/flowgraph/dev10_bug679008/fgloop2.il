@@ -11,6 +11,7 @@
 .assembly extern System { auto }
 .assembly 'fgloop2' {}
 .assembly extern xunit.core {}
+.namespace Test_fgloop2 {
 .class public EHTest
 {
   .field private static int64 fld0
@@ -34,20 +35,20 @@
   }
   .method public static int32 GetInt32_jmp()
   {
-  	jmp   int32 EHTest::GetInt32()
+  	jmp   int32 Test_fgloop2.EHTest::GetInt32()
   }
   .method public static int32 GetInt32_tailcall()
   {
-  	tail. call   int32 EHTest::GetInt32()
+  	tail. call   int32 Test_fgloop2.EHTest::GetInt32()
   	ret
   }
   .method public static int64 GetInt64_jmp()
   {
-  	jmp   int64 EHTest::GetInt64()
+  	jmp   int64 Test_fgloop2.EHTest::GetInt64()
   }
   .method public static int64 GetInt64_tailcall()
   {
-  	tail. call   int64 EHTest::GetInt64()
+  	tail. call   int64 Test_fgloop2.EHTest::GetInt64()
   	ret
   }
 .method public static int32 f0() cil managed
@@ -71,11 +72,11 @@ nop
 	  bgt	TARGET_0_4
 	TARGET_0_1:
 	  ldc.i8 111
-	  stsfld int64 EHTest::fld5
+	  stsfld int64 Test_fgloop2.EHTest::fld5
 	  ldc.i8 63
 	  ldc.i8 118
 	  add
-	  stsfld int64 EHTest::fld3
+	  stsfld int64 Test_fgloop2.EHTest::fld3
 	  ldc.i8 121
 	  ldc.i8 109
 	  blt	TARGET_0_0
@@ -87,7 +88,7 @@ nop
 	  ldc.i4 75
 	  stloc 4
 	  ldc.i4 83
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 18
 	  ble	TARGET_0_3
 	TARGET_0_3:
@@ -113,7 +114,7 @@ nop
 	  mkrefany   [mscorlib]System.Int64
 	  refanyval	[mscorlib]System.Int64
 	  ldind.i8
-	  ldsfld int64 EHTest::fld3
+	  ldsfld int64 Test_fgloop2.EHTest::fld3
 	  stloc.1
 	  ldc.i8 56
 	  neg
@@ -147,7 +148,7 @@ OUT:
 	  ldc.i4 102
 	  stloc.2
 	  ldc.i4 60
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 96
 ret
 OUT0:
@@ -208,7 +209,7 @@ nop
 	  ldc.i4 99
 	  stloc.0
 	  ldc.i4 43
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 22
 	  ldc.i4 125
 	  stloc.0
@@ -219,13 +220,13 @@ nop
 	  ldc.i4 54
 	  ldc.i4 23
 	  ldc.i4 20
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 73
 	  ldc.i4 106
 	  ldc.i4 111
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 58
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 113
 	  stloc.0
 	  ldc.i4 72
@@ -237,23 +238,23 @@ nop
 	  ldc.i4 92
 	  ldc.i4 32
 	  ldc.i4 124
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 47
 	  ldc.i4.6
 	  ldc.i4 64
 	  ldc.i4 18
 	  ldc.i4 16
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4.8
 	  ldc.i4 21
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 47
 	  ldc.i4 13
 	  ldc.i4.3
 	  ldc.i4 27
 	  call instance int32 int32[,,,,,,,,,,,,]::Get(int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32)
 	  ldc.i4 98
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 21
 	  bge	TARGET_1_4
 	TARGET_1_1:
@@ -264,7 +265,7 @@ nop
 	  bgt	TARGET_1_1
 	TARGET_1_2:
 	  ldarg.1
-	  ldftn int64 EHTest::GetInt64_tailcall()
+	  ldftn int64 Test_fgloop2.EHTest::GetInt64_tailcall()
 	  calli int64 ()
 	  conv.i4
 	  ldc.i4 21
@@ -272,11 +273,11 @@ nop
 	  ldc.i4 82
 	  ldc.i4 80
 	  ldc.i4 94
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 29
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 98
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 90
 	  ldc.i4 61
 	  ldc.i4.3
@@ -300,20 +301,20 @@ nop
 	  stloc.0
 	  ldc.i4 32
 	  ldc.i4 62
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 45
 	  ldc.i4.0
 	  ldc.i4 112
 	  ldc.i4.5
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 114
 	  stloc.0
 	  ldc.i4 28
 	  newobj instance void int32[55...85,102...113,84...104,55...104,43...83,64...93,118...122,67...71,76...105,83...123,115...124,16...56,117...127,26...104,51...97,60...104,88...110,18...80,27...47,119...123,103...122,111...112]::.ctor(int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32)
 	  ldc.i4 99
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4.2
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 32
 	  ldc.i4 51
 	  ldc.i4 122
@@ -323,26 +324,26 @@ nop
 	  ldc.i4 105
 	  ldc.i4 120
 	  ldc.i4 101
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 101
 	  ldc.i4 73
 	  ldc.i4 91
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 121
 	  ldc.i4 71
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 37
 	  stloc.0
 	  ldc.i4 34
 	  ldc.i4.3
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4.3
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4.3
 	  ldc.i4 85
 	  ldc.i4 28
 	  ldc.i4 102
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 12
 	  stloc.0
 	  ldc.i4.7
@@ -359,43 +360,43 @@ nop
 	  ldc.i4 126
 	  stloc.0
 	  ldc.i4 102
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 119
 	  stloc.0
 	  ldc.i4 67
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 58
 	  ldc.i4 126
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 61
 	  stloc.0
 	  ldc.i4.5
 	  call instance int32 int32[55...85,102...113,84...104,55...104,43...83,64...93,118...122,67...71,76...105,83...123,115...124,16...56,117...127,26...104,51...97,60...104,88...110,18...80,27...47,119...123,103...122,111...112]::Get(int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32)
 	  newarr     [mscorlib]System.Int32
 	  ldc.i4.6
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 96
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 14
 	  ldelem.i4
 	  ldc.i4 44
 	  ldc.i4 64
 	  ldc.i4 107
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 48
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 109
 	  ldc.i4 53
 	  ldc.i4 74
 	  ldc.i4 61
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 56
 	  stloc.0
 	  ldc.i4 111
 	  ldc.i4 45
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 60
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 85
 	  ldc.i4 45
 	  ldc.i4 58
@@ -406,9 +407,9 @@ nop
 	  ldc.i4 80
 	  ldc.i4 107
 	  ldc.i4 125
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 112
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 115
 	  stloc.0
 	  ldc.i4 74
@@ -416,7 +417,7 @@ nop
 	  ldc.i4 107
 	  ldc.i4 112
 	  ldc.i4 95
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4.0
 	  stloc.0
 	  ldc.i4 100
@@ -428,9 +429,9 @@ nop
 	  ldc.i4 36
 	  ldc.i4 56
 	  ldc.i4 97
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 78
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 122
 	  ldc.i4 121
 	  newobj instance void int32[...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...]::.ctor(int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32)
@@ -439,31 +440,31 @@ nop
 	  ldc.i4 86
 	  ldc.i4 76
 	  ldc.i4.1
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 118
 	  ldc.i4 74
 	  ldc.i4 38
 	  ldc.i4 113
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 80
 	  ldc.i4 69
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 13
 	  ldc.i4 67
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 123
 	  ldc.i4 105
 	  ldc.i4 55
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 78
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 19
 	  ldc.i4.4
 	  ldc.i4 87
 	  ldc.i4 99
 	  ldc.i4 76
 	  ldc.i4 42
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 60
 	  ldc.i4 102
 	  ldc.i4 43
@@ -472,10 +473,10 @@ nop
 	  ldc.i4 30
 	  ldc.i4.1
 	  ldc.i4 9
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 111
 	  ldc.i4 113
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 62
 	  ldc.i4 104
 	  ldc.i4 115
@@ -486,10 +487,10 @@ nop
 	  call instance int32 int32[...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...,...]::Get(int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32)
 	  ldc.i4 63
 	  ldc.i4 106
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 122
 	  ldc.i4 14
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 125
 	  ldc.i4 100
 	  ldc.i4 77
@@ -498,12 +499,12 @@ nop
 	  ldc.i4 22
 	  stloc.0
 	  ldc.i4 123
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 33
 	  ldc.i4 112
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 30
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 70
 	  ldc.i4 59
 	  ldc.i4 114
@@ -512,7 +513,7 @@ nop
 	  stloc.0
 	  ldc.i4 99
 	  ldc.i4 65
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 11
 	  ldc.i4 16
 	  ldc.i4 10
@@ -525,7 +526,7 @@ nop
 	  ldc.i4 110
 	  stloc.0
 	  ldc.i4 64
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 80
 	  ldc.i4 88
 	  ldc.i4.5
@@ -535,9 +536,9 @@ nop
 	  ldc.i4 93
 	  ldc.i4 9
 	  ldc.i4 43
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 79
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 124
 	  stloc.0
 	  ldc.i4 107
@@ -550,12 +551,12 @@ nop
 	  ldc.i4 111
 	  ldc.i4 119
 	  ldc.i4 78
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 10
 	  call instance int64 int64[,,,,,,,,,,,,,,,,]::Get(int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32)
 	  bgt.un	TARGET_1_2
 	TARGET_1_3:
-	  call int64 EHTest::GetInt64_jmp()
+	  call int64 Test_fgloop2.EHTest::GetInt64_jmp()
 	  ldarg.0
 	  mul
 	  ldc.i8 119
@@ -586,17 +587,17 @@ end_try2:
 
 nop
 	TARGET_2_0:
-	  call int64 EHTest::GetInt64()
+	  call int64 Test_fgloop2.EHTest::GetInt64()
 	  stloc.1
 	  ldc.i8 25
 	  ldc.i8 16
-	  stsfld int64 EHTest::fld2
+	  stsfld int64 Test_fgloop2.EHTest::fld2
 	  ldc.i8 15
 	  beq	TARGET_2_3
 	TARGET_2_1:
-	  call int64 EHTest::GetInt64()
+	  call int64 Test_fgloop2.EHTest::GetInt64()
 	  conv.i8
-	  ldsfld int64 EHTest::fld2
+	  ldsfld int64 Test_fgloop2.EHTest::fld2
 	  ble.un	TARGET_2_1
 	TARGET_2_2:
 	  ldc.i4 47
@@ -615,11 +616,11 @@ nop
 	  ldc.i4 55
 	  ldc.i4.5
 	  or
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 58
 	  ldc.i4 52
 	  or
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 44
 	  newarr     [mscorlib]System.Int64
 	  ldc.i4 36
@@ -627,9 +628,9 @@ nop
 	  ldc.i8 15
 	  ldc.i8 26
 	  sub
-	  stsfld int64 EHTest::fld2
+	  stsfld int64 Test_fgloop2.EHTest::fld2
 	  ldc.i8 81
-	  stsfld int64 EHTest::fld6
+	  stsfld int64 Test_fgloop2.EHTest::fld6
 	  ldc.i8 80
 	  ldc.i8 88
 	  sub
@@ -658,11 +659,11 @@ OUT:
 	  ldc.i4 29
 	  newarr     [mscorlib]System.Int32
 	  ldc.i4 103
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 15
 	  ldelem.i4
 	  not
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 48
 	  ldc.i4 74
 	  stloc.0
@@ -672,9 +673,9 @@ OUT:
 	  ldc.i4 87
 	  stloc.0
 	  ldc.i4 42
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 30
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 28
 	  stloc.0
 	  ldc.i4.7
@@ -693,17 +694,17 @@ nop
 	  ldc.i8 85
 	  blt	TARGET_3_0
 	TARGET_3_1:
-	  ldsflda int64 EHTest::fld3
+	  ldsflda int64 Test_fgloop2.EHTest::fld3
 	  mkrefany   [mscorlib]System.Int64
 	  refanyval	[mscorlib]System.Int64
 	  ldind.i8
 	  ldc.i8 85
 	  stloc.2
 	  ldc.i8 25
-	  stsfld int64 EHTest::fld1
+	  stsfld int64 Test_fgloop2.EHTest::fld1
 	  ldc.i8 103
 	  clt
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 77
 	  conv.i4
 	  ldc.i4 88
@@ -718,11 +719,11 @@ nop
 	  ldc.i4 103
 	  ldc.i4 12
 	  ldc.i4 40
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 91
 	  ldc.i4 123
 	  ldc.i4 100
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 91
 	  stloc.0
 	  ldc.i4 47
@@ -732,41 +733,41 @@ nop
 	  ldc.i4 16
 	  ldc.i4 89
 	  ldc.i4 13
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 52
 	  ldc.i4 121
 	  ldc.i4 19
 	  ldc.i4 47
 	  ldc.i4.8
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4.7
 	  ldc.i4 36
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 61
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 27
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 125
 	  ldc.i4 36
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 96
 	  ldc.i4 39
 	  ldc.i4 77
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 29
 	  ldc.i4 20
 	  ldc.i4 15
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 88
 	  ldc.i4 126
 	  ldc.i4.0
 	  newobj instance void int32[67...72,77...122,8...55,10...14,49...124,5...38,81...103,40...104,68...93,75...101,8...91,70...78,75...85,106...109,1...71,71...126,105...109,88...123,122...123,5...127,89...103,18...73,90...113,116...119,15...78,100...100,46...75,76...120,76...87]::.ctor(int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32)
 	  ldc.i4 120
 	  ldc.i4 12
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 109
 	  ldc.i4.1
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 29
 	  ldc.i4 121
 	  ldc.i4 19
@@ -777,10 +778,10 @@ nop
 	  ldc.i4 66
 	  ldc.i4 115
 	  ldc.i4 79
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 31
 	  ldc.i4 102
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 55
 	  ldc.i4 40
 	  ldc.i4 25
@@ -797,7 +798,7 @@ nop
 	  ldc.i4 48
 	  ldc.i4.7
 	  ldc.i4 22
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 98
 	  ldc.i4 122
 	  ldc.i4 100
@@ -806,11 +807,11 @@ nop
 	  ldc.i4 58
 	  call instance int32 int32[67...72,77...122,8...55,10...14,49...124,5...38,81...103,40...104,68...93,75...101,8...91,70...78,75...85,106...109,1...71,71...126,105...109,88...123,122...123,5...127,89...103,18...73,90...113,116...119,15...78,100...100,46...75,76...120,76...87]::Get(int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32)
 	  ldc.i4 15
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 39
 	  bge.un	TARGET_3_4
 	TARGET_3_2:
-	  ldftn int64 EHTest::GetInt64_tailcall()
+	  ldftn int64 Test_fgloop2.EHTest::GetInt64_tailcall()
 	  calli int64 ()
 	  ldc.i4 47
 	  ldc.i4 7
@@ -819,9 +820,9 @@ nop
 	  ldc.i4 57
 	  stloc.0
 	  ldc.i4 127
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 108
-	  stsfld int32 EHTest::fld4
+	  stsfld int32 Test_fgloop2.EHTest::fld4
 	  ldc.i4 123
 	  ldelem.i8
 	  starg.s arg1
@@ -893,7 +894,7 @@ ret
 {
 	  ldc.i8 1
 	  ldc.i8 24
-call int32 EHTest::f1(int64 ,int64 )
+call int32 Test_fgloop2.EHTest::f1(int64 ,int64 )
 leave RET
 }
 catch [mscorlib]System.Exception
@@ -906,4 +907,5 @@ call void [System.Console]System.Console::WriteLine(string)
 ret
 }
 
+}
 }

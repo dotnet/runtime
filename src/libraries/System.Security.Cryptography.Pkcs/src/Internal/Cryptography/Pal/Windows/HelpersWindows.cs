@@ -119,7 +119,7 @@ namespace Internal.Cryptography.Pal.Windows
 
         public static X509Certificate2Collection GetOriginatorCerts(this SafeCryptMsgHandle hCryptMsg)
         {
-            int numCertificates = 0;
+            int numCertificates;
             int cbNumCertificates = sizeof(int);
             if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, CryptMsgParamType.CMSG_CERT_COUNT_PARAM, 0, out numCertificates, ref cbNumCertificates))
                 throw Marshal.GetLastWin32Error().ToCryptographicException();

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime;
 using System.Runtime.InteropServices;
 
 using BindingFlags = System.Reflection.BindingFlags;
@@ -40,6 +42,7 @@ internal class Program
         TestDrawCircle.Run();
         TestValueTypeDup.Run();
         TestFunctionPointers.Run();
+        TestGCInteraction.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -834,8 +837,43 @@ unsafe class TestFunctionPointers
     }
 }
 
+class TestGCInteraction
+{
+    class WithFrozenObjects
+    {
+        internal readonly static string s_someStringLiteral = "Some string literal";
+        internal readonly static object s_someObject = new object();
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(WithFrozenObjects));
+
+        var holder = new object[]
+        {
+            WithFrozenObjects.s_someStringLiteral,
+            WithFrozenObjects.s_someObject,
+        };
+
+        var h1 = new DependentHandle(WithFrozenObjects.s_someObject, WithFrozenObjects.s_someStringLiteral);
+        var h2 = new DependentHandle(WithFrozenObjects.s_someStringLiteral, WithFrozenObjects.s_someObject);
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        Assert.AreSame(holder[0], WithFrozenObjects.s_someStringLiteral);
+        Assert.AreSame(holder[1], WithFrozenObjects.s_someObject);
+
+        h1.Dispose();
+        h2.Dispose();
+    }
+}
+
 static class Assert
 {
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+        Justification = "Yep, we don't want to keep the cctor if it wasn't kept")]
     private static bool HasCctor(Type type)
     {
         return type.GetConstructor(BindingFlags.NonPublic | BindingFlags.Static, null, Type.EmptyTypes, null) != null;

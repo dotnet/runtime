@@ -58,7 +58,7 @@ namespace System.Threading
         /// <summary>
         /// Tracks thread count information that is used when the <code>EnableWorkerTracking</code> config option is enabled.
         /// </summary>
-        private struct CountsOfThreadsProcessingUserCallbacks
+        private struct CountsOfThreadsProcessingUserCallbacks : IEquatable<CountsOfThreadsProcessingUserCallbacks>
         {
             private const byte CurrentShift = 0;
             private const byte HighWatermarkShift = 16;
@@ -114,13 +114,16 @@ namespace System.Threading
 
             public static bool operator ==(
                 CountsOfThreadsProcessingUserCallbacks lhs,
-                CountsOfThreadsProcessingUserCallbacks rhs) => lhs._data == rhs._data;
+                CountsOfThreadsProcessingUserCallbacks rhs) => lhs.Equals(rhs);
             public static bool operator !=(
                 CountsOfThreadsProcessingUserCallbacks lhs,
-                CountsOfThreadsProcessingUserCallbacks rhs) => lhs._data != rhs._data;
+                CountsOfThreadsProcessingUserCallbacks rhs) => !lhs.Equals(rhs);
 
             public override bool Equals([NotNullWhen(true)] object? obj) =>
-                obj is CountsOfThreadsProcessingUserCallbacks other && _data == other._data;
+                obj is CountsOfThreadsProcessingUserCallbacks other && Equals(other);
+
+            public bool Equals(CountsOfThreadsProcessingUserCallbacks other) => _data == other._data;
+
             public override int GetHashCode() => (int)_data;
         }
     }

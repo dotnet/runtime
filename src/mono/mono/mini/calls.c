@@ -105,7 +105,7 @@ handle_enum:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_ARRAY:    
+	case MONO_TYPE_ARRAY:
 		return calli? OP_CALL_REG: virt? OP_CALL_MEMBASE: OP_CALL;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
@@ -139,7 +139,7 @@ handle_enum:
 }
 
 MonoCallInst *
-mini_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig, 
+mini_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 					 MonoInst **args, gboolean calli, gboolean virtual_, gboolean tailcall,
 					 gboolean rgctx, gboolean unbox_trampoline, MonoMethod *target)
 {
@@ -193,7 +193,7 @@ mini_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 		MonoInst *temp = mono_compile_create_var (cfg, sig_ret, OP_LOCAL);
 		MonoInst *loada;
 
-		temp->backend.is_pinvoke = sig->pinvoke;
+		temp->backend.is_pinvoke = sig->pinvoke && !sig->marshalling_disabled;
 
 		/*
 		 * We use a new opcode OP_OUTARG_VTRETADDR instead of LDADDR for emitting the
@@ -218,8 +218,8 @@ mini_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 
 #ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 	if (COMPILE_SOFT_FLOAT (cfg)) {
-		/* 
-		 * If the call has a float argument, we would need to do an r8->r4 conversion using 
+		/*
+		 * If the call has a float argument, we would need to do an r8->r4 conversion using
 		 * an icall, but that cannot be done during the call sequence since it would clobber
 		 * the call registers + the stack. So we do it before emitting the call.
 		 */
@@ -260,7 +260,7 @@ mini_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 
 	cfg->param_area = MAX (cfg->param_area, call->stack_usage);
 	cfg->flags |= MONO_CFG_HAS_CALLS;
-	
+
 	return call;
 }
 
@@ -289,7 +289,7 @@ set_rgctx_arg (MonoCompile *cfg, MonoCallInst *call, int rgctx_reg, MonoInst *rg
 #ifdef ENABLE_LLVM
 	call->rgctx_arg_reg = rgctx_reg;
 #endif
-}	
+}
 
 /* Either METHOD or IMT_ARG needs to be set */
 static void
@@ -524,7 +524,7 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 			FIXME: a dummy use is not the best way to do it as the local register allocator
 			will put it on a caller save register and spill it around the call.
-			Ideally, we would either put it on a callee save register or only do the store part.  
+			Ideally, we would either put it on a callee save register or only do the store part.
 			 */
 			EMIT_NEW_DUMMY_USE (cfg, dummy_use, args [0]);
 
@@ -533,7 +533,7 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 		if ((!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
 			 (MONO_METHOD_IS_FINAL (method)))) {
-			/* 
+			/*
 			 * the method is not virtual, we just need to ensure this is not null
 			 * and then we can call the method directly.
 			 */
@@ -635,13 +635,13 @@ mono_emit_jit_icall_id (MonoCompile *cfg, MonoJitICallId jit_icall_id, MonoInst 
  *   Emit a call to the runtime function described by PATCH_TYPE and DATA.
  */
 MonoInst*
-mini_emit_abs_call (MonoCompile *cfg, MonoJumpInfoType patch_type, gconstpointer data, 
+mini_emit_abs_call (MonoCompile *cfg, MonoJumpInfoType patch_type, gconstpointer data,
 					MonoMethodSignature *sig, MonoInst **args)
 {
 	MonoJumpInfo *ji = mono_patch_info_new (cfg->mempool, 0, patch_type, data);
 	MonoInst *ins;
 
-	/* 
+	/*
 	 * We pass ji as the call address, the PATCH_INFO_ABS resolving code will
 	 * handle it.
 	 * FIXME: Is the abs_patches hashtable avoidable?

@@ -5,7 +5,6 @@ using System.Threading;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Tracing
 {

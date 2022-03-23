@@ -10,8 +10,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
 
-using Internal.Runtime.CompilerServices;
-
 namespace System
 {
     public partial class String
@@ -541,13 +539,8 @@ namespace System
             return EndsWith(value, StringComparison.CurrentCulture);
         }
 
-        public bool EndsWith(string value, StringComparison comparisonType)
+        public bool EndsWith(string value!!, StringComparison comparisonType)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             if ((object)this == (object)value)
             {
                 CheckStringComparison(comparisonType);
@@ -584,13 +577,8 @@ namespace System
             }
         }
 
-        public bool EndsWith(string value, bool ignoreCase, CultureInfo? culture)
+        public bool EndsWith(string value!!, bool ignoreCase, CultureInfo? culture)
         {
-            if (null == value)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             if ((object)this == (object)value)
             {
                 return true;
@@ -622,6 +610,7 @@ namespace System
         }
 
         // Determines whether two strings match.
+        [Intrinsic] // Unrolled and vectorized for half-constant input
         public bool Equals([NotNullWhen(true)] string? value)
         {
             if (object.ReferenceEquals(this, value))
@@ -640,6 +629,7 @@ namespace System
             return EqualsHelper(this, value);
         }
 
+        [Intrinsic] // Unrolled and vectorized for half-constant input (Ordinal)
         public bool Equals([NotNullWhen(true)] string? value, StringComparison comparisonType)
         {
             if (object.ReferenceEquals(this, value))
@@ -681,6 +671,7 @@ namespace System
         }
 
         // Determines whether two Strings match.
+        [Intrinsic] // Unrolled and vectorized for half-constant input
         public static bool Equals(string? a, string? b)
         {
             if (object.ReferenceEquals(a, b))
@@ -696,6 +687,7 @@ namespace System
             return EqualsHelper(a, b);
         }
 
+        [Intrinsic] // Unrolled and vectorized for half-constant input (Ordinal)
         public static bool Equals(string? a, string? b, StringComparison comparisonType)
         {
             if (object.ReferenceEquals(a, b))
@@ -935,22 +927,14 @@ namespace System
 
         // Determines whether a specified string is a prefix of the current instance
         //
-        public bool StartsWith(string value)
+        public bool StartsWith(string value!!)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
             return StartsWith(value, StringComparison.CurrentCulture);
         }
 
-        public bool StartsWith(string value, StringComparison comparisonType)
+        [Intrinsic] // Unrolled and vectorized for half-constant input (Ordinal)
+        public bool StartsWith(string value!!, StringComparison comparisonType)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             if ((object)this == (object)value)
             {
                 CheckStringComparison(comparisonType);
@@ -997,13 +981,8 @@ namespace System
             }
         }
 
-        public bool StartsWith(string value, bool ignoreCase, CultureInfo? culture)
+        public bool StartsWith(string value!!, bool ignoreCase, CultureInfo? culture)
         {
-            if (null == value)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             if ((object)this == (object)value)
             {
                 return true;
@@ -1013,7 +992,14 @@ namespace System
             return referenceCulture.CompareInfo.IsPrefix(this, value, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
         }
 
-        public bool StartsWith(char value) => Length != 0 && _firstChar == value;
+        public bool StartsWith(char value)
+        {
+            if (RuntimeHelpers.IsKnownConstant(value) && value != '\0')
+            {
+                return _firstChar == value;
+            }
+            return Length != 0 && _firstChar == value;
+        }
 
         internal static void CheckStringComparison(StringComparison comparisonType)
         {

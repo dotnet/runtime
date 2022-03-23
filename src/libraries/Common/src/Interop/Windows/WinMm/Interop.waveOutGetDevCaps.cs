@@ -34,7 +34,7 @@ internal static partial class Interop
         /// information about the capabilities of the device.</param>
         /// <param name="cbwoc">Size, in bytes, of the WAVEOUTCAPS structure.</param>
         /// <returns>MMSYSERR</returns>
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
         // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable types.
         [DllImport(Libraries.WinMM)]
         internal static extern MMSYSERR waveOutGetDevCaps(IntPtr uDeviceID, ref WAVEOUTCAPS caps, int cbwoc);

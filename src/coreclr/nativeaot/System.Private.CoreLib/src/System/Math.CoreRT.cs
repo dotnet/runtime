@@ -17,18 +17,6 @@ namespace System
     public static partial class Math
     {
         [Intrinsic]
-        public static float Abs(float value)
-        {
-            return RuntimeImports.fabsf(value);
-        }
-
-        [Intrinsic]
-        public static double Abs(double value)
-        {
-            return RuntimeImports.fabs(value);
-        }
-
-        [Intrinsic]
         public static double Acos(double d)
         {
             return RuntimeImports.acos(d);

@@ -3,6 +3,11 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+    <!--
+      SYSLIB1053: LibraryImportGenerator Target Framework Not Supported.
+     -->
+    <NoWarn>$(NoWarn);SYSLIB1053</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <DefineConstants>FEATURE_GC_STRESS;$(DefineConstants)</DefineConstants>
@@ -61,6 +66,9 @@
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\TypeCast.cs">
       <Link>Runtime.Base\src\System\Runtime\TypeCast.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\MarshalAsAttribute.cs">
+      <Link>Runtime.Base\src\System\Runtime\InteropServices\MarshalAsAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\UnsafeGCHandle.cs">
       <Link>Runtime.Base\src\System\Runtime\InteropServices\UnsafeGCHandle.cs</Link>
@@ -184,6 +192,9 @@
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\LayoutKind.cs">
       <Link>System\Runtime\InteropServices\LayoutKind.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\UnmanagedCallConvAttribute.cs">
+      <Link>System\Runtime\InteropServices\UnmanagedCallConvAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\UnmanagedCallersOnlyAttribute.cs">
       <Link>System\Runtime\InteropServices\UnmanagedCallersOnlyAttribute.cs</Link>
     </Compile>
@@ -208,8 +219,8 @@
     <Compile Include="..\..\Runtime.Base\src\System\Void.cs">
       <Link>System\Void.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\Internal\Runtime\CompilerServices\Unsafe.cs">
-      <Link>Internal\Runtime\CompilerServices\Unsafe.cs</Link>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\Unsafe.cs">
+      <Link>System\Runtime\CompilerServices\Unsafe.cs</Link>
     </Compile>
     <Compile Include="Internal\Runtime\IDynamicInterfaceCastableSupport.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />

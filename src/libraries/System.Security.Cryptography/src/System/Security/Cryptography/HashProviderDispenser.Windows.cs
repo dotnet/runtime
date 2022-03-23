@@ -113,35 +113,35 @@ namespace System.Security.Cryptography
                     algHandle = isHmac ?
                         Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_HMAC_MD5_ALG_HANDLE :
                         Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_MD5_ALG_HANDLE;
-                    digestSizeInBytes = 128 / 8;
+                    digestSizeInBytes = MD5.HashSizeInBytes;
                 }
                 else if (hashAlgorithmId == HashAlgorithmNames.SHA1)
                 {
                     algHandle = isHmac ?
                         Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_HMAC_SHA1_ALG_HANDLE :
                         Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA1_ALG_HANDLE;
-                    digestSizeInBytes = 160 / 8;
+                    digestSizeInBytes = SHA1.HashSizeInBytes;
                 }
                 else if (hashAlgorithmId == HashAlgorithmNames.SHA256)
                 {
                     algHandle = isHmac ?
                         Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_HMAC_SHA256_ALG_HANDLE :
                         Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA256_ALG_HANDLE;
-                    digestSizeInBytes = 256 / 8;
+                    digestSizeInBytes = SHA256.HashSizeInBytes;
                 }
                 else if (hashAlgorithmId == HashAlgorithmNames.SHA384)
                 {
                     algHandle = isHmac ?
                         Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_HMAC_SHA384_ALG_HANDLE :
                         Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA384_ALG_HANDLE;
-                    digestSizeInBytes = 384 / 8;
+                    digestSizeInBytes = SHA384.HashSizeInBytes;
                 }
                 else if (hashAlgorithmId == HashAlgorithmNames.SHA512)
                 {
                     algHandle = isHmac ?
                         Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_HMAC_SHA512_ALG_HANDLE :
                         Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA512_ALG_HANDLE;
-                    digestSizeInBytes = 512 / 8;
+                    digestSizeInBytes = SHA512.HashSizeInBytes;
                 }
                 else
                 {

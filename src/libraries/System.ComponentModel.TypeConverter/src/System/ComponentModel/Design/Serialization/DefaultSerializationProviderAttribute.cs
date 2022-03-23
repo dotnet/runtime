@@ -16,26 +16,16 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Creates a new DefaultSerializationProviderAttribute
         /// </summary>
-        public DefaultSerializationProviderAttribute(Type providerType)
+        public DefaultSerializationProviderAttribute(Type providerType!!)
         {
-            if (providerType == null)
-            {
-                throw new ArgumentNullException(nameof(providerType));
-            }
-
             ProviderTypeName = providerType.AssemblyQualifiedName!;
         }
 
         /// <summary>
         /// Creates a new DefaultSerializationProviderAttribute
         /// </summary>
-        public DefaultSerializationProviderAttribute(string providerTypeName)
+        public DefaultSerializationProviderAttribute(string providerTypeName!!)
         {
-            if (providerTypeName == null)
-            {
-                throw new ArgumentNullException(nameof(providerTypeName));
-            }
-
             ProviderTypeName = providerTypeName;
         }
 

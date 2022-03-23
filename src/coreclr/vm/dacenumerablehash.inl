@@ -243,7 +243,7 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
 template <DAC_ENUM_HASH_PARAMS>
 DWORD DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::NextLargestPrime(DWORD dwNumber)
 {
-    for (DWORD i = 0; i < COUNTOF(g_rgPrimes); i++)
+    for (DWORD i = 0; i < ARRAY_SIZE(g_rgPrimes); i++)
         if (g_rgPrimes[i] >= dwNumber)
         {
             dwNumber = g_rgPrimes[i];
@@ -400,8 +400,8 @@ namespace HashTableDetail
 {
     // Use the C++ detection idiom (https://isocpp.org/blog/2017/09/detection-idiom-a-stopgap-for-concepts-simon-brand) to call the
     // derived table's EnumMemoryRegionsForEntry method if it defines one.
-    template<typename...>
-    using void_t = void;
+    template <class... > struct make_void { using type = void; };
+    template <class... T> using void_t = typename make_void<T...>::type;
 
     template<typename B>
     struct negation : std::integral_constant<bool, !bool(B::value)> { };
@@ -499,7 +499,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseIterator::Next()
     DPTR(PTR_VolatileEntry) curBuckets = m_pTable->GetBuckets();
     DWORD cBuckets = GetLength(curBuckets);
 
-    while (m_dwBucket < cBuckets)
+    while (m_dwBucket < cBuckets + SKIP_SPECIAL_SLOTS)
     {
         if (m_pEntry == NULL)
         {

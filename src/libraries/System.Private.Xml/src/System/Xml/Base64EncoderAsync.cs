@@ -12,12 +12,8 @@ namespace System.Xml
     {
         internal abstract Task WriteCharsAsync(char[] chars, int index, int count);
 
-        internal async Task EncodeAsync(byte[] buffer, int index, int count)
+        internal async Task EncodeAsync(byte[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index));

@@ -98,7 +98,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 		 * Map ret arg.
 		 * This handles the case when the method returns a normal vtype, and when it returns a type arg, and its instantiated
 		 * with a vtype.
-		 */		
+		 */
 		g_ptr_array_add (map, GUINT_TO_POINTER (caller_cinfo->vret_arg_offset / sizeof (target_mgreg_t)));
 		g_ptr_array_add (map, GUINT_TO_POINTER (callee_cinfo->vret_arg_offset / sizeof (target_mgreg_t)));
 	}

@@ -178,8 +178,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                RuntimeParameterInfo ignore;
-                return _lazyParameters ?? (_lazyParameters = RuntimeMethodHelpers.GetRuntimeParameters(ref _common, this, Array.Empty<RuntimeTypeInfo>(), out ignore));
+                return _lazyParameters ??= RuntimeMethodHelpers.GetRuntimeParameters(ref _common, this, Array.Empty<RuntimeTypeInfo>(), out _);
             }
         }
 

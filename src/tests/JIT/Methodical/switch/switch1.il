@@ -17,6 +17,8 @@
 .class public auto ansi Test_switch1
        extends ['mscorlib']System.Object
 {
+  .field private static int32 s_exitCode;
+
   .method private hidebysig static void  DoSwitch(int32 'value') il managed
   {
     .maxstack  2
@@ -32,7 +34,7 @@
     IL_0012:  br.s       IL_0033
 
     IL_0014:  ldc.i4.s   100
-    IL_0016:  call       void ['System.Runtime.Extensions']System.Environment::set_ExitCode(int32)
+    IL_0016:  stsfld     int32 Test_switch1::s_exitCode
     IL_001b:  ldstr      "Test passed"
     IL_0020:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
     IL_0025:  br.s       IL_003f
@@ -48,7 +50,7 @@
     IL_003f:  ret
   }
 
-  .method public hidebysig static void Main() il managed
+  .method public hidebysig static int32 Main() il managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
@@ -57,8 +59,7 @@
     .maxstack  8
     IL_0000:  ldc.i4.1
     IL_0001:  call       void Test_switch1::DoSwitch(int32)
-    IL_0006:  call       int32 ['System.Runtime.Extensions']System.Environment::get_ExitCode()
-              call       void ['System.Runtime.Extensions']System.Environment::Exit(int32)
+    IL_0006:  ldsfld     int32 Test_switch1::s_exitCode
               ret
   }
 

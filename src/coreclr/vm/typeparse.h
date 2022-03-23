@@ -269,12 +269,6 @@ public:
     virtual ~TypeName();
 
 public:
-    //-------------------------------------------------------------------------------------------
-    // Retrieves a type from an assembly. It requires the caller to know which assembly
-    // the type is in.
-    //-------------------------------------------------------------------------------------------
-    static TypeHandle GetTypeFromAssembly(LPCWSTR szTypeName, Assembly *pAssembly, BOOL bThrowIfNotFound = TRUE);
-
     TypeHandle GetTypeFromAsm();
 
     //-------------------------------------------------------------------------------------------

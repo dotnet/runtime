@@ -4,7 +4,7 @@
     <DefineConstants>$(DefineConstants);CODEDOM</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>annotations</Nullable>
-    <SetIsTrimmable>false</SetIsTrimmable>
+    <IsTrimmable>false</IsTrimmable>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides types that can be used to model the structure of a source code document and to output source code for that model in a supported language.
 

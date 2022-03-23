@@ -21,7 +21,7 @@
 #include "metadata/marshal.h"
 #include "metadata/abi-details.h"
 #include "metadata/class-abi-details.h"
-#include "metadata/mono-gc.h"
+#include <mono/metadata/mono-gc.h>
 #include "metadata/runtime.h"
 #include "metadata/sgen-bridge-internals.h"
 #include "metadata/sgen-mono.h"
@@ -32,7 +32,6 @@
 #include "utils/mono-logger-internals.h"
 #include "utils/mono-threads-coop.h"
 #include "utils/mono-threads.h"
-#include "metadata/w32handle.h"
 #include "icall-decl.h"
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
@@ -295,7 +294,7 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 		 *
 		 * offsetof (MonoString, chars) + ((len + 1) * 2) <= INT32_MAX - (SGEN_ALLOC_ALIGN - 1)
 		 * len <= (SIZE_MAX - (SGEN_ALLOC_ALIGN - 1) - offsetof (MonoString, chars)) / 2 - 1
-		 * 
+		 *
 		 * On 64-bit platforms SIZE_MAX is so big that the 32-bit string length can
 		 * never reach the maximum size.
 		 */
@@ -372,7 +371,7 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 	mono_mb_emit_no_nullcheck (mb);
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_stloc (mb, p_var);
-	
+
 	/* new_next = (char*)p + size; */
 	new_next_var = mono_mb_add_local (mb, int_type);
 	mono_mb_emit_ldloc (mb, p_var);
@@ -464,11 +463,7 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 		mono_mb_emit_ldloc (mb, p_var);
 		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoArray, max_length));
 		mono_mb_emit_ldarg (mb, 1);
-#ifdef MONO_BIG_ARRAYS
-		mono_mb_emit_byte (mb, CEE_STIND_I);
-#else
 		mono_mb_emit_byte (mb, CEE_STIND_I4);
-#endif
 	} else 	if (atype == ATYPE_STRING) {
 		/* need to set length and clear the last char */
 		/* s->length = len; */

@@ -19,13 +19,8 @@ namespace Microsoft.Extensions.Logging
         /// Creates a new <see cref="Logger{T}"/>.
         /// </summary>
         /// <param name="factory">The factory.</param>
-        public Logger(ILoggerFactory factory)
+        public Logger(ILoggerFactory factory!!)
         {
-            if (factory == null)
-            {
-                throw new ArgumentNullException(nameof(factory));
-            }
-
             _logger = factory.CreateLogger(TypeNameHelper.GetTypeDisplayName(typeof(T), includeGenericParameters: false, nestedTypeDelimiter: '.'));
         }
 

@@ -3,7 +3,7 @@
 // static method
 using System;
 namespace Precise {
-class Driver
+class Driver_xprecise1
 {
 	public static int Main()
 	{

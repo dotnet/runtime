@@ -341,7 +341,7 @@ FCIMPL1(UINT32, MarshalNative::OffsetOfHelper, ReflectFieldObject *pFieldUNSAFE)
         return pField->GetOffset();
     }
 
-    UINT32 externalOffset;
+    UINT32 externalOffset = 0;
 
     HELPER_METHOD_FRAME_BEGIN_RET_1(refField);
     {

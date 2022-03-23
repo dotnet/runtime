@@ -173,7 +173,7 @@ namespace Internal.Runtime.TypeLoader
 
             bool unboxingStub = (flags & MethodFlags.IsUnboxingStub) != 0;
 
-            MethodDesc retVal = null;
+            MethodDesc retVal;
             if ((flags & MethodFlags.HasInstantiation) != 0)
             {
                 TypeDesc[] typeArguments = GetTypeSequence(ref parser);
@@ -197,9 +197,7 @@ namespace Internal.Runtime.TypeLoader
 
         internal MethodDesc GetMethod(ref NativeParser parser)
         {
-            RuntimeSignature methodSig;
-            RuntimeSignature methodNameSig;
-            return GetMethod(ref parser, out methodNameSig, out methodSig);
+            return GetMethod(ref parser, out _, out _);
         }
 
         internal TypeDesc[] GetTypeSequence(ref NativeParser parser)

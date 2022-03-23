@@ -5,7 +5,7 @@
 // 1. in daccess.h to build the table of DAC globals
 // 2. in enummem.cpp to dump out the related memory of static and globals
 //    in a mini dump or heap dump
-// 3. in DacUpdateDll and toolbox\DacTablenGen\main.cs
+// 3. in DacUpdateDll and tools\DacTablenGen\main.cs
 //
 // To use this functionality for other tools or purposes, define the
 // DEFINE_DACVAR macro & include dacvars.h like so (see enummem.cpp and/or
@@ -145,6 +145,7 @@ DEFINE_DACVAR(ULONG, ProfControlBlock, dac__g_profControlBlock, ::g_profControlB
 DEFINE_DACVAR(ULONG, PTR_DWORD, dac__g_card_table, ::g_card_table)
 DEFINE_DACVAR(ULONG, PTR_BYTE, dac__g_lowest_address, ::g_lowest_address)
 DEFINE_DACVAR(ULONG, PTR_BYTE, dac__g_highest_address, ::g_highest_address)
+DEFINE_DACVAR(ULONG, gc_alloc_context, dac__g_global_alloc_context, ::g_global_alloc_context)
 
 DEFINE_DACVAR(ULONG, IGCHeap, dac__g_pGCHeap, ::g_pGCHeap)
 

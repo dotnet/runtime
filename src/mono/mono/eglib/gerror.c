@@ -35,13 +35,13 @@ g_error_new (gpointer domain, gint code, const char *format, ...)
 {
 	va_list args;
 	GError *err = g_new (GError, 1);
-	
+
 	err->domain = domain;
 	err->code = code;
 
 	va_start (args, format);
 	if (g_vasprintf (&err->message, format, args) == -1)
-		err->message = g_strdup_printf ("internal: invalid format string %s", format); 
+		err->message = g_strdup_printf ("internal: invalid format string %s", format);
 	va_end (args);
 
 	return err;
@@ -51,12 +51,12 @@ static GError *
 g_error_vnew (gpointer domain, gint code, const char *format, va_list ap)
 {
 	GError *err = g_new (GError, 1);
-	
+
 	err->domain = domain;
 	err->code = code;
 
 	if (g_vasprintf (&err->message, format, ap) == -1)
-		err->message = g_strdup_printf ("internal: invalid format string %s", format); 
+		err->message = g_strdup_printf ("internal: invalid format string %s", format);
 
 	return err;
 }
@@ -75,7 +75,7 @@ g_error_free (GError *gerror)
 {
 	if (!gerror)
 		return;
-	
+
 	g_free (gerror->message);
 	g_free (gerror);
 }

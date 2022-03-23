@@ -19,13 +19,8 @@ namespace System.ServiceModel.Syndication
         private string _outerName;
         private string _outerNamespace;
 
-        public SyndicationElementExtension(XmlReader xmlReader)
+        public SyndicationElementExtension(XmlReader xmlReader!!)
         {
-            if (xmlReader == null)
-            {
-                throw new ArgumentNullException(nameof(xmlReader));
-            }
-
             SyndicationFeedFormatter.MoveToStartElement(xmlReader);
             _outerName = xmlReader.LocalName;
             _outerNamespace = xmlReader.NamespaceURI;
@@ -55,12 +50,8 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public SyndicationElementExtension(string outerName, string outerNamespace, object dataContractExtension, XmlObjectSerializer dataContractSerializer)
+        public SyndicationElementExtension(string outerName, string outerNamespace, object dataContractExtension!!, XmlObjectSerializer dataContractSerializer)
         {
-            if (dataContractExtension == null)
-            {
-                throw new ArgumentNullException(nameof(dataContractExtension));
-            }
             if (outerName == string.Empty)
             {
                 throw new ArgumentException(SR.OuterNameOfElementExtensionEmpty, nameof(outerName));
@@ -76,13 +67,8 @@ namespace System.ServiceModel.Syndication
             _extensionDataWriter = new ExtensionDataWriter(_extensionData, dataContractSerializer, _outerName, _outerNamespace);
         }
 
-        public SyndicationElementExtension(object xmlSerializerExtension, XmlSerializer serializer)
+        public SyndicationElementExtension(object xmlSerializerExtension!!, XmlSerializer serializer)
         {
-            if (xmlSerializerExtension == null)
-            {
-                throw new ArgumentNullException(nameof(xmlSerializerExtension));
-            }
-
             if (serializer == null)
             {
                 serializer = new XmlSerializer(xmlSerializerExtension.GetType());
@@ -127,13 +113,8 @@ namespace System.ServiceModel.Syndication
 
         public TExtension GetObject<TExtension>() => GetObject<TExtension>(new DataContractSerializer(typeof(TExtension)));
 
-        public TExtension GetObject<TExtension>(XmlObjectSerializer serializer)
+        public TExtension GetObject<TExtension>(XmlObjectSerializer serializer!!)
         {
-            if (serializer == null)
-            {
-                throw new ArgumentNullException(nameof(serializer));
-            }
-
             if (_extensionData != null && typeof(TExtension).IsAssignableFrom(_extensionData.GetType()))
             {
                 return (TExtension)_extensionData;
@@ -144,13 +125,8 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public TExtension GetObject<TExtension>(XmlSerializer serializer)
+        public TExtension GetObject<TExtension>(XmlSerializer serializer!!)
         {
-            if (serializer == null)
-            {
-                throw new ArgumentNullException(nameof(serializer));
-            }
-
             if (_extensionData != null && typeof(TExtension).IsAssignableFrom(_extensionData.GetType()))
             {
                 return (TExtension)_extensionData;
@@ -179,13 +155,8 @@ namespace System.ServiceModel.Syndication
             return reader;
         }
 
-        public void WriteTo(XmlWriter writer)
+        public void WriteTo(XmlWriter writer!!)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
             if (_extensionDataWriter != null)
             {
                 _extensionDataWriter.WriteTo(writer);

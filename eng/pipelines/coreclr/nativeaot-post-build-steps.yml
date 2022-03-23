@@ -16,7 +16,7 @@ steps:
 
   # Build coreclr native test output
   - ${{ if eq(parameters.osGroup, 'windows') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build.cmd nativeaot $(buildConfigUpper) ${{ parameters.archType }} ${{ parameters.testFilter }} /p:NativeAotMultimodule=true
+    - script: $(Build.SourcesDirectory)/src/tests/build.cmd nativeaot $(buildConfigUpper) ${{ parameters.archType }} ${{ parameters.testFilter }} /p:BuildNativeAotFrameworkObjects=true
       displayName: Build tests
   - ${{ if ne(parameters.osGroup, 'windows') }}:
     - script: $(Build.SourcesDirectory)/src/tests/build.sh nativeaot $(buildConfigUpper) ${{ parameters.archType }} '${{ parameters.testFilter }}'
@@ -29,7 +29,3 @@ steps:
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - script: $(Build.SourcesDirectory)/src/tests/run.sh --runnativeaottests $(buildConfigUpper) ${{ parameters.archType }}
         displayName: Run tests in single file mode
-
-  - ${{ if eq(parameters.osGroup, 'windows') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/run.cmd runnativeaottests nativeaotmultimodule $(buildConfigUpper) ${{ parameters.archType }}
-      displayName: Run tests in multifile mode

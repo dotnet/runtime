@@ -80,14 +80,14 @@ namespace System.Text.Json.Serialization.Metadata
         public static JsonTypeInfo<TCollection> CreateImmutableDictionaryInfo<TCollection, TKey, TValue>(
             JsonSerializerOptions options,
             JsonCollectionInfoValues<TCollection> collectionInfo,
-            Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection> createRangeFunc)
+            Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection> createRangeFunc!!)
             where TCollection : IReadOnlyDictionary<TKey, TValue>
             where TKey : notnull
             => new JsonTypeInfoInternal<TCollection>(
                 options,
                 collectionInfo,
                 () => new ImmutableDictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>(),
-                createObjectWithArgs: createRangeFunc ?? throw new ArgumentNullException(nameof(createRangeFunc)));
+                createObjectWithArgs: createRangeFunc);
 
         /// <summary>
         /// Creates serialization metadata for types assignable to <see cref="IDictionary{TKey, TValue}"/>.
@@ -144,13 +144,13 @@ namespace System.Text.Json.Serialization.Metadata
         public static JsonTypeInfo<TCollection> CreateImmutableEnumerableInfo<TCollection, TElement>(
             JsonSerializerOptions options,
             JsonCollectionInfoValues<TCollection> collectionInfo,
-            Func<IEnumerable<TElement>, TCollection> createRangeFunc)
+            Func<IEnumerable<TElement>, TCollection> createRangeFunc!!)
             where TCollection : IEnumerable<TElement>
             => new JsonTypeInfoInternal<TCollection>(
                 options,
                 collectionInfo,
                 () => new ImmutableEnumerableOfTConverter<TCollection, TElement>(),
-                createObjectWithArgs: createRangeFunc ?? throw new ArgumentNullException(nameof(createRangeFunc)));
+                createObjectWithArgs: createRangeFunc);
 
         /// <summary>
         /// Creates serialization metadata for types assignable to <see cref="IList"/>.
@@ -369,14 +369,14 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonTypeInfo<TCollection> CreateStackOrQueueInfo<TCollection>(
             JsonSerializerOptions options,
             JsonCollectionInfoValues<TCollection> collectionInfo,
-            Action<TCollection, object?> addFunc)
+            Action<TCollection, object?> addFunc!!)
             where TCollection : IEnumerable
             => new JsonTypeInfoInternal<TCollection>(
                 options,
                 collectionInfo,
                 () => new StackOrQueueConverter<TCollection>(),
                 createObjectWithArgs: null,
-                addFunc: addFunc ?? throw new ArgumentNullException(nameof(addFunc)));
+                addFunc: addFunc);
 
         /// <summary>
         /// Creates serialization metadata for types assignable to <see cref="IList"/>.

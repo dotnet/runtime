@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RootNamespace>System.Resources</RootNamespace>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>

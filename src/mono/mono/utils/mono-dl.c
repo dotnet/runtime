@@ -232,7 +232,7 @@ mono_dl_open_full (const char *name, int mono_flags, int native_flags, char **er
 	void *lib;
 	MonoDlFallbackHandler *dl_fallback = NULL;
 	int lflags = mono_dl_convert_flags (mono_flags, native_flags);
-	char *found_name;
+	char *found_name = NULL;
 
 	if (error_msg)
 		*error_msg = NULL;
@@ -346,18 +346,7 @@ mono_dl_symbol (MonoDl *module, const char *name, void **symbol)
 	if (module->dl_fallback) {
 		sym = module->dl_fallback->symbol_func (module->handle, name, &err, module->dl_fallback->user_data);
 	} else {
-#if MONO_DL_NEED_USCORE
-		{
-			const size_t length = strlen (name);
-			char *usname = g_new (char, length + 2);
-			*usname = '_';
-			memcpy (usname + 1, name, length + 1);
-			sym = mono_dl_lookup_symbol (module, usname);
-			g_free (usname);
-		}
-#else
 		sym = mono_dl_lookup_symbol (module, name);
-#endif
 	}
 
 	if (sym) {
@@ -466,8 +455,7 @@ dl_build_path (const char *directory, const char *name, void **iter, dl_library_
 	const char *prefix;
 	const char *suffix;
 	gboolean need_prefix = TRUE, need_suffix = TRUE;
-	int prlen;
-	int suffixlen;
+	size_t prlen, suffixlen;
 	char *res;
 	int iteration;
 

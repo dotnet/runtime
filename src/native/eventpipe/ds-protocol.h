@@ -146,6 +146,13 @@ ds_ipc_message_try_parse_int32_t (
 }
 
 bool
+ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	uint8_t **string_byte_array,
+	uint32_t *string_byte_array_len);
+
+bool
 ds_ipc_message_try_parse_string_utf16_t (
 	uint8_t **buffer,
 	uint32_t *buffer_len,

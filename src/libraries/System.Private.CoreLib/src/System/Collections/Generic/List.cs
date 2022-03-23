@@ -318,7 +318,7 @@ namespace System.Collections.Generic
             // via EqualityComparer<T>.Default.Equals, we
             // only make one virtual call to EqualityComparer.IndexOf.
 
-            return _size != 0 && IndexOf(item) != -1;
+            return _size != 0 && IndexOf(item) >= 0;
         }
 
         bool IList.Contains(object? item)

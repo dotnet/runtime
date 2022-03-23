@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Net;
@@ -17,31 +18,30 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         internal SymbolicRegexNode<T> Node { get; }
+
         internal uint PrevCharKind { get; }
 
         internal int Id { get; set; }
-        internal bool IsInitialState { get; set; }
 
-        /// <summary>State is lazy</summary>
-        internal bool IsLazy => Node._info.IsLazy;
+        internal bool IsInitialState { get; set; }
 
         /// <summary>This is a deadend state</summary>
         internal bool IsDeadend => Node.IsNothing;
 
         /// <summary>The node must be nullable here</summary>
-        internal int WatchDog
+        internal int FixedLength
         {
             get
             {
-                if (Node._kind == SymbolicRegexKind.WatchDog)
+                if (Node._kind == SymbolicRegexNodeKind.FixedLengthMarker)
                 {
                     return Node._lower;
                 }
 
-                if (Node._kind == SymbolicRegexKind.Or)
+                if (Node._kind == SymbolicRegexNodeKind.Or)
                 {
                     Debug.Assert(Node._alts is not null);
-                    return Node._alts._watchdog;
+                    return Node._alts._maximumLength;
                 }
 
                 return -1;
@@ -55,18 +55,22 @@ namespace System.Text.RegularExpressions.Symbolic
         internal bool StartsWithLineAnchor => Node._info.StartsWithLineAnchor;
 
         /// <summary>
-        /// Compute the target state for the given input minterm.
-        /// If <paramref name="minterm"/> is False this means that this is \n and it is the last character of the input.
+        /// Translates a minterm predicate to a character kind, which is a general categorization of characters used
+        /// for cheaply deciding the nullability of anchors.
         /// </summary>
-        /// <param name="minterm">minterm corresponding to some input character or False corresponding to last \n</param>
-        internal DfaMatchingState<T> Next(T minterm)
+        /// <remarks>
+        /// A False predicate is handled as a special case to indicate the very last \n.
+        /// </remarks>
+        /// <param name="minterm">the minterm to translate</param>
+        /// <returns>the character kind of the minterm</returns>
+        private uint GetNextCharKind(ref T minterm)
         {
             ICharAlgebra<T> alg = Node._builder._solver;
             T wordLetterPredicate = Node._builder._wordLetterPredicateForAnchors;
             T newLinePredicate = Node._builder._newLinePredicate;
 
             // minterm == solver.False is used to represent the very last \n
-            uint nextCharKind = 0;
+            uint nextCharKind = CharKind.General;
             if (alg.False.Equals(minterm))
             {
                 nextCharKind = CharKind.NewLineS;
@@ -77,7 +81,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // If the previous state was the start state, mark this as the very FIRST \n.
                 // Essentially, this looks the same as the very last \n and is used to nullify
                 // rev(\Z) in the conext of a reversed automaton.
-                nextCharKind = PrevCharKind == CharKind.StartStop ?
+                nextCharKind = PrevCharKind == CharKind.BeginningEnd ?
                     CharKind.NewLineS :
                     CharKind.Newline;
             }
@@ -85,23 +89,60 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 nextCharKind = CharKind.WordLetter;
             }
+            return nextCharKind;
+        }
+
+        /// <summary>
+        /// Compute the target state for the given input minterm.
+        /// If <paramref name="minterm"/> is False this means that this is \n and it is the last character of the input.
+        /// </summary>
+        /// <param name="minterm">minterm corresponding to some input character or False corresponding to last \n</param>
+        internal DfaMatchingState<T> Next(T minterm)
+        {
+            uint nextCharKind = GetNextCharKind(ref minterm);
 
             // Combined character context
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the derivative of the node for the given context
-            SymbolicRegexNode<T> derivative = Node.MkDerivative(minterm, context);
+            SymbolicRegexNode<T> derivative = Node.CreateDerivative(minterm, context);
 
             // nextCharKind will be the PrevCharKind of the target state
             // use an existing state instead if one exists already
             // otherwise create a new new id for it
-            return Node._builder.MkState(derivative, nextCharKind);
+            return Node._builder.CreateState(derivative, nextCharKind, capturing: false);
+        }
+
+        /// <summary>
+        /// Compute a set of transitions for the given minterm.
+        /// </summary>
+        /// <param name="minterm">minterm corresponding to some input character or False corresponding to last \n</param>
+        /// <returns>an enumeration of the transitions as pairs of the target state and a list of effects to be applied</returns>
+        internal List<(DfaMatchingState<T> State, DerivativeEffect[] Effects)> NfaNextWithEffects(T minterm)
+        {
+            uint nextCharKind = GetNextCharKind(ref minterm);
+
+            // Combined character context
+            uint context = CharKind.Context(PrevCharKind, nextCharKind);
+
+            // Compute the transitions for the given context
+            List<(SymbolicRegexNode<T>, DerivativeEffect[])> nodesAndEffects = Node.CreateNfaDerivativeWithEffects(minterm, context);
+
+            var list = new List<(DfaMatchingState<T> State, DerivativeEffect[] Effects)>();
+            foreach ((SymbolicRegexNode<T> node, DerivativeEffect[]? effects) in nodesAndEffects)
+            {
+                // nextCharKind will be the PrevCharKind of the target state
+                // use an existing state instead if one exists already
+                // otherwise create a new new id for it
+                list.Add((Node._builder.CreateState(node, nextCharKind, capturing: true), effects));
+            }
+            return list;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsNullable(uint nextCharKind)
         {
-            Debug.Assert(nextCharKind is 0 or CharKind.StartStop or CharKind.Newline or CharKind.WordLetter or CharKind.NewLineS);
+            Debug.Assert(nextCharKind is 0 or CharKind.BeginningEnd or CharKind.Newline or CharKind.WordLetter or CharKind.NewLineS);
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
             return Node.IsNullableFor(context);
         }
@@ -115,6 +156,7 @@ namespace System.Text.RegularExpressions.Symbolic
             PrevCharKind == 0 ? Node.ToString() :
              $"({CharKind.DescribePrev(PrevCharKind)},{Node})";
 
+#if DEBUG
         internal string DgmlView
         {
             get
@@ -134,5 +176,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 return $"{info}{deriv}";
             }
         }
+#endif
     }
 }

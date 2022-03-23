@@ -386,17 +386,12 @@ namespace System.Reflection.Metadata.Ecma335
 
         public AssemblyDefinitionHandle AddAssembly(
             StringHandle name,
-            Version version,
+            Version version!!,
             StringHandle culture,
             BlobHandle publicKey,
             AssemblyFlags flags,
             AssemblyHashAlgorithm hashAlgorithm)
         {
-            if (version == null)
-            {
-                Throw.ArgumentNull(nameof(version));
-            }
-
             if (_assemblyRow.HasValue)
             {
                 Throw.InvalidOperation(SR.AssemblyAlreadyAdded);
@@ -417,17 +412,12 @@ namespace System.Reflection.Metadata.Ecma335
 
         public AssemblyReferenceHandle AddAssemblyReference(
             StringHandle name,
-            Version version,
+            Version version!!,
             StringHandle culture,
             BlobHandle publicKeyOrToken,
             AssemblyFlags flags,
             BlobHandle hashValue)
         {
-            if (version == null)
-            {
-                Throw.ArgumentNull(nameof(version));
-            }
-
             _assemblyRefTable.Add(new AssemblyRefTableRow
             {
                 Name = name,

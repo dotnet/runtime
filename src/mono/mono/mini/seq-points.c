@@ -41,7 +41,7 @@ recursively_make_pred_seq_points (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	for (int i = 0; i < bb->in_count; ++i) {
 		MonoBasicBlock *in_bb = bb->in_bb [i];
-		
+
 		// This bb has the last seq point, append it and continue
 		if (in_bb->last_seq_point != NULL) {
 			predecessors = g_array_append_val (predecessors, in_bb->last_seq_point);
@@ -54,7 +54,7 @@ recursively_make_pred_seq_points (MonoCompile *cfg, MonoBasicBlock *bb)
 			continue;
 
 		// Take sequence points from incoming basic blocks
-	
+
 		if (in_bb == cfg->bb_entry)
 			continue;
 
@@ -80,7 +80,7 @@ recursively_make_pred_seq_points (MonoCompile *cfg, MonoBasicBlock *bb)
 		for (int newer = 0; newer < bb->num_pred_seq_points; newer++) {
 			bb->pred_seq_points [newer] = g_array_index(predecessors, MonoInst*, newer);
 		}
-	} 
+	}
 
 	g_array_free (predecessors, TRUE);
 }

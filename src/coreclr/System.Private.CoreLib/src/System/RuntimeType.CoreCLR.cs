@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using Internal.Runtime.CompilerServices;
+
 using DebuggerStepThroughAttribute = System.Diagnostics.DebuggerStepThroughAttribute;
 using MdToken = System.Reflection.MetadataToken;
 
@@ -1719,12 +1719,9 @@ namespace System
         #region Static Members
 
         #region Internal
-        internal static RuntimeType? GetType(string typeName, bool throwOnError, bool ignoreCase,
+        internal static RuntimeType? GetType(string typeName!!, bool throwOnError, bool ignoreCase,
             ref StackCrawlMark stackMark)
         {
-            if (typeName == null)
-                throw new ArgumentNullException(nameof(typeName));
-
             return RuntimeTypeHandle.GetTypeByName(
                 typeName, throwOnError, ignoreCase, ref stackMark);
         }
@@ -1941,7 +1938,7 @@ namespace System
             }
 
             Debug.Fail("Unreachable code");
-            throw new SystemException();
+            throw new UnreachableException();
         }
 
         internal static void ValidateGenericArguments(MemberInfo definition, RuntimeType[] genericArguments, Exception? e)
@@ -1992,8 +1989,8 @@ namespace System
                 return;
 
             // Get namespace
-            int nsDelimiter = fullname.LastIndexOf(".", StringComparison.Ordinal);
-            if (nsDelimiter != -1)
+            int nsDelimiter = fullname.LastIndexOf('.');
+            if (nsDelimiter >= 0)
             {
                 ns = fullname.Substring(0, nsDelimiter);
                 int nameLength = fullname.Length - ns.Length - 1;
@@ -2669,8 +2666,7 @@ namespace System
             if (IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_GenericParameter);
 
-            if (ifaceType is null)
-                throw new ArgumentNullException(nameof(ifaceType));
+            ArgumentNullException.ThrowIfNull(ifaceType);
 
             RuntimeType? ifaceRtType = ifaceType as RuntimeType;
 
@@ -2804,7 +2800,7 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers) as ConstructorInfo;
+                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
 
             binder ??= DefaultBinder;
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as ConstructorInfo;
@@ -2812,10 +2808,8 @@ namespace System
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         protected override PropertyInfo? GetPropertyImpl(
-            string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
+            string name!!, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
-
             ListBuilder<PropertyInfo> candidates = GetPropertyCandidates(name, bindingAttr, types, false);
 
             if (candidates.Count == 0)
@@ -2842,17 +2836,15 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types, modifiers);
+                return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types);
 
             binder ??= DefaultBinder;
             return binder.SelectProperty(bindingAttr, candidates.ToArray(), returnType, types, modifiers);
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
-        public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
+        public override EventInfo? GetEvent(string name!!, BindingFlags bindingAttr)
         {
-            if (name is null) throw new ArgumentNullException(nameof(name));
-
             FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
             RuntimeEventInfo[] cache = Cache.GetEventList(listType, name);
@@ -2876,10 +2868,8 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
+        public override FieldInfo? GetField(string name!!, BindingFlags bindingAttr)
         {
-            if (name is null) throw new ArgumentNullException();
-
             FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
             RuntimeFieldInfo[] cache = Cache.GetFieldList(listType, name);
@@ -2913,12 +2903,14 @@ namespace System
             return match;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern",
+            Justification = "Trimming makes sure that interfaces are fully preserved, so the Interfaces annotation is transitive." +
+                            "The cache doesn't carry the necessary annotation since it returns an array type," +
+                            "so the analysis complains that the returned value doesn't have the necessary annotation.")]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        public override Type? GetInterface(string fullname, bool ignoreCase)
+        public override Type? GetInterface(string fullname!!, bool ignoreCase)
         {
-            if (fullname is null) throw new ArgumentNullException(nameof(fullname));
-
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic;
 
             bindingAttr &= ~BindingFlags.Static;
@@ -2950,10 +2942,8 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public override Type? GetNestedType(string fullname, BindingFlags bindingAttr)
+        public override Type? GetNestedType(string fullname!!, BindingFlags bindingAttr)
         {
-            if (fullname is null) throw new ArgumentNullException(nameof(fullname));
-
             bindingAttr &= ~BindingFlags.Static;
             string name, ns;
             SplitName(fullname, out name!, out ns!);
@@ -2979,10 +2969,8 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(GetAllMembers)]
-        public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
+        public override MemberInfo[] GetMember(string name!!, MemberTypes type, BindingFlags bindingAttr)
         {
-            if (name is null) throw new ArgumentNullException(nameof(name));
-
             ListBuilder<MethodInfo> methods = default;
             ListBuilder<ConstructorInfo> constructors = default;
             ListBuilder<PropertyInfo> properties = default;
@@ -3061,10 +3049,8 @@ namespace System
             return compressMembers;
         }
 
-        public override MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
+        public override MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member!!)
         {
-            if (member is null) throw new ArgumentNullException(nameof(member));
-
             RuntimeType? runtimeType = this;
             while (runtimeType != null)
             {
@@ -3217,10 +3203,8 @@ namespace System
 
         #region Hierarchy
 
-        public override bool IsSubclassOf(Type type)
+        public override bool IsSubclassOf(Type type!!)
         {
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
             RuntimeType? rtType = type as RuntimeType;
             if (rtType == null)
                 return false;
@@ -3352,11 +3336,8 @@ namespace System
         }
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
-        public override Type MakeGenericType(Type[] instantiation)
+        public override Type MakeGenericType(Type[] instantiation!!)
         {
-            if (instantiation == null)
-                throw new ArgumentNullException(nameof(instantiation));
-
             if (!IsGenericTypeDefinition)
                 throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
 
@@ -3906,9 +3887,11 @@ namespace System
                         case DispatchWrapperType.Error:
                             wrapperType = typeof(ErrorWrapper);
                             break;
+#pragma warning disable 0618 // CurrencyWrapper is obsolete
                         case DispatchWrapperType.Currency:
                             wrapperType = typeof(CurrencyWrapper);
                             break;
+#pragma warning restore 0618
                         case DispatchWrapperType.BStr:
                             wrapperType = typeof(BStrWrapper);
                             isString = true;
@@ -3965,9 +3948,11 @@ namespace System
                         case DispatchWrapperType.Error:
                             aArgs[i] = new ErrorWrapper(aArgs[i]);
                             break;
+#pragma warning disable 0618 // CurrencyWrapper is obsolete
                         case DispatchWrapperType.Currency:
                             aArgs[i] = new CurrencyWrapper(aArgs[i]);
                             break;
+#pragma warning restore 0618
                         case DispatchWrapperType.BStr:
                             aArgs[i] = new BStrWrapper((string)aArgs[i]);
                             break;
@@ -4001,10 +3986,11 @@ namespace System
     #region Library
     internal readonly unsafe partial struct MdUtf8String
     {
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_EqualsCaseInsensitive")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_EqualsCaseInsensitive")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_HashCaseInsensitive")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_HashCaseInsensitive")]
         private static partial uint HashCaseInsensitive(void* sz, int cSz);
 
         private readonly byte* m_pStringHeap;        // This is the raw UTF8 string.

@@ -231,7 +231,6 @@ namespace System.Xml.Xsl.IlGen
         #region meta
         protected override QilNode VisitQilExpression(QilExpression local0)
         {
-            QilNode local1 = local0[0];
             if (this[XmlILOptimization.EliminateUnusedGlobals])
             {
                 // PATTERN: [EliminateUnusedGlobals] $qil:(QilExpression *) => { ... }
@@ -721,8 +720,6 @@ namespace System.Xml.Xsl.IlGen
 
         protected override QilNode VisitChoice(QilChoice local0)
         {
-            QilNode local1 = local0[0];
-            QilNode local2 = local0[1];
             if (this[XmlILOptimization.AnnotateConstruction])
             {
                 // PATTERN: [AnnotateConstruction] $ctor:(Choice * *) => { ... }
@@ -3271,7 +3268,6 @@ namespace System.Xml.Xsl.IlGen
         protected override QilNode VisitSort(QilLoop local0)
         {
             QilNode local1 = local0[0];
-            QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
                 if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)
@@ -3607,8 +3603,6 @@ namespace System.Xml.Xsl.IlGen
         {
             QilNode local1 = local0[0];
             QilNode local2 = local0[1];
-            QilNode local3 = local0[2];
-            XmlQueryType? local4 = (XmlQueryType?)((QilFunction)local0).XmlType;
             if (((local0).XmlType!.IsSubtypeOf(XmlQueryTypeFactory.NodeS)) && (this[XmlILOptimization.AnnotateIndex1]))
             {
                 if (((local1.Count == 2) && (((QilNode)(local1)[0]).XmlType!.IsSubtypeOf(XmlQueryTypeFactory.Node))) && ((((QilNode)(local1)[1]).XmlType) == (XmlQueryTypeFactory.StringX)))
@@ -3730,7 +3724,6 @@ namespace System.Xml.Xsl.IlGen
         protected override QilNode VisitInvoke(QilInvoke local0)
         {
             QilNode local1 = local0[0];
-            QilNode local2 = local0[1];
             if (this[XmlILOptimization.NormalizeInvokeEmpty])
             {
                 if (local1.NodeType == QilNodeType.Function)
@@ -4392,7 +4385,6 @@ namespace System.Xml.Xsl.IlGen
         protected override QilNode VisitRtfCtor(QilBinary local0)
         {
             QilNode local1 = local0[0];
-            QilNode local2 = local0[1];
             if (this[XmlILOptimization.FoldNone])
             {
                 if ((object?)((local1).XmlType) == (object)XmlQueryTypeFactory.None)

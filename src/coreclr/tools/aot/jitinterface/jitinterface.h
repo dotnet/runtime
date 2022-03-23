@@ -16,7 +16,7 @@ struct JitInterfaceCallbacks
     void (* setMethodAttribs)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, CorInfoMethodRuntimeFlags attribs);
     void (* getMethodSig)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, CORINFO_SIG_INFO* sig, CORINFO_CLASS_HANDLE memberParent);
     bool (* getMethodInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info);
-    CorInfoInline (* canInline)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd, uint32_t* pRestrictions);
+    CorInfoInline (* canInline)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd);
     void (* reportInliningDecision)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd, CorInfoInline inlineResult, const char* reason);
     bool (* canTailCall)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE declaredCalleeHnd, CORINFO_METHOD_HANDLE exactCalleeHnd, bool fIsTailPrefix);
     void (* reportTailCallDecision)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, const char* reason);
@@ -129,6 +129,7 @@ struct JitInterfaceCallbacks
     unsigned (* getMethodHash)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn);
     size_t (* findNameOfToken)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE moduleHandle, unsigned int token, char* szFQName, size_t FQNameCapacity);
     bool (* getSystemVAmd64PassStructInRegisterDescriptor)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
+    uint32_t (* getLoongArch64PassStructInRegisterFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd);
     uint32_t (* getThreadTLSIndex)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     const void* (* getInlinedCallFrameVptr)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     int32_t* (* getAddrOfCaptureThreadGlobal)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
@@ -247,11 +248,10 @@ public:
 
     virtual CorInfoInline canInline(
           CORINFO_METHOD_HANDLE callerHnd,
-          CORINFO_METHOD_HANDLE calleeHnd,
-          uint32_t* pRestrictions)
+          CORINFO_METHOD_HANDLE calleeHnd)
 {
     CorInfoExceptionClass* pException = nullptr;
-    CorInfoInline temp = _callbacks->canInline(_thisHandle, &pException, callerHnd, calleeHnd, pRestrictions);
+    CorInfoInline temp = _callbacks->canInline(_thisHandle, &pException, callerHnd, calleeHnd);
     if (pException != nullptr) throw pException;
     return temp;
 }
@@ -1319,6 +1319,15 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->getSystemVAmd64PassStructInRegisterDescriptor(_thisHandle, &pException, structHnd, structPassInRegDescPtr);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual uint32_t getLoongArch64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    uint32_t temp = _callbacks->getLoongArch64PassStructInRegisterFlags(_thisHandle, &pException, structHnd);
     if (pException != nullptr) throw pException;
     return temp;
 }

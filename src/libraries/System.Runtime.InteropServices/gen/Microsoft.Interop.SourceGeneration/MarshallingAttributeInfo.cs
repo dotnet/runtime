@@ -15,14 +15,27 @@ namespace Microsoft.Interop
     /// <summary>
     /// Type used to pass on default marshalling details.
     /// </summary>
+    /// <remarks>
+    /// This type used to pass default marshalling details to <see cref="MarshallingAttributeInfoParser"/>.
+    /// Since it contains a <see cref="INamedTypeSymbol"/>, it should not be used as a field on any types
+    /// derived from <see cref="MarshallingInfo"/>. See remarks on <see cref="MarshallingInfo"/>.
+    /// </remarks>
     public sealed record DefaultMarshallingInfo(
-        CharEncoding CharEncoding
+        CharEncoding CharEncoding,
+        INamedTypeSymbol? StringMarshallingCustomType
     );
 
     // The following types are modeled to fit with the current prospective spec
     // for C# vNext discriminated unions. Once discriminated unions are released,
     // these should be updated to be implemented as a discriminated union.
 
+    /// <summary>
+    /// Base type for marshalling information
+    /// </summary>
+    /// <remarks>
+    /// Types derived from this are used to represent the stub information calculated from the semantic model.
+    /// To support incremental generation, they must not include any types derived from <see cref="ISymbol"/>.
+    /// </remarks>
     public abstract record MarshallingInfo
     {
         // Add a constructor that can only be called by derived types in the same assembly
@@ -47,14 +60,9 @@ namespace Microsoft.Interop
     /// </summary>
     /// <remarks>
     /// An indication of "missing support" will trigger the fallback logic, which is
-    /// the forwarder marshaler.
+    /// the forwarder marshaller.
     /// </remarks>
-    public sealed record MissingSupportMarshallingInfo : MarshallingInfo
-    {
-        public static readonly MarshallingInfo Instance = new MissingSupportMarshallingInfo();
-
-        private MissingSupportMarshallingInfo() { }
-    }
+    public record MissingSupportMarshallingInfo : MarshallingInfo;
 
     /// <summary>
     /// Character encoding enumeration.
@@ -65,7 +73,7 @@ namespace Microsoft.Interop
         Utf8,
         Utf16,
         Ansi,
-        PlatformDefined
+        Custom
     }
 
     /// <summary>
@@ -85,11 +93,9 @@ namespace Microsoft.Interop
     }
 
     /// <summary>
-    /// User-applied System.Runtime.InteropServices.BlittableTypeAttribute
-    /// or System.Runtime.InteropServices.GeneratedMarshallingAttribute on a blittable type
-    /// in source in this compilation.
+    /// The provided type was determined to be an "unmanaged" type that can be passed as-is to native code.
     /// </summary>
-    public sealed record BlittableTypeAttributeInfo : MarshallingInfo;
+    public sealed record UnmanagedBlittableMarshallingInfo : MarshallingInfo;
 
     [Flags]
     public enum CustomMarshallingFeatures
@@ -169,6 +175,18 @@ namespace Microsoft.Interop
             MarshallingFeatures,
             UseDefaultMarshalling
         );
+
+
+    /// <summary>
+    /// Marshalling information is lacking because of support not because it is
+    /// unknown or non-existent. Includes information about element types in case
+    /// we need to rehydrate the marshalling info into an attribute for the fallback marshaller.
+    /// </summary>
+    /// <remarks>
+    /// An indication of "missing support" will trigger the fallback logic, which is
+    /// the forwarder marshaller.
+    /// </remarks>
+    public sealed record MissingSupportCollectionMarshallingInfo(CountInfo CountInfo, MarshallingInfo ElementMarshallingInfo) : MissingSupportMarshallingInfo;
 
     public sealed class MarshallingAttributeInfoParser
     {
@@ -271,6 +289,7 @@ namespace Microsoft.Interop
                     {
                         return CreateNativeMarshallingInfo(
                             type,
+                            (INamedTypeSymbol)useSiteAttribute.ConstructorArguments[0].Value!,
                             useSiteAttribute,
                             isMarshalUsingAttribute: true,
                             indirectionLevel,
@@ -288,19 +307,11 @@ namespace Microsoft.Interop
             {
                 INamedTypeSymbol attributeClass = typeAttribute.AttributeClass!;
 
-                if (SymbolEqualityComparer.Default.Equals(_compilation.GetTypeByMetadataName(TypeNames.BlittableTypeAttribute), attributeClass))
-                {
-                    // If type is generic, then we need to re-evaluate that it is blittable at usage time.
-                    if (type is INamedTypeSymbol { IsGenericType: false } || type.HasOnlyBlittableFields())
-                    {
-                        return new BlittableTypeAttributeInfo();
-                    }
-                    break;
-                }
-                else if (SymbolEqualityComparer.Default.Equals(_compilation.GetTypeByMetadataName(TypeNames.NativeMarshallingAttribute), attributeClass))
+                if (attributeClass.ToDisplayString() == TypeNames.NativeMarshallingAttribute)
                 {
                     return CreateNativeMarshallingInfo(
                         type,
+                        (INamedTypeSymbol)typeAttribute.ConstructorArguments[0].Value!,
                         typeAttribute,
                         isMarshalUsingAttribute: false,
                         indirectionLevel,
@@ -309,9 +320,9 @@ namespace Microsoft.Interop
                         inspectedElements,
                         ref maxIndirectionLevelUsed);
                 }
-                else if (SymbolEqualityComparer.Default.Equals(_compilation.GetTypeByMetadataName(TypeNames.GeneratedMarshallingAttribute), attributeClass))
+                else if (attributeClass.ToDisplayString() == TypeNames.GeneratedMarshallingAttribute)
                 {
-                    return type.IsConsideredBlittable() ? new BlittableTypeAttributeInfo() : new GeneratedNativeMarshallingAttributeInfo(null! /* TODO: determine naming convention */);
+                    return type.IsConsideredBlittable() ? GetBlittableMarshallingInfo(type) : new GeneratedNativeMarshallingAttributeInfo(null! /* TODO: determine naming convention */);
                 }
             }
 
@@ -327,15 +338,6 @@ namespace Microsoft.Interop
                 out MarshallingInfo infoMaybe))
             {
                 return infoMaybe;
-            }
-
-            // No marshalling info was computed, but a character encoding was provided.
-            // If the type is a character or string then pass on these details.
-            if (_defaultInfo.CharEncoding != CharEncoding.Undefined
-                && (type.SpecialType == SpecialType.System_Char
-                    || type.SpecialType == SpecialType.System_String))
-            {
-                return new MarshallingInfoStringSupport(_defaultInfo.CharEncoding);
             }
 
             return NoMarshallingInfo.Instance;
@@ -563,7 +565,7 @@ namespace Microsoft.Interop
             if (arrayMarshaller is null)
             {
                 // If the array marshaler type is not available, then we cannot marshal arrays but indicate it is missing.
-                return MissingSupportMarshallingInfo.Instance;
+                return new MissingSupportCollectionMarshallingInfo(arraySizeInfo, elementMarshallingInfo);
             }
 
             ITypeSymbol? valuePropertyType = ManualTypeMarshallingHelper.FindValueProperty(arrayMarshaller)?.Type;
@@ -580,6 +582,7 @@ namespace Microsoft.Interop
 
         private MarshallingInfo CreateNativeMarshallingInfo(
             ITypeSymbol type,
+            INamedTypeSymbol nativeType,
             AttributeData attrData,
             bool isMarshalUsingAttribute,
             int indirectionLevel,
@@ -596,8 +599,6 @@ namespace Microsoft.Interop
             }
 
             ITypeSymbol spanOfByte = _compilation.GetTypeByMetadataName(TypeNames.System_Span_Metadata)!.Construct(_compilation.GetSpecialType(SpecialType.System_Byte));
-
-            INamedTypeSymbol nativeType = (INamedTypeSymbol)attrData.ConstructorArguments[0].Value!;
 
             if (nativeType.IsUnboundGenericType)
             {
@@ -724,25 +725,30 @@ namespace Microsoft.Interop
             out MarshallingInfo marshallingInfo)
         {
             // Check for an implicit SafeHandle conversion.
-            CodeAnalysis.Operations.CommonConversion conversion = _compilation.ClassifyCommonConversion(type, _compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_SafeHandle)!);
-            if (conversion.Exists
-                && conversion.IsImplicit
-                && (conversion.IsReference || conversion.IsIdentity))
+            // The SafeHandle type might not be defined if we're using one of the test CoreLib implementations used for NativeAOT.
+            ITypeSymbol? safeHandleType = _compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_SafeHandle);
+            if (safeHandleType is not null)
             {
-                bool hasAccessibleDefaultConstructor = false;
-                if (type is INamedTypeSymbol named && !named.IsAbstract && named.InstanceConstructors.Length > 0)
+                CodeAnalysis.Operations.CommonConversion conversion = _compilation.ClassifyCommonConversion(type, safeHandleType);
+                if (conversion.Exists
+                    && conversion.IsImplicit
+                    && (conversion.IsReference || conversion.IsIdentity))
                 {
-                    foreach (IMethodSymbol ctor in named.InstanceConstructors)
+                    bool hasAccessibleDefaultConstructor = false;
+                    if (type is INamedTypeSymbol named && !named.IsAbstract && named.InstanceConstructors.Length > 0)
                     {
-                        if (ctor.Parameters.Length == 0)
+                        foreach (IMethodSymbol ctor in named.InstanceConstructors)
                         {
-                            hasAccessibleDefaultConstructor = _compilation.IsSymbolAccessibleWithin(ctor, _contextSymbol.ContainingType);
-                            break;
+                            if (ctor.Parameters.Length == 0)
+                            {
+                                hasAccessibleDefaultConstructor = _compilation.IsSymbolAccessibleWithin(ctor, _contextSymbol.ContainingType);
+                                break;
+                            }
                         }
                     }
+                    marshallingInfo = new SafeHandleMarshallingInfo(hasAccessibleDefaultConstructor, type.IsAbstract);
+                    return true;
                 }
-                marshallingInfo = new SafeHandleMarshallingInfo(hasAccessibleDefaultConstructor, type.IsAbstract);
-                return true;
             }
 
             if (type is IArrayTypeSymbol { ElementType: ITypeSymbol elementType })
@@ -761,7 +767,7 @@ namespace Microsoft.Interop
                 if (arrayMarshaller is null)
                 {
                     // If the array marshaler type is not available, then we cannot marshal arrays but indicate it is missing.
-                    marshallingInfo = MissingSupportMarshallingInfo.Instance;
+                    marshallingInfo = new MissingSupportCollectionMarshallingInfo(parsedCountInfo, GetMarshallingInfo(elementType, useSiteAttributes, indirectionLevel + 1, inspectedElements, ref maxIndirectionLevelUsed));
                     return true;
                 }
 
@@ -778,17 +784,66 @@ namespace Microsoft.Interop
                 return true;
             }
 
-            if (type is INamedTypeSymbol { IsValueType: true } valueType
-                && !valueType.IsExposedOutsideOfCurrentCompilation()
-                && valueType.IsConsideredBlittable())
+            // No marshalling info was computed, but a character encoding was provided.
+            // If the type is a character or string then pass on these details.
+            if (type.SpecialType == SpecialType.System_Char || type.SpecialType == SpecialType.System_String)
             {
-                // Allow implicit [BlittableType] on internal value types.
-                marshallingInfo = new BlittableTypeAttributeInfo();
+                if (_defaultInfo.CharEncoding == CharEncoding.Custom && _defaultInfo.StringMarshallingCustomType is not null)
+                {
+                    AttributeData attrData = _contextSymbol is IMethodSymbol
+                        ? _contextSymbol.GetAttributes().First(a => a.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
+                        : default;
+                    marshallingInfo = CreateNativeMarshallingInfo(type, _defaultInfo.StringMarshallingCustomType, attrData, true, indirectionLevel, parsedCountInfo, useSiteAttributes, inspectedElements, ref maxIndirectionLevelUsed);
+                    return true;
+                }
+
+                if (_defaultInfo.CharEncoding != CharEncoding.Undefined)
+                {
+                    marshallingInfo = new MarshallingInfoStringSupport(_defaultInfo.CharEncoding);
+                    return true;
+                }
+            }
+
+            if (type.SpecialType == SpecialType.System_Boolean)
+            {
+                // We explicitly don't support marshalling bool without any marshalling info
+                // as treating bool as a non-normalized 1-byte value is generally not a good default.
+                // Additionally, that default is different than the runtime marshalling, so by explicitly
+                // blocking bool marshalling without additional info, we make it a little easier
+                // to transition by explicitly notifying people of changing behavior.
+                marshallingInfo = NoMarshallingInfo.Instance;
+                return false;
+            }
+
+            if (type is INamedTypeSymbol { IsUnmanagedType: true } unmanagedType
+                && unmanagedType.IsConsideredBlittable())
+            {
+                marshallingInfo = GetBlittableMarshallingInfo(type);
                 return true;
             }
 
             marshallingInfo = NoMarshallingInfo.Instance;
             return false;
+        }
+
+        private MarshallingInfo GetBlittableMarshallingInfo(ITypeSymbol type)
+        {
+            if (type.TypeKind is TypeKind.Enum or TypeKind.Pointer or TypeKind.FunctionPointer
+                || type.SpecialType.IsAlwaysBlittable())
+            {
+                // Treat primitive types and enums as having no marshalling info.
+                // They are supported in configurations where runtime marshalling is enabled.
+                return NoMarshallingInfo.Instance;
+            }
+            else if (_compilation.GetTypeByMetadataName(TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute) is null)
+            {
+                // If runtime marshalling cannot be disabled, then treat this as a "missing support" scenario so we can gracefully fall back to using the fowarder downlevel.
+                return new MissingSupportMarshallingInfo();
+            }
+            else
+            {
+                return new UnmanagedBlittableMarshallingInfo();
+            }
         }
 
         private bool TryGetAttributeIndirectionLevel(AttributeData attrData, out int indirectionLevel)

@@ -319,7 +319,6 @@ unsigned totalLoopCount;          // counts the total number of natural loops
 unsigned totalUnnatLoopCount;     // counts the total number of (not-necessarily natural) loops
 unsigned totalUnnatLoopOverflows; // # of methods that identified more unnatural loops than we can represent
 unsigned iterLoopCount;           // counts the # of loops with an iterator (for like)
-unsigned simpleTestLoopCount;     // counts the # of loops with an iterator and a simple loop condition (iter < const)
 unsigned constIterLoopCount;      // counts the # of loops with a constant iterator (for like)
 bool     hasMethodLoops;          // flag to keep track if we already counted a method as having loops
 unsigned loopsThisMethod;         // counts the number of loops in the current method
@@ -1556,7 +1555,6 @@ void Compiler::compShutdown()
     fprintf(fout, "Total number of 'unnatural' loops is %5u\n", totalUnnatLoopCount);
     fprintf(fout, "# of methods overflowing unnat loop limit is %5u\n", totalUnnatLoopOverflows);
     fprintf(fout, "Total number of loops with an         iterator is %5u\n", iterLoopCount);
-    fprintf(fout, "Total number of loops with a simple   iterator is %5u\n", simpleTestLoopCount);
     fprintf(fout, "Total number of loops with a constant iterator is %5u\n", constIterLoopCount);
 
     fprintf(fout, "--------------------------------------------------\n");
@@ -1885,7 +1883,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compQmarkRationalized = false;
     compQmarkUsed         = false;
     compFloatingPointUsed = false;
-    compUnsafeCastUsed    = false;
 
     compSuppressedZeroInit = false;
 
@@ -2235,7 +2232,7 @@ void Compiler::compSetProcessor()
     opts.compUseCMOV = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
 #ifdef DEBUG
     if (opts.compUseCMOV)
-        opts.compUseCMOV                = !compStressCompile(STRESS_USE_CMOV, 50);
+        opts.compUseCMOV                   = !compStressCompile(STRESS_USE_CMOV, 50);
 #endif // DEBUG
 
 #endif // TARGET_X86
@@ -2410,15 +2407,17 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitAlignLoopBoundary       = (unsigned short)JitConfig.JitAlignLoopBoundary();
     opts.compJitAlignLoopMinBlockWeight = (unsigned short)JitConfig.JitAlignLoopMinBlockWeight();
 
-    opts.compJitAlignLoopForJcc      = JitConfig.JitAlignLoopForJcc() == 1;
-    opts.compJitAlignLoopMaxCodeSize = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
-    opts.compJitHideAlignBehindJmp   = JitConfig.JitHideAlignBehindJmp() == 1;
+    opts.compJitAlignLoopForJcc            = JitConfig.JitAlignLoopForJcc() == 1;
+    opts.compJitAlignLoopMaxCodeSize       = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
+    opts.compJitHideAlignBehindJmp         = JitConfig.JitHideAlignBehindJmp() == 1;
+    opts.compJitOptimizeStructHiddenBuffer = JitConfig.JitOptimizeStructHiddenBuffer() == 1;
 #else
-    opts.compJitAlignLoopAdaptive       = true;
-    opts.compJitAlignLoopBoundary       = DEFAULT_ALIGN_LOOP_BOUNDARY;
-    opts.compJitAlignLoopMinBlockWeight = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
-    opts.compJitAlignLoopMaxCodeSize    = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
-    opts.compJitHideAlignBehindJmp      = true;
+    opts.compJitAlignLoopAdaptive          = true;
+    opts.compJitAlignLoopBoundary          = DEFAULT_ALIGN_LOOP_BOUNDARY;
+    opts.compJitAlignLoopMinBlockWeight    = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
+    opts.compJitAlignLoopMaxCodeSize       = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
+    opts.compJitHideAlignBehindJmp         = true;
+    opts.compJitOptimizeStructHiddenBuffer = true;
 #endif
 
 #ifdef TARGET_XARCH
@@ -2644,15 +2643,19 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         verboseDump = (JitConfig.JitDumpTier0() > 0);
     }
 
-    // Optionally suppress dumping some OSR jit requests.
+    // Optionally suppress dumping except for a specific OSR jit request.
     //
-    if (verboseDump && jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
-    {
-        const int desiredOffset = JitConfig.JitDumpAtOSROffset();
+    const int dumpAtOSROffset = JitConfig.JitDumpAtOSROffset();
 
-        if (desiredOffset != -1)
+    if (verboseDump && (dumpAtOSROffset != -1))
+    {
+        if (jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
         {
-            verboseDump = (((IL_OFFSET)desiredOffset) == info.compILEntry);
+            verboseDump = (((IL_OFFSET)dumpAtOSROffset) == info.compILEntry);
+        }
+        else
+        {
+            verboseDump = false;
         }
     }
 
@@ -2663,8 +2666,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif // DEBUG
 
 #ifdef FEATURE_SIMD
-    // Minimum bar for availing SIMD benefits is SSE2 on AMD64/x86.
-    featureSIMD = jitFlags->IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD);
     setUsesSIMDTypes(false);
 #endif // FEATURE_SIMD
 
@@ -4073,6 +4074,15 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
 {
     const bool tier0 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
     const bool tier1 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+
+    if (!opts.compMinOptsIsSet)
+    {
+        // If 'compMinOptsIsSet' is not set, just return here. Otherwise, if this method is called
+        // by the assertAbort(), we would recursively call assert while trying to get MinOpts()
+        // and eventually stackoverflow.
+        return "Optimization-Level-Not-Yet-Set";
+    }
+
     assert(!tier0 || !tier1); // We don't expect multiple TIER flags to be set at one time.
 
     if (tier0)
@@ -4632,7 +4642,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Run an early flow graph simplification pass
         //
         auto earlyUpdateFlowGraphPhase = [this]() {
-            const bool doTailDup = false;
+            constexpr bool doTailDup = false;
             fgUpdateFlowGraph(doTailDup);
         };
         DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, earlyUpdateFlowGraphPhase);
@@ -4653,6 +4663,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Figure out what locals are address-taken.
     //
     DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
+    // Run a simple forward substitution pass.
+    //
+    DoPhase(this, PHASE_FWD_SUB, &Compiler::fgForwardSub);
 
     // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
@@ -4772,6 +4785,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Unroll loops
         //
         DoPhase(this, PHASE_UNROLL_LOOPS, &Compiler::optUnrollLoops);
+
+        // Clear loop table info that is not used after this point, and might become invalid.
+        //
+        DoPhase(this, PHASE_CLEAR_LOOP_INFO, &Compiler::optClearLoopIterInfo);
     }
 
 #ifdef DEBUG
@@ -4905,7 +4922,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // update the flowgraph if we modified it during the optimization phase
                 //
                 auto optUpdateFlowGraphPhase = [this]() {
-                    const bool doTailDup = false;
+                    constexpr bool doTailDup = false;
                     fgUpdateFlowGraph(doTailDup);
                 };
                 DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, optUpdateFlowGraphPhase);
@@ -4962,11 +4979,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_SIMPLE_LOWERING, &Compiler::fgSimpleLowering);
 
-#ifdef DEBUG
-    fgDebugCheckBBlist();
-    fgDebugCheckLinks();
-#endif
-
     // Enable this to gather statistical data such as
     // call and register argument info, flowgraph and loop info, etc.
     compJitStats();
@@ -5016,10 +5028,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Copied from rpPredictRegUse()
     SetFullPtrRegMapRequired(codeGen->GetInterruptible() || !codeGen->isFramePointerUsed());
-
-#ifdef DEBUG
-    fgDebugCheckLinks();
-#endif
 
 #if FEATURE_LOOP_ALIGN
     // Place loop alignment instructions
@@ -5286,6 +5294,18 @@ void Compiler::generatePatchpointInfo()
         JITDUMP("--OSR-- monitor acquired V%02u virtual offset is %d\n", lvaMonAcquired,
                 patchpointInfo->MonitorAcquiredOffset());
     }
+
+#if defined(TARGET_AMD64)
+    // Record callee save registers.
+    // Currently only needed for x64.
+    //
+    regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    rsPushRegs |= RBM_FPBASE;
+    patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
+    JITDUMP("--OSR-- Tier0 callee saves: ");
+    JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
+    JITDUMP("\n");
+#endif
 
     // Register this with the runtime.
     info.compCompHnd->setPatchpointInfo(patchpointInfo);
@@ -5626,10 +5646,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 
     // Set this before the first 'BADCODE'
     // Skip verification where possible
-    //.tiVerificationNeeded = !compileFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION);
     assert(compileFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION));
-
-    assert(!compIsForInlining() || !tiVerificationNeeded); // Inlinees must have been verified.
 
     /* Setup an error trap */
 
@@ -6157,17 +6174,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
                 eeGetMethodFullName(info.compMethodHnd), dspPtr(impTokenLookupContextHandle)));
     }
 
-    if (tiVerificationNeeded)
-    {
-        JITLOG((LL_INFO10000, "tiVerificationNeeded initially set to true for %s\n", info.compFullName));
-    }
 #endif // DEBUG
 
-    /* Since tiVerificationNeeded can be turned off in the middle of
-       compiling a method, and it might have caused blocks to be queued up
-       for reimporting, impCanReimport can be used to check for reimporting. */
-
-    impCanReimport = (tiVerificationNeeded || compStressCompile(STRESS_CHK_REIMPORT, 15));
+    impCanReimport = compStressCompile(STRESS_CHK_REIMPORT, 15);
 
     /* Initialize set a bunch of global values */
 
@@ -6397,9 +6406,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         // Honor the config setting that tells the jit to
         // always optimize methods with loops.
         //
-        // If that's not set, and OSR is enabled, the jit may still
+        // If neither of those apply, and OSR is enabled, the jit may still
         // decide to optimize, if there's something in the method that
-        // OSR currently cannot handle.
+        // OSR currently cannot handle, or we're optionally suppressing
+        // OSR by method hash.
         //
         const char* reason = nullptr;
 
@@ -6407,35 +6417,42 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         {
             reason = "tail.call and not BBINSTR";
         }
-        else if ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0)
+        else if (compHasBackwardJump && ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0))
         {
-            if (compHasBackwardJump)
-            {
-                reason = "loop";
-            }
+            reason = "loop";
         }
-        else if (JitConfig.TC_OnStackReplacement() > 0)
+
+        if (compHasBackwardJump && (reason == nullptr) && (JitConfig.TC_OnStackReplacement() > 0))
         {
-            const bool patchpointsOK = compCanHavePatchpoints(&reason);
-            assert(patchpointsOK || (reason != nullptr));
+            const char* noPatchpointReason = nullptr;
+            bool        canEscapeViaOSR    = compCanHavePatchpoints(&reason);
 
 #ifdef DEBUG
-            // Optionally disable OSR by method hash.
-            //
-            if (patchpointsOK && compHasBackwardJump)
+            if (canEscapeViaOSR)
             {
+                // Optionally disable OSR by method hash. This will force any
+                // method that might otherwise get trapped in Tier0 to be optimized.
+                //
                 static ConfigMethodRange JitEnableOsrRange;
                 JitEnableOsrRange.EnsureInit(JitConfig.JitEnableOsrRange());
                 const unsigned hash = impInlineRoot()->info.compMethodHash();
                 if (!JitEnableOsrRange.Contains(hash))
                 {
-                    JITDUMP("Disabling OSR -- Method hash 0x%08x not within range ", hash);
-                    JITDUMPEXEC(JitEnableOsrRange.Dump());
-                    JITDUMP("\n");
-                    reason = "OSR disabled by JitEnableOsrRange";
+                    canEscapeViaOSR = false;
+                    reason          = "OSR disabled by JitEnableOsrRange";
                 }
             }
 #endif
+
+            if (canEscapeViaOSR)
+            {
+                JITDUMP("\nOSR enabled for this method\n");
+            }
+            else
+            {
+                JITDUMP("\nOSR disabled for this method: %s\n", noPatchpointReason);
+                assert(reason != nullptr);
+            }
         }
 
         if (reason != nullptr)
@@ -8849,6 +8866,20 @@ void dTreeLIR(GenTree* tree)
     cTreeLIR(JitTls::GetCompiler(), tree);
 }
 
+void dTreeRange(GenTree* first, GenTree* last)
+{
+    Compiler* comp = JitTls::GetCompiler();
+    GenTree*  cur  = first;
+    while (true)
+    {
+        cTreeLIR(comp, cur);
+        if (cur == last)
+            break;
+
+        cur = cur->gtNext;
+    }
+}
+
 void dTrees()
 {
     cTrees(JitTls::GetCompiler());
@@ -9385,7 +9416,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 FALLTHROUGH;
 
             case GT_BLK:
-            case GT_DYN_BLK:
             case GT_STORE_BLK:
             case GT_STORE_DYN_BLK:
 
@@ -9725,6 +9755,29 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 }
 
 //------------------------------------------------------------------------------
+// gtTypeForNullCheck: helper to get the most optimal and correct type for nullcheck
+//
+// Arguments:
+//    tree - the node for nullcheck;
+//
+var_types Compiler::gtTypeForNullCheck(GenTree* tree)
+{
+    if (varTypeIsArithmetic(tree))
+    {
+#if defined(TARGET_XARCH)
+        // Just an optimization for XARCH - smaller mov
+        if (varTypeIsLong(tree))
+        {
+            return TYP_INT;
+        }
+#endif
+        return tree->TypeGet();
+    }
+    // for the rest: probe a single byte to avoid potential AVEs
+    return TYP_BYTE;
+}
+
+//------------------------------------------------------------------------------
 // gtChangeOperToNullCheck: helper to change tree oper to a NULLCHECK.
 //
 // Arguments:
@@ -9738,9 +9791,9 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 //
 void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
 {
-    assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK, GT_DYN_BLK));
+    assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
-    tree->ChangeType(TYP_INT);
+    tree->ChangeType(gtTypeForNullCheck(tree));
     block->bbFlags |= BBF_HAS_NULLCHECK;
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }
@@ -9827,6 +9880,9 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
             case DoNotEnregisterReason::AddrExposed:
                 m_addrExposed++;
                 break;
+            case DoNotEnregisterReason::HiddenBufferStructArg:
+                m_hiddenStructArg++;
+                break;
             case DoNotEnregisterReason::DontEnregStructs:
                 m_dontEnregStructs++;
                 break;
@@ -9893,6 +9949,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
 
             case DoNotEnregisterReason::ReturnSpCheck:
                 m_returnSpCheck++;
+                break;
+
+            case DoNotEnregisterReason::SimdUserForcesDep:
+                m_simdUserForcesDep++;
                 break;
 
             default:
@@ -9993,6 +10053,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     }
 
     PRINT_STATS(m_addrExposed, notEnreg);
+    PRINT_STATS(m_hiddenStructArg, notEnreg);
     PRINT_STATS(m_dontEnregStructs, notEnreg);
     PRINT_STATS(m_notRegSizeStruct, notEnreg);
     PRINT_STATS(m_localField, notEnreg);
@@ -10016,6 +10077,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_swizzleArg, notEnreg);
     PRINT_STATS(m_blockOpRet, notEnreg);
     PRINT_STATS(m_returnSpCheck, notEnreg);
+    PRINT_STATS(m_simdUserForcesDep, notEnreg);
 
     fprintf(fout, "\nAddr exposed details:\n");
     if (m_addrExposed == 0)

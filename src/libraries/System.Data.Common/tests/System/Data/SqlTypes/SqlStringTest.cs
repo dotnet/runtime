@@ -262,9 +262,12 @@ namespace System.Data.Tests.SqlTypes
         public void EqualsMethods()
         {
             Assert.False(_test1.Equals(_test2));
+            Assert.False(_test1.Equals((object)_test2));
             Assert.False(_test3.Equals(_test1));
+            Assert.False(_test3.Equals((object)_test1));
             Assert.False(_test2.Equals(new SqlString("TEST")));
             Assert.True(_test2.Equals(_test3));
+            Assert.True(_test2.Equals((object)_test3));
 
             // Static Equals()-method
             Assert.True(SqlString.Equals(_test2, _test3).Value);

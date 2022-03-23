@@ -56,7 +56,7 @@ namespace System.Xml
         {
             Debug.Assert(_reader != null);
             Debug.Assert(parentDoc != null);
-            XmlNode? node = null;
+            XmlNode? node;
             while ((node = LoadNode(true)) != null)
             {
                 parentDoc.AppendChildForLoad(node, parentDoc);
@@ -102,7 +102,7 @@ namespace System.Xml
             IXmlSchemaInfo? schemaInfo;
             do
             {
-                XmlNode? node = null;
+                XmlNode? node;
                 switch (r.NodeType)
                 {
                     case XmlNodeType.Element:
@@ -463,7 +463,7 @@ namespace System.Xml
             XmlNode? parent = null;
             do
             {
-                XmlNode? node = null;
+                XmlNode? node;
                 switch (r.NodeType)
                 {
                     case XmlNodeType.Element:
@@ -763,7 +763,7 @@ namespace System.Xml
 
                 if (nt == XmlNodeType.Entity)
                 {
-                    XmlNode? node = null;
+                    XmlNode? node;
                     while (_reader.Read() && (node = LoadNodeDirect()) != null)
                     {
                         parentNode.AppendChildForLoad(node, _doc);
@@ -771,7 +771,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    XmlNode? node = null;
+                    XmlNode? node;
                     while (_reader.Read() && (node = LoadNode(true)) != null)
                     {
                         parentNode.AppendChildForLoad(node, _doc);

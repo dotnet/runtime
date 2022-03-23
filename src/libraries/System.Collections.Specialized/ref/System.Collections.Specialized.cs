@@ -6,7 +6,7 @@
 
 namespace System.Collections.Specialized
 {
-    public partial struct BitVector32
+    public partial struct BitVector32 : System.IEquatable<System.Collections.Specialized.BitVector32>
     {
         private int _dummyPrimitive;
         public BitVector32(System.Collections.Specialized.BitVector32 value) { throw null; }
@@ -18,11 +18,12 @@ namespace System.Collections.Specialized
         public static int CreateMask(int previous) { throw null; }
         public static System.Collections.Specialized.BitVector32.Section CreateSection(short maxValue) { throw null; }
         public static System.Collections.Specialized.BitVector32.Section CreateSection(short maxValue, System.Collections.Specialized.BitVector32.Section previous) { throw null; }
+        public bool Equals(System.Collections.Specialized.BitVector32 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
         public static string ToString(System.Collections.Specialized.BitVector32 value) { throw null; }
-        public readonly partial struct Section
+        public readonly partial struct Section : System.IEquatable<System.Collections.Specialized.BitVector32.Section>
         {
             private readonly int _dummyPrimitive;
             public short Mask { get { throw null; } }

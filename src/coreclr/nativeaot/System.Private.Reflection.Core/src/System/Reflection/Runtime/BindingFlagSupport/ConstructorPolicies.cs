@@ -54,7 +54,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
             // Constructors are only resolvable using an array of parameter types so this should never be called.
             Debug.Fail("This code path should be unreachable.");
-            throw new NotSupportedException();
+            throw new UnreachableException();
         }
     }
 }

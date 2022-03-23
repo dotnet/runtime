@@ -748,7 +748,6 @@ namespace System.Configuration
 
         private object GetSection(string configKey, bool getLkg, bool checkPermission)
         {
-            object result;
             object resultRuntimeObject;
 
             // Note that GetSectionRecursive may invalidate this record,
@@ -759,7 +758,7 @@ namespace System.Configuration
                 checkPermission,
                 getRuntimeObject: true,
                 requestIsHere: true,
-                result: out result,
+                result: out _,
                 resultRuntimeObject: out resultRuntimeObject);
 
             return resultRuntimeObject;
@@ -1688,8 +1687,7 @@ namespace System.Configuration
 
         internal FactoryRecord FindFactoryRecord(string configKey, bool permitErrors)
         {
-            BaseConfigurationRecord dummy;
-            return FindFactoryRecord(configKey, permitErrors, out dummy);
+            return FindFactoryRecord(configKey, permitErrors, out _);
         }
 
         // - Find the nearest factory record
@@ -2287,8 +2285,7 @@ namespace System.Configuration
 
         protected OverrideMode GetSectionLockedMode(string configKey)
         {
-            OverrideMode dummy;
-            return GetSectionLockedMode(configKey, out dummy);
+            return GetSectionLockedMode(configKey, out _);
         }
 
         // Return the current lock mode for a section

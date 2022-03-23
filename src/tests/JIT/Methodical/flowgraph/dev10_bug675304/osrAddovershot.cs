@@ -59,7 +59,7 @@ internal static class Repro
         return ms;
     }
 
-    private static int Main(string[] args)
+    private static int Main()
     {
         MyStruct[] ms = InitMS(5); //InitMS(args.Length > 0 ? int.Parse(args[0]) : 5);
                                    //Do not expect to take in any arguments here for simplicity sake.

@@ -26,84 +26,65 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             uint status;
 
             SetParamDelegate =
-                Marshal.GetDelegateForFunctionPointer<SetParamDelegate>(
-                    vtable->SetParam);
+                new SetParamDelegate(new DelegateHelper(vtable->SetParam).SetParam);
 
             GetParamDelegate =
-                Marshal.GetDelegateForFunctionPointer<GetParamDelegate>(
-                    vtable->GetParam);
+                new GetParamDelegate(new DelegateHelper(vtable->GetParam).GetParam);
 
             SetCallbackHandlerDelegate =
-                Marshal.GetDelegateForFunctionPointer<SetCallbackHandlerDelegate>(
-                    vtable->SetCallbackHandler);
+                new SetCallbackHandlerDelegate(new DelegateHelper(vtable->SetCallbackHandler).SetCallbackHandler);
 
             RegistrationOpenDelegate =
-                Marshal.GetDelegateForFunctionPointer<RegistrationOpenDelegate>(
-                    vtable->RegistrationOpen);
+                new RegistrationOpenDelegate(new DelegateHelper(vtable->RegistrationOpen).RegistrationOpen);
             RegistrationCloseDelegate =
                 Marshal.GetDelegateForFunctionPointer<RegistrationCloseDelegate>(
                     vtable->RegistrationClose);
 
             ConfigurationOpenDelegate =
-                Marshal.GetDelegateForFunctionPointer<ConfigurationOpenDelegate>(
-                    vtable->ConfigurationOpen);
+                new ConfigurationOpenDelegate(new DelegateHelper(vtable->ConfigurationOpen).ConfigurationOpen);
             ConfigurationCloseDelegate =
                 Marshal.GetDelegateForFunctionPointer<ConfigurationCloseDelegate>(
                     vtable->ConfigurationClose);
             ConfigurationLoadCredentialDelegate =
-                Marshal.GetDelegateForFunctionPointer<ConfigurationLoadCredentialDelegate>(
-                    vtable->ConfigurationLoadCredential);
+                new ConfigurationLoadCredentialDelegate(new DelegateHelper(vtable->ConfigurationLoadCredential).ConfigurationLoadCredential);
 
             ListenerOpenDelegate =
-                Marshal.GetDelegateForFunctionPointer<ListenerOpenDelegate>(
-                    vtable->ListenerOpen);
+                new ListenerOpenDelegate(new DelegateHelper(vtable->ListenerOpen).ListenerOpen);
             ListenerCloseDelegate =
                 Marshal.GetDelegateForFunctionPointer<ListenerCloseDelegate>(
                     vtable->ListenerClose);
             ListenerStartDelegate =
-                Marshal.GetDelegateForFunctionPointer<ListenerStartDelegate>(
-                    vtable->ListenerStart);
+                new ListenerStartDelegate(new DelegateHelper(vtable->ListenerStart).ListenerStart);
             ListenerStopDelegate =
-                Marshal.GetDelegateForFunctionPointer<ListenerStopDelegate>(
-                    vtable->ListenerStop);
+                new ListenerStopDelegate(new DelegateHelper(vtable->ListenerStop).ListenerStop);
 
             ConnectionOpenDelegate =
-                Marshal.GetDelegateForFunctionPointer<ConnectionOpenDelegate>(
-                    vtable->ConnectionOpen);
+                new ConnectionOpenDelegate(new DelegateHelper(vtable->ConnectionOpen).ConnectionOpen);
             ConnectionCloseDelegate =
                 Marshal.GetDelegateForFunctionPointer<ConnectionCloseDelegate>(
                     vtable->ConnectionClose);
             ConnectionSetConfigurationDelegate =
-                Marshal.GetDelegateForFunctionPointer<ConnectionSetConfigurationDelegate>(
-                    vtable->ConnectionSetConfiguration);
+                new ConnectionSetConfigurationDelegate(new DelegateHelper(vtable->ConnectionSetConfiguration).ConnectionSetConfiguration);
             ConnectionShutdownDelegate =
-                Marshal.GetDelegateForFunctionPointer<ConnectionShutdownDelegate>(
-                    vtable->ConnectionShutdown);
+                new ConnectionShutdownDelegate(new DelegateHelper(vtable->ConnectionShutdown).ConnectionShutdown);
             ConnectionStartDelegate =
-                Marshal.GetDelegateForFunctionPointer<ConnectionStartDelegate>(
-                    vtable->ConnectionStart);
+                new ConnectionStartDelegate(new DelegateHelper(vtable->ConnectionStart).ConnectionStart);
 
             StreamOpenDelegate =
-                Marshal.GetDelegateForFunctionPointer<StreamOpenDelegate>(
-                    vtable->StreamOpen);
+                new StreamOpenDelegate(new DelegateHelper(vtable->StreamOpen).StreamOpen);
             StreamCloseDelegate =
                 Marshal.GetDelegateForFunctionPointer<StreamCloseDelegate>(
                     vtable->StreamClose);
             StreamStartDelegate =
-                Marshal.GetDelegateForFunctionPointer<StreamStartDelegate>(
-                    vtable->StreamStart);
+                new StreamStartDelegate(new DelegateHelper(vtable->StreamStart).StreamStart);
             StreamShutdownDelegate =
-                Marshal.GetDelegateForFunctionPointer<StreamShutdownDelegate>(
-                    vtable->StreamShutdown);
+                new StreamShutdownDelegate(new DelegateHelper(vtable->StreamShutdown).StreamShutdown);
             StreamSendDelegate =
-                Marshal.GetDelegateForFunctionPointer<StreamSendDelegate>(
-                    vtable->StreamSend);
+                new StreamSendDelegate(new DelegateHelper(vtable->StreamSend).StreamSend);
             StreamReceiveCompleteDelegate =
-                Marshal.GetDelegateForFunctionPointer<StreamReceiveCompleteDelegate>(
-                    vtable->StreamReceiveComplete);
+                new StreamReceiveCompleteDelegate(new DelegateHelper(vtable->StreamReceiveComplete).StreamReceiveComplete);
             StreamReceiveSetEnabledDelegate =
-                Marshal.GetDelegateForFunctionPointer<StreamReceiveSetEnabledDelegate>(
-                    vtable->StreamReceiveSetEnabled);
+                new StreamReceiveSetEnabledDelegate(new DelegateHelper(vtable->StreamReceiveSetEnabled).StreamReceiveSetEnabled);
 
             var cfg = new RegistrationConfig
             {
@@ -142,9 +123,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 {
                     if (NativeLibrary.TryGetExport(msQuicHandle, "MsQuicOpenVersion", out IntPtr msQuicOpenVersionAddress))
                     {
-                        delegate* unmanaged[Cdecl]<uint, out NativeApi*, uint> msQuicOpenVersion =
-                            (delegate* unmanaged[Cdecl]<uint, out NativeApi*, uint>)msQuicOpenVersionAddress;
-                        uint status = msQuicOpenVersion(MsQuicVersion, out NativeApi* vtable);
+                        NativeApi* vtable;
+                        delegate* unmanaged[Cdecl]<uint, NativeApi**, uint> msQuicOpenVersion =
+                            (delegate* unmanaged[Cdecl]<uint, NativeApi**, uint>)msQuicOpenVersionAddress;
+                        uint status = msQuicOpenVersion(MsQuicVersion, &vtable);
                         if (MsQuicStatusHelper.SuccessfulStatusCode(status))
                         {
                             IsQuicSupported = true;

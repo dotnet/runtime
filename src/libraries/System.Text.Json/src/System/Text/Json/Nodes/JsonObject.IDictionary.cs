@@ -113,13 +113,8 @@ namespace System.Text.Json.Nodes
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="propertyName"/> is <see langword="null"/>.
         /// </exception>
-        public bool Remove(string propertyName)
+        public bool Remove(string propertyName!!)
         {
-            if (propertyName == null)
-            {
-                throw new ArgumentNullException(nameof(propertyName));
-            }
-
             InitializeIfRequired();
             Debug.Assert(_dictionary != null);
 

@@ -981,7 +981,7 @@ Stub *GenerateArrayOpStub(ArrayMethodDesc* pMD)
 
     static const ILStubTypes stubTypes[3] = { ILSTUB_ARRAYOP_GET, ILSTUB_ARRAYOP_SET, ILSTUB_ARRAYOP_ADDRESS };
 
-    _ASSERTE(pMD->GetArrayFuncIndex() <= COUNTOF(stubTypes));
+    _ASSERTE(pMD->GetArrayFuncIndex() <= ARRAY_SIZE(stubTypes));
     NDirectStubFlags arrayOpStubFlag = (NDirectStubFlags)stubTypes[pMD->GetArrayFuncIndex()];
 
     MethodDesc * pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(pMD->GetLoaderAllocator(),

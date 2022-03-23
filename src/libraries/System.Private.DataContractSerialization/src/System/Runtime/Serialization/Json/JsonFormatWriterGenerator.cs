@@ -370,7 +370,7 @@ namespace System.Runtime.Serialization.Json
                     }
 
                     bool isDictionary = false, isGenericDictionary = false;
-                    Type? enumeratorType = null;
+                    Type? enumeratorType;
                     Type[]? keyValueTypes = null;
                     if (collectionContract.Kind == CollectionKind.GenericDictionary)
                     {
@@ -728,6 +728,7 @@ namespace System.Runtime.Serialization.Json
                 _ilg.Call(methodInfo);
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private LocalBuilder UnwrapNullableObject(LocalBuilder memberValue)// Leaves !HasValue on stack
             {
                 Type memberType = memberValue.LocalType;

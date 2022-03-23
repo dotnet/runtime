@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal static SafeCertStoreHandle ExportToMemoryStore(X509Certificate2Collection collection)
         {
-            SafeCertStoreHandle safeCertStoreHandle = SafeCertStoreHandle.InvalidHandle;
+            SafeCertStoreHandle safeCertStoreHandle;
 
             // we always want to use CERT_STORE_ENUM_ARCHIVED_FLAG since we want to preserve the collection in this operation.
             // By default, Archived certificates will not be included.

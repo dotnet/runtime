@@ -106,8 +106,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             EnsureValidationContext(validationContext);
             var typeItem = GetTypeStoreItem(validationContext.ObjectType);
-            PropertyStoreItem? item;
-            return typeItem.TryGetPropertyStoreItem(validationContext.MemberName!, out item);
+            return typeItem.TryGetPropertyStoreItem(validationContext.MemberName!, out _);
         }
 
         /// <summary>
@@ -136,12 +135,8 @@ namespace System.ComponentModel.DataAnnotations
         ///     Throws an ArgumentException of the validation context is null
         /// </summary>
         /// <param name="validationContext">The context to check</param>
-        private static void EnsureValidationContext(ValidationContext validationContext)
+        private static void EnsureValidationContext(ValidationContext validationContext!!)
         {
-            if (validationContext == null)
-            {
-                throw new ArgumentNullException(nameof(validationContext));
-            }
         }
 
         internal static bool IsPublic(PropertyInfo p) =>

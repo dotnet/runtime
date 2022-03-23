@@ -51,11 +51,16 @@ namespace System
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;
 
-        public static bool IsSuperUser => IsBrowser || IsWindows ? false : Libc.geteuid() == 0;
+        public static bool IsSuperUser => IsBrowser || IsWindows ? false : libc.geteuid() == 0;
 
         public static Version OpenSslVersion => !IsOSXLike && !IsWindows && !IsAndroid ?
             GetOpenSslVersion() :
             throw new PlatformNotSupportedException();
+
+        private static readonly Version s_openssl3Version = new Version(3, 0, 0);
+        public static bool IsOpenSsl3 => !IsOSXLike && !IsWindows && !IsAndroid && !IsBrowser ?
+            GetOpenSslVersion() >= s_openssl3Version :
+            false;
 
         /// <summary>
         /// If gnulibc is available, returns the release, such as "stable".
@@ -72,7 +77,7 @@ namespace System
 
                 try
                 {
-                    return Marshal.PtrToStringAnsi(Libc.gnu_get_libc_release());
+                    return Marshal.PtrToStringAnsi(libc.gnu_get_libc_release());
                 }
                 catch (Exception e) when (e is DllNotFoundException || e is EntryPointNotFoundException)
                 {
@@ -96,7 +101,7 @@ namespace System
 
                 try
                 {
-                    return Marshal.PtrToStringAnsi(Libc.gnu_get_libc_version());
+                    return Marshal.PtrToStringAnsi(libc.gnu_get_libc_version());
                 }
                 catch (Exception e) when (e is DllNotFoundException || e is EntryPointNotFoundException)
                 {
@@ -319,15 +324,15 @@ namespace System
             public Version VersionId { get; set; }
         }
 
-        private static partial class Libc
+        private static partial class @libc
         {
-            [GeneratedDllImport("libc", SetLastError = true)]
+            [LibraryImport("libc", SetLastError = true)]
             public static unsafe partial uint geteuid();
 
-            [GeneratedDllImport("libc")]
+            [LibraryImport("libc")]
             public static partial IntPtr gnu_get_libc_release();
 
-            [GeneratedDllImport("libc")]
+            [LibraryImport("libc")]
             public static partial IntPtr gnu_get_libc_version();
         }
     }

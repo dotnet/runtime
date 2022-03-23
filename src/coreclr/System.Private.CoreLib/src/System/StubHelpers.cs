@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
-using Internal.Runtime.CompilerServices;
 
 namespace System.StubHelpers
 {
@@ -184,7 +182,7 @@ namespace System.StubHelpers
         internal static unsafe string ConvertFixedToManaged(IntPtr cstr, int length)
         {
             int end = SpanHelpers.IndexOf(ref *(byte*)cstr, 0, length);
-            if (end != -1)
+            if (end >= 0)
             {
                 length = end;
             }
@@ -512,7 +510,7 @@ namespace System.StubHelpers
         internal static unsafe string ConvertToManaged(IntPtr nativeHome, int length)
         {
             int end = SpanHelpers.IndexOf(ref *(char*)nativeHome, '\0', length);
-            if (end != -1)
+            if (end >= 0)
             {
                 length = end;
             }
@@ -545,10 +543,7 @@ namespace System.StubHelpers
                 throw new InvalidOperationException(SR.Interop_Marshal_SafeHandle_InvalidOperation);
             }
 
-            if (handle is null)
-            {
-                throw new ArgumentNullException(nameof(handle));
-            }
+            ArgumentNullException.ThrowIfNull(handle);
 
             return StubHelpers.AddToCleanupList(ref cleanupWorkList, handle);
         }
@@ -586,7 +581,7 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler__ClearNative")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler__ClearNative")]
         internal static partial void ClearNative(IntPtr pUnk);
     }  // class InterfaceMarshaler
 #endif // FEATURE_COMINTEROP

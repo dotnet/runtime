@@ -405,8 +405,6 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             doc.Root.Add(nodesElement);
             doc.Root.Add(linksElement);
 
-            var nodeIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
             foreach (var runtimeDescription in graph.Runtimes.Values)
             {
                 nodesElement.Add(new XElement(s_dgmlns + "Node",

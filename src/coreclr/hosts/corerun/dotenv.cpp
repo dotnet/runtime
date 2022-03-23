@@ -4,22 +4,11 @@
 #include "dotenv.hpp"
 #include <istream>
 #include <locale>
-#include <codecvt>
 #include <sstream>
 #include <algorithm>
 
 namespace
 {
-    pal::string_t convert_to_string_t(std::string str)
-    {
-#ifdef TARGET_WINDOWS
-        std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-        return converter.from_bytes(str);
-#else
-        return str;
-#endif
-    }
-
     bool read_var_name(std::istream& file, std::string& var_name_out)
     {
         std::string var_name;
@@ -323,8 +312,7 @@ dotenv::dotenv(pal::string_t dotEnvFilePath, std::istream& contents)
                 {
                     return dot_env_entry->second;
                 }
-                pal::string_t env_var_name = convert_to_string_t(name);
-                return pal::convert_to_utf8(pal::getenv(env_var_name.c_str()));
+                return pal::getenvA(name.c_str());
             }, temp_value))
         {
             _environmentVariables = {};
@@ -338,9 +326,9 @@ void dotenv::load_into_current_process() const
 {
     for (std::pair<std::string, std::string> env_vars : _environmentVariables)
     {
-        pal::string_t name_string = convert_to_string_t(env_vars.first);
-        pal::string_t value_string = convert_to_string_t(env_vars.second);
-        pal::setenv(name_string.c_str(), std::move(value_string));
+        pal::string_utf8_t name_string = env_vars.first;
+        pal::string_utf8_t value_string = env_vars.second;
+        pal::setenvA(name_string.c_str(), std::move(value_string));
     }
 }
 
