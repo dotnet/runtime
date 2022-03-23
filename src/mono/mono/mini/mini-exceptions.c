@@ -853,11 +853,8 @@ mono_get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
 	}
 
 	method = jinfo_get_method (ji);
-	if (mono_method_get_context (method)->method_inst || mini_method_is_default_method (method)) {
+	if (mono_method_get_context (method)->method_inst || m_method_is_static (method) || m_class_is_valuetype (method->klass) || mini_method_is_default_method (method)) {
 		/* A MonoMethodRuntimeGenericContext* */
-		return info;
-	} else if ((method->flags & METHOD_ATTRIBUTE_STATIC) || m_class_is_valuetype (method->klass)) {
-		/* A MonoVTable* */
 		return info;
 	} else {
 		/* Avoid returning a managed object */
@@ -881,13 +878,11 @@ mono_get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_inf
 
 	method = jinfo_get_method (ji);
 	g_assert (method->is_inflated);
-	if (mono_method_get_context (method)->method_inst || mini_method_is_default_method (method)) {
+	if (mono_method_get_context (method)->method_inst || mini_method_is_default_method (method) || m_method_is_static (method) || m_class_is_valuetype (method->klass)) {
 		MonoMethodRuntimeGenericContext *mrgctx = (MonoMethodRuntimeGenericContext *)generic_info;
 
 		klass = mrgctx->class_vtable->klass;
 		context.method_inst = mrgctx->method_inst;
-		if (!mini_method_is_default_method (method))
-			g_assert (context.method_inst);
 	} else {
 		MonoVTable *vtable = (MonoVTable *)generic_info;
 
