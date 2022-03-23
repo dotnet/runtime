@@ -3262,6 +3262,7 @@ mono_thread_state_init_from_sigctx (MonoThreadUnwindState *ctx, void *sigctx)
 	return TRUE;
 }
 
+MONO_DISABLE_WARNING(4740) /* flow in or out of inline asm code suppresses global optimization, x86 only */
 void
 mono_thread_state_init (MonoThreadUnwindState *ctx)
 {
@@ -3282,7 +3283,7 @@ mono_thread_state_init (MonoThreadUnwindState *ctx)
 	ctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = thread ? thread->jit_data : NULL;
 	ctx->valid = TRUE;
 }
-
+MONO_RESTORE_WARNING
 
 gboolean
 mono_thread_state_init_from_monoctx (MonoThreadUnwindState *ctx, MonoContext *mctx)

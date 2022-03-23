@@ -14552,10 +14552,10 @@ emit_aot_image (MonoAotCompile *acfg)
 
 #ifdef ENABLE_LLVM
 	if (acfg->llvm) {
-		gboolean res;
+		gboolean emit_res;
 
-		res = emit_llvm_file (acfg);
-		if (!res)
+		emit_res = emit_llvm_file (acfg);
+		if (!emit_res)
 			return 1;
 	}
 #endif
