@@ -32,7 +32,6 @@
 #include "utils/mono-logger-internals.h"
 #include "utils/mono-threads-coop.h"
 #include "utils/mono-threads.h"
-#include "metadata/w32handle.h"
 #include "icall-decl.h"
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \

@@ -74,6 +74,7 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeCall:
     call->gtCallMoreFlags       = GTF_CALL_M_EMPTY;
     call->gtInlineCandidateInfo = nullptr;
     call->gtControlExpr         = nullptr;
+    call->gtRetBufArg           = nullptr;
 #ifdef UNIX_X86_ABI
     call->gtFlags |= GTF_CALL_POP_ARGS;
 #endif // UNIX_X86_ABI
@@ -2179,6 +2180,11 @@ void fgArgInfo::EvalArgsToTemps()
 
         curArgTabEntry->lateUse = tmpRegArgNext;
         curArgTabEntry->SetLateArgInx(regArgInx++);
+
+        if ((setupArg != nullptr) && setupArg->OperIs(GT_ARGPLACE) && (callTree->gtRetBufArg == curArgTabEntry->use))
+        {
+            callTree->SetLclRetBufArg(tmpRegArgNext);
+        }
     }
 
 #ifdef DEBUG
@@ -5559,7 +5565,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     }
 
 #ifdef FEATURE_SIMD
-    if (supportSIMDTypes() && varTypeIsStruct(elemTyp) && structSizeMightRepresentSIMDType(elemSize))
+    if (varTypeIsStruct(elemTyp) && structSizeMightRepresentSIMDType(elemSize))
     {
         // If this is a SIMD type, this is the point at which we lose the type information,
         // so we need to set the correct type on the GT_IND.
@@ -9598,9 +9604,16 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     compCurBB->bbFlags |= BBF_HAS_CALL; // This block has a call
 
-    /* Process the "normal" argument list */
+    // Process the "normal" argument list
     call = fgMorphArgs(call);
     noway_assert(call->gtOper == GT_CALL);
+
+    // Assign DEF flags if it produces a definition from "return buffer".
+    fgAssignSetVarDef(call);
+    if (call->OperRequiresAsgFlag())
+    {
+        call->gtFlags |= GTF_ASG;
+    }
 
     // Should we expand this virtual method call target early here?
     //
@@ -15895,7 +15908,7 @@ void Compiler::fgMorphTreeDone(GenTree* tree,
 
         // DefinesLocal can return true for some BLK op uses, so
         // check what gets assigned only when we're at an assignment.
-        if (tree->OperIs(GT_ASG) && tree->DefinesLocal(this, &lclVarTree))
+        if (tree->OperIsSsaDef() && tree->DefinesLocal(this, &lclVarTree))
         {
             unsigned lclNum = lclVarTree->GetLclNum();
             noway_assert(lclNum < lvaCount);

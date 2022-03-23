@@ -4041,11 +4041,13 @@ GetSetFrameHelper::Init(MethodDesc *pMD)
     mdSignature mdLocalSig = (decoderOldIL.GetLocalVarSigTok()) ? (decoderOldIL.GetLocalVarSigTok()):
                                                                   (mdSignatureNil);
 
+    PCCOR_SIGNATURE pLocalSig = NULL;
+    ULONG cbLocalSigSize = 0;
+
     PCCOR_SIGNATURE pCallSig;
     DWORD cbCallSigSize;
 
     pMD->GetSig(&pCallSig, &cbCallSigSize);
-
     if (pCallSig != NULL)
     {
         // Yes, we do need to pass in the text because this might be generic function!
@@ -4079,18 +4081,15 @@ GetSetFrameHelper::Init(MethodDesc *pMD)
     }
 
     // allocation of pArgSig succeeded
-    ULONG cbSig;
-    PCCOR_SIGNATURE pLocalSig;
-    pLocalSig = NULL;
     if (mdLocalSig != mdSignatureNil)
     {
-        IfFailGo(pMD->GetModule()->GetMDImport()->GetSigFromToken(mdLocalSig, &cbSig, &pLocalSig));
+        IfFailGo(pMD->GetModule()->GetMDImport()->GetSigFromToken(mdLocalSig, &cbLocalSigSize, &pLocalSig));
     }
     if (pLocalSig != NULL)
     {
         SigTypeContext tmpContext(pMD);
         pLocSig = new (interopsafe, nothrow) MetaSig(pLocalSig,
-                                                     cbSig,
+                                                     cbLocalSigSize,
                                                      pMD->GetModule(),
                                                      &tmpContext,
                                                      MetaSig::sigLocalVars);
@@ -10510,7 +10509,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                 // If we haven't been either JITted or EnC'd yet, then
                 // we'll put a patch in by offset, implicitly relative
                 // to the first version of the code.
-
+                fSuccess = FALSE;
                 pDebuggerBP = new (interopsafe, nothrow) DebuggerBreakpoint(pModule,
                                                                             pEvent->BreakpointData.funcMetadataToken,
                                                                             pEvent->vmAppDomain.GetRawPtr(),
@@ -11111,12 +11110,14 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                         objectHandle = pAppDomain->CreatePinningHandle(objref);
                         break;
                     default:
+                        objectHandle = NULL;
                         pEvent->hr = E_INVALIDARG;
                     }
-                 }
-                 if (SUCCEEDED(pEvent->hr))
-                 {
-                    pEvent->CreateHandleResult.vmObjectHandle.SetRawPtr(objectHandle);
+
+                    if (SUCCEEDED(pEvent->hr))
+                    {
+                        pEvent->CreateHandleResult.vmObjectHandle.SetRawPtr(objectHandle);
+                    }
                  }
              }
 

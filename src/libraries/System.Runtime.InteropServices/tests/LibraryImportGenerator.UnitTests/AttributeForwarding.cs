@@ -17,7 +17,7 @@ namespace LibraryImportGenerator.UnitTests
 {
     public class AttributeForwarding
     {
-        [ConditionalTheory]
+        [Theory]
         [InlineData("SuppressGCTransition", "System.Runtime.InteropServices.SuppressGCTransitionAttribute")]
         [InlineData("UnmanagedCallConv", "System.Runtime.InteropServices.UnmanagedCallConvAttribute")]
         public async Task KnownParameterlessAttribute(string attributeSourceName, string attributeMetadataName)
@@ -59,7 +59,7 @@ struct Native
                 attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task UnmanagedCallConvAttribute_EmptyCallConvArray()
         {
             string source = @"
@@ -103,7 +103,7 @@ struct Native
                     && attr.NamedArguments[0].Value.Values.Length == 0);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task UnmanagedCallConvAttribute_SingleCallConvType()
         {
             string source = @"
@@ -150,7 +150,7 @@ struct Native
                         callConvType));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task UnmanagedCallConvAttribute_MultipleCallConvTypes()
         {
             string source = @"
@@ -201,7 +201,7 @@ struct Native
                         callConvType2));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task DefaultDllImportSearchPathsAttribute()
         {
             string source = @$"
@@ -245,7 +245,7 @@ struct Native
                     && expected == (DllImportSearchPath)attr.ConstructorArguments[0].Value!);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task OtherAttributeType()
         {
             string source = @"
@@ -290,7 +290,7 @@ struct Native
                 attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task InOutAttributes_Forwarded_To_ForwardedParameter()
         {
             string source = @"
@@ -333,7 +333,7 @@ partial class C
                     }));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task MarshalAsAttribute_Forwarded_To_ForwardedParameter()
         {
             string source = @"
@@ -362,7 +362,7 @@ partial class C
                     }));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task MarshalAsAttribute_Forwarded_To_ForwardedParameter_Array()
         {
             string source = @"

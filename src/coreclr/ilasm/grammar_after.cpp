@@ -137,7 +137,7 @@ char* NewStaticStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen, _Ou
 unsigned GetDoubleAU(_In_ __nullterminated char* begNum, unsigned L, double** ppRes)
 {
     static char dbuff[128];
-    char* pdummy;
+    char* pdummy = NULL;
     if(L > 127) L = 127;
     memcpy(dbuff,begNum,L);
     dbuff[L] = 0;
@@ -148,7 +148,7 @@ unsigned GetDoubleAU(_In_ __nullterminated char* begNum, unsigned L, double** pp
 unsigned GetDoubleW(_In_ __nullterminated char* begNum, unsigned L, double** ppRes)
 {
     static char dbuff[256];
-    char* pdummy;
+    char* pdummy = NULL;
     if(L > 254) L = 254;
     memcpy(dbuff,begNum,L);
     dbuff[L] = 0;

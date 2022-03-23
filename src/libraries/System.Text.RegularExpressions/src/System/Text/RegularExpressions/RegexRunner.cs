@@ -184,7 +184,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 runmatch = null;
-                match.Tidy(runtextpos);
+                match.Tidy(runtextpos, 0);
             }
             else
             {

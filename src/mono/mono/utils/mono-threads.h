@@ -539,7 +539,7 @@ mono_thread_info_self_interrupt (void);
 void
 mono_thread_info_clear_self_interrupt (void);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_thread_info_is_interrupt_state (THREAD_INFO_TYPE *info);
 
 void

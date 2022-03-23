@@ -50,7 +50,6 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/exception-internals.h>
-#include <mono/metadata/w32file.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/metadata-internals.h>
@@ -76,7 +75,6 @@
 #include <mono/metadata/seq-points-data.h>
 #include <mono/metadata/icall-table.h>
 #include <mono/metadata/handle.h>
-#include <mono/metadata/w32event.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/loader-internals.h>
 #include <mono/utils/monobitset.h>
@@ -89,7 +87,6 @@
 #include <mono/utils/bsearch.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-threads.h>
-#include <mono/metadata/w32error.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-math.h>
@@ -167,9 +164,7 @@ is_generic_parameter (MonoType *type)
 static void
 mono_icall_make_platform_path (gchar *path)
 {
-	for (size_t i = strlen (path); i > 0; i--)
-		if (path [i-1] == '\\')
-			path [i-1] = '/';
+	g_strdelimit (path, '\\', '/');
 }
 
 static const gchar *
@@ -2351,7 +2346,7 @@ ves_icall_RuntimePropertyInfo_get_property_info (MonoReflectionPropertyHandle pr
 	}
 
 	if ((req_info & PInfo_Attributes) != 0)
-		info->attrs = pproperty->attrs;
+		info->attrs = (pproperty->attrs & ~MONO_PROPERTY_META_FLAG_MASK);
 
 	if ((req_info & PInfo_GetMethod) != 0) {
 		MonoClass *property_klass = MONO_HANDLE_GETVAL (property, klass);
@@ -2416,7 +2411,7 @@ ves_icall_RuntimeEventInfo_get_event_info (MonoReflectionMonoEventHandle ref_eve
 	return_if_nok (error);
 	MONO_STRUCT_SETREF_INTERNAL (info, name, MONO_HANDLE_RAW (ev_name));
 
-	info->attrs = event->attrs;
+	info->attrs = event->attrs & ~MONO_EVENT_META_FLAG_MASK;
 
 	MonoReflectionMethodHandle rm;
 	if (event->add) {
@@ -5050,9 +5045,8 @@ image_get_type (MonoImage *image, MonoTableInfo *tdef, int table_idx, int count,
 static MonoArrayHandle
 mono_module_get_types (MonoImage *image, MonoArrayHandleOut exceptions, MonoBoolean exportedOnly, MonoError *error)
 {
-	/* FIXME: metadata-update */
 	MonoTableInfo *tdef = &image->tables [MONO_TABLE_TYPEDEF];
-	int rows = table_info_get_rows (tdef);
+	int rows = mono_metadata_table_num_rows (image, MONO_TABLE_TYPEDEF);
 	int i, count;
 
 	/* we start the count from 1 because we skip the special type <Module> */

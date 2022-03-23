@@ -824,6 +824,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslPkcs12Reader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslSingleCertLoader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslX509CertificateReader.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslX509ChainEventSource.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslX509ChainProcessor.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslX509Encoder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.OpenSsl.cs" />
@@ -1790,6 +1791,7 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.Formats.Asn1" />
     <Reference Include="System.Memory" />

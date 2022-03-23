@@ -43,7 +43,6 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/w32event.h>
-#include <mono/metadata/w32file.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/coree.h>
@@ -68,8 +67,6 @@
 
 static MonoImage *exe_image;
 static MonoDomain *mono_root_domain;
-
-gboolean mono_dont_free_domains;
 
 /* AppConfigInfo: Information about runtime versions supported by an
  * aplication.
@@ -171,7 +168,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 #endif
 
 	mono_w32event_init ();
-	mono_w32file_init ();
 
 #ifndef DISABLE_PERFCOUNTERS
 	mono_perfcounters_init ();
