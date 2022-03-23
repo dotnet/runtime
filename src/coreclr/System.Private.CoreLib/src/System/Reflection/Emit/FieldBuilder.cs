@@ -10,14 +10,14 @@ namespace System.Reflection.Emit
     {
         #region Private Data Members
         private int m_fieldTok;
-        private TypeBuilder m_typeBuilder;
+        private RuntimeTypeBuilder m_typeBuilder;
         private string m_fieldName;
         private FieldAttributes m_Attributes;
         private Type m_fieldType;
         #endregion
 
         #region Constructor
-        internal FieldBuilder(TypeBuilder typeBuilder, string fieldName, Type type,
+        internal FieldBuilder(RuntimeTypeBuilder typeBuilder, string fieldName, Type type,
             Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
             ArgumentException.ThrowIfNullOrEmpty(fieldName);
@@ -41,7 +41,7 @@ namespace System.Reflection.Emit
             byte[] signature = sigHelp.InternalGetSignature(out int sigLength);
 
             RuntimeModuleBuilder module = m_typeBuilder.GetModuleBuilder();
-            m_fieldTok = TypeBuilder.DefineField(new QCallModule(ref module),
+            m_fieldTok = RuntimeTypeBuilder.DefineField(new QCallModule(ref module),
                 typeBuilder.TypeToken, fieldName, signature, sigLength, m_Attributes);
         }
 
@@ -137,7 +137,7 @@ namespace System.Reflection.Emit
             m_typeBuilder.ThrowIfCreated();
 
             RuntimeModuleBuilder module = m_typeBuilder.GetModuleBuilder();
-            TypeBuilder.SetFieldLayoutOffset(new QCallModule(ref module), m_fieldTok, iOffset);
+            RuntimeTypeBuilder.SetFieldLayoutOffset(new QCallModule(ref module), m_fieldTok, iOffset);
         }
 
         public void SetConstant(object? defaultValue)
@@ -151,7 +151,7 @@ namespace System.Reflection.Emit
                     throw new ArgumentException(SR.Argument_ConstantNull);
             }
 
-            TypeBuilder.SetConstantValue(m_typeBuilder.GetModuleBuilder(), m_fieldTok, m_fieldType, defaultValue);
+            RuntimeTypeBuilder.SetConstantValue(m_typeBuilder.GetModuleBuilder(), m_fieldTok, m_fieldType, defaultValue);
         }
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
@@ -163,7 +163,7 @@ namespace System.Reflection.Emit
 
             RuntimeModuleBuilder moduleBuilder = (RuntimeModuleBuilder)m_typeBuilder.Module;
 
-            TypeBuilder.DefineCustomAttribute(moduleBuilder,
+            RuntimeTypeBuilder.DefineCustomAttribute(moduleBuilder,
                 m_fieldTok, moduleBuilder.GetConstructorToken(con), binaryAttribute);
         }
 

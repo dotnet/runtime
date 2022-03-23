@@ -150,14 +150,14 @@ namespace System.Reflection.Emit
                     // Might have failed check because one type is a XXXBuilder
                     // and the other is not. Deal with these special cases
                     // separately.
-                    if (!TypeBuilder.IsTypeEqual(property.DeclaringType, con.DeclaringType))
+                    if (!RuntimeTypeBuilder.IsTypeEqual(property.DeclaringType, con.DeclaringType))
                     {
                         // IsSubclassOf is overloaded to do the right thing if
                         // the constructor is a TypeBuilder, but we still need
                         // to deal with the case where the property's declaring
                         // type is one.
                         if (!(property.DeclaringType is TypeBuilder) ||
-                            !con.DeclaringType.IsSubclassOf(((TypeBuilder)property.DeclaringType).BakedRuntimeType))
+                            !con.DeclaringType.IsSubclassOf(((RuntimeTypeBuilder)property.DeclaringType).BakedRuntimeType))
                             throw new ArgumentException(SR.Argument_BadPropertyForConstructorBuilder);
                     }
                 }
@@ -204,14 +204,14 @@ namespace System.Reflection.Emit
                     // Might have failed check because one type is a XXXBuilder
                     // and the other is not. Deal with these special cases
                     // separately.
-                    if (!TypeBuilder.IsTypeEqual(namedField.DeclaringType, con.DeclaringType))
+                    if (!RuntimeTypeBuilder.IsTypeEqual(namedField.DeclaringType, con.DeclaringType))
                     {
                         // IsSubclassOf is overloaded to do the right thing if
                         // the constructor is a TypeBuilder, but we still need
                         // to deal with the case where the field's declaring
                         // type is one.
                         if (!(namedField.DeclaringType is TypeBuilder) ||
-                            !con.DeclaringType.IsSubclassOf(((TypeBuilder)namedFields[i].DeclaringType!).BakedRuntimeType))
+                            !con.DeclaringType.IsSubclassOf(((RuntimeTypeBuilder)namedFields[i].DeclaringType!).BakedRuntimeType))
                             throw new ArgumentException(SR.Argument_BadFieldForConstructorBuilder);
                     }
                 }
@@ -517,7 +517,7 @@ namespace System.Reflection.Emit
         // return the byte interpretation of the custom attribute
         internal void CreateCustomAttribute(RuntimeModuleBuilder mod, int tkOwner)
         {
-            TypeBuilder.DefineCustomAttribute(mod, tkOwner, mod.GetConstructorToken(m_con), m_blob);
+            RuntimeTypeBuilder.DefineCustomAttribute(mod, tkOwner, mod.GetConstructorToken(m_con), m_blob);
         }
     }
 }

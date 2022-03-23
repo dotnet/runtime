@@ -15,11 +15,11 @@ namespace System.Reflection.Emit
         }
 
         #region Private Data Members
-        internal TypeBuilder m_type;
+        internal RuntimeTypeBuilder m_type;
         #endregion
 
         #region Constructor
-        internal GenericTypeParameterBuilder(TypeBuilder type)
+        internal GenericTypeParameterBuilder(RuntimeTypeBuilder type)
         {
             m_type = type;
         }

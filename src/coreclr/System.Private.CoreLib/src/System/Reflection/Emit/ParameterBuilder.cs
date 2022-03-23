@@ -10,7 +10,7 @@ namespace System.Reflection.Emit
         // Set the default value of the parameter
         public virtual void SetConstant(object? defaultValue)
         {
-            TypeBuilder.SetConstantValue(
+            RuntimeTypeBuilder.SetConstantValue(
                 _methodBuilder.GetModuleBuilder(),
                 _token,
                 _position == 0 ? _methodBuilder.ReturnType : _methodBuilder.m_parameterTypes![_position - 1],
@@ -23,7 +23,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(con);
             ArgumentNullException.ThrowIfNull(binaryAttribute);
 
-            TypeBuilder.DefineCustomAttribute(
+            RuntimeTypeBuilder.DefineCustomAttribute(
                 _methodBuilder.GetModuleBuilder(),
                 _token,
                 ((RuntimeModuleBuilder)_methodBuilder.GetModule()).GetConstructorToken(con),
@@ -49,7 +49,7 @@ namespace System.Reflection.Emit
             _methodBuilder = methodBuilder;
             _attributes = attributes;
             RuntimeModuleBuilder module = _methodBuilder.GetModuleBuilder();
-            _token = TypeBuilder.SetParamInfo(
+            _token = RuntimeTypeBuilder.SetParamInfo(
                         new QCallModule(ref module),
                         _methodBuilder.MetadataToken,
                         sequence,

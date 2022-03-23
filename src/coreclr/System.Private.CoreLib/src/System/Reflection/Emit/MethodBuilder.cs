@@ -20,7 +20,7 @@ namespace System.Reflection.Emit
         private readonly RuntimeModuleBuilder m_module;
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        internal TypeBuilder m_containingType;
+        internal RuntimeTypeBuilder m_containingType;
 
         // IL
         private int[]? m_mdMethodFixups;              // The location of all of the token fixups. Null means no fixups.
@@ -59,7 +59,7 @@ namespace System.Reflection.Emit
         internal MethodBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers,
-            RuntimeModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TypeBuilder type)
+            RuntimeModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] RuntimeTypeBuilder type)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
@@ -348,7 +348,7 @@ namespace System.Reflection.Emit
         }
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        internal TypeBuilder GetTypeBuilder()
+        internal RuntimeTypeBuilder GetTypeBuilder()
         {
             return m_containingType;
         }
@@ -535,7 +535,7 @@ namespace System.Reflection.Emit
             m_bIsGenMethDef = true;
             m_inst = new GenericTypeParameterBuilder[names.Length];
             for (int i = 0; i < names.Length; i++)
-                m_inst[i] = new GenericTypeParameterBuilder(new TypeBuilder(names[i], i, this));
+                m_inst[i] = new GenericTypeParameterBuilder(new RuntimeTypeBuilder(names[i], i, this));
 
             return m_inst;
         }
@@ -602,14 +602,14 @@ namespace System.Reflection.Emit
             byte[] sigBytes = GetMethodSignature().InternalGetSignature(out int sigLength);
             RuntimeModuleBuilder module = m_module;
 
-            int token = TypeBuilder.DefineMethod(new QCallModule(ref module), m_containingType.MetadataToken, m_strName, sigBytes, sigLength, Attributes);
+            int token = RuntimeTypeBuilder.DefineMethod(new QCallModule(ref module), m_containingType.MetadataToken, m_strName, sigBytes, sigLength, Attributes);
             m_token = token;
 
             if (m_inst != null)
                 foreach (GenericTypeParameterBuilder tb in m_inst)
                     if (!tb.m_type.IsCreated()) tb.m_type.CreateType();
 
-            TypeBuilder.SetMethodImpl(new QCallModule(ref module), token, m_dwMethodImplFlags);
+            RuntimeTypeBuilder.SetMethodImpl(new QCallModule(ref module), token, m_dwMethodImplFlags);
 
             return m_token;
         }
@@ -678,7 +678,7 @@ namespace System.Reflection.Emit
             m_canBeRuntimeImpl = true;
 
             RuntimeModuleBuilder module = m_module;
-            TypeBuilder.SetMethodImpl(new QCallModule(ref module), MetadataToken, attributes);
+            RuntimeTypeBuilder.SetMethodImpl(new QCallModule(ref module), MetadataToken, attributes);
         }
 
         public ILGenerator GetILGenerator()
@@ -729,7 +729,7 @@ namespace System.Reflection.Emit
 
             ThrowIfGeneric();
 
-            TypeBuilder.DefineCustomAttribute(m_module, MetadataToken,
+            RuntimeTypeBuilder.DefineCustomAttribute(m_module, MetadataToken,
                 ((RuntimeModuleBuilder)m_module).GetConstructorToken(con),
                 binaryAttribute);
 

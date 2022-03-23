@@ -130,7 +130,6 @@
     <Compile Include="System\Reflection\Emit\DynamicILInfo.cs" />
     <Compile Include="System\Reflection\Emit\DynamicMethod.cs" />
     <Compile Include="System\Reflection\Emit\EnumBuilder.cs" />
-    <Compile Include="System\Reflection\Emit\EventBuilder.cs" />
     <Compile Include="System\Reflection\Emit\FieldBuilder.cs" />
     <Compile Include="System\Reflection\Emit\GenericTypeParameterBuilder.cs" />
     <Compile Include="System\Reflection\Emit\ILGenerator.cs" />
@@ -140,7 +139,6 @@
     <Compile Include="System\Reflection\Emit\PropertyBuilder.cs" />
     <Compile Include="System\Reflection\Emit\ReflectionEmitThrower.cs" />
     <Compile Include="System\Reflection\Emit\SignatureHelper.cs" />
-    <Compile Include="System\Reflection\Emit\TypeBuilder.cs" />
     <Compile Include="System\Reflection\EnumInfo.cs" />
     <Compile Include="System\Reflection\FieldInfo.CoreRT.cs" />
     <Compile Include="System\Reflection\MethodBase.CoreRT.cs" />

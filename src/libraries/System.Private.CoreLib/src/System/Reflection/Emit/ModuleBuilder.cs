@@ -95,5 +95,9 @@ namespace System.Reflection.Emit
         public abstract int GetConstructorToken(ConstructorInfo con);
         public abstract int GetSignatureToken(SignatureHelper sigHelper);
         public abstract int GetStringConstant(string str);
+
+        public abstract ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor);
+        public abstract FieldInfo GetField(Type type, FieldInfo field);
+        public abstract MethodInfo GetMethod(Type type, MethodInfo method);
     }
 }

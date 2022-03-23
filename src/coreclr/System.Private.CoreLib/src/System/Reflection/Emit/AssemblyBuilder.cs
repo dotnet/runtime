@@ -145,7 +145,10 @@ namespace System.Reflection.Emit
             {
                 foreach (CustomAttributeBuilder assemblyAttribute in assemblyAttributes)
                 {
-                    SetCustomAttribute(assemblyAttribute);
+                    foreach (CustomAttributeBuilder assemblyAttribute in assemblyAttributes)
+                    {
+                        SetCustomAttribute(assemblyAttribute);
+                    }
                 }
             }
         }
@@ -324,7 +327,7 @@ namespace System.Reflection.Emit
 
             if (_isManifestModuleUsedAsDefinedModule)
             {
-                if (ModuleBuilder.ManifestModuleName == name)
+                if (RuntimeModuleBuilder.ManifestModuleName == name)
                 {
                     return _manifestModuleBuilder;
                 }
@@ -342,7 +345,7 @@ namespace System.Reflection.Emit
 
             lock (SyncRoot)
             {
-                TypeBuilder.DefineCustomAttribute(
+                RuntimeTypeBuilder.DefineCustomAttribute(
                     _manifestModuleBuilder,     // pass in the in-memory assembly module
                     AssemblyDefToken,
                     _manifestModuleBuilder.GetConstructorToken(con),

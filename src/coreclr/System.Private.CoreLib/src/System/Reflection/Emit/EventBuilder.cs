@@ -20,16 +20,16 @@ namespace System.Reflection.Emit
     // A EventBuilder is always associated with a TypeBuilder.  The TypeBuilder.DefineEvent
     // method will return a new EventBuilder to a client.
     //
-    public sealed class EventBuilder
+    internal sealed class RuntimeEventBuilder : EventBuilder
     {
         // Constructs a EventBuilder.
         //
-        internal EventBuilder(
+        internal RuntimeEventBuilder(
             RuntimeModuleBuilder mod,                    // the module containing this EventBuilder
             string name,                    // Event name
             EventAttributes attr,                    // event attribute such as Public, Private, and Protected defined above
                                                      // int            eventType,                // event type
-            TypeBuilder type,                    // containing type
+            RuntimeTypeBuilder type,                 // containing type
             int evToken)
         {
             m_name = name;
@@ -52,43 +52,43 @@ namespace System.Reflection.Emit
 
             m_type.ThrowIfCreated();
             RuntimeModuleBuilder module = m_module;
-            TypeBuilder.DefineMethodSemantics(
+            RuntimeTypeBuilder.DefineMethodSemantics(
                 new QCallModule(ref module),
                 m_evToken,
                 semantics,
                 mdBuilder.MetadataToken);
         }
 
-        public void SetAddOnMethod(MethodBuilder mdBuilder)
+        public override void SetAddOnMethod(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.AddOn);
         }
 
-        public void SetRemoveOnMethod(MethodBuilder mdBuilder)
+        public override void SetRemoveOnMethod(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.RemoveOn);
         }
 
-        public void SetRaiseMethod(MethodBuilder mdBuilder)
+        public override void SetRaiseMethod(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.Fire);
         }
 
-        public void AddOtherMethod(MethodBuilder mdBuilder)
+        public override void AddOtherMethod(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.Other);
         }
 
         // Use this function if client decides to form the custom attribute blob themselves
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             ArgumentNullException.ThrowIfNull(con);
             ArgumentNullException.ThrowIfNull(binaryAttribute);
 
             m_type.ThrowIfCreated();
 
-            TypeBuilder.DefineCustomAttribute(
+            RuntimeTypeBuilder.DefineCustomAttribute(
                 m_module,
                 m_evToken,
                 m_module.GetConstructorToken(con),
@@ -96,7 +96,7 @@ namespace System.Reflection.Emit
         }
 
         // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 
@@ -109,6 +109,6 @@ namespace System.Reflection.Emit
         private int m_evToken;      // The token of this event
         private RuntimeModuleBuilder m_module;
         private EventAttributes m_attributes;
-        private TypeBuilder m_type;
+        private RuntimeTypeBuilder m_type;
     }
 }

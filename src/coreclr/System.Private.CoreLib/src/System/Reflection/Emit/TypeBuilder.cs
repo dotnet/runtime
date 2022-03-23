@@ -10,7 +10,7 @@ using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection.Emit
 {
-    public sealed partial class TypeBuilder : TypeInfo
+    internal sealed partial class RuntimeTypeBuilder : TypeBuilder
     {
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
@@ -60,7 +60,7 @@ namespace System.Reflection.Emit
         #region Public Static Methods
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
-        public static MethodInfo GetMethod(Type type, MethodInfo method)
+        public static new MethodInfo GetMethod(Type type, MethodInfo method)
         {
             if (type is not TypeBuilder && type is not TypeBuilderInstantiation)
                 throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
@@ -95,7 +95,7 @@ namespace System.Reflection.Emit
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
-        public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
+        public static new ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
         {
             if (type is not TypeBuilder && type is not TypeBuilderInstantiation)
                 throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
@@ -118,7 +118,7 @@ namespace System.Reflection.Emit
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
-        public static FieldInfo GetField(Type type, FieldInfo field)
+        public static new FieldInfo GetField(Type type, FieldInfo field)
         {
             if (type is not TypeBuilder and not TypeBuilderInstantiation)
                 throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
@@ -231,15 +231,15 @@ namespace System.Reflection.Emit
             // Maybe we are lucky that they are equal in the first place
             if (t1 == t2)
                 return true;
-            TypeBuilder? tb1 = null;
-            TypeBuilder? tb2 = null;
+            RuntimeTypeBuilder? tb1 = null;
+            RuntimeTypeBuilder? tb2 = null;
             Type? runtimeType1;
             Type? runtimeType2;
 
             // set up the runtimeType and TypeBuilder type corresponding to t1 and t2
-            if (t1 is TypeBuilder)
+            if (t1 is RuntimeTypeBuilder)
             {
-                tb1 = (TypeBuilder)t1;
+                tb1 = (RuntimeTypeBuilder)t1;
                 // This will be null if it is not baked.
                 runtimeType1 = tb1.m_bakedRuntimeType;
             }
@@ -248,9 +248,9 @@ namespace System.Reflection.Emit
                 runtimeType1 = t1;
             }
 
-            if (t2 is TypeBuilder)
+            if (t2 is RuntimeTypeBuilder)
             {
-                tb2 = (TypeBuilder)t2;
+                tb2 = (RuntimeTypeBuilder)t2;
                 // This will be null if it is not baked.
                 runtimeType2 = tb2.m_bakedRuntimeType;
             }
@@ -312,7 +312,7 @@ namespace System.Reflection.Emit
                         if (type != enumBldr.m_typeBuilder.m_bakedRuntimeType && type != underlyingType)
                             throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
                     }
-                    else if (destType is TypeBuilder typeBldr)
+                    else if (destType is RuntimeTypeBuilder typeBldr)
                     {
                         underlyingType = typeBldr.m_enumUnderlyingType;
 
@@ -411,7 +411,7 @@ namespace System.Reflection.Emit
         private int m_constructorCount;
         private readonly int m_iTypeSize;
         private readonly PackingSize m_iPackingSize;
-        private readonly TypeBuilder? m_DeclaringType;
+        private readonly RuntimeTypeBuilder? m_DeclaringType;
 
         // We cannot store this on EnumBuilder because users can define enum types manually using TypeBuilder.
         private Type? m_enumUnderlyingType;
@@ -430,7 +430,7 @@ namespace System.Reflection.Emit
 
         #region Constructor
         // ctor for the global (module) type
-        internal TypeBuilder(RuntimeModuleBuilder module)
+        internal RuntimeTypeBuilder(RuntimeModuleBuilder module)
         {
             m_tdType = ((int)MetadataTokenType.TypeDef);
             m_isHiddenGlobalType = true;
@@ -442,7 +442,7 @@ namespace System.Reflection.Emit
         }
 
         // ctor for generic method parameter
-        internal TypeBuilder(string szName, int genParamPos, MethodBuilder declMeth)
+        internal RuntimeTypeBuilder(string szName, int genParamPos, MethodBuilder declMeth)
         {
             m_strName = szName;
             m_genParamPos = genParamPos;
@@ -456,7 +456,7 @@ namespace System.Reflection.Emit
         }
 
         // ctor for generic type parameter
-        private TypeBuilder(string szName, int genParamPos, TypeBuilder declType)
+        private RuntimeTypeBuilder(string szName, int genParamPos, RuntimeTypeBuilder declType)
         {
             m_strName = szName;
             m_genParamPos = genParamPos;
@@ -468,9 +468,9 @@ namespace System.Reflection.Emit
             m_module = declType.GetModuleBuilder();
         }
 
-        internal TypeBuilder(
+        internal RuntimeTypeBuilder(
             string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, RuntimeModuleBuilder module,
-            PackingSize iPackingSize, int iTypeSize, TypeBuilder? enclosingType)
+            PackingSize iPackingSize, int iTypeSize, RuntimeTypeBuilder? enclosingType)
         {
             ArgumentException.ThrowIfNullOrEmpty(fullname);
 
@@ -629,7 +629,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public bool IsCreated()
+        public override bool IsCreated()
         {
             return m_hasBeenCreated;
         }
@@ -691,7 +691,7 @@ namespace System.Reflection.Emit
 
         private void SetGenParamCustomAttributeNoLock(CustAttr ca)
         {
-            m_ca ??= new List<TypeBuilder.CustAttr>();
+            m_ca ??= new List<CustAttr>();
             m_ca.Add(ca);
         }
         #endregion
@@ -940,7 +940,7 @@ namespace System.Reflection.Emit
                 return true;
 
             Type? fromRuntimeType;
-            TypeBuilder? fromTypeBuilder = c as TypeBuilder;
+            RuntimeTypeBuilder? fromTypeBuilder = c as RuntimeTypeBuilder;
 
             if (fromTypeBuilder != null)
                 fromRuntimeType = fromTypeBuilder.m_bakedRuntimeType;
@@ -1150,7 +1150,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
+        public override GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
         {
             ArgumentNullException.ThrowIfNull(names);
             if (names.Length == 0)
@@ -1164,7 +1164,7 @@ namespace System.Reflection.Emit
 
             m_inst = new GenericTypeParameterBuilder[names.Length];
             for (int i = 0; i < names.Length; i++)
-                m_inst[i] = new GenericTypeParameterBuilder(new TypeBuilder(names[i], i, this));
+                m_inst[i] = new GenericTypeParameterBuilder(new RuntimeTypeBuilder(names[i], i, this));
 
             return m_inst;
         }
@@ -1191,7 +1191,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Define Method
-        public void DefineMethodOverride(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
+        public override void DefineMethodOverride(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
         {
             lock (SyncRoot)
             {
@@ -1217,7 +1217,7 @@ namespace System.Reflection.Emit
             DefineMethodImpl(new QCallModule(ref module), m_tdType, tkBody, tkDecl);
         }
 
-        public MethodBuilder DefineMethod(string name, MethodAttributes attributes, CallingConventions callingConvention,
+        public override MethodBuilder DefineMethod(string name, MethodAttributes attributes, CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
@@ -1270,7 +1270,7 @@ namespace System.Reflection.Emit
         }
 
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes,
+        public override MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes,
             CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers,
@@ -1358,7 +1358,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Define Constructor
-        public ConstructorBuilder DefineTypeInitializer()
+        public override ConstructorBuilder DefineTypeInitializer()
         {
             lock (SyncRoot)
             {
@@ -1381,7 +1381,7 @@ namespace System.Reflection.Emit
             return constBuilder;
         }
 
-        public ConstructorBuilder DefineDefaultConstructor(MethodAttributes attributes)
+        public override ConstructorBuilder DefineDefaultConstructor(MethodAttributes attributes)
         {
             if ((m_iAttr & TypeAttributes.Interface) == TypeAttributes.Interface)
             {
@@ -1415,7 +1415,7 @@ namespace System.Reflection.Emit
                 Type? genericTypeDefinition = m_typeParent.GetGenericTypeDefinition();
 
                 if (genericTypeDefinition is TypeBuilder)
-                    genericTypeDefinition = ((TypeBuilder)genericTypeDefinition).m_bakedRuntimeType;
+                    genericTypeDefinition = ((RuntimeTypeBuilder)genericTypeDefinition).m_bakedRuntimeType;
 
                 if (genericTypeDefinition == null)
                     throw new NotSupportedException(SR.NotSupported_DynamicModule);
@@ -1452,7 +1452,7 @@ namespace System.Reflection.Emit
             return constBuilder;
         }
 
-        public ConstructorBuilder DefineConstructor(MethodAttributes attributes, CallingConventions callingConvention,
+        public override ConstructorBuilder DefineConstructor(MethodAttributes attributes, CallingConventions callingConvention,
             Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
         {
             if ((m_iAttr & TypeAttributes.Interface) == TypeAttributes.Interface && (attributes & MethodAttributes.Static) != MethodAttributes.Static)
@@ -1499,10 +1499,11 @@ namespace System.Reflection.Emit
 
         #region Define Nested Type
 
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces)
+        public override TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces)
         {
             lock (SyncRoot)
             {
+<<<<<<< HEAD
                 return new TypeBuilder(name, attr, parent, interfaces, m_module, PackingSize.Unspecified, UnspecifiedTypeSize, this);
             }
         }
@@ -1520,6 +1521,34 @@ namespace System.Reflection.Emit
         #region Define Field
 
         public FieldBuilder DefineField(string fieldName, Type type, Type[]? requiredCustomModifiers,
+=======
+                RuntimeAssemblyBuilder.CheckContext(parent);
+                RuntimeAssemblyBuilder.CheckContext(interfaces);
+
+                return DefineNestedTypeNoLock(name, attr, parent, interfaces, PackingSize.Unspecified, UnspecifiedTypeSize);
+            }
+        }
+
+        public override TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packSize, int typeSize)
+        {
+            lock (SyncRoot)
+            {
+                RuntimeAssemblyBuilder.CheckContext(parent);
+
+                return DefineNestedTypeNoLock(name, attr, parent, null, packSize, typeSize);
+            }
+        }
+
+        private TypeBuilder DefineNestedTypeNoLock(string name, TypeAttributes attr,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packSize, int typeSize)
+        {
+            return new RuntimeTypeBuilder(name, attr, parent, interfaces, m_module, packSize, typeSize, this);
+        }
+
+        #endregion
+
+        #region Define Field
+        public override FieldBuilder DefineField(string fieldName, Type type, Type[]? requiredCustomModifiers,
             Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
             lock (SyncRoot)
@@ -1545,7 +1574,7 @@ namespace System.Reflection.Emit
             return new FieldBuilder(this, fieldName, type, requiredCustomModifiers, optionalCustomModifiers, attributes);
         }
 
-        public FieldBuilder DefineInitializedData(string name, byte[] data, FieldAttributes attributes)
+        public override FieldBuilder DefineInitializedData(string name, byte[] data, FieldAttributes attributes)
         {
             lock (SyncRoot)
             {
@@ -1564,7 +1593,7 @@ namespace System.Reflection.Emit
             return DefineDataHelper(name, data, data.Length, attributes);
         }
 
-        public FieldBuilder DefineUninitializedData(string name, int size, FieldAttributes attributes)
+        public override FieldBuilder DefineUninitializedData(string name, int size, FieldAttributes attributes)
         {
             lock (SyncRoot)
             {
@@ -1583,8 +1612,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Define Properties and Events
-
-        public PropertyBuilder DefineProperty(string name, PropertyAttributes attributes, CallingConventions callingConvention,
+        public override PropertyBuilder DefineProperty(string name, PropertyAttributes attributes, CallingConventions callingConvention,
             Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
@@ -1635,7 +1663,7 @@ namespace System.Reflection.Emit
                     this);
         }
 
-        public EventBuilder DefineEvent(string name, EventAttributes attributes, Type eventtype)
+        public override EventBuilder DefineEvent(string name, EventAttributes attributes, Type eventtype)
         {
             lock (SyncRoot)
             {
@@ -1666,7 +1694,7 @@ namespace System.Reflection.Emit
                 tkType);
 
             // create the property builder now.
-            return new EventBuilder(
+            return new RuntimeEventBuilder(
                     m_module,
                     name,
                     attributes,
@@ -1680,16 +1708,7 @@ namespace System.Reflection.Emit
         #region Create Type
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public TypeInfo? CreateTypeInfo()
-        {
-            lock (SyncRoot)
-            {
-                return CreateTypeNoLock();
-            }
-        }
-
-        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public Type? CreateType()
+        public override TypeInfo? CreateTypeInfo()
         {
             lock (SyncRoot)
             {
@@ -1887,11 +1906,11 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Misc
-        public int Size => m_iTypeSize;
+        public override int Size => m_iTypeSize;
 
-        public PackingSize PackingSize => m_iPackingSize;
+        public override PackingSize PackingSize => m_iPackingSize;
 
-        public void SetParent([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
+        public override void SetParent([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
             ThrowIfCreated();
 
@@ -1919,7 +1938,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
+        public override void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
         {
             ArgumentNullException.ThrowIfNull(interfaceType);
 
@@ -1943,7 +1962,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public override void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute)
         {
             ArgumentNullException.ThrowIfNull(con);
             ArgumentNullException.ThrowIfNull(binaryAttribute);
@@ -1952,7 +1971,7 @@ namespace System.Reflection.Emit
                 binaryAttribute);
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 

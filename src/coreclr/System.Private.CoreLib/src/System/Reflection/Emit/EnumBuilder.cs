@@ -350,7 +350,7 @@ namespace System.Reflection.Emit
             // Client should not set any bits other than the visibility bits.
             if ((visibility & ~TypeAttributes.VisibilityMask) != 0)
                 throw new ArgumentException(SR.Argument_ShouldOnlySetVisibilityFlags, nameof(name));
-            m_typeBuilder = new TypeBuilder(name, visibility | TypeAttributes.Sealed, typeof(System.Enum), null, module, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize, null);
+            m_typeBuilder = new RuntimeTypeBuilder(name, visibility | TypeAttributes.Sealed, typeof(System.Enum), null, module, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize, null);
 
             // Define the underlying field for the enum. It will be a non-static, private field with special name bit set.
             m_underlyingField = m_typeBuilder.DefineField("value__", underlyingType, FieldAttributes.Public | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName);
@@ -362,7 +362,7 @@ namespace System.Reflection.Emit
          *
          */
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        internal TypeBuilder m_typeBuilder;
+        internal RuntimeTypeBuilder m_typeBuilder;
 
         private FieldBuilder m_underlyingField;
     }

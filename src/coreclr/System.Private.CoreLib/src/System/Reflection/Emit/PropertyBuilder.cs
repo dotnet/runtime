@@ -31,7 +31,7 @@ namespace System.Reflection.Emit
             PropertyAttributes attr, // property attribute such as DefaultProperty, Bindable, DisplayBind, etc
             Type returnType, // return type of the property.
             int prToken, // the metadata token for this property
-            TypeBuilder containingType) // the containing type
+            RuntimeTypeBuilder containingType) // the containing type
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
             if (name[0] == '\0')
@@ -52,7 +52,7 @@ namespace System.Reflection.Emit
         {
             m_containingType.ThrowIfCreated();
 
-            TypeBuilder.SetConstantValue(
+            RuntimeTypeBuilder.SetConstantValue(
                 m_moduleBuilder,
                 m_tkProperty,
                 m_returnType,
@@ -72,7 +72,7 @@ namespace System.Reflection.Emit
 
             m_containingType.ThrowIfCreated();
             RuntimeModuleBuilder module = m_moduleBuilder;
-            TypeBuilder.DefineMethodSemantics(
+            RuntimeTypeBuilder.DefineMethodSemantics(
                 new QCallModule(ref module),
                 m_tkProperty,
                 semantics,
@@ -104,7 +104,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(binaryAttribute);
 
             m_containingType.ThrowIfCreated();
-            TypeBuilder.DefineCustomAttribute(
+            RuntimeTypeBuilder.DefineCustomAttribute(
                 m_moduleBuilder,
                 m_tkProperty,
                 m_moduleBuilder.GetConstructorToken(con),
@@ -214,6 +214,6 @@ namespace System.Reflection.Emit
         private Type m_returnType; // property's return type
         private MethodInfo? m_getMethod;
         private MethodInfo? m_setMethod;
-        private TypeBuilder m_containingType;
+        private RuntimeTypeBuilder m_containingType;
     }
 }

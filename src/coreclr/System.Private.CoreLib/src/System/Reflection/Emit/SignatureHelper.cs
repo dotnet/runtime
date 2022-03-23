@@ -349,9 +349,9 @@ namespace System.Reflection.Emit
                 foreach (Type t in args)
                     AddOneArgTypeHelper(t);
             }
-            else if (clsArgument is TypeBuilder)
+            else if (clsArgument is RuntimeTypeBuilder)
             {
-                TypeBuilder clsBuilder = (TypeBuilder)clsArgument;
+                RuntimeTypeBuilder clsBuilder = (RuntimeTypeBuilder)clsArgument;
                 int tkType;
 
                 if (clsBuilder.Module.Equals(m_module))
@@ -374,7 +374,7 @@ namespace System.Reflection.Emit
             }
             else if (clsArgument is EnumBuilder)
             {
-                TypeBuilder clsBuilder = ((EnumBuilder)clsArgument).m_typeBuilder;
+                RuntimeTypeBuilder clsBuilder = ((EnumBuilder)clsArgument).m_typeBuilder;
                 int tkType;
 
                 if (clsBuilder.Module.Equals(m_module))

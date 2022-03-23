@@ -68,7 +68,7 @@ namespace System.Reflection.Emit
             _internalModule = internalModule;
             _assemblyBuilder = assemblyBuilder;
 
-            _globalTypeBuilder = new TypeBuilder(this);
+            _globalTypeBuilder = new RuntimeTypeBuilder(this);
             _typeBuilderDict = new Dictionary<string, Type>();
         }
 
@@ -749,7 +749,7 @@ namespace System.Reflection.Emit
         {
             lock (SyncRoot)
             {
-                return new TypeBuilder(name, attr, parent, null, this, packingSize, typesize, null);
+                return new RuntimeTypeBuilder(name, attr, parent, null, this, packingSize, typesize, null);
             }
         }
 
@@ -757,7 +757,7 @@ namespace System.Reflection.Emit
         {
             lock (SyncRoot)
             {
-                return new TypeBuilder(name, attr, parent, interfaces, this, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize, null);
+                return new RuntimeTypeBuilder(name, attr, parent, interfaces, this, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize, null);
             }
         }
 
@@ -934,10 +934,10 @@ namespace System.Reflection.Emit
             if (refedModule.Equals(this))
             {
                 // no need to do anything additional other than defining the TypeRef Token
-                TypeBuilder? typeBuilder;
+                RuntimeTypeBuilder? typeBuilder;
 
                 EnumBuilder? enumBuilder = type as EnumBuilder;
-                typeBuilder = enumBuilder != null ? enumBuilder.m_typeBuilder : type as TypeBuilder;
+                typeBuilder = enumBuilder != null ? enumBuilder.m_typeBuilder : type as RuntimeTypeBuilder;
 
                 if (typeBuilder != null)
                 {
@@ -1114,7 +1114,7 @@ namespace System.Reflection.Emit
                 byte[] sigBytes = SignatureHelper.GetMethodSpecSigHelper(
                     this, methodInfo.GetGenericArguments()).InternalGetSignature(out int sigLength);
                 RuntimeModuleBuilder thisModule = this;
-                tk = TypeBuilder.DefineMethodSpec(new QCallModule(ref thisModule), tk, sigBytes, sigLength);
+                tk = RuntimeTypeBuilder.DefineMethodSpec(new QCallModule(ref thisModule), tk, sigBytes, sigLength);
             }
             else
             {
@@ -1266,11 +1266,7 @@ namespace System.Reflection.Emit
             return mr;
         }
 
-<<<<<<< HEAD
-        internal int GetStringConstant(string str)
-=======
-        public override int GetStringConstant(string str!!)
->>>>>>> 3bca7cb8116... Factor out RuntimeModuleBuilder
+        public override int GetStringConstant(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
 
@@ -1280,11 +1276,7 @@ namespace System.Reflection.Emit
             return GetStringConstant(new QCallModule(ref thisModule), str, str.Length);
         }
 
-<<<<<<< HEAD
-        internal int GetSignatureToken(SignatureHelper sigHelper)
-=======
-        public override int GetSignatureToken(SignatureHelper sigHelper!!)
->>>>>>> 3bca7cb8116... Factor out RuntimeModuleBuilder
+        public override int GetSignatureToken(SignatureHelper sigHelper)
         {
             ArgumentNullException.ThrowIfNull(sigHelper);
 
@@ -1293,7 +1285,7 @@ namespace System.Reflection.Emit
             // Get the signature in byte form.
             byte[] sigBytes = sigHelper.InternalGetSignature(out int sigLength);
             RuntimeModuleBuilder thisModule = this;
-            return TypeBuilder.GetTokenFromSig(new QCallModule(ref thisModule), sigBytes, sigLength);
+            return RuntimeTypeBuilder.GetTokenFromSig(new QCallModule(ref thisModule), sigBytes, sigLength);
         }
 
         internal int GetSignatureToken(byte[] sigBytes, int sigLength)
@@ -1304,34 +1296,26 @@ namespace System.Reflection.Emit
             Buffer.BlockCopy(sigBytes, 0, localSigBytes, 0, sigBytes.Length);
 
             RuntimeModuleBuilder thisModule = this;
-            return TypeBuilder.GetTokenFromSig(new QCallModule(ref thisModule), localSigBytes, sigLength);
+            return RuntimeTypeBuilder.GetTokenFromSig(new QCallModule(ref thisModule), localSigBytes, sigLength);
         }
 
         #endregion
 
         #region Other
 
-<<<<<<< HEAD
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
-=======
-        public override void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
->>>>>>> 3bca7cb8116... Factor out RuntimeModuleBuilder
+        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             ArgumentNullException.ThrowIfNull(con);
             ArgumentNullException.ThrowIfNull(binaryAttribute);
 
-            TypeBuilder.DefineCustomAttribute(
+            RuntimeTypeBuilder.DefineCustomAttribute(
                 this,
                 1,                                          // This is hard coding the module token to 1
                 GetConstructorToken(con),
                 binaryAttribute);
         }
 
-<<<<<<< HEAD
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
-=======
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
->>>>>>> 3bca7cb8116... Factor out RuntimeModuleBuilder
+        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 
@@ -1341,5 +1325,15 @@ namespace System.Reflection.Emit
         #endregion
 
         #endregion
+
+        public override ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
+            => RuntimeTypeBuilder.GetConstructor(type, constructor);
+
+        public override FieldInfo GetField(Type type, FieldInfo field)
+            => RuntimeTypeBuilder.GetField(type, field);
+
+        public override MethodInfo GetMethod(Type type, MethodInfo method)
+            => RuntimeTypeBuilder.GetMethod(type, method);
+
     }
 }
