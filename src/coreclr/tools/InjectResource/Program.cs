@@ -1,4 +1,6 @@
-﻿using System.CommandLine;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+using System.CommandLine;
 using System.IO;
 
 var binOption = new Option<FileInfo?>(
@@ -16,13 +18,13 @@ rootCommand.AddOption(imageOption);
 rootCommand.AddOption(nameOption);
 
 rootCommand.SetHandler(
-    async (FileInfo binaryData, FileInfo peImage, string name) => 
+    (FileInfo binaryData, FileInfo peImage, string name) => 
         {
             using ResourceUpdater updater = new(peImage);
-            updater.AddBinaryResource(name, await File.ReadAllBytesAsync(binaryData.FullName));
+            updater.AddBinaryResource(name, File.ReadAllBytes(binaryData.FullName));
         },
     binOption,
     imageOption,
     nameOption);
 
-return await rootCommand.InvokeAsync(args);
+return rootCommand.Invoke(args);
