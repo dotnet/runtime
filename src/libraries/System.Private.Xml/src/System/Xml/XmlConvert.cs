@@ -314,6 +314,8 @@ namespace System.Xml
 
         internal static byte[] FromBinHexString(string s!!, bool allowOddCount)
         {
+            if (s == null) throw new ArgumentNullException(nameof(s));
+
             return BinHexDecoder.Decode(s.AsSpan(), allowOddCount);
         }
 

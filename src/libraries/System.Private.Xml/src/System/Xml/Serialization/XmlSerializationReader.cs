@@ -975,8 +975,7 @@ namespace System.Xml.Serialization
                 throw new ArgumentException(SR.Format(SR.XmlEmptyArrayType, CurrentTag()), nameof(value));
             }
 
-            ReadOnlySpan<char> chars = value.AsSpan();
-            int charsLength = chars.Length;
+            int charsLength = value.Length;
 
             SoapArrayInfo soapArrayInfo = default;
 
@@ -984,16 +983,16 @@ namespace System.Xml.Serialization
             int pos = charsLength - 1;
 
             // Must end with ]
-            if (chars[pos] != ']')
+            if (value[pos] != ']')
             {
                 throw new ArgumentException(SR.XmlInvalidArraySyntax, nameof(value));
             }
             pos--;
 
             // Find [
-            while (pos != -1 && chars[pos] != '[')
+            while (pos != -1 && value[pos] != '[')
             {
-                if (chars[pos] == ',')
+                if (value[pos] == ',')
                     throw new ArgumentException(SR.Format(SR.XmlInvalidArrayDimentions, CurrentTag()), nameof(value));
                 pos--;
             }
@@ -1005,10 +1004,11 @@ namespace System.Xml.Serialization
             int len = charsLength - pos - 2;
             if (len > 0)
             {
-                string lengthString = new string(chars.Slice(pos + 1, len));
+                ReadOnlySpan<char> lengthStringSpan = value.AsSpan(pos + 1, len);
                 try
                 {
-                    soapArrayInfo.length = int.Parse(lengthString, CultureInfo.InvariantCulture);
+                    if (!int.TryParse(lengthStringSpan, CultureInfo.InvariantCulture, out soapArrayInfo.length))
+                        throw new ArgumentException(SR.Format(SR.XmlInvalidArrayLength, new string(lengthStringSpan)), nameof(value));
                 }
                 catch (Exception e)
                 {
@@ -1016,7 +1016,7 @@ namespace System.Xml.Serialization
                     {
                         throw;
                     }
-                    throw new ArgumentException(SR.Format(SR.XmlInvalidArrayLength, lengthString), nameof(value));
+                    throw new ArgumentException(SR.Format(SR.XmlInvalidArrayLength, new string(lengthStringSpan)), nameof(value));
                 }
             }
             else
@@ -1027,14 +1027,14 @@ namespace System.Xml.Serialization
             pos--;
 
             soapArrayInfo.jaggedDimensions = 0;
-            while (pos != -1 && chars[pos] == ']')
+            while (pos != -1 && value[pos] == ']')
             {
                 pos--;
                 if (pos < 0)
                     throw new ArgumentException(SR.XmlMismatchedArrayBrackets, nameof(value));
-                if (chars[pos] == ',')
+                if (value[pos] == ',')
                     throw new ArgumentException(SR.Format(SR.XmlInvalidArrayDimentions, CurrentTag()), nameof(value));
-                else if (chars[pos] != '[')
+                else if (value[pos] != '[')
                     throw new ArgumentException(SR.XmlInvalidArraySyntax, nameof(value));
                 pos--;
                 soapArrayInfo.jaggedDimensions++;
@@ -1043,7 +1043,7 @@ namespace System.Xml.Serialization
             soapArrayInfo.dimensions = 1;
 
             // everything else is qname - validation of qnames?
-            soapArrayInfo.qname = new string(chars.Slice(0, pos + 1));
+            soapArrayInfo.qname = new string(value.AsSpan(0, pos + 1));
             return soapArrayInfo;
         }
 
