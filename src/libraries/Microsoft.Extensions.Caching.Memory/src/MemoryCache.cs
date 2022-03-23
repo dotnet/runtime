@@ -285,7 +285,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>Returns <see langword="null"/> if statistics are not being tracked because <see cref="MemoryCacheOptions.TrackStatistics" /> is <see langword="false"/>.</returns>
         public MemoryCacheStatistics? GetCurrentStatistics()
         {
-            if (_options.TrackStatistics)
+            if (_allStats is not null)
             {
                 (long hit, long miss) sumTotal = Sum();
                 return new MemoryCacheStatistics()
@@ -352,7 +352,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private void Hit()
         {
-            if (_options.TrackStatistics)
+            if (_allStats is not null)
             {
                 if (IntPtr.Size == 4)
                     Interlocked.Increment(ref GetStats().Hits);
@@ -363,7 +363,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private void Miss()
         {
-            if (_options.TrackStatistics)
+            if (_allStats is not null)
             {
                 if (IntPtr.Size == 4)
                     Interlocked.Increment(ref GetStats().Misses);
