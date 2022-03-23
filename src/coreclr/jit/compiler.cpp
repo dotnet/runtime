@@ -4769,8 +4769,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Compute reachability sets and dominators.
         //
-        auto computeReachability = [this]() { fgComputeReachability(); };
-        DoPhase(this, PHASE_COMPUTE_REACHABILITY, computeReachability);
+        DoPhase(this, PHASE_COMPUTE_REACHABILITY, &Compiler::fgComputeReachability);
 
         // Scale block weights and mark run rarely blocks.
         //
@@ -4944,17 +4943,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             RecomputeLoopInfo();
         }
     }
-
-    ////
-    //// Compute reachability and remove unreachable blocks, if any.
-    ////
-    //auto computeReachability = [this]() {
-
-    //    EnsureBasicBlockEpoch();
-    //    fgComputeReachability(/* computeDoms */ false, /* doRenumbering */ false);
-    //};
-    //DoPhase(this, PHASE_REMOVE_DEAD_BLOCKS, computeReachability);
-
 
     // Remove dead blocks
     DoPhase(this, PHASE_REMOVE_DEAD_BLOCKS, &Compiler::fgRemoveDeadBlocks);

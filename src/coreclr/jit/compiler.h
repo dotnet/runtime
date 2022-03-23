@@ -5772,20 +5772,15 @@ protected:
 
     void fgComputeReturnBlocks(); // Initialize fgReturnBlocks to a list of BBJ_RETURN blocks.
 
-    void fgComputeEnterBlocksSet(DEBUG_ARG1(bool renumberingDone = true)); // Compute the set of entry blocks,
-                                                                           // 'fgEnterBlks'.
+    void fgComputeEnterBlocksSet(); // Compute the set of entry blocks, 'fgEnterBlks'.
 
+    // Remove blocks determined to be unreachable by the 'canRemoveBlock'.
     template <typename CanRemoveBlockBody>
-    bool fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock); // Remove blocks determined to be
-                                                                               // unreachable by
-                                                                        // the bbReach sets.
+    bool fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock);
 
-    //bool fgRemoveUnreachableBlocks(bool (*_action)(BasicBlock* block)); // Remove blocks determined to be unreachable by the bbReach sets.
+    void fgComputeReachability(); // Perform flow graph node reachability analysis.
 
-    void fgComputeReachability(bool computeDoms = true, bool doRenumber = true); // Perform flow graph node reachability
-                                                                                 // analysis.
-
-    void fgRemoveDeadBlocks();
+    void fgRemoveDeadBlocks(); // Identify and remove dead blocks.
 
     BasicBlock* fgIntersectDom(BasicBlock* a, BasicBlock* b); // Intersect two immediate dominator sets.
 

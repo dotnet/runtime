@@ -351,10 +351,7 @@ void Compiler::fgComputeReturnBlocks()
 // to avoid creating "retless" calls, since we need the BBJ_ALWAYS for the purpose
 // of unwinding, even if the call doesn't return (due to an explicit throw, for example).
 //
-// Arguments:
-//    renumberingDone -- `true` if block renumbering was done.
-//
-void Compiler::fgComputeEnterBlocksSet(DEBUG_ARG1(const bool renumberingDone))
+void Compiler::fgComputeEnterBlocksSet()
 {
 #ifdef DEBUG
     fgEnterBlksSetValid = false;
@@ -368,7 +365,7 @@ void Compiler::fgComputeEnterBlocksSet(DEBUG_ARG1(const bool renumberingDone))
 
     /* Now set the entry basic block */
     BlockSetOps::AddElemD(this, fgEnterBlks, fgFirstBB->bbNum);
-    assert(fgFirstBB->bbNum == 1 || !renumberingDone);
+    assert(fgFirstBB->bbNum == 1);
 
     if (compHndBBtabCount > 0)
     {
@@ -426,10 +423,16 @@ void Compiler::fgComputeEnterBlocksSet(DEBUG_ARG1(const bool renumberingDone))
 // Return Value:
 //    Return true if changes were made that may cause additional blocks to be removable.
 //
-// Assumptions:
-//    The reachability sets must be computed and valid.
+// Notes:
+//    Unreachable blocks removal phase happens twice.
 //
-
+//    During early phases RecomputeLoopInfo, the logic to determine if a block is reachable
+//    or not is based on the reachability sets, and hence it must be computed and valid.
+//
+//    During late phase, all the reachable blocks from fgFirstBB are traversed and everything
+//    else are marked as unreachable (with exceptions of handler/filter blocks and BBJ_ALWAYS
+//    blocks in Arm). As such, it is not dependent on the validity of reachability sets.
+//
 template <typename CanRemoveBlockBody>
 bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
 {
@@ -539,14 +542,10 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
 // Also, compute the list of return blocks `fgReturnBlocks` and set of enter blocks `fgEnterBlks`.
 // Delete unreachable blocks.
 //
-//  Arguments:
-//       computeDoms - Whether to compute doms or not.
-//       doRenumber  - Should it do block renumbering or not.
-//
 // Assumptions:
 //    Assumes the predecessor lists are computed and correct.
 //
-void Compiler::fgComputeReachability(const bool computeDoms, const bool doRenumber)
+void Compiler::fgComputeReachability()
 {
 #ifdef DEBUG
     if (verbose)
@@ -573,8 +572,7 @@ void Compiler::fgComputeReachability(const bool computeDoms, const bool doRenumb
     unsigned passNum = 1;
     bool     changed;
 
-    auto canRemoveBlock = [&](BasicBlock* block) -> bool
-    {
+    auto canRemoveBlock = [&](BasicBlock* block) -> bool {
         // If any of the entry blocks can reach this block, then we skip it.
         if (!BlockSetOps::IsEmptyIntersection(this, fgEnterBlks, block->bbReach))
         {
@@ -599,19 +597,16 @@ void Compiler::fgComputeReachability(const bool computeDoms, const bool doRenumb
             noway_assert(!"Too many unreachable block removal loops");
         }
 
-        if (doRenumber)
-        {
-            // Walk the flow graph, reassign block numbers to keep them in ascending order.
-            JITDUMP("\nRenumbering the basic blocks for fgComputeReachability pass #%u\n", passNum);
-            fgRenumberBlocks();
-        }
+        // Walk the flow graph, reassign block numbers to keep them in ascending order.
+        JITDUMP("\nRenumbering the basic blocks for fgComputeReachability pass #%u\n", passNum);
         passNum++;
+        fgRenumberBlocks();
 
         //
         // Compute fgEnterBlks
         //
 
-        fgComputeEnterBlocksSet(DEBUG_ARG1(doRenumber));
+        fgComputeEnterBlocksSet();
 
         //
         // Compute bbReach
@@ -636,27 +631,57 @@ void Compiler::fgComputeReachability(const bool computeDoms, const bool doRenumb
     }
 
     fgVerifyHandlerTab();
-    fgDebugCheckBBlist(doRenumber);
+    fgDebugCheckBBlist(true);
 #endif // DEBUG
 
-    if (computeDoms)
-    {
-        //
-        // Now, compute the dominators
-        //
+    //
+    // Now, compute the dominators
+    //
 
-        fgComputeDoms();
-    }
+    fgComputeDoms();
 }
 
-
+//------------------------------------------------------------------------
+// fgRemoveDeadBlocks: Identify all the unreachable blocks and remove them.
+//         Handler and filter blocks are considered as reachable and hence won't
+//         be removed. For Arm, do not remove BBJ_ALWAYS block.
+//
 void Compiler::fgRemoveDeadBlocks()
 {
+    jitstd::list<BasicBlock*> worklist(jitstd::allocator<void>(getAllocator(CMK_Reachability)));
+    worklist.insert(worklist.begin(), fgFirstBB);
+
+    if (compHndBBtabCount > 0)
+    {
+        // Do not remove handler blocks
+        for (EHblkDsc* const HBtab : EHClauses(this))
+        {
+            if (HBtab->HasFilter())
+            {
+                worklist.insert(worklist.end(), HBtab->ebdFilter);
+            }
+            worklist.insert(worklist.end(), HBtab->ebdHndBeg);
+        }
+    }
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    // For ARM code, prevent creating retless calls by adding the BBJ_ALWAYS to the "fgAlwaysBlks" list.
+    for (BasicBlock* const block : Blocks())
+    {
+        if (block->bbJumpKind == BBJ_CALLFINALLY)
+        {
+            assert(block->isBBCallAlwaysPair());
+
+            // Don't remove the BBJ_ALWAYS block that is only here for the unwinder.
+            worklist.insert(worklist.end(), block->bbNext);
+        }
+    }
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+
     EnsureBasicBlockEpoch();
     BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
-    jitstd::list<BasicBlock*> worklist(jitstd::allocator<void>(getAllocator(CMK_Reachability)));
 
-    worklist.insert(worklist.begin(), fgFirstBB);
+    // Visit all the reachable blocks, everything else can be removed
     while (!worklist.empty())
     {
         BasicBlock* block = *(worklist.begin());
@@ -675,8 +700,9 @@ void Compiler::fgRemoveDeadBlocks()
         }
     }
 
-    auto isBlockRemovable = [&](BasicBlock* block) -> bool
-    {
+    // A block is unreachable if no path was found from
+    // any of the fgFirstBB, handler, filter or BBJ_ALWAYS (Arm) blocks.
+    auto isBlockRemovable = [&](BasicBlock* block) -> bool {
         return !BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
     };
 
@@ -684,7 +710,7 @@ void Compiler::fgRemoveDeadBlocks()
     bool     changed;
     do
     {
-        // Just to be paranoid, avoid infinite loops; fall back to minopts.
+        // Just to be paranoid, avoid infinite loops.
         if (passNum > 10)
         {
             noway_assert(!"Too many unreachable block removal loops");
@@ -692,6 +718,18 @@ void Compiler::fgRemoveDeadBlocks()
         passNum++;
         changed = fgRemoveUnreachableBlocks(isBlockRemovable);
     } while (changed);
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\nAfter dead block removal:\n");
+        fgDispBasicBlocks(verboseTrees);
+        printf("\n");
+    }
+
+    fgVerifyHandlerTab();
+    fgDebugCheckBBlist(false);
+#endif // DEBUG
 }
 
 //-------------------------------------------------------------
