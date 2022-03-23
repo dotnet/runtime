@@ -5257,7 +5257,14 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 {
     if (!addr->OperIs(GT_ADD) || addr->gtOverflow())
     {
+#ifdef TARGET_ARM64
+        if (!addr->OperIs(GT_ADDEX))
+        {
+            return false;
+        }
+#else
         return false;
+#endif
     }
 
 #ifdef TARGET_ARM64
@@ -5397,6 +5404,11 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     }
 
 #ifdef TARGET_ARM64
+    if ((index != nullptr) && index->OperIs(GT_CAST) && (scale == 1) && (offset == 0) && varTypeIsByte(targetType))
+    {
+        MakeSrcContained(addrMode, index);
+    }
+
     // Check if we can "contain" LEA(BFIZ) in order to extend 32bit index to 64bit as part of load/store.
     if ((index != nullptr) && index->OperIs(GT_BFIZ) && index->gtGetOp1()->OperIs(GT_CAST) &&
         index->gtGetOp2()->IsCnsIntOrI() && (varTypeIsIntegral(targetType) || varTypeIsFloating(targetType)))
