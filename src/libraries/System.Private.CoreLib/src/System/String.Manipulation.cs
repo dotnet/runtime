@@ -967,13 +967,11 @@ namespace System
         //
         public string Replace(char oldChar, char newChar)
         {
-            if (oldChar == newChar)
+            int firstIndex;
+            if (oldChar == newChar || (firstIndex = IndexOf(oldChar)) < 0)
+            {
                 return this;
-
-            int firstIndex = IndexOf(oldChar);
-
-            if (firstIndex < 0)
-                return this;
+            }
 
             int remainingLength = Length - firstIndex;
             string result = FastAllocateString(Length);
@@ -987,13 +985,14 @@ namespace System
             }
 
             // Copy the remaining characters, doing the replacement as we go.
-            ref ushort pSrc = ref Unsafe.Add(ref Unsafe.As<char, ushort>(ref _firstChar), copyLength);
-            ref ushort pDst = ref Unsafe.Add(ref Unsafe.As<char, ushort>(ref result._firstChar), copyLength);
+            ref ushort pSrc = ref Unsafe.Add(ref Unsafe.As<char, ushort>(ref _firstChar), (nint)(uint)copyLength);
+            ref ushort pDst = ref Unsafe.Add(ref Unsafe.As<char, ushort>(ref result._firstChar), (nint)(uint)copyLength);
+            nint i = 0;
 
             if (Vector.IsHardwareAccelerated && remainingLength >= Vector<ushort>.Count)
             {
-                Vector<ushort> oldChars = new Vector<ushort>(oldChar);
-                Vector<ushort> newChars = new Vector<ushort>(newChar);
+                Vector<ushort> oldChars = new(oldChar);
+                Vector<ushort> newChars = new(newChar);
 
                 Vector<ushort> original;
                 Vector<ushort> equals;
@@ -1001,16 +1000,14 @@ namespace System
 
                 do
                 {
-                    original = Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<ushort, byte>(ref pSrc));
+                    original = Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<ushort, byte>(ref Unsafe.Add(ref pSrc, i)));
                     equals = Vector.Equals(original, oldChars);
                     results = Vector.ConditionalSelect(equals, newChars, original);
-                    Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref pDst), results);
+                    Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref Unsafe.Add(ref pDst, i)), results);
 
-                    pSrc = ref Unsafe.Add(ref pSrc, Vector<ushort>.Count);
-                    pDst = ref Unsafe.Add(ref pDst, Vector<ushort>.Count);
-                    remainingLength -= Vector<ushort>.Count;
+                    i += Vector<ushort>.Count;
                 }
-                while (remainingLength >= Vector<ushort>.Count);
+                while (i <= (nint)(uint)(remainingLength - Vector<ushort>.Count));
 
                 // There are [0, Vector<ushort>.Count) elements remaining now.
                 // As the operation is idempotent, and we know that in total there are at least Vector<ushort>.Count
@@ -1019,21 +1016,20 @@ namespace System
                 // Thus we can eliminate the scalar processing of the remaining elements.
                 // We perform this operation even if there are 0 elements remaining, as it is cheaper than the
                 // additional check which would introduce a branch here.
-                original = Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref _firstChar, Length - Vector<ushort>.Count)));
+
+                i = (nint)(uint)this.Length - Vector<ushort>.Count;
+                original = Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref _firstChar, i)));
                 equals = Vector.Equals(original, oldChars);
                 results = Vector.ConditionalSelect(equals, newChars, original);
-                Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref result._firstChar, result.Length - Vector<ushort>.Count)), results);
-
-                return result;
+                Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref result._firstChar, i)), results);
             }
-
-            for (; remainingLength > 0; remainingLength--)
+            else
             {
-                ushort currentChar = pSrc;
-                pDst = currentChar == oldChar ? newChar : currentChar;
-
-                pSrc = ref Unsafe.Add(ref pSrc, 1);
-                pDst = ref Unsafe.Add(ref pDst, 1);
+                for (; i < (nint)(uint)remainingLength; ++i)
+                {
+                    ushort currentChar = Unsafe.Add(ref pSrc, i);
+                    Unsafe.Add(ref pDst, i) = currentChar == oldChar ? newChar : currentChar;
+                }
             }
 
             return result;
