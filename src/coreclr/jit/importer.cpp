@@ -11430,45 +11430,13 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
 
         if (genActualType(op1->TypeGet()) != TYP_I_IMPL)
         {
-// insert an explicit upcast
-#ifdef TARGET_LOONGARCH64
-            if (op1->TypeGet() == TYP_INT && op1->gtOper == GT_CNS_INT)
-            {
-                // For LoongArch64's instructions operation of the 64bits and 32bits using the whole
-                // 64bits-width register which is unlike the AMD64 and ARM64.
-                // And the INT type instruction will be signed-extend by default.
-                // e.g. 'ld_w $r4, $5, 4' and `addi_w $r4,$r5,-1` the result of INT
-                // will be signed-extend by default.
-                op1->AsIntCon()->gtIconVal =
-                    fUnsigned ? (uint32_t)op1->AsIntCon()->gtIconVal : op1->AsIntCon()->gtIconVal;
-                op1->gtType = TYP_LONG;
-            }
-            else
-                *pOp1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
-#else
+            // insert an explicit upcast
             op1 = *pOp1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
-#endif
         }
         else if (genActualType(op2->TypeGet()) != TYP_I_IMPL)
         {
-// insert an explicit upcast
-#ifdef TARGET_LOONGARCH64
-            if (op2->TypeGet() == TYP_INT && op2->gtOper == GT_CNS_INT)
-            {
-                // For LoongArch64's instructions operation of the 64bits and 32bits using the whole
-                // 64bits-width register which is unlike the AMD64 and ARM64.
-                // And the INT type instruction will be signed-extend by default.
-                // e.g. 'ld_w $r4, $5, 4' and `addi_w $r4,$r5,-1` the result of INT
-                // will be signed-extend by default.
-                op2->AsIntCon()->gtIconVal =
-                    fUnsigned ? (uint32_t)op2->AsIntCon()->gtIconVal : op2->AsIntCon()->gtIconVal;
-                op2->gtType = TYP_LONG;
-            }
-            else
-                *pOp2 = gtNewCastNode(TYP_I_IMPL, op2, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
-#else
+            // insert an explicit upcast
             op2 = *pOp2 = gtNewCastNode(TYP_I_IMPL, op2, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
-#endif
         }
 
         type = TYP_I_IMPL;
@@ -12670,17 +12638,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 #endif // FEATURE_SIMD
 
-#ifdef TARGET_LOONGARCH64
-                if (prevOpcode == CEE_LDC_I4_0 || prevOpcode == CEE_LDNULL)
-                {
-                    op1->gtType = lclTyp;
-                    op1->gtFlags |= GTF_CONTAINED;
-                }
-                else
-                    op1 = impImplicitIorI4Cast(op1, lclTyp);
-#else
-                op1  = impImplicitIorI4Cast(op1, lclTyp);
-#endif
+                op1 = impImplicitIorI4Cast(op1, lclTyp);
 
 #ifdef TARGET_64BIT
                 // Downcast the TYP_I_IMPL into a 32-bit Int for x86 JIT compatiblity
@@ -13560,17 +13518,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impPopStack().val; // operand to be shifted
                 impBashVarAddrsToI(op1, op2);
 
-#ifdef TARGET_LOONGARCH64
-                if (op2->gtOper == GT_CNS_INT && op2->AsIntCon()->gtIconVal > 31)
-                {
-                    type = TYP_LONG;
-                }
-                else
-                    type = genActualType(op1->TypeGet());
-#else
                 type = genActualType(op1->TypeGet());
-#endif
-                op1 = gtNewOperNode(oper, type, op1, op2);
+                op1  = gtNewOperNode(oper, type, op1, op2);
 
                 impPushOnStack(op1, tiRetVal);
                 break;
@@ -13777,29 +13726,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // See also identical code in impGetByRefResultType and STSFLD import.
                 if (varTypeIsI(op1) && (genActualType(op2) == TYP_INT))
                 {
-#ifdef TARGET_LOONGARCH64
-                    if (op2->gtOper == GT_CNS_INT)
-                    {
-                        op2->AsIntCon()->gtIconVal =
-                            uns ? (uint32_t)op2->AsIntCon()->gtIconVal : (int32_t)op2->AsIntCon()->gtIconVal;
-                        op2->gtType = TYP_LONG;
-                    }
-                    else
-#endif
-                        op2 = gtNewCastNode(TYP_I_IMPL, op2, uns, TYP_I_IMPL);
+                    op2 = gtNewCastNode(TYP_I_IMPL, op2, uns, TYP_I_IMPL);
                 }
                 else if (varTypeIsI(op2) && (genActualType(op1) == TYP_INT))
                 {
-#ifdef TARGET_LOONGARCH64
-                    if (op1->gtOper == GT_CNS_INT)
-                    {
-                        op1->AsIntCon()->gtIconVal =
-                            uns ? (uint32_t)op1->AsIntCon()->gtIconVal : (int32_t)op1->AsIntCon()->gtIconVal;
-                        op1->gtType = TYP_LONG;
-                    }
-                    else
-#endif
-                        op1 = gtNewCastNode(TYP_I_IMPL, op1, uns, TYP_I_IMPL);
+                    op1 = gtNewCastNode(TYP_I_IMPL, op1, uns, TYP_I_IMPL);
                 }
 #endif // TARGET_64BIT
 
@@ -13886,18 +13817,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impPopStack().val;
 
 #ifdef TARGET_64BIT
-#ifdef TARGET_LOONGARCH64
-                if ((op2->OperGet() == GT_CNS_INT) /* && (op2->AsIntCon()->IconValue() == 0)*/)
-                {
-                    op2->gtType = op1->TypeGet();
-                }
-/*if (op1->OperGet() == GT_CNS_INT)
-{
-    //assert(op1->gtType == op2->TypeGet());
-    //op2->gtType = op1->TypeGet();
-    op1->gtFlags |= GTF_CONTAINED;
-}*/
-#else
                 if ((op1->TypeGet() == TYP_I_IMPL) && (genActualType(op2->TypeGet()) == TYP_INT))
                 {
                     op2 = gtNewCastNode(TYP_I_IMPL, op2, uns, uns ? TYP_U_IMPL : TYP_I_IMPL);
@@ -13906,20 +13825,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     op1 = gtNewCastNode(TYP_I_IMPL, op1, uns, uns ? TYP_U_IMPL : TYP_I_IMPL);
                 }
-#endif
 #endif // TARGET_64BIT
 
-#ifdef TARGET_LOONGARCH64
-                assertImp((genActualType(op1->TypeGet()) == TYP_LONG || genActualType(op1->TypeGet()) == TYP_INT) ||
-                          (genActualType(op2->TypeGet()) == TYP_LONG || genActualType(op2->TypeGet()) == TYP_INT) ||
-                          (genActualType(op1->TypeGet()) == genActualType(op2->TypeGet())) ||
-                          (varTypeIsI(op1->TypeGet()) && varTypeIsI(op2->TypeGet())) ||
-                          (varTypeIsFloating(op1->gtType) && varTypeIsFloating(op2->gtType)));
-#else
                 assertImp(genActualType(op1->TypeGet()) == genActualType(op2->TypeGet()) ||
                           (varTypeIsI(op1->TypeGet()) && varTypeIsI(op2->TypeGet())) ||
                           (varTypeIsFloating(op1->gtType) && varTypeIsFloating(op2->gtType)));
-#endif
 
                 if (opts.OptimizationEnabled() && (block->bbJumpDest == block->bbNext))
                 {
@@ -14160,18 +14070,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 op1 = impPopStack().val;
-#ifdef TARGET_LOONGARCH64
-                if (!callNode && prevOpcode == CEE_LDC_I4_0)
-                {
-                    assert(op1->gtOper == GT_CNS_INT && op1->AsIntCon()->gtIconVal == 0);
-                    if (varTypeIsFloating(lclTyp))
-                        op1->gtOper = GT_CNS_DBL;
-                    op1->gtType     = genActualType(lclTyp);
-                    impPushOnStack(op1, tiRetVal);
-                    // opcode = CEE_LDC_I4_0;
-                    break;
-                }
-#endif
 
                 impBashVarAddrsToI(op1);
 
@@ -14181,38 +14079,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     uns = false;
                 }
 
-// At this point uns, ovf, callNode are all set.
+                // At this point uns, ovf, callNode are all set.
 
-#ifdef TARGET_LOONGARCH64
-                if (varTypeIsSmall(lclTyp) && !ovfl && op1->gtOper == GT_CNS_INT)
-                {
-                    switch (lclTyp)
-                    {
-                        case TYP_BYTE:
-                            op1->AsIntCon()->gtIconVal = (int8_t)op1->AsIntCon()->gtIconVal;
-                            break;
-                        case TYP_UBYTE:
-                            op1->AsIntCon()->gtIconVal = (uint8_t)op1->AsIntCon()->gtIconVal;
-                            break;
-                        case TYP_USHORT:
-                            op1->AsIntCon()->gtIconVal = (uint16_t)op1->AsIntCon()->gtIconVal;
-                            break;
-                        case TYP_SHORT:
-                            op1->AsIntCon()->gtIconVal = (short)op1->AsIntCon()->gtIconVal;
-                            break;
-                        default:
-                            assert(!"unexpected type");
-                            return;
-                    }
-
-                    op1->gtType = TYP_INT;
-
-                    impPushOnStack(op1, tiRetVal);
-                    break;
-                }
-                else
-#endif
-                    if (varTypeIsSmall(lclTyp) && !ovfl && op1->gtType == TYP_INT && op1->gtOper == GT_AND)
+                if (varTypeIsSmall(lclTyp) && !ovfl && op1->gtType == TYP_INT && op1->gtOper == GT_AND)
                 {
                     op2 = op1->AsOp()->gtOp2;
 
@@ -14276,32 +14145,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op1 = gtNewCastNodeL(type, op1, uns, lclTyp);
                     }
                     else
-#ifdef TARGET_LOONGARCH64
-                        if (type != TYP_LONG)
-                    {
-                        if (!ovfl && op1->gtOper == GT_CNS_INT && op1->TypeGet() == TYP_LONG)
-                        {
-                            assert(lclTyp == TYP_INT || lclTyp == TYP_UINT);
-                            if (lclTyp == TYP_INT)
-                            {
-                                op1->AsIntCon()->gtIconVal = (int32_t)op1->AsIntCon()->gtIconVal;
-                                op1->gtType                = TYP_INT;
-                            }
-                            else if (lclTyp == TYP_UINT)
-                            {
-                                op1->AsIntCon()->gtIconVal = (uint32_t)op1->AsIntCon()->gtIconVal;
-                                op1->gtType                = TYP_UINT;
-                            }
-                            else
-                                op1 = gtNewCastNode(type, op1, uns, lclTyp);
-                        }
-                        else
-                        {
-                            op1 = gtNewCastNode(type, op1, uns, lclTyp);
-                        }
-                    }
-                    else
-#endif
                     {
                         op1 = gtNewCastNode(type, op1, uns, lclTyp);
                     }
@@ -14311,13 +14154,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op1->gtFlags |= (GTF_OVERFLOW | GTF_EXCEPT);
                     }
 
-#ifndef TARGET_LOONGARCH64
                     if (op1->gtGetOp1()->OperIsConst() && opts.OptimizationEnabled())
                     {
                         // Try and fold the introduced cast
                         op1 = gtFoldExprConst(op1);
                     }
-#endif
                 }
 
                 impPushOnStack(op1, tiRetVal);
@@ -15943,9 +15784,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op2->gtType = TYP_I_IMPL;
                     }
                     else
-#ifdef TARGET_LOONGARCH64
-                        if (genActualType(op2->TypeGet()) != TYP_INT)
-#endif
                     {
                         bool isUnsigned = false;
                         op2             = gtNewCastNode(TYP_I_IMPL, op2, isUnsigned, TYP_I_IMPL);
@@ -17310,21 +17148,12 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             impBashVarAddrsToI(op2);
             op2 = impImplicitIorI4Cast(op2, info.compRetType);
             op2 = impImplicitR4orR8Cast(op2, info.compRetType);
-// Note that we allow TYP_I_IMPL<->TYP_BYREF transformation, but only TYP_I_IMPL<-TYP_REF.
-#ifdef TARGET_LOONGARCH64
-            assertImp((genActualType(op2->TypeGet()) == genActualType(info.compRetType)) ||
-                      (genTypeStSz(op2->TypeGet()) == genTypeStSz(info.compRetType)) ||
-                      ((op2->TypeGet() == TYP_I_IMPL) && TypeIs(info.compRetType, TYP_BYREF)) ||
-                      (op2->TypeIs(TYP_BYREF, TYP_REF) && (info.compRetType == TYP_I_IMPL)) ||
-                      (varTypeIsFloating(op2->gtType) && varTypeIsFloating(info.compRetType)) ||
-                      (varTypeIsStruct(op2) && varTypeIsStruct(info.compRetType)));
-#else
+            // Note that we allow TYP_I_IMPL<->TYP_BYREF transformation, but only TYP_I_IMPL<-TYP_REF.
             assertImp((genActualType(op2->TypeGet()) == genActualType(info.compRetType)) ||
                       ((op2->TypeGet() == TYP_I_IMPL) && TypeIs(info.compRetType, TYP_BYREF)) ||
                       (op2->TypeIs(TYP_BYREF, TYP_REF) && (info.compRetType == TYP_I_IMPL)) ||
                       (varTypeIsFloating(op2->gtType) && varTypeIsFloating(info.compRetType)) ||
                       (varTypeIsStruct(op2) && varTypeIsStruct(info.compRetType)));
-#endif
 
 #ifdef DEBUG
             if (!isTailCall && opts.compGcChecks && (info.compRetType == TYP_REF))
@@ -18169,17 +17998,9 @@ SPILLSTACK:
             }
             else if (genActualType(tree->gtType) == TYP_INT && lvaTable[tempNum].lvType == TYP_I_IMPL)
             {
-// Spill clique has decided this should be "native int", but this block only pushes an "int".
-// Insert a sign-extension to "native int" so we match the clique.
-#ifdef TARGET_LOONGARCH64
-                if (tree->gtOper == GT_CNS_INT)
-                {
-                    tree->gtType = TYP_I_IMPL;
-                    tree->SetContained();
-                }
-                else
-#endif
-                    verCurrentState.esStack[level].val = gtNewCastNode(TYP_I_IMPL, tree, false, TYP_I_IMPL);
+                // Spill clique has decided this should be "native int", but this block only pushes an "int".
+                // Insert a sign-extension to "native int" so we match the clique.
+                verCurrentState.esStack[level].val = gtNewCastNode(TYP_I_IMPL, tree, false, TYP_I_IMPL);
             }
 
             // Consider the case where one branch left a 'byref' on the stack and the other leaves
@@ -18199,17 +18020,9 @@ SPILLSTACK:
             }
             else if (genActualType(tree->gtType) == TYP_INT && lvaTable[tempNum].lvType == TYP_BYREF)
             {
-// Spill clique has decided this should be "byref", but this block only pushes an "int".
-// Insert a sign-extension to "native int" so we match the clique size.
-#ifdef TARGET_LOONGARCH64
-                if (tree->gtOper == GT_CNS_INT)
-                {
-                    tree->gtType = TYP_I_IMPL;
-                    tree->SetContained();
-                }
-                else
-#endif
-                    verCurrentState.esStack[level].val = gtNewCastNode(TYP_I_IMPL, tree, false, TYP_I_IMPL);
+                // Spill clique has decided this should be "byref", but this block only pushes an "int".
+                // Insert a sign-extension to "native int" so we match the clique size.
+                verCurrentState.esStack[level].val = gtNewCastNode(TYP_I_IMPL, tree, false, TYP_I_IMPL);
             }
 
 #endif // TARGET_64BIT
@@ -20934,13 +20747,8 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             return false;
     }
 #elif defined(TARGET_LOONGARCH64)
-    switch (intrinsicName)
-    {
-        // LOONGARCH64: will amend in the future
-
-        default:
-            return false;
-    }
+    // TODO-LoongArch64: add some instrinsics.
+    return false;
 #else
     // TODO: This portion of logic is not implemented for other arch.
     // The reason for returning true is that on all other arch the only intrinsic

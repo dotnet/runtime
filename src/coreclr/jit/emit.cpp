@@ -744,6 +744,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         ig->igFlags |= IGF_BYREF_REGS;
 
         // We'll allocate extra space (DWORD aligned) to record the GC regs
+
         gs += sizeof(int);
     }
 
@@ -756,6 +757,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
     if (ig->igFlags & IGF_BYREF_REGS)
     {
         // Record the byref regs in front the of the instructions
+
         *castto(id, unsigned*)++ = (unsigned)emitInitByrefRegs;
     }
 
@@ -4332,7 +4334,6 @@ AGAIN:
                                lstIG->igOffs - adjIG);
                     }
 #endif // DEBUG
-
                     lstIG->igOffs -= adjIG;
                     assert(IsCodeAligned(lstIG->igOffs));
                 } while (lstIG != jmpIG);
@@ -4846,7 +4847,6 @@ AGAIN:
             goto AGAIN;
         }
     }
-
 #ifdef DEBUG
     if (EMIT_INSTLIST_VERBOSE)
     {

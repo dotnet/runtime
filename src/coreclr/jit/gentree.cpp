@@ -13806,16 +13806,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
         case TYP_INT:
 
-#ifdef TARGET_LOONGARCH64
-            // For LoongArch64's instructions operation of the 64bits and 32bits using the whole
-            // 64bits-width register which is unlike the AMD64 and ARM64.
-            // And the INT type instruction will be signed-extend by default.
-            // e.g. 'ld_w $r4, $5, 4' and `addi_w $r4,$r5,-1` the result of INT
-            // will be signed-extend by default.
-            assert(tree->TypeIs(TYP_INT, TYP_LONG) || varTypeIsGC(tree) || tree->OperIs(GT_MKREFANY));
-#else
             assert(tree->TypeIs(TYP_INT) || varTypeIsGC(tree) || tree->OperIs(GT_MKREFANY));
-#endif
             // No GC pointer types should be folded here...
             assert(!varTypeIsGC(op1->TypeGet()) && !varTypeIsGC(op2->TypeGet()));
 

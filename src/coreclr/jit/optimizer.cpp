@@ -5092,14 +5092,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
     unsigned   kind;
 
     noway_assert(tree);
-#ifndef TARGET_LOONGARCH64
-    // For LoongArch64's instructions operation of the 64bits and 32bits using the whole
-    // 64bits-width register which is unlike the AMD64 and ARM64.
-    // And the INT type instruction will be signed-extend by default.
-    // e.g. 'ld_w $r4, $5, 4' and `addi_w $r4,$r5,-1` the result of INT
-    // will be signed-extend by default. So `LONG != INT(but default is LONG)`
     noway_assert(genActualType(tree->gtType) == genActualType(srct));
-#endif
 
     /* Assume we're only handling integer types */
     noway_assert(varTypeIsIntegral(srct));
@@ -5267,18 +5260,8 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
         switch (tree->gtOper)
         {
             case GT_AND:
-#ifdef TARGET_LOONGARCH64
-                // For LoongArch64's instructions operation of the 64bits and 32bits using the whole
-                // 64bits-width register which is unlike the AMD64 and ARM64.
-                // And the INT type instruction will be signed-extend by default.
-                // e.g. 'ld_w $r4, $5, 4' and `addi_w $r4,$r5,-1` the result of INT
-                // will be signed-extend by default. So `LONG != INT(but default is LONG)`
-                noway_assert(genTypeSize(genActualType(tree->gtType)) >= genTypeSize(genActualType(op1->gtType)));
-                noway_assert(genTypeSize(genActualType(tree->gtType)) >= genTypeSize(genActualType(op2->gtType)));
-#else
                 noway_assert(genActualType(tree->gtType) == genActualType(op1->gtType));
                 noway_assert(genActualType(tree->gtType) == genActualType(op2->gtType));
-#endif
 
                 GenTree* opToNarrow;
                 opToNarrow = nullptr;
