@@ -5,6 +5,7 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
     <Platform>AnyCPU</Platform>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <IsShipping>false</IsShipping>
     <OutputPath>$(RuntimeBinDir)\InjectResource</OutputPath>
   </PropertyGroup>
