@@ -39,7 +39,7 @@ static void EnsureLibSsl10Initialized()
 #endif
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-// redirect all SSL_CTX_set_options and SSL_set_options calss via dynamic shims
+// redirect all SSL_CTX_set_options and SSL_set_options calls via dynamic shims
 // to work around ABI breaking change between 1.1 and 3.0
 
 #undef SSL_CTX_set_options
