@@ -14,5 +14,5 @@ ifndef DOTNET_ROOT
 $(error DOTNET_ROOT is undefined. Example: export DOTNET_ROOT=~/dotnet7)
 endif
 ifndef BROWSER_WASM_RUNTIME_PATH
-$(error BROWSER_WASM_RUNTIME_PATH is undefined. Example: export BROWSER_WASM_RUNTIME_PATH=$(DOTNET_ROOT)/packs/Microsoft.NETCore.App.Runtime.Mono.browser-wasm/7.0.0-alpha.1.22061.11/runtimes/browser-wasm)
+$(error BROWSER_WASM_RUNTIME_PATH is undefined. Example: export BROWSER_WASM_RUNTIME_PATH=$(DOTNET_ROOT)/packs/Microsoft.NETCore.App.Runtime.Mono.browser-wasm/7.0.0-preview.3.22151.6/runtimes/browser-wasm)
 endif
