@@ -4945,15 +4945,19 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         }
     }
 
-    //
-    // Compute reachability and remove unreachable blocks, if any.
-    //
-    auto computeReachability = [this]() {
+    ////
+    //// Compute reachability and remove unreachable blocks, if any.
+    ////
+    //auto computeReachability = [this]() {
 
-        EnsureBasicBlockEpoch();
-        fgComputeReachability(/* computeDoms */ false, /* doRenumbering */ false);
-    };
-    DoPhase(this, PHASE_COMPUTE_REACHABILITY, computeReachability);
+    //    EnsureBasicBlockEpoch();
+    //    fgComputeReachability(/* computeDoms */ false, /* doRenumbering */ false);
+    //};
+    //DoPhase(this, PHASE_REMOVE_DEAD_BLOCKS, computeReachability);
+
+
+    // Remove dead blocks
+    DoPhase(this, PHASE_REMOVE_DEAD_BLOCKS, &Compiler::fgRemoveDeadBlocks);
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);

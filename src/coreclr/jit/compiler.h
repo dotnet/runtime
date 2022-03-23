@@ -5775,10 +5775,17 @@ protected:
     void fgComputeEnterBlocksSet(DEBUG_ARG1(bool renumberingDone = true)); // Compute the set of entry blocks,
                                                                            // 'fgEnterBlks'.
 
-    bool fgRemoveUnreachableBlocks(); // Remove blocks determined to be unreachable by the bbReach sets.
+    template <typename CanRemoveBlockBody>
+    bool fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock); // Remove blocks determined to be
+                                                                               // unreachable by
+                                                                        // the bbReach sets.
+
+    //bool fgRemoveUnreachableBlocks(bool (*_action)(BasicBlock* block)); // Remove blocks determined to be unreachable by the bbReach sets.
 
     void fgComputeReachability(bool computeDoms = true, bool doRenumber = true); // Perform flow graph node reachability
                                                                                  // analysis.
+
+    void fgRemoveDeadBlocks();
 
     BasicBlock* fgIntersectDom(BasicBlock* a, BasicBlock* b); // Intersect two immediate dominator sets.
 

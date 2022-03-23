@@ -429,10 +429,11 @@ void Compiler::fgComputeEnterBlocksSet(DEBUG_ARG1(const bool renumberingDone))
 // Assumptions:
 //    The reachability sets must be computed and valid.
 //
-bool Compiler::fgRemoveUnreachableBlocks()
+
+template <typename CanRemoveBlockBody>
+bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
 {
     assert(!fgCheapPredsValid);
-    assert(fgReachabilitySetsValid);
 
     bool hasUnreachableBlocks = false;
     bool changed              = false;
@@ -454,18 +455,10 @@ bool Compiler::fgRemoveUnreachableBlocks()
         }
         else
         {
-            // If any of the entry blocks can reach this block, then we skip it.
-            if (!BlockSetOps::IsEmptyIntersection(this, fgEnterBlks, block->bbReach))
+            if (!canRemoveBlock(block))
             {
                 continue;
             }
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-            if (!BlockSetOps::IsEmptyIntersection(this, fgAlwaysBlks, block->bbReach))
-            {
-                continue;
-            }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         }
 
         // Remove all the code for the block
@@ -579,6 +572,25 @@ void Compiler::fgComputeReachability(const bool computeDoms, const bool doRenumb
     // The dominator algorithm expects that all blocks can be reached from the fgEnterBlks set.
     unsigned passNum = 1;
     bool     changed;
+
+    auto canRemoveBlock = [&](BasicBlock* block) -> bool
+    {
+        // If any of the entry blocks can reach this block, then we skip it.
+        if (!BlockSetOps::IsEmptyIntersection(this, fgEnterBlks, block->bbReach))
+        {
+            return false;
+        }
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+        if (!BlockSetOps::IsEmptyIntersection(this, fgAlwaysBlks, block->bbReach))
+        {
+            return false;
+        }
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+
+        return true;
+    };
+
     do
     {
         // Just to be paranoid, avoid infinite loops; fall back to minopts.
@@ -611,7 +623,7 @@ void Compiler::fgComputeReachability(const bool computeDoms, const bool doRenumb
         // Use reachability information to delete unreachable blocks.
         //
 
-        changed = fgRemoveUnreachableBlocks();
+        changed = fgRemoveUnreachableBlocks(canRemoveBlock);
 
     } while (changed);
 
@@ -635,6 +647,51 @@ void Compiler::fgComputeReachability(const bool computeDoms, const bool doRenumb
 
         fgComputeDoms();
     }
+}
+
+
+void Compiler::fgRemoveDeadBlocks()
+{
+    EnsureBasicBlockEpoch();
+    BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
+    jitstd::list<BasicBlock*> worklist(jitstd::allocator<void>(getAllocator(CMK_Reachability)));
+
+    worklist.insert(worklist.begin(), fgFirstBB);
+    while (!worklist.empty())
+    {
+        BasicBlock* block = *(worklist.begin());
+        worklist.erase(worklist.begin());
+
+        if (BlockSetOps::IsMember(this, visitedBlocks, block->bbNum))
+        {
+            continue;
+        }
+
+        BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
+
+        for (BasicBlock* succ : block->GetAllSuccs(this))
+        {
+            worklist.insert(worklist.end(), succ);
+        }
+    }
+
+    auto isBlockRemovable = [&](BasicBlock* block) -> bool
+    {
+        return !BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
+    };
+
+    unsigned passNum = 1;
+    bool     changed;
+    do
+    {
+        // Just to be paranoid, avoid infinite loops; fall back to minopts.
+        if (passNum > 10)
+        {
+            noway_assert(!"Too many unreachable block removal loops");
+        }
+        passNum++;
+        changed = fgRemoveUnreachableBlocks(isBlockRemovable);
+    } while (changed);
 }
 
 //-------------------------------------------------------------

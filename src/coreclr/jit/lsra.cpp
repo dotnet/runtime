@@ -1044,6 +1044,33 @@ int LinearScan::compareBlocksForSequencing(BasicBlock* block1, BasicBlock* block
         }
     }
 
+   /* unsigned block1Reach =
+        BlockSetOps::MayBeUninit(block1->bbReach) ? 0 : BlockSetOps::Count(compiler, block1->bbReach);
+    unsigned block2Reach =
+        BlockSetOps::MayBeUninit(block2->bbReach) ? 0 : BlockSetOps::Count(compiler, block2->bbReach);*/
+
+    //if (block1Reach < block2Reach)
+    //{
+    //    return -1;
+    //}
+    //else if (block1Reach > block2Reach)
+    //{
+    //    return 1;
+    //}
+
+    //if (block1->countOfInEdges() > block2->countOfInEdges())
+    //{
+    //    return 1;
+    //}
+    //else if (block1->countOfInEdges() < block2->countOfInEdges())
+    //{
+    //    return -1;
+    //}
+    /*else
+    {
+        assert(!"failed");
+    }*/
+
     // If weights are the same prefer LOWER bbnum
     if (block1->bbNum < block2->bbNum)
     {
