@@ -2221,6 +2221,15 @@
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_QuickJitOn_R2r/*">
           <Issue>missing assembly</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)Interop/MonoAPI/MonoMono/PInvokeDetach/*">
+          <Issue>https://github.com/dotnet/runtime/issues/67047</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)Interop/MonoAPI/MonoMono/Thunks/*">
+          <Issue>https://github.com/dotnet/runtime/issues/67047</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)Interop/MonoAPI/MonoMono/InstallEHCallback/*">
+          <Issue>https://github.com/dotnet/runtime/issues/67047</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in interpreter runtime mode -->
