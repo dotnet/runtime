@@ -88,7 +88,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
  * mono_arch_get_call_filter:
  *
  * Returns a pointer to a method which calls an exception filter. We
- * also use this function to call finally handlers (we pass NULL as 
+ * also use this function to call finally handlers (we pass NULL as
  * @exc object in this case).
  *
  * This function is invoked as
@@ -222,13 +222,13 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gboolean
 /**
  * arch_get_throw_exception_generic:
  *
- * Returns a function pointer which can be used to raise 
- * exceptions. The returned function has the following 
+ * Returns a function pointer which can be used to raise
+ * exceptions. The returned function has the following
  * signature: void (*func) (MonoException *exc); or
  * void (*func) (char *exc_name);
  *
  */
-static gpointer 
+static gpointer
 mono_arch_get_throw_exception_generic (guint8 *start, int size, int corlib, gboolean rethrow, gboolean preserve_ips)
 {
 	guint8 *code;
@@ -298,9 +298,9 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int corlib, gboo
 
 /**
  * mono_arch_get_rethrow_exception:
- * \returns a function pointer which can be used to rethrow 
- * exceptions. The returned function has the following 
- * signature: void (*func) (MonoException *exc); 
+ * \returns a function pointer which can be used to rethrow
+ * exceptions. The returned function has the following
+ * signature: void (*func) (MonoException *exc);
  */
 gpointer
 mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
@@ -323,8 +323,8 @@ mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
  * mono_arch_get_rethrow_preserve_exception:
  * \returns a function pointer which can be used to rethrow
  * exceptions while avoiding modification of saved trace_ips.
- * The returned function has the following 
- * signature: void (*func) (MonoException *exc); 
+ * The returned function has the following
+ * signature: void (*func) (MonoException *exc);
  */
 gpointer
 mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
@@ -346,13 +346,13 @@ mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
 /**
  * arch_get_throw_exception:
  *
- * Returns a function pointer which can be used to raise 
- * exceptions. The returned function has the following 
- * signature: void (*func) (MonoException *exc); 
+ * Returns a function pointer which can be used to raise
+ * exceptions. The returned function has the following
+ * signature: void (*func) (MonoException *exc);
  * For example to raise an arithmetic exception you can use:
  *
- * x86_push_imm (code, mono_get_exception_arithmetic ()); 
- * x86_call_code (code, arch_get_throw_exception ()); 
+ * x86_push_imm (code, mono_get_exception_arithmetic ());
+ * x86_call_code (code, arch_get_throw_exception ());
  *
  */
 gpointer
@@ -372,13 +372,13 @@ mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 	return start;
 }
 
-gpointer 
+gpointer
 mono_arch_get_throw_exception_by_name (void)
 {
 	guint8 *start, *code;
 	int size = 64;
 
-	/* Not used on MIPS */	
+	/* Not used on MIPS */
 	start = code = mono_global_codeman_reserve (size);
 	mips_break (code, 0xfd);
 	mono_arch_flush_icache (start, code - start);
@@ -388,9 +388,9 @@ mono_arch_get_throw_exception_by_name (void)
 
 /**
  * mono_arch_get_throw_corlib_exception:
- * \returns a function pointer which can be used to raise 
- * corlib exceptions. The returned function has the following 
- * signature: void (*func) (guint32 ex_token, guint32 offset); 
+ * \returns a function pointer which can be used to raise
+ * corlib exceptions. The returned function has the following
+ * signature: void (*func) (guint32 ex_token, guint32 offset);
  * On MIPS, the offset argument is missing.
  */
 gpointer
@@ -419,9 +419,9 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
  * Returns TRUE on success, FALSE otherwise.
  */
 gboolean
-mono_arch_unwind_frame (MonoJitTlsData *jit_tls, 
-						MonoJitInfo *ji, MonoContext *ctx, 
-						MonoContext *new_ctx, MonoLMF **lmf, 
+mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
+						MonoJitInfo *ji, MonoContext *ctx,
+						MonoContext *new_ctx, MonoLMF **lmf,
 						host_mgreg_t **save_locations,
 						StackFrameInfo *frame)
 {
@@ -448,7 +448,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 		for (i = 0; i < MONO_MAX_IREGS; ++i)
 			regs [i] = new_ctx->sc_regs [i];
 
-		gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
+		gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start,
 						   (guint8*)ji->code_start + ji->code_size,
 						   ip, NULL, regs, MONO_MAX_IREGS,
 						   save_locations, MONO_MAX_IREGS, &cfa);
@@ -562,7 +562,7 @@ mono_arch_handle_exception (void *ctx, gpointer obj)
 
 	result = mono_handle_exception (&mctx, obj);
 	/* restore the context so that returning from the signal handler will invoke
-	 * the catch clause 
+	 * the catch clause
 	 */
 	mono_monoctx_to_sigctx (&mctx, ctx);
 	return result;

@@ -1152,6 +1152,9 @@ HRESULT ClrDataAccess::GetTieredVersions(
                 case NativeCodeVersion::OptimizationTier1:
                     nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_OptimizedTier1;
                     break;
+                case NativeCodeVersion::OptimizationTier1OSR:
+                    nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_OptimizedTier1OSR;
+                    break;
                 case NativeCodeVersion::OptimizationTierOptimized:
                     nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Optimized;
                     break;
@@ -2607,10 +2610,7 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS cdBaseDomainPtr, CLRDATA_ADDRESS 
     assemblyData->ModuleCount = 0;
     assemblyData->isDomainNeutral = FALSE;
 
-    pAssembly->GetManifestFile();
-
-    ModuleIterator mi = pAssembly->IterateModules();
-    while (mi.Next())
+    if (pAssembly->GetModule())
     {
         assemblyData->ModuleCount++;
     }
@@ -2628,17 +2628,17 @@ ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, _In
     if (name)
         name[0] = 0;
 
-    if (!pAssembly->GetManifestFile()->GetPath().IsEmpty())
+    if (!pAssembly->GetPEAssembly()->GetPath().IsEmpty())
     {
-        if (!pAssembly->GetManifestFile()->GetPath().DacGetUnicode(count, name, pNeeded))
+        if (!pAssembly->GetPEAssembly()->GetPath().DacGetUnicode(count, name, pNeeded))
             hr = E_FAIL;
         else if (name)
             name[count-1] = 0;
     }
-    else if (!pAssembly->GetManifestFile()->IsDynamic())
+    else if (!pAssembly->GetPEAssembly()->IsDynamic())
     {
         StackSString displayName;
-        pAssembly->GetManifestFile()->GetDisplayName(displayName, 0);
+        pAssembly->GetPEAssembly()->GetDisplayName(displayName, 0);
 
         const WCHAR *val = displayName.GetUnicode();
 
@@ -2673,9 +2673,9 @@ ClrDataAccess::GetAssemblyLocation(CLRDATA_ADDRESS assembly, int count, _Inout_u
     Assembly* pAssembly = PTR_Assembly(TO_TADDR(assembly));
 
     // Turn from bytes to wide characters
-    if (!pAssembly->GetManifestFile()->GetPath().IsEmpty())
+    if (!pAssembly->GetPEAssembly()->GetPath().IsEmpty())
     {
-        if (!pAssembly->GetManifestFile()->GetPath().
+        if (!pAssembly->GetPEAssembly()->GetPath().
             DacGetUnicode(count, location, pNeeded))
         {
             hr = E_FAIL;
@@ -2703,21 +2703,14 @@ ClrDataAccess::GetAssemblyModuleList(CLRDATA_ADDRESS assembly, unsigned int coun
     SOSDacEnter();
 
     Assembly* pAssembly = PTR_Assembly(TO_TADDR(assembly));
-    ModuleIterator mi = pAssembly->IterateModules();
-    unsigned int n = 0;
     if (modules)
     {
-        while (mi.Next() && n < count)
-            modules[n++] = HOST_CDADDR(mi.GetModule());
-    }
-    else
-    {
-        while (mi.Next())
-            n++;
+        if (pAssembly->GetModule() && count > 0)
+            modules[0] = HOST_CDADDR(pAssembly->GetModule());
     }
 
     if (pNeeded)
-        *pNeeded = n;
+        *pNeeded = 1;
 
     SOSDacLeave();
     return hr;
@@ -5150,6 +5143,22 @@ HRESULT ClrDataAccess::GetTaggedMemory(
         hr = S_FALSE;
     }
 
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetGlobalAllocationContext(
+        CLRDATA_ADDRESS *allocPtr,
+        CLRDATA_ADDRESS *allocLimit)
+{
+    if (allocPtr == nullptr || allocLimit == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+    *allocPtr = (CLRDATA_ADDRESS)((&g_global_alloc_context)->alloc_ptr);
+    *allocLimit = (CLRDATA_ADDRESS)((&g_global_alloc_context)->alloc_limit);
     SOSDacLeave();
     return hr;
 }

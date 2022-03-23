@@ -34,14 +34,14 @@ make_room_in_stream (MonoDynamicStream *stream, int size)
 
 	if (size <= stream->alloc_size)
 		return;
-	
+
 	while (stream->alloc_size <= size) {
 		if (stream->alloc_size < 4096)
 			stream->alloc_size = 4096;
 		else
 			stream->alloc_size *= 2;
 	}
-	
+
 	stream->data = (char *)g_realloc (stream->data, stream->alloc_size);
 }
 
@@ -51,7 +51,7 @@ mono_dynstream_insert_string (MonoDynamicStream *sh, const char *str)
 	MONO_REQ_GC_NEUTRAL_MODE;
 
 	guint32 idx;
-	guint32 len;
+	size_t len;
 	gpointer oldkey, oldval;
 
 	if (g_hash_table_lookup_extended (sh->hash, str, &oldkey, &oldval))
@@ -59,8 +59,8 @@ mono_dynstream_insert_string (MonoDynamicStream *sh, const char *str)
 
 	len = strlen (str) + 1;
 	idx = sh->index;
-	
-	make_room_in_stream (sh, idx + len);
+
+	make_room_in_stream (sh, (int)(idx + len));
 
 	/*
 	 * We strdup the string even if we already copy them in sh->data
@@ -69,7 +69,7 @@ mono_dynstream_insert_string (MonoDynamicStream *sh, const char *str)
 	 */
 	g_hash_table_insert (sh->hash, g_strdup (str), GUINT_TO_POINTER (idx));
 	memcpy (sh->data + idx, str, len);
-	sh->index += len;
+	sh->index += (guint32)len;
 	return idx;
 }
 
@@ -93,12 +93,12 @@ mono_dynstream_add_data (MonoDynamicStream *stream, gconstpointer data, guint32 
 	MONO_REQ_GC_NEUTRAL_MODE;
 
 	guint32 idx;
-	
+
 	make_room_in_stream (stream, stream->index + len);
 	memcpy (stream->data + stream->index, data, len);
 	idx = stream->index;
 	stream->index += len;
-	/* 
+	/*
 	 * align index? Not without adding an additional param that controls it since
 	 * we may store a blob value in pieces.
 	 */
@@ -111,7 +111,7 @@ mono_dynstream_add_zero (MonoDynamicStream *stream, guint32 len)
 	MONO_REQ_GC_NEUTRAL_MODE;
 
 	guint32 idx;
-	
+
 	make_room_in_stream (stream, stream->index + len);
 	memset (stream->data + stream->index, 0, len);
 	idx = stream->index;

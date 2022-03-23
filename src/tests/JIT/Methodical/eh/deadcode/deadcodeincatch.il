@@ -9,7 +9,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly extern common {}
+.assembly extern eh_common {}
 .assembly 'deadcodeincatch'
 {
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -19,21 +19,13 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-// MVID: {3B8B6D1B-A317-4591-BD66-1D1000E3767F}
-.imagebase 0x00400000
-.subsystem 0x00000003
-.file alignment 512
-.corflags 0x00000001
-// Image base: 0x03010000
-//
-// ============== CLASS STRUCTURE DECLARATION ==================
-//
+
 .namespace hello
 {
   .class private auto ansi beforefieldinit Class1
          extends [mscorlib]System.Object
   {
-    .field private static class [common]TestUtil.TestLog testLog
+    .field private static class [eh_common]TestUtil.TestLog testLog
     .method private hidebysig specialname rtspecialname static void  .cctor() cil managed
         {
             .maxstack  3
@@ -56,34 +48,11 @@
             ldstr      "Pass"
             callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
             ldloc.s    expectedOut
-            newobj     instance void [common]TestUtil.TestLog::.ctor(object)
-            stsfld     class [common]TestUtil.TestLog hello.Class1::testLog
+            newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
+            stsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
             ret
     } // end of method Class1::.cctor
-    
-  } // end of class Class1
 
-} // end of namespace hello
-
-
-// =============================================================
-
-
-// =============== GLOBAL FIELDS AND METHODS ===================
-
-
-// =============================================================
-
-
-// =============== CLASS MEMBERS DECLARATION ===================
-//   note that class flags, 'extends' and 'implements' clauses
-//          are provided here for information only
-
-.namespace hello
-{
-  .class private auto ansi beforefieldinit Class1
-         extends [mscorlib]System.Object
-  {
     .method public hidebysig static void 
             inTry() cil managed
     {
@@ -113,7 +82,7 @@
     } // end of method Class1::inFinally
 
     .method public hidebysig static int32 
-            Main(string[] args) cil managed
+            Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
@@ -137,8 +106,8 @@
              
     starttest:
       // Start recording
-      ldsfld     class [common]TestUtil.TestLog hello.Class1::testLog
-      callvirt   instance void [common]TestUtil.TestLog::StartRecording()
+      ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+      callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
       ldarg.0
       stloc.0
       .try
@@ -189,12 +158,12 @@
         call       void [System.Console]System.Console::WriteLine(string)
         
         // stop recoding
-        ldsfld     class [common]TestUtil.TestLog hello.Class1::testLog
-        callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+        ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+        callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
       
         // verify output
-        ldsfld     class [common]TestUtil.TestLog hello.Class1::testLog
-        callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+        ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+        callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
         stloc.3
        done:
         ldloc.3
@@ -212,11 +181,4 @@
     } // end of method Class1::.ctor
 
   } // end of class Class1
-
-
-// =============================================================
-
 } // end of namespace hello
-
-//*********** DISASSEMBLY COMPLETE ***********************
-// WARNING: Created Win32 resource file deadcodeincatch.res

@@ -12,7 +12,7 @@ namespace ABIStress
         internal const string PInvokerPrefix = "ABIStress_PInvoker";
         internal const string PInvokeePrefix = "ABIStress_PInvokee";
 
-        internal const string InstantiatingStubPrefix = "ABIStress_InstantiatingStub_";
+        internal const string StubPrefix = "ABIStress_Stub_";
 
         internal static StressModes StressModes { get; set; } = StressModes.None;
         

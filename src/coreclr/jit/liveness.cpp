@@ -245,6 +245,8 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             break;
 
         case GT_IND:
+        case GT_OBJ:
+        case GT_BLK:
             // For Volatile indirection, first mutate GcHeap/ByrefExposed
             // see comments in ValueNum.cpp (under case GT_CLS_VAR)
             // This models Volatile reads as def-then-use of memory.
@@ -1829,13 +1831,37 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
             bool isDeadStore = fgComputeLifeLocal(life, keepAliveVars, tree);
             if (isDeadStore)
             {
-                LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
+                LclVarDsc* varDsc       = lvaGetDesc(tree->AsLclVarCommon());
+                bool       isUse        = (tree->gtFlags & GTF_VAR_USEASG) != 0;
+                bool       doAgain      = false;
+                bool       storeRemoved = false;
 
-                bool doAgain = false;
-                if (fgRemoveDeadStore(&tree, varDsc, life, &doAgain, pStmtInfoDirty DEBUGARG(treeModf)))
+                if (fgRemoveDeadStore(&tree, varDsc, life, &doAgain, pStmtInfoDirty, &storeRemoved DEBUGARG(treeModf)))
                 {
                     assert(!doAgain);
                     break;
+                }
+
+                if (isUse && !storeRemoved)
+                {
+                    // SSA and VN treat "partial definitions" as true uses, so for this
+                    // front-end liveness pass we must add them to the live set in case
+                    // we failed to remove the dead store.
+                    if (varDsc->lvTracked)
+                    {
+                        VarSetOps::AddElemD(this, life, varDsc->lvVarIndex);
+                    }
+                    if (varDsc->lvPromoted)
+                    {
+                        for (unsigned fieldIndex = 0; fieldIndex < varDsc->lvFieldCnt; fieldIndex++)
+                        {
+                            LclVarDsc* fieldVarDsc = lvaGetDesc(varDsc->lvFieldLclStart + fieldIndex);
+                            if (fieldVarDsc->lvTracked)
+                            {
+                                VarSetOps::AddElemD(this, life, fieldVarDsc->lvVarIndex);
+                            }
+                        }
+                    }
                 }
 
                 if (doAgain)
@@ -2066,15 +2092,22 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_PUTARG_STK:
             case GT_IL_OFFSET:
             case GT_KEEPALIVE:
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
-#endif // FEATURE_HW_INTRINSICS
                 // Never remove these nodes, as they are always side-effecting.
                 //
                 // NOTE: the only side-effect of some of these nodes (GT_CMP, GT_SUB_HI) is a write to the flags
                 // register.
                 // Properly modeling this would allow these nodes to be removed.
                 break;
+
+#ifdef FEATURE_HW_INTRINSICS
+            case GT_HWINTRINSIC:
+                // Conservative: This only removes Vector.Zero nodes, but could be expanded.
+                if (node->IsVectorZero())
+                {
+                    fgTryRemoveNonLocal(node, &blockRange);
+                }
+                break;
+#endif // FEATURE_HW_INTRINSICS
 
             case GT_NOP:
             {
@@ -2090,7 +2123,6 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 
             case GT_BLK:
             case GT_OBJ:
-            case GT_DYN_BLK:
             {
                 bool removed = fgTryRemoveNonLocal(node, &blockRange);
                 if (!removed && node->IsUnusedValue())
@@ -2190,14 +2222,17 @@ void Compiler::fgRemoveDeadStoreLIR(GenTree* store, BasicBlock* block)
 //   life           - current live tracked vars (maintained as we walk backwards)
 //   doAgain        - out parameter, true if we should restart the statement
 //   pStmtInfoDirty - should defer the cost computation to the point after the reverse walk is completed?
+//   pStoreRemoved  - whether the assignment part of the store was removed
 //
-// Returns: true if we should skip the rest of the statement, false if we should continue
-
+// Return Value:
+//   true if we should skip the rest of the statement, false if we should continue
+//
 bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
                                  LclVarDsc*       varDsc,
                                  VARSET_VALARG_TP life,
                                  bool*            doAgain,
-                                 bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
+                                 bool*            pStmtInfoDirty,
+                                 bool* pStoreRemoved DEBUGARG(bool* treeModf))
 {
     assert(!compRationalIRForm);
 
@@ -2209,8 +2244,9 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
     GenTree*       rhsNode  = nullptr;
     GenTree*       addrNode = nullptr;
     GenTree* const tree     = *pTree;
+    GenTree*       nextNode = tree->gtNext;
 
-    GenTree* nextNode = tree->gtNext;
+    *pStoreRemoved = false;
 
     // First, characterize the lclVarTree and see if we are taking its address.
     if (tree->OperIsLocalStore())
@@ -2292,6 +2328,19 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
         return false;
     }
 
+    // Do not remove if this local variable represents
+    // a promoted struct field of an address exposed local.
+    if (varDsc->lvIsStructField && lvaTable[varDsc->lvParentLcl].IsAddressExposed())
+    {
+        return false;
+    }
+
+    // Do not remove if the address of the variable has been exposed.
+    if (varDsc->IsAddressExposed())
+    {
+        return false;
+    }
+
     if (asgNode->gtFlags & GTF_ASG)
     {
         noway_assert(rhsNode);
@@ -2299,18 +2348,8 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
 
         assert(asgNode->OperIs(GT_ASG));
 
-        // Do not remove if this local variable represents
-        // a promoted struct field of an address exposed local.
-        if (varDsc->lvIsStructField && lvaTable[varDsc->lvParentLcl].IsAddressExposed())
-        {
-            return false;
-        }
-
-        // Do not remove if the address of the variable has been exposed.
-        if (varDsc->IsAddressExposed())
-        {
-            return false;
-        }
+        // We are now commited to removing the store.
+        *pStoreRemoved = true;
 
         // Check for side effects
         GenTree* sideEffList = nullptr;
@@ -2486,6 +2525,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
             return false;
         }
     }
+
     return false;
 }
 

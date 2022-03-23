@@ -69,6 +69,19 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [InlineData("MyAssemblyName, Version=1.0.0.0, PublicKeyToken=b77a5c561934e089", "MyAssemblyName, Version=1.0.0.0, PublicKeyToken=b77a5c561934e089")]
+        [InlineData("MyAssemblyName, Version=1.0.0.0, PublicKey=00000000000000000400000000000000", "MyAssemblyName, Version=1.0.0.0, PublicKeyToken=b77a5c561934e089")]
+        [InlineData("TerraFX.Interop.Windows, PublicKey=" +
+            "002400000c800000940000000602000000240000525341310004000001000100897039f5ff762b25b9ba982c3f5836c34e299279c33df505bf806a07bccdf0e1216e661943f557b954cb18422ed522a5" +
+            "b3174b85385052677f39c4ce19f30a1ddbaa507054bc5943461651f396afc612cd80419c5ee2b5277571ff65f51d14ba99e4e4196de0f393e89850a465f019dbdc365ed5e81bbafe1370f54efd254ba8",
+            "TerraFX.Interop.Windows, PublicKeyToken=35b01b53313a6f7e")]
+        public void Ctor_String_Public_Key(string name, string expectedName)
+        {
+            AssemblyName assemblyName = new AssemblyName(name);
+            Assert.Equal(expectedName, assemblyName.FullName);
+        }
+
+        [Theory]
         [InlineData(null, typeof(ArgumentNullException))]
         [InlineData("", typeof(ArgumentException))]
         [InlineData("\0", typeof(ArgumentException))]
@@ -76,7 +89,36 @@ namespace System.Reflection.Tests
         [InlineData("/a", typeof(FileLoadException))]
         [InlineData("           ", typeof(FileLoadException))]
         [InlineData("  \t \r \n ", typeof(FileLoadException))]
+        [InlineData("aa, culture=en-en, culture=en-en", typeof(FileLoadException))]
+        [InlineData("MyAssemblyName, PublicKey=00000000000000000400000000000000, PublicKeyToken=b77a5c561934e089", typeof(FileLoadException))]
         public void Ctor_String_Invalid(string assemblyName, Type exceptionType)
+        {
+            Assert.Throws(exceptionType, () => new AssemblyName(assemblyName));
+        }
+
+        [Theory]
+        [InlineData("aaaa, language=en-en", "aaaa")]
+        [InlineData("aaaa, foo=bar, foo=baz", "aaaa")]
+        [InlineData("aaaa, foo = bar, foo = bar", "aaaa")]
+        [InlineData("aaaa, custom=10", "aaaa")]
+        [InlineData("aaaa, custom=10, custom=20", "aaaa")]
+        [InlineData("aaaa, custom=lalala", "aaaa")]
+        public void Ctor_String_Valid_Legacy(string name, string expectedName)
+        {
+            AssemblyName assemblyName = new AssemblyName(name);
+            Assert.Equal(expectedName, assemblyName.Name);
+        }
+
+        [Theory]
+        [InlineData("name\\u50; ", typeof(FileLoadException))]
+        [InlineData("aa/name ", typeof(FileLoadException))]
+        [InlineData("aa\\/tname", typeof(FileLoadException))]
+        [InlineData("aaaa, publickey=neutral", typeof(FileLoadException))]
+        [InlineData("aaaa, publickeytoken=neutral", typeof(FileLoadException))]
+        [InlineData("aaaa\0", typeof(FileLoadException))]
+        [InlineData("aaaa\0potato", typeof(FileLoadException))]
+        [InlineData("aaaa, publickeytoken=null\0,culture=en-en", typeof(FileLoadException))]
+        public void Ctor_String_Invalid_Legacy(string assemblyName, Type exceptionType)
         {
             Assert.Throws(exceptionType, () => new AssemblyName(assemblyName));
         }
@@ -86,7 +128,6 @@ namespace System.Reflection.Tests
         [InlineData("na=me", typeof(FileLoadException))]
         [InlineData("na\'me", typeof(FileLoadException))]
         [InlineData("na\"me", typeof(FileLoadException))]
-        [ActiveIssue ("https://github.com/dotnet/runtime/issues/45032", TestRuntimes.Mono)]
         public void Ctor_String_Invalid_Issue(string assemblyName, Type exceptionType)
         {
             Assert.Throws(exceptionType, () => new AssemblyName(assemblyName));
@@ -272,20 +313,13 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34492", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser, "File locking is not respected")]
         public static void GetAssemblyName_LockedFile()
         {
             using (var tempFile = new TempFile(Path.GetTempFileName(), 100))
             using (var fileStream = new FileStream(tempFile.Path, FileMode.Append, FileAccess.Write, FileShare.None))
             {
-                if (PlatformDetection.IsWindows) // File locking is Windows specific.
-                {
-                    Assert.Throws<System.IO.FileLoadException>(() => AssemblyName.GetAssemblyName(tempFile.Path));
-                }
-                else
-                {
-                    Assert.Throws<System.BadImageFormatException>(() => AssemblyName.GetAssemblyName(tempFile.Path));
-                }
+                Assert.Throws<System.IO.IOException>(() => AssemblyName.GetAssemblyName(tempFile.Path));
             }
         }
 

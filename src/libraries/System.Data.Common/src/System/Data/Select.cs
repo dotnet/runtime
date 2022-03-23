@@ -691,7 +691,7 @@ namespace System.Data
                 // use InvariantCulture instead of DataTable.Locale because in the Danish related cultures
                 // sorting a Guid as a string has different results than in Invariant and English related cultures.
                 // This fix is restricted to DataTable.Select("GuidColumn = 'string literal'") types of queries
-                NameNode? namedNode = null;
+                NameNode? namedNode;
                 System.Globalization.CompareInfo? comparer =
                     ((isLConst && !isRConst && (leftType == StorageType.String) && (rightType == StorageType.Guid) && (null != (namedNode = expr._right as NameNode)) && (namedNode._column!.DataType == typeof(Guid))) ||
                      (isRConst && !isLConst && (rightType == StorageType.String) && (leftType == StorageType.Guid) && (null != (namedNode = expr._left as NameNode)) && (namedNode._column!.DataType == typeof(Guid))))

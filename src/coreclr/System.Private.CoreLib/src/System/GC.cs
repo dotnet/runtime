@@ -16,7 +16,6 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -78,10 +77,10 @@ namespace System
             return new GCMemoryInfo(data);
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_StartNoGCRegion")]
-        internal static partial int _StartNoGCRegion(long totalSize, bool lohSizeKnown, long lohSize, bool disallowFullBlockingGC);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_StartNoGCRegion")]
+        internal static partial int _StartNoGCRegion(long totalSize, [MarshalAs(UnmanagedType.Bool)] bool lohSizeKnown, long lohSize, [MarshalAs(UnmanagedType.Bool)] bool disallowFullBlockingGC);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EndNoGCRegion")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EndNoGCRegion")]
         internal static partial int _EndNoGCRegion();
 
         // keep in sync with GC_ALLOC_FLAGS in gcinterface.h
@@ -98,10 +97,10 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int GetGenerationWR(IntPtr handle);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalMemory")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalMemory")]
         private static partial long GetTotalMemory();
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_Collect")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_Collect")]
         private static partial void _Collect(int generation, int mode);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -119,10 +118,10 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern ulong GetGenerationSize(int gen);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_AddMemoryPressure")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_AddMemoryPressure")]
         private static partial void _AddMemoryPressure(ulong bytesAllocated);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RemoveMemoryPressure")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RemoveMemoryPressure")]
         private static partial void _RemoveMemoryPressure(ulong bytesAllocated);
 
         public static void AddMemoryPressure(long bytesAllocated)
@@ -289,7 +288,7 @@ namespace System
         //
         public static int MaxGeneration => GetMaxGeneration();
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForPendingFinalizers")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForPendingFinalizers")]
         private static partial void _WaitForPendingFinalizers();
 
         public static void WaitForPendingFinalizers()
@@ -303,10 +302,8 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void _SuppressFinalize(object o);
 
-        public static void SuppressFinalize(object obj)
+        public static void SuppressFinalize(object obj!!)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
             _SuppressFinalize(obj);
         }
 
@@ -317,10 +314,8 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void _ReRegisterForFinalize(object o);
 
-        public static void ReRegisterForFinalize(object obj)
+        public static void ReRegisterForFinalize(object obj!!)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
             _ReRegisterForFinalize(obj);
         }
 
@@ -352,10 +347,10 @@ namespace System
             return newSize;
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RegisterFrozenSegment")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RegisterFrozenSegment")]
         private static partial IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, nint sectionSize);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_UnregisterFrozenSegment")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_UnregisterFrozenSegment")]
         private static partial void _UnregisterFrozenSegment(IntPtr segmentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -609,10 +604,7 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(lowMemoryPercent));
             }
-            if (notification == null)
-            {
-                throw new ArgumentNullException(nameof(notification));
-            }
+            ArgumentNullException.ThrowIfNull(notification);
 
             lock (s_notifications)
             {
@@ -625,13 +617,8 @@ namespace System
             }
         }
 
-        internal static void UnregisterMemoryLoadChangeNotification(Action notification)
+        internal static void UnregisterMemoryLoadChangeNotification(Action notification!!)
         {
-            if (notification == null)
-            {
-                throw new ArgumentNullException(nameof(notification));
-            }
-
             lock (s_notifications)
             {
                 for (int i = 0; i < s_notifications.Count; ++i)

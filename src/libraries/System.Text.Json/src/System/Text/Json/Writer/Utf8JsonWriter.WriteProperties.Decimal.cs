@@ -49,8 +49,8 @@ namespace System.Text.Json
         /// Writes the <see cref="decimal"/> using the default <see cref="StandardFormat"/> (that is, 'G').
         /// The property name is escaped before writing.
         /// </remarks>
-        public void WriteNumber(string propertyName, decimal value)
-            => WriteNumber((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan(), value);
+        public void WriteNumber(string propertyName!!, decimal value)
+            => WriteNumber(propertyName.AsSpan(), value);
 
         /// <summary>
         /// Writes the property name and <see cref="decimal"/> value (as a JSON number) as part of a name/value pair of a JSON object.

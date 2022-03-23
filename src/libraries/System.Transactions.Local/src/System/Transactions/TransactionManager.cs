@@ -110,10 +110,7 @@ namespace System.Transactions
             {
                 // Note do not add trace notifications to this method.  It is called
                 // at the startup of SQLCLR and tracing has too much working set overhead.
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 lock (ClassSyncObject)
                 {
@@ -157,7 +154,7 @@ namespace System.Transactions
 
             // Put the recovery information into a stream.
             MemoryStream stream = new MemoryStream(recoveryInformation);
-            int recoveryInformationVersion = 0;
+            int recoveryInformationVersion;
             string? nodeName = null;
             byte[]? resourceManagerRecoveryInformation = null;
 

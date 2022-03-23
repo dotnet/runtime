@@ -329,6 +329,44 @@ namespace Internal.TypeSystem.Interop
 
             return marshaller;
         }
+
+        /// <summary>
+        /// Create a marshaller
+        /// </summary>
+        /// <param name="parameterType">type of the parameter to marshal</param>
+        /// <returns>The created Marshaller</returns>
+        public static Marshaller CreateDisabledMarshaller(TypeDesc parameterType,
+            int? parameterIndex,
+            MarshallerType marshallerType,
+            MarshalDirection direction,
+            Marshaller[] marshallers,
+            int index,
+            PInvokeFlags flags,
+            bool isReturn)
+        {
+            MarshallerKind marshallerKind = MarshalHelpers.GetDisabledMarshallerKind(parameterType);
+
+            TypeSystemContext context = parameterType.Context;
+            // Create the marshaller based on MarshallerKind
+            Marshaller marshaller = CreateMarshaller(marshallerKind);
+            marshaller.Context = context;
+            marshaller.MarshallerKind = marshallerKind;
+            marshaller.MarshallerType = marshallerType;
+            marshaller.ElementMarshallerKind = MarshallerKind.Unknown;
+            marshaller.ManagedParameterType = parameterType;
+            marshaller.ManagedType = parameterType;
+            marshaller.Return = isReturn;
+            marshaller.IsManagedByRef = false;
+            marshaller.IsNativeByRef = false;
+            marshaller.MarshalDirection = direction;
+            marshaller.MarshalAsDescriptor = null;
+            marshaller.Marshallers = marshallers;
+            marshaller.Index = index;
+            marshaller.PInvokeFlags = flags;
+            marshaller.In = true;
+            marshaller.Out = false;
+            return marshaller;
+        }
         #endregion
 
 
@@ -1560,7 +1598,7 @@ namespace Internal.TypeSystem.Interop
     class AnsiStringMarshaller : Marshaller
     {
 #if READYTORUN
-        const int MAX_LOCAL_BUFFER_LENGTH = 260 + 1; // MAX_PATH + 1 
+        const int MAX_LOCAL_BUFFER_LENGTH = 260 + 1; // MAX_PATH + 1
 
         private ILLocalVariable? _localBuffer = null;
 #endif
@@ -1597,7 +1635,7 @@ namespace Internal.TypeSystem.Interop
                 .GetKnownMethod("ConvertToNative", null);
 
             bool bPassByValueInOnly = In && !Out && !IsManagedByRef;
-            
+
             if (bPassByValueInOnly)
             {
                 var bufSize = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
@@ -1632,7 +1670,7 @@ namespace Internal.TypeSystem.Interop
                 codeStream.EmitStLoc(bufSize);
 
                 // if (MAX_LOCAL_BUFFER_LENGTH < BufSize ) goto NoOptimize
-                codeStream.EmitLdc(MAX_LOCAL_BUFFER_LENGTH + 1); 
+                codeStream.EmitLdc(MAX_LOCAL_BUFFER_LENGTH + 1);
                 codeStream.EmitLdLoc(bufSize);
                 codeStream.Emit(ILOpcode.clt);
                 codeStream.Emit(ILOpcode.brtrue, noOptimize);

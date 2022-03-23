@@ -22,7 +22,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         // This entry is used to implement Type.GetType()'s ability to detect the calling assembly and use it as
         // a default assembly name.
-        public static Type ExtensibleGetType(string typeName, string callingAssemblyName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase)
+        public static Type ExtensibleGetType(string typeName, string callingAssemblyName, Func<AssemblyName, Assembly?> assemblyResolver, Func<Assembly?, string, bool, Type?>? typeResolver, bool throwOnError, bool ignoreCase)
         {
             return RuntimeAugments.Callbacks.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, callingAssemblyName);
         }

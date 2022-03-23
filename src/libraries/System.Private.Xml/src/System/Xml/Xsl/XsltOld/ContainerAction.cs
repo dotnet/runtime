@@ -485,8 +485,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             else
             {
-                string prefix, localname;
-                PrefixQName.ParseQualifiedName(name, out prefix, out localname);
+                PrefixQName.ParseQualifiedName(name, out _, out _);
                 return 0;
             }
         }
@@ -673,7 +672,7 @@ namespace System.Xml.Xsl.XsltOld
         private void CompileInstruction(Compiler compiler)
         {
             NavigatorInput input = compiler.Input;
-            CompiledAction? action = null;
+            CompiledAction? action;
 
             Debug.Assert(Ref.Equal(input.NamespaceURI, input.Atoms.UriXsl));
 

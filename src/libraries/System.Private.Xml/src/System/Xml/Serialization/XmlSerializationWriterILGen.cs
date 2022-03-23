@@ -1228,7 +1228,7 @@ namespace System.Xml.Serialization
                 {
                     string methodName;
                     Type methodType;
-                    Type argType = typeof(string);
+                    Type argType;
                     // check to see if we can write values of the attribute sequentially
                     if (CanOptimizeWriteListSequence(memberTypeDesc.ArrayElementTypeDesc))
                     {

@@ -5,12 +5,11 @@
 
 //
 // Types in this file are used for generated p/invokes (docs/design/features/source-generator-pinvokes.md).
-// See the DllImportGenerator experiment in https://github.com/dotnet/runtimelab.
 //
 namespace System.Runtime.InteropServices
 {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-#if DLLIMPORT_GENERATOR_TEST
+#if LIBRARYIMPORT_GENERATOR_TEST
     public
 #else
     internal
@@ -19,18 +18,8 @@ namespace System.Runtime.InteropServices
     {
     }
 
-    [AttributeUsage(AttributeTargets.Struct)]
-#if DLLIMPORT_GENERATOR_TEST
-    public
-#else
-    internal
-#endif
-    sealed class BlittableTypeAttribute : Attribute
-    {
-    }
-
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
-#if DLLIMPORT_GENERATOR_TEST
+#if LIBRARYIMPORT_GENERATOR_TEST
     public
 #else
     internal
@@ -46,7 +35,7 @@ namespace System.Runtime.InteropServices
     }
 
     [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.ReturnValue | AttributeTargets.Field, AllowMultiple = true)]
-#if DLLIMPORT_GENERATOR_TEST
+#if LIBRARYIMPORT_GENERATOR_TEST
     public
 #else
     internal
@@ -76,7 +65,7 @@ namespace System.Runtime.InteropServices
     }
 
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
-#if DLLIMPORT_GENERATOR_TEST
+#if LIBRARYIMPORT_GENERATOR_TEST
     public
 #else
     internal

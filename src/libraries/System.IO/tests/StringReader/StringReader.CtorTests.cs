@@ -69,6 +69,23 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public static async Task ReadLineAsync()
+        {
+            string str1 = "Hello\0\t\v   \\ World";
+            string str2 = str1 + Environment.NewLine + str1;
+
+            using (StringReader sr = new StringReader(str1))
+            {
+                Assert.Equal(str1, await sr.ReadLineAsync());
+            }
+            using (StringReader sr = new StringReader(str2))
+            {
+                Assert.Equal(str1, await sr.ReadLineAsync(default));
+                Assert.Equal(str1, await sr.ReadLineAsync(default));
+            }
+        }
+
+        [Fact]
         public static void ReadPseudoRandomString()
         {
             string str1 = string.Empty;
@@ -153,6 +170,14 @@ namespace System.IO.Tests
 
             StringReader sr = new StringReader(str1);
             Assert.Equal(str1, sr.ReadToEnd());
+        }
+
+        [Fact]
+        public static async Task ReadToEndAsyncString()
+        {
+            string str1 = "Hello\0\t\v   \\ World";
+            StringReader sr = new StringReader(str1);
+            Assert.Equal(str1, await sr.ReadToEndAsync(default));
         }
 
         [Fact]
@@ -278,6 +303,8 @@ namespace System.IO.Tests
 
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => reader.ReadAsync(Memory<char>.Empty, new CancellationToken(true)).AsTask());
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => reader.ReadBlockAsync(Memory<char>.Empty, new CancellationToken(true)).AsTask());
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => reader.ReadLineAsync(new CancellationToken(true)).AsTask());
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => reader.ReadToEndAsync(new CancellationToken(true)));
         }
 
         private static void ValidateDisposedExceptions(StringReader sr)

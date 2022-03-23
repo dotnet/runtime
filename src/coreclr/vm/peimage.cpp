@@ -18,7 +18,6 @@
 
 #ifndef DACCESS_COMPILE
 
-
 CrstStatic  PEImage::s_hashLock;
 PtrHashMap *PEImage::s_Images = NULL;
 CrstStatic  PEImage::s_ijwHashLock;
@@ -95,7 +94,7 @@ PEImage::~PEImage()
     if(m_hFile!=INVALID_HANDLE_VALUE)
         CloseHandle(m_hFile);
 
-    for (unsigned int i=0;i<COUNTOF(m_pLayouts);i++)
+    for (unsigned int i=0;i<ARRAY_SIZE(m_pLayouts);i++)
     {
         if (m_pLayouts[i]!=NULL)
             m_pLayouts[i]->Release();
@@ -457,34 +456,6 @@ void PEImage::GetMVID(GUID *pMvid)
 #endif // _DEBUG
 }
 
-void PEImage::VerifyIsAssembly()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // buch of legacy stuff here wrt the error codes...
-
-    if (!HasNTHeaders())
-        ThrowFormat(COR_E_BADIMAGEFORMAT);
-
-    if(!HasCorHeader())
-        ThrowFormat(COR_E_ASSEMBLYEXPECTED);
-
-    CHECK checkGoodFormat;
-    checkGoodFormat = CheckILFormat();
-    if (!checkGoodFormat)
-        ThrowFormat(COR_E_BADIMAGEFORMAT);
-
-    mdAssembly a;
-    if (FAILED(GetMDImport()->GetAssemblyFromScope(&a)))
-        ThrowFormat(COR_E_ASSEMBLYEXPECTED);
-}
-
 void DECLSPEC_NORETURN PEImage::ThrowFormat(HRESULT hrError)
 {
     CONTRACTL
@@ -534,7 +505,7 @@ LoaderHeap *PEImage::IJWFixupData::GetThunkHeap()
         LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
             0,                                 // DWORD dwCommitBlockSize
             ThunkHeapStubManager::g_pManager->GetRangeList(),
-            TRUE);                             // BOOL fMakeExecutable
+            UnlockedLoaderHeap::HeapKind::Executable);
 
         if (FastInterlockCompareExchangePointer((PVOID*)&m_DllThunkHeap, (VOID*)pNewHeap, (VOID*)0) != 0)
         {
@@ -754,7 +725,7 @@ PEImage::PEImage():
         MODE_ANY;
     }
     CONTRACTL_END;
-    for (DWORD i=0;i<COUNTOF(m_pLayouts);i++)
+    for (DWORD i=0;i<ARRAY_SIZE(m_pLayouts);i++)
         m_pLayouts[i]=NULL ;
     m_pLayoutLock=new SimpleRWLock(PREEMPTIVE,LOCK_TYPE_DEFAULT);
 }

@@ -1045,7 +1045,7 @@ namespace Internal.Runtime.TypeLoader
         {
             Debug.Assert(type != null && state != null);
 
-            MethodTable* pTemplateEEType = null;
+            MethodTable* pTemplateEEType;
             bool requireVtableSlotMapping = false;
 
             if (type is PointerType || type is ByRefType)

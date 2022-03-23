@@ -5,11 +5,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -41,13 +41,8 @@ namespace System
         public static string Concat(object? arg0, object? arg1, object? arg2) =>
             Concat(arg0?.ToString(), arg1?.ToString(), arg2?.ToString());
 
-        public static string Concat(params object?[] args)
+        public static string Concat(params object?[] args!!)
         {
-            if (args == null)
-            {
-                throw new ArgumentNullException(nameof(args));
-            }
-
             if (args.Length <= 1)
             {
                 return args.Length == 0 ?
@@ -106,11 +101,8 @@ namespace System
             return result;
         }
 
-        public static string Concat<T>(IEnumerable<T> values)
+        public static string Concat<T>(IEnumerable<T> values!!)
         {
-            if (values == null)
-                throw new ArgumentNullException(nameof(values));
-
             if (typeof(T) == typeof(char))
             {
                 // Special-case T==char, as we can handle that case much more efficiently,
@@ -190,11 +182,8 @@ namespace System
             }
         }
 
-        public static string Concat(IEnumerable<string?> values)
+        public static string Concat(IEnumerable<string?> values!!)
         {
-            if (values == null)
-                throw new ArgumentNullException(nameof(values));
-
             using (IEnumerator<string?> en = values.GetEnumerator())
             {
                 if (!en.MoveNext())
@@ -371,11 +360,8 @@ namespace System
             return result;
         }
 
-        public static string Concat(params string?[] values)
+        public static string Concat(params string?[] values!!)
         {
-            if (values == null)
-                throw new ArgumentNullException(nameof(values));
-
             if (values.Length <= 1)
             {
                 return values.Length == 0 ?
@@ -456,11 +442,11 @@ namespace System
 
         public static string Format(string format, params object?[] args)
         {
-            if (args == null)
+            if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in FormatHelper.
-                throw new ArgumentNullException((format == null) ? nameof(format) : nameof(args));
+                ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
             return FormatHelper(null, format, new ParamsArray(args));
@@ -483,31 +469,26 @@ namespace System
 
         public static string Format(IFormatProvider? provider, string format, params object?[] args)
         {
-            if (args == null)
+            if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in FormatHelper.
-                throw new ArgumentNullException((format == null) ? nameof(format) : nameof(args));
+                ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
             return FormatHelper(provider, format, new ParamsArray(args));
         }
 
-        private static string FormatHelper(IFormatProvider? provider, string format, ParamsArray args)
+        private static string FormatHelper(IFormatProvider? provider, string format!!, ParamsArray args)
         {
-            if (format == null)
-                throw new ArgumentNullException(nameof(format));
-
             var sb = new ValueStringBuilder(stackalloc char[256]);
             sb.EnsureCapacity(format.Length + args.Length * 8);
             sb.AppendFormatHelper(provider, format, args);
             return sb.ToString();
         }
 
-        public string Insert(int startIndex, string value)
+        public string Insert(int startIndex, string value!!)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
             if ((uint)startIndex > Length)
                 throw new ArgumentOutOfRangeException(nameof(startIndex));
 
@@ -556,12 +537,8 @@ namespace System
         public static string Join(string? separator, string?[] value, int startIndex, int count) =>
             JoinCore(separator.AsSpan(), value, startIndex, count);
 
-        private static string JoinCore(ReadOnlySpan<char> separator, string?[] value, int startIndex, int count)
+        private static string JoinCore(ReadOnlySpan<char> separator, string?[] value!!, int startIndex, int count)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
             if (startIndex < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
@@ -925,15 +902,7 @@ namespace System
 
         private string ReplaceCore(string oldValue, string? newValue, CompareInfo? ci, CompareOptions options)
         {
-            if (oldValue is null)
-            {
-                throw new ArgumentNullException(nameof(oldValue));
-            }
-
-            if (oldValue.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(oldValue));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(oldValue);
 
             // If they asked to replace oldValue with a null, replace all occurrences
             // with the empty string. AsSpan() will normalize appropriately.
@@ -1054,14 +1023,7 @@ namespace System
 
         public string Replace(string oldValue, string? newValue)
         {
-            if (oldValue is null)
-            {
-                throw new ArgumentNullException(nameof(oldValue));
-            }
-            if (oldValue.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(oldValue));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(oldValue);
 
             // If newValue is null, treat it as an empty string.  Callers use this to remove the oldValue.
             newValue ??= Empty;
@@ -1087,7 +1049,7 @@ namespace System
                 while (true)
                 {
                     int pos = SpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
-                    if (pos == -1)
+                    if (pos < 0)
                     {
                         break;
                     }
@@ -1102,7 +1064,7 @@ namespace System
                 while (true)
                 {
                     int pos = SpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), Length - i, ref oldValue._firstChar, oldValue.Length);
-                    if (pos == -1)
+                    if (pos < 0)
                     {
                         break;
                     }
@@ -1217,13 +1179,8 @@ namespace System
         /// This method is guaranteed O(n * r) complexity, where <em>n</em> is the length of the input string,
         /// and where <em>r</em> is the length of <paramref name="replacementText"/>.
         /// </remarks>
-        public string ReplaceLineEndings(string replacementText)
+        public string ReplaceLineEndings(string replacementText!!)
         {
-            if (replacementText is null)
-            {
-                throw new ArgumentNullException(nameof(replacementText));
-            }
-
             // Early-exit: do we need to do anything at all?
             // If not, return this string as-is.
 
@@ -1683,12 +1640,13 @@ namespace System
                 {
                     ProbabilisticMap map = default;
                     uint* charMap = (uint*)&map;
-                    InitializeProbabilisticMap(charMap, separators);
+                    ProbabilisticMap.Initialize(charMap, separators);
 
                     for (int i = 0; i < Length; i++)
                     {
                         char c = this[i];
-                        if (IsCharBitSet(charMap, (byte)c) && IsCharBitSet(charMap, (byte)(c >> 8)) &&
+                        if (ProbabilisticMap.IsCharBitSet(charMap, (byte)c) &&
+                            ProbabilisticMap.IsCharBitSet(charMap, (byte)(c >> 8)) &&
                             separators.Contains(c))
                         {
                             sepListBuilder.Append(i);

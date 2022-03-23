@@ -80,7 +80,7 @@ namespace System
                 if (default(IntPtr) == h)
                     return null;
 
-                object o = RuntimeImports.RhHandleGet(h);
+                object? o = RuntimeImports.RhHandleGet(h);
 
                 if (o == null)
                 {

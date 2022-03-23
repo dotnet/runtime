@@ -1092,8 +1092,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private Expr BindUDConversionCore(Expr pFrom, CType pTypeFrom, CType pTypeTo, CType pTypeDestination, MethWithInst mwiBest)
         {
-            Expr ppTransformedArgument;
-            return BindUDConversionCore(pFrom, pTypeFrom, pTypeTo, pTypeDestination, mwiBest, out ppTransformedArgument);
+            return BindUDConversionCore(pFrom, pTypeFrom, pTypeTo, pTypeDestination, mwiBest, out _);
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
@@ -1237,7 +1236,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case FUNDTYPE.FT_U8:
                     if (!srcIntegral)
                     {
-                        valueInt = (long)(ulong)valueFlt;
                         const double two63 = 2147483648.0 * 4294967296.0;
                         if (valueFlt < two63)
                         {

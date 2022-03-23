@@ -3,15 +3,16 @@
     <NativeVersionFile Condition="$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.h</NativeVersionFile>
     <NativeVersionFile Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.c</NativeVersionFile>
     <RuntimeVersionFile>$(ArtifactsObjDir)runtime_version.h</RuntimeVersionFile>
+    <NativeSourceLinkFile>$(ArtifactsObjDir)native.sourcelink.json</NativeSourceLinkFile>
     <AssemblyName>.NET Runtime</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Condition="'$(TargetOS)' == 'Windows'" Include="ToolBox/SOS/DacTableGen/DacTableGen.csproj" />
+    <ProjectReference Condition="'$(TargetOS)' == 'Windows'" Include="tools/SOS/DacTableGen/DacTableGen.csproj" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
 
-  <Target Name="BuildPrereqs" BeforeTargets="Build" DependsOnTargets="GenerateRuntimeVersionFile;OutputPgoPathForCI" />
+  <Target Name="BuildPrereqs" BeforeTargets="Build" DependsOnTargets="GenerateRuntimeVersionFile;GenerateNativeSourcelinkFile;OutputPgoPathForCI" />
 </Project>

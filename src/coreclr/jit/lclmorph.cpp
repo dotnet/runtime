@@ -442,14 +442,15 @@ public:
 #endif // DEBUG
     }
 
-    // Morph promoted struct fields and count implicit byref argument occurrences.
+    // Morph promoted struct fields and count local occurrences.
+    //
     // Also create and push the value produced by the visited node. This is done here
     // rather than in PostOrderVisit because it makes it easy to handle nodes with an
     // arbitrary number of operands - just pop values until the value corresponding
     // to the visited node is encountered.
     fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
-        GenTree* node = *use;
+        GenTree* const node = *use;
 
         if (node->OperIs(GT_FIELD))
         {
@@ -462,19 +463,29 @@ public:
 
         if (node->OperIsLocal())
         {
-            unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
+            unsigned const   lclNum = node->AsLclVarCommon()->GetLclNum();
+            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
 
-            LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+            UpdateEarlyRefCount(lclNum);
+
             if (varDsc->lvIsStructField)
             {
-                // Promoted field, increase counter for the parent lclVar.
+                // Promoted field, increase count for the parent lclVar.
+                //
                 assert(!m_compiler->lvaIsImplicitByRefLocal(lclNum));
                 unsigned parentLclNum = varDsc->lvParentLcl;
-                UpdateEarlyRefCountForImplicitByRef(parentLclNum);
+                UpdateEarlyRefCount(parentLclNum);
             }
-            else
+
+            if (varDsc->lvPromoted)
             {
-                UpdateEarlyRefCountForImplicitByRef(lclNum);
+                // Promoted struct, increase count for each promoted field.
+                //
+                for (unsigned childLclNum = varDsc->lvFieldLclStart;
+                     childLclNum < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++childLclNum)
+                {
+                    UpdateEarlyRefCount(childLclNum);
+                }
             }
         }
 
@@ -564,26 +575,6 @@ public:
                     EscapeLocation(TopValue(0), node);
                 }
 
-                PopValue();
-                break;
-
-            case GT_DYN_BLK:
-                assert(TopValue(2).Node() == node);
-                assert(TopValue(1).Node() == node->AsDynBlk()->Addr());
-                assert(TopValue(0).Node() == node->AsDynBlk()->gtDynamicSize);
-
-                // The block size may be the result of an indirection so we need
-                // to escape the location that may be associated with it.
-                EscapeValue(TopValue(0), node);
-
-                if (!TopValue(2).Indir(TopValue(1)))
-                {
-                    // If the address comes from another indirection (e.g. DYN_BLK(IND(...))
-                    // then we need to escape the location.
-                    EscapeLocation(TopValue(1), node);
-                }
-
-                PopValue();
                 PopValue();
                 break;
 
@@ -687,17 +678,38 @@ private:
 
         // In general we don't know how an exposed struct field address will be used - it may be used to
         // access only that specific field or it may be used to access other fields in the same struct
-        // be using pointer/ref arithmetic. It seems reasonable to make an exception for the "this" arg
-        // of calls - it would be highly unsual for a struct member method to attempt to access memory
+        // by using pointer/ref arithmetic. It seems reasonable to make an exception for the "this" arg
+        // of calls - it would be highly unusual for a struct member method to attempt to access memory
         // beyond "this" instance. And calling struct member methods is common enough that attempting to
         // mark the entire struct as address exposed results in CQ regressions.
-        bool isThisArg = user->IsCall() && (user->AsCall()->gtCallThisArg != nullptr) &&
-                         (val.Node() == user->AsCall()->gtCallThisArg->GetNode());
+        GenTreeCall* callTree  = user->IsCall() ? user->AsCall() : nullptr;
+        bool         isThisArg = (callTree != nullptr) && (callTree->gtCallThisArg != nullptr) &&
+                         (val.Node() == callTree->gtCallThisArg->GetNode());
         bool exposeParentLcl = varDsc->lvIsStructField && !isThisArg;
 
-        m_compiler->lvaSetVarAddrExposed(exposeParentLcl ? varDsc->lvParentLcl
-                                                         : val.LclNum() DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+        bool hasHiddenStructArg = false;
+        if (m_compiler->opts.compJitOptimizeStructHiddenBuffer)
+        {
+            if (varTypeIsStruct(varDsc) && varDsc->lvIsTemp)
+            {
+                // We rely here on the fact that the return buffer, if present, is always first in the arg list.
+                if ((callTree != nullptr) && callTree->HasRetBufArg() &&
+                    (val.Node() == callTree->gtCallArgs->GetNode()))
+                {
+                    assert(!exposeParentLcl);
 
+                    m_compiler->lvaSetHiddenBufferStructArg(val.LclNum());
+                    hasHiddenStructArg = true;
+                    callTree->SetLclRetBufArg(callTree->gtCallArgs);
+                }
+            }
+        }
+
+        if (!hasHiddenStructArg)
+        {
+            m_compiler->lvaSetVarAddrExposed(
+                exposeParentLcl ? varDsc->lvParentLcl : val.LclNum() DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+        }
 #ifdef TARGET_64BIT
         // If the address of a variable is passed in a call and the allocation size of the variable
         // is 32 bits we will quirk the size to 64 bits. Some PInvoke signatures incorrectly specify
@@ -720,7 +732,7 @@ private:
         // Other usages require more changes. For example, a tree like OBJ(ADD(ADDR(LCL_VAR), 4))
         // could be changed to OBJ(LCL_FLD_ADDR) but then DefinesLocalAddr does not recognize
         // LCL_FLD_ADDR (even though it does recognize LCL_VAR_ADDR).
-        if (user->OperIs(GT_CALL, GT_ASG))
+        if (user->OperIs(GT_CALL, GT_ASG) && !hasHiddenStructArg)
         {
             MorphLocalAddress(val);
         }
@@ -829,14 +841,13 @@ private:
     //    user - the node that uses the indirection
     //
     // Notes:
-    //    This returns 0 for indirection of unknown size, typically GT_DYN_BLK.
-    //    GT_IND nodes that have type TYP_STRUCT are expected to only appears
-    //    on the RHS of an assignment, in which case the LHS size will be used instead.
-    //    Otherwise 0 is returned as well.
+    //    This returns 0 for indirection of unknown size. GT_IND nodes that have type
+    //    TYP_STRUCT are expected to only appears on the RHS of an assignment, in which
+    //    case the LHS size will be used instead. Otherwise 0 is returned as well.
     //
     unsigned GetIndirSize(GenTree* indir, GenTree* user)
     {
-        assert(indir->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_DYN_BLK, GT_FIELD));
+        assert(indir->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_FIELD));
 
         if (indir->TypeGet() != TYP_STRUCT)
         {
@@ -883,7 +894,7 @@ private:
             case GT_OBJ:
                 return indir->AsBlk()->GetLayout()->GetSize();
             default:
-                assert(indir->OperIs(GT_IND, GT_DYN_BLK));
+                assert(indir->OperIs(GT_IND));
                 return 0;
         }
     }
@@ -1183,7 +1194,7 @@ private:
     }
 
     //------------------------------------------------------------------------
-    // UpdateEarlyRefCountForImplicitByRef: updates the ref count for implicit byref params.
+    // UpdateEarlyRefCount: updates the ref count for locals
     //
     // Arguments:
     //    lclNum - the local number to update the count for.
@@ -1192,18 +1203,23 @@ private:
     //    fgMakeOutgoingStructArgCopy checks the ref counts for implicit byref params when it decides
     //    if it's legal to elide certain copies of them;
     //    fgRetypeImplicitByRefArgs checks the ref counts when it decides to undo promotions.
+    //    fgForwardSub uses ref counts to decide when to forward sub.
     //
-    void UpdateEarlyRefCountForImplicitByRef(unsigned lclNum)
+    void UpdateEarlyRefCount(unsigned lclNum)
     {
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+
+        // Note we don't need accurate counts when the values are large.
+        //
+        if (varDsc->lvRefCnt(RCS_EARLY) < USHRT_MAX)
+        {
+            varDsc->incLvRefCnt(1, RCS_EARLY);
+        }
+
         if (!m_compiler->lvaIsImplicitByRefLocal(lclNum))
         {
             return;
         }
-
-        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-        JITDUMP("LocalAddressVisitor incrementing ref count from %d to %d for implicit by-ref V%02d\n",
-                varDsc->lvRefCnt(RCS_EARLY), varDsc->lvRefCnt(RCS_EARLY) + 1, lclNum);
-        varDsc->incLvRefCnt(1, RCS_EARLY);
 
         // See if this struct is an argument to a call. This information is recorded
         // via the weighted early ref count for the local, and feeds the undo promotion

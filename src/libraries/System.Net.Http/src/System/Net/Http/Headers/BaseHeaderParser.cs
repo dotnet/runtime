@@ -41,7 +41,7 @@ namespace System.Net.Http.Headers
                 return SupportsMultipleValues;
             }
 
-            bool separatorFound = false;
+            bool separatorFound;
             int current = HeaderUtilities.GetNextNonEmptyOrWhitespaceIndex(value, index, SupportsMultipleValues,
                 out separatorFound);
 

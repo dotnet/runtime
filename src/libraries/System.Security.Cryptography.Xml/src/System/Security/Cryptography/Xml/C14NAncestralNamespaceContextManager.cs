@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Xml
 
         internal override void GetNamespacesToRender(XmlElement element, SortedList attrListToRender, SortedList nsListToRender, Hashtable nsLocallyDeclared)
         {
-            XmlAttribute attrib = null;
+            XmlAttribute attrib;
             object[] attrs = new object[nsLocallyDeclared.Count];
             nsLocallyDeclared.Values.CopyTo(attrs, 0);
             foreach (object a in attrs)

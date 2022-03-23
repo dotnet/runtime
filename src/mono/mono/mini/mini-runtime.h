@@ -129,6 +129,8 @@ typedef struct {
 	gpointer        ex_obj;
 	MonoLMF *lmf;
 	int first_filter_idx, filter_idx;
+	/* MonoMethodILState */
+	gpointer il_state;
 } ResumeState;
 
 typedef void (*MonoAbortFunction)(MonoObject*);
@@ -159,14 +161,14 @@ struct MonoJitTlsData {
 
 	/* context to be used by the guard trampoline when resuming interruption.*/
 	MonoContext handler_block_context;
-	/* 
+	/*
 	 * Stores the state at the exception throw site to be used by mono_stack_walk ()
 	 * when it is called from profiler functions during exception handling.
 	 */
 	MonoContext orig_ex_ctx;
 	gboolean orig_ex_ctx_set;
 
-	/* 
+	/*
 	 * The current exception in flight
 	 */
 	MonoGCHandle thrown_exc;
@@ -649,7 +651,7 @@ mono_is_addr_implicit_null_check (void *addr);
  * Signal handling
  */
 
-#if defined(DISABLE_HW_TRAPS) || defined(MONO_ARCH_DISABLE_HW_TRAPS)
+#if defined(MONO_ARCH_DISABLE_HW_TRAPS)
  // Signal handlers not available
 #define MONO_ARCH_NEED_DIV_CHECK 1
 #endif

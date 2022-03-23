@@ -8,7 +8,28 @@ The rule of thumb is that we (**dotnet/runtime**) review every API that is being
 
 ## Process
 
-![API Review Process](api-review-process.png)
+```mermaid
+sequenceDiagram
+    participant R as Requester
+    participant O as Runtime Owners
+    participant F as API review board <br> (FXDC)
+    R ->> O: Files issue under dotnet/runtime
+    note over O: Assigns owner
+    
+    note over R, O: Discussion
+
+    O ->> F: Label api-ready-for-review
+    
+    note over F: Performs review
+
+    alt is accepted
+        F ->> R: Label api-approved
+    else is work needed
+        F ->> O: Label api-needs-work
+    else is rejected
+        F ->> R: Issue is closed
+    end
+```
 
 ## Steps
 

@@ -997,7 +997,10 @@ private:
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     void buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet);
-    void buildUpperVectorRestoreRefPosition(Interval* lclVarInterval, LsraLocation currentLoc, GenTree* node);
+    void buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
+                                            LsraLocation currentLoc,
+                                            GenTree*     node,
+                                            bool         isUse);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
 #if defined(UNIX_AMD64_ABI)
@@ -1772,7 +1775,7 @@ private:
 
     // The following keep track of information about internal (temporary register) intervals
     // during the building of a single node.
-    static const int MaxInternalCount = 4;
+    static const int MaxInternalCount = 5;
     RefPosition*     internalDefs[MaxInternalCount];
     int              internalCount = 0;
     bool             setInternalRegsDelayFree;
@@ -1876,7 +1879,7 @@ private:
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-    int BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree);
+    int BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount);
 #endif // FEATURE_HW_INTRINSICS
 
     int BuildPutArgStk(GenTreePutArgStk* argNode);
@@ -2269,6 +2272,11 @@ public:
     // register currently assigned to the Interval.  This happens when we use the assigned
     // register from a predecessor that is not the most recently allocated BasicBlock.
     unsigned char outOfOrder : 1;
+
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+    // If upper vector save/restore can be avoided.
+    unsigned char skipSaveRestore : 1;
+#endif
 
 #ifdef DEBUG
     // Minimum number registers that needs to be ensured while

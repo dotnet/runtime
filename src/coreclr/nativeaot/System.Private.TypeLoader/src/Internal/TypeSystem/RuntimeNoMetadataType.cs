@@ -318,8 +318,7 @@ namespace Internal.TypeSystem.NoMetadata
         {
             get
             {
-                string name, nsName, assemblyName;
-                GetTypeNameHelper(out name, out nsName, out assemblyName);
+                GetTypeNameHelper(out _, out string nsName, out _);
                 return nsName;
             }
         }
@@ -328,8 +327,7 @@ namespace Internal.TypeSystem.NoMetadata
         {
             get
             {
-                string name, nsName, assemblyName;
-                GetTypeNameHelper(out name, out nsName, out assemblyName);
+                GetTypeNameHelper(out string name, out _, out _);
                 return name;
             }
         }
@@ -338,8 +336,7 @@ namespace Internal.TypeSystem.NoMetadata
         {
             get
             {
-                string name, nsName, assemblyName;
-                GetTypeNameHelper(out name, out nsName, out assemblyName);
+                GetTypeNameHelper(out _, out _, out string assemblyName);
                 return assemblyName;
             }
         }

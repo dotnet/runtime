@@ -154,7 +154,7 @@ namespace System.IO
             return data.ftLastWriteTime.ToDateTimeOffset();
         }
 
-        public static void MoveDirectory(string sourceFullPath, string destFullPath)
+        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool sameDirectoryDifferentCase)
         {
             if (!Interop.Kernel32.MoveFile(sourceFullPath, destFullPath, overwrite: false))
             {
@@ -456,7 +456,6 @@ namespace System.IO
 
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
-            string pathToTargetFullPath = PathInternal.GetLinkTargetFullPath(path, pathToTarget);
             Interop.Kernel32.CreateSymbolicLink(path, pathToTarget, isDirectory);
         }
 

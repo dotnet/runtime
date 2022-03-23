@@ -3,9 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
@@ -88,8 +86,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            var result = quaternion;
-            return GetElementUnsafe(ref result, index);
+            return GetElementUnsafe(ref quaternion, index);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -112,7 +109,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            var result = quaternion;
+            Quaternion result = quaternion;
             SetElementUnsafe(ref result, index, value);
             return result;
         }

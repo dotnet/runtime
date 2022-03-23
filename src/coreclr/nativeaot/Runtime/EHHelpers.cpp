@@ -92,7 +92,7 @@ COOP_PINVOKE_HELPER(int32_t, RhGetModuleFileName, (HANDLE moduleHandle, _Out_ co
 COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, int32_t cbOSContext, PAL_LIMITED_CONTEXT * pPalContext))
 {
     UNREFERENCED_PARAMETER(cbOSContext);
-    ASSERT(cbOSContext >= sizeof(CONTEXT));
+    ASSERT((size_t)cbOSContext >= sizeof(CONTEXT));
     CONTEXT* pContext = (CONTEXT *)pOSContext;
 #if defined(UNIX_AMD64_ABI)
     pContext->Rip = pPalContext->IP;
@@ -195,7 +195,7 @@ EXTERN_C int32_t __stdcall RhpPInvokeExceptionGuard(PEXCEPTION_RECORD       pExc
 
     // If the thread is currently in the "do not trigger GC" mode, we must not allocate, we must not reverse pinvoke, or
     // return from a pinvoke.  All of these things will deadlock with the GC and they all become increasingly likely as
-    // exception dispatch kicks off.  So we just nip this in the bud as early as possible with a FailFast.  The most
+    // exception dispatch kicks off.  So we just address this as early as possible with a FailFast.  The most
     // likely case where this occurs is in our GC-callouts for Jupiter lifetime management -- in that case, we have
     // managed code that calls to native code (without pinvoking) which might have a bug that causes an AV.
     if (pThread->IsDoNotTriggerGcSet())

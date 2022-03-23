@@ -7,11 +7,11 @@
 
 #include <mono/utils/mono-publib.h>
 
-/* 
+/*
  * This is a fallback for platform symbol loading functionality.
  */
 typedef struct {
-	const char *name;	
+	const char *name;
 	void *addr;
 } MonoDlMapping;
 

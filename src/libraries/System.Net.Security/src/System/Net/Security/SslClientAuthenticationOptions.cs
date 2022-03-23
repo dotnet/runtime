@@ -50,10 +50,12 @@ namespace System.Net.Security
             get => _encryptionPolicy;
             set
             {
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 if (value != EncryptionPolicy.RequireEncryption && value != EncryptionPolicy.AllowNoEncryption && value != EncryptionPolicy.NoEncryption)
                 {
                     throw new ArgumentException(SR.Format(SR.net_invalid_enum, nameof(EncryptionPolicy)), nameof(value));
                 }
+#pragma warning restore SYSLIB0040
 
                 _encryptionPolicy = value;
             }

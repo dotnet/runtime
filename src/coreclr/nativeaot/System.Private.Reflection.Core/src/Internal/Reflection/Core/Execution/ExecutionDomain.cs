@@ -89,7 +89,7 @@ namespace Internal.Reflection.Core.Execution
                     {
                         foreach (string defaultAssemblyName in defaultAssemblyNames)
                         {
-                            RuntimeAssemblyName runtimeAssemblyName = AssemblyNameParser.Parse(defaultAssemblyName);
+                            RuntimeAssemblyName runtimeAssemblyName = RuntimeAssemblyName.Parse(defaultAssemblyName);
                             RuntimeAssemblyInfo defaultAssembly = RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(runtimeAssemblyName);
                             if (defaultAssembly == null)
                                 continue;

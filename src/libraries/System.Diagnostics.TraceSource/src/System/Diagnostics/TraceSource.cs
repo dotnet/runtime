@@ -28,10 +28,7 @@ namespace System.Diagnostics
 
         public TraceSource(string name, SourceLevels defaultLevel)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0)
-                throw new ArgumentException(SR.Format(SR.InvalidNullEmptyArgument, nameof(name)), nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             _sourceName = name;
             _switchLevel = defaultLevel;

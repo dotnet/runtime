@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
@@ -31,19 +32,21 @@ namespace System
 
     [StructLayout(LayoutKind.Auto)]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct DateTimeOffset : IComparable, ISpanFormattable, IComparable<DateTimeOffset>, IEquatable<DateTimeOffset>, ISerializable, IDeserializationCallback
-#if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
-        , IAdditionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>,
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public readonly struct DateTimeOffset
+        : IComparable,
+          ISpanFormattable,
+          IComparable<DateTimeOffset>,
+          IEquatable<DateTimeOffset>,
+          ISerializable,
+          IDeserializationCallback,
+          IAdditionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>,
           IAdditiveIdentity<DateTimeOffset, TimeSpan>,
           IComparisonOperators<DateTimeOffset, DateTimeOffset>,
           IMinMaxValue<DateTimeOffset>,
           ISpanParseable<DateTimeOffset>,
           ISubtractionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>,
           ISubtractionOperators<DateTimeOffset, DateTimeOffset, TimeSpan>
-#pragma warning restore SA1001, CA2252
-#endif // FEATURE_GENERIC_MATH
     {
         // Constants
         internal const long MaxOffset = TimeSpan.TicksPerHour * 14;
@@ -470,24 +473,14 @@ namespace System
             }
         }
 
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
             info.AddValue("DateTime", _dateTime); // Do not rename (binary serialization)
             info.AddValue("OffsetMinutes", _offsetMinutes); // Do not rename (binary serialization)
         }
 
-        private DateTimeOffset(SerializationInfo info, StreamingContext context)
+        private DateTimeOffset(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
             _dateTime = (DateTime)info.GetValue("DateTime", typeof(DateTime))!; // Do not rename (binary serialization)
             _offsetMinutes = (short)info.GetValue("OffsetMinutes", typeof(short))!; // Do not rename (binary serialization)
         }
@@ -544,7 +537,7 @@ namespace System
         // date and optionally a time in a culture-specific or universal format.
         // Leading and trailing whitespace characters are allowed.
         //
-        public static DateTimeOffset ParseExact(string input, string format, IFormatProvider? formatProvider)
+        public static DateTimeOffset ParseExact(string input, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format, IFormatProvider? formatProvider)
         {
             if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             if (format == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.format);
@@ -555,7 +548,7 @@ namespace System
         // date and optionally a time in a culture-specific or universal format.
         // Leading and trailing whitespace characters are allowed.
         //
-        public static DateTimeOffset ParseExact(string input, string format, IFormatProvider? formatProvider, DateTimeStyles styles)
+        public static DateTimeOffset ParseExact(string input, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format, IFormatProvider? formatProvider, DateTimeStyles styles)
         {
             styles = ValidateStyles(styles, nameof(styles));
             if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
@@ -569,14 +562,14 @@ namespace System
             return new DateTimeOffset(dateResult.Ticks, offset);
         }
 
-        public static DateTimeOffset ParseExact(ReadOnlySpan<char> input, ReadOnlySpan<char> format, IFormatProvider? formatProvider, DateTimeStyles styles = DateTimeStyles.None)
+        public static DateTimeOffset ParseExact(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] ReadOnlySpan<char> format, IFormatProvider? formatProvider, DateTimeStyles styles = DateTimeStyles.None)
         {
             styles = ValidateStyles(styles, nameof(styles));
             DateTime dateResult = DateTimeParse.ParseExact(input, format, DateTimeFormatInfo.GetInstance(formatProvider), styles, out TimeSpan offset);
             return new DateTimeOffset(dateResult.Ticks, offset);
         }
 
-        public static DateTimeOffset ParseExact(string input, string[] formats, IFormatProvider? formatProvider, DateTimeStyles styles)
+        public static DateTimeOffset ParseExact(string input, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string[] formats, IFormatProvider? formatProvider, DateTimeStyles styles)
         {
             styles = ValidateStyles(styles, nameof(styles));
             if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
@@ -589,7 +582,7 @@ namespace System
             return new DateTimeOffset(dateResult.Ticks, offset);
         }
 
-        public static DateTimeOffset ParseExact(ReadOnlySpan<char> input, string[] formats, IFormatProvider? formatProvider, DateTimeStyles styles = DateTimeStyles.None)
+        public static DateTimeOffset ParseExact(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string[] formats, IFormatProvider? formatProvider, DateTimeStyles styles = DateTimeStyles.None)
         {
             styles = ValidateStyles(styles, nameof(styles));
             DateTime dateResult = DateTimeParse.ParseExactMultiple(input, formats, DateTimeFormatInfo.GetInstance(formatProvider), styles, out TimeSpan offset);
@@ -658,16 +651,16 @@ namespace System
         public override string ToString() =>
             DateTimeFormat.Format(ClockDateTime, null, null, Offset);
 
-        public string ToString(string? format) =>
+        public string ToString([StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string? format) =>
             DateTimeFormat.Format(ClockDateTime, format, null, Offset);
 
         public string ToString(IFormatProvider? formatProvider) =>
             DateTimeFormat.Format(ClockDateTime, null, formatProvider, Offset);
 
-        public string ToString(string? format, IFormatProvider? formatProvider) =>
+        public string ToString([StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string? format, IFormatProvider? formatProvider) =>
             DateTimeFormat.Format(ClockDateTime, format, formatProvider, Offset);
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null) =>
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null) =>
             DateTimeFormat.TryFormat(ClockDateTime, destination, out charsWritten, format, formatProvider, Offset);
 
         public DateTimeOffset ToUniversalTime() =>
@@ -717,7 +710,7 @@ namespace System
             return parsed;
         }
 
-        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string? format, IFormatProvider? formatProvider, DateTimeStyles styles,
+        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true), StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string? format, IFormatProvider? formatProvider, DateTimeStyles styles,
                                             out DateTimeOffset result)
         {
             styles = ValidateStyles(styles, nameof(styles));
@@ -738,7 +731,7 @@ namespace System
         }
 
         public static bool TryParseExact(
-            ReadOnlySpan<char> input, ReadOnlySpan<char> format, IFormatProvider? formatProvider, DateTimeStyles styles, out DateTimeOffset result)
+            ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] ReadOnlySpan<char> format, IFormatProvider? formatProvider, DateTimeStyles styles, out DateTimeOffset result)
         {
             styles = ValidateStyles(styles, nameof(styles));
             bool parsed = DateTimeParse.TryParseExact(input, format, DateTimeFormatInfo.GetInstance(formatProvider), styles, out DateTime dateResult, out TimeSpan offset);
@@ -746,7 +739,7 @@ namespace System
             return parsed;
         }
 
-        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string?[]? formats, IFormatProvider? formatProvider, DateTimeStyles styles,
+        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true), StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string?[]? formats, IFormatProvider? formatProvider, DateTimeStyles styles,
                                             out DateTimeOffset result)
         {
             styles = ValidateStyles(styles, nameof(styles));
@@ -767,7 +760,7 @@ namespace System
         }
 
         public static bool TryParseExact(
-            ReadOnlySpan<char> input, [NotNullWhen(true)] string?[]? formats, IFormatProvider? formatProvider, DateTimeStyles styles, out DateTimeOffset result)
+            ReadOnlySpan<char> input, [NotNullWhen(true), StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string?[]? formats, IFormatProvider? formatProvider, DateTimeStyles styles, out DateTimeOffset result)
         {
             styles = ValidateStyles(styles, nameof(styles));
             bool parsed = DateTimeParse.TryParseExactMultiple(input, formats, DateTimeFormatInfo.GetInstance(formatProvider), styles, out DateTime dateResult, out TimeSpan offset);
@@ -853,123 +846,69 @@ namespace System
         public static bool operator !=(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime != right.UtcDateTime;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime < right.UtcDateTime;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime <= right.UtcDateTime;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime > right.UtcDateTime;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime >= right.UtcDateTime;
 
-#if FEATURE_GENERIC_MATH
         //
         // IAdditionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static DateTimeOffset IAdditionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>.operator +(DateTimeOffset left, TimeSpan right)
-            => left + right;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked DateTimeOffset IAdditionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>.operator +(DateTimeOffset left, TimeSpan right)
-        //     => checked(left + right);
+        // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        // static DateTimeOffset IAdditionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>.operator checked +(DateTimeOffset left, TimeSpan right) => checked(left + right);
 
         //
         // IAdditiveIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static TimeSpan IAdditiveIdentity<DateTimeOffset, TimeSpan>.AdditiveIdentity => default;
-
-        //
-        // IComparisonOperators
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<DateTimeOffset, DateTimeOffset>.operator <(DateTimeOffset left, DateTimeOffset right)
-            => left < right;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<DateTimeOffset, DateTimeOffset>.operator <=(DateTimeOffset left, DateTimeOffset right)
-            => left <= right;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<DateTimeOffset, DateTimeOffset>.operator >(DateTimeOffset left, DateTimeOffset right)
-            => left > right;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<DateTimeOffset, DateTimeOffset>.operator >=(DateTimeOffset left, DateTimeOffset right)
-            => left >= right;
-
-        //
-        // IEqualityOperators
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IEqualityOperators<DateTimeOffset, DateTimeOffset>.operator ==(DateTimeOffset left, DateTimeOffset right)
-            => left == right;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IEqualityOperators<DateTimeOffset, DateTimeOffset>.operator !=(DateTimeOffset left, DateTimeOffset right)
-            => left != right;
+        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
+        public static TimeSpan AdditiveIdentity => default;
 
         //
         // IMinMaxValue
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static DateTimeOffset IMinMaxValue<DateTimeOffset>.MinValue => MinValue;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static DateTimeOffset IMinMaxValue<DateTimeOffset>.MaxValue => MaxValue;
 
         //
         // IParseable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static DateTimeOffset IParseable<DateTimeOffset>.Parse(string s, IFormatProvider? provider)
-            => Parse(s, provider);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IParseable<DateTimeOffset>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out DateTimeOffset result)
-            => TryParse(s, provider, DateTimeStyles.None, out result);
+        /// <inheritdoc cref="IParseable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out DateTimeOffset result) => TryParse(s, provider, DateTimeStyles.None, out result);
 
         //
         // ISpanParseable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static DateTimeOffset ISpanParseable<DateTimeOffset>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s, provider, DateTimeStyles.None);
+        /// <inheritdoc cref="ISpanParseable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        public static DateTimeOffset Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, provider, DateTimeStyles.None);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool ISpanParseable<DateTimeOffset>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out DateTimeOffset result)
-            => TryParse(s, provider, DateTimeStyles.None, out result);
+        /// <inheritdoc cref="ISpanParseable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out DateTimeOffset result) => TryParse(s, provider, DateTimeStyles.None, out result);
 
         //
         // ISubtractionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static DateTimeOffset ISubtractionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>.operator -(DateTimeOffset left, TimeSpan right)
-            => left - right;
+        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        // static DateTimeOffset ISubtractionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>.operator checked -(DateTimeOffset left, TimeSpan right) => checked(left - right);
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked DateTimeOffset ISubtractionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>.operator -(DateTimeOffset left, TimeSpan right)
-        //     => checked(left - right);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static TimeSpan ISubtractionOperators<DateTimeOffset, DateTimeOffset, TimeSpan>.operator -(DateTimeOffset left, DateTimeOffset right)
-            => left - right;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked TimeSpan ISubtractionOperators<DateTimeOffset, DateTimeOffset, TimeSpan>.operator -(DateTimeOffset left, DateTimeOffset right)
-        //     => checked(left - right);
-#endif // FEATURE_GENERIC_MATH
+        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        // static TimeSpan ISubtractionOperators<DateTimeOffset, DateTimeOffset, TimeSpan>.operator checked -(DateTimeOffset left, DateTimeOffset right) => checked(left - right);
     }
 }

@@ -16,3 +16,4 @@ DebuggerTests.PointerTests
 DebuggerTests.SetVariableValueTests
 DebuggerTests.MiscTests
 DebuggerTests.SteppingTests
+DebuggerTests.SetNextIpTests

@@ -11,6 +11,7 @@
 .assembly 'zeroinit01_small'{}
 .assembly extern xunit.core {}
 
+.namespace Test_zeroinit01_small {
 .class private auto ansi beforefieldinit T
        extends [mscorlib]System.Object
 {
@@ -30,7 +31,7 @@
     IL_0000:  ldc.i4.1
     IL_0001:  stloc.0
     
-    IL_0002:  call       void T::dirtyStack()
+    IL_0002:  call       void Test_zeroinit01_small.T::dirtyStack()
     // localloc
     IL_0007:  ldc.i4.4
     IL_0008:  ldc.i4.1
@@ -39,7 +40,7 @@
     IL_0010:  stloc.1
     // Set size of localloc
     IL_0011:  ldc.i4.1
-    IL_0016:  stsfld     int32 T::size_to_test
+    IL_0016:  stsfld     int32 Test_zeroinit01_small.T::size_to_test
     
     IL_001b:  ldc.i4.0
     IL_001c:  stloc.2
@@ -61,7 +62,7 @@
     IL_002b:  add
     IL_002c:  stloc.2
     L_LOOP2:  ldloc.2
-    IL_002e:  ldsfld     int32 T::size_to_test
+    IL_002e:  ldsfld     int32 Test_zeroinit01_small.T::size_to_test
     IL_0033:  blt.s      L_LOOP1
 
     IL_0035:  ldloc.0
@@ -76,7 +77,7 @@
     IL_0049:  call       void [System.Console]System.Console::WriteLine(string)
     ldc.i4.1
     IL_004e:  ret
-  } // end of method T::Main
+  } // end of method Test_zeroinit01_small.T::Main
 
   .method public hidebysig static void  dirtyStack() cil managed
   {
@@ -85,7 +86,7 @@
     .locals (int32* buffer,
              int32 n)
     IL_0000:  ldc.i4.4
-    IL_0001:  ldsfld     int32 T::size_to_test
+    IL_0001:  ldsfld     int32 Test_zeroinit01_small.T::size_to_test
     IL_0006:  mul
     IL_0007:  localloc
     IL_0009:  stloc.0
@@ -105,11 +106,11 @@
     IL_0017:  add
     IL_0018:  stloc.1
     IL_0019:  ldloc.1
-    IL_001a:  ldsfld     int32 T::size_to_test
+    IL_001a:  ldsfld     int32 Test_zeroinit01_small.T::size_to_test
     IL_001f:  blt.s      IL_000e
 
     IL_0021:  ret
-  } // end of method T::dirtyStack
+  } // end of method Test_zeroinit01_small.T::dirtyStack
 
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
@@ -119,6 +120,7 @@
     IL_0000:  ldarg.0
     IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
     IL_0006:  ret
-  } // end of method T::.ctor
+  } // end of method Test_zeroinit01_small.T::.ctor
 
-} // end of class T
+} // end of class Test_zeroinit01_small.T
+}

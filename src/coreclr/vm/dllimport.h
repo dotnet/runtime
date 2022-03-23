@@ -23,7 +23,15 @@ public:
     MethodDesc        *m_pMD;
     MethodTable       *m_pMT;
     Signature          m_sig;
+    // Module to use for signature reading.
     Module            *m_pModule;
+    // Module that owns any metadata that influences interop behavior.
+    // This is usually the same as m_pModule, but can differ with vararg
+    // P/Invokes, where the calling assembly's module is assigned to m_pModule
+    // since the specific caller signature is defined in that assembly, not the
+    // assembly that defined the P/Invoke.
+    Module            *m_pMetadataModule;
+    // Used for ILStubCache selection and MethodTable creation.
     Module            *m_pLoaderModule;
     mdMethodDef        m_tkMethodDef;
     SigTypeContext     m_typeContext;

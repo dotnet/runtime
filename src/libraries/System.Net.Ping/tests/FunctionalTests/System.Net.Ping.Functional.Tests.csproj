@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <!-- Test APIs introduced after 1.0 -->
   <ItemGroup>
@@ -15,6 +15,9 @@
     <Compile Include="PingOptionsTest.cs" />
     <Compile Include="TestSettings.cs" />
     <Compile Include="UnixPingUtilityTests.cs" />
+    <!-- Common -->
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <!-- System.Net Common -->
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
              Link="SocketCommon\Configuration.cs" />

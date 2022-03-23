@@ -9,7 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
-    internal readonly struct IndexField
+    internal readonly struct IndexField : IEquatable<IndexField>
     {
         public readonly DataColumn Column;
         public readonly bool IsDescending; // false = Asc; true = Desc what is default value for this?
@@ -22,15 +22,15 @@ namespace System.Data
             IsDescending = isDescending;
         }
 
-        public static bool operator ==(IndexField if1, IndexField if2) =>
-            if1.Column == if2.Column && if1.IsDescending == if2.IsDescending;
+        public static bool operator ==(IndexField if1, IndexField if2) => if1.Equals(if2);
 
-        public static bool operator !=(IndexField if1, IndexField if2) => !(if1 == if2);
+        public static bool operator !=(IndexField if1, IndexField if2) => !if1.Equals(if2);
 
         // must override Equals if == operator is defined
-        public override bool Equals([NotNullWhen(true)] object? obj) => obj is IndexField ?
-            this == (IndexField)obj :
-            false;
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is IndexField other && Equals(other);
+
+        public bool Equals(IndexField other) => Column == other.Column && IsDescending == other.IsDescending;
 
         // must override GetHashCode if Equals is redefined
         public override int GetHashCode() =>

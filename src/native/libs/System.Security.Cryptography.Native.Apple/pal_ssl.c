@@ -156,6 +156,14 @@ int32_t AppleCryptoNative_SslSetBreakOnServerAuth(SSLContextRef sslContext, int3
 #pragma clang diagnostic pop
 }
 
+int32_t AppleCryptoNative_SslSetBreakOnCertRequested(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus)
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    return SslSetSessionOption(sslContext, kSSLSessionOptionBreakOnCertRequested, setBreak, pOSStatus);
+#pragma clang diagnostic pop
+}
+
 int32_t AppleCryptoNative_SslSetBreakOnClientAuth(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus)
 {
 #pragma clang diagnostic push
@@ -275,6 +283,8 @@ PAL_TlsHandshakeState AppleCryptoNative_SslHandshake(SSLContextRef sslContext)
             return PAL_TlsHandshakeState_WouldBlock;
         case errSSLServerAuthCompleted:
             return PAL_TlsHandshakeState_ServerAuthCompleted;
+        case errSSLClientCertRequested:
+            return PAL_TlsHandshakeState_ClientCertRequested;
         default:
             return osStatus;
     }
@@ -631,8 +641,28 @@ int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, co
     }
 }
 
+// This API is present on macOS 10.5 and newer only
+static OSStatus (*SSLSetCertificateAuthoritiesPtr)(SSLContextRef context, CFArrayRef certificates, int32_t replaceExisting) = NULL;
+
+PALEXPORT int32_t AppleCryptoNative_SslSetCertificateAuthorities(SSLContextRef sslContext, CFArrayRef certificates, int32_t replaceExisting)
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    // The underlying call handles NULL inputs, so just pass it through
+
+    if (!SSLSetCertificateAuthoritiesPtr)
+    {
+        // not available.
+        return 0;
+    }
+
+    return SSLSetCertificateAuthoritiesPtr(sslContext, certificates, replaceExisting);
+#pragma clang diagnostic pop
+}
+
 __attribute__((constructor)) static void InitializeAppleCryptoSslShim()
 {
+    SSLSetCertificateAuthoritiesPtr = (OSStatus(*)(SSLContextRef, CFArrayRef, int32_t))dlsym(RTLD_DEFAULT, "SSLSetCertificateAuthorities");
     SSLSetALPNProtocolsPtr = (OSStatus(*)(SSLContextRef, CFArrayRef))dlsym(RTLD_DEFAULT, "SSLSetALPNProtocols");
     SSLCopyALPNProtocolsPtr = (OSStatus(*)(SSLContextRef, CFArrayRef*))dlsym(RTLD_DEFAULT, "SSLCopyALPNProtocols");
 }

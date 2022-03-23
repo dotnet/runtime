@@ -105,7 +105,7 @@ namespace System.Text.Json
             {
                 // Create the appropriate dictionary type. We already verified the types.
 #if DEBUG
-                Type underlyingIDictionaryType = jsonPropertyInfo.DeclaredPropertyType.GetCompatibleGenericInterface(typeof(IDictionary<,>))!;
+                Type underlyingIDictionaryType = jsonPropertyInfo.PropertyType.GetCompatibleGenericInterface(typeof(IDictionary<,>))!;
                 Type[] genericArgs = underlyingIDictionaryType.GetGenericArguments();
 
                 Debug.Assert(underlyingIDictionaryType.IsGenericType);
@@ -116,21 +116,21 @@ namespace System.Text.Json
                     genericArgs[1].UnderlyingSystemType == typeof(JsonElement) ||
                     genericArgs[1].UnderlyingSystemType == typeof(Nodes.JsonNode));
 #endif
-                if (jsonPropertyInfo.RuntimeTypeInfo.CreateObject == null)
+                if (jsonPropertyInfo.JsonTypeInfo.CreateObject == null)
                 {
                     // Avoid a reference to the JsonNode type for trimming
-                    if (jsonPropertyInfo.DeclaredPropertyType.FullName == JsonTypeInfo.JsonObjectTypeName)
+                    if (jsonPropertyInfo.PropertyType.FullName == JsonTypeInfo.JsonObjectTypeName)
                     {
                         extensionData = jsonPropertyInfo.ConverterBase.CreateObject(options);
                     }
                     else
                     {
-                        ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(jsonPropertyInfo.DeclaredPropertyType);
+                        ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(jsonPropertyInfo.PropertyType);
                     }
                 }
                 else
                 {
-                    extensionData = jsonPropertyInfo.RuntimeTypeInfo.CreateObject();
+                    extensionData = jsonPropertyInfo.JsonTypeInfo.CreateObject();
                 }
 
                 jsonPropertyInfo.SetExtensionDictionaryAsObject(obj, extensionData);

@@ -39,7 +39,7 @@
     <Compile Include="EnvelopedCms\DecryptTestsRsaPaddingModeTests.cs" />
     <Compile Include="EnvelopedCms\DecryptTestsUsingExplicitPrivateKey.cs" />
     <Compile Include="EnvelopedCms\KeyTransRecipientInfoRsaOaepCertTests.cs" />
-    <Compile Include="EnvelopedCms\DecryptTests.KeyPersistence.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="EnvelopedCms\DecryptTests.KeyPersistence.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="EnvelopedCms\KeyTransRecipientInfoRsaPaddingModeTests.cs" />
     <Compile Include="EnvelopedCms\SubjectIdentifierTests.cs" />
     <Compile Include="Pkcs12\CertBagTests.cs" />

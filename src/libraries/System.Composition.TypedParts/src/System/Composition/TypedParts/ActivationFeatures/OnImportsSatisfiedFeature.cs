@@ -19,9 +19,8 @@ namespace System.Composition.TypedParts.ActivationFeatures
     {
         private readonly AttributedModelProvider _attributeContext;
 
-        public OnImportsSatisfiedFeature(AttributedModelProvider attributeContext)
+        public OnImportsSatisfiedFeature(AttributedModelProvider attributeContext!!)
         {
-            if (attributeContext == null) throw new ArgumentNullException(nameof(attributeContext));
             _attributeContext = attributeContext;
         }
 

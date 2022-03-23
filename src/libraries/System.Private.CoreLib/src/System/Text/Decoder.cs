@@ -33,8 +33,7 @@ namespace System.Text
             get => _fallback;
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 // Can't change fallback if buffer is wrong
                 if (_fallbackBuffer != null && _fallbackBuffer.Remaining > 0)
@@ -99,13 +98,9 @@ namespace System.Text
         // We expect this to be the workhorse for NLS Encodings, but for existing
         // ones we need a working (if slow) default implementation)
         [CLSCompliant(false)]
-        public virtual unsafe int GetCharCount(byte* bytes, int count, bool flush)
+        public virtual unsafe int GetCharCount(byte* bytes!!, int count, bool flush)
         {
             // Validate input parameters
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes),
-                      SR.ArgumentNull_Array);
-
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -169,14 +164,10 @@ namespace System.Text
         // could easily overflow our output buffer.  Therefore we do an extra test
         // when we copy the buffer so that we don't overflow charCount either.
         [CLSCompliant(false)]
-        public virtual unsafe int GetChars(byte* bytes, int byteCount,
-                                              char* chars, int charCount, bool flush)
+        public virtual unsafe int GetChars(byte* bytes!!, int byteCount,
+                                           char* chars!!, int charCount, bool flush)
         {
             // Validate input parameters
-            if (chars == null || bytes == null)
-                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes),
-                    SR.ArgumentNull_Array);
-
             if (byteCount < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException(byteCount < 0 ? nameof(byteCount) : nameof(charCount),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -234,15 +225,11 @@ namespace System.Text
         // Note that if all of the input bytes are not consumed, then we'll do a /2, which means
         // that its likely that we didn't consume as many bytes as we could have.  For some
         // applications this could be slow.  (Like trying to exactly fill an output buffer from a bigger stream)
-        public virtual void Convert(byte[] bytes, int byteIndex, int byteCount,
-                                      char[] chars, int charIndex, int charCount, bool flush,
-                                      out int bytesUsed, out int charsUsed, out bool completed)
+        public virtual void Convert(byte[] bytes!!, int byteIndex, int byteCount,
+                                    char[] chars!!, int charIndex, int charCount, bool flush,
+                                    out int bytesUsed, out int charsUsed, out bool completed)
         {
             // Validate parameters
-            if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars),
-                      SR.ArgumentNull_Array);
-
             if (byteIndex < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -290,15 +277,11 @@ namespace System.Text
         // that its likely that we didn't consume as many bytes as we could have.  For some
         // applications this could be slow.  (Like trying to exactly fill an output buffer from a bigger stream)
         [CLSCompliant(false)]
-        public virtual unsafe void Convert(byte* bytes, int byteCount,
-                                             char* chars, int charCount, bool flush,
-                                             out int bytesUsed, out int charsUsed, out bool completed)
+        public virtual unsafe void Convert(byte* bytes!!, int byteCount,
+                                           char* chars!!, int charCount, bool flush,
+                                           out int bytesUsed, out int charsUsed, out bool completed)
         {
             // Validate input parameters
-            if (chars == null || bytes == null)
-                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes),
-                    SR.ArgumentNull_Array);
-
             if (byteCount < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException(byteCount < 0 ? nameof(byteCount) : nameof(charCount),
                     SR.ArgumentOutOfRange_NeedNonNegNum);

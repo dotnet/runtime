@@ -34,6 +34,8 @@ const ep_char8_t* _ep_os_info = "Unknown";
 const ep_char8_t* _ep_arch_info = "x86";
 #elif defined(TARGET_AMD64)
 const ep_char8_t* _ep_arch_info = "x64";
+#elif defined(TARGET_ARMV6)
+const ep_char8_t* _ep_arch_info = "arm32";
 #elif defined(TARGET_ARM)
 const ep_char8_t* _ep_arch_info = "arm32";
 #elif defined(TARGET_ARM64)

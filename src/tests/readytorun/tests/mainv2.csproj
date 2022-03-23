@@ -6,7 +6,7 @@
   <ItemGroup>
     <ProjectReference Include="fieldgetter.ilproj" />
     <ProjectReference Include="testv1\test.csproj" />
-    <ProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="main.cs" />
@@ -45,7 +45,7 @@ if not exist mainv2.ni.dll (
     exit /b 1
 )
 
-%Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -r:%25CD% -o:fieldgetter.ni.dll fieldgetter.dll 
+%Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -r:%25CD% -o:fieldgetter.ni.dll fieldgetter.dll
 
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
@@ -67,7 +67,7 @@ if not exist test.dll (
     exit /b 1
 )
 
-%Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -r:%25CD% -o:test.ni.dll test.dll 
+%Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -r:%25CD% -o:test.ni.dll test.dll
 
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (

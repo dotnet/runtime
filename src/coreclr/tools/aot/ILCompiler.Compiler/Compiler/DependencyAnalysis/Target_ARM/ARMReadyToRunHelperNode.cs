@@ -142,7 +142,6 @@ namespace ILCompiler.DependencyAnalysis
                         }
                         else
                         {
-                            ISymbolNode targetMethodNode = target.GetTargetNode(factory);
                             encoder.EmitMOV(encoder.TargetRegister.Arg2, target.GetTargetNode(factory));
                         }
 

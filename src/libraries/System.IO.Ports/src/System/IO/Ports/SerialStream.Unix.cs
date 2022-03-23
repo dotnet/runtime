@@ -517,7 +517,7 @@ namespace System.IO.Ports
                 eventsToPoll |= Interop.PollEvents.POLLOUT;
             }
 
-            Interop.PollEvents events = Interop.PollEvents.POLLNONE;
+            Interop.PollEvents events;
             Interop.Error ret = Interop.Serial.Poll(
                 _handle,
                 eventsToPoll,
@@ -566,14 +566,9 @@ namespace System.IO.Ports
         }
 
         // this method is used by SerialPort upon SerialStream's creation
-        internal SerialStream(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits, int readTimeout, int writeTimeout, Handshake handshake,
+        internal SerialStream(string portName!!, int baudRate, Parity parity, int dataBits, StopBits stopBits, int readTimeout, int writeTimeout, Handshake handshake,
             bool dtrEnable, bool rtsEnable, bool discardNull, byte parityReplace)
         {
-            if (portName == null)
-            {
-                throw new ArgumentNullException(nameof(portName));
-            }
-
             CheckBaudRate(baudRate);
 
             // Error checking done in SerialPort.

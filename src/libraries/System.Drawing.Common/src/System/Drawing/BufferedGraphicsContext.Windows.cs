@@ -139,7 +139,6 @@ namespace System.Drawing
                 if (hbm != IntPtr.Zero)
                 {
                     Interop.Gdi32.DeleteObject(hbm);
-                    hbm = IntPtr.Zero;
                 }
             }
             return bRet;

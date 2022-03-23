@@ -1,7 +1,7 @@
 /**
  * \file
  * COM Interop Support
- * 
+ *
  *
  * (C) 2002 Ximian, Inc.  http://www.ximian.com
  *
@@ -39,16 +39,16 @@ MonoMethod *
 mono_cominterop_get_invoke (MonoMethod *method);
 
 int
-mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum, 
+mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 											MonoType *t,
-											MonoMarshalSpec *spec, 
-											int conv_arg, MonoType **conv_arg_type, 
+											MonoMarshalSpec *spec,
+											int conv_arg, MonoType **conv_arg_type,
 											MarshalAction action);
 
 int
 mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum,
 										MonoType *t,
-										MonoMarshalSpec *spec, 
+										MonoMarshalSpec *spec,
 										int conv_arg, MonoType **conv_arg_type,
 										MarshalAction action);
 
@@ -58,7 +58,7 @@ mono_string_from_bstr (/*mono_bstr*/gpointer bstr);
 MonoStringHandle
 mono_string_from_bstr_checked (mono_bstr_const bstr, MonoError *error);
 
-MONO_API void 
+MONO_API void
 mono_free_bstr (/*mono_bstr_const*/gpointer bstr);
 
 MonoClass*

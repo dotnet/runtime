@@ -30,7 +30,7 @@ namespace System.Text.RegularExpressions
         ExplicitCapture         = 0x0004, // "n"
 
         /// <summary>Compile the regular expression to Microsoft intermediate language (MSIL).</summary>
-        Compiled                = 0x0008, // "c"
+        Compiled                = 0x0008,
 
         /// <summary>
         /// Use single-line mode, where the period (.) matches every character (instead of every character except \n).
@@ -41,15 +41,10 @@ namespace System.Text.RegularExpressions
         IgnorePatternWhitespace = 0x0020, // "x"
 
         /// <summary>Change the search direction. Search moves from right to left instead of from left to right.</summary>
-        RightToLeft             = 0x0040, // "r"
-
-#if DEBUG
-        /// <summary>Enable Regex debugging.</summary>
-        Debug                   = 0x0080, // "d"
-#endif
+        RightToLeft             = 0x0040,
 
         /// <summary>Enable ECMAScript-compliant behavior for the expression.</summary>
-        ECMAScript              = 0x0100, // "e"
+        ECMAScript              = 0x0100,
 
         /// <summary>Ignore cultural differences in language.</summary>
         CultureInvariant        = 0x0200,
@@ -65,9 +60,5 @@ namespace System.Text.RegularExpressions
         /// the top-level match.
         /// </remarks>
         NonBacktracking         = 0x0400,
-
-        // RegexCompiler internally uses 0x80000000 for its own internal purposes.
-        // If such a value ever needs to be added publicly, RegexCompiler will need
-        // to be changed to avoid it.
     }
 }

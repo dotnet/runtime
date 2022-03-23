@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Options
         private readonly IOptionsMonitorCache<TOptions> _cache;
         private readonly IOptionsFactory<TOptions> _factory;
         private readonly List<IDisposable> _registrations = new List<IDisposable>();
-        internal event Action<TOptions, string> _onChange;
+        internal event Action<TOptions, string>? _onChange;
 
         /// <summary>
         /// Constructor.
@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Options
             }
         }
 
-        private void InvokeChanged(string name)
+        private void InvokeChanged(string? name)
         {
             name = name ?? Options.DefaultName;
             _cache.TryRemove(name);
@@ -83,7 +83,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
         /// </summary>
-        public virtual TOptions Get(string name)
+        public virtual TOptions Get(string? name)
         {
             name = name ?? Options.DefaultName;
             return _cache.GetOrAdd(name, () => _factory.Create(name));

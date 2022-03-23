@@ -5,6 +5,7 @@
 #define __COMMONMACROS_H__
 
 #include "rhassert.h"
+#include <minipal/utils.h>
 
 #define EXTERN_C extern "C"
 
@@ -32,12 +33,6 @@
 #define MSVC_RESTORE_WARNING_STATE()
 
 #endif // _MSC_VER
-
-#ifndef COUNTOF
-template <typename _CountofType, size_t _SizeOfArray>
-char (*COUNTOF_helper(_CountofType (&_Array)[_SizeOfArray]))[_SizeOfArray];
-#define COUNTOF(_Array) sizeof(*COUNTOF_helper(_Array))
-#endif // COUNTOF
 
 #ifndef offsetof
 #define offsetof(s,m)   (uintptr_t)( (intptr_t)&reinterpret_cast<const volatile char&>((((s *)0)->m)) )

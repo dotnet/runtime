@@ -299,13 +299,9 @@ namespace System.Xml
             return readCount;
         }
 
-        public override async Task<int> ReadElementContentAsBase64Async(byte[] buffer, int index, int count)
+        public override async Task<int> ReadElementContentAsBase64Async(byte[] buffer!!, int index, int count)
         {
             // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -360,13 +356,9 @@ namespace System.Xml
             return readCount;
         }
 
-        public override async Task<int> ReadElementContentAsBinHexAsync(byte[] buffer, int index, int count)
+        public override async Task<int> ReadElementContentAsBinHexAsync(byte[] buffer!!, int index, int count)
         {
             // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));

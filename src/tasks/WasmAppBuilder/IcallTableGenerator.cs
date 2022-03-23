@@ -274,7 +274,6 @@ public class IcallTableGenerator : Task
         var method = icall.Method!;
         sb.Append (MapType (method.ReturnType));
         sb.Append ($" {icall.Func} (");
-        int pindex = 0;
         int aindex = 0;
         if (!method.IsStatic)
         {
@@ -286,7 +285,6 @@ public class IcallTableGenerator : Task
             if (aindex > 0)
                 sb.Append (',');
             sb.Append (MapType (p.ParameterType));
-            pindex++;
             aindex++;
         }
         if (icall.Handles)
@@ -294,7 +292,6 @@ public class IcallTableGenerator : Task
             if (aindex > 0)
                 sb.Append (',');
             sb.Append ("int");
-            pindex++;
         }
         sb.Append (");");
         return sb.ToString ();

@@ -277,6 +277,9 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
             uint64_t start = segment.vmaddr + module.LoadBias();
             uint64_t end = start + segment.vmsize;
 
+            // Add this module segment to the set used by the thread unwinding to lookup the module base address for an ip.
+            AddModuleAddressRange(start, end, module.BaseAddress());
+
             // Round to page boundary
             start = start & PAGE_MASK;
             _ASSERTE(start > 0);
@@ -297,9 +300,6 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
                 }
                 // Add this module segment to the module mappings list
                 m_moduleMappings.insert(moduleRegion);
-
-                // Add this module segment to the set used by the thread unwinding to lookup the module base address for an ip.
-                AddModuleAddressRange(start, end, module.BaseAddress());
             }
             else
             {

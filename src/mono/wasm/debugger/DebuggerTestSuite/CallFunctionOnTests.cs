@@ -534,7 +534,6 @@ namespace DebuggerTests
             // doesn't get reported, and the execution is NOT paused even with setPauseOnException=true
             result = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
             Assert.False(result.IsOk, "result.IsOk");
-            Assert.True(result.IsErr, "result.IsErr");
 
             var hasErrorMessage = result.Error["exceptionDetails"]?["exception"]?["description"]?.Value<string>()?.Contains(error_msg);
             Assert.True((hasErrorMessage ?? false), "Exception message not found");
@@ -785,7 +784,7 @@ namespace DebuggerTests
                });
 
                var res = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
-               Assert.True(res.IsErr);
+               Assert.False(res.IsOk);
            });
 
         [Theory]
@@ -811,7 +810,7 @@ namespace DebuggerTests
             });
 
             var res = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
-            Assert.True(res.IsErr);
+            Assert.False(res.IsOk);
         }
 
         [Theory]

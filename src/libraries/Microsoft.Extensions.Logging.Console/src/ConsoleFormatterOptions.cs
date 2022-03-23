@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Microsoft.Extensions.Logging.Console
@@ -21,6 +22,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// <summary>
         /// Gets or sets format string used to format timestamp in logging messages. Defaults to <c>null</c>.
         /// </summary>
+        [StringSyntax(StringSyntaxAttribute.DateTimeFormat)]
         public string TimestampFormat { get; set; }
 
         /// <summary>

@@ -10,6 +10,7 @@ let _scratch_root_buffer: WasmRootBuffer | null = null;
 let _scratch_root_free_indices: Int32Array | null = null;
 let _scratch_root_free_indices_count = 0;
 const _scratch_root_free_instances: WasmRoot<any>[] = [];
+const _external_root_free_instances: WasmExternalRoot<any>[] = [];
 
 /**
  * Allocates a block of memory that can safely contain pointers into the managed heap.
@@ -53,6 +54,26 @@ export function mono_wasm_new_root_buffer_from_pointer(offset: VoidPtr, capacity
 }
 
 /**
+ * Allocates a WasmRoot pointing to a root provided and controlled by external code. Typicaly on managed stack.
+ * Releasing this root will not de-allocate the root space. You still need to call .release().
+ */
+export function mono_wasm_new_external_root<T extends ManagedPointer | NativePointer>(address: VoidPtr): WasmRoot<T> {
+    let result: WasmExternalRoot<T>;
+
+    if (!address)
+        throw new Error("address must be a location in the native heap");
+
+    if (_external_root_free_instances.length > 0) {
+        result = _external_root_free_instances.pop()!;
+        result._set_address(address);
+    } else {
+        result = new WasmExternalRoot<T>(address);
+    }
+
+    return result;
+}
+
+/**
  * Allocates temporary storage for a pointer into the managed heap.
  * Pointers stored here will be visible to the GC, ensuring that the object they point to aren't moved or collected.
  * If you already have a managed pointer you can pass it as an argument to initialize the temporary storage.
@@ -68,7 +89,7 @@ export function mono_wasm_new_root<T extends ManagedPointer | NativePointer>(val
         const index = _mono_wasm_claim_scratch_index();
         const buffer = _scratch_root_buffer;
 
-        result = new WasmRoot(buffer!, index);
+        result = new WasmJsOwnedRoot(buffer!, index);
     }
 
     if (value !== undefined) {
@@ -239,7 +260,20 @@ export class WasmRootBuffer {
     }
 }
 
-export class WasmRoot<T extends ManagedPointer | NativePointer> {
+export interface WasmRoot<T extends ManagedPointer | NativePointer> {
+    get_address(): NativePointer;
+    get_address_32(): number;
+    get(): T;
+    set(value: T): T;
+    get value(): T;
+    set value(value: T);
+    valueOf(): T;
+    clear(): void;
+    release(): void;
+    toString(): string;
+}
+
+class WasmJsOwnedRoot<T extends ManagedPointer | NativePointer> implements WasmRoot<T> {
     private __buffer: WasmRootBuffer;
     private __index: number;
 
@@ -299,5 +333,63 @@ export class WasmRoot<T extends ManagedPointer | NativePointer> {
 
     toString(): string {
         return `[root @${this.get_address()}]`;
+    }
+}
+
+class WasmExternalRoot<T extends ManagedPointer | NativePointer> implements WasmRoot<T> {
+    private __external_address: NativePointer = <any>undefined;
+    private __external_address_32: number = <any>undefined;
+
+    constructor(address: NativePointer) {
+        this._set_address(address);
+    }
+
+    _set_address(address: NativePointer): void {
+        this.__external_address = address;
+        this.__external_address_32 = <number><any>address >>> 2;
+    }
+
+    get_address(): NativePointer {
+        return this.__external_address;
+    }
+
+    get_address_32(): number {
+        return this.__external_address_32;
+    }
+
+    get(): T {
+        const result = Module.HEAPU32[this.__external_address_32];
+        return <any>result;
+    }
+
+    set(value: T): T {
+        Module.HEAPU32[this.__external_address_32] = <number><any>value;
+        return value;
+    }
+
+    get value(): T {
+        return this.get();
+    }
+
+    set value(value: T) {
+        this.set(value);
+    }
+
+    valueOf(): T {
+        return this.get();
+    }
+
+    clear(): void {
+        this.set(<any>0);
+    }
+
+    release(): void {
+        const maxPooledInstances = 128;
+        if (_external_root_free_instances.length < maxPooledInstances)
+            _external_root_free_instances.push(this);
+    }
+
+    toString(): string {
+        return `[external root @${this.get_address()}]`;
     }
 }

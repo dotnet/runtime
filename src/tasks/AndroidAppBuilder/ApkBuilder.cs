@@ -503,7 +503,7 @@ public class ApkBuilder
         string aapt = Path.Combine(buildToolsFolder, "aapt");
         string apksigner = Path.Combine(buildToolsFolder, "apksigner");
 
-        string apkPath = "";
+        string apkPath;
         if (string.IsNullOrEmpty(ProjectName))
             apkPath = Directory.GetFiles(Path.Combine(OutputDir, "bin"), "*.apk").First();
         else

@@ -27,7 +27,7 @@ namespace hello
             testLog = new TestUtil.TestLog(expectedOut);
         }
 
-        static public int Main(string[] args)
+        static public int Main()
         {
             //Start recording
             testLog.StartRecording();
@@ -39,11 +39,8 @@ namespace hello
                 if (i > 0) goto done;
                 try
                 {
-                    if (args.Length == 0)
-                    {
-                        i++;
-                        goto begintry1;
-                    }
+                    i++;
+                    goto begintry1;
                 }
                 finally
                 {

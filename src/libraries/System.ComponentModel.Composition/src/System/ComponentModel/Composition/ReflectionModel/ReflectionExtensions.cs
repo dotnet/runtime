@@ -41,13 +41,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        public static LazyMemberInfo ToLazyMember(this MemberInfo member)
+        public static LazyMemberInfo ToLazyMember(this MemberInfo member!!)
         {
-            if (member == null)
-            {
-                throw new ArgumentNullException(nameof(member));
-            }
-
             if (member.MemberType == MemberTypes.Property)
             {
                 PropertyInfo? property = member as PropertyInfo;
@@ -81,13 +76,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return reflectionMember;
         }
 
-        public static ReflectionProperty ToReflectionProperty(this PropertyInfo property)
+        public static ReflectionProperty ToReflectionProperty(this PropertyInfo property!!)
         {
-            if (property == null)
-            {
-                throw new ArgumentNullException(nameof(property));
-            }
-
             return CreateReflectionProperty(property.GetGetMethod(true)!, property.GetSetMethod(true)!);
         }
 
@@ -101,13 +91,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return new ReflectionProperty(getMethod, setMethod);
         }
 
-        public static ReflectionParameter ToReflectionParameter(this ParameterInfo parameter)
+        public static ReflectionParameter ToReflectionParameter(this ParameterInfo parameter!!)
         {
-            if (parameter == null)
-            {
-                throw new ArgumentNullException(nameof(parameter));
-            }
-
             return new ReflectionParameter(parameter);
         }
 
@@ -121,33 +106,18 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return new ReflectionMethod(method);
         }
 
-        public static ReflectionField ToReflectionField(this FieldInfo field)
+        public static ReflectionField ToReflectionField(this FieldInfo field!!)
         {
-            if (field == null)
-            {
-                throw new ArgumentNullException(nameof(field));
-            }
-
             return new ReflectionField(field);
         }
 
-        public static ReflectionType ToReflectionType(this Type type)
+        public static ReflectionType ToReflectionType(this Type type!!)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
             return new ReflectionType(type);
         }
 
-        public static ReflectionWritableMember ToReflectionWritableMember(this MemberInfo member)
+        public static ReflectionWritableMember ToReflectionWritableMember(this MemberInfo member!!)
         {
-            if (member == null)
-            {
-                throw new ArgumentNullException(nameof(member));
-            }
-
             if (member.MemberType == MemberTypes.Property)
             {
                 return ((PropertyInfo)member).ToReflectionProperty();

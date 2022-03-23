@@ -383,7 +383,7 @@ mono_strength_reduction_ins (MonoCompile *cfg, MonoInst *ins, const char **spec)
 			ins->opcode = OP_ICONST;
 			MONO_INST_NULLIFY_SREGS (ins);
 			ins->inst_c0 = 0;
-		} else if ((ins->inst_imm > 0) && (ins->inst_imm < (1LL << 32)) && 
+		} else if ((ins->inst_imm > 0) && (ins->inst_imm < (1LL << 32)) &&
 			   (power != -1) && (!cfg->backend->optimized_div)) {
 			gboolean is_long = ins->opcode == OP_LREM_IMM;
 			int compensator_reg = alloc_ireg (cfg);
@@ -600,21 +600,21 @@ mono_local_cprop (MonoCompile *cfg)
 				def = defs [sreg];
 
 				/* Copy propagation */
-				/* 
-				 * The first check makes sure the source of the copy did not change since 
+				/*
+				 * The first check makes sure the source of the copy did not change since
 				 * the copy was made.
 				 * The second check avoids volatile variables.
-				 * The third check avoids copy propagating local vregs through a call, 
-				 * since the lvreg will be spilled 
+				 * The third check avoids copy propagating local vregs through a call,
+				 * since the lvreg will be spilled
 				 * The fourth check avoids copy propagating a vreg in cases where
 				 * it would be eliminated anyway by reverse copy propagation later,
-				 * because propagating it would create another use for it, thus making 
+				 * because propagating it would create another use for it, thus making
 				 * it impossible to use reverse copy propagation.
 				 */
 				/* Enabling this for floats trips up the fp stack */
-				/* 
-				 * Enabling this for floats on amd64 seems to cause a failure in 
-				 * basic-math.cs, most likely because it gets rid of some r8->r4 
+				/*
+				 * Enabling this for floats on amd64 seems to cause a failure in
+				 * basic-math.cs, most likely because it gets rid of some r8->r4
 				 * conversions.
 				 */
 				if (MONO_IS_MOVE (def) &&
@@ -707,7 +707,7 @@ mono_local_cprop (MonoCompile *cfg)
 				}
 				else if (((def->opcode == OP_ADD_IMM) || (def->opcode == OP_LADD_IMM)) && (MONO_IS_LOAD_MEMBASE (ins) || MONO_ARCH_IS_OP_MEMBASE (ins->opcode))) {
 					/* ADD_IMM is created by spill_global_vars */
-					/* 
+					/*
 					 * We have to guarantee that def->sreg1 haven't changed since def->dreg
 					 * was defined. cfg->frame_reg is assumed to remain constant.
 					 */
@@ -806,7 +806,7 @@ mono_local_cprop (MonoCompile *cfg)
 					def_index [ins->dreg] = ins_index;
 				}
 			}
-			
+
 			if (MONO_IS_CALL (ins))
 				last_call_index = ins_index;
 
@@ -825,7 +825,7 @@ reg_is_softreg_no_fpstack (int reg, const char spec)
 #endif
 		|| (spec == 'v');
 }
-		
+
 static gboolean
 reg_is_softreg (int reg, const char spec)
 {
@@ -864,7 +864,7 @@ mono_is_simd_accessor (MonoInst *ins)
 /**
  * mono_local_deadce:
  *
- *   Get rid of the dead assignments to local vregs like the ones created by the 
+ *   Get rid of the dead assignments to local vregs like the ones created by the
  * copyprop pass.
  */
 void
@@ -933,7 +933,7 @@ mono_local_deadce (MonoCompile *cfg)
 				def = prev_f;
 				spec2 = INS_INFO (def->opcode);
 
-				/* 
+				/*
 				 * Perform a limited kind of reverse copy propagation, i.e.
 				 * transform B <- FOO; A <- B into A <- FOO
 				 * This isn't copyprop, not deadce, but it can only be performed
@@ -953,17 +953,17 @@ mono_local_deadce (MonoCompile *cfg)
 
 			/* Enabling this on x86 could screw up the fp stack */
 			if (reg_is_softreg_no_fpstack (ins->dreg, spec [MONO_INST_DEST])) {
-				/* 
+				/*
 				 * Assignments to global vregs can only be eliminated if there is another
 				 * assignment to the same vreg later in the same bblock.
 				 */
-				if (!mono_bitset_test_fast (used, ins->dreg) && 
+				if (!mono_bitset_test_fast (used, ins->dreg) &&
 					(!get_vreg_to_inst (cfg, ins->dreg) || (!bb->extended && !vreg_is_volatile (cfg, ins->dreg) && mono_bitset_test_fast (defined, ins->dreg))) &&
 					MONO_INS_HAS_NO_SIDE_EFFECT (ins)) {
 					/* Happens with CMOV instructions */
 					if (prev_f && prev_f->opcode == OP_ICOMPARE_IMM) {
 						MonoInst *prev = prev_f;
-						/* 
+						/*
 						 * Can't use DELETE_INS since that would interfere with the
 						 * FOR_EACH_INS loop.
 						 */
@@ -996,7 +996,7 @@ mono_local_deadce (MonoCompile *cfg)
 
 						regpair = (guint32)(gssize)(l->data);
 						reg = regpair & 0xffffff;
-					
+
 						mono_bitset_set_fast (used, reg);
 					}
 				}
@@ -1007,7 +1007,7 @@ mono_local_deadce (MonoCompile *cfg)
 
 						regpair = (guint32)(gssize)(l->data);
 						reg = regpair & 0xffffff;
-					
+
 						mono_bitset_set_fast (used, reg);
 					}
 				}

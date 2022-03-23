@@ -557,7 +557,7 @@ namespace System.Formats.Cbor.Tests
                 (new object[] { CborTag.MimeMessage, 42 }, "d824182a"),
                 (42.0m, "c482201901a4"),
                 ((BigInteger)1, "c24101"),
-                (DateTimeOffset.UnixEpoch, "c0781c313937302d30312d30315430303a30303a30302e303030303030305a"),
+                (CborTestHelpers.UnixEpoch, "c0781c313937302d30312d30315430303a30303a30302e303030303030305a"),
             };
     }
 }

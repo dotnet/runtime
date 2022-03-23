@@ -15,11 +15,11 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
 
         private readonly StringComparison _comparisonType;
 
-        public WildcardPathSegment(string beginsWith, List<string> contains, string endsWith, StringComparison comparisonType)
+        public WildcardPathSegment(string beginsWith!!, List<string> contains!!, string endsWith!!, StringComparison comparisonType)
         {
-            BeginsWith = beginsWith ?? throw new ArgumentNullException(nameof(beginsWith));
-            Contains = contains ?? throw new ArgumentNullException(nameof(contains));
-            EndsWith = endsWith ?? throw new ArgumentNullException(nameof(endsWith));
+            BeginsWith = beginsWith;
+            Contains = contains;
+            EndsWith = endsWith;
             _comparisonType = comparisonType;
         }
 

@@ -1118,6 +1118,18 @@ namespace System.Diagnostics.Tests
             Assert.Equal(_process.ProcessName, p.ProcessName);
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void GetProcessById_KilledProcess_ThrowsArgumentException()
+        {
+            Process process = CreateDefaultProcess();
+            var handle = process.SafeHandle;
+            int processId = process.Id;
+            process.Kill();
+            process.WaitForExit(WaitInMS);
+            Assert.Throws<ArgumentException>(() => Process.GetProcessById(processId));
+            GC.KeepAlive(handle);
+        }
+
         [Fact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void TestGetProcesses()
@@ -1147,7 +1159,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void GetProcesses_EmptyMachineName_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => Process.GetProcesses(""));
+            AssertExtensions.Throws<ArgumentException>("machineName", () => Process.GetProcesses(""));
         }
 
         [Fact]
@@ -1292,7 +1304,7 @@ namespace System.Diagnostics.Tests
         public void GetProcessesByName_EmptyMachineName_ThrowsArgumentException()
         {
             Process currentProcess = Process.GetCurrentProcess();
-            AssertExtensions.Throws<ArgumentException>(null, () => Process.GetProcessesByName(currentProcess.ProcessName, ""));
+            AssertExtensions.Throws<ArgumentException>("machineName", () => Process.GetProcessesByName(currentProcess.ProcessName, ""));
         }
 
         [Fact]

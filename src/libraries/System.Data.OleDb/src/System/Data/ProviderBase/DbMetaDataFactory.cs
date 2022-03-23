@@ -204,7 +204,6 @@ namespace System.Data.ProviderBase
                 if (reader != null)
                 {
                     reader.Dispose();
-                    reader = null;
                 }
             }
 
@@ -215,7 +214,6 @@ namespace System.Data.ProviderBase
         {
             DataColumn newDestinationColumn;
             int currentColumn;
-            DataColumn[]? filteredSourceColumns = null;
 
             int columnCount = 0;
             foreach (DataColumn sourceColumn in sourceTable.Columns)
@@ -232,7 +230,7 @@ namespace System.Data.ProviderBase
             }
 
             currentColumn = 0;
-            filteredSourceColumns = new DataColumn[columnCount];
+            var filteredSourceColumns = new DataColumn[columnCount];
 
             foreach (DataColumn sourceColumn in sourceTable.Columns)
             {
@@ -362,13 +360,12 @@ namespace System.Data.ProviderBase
 
         private string GetParameterName(string neededCollectionName, int neededRestrictionNumber)
         {
-            DataTable? restrictionsTable = null;
-            DataColumnCollection? restrictionColumns = null;
+            DataTable? restrictionsTable;
+            DataColumnCollection? restrictionColumns;
             DataColumn? collectionName = null;
             DataColumn? parameterName = null;
             DataColumn? restrictionName = null;
             DataColumn? restrictionNumber = null;
-            ;
             string? result = null;
 
             restrictionsTable = _metaDataCollectionsDataSet.Tables[DbMetaDataCollectionNames.Restrictions];
@@ -416,13 +413,11 @@ namespace System.Data.ProviderBase
             DataTable metaDataCollectionsTable = _metaDataCollectionsDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections]!;
             DataColumn populationMechanismColumn = metaDataCollectionsTable.Columns[_populationMechanism]!;
             DataColumn collectionNameColumn = metaDataCollectionsTable.Columns[DbMetaDataColumnNames.CollectionName]!;
-            DataRow? requestedCollectionRow = null;
-            DataTable? requestedSchema = null;
             string[]? hiddenColumns;
-            string? exactCollectionName = null;
+            DataTable? requestedSchema;
 
-            requestedCollectionRow = FindMetaDataCollectionRow(collectionName);
-            exactCollectionName = (requestedCollectionRow[collectionNameColumn, DataRowVersion.Current] as string)!;
+            DataRow? requestedCollectionRow = FindMetaDataCollectionRow(collectionName);
+            string exactCollectionName = (requestedCollectionRow[collectionNameColumn, DataRowVersion.Current] as string)!;
 
             if (ADP.IsEmptyArray(restrictions) == false)
             {

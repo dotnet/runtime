@@ -43,7 +43,7 @@ class Class1
         Console.WriteLine("middle1 L1");
     }
 
-    static public int Main(string[] args)
+    static public int Main()
     {
         // start recording
         testLog.StartRecording();

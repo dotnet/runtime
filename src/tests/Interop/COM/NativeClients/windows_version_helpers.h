@@ -23,7 +23,7 @@ inline HRESULT is_windows_nano()
         osVersionInfo.wServicePackMinor,
         &productKind))
     {
-        return HRESULT_FROM_WIN32(GetLastError());
+        return E_FAIL;
     }
 
     if (productKind == PRODUCT_IOTUAP)
@@ -31,33 +31,40 @@ inline HRESULT is_windows_nano()
         return S_FALSE;
     }
 
+    LSTATUS err;
     DWORD dataSize;
     DWORD type;
-    if (!RegGetValueW(HKEY_LOCAL_MACHINE,
+    err = RegGetValueW(HKEY_LOCAL_MACHINE,
         L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
         L"InstallationType",
         RRF_RT_REG_SZ,
         &type,
         nullptr,
-        &dataSize)
-        || type != REG_SZ)
+        &dataSize);
+    if (err != ERROR_SUCCESS)
     {
-        return HRESULT_FROM_WIN32(GetLastError());
+        return HRESULT_FROM_WIN32(err);
+    }
+    if (type != REG_SZ)
+    {
+        return S_FALSE;
     }
 
     LPWSTR installationType = new WCHAR[dataSize + 1];
-
-    if (!RegGetValueW(HKEY_LOCAL_MACHINE,
+    err = RegGetValueW(HKEY_LOCAL_MACHINE,
         L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
         L"InstallationType",
         RRF_RT_REG_SZ,
         &type,
         installationType,
-        &dataSize)
-        || type != REG_SZ)
+        &dataSize);
+    if (err != ERROR_SUCCESS || type != REG_SZ)
     {
         delete[] installationType;
-        return HRESULT_FROM_WIN32(GetLastError());
+        if (err == ERROR_SUCCESS)
+            return S_FALSE;
+
+        return HRESULT_FROM_WIN32(err);
     }
 
     bool isNano = _wcsnicmp(L"Nano Server", installationType, dataSize + 1) == 0;

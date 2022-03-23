@@ -112,18 +112,18 @@ namespace ABIStress
 
         private static bool DoStubCall(int callerIndex, bool staticMethod, bool onValueType, GenericShape typeGenericShape, GenericShape methodGenericShape)
         {
-            string callerNameSeed = Config.InstantiatingStubPrefix + "Caller" + callerIndex; // Use a consistent seed value here so that the various various of unboxing/instantiating stubs are generated with the same arg shape
+            string callerNameSeed = Config.StubPrefix + "Caller" + callerIndex; // Use a consistent seed value here so that the various various of unboxing/instantiating stubs are generated with the same arg shape
             string callerName = callerNameSeed + (staticMethod ? "Static" : "Instance") + (onValueType ? "Class" : "ValueType") + typeGenericShape.ToString() + methodGenericShape.ToString();
             Random rand = new Random(GetSeed(callerName));
             List<TypeEx> pms;
             do
             {
                 pms = RandomParameters(s_allTypes, rand);
-            } while (pms.Count > 16);
+            } while (pms.Count > 16); // GetDelegateType supports only up to 16 arguments
 
             Type delegateType = GetDelegateType(pms, typeof(int));
 
-            Callee callee = new Callee(callerName+"Callee", pms);// CreateCallee(Config.PInvokeePrefix + calleeIndex, s_allTypes);
+            Callee callee = new Callee(callerName+"Callee", pms);
             callee.Emit();
 
             Delegate calleeDelegate = callee.Method.CreateDelegate(delegateType);

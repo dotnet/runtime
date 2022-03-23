@@ -97,7 +97,6 @@
   <data name="Xml_MultipleTargetConverterError" xml:space="preserve"><value>An error occurred with the multiple target converter while writing an Xml Schema.  See the inner exception for details.</value></data>
   <data name="Xml_MultipleTargetConverterEmpty" xml:space="preserve"><value>An error occurred with the multiple target converter while writing an Xml Schema.  A null or empty string was returned.</value></data>
   <data name="Xml_MergeDuplicateDeclaration" xml:space="preserve"><value>Duplicated declaration '{0}'.</value></data>
-  <data name="Xml_MissingTable" xml:space="preserve"><value>Cannot load diffGram. Table '{0}' is missing in the destination dataset.</value></data>
   <data name="Xml_MissingSQL" xml:space="preserve"><value>Cannot load diffGram. The 'sql' node is missing.</value></data>
   <data name="Xml_ColumnConflict" xml:space="preserve"><value>Column name '{0}' is defined for different mapping types.</value></data>
   <data name="Xml_InvalidPrefix_SpecialCharacters" xml:space="preserve"><value>Prefix '{0}' is not valid, because it contains special characters.</value></data>

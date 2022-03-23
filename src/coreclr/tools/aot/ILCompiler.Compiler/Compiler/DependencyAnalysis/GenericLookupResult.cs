@@ -1431,20 +1431,36 @@ namespace ILCompiler.DependencyAnalysis
         {
             MethodDesc instantiatedConstrainedMethod = _constrainedMethod.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
             TypeDesc instantiatedConstraintType = _constraintType.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-            MethodDesc implMethod = instantiatedConstrainedMethod;
+            MethodDesc implMethod;
 
-            if (implMethod.OwningType.IsInterface)
+            if (instantiatedConstrainedMethod.OwningType.IsInterface)
             {
-                implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToVirtualMethodOnType(implMethod);
+                if (instantiatedConstrainedMethod.Signature.IsStatic)
+                {
+                    implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(instantiatedConstrainedMethod);
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+            }
+            else
+            {
+                implMethod = instantiatedConstraintType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(instantiatedConstrainedMethod);
             }
 
-            implMethod = instantiatedConstraintType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(implMethod);
-
             // AOT use of this generic lookup is restricted to finding methods on valuetypes (runtime usage of this slot in universal generics is more flexible)
-            Debug.Assert(instantiatedConstraintType.IsValueType);
-            Debug.Assert(implMethod.OwningType == instantiatedConstraintType);
+            Debug.Assert(instantiatedConstraintType.IsValueType || (instantiatedConstrainedMethod.OwningType.IsInterface && instantiatedConstrainedMethod.Signature.IsStatic));
+            Debug.Assert(!instantiatedConstraintType.IsValueType || implMethod.OwningType == instantiatedConstraintType);
 
-            if (implMethod.HasInstantiation)
+            if (implMethod.Signature.IsStatic)
+            {
+                if (implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsSharedByGenericInstantiations)
+                    return factory.ExactCallableAddress(implMethod);
+                else
+                    return factory.MethodEntrypoint(implMethod);
+            }
+            else if (implMethod.HasInstantiation)
             {
                 return factory.ExactCallableAddress(implMethod);
             }
@@ -1467,7 +1483,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
-            return factory.NativeLayout.ConstrainedMethodUse(_constrainedMethod, _constraintType, _directCall);
+            return factory.NativeLayout.NotSupportedDictionarySlot;
+            //return factory.NativeLayout.ConstrainedMethodUse(_constrainedMethod, _constraintType, _directCall);
         }
 
         public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)

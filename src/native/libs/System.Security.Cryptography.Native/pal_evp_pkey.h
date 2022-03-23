@@ -58,9 +58,13 @@ Requres a non-null buf, and len > 0.
 PALEXPORT EVP_PKEY* CryptoNative_DecodePkcs8PrivateKey(const uint8_t* buf, int32_t len, int32_t algId);
 
 /*
-Reports the number of bytes rqeuired to encode an EVP_PKEY* as a Pkcs8PrivateKeyInfo, or a negative value on error.
+Gets the number of bytes rqeuired to encode an EVP_PKEY* as a Pkcs8PrivateKeyInfo.
+
+On success, 1 is returned and p8size contains the size of the Pkcs8PrivateKeyInfo.
+On failure, -1 is used to indicate the openssl error queue contains the error.
+On failure, -2 is used to indcate that the supplied EVP_PKEY* is possibly missing a private key.
 */
-PALEXPORT int32_t CryptoNative_GetPkcs8PrivateKeySize(EVP_PKEY* pkey);
+PALEXPORT int32_t CryptoNative_GetPkcs8PrivateKeySize(EVP_PKEY* pkey, int32_t* p8size);
 
 /*
 Encodes the EVP_PKEY* as a Pkcs8PrivateKeyInfo, writing the encoded value to buf.

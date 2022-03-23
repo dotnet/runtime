@@ -8,7 +8,7 @@ using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
-    public struct LazyMemberInfo
+    public struct LazyMemberInfo : IEquatable<LazyMemberInfo>
     {
         private readonly MemberTypes _memberType;
         private MemberInfo?[]? _accessors;
@@ -106,31 +106,32 @@ namespace System.ComponentModel.Composition.ReflectionModel
             throw new Exception(SR.Diagnostic_InternalExceptionMessage);
         }
 
-        public override bool Equals(object? obj)
-        {
-            if (obj is not LazyMemberInfo that)
-            {
-                return false;
-            }
+        public override bool Equals(object? obj) =>
+            obj is LazyMemberInfo other && Equals(other);
 
+        /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
+        /// <param name="other">An instance to compare with this instance.</param>
+        /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+        public bool Equals(LazyMemberInfo other)
+        {
             // Different member types mean different members
-            if (_memberType != that._memberType)
+            if (_memberType != other._memberType)
             {
                 return false;
             }
 
             // if any of the lazy memebers create accessors in a delay-loaded fashion, we simply compare the creators
-            if ((_accessorsCreator != null) || (that._accessorsCreator != null))
+            if ((_accessorsCreator != null) || (other._accessorsCreator != null))
             {
-                return object.Equals(_accessorsCreator, that._accessorsCreator);
+                return object.Equals(_accessorsCreator, other._accessorsCreator);
             }
 
             // we are dealing with explicitly passed accessors in both cases
-            if (_accessors == null || that._accessors == null)
+            if (_accessors == null || other._accessors == null)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
-            return _accessors.SequenceEqual(that._accessors);
+            return _accessors.SequenceEqual(other._accessors);
         }
 
         public static bool operator ==(LazyMemberInfo left, LazyMemberInfo right)

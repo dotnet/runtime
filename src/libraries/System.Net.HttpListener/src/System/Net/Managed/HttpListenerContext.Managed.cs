@@ -46,7 +46,7 @@ namespace System.Net
         }
 
         internal IPrincipal? ParseBasicAuthentication(string authData) =>
-            TryParseBasicAuth(authData, out HttpStatusCode errorCode, out string? username, out string? password) ?
+            TryParseBasicAuth(authData, out _, out string? username, out string? password) ?
                 new GenericPrincipal(new HttpListenerBasicIdentity(username, password), Array.Empty<string>()) :
                 null;
 
@@ -91,7 +91,6 @@ namespace System.Net
             return HttpWebSocket.AcceptWebSocketAsyncCore(this, subProtocol, receiveBufferSize, keepAliveInterval);
         }
 
-        [EditorBrowsable(EditorBrowsableState.Never)]
         public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string? subProtocol, int receiveBufferSize, TimeSpan keepAliveInterval, ArraySegment<byte> internalBuffer)
         {
             WebSocketValidate.ValidateArraySegment(internalBuffer, nameof(internalBuffer));

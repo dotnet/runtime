@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Optimize>True</Optimize>
+    <CLRTestBatchPreCommands><![CDATA[
+      $(CLRTestBatchPreCommands)
+      set DOTNET_JitOptRepeat=ProblemWithCopyProp
+      ]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+      $(BashCLRTestPreCommands)
+      export DOTNET_JitOptRepeat=ProblemWithCopyProp
+      ]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+</Project>

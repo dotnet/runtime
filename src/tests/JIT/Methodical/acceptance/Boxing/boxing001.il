@@ -14,6 +14,7 @@
 }
 .assembly extern xunit.core {}
 
+.namespace Test_boxing001 {
 .class private sequential ansi sealed beforefieldinit V extends [mscorlib] System.ValueType
 {
   .field public int32 m_i
@@ -37,11 +38,11 @@
    call       void [console]System.Console::Write(string)
    ldstr      "'"
    call       void [console]System.Console::WriteLine(string)
-   ldsfld     int32 Z::nFailures
+   ldsfld     int32 Test_boxing001.Z::nFailures
    ldc.i4.1
    add
-   stsfld     int32 Z::nFailures
-   ldsfld     int32 Z::nFailures
+   stsfld     int32 Test_boxing001.Z::nFailures
+   ldsfld     int32 Test_boxing001.Z::nFailures
    stloc.0
    ldloc.0
    ret
@@ -55,8 +56,8 @@
   .entrypoint
   .locals (int32 V_0,
            object V1,
-           valuetype V V_2,
-           valuetype V& V_3,
+           valuetype Test_boxing001.V V_2,
+           valuetype Test_boxing001.V& V_3,
            object V_4,
            object V_5,
            object V_6,
@@ -68,9 +69,9 @@
            object V_12,
            string V_13,
            string V_14,
-           valuetype V& V_15,
-           valuetype V V_16,
-           valuetype V V_17)
+           valuetype Test_boxing001.V& V_15,
+           valuetype Test_boxing001.V V_16,
+           valuetype Test_boxing001.V V_17)
   ldc.i4.0
   stloc.s    V_7
   ldnull
@@ -90,16 +91,16 @@
   ldnull
   stloc.s    V_11
   ldloca.s   V_2
-  initobj    V
+  initobj    Test_boxing001.V
   ldloca.s   V_2
   ldc.i4.5
-  stfld      int32 V::m_i
+  stfld      int32 Test_boxing001.V::m_i
   ldloc.2
-  box        V
+  box        Test_boxing001.V
   stloc.1
   ldloc.1
-  unbox      V
-  ldfld      int32 V::m_i
+  unbox      Test_boxing001.V
+  ldfld      int32 Test_boxing001.V::m_i
   stloc.0
   ldloc.0
   ldc.i4.5
@@ -107,64 +108,64 @@
 
   ldc.i4.s   50
   ldstr      "i == 5"
-  call       int32 Z::Assert(int32, string)
+  call       int32 Test_boxing001.Z::Assert(int32, string)
   pop
 
 T1:
 
   ldloc.1
-  unbox      V
+  unbox      Test_boxing001.V
   stloc.3
   ldloc.3
-  ldfld      int32 V::m_i
+  ldfld      int32 Test_boxing001.V::m_i
   ldc.i4.5
   beq.s      T2
 
   ldc.i4.s   53
   ldstr      "pv->m_i == 5"
-  call       int32 Z::Assert(int32, string)
+  call       int32 Test_boxing001.Z::Assert(int32, string)
   pop
 
 T2:
 
   ldloc.3
-  ldfld      int32 V::m_i
+  ldfld      int32 Test_boxing001.V::m_i
   ldc.i4.5
   beq.s      T3
 
   ldc.i4.s   55
   ldstr      "(*pv).m_i == 5"
-  call       int32 Z::Assert(int32, string)
+  call       int32 Test_boxing001.Z::Assert(int32, string)
   pop
 
 T3:
 
   ldloc.3
-  ldobj      V
+  ldobj      Test_boxing001.V
   stloc.s    V_17
   ldloca.s   V_17
   ldc.i4.s   10
-  stfld      int32 V::m_i
+  stfld      int32 Test_boxing001.V::m_i
   ldloca.s   V_17
-  ldfld      int32 V::m_i
+  ldfld      int32 Test_boxing001.V::m_i
   ldc.i4.s   10
   beq.s      T4
 
   ldc.i4.s   60
   ldstr      "v3.m_i == 10"
-  call       int32 Z::Assert(int32, string)
+  call       int32 Test_boxing001.Z::Assert(int32, string)
   pop
 
 T4:
 
   ldloc.3
-  ldfld      int32 V::m_i
+  ldfld      int32 Test_boxing001.V::m_i
   ldc.i4.5
   beq.s      T5
 
   ldc.i4.s   61
   ldstr      "(*pv).m_i == 5"
-  call       int32 Z::Assert(int32, string)
+  call       int32 Test_boxing001.Z::Assert(int32, string)
   pop
 
 T5:
@@ -172,40 +173,40 @@ T5:
   ldloca.s   V_17
   stloc.3
   ldloc.3
-  ldfld      int32 V::m_i
+  ldfld      int32 Test_boxing001.V::m_i
   ldc.i4.s   10
   beq.s      T6
 
   ldc.i4.s   64
   ldstr      "(*pv).m_i == 10"
-  call       int32 Z::Assert(int32, string)
+  call       int32 Test_boxing001.Z::Assert(int32, string)
   pop
 
 T6:
 
   ldloc.1
-  unbox      V
-  ldobj      V
+  unbox      Test_boxing001.V
+  ldobj      Test_boxing001.V
   stloc.s    V_16
   ldloca.s   V_16
-  ldfld      int32 V::m_i
+  ldfld      int32 Test_boxing001.V::m_i
   ldc.i4.5
   beq.s      T7
 
   ldc.i4.s   68
   ldstr      "v2.m_i == 5"
-  call       int32 Z::Assert(int32, string)
+  call       int32 Test_boxing001.Z::Assert(int32, string)
   pop
 
 T7:
 
   ldloc.1
-  unbox      V
+  unbox      Test_boxing001.V
   ldc.i4.s   10
-  stfld      int32 V::m_i
+  stfld      int32 Test_boxing001.V::m_i
   ldloc.1
-  unbox      V
-  ldfld      int32 V::m_i
+  unbox      Test_boxing001.V
+  ldfld      int32 Test_boxing001.V::m_i
   stloc.0
   ldloc.0
   ldc.i4.s   10
@@ -213,39 +214,39 @@ T7:
 
   ldc.i4.s   72
   ldstr      "i == 10"
-  call       int32 Z::Assert(int32, string)
+  call       int32 Test_boxing001.Z::Assert(int32, string)
   pop
 
 T8:
 
   ldloc.1
-  unbox      V
+  unbox      Test_boxing001.V
   ldc.i4.s   123
-  stfld      int32 V::m_i
+  stfld      int32 Test_boxing001.V::m_i
   ldloc.1
-  unbox      V
-  ldobj      V
+  unbox      Test_boxing001.V
+  ldobj      Test_boxing001.V
   stloc.2
   ldloca.s   V_2
-  ldfld      int32 V::m_i
+  ldfld      int32 Test_boxing001.V::m_i
   ldc.i4.s   123
   beq.s      T9
 
   ldc.i4.s   76
   ldstr      "v.m_i == 123"
-  call       int32 Z::Assert(int32, string)
+  call       int32 Test_boxing001.Z::Assert(int32, string)
   pop
 
 T9:
 
   ldloc.2
-  box        V
+  box        Test_boxing001.V
   stloc.s    V_4
   ldloc.s    V_4
   stloc.1
   ldloc.1
-  unbox      V
-  ldfld      int32 V::m_i
+  unbox      Test_boxing001.V
+  ldfld      int32 Test_boxing001.V::m_i
   stloc.0
   ldloc.0
   ldc.i4.s   123
@@ -253,12 +254,12 @@ T9:
 
   ldc.i4.s   82
   ldstr      "i == 123"
-  call       int32 Z::Assert(int32, string)
+  call       int32 Test_boxing001.Z::Assert(int32, string)
   pop
 
 T10:
 
-  ldstr      "V"
+  ldstr      "Test_boxing001.V"
   stloc.s    V_14
   ldloc.1
   callvirt   instance string [mscorlib]System.ValueType::ToString()
@@ -270,22 +271,22 @@ T10:
 
   ldc.i4.s   86
   ldstr      "str1->Equals( str2 )"
-  call       int32 Z::Assert(int32, string)
+  call       int32 Test_boxing001.Z::Assert(int32, string)
   pop
 
 T11:
 
   ldloc.2
-  box        V
+  box        Test_boxing001.V
   stloc.s    V_4
   ldloc.s    V_4
   stloc.s    V_10
   ldloc.s    V_10
-  isinst     V
+  isinst     Test_boxing001.V
   brfalse.s  X0
 
   ldloc.s    V_10
-  unbox      V
+  unbox      Test_boxing001.V
   br.s       X1
 
 X0:
@@ -297,16 +298,16 @@ X1:
 
   stloc.s    V_15
   ldloc.s    V_15
-  ldobj      V
+  ldobj      Test_boxing001.V
   stloc.2
   ldloc.s    V_4
   stloc.s    V_9
   ldloc.s    V_9
-  isinst     V
+  isinst     Test_boxing001.V
   brfalse.s  X2
 
   ldloc.s    V_9
-  unbox      V
+  unbox      Test_boxing001.V
   br.s       X3
 
 X2:
@@ -316,39 +317,39 @@ X2:
 
 X3:
 
-  ldobj      V
+  ldobj      Test_boxing001.V
   stloc.2
   ldloc.1
-  unbox      V
-  ldobj      V
-  box        V
-  unbox      V
-  ldobj      V
-  box        V
-  unbox      V
-  ldobj      V
+  unbox      Test_boxing001.V
+  ldobj      Test_boxing001.V
+  box        Test_boxing001.V
+  unbox      Test_boxing001.V
+  ldobj      Test_boxing001.V
+  box        Test_boxing001.V
+  unbox      Test_boxing001.V
+  ldobj      Test_boxing001.V
   stloc.2
   ldloca.s   V_2
-  ldfld      int32 V::m_i
+  ldfld      int32 Test_boxing001.V::m_i
   stloc.0
   ldloc.1
-  unbox      V
-  ldobj      V
-  box        V
-  unbox      V
-  ldobj      V
-  box        V
-  unbox      V
-  ldobj      V
-  box        V
-  unbox      V
-  ldobj      V
-  box        V
+  unbox      Test_boxing001.V
+  ldobj      Test_boxing001.V
+  box        Test_boxing001.V
+  unbox      Test_boxing001.V
+  ldobj      Test_boxing001.V
+  box        Test_boxing001.V
+  unbox      Test_boxing001.V
+  ldobj      Test_boxing001.V
+  box        Test_boxing001.V
+  unbox      Test_boxing001.V
+  ldobj      Test_boxing001.V
+  box        Test_boxing001.V
   stloc.1
   ldloc.0
   ldloc.1
-  unbox      V
-  ldfld      int32 V::m_i
+  unbox      Test_boxing001.V
+  ldfld      int32 Test_boxing001.V::m_i
   sub
   stloc.0
   ldloc.0
@@ -356,7 +357,7 @@ X3:
 
   ldc.i4.s   101
   ldstr      "i == 0"
-  call       int32 Z::Assert(int32, string)
+  call       int32 Test_boxing001.Z::Assert(int32, string)
   pop
 
 T12:
@@ -407,14 +408,14 @@ T12:
 
   ldc.i4.s   114
   ldstr      "i == 5+5+5+5"
-  call       int32 Z::Assert(int32, string)
+  call       int32 Test_boxing001.Z::Assert(int32, string)
   pop
 
 T13:
 
   ldloc.s    V_5
   stloc.s    V_6
-  ldsfld     int32 Z::nFailures
+  ldsfld     int32 Test_boxing001.Z::nFailures
   brtrue.s   Fail
 
   ldstr      "PASSED"
@@ -427,7 +428,7 @@ Fail:
 
   ldstr      "FAILED"
   call       void [console]System.Console::WriteLine(string)
-  ldsfld     int32 Z::nFailures
+  ldsfld     int32 Test_boxing001.Z::nFailures
   stloc.s    V_7
 
 Done:
@@ -437,4 +438,4 @@ Done:
 }
 
 }
-
+}

@@ -410,7 +410,7 @@ namespace System.Xml.Xsl.Qil
             /// <returns>the node name (unique across nodes)</returns>
             public string NameOf(QilNode n)
             {
-                string? name = null;
+                string? name;
 
                 object? old = n.Annotation;
                 NameAnnotation? a = old as NameAnnotation;

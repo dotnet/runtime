@@ -176,6 +176,22 @@ enum
     ASSIGN_REG(R13)        \
     ASSIGN_REG(R14)        \
     ASSIGN_REG(R15)
+#elif (defined(HOST_UNIX) && defined(HOST_LOONGARCH64))
+#define ASSIGN_UNWIND_REGS \
+    ASSIGN_REG(Pc)         \
+    ASSIGN_REG(Tp)         \
+    ASSIGN_REG(Sp)         \
+    ASSIGN_REG(Fp)         \
+    ASSIGN_REG(Ra)         \
+    ASSIGN_REG(S0)         \
+    ASSIGN_REG(S1)         \
+    ASSIGN_REG(S2)         \
+    ASSIGN_REG(S3)         \
+    ASSIGN_REG(S4)         \
+    ASSIGN_REG(S5)         \
+    ASSIGN_REG(S6)         \
+    ASSIGN_REG(S7)         \
+    ASSIGN_REG(S8)
 #else
 #error unsupported architecture
 #endif
@@ -404,6 +420,21 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_S390X_R12, (unw_word_t *) &winContext->R12);
     unw_get_reg(cursor, UNW_S390X_R13, (unw_word_t *) &winContext->R13);
     unw_get_reg(cursor, UNW_S390X_R14, (unw_word_t *) &winContext->R14);
+#elif (defined(HOST_UNIX) && defined(HOST_LOONGARCH64))
+    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
+    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R1, (unw_word_t *) &winContext->Ra);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R2, (unw_word_t *) &winContext->Tp);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R22, (unw_word_t *) &winContext->Fp);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R23, (unw_word_t *) &winContext->S0);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R24, (unw_word_t *) &winContext->S1);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R25, (unw_word_t *) &winContext->S2);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R26, (unw_word_t *) &winContext->S3);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R27, (unw_word_t *) &winContext->S4);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R28, (unw_word_t *) &winContext->S5);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R29, (unw_word_t *) &winContext->S6);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R30, (unw_word_t *) &winContext->S7);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R31, (unw_word_t *) &winContext->S8);
 #else
 #error unsupported architecture
 #endif
@@ -489,6 +520,19 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
     GetContextPointer(cursor, unwContext, UNW_S390X_R13, &contextPointers->R13);
     GetContextPointer(cursor, unwContext, UNW_S390X_R14, &contextPointers->R14);
     GetContextPointer(cursor, unwContext, UNW_S390X_R15, &contextPointers->R15);
+#elif (defined(HOST_UNIX) && defined(HOST_LOONGARCH64))
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R1, &contextPointers->Ra);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R2, &contextPointers->Tp);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R22, &contextPointers->Fp);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R23, &contextPointers->S0);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R24, &contextPointers->S1);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R25, &contextPointers->S2);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R26, &contextPointers->S3);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R27, &contextPointers->S4);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R28, &contextPointers->S5);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R29, &contextPointers->S6);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R30, &contextPointers->S7);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R31, &contextPointers->S8);
 #else
 #error unsupported architecture
 #endif
@@ -496,7 +540,9 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
 
 #ifndef HOST_WINDOWS
 
-extern int g_common_signal_handler_context_locvar_offset;
+// Frame pointer relative offset of a local containing a pointer to the windows style context of a location
+// where a hardware exception occured.
+int g_hardware_exception_context_locvar_offset = 0;
 
 BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
 {
@@ -506,19 +552,17 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
 
     DWORD64 curPc = CONTEXTGetPC(context);
 
-#ifndef __APPLE__
-    // Check if the PC is the return address from the SEHProcessException in the common_signal_handler.
-    // If that's the case, extract its local variable containing the windows style context of the hardware
+    // Check if the PC is the return address from the SEHProcessException.
+    // If that's the case, extract its local variable containing a pointer to the windows style context of the hardware
     // exception and return that. This skips the hardware signal handler trampoline that the libunwind
-    // cannot cross on some systems.
+    // cannot cross on some systems. On macOS, it skips a similar trampoline we create in HijackFaultingThread.
     if ((void*)curPc == g_SEHProcessExceptionReturnAddress)
     {
-        CONTEXT* signalContext = (CONTEXT*)(CONTEXTGetFP(context) + g_common_signal_handler_context_locvar_offset);
-        memcpy_s(context, sizeof(CONTEXT), signalContext, sizeof(CONTEXT));
+        CONTEXT* exceptionContext = *(CONTEXT**)(CONTEXTGetFP(context) + g_hardware_exception_context_locvar_offset);
+        memcpy_s(context, sizeof(CONTEXT), exceptionContext, sizeof(CONTEXT));
 
         return TRUE;
     }
-#endif
 
     if ((context->ContextFlags & CONTEXT_EXCEPTION_ACTIVE) != 0)
     {
@@ -699,7 +743,7 @@ Parameters:
 Note:
     The name of this function and the name of the ExceptionRecord
     parameter is used in the sos lldb plugin code to read the exception
-    record. See coreclr\ToolBox\SOS\lldbplugin\services.cpp.
+    record. See coreclr\tools\SOS\lldbplugin\services.cpp.
 
     This function must not be inlined or optimized so the below PAL_VirtualUnwind
     calls end up with RaiseException caller's context and so the above debugger

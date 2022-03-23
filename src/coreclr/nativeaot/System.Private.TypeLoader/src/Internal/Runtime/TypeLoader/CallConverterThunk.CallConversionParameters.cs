@@ -341,10 +341,8 @@ namespace Internal.Runtime.TypeLoader
             Delegate[] delegateArray = (Delegate[])_delegateData._helperObject;
             Delegate currentDelegate = delegateArray[currentIndex];
 
-            object helperObject;
-            IntPtr extraFunctionPointerOrData;
             IntPtr functionPointer;
-            RuntimeAugments.GetDelegateData(currentDelegate, out _delegateData._multicastThisPointer, out helperObject, out extraFunctionPointerOrData, out functionPointer);
+            RuntimeAugments.GetDelegateData(currentDelegate, out _delegateData._multicastThisPointer, out _, out _, out functionPointer);
 
             bool forceCalleeHasParamType = UpdateCalleeFunctionPointer(functionPointer);
             _calleeArgs.SetHasParamTypeAndReset(forceCalleeHasParamType);

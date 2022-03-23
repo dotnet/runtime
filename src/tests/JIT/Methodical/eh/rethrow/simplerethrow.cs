@@ -26,7 +26,7 @@ namespace hello
             testLog = new TestUtil.TestLog(expectedOut);
         }
 
-        static public int Main(string[] args)
+        static public int Main()
         {
             //Start recording
             testLog.StartRecording();

@@ -1956,9 +1956,7 @@ GetContinueStartupEvent(
 
 #endif // !TARGET_UNIX
 
-#if defined(FEATURE_CORESYSTEM)
 #include "debugshim.h"
-#endif
 
 //-----------------------------------------------------------------------------
 // Public API.
@@ -1980,26 +1978,17 @@ CLRCreateInstance(
 {
     PUBLIC_CONTRACT;
 
-#if defined(FEATURE_CORESYSTEM)
-
     if (ppInterface == NULL)
         return E_POINTER;
 
     if (clsid != CLSID_CLRDebugging || riid != IID_ICLRDebugging)
         return E_NOINTERFACE;
 
-#if defined(FEATURE_CORESYSTEM)
     GUID skuId = CLR_ID_ONECORE_CLR;
-#else
-    GUID skuId = CLR_ID_CORECLR;
-#endif
 
     CLRDebuggingImpl *pDebuggingImpl = new (nothrow) CLRDebuggingImpl(skuId);
     if (NULL == pDebuggingImpl)
         return E_OUTOFMEMORY;
 
     return pDebuggingImpl->QueryInterface(riid, ppInterface);
-#else
-    return E_NOTIMPL;
-#endif
 }

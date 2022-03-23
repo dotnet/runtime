@@ -118,7 +118,7 @@ uint32_t RhConfig::GetConfigVariable(_In_z_ const TCHAR* configName, const Confi
 
             uint32_t iValue;
 
-            for (iValue = 0; (iValue < CONFIG_VAL_MAXLEN + 1) && (iValue < (int32_t)cchOutputBuffer); iValue++)
+            for (iValue = 0; (iValue < CONFIG_VAL_MAXLEN + 1) && (iValue < cchOutputBuffer); iValue++)
             {
                 outputBuffer[iValue] = configPairs[iSettings].Value[iValue];
 

@@ -48,6 +48,7 @@ namespace System.Net.Security
                 {
                     if (b[5] == '\0')
                     {
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                         return SslProtocols.Tls;
                     }
                     else if (b[5] == '.' && b[6] != '\0' && b[7] == '\0')
@@ -55,6 +56,7 @@ namespace System.Net.Security
                         switch (b[6])
                         {
                             case (byte)'1': return SslProtocols.Tls11;
+#pragma warning restore SYSLIB0039
                             case (byte)'2': return SslProtocols.Tls12;
                             case (byte)'3': return SslProtocols.Tls13;
                         }

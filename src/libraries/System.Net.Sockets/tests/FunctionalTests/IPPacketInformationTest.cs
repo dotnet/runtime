@@ -13,7 +13,10 @@ namespace System.Net.Sockets.Tests
         public void Equals_DefaultValues_Success()
         {
             Assert.Equal(default(IPPacketInformation), default(IPPacketInformation));
+
             Assert.True(default(IPPacketInformation) == default(IPPacketInformation));
+            Assert.True(default(IPPacketInformation).Equals(default(IPPacketInformation)));
+
             Assert.False(default(IPPacketInformation) != default(IPPacketInformation));
         }
 
@@ -31,10 +34,14 @@ namespace System.Net.Sockets.Tests
 
             Assert.Equal(packetInfo, packetInfoCopy);
             Assert.True(packetInfo == packetInfoCopy);
+            Assert.True(packetInfo.Equals(packetInfoCopy));
+            Assert.True(packetInfo.Equals((object)packetInfoCopy));
             Assert.False(packetInfo != packetInfoCopy);
 
             Assert.NotEqual(default, packetInfo);
             Assert.False(packetInfo == default(IPPacketInformation));
+            Assert.False(packetInfo.Equals(default(IPPacketInformation)));
+            Assert.False(packetInfo.Equals((object)default(IPPacketInformation)));
             Assert.True(packetInfo != default(IPPacketInformation));
 
             int ignored = packetInfo.Interface; // just make sure it doesn't throw, nothing else to verify

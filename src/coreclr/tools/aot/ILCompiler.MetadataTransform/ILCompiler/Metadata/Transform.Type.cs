@@ -261,17 +261,43 @@ namespace ILCompiler.Metadata
             record.PackingSize = checked((ushort)layoutMetadata.PackingSize);
             record.Flags = GetTypeAttributes(entity);
 
-            if (entity.HasBaseType)
+            try
             {
-                record.BaseType = HandleType(entity.BaseType);
+                if (entity.HasBaseType)
+                {
+                    record.BaseType = HandleType(entity.BaseType);
+                }
+            }
+            catch (Cts.TypeSystemException) when (HasNestedTypes(entity))
+            {
+                // We might have been forced to generate metadata for a type
+                // that wasn't looked at during code generation because it's an owning
+                // type of a type we did look at. Allow those to generate incomplete
+                // metadata. The ultimate fix is to rewrite metadata generation to be
+                // System.Reflection.Metadata-based as opposed to type system based.
+                // If there's no nested types, this is a bug and should tear down
+                // the compiler at this point.
             }
 
-            record.Interfaces.Capacity = entity.ExplicitlyImplementedInterfaces.Length;
-            foreach (var interfaceType in entity.ExplicitlyImplementedInterfaces)
+            try
             {
-                if (IsBlocked(interfaceType))
-                    continue;
-                record.Interfaces.Add(HandleType(interfaceType));
+                record.Interfaces.Capacity = entity.ExplicitlyImplementedInterfaces.Length;
+                foreach (var interfaceType in entity.ExplicitlyImplementedInterfaces)
+                {
+                    if (IsBlocked(interfaceType))
+                        continue;
+                    record.Interfaces.Add(HandleType(interfaceType));
+                }
+            }
+            catch (Cts.TypeSystemException) when (HasNestedTypes(entity))
+            {
+                // We might have been forced to generate metadata for a type
+                // that wasn't looked at during code generation because it's an owning
+                // type of a type we did look at. Allow those to generate incomplete
+                // metadata. The ultimate fix is to rewrite metadata generation to be
+                // System.Reflection.Metadata-based as opposed to type system based.
+                // If there's no nested types, this is a bug and should tear down
+                // the compiler at this point.
             }
 
             if (entity.HasInstantiation)
@@ -346,6 +372,9 @@ namespace ILCompiler.Metadata
                     record.MethodImpls.Add(methodImplRecord);
                 }*/
             }
+
+            static bool HasNestedTypes(Cts.MetadataType entity)
+                => entity.GetNestedTypes().GetEnumerator().MoveNext();
         }
 
         private TypeAttributes GetTypeAttributes(Cts.MetadataType type)

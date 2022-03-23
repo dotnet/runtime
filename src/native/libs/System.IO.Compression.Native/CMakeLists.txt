@@ -7,11 +7,20 @@ set(NATIVECOMPRESSION_SOURCES
 )
 
 if (NOT CLR_CMAKE_TARGET_BROWSER)
-    include(${CLR_SRC_NATIVE_DIR}/external/brotli.cmake)
+
+    if (CLR_CMAKE_USE_SYSTEM_BROTLI)
+        add_definitions(-DFEATURE_USE_SYSTEM_BROTLI)
+    else ()
+        include(${CLR_SRC_NATIVE_DIR}/external/brotli.cmake)
+
+        set (NATIVECOMPRESSION_SOURCES
+            ${NATIVECOMPRESSION_SOURCES}
+            ${BROTLI_SOURCES}
+        )
+    endif ()
 
     set (NATIVECOMPRESSION_SOURCES
         ${NATIVECOMPRESSION_SOURCES}
-        ${BROTLI_SOURCES}
         entrypoints.c
     )
 endif ()
@@ -21,17 +30,19 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
     append_extra_compression_libs(NATIVE_LIBS_EXTRA)
 
     if (CLR_CMAKE_TARGET_BROWSER)
-        add_definitions(-s USE_ZLIB)
-    else ()
-        # Disable implicit fallthrough warning for Brotli
-        set(FLAGS -Wno-implicit-fallthrough)
+        include(${CLR_SRC_NATIVE_DIR}/external/zlib.cmake)
+        add_definitions(-DINTERNAL_ZLIB)
+        set(NATIVECOMPRESSION_SOURCES ${ZLIB_SOURCES} ${NATIVECOMPRESSION_SOURCES})
+    endif()
 
-        # Delete this supression once brotli is upgraded to vNext (current latest v1.0.9
-        # does not contain upstream fix: https://github.com/google/brotli/commit/0a3944c)
-        set(FLAGS "${FLAGS} -Wno-vla-parameter")
+    # Disable implicit fallthrough warning for Brotli
+    set(FLAGS -Wno-implicit-fallthrough)
 
-        set_source_files_properties(${NATIVECOMPRESSION_SOURCES} PROPERTIES COMPILE_FLAGS ${FLAGS})
-    endif ()
+    # Delete this supression once brotli is upgraded to vNext (current latest v1.0.9
+    # does not contain upstream fix: https://github.com/google/brotli/commit/0a3944c)
+    set(FLAGS "${FLAGS} -Wno-vla-parameter")
+
+    set_source_files_properties(${NATIVECOMPRESSION_SOURCES} PROPERTIES COMPILE_FLAGS ${FLAGS})
 
     if (GEN_SHARED_LIB)
         add_definitions(-DBROTLI_SHARED_COMPILATION)
@@ -58,14 +69,16 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
             set_property(TARGET System.IO.Compression.Native APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
             set_property(TARGET System.IO.Compression.Native APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 
-            add_custom_command(TARGET System.IO.Compression.Native POST_BUILD
-                COMMENT "Verifying System.IO.Compression.Native entry points against entrypoints.c "
-                COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
-                    $<TARGET_FILE:System.IO.Compression.Native>
-                    ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
-                    ${CMAKE_NM}
-                VERBATIM
-            )
+            if (NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
+                add_custom_command(TARGET System.IO.Compression.Native POST_BUILD
+                    COMMENT "Verifying System.IO.Compression.Native entry points against entrypoints.c "
+                    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
+                        $<TARGET_FILE:System.IO.Compression.Native>
+                        ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
+                        ${CMAKE_NM}
+                    VERBATIM
+                )
+            endif ()
         endif ()
 
         install_with_stripped_symbols (System.IO.Compression.Native PROGRAMS .)
@@ -88,6 +101,7 @@ else ()
         include(${CLR_SRC_NATIVE_DIR}/external/zlib.cmake)
     endif ()
 
+    add_definitions(-DINTERNAL_ZLIB)
     set(NATIVECOMPRESSION_SOURCES ${ZLIB_SOURCES} ${NATIVECOMPRESSION_SOURCES})
 
     if (GEN_SHARED_LIB)

@@ -78,7 +78,7 @@ namespace System.Reflection.Emit
             type = tb;
             this.paramModReq = paramModReq;
             this.paramModOpt = paramModOpt;
-            table_idx = get_next_table_index(this, 0x06, 1);
+            table_idx = get_next_table_index(0x06, 1);
 
             ((ModuleBuilder)tb.Module).RegisterToken(this, MetadataToken);
         }
@@ -348,9 +348,9 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal override int get_next_table_index(object obj, int table, int count)
+        internal override int get_next_table_index(int table, int count)
         {
-            return type.get_next_table_index(obj, table, count);
+            return type.get_next_table_index(table, count);
         }
 
         private void RejectIfCreated()

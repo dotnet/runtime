@@ -4,7 +4,10 @@
 #ifndef _NAMEDINTRINSICLIST_H_
 #define _NAMEDINTRINSICLIST_H_
 
-// Named jit intrinsics
+// Named jit intrinsics.
+
+// When adding a new intrinsic that will use the GT_INTRINSIC node and can throw, make sure
+// to update the "OperMayThrow" and "fgValueNumberAddExceptionSet" methods to account for that.
 
 enum NamedIntrinsic : unsigned short
 {
@@ -33,6 +36,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_Math_Log,
     NI_System_Math_Log2,
     NI_System_Math_Log10,
+    NI_System_Math_Max,
+    NI_System_Math_Min,
     NI_System_Math_Pow,
     NI_System_Math_Round,
     NI_System_Math_Sin,
@@ -40,6 +45,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Math_Sqrt,
     NI_System_Math_Tan,
     NI_System_Math_Tanh,
+    NI_System_Math_Truncate,
     NI_SYSTEM_MATH_END,
 
     NI_System_Collections_Generic_Comparer_get_Default,
@@ -78,11 +84,20 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
 
+    NI_System_String_Equals,
     NI_System_String_get_Chars,
     NI_System_String_get_Length,
+    NI_System_String_op_Implicit,
+    NI_System_String_StartsWith,
     NI_System_Span_get_Item,
     NI_System_ReadOnlySpan_get_Item,
+
+    NI_System_MemoryExtensions_AsSpan,
+    NI_System_MemoryExtensions_Equals,
+    NI_System_MemoryExtensions_SequenceEqual,
+    NI_System_MemoryExtensions_StartsWith,
 
     // These are used by HWIntrinsics but are defined more generally
     // to allow dead code optimization and handle the recursion case

@@ -1413,7 +1413,7 @@ mono_arch_unwindinfo_insert_range_in_table (const gpointer code_block, gsize blo
 			new_entry->handle = NULL;
 			new_entry->begin_range = begin_range;
 			new_entry->end_range = end_range;
-			new_entry->rt_funcs_max_count = (block_size / MONO_UNWIND_INFO_RT_FUNC_SIZE) + 1;
+			new_entry->rt_funcs_max_count = (DWORD)((block_size / MONO_UNWIND_INFO_RT_FUNC_SIZE) + 1);
 			new_entry->rt_funcs_current_count = 0;
 			new_entry->rt_funcs = g_new0 (RUNTIME_FUNCTION, new_entry->rt_funcs_max_count);
 
@@ -1660,11 +1660,11 @@ mono_arch_unwindinfo_insert_rt_func_in_table (const gpointer code, gsize code_si
 		PRUNTIME_FUNCTION current_rt_funcs = found_entry->rt_funcs;
 
 		RUNTIME_FUNCTION new_rt_func_data;
-		new_rt_func_data.BeginAddress = code_offset;
-		new_rt_func_data.EndAddress = code_offset + code_size;
+		new_rt_func_data.BeginAddress = (DWORD)code_offset;
+		new_rt_func_data.EndAddress = (DWORD)(code_offset + code_size);
 
 		gsize aligned_unwind_data = ALIGN_TO(end_range, sizeof(host_mgreg_t));
-		new_rt_func_data.UnwindData = aligned_unwind_data - found_entry->begin_range;
+		new_rt_func_data.UnwindData = (DWORD)(aligned_unwind_data - found_entry->begin_range);
 
 		g_assert_checked (new_rt_func_data.UnwindData == ALIGN_TO(new_rt_func_data.EndAddress, sizeof (host_mgreg_t)));
 
@@ -1708,8 +1708,8 @@ mono_arch_unwindinfo_insert_rt_func_in_table (const gpointer code, gsize code_si
 		}
 
 		// Update the stats for current entry.
-		found_entry->rt_funcs_current_count = entry_count;
-		found_entry->rt_funcs_max_count = max_entry_count;
+		found_entry->rt_funcs_current_count = (DWORD)entry_count;
+		found_entry->rt_funcs_max_count = (DWORD)max_entry_count;
 
 		if (new_rt_funcs == NULL && g_rtl_grow_function_table != NULL) {
 			// No new table just report increase in use.

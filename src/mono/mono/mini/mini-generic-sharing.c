@@ -676,6 +676,12 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
 
 		MonoClass *inflated_class = mono_class_from_mono_type_internal (inflated_type);
+		/*
+		 * metadata-update: no EnC with the JIT.  But even if ther was, adding fields to
+		 * generic types isn't supported, and fields in added generic types would be
+		 * contiguous.  So this is ok.
+		 */
+		g_assert (!m_field_is_from_update (field));
 		int i = field - m_class_get_fields (m_field_get_parent (field));
 		gpointer dummy = NULL;
 
@@ -1122,7 +1128,7 @@ tramp_info_hash (gconstpointer key)
 {
 	GSharedVtTrampInfo *tramp = (GSharedVtTrampInfo *)key;
 
-	return (gsize)tramp->addr;
+	return (guint)(gsize)tramp->addr;
 }
 
 static gboolean
@@ -1178,11 +1184,9 @@ get_wrapper_shared_vtype (MonoType *t)
 	if (m_class_get_type_token (klass) && mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), NULL, NULL))
 		return NULL;
 
-	int num_fields = mono_class_get_field_count (klass);
-	MonoClassField *klass_fields = m_class_get_fields (klass);
-
-	for (int i = 0; i < num_fields; ++i) {
-		MonoClassField *field = &klass_fields [i];
+	gpointer iter = NULL;
+	MonoClassField *field;
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 
 		if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
 			continue;
@@ -1739,7 +1743,9 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	static GHashTable *cache;
 	const char *name;
 	gboolean generic = FALSE;
+#ifndef DISABLE_JIT
 	gboolean return_native_struct;
+#endif
 
 	sig = mini_get_underlying_reg_signature (sig);
 
@@ -1763,7 +1769,9 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	 * stack, pass this address to the interp_entry and when we return it we use
 	 * CEE_MONO_LDNATIVEOBJ
 	 */
-	return_native_struct = sig->ret->type == MONO_TYPE_VALUETYPE && sig->pinvoke;
+#ifndef DISABLE_JIT
+	return_native_struct = sig->ret->type == MONO_TYPE_VALUETYPE && sig->pinvoke && !sig->marshalling_disabled;
+#endif
 
 	/* Create the signature for the wrapper */
 	csig = g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + (sig->param_count * sizeof (MonoType*)));
@@ -2327,9 +2335,9 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 
 		/* The value is offset by 1 */
 		if (m_class_is_valuetype (m_field_get_parent (field)) && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
-			return GUINT_TO_POINTER (field->offset - MONO_ABI_SIZEOF (MonoObject) + 1);
+			return GUINT_TO_POINTER (m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject) + 1);
 		else
-			return GUINT_TO_POINTER (field->offset + 1);
+			return GUINT_TO_POINTER (m_field_get_offset (field) + 1);
 	}
 	case MONO_RGCTX_INFO_METHOD_RGCTX: {
 		MonoMethodInflated *method = (MonoMethodInflated *)data;
@@ -3521,19 +3529,29 @@ mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_va
 
 	if (method->is_inflated) {
 		MonoMethodInflated *inflated = (MonoMethodInflated*)method;
-		MonoGenericContext *context = &inflated->context;
+		MonoGenericContext *ctx = &inflated->context;
 
-		if (!mono_generic_context_is_sharable_full (context, allow_type_vars, allow_partial))
+		if (!mono_generic_context_is_sharable_full (ctx, allow_type_vars, allow_partial))
 			return FALSE;
 
 		g_assert (inflated->declaring);
 
-#if 0
-		if (inflated->declaring->is_generic) {
-			if (has_constraints (mono_method_get_generic_container (inflated->declaring))) {
+		/*
+		 * If all the parameters are primitive types and constraints prevent
+		 * them from being instantiated with enums, then only the primitive
+		 * type instantiation is possible, thus sharing is not useful.
+		 * Happens with generic math interfaces.
+		 */
+		if ((!ctx->class_inst || is_primitive_inst (ctx->class_inst)) &&
+			(!ctx->method_inst || is_primitive_inst (ctx->method_inst))) {
+			MonoGenericContainer *container = mono_method_get_generic_container (inflated->declaring);
+			if (container && has_constraints (container)) {
+				for (int i = 0; i < container->type_argc; ++i) {
+					if (!gparam_can_be_enum (&container->type_params [i]))
+						return FALSE;
+				}
 			}
 		}
-#endif
 	}
 
 	if (mono_class_is_ginst (method->klass)) {
@@ -3544,12 +3562,6 @@ mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_va
 		g_assert (mono_class_get_generic_class (method->klass)->container_class &&
 				mono_class_is_gtd (mono_class_get_generic_class (method->klass)->container_class));
 
-		/*
-		 * If all the parameters are primitive types and constraints prevent
-		 * them from being instantiated with enums, then only the primitive
-		 * type instantiation is possible, thus sharing is not useful.
-		 * Happens with generic math interfaces.
-		 */
 		if ((!ctx->class_inst || is_primitive_inst (ctx->class_inst)) &&
 			(!ctx->method_inst || is_primitive_inst (ctx->method_inst))) {
 			MonoGenericContainer *container = mono_class_get_generic_container (mono_class_get_generic_class (method->klass)->container_class);
@@ -3819,7 +3831,7 @@ mini_get_basic_type_from_generic (MonoType *type)
 			return m_class_get_byval_arg (klass);
 		}
 	} else {
-		return mini_native_type_replace_type (mono_type_get_basic_type_from_generic (type));
+		return mono_type_get_basic_type_from_generic (type);
 	}
 }
 
@@ -3832,8 +3844,6 @@ mini_get_basic_type_from_generic (MonoType *type)
 MonoType*
 mini_type_get_underlying_type (MonoType *type)
 {
-	type = mini_native_type_replace_type (type);
-
 	if (m_type_is_byref (type))
 		return mono_get_int_type ();
 	if (!m_type_is_byref (type) && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type (type))
@@ -4023,15 +4033,16 @@ get_shared_gparam_name (MonoTypeEnum constraint, const char *name)
 		return g_strdup_printf ("%s_INST", name);
 	} else {
 		MonoType t;
-		char *tname, *tname2, *res;
+		char *tname, *res;
 
 		memset (&t, 0, sizeof (t));
 		t.type = constraint;
 		tname = mono_type_full_name (&t);
-		tname2 = g_utf8_strup (tname, strlen (tname));
-		res = g_strdup_printf ("%s_%s", name, tname2);
+		size_t len = strlen (tname);
+		for (int i = 0; i < len; ++i)
+			tname [i] = toupper (tname [i]);
+		res = g_strdup_printf ("%s_%s", name, tname);
 		g_free (tname);
-		g_free (tname2);
 		return res;
 	}
 }

@@ -843,14 +843,13 @@ namespace System.Xml
             // Write encoded text to stream
             int chEnc;
             int bEnc;
-            bool completed;
             while (startOffset < endOffset)
             {
                 if (_charEntityFallback != null)
                 {
                     _charEntityFallback.StartOffset = startOffset;
                 }
-                _encoder.Convert(_bufChars, startOffset, endOffset - startOffset, _bufBytes, _bufBytesUsed, _bufBytes.Length - _bufBytesUsed, false, out chEnc, out bEnc, out completed);
+                _encoder.Convert(_bufChars, startOffset, endOffset - startOffset, _bufBytes, _bufBytesUsed, _bufBytes.Length - _bufBytesUsed, false, out chEnc, out bEnc, out _);
                 startOffset += chEnc;
                 _bufBytesUsed += bEnc;
                 if (_bufBytesUsed >= (_bufBytes.Length - 16))
@@ -871,11 +870,9 @@ namespace System.Xml
             Debug.Assert(_bufPos == 1);
             if (_stream != null)
             {
-                int chEnc;
                 int bEnc;
-                bool completed;
                 // decode no chars, just flush
-                _encoder.Convert(_bufChars, 1, 0, _bufBytes, 0, _bufBytes.Length, true, out chEnc, out bEnc, out completed);
+                _encoder.Convert(_bufChars, 1, 0, _bufBytes, 0, _bufBytes.Length, true, out _, out bEnc, out _);
                 if (bEnc != 0)
                 {
                     _stream.Write(_bufBytes, 0, bEnc);
@@ -1852,7 +1849,7 @@ namespace System.Xml
             }
             else
             {
-                string error = null;
+                string error;
                 for (int i = 0; i < chars.Length; i++)
                 {
                     if (!XmlCharType.IsTextChar(chars[i]))

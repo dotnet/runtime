@@ -1536,6 +1536,9 @@ dotnet_diagnostic.IDE0160.severity = silent
 # IDE0161: Convert to file-scoped namespace
 dotnet_diagnostic.IDE0161.severity = silent
 
+# IDE0190: Null check can be simplified
+dotnet_diagnostic.IDE0190.severity = silent
+
 # IDE1005: Delegate invocation can be simplified.
 dotnet_diagnostic.IDE1005.severity = silent
 
@@ -1681,7 +1684,7 @@ dotnet_diagnostic.xUnit2012.severity = warning
 dotnet_diagnostic.xUnit2013.severity = none
 
 # xUnit2014: Do not use throws check to check for asynchronously thrown exception
-dotnet_diagnostic.xUnit2014.severity = warning
+dotnet_diagnostic.xUnit2014.severity = none
 
 # xUnit2015: Do not use typeof expression to check the exception type
 dotnet_diagnostic.xUnit2015.severity = warning

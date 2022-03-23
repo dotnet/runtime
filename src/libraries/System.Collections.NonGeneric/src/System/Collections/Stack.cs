@@ -53,11 +53,8 @@ namespace System.Collections
         // Fills a Stack with the contents of a particular collection.  The items are
         // pushed onto the stack in the same order they are read by the enumerator.
         //
-        public Stack(ICollection col) : this(col == null ? 32 : col.Count)
+        public Stack(ICollection col!!) : this(col.Count)
         {
-            if (col == null)
-                throw new ArgumentNullException(nameof(col));
-
             IEnumerator en = col.GetEnumerator();
             while (en.MoveNext())
                 Push(en.Current);
@@ -115,10 +112,8 @@ namespace System.Collections
         }
 
         // Copies the stack into an array.
-        public virtual void CopyTo(Array array, int index)
+        public virtual void CopyTo(Array array!!, int index)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             if (index < 0)
@@ -191,11 +186,8 @@ namespace System.Collections
 
         // Returns a synchronized Stack.
         //
-        public static Stack Synchronized(Stack stack)
+        public static Stack Synchronized(Stack stack!!)
         {
-            if (stack == null)
-                throw new ArgumentNullException(nameof(stack));
-
             return new SyncStack(stack);
         }
 
@@ -388,11 +380,8 @@ namespace System.Collections
         {
             private readonly Stack _stack;
 
-            public StackDebugView(Stack stack)
+            public StackDebugView(Stack stack!!)
             {
-                if (stack == null)
-                    throw new ArgumentNullException(nameof(stack));
-
                 _stack = stack;
             }
 

@@ -15,7 +15,7 @@ namespace System.Diagnostics.Tracing
 #if ES_BUILD_STANDALONE
     [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
 #endif
-    internal struct EventDescriptor
+    internal readonly struct EventDescriptor : IEquatable<EventDescriptor>
     {
         #region private
         [FieldOffset(0)]

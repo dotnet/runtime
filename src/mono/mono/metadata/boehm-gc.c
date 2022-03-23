@@ -35,7 +35,6 @@
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/dtrace.h>
-#include <mono/utils/gc_wrapper.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-compiler.h>
@@ -89,7 +88,7 @@ typedef struct {
 
 #define EMPTY_HANDLE_DATA(type) {NULL, NULL, 0, (type), 0, NULL}
 
-/* weak and weak-track arrays will be allocated in malloc memory 
+/* weak and weak-track arrays will be allocated in malloc memory
  */
 static HandleData gc_handles [] = {
 	EMPTY_HANDLE_DATA (HANDLE_WEAK),
@@ -254,7 +253,7 @@ mono_gc_max_generation (void)
 }
 
 guint64
-mono_gc_get_allocated_bytes_for_current_thread (void) 
+mono_gc_get_allocated_bytes_for_current_thread (void)
 {
 	return 0;
 }
@@ -1006,7 +1005,7 @@ mono_gc_invoke_with_gc_lock (MonoGCLockedCallbackFunc func, void *data)
 char*
 mono_gc_get_description (void)
 {
-	return g_strdup (DEFAULT_GC_NAME);
+	return g_strdup ("boehm");
 }
 
 void
@@ -1226,10 +1225,10 @@ void
 mono_gc_set_string_length (MonoString *str, gint32 new_length)
 {
 	mono_unichar2 *new_end = str->chars + new_length;
-	
-	/* zero the discarded string. This null-delimits the string and allows 
+
+	/* zero the discarded string. This null-delimits the string and allows
 	 * the space to be reclaimed by SGen. */
-	 
+
 	memset (new_end, 0, (str->length - new_length + 1) * sizeof (mono_unichar2));
 	str->length = new_length;
 }
@@ -1468,12 +1467,12 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
  * This returns a handle that wraps the object, this is used to keep a
  * reference to a managed object from the unmanaged world and preventing the
  * object from being disposed.
- * 
+ *
  * If \p pinned is false the address of the object can not be obtained, if it is
  * true the address of the object can be obtained.  This will also pin the
  * object so it will not be possible by a moving garbage collector to move the
- * object. 
- * 
+ * object.
+ *
  * \returns a handle that can be used to access the object from
  * unmanaged code.
  */
@@ -1493,14 +1492,14 @@ mono_gchandle_new_internal (MonoObject *obj, gboolean pinned)
  * Unlike the \c mono_gchandle_new_internal the object can be reclaimed by the
  * garbage collector.  In this case the value of the GCHandle will be
  * set to zero.
- * 
+ *
  * If \p track_resurrection is TRUE the object will be tracked through
  * finalization and if the object is resurrected during the execution
  * of the finalizer, then the returned weakref will continue to hold
  * a reference to the object.   If \p track_resurrection is FALSE, then
  * the weak reference's target will become NULL as soon as the object
  * is passed on to the finalizer.
- * 
+ *
  * \returns a handle that can be used to access the object from
  * unmanaged code.
  */
@@ -1589,7 +1588,7 @@ mono_gc_is_null (void)
  *
  * Frees the \p gchandle handle.  If there are no outstanding
  * references, the garbage collector can reclaim the memory of the
- * object wrapped. 
+ * object wrapped.
  */
 void
 mono_gchandle_free_internal (MonoGCHandle gch)
@@ -1625,7 +1624,7 @@ mono_gchandle_free_internal (MonoGCHandle gch)
 }
 
 guint64
-mono_gc_get_total_allocated_bytes (MonoBoolean precise) 
+mono_gc_get_total_allocated_bytes (MonoBoolean precise)
 {
 	return 0;
 }

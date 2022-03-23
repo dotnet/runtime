@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
-        [GeneratedDllImport(Interop.Libraries.Ws2_32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.Ws2_32, EntryPoint = "WSADuplicateSocketW", SetLastError = true)]
         internal static unsafe partial int WSADuplicateSocket(
             SafeSocketHandle s,
             uint dwProcessId,

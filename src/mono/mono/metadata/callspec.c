@@ -12,12 +12,12 @@
  * license information.
  */
 #include <config.h>
-#include "metadata.h"
+#include <mono/metadata/metadata.h>
 #include "callspec.h"
-#include "assembly.h"
+#include <mono/metadata/assembly.h>
 #include "assembly-internals.h"
 #include "class-internals.h"
-#include "debug-helpers.h"
+#include <mono/metadata/debug-helpers.h>
 
 static MonoAssembly *prog_assembly;
 

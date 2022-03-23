@@ -9,13 +9,8 @@ namespace System.Collections.Generic
     {
         private readonly Stack<T> _stack;
 
-        public StackDebugView(Stack<T> stack)
+        public StackDebugView(Stack<T> stack!!)
         {
-            if (stack == null)
-            {
-                throw new ArgumentNullException(nameof(stack));
-            }
-
             _stack = stack;
         }
 

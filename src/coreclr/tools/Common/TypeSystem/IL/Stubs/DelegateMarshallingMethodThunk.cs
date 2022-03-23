@@ -27,6 +27,14 @@ namespace Internal.IL.Stubs
         private readonly MethodDesc _invokeMethod;
         private MethodSignature _signature;         // signature of the native callable marshalling stub
 
+        public MethodDesc InvokeMethod
+        {
+            get
+            {
+                return _invokeMethod;
+            }
+        }
+
         public DelegateMarshallingMethodThunkKind Kind
         {
             get;

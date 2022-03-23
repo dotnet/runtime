@@ -64,11 +64,6 @@
 #include "typekey.h"
 #include "peimagelayout.inl"
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4244)
-#endif // _MSC_VER
-
 #ifdef TARGET_64BIT
 #define COR_VTABLE_PTRSIZED     COR_VTABLE_64BIT
 #define COR_VTABLE_NOT_PTRSIZED COR_VTABLE_32BIT
@@ -432,7 +427,7 @@ void Module::SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssemb
     _ASSERTE(m_NativeMetadataAssemblyRefMap != NULL);
 
     _ASSERTE(rid <= GetNativeMetadataAssemblyCount());
-    m_NativeMetadataAssemblyRefMap[rid - 1] = pAssembly;
+    VolatileStore(&m_NativeMetadataAssemblyRefMap[rid - 1], pAssembly);
 }
 
 // Module initialization occurs in two phases: the constructor phase and the Initialize phase.
@@ -442,7 +437,6 @@ void Module::SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssemb
 // in a state where Destruct() can be safely called.
 //
 // szName is only used by dynamic modules, see ReflectionModule::Initialize
-//
 //
 void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 {
@@ -464,14 +458,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_DictionaryCrst.Init(CrstDomainLocalBlock);
 
     AllocateMaps();
-
-    if (IsSystem() ||
-        (strcmp(m_pSimpleName, "System") == 0) ||
-        (strcmp(m_pSimpleName, "System.Core") == 0))
-    {
-        FastInterlockOr(&m_dwPersistedFlags, LOW_LEVEL_SYSTEM_ASSEMBLY_BY_NAME);
-    }
-
     m_dwTransientFlags &= ~((DWORD)CLASSES_FREED);  // Set flag indicating LookupMaps are now in a consistent and destructable state
 
 #ifdef FEATURE_COLLECTIBLE_TYPES
@@ -1041,7 +1027,7 @@ BOOL Module::IsEditAndContinueCapable(Assembly *pAssembly, PEAssembly *pPEAssemb
 BOOL Module::IsManifest()
 {
     WRAPPER_NO_CONTRACT;
-    return dac_cast<TADDR>(GetAssembly()->GetManifestModule()) ==
+    return dac_cast<TADDR>(GetAssembly()->GetModule()) ==
            dac_cast<TADDR>(this);
 }
 
@@ -1049,14 +1035,7 @@ DomainAssembly* Module::GetDomainAssembly()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return dac_cast<PTR_DomainAssembly>(m_ModuleID->GetDomainFile());
-}
-
-DomainFile *Module::GetDomainFile()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return dac_cast<PTR_DomainFile>(m_ModuleID->GetDomainFile());
+    return dac_cast<PTR_DomainAssembly>(m_ModuleID->GetDomainAssembly());
 }
 
 #ifndef DACCESS_COMPILE
@@ -1612,77 +1591,6 @@ InstrumentedILOffsetMapping Module::GetInstrumentedILOffsetMapping(mdMethodDef t
 
 #ifndef DACCESS_COMPILE
 
-
-BOOL Module::IsNoStringInterning()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END
-
-    if (!(m_dwPersistedFlags & COMPUTED_STRING_INTERNING))
-    {
-        // Default is string interning
-        BOOL fNoStringInterning = FALSE;
-
-        HRESULT hr;
-
-        // This flag applies to assembly, but it is stored on module so it can be cached in ngen image
-        // Thus, we should ever need it for manifest module only.
-        IMDInternalImport *mdImport = GetAssembly()->GetManifestImport();
-        _ASSERTE(mdImport);
-
-        mdToken token;
-        IfFailThrow(mdImport->GetAssemblyFromScope(&token));
-
-        const BYTE *pVal;
-        ULONG       cbVal;
-
-        hr = mdImport->GetCustomAttributeByName(token,
-                        COMPILATIONRELAXATIONS_TYPE,
-                        (const void**)&pVal, &cbVal);
-
-        // Parse the attribute
-        if (hr == S_OK)
-        {
-            CustomAttributeParser cap(pVal, cbVal);
-            IfFailThrow(cap.SkipProlog());
-
-            // Get Flags
-            UINT32 flags;
-            IfFailThrow(cap.GetU4(&flags));
-
-            if (flags & CompilationRelaxations_NoStringInterning)
-            {
-                fNoStringInterning = TRUE;
-            }
-        }
-
-#ifdef _DEBUG
-        static ConfigDWORD g_NoStringInterning;
-        DWORD dwOverride = g_NoStringInterning.val(CLRConfig::INTERNAL_NoStringInterning);
-
-        if (dwOverride == 0)
-        {
-            // Disabled
-            fNoStringInterning = FALSE;
-        }
-        else if (dwOverride == 2)
-        {
-            // Always true (testing)
-            fNoStringInterning = TRUE;
-        }
-#endif // _DEBUG
-
-        FastInterlockOr(&m_dwPersistedFlags, COMPUTED_STRING_INTERNING |
-            (fNoStringInterning ? NO_STRING_INTERNING : 0));
-    }
-
-    return !!(m_dwPersistedFlags & NO_STRING_INTERNING);
-}
-
 BOOL Module::HasDefaultDllImportSearchPathsAttribute()
 {
     CONTRACTL
@@ -1736,9 +1644,7 @@ BOOL Module::IsRuntimeWrapExceptions()
         HRESULT hr;
         BOOL fRuntimeWrapExceptions = FALSE;
 
-        // This flag applies to assembly, but it is stored on module so it can be cached in ngen image
-        // Thus, we should ever need it for manifest module only.
-        IMDInternalImport *mdImport = GetAssembly()->GetManifestImport();
+        IMDInternalImport *mdImport = GetAssembly()->GetMDImport();
 
         mdToken token;
         IfFailGo(mdImport->GetAssemblyFromScope(&token));
@@ -1775,6 +1681,42 @@ ErrExit:
     return !!(m_dwPersistedFlags & WRAP_EXCEPTIONS);
 }
 
+BOOL Module::IsRuntimeMarshallingEnabled()
+{
+    CONTRACTL
+    {
+        THROWS;
+        if (IsRuntimeMarshallingEnabledCached()) GC_NOTRIGGER; else GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    if (IsRuntimeMarshallingEnabledCached())
+    {
+        return !!(m_dwPersistedFlags & RUNTIME_MARSHALLING_ENABLED);
+    }
+
+    HRESULT hr;
+
+    IMDInternalImport *mdImport = GetAssembly()->GetMDImport();
+
+    mdToken token;
+    if (SUCCEEDED(hr = mdImport->GetAssemblyFromScope(&token)))
+    {
+        const BYTE *pVal;
+        ULONG       cbVal;
+
+        hr = mdImport->GetCustomAttributeByName(token,
+                        g_DisableRuntimeMarshallingAttribute,
+                        (const void**)&pVal, &cbVal);
+    }
+
+    FastInterlockOr(&m_dwPersistedFlags, RUNTIME_MARSHALLING_ENABLED_IS_CACHED |
+        (hr == S_OK ? 0 : RUNTIME_MARSHALLING_ENABLED));
+
+    return hr != S_OK;
+}
+
 BOOL Module::IsPreV4Assembly()
 {
     CONTRACTL
@@ -1786,7 +1728,7 @@ BOOL Module::IsPreV4Assembly()
 
     if (!(m_dwPersistedFlags & COMPUTED_IS_PRE_V4_ASSEMBLY))
     {
-        IMDInternalImport *pImport = GetAssembly()->GetManifestImport();
+        IMDInternalImport *pImport = GetAssembly()->GetMDImport();
         _ASSERTE(pImport);
 
         BOOL fIsPreV4Assembly = FALSE;
@@ -1907,9 +1849,10 @@ void Module::FreeModuleIndex(ModuleIndex index)
     WRAPPER_NO_CONTRACT;
     // We subtracted 1 after we allocated this ID, so we need to
     // add 1 before we free it.
-    DWORD val = index.m_dwIndex + 1;
+    SIZE_T val = index.m_dwIndex + 1;
 
-    g_pModuleIndexDispenser->DisposeId(val);
+    _ASSERTE(val <= MAXDWORD);
+    g_pModuleIndexDispenser->DisposeId((DWORD)val);
 }
 
 
@@ -1968,13 +1911,13 @@ void Module::AllocateStatics(AllocMemTracker *pamTracker)
     BuildStaticsOffsets(pamTracker);
 }
 
-void Module::SetDomainFile(DomainFile *pDomainFile)
+void Module::SetDomainAssembly(DomainAssembly *pDomainAssembly)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(pDomainFile));
-        PRECONDITION(IsManifest() == pDomainFile->IsAssembly());
+        PRECONDITION(CheckPointer(pDomainAssembly));
+        PRECONDITION(IsManifest());
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
@@ -1994,7 +1937,7 @@ void Module::SetDomainFile(DomainFile *pDomainFile)
         }
         else
         {
-            pLoaderAllocator = pDomainFile->GetAppDomain()->GetLoaderAllocator();
+            pLoaderAllocator = pDomainAssembly->GetAppDomain()->GetLoaderAllocator();
         }
 
         SIZE_T size = GetDomainLocalModuleSize();
@@ -2034,7 +1977,7 @@ void Module::SetDomainFile(DomainFile *pDomainFile)
         m_ModuleID = pModuleData;
     }
 
-    m_ModuleID->SetDomainFile(pDomainFile);
+    m_ModuleID->SetDomainAssembly(pDomainAssembly);
 
     // Allocate static handles now.
     // NOTE: Bootstrapping issue with CoreLib - we will manually allocate later
@@ -2042,7 +1985,7 @@ void Module::SetDomainFile(DomainFile *pDomainFile)
     // as it is currently initialized through the DomainLocalModule::PopulateClass in MethodTable::CheckRunClassInitThrowing
     // (If we don't do this, it would allocate here unused regular static handles that will be overridden later)
     if (g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT] != NULL && !GetAssembly()->IsCollectible())
-        AllocateRegularStaticHandles(pDomainFile->GetAppDomain());
+        AllocateRegularStaticHandles(pDomainAssembly->GetAppDomain());
 }
 
 OBJECTREF Module::GetExposedObject()
@@ -2057,7 +2000,7 @@ OBJECTREF Module::GetExposedObject()
     }
     CONTRACT_END;
 
-    RETURN GetDomainFile()->GetExposedModuleObject();
+    RETURN GetDomainAssembly()->GetExposedModuleObject();
 }
 
 //
@@ -3086,7 +3029,7 @@ void Module::InitializeStringData(DWORD token, EEStringData *pstrData, CQuickByt
 }
 
 
-OBJECTHANDLE Module::ResolveStringRef(DWORD token, BaseDomain *pDomain, bool bNeedToSyncWithFixups)
+OBJECTHANDLE Module::ResolveStringRef(DWORD token, BaseDomain *pDomain)
 {
     CONTRACTL
     {
@@ -3284,7 +3227,7 @@ Module::GetAssemblyIfLoaded(
                 }
 
                 if (pDomainAssembly && pDomainAssembly->IsLoaded())
-                    pAssembly = pDomainAssembly->GetCurrentAssembly(); // <NOTE> Do not use GetAssembly - that may force the completion of a load
+                    pAssembly = pDomainAssembly->GetAssembly();
 
                 // Only store in the rid map if working with the current AppDomain.
                 if (fCanUseRidMap && pAssembly)
@@ -3368,7 +3311,7 @@ DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
     if (pAssembly != NULL)
     {
         pDomainAssembly = pAssembly->GetDomainAssembly();
-        ::GetAppDomain()->LoadDomainFile(pDomainAssembly, FILE_LOADED);
+        ::GetAppDomain()->LoadDomainAssembly(pDomainAssembly, FILE_LOADED);
 
         RETURN pDomainAssembly;
     }
@@ -3395,9 +3338,9 @@ DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
             !pDomainAssembly->IsLoaded() ||                 // GetAssemblyIfLoaded will not find not-yet-loaded assemblies
             GetAssemblyIfLoaded(kAssemblyRef, NULL, FALSE, pDomainAssembly->GetPEAssembly()->GetHostAssembly()->GetBinder()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
 
-        if (pDomainAssembly->GetCurrentAssembly() != NULL)
+        if (pDomainAssembly->GetAssembly() != NULL)
         {
-            StoreAssemblyRef(kAssemblyRef, pDomainAssembly->GetCurrentAssembly());
+            StoreAssemblyRef(kAssemblyRef, pDomainAssembly->GetAssembly());
         }
     }
 
@@ -3438,7 +3381,7 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
         if (kFile == mdTokenNil)
             RETURN NULL;
 
-        RETURN GetAssembly()->GetManifestModule()->GetModuleIfLoaded(kFile);
+        RETURN GetAssembly()->GetModule()->GetModuleIfLoaded(kFile);
     }
 
     Module *pModule = LookupFile(kFile);
@@ -3447,7 +3390,7 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
         if (IsManifest())
         {
             if (kFile == mdFileNil)
-                pModule = GetAssembly()->GetManifestModule();
+                pModule = GetAssembly()->GetModule();
         }
         else
         {
@@ -3461,7 +3404,7 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
             {
                 if (kMatch == mdFileNil)
                 {
-                    pModule = pAssembly->GetManifestModule();
+                    pModule = pAssembly->GetModule();
                 }
                 else
                 {
@@ -3469,7 +3412,7 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
                 }
             }
             else
-            pModule = pAssembly->GetManifestModule()->LookupFile(kMatch);
+            pModule = pAssembly->GetModule()->LookupFile(kMatch);
         }
 
 #ifndef DACCESS_COMPILE
@@ -3485,9 +3428,9 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
 
 #ifndef DACCESS_COMPILE
 
-DomainFile *Module::LoadModule(AppDomain *pDomain, mdFile kFile)
+DomainAssembly *Module::LoadModule(AppDomain *pDomain, mdFile kFile)
 {
-    CONTRACT(DomainFile *)
+    CONTRACT(DomainAssembly *)
     {
         INSTANCE_CHECK;
         THROWS;
@@ -3507,7 +3450,7 @@ DomainFile *Module::LoadModule(AppDomain *pDomain, mdFile kFile)
     else
     {
         // This is mdtFile
-        IfFailThrow(GetAssembly()->GetManifestImport()->GetFileProps(kFile,
+        IfFailThrow(GetAssembly()->GetMDImport()->GetFileProps(kFile,
                                     &psModuleName,
                                     NULL,
                                     NULL,
@@ -3546,7 +3489,7 @@ PTR_Module Module::LookupModule(mdToken kFile)
         if (kFileLocal == mdTokenNil)
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
 
-        RETURN GetAssembly()->GetManifestModule()->LookupModule(kFileLocal);
+        RETURN GetAssembly()->GetModule()->LookupModule(kFileLocal);
     }
 
     PTR_Module pModule = LookupFile(kFile);
@@ -3557,12 +3500,12 @@ PTR_Module Module::LookupModule(mdToken kFile)
         mdFile kMatch = pAssembly->GetManifestFileToken(GetMDImport(), kFile);
         if (IsNilToken(kMatch)) {
             if (kMatch == mdFileNil)
-                pModule = pAssembly->GetManifestModule();
+                pModule = pAssembly->GetModule();
             else
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
         }
         else
-            pModule = pAssembly->GetManifestModule()->LookupFile(kMatch);
+            pModule = pAssembly->GetModule()->LookupFile(kMatch);
     }
     RETURN pModule;
 }
@@ -3857,7 +3800,7 @@ MethodDesc *Module::FindMethod(mdToken pMethod)
 #ifdef _DEBUG
         CONTRACT_VIOLATION(ThrowsViolation);
         char szMethodName [MAX_CLASSNAME_LENGTH];
-        CEEInfo::findNameOfToken(this, pMethod, szMethodName, COUNTOF (szMethodName));
+        CEEInfo::findNameOfToken(this, pMethod, szMethodName, ARRAY_SIZE(szMethodName));
         // This used to be IJW, but changed to LW_INTEROP to reclaim a bit in our log facilities
         LOG((LF_INTEROP, LL_INFO10, "Failed to find Method: %s for Vtable Fixup\n", szMethodName));
 #endif // _DEBUG
@@ -4031,7 +3974,7 @@ void Module::UpdateDynamicMetadataIfNeeded()
 
 #endif // DEBUGGING_SUPPORTED
 
-BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainFile * pDomainFile, int flags, BOOL attaching)
+BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAssembly, int flags, BOOL attaching)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -4042,7 +3985,7 @@ BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainFile * pDomainFile, in
     // Always capture metadata, even if no debugger is attached. If a debugger later attaches, it will use
     // this data.
     {
-        Module * pModule = pDomainFile->GetModule();
+        Module * pModule = pDomainAssembly->GetModule();
         pModule->UpdateDynamicMetadataIfNeeded();
     }
 
@@ -4063,7 +4006,7 @@ BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainFile * pDomainFile, in
                                       m_pPEAssembly->GetPath().GetCount(),
                                       GetAssembly(),
                                       pDomain,
-                                      pDomainFile,
+                                      pDomainAssembly,
                                       attaching);
 
         result = TRUE;
@@ -4526,7 +4469,7 @@ LoaderHeap *Module::GetThunkHeap()
         LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
             0,                                 // DWORD dwCommitBlockSize
             ThunkHeapStubManager::g_pManager->GetRangeList(),
-            TRUE);                             // BOOL fMakeExecutable
+            UnlockedLoaderHeap::HeapKind::Executable);
 
         if (FastInterlockCompareExchangePointer(&m_pThunkHeap, pNewHeap, 0) != 0)
         {
@@ -4559,7 +4502,7 @@ Module *Module::GetModuleFromIndex(DWORD ix)
         Assembly *pAssembly = this->LookupAssemblyRef(mdAssemblyRefToken);
         if (pAssembly)
         {
-            RETURN pAssembly->GetManifestModule();
+            RETURN pAssembly->GetModule();
         }
         else
         {
@@ -4668,16 +4611,16 @@ void Module::RunEagerFixups()
     {
         // For composite images, multiple modules may request initializing eager fixups
         // from multiple threads so we need to lock their resolution.
-        if (compositeNativeImage->EagerFixupsHaveRun())
-        {
-            return;
-        }
         CrstHolder compositeEagerFixups(compositeNativeImage->EagerFixupsLock());
         if (compositeNativeImage->EagerFixupsHaveRun())
         {
+            if (compositeNativeImage->ReadyToRunCodeDisabled())
+                GetReadyToRunInfo()->DisableAllR2RCode();
             return;
         }
         RunEagerFixupsUnlocked();
+        if (GetReadyToRunInfo()->ReadyToRunCodeDisabled())
+            compositeNativeImage->DisableAllR2RCode();
         compositeNativeImage->SetEagerFixupsHaveRun();
     }
     else
@@ -4756,6 +4699,14 @@ void Module::RunEagerFixupsUnlocked()
             }
         }
     }
+
+    TADDR base = dac_cast<TADDR>(pNativeImage->GetBase());
+
+    ExecutionManager::AddCodeRange(
+        base, base + (TADDR)pNativeImage->GetVirtualSize(),
+        ExecutionManager::GetReadyToRunJitManager(),
+        RangeSection::RANGE_SECTION_READYTORUN,
+        this /* pHeapListOrZapModule */);
 }
 #endif // !DACCESS_COMPILE
 
@@ -4835,7 +4786,7 @@ ICorJitInfo::BlockCounts * Module::AllocateMethodBlockCounts(mdToken _token, DWO
     }
     CONTRACT_END;
 
-    assert(_ILSize != 0);
+    _ASSERTE(_ILSize != 0);
 
     DWORD   listSize   = sizeof(CORCOMPILE_METHOD_PROFILE_LIST);
     DWORD   headerSize = sizeof(CORBBTPROF_METHOD_HEADER);
@@ -4854,7 +4805,7 @@ ICorJitInfo::BlockCounts * Module::AllocateMethodBlockCounts(mdToken _token, DWO
     methodProfileData->method.ILSize = _ILSize;
     methodProfileData->method.cBlock = _count;
 
-    assert(methodProfileData->size == methodProfileData->Size());
+    _ASSERTE(methodProfileData->size == methodProfileData->Size());
 
     // Link it to the per module list of profile data buffers
 
@@ -5071,10 +5022,12 @@ public:
             for (SectionList *pSec = pSectionList; pSec; pSec = pSec->next, secCount++)
             {
                 SIZE_T offset = profileMap->getCurrentOffset();
-                assert((offset & 0x3) == 0);
+                _ASSERTE((offset & 0x3) == 0);
+                _ASSERTE(offset <= MAXDWORD);
 
                 SIZE_T actualSize  = pSec->profileMap.getCurrentOffset();
                 SIZE_T alignUpSize = AlignUp(actualSize, sizeof(DWORD));
+                _ASSERTE(alignUpSize <= MAXDWORD);
 
                 profileMap->Allocate(alignUpSize);
 
@@ -5088,8 +5041,8 @@ public:
                 tableEntry = (CORBBTPROF_SECTION_TABLE_ENTRY *) profileMap->getOffsetPtr(tableEntryOffset);
                 tableEntry += secCount;
                 tableEntry->FormatID    = pSec->format;
-                tableEntry->Data.Offset = offset;
-                tableEntry->Data.Size   = alignUpSize;
+                tableEntry->Data.Offset = (DWORD)offset;
+                tableEntry->Data.Size   = (DWORD)alignUpSize;
             }
         }
 
@@ -5997,12 +5950,14 @@ static void ProfileDataAllocateScenarioInfo(ProfileEmitter * pEmitter, LPCSTR sc
             sHeaderOffset = profileMap->getCurrentOffset();
             sHeader = (CORBBTPROF_SCENARIO_HEADER *) profileMap->Allocate(sizeHeader.Value());
 
-            sHeader->size              = sHeaderSize.Value();
+            _ASSERTE(sHeaderSize.Value() <= MAXDWORD);
+            _ASSERTE(cName.Value() <= MAXDWORD);
+            sHeader->size              = (DWORD)sHeaderSize.Value();
             sHeader->scenario.ordinal  = 1;
             sHeader->scenario.mask     = 1;
             sHeader->scenario.priority = 0;
             sHeader->scenario.numRuns  = 1;
-            sHeader->scenario.cName    = cName.Value();
+            sHeader->scenario.cName    = (DWORD)cName.Value();
             wcscpy_s(sHeader->scenario.name, cName.Value(), pName);
         }
 
@@ -6013,10 +5968,12 @@ static void ProfileDataAllocateScenarioInfo(ProfileEmitter * pEmitter, LPCSTR sc
             CORBBTPROF_SCENARIO_RUN *sRun;
             sRun = (CORBBTPROF_SCENARIO_RUN *)  profileMap->Allocate(sizeRun.Value());
 
+            _ASSERTE(cCmdLine.Value() <= MAXDWORD);
+            _ASSERTE(cSystemInfo.Value() <= MAXDWORD);
             sRun->runTime     = runTime;
             sRun->mvid        = *pMvid;
-            sRun->cCmdLine    = cCmdLine.Value();
-            sRun->cSystemInfo = cSystemInfo.Value();
+            sRun->cCmdLine    = (DWORD)cCmdLine.Value();
+            sRun->cSystemInfo = (DWORD)cSystemInfo.Value();
             wcscpy_s(sRun->cmdLine, cCmdLine.Value(), pCmdLine);
             wcscpy_s(sRun->cmdLine+cCmdLine.Value(), cSystemInfo.Value(), pSystemInfo);
         }
@@ -6024,7 +5981,7 @@ static void ProfileDataAllocateScenarioInfo(ProfileEmitter * pEmitter, LPCSTR sc
         {
             CORBBTPROF_SCENARIO_HEADER * sHeader;
             sHeader = (CORBBTPROF_SCENARIO_HEADER *) profileMap->getOffsetPtr(sHeaderOffset);
-            assert(sHeader->size == sHeader->Size());
+            _ASSERTE(sHeader->size == sHeader->Size());
         }
 #endif
     }
@@ -6063,7 +6020,7 @@ static void ProfileDataAllocateMethodBlockCounts(ProfileEmitter * pEmitter, CORC
     {
         CORBBTPROF_METHOD_HEADER * pInfo = methodProfileList->GetInfo();
 
-        assert(pInfo->size == pInfo->Size());
+        _ASSERTE(pInfo->size == pInfo->Size());
 
         //
         // We set methodWasExecuted based upon the ExecutionCount of the very first block
@@ -6132,7 +6089,8 @@ static void ProfileDataAllocateMethodBlockCounts(ProfileEmitter * pEmitter, CORC
                     profileMap->Allocate(sizeof(CORBBTPROF_TOKEN_LIST_SECTION_HEADER) +
                                          pTokenArray->Size() * sizeof(CORBBTPROF_TOKEN_INFO));
 
-                header->NumTokens = pTokenArray->Size();
+                _ASSERTE(pTokenArray->Size() <= MAXDWORD);
+                header->NumTokens = (DWORD)pTokenArray->Size();
                 memcpy( (header + 1), &((*pTokenArray)[0]), pTokenArray->Size() * sizeof(CORBBTPROF_TOKEN_INFO));
 
                 // Reset the collected tokens
@@ -6393,7 +6351,8 @@ HRESULT Module::WriteMethodProfileDataLogFile(bool cleanup)
             HandleHolder profileDataFile(OpenMethodProfileDataLogFile(mvid));
 
             ULONG count;
-            BOOL result = WriteFile(profileDataFile, profileImage.getOffsetPtr(0), profileImage.getCurrentOffset(), &count, NULL);
+            _ASSERTE(profileImage.getCurrentOffset() <= MAXDWORD);
+            BOOL result = WriteFile(profileDataFile, profileImage.getOffsetPtr(0), (DWORD)profileImage.getCurrentOffset(), &count, NULL);
             if (!result || (count != profileImage.getCurrentOffset()))
             {
                 DWORD lasterror = GetLastError();
@@ -6442,11 +6401,7 @@ void Module::WriteAllModuleProfileData(bool cleanup)
 
             while (assemblyIterator.Next(pDomainAssembly.This()))
             {
-                DomainModuleIterator i = pDomainAssembly->IterateModules(kModIterIncludeLoaded);
-                while (i.Next())
-                {
-                    /*hr=*/i.GetModule()->WriteMethodProfileDataLogFile(cleanup);
-                }
+                pDomainAssembly->GetModule()->WriteMethodProfileDataLogFile(cleanup);
             }
         }
     }
@@ -6982,7 +6937,6 @@ ReflectionModule::ReflectionModule(Assembly *pAssembly, mdFile token, PEAssembly
 
     m_pInMemoryWriter = NULL;
     m_sdataSection = NULL;
-    m_pCreatingAssembly = NULL;
     m_pCeeFileGen = NULL;
     m_pDynamicMetadata = NULL;
 }
@@ -7437,7 +7391,7 @@ VOID Module::EnsureActive()
         MODE_ANY;
     }
     CONTRACTL_END;
-    GetDomainFile()->EnsureActive();
+    GetDomainAssembly()->EnsureActive();
 }
 #endif // DACCESS_COMPILE
 
@@ -7456,13 +7410,13 @@ VOID Module::EnsureAllocated()
     }
     CONTRACTL_END;
 
-    GetDomainFile()->EnsureAllocated();
+    GetDomainAssembly()->EnsureAllocated();
 }
 
 VOID Module::EnsureLibraryLoaded()
 {
     STANDARD_VM_CONTRACT;
-    GetDomainFile()->EnsureLibraryLoaded();
+    GetDomainAssembly()->EnsureLibraryLoaded();
 }
 #endif // !DACCESS_COMPILE
 
@@ -7477,10 +7431,10 @@ CHECK Module::CheckActivated()
     CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-    DomainFile *pDomainFile = GetDomainFile();
-    CHECK(pDomainFile != NULL);
-    PREFIX_ASSUME(pDomainFile != NULL);
-    CHECK(pDomainFile->CheckActivated());
+    DomainAssembly *pDomainAssembly = GetDomainAssembly();
+    CHECK(pDomainAssembly != NULL);
+    PREFIX_ASSUME(pDomainAssembly != NULL);
+    CHECK(pDomainAssembly->CheckActivated());
 #endif
     CHECK_OK;
 }
@@ -7898,10 +7852,6 @@ bool Module::HasReferenceByName(LPCUTF8 pModuleName)
     return false;
 }
 #endif
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif // _MSC_VER: warning C4244
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
 NOINLINE void NgenForceFailure_AV()

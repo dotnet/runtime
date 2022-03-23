@@ -642,7 +642,8 @@ namespace Internal.JitInterface
             methodInfo->ILCode = (byte*)GetPin(ilCode);
             methodInfo->ILCodeSize = (uint)ilCode.Length;
             methodInfo->maxStack = (uint)methodIL.MaxStack;
-            methodInfo->EHcount = (uint)methodIL.GetExceptionRegions().Length;
+            var exceptionRegions = methodIL.GetExceptionRegions();
+            methodInfo->EHcount = (uint)exceptionRegions.Length;
             methodInfo->options = methodIL.IsInitLocals ? CorInfoOptions.CORINFO_OPT_INIT_LOCALS : (CorInfoOptions)0;
 
             if (method.AcquiresInstMethodTableFromThis())
@@ -658,8 +659,26 @@ namespace Internal.JitInterface
                 methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
             }
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
-            Get_CORINFO_SIG_INFO(method, sig: &methodInfo->args);
+            Get_CORINFO_SIG_INFO(method, sig: &methodInfo->args, methodIL);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
+
+#if READYTORUN
+            if ((methodInfo->options & CorInfoOptions.CORINFO_GENERICS_CTXT_MASK) != 0)
+            {
+                foreach (var region in exceptionRegions)
+                {
+                    if (region.Kind == ILExceptionRegionKind.Catch)
+                    {
+                        TypeDesc catchType = (TypeDesc)methodIL.GetObject(region.ClassToken);
+                        if (catchType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        {
+                            methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_KEEP_ALIVE;
+                            break;
+                        }
+                    }
+                }
+            }
+#endif
 
             return true;
         }
@@ -683,9 +702,9 @@ namespace Internal.JitInterface
             return (CORINFO_CLASS_STRUCT_**)GetPin(jitVisibleInstantiation);
         }
 
-        private void Get_CORINFO_SIG_INFO(MethodDesc method, CORINFO_SIG_INFO* sig, bool suppressHiddenArgument = false)
+        private void Get_CORINFO_SIG_INFO(MethodDesc method, CORINFO_SIG_INFO* sig, MethodILScope scope, bool suppressHiddenArgument = false)
         {
-            Get_CORINFO_SIG_INFO(method.Signature, sig);
+            Get_CORINFO_SIG_INFO(method.Signature, sig, scope);
 
             // Does the method have a hidden parameter?
             bool hasHiddenParameter = !suppressHiddenArgument && method.RequiresInstArg();
@@ -845,7 +864,7 @@ namespace Internal.JitInterface
                 var c => c
             };
 
-        private void Get_CORINFO_SIG_INFO(MethodSignature signature, CORINFO_SIG_INFO* sig)
+        private void Get_CORINFO_SIG_INFO(MethodSignature signature, CORINFO_SIG_INFO* sig, MethodILScope scope)
         {
             sig->callConv = (CorInfoCallConv)(signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask);
 
@@ -875,7 +894,7 @@ namespace Internal.JitInterface
             sig->pSig = null;
             sig->cbSig = 0; // Not used by the JIT
             sig->methodSignature = ObjectToHandle(signature);
-            sig->scope = null;
+            sig->scope = scope is not null ? ObjectToHandle(scope) : null; // scope can be null for internal calls and COM methods.
             sig->token = 0; // Not used by the JIT
         }
 
@@ -1118,6 +1137,15 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
             }
 
+            // Internal calls typically turn into fcalls that do not always
+            // probe for GC. Be conservative here and always let JIT know that
+            // this method may not do GC checks so the JIT might need to make
+            // callers fully interruptible.
+            if (method.IsInternalCall)
+            {
+                result |= CorInfoFlag.CORINFO_FLG_NOGCCHECK;
+            }
+
             return (uint)result;
         }
 
@@ -1149,7 +1177,7 @@ namespace Internal.JitInterface
                 }
             }
 
-            Get_CORINFO_SIG_INFO(method, sig: sig);
+            Get_CORINFO_SIG_INFO(method, sig: sig, scope: null);
         }
 
         private bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info)
@@ -1159,7 +1187,7 @@ namespace Internal.JitInterface
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
 
-        private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, ref uint pRestrictions)
+        private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd)
         {
             MethodDesc callerMethod = HandleToObject(callerHnd);
             MethodDesc calleeMethod = HandleToObject(calleeHnd);
@@ -1795,7 +1823,7 @@ namespace Internal.JitInterface
             var methodIL = HandleToObject(module);
             var methodSig = (MethodSignature)methodIL.GetObject((int)sigTOK);
 
-            Get_CORINFO_SIG_INFO(methodSig, sig);
+            Get_CORINFO_SIG_INFO(methodSig, sig, methodIL);
 
 #if !READYTORUN
             // Check whether we need to report this as a fat pointer call
@@ -1811,7 +1839,7 @@ namespace Internal.JitInterface
         private void findCallSiteSig(CORINFO_MODULE_STRUCT_* module, uint methTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
         {
             var methodIL = HandleToObject(module);
-            Get_CORINFO_SIG_INFO(((MethodDesc)methodIL.GetObject((int)methTOK)), sig: sig);
+            Get_CORINFO_SIG_INFO(((MethodDesc)methodIL.GetObject((int)methTOK)), sig: sig, methodIL);
         }
 
         private CORINFO_CLASS_STRUCT_* getTokenTypeAsHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
@@ -2927,6 +2955,11 @@ namespace Internal.JitInterface
             }
         }
 
+        private uint getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
+        {
+            throw new NotImplementedException("For LoongArch64, would be implemented later");
+        }
+
         private CORINFO_CLASS_STRUCT_* getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args)
         {
             int index = (int)args;
@@ -3283,8 +3316,6 @@ namespace Internal.JitInterface
 
         private uint getFieldThreadLocalStoreID(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
         { throw new NotImplementedException("getFieldThreadLocalStoreID"); }
-        private void setOverride(IntPtr pOverride, CORINFO_METHOD_STRUCT_* currentMethod)
-        { throw new NotImplementedException("setOverride"); }
         private void addActiveDependency(CORINFO_MODULE_STRUCT_* moduleFrom, CORINFO_MODULE_STRUCT_* moduleTo)
         { throw new NotImplementedException("addActiveDependency"); }
         private CORINFO_METHOD_STRUCT_* GetDelegateCtor(CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd, ref DelegateCtorArgs pCtorData)
@@ -3713,17 +3744,11 @@ namespace Internal.JitInterface
                 case TargetArchitecture.X64:
                 case TargetArchitecture.X86:
                     Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
-                    if (_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2))
-                    {
-                        flags.Set(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
-                    }
+                    Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2));
                     break;
 
                 case TargetArchitecture.ARM64:
-                    if (_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.ARM64_AdvSimd))
-                    {
-                        flags.Set(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
-                    }
+                    Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.ARM64_AdvSimd));
                     break;
             }
 
@@ -3747,7 +3772,7 @@ namespace Internal.JitInterface
 
 #if READYTORUN
                 // TODO: enable this check in full AOT
-                if (Marshaller.IsMarshallingRequired(this.MethodBeingCompiled.Signature, Array.Empty<ParameterMetadata>())) // Only blittable arguments
+                if (Marshaller.IsMarshallingRequired(this.MethodBeingCompiled.Signature, Array.Empty<ParameterMetadata>(), ((MetadataType)this.MethodBeingCompiled.OwningType).Module)) // Only blittable arguments
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonBlittableTypes, this.MethodBeingCompiled);
                 }
@@ -3887,6 +3912,10 @@ namespace Internal.JitInterface
 
         private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
         {
+            InstructionSet_ARM64 asArm64 = (InstructionSet_ARM64)instructionSet;
+            InstructionSet_X64 asX64 = (InstructionSet_X64)instructionSet;
+            InstructionSet_X86 asX86 = (InstructionSet_X86)instructionSet;
+
             if (supportEnabled)
             {
                 _actualInstructionSetSupported.AddInstructionSet(instructionSet);
@@ -3897,6 +3926,10 @@ namespace Internal.JitInterface
                 // set is not a reason to not support usage of it.
                 if (!isMethodDefinedInCoreLib())
                 {
+                    // If a vector instruction set is marked as attempted to be used, but is also explicitly unsupported
+                    // then we need to mark as explicitly unsupported the implied instruction set associated with the vector set. 
+                    instructionSet = InstructionSetFlags.ConvertToImpliedInstructionSetForVectorInstructionSets(_compilation.TypeSystemContext.Target.Architecture, instructionSet);
+
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
                 }
             }

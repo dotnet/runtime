@@ -113,9 +113,9 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
  * Macros used to generate intermediate representation macros
  *
  * The macros use a `MonoConfig` object as its context, and among other
- * things it is used to associate instructions with the memory pool with 
+ * things it is used to associate instructions with the memory pool with
  * it.
- * 
+ *
  * The macros come in three variations with slightly different
  * features, the patter is: NEW_OP, EMIT_NEW_OP, MONO_EMIT_NEW_OP,
  * the differences are as follows:
@@ -131,25 +131,25 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
  *
  * `MONO_EMIT_NEW_OP`: These variations of the instructions are used when
  * you are merely interested in emitting the instruction into the `MonoConfig`
- * parameter. 
+ * parameter.
  */
 #undef MONO_INST_NEW
-/* 
- * FIXME: zeroing out some fields is not needed with the new IR, but the old 
+/*
+ * FIXME: zeroing out some fields is not needed with the new IR, but the old
  * JIT code still uses the left and right fields, so it has to stay.
  */
 
 /*
  * MONO_INST_NEW: create a new MonoInst instance that is allocated on the MonoConfig pool.
  *
- * @cfg: the MonoConfig object that will be used as the context for the 
+ * @cfg: the MonoConfig object that will be used as the context for the
  * instruction.
  * @dest: this is the place where the instance of the `MonoInst` is stored.
  * @op: the value that should be stored in the MonoInst.opcode field
  *
  * This initializes an empty MonoInst that has been nulled out, it is allocated
  * from the memory pool associated with the MonoConfig, but it is not linked anywhere.
- * the cil_code is set to the cfg->ip address. 
+ * the cil_code is set to the cfg->ip address.
  */
 #define MONO_INST_NEW(cfg,dest,op) do {	\
 		(dest) = (MonoInst *)mono_mempool_alloc ((cfg)->mempool, sizeof (MonoInst));	\
@@ -173,8 +173,8 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		(dest)->dreg = alloc_dreg ((cfg), STACK_I4);	\
 	} while (0)
 
-/* 
- * Avoid using this with a non-NULL val if possible as it is not AOT 
+/*
+ * Avoid using this with a non-NULL val if possible as it is not AOT
  * compatible. Use one of the NEW_xxxCONST variants instead.
  */
 #define NEW_PCONST(cfg,dest,val) do {	\
@@ -217,7 +217,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
         MONO_INST_NEW ((cfg), (dest), (op)); \
         (dest)->dreg = dr; \
         (dest)->sreg1 = sr1; \
-    } while (0)        
+    } while (0)
 
 #define NEW_BIALU(cfg,dest,op,dr,sr1,sr2) do { \
         MONO_INST_NEW ((cfg), (dest), (op)); \

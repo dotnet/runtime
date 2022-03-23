@@ -18,9 +18,6 @@ namespace System.Security
         private const int AttributesTypical = 4 * 2;  // 4 attributes, times 2 strings per attribute
         private const int ChildrenTypical = 1;
 
-        private static readonly char[] s_tagIllegalCharacters = new char[] { ' ', '<', '>' };
-        private static readonly char[] s_textIllegalCharacters = new char[] { '<', '>' };
-        private static readonly char[] s_valueIllegalCharacters = new char[] { '<', '>', '\"' };
         private static readonly char[] s_escapeChars = new char[] { '<', '>', '\"', '\'', '&' };
         private static readonly string[] s_escapeStringPairs = new string[]
         {
@@ -34,22 +31,16 @@ namespace System.Security
 
         //-------------------------- Constructors ---------------------------
 
-        public SecurityElement(string tag)
+        public SecurityElement(string tag!!)
         {
-            if (tag == null)
-                throw new ArgumentNullException(nameof(tag));
-
             if (!IsValidTag(tag))
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, tag));
 
             _tag = tag;
         }
 
-        public SecurityElement(string tag, string? text)
+        public SecurityElement(string tag!!, string? text)
         {
-            if (tag == null)
-                throw new ArgumentNullException(nameof(tag));
-
             if (!IsValidTag(tag))
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, tag));
 
@@ -67,8 +58,7 @@ namespace System.Security
             get => _tag;
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(Tag));
+                ArgumentNullException.ThrowIfNull(value, nameof(Tag));
 
                 if (!IsValidTag(value))
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, value));
@@ -194,14 +184,8 @@ namespace System.Security
             _attributes.Add(value);
         }
 
-        public void AddAttribute(string name, string value)
+        public void AddAttribute(string name!!, string value!!)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             if (!IsValidAttributeName(name))
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidElementName, name));
 
@@ -211,11 +195,8 @@ namespace System.Security
             AddAttributeSafe(name, value);
         }
 
-        public void AddChild(SecurityElement child)
+        public void AddChild(SecurityElement child!!)
         {
-            if (child == null)
-                throw new ArgumentNullException(nameof(child));
-
             _children ??= new ArrayList(ChildrenTypical);
 
             _children.Add(child);
@@ -298,34 +279,17 @@ namespace System.Security
             return element;
         }
 
-        public static bool IsValidTag([NotNullWhen(true)] string? tag)
-        {
-            if (tag == null)
-                return false;
+        public static bool IsValidTag([NotNullWhen(true)] string? tag) =>
+            tag != null && tag.AsSpan().IndexOfAny(' ', '<', '>') < 0;
 
-            return tag.IndexOfAny(s_tagIllegalCharacters) == -1;
-        }
+        public static bool IsValidText([NotNullWhen(true)] string? text) =>
+            text != null && text.AsSpan().IndexOfAny('<', '>') < 0;
 
-        public static bool IsValidText([NotNullWhen(true)] string? text)
-        {
-            if (text == null)
-                return false;
+        public static bool IsValidAttributeName([NotNullWhen(true)] string? name) =>
+            IsValidTag(name);
 
-            return text.IndexOfAny(s_textIllegalCharacters) == -1;
-        }
-
-        public static bool IsValidAttributeName([NotNullWhen(true)] string? name)
-        {
-            return IsValidTag(name);
-        }
-
-        public static bool IsValidAttributeValue([NotNullWhen(true)] string? value)
-        {
-            if (value == null)
-                return false;
-
-            return value.IndexOfAny(s_valueIllegalCharacters) == -1;
-        }
+        public static bool IsValidAttributeValue([NotNullWhen(true)] string? value) =>
+            value != null && value.AsSpan().IndexOfAny('<', '>', '\"') < 0;
 
         private static string GetEscapeSequence(char c)
         {
@@ -361,7 +325,7 @@ namespace System.Security
             {
                 index = str.IndexOfAny(s_escapeChars, newIndex);
 
-                if (index == -1)
+                if (index < 0)
                 {
                     if (sb == null)
                         return str;
@@ -425,7 +389,7 @@ namespace System.Security
             {
                 index = str.IndexOf('&', newIndex);
 
-                if (index == -1)
+                if (index < 0)
                 {
                     if (sb == null)
                         return str;
@@ -517,11 +481,8 @@ namespace System.Security
             }
         }
 
-        public string? Attribute(string name)
+        public string? Attribute(string name!!)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             // Note: we don't check for validity here because an
             // if an invalid name is passed we simply won't find it.
             if (_attributes == null)
@@ -549,12 +510,10 @@ namespace System.Security
             return null;
         }
 
-        public SecurityElement? SearchForChildByTag(string tag)
+        public SecurityElement? SearchForChildByTag(string tag!!)
         {
             // Go through all the children and see if we can
             // find the ones that are asked for (matching tags)
-            if (tag == null)
-                throw new ArgumentNullException(nameof(tag));
 
             // Note: we don't check for a valid tag here because
             // an invalid tag simply won't be found.
@@ -568,12 +527,10 @@ namespace System.Security
             return null;
         }
 
-        public string? SearchForTextOfTag(string tag)
+        public string? SearchForTextOfTag(string tag!!)
         {
             // Search on each child in order and each
             // child's child, depth-first
-            if (tag == null)
-                throw new ArgumentNullException(nameof(tag));
 
             // Note: we don't check for a valid tag here because
             // an invalid tag simply won't be found.
@@ -591,12 +548,6 @@ namespace System.Security
             return null;
         }
 
-        public static SecurityElement? FromString(string xml)
-        {
-            if (xml == null)
-                throw new ArgumentNullException(nameof(xml));
-
-            return default;
-        }
+        public static SecurityElement? FromString(string xml!!) => default;
     }
 }

@@ -47,11 +47,6 @@
         <target state="translated">A matriz de destino não é longa o suficiente para copiar todos os itens da coleção. Verifique o índice e o tamanho da matriz.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ArgumentNull_ArrayWithNullElements">
-        <source>The array cannot contain null elements.</source>
-        <target state="translated">A matriz não pode conter elementos nulos.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="BeginIndexNotNegative">
         <source>Start index cannot be less than 0 or greater than input length.</source>
         <target state="translated">Índice inicial não pode ser menor que 0 ou maior que o comprimento de entrada.</target>
@@ -123,8 +118,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidLangVersionMessage">
-        <source>C# LangVersion of 10 or greater is required</source>
-        <target state="translated">C# LangVersion de 10 ou maior é necessário</target>
+        <source>C# LangVersion of 11 or greater is required</source>
+        <target state="new">C# LangVersion of 11 or greater is required</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidRegexArgumentsMessage">
@@ -154,12 +149,12 @@
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
         <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</source>
-        <target state="new">The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</target>
+        <target state="translated">O RegexGenerator não pôde gerar uma implementação de origem completa para a expressão regular especificada, devido a uma opção sem suporte ou a uma expressão regular muito complexa.  A implementação interpretará a expressão regular em tempo de execução.</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
         <source>RegexGenerator limitation reached.</source>
-        <target state="new">RegexGenerator limitation reached.</target>
+        <target state="translated">Limitação de RegexGenerator atingida.</target>
         <note />
       </trans-unit>
       <trans-unit id="MakeException">
@@ -212,11 +207,6 @@
         <target state="translated">A coleção é somente leitura.</target>
         <note />
       </trans-unit>
-      <trans-unit id="OnlyAllowedOnce">
-        <source>This operation is only allowed once per object.</source>
-        <target state="translated">Esta operação só é permitida uma vez por objeto.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="PlatformNotSupported_CompileToAssembly">
         <source>This platform does not support writing compiled regular expressions to an assembly.</source>
         <target state="translated">Essa plataforma não suporta a escrita de expressões regulares compiladas em um assembly.</target>
@@ -238,8 +228,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>Regex method must be partial, parameterless, non-generic, and return Regex</source>
-        <target state="translated">O método Regex deve ser parcial, sem parâmetros, não genérico e retornar Regex</target>
+        <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
+        <target state="new">RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</target>
         <note />
       </trans-unit>
       <trans-unit id="ReplacementError">
@@ -290,11 +280,6 @@
       <trans-unit id="UnescapedEndingBackslash">
         <source>Illegal \\ at end of pattern.</source>
         <target state="translated">\\ incorreto no final do padrão.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="UnexpectedOpcode">
-        <source>Unexpected opcode in regular expression generation: {0}.</source>
-        <target state="translated">Opcode inesperado na geração de expressão regular: {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">

@@ -105,7 +105,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             .Where(data =>
             {
                 var (test, options) = data;
-                var filter = new XUnitWrapperLibrary.TestFilter(options.GlobalOptions.TestFilter() ?? "");
+                var filter = new XUnitWrapperLibrary.TestFilter(options.GlobalOptions.TestFilter(), null);
                 return filter.ShouldRunTest($"{test.ContainingType}.{test.Method}", test.DisplayNameForFiltering, Array.Empty<string>());
             })
             .Select((data, ct) => data.Left)
@@ -151,12 +151,16 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
     {
         // For simplicity, we'll use top-level statements for the generated Main method.
         StringBuilder builder = new();
-        ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter");
         builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
+        builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
 
-        builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = args.Length != 0 ? new XUnitWrapperLibrary.TestFilter(args[0]) : null;");
+        builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = new (args.Length != 0 ? args[0] : null, testExclusionList);");
         builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
         builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();");
+        builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
+        builder.AppendLine("System.Console.SetOut(outputRecorder);");
+
+        ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
 
         foreach (ITestInfo test in testInfos)
         {
@@ -174,17 +178,20 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         // For simplicity, we'll use top-level statements for the generated Main method.
         StringBuilder builder = new();
         builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
+        builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
 
-        
         builder.AppendLine("try {");
-        builder.AppendLine($@"return await XHarnessRunnerLibrary.RunnerEntryPoint.RunTests(RunTests, ""{assemblyName}"", args.Length != 0 ? args[0] : null);");
+        builder.AppendLine($@"return await XHarnessRunnerLibrary.RunnerEntryPoint.RunTests(RunTests, ""{assemblyName}"", args.Length != 0 ? args[0] : null, testExclusionList);");
         builder.AppendLine("} catch(System.Exception ex) { System.Console.WriteLine(ex.ToString()); return 101; }");
 
         builder.AppendLine("static XUnitWrapperLibrary.TestSummary RunTests(XUnitWrapperLibrary.TestFilter filter)");
         builder.AppendLine("{");
         builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
-        ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter");
         builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = new();");
+        builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
+        builder.AppendLine("System.Console.SetOut(outputRecorder);");
+
+        ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
 
         foreach (ITestInfo test in testInfos)
         {
@@ -396,7 +403,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     }
                     break;
                 case "Xunit.SkipOnMonoAttribute":
-                    if (options.GlobalOptions.RuntimeFlavor() != "Mono")
+                    if (options.GlobalOptions.RuntimeFlavor().ToLowerInvariant() != "mono")
                     {
                         // If we're building tests not for Mono, we can skip handling the specifics of the SkipOnMonoAttribute.
                         continue;
@@ -413,7 +420,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     testInfos = FilterForSkippedTargetFrameworkMonikers(testInfos, (int)filterAttribute.ConstructorArguments[0].Value!);
                     break;
                 case "Xunit.SkipOnCoreClrAttribute":
-                    if (options.GlobalOptions.RuntimeFlavor() != "CoreCLR")
+                    if (options.GlobalOptions.RuntimeFlavor().ToLowerInvariant() != "coreclr")
                     {
                         // If we're building tests not for CoreCLR, we can skip handling the specifics of the SkipOnCoreClrAttribute.
                         continue;
@@ -593,12 +600,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
     private static ImmutableArray<ITestInfo> FilterForSkippedRuntime(ImmutableArray<ITestInfo> testInfos, int skippedRuntimeValue, AnalyzerConfigOptionsProvider options)
     {
         Xunit.TestRuntimes skippedRuntimes = (Xunit.TestRuntimes)skippedRuntimeValue;
-        string runtimeFlavor = options.GlobalOptions.RuntimeFlavor();
-        if (runtimeFlavor == "Mono" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.Mono))
+        string runtimeFlavor = options.GlobalOptions.RuntimeFlavor().ToLowerInvariant();
+        if (runtimeFlavor == "mono" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.Mono))
         {
             return ImmutableArray<ITestInfo>.Empty;
         }
-        else if (runtimeFlavor == "CoreCLR" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.CoreCLR))
+        else if (runtimeFlavor == "coreclr" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.CoreCLR))
         {
             return ImmutableArray<ITestInfo>.Empty;
         }

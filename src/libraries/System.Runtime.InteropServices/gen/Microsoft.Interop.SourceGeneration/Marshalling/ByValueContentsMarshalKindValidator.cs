@@ -26,6 +26,12 @@ namespace Microsoft.Interop
 
         private static IMarshallingGenerator ValidateByValueMarshalKind(TypePositionInfo info, StubCodeContext context, IMarshallingGenerator generator)
         {
+            if (generator is Forwarder)
+            {
+                // Forwarder allows everything since it just forwards to a P/Invoke.
+                return generator;
+            }
+
             if (info.IsByRef && info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default)
             {
                 throw new MarshallingNotSupportedException(info, context)

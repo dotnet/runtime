@@ -38,7 +38,7 @@ namespace System.Formats.Cbor.Tests
             bool result = reader.TryReadByteString(buffer, out int bytesWritten);
             Assert.True(result);
             Assert.Equal(expectedValue.Length, bytesWritten);
-            Assert.Equal(expectedValue, buffer[..bytesWritten]);
+            Assert.Equal(expectedValue, buffer.Take(bytesWritten));
             Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 

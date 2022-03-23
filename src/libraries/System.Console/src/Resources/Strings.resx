@@ -128,9 +128,6 @@
   <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
     <value>Positive number required.</value>
   </data>
-  <data name="ArgumentNull_Buffer" xml:space="preserve">
-    <value>Buffer cannot be null.</value>
-  </data>
   <data name="Argument_InvalidOffLen" xml:space="preserve">
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
   </data>
@@ -221,9 +218,6 @@
   <data name="ArgumentOutOfRange_BeepFrequency" xml:space="preserve">
     <value>The frequency must be between {0} and {1}.</value>
   </data>
-  <data name="ArgumentNull_Array" xml:space="preserve">
-    <value>Array cannot be null.</value>
-  </data>
   <data name="ArgumentOutOfRange_IndexCountBuffer" xml:space="preserve">
     <value>Index and count must refer to a location within the buffer.</value>
   </data>
@@ -253,5 +247,8 @@
   </data>
   <data name="IO_TermInfoInvalidMagicNumber" xml:space="preserve">
     <value>The terminfo database has an invalid magic number: '{0}'.</value>
+  </data>
+  <data name="PlatformNotSupported_SystemConsole" xml:space="preserve">
+    <value>System.Console is not supported on this platform.</value>
   </data>
 </root>

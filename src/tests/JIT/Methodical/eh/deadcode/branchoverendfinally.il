@@ -7,14 +7,14 @@
   .ver 4:0:0:0
 }
 .assembly extern mscorlib {}
-.assembly extern common {}
+.assembly extern eh_common {}
 .assembly 'branchoverendfinally' {}
 .assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit foo
        extends [mscorlib]System.Object
 {
-  .field private static class [common]TestUtil.TestLog testLog
+  .field private static class [eh_common]TestUtil.TestLog testLog
   .method private hidebysig specialname rtspecialname static void  .cctor() cil managed
   {
     .maxstack  2
@@ -36,8 +36,8 @@
     callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
 
     ldloc.s    expectedOut
-    newobj     instance void [common]TestUtil.TestLog::.ctor(object)
-    stsfld     class [common]TestUtil.TestLog foo::testLog
+    newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
+    stsfld     class [eh_common]TestUtil.TestLog foo::testLog
     ret
   } 
 
@@ -49,8 +49,8 @@
     .entrypoint
     .maxstack  1
 
-    ldsfld     class [common]TestUtil.TestLog foo::testLog
-    callvirt   instance void [common]TestUtil.TestLog::StartRecording()
+    ldsfld     class [eh_common]TestUtil.TestLog foo::testLog
+    callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
     
     .try
     {
@@ -79,11 +79,11 @@
     IL_0036:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0039:
       
-    ldsfld     class [common]TestUtil.TestLog foo::testLog
-    callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+    ldsfld     class [eh_common]TestUtil.TestLog foo::testLog
+    callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
   
-    ldsfld     class [common]TestUtil.TestLog foo::testLog
-    callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+    ldsfld     class [eh_common]TestUtil.TestLog foo::testLog
+    callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
     
     IL_003b:  ret
   } 

@@ -585,7 +585,8 @@ void RedhawkGCInterface::UnregisterFrozenSegment(GcSegmentHandle segment)
     GCHeapUtilities::GetGCHeap()->UnregisterFrozenSegment((segment_handle)segment);
 }
 
-EXTERN_C UInt32_BOOL g_fGcStressStarted = UInt32_FALSE; // UInt32_BOOL because asm code reads it
+EXTERN_C UInt32_BOOL g_fGcStressStarted;
+UInt32_BOOL g_fGcStressStarted = UInt32_FALSE; // UInt32_BOOL because asm code reads it
 #ifdef FEATURE_GC_STRESS
 // static
 void RedhawkGCInterface::StressGc()
@@ -923,7 +924,7 @@ void GCToEEInterface::DisablePreemptiveGC()
 Thread* GCToEEInterface::GetThread()
 {
 #ifndef DACCESS_COMPILE
-    return ThreadStore::GetCurrentThread();
+    return ThreadStore::GetCurrentThreadIfAvailable();
 #else
     return NULL;
 #endif

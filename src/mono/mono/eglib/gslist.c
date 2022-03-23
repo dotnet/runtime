@@ -12,10 +12,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -60,7 +60,7 @@ g_slist_prepend (GSList *list, gpointer data)
 }
 
 /*
- * Insert the given data in a new node after the current node. 
+ * Insert the given data in a new node after the current node.
  * Return new node.
  */
 static GSList *
@@ -186,14 +186,14 @@ g_slist_find_custom (GSList *list, gconstpointer data, GCompareFunc func)
 {
 	if (!func)
 		return NULL;
-	
+
 	while (list) {
 		if (func (list->data, data) == 0)
 			return list;
-		
+
 		list = list->next;
 	}
-	
+
 	return NULL;
 }
 
@@ -299,7 +299,7 @@ GSList*
 g_slist_insert_sorted (GSList *list, gpointer data, GCompareFunc func)
 {
 	GSList *prev = NULL;
-	
+
 	if (!func)
 		return list;
 
@@ -320,15 +320,15 @@ gint
 g_slist_index (GSList *list, gconstpointer data)
 {
 	gint index = 0;
-	
+
 	while (list) {
 		if (list->data == data)
 			return index;
-		
+
 		index++;
 		list = list->next;
 	}
-	
+
 	return -1;
 }
 
