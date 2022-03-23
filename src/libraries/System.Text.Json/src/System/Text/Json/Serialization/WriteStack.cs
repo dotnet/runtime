@@ -332,15 +332,19 @@ namespace System.Text.Json
         {
             StringBuilder sb = new StringBuilder("$");
 
-            // If a continuation, always report back full stack which does not use Current for the last frame.
-            int count = Math.Max(_count, _continuationCount + 1);
+            (int frameCount, bool includeCurrentFrame) = _continuationCount switch
+            {
+                0 => (_count - 1, true), // Not a countinuation, report previous frames and Current.
+                1 => (0, true), // Continuation of depth 1, just report Current frame.
+                int c => (c, false) // Continuation of depth > 1, report the entire stack.
+            };
 
-            for (int i = 0; i < count - 1; i++)
+            for (int i = 0; i < frameCount; i++)
             {
                 AppendStackFrame(sb, ref _stack[i]);
             }
 
-            if (_continuationCount == 0)
+            if (includeCurrentFrame)
             {
                 AppendStackFrame(sb, ref Current);
             }
