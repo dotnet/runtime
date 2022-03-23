@@ -220,7 +220,34 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != ''">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);$(ClrRuntimeBuildSubsets)" Category="clr" />
+    <ProjectToBuild
+      Include="$(CoreClrProjectRoot)runtime.proj"
+      AdditionalProperties="%(AdditionalProperties);$(ClrRuntimeBuildSubsets)"
+      Category="clr" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(BuildArchitecture)' != '$(TargetArchitecture)'">
+    <ProjectToBuild
+      Include="$(CoreClrProjectRoot)runtime.proj"
+      AdditionalProperties="%(AdditionalProperties);
+                            ClrCrossComponentsSubset=true;
+                            HostArchitecture=$(BuildArchitecture);
+                            PgoInstrument=false;
+                            NativeOptimizationDataSupported=false;
+                            CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
+      Category="clr" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' == 'x64'">
+    <ProjectToBuild
+      Include="$(CoreClrProjectRoot)runtime.proj"
+      AdditionalProperties="%(AdditionalProperties);
+                            ClrCrossComponentsSubset=true;
+                            HostArchitecture=x86;
+                            PgoInstrument=false;
+                            NativeOptimizationDataSupported=false;
+                            CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
+      Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.paltestlist+'))">
@@ -228,11 +255,23 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+linuxdac+')) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' != 'x86'">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);$(ClrDefaultRuntimeBuildSubsets);CrossDac=linux" Category="clr" />
+    <ProjectToBuild
+      Include="$(CoreClrProjectRoot)runtime.proj"
+      AdditionalProperties="%(AdditionalProperties);
+                            ClrCrossComponentsSubset=true;
+                            BuildArchitecture=x64;
+                            TargetOS=Linux;
+                            CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+alpinedac+')) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' != 'x86'">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);$(ClrDefaultRuntimeBuildSubsets);CrossDac=alpine" Category="clr" />
+    <ProjectToBuild
+      Include="$(CoreClrProjectRoot)runtime.proj"
+      AdditionalProperties="%(AdditionalProperties);
+                            ClrCrossComponentsSubset=true;
+                            BuildArchitecture=x64;
+                            TargetOS=alpine;
+                            CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+crossdacpack+'))">
