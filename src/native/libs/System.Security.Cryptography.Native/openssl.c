@@ -1202,10 +1202,20 @@ static void ExDataFree(
     }
 }
 
+// In the OpenSSL 1.0.2 headers, the `from` argument is not const (became const in 1.1.0)
+// In the OpenSSL 3 headers, `from_d` changed from (void*) to (void**).
 static int ExDataDup(
     CRYPTO_EX_DATA* to,
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
     const CRYPTO_EX_DATA* from,
+#else
+    CRYPTO_EX_DATA* from,
+#endif
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
+    void** from_d,
+#else
     void* from_d,
+#endif
     int idx,
     long argl,
     void* argp)
