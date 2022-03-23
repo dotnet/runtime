@@ -1345,7 +1345,9 @@ mono_wasm_load_profiler_aot (const char *desc)
 static void
 mono_wasm_init_finalizer_thread (void)
 {
-#ifdef __EMSCRIPTEN_PTHREADS__
+	// At this time we don't use a dedicated thread for finalization even if threading is enabled.
+	// Finalizers periodically run on the main thread
+#if 0
 	mono_gc_init_finalizer_thread ();
 #endif
 }
