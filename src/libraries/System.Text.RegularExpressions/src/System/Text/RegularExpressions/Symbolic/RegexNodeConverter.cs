@@ -263,7 +263,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     return false;
                 }
 
-                conjuncts = new();
+                conjuncts = new List<RegexNode>();
                 conjuncts.Add(node.Child(0));
                 node = node.Child(1);
                 while (IsIntersect(node))
@@ -293,7 +293,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             // Lazily-initialize the set cache on first use, since some expressions may not have character classes in them.
-            _setBddCache ??= new();
+            _setBddCache ??= new Dictionary<(bool IgnoreCase, string Set), BDD>();
 
             // Try to get the cached BDD for the combined ignoreCase+set key.
             // If one doesn't yet exist, compute and populate it.
