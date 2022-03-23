@@ -624,7 +624,14 @@ if(LLVM_PREFIX)
   set(LLVM_LIBDIR "${LLVM_PREFIX}/lib")
   set(LLVM_INCLUDEDIR "${llvm_includedir}")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${llvm_cflags}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags} -fexceptions -fno-rtti")
+  if(lower_CMAKE_SYSTEM_NAME STREQUAL "windows")
+    # /EHsc already enabled, prevent LLVM flags to disable it. Corresponds to -fexceptions.
+    string(REPLACE "/EHs-c-" "" llvm_cxxflags "${llvm_cxxflags}")
+    # /GR- already enabled and inherited from LLVM flags. Corresponds to -fno-rtti.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags}")
+  else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags} -fexceptions -fno-rtti")
+  endif()
   add_definitions(-DLLVM_API_VERSION=${llvm_api_version})
 endif()
 

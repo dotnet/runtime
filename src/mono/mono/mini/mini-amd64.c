@@ -4516,7 +4516,7 @@ amd64_handle_varargs_call (MonoCompile *cfg, guint8 *code, MonoCallInst *call, g
 		 * potential vararg call.
 		 */
 		for (guint32 i = 0; i < AMD64_XMM_NREG; ++i)
-			nregs += (call->used_fregs & (1 << i)) != 0;
+			nregs += (call->used_fregs & ((regmask_t)1 << i)) != 0;
 	} else {
 		return code;
 	}

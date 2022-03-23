@@ -6266,11 +6266,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				values [ins->dreg] = LLVMBuildShl (builder, lhs, imm, dname);
 				break;
 			case OP_SHL_IMM:
+				MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 				if (TARGET_SIZEOF_VOID_P == 8) {
 					/* The IL is not regular */
 					lhs = convert (ctx, lhs, LLVMInt64Type ());
 					imm = convert (ctx, imm, LLVMInt64Type ());
 				}
+				MONO_RESTORE_WARNING
 				values [ins->dreg] = LLVMBuildShl (builder, lhs, imm, dname);
 				break;
 			case OP_ISHR_IMM:
