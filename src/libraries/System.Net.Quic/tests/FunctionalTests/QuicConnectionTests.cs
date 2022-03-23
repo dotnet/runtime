@@ -8,6 +8,15 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
+    public class QuicConnectionTests
+    {
+        [Fact]
+        public void QuicConnection_IsSupported_DoesNotThrow()
+        {
+            Assert.Equal(QuicConnection.IsSupported, QuicImplementationProviders.Default.IsSupported);
+        }
+    }
+
     public abstract class QuicConnectionTests<T> : QuicTestBase<T>
         where T : IQuicImplProviderFactory, new()
     {
@@ -28,7 +37,7 @@ namespace System.Net.Quic.Tests
             ValueTask connectTask = clientConnection.ConnectAsync();
             ValueTask<QuicConnection> acceptTask = listener.AcceptConnectionAsync();
 
-            await new Task[] { connectTask.AsTask(), acceptTask.AsTask()}.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+            await new Task[] { connectTask.AsTask(), acceptTask.AsTask() }.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
             QuicConnection serverConnection = acceptTask.Result;
 
             Assert.True(clientConnection.Connected);
