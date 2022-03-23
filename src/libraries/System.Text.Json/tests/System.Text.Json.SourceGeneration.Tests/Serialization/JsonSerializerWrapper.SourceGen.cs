@@ -84,6 +84,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         private readonly JsonSerializerContext _defaultContext;
         private readonly Func<JsonSerializerOptions, JsonSerializerContext> _customContextCreator;
 
+        public override bool IsAsyncSerializer => true;
+
         public AsyncStreamSerializerWrapper(JsonSerializerContext defaultContext!!, Func<JsonSerializerOptions, JsonSerializerContext> customContextCreator!!)
         {
             _defaultContext = defaultContext;
