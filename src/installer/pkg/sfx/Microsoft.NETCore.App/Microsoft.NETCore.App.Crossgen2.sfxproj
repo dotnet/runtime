@@ -62,7 +62,8 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="RunPublishedCrossgen" AfterTargets="PublishCrossgen" Condition="'$(CrossBuild)' != 'true'">
+  <Target Name="RunPublishedCrossgen" AfterTargets="PublishCrossgen"
+          Condition="'$(TargetOs)' == '$(HostOs)' and '$(TargetArchitecture)' == '$(BuildArchitecture)'">
     <!-- Run the published crossgen if we're not cross-compiling -->
     <Exec Command="@(FilesToPackage) $(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll --out $(IntermediateOutputPath)S.P.C.tmp" Condition="'%(FileName)%(Extension)' == 'crossgen2$(ExeSuffix)'"
           ConsoleToMsBuild="true">
