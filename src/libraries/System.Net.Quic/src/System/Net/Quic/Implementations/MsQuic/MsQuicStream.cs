@@ -227,7 +227,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             get
             {
                 ThrowIfDisposed();
-                return _writeTimeout;
+                return  _writeTimeout;
             }
             set
             {
@@ -510,7 +510,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     ex = new InvalidOperationException("Only one read is supported at a time.");
                     break;
                 case ReadState.Aborted:
-                    ex = preCanceled ? new OperationCanceledException(cancellationToken) :
+                    ex =  preCanceled ? new OperationCanceledException(cancellationToken) :
                           ThrowHelper.GetStreamAbortedException(abortError);
                     break;
                 case ReadState.ConnectionClosed:
@@ -818,8 +818,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     // Handle race condition when stream can be closed handling SHUTDOWN_COMPLETE.
                     StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
-                }
-                catch (ObjectDisposedException) { };
+                } catch (ObjectDisposedException) { };
             }
 
             if (abortRead)
@@ -827,8 +826,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 try
                 {
                     StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE, 0xffffffff);
-                }
-                catch (ObjectDisposedException) { };
+                } catch (ObjectDisposedException) { };
             }
 
             if (completeRead)
