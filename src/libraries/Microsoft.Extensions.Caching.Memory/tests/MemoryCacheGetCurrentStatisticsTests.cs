@@ -37,8 +37,9 @@ namespace Microsoft.Extensions.Caching.Memory
                 Assert.Null(cache.Get("missingKey2"));            
             }
 
-            MemoryCacheStatistics stats = cache.GetCurrentStatistics();
+            MemoryCacheStatistics? stats = cache.GetCurrentStatistics();
 
+            Assert.NotNull(stats);
             Assert.Equal(200, stats.TotalMisses);
             Assert.Equal(100, stats.TotalHits);
             Assert.Equal(1, stats.CurrentEntryCount);
@@ -60,8 +61,9 @@ namespace Microsoft.Extensions.Caching.Memory
             cache.Set("key", "updated value", new MemoryCacheEntryOptions { Size = 3 });
             Assert.Equal("updated value", cache.Get("key"));
 
-            MemoryCacheStatistics stats = cache.GetCurrentStatistics();//
+            MemoryCacheStatistics? stats = cache.GetCurrentStatistics();
 
+            Assert.NotNull(stats);
             Assert.Equal(1, stats.CurrentEntryCount);
             Assert.Equal(0, stats.TotalMisses);
             Assert.Equal(2, stats.TotalHits);
@@ -86,7 +88,9 @@ namespace Microsoft.Extensions.Caching.Memory
                 var expirationToken = new TestExpirationToken() { ActiveChangeCallbacks = true };
                 var mc = new MemoryCacheEntryOptions { Size = 5 };
                 cache.Set(Key, new object(), mc.AddExpirationToken(expirationToken));
-                MemoryCacheStatistics stats = cache.GetCurrentStatistics();
+                MemoryCacheStatistics? stats = cache.GetCurrentStatistics();
+
+                Assert.NotNull(stats);
                 Assert.Equal(1,  cache.Count);
                 Assert.Equal(1,  stats.CurrentEntryCount);
                 VerifyCurrentEstimatedSize(5, sizeLimitIsSet, stats);
@@ -94,6 +98,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 expirationToken.HasChanged = true;
                 cache.Set(Key, new object(), mc.AddExpirationToken(expirationToken));
                 stats = cache.GetCurrentStatistics();
+
+                Assert.NotNull(stats);
                 Assert.Equal(0,  cache.Count);
                 Assert.Equal(0,  stats.CurrentEntryCount);
                 VerifyCurrentEstimatedSize(0, sizeLimitIsSet, stats);
