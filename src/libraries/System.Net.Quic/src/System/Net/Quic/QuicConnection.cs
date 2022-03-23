@@ -11,6 +11,8 @@ namespace System.Net.Quic
 {
     public sealed class QuicConnection : IDisposable
     {
+        public static bool IsSupported => QuicImplementationProviders.Default.IsSupported;
+
         private readonly QuicConnectionProvider _provider;
 
         /// <summary>

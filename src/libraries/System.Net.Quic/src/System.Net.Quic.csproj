@@ -9,6 +9,7 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'FreeBSD' or '$(TargetPlatformIdentifier)' == 'OSX'">$(DefineConstants);SOCKADDR_HAS_LENGTH</DefineConstants>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.SystemNetQuic_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAdditionalParameters Condition="'$(TargetPlatformIdentifier)' == ''">--exclude-api-list ExcludeApiList.PNSE.txt</GeneratePlatformNotSupportedAdditionalParameters>
   </PropertyGroup>
   <!-- Source files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
