@@ -1639,10 +1639,10 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Theory]
-        [InlineData("a")]
-        [InlineData("b")]
-        [InlineData("y")]
-        public void CheckSignature_MultipleEnvelopedSignatures(string signatureParent)
+        [InlineData("a", 1)]
+        [InlineData("b", 2)]
+        [InlineData("y", 1)]
+        public void CheckSignature_MultipleEnvelopedSignatures(string signatureParent, int expectedPosition)
         {
             // Note that signatures were created/added in an order so that all should validate.
             var xml =
@@ -1679,6 +1679,14 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlElement signatureElement = parentNode["Signature"];
 
             subject.LoadXml(signatureElement);
+
+            var transform = (XmlDsigEnvelopedSignatureTransform)((Reference)subject.Signature.SignedInfo.References[0]).TransformChain[0];
+
+            var signaturePositionField = typeof(XmlDsigEnvelopedSignatureTransform).GetField("_signaturePosition", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+
+            var actualPositiom = (int)signaturePositionField.GetValue(transform);
+
+            Assert.Equal(expectedPosition, actualPositiom);
 
             Assert.True(subject.CheckSignature(), "Multiple signatures, validating " + signatureParent);
         }
