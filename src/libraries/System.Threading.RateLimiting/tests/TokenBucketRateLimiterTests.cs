@@ -744,5 +744,35 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(wait.IsCompleted);
             Assert.Equal(1, limiter.GetAvailablePermits());
         }
+
+        [Fact]
+        public override void NullIdleDurationWhenActive()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2,
+                   TimeSpan.FromMilliseconds(2), 1, autoReplenishment: false));
+            limiter.Acquire(1);
+            Assert.Null(limiter.IdleDuration);
+        }
+
+        [Fact]
+        public override async Task IdleDurationUpdatesWhenIdle()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2,
+                TimeSpan.FromMilliseconds(2), 1, autoReplenishment: false));
+            Assert.NotNull(limiter.IdleDuration);
+            var previousDuration = limiter.IdleDuration;
+            await Task.Delay(15);
+            Assert.True(previousDuration < limiter.IdleDuration);
+        }
+
+        [Fact]
+        public override void IdleDurationUpdatesWhenChangingFromActive()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2,
+                TimeSpan.Zero, 1, autoReplenishment: false));
+            limiter.Acquire(1);
+            limiter.TryReplenish();
+            Assert.NotNull(limiter.IdleDuration);
+        }
     }
 }

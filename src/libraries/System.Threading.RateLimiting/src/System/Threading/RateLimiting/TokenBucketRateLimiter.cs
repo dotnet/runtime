@@ -11,11 +11,12 @@ namespace System.Threading.RateLimiting
     /// <summary>
     /// <see cref="RateLimiter"/> implementation that replenishes tokens periodically instead of via a release mechanism.
     /// </summary>
-    public sealed class TokenBucketRateLimiter : RateLimiter
+    public sealed class TokenBucketRateLimiter : ReplenishingRateLimiter
     {
         private int _tokenCount;
         private int _queueCount;
         private uint _lastReplenishmentTick = (uint)Environment.TickCount;
+        private long? _idleSince = Stopwatch.GetTimestamp();
         private bool _disposed;
 
         private readonly Timer? _renewTimer;
@@ -27,6 +28,16 @@ namespace System.Threading.RateLimiting
 
         private static readonly RateLimitLease SuccessfulLease = new TokenBucketLease(true, null);
         private static readonly RateLimitLease FailedLease = new TokenBucketLease(false, null);
+        private static readonly double TickFrequency = (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency;
+
+        /// <inheritdoc />
+        public override TimeSpan? IdleDuration => _idleSince is null ? null : new TimeSpan((long)((Stopwatch.GetTimestamp() - _idleSince) * TickFrequency));
+
+        /// <inheritdoc />
+        public override bool IsAutoReplenishing => _options.AutoReplenishment;
+
+        /// <inheritdoc />
+        public override TimeSpan ReplenishmentPeriod => _options.ReplenishmentPeriod;
 
         /// <summary>
         /// Initializes the <see cref="TokenBucketRateLimiter"/>.
@@ -172,6 +183,7 @@ namespace System.Threading.RateLimiting
                 // b. if there are items queued but the processing order is newest first, then we can lease the incoming request since it is the newest
                 if (_queueCount == 0 || (_queueCount > 0 && _options.QueueProcessingOrder == QueueProcessingOrder.NewestFirst))
                 {
+                    _idleSince = null;
                     _tokenCount -= tokenCount;
                     Debug.Assert(_tokenCount >= 0);
                     lease = SuccessfulLease;
@@ -187,10 +199,10 @@ namespace System.Threading.RateLimiting
         /// Attempts to replenish the bucket.
         /// </summary>
         /// <returns>
-        /// False if <see cref="TokenBucketRateLimiterOptions.AutoReplenishment"/> is enabled, otherwise true.
+        /// <see langword="false"/> if <see cref="TokenBucketRateLimiterOptions.AutoReplenishment"/> is enabled, otherwise <see langword="true"/>.
         /// Does not reflect if tokens were replenished.
         /// </returns>
-        public bool TryReplenish()
+        public override bool TryReplenish()
         {
             if (_options.AutoReplenishment)
             {
@@ -291,6 +303,12 @@ namespace System.Threading.RateLimiting
                         // Request cannot be fulfilled
                         break;
                     }
+                }
+
+                if (_tokenCount == _options.TokenLimit && _idleSince is null)
+                {
+                    Debug.Assert(_queueCount == 0);
+                    _idleSince = Stopwatch.GetTimestamp();
                 }
             }
         }
