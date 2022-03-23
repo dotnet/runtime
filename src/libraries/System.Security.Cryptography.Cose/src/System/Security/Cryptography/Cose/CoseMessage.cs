@@ -58,9 +58,10 @@ namespace System.Security.Cryptography.Cose
                 {
                     fixed (byte* ptr = &MemoryMarshal.GetReference(cborPayload))
                     {
-                        using MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, cborPayload.Length);
-
-                        return DecodeCoseSign1Core(new CborReader(manager.Memory));
+                        using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, cborPayload.Length))
+                        {
+                            return DecodeCoseSign1Core(new CborReader(manager.Memory));
+                        }
                     }
                 }
             }
