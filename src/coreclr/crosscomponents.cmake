@@ -42,7 +42,3 @@ if(NOT CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_OSX AND NOT FEATURE_CROSSBITN
         COMPONENT crosscomponents
     )
 endif()
-
-if (CLR_CMAKE_TARGET_WIN32 AND NOT CLR_CMAKE_CROSS_ARCH)
-    add_dependencies(crosscomponents InjectResource GenClrDebugResource)
-endif()

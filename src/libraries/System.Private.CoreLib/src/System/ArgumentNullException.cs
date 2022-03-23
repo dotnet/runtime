@@ -88,7 +88,7 @@ namespace System
         }
 
         [DoesNotReturn]
-        private static void Throw(string? paramName) =>
+        internal static void Throw(string? paramName) =>
             throw new ArgumentNullException(paramName);
     }
 }

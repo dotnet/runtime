@@ -126,13 +126,8 @@ namespace System.Text.Encodings.Web
         /// </summary>
         /// <param name="value">String to encode.</param>
         /// <returns>Encoded string.</returns>
-        public virtual string Encode(string value)
+        public virtual string Encode(string value!!)
         {
-            if (value is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
-            }
-
             int indexOfFirstCharToEncode = FindFirstCharacterToEncode(value.AsSpan());
             if (indexOfFirstCharToEncode < 0)
             {

@@ -107,13 +107,8 @@ namespace System.Text.Json
         ///   </para>
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions? options = null)
+        public static object? Deserialize(ref Utf8JsonReader reader, Type returnType!!, JsonSerializerOptions? options = null)
         {
-            if (returnType == null)
-            {
-                throw new ArgumentNullException(nameof(returnType));
-            }
-
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
             return Read<object?>(ref reader, jsonTypeInfo);
         }

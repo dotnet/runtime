@@ -26,14 +26,14 @@ namespace System.IO
 
         internal const int DefaultBufferSize = 4096;
 
-        public static StreamReader OpenText(string path)
-            => new StreamReader(path ?? throw new ArgumentNullException(nameof(path)));
+        public static StreamReader OpenText(string path!!)
+            => new StreamReader(path);
 
-        public static StreamWriter CreateText(string path)
-            => new StreamWriter(path ?? throw new ArgumentNullException(nameof(path)), append: false);
+        public static StreamWriter CreateText(string path!!)
+            => new StreamWriter(path, append: false);
 
-        public static StreamWriter AppendText(string path)
-            => new StreamWriter(path ?? throw new ArgumentNullException(nameof(path)), append: true);
+        public static StreamWriter AppendText(string path!!)
+            => new StreamWriter(path, append: true);
 
         /// <summary>
         /// Copies an existing file to a new file.
@@ -78,8 +78,8 @@ namespace System.IO
         //
         // On Windows, Delete will fail for a file that is open for normal I/O
         // or a file that is memory mapped.
-        public static void Delete(string path)
-            => FileSystem.DeleteFile(Path.GetFullPath(path ?? throw new ArgumentNullException(nameof(path))));
+        public static void Delete(string path!!)
+            => FileSystem.DeleteFile(Path.GetFullPath(path));
 
         // Tests whether a file exists. The result is true if the file
         // given by the specified path exists; otherwise, the result is
@@ -412,12 +412,12 @@ namespace System.IO
         }
 
         [SupportedOSPlatform("windows")]
-        public static void Encrypt(string path)
-            => FileSystem.Encrypt(path ?? throw new ArgumentNullException(nameof(path)));
+        public static void Encrypt(string path!!)
+            => FileSystem.Encrypt(path);
 
         [SupportedOSPlatform("windows")]
-        public static void Decrypt(string path)
-            => FileSystem.Decrypt(path ?? throw new ArgumentNullException(nameof(path)));
+        public static void Decrypt(string path!!)
+            => FileSystem.Decrypt(path);
 
         // If we use the path-taking constructors we will not have FileOptions.Asynchronous set and
         // we will have asynchronous file access faked by the thread pool. We want the real thing.

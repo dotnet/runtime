@@ -12,7 +12,7 @@
   <!-- Default priority building values. -->
   <PropertyGroup>
     <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and $(BuildAsStandalone)">true</DisableProjectBuild>
-    <OutputType Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and !$(BuildAsStandalone)">Exe</OutputType>
+    <OutputType Condition="('$(IsMergedTestRunnerAssembly)' == 'true' and !$(BuildAsStandalone)) or '$(RequiresProcessIsolation)' == 'true'">Exe</OutputType>
     <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Exe'">BuildAndRun</CLRTestKind>
     <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildOnly</CLRTestKind>
     <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
@@ -67,7 +67,12 @@
   <PropertyGroup>
     <!-- Since bug in Roslyn for Linux empty DebugType property leads to build failure. See issue Roslyn@20343 -->
     <DebugType Condition=" '$(DebugType)' == '' and '$(RunningOnUnix)' == 'true' ">None</DebugType>
+    <TestLibraryProjectPath>$(RepoRoot)\src\tests\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj</TestLibraryProjectPath>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
+  </ItemGroup>
 
   <!--
   If it needs ProjectToRun, turn the project into a ProjectReference so it gets built
@@ -108,6 +113,21 @@
     <SkipImportILTargets Condition="'$(CLRTestPriority)' &gt; '$(CLRTestPriorityToBuild)'">true</SkipImportILTargets>
     <SkipImportILTargets Condition="'$(CLRTestBuildAllTargets)' != '' And '$(CLRTestNeedTarget)' != '$(CLRTestBuildAllTargets)'">true</SkipImportILTargets>
   </PropertyGroup>
+
+  <Target Name="CopyMergedWrapperReferences"
+      Condition="'$(IsMergedTestRunnerAssembly)' == 'true'"
+      AfterTargets="Build"
+      BeforeTargets="CopyNativeProjectBinaries">
+    <ItemGroup>
+      <MergedWrapperReferenceFolders Include="@(ProjectReference->'$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)/..', '$(OutDir)/..'))/%(ProjectReference.FileName)')" />
+      <!-- For merged project wrappers, include native libraries in all project references -->
+      <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(LibSuffix)" />
+    </ItemGroup>
+    <Copy SourceFiles="@(MergedWrapperReferenceFiles)"
+        DestinationFiles="@(MergedWrapperReferenceFiles->'$(OutDir)/%(FileName)%(Extension)')"
+        SkipUnchangedFiles="true"
+        />
+  </Target>
 
   <Target Name="CopyNativeProjectBinaries" Condition="'$(_CopyNativeProjectBinaries)' == 'true'">
     <ItemGroup Condition="'$(UseVisualStudioNativeBinariesLayout)' == 'true'">
@@ -183,12 +203,11 @@
      </Copy>
   </Target>
 
-  <Target Name="ResolveCmakeNativeProjectReference"
-          Condition="'@(ProjectReference)' != ''"
+  <Target Name="ResolveCMakeNativeProjectReference"
+          Condition="'@(CMakeProjectReference)' != ''"
           BeforeTargets="ConsolidateNativeProjectReference;BeforeResolveReferences;BeforeClean" >
      <ItemGroup>
-        <NativeProjectReference Include="%(ProjectReference.Identity)" Condition="$([System.String]::Copy(%(ProjectReference.FileName)).ToUpper()) == 'CMAKELISTS'" />
-        <ProjectReference Remove="%(NativeProjectReference.Identity)" />
+        <NativeProjectReference Include="%(CMakeProjectReference.Identity)" Condition="$([System.String]::Copy(%(CMakeProjectReference.FileName)).ToUpper()) == 'CMAKELISTS'" />
         <NativeProjectReferenceNormalized Include="@(NativeProjectReference -> '%(FullPath)')" />
      </ItemGroup>
   </Target>
@@ -208,7 +227,7 @@
 
   </Target>
 
-  <Target Name="CopyAllNativeProjectReferenceBinaries" DependsOnTargets="ResolveCmakeNativeProjectReference;ConsolidateNativeProjectReference" />
+  <Target Name="CopyAllNativeProjectReferenceBinaries" DependsOnTargets="ResolveCMakeNativeProjectReference;ConsolidateNativeProjectReference" />
 
   <!-- Build shell or command scripts whenever we copy native binaries -->
   <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.Execute.targets" />
@@ -249,11 +268,18 @@
         Condition="'$(IsMergedTestRunnerAssembly)' == 'true'"
         File="$(OutputPath)\$(MSBuildProjectName).MergedTestAssembly"
         Lines="MergedTestAssembly" />
+
+    <WriteLinesToFile
+        Condition="'$(RequiresProcessIsolation)' == 'true' and '$(BuildAsStandalone)' != 'true'"
+        File="$(OutputPath)\$(MSBuildProjectName).OutOfProcessTest"
+        Lines="OutOfProcessTest" />
   </Target>
 
   <PropertyGroup>
     <ProjectAssetsFile>$(BaseOutputPath)\packages\Common\test_dependencies\test_dependencies\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
+  <Import Project="$(BaseOutputPath)\packages\Common\test_dependencies\test_dependencies\test_dependencies.*.targets" />
+
 
   <PropertyGroup>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
@@ -410,14 +436,14 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="DiscoverProcessIsolatedTestProjectReferences" BeforeTargets="AssignProjectConfiguration">
+  <Target Name="DiscoverProcessIsolatedTestProjectReferences" BeforeTargets="AssignProjectConfiguration" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
     <MSBuild Projects="@(ProjectReference)" Targets="GetRequiresProcessIsolation" SkipNonexistentTargets="true">
       <Output TaskParameter="TargetOutputs" ItemName="ReferencedProjectRequiringProcessIsolation" />
     </MSBuild>
 
     <ItemGroup>
-      <ProjectReference Remove="@(ReferencedProjectRequiringProcessIsolation)" />
-      <ProjectReference Include="@(ReferencedProjectRequiringProcessIsolation)" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" />
+      <ProjectReference Remove="@(ReferencedProjectRequiringProcessIsolation->'%(OriginalItemSpec)')" />
+      <ProjectReference Include="@(ReferencedProjectRequiringProcessIsolation->'%(OriginalItemSpec)')" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" />
     </ItemGroup>
   </Target>
 
@@ -436,7 +462,7 @@
   <Import Project="$(RepoRoot)/src/tests/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.props" />
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
   <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
-  <Import Project="$(RepoRoot)/src/tests/Common/mergedrunnermobile.targets" Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '$(TargetsMobile)' == 'true'" />
+  <Import Project="$(RepoRoot)/src/tests/Common/mergedrunner.targets" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
 
   <Target Name="GetBinPlaceTargetFramework" />
 

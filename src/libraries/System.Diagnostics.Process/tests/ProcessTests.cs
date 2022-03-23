@@ -1118,6 +1118,18 @@ namespace System.Diagnostics.Tests
             Assert.Equal(_process.ProcessName, p.ProcessName);
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void GetProcessById_KilledProcess_ThrowsArgumentException()
+        {
+            Process process = CreateDefaultProcess();
+            var handle = process.SafeHandle;
+            int processId = process.Id;
+            process.Kill();
+            process.WaitForExit(WaitInMS);
+            Assert.Throws<ArgumentException>(() => Process.GetProcessById(processId));
+            GC.KeepAlive(handle);
+        }
+
         [Fact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void TestGetProcesses()

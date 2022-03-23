@@ -1785,19 +1785,50 @@ private:
     void emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt, instruction ins);
     void spillIntArgRegsToShadowSlots();
 
-/************************************************************************/
-/*      The logic that creates and keeps track of instruction groups    */
-/************************************************************************/
+    /************************************************************************/
+    /*      The logic that creates and keeps track of instruction groups    */
+    /************************************************************************/
+
+    // SC_IG_BUFFER_SIZE defines the size, in bytes, of the single, global instruction group buffer.
+    // When a label is reached, or the buffer is filled, the precise amount of the buffer that was
+    // used is copied to a newly allocated, precisely sized buffer, and the global buffer is reset
+    // for use with the next set of instructions (see emitSavIG). If the buffer was filled before
+    // reaching a label, the next instruction group will be an "overflow", or "extension" group
+    // (marked with IGF_EXTEND). Thus, the size of the global buffer shouldn't matter (as long as it
+    // can hold at least one of the largest instruction descriptor forms), since we can always overflow
+    // to subsequent instruction groups.
+    //
+    // The only place where this fixed instruction group size is a problem is in the main function prolog,
+    // where we only support a single instruction group, and no extension groups. We should really fix that.
+    // Thus, the buffer size needs to be large enough to hold the maximum number of instructions that
+    // can possibly be generated into the prolog instruction group. That is difficult to statically determine.
+    //
+    // If we do generate an overflow prolog group, we will hit a NOWAY assert and fall back to MinOpts.
+    // This should reduce the number of instructions generated into the prolog.
+    //
+    // Note that OSR prologs require additional code not seen in normal prologs.
+    //
+    // Also, note that DEBUG and non-DEBUG builds have different instrDesc sizes, and there are multiple
+    // sizes of instruction descriptors, so the number of instructions that will fit in the largest
+    // instruction group depends on the instruction mix as well as DEBUG/non-DEBUG build type. See the
+    // EMITTER_STATS output for various statistics related to this.
+    //
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_ARMARCH
-// The only place where this limited instruction group size is a problem is
-// in the prolog, where we only support a single instruction group. We should really fix that.
 // ARM32 and ARM64 both can require a bigger prolog instruction group. One scenario is where
 // a function uses all the incoming integer and single-precision floating-point arguments,
 // and must store them all to the frame on entry. If the frame is very large, we generate
-// ugly code like "movw r10, 0x488; add r10, sp; vstr s0, [r10]" for each store, which
-// eats up our insGroup buffer.
-#define SC_IG_BUFFER_SIZE (100 * sizeof(emitter::instrDesc) + 14 * SMALL_IDSC_SIZE)
+// ugly code like:
+//     movw r10, 0x488
+//     add r10, sp
+//     vstr s0, [r10]
+// for each store, or, to load arguments into registers:
+//     movz    xip1, #0x6cd0
+//     movk    xip1, #2 LSL #16
+//     ldr     w8, [fp, xip1]        // [V10 arg10]
+// which eats up our insGroup buffer.
+#define SC_IG_BUFFER_SIZE (200 * sizeof(emitter::instrDesc))
 #else // !TARGET_ARMARCH
 #define SC_IG_BUFFER_SIZE (50 * sizeof(emitter::instrDesc) + 14 * SMALL_IDSC_SIZE)
 #endif // !TARGET_ARMARCH

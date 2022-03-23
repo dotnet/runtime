@@ -10,7 +10,7 @@ internal static partial class Interop
     internal unsafe partial class Sys
     {
         [DoesNotReturn]
-        [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_Exit")]
-        internal static extern void Exit(int exitCode);
+        [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_Exit")]
+        internal static partial void Exit(int exitCode);
     }
 }

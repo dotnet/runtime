@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using Internal.Runtime.CompilerServices;
+
 using DebuggerStepThroughAttribute = System.Diagnostics.DebuggerStepThroughAttribute;
 using MdToken = System.Reflection.MetadataToken;
 
@@ -2800,7 +2800,7 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers) as ConstructorInfo;
+                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
 
             binder ??= DefaultBinder;
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as ConstructorInfo;
@@ -2836,7 +2836,7 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types, modifiers);
+                return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types);
 
             binder ??= DefaultBinder;
             return binder.SelectProperty(bindingAttr, candidates.ToArray(), returnType, types, modifiers);
@@ -2903,6 +2903,10 @@ namespace System
             return match;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern",
+            Justification = "Trimming makes sure that interfaces are fully preserved, so the Interfaces annotation is transitive." +
+                            "The cache doesn't carry the necessary annotation since it returns an array type," +
+                            "so the analysis complains that the returned value doesn't have the necessary annotation.")]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string fullname!!, bool ignoreCase)
@@ -3883,9 +3887,11 @@ namespace System
                         case DispatchWrapperType.Error:
                             wrapperType = typeof(ErrorWrapper);
                             break;
+#pragma warning disable 0618 // CurrencyWrapper is obsolete
                         case DispatchWrapperType.Currency:
                             wrapperType = typeof(CurrencyWrapper);
                             break;
+#pragma warning restore 0618
                         case DispatchWrapperType.BStr:
                             wrapperType = typeof(BStrWrapper);
                             isString = true;
@@ -3942,9 +3948,11 @@ namespace System
                         case DispatchWrapperType.Error:
                             aArgs[i] = new ErrorWrapper(aArgs[i]);
                             break;
+#pragma warning disable 0618 // CurrencyWrapper is obsolete
                         case DispatchWrapperType.Currency:
                             aArgs[i] = new CurrencyWrapper(aArgs[i]);
                             break;
+#pragma warning restore 0618
                         case DispatchWrapperType.BStr:
                             aArgs[i] = new BStrWrapper((string)aArgs[i]);
                             break;
@@ -3978,10 +3986,11 @@ namespace System
     #region Library
     internal readonly unsafe partial struct MdUtf8String
     {
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_EqualsCaseInsensitive")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_EqualsCaseInsensitive")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_HashCaseInsensitive")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_HashCaseInsensitive")]
         private static partial uint HashCaseInsensitive(void* sz, int cSz);
 
         private readonly byte* m_pStringHeap;        // This is the raw UTF8 string.

@@ -530,8 +530,22 @@ ipc_socket_accept (
 	ds_ipc_socket_t client_socket;
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	do {
-		client_socket = accept (s, address, address_len);
+#if HAVE_ACCEPT4 && defined(SOCK_CLOEXEC)
+    	client_socket = accept4 (s, address, address_len, SOCK_CLOEXEC);
+#else
+    	client_socket = accept (s, address, address_len);
+#endif
 	} while (ipc_retry_syscall (client_socket));
+
+#if !HAVE_ACCEPT4 || !defined(SOCK_CLOEXEC)
+#if defined(FD_CLOEXEC)
+		if (client_socket != -1)
+		{
+			// ignore any failures; this is best effort
+			fcntl (client_socket, F_SETFD, FD_CLOEXEC);
+		}
+#endif
+#endif
 	DS_EXIT_BLOCKING_PAL_SECTION;
 	return client_socket;
 }

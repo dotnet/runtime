@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
             if (hashAlgorithm != HashAlgorithmName.SHA1)
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
 
-            return AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
+            return HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
         }
 
         protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
@@ -112,7 +112,7 @@ namespace System.Security.Cryptography
             if (hashAlgorithm != HashAlgorithmName.SHA1)
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
 
-            return AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
+            return HashOneShotHelpers.HashData(hashAlgorithm, data);
         }
 
         protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
@@ -120,7 +120,7 @@ namespace System.Security.Cryptography
             if (hashAlgorithm != HashAlgorithmName.SHA1)
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
 
-            return AsymmetricAlgorithmHelpers.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
+            return HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
         }
 
         public void ImportCspBlob(byte[] keyBlob)

@@ -3,11 +3,12 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Runtime.Dispensers
 {
-    internal sealed class DispenserThatReusesAsLongAsKeyIsAlive<K, V> : Dispenser<K, V>
+    internal sealed class DispenserThatReusesAsLongAsKeyIsAlive<K, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] V> : Dispenser<K, V>
         where K : class, IEquatable<K>
         where V : class
     {

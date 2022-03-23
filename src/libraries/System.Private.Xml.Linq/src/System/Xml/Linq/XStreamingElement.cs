@@ -21,9 +21,8 @@ namespace System.Xml.Linq
         ///  Creates a <see cref="XStreamingElement"/> node with a given name
         /// </summary>
         /// <param name="name">The name to assign to the new <see cref="XStreamingElement"/> node</param>
-        public XStreamingElement(XName name)
+        public XStreamingElement(XName name!!)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
             this.name = name;
         }
 
@@ -60,7 +59,7 @@ namespace System.Xml.Linq
             }
             set
             {
-                if (value == null) throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 name = value;
             }
         }

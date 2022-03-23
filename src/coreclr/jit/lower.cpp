@@ -2129,7 +2129,20 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
 #ifdef DEBUG
             comp->lvaTable[tmpLclNum].SetDoNotEnregReason(callerArgDsc->GetDoNotEnregReason());
 #endif // DEBUG
-            GenTree* value = comp->gtNewLclvNode(lclNum, tmpTyp);
+
+            GenTree* value;
+#ifdef TARGET_ARM
+            if (tmpTyp == TYP_LONG)
+            {
+                GenTree* loResult = comp->gtNewLclFldNode(lclNum, TYP_INT, 0);
+                GenTree* hiResult = comp->gtNewLclFldNode(lclNum, TYP_INT, 4);
+                value             = new (comp, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, loResult, hiResult);
+            }
+            else
+#endif // TARGET_ARM
+            {
+                value = comp->gtNewLclvNode(lclNum, tmpTyp);
+            }
 
             if (tmpTyp == TYP_STRUCT)
             {
@@ -2757,7 +2770,7 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
             // to have a constant as the first operand.
             //
 
-            if (hiSrc1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+            if (hiSrc1->OperIs(GT_LCL_VAR, GT_LCL_FLD) && IsInvariantInRange(hiSrc1, hiCmp))
             {
                 BlockRange().Remove(hiSrc1);
                 BlockRange().InsertBefore(hiCmp, hiSrc1);
@@ -2912,6 +2925,25 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
         if (op2Value != 0)
         {
+            // Optimizes (X & 1) == 1 to (X & 1)
+            // The compiler requires jumps to have relop operands, so we do not fold that case.
+            LIR::Use cmpUse;
+            if ((op2Value == 1) && cmp->OperIs(GT_EQ))
+            {
+                if (andOp2->IsIntegralConst(1) && (genActualType(op1) == cmp->TypeGet()) &&
+                    BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE))
+                {
+                    GenTree* next = cmp->gtNext;
+
+                    cmpUse.ReplaceWith(op1);
+
+                    BlockRange().Remove(cmp->gtGetOp2());
+                    BlockRange().Remove(cmp);
+
+                    return next;
+                }
+            }
+
             //
             // If we don't have a 0 compare we can get one by transforming ((x AND mask) EQ|NE mask)
             // into ((x AND mask) NE|EQ 0) when mask is a single bit.
@@ -5225,7 +5257,14 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 {
     if (!addr->OperIs(GT_ADD) || addr->gtOverflow())
     {
+#ifdef TARGET_ARM64
+        if (!addr->OperIs(GT_ADDEX))
+        {
+            return false;
+        }
+#else
         return false;
+#endif
     }
 
 #ifdef TARGET_ARM64
@@ -5365,9 +5404,14 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     }
 
 #ifdef TARGET_ARM64
+    if ((index != nullptr) && index->OperIs(GT_CAST) && (scale == 1) && (offset == 0) && varTypeIsByte(targetType))
+    {
+        MakeSrcContained(addrMode, index);
+    }
+
     // Check if we can "contain" LEA(BFIZ) in order to extend 32bit index to 64bit as part of load/store.
     if ((index != nullptr) && index->OperIs(GT_BFIZ) && index->gtGetOp1()->OperIs(GT_CAST) &&
-        index->gtGetOp2()->IsCnsIntOrI() && varTypeIsIntegral(targetType))
+        index->gtGetOp2()->IsCnsIntOrI() && (varTypeIsIntegral(targetType) || varTypeIsFloating(targetType)))
     {
         // BFIZ node is a binary op where op1 is GT_CAST and op2 is GT_CNS_INT
         GenTreeCast* cast = index->gtGetOp1()->AsCast();
@@ -7065,7 +7109,16 @@ void Lowering::ContainCheckBitCast(GenTree* node)
 void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 {
     assert(ind->TypeGet() != TYP_STRUCT);
-    TryCreateAddrMode(ind->Addr(), true, ind);
+
+#if defined(TARGET_ARM64)
+    // Verify containment safety before creating an LEA that must be contained.
+    //
+    const bool isContainable = IsSafeToContainMem(ind, ind->Addr());
+#else
+    const bool     isContainable         = true;
+#endif
+    TryCreateAddrMode(ind->Addr(), isContainable, ind);
+
     if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {
         if (varTypeIsFloating(ind) && ind->Data()->IsCnsFltOrDbl())
@@ -7085,7 +7138,7 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 #if defined(TARGET_XARCH) || defined(TARGET_ARM)
             bool shouldSwitchToInteger = true;
 #else // TARGET_ARM64
-            bool shouldSwitchToInteger = !data->IsCnsNonZeroFltOrDbl();
+            bool   shouldSwitchToInteger = !data->IsCnsNonZeroFltOrDbl();
 #endif
 
             if (shouldSwitchToInteger)
@@ -7133,7 +7186,17 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
         // TODO-Cleanup: We're passing isContainable = true but ContainCheckIndir rejects
         // address containment in some cases so we end up creating trivial (reg + offfset)
         // or (reg + reg) LEAs that are not necessary.
-        TryCreateAddrMode(ind->Addr(), true, ind);
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if defined(TARGET_ARM64)
+        // Verify containment safety before creating an LEA that must be contained.
+        //
+        const bool isContainable = IsSafeToContainMem(ind, ind->Addr());
+#else
+        const bool isContainable         = true;
+#endif
+
+        TryCreateAddrMode(ind->Addr(), isContainable, ind);
         ContainCheckIndir(ind);
 
         if (ind->OperIs(GT_NULLCHECK) || ind->IsUnusedValue())
@@ -7174,15 +7237,18 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     // - On ARM64, always use GT_NULLCHECK for a dead indirection.
     // - On ARM, always use GT_IND.
     // - On XARCH, use GT_IND if we have a contained address, and GT_NULLCHECK otherwise.
-    // In all cases, change the type to TYP_INT.
+    // In all cases we try to preserve the original type and never make it wider to avoid AVEs.
+    // For structs we conservatively lower it to BYTE. For 8-byte primitives we lower it to TYP_INT
+    // on XARCH as an optimization.
     //
     assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK, GT_OBJ));
 
-    ind->gtType = TYP_INT;
+    ind->ChangeType(comp->gtTypeForNullCheck(ind));
+
 #ifdef TARGET_ARM64
     bool useNullCheck = true;
 #elif TARGET_ARM
-    bool         useNullCheck          = false;
+    bool           useNullCheck          = false;
 #else  // TARGET_XARCH
     bool useNullCheck = !ind->Addr()->isContained();
 #endif // !TARGET_XARCH

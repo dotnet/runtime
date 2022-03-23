@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -10,63 +11,58 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrClearError")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrClearError")]
         internal static partial ulong ErrClearError();
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrGetErrorAlloc")]
-        private static partial ulong ErrGetErrorAlloc([MarshalAs(UnmanagedType.Bool)] out bool isAllocFailure);
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrGetExceptionError")]
+        private static partial ulong ErrGetExceptionError([MarshalAs(UnmanagedType.Bool)] out bool isAllocFailure);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrPeekError")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrPeekError")]
         internal static partial ulong ErrPeekError();
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrPeekLastError")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrPeekLastError")]
         internal static partial ulong ErrPeekLastError();
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrReasonErrorString")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrReasonErrorString")]
         internal static partial IntPtr ErrReasonErrorString(ulong error);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrErrorStringN")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrErrorStringN")]
         private static unsafe partial void ErrErrorStringN(ulong e, byte* buf, int len);
 
         private static unsafe string ErrErrorStringN(ulong error)
         {
-            var buffer = new byte[1024];
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(1024);
+            string ret;
+
             fixed (byte* buf = &buffer[0])
             {
                 ErrErrorStringN(error, buf, buffer.Length);
-                return Marshal.PtrToStringAnsi((IntPtr)buf)!;
+                ret = Marshal.PtrToStringAnsi((IntPtr)buf)!;
             }
+
+            ArrayPool<byte>.Shared.Return(buffer);
+            return ret;
         }
 
         internal static Exception CreateOpenSslCryptographicException()
         {
-            // The Windows cryptography library reports error codes through
-            // Marshal.GetLastWin32Error, which has a single value when the
-            // function exits, last writer wins.
+            // The Windows cryptography libraries reports error codes through
+            // return values, or Marshal.GetLastWin32Error, either of which
+            // has a single value when the function exits.
             //
             // OpenSSL maintains an error queue. Calls to ERR_get_error read
             // values out of the queue in the order that ERR_set_error wrote
             // them. Nothing enforces that a single call into an OpenSSL
-            // function will guarantee at-most one error being set.
+            // function will guarantee at-most one error being set, and there
+            // are well-known cases where multiple errors are emitted.
             //
-            // In order to maintain parity in how error flows look between the
-            // Windows code and the OpenSSL-calling code, drain the queue
-            // whenever an Exception is desired, and report the exception
-            // related to the last value in the queue.
-            bool isAllocFailure;
-            ulong error = ErrGetErrorAlloc(out isAllocFailure);
-            ulong lastRead = error;
-            bool lastIsAllocFailure = isAllocFailure;
-
-            // 0 (there's no named constant) is only returned when the calls
-            // to ERR_get_error exceed the calls to ERR_set_error.
-            while (lastRead != 0)
-            {
-                error = lastRead;
-                isAllocFailure = lastIsAllocFailure;
-
-                lastRead = ErrGetErrorAlloc(out lastIsAllocFailure);
-            }
+            // In older versions of .NET, we collected the last error in the
+            // queue, by repeatedly calling into ERR_get_error from managed code
+            // and using the last error as the basis of the exception.
+            // Now, we call into the shim once, which is responsible for
+            // maintaining the error state and informing us of the one value to report.
+            // (and when fetching that error we go ahead and clear out the rest).
+            ulong error = ErrGetExceptionError(out bool isAllocFailure);
 
             // If we're in an error flow which results in an Exception, but
             // no calls to ERR_set_error were made, throw the unadorned
@@ -82,7 +78,8 @@ internal static partial class Interop
             }
 
             // Even though ErrGetError returns ulong (C++ unsigned long), we
-            // really only expect error codes in the UInt32 range
+            // really only expect error codes in the UInt32 range, since that
+            // type is only 32 bits on x86 Linux.
             Debug.Assert(error <= uint.MaxValue, "ErrGetError should only return error codes in the UInt32 range.");
 
             // If there was an error code, and it wasn't something handled specially,

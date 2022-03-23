@@ -77,7 +77,7 @@
 #include "ir-emit.h"
 
 #include "jit-icalls.h"
-#include "jit.h"
+#include <mono/jit/jit.h>
 #include "seq-points.h"
 #include "aot-compiler.h"
 #include "mini-llvm.h"
@@ -1182,6 +1182,17 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 	case MONO_CEE_CONV_OVF_U:
 		ins->type = STACK_PTR;
 		ins->opcode += ovfops_op_map [src1->type];
+
+		switch (ins->opcode) {
+		case OP_FCONV_TO_I:
+			ins->opcode = TARGET_SIZEOF_VOID_P == 4 ? OP_FCONV_TO_I4 : OP_FCONV_TO_I8;
+			break;
+		case OP_RCONV_TO_I:
+			ins->opcode = TARGET_SIZEOF_VOID_P == 4 ? OP_RCONV_TO_I4 : OP_RCONV_TO_I8;
+			break;
+		default:
+			break;
+		}
 		break;
 	case MONO_CEE_ADD_OVF:
 	case MONO_CEE_ADD_OVF_UN:
@@ -2749,6 +2760,9 @@ emit_get_rgctx_virt_method (MonoCompile *cfg, int context_used,
 	MonoJumpInfoVirtMethod *info;
 	MonoJumpInfoRgctxEntry *entry;
 
+	if (context_used == -1)
+		context_used = mono_class_check_context_used (klass) | mono_method_check_context_used (virt_method);
+
 	info = (MonoJumpInfoVirtMethod *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoJumpInfoVirtMethod));
 	info->klass = klass;
 	info->method = virt_method;
@@ -3106,8 +3120,8 @@ handle_unbox_nullable (MonoCompile* cfg, MonoInst* val, MonoClass* klass, int co
 	}
 }
 
-static MonoInst*
-handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, int context_used)
+MonoInst*
+mini_handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst *val, int context_used)
 {
 	MonoInst *add;
 	int obj_reg;
@@ -3116,7 +3130,7 @@ handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, int context_use
 	int eclass_reg = alloc_dreg (cfg ,STACK_PTR);
 	int rank_reg = alloc_dreg (cfg ,STACK_I4);
 
-	obj_reg = sp [0]->dreg;
+	obj_reg = val->dreg;
 	MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, rank_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, rank));
 
@@ -3739,12 +3753,15 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 		 * plus some simple interface calls enough to support AsyncTaskMethodBuilder.
 		 */
 
-		args [0] = sp [0];
+		if (fsig->hasthis)
+			args [0] = sp [0];
+		else
+			EMIT_NEW_PCONST (cfg, args [0], NULL);
 		args [1] = emit_get_rgctx_method (cfg, mono_method_check_context_used (cmethod), cmethod, MONO_RGCTX_INFO_METHOD);
 		args [2] = mini_emit_get_rgctx_klass (cfg, mono_class_check_context_used (constrained_class), constrained_class, MONO_RGCTX_INFO_KLASS);
 
-		/* !fsig->hasthis is for the wrapper for the Object.GetType () icall */
-		if (fsig->hasthis && fsig->param_count) {
+		/* !fsig->hasthis is for the wrapper for the Object.GetType () icall or static virtual methods */
+		if ((fsig->hasthis || m_method_is_static (cmethod)) && fsig->param_count) {
 			/* Call mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gboolean *deref_args, gpointer *args) */
 			gboolean has_gsharedvt = FALSE;
 			for (int i = 0; i < fsig->param_count; ++i) {
@@ -3783,12 +3800,14 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI1_MEMBASE_IMM, args [3]->dreg, i, 0);
 				}
 
+				MonoInst *arg = sp [i + fsig->hasthis];
+
 				if (mini_is_gsharedvt_type (fsig->params [i]) || MONO_TYPE_IS_PRIMITIVE (fsig->params [i]) || MONO_TYPE_ISSTRUCT (fsig->params [i])) {
-					EMIT_NEW_VARLOADA_VREG (cfg, ins, sp [i + 1]->dreg, fsig->params [i]);
+					EMIT_NEW_VARLOADA_VREG (cfg, ins, arg->dreg, fsig->params [i]);
 					addr_reg = ins->dreg;
 					EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [4]->dreg, i * sizeof (target_mgreg_t), addr_reg);
 				} else {
-					EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [4]->dreg, i * sizeof (target_mgreg_t), sp [i + 1]->dreg);
+					EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [4]->dreg, i * sizeof (target_mgreg_t), arg->dreg);
 				}
 			}
 		} else {
@@ -4354,7 +4373,7 @@ mini_emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboole
 		} else if (sp [1]->opcode == OP_ICONST) {
 			int array_reg = sp [0]->dreg;
 			int index_reg = sp [1]->dreg;
-			int offset = (mono_class_array_element_size (klass) * sp [1]->inst_c0) + MONO_STRUCT_OFFSET (MonoArray, vector);
+			size_t offset = (mono_class_array_element_size (klass) * sp [1]->inst_c0) + MONO_STRUCT_OFFSET (MonoArray, vector);
 
 			if (SIZEOF_REGISTER == 8 && COMPILE_LLVM (cfg) && sp [1]->inst_c0 < 0)
 				MONO_EMIT_NEW_UNALU (cfg, OP_ZEXT_I4, index_reg, index_reg);
@@ -5726,9 +5745,9 @@ handle_constrained_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 	}
 
 	if (m_method_is_static (cmethod)) {
-		/* Call to an abstract static method */
+		/* Call to an abstract static method, handled normally */
 		return NULL;
-	} if (constrained_partial_call) {
+	} else if (constrained_partial_call) {
 		gboolean need_box = TRUE;
 
 		/*
@@ -6148,7 +6167,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoType **param_types;
 	int i, n, start_new_bblock, dreg;
 	int num_calls = 0, inline_costs = 0;
-	int breakpoint_id = 0;
 	guint num_args;
 	GSList *class_inits = NULL;
 	gboolean dont_verify, dont_verify_stloc, readonly = FALSE;
@@ -6269,12 +6287,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	while (method_definition->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method_definition;
 		method_definition = imethod->declaring;
-	}
-
-	/* SkipVerification is not allowed if core-clr is enabled */
-	if (!dont_verify && mini_assembly_can_skip_verification (method)) {
-		dont_verify = TRUE;
-		dont_verify_stloc = TRUE;
 	}
 
 	if (sig->is_inflated)
@@ -6484,24 +6496,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		mono_emit_method_call (cfg, wrapper, args, NULL);
 	}
 
-	if (cfg->method == method) {
-		breakpoint_id = mono_debugger_method_has_breakpoint (method);
-		if (breakpoint_id) {
-			MONO_INST_NEW (cfg, ins, OP_BREAK);
-			MONO_ADD_INS (cfg->cbb, ins);
-		}
-	}
-
-	if (cfg->llvm_only && cfg->interp && cfg->method == method && !cfg->deopt) {
-		if (header->num_clauses) {
-			for (int i = 0; i < header->num_clauses; ++i) {
-				MonoExceptionClause *clause = &header->clauses [i];
-				/* Finally clauses are checked after the remove_finally pass */
-				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
-					cfg->interp_entry_only = TRUE;
-			}
-		}
-	}
+	if (cfg->llvm_only)
+		g_assert (cfg->interp);
 
 	/* we use a separate basic block for the initialization code */
 	NEW_BBLOCK (cfg, init_localsbb);
@@ -6618,8 +6614,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		UNVERIFIED;
 	}
 
-	if (cfg->method == method)
+	if (cfg->method == method) {
+		int breakpoint_id = mono_debugger_method_has_breakpoint (method);
+		if (breakpoint_id) {
+			MONO_INST_NEW (cfg, ins, OP_BREAK);
+			MONO_ADD_INS (cfg->cbb, ins);
+		}
 		mono_debug_init_method (cfg, cfg->cbb, breakpoint_id);
+	}
 
 	for (n = 0; n < header->num_locals; ++n) {
 		if (header->locals [n]->type == MONO_TYPE_VOID && !m_type_is_byref (header->locals [n]))
@@ -6672,6 +6674,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	ins_flag = 0;
 	start_new_bblock = 0;
 	MonoOpcodeEnum il_op; il_op = MonoOpcodeEnum_Invalid;
+
+	emit_set_deopt_il_offset (cfg, ip - cfg->cil_start);
 
 	for (guchar *next_ip = ip; ip < end; ip = next_ip) {
 		MonoOpcodeEnum previous_il_op = il_op;
@@ -7180,7 +7184,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * FIXME: This is very slow, need to create a wrapper at JIT time
 				 * instead based on the signature.
 				 */
-				EMIT_NEW_IMAGECONST (cfg, args [0], m_class_get_image (method->klass));
+				EMIT_NEW_IMAGECONST (cfg, args [0], ((MonoDynamicMethod*)method)->assembly->image);
 				EMIT_NEW_PCONST (cfg, args [1], fsig);
 				args [2] = addr;
 				// FIXME tailcall?
@@ -7325,6 +7329,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean direct_icall; direct_icall = FALSE;
 			gboolean tailcall_calli; tailcall_calli = FALSE;
 			gboolean noreturn; noreturn = FALSE;
+			gboolean gshared_static_virtual; gshared_static_virtual = FALSE;
 #ifdef TARGET_WASM
 			gboolean needs_stack_walk; needs_stack_walk = FALSE;
 #endif
@@ -7357,20 +7362,24 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			MonoMethod *cil_method; cil_method = cmethod;
 			if (constrained_class) {
-				if (m_method_is_static (cil_method) && mini_class_check_context_used (cfg, constrained_class))
-					// FIXME:
-					GENERIC_SHARING_FAILURE (CEE_CALL);
+				if (m_method_is_static (cil_method) && mini_class_check_context_used (cfg, constrained_class)) {
+					/* get_constrained_method () doesn't work on the gparams used by generic sharing */
+					// FIXME: Other configurations
+					//if (!cfg->gsharedvt)
+					//	GENERIC_SHARING_FAILURE (CEE_CALL);
+					gshared_static_virtual = TRUE;
+				} else {
+					cmethod = get_constrained_method (cfg, image, token, cil_method, constrained_class, generic_context);
+					CHECK_CFG_ERROR;
 
-				cmethod = get_constrained_method (cfg, image, token, cil_method, constrained_class, generic_context);
-				CHECK_CFG_ERROR;
-
-				if (m_class_is_enumtype (constrained_class) && !strcmp (cmethod->name, "GetHashCode")) {
-					/* Use the corresponding method from the base type to avoid boxing */
-					MonoType *base_type = mono_class_enum_basetype_internal (constrained_class);
-					g_assert (base_type);
-					constrained_class = mono_class_from_mono_type_internal (base_type);
-					cmethod = get_method_nofail (constrained_class, cmethod->name, 0, 0);
-					g_assert (cmethod);
+					if (m_class_is_enumtype (constrained_class) && !strcmp (cmethod->name, "GetHashCode")) {
+						/* Use the corresponding method from the base type to avoid boxing */
+						MonoType *base_type = mono_class_enum_basetype_internal (constrained_class);
+						g_assert (base_type);
+						constrained_class = mono_class_from_mono_type_internal (base_type);
+						cmethod = get_method_nofail (constrained_class, cmethod->name, 0, 0);
+						g_assert (cmethod);
+					}
 				}
 			}
 
@@ -7400,7 +7409,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 #endif
 			}
 
-			if (!virtual_ && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
+			if (!virtual_ && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT) && !gshared_static_virtual) {
 				if (!mono_class_is_interface (method->klass))
 					emit_bad_image_failure (cfg, method, cil_method);
 				else
@@ -7510,7 +7519,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (constrained_class) {
 				ins = handle_constrained_call (cfg, cmethod, fsig, constrained_class, sp, &cdata, &cmethod, &virtual_, &emit_widen);
 				CHECK_CFG_EXCEPTION;
-				constrained_class = NULL;
+				if (!gshared_static_virtual)
+					constrained_class = NULL;
 				if (ins)
 					goto call_end;
 			}
@@ -7629,6 +7639,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoGenericContext *cmethod_context = mono_method_get_context (cmethod);
 
 				context_used = mini_method_check_context_used (cfg, cmethod);
+				if (!context_used && gshared_static_virtual)
+					context_used = mini_class_check_context_used (cfg, constrained_class);
 
 				if (context_used && mono_class_is_interface (cmethod->klass) && !m_method_is_static (cmethod)) {
 					/* Generic method interface
@@ -7935,41 +7947,56 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* Generic sharing */
 
 			/*
+			 * Calls to generic methods from shared code cannot go through the trampoline infrastructure
+			 * in some cases, because the called method might end up being different on every call.
+			 * Load the called method address from the rgctx and do an indirect call in these cases.
 			 * Use this if the callee is gsharedvt sharable too, since
 			 * at runtime we might find an instantiation so the call cannot
 			 * be patched (the 'no_patch' code path in mini-trampolines.c).
 			 */
-			if (context_used && !imt_arg && !array_rank && !delegate_invoke &&
-				(!mono_method_is_generic_sharable_full (cmethod, TRUE, FALSE, FALSE) ||
-				 !mono_class_generic_sharing_enabled (cmethod->klass)) &&
-				(!virtual_ || MONO_METHOD_IS_FINAL (cmethod) ||
-				 !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL))) {
+			gboolean gshared_indirect;
+			gshared_indirect = context_used && !imt_arg && !array_rank && !delegate_invoke;
+			if (gshared_indirect)
+				gshared_indirect = (!mono_method_is_generic_sharable_full (cmethod, TRUE, FALSE, FALSE) ||
+									!mono_class_generic_sharing_enabled (cmethod->klass) ||
+									gshared_static_virtual);
+			if (gshared_indirect)
+				gshared_indirect = (!virtual_ || MONO_METHOD_IS_FINAL (cmethod) ||
+									!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL));
+			if (gshared_indirect) {
 				INLINE_FAILURE ("gshared");
 
 				g_assert (cfg->gshared && cmethod);
 				g_assert (!addr);
 
-				/*
-				 * We are compiling a call to a
-				 * generic method from shared code,
-				 * which means that we have to look up
-				 * the method in the rgctx and do an
-				 * indirect call.
-				 */
 				if (fsig->hasthis)
 					MONO_EMIT_NEW_CHECK_THIS (cfg, sp [0]->dreg);
 
 				if (cfg->llvm_only) {
-					if (cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig))
+					if (cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig)) {
+						/* Handled in handle_constrained_gsharedvt_call () */
+						g_assert (!gshared_static_virtual);
 						addr = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER);
-					else
-						addr = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD_FTNDESC);
+					} else {
+						if (gshared_static_virtual)
+							addr = emit_get_rgctx_virt_method (cfg, -1, constrained_class, cmethod, MONO_RGCTX_INFO_VIRT_METHOD_CODE);
+						else
+							addr = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD_FTNDESC);
+					}
 					// FIXME: Avoid initializing imt_arg/vtable_arg
 					ins = mini_emit_llvmonly_calli (cfg, fsig, sp, addr);
 					if (inst_tailcall) // FIXME
 						mono_tailcall_print ("missed tailcall context_used_llvmonly %s -> %s\n", method->name, cmethod->name);
 				} else {
-					addr = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
+					if (gshared_static_virtual) {
+						/*
+						 * cmethod is a static interface method, the actual called method at runtime
+						 * needs to be computed using constrained_class and cmethod.
+						 */
+						addr = emit_get_rgctx_virt_method (cfg, -1, constrained_class, cmethod, MONO_RGCTX_INFO_VIRT_METHOD_CODE);
+					} else {
+						addr = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
+					}
 					if (inst_tailcall)
 						mono_tailcall_print ("%s tailcall_calli#2 %s -> %s\n", tailcall_calli ? "making" : "missed", method->name, cmethod->name);
 					tailcall = tailcall_calli;
@@ -8111,7 +8138,6 @@ call_end:
 
 #ifdef TARGET_WASM
 			if (common_call && needs_stack_walk && !cfg->deopt)
-				/* If an exception is thrown, the LMF is popped by a call to mini_llvmonly_pop_lmf () */
 				emit_pop_lmf (cfg);
 #endif
 
@@ -8698,8 +8724,8 @@ calli_end:
 			break;
 		case MONO_CEE_CONV_U2:
 		case MONO_CEE_CONV_U1:
-		case MONO_CEE_CONV_I:
 		case MONO_CEE_CONV_U:
+		case MONO_CEE_CONV_I:
 			ADD_UNOP (il_op);
 			CHECK_CFG_EXCEPTION;
 			break;
@@ -9163,7 +9189,7 @@ calli_end:
 			} else if (mono_class_is_nullable (klass)) {
 				res = handle_unbox_nullable (cfg, *sp, klass, context_used);
 			} else {
-				addr = handle_unbox (cfg, klass, sp, context_used);
+				addr = mini_handle_unbox (cfg, klass, *sp, context_used);
 				/* LDOBJ */
 				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), addr->dreg, 0);
 				res = ins;
@@ -9517,7 +9543,7 @@ calli_end:
 
 				*sp++= ins;
 			} else {
-				ins = handle_unbox (cfg, klass, sp, context_used);
+				ins = mini_handle_unbox (cfg, klass, *sp, context_used);
 				*sp++ = ins;
 			}
 			inline_costs += 2;
@@ -9610,6 +9636,9 @@ calli_end:
 
 			if (is_instance)
 				g_assert (field->offset);
+			/* metadata-update: no hot reload in the JIT.  But if it was supported,
+			 * field->offset here could be wrong for added (m_field_is_from_update)
+			 * fields */
 			foffset = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject): field->offset;
 			if (il_op == MONO_CEE_STFLD) {
 				sp [1] = convert_value (cfg, field->type, sp [1]);
@@ -10234,7 +10263,7 @@ field_access_end:
 			} else if (sp [1]->opcode == OP_ICONST) {
 				int array_reg = sp [0]->dreg;
 				int index_reg = sp [1]->dreg;
-				int offset = (mono_class_array_element_size (klass) * sp [1]->inst_c0) + MONO_STRUCT_OFFSET (MonoArray, vector);
+				size_t offset = (mono_class_array_element_size (klass) * sp [1]->inst_c0) + MONO_STRUCT_OFFSET (MonoArray, vector);
 
 				if (SIZEOF_REGISTER == 8 && COMPILE_LLVM (cfg))
 					MONO_EMIT_NEW_UNALU (cfg, OP_ZEXT_I4, index_reg, index_reg);
@@ -11656,7 +11685,6 @@ mono_ldptr:
 
 #ifdef TARGET_WASM
 	if (cfg->lmf_var && !cfg->deopt) {
-		// mini_llvmonly_pop_lmf () might be called before emit_push_lmf () so initialize the LMF
 		cfg->cbb = init_localsbb;
 		EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
 		int lmf_reg = ins->dreg;
@@ -12218,6 +12246,7 @@ mono_op_no_side_effects (int opcode)
 	case OP_RMOVE:
 	case OP_VZERO:
 	case OP_XZERO:
+	case OP_XONES:
 	case OP_ICONST:
 	case OP_I8CONST:
 	case OP_ADD_IMM:

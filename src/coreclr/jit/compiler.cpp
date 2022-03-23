@@ -319,7 +319,6 @@ unsigned totalLoopCount;          // counts the total number of natural loops
 unsigned totalUnnatLoopCount;     // counts the total number of (not-necessarily natural) loops
 unsigned totalUnnatLoopOverflows; // # of methods that identified more unnatural loops than we can represent
 unsigned iterLoopCount;           // counts the # of loops with an iterator (for like)
-unsigned simpleTestLoopCount;     // counts the # of loops with an iterator and a simple loop condition (iter < const)
 unsigned constIterLoopCount;      // counts the # of loops with a constant iterator (for like)
 bool     hasMethodLoops;          // flag to keep track if we already counted a method as having loops
 unsigned loopsThisMethod;         // counts the number of loops in the current method
@@ -1556,7 +1555,6 @@ void Compiler::compShutdown()
     fprintf(fout, "Total number of 'unnatural' loops is %5u\n", totalUnnatLoopCount);
     fprintf(fout, "# of methods overflowing unnat loop limit is %5u\n", totalUnnatLoopOverflows);
     fprintf(fout, "Total number of loops with an         iterator is %5u\n", iterLoopCount);
-    fprintf(fout, "Total number of loops with a simple   iterator is %5u\n", simpleTestLoopCount);
     fprintf(fout, "Total number of loops with a constant iterator is %5u\n", constIterLoopCount);
 
     fprintf(fout, "--------------------------------------------------\n");
@@ -1885,7 +1883,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compQmarkRationalized = false;
     compQmarkUsed         = false;
     compFloatingPointUsed = false;
-    compUnsafeCastUsed    = false;
 
     compSuppressedZeroInit = false;
 
@@ -2235,7 +2232,7 @@ void Compiler::compSetProcessor()
     opts.compUseCMOV = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
 #ifdef DEBUG
     if (opts.compUseCMOV)
-        opts.compUseCMOV                = !compStressCompile(STRESS_USE_CMOV, 50);
+        opts.compUseCMOV                   = !compStressCompile(STRESS_USE_CMOV, 50);
 #endif // DEBUG
 
 #endif // TARGET_X86
@@ -2410,15 +2407,17 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitAlignLoopBoundary       = (unsigned short)JitConfig.JitAlignLoopBoundary();
     opts.compJitAlignLoopMinBlockWeight = (unsigned short)JitConfig.JitAlignLoopMinBlockWeight();
 
-    opts.compJitAlignLoopForJcc      = JitConfig.JitAlignLoopForJcc() == 1;
-    opts.compJitAlignLoopMaxCodeSize = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
-    opts.compJitHideAlignBehindJmp   = JitConfig.JitHideAlignBehindJmp() == 1;
+    opts.compJitAlignLoopForJcc            = JitConfig.JitAlignLoopForJcc() == 1;
+    opts.compJitAlignLoopMaxCodeSize       = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
+    opts.compJitHideAlignBehindJmp         = JitConfig.JitHideAlignBehindJmp() == 1;
+    opts.compJitOptimizeStructHiddenBuffer = JitConfig.JitOptimizeStructHiddenBuffer() == 1;
 #else
-    opts.compJitAlignLoopAdaptive       = true;
-    opts.compJitAlignLoopBoundary       = DEFAULT_ALIGN_LOOP_BOUNDARY;
-    opts.compJitAlignLoopMinBlockWeight = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
-    opts.compJitAlignLoopMaxCodeSize    = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
-    opts.compJitHideAlignBehindJmp      = true;
+    opts.compJitAlignLoopAdaptive          = true;
+    opts.compJitAlignLoopBoundary          = DEFAULT_ALIGN_LOOP_BOUNDARY;
+    opts.compJitAlignLoopMinBlockWeight    = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
+    opts.compJitAlignLoopMaxCodeSize       = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
+    opts.compJitHideAlignBehindJmp         = true;
+    opts.compJitOptimizeStructHiddenBuffer = true;
 #endif
 
 #ifdef TARGET_XARCH
@@ -2667,8 +2666,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif // DEBUG
 
 #ifdef FEATURE_SIMD
-    // Minimum bar for availing SIMD benefits is SSE2 on AMD64/x86.
-    featureSIMD = jitFlags->IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD);
     setUsesSIMDTypes(false);
 #endif // FEATURE_SIMD
 
@@ -4077,6 +4074,15 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
 {
     const bool tier0 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
     const bool tier1 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+
+    if (!opts.compMinOptsIsSet)
+    {
+        // If 'compMinOptsIsSet' is not set, just return here. Otherwise, if this method is called
+        // by the assertAbort(), we would recursively call assert while trying to get MinOpts()
+        // and eventually stackoverflow.
+        return "Optimization-Level-Not-Yet-Set";
+    }
+
     assert(!tier0 || !tier1); // We don't expect multiple TIER flags to be set at one time.
 
     if (tier0)
@@ -5288,6 +5294,18 @@ void Compiler::generatePatchpointInfo()
         JITDUMP("--OSR-- monitor acquired V%02u virtual offset is %d\n", lvaMonAcquired,
                 patchpointInfo->MonitorAcquiredOffset());
     }
+
+#if defined(TARGET_AMD64)
+    // Record callee save registers.
+    // Currently only needed for x64.
+    //
+    regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    rsPushRegs |= RBM_FPBASE;
+    patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
+    JITDUMP("--OSR-- Tier0 callee saves: ");
+    JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
+    JITDUMP("\n");
+#endif
 
     // Register this with the runtime.
     info.compCompHnd->setPatchpointInfo(patchpointInfo);
@@ -9737,6 +9755,29 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 }
 
 //------------------------------------------------------------------------------
+// gtTypeForNullCheck: helper to get the most optimal and correct type for nullcheck
+//
+// Arguments:
+//    tree - the node for nullcheck;
+//
+var_types Compiler::gtTypeForNullCheck(GenTree* tree)
+{
+    if (varTypeIsArithmetic(tree))
+    {
+#if defined(TARGET_XARCH)
+        // Just an optimization for XARCH - smaller mov
+        if (varTypeIsLong(tree))
+        {
+            return TYP_INT;
+        }
+#endif
+        return tree->TypeGet();
+    }
+    // for the rest: probe a single byte to avoid potential AVEs
+    return TYP_BYTE;
+}
+
+//------------------------------------------------------------------------------
 // gtChangeOperToNullCheck: helper to change tree oper to a NULLCHECK.
 //
 // Arguments:
@@ -9752,7 +9793,7 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
 {
     assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
-    tree->ChangeType(TYP_INT);
+    tree->ChangeType(gtTypeForNullCheck(tree));
     block->bbFlags |= BBF_HAS_NULLCHECK;
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }
@@ -9838,6 +9879,9 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
         {
             case DoNotEnregisterReason::AddrExposed:
                 m_addrExposed++;
+                break;
+            case DoNotEnregisterReason::HiddenBufferStructArg:
+                m_hiddenStructArg++;
                 break;
             case DoNotEnregisterReason::DontEnregStructs:
                 m_dontEnregStructs++;
@@ -10009,6 +10053,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     }
 
     PRINT_STATS(m_addrExposed, notEnreg);
+    PRINT_STATS(m_hiddenStructArg, notEnreg);
     PRINT_STATS(m_dontEnregStructs, notEnreg);
     PRINT_STATS(m_notRegSizeStruct, notEnreg);
     PRINT_STATS(m_localField, notEnreg);

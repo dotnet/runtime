@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetMaximumAddressSize")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetMaximumAddressSize")]
         [SuppressGCTransition]
         internal static partial int GetMaximumAddressSize();
     }

@@ -65,7 +65,6 @@
 // assignments in a static class constructor are under a lock implicitly.
 
 using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Runtime.InteropServices

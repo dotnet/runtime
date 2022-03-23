@@ -1154,18 +1154,15 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     if (jitMgr->LoadJIT())
     {
         CORJIT_FLAGS cpuCompileFlags = jitMgr->GetCPUCompileFlags();
-        if (cpuCompileFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD))
+        unsigned intrinsicSIMDVectorLength = jitMgr->m_jit->getMaxIntrinsicSIMDVectorLength(cpuCompileFlags);
+        if (intrinsicSIMDVectorLength != 0)
         {
-            unsigned intrinsicSIMDVectorLength = jitMgr->m_jit->getMaxIntrinsicSIMDVectorLength(cpuCompileFlags);
-            if (intrinsicSIMDVectorLength != 0)
+            bmtFP->NumInstanceFieldBytes     = intrinsicSIMDVectorLength;
+            if (HasLayout())
             {
-                bmtFP->NumInstanceFieldBytes     = intrinsicSIMDVectorLength;
-                if (HasLayout())
-                {
-                    GetLayoutInfo()->m_cbManagedSize = intrinsicSIMDVectorLength;
-                }
-                return true;
+                GetLayoutInfo()->m_cbManagedSize = intrinsicSIMDVectorLength;
             }
+            return true;
         }
     }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -5076,7 +5073,7 @@ MethodTableBuilder::ValidateMethods()
         // Virtual static methods are only allowed on interfaces and they must be abstract.
         if (IsMdStatic(it.Attrs()) && IsMdVirtual(it.Attrs()))
         {
-            if (!IsInterface() || !IsMdAbstract(it.Attrs()))
+            if (!IsInterface())
             {
                 BuildMethodTableThrowException(IDS_CLASSLOAD_STATICVIRTUAL, it.Token());
             }
@@ -7053,7 +7050,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
     }
     _ASSERTE(offset == sizeof(MethodDescChunk) + sizeOfMethodDescs);
 
-    pChunk->SetSizeAndCount((ULONG)sizeOfMethodDescs, methodDescCount);
+    pChunk->SetSizeAndCount(sizeOfMethodDescs, methodDescCount);
 
     GetHalfBakedClass()->AddChunk(pChunk);
 }
@@ -8394,7 +8391,6 @@ MethodTableBuilder::HandleExplicitLayout(
     // Instance slice size is the total size of an instance, and is calculated as
     // the field whose offset and size add to the greatest number.
     UINT instanceSliceSize = 0;
-    DWORD firstObjectOverlapOffset = ((DWORD)(-1));
 
     UINT i;
     for (i = 0; i < bmtMetaData->cFields; i++)
@@ -8433,15 +8429,19 @@ MethodTableBuilder::HandleExplicitLayout(
     //
     // 1. Verify that every OREF or BYREF is on a valid alignment.
     // 2. Verify that OREFs only overlap with other OREFs.
-    // 3. If an OREF does overlap with another OREF, the class is marked unverifiable.
-    // 4. If an overlap of any kind occurs, the class will be marked NotTightlyPacked (affects ValueType.Equals()).
+    // 3. Verify that BYREFs only overlap with other BYREFs.
+    // 4. If an OREF does overlap with another OREF, the class is marked unverifiable.
+    // 5. If a BYREF does overlap with another BYREF, the class is marked unverifiable.
+    // 6. If an overlap of any kind occurs, the class will be marked NotTightlyPacked (affects ValueType.Equals()).
     //
     char emptyObject[TARGET_POINTER_SIZE];
     char isObject[TARGET_POINTER_SIZE];
+    char isByRef[TARGET_POINTER_SIZE];
     for (i = 0; i < TARGET_POINTER_SIZE; i++)
     {
         emptyObject[i] = empty;
         isObject[i]    = oref;
+        isByRef[i]     = byref;
     }
 
     ExplicitClassTrust explicitClassTrust;
@@ -8482,7 +8482,7 @@ MethodTableBuilder::HandleExplicitLayout(
         CorElementType type = pFD->GetFieldType();
         if (CorTypeInfo::IsObjRef(type) || CorTypeInfo::IsByRef(type))
         {
-            // Check that the ref offset is pointer aligned
+            // Check that the field is pointer aligned
             if ((pFD->GetOffset_NoLogging() & ((ULONG)TARGET_POINTER_SIZE - 1)) != 0)
             {
                 badOffset = pFD->GetOffset_NoLogging();
@@ -8491,33 +8491,43 @@ MethodTableBuilder::HandleExplicitLayout(
                 // If we got here, OREF or BYREF field was not pointer aligned. THROW.
                 break;
             }
-        }
 
-        if (CorTypeInfo::IsObjRef(type))
-        {
-            // check if overlaps another object
-            if (memcmp((void *)&pFieldLayout[pFD->GetOffset_NoLogging()], (void *)isObject, sizeof(isObject)) == 0)
+            // Determine which tag type we are working with.
+            bmtFieldLayoutTag tag;
+            SIZE_T tagBlockSize;
+            void* tagBlock;
+            if (CorTypeInfo::IsObjRef(type))
             {
-                // If we got here, an OREF overlapped another OREF. We permit this but mark the class unverifiable.
+                tagBlockSize = sizeof(isObject);
+                tagBlock = (void*)isObject;
+                tag = oref;
+            }
+            else
+            {
+                _ASSERTE(CorTypeInfo::IsByRef(type));
+                tagBlockSize = sizeof(isByRef);
+                tagBlock = (void*)isByRef;
+                tag = byref;
+            }
+
+            // Check if there is overlap with its own tag type
+            if (memcmp((void *)&pFieldLayout[pFD->GetOffset_NoLogging()], tagBlock, tagBlockSize) == 0)
+            {
+                // If we got here, there is tag type overlap. We permit this but mark the class unverifiable.
                 fieldTrust.SetTrust(ExplicitFieldTrust::kLegal);
-
-                if (firstObjectOverlapOffset == ((DWORD)(-1)))
-                {
-                    firstObjectOverlapOffset = pFD->GetOffset_NoLogging();
-                }
-
                 continue;
             }
-            // check if is empty at this point
+            // check if typed layout is empty at this point
             if (memcmp((void *)&pFieldLayout[pFD->GetOffset_NoLogging()], (void *)emptyObject, sizeof(emptyObject)) == 0)
             {
-                // If we got here, this OREF is overlapping no other fields (yet). Record that these bytes now contain an OREF.
-                memset((void *)&pFieldLayout[pFD->GetOffset_NoLogging()], oref, sizeof(isObject));
+                // If we got here, this tag type is overlapping no other fields (yet).
+                // Record that these bytes now contain the current tag type.
+                memset((void *)&pFieldLayout[pFD->GetOffset_NoLogging()], tag, tagBlockSize);
                 fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverLayed);
                 continue;
             }
 
-            // If we got here, the OREF overlaps a non-OREF. THROW.
+            // If we got here, the tag overlaps something else. THROW.
             badOffset = pFD->GetOffset_NoLogging();
             fieldTrust.SetTrust(ExplicitFieldTrust::kNone);
             break;
@@ -8525,64 +8535,57 @@ MethodTableBuilder::HandleExplicitLayout(
         else
         {
             UINT fieldSize;
-            if (pFD->IsByValue())
+            if (!pFD->IsByValue())
+            {
+                fieldSize = GetFieldSize(pFD);
+            }
+            else
             {
                 MethodTable *pByValueMT = pByValueClassCache[valueClassCacheIndex];
-                if (pByValueMT->IsByRefLike())
+                if (pByValueMT->IsByRefLike() || pByValueMT->ContainsPointers())
                 {
                     if ((pFD->GetOffset_NoLogging() & ((ULONG)TARGET_POINTER_SIZE - 1)) != 0)
                     {
-                        // If we got here, then a byref-like valuetype was misaligned.
+                        // If we got here, then a ByRefLike valuetype or a valuetype containing an OREF was misaligned.
                         badOffset = pFD->GetOffset_NoLogging();
                         fieldTrust.SetTrust(ExplicitFieldTrust::kNone);
                         break;
                     }
-                }
-                if (pByValueMT->ContainsPointers())
-                {
-                    if ((pFD->GetOffset_NoLogging() & ((ULONG)TARGET_POINTER_SIZE - 1)) == 0)
-                    {
-                        ExplicitFieldTrust::TrustLevel trust;
-                        DWORD firstObjectOverlapOffsetInsideValueClass = ((DWORD)(-1));
-                        trust = CheckValueClassLayout(pByValueMT, &pFieldLayout[pFD->GetOffset_NoLogging()], &firstObjectOverlapOffsetInsideValueClass);
-                        fieldTrust.SetTrust(trust);
-                        if (firstObjectOverlapOffsetInsideValueClass != ((DWORD)(-1)))
-                        {
-                            if (firstObjectOverlapOffset == ((DWORD)(-1)))
-                            {
-                                firstObjectOverlapOffset = pFD->GetOffset_NoLogging() + firstObjectOverlapOffsetInsideValueClass;
-                            }
-                        }
 
-                        if (trust != ExplicitFieldTrust::kNone)
-                        {
-                            continue;
-                        }
-                        else
-                        {
-                            // If we got here, then an OREF inside the valuetype illegally overlapped a non-OREF field. THROW.
-                            badOffset = pFD->GetOffset_NoLogging();
-                            break;
-                        }
+                    ExplicitFieldTrust::TrustLevel trust = CheckValueClassLayout(pByValueMT, &pFieldLayout[pFD->GetOffset_NoLogging()]);
+                    fieldTrust.SetTrust(trust);
+
+                    if (trust != ExplicitFieldTrust::kNone)
+                    {
+                        continue;
                     }
-                    // If we got here, then a valuetype containing an OREF was misaligned.
-                    badOffset = pFD->GetOffset_NoLogging();
-                    fieldTrust.SetTrust(ExplicitFieldTrust::kNone);
+                    else
+                    {
+                        // If we got here, then an OREF/BYREF inside the valuetype illegally overlapped a non-OREF field. THROW.
+                        badOffset = pFD->GetOffset_NoLogging();
+                        break;
+                    }
                     break;
                 }
                 // no pointers so fall through to do standard checking
                 fieldSize = pByValueMT->GetNumInstanceFieldBytes();
             }
-            else
-            {
-                // field size temporarily stored in pInterface field
-                fieldSize = GetFieldSize(pFD);
-            }
 
             // If we got here, we are trying to place a non-OREF (or a valuetype composed of non-OREFs.)
-            // Look for any orefs under this field
-            BYTE *loc;
-            if ((loc = (BYTE*)memchr((void*)&pFieldLayout[pFD->GetOffset_NoLogging()], oref, fieldSize)) == NULL)
+            // Look for any orefs or byrefs under this field
+            BYTE *loc = NULL;
+            BYTE* currOffset = pFieldLayout + pFD->GetOffset_NoLogging();
+            BYTE* endOffset = currOffset + fieldSize;
+            for (; currOffset < endOffset; ++currOffset)
+            {
+                if (*currOffset == oref || *currOffset == byref)
+                {
+                    loc = currOffset;
+                    break;
+                }
+            }
+
+            if (loc == NULL)
             {
                 // If we have a nonoref in the range then we are doing an overlay
                 if(memchr((void*)&pFieldLayout[pFD->GetOffset_NoLogging()], nonoref, fieldSize))
@@ -8598,7 +8601,7 @@ MethodTableBuilder::HandleExplicitLayout(
             }
 
             // If we got here, we tried to place a non-OREF (or a valuetype composed of non-OREFs)
-            // on top of an OREF. THROW.
+            // on top of an OREF/BYREF. THROW.
             badOffset = (UINT)(loc - pFieldLayout);
             fieldTrust.SetTrust(ExplicitFieldTrust::kNone);
             break;
@@ -8716,27 +8719,29 @@ MethodTableBuilder::HandleExplicitLayout(
 } // MethodTableBuilder::HandleExplicitLayout
 
 //*******************************************************************************
-// make sure that no object fields are overlapped incorrectly, returns S_FALSE if
-// there overlap but nothing illegal, S_OK if there is no overlap
-/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckValueClassLayout(MethodTable * pMT, BYTE *pFieldLayout, DWORD *pFirstObjectOverlapOffset)
+// make sure that no object fields are overlapped incorrectly, returns the trust level
+/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckValueClassLayout(MethodTable * pMT, BYTE *pFieldLayout)
 {
     STANDARD_VM_CONTRACT;
 
+    // ByRefLike types need to be checked for ByRef fields.
+    if (pMT->IsByRefLike())
+        return CheckByRefLikeValueClassLayout(pMT, pFieldLayout);
 
-    *pFirstObjectOverlapOffset = (DWORD)(-1);
+    // This method assumes there is a GC desc associated with the MethodTable.
+    _ASSERTE(pMT->ContainsPointers());
 
-    // Build a layout of the value class. Don't know the sizes of all the fields easily, but
-    // do know a) vc is already consistent so don't need to check it's overlaps and
-    // b) size and location of all objectrefs. So build it by setting all non-oref
+    // Build a layout of the value class (vc). Don't know the sizes of all the fields easily, but
+    // do know (a) vc is already consistent so don't need to check it's overlaps and
+    // (b) size and location of all objectrefs. So build it by setting all non-oref
     // then fill in the orefs later
     UINT fieldSize = pMT->GetNumInstanceFieldBytes();
+
     CQuickBytes qb;
     BYTE *vcLayout = (BYTE*) qb.AllocThrows(fieldSize * sizeof(BYTE));
-
     memset((void*)vcLayout, nonoref, fieldSize);
 
     // use pointer series to locate the orefs
-
     CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
     CGCDescSeries *pSeries = map->GetLowestSeries();
 
@@ -8748,11 +8753,9 @@ MethodTableBuilder::HandleExplicitLayout(
         pSeries++;
     }
 
-
     ExplicitClassTrust explicitClassTrust;
-
-    for (UINT i=0; i < fieldSize; i++) {
-
+    for (UINT i=0; i < fieldSize; i++)
+    {
         ExplicitFieldTrustHolder fieldTrust(&explicitClassTrust);
 
         if (vcLayout[i] == oref) {
@@ -8771,10 +8774,6 @@ MethodTableBuilder::HandleExplicitLayout(
                 // oref <--> oref
                 case oref:
                     fieldTrust.SetTrust(ExplicitFieldTrust::kLegal);
-                    if ((*pFirstObjectOverlapOffset) == ((DWORD)(-1)))
-                    {
-                        *pFirstObjectOverlapOffset = (DWORD)i;
-                    }
                     break;
 
                 default:
@@ -8810,10 +8809,92 @@ MethodTableBuilder::HandleExplicitLayout(
 }
 
 
+//*******************************************************************************
+// make sure that no byref/object fields are overlapped, returns the trust level
+/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckByRefLikeValueClassLayout(MethodTable * pMT, BYTE *pFieldLayout)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pMT->IsByRefLike());
 
+    // ByReference<T> is an indication for a byref field, treat it as such.
+    if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
+         return MarkTagType(pFieldLayout, TARGET_POINTER_SIZE, byref);
 
+    ExplicitClassTrust explicitClassTrust;
 
+    ExplicitFieldTrust::TrustLevel trust;
+    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
+    for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
+    {
+        ExplicitFieldTrustHolder fieldTrust(&explicitClassTrust);
+        int fieldStartIndex = pFD->GetOffset();
 
+        if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+        {
+            MethodTable *pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+            trust = CheckValueClassLayout(pFieldMT, &pFieldLayout[fieldStartIndex]);
+        }
+        else if (pFD->IsObjRef())
+        {
+            _ASSERTE(fieldStartIndex % TARGET_POINTER_SIZE == 0);
+            trust = MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, oref);
+        }
+        else if (pFD->IsByRef())
+        {
+            _ASSERTE(fieldStartIndex % TARGET_POINTER_SIZE == 0);
+            trust = MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, byref);
+        }
+        else
+        {
+            trust = MarkTagType(&pFieldLayout[fieldStartIndex], pFD->GetSize(), nonoref);
+        }
+
+        fieldTrust.SetTrust(trust);
+
+        // Some invalid overlap was detected.
+        if (trust == ExplicitFieldTrust::kNone)
+            break;
+    }
+
+    return explicitClassTrust.GetTrustLevel();
+}
+
+//*******************************************************************************
+// Set the field's tag type and/or detect invalid overlap
+/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::MarkTagType(BYTE* field, SIZE_T fieldSize, bmtFieldLayoutTag tagType)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(field != NULL);
+    _ASSERTE(fieldSize != 0);
+    _ASSERTE(tagType != empty);
+
+    ExplicitFieldTrust::TrustLevel trust = ExplicitFieldTrust::kMaxTrust;
+    for (SIZE_T i = 0; i < fieldSize; ++i)
+    {
+        if (field[i] == empty)
+        {
+            // Nothing set for overlap, mark as requested.
+            field[i] = tagType;
+        }
+        else if (field[i] == tagType)
+        {
+            // Only a overlapped nonoref tag is verifiable, all others are simply legal.
+            ExplicitFieldTrust::TrustLevel overlapTrust = tagType == nonoref ? ExplicitFieldTrust::kVerifiable : ExplicitFieldTrust::kLegal;
+
+            // The ExplicitFieldTrust enum is ranked in descending order of trust.
+            // We always take the computed minimum trust level.
+            trust = min(trust, overlapTrust);
+        }
+        else
+        {
+            // A non-equal overlap was detected. There is no trust for the type.
+            trust = ExplicitFieldTrust::kNone;
+            break;
+        }
+    }
+
+    return trust;
+}
 
 //*******************************************************************************
 void MethodTableBuilder::FindPointerSeriesExplicit(UINT instanceSliceSize,
@@ -10367,25 +10448,6 @@ MethodTableBuilder::SetupMethodTable2(
 #ifdef FEATURE_COMINTEROP
     if (bmtProp->fSparse)
         pClass->SetSparseForCOMInterop();
-
-    if (IsInterface() && IsComImport())
-    {
-        // Determine if we are creating an interface methodtable that may be used to dispatch through VSD
-        // on an object that has the methodtable of __ComObject.
-
-        // This is done to allow COM tearoff interfaces, but as a side-effect of this feature,
-        // we end up using a domain-shared type (__ComObject) with a domain-specific dispatch token.
-        // This is a problem because the same domain-specific dispatch token value can appear in
-        // multiple unshared domains (VSD takes advantage of the fact that in general a shared type
-        // cannot implement an unshared interface). This means that the same <token, __ComObject> pair
-        // value can mean different things in different domains (since the token could represent
-        // IFoo in one domain and IBar in another). This is a problem because the
-        // VSD polymorphic lookup mechanism relies on a process-wide cache table, and as a result
-        // these duplicate values would collide if we didn't use fat dispatch token to ensure uniqueness
-        // and the interface methodtable is not in the shared domain.
-
-        pMT->SetRequiresFatDispatchTokens();
-    }
 #endif // FEATURE_COMINTEROP
 
     if (bmtVT->pCCtor != NULL)

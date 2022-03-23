@@ -1623,6 +1623,15 @@ MINI_OP3(OP_ARM64_LD1_INSERT, "arm64_ld1_insert", XREG, IREG, XREG, IREG)
 MINI_OP(OP_ARM64_LD1, "arm64_ld1", XREG, IREG, NONE)
 MINI_OP(OP_ARM64_LD1R, "arm64_ld1r", XREG, IREG, NONE)
 
+/* Loads two consecutive vector (or scalar) values into a pair of
+ * vector registers. Returns a ValueTuple in a vreg. klass must be set to the
+ * MonoClass representing the ValueTuple return type of the op.
+ */
+MINI_OP(OP_ARM64_LDNP, "arm64_ldnp", VREG, IREG, NONE)
+MINI_OP(OP_ARM64_LDNP_SCALAR, "arm64_ldnp_scalar", VREG, IREG, NONE)
+MINI_OP(OP_ARM64_LDP, "arm64_ldp", VREG, IREG, NONE)
+MINI_OP(OP_ARM64_LDP_SCALAR, "arm64_ldp_scalar", VREG, IREG, NONE)
+
 MINI_OP(OP_ARM64_ST1, "arm64_st1", NONE, IREG, XREG)
 MINI_OP(OP_ARM64_SXTL, "arm64_sxtl", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_SXTL2, "arm64_sxtl2", XREG, XREG, NONE)
@@ -1803,7 +1812,7 @@ MINI_OP(OP_ARM64_UADALP, "arm64_uadalp_scalar", XREG, XREG, XREG)
 
 MINI_OP(OP_ARM64_SADDLV, "arm64_saddlv", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_UADDLV, "arm64_uaddlv", XREG, XREG, NONE)
-
+MINI_OP(OP_ARM64_XADDV, "arm64_xaddv", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_XHORIZ, "arm64_xhoriz", XREG, XREG, NONE)
 
 MINI_OP3(OP_ARM64_SABAL, "arm64_sabal", XREG, XREG, XREG, XREG)

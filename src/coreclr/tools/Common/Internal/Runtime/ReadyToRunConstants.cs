@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Internal.TypeSystem;
 
 // If any of these constants change, update src/coreclr/inc/readytorun.h and
 // src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs with the new R2R minor version
@@ -344,6 +343,7 @@ namespace Internal.ReadyToRunConstants
     public static class ReadyToRunRuntimeConstants
     {
         public const int READYTORUN_PInvokeTransitionFrameSizeInPointerUnits = 11;
-        public static int READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits(TargetArchitecture target) => target == TargetArchitecture.X86 ? 5 : 2;
+        public const int READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits_X86 = 5;
+        public const int READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits_Universal = 2;
     }
 }

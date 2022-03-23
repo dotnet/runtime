@@ -187,6 +187,12 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
         {
             return replacementNode->gtNext;
         }
+
+        replacementNode = TryLowerAndOpToExtractLowestSetBit(binOp);
+        if (replacementNode != nullptr)
+        {
+            return replacementNode->gtNext;
+        }
     }
 #endif
 
@@ -600,31 +606,41 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
     // TODO-X86-CQ: The helper call either is not supported on x86 or required more work
     // (I don't know which).
 
-    if (size <= CPBLK_UNROLL_LIMIT && !layout->HasGCPtr())
+    if (!layout->HasGCPtr())
     {
 #ifdef TARGET_X86
         if (size < XMM_REGSIZE_BYTES)
         {
+            // Codegen for "Kind::Push" will always load bytes in TARGET_POINTER_SIZE
+            // chunks. As such, the correctness of this code depends on the fact that
+            // morph will copy any "mis-sized" (too small) non-local OBJs into a temp,
+            // thus preventing any possible out-of-bounds memory reads.
+            assert(((layout->GetSize() % TARGET_POINTER_SIZE) == 0) || src->OperIsLocalRead() ||
+                   (src->OperIsIndir() && src->AsIndir()->Addr()->IsLocalAddrExpr()));
             putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
         }
         else
 #endif // TARGET_X86
+            if (size <= CPBLK_UNROLL_LIMIT)
         {
             putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Unroll;
         }
+        else
+        {
+            putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::RepInstr;
+        }
     }
-#ifdef TARGET_X86
-    else if (layout->HasGCPtr())
+    else // There are GC pointers.
     {
+#ifdef TARGET_X86
         // On x86, we must use `push` to store GC references to the stack in order for the emitter to properly update
         // the function's GC info. These `putargstk` nodes will generate a sequence of `push` instructions.
         putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
+#else  // !TARGET_X86
+        putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::PartialRepInstr;
+#endif // !TARGET_X86
     }
-#endif // TARGET_X86
-    else
-    {
-        putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::RepInstr;
-    }
+
     // Always mark the OBJ and ADDR as contained trees by the putarg_stk. The codegen will deal with this tree.
     MakeSrcContained(putArgStk, src);
     if (haveLocalAddr)
@@ -3773,6 +3789,13 @@ GenTree* Lowering::TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
         return nullptr;
     }
 
+    // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
+    if (((addOp2->gtFlags & GTF_SET_FLAGS) != 0) || ((op2->gtFlags & GTF_SET_FLAGS) != 0) ||
+        ((andNode->gtFlags & GTF_SET_FLAGS) != 0))
+    {
+        return nullptr;
+    }
+
     NamedIntrinsic intrinsic;
     if (op1->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64))
     {
@@ -3814,6 +3837,90 @@ GenTree* Lowering::TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
 }
 
 //----------------------------------------------------------------------------------------------
+// Lowering::TryLowerAndOpToExtractLowestSetIsolatedBit: Lowers a tree AND(X, NEG(X)) to
+// HWIntrinsic::ExtractLowestSetBit
+//
+// Arguments:
+//    andNode - GT_AND node of integral type
+//
+// Return Value:
+//    Returns the replacement node if one is created else nullptr indicating no replacement
+//
+// Notes:
+//    Performs containment checks on the replacement node if one is created
+GenTree* Lowering::TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode)
+{
+    GenTree* opNode  = nullptr;
+    GenTree* negNode = nullptr;
+    if (andNode->gtGetOp1()->OperIs(GT_NEG))
+    {
+        negNode = andNode->gtGetOp1();
+        opNode  = andNode->gtGetOp2();
+    }
+    else if (andNode->gtGetOp2()->OperIs(GT_NEG))
+    {
+        negNode = andNode->gtGetOp2();
+        opNode  = andNode->gtGetOp1();
+    }
+
+    if (opNode == nullptr)
+    {
+        return nullptr;
+    }
+
+    GenTree* negOp = negNode->AsUnOp()->gtGetOp1();
+    if (!negOp->OperIs(GT_LCL_VAR) || !opNode->OperIs(GT_LCL_VAR) ||
+        (negOp->AsLclVar()->GetLclNum() != opNode->AsLclVar()->GetLclNum()))
+    {
+        return nullptr;
+    }
+
+    // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
+    if (((opNode->gtFlags & GTF_SET_FLAGS) != 0) || ((negNode->gtFlags & GTF_SET_FLAGS) != 0))
+    {
+        return nullptr;
+    }
+
+    NamedIntrinsic intrinsic;
+    if (andNode->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64))
+    {
+        intrinsic = NamedIntrinsic::NI_BMI1_X64_ExtractLowestSetBit;
+    }
+    else if (comp->compOpportunisticallyDependsOn(InstructionSet_BMI1))
+    {
+        intrinsic = NamedIntrinsic::NI_BMI1_ExtractLowestSetBit;
+    }
+    else
+    {
+        return nullptr;
+    }
+
+    LIR::Use use;
+    if (!BlockRange().TryGetUse(andNode, &use))
+    {
+        return nullptr;
+    }
+
+    GenTreeHWIntrinsic* blsiNode = comp->gtNewScalarHWIntrinsicNode(andNode->TypeGet(), opNode, intrinsic);
+
+    JITDUMP("Lower: optimize AND(X, NEG(X)))\n");
+    DISPNODE(andNode);
+    JITDUMP("to:\n");
+    DISPNODE(blsiNode);
+
+    use.ReplaceWith(blsiNode);
+
+    BlockRange().InsertBefore(andNode, blsiNode);
+    BlockRange().Remove(andNode);
+    BlockRange().Remove(negNode);
+    BlockRange().Remove(negOp);
+
+    ContainCheckHWIntrinsic(blsiNode);
+
+    return blsiNode;
+}
+
+//----------------------------------------------------------------------------------------------
 // Lowering::TryLowerAndOpToAndNot: Lowers a tree AND(X, NOT(Y)) to HWIntrinsic::AndNot
 //
 // Arguments:
@@ -3849,6 +3956,12 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
     // We want to avoid using "andn" when one of the operands is both a source and the destination and is also coming
     // from memory. In this scenario, we will get smaller and likely faster code by using the RMW encoding of `and`
     if (IsBinOpInRMWStoreInd(andNode))
+    {
+        return nullptr;
+    }
+
+    // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
+    if (((andNode->gtFlags & GTF_SET_FLAGS) != 0) || ((notNode->gtFlags & GTF_SET_FLAGS) != 0))
     {
         return nullptr;
     }
@@ -5275,7 +5388,8 @@ void Lowering::ContainCheckIntrinsic(GenTreeOp* node)
     NamedIntrinsic intrinsicName = node->AsIntrinsic()->gtIntrinsicName;
 
     if ((intrinsicName == NI_System_Math_Ceiling) || (intrinsicName == NI_System_Math_Floor) ||
-        (intrinsicName == NI_System_Math_Round) || (intrinsicName == NI_System_Math_Sqrt))
+        (intrinsicName == NI_System_Math_Truncate) || (intrinsicName == NI_System_Math_Round) ||
+        (intrinsicName == NI_System_Math_Sqrt))
     {
         GenTree* op1 = node->gtGetOp1();
 

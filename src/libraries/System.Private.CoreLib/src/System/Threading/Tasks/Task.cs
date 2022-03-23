@@ -10,13 +10,11 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
 {
@@ -6215,8 +6213,7 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="task1"/> or <paramref name="task2"/> argument was null.
         /// </exception>
-        public static Task<Task> WhenAny(Task task1, Task task2) =>
-            (task1 is null) || (task2 is null) ? throw new ArgumentNullException(task1 is null ? nameof(task1) : nameof(task2)) :
+        public static Task<Task> WhenAny(Task task1!!, Task task2!!) =>
             task1.IsCompleted ? FromResult(task1) :
             task2.IsCompleted ? FromResult(task2) :
             new TwoTaskWhenAnyPromise<Task>(task1, task2);
@@ -6408,8 +6405,7 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="task1"/> or <paramref name="task2"/> argument was null.
         /// </exception>
-        public static Task<Task<TResult>> WhenAny<TResult>(Task<TResult> task1, Task<TResult> task2) =>
-            (task1 is null) || (task2 is null) ? throw new ArgumentNullException(task1 is null ? nameof(task1) : nameof(task2)) :
+        public static Task<Task<TResult>> WhenAny<TResult>(Task<TResult> task1!!, Task<TResult> task2!!) =>
             task1.IsCompleted ? FromResult(task1) :
             task2.IsCompleted ? FromResult(task2) :
             new TwoTaskWhenAnyPromise<Task<TResult>>(task1, task2);

@@ -17,7 +17,6 @@ class CrawlFrame;
 struct EE_ILEXCEPTION_CLAUSE;
 struct TransitionBlock;
 struct VASigCookie;
-struct CORCOMPILE_EXTERNAL_METHOD_THUNK;
 class ComPlusCallMethodDesc;
 
 #include <cgencpu.h>
@@ -119,12 +118,6 @@ inline bool TargetHasAVXSupport()
 #endif // (defined(TARGET_X86) || defined(TARGET_AMD64))
     return false;
 }
-
-
-#ifndef DACCESS_COMPILE
-// Given an address in a slot, figure out if the prestub will be called
-BOOL DoesSlotCallPrestub(PCODE pCode);
-#endif
 
 #ifdef DACCESS_COMPILE
 

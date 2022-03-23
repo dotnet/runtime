@@ -232,8 +232,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private static SafeSocketHandle ValidateHandle(SafeSocketHandle handle) =>
-            handle is null ? throw new ArgumentNullException(nameof(handle)) :
+        private static SafeSocketHandle ValidateHandle(SafeSocketHandle handle!!) =>
             handle.IsInvalid ? throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle)) :
             handle;
 
@@ -2143,7 +2142,9 @@ namespace System.Net.Sockets
         public static void Select(IList? checkRead, IList? checkWrite, IList? checkError, int microSeconds)
         {
             // Validate input parameters.
-            if ((checkRead == null || checkRead.Count == 0) && (checkWrite == null || checkWrite.Count == 0) && (checkError == null || checkError.Count == 0))
+            if ((checkRead == null || checkRead.Count == 0) &&
+                (checkWrite == null || checkWrite.Count == 0) &&
+                (checkError == null || checkError.Count == 0))
             {
                 throw new ArgumentNullException(null, SR.net_sockets_empty_select);
             }

@@ -11,11 +11,13 @@
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Create.cs" />
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Extract.cs" />
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchiveEntry.Extract.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"
              Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
   </ItemGroup>
   <!-- Unix specific files -->
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' ">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Create.Unix.cs" />
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchiveEntry.Extract.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"

@@ -1585,26 +1585,14 @@
   <data name="ArgumentNull_Child" xml:space="preserve">
     <value>Cannot have a null child.</value>
   </data>
-  <data name="ArgumentNull_Collection" xml:space="preserve">
-    <value>Collection cannot be null.</value>
-  </data>
-  <data name="ArgumentNull_Dictionary" xml:space="preserve">
-    <value>Dictionary cannot be null.</value>
-  </data>
   <data name="ArgumentNull_FileName" xml:space="preserve">
     <value>File name cannot be null.</value>
   </data>
   <data name="ArgumentNull_Generic" xml:space="preserve">
     <value>Value cannot be null.</value>
   </data>
-  <data name="ArgumentNull_Path" xml:space="preserve">
-    <value>Path cannot be null.</value>
-  </data>
   <data name="ArgumentNull_SafeHandle" xml:space="preserve">
     <value>SafeHandle cannot be null.</value>
-  </data>
-  <data name="ArgumentNull_Stream" xml:space="preserve">
-    <value>Stream cannot be null.</value>
   </data>
   <data name="ArgumentNull_String" xml:space="preserve">
     <value>String reference not set to an instance of a String.</value>
@@ -1614,9 +1602,6 @@
   </data>
   <data name="ArgumentNull_TypedRefType" xml:space="preserve">
     <value>Type in TypedReference cannot be null.</value>
-  </data>
-  <data name="ArgumentNull_Waithandles" xml:space="preserve">
-    <value>The waitHandles parameter cannot be null.</value>
   </data>
   <data name="ArgumentOutOfRange_ActualValue" xml:space="preserve">
     <value>Actual value was {0}.</value>
@@ -3741,6 +3726,9 @@
   </data>
   <data name="NotSupported_COM" xml:space="preserve">
     <value>Built-in COM has been disabled via a feature switch. See https://aka.ms/dotnet-illink/com for more information.</value>
+  </data>
+  <data name="NotSupported_CppCli" xml:space="preserve">
+    <value>C++/CLI activation has been disabled via a feature switch. See https://aka.ms/dotnet-illink/nativehost for more information.</value>
   </data>
   <data name="InvalidOperation_EmptyQueue" xml:space="preserve">
     <value>Queue empty.</value>

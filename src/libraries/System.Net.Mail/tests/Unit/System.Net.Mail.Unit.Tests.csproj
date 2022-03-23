@@ -4,7 +4,7 @@
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>annotations</Nullable>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Base64EncodingTest.cs" />
@@ -19,7 +19,7 @@
     <Compile Include="MessageTests\MessageHeaderBehaviorTest.cs" />
     <Compile Include="MessageTests\ReplyToListTest.cs" />
     <Compile Include="QuotedPrintableStreamTest.cs" />
-    <Compile Include="SmtpConnectionTests\EhloParseExtensionsTest.cs" Condition="'$(TargetsBrowser)' != 'true'" />
+    <Compile Include="SmtpConnectionTests\EhloParseExtensionsTest.cs" Condition="'$(TargetPlatformIdentifier)' != 'Browser'" />
     <Compile Include="SmtpDateTimeTest.cs" />
     <Compile Include="WriteStateInfoTest.cs" />
   </ItemGroup>
@@ -112,6 +112,8 @@
              Link="ProductionCode\MailHeaderInfo.cs" />
     <Compile Include="..\..\src\System\Net\BufferBuilder.cs"
              Link="ProductionCode\BufferBuilder.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\Net\TlsStream.cs"
              Link="Common\System\Net\TlsStream.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
@@ -124,10 +126,8 @@
              Link="Common\System\Net\SecurityProtocol.cs" />
     <Compile Include="$(CommonPath)System\StringExtensions.cs"
              Link="Common\System\StringExtensions.cs" />
-    <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleMinusOneIsInvalid.cs"
-             Link="Common\System\Net\DebugCriticalHandleMinusOneIsInvalid.cs" />
-    <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs"
-             Link="Common\System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs" />
+    <Compile Include="$(CommonPath)System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs"
+             Link="Common\System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="$(CommonPath)System\Net\DebugSafeHandle.cs"
              Link="Common\System\Net\DebugSafeHandle.cs" />
     <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs"
@@ -148,7 +148,7 @@
              Link="Common\System\HexConverter.cs" />
   </ItemGroup>
   <!-- Unix specific files -->
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Unix.cs"
              Link="Common\System\Net\ContextAwareResult.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.Unix.cs"
@@ -183,7 +183,7 @@
              Link="Common\System\Net\Security\Unix\SecChannelBindings.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
-  <ItemGroup Condition="'$(TargetsWindows)'=='true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
              Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs"
@@ -265,7 +265,7 @@
   </ItemGroup>
 
   <!-- Non Browser specific files - internal and security -->
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
     <Compile Include="..\..\src\System\Net\Mail\SmtpLoginAuthenticationModule.cs"
              Link="ProductionCode\SmtpLoginAuthenticationModule.cs" />
     <Compile Include="..\..\src\System\Net\Mail\SmtpNegotiateAuthenticationModule.cs"

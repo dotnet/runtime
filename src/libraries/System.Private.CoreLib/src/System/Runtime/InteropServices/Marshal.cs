@@ -1,14 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
-
-using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
@@ -43,10 +42,7 @@ namespace System.Runtime.InteropServices
 
         public static unsafe string PtrToStringAnsi(IntPtr ptr, int len)
         {
-            if (ptr == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(ptr));
-            }
+            ArgumentNullException.ThrowIfNull(ptr);
             if (len < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(len), len, SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -67,10 +63,7 @@ namespace System.Runtime.InteropServices
 
         public static unsafe string PtrToStringUni(IntPtr ptr, int len)
         {
-            if (ptr == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(ptr));
-            }
+            ArgumentNullException.ThrowIfNull(ptr);
             if (len < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(len), len, SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -92,10 +85,7 @@ namespace System.Runtime.InteropServices
 
         public static unsafe string PtrToStringUTF8(IntPtr ptr, int byteLen)
         {
-            if (ptr == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(ptr));
-            }
+            ArgumentNullException.ThrowIfNull(ptr);
             if (byteLen < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(byteLen), byteLen, SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -105,6 +95,7 @@ namespace System.Runtime.InteropServices
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available. Use the SizeOf<T> overload instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static int SizeOf(object structure!!)
         {
             return SizeOfHelper(structure.GetType(), throwIfNotMarshalable: true);
@@ -116,6 +107,7 @@ namespace System.Runtime.InteropServices
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available. Use the SizeOf<T> overload instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static int SizeOf(Type t!!)
         {
             if (t is not RuntimeType)
@@ -143,8 +135,7 @@ namespace System.Runtime.InteropServices
 
         public static unsafe int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
         {
-            if (pUnk == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(pUnk));
+            ArgumentNullException.ThrowIfNull(pUnk);
 
             fixed (Guid* pIID = &iid)
             fixed (IntPtr* p = &ppv)
@@ -155,16 +146,14 @@ namespace System.Runtime.InteropServices
 
         public static unsafe int AddRef(IntPtr pUnk)
         {
-            if (pUnk == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(pUnk));
+            ArgumentNullException.ThrowIfNull(pUnk);
 
             return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)pUnk + 1 /* IUnknown.AddRef slot */)))(pUnk);
         }
 
         public static unsafe int Release(IntPtr pUnk)
         {
-            if (pUnk == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(pUnk));
+            ArgumentNullException.ThrowIfNull(pUnk);
 
             return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)pUnk + 2 /* IUnknown.Release slot */)))(pUnk);
         }
@@ -174,6 +163,7 @@ namespace System.Runtime.InteropServices
         /// It must be used with EXTREME CAUTION since passing in invalid index or
         /// an array that is not pinned can cause unexpected results.
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static unsafe IntPtr UnsafeAddrOfPinnedArrayElement(Array arr!!, int index)
         {
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
@@ -354,6 +344,8 @@ namespace System.Runtime.InteropServices
         public static int ReadInt32(IntPtr ptr) => ReadInt32(ptr, 0);
 
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("ReadIntPtr(Object, Int32) may be unavailable in future releases.")]
         public static IntPtr ReadIntPtr(object ptr, int ofs)
         {
 #if TARGET_64BIT
@@ -441,6 +433,8 @@ namespace System.Runtime.InteropServices
         public static void WriteInt16(IntPtr ptr, int ofs, char val) => WriteInt16(ptr, ofs, (short)val);
 
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("WriteInt16(Object, Int32, Char) may be unavailable in future releases.")]
         public static void WriteInt16([In, Out]object ptr, int ofs, char val) => WriteInt16(ptr, ofs, (short)val);
 
         public static void WriteInt16(IntPtr ptr, char val) => WriteInt16(ptr, 0, (short)val);
@@ -479,6 +473,8 @@ namespace System.Runtime.InteropServices
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
+        [EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("WriteIntPtr(Object, Int32, IntPtr) may be unavailable in future releases.")]
         public static void WriteIntPtr(object ptr, int ofs, IntPtr val)
         {
 #if TARGET_64BIT
@@ -543,6 +539,7 @@ namespace System.Runtime.InteropServices
         /// native memory block to it.
         /// </summary>
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static object? PtrToStructure(IntPtr ptr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type structureType!!)
@@ -570,6 +567,7 @@ namespace System.Runtime.InteropServices
         /// Marshals data from a native memory block to a preallocated structure class.
         /// </summary>
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void PtrToStructure(IntPtr ptr, object structure)
         {
             PtrToStructureHelper(ptr, structure, allowValueClasses: false);
@@ -605,14 +603,11 @@ namespace System.Runtime.InteropServices
             Justification = "AOT compilers can see the T.")]
         public static void DestroyStructure<T>(IntPtr ptr) => DestroyStructure(ptr, typeof(T));
 
-// CoreCLR has a different implementation for Windows only
+        // CoreCLR has a different implementation for Windows only
 #if !CORECLR || !TARGET_WINDOWS
         public static IntPtr GetHINSTANCE(Module m)
         {
-            if (m is null)
-            {
-                throw new ArgumentNullException(nameof(m));
-            }
+            ArgumentNullException.ThrowIfNull(m);
 
             return (IntPtr)(-1);
         }
@@ -634,6 +629,7 @@ namespace System.Runtime.InteropServices
         }
 
 #if !CORECLR
+#pragma warning disable IDE0060
         private static Exception? GetExceptionForHRInternal(int errorCode, IntPtr errorInfo)
         {
             switch (errorCode)
@@ -863,6 +859,7 @@ namespace System.Runtime.InteropServices
                     return new COMException("", errorCode);
             }
         }
+#pragma warning restore IDE0060
 #endif
 
         /// <summary>
@@ -1114,6 +1111,7 @@ namespace System.Runtime.InteropServices
         }
 
         [RequiresDynamicCode("Marshalling code for the delegate might not be available. Use the GetDelegateForFunctionPointer<TDelegate> overload instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Delegate GetDelegateForFunctionPointer(IntPtr ptr, Type t!!)
         {
             ArgumentNullException.ThrowIfNull(ptr);
@@ -1139,10 +1137,7 @@ namespace System.Runtime.InteropServices
 
         public static TDelegate GetDelegateForFunctionPointer<TDelegate>(IntPtr ptr)
         {
-            if (ptr == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(ptr));
-            }
+            ArgumentNullException.ThrowIfNull(ptr);
 
             Type t = typeof(TDelegate);
             if (t.IsGenericType)
@@ -1162,6 +1157,7 @@ namespace System.Runtime.InteropServices
         }
 
         [RequiresDynamicCode("Marshalling code for the delegate might not be available. Use the GetFunctionPointerForDelegate<TDelegate> overload instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr GetFunctionPointerForDelegate(Delegate d!!)
         {
             return GetFunctionPointerForDelegateInternal(d);
@@ -1256,10 +1252,7 @@ namespace System.Runtime.InteropServices
 
         public static string PtrToStringBSTR(IntPtr ptr)
         {
-            if (ptr == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(ptr));
-            }
+            ArgumentNullException.ThrowIfNull(ptr);
 
             return PtrToStringUni(ptr, (int)(SysStringByteLen(ptr) / sizeof(char)));
         }

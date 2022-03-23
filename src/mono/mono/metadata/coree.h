@@ -19,7 +19,7 @@
 
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/w32api.h>
-#include "image.h"
+#include <mono/metadata/image.h>
 #include "image-internals.h"
 
 #define STATUS_SUCCESS 0x00000000L

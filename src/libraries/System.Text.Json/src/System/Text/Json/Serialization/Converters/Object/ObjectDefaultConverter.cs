@@ -261,10 +261,8 @@ namespace System.Text.Json.Serialization.Converters
                 writer.WriteStartObject();
                 if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
                 {
-                    if (JsonSerializer.WriteReferenceForObject(this, obj, ref state, writer) == MetadataPropertyName.Ref)
-                    {
-                        return true;
-                    }
+                    MetadataPropertyName propertyName = JsonSerializer.WriteReferenceForObject(this, ref state, writer);
+                    Debug.Assert(propertyName != MetadataPropertyName.Ref);
                 }
 
                 if (obj is IJsonOnSerializing onSerializing)
@@ -279,7 +277,7 @@ namespace System.Text.Json.Serialization.Converters
                     if (jsonPropertyInfo.ShouldSerialize)
                     {
                         // Remember the current property for JsonPath support if an exception is thrown.
-                        state.Current.DeclaredJsonPropertyInfo = jsonPropertyInfo;
+                        state.Current.JsonPropertyInfo = jsonPropertyInfo;
                         state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
 
                         bool success = jsonPropertyInfo.GetMemberAndWriteJson(obj, ref state, writer);
@@ -295,7 +293,7 @@ namespace System.Text.Json.Serialization.Converters
                 if (dataExtensionProperty?.ShouldSerialize == true)
                 {
                     // Remember the current property for JsonPath support if an exception is thrown.
-                    state.Current.DeclaredJsonPropertyInfo = dataExtensionProperty;
+                    state.Current.JsonPropertyInfo = dataExtensionProperty;
                     state.Current.NumberHandling = dataExtensionProperty.NumberHandling;
 
                     bool success = dataExtensionProperty.GetMemberAndWriteJsonExtensionData(obj, ref state, writer);
@@ -313,10 +311,8 @@ namespace System.Text.Json.Serialization.Converters
                     writer.WriteStartObject();
                     if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
                     {
-                        if (JsonSerializer.WriteReferenceForObject(this, obj, ref state, writer) == MetadataPropertyName.Ref)
-                        {
-                            return true;
-                        }
+                        MetadataPropertyName propertyName = JsonSerializer.WriteReferenceForObject(this, ref state, writer);
+                        Debug.Assert(propertyName != MetadataPropertyName.Ref);
                     }
 
                     if (obj is IJsonOnSerializing onSerializing)
@@ -334,14 +330,12 @@ namespace System.Text.Json.Serialization.Converters
                     Debug.Assert(jsonPropertyInfo != null);
                     if (jsonPropertyInfo.ShouldSerialize)
                     {
-                        state.Current.DeclaredJsonPropertyInfo = jsonPropertyInfo;
+                        state.Current.JsonPropertyInfo = jsonPropertyInfo;
                         state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
 
                         if (!jsonPropertyInfo.GetMemberAndWriteJson(obj!, ref state, writer))
                         {
-                            Debug.Assert(jsonPropertyInfo.ConverterBase.ConverterStrategy != ConverterStrategy.Value ||
-                                         jsonPropertyInfo.ConverterBase.TypeToConvert == JsonTypeInfo.ObjectType);
-
+                            Debug.Assert(jsonPropertyInfo.ConverterBase.ConverterStrategy != ConverterStrategy.Value);
                             return false;
                         }
 
@@ -366,7 +360,7 @@ namespace System.Text.Json.Serialization.Converters
                     if (dataExtensionProperty?.ShouldSerialize == true)
                     {
                         // Remember the current property for JsonPath support if an exception is thrown.
-                        state.Current.DeclaredJsonPropertyInfo = dataExtensionProperty;
+                        state.Current.JsonPropertyInfo = dataExtensionProperty;
                         state.Current.NumberHandling = dataExtensionProperty.NumberHandling;
 
                         if (!dataExtensionProperty.GetMemberAndWriteJsonExtensionData(obj, ref state, writer))
@@ -443,7 +437,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (!state.Current.UseExtensionProperty)
             {
-                if (!SingleValueReadWithReadAhead(jsonPropertyInfo.ConverterBase.ConverterStrategy, ref reader, ref state))
+                if (!SingleValueReadWithReadAhead(jsonPropertyInfo.ConverterBase.RequiresReadAhead, ref reader, ref state))
                 {
                     return false;
                 }
@@ -451,7 +445,7 @@ namespace System.Text.Json.Serialization.Converters
             else
             {
                 // The actual converter is JsonElement, so force a read-ahead.
-                if (!SingleValueReadWithReadAhead(ConverterStrategy.Value, ref reader, ref state))
+                if (!SingleValueReadWithReadAhead(requiresReadAhead: true, ref reader, ref state))
                 {
                     return false;
                 }

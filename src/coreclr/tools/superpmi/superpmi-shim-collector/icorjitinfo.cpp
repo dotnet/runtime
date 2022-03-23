@@ -1385,6 +1385,14 @@ bool interceptor_ICJI::getSystemVAmd64PassStructInRegisterDescriptor(
     return result;
 }
 
+uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+{
+    mc->cr->AddCall("getLoongArch64PassStructInRegisterFlags");
+    uint32_t temp = original_ICorJitInfo->getLoongArch64PassStructInRegisterFlags(structHnd);
+    mc->recGetLoongArch64PassStructInRegisterFlags(structHnd, temp);
+    return temp;
+}
+
 // Stuff on ICorDynamicInfo
 uint32_t interceptor_ICJI::getThreadTLSIndex(void** ppIndirection)
 {

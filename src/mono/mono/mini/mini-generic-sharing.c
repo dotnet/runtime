@@ -676,6 +676,12 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
 
 		MonoClass *inflated_class = mono_class_from_mono_type_internal (inflated_type);
+		/*
+		 * metadata-update: no EnC with the JIT.  But even if ther was, adding fields to
+		 * generic types isn't supported, and fields in added generic types would be
+		 * contiguous.  So this is ok.
+		 */
+		g_assert (!m_field_is_from_update (field));
 		int i = field - m_class_get_fields (m_field_get_parent (field));
 		gpointer dummy = NULL;
 
@@ -1122,7 +1128,7 @@ tramp_info_hash (gconstpointer key)
 {
 	GSharedVtTrampInfo *tramp = (GSharedVtTrampInfo *)key;
 
-	return (gsize)tramp->addr;
+	return (guint)(gsize)tramp->addr;
 }
 
 static gboolean
@@ -1178,11 +1184,9 @@ get_wrapper_shared_vtype (MonoType *t)
 	if (m_class_get_type_token (klass) && mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), NULL, NULL))
 		return NULL;
 
-	int num_fields = mono_class_get_field_count (klass);
-	MonoClassField *klass_fields = m_class_get_fields (klass);
-
-	for (int i = 0; i < num_fields; ++i) {
-		MonoClassField *field = &klass_fields [i];
+	gpointer iter = NULL;
+	MonoClassField *field;
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 
 		if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
 			continue;
@@ -2331,9 +2335,9 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 
 		/* The value is offset by 1 */
 		if (m_class_is_valuetype (m_field_get_parent (field)) && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
-			return GUINT_TO_POINTER (field->offset - MONO_ABI_SIZEOF (MonoObject) + 1);
+			return GUINT_TO_POINTER (m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject) + 1);
 		else
-			return GUINT_TO_POINTER (field->offset + 1);
+			return GUINT_TO_POINTER (m_field_get_offset (field) + 1);
 	}
 	case MONO_RGCTX_INFO_METHOD_RGCTX: {
 		MonoMethodInflated *method = (MonoMethodInflated *)data;
@@ -3827,7 +3831,7 @@ mini_get_basic_type_from_generic (MonoType *type)
 			return m_class_get_byval_arg (klass);
 		}
 	} else {
-		return mini_native_type_replace_type (mono_type_get_basic_type_from_generic (type));
+		return mono_type_get_basic_type_from_generic (type);
 	}
 }
 
@@ -3840,8 +3844,6 @@ mini_get_basic_type_from_generic (MonoType *type)
 MonoType*
 mini_type_get_underlying_type (MonoType *type)
 {
-	type = mini_native_type_replace_type (type);
-
 	if (m_type_is_byref (type))
 		return mono_get_int_type ();
 	if (!m_type_is_byref (type) && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type (type))
@@ -4031,15 +4033,16 @@ get_shared_gparam_name (MonoTypeEnum constraint, const char *name)
 		return g_strdup_printf ("%s_INST", name);
 	} else {
 		MonoType t;
-		char *tname, *tname2, *res;
+		char *tname, *res;
 
 		memset (&t, 0, sizeof (t));
 		t.type = constraint;
 		tname = mono_type_full_name (&t);
-		tname2 = g_utf8_strup (tname, strlen (tname));
-		res = g_strdup_printf ("%s_%s", name, tname2);
+		size_t len = strlen (tname);
+		for (int i = 0; i < len; ++i)
+			tname [i] = toupper (tname [i]);
+		res = g_strdup_printf ("%s_%s", name, tname);
 		g_free (tname);
-		g_free (tname2);
 		return res;
 	}
 }

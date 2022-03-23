@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if DEBUG
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -148,7 +149,6 @@ namespace System.Text.RegularExpressions.Symbolic
                          todo.Push(transition._look.IsNullableFor(context) ? transition._first : transition._second);
                         break;
 
-
                     default:
                         Debug.Assert(transition._kind == TransitionRegexKind.Union && transition._first is not null && transition._second is not null);
                         todo.Push(transition._second);
@@ -197,7 +197,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     // If q was on the front it must be associated with a node but not have a transition yet
                     Debug.Assert(q >= 0 && q < workState.nodes.Count &&  !transitions.ContainsKey(q));
-                    transitions[q] = Convert(workState.nodes[q].MkDerivative(), workState);
+                    transitions[q] = Convert(workState.nodes[q].CreateDerivative(), workState);
                 }
 
                 if (front.Count > 0)
@@ -211,7 +211,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // All states are numbered from 0 to nodes.Count-1
             Transition[] transition_array = new Transition[nodes_array.Length];
-            foreach (var entry in transitions)
+            foreach (KeyValuePair<int, SymbolicNFA<S>.Transition> entry in transitions)
             {
                 transition_array[entry.Key] = entry.Value;
             }
@@ -311,7 +311,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Representation of transitions inside the parent class</summary>
-        private class Transition
+        private sealed class Transition
         {
             public readonly TransitionRegexKind _kind;
             public readonly int _leaf;
@@ -374,13 +374,13 @@ namespace System.Text.RegularExpressions.Symbolic
                         Debug.Assert(_kind is TransitionRegexKind.Lookaround && _look is not null && _first is not null && _second is not null);
                         foreach ((S, SymbolicRegexNode<S>?, int) path in _first.EnumeratePaths(solver, pathCondition))
                         {
-                            SymbolicRegexNode<S> nullabilityTest = path.Item2 is null ? _look : _look._builder.MkAnd(path.Item2, _look);
+                            SymbolicRegexNode<S> nullabilityTest = path.Item2 is null ? _look : _look._builder.And(path.Item2, _look);
                             yield return (path.Item1, nullabilityTest, path.Item3);
                         }
                         foreach ((S, SymbolicRegexNode<S>?, int) path in _second.EnumeratePaths(solver, pathCondition))
                         {
                             // Complement the nullability test
-                            SymbolicRegexNode<S> nullabilityTest = path.Item2 is null ? _look._builder.MkNot(_look) : _look._builder.MkAnd(path.Item2, _look._builder.MkNot(_look));
+                            SymbolicRegexNode<S> nullabilityTest = path.Item2 is null ? _look._builder.Not(_look) : _look._builder.And(path.Item2, _look._builder.Not(_look));
                             yield return (path.Item1, nullabilityTest, path.Item3);
                         }
                         break;
@@ -389,3 +389,4 @@ namespace System.Text.RegularExpressions.Symbolic
         }
     }
 }
+#endif

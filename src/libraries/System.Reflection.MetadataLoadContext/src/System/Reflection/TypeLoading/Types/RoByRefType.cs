@@ -25,7 +25,7 @@ namespace System.Reflection.TypeLoading
 
         public sealed override int GetArrayRank() => throw new ArgumentException(SR.Argument_HasToBeArrayClass);
 
-        protected sealed override TypeAttributes ComputeAttributeFlags() => TypeAttributes.AnsiClass;
+        protected sealed override TypeAttributes ComputeAttributeFlags() => TypeAttributes.Public;
 
         protected sealed override string Suffix => "&";
 

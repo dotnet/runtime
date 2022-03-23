@@ -79,7 +79,7 @@ namespace System.Xml.Tests
         public static void CreateGenericTestFile(string strFileName)
         {
             MemoryStream ms = new MemoryStream();
-            TextWriter tw = new StreamWriter(ms);
+            using var tw = new StreamWriter(ms, encoding:null, bufferSize:-1, leaveOpen:true);
 
             tw.WriteLine("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>");
             tw.WriteLine("<!-- comment1 -->");
@@ -170,7 +170,6 @@ namespace System.Xml.Tests
             tw.WriteLine("<CHARS_COMMENT1>xxx<!-- comment1-->zzz</CHARS_COMMENT1>");
             tw.WriteLine("<CHARS_COMMENT2><!-- comment1-->zzz</CHARS_COMMENT2>");
             tw.WriteLine("<CHARS_COMMENT3>xxx<!-- comment1--></CHARS_COMMENT3>");
-            tw.Flush();
             tw.WriteLine("<ISDEFAULT />");
             tw.WriteLine("<ISDEFAULT a1='a1value' />");
             tw.WriteLine("<BOOLEAN1>true</BOOLEAN1>");
@@ -202,7 +201,6 @@ namespace System.Xml.Tests
             tw.WriteLine("<GRPDESCR>twin brothers, and sons to Aegeon and Aemilia.</GRPDESCR>");
             tw.WriteLine("</PGROUP>");
             tw.WriteLine("<PGROUP>");
-            tw.Flush();
             tw.WriteLine("<XMLLANG0 xml:lang=\"en-US\">What color e1foo is it?</XMLLANG0>");
             tw.Write("<XMLLANG1 xml:lang=\"en-GB\">What color is it?<a><b><c>Language Test</c><PERSONA>DROMIO OF EPHESUS</PERSONA></b></a></XMLLANG1>");
             tw.WriteLine("<NOXMLLANG />");
@@ -269,28 +267,26 @@ namespace System.Xml.Tests
 
 
             tw.Write("</PLAY>");
-            tw.Flush();
+
             FilePathUtil.addStream(strFileName, ms);
         }
 
         public static void CreateBigElementTestFile(string strFileName)
         {
             MemoryStream ms = new MemoryStream();
-            TextWriter tw = new StreamWriter(ms);
+            using var tw = new StreamWriter(ms, encoding:null, bufferSize:-1, leaveOpen:true);
 
             string str = new string('Z', (1 << 20) - 1);
             tw.WriteLine("<Root>");
             tw.Write("<");
             tw.Write(str);
             tw.WriteLine("X />");
-            tw.Flush();
 
             tw.Write("<");
             tw.Write(str);
             tw.WriteLine("Y />");
             tw.WriteLine("</Root>");
 
-            tw.Flush();
             FilePathUtil.addStream(strFileName, ms);
         }
     }

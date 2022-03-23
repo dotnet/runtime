@@ -176,6 +176,21 @@ namespace System.IO.Compression.Tests
             AssertDataDescriptor(memoryStream, false);
         }
 
+        [Theory]
+        [InlineData(UnicodeFileName, UnicodeFileName, true)]
+        [InlineData(UnicodeFileName, AsciiFileName, true)]
+        [InlineData(AsciiFileName, UnicodeFileName, true)]
+        [InlineData(AsciiFileName, AsciiFileName, false)]
+        public static void CreateNormal_VerifyUnicodeFileNameAndComment(string fileName, string entryComment, bool isUnicodeFlagExpected)
+        {
+            using var ms = new MemoryStream();
+            using var archive = new ZipArchive(ms, ZipArchiveMode.Create);
+
+            CreateEntry(archive, fileName, fileContents: "xxx", entryComment);
+
+            AssertUnicodeFileNameAndComment(ms, isUnicodeFlagExpected);
+        }
+
         [Fact]
         public static void CreateNormal_With2SameEntries_ThrowException()
         {
@@ -198,11 +213,12 @@ namespace System.IO.Compression.Tests
             return Text.Encoding.UTF8.GetString(input.ToArray());
         }
 
-        private static void CreateEntry(ZipArchive archive, string fileName, string fileContents)
+        private static void CreateEntry(ZipArchive archive, string fileName, string fileContents, string entryComment = null)
         {
             ZipArchiveEntry entry = archive.CreateEntry(fileName);
             using StreamWriter writer = new StreamWriter(entry.Open());
             writer.Write(fileContents);
+            entry.Comment = entryComment;
         }
 
         private static void AssertDataDescriptor(MemoryStream memoryStream, bool hasDataDescriptor)
@@ -210,6 +226,13 @@ namespace System.IO.Compression.Tests
             byte[] fileBytes = memoryStream.ToArray();
             Assert.Equal(hasDataDescriptor ? 8 : 0, fileBytes[6]);
             Assert.Equal(0, fileBytes[7]);
+        }
+
+        private static void AssertUnicodeFileNameAndComment(MemoryStream memoryStream, bool isUnicodeFlagExpected)
+        {
+            byte[] fileBytes = memoryStream.ToArray();
+            Assert.Equal(0, fileBytes[6]);
+            Assert.Equal(isUnicodeFlagExpected ? 8 : 0, fileBytes[7]);
         }
     }
 }

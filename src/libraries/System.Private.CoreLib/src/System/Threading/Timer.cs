@@ -94,8 +94,7 @@ namespace System.Threading
         {
             private readonly TimerQueue _queue;
 
-            public TimerQueueDebuggerTypeProxy(TimerQueue queue) =>
-                _queue = queue ?? throw new ArgumentNullException(nameof(queue));
+            public TimerQueueDebuggerTypeProxy(TimerQueue queue!!) => _queue = queue;
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
             public TimerQueueTimer[] Items => new List<TimerQueueTimer>(_queue.GetTimersForDebugger()).ToArray();

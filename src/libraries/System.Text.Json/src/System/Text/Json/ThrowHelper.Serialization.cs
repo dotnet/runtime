@@ -290,12 +290,7 @@ namespace System.Text.Json
             if (string.IsNullOrEmpty(message))
             {
                 // Use a default message.
-                Type? propertyType = state.Current.JsonPropertyInfo?.RuntimePropertyType;
-                if (propertyType == null)
-                {
-                    propertyType = state.Current.JsonTypeInfo?.Type;
-                }
-
+                Type propertyType = state.Current.JsonTypeInfo.Type;
                 message = SR.Format(SR.DeserializeUnableToConvertValue, propertyType);
                 ex.AppendPathInformation = true;
             }
@@ -376,11 +371,7 @@ namespace System.Text.Json
             Debug.Assert(!message.Contains(" Path: "));
 
             // Obtain the type to show in the message.
-            Type? propertyType = state.Current.JsonPropertyInfo?.RuntimePropertyType;
-            if (propertyType == null)
-            {
-                propertyType = state.Current.JsonTypeInfo.Type;
-            }
+            Type propertyType = state.Current.JsonTypeInfo.Type;
 
             if (!message.Contains(propertyType.ToString()))
             {
@@ -408,11 +399,7 @@ namespace System.Text.Json
             Debug.Assert(!message.Contains(" Path: "));
 
             // Obtain the type to show in the message.
-            Type? propertyType = state.Current.DeclaredJsonPropertyInfo?.RuntimePropertyType;
-            if (propertyType == null)
-            {
-                propertyType = state.Current.JsonTypeInfo.Type;
-            }
+            Type propertyType = state.Current.JsonTypeInfo.Type;
 
             if (!message.Contains(propertyType.ToString()))
             {
@@ -589,12 +576,6 @@ namespace System.Text.Json
             {
                 ThrowJsonException_MetadataInvalidPropertyWithLeadingDollarSign(propertyName, ref state, reader);
             }
-        }
-
-        [DoesNotReturn]
-        public static void ThrowInvalidOperationException_JsonSerializerOptionsAlreadyBoundToContext()
-        {
-            throw new InvalidOperationException(SR.Format(SR.OptionsAlreadyBoundToContext));
         }
 
         [DoesNotReturn]

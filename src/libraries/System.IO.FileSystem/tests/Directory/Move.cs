@@ -343,7 +343,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX | TestPlatforms.FreeBSD | TestPlatforms.NetBSD)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         public void MoveDirectory_FailToMoveLowerCaseDirectoryWhenUpperCaseDirectoryExists()
         {
             Directory.CreateDirectory($"{TestDirectory}/bar/FOO");

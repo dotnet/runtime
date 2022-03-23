@@ -17,11 +17,11 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsAndroid)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Android'">
     <Compile Include="MD4Tests.cs" />
     <Compile Include="..\..\src\System\Net\Security\MD4.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
     <Compile Include="SslApplicationProtocolTests.cs" />
     <Compile Include="SslAuthenticationOptionsTests.cs" />
     <Compile Include="SslStreamAllowedProtocolsTest.cs" />
@@ -38,7 +38,7 @@
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
     <!-- Production code references -->
     <Compile Include="..\..\src\System\Net\Security\NetEventSource.Security.cs"
              Link="ProductionCode\System\Net\Security\NetEventSource.Security.cs" />
@@ -74,10 +74,15 @@
              Link="Common\Interop\Windows\SChannel\Interop.Alerts.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" 
+             Link="Common\System\Obsoletions.cs" />
     <!-- Logging -->
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="ProductionCode\Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
              Link="ProductionCode\Common\System\Net\InternalException.cs" />
+    <!-- System.Net common -->
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
+             Link="Common\System\Net\ArrayBuffer.cs" />
   </ItemGroup>
 </Project>

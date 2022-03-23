@@ -9,6 +9,9 @@
 ; Add jit 64bit architecture specific instruction set when instruction set is available
 ; instructionset64bit,<architecture>,<jit instruction set name>
 ;
+; Note that a instruction set is a "Vector" instruction set. A vector instruction set may only imply a single other instruction set
+; vectorinstructionset,<architecture>,<jit instruction set name>
+;
 ; Add an instruction set implication (i.e, if instruction set A is present, then instruction set B must be present too.)
 ; implication,<architecture>,<jit instruction set name>,<implied jit instruction set name>
 ;
@@ -60,6 +63,9 @@ instructionset64bit,X86   ,PCLMULQDQ
 instructionset64bit,X86   ,POPCNT
 instructionset64bit,X86   ,AVXVNNI
 
+vectorinstructionset,X86  ,Vector128
+vectorinstructionset,X86  ,Vector256
+
 implication        ,X86   ,SSE       ,X86Base
 implication        ,X86   ,SSE2      ,SSE
 implication        ,X86   ,SSE3      ,SSE2
@@ -108,6 +114,9 @@ instructionset64bit,ARM64 ,Dp
 instructionset64bit,ARM64 ,Rdm
 instructionset64bit,ARM64 ,Sha1
 instructionset64bit,ARM64 ,Sha256
+
+vectorinstructionset,ARM64,Vector64
+vectorinstructionset,ARM64,Vector128
 
 implication        ,ARM64 ,AdvSimd   ,ArmBase
 implication        ,ARM64 ,Aes       ,ArmBase

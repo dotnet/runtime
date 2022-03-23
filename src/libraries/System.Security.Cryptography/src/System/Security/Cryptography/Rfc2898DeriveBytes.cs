@@ -133,9 +133,7 @@ namespace System.Security.Cryptography
 
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-
+                ArgumentNullException.ThrowIfNull(value);
                 _salt = new byte[value.Length + sizeof(uint)];
                 value.AsSpan().CopyTo(_salt);
                 Initialize();

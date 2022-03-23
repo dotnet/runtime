@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetUnixName")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetUnixName")]
         private static partial IntPtr GetUnixNamePrivate();
 
         internal static string GetUnixName()

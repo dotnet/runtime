@@ -38,7 +38,6 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/atomic.h>
-#include <mono/utils/mono-jemalloc.h>
 #include <mono/utils/mono-conc-hashtable.h>
 #include <mono/utils/mono-signal-handler.h>
 #include <mono/utils/ftnptr.h>
@@ -53,7 +52,7 @@ typedef struct SeqPointInfo SeqPointInfo;
 #include "mini-arch.h"
 #include "regalloc.h"
 #include "mini-unwind.h"
-#include "jit.h"
+#include <mono/jit/jit.h>
 #include "cfgdump.h"
 #include "tiered.h"
 
@@ -2198,7 +2197,6 @@ void      mono_empty_compile              (MonoCompile *cfg);
 MonoJitICallInfo *mono_find_jit_opcode_emulation (int opcode);
 void	  mono_print_ins_index (int i, MonoInst *ins);
 void	  mono_print_ins (MonoInst *ins);
-gboolean  mini_assembly_can_skip_verification (MonoMethod *method);
 MonoInst *mono_get_got_var (MonoCompile *cfg);
 void      mono_add_seq_point (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, int native_offset);
 void      mono_add_var_location (MonoCompile *cfg, MonoInst *var, gboolean is_reg, int reg, int offset, int from, int to);
@@ -2329,6 +2327,7 @@ MonoInst*         mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmeth
 MonoInst*         mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*         mini_emit_inst_for_field_load (MonoCompile *cfg, MonoClassField *field);
 MonoInst*         mini_handle_enum_has_flag (MonoCompile *cfg, MonoClass *klass, MonoInst *enum_this, int enum_val_reg, MonoInst *enum_flag);
+MonoInst*         mini_handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst *val, int context_used);
 
 MonoMethod*       mini_get_memcpy_method (void);
 MonoMethod*       mini_get_memset_method (void);
@@ -2580,16 +2579,6 @@ MONO_API gboolean mono_exception_walk_trace     (MonoException *ex, MonoExceptio
 MONO_COMPONENT_API void mono_restore_context                       (MonoContext *ctx);
 guint8* mono_jinfo_get_unwind_info              (MonoJitInfo *ji, guint32 *unwind_info_len);
 int  mono_jinfo_get_epilog_size                 (MonoJitInfo *ji);
-G_EXTERN_C void mono_llvm_rethrow_exception     (MonoObject *ex);
-G_EXTERN_C void mono_llvm_throw_exception       (MonoObject *ex);
-G_EXTERN_C void mono_llvm_throw_corlib_exception (guint32 ex_token_index);
-G_EXTERN_C void mono_llvm_resume_exception      (void);
-G_EXTERN_C void mono_llvm_clear_exception       (void);
-G_EXTERN_C MonoObject *mono_llvm_load_exception (void);
-void     mono_llvm_reset_exception              (void);
-void     mono_llvm_raise_exception              (MonoException *e);
-void     mono_llvm_reraise_exception            (MonoException *e);
-G_EXTERN_C gint32 mono_llvm_match_exception     (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end, gpointer rgctx, MonoObject *this_obj);
 
 gboolean
 mono_find_jit_info_ext (MonoJitTlsData *jit_tls,
@@ -2934,14 +2923,6 @@ MonoInst*   mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, Mo
 MonoInst*   mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, MonoInst *addr);
 void        mono_simd_intrinsics_init (void);
 #endif
-
-gboolean    mono_class_is_magic_int (MonoClass *klass);
-gboolean    mono_class_is_magic_float (MonoClass *klass);
-MonoInst*   mono_emit_native_types_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
-gsize       mini_magic_type_size (MonoCompile *cfg, MonoType *type);
-gboolean    mini_magic_is_int_type (MonoType *t);
-gboolean    mini_magic_is_float_type (MonoType *t);
-MonoType* mini_native_type_replace_type (MonoType *type);
 
 MonoMethod*
 mini_method_to_shared (MonoMethod *method); // null if not shared

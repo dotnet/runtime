@@ -17,6 +17,7 @@ using System.Reflection;
 using System.Text;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -435,10 +436,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         public static MonoBinaryReader From(Result result)
         {
             byte[] newBytes = Array.Empty<byte>();
-            if (!result.IsErr) {
+            if (result.IsOk) {
                 newBytes = Convert.FromBase64String(result.Value?["result"]?["value"]?["value"]?.Value<string>());
             }
-            return new MonoBinaryReader(new MemoryStream(newBytes), result.IsErr);
+            return new MonoBinaryReader(new MemoryStream(newBytes), !result.IsOk);
         }
 
         public override string ReadString()
@@ -525,6 +526,50 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             Write(bytes.Length);
             Write(bytes);
+        }
+
+        public async Task<bool> WriteConst(ElementType? type, object value, MonoSDBHelper SdbHelper, CancellationToken token)
+        {
+            switch (type)
+            {
+                case ElementType.Boolean:
+                case ElementType.Char:
+                case ElementType.U1:
+                case ElementType.I2:
+                case ElementType.I4:
+                    Write((ElementType)type, (int)value);
+                    return true;
+                case ElementType.I1:
+                case ElementType.U2:
+                case ElementType.U4:
+                    Write((ElementType)type, (uint)value);
+                    return true;
+                case ElementType.I8:
+                    Write((ElementType)type, (long)value);
+                    return true;
+                case ElementType.U8:
+                    Write((ElementType)type, (ulong)value);
+                    return true;
+                case ElementType.R4:
+                    Write((ElementType)type, (float)value);
+                    return true;
+                case ElementType.R8:
+                    Write((ElementType)type, (double)value);
+                    return true;
+                case ElementType.String:
+                    int stringId = await SdbHelper.CreateString((string)value, token);
+                    Write(ElementType.String, stringId);
+                    return true;
+                case null:
+                    if (value == null)
+                        return false;
+                    //ConstantTypeCode.NullReference
+                    Write((byte)value);
+                    Write((byte)0); //not used
+                    Write((int)0);  //not used
+                    return true;
+            }
+            return false;
         }
 
         public async Task<bool> WriteConst(LiteralExpressionSyntax constValue, MonoSDBHelper SdbHelper, CancellationToken token)
@@ -1720,8 +1765,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public JObject CreateJObjectForChar(int value)
         {
-            var description = $"{value.ToString()} '{Convert.ToChar(value)}'";
-            return CreateJObject<string>(description, "symbol", description, true);
+            char charValue = Convert.ToChar(value);
+            var description = $"{value} '{charValue}'";
+            return CreateJObject<char>(charValue, "symbol", description, true);
         }
 
         public async Task<JObject> CreateJObjectForPtr(ElementType etype, MonoBinaryReader retDebuggerCmdReader, string name, CancellationToken token)
@@ -2121,8 +2167,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             using var localsDebuggerCmdReader = await SendDebuggerAgentCommand(CmdFrame.GetValues, commandParamsWriter, token);
             foreach (var var in varIds)
             {
-                var var_json = await CreateJObjectForVariableValue(localsDebuggerCmdReader, var.Name, false, -1, false, token);
-                locals.Add(var_json);
+                try
+                {
+                    var var_json = await CreateJObjectForVariableValue(localsDebuggerCmdReader, var.Name, false, -1, false, token);
+                    locals.Add(var_json);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogDebug($"Failed to create value for local var {var}: {ex}");
+                    continue;
+                }
             }
             if (!method.Info.IsStatic())
             {

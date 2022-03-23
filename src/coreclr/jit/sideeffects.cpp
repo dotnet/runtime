@@ -140,14 +140,35 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
 {
     if (node->IsCall())
     {
+        // For calls having return buffer, update the local number that is written after this call.
+        GenTree* retBufArgNode = node->AsCall()->GetLclRetBufArgNode();
+        if (retBufArgNode != nullptr)
+        {
+            // If a copy/reload is inserted by LSRA, retrieve the returnBuffer
+            if (retBufArgNode->IsCopyOrReload())
+            {
+                retBufArgNode = retBufArgNode->AsCopyOrReload()->gtGetOp1();
+            }
+
+            m_flags |= ALIAS_WRITES_LCL_VAR;
+            m_lclNum  = retBufArgNode->AsLclVarCommon()->GetLclNum();
+            m_lclOffs = retBufArgNode->AsLclVarCommon()->GetLclOffs();
+
+            if (compiler->lvaTable[m_lclNum].IsAddressExposed())
+            {
+                m_flags |= ALIAS_WRITES_ADDRESSABLE_LOCATION;
+            }
+        }
+
         // Calls are treated as reads and writes of addressable locations unless they are known to be pure.
         if (node->AsCall()->IsPure(compiler))
         {
             m_flags = ALIAS_NONE;
-            return;
         }
-
-        m_flags = ALIAS_READS_ADDRESSABLE_LOCATION | ALIAS_WRITES_ADDRESSABLE_LOCATION;
+        else
+        {
+            m_flags = ALIAS_READS_ADDRESSABLE_LOCATION | ALIAS_WRITES_ADDRESSABLE_LOCATION;
+        }
         return;
     }
     else if (node->OperIsAtomicOp())
@@ -164,10 +185,18 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         isWrite = true;
         node    = node->gtGetOp1();
     }
-    else if (node->OperIsStore())
+    else if (node->OperIsStore() || node->OperIs(GT_MEMORYBARRIER))
     {
         isWrite = true;
     }
+#ifdef FEATURE_HW_INTRINSICS
+    else if (node->OperIsHWIntrinsic() && node->AsHWIntrinsic()->OperIsMemoryStore())
+    {
+        isWrite = true;
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    assert(isWrite || !node->OperRequiresAsgFlag());
 
     // `node` is the location being accessed. Determine whether or not it is a memory or local variable access, and if
     // it is the latter, get the number of the lclVar.

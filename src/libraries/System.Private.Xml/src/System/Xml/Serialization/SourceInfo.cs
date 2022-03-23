@@ -12,13 +12,16 @@ using System.Xml.Extensions;
 
 namespace System.Xml.Serialization
 {
-    internal sealed class SourceInfo
+    internal sealed partial class SourceInfo
     {
         //a[ia]
         //((global::System.Xml.Serialization.XmlSerializerNamespaces)p[0])
-        private static readonly Regex s_regex = new Regex("([(][(](?<t>[^)]+)[)])?(?<a>[^[]+)[[](?<ia>.+)[]][)]?");
+        [RegexGenerator("([(][(](?<t>[^)]+)[)])?(?<a>[^[]+)[[](?<ia>.+)[]][)]?")]
+        private static partial Regex Regex1();
+
         //((global::Microsoft.CFx.Test.Common.TypeLibrary.IXSType_9)o), @"IXSType_9", @"", true, true);
-        private static readonly Regex s_regex2 = new Regex("[(][(](?<cast>[^)]+)[)](?<arg>[^)]+)[)]");
+        [RegexGenerator("[(][(](?<cast>[^)]+)[)](?<arg>[^)]+)[)]")]
+        private static partial Regex Regex2();
 
         private static readonly Lazy<MethodInfo> s_iListGetItemMethod = new Lazy<MethodInfo>(
             () =>
@@ -67,7 +70,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls LoadMemberAddress")]
         private void InternalLoad(Type? elementType, bool asAddress = false)
         {
-            Match match = s_regex.Match(Arg);
+            Match match = Regex1().Match(Arg);
             if (match.Success)
             {
                 object varA = ILG.GetVariable(match.Groups["a"].Value);
@@ -188,7 +191,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    match = s_regex2.Match(Source);
+                    match = Regex2().Match(Source);
                     if (match.Success)
                     {
                         Debug.Assert(match.Groups["arg"].Value == Arg);

@@ -556,13 +556,13 @@ namespace System.Security.Cryptography
             }
 
             protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-                AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
+                HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
 
             protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-                AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
+                HashOneShotHelpers.HashData(hashAlgorithm, data);
 
             protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-                AsymmetricAlgorithmHelpers.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
+                HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
 
             protected override void Dispose(bool disposing)
             {

@@ -696,12 +696,9 @@ namespace System.Collections
         // downcasting all elements.  This copy may fail and is an O(n) operation.
         // Internally, this implementation calls Array.Copy.
         //
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-        public virtual Array ToArray(Type type)
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        public virtual Array ToArray(Type type!!)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
             Array array = Array.CreateInstance(type, _size);
             Array.Copy(_items, array, _size);
             return array;
@@ -1071,12 +1068,9 @@ namespace System.Collections
                 return array;
             }
 
-            [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-            public override Array ToArray(Type type)
+            [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+            public override Array ToArray(Type type!!)
             {
-                if (type == null)
-                    throw new ArgumentNullException(nameof(type));
-
                 Array array = Array.CreateInstance(type, _list.Count);
                 _list.CopyTo(array, 0);
                 return array;
@@ -1465,7 +1459,7 @@ namespace System.Collections
                 }
             }
 
-            [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+            [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
             public override Array ToArray(Type type)
             {
                 lock (_root)
@@ -1848,7 +1842,7 @@ namespace System.Collections
                 return _list.ToArray();
             }
 
-            [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+            [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
             public override Array ToArray(Type type)
             {
                 return _list.ToArray(type);
@@ -2100,7 +2094,7 @@ namespace System.Collections
                 return _list.ToArray();
             }
 
-            [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+            [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
             public override Array ToArray(Type type)
             {
                 return _list.ToArray(type);
@@ -2542,12 +2536,9 @@ namespace System.Collections
                 return array;
             }
 
-            [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
-            public override Array ToArray(Type type)
+            [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+            public override Array ToArray(Type type!!)
             {
-                if (type == null)
-                    throw new ArgumentNullException(nameof(type));
-
                 InternalUpdateRange();
                 Array array = Array.CreateInstance(type, _baseSize);
                 _baseList.CopyTo(_baseIndex, array, 0, _baseSize);

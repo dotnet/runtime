@@ -161,8 +161,7 @@ namespace System
         {
             for (int i = 0; i < types.Length; i++)
             {
-                if (types[i] == null)
-                    throw new ArgumentNullException(nameof(types));
+                ArgumentNullException.ThrowIfNull(types[i], nameof(types));
             }
             return GetConstructorImpl(bindingAttr, binder, callConvention, types, modifiers);
         }
@@ -298,8 +297,7 @@ namespace System
         {
             for (int i = 0; i < types.Length; i++)
             {
-                if (types[i] == null)
-                    throw new ArgumentNullException(nameof(types));
+                ArgumentNullException.ThrowIfNull(types[i], nameof(types));
             }
             return GetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers);
         }
@@ -324,8 +322,7 @@ namespace System
             ArgumentNullException.ThrowIfNull(types);
             for (int i = 0; i < types.Length; i++)
             {
-                if (types[i] == null)
-                    throw new ArgumentNullException(nameof(types));
+                ArgumentNullException.ThrowIfNull(types[i], nameof(types));
             }
             return GetMethodImpl(name, genericParameterCount, bindingAttr, binder, callConvention, types, modifiers);
         }
@@ -402,12 +399,9 @@ namespace System
         public virtual MemberInfo[] GetDefaultMembers() => throw NotImplemented.ByDesign;
 
         public virtual RuntimeTypeHandle TypeHandle => throw new NotSupportedException();
-        public static RuntimeTypeHandle GetTypeHandle(object o)
+        public static RuntimeTypeHandle GetTypeHandle(object o!!)
         {
-            if (o == null)
-                throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
-            Type type = o.GetType();
-            return type.TypeHandle;
+            return o.GetType().TypeHandle;
         }
 
         public static Type[] GetTypeArray(object[] args!!)
@@ -510,9 +504,9 @@ namespace System
             throw NotImplemented.ByDesign;
         }
 
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public virtual Type MakeArrayType() => throw new NotSupportedException();
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public virtual Type MakeArrayType(int rank) => throw new NotSupportedException();
         public virtual Type MakeByRefType() => throw new NotSupportedException();
 

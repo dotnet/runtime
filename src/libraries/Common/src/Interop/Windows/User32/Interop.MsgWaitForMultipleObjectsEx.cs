@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class User32
     {
-        [GeneratedDllImport(Libraries.User32, ExactSpelling = true)]
+        [LibraryImport(Libraries.User32)]
         public static partial int MsgWaitForMultipleObjectsEx(int nCount, IntPtr pHandles, int dwMilliseconds, int dwWakeMask, int dwFlags);
     }
 }

@@ -28,7 +28,6 @@ namespace System.Reflection.Emit
         internal PropertyBuilder(
             ModuleBuilder mod, // the module containing this PropertyBuilder
             string name, // property name
-            SignatureHelper sig, // property signature descriptor info
             PropertyAttributes attr, // property attribute such as DefaultProperty, Bindable, DisplayBind, etc
             Type returnType, // return type of the property.
             int prToken, // the metadata token for this property

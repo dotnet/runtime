@@ -43,7 +43,7 @@
                               $(RepoRoot)NuGet.config;
                               $(RepositoryEngineeringDir)Versions.props;
                               $(RepositoryEngineeringDir)targetingpacks.targets;
-                              $(LibrariesProjectRoot)shims\netfxreference.props;
+                              $(LibrariesProjectRoot)NetCoreAppLibrary.props;
                               build\packageTest.targets;
                               build\Directory.Build.props;
                               build\Directory.Build.targets"

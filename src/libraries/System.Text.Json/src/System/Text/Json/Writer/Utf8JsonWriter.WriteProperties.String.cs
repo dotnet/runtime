@@ -65,8 +65,8 @@ namespace System.Text.Json
         /// <remarks>
         /// The property name is escaped before writing.
         /// </remarks>
-        public void WritePropertyName(string propertyName)
-            => WritePropertyName((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan());
+        public void WritePropertyName(string propertyName!!)
+            => WritePropertyName(propertyName.AsSpan());
 
         /// <summary>
         /// Writes the property name (as a JSON string) as the first part of a name/value pair of a JSON object.
@@ -452,8 +452,8 @@ namespace System.Text.Json
         /// <remarks>
         /// The property name is escaped before writing.
         /// </remarks>
-        public void WriteString(string propertyName, JsonEncodedText value)
-            => WriteString((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan(), value);
+        public void WriteString(string propertyName!!, JsonEncodedText value)
+            => WriteString(propertyName.AsSpan(), value);
 
         /// <summary>
         /// Writes the property name and string text value (as a JSON string) as part of a name/value pair of a JSON object.
@@ -627,8 +627,8 @@ namespace System.Text.Json
         /// <remarks>
         /// The property name and value is escaped before writing.
         /// </remarks>
-        public void WriteString(string propertyName, ReadOnlySpan<char> value)
-            => WriteString((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan(), value);
+        public void WriteString(string propertyName!!, ReadOnlySpan<char> value)
+            => WriteString(propertyName.AsSpan(), value);
 
         /// <summary>
         /// Writes the UTF-8 property name and text value (as a JSON string) as part of a name/value pair of a JSON object.
@@ -711,8 +711,8 @@ namespace System.Text.Json
         /// <remarks>
         /// The property name and value is escaped before writing.
         /// </remarks>
-        public void WriteString(string propertyName, ReadOnlySpan<byte> utf8Value)
-            => WriteString((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan(), utf8Value);
+        public void WriteString(string propertyName!!, ReadOnlySpan<byte> utf8Value)
+            => WriteString(propertyName.AsSpan(), utf8Value);
 
         /// <summary>
         /// Writes the property name and UTF-8 text value (as a JSON string) as part of a name/value pair of a JSON object.

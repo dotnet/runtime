@@ -943,6 +943,13 @@ bool interceptor_ICJI::getSystemVAmd64PassStructInRegisterDescriptor(
     return original_ICorJitInfo->getSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr);
 }
 
+uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    mcs->AddCall("getLoongArch64PassStructInRegisterFlags");
+    return original_ICorJitInfo->getLoongArch64PassStructInRegisterFlags(structHnd);
+}
+
 uint32_t interceptor_ICJI::getThreadTLSIndex(
           void** ppIndirection)
 {

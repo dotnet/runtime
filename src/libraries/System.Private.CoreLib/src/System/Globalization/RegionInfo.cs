@@ -58,7 +58,7 @@ namespace System.Globalization
                 throw new ArgumentException(SR.Format(SR.Argument_CultureIsNeutral, culture), nameof(culture));
             }
 
-            if (culture == CultureInfo.LOCALE_CUSTOM_DEFAULT)
+            if (culture == CultureInfo.LOCALE_CUSTOM_DEFAULT || culture == CultureInfo.LOCALE_CUSTOM_UNSPECIFIED)
             {
                 // Not supposed to be neutral
                 throw new ArgumentException(SR.Format(SR.Argument_CustomCultureCannotBePassedByNumber, culture), nameof(culture));

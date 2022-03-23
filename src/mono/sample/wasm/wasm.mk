@@ -1,9 +1,9 @@
 DOTNET=$(TOP)/dotnet.sh
 
 ifeq ($(V),)
-DOTNET_Q_ARGS=--nologo -v:q -consoleloggerparameters:NoSummary
+DOTNET_Q_ARGS=--nologo -v:q -consoleloggerparameters:NoSummary -bl
 else
-DOTNET_Q_ARGS=--nologo
+DOTNET_Q_ARGS=--nologo -bl
 endif
 
 CONFIG?=Release
@@ -25,7 +25,7 @@ build:
 	EMSDK_PATH=$(realpath $(TOP)/src/mono/wasm/emsdk) $(DOTNET) build $(DOTNET_Q_ARGS) $(WASM_DEFAULT_BUILD_ARGS) $(MSBUILD_ARGS) $(PROJECT_NAME)
 
 publish:
-	EMSDK_PATH=$(realpath $(TOP)/src/mono/wasm/emsdk) $(DOTNET) publish $(DOTNET_Q_ARGS) $(WASM_DEFAULT_BUILD_ARGS) $(MSBUILD_ARGS) $(PROJECT_NAME)
+	EMSDK_PATH=$(realpath $(TOP)/src/mono/wasm/emsdk) $(DOTNET) publish $(DOTNET_Q_ARGS) $(WASM_DEFAULT_BUILD_ARGS) -p:WasmBuildOnlyAfterPublish=true $(MSBUILD_ARGS) $(PROJECT_NAME)
 
 clean:
 	rm -rf bin $(TOP)/artifacts/obj/mono/$(PROJECT_NAME:%.csproj=%)
@@ -39,7 +39,7 @@ run-browser:
 	fi
 
 run-console:
-	cd bin/$(CONFIG)/AppBundle && $(V8_PATH) --stack-trace-limit=1000 --single-threaded --expose_wasm $(MAIN_JS) -- $(DOTNET_MONO_LOG_LEVEL) --run $(CONSOLE_DLL) $(ARGS)
+	cd bin/$(CONFIG)/AppBundle && $(V8_PATH) --stack-trace-limit=1000 --single-threaded --expose_wasm $(MAIN_JS) -- $(ARGS)
 
 run-console-node:
-	cd bin/$(CONFIG)/AppBundle && node --stack-trace-limit=1000 --single-threaded --expose_wasm $(MAIN_JS) -- $(DOTNET_MONO_LOG_LEVEL) --run $(CONSOLE_DLL) $(ARGS)
+	cd bin/$(CONFIG)/AppBundle && node --stack-trace-limit=1000 --single-threaded --expose_wasm $(MAIN_JS) $(ARGS)

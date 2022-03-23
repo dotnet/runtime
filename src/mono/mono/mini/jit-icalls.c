@@ -57,10 +57,13 @@ mono_ldftn (MonoMethod *method)
 
 	/* if we need the address of a native-to-managed wrapper, just compile it now, trampoline needs thread local
 	 * variables that won't be there if we run on a thread that's not attached yet. */
-	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
+	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
 		addr = mono_compile_method_checked (method, error);
-	else
+	} else {
 		addr = mono_create_jump_trampoline (method, FALSE, error);
+		if (mono_method_needs_static_rgctx_invoke (method, FALSE))
+                        addr = mono_create_static_rgctx_trampoline (method, addr);
+	}
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
@@ -1421,6 +1424,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
  *
  *   Make a call to CMETHOD using the receiver MP, which is assumed to be of type KLASS. ARGS contains
  * the arguments to the method in the format used by mono_runtime_invoke_checked ().
+ * MP is NULL if CMETHOD is a static virtual method.
  */
 MonoObject*
 mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, guint8 *deref_args, gpointer *args)

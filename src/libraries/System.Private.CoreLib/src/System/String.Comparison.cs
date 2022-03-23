@@ -10,8 +10,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
 
-using Internal.Runtime.CompilerServices;
-
 namespace System
 {
     public partial class String
@@ -612,6 +610,7 @@ namespace System
         }
 
         // Determines whether two strings match.
+        [Intrinsic] // Unrolled and vectorized for half-constant input
         public bool Equals([NotNullWhen(true)] string? value)
         {
             if (object.ReferenceEquals(this, value))
@@ -630,6 +629,7 @@ namespace System
             return EqualsHelper(this, value);
         }
 
+        [Intrinsic] // Unrolled and vectorized for half-constant input (Ordinal)
         public bool Equals([NotNullWhen(true)] string? value, StringComparison comparisonType)
         {
             if (object.ReferenceEquals(this, value))
@@ -671,20 +671,9 @@ namespace System
         }
 
         // Determines whether two Strings match.
+        [Intrinsic] // Unrolled and vectorized for half-constant input
         public static bool Equals(string? a, string? b)
         {
-            // Transform 'str == ""' to 'str != null && str.Length == 0' if either a or b are jit-time
-            // constants. Otherwise, these two blocks are eliminated
-            if (RuntimeHelpers.IsKnownConstant(a) && a != null && a.Length == 0)
-            {
-                return b != null && b.Length == 0;
-            }
-
-            if (RuntimeHelpers.IsKnownConstant(b) && b != null && b.Length == 0)
-            {
-                return a != null && a.Length == 0;
-            }
-
             if (object.ReferenceEquals(a, b))
             {
                 return true;
@@ -698,6 +687,7 @@ namespace System
             return EqualsHelper(a, b);
         }
 
+        [Intrinsic] // Unrolled and vectorized for half-constant input (Ordinal)
         public static bool Equals(string? a, string? b, StringComparison comparisonType)
         {
             if (object.ReferenceEquals(a, b))
@@ -942,6 +932,7 @@ namespace System
             return StartsWith(value, StringComparison.CurrentCulture);
         }
 
+        [Intrinsic] // Unrolled and vectorized for half-constant input (Ordinal)
         public bool StartsWith(string value!!, StringComparison comparisonType)
         {
             if ((object)this == (object)value)

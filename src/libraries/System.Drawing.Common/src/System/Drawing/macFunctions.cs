@@ -151,83 +151,83 @@ namespace System.Drawing
         }
 
         #region Cocoa Methods
-        [GeneratedDllImport("libobjc.dylib", CharSet = CharSet.Ansi)]
+        [LibraryImport("libobjc.dylib", StringMarshalling = StringMarshalling.Utf8)]
         public static partial IntPtr objc_getClass(string className);
-        [GeneratedDllImport("libobjc.dylib", EntryPoint = "objc_msgSend")]
+        [LibraryImport("libobjc.dylib", EntryPoint = "objc_msgSend")]
         public static partial IntPtr intptr_objc_msgSend(IntPtr basePtr, IntPtr selector);
-        [GeneratedDllImport("libobjc.dylib", EntryPoint = "objc_msgSend_stret")]
+        [LibraryImport("libobjc.dylib", EntryPoint = "objc_msgSend_stret")]
         public static partial void Rect_objc_msgSend_stret(out Rect arect, IntPtr basePtr, IntPtr selector);
-        [GeneratedDllImport("libobjc.dylib", EntryPoint = "objc_msgSend")]
+        [LibraryImport("libobjc.dylib", EntryPoint = "objc_msgSend")]
         [return:MarshalAs(UnmanagedType.U1)]
         public static partial bool bool_objc_msgSend(IntPtr handle, IntPtr selector);
-        [GeneratedDllImport("libobjc.dylib", CharSet = CharSet.Ansi)]
+        [LibraryImport("libobjc.dylib", StringMarshalling = StringMarshalling.Utf8)]
         public static partial IntPtr sel_registerName(string selectorName);
         #endregion
 
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial IntPtr CGMainDisplayID();
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial Rect CGDisplayBounds(IntPtr display);
 
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial int HIViewGetBounds(IntPtr vHnd, ref Rect r);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial int HIViewConvertRect(ref Rect r, IntPtr a, IntPtr b);
 
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial IntPtr GetControlOwner(IntPtr aView);
 
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial int GetWindowBounds(IntPtr wHnd, uint reg, ref QDRect rect);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial IntPtr GetWindowPort(IntPtr hWnd);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial IntPtr GetQDGlobalsThePort();
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void CreateCGContextForPort(IntPtr port, ref IntPtr context);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void CFRelease(IntPtr context);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void QDBeginCGContext(IntPtr port, ref IntPtr context);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void QDEndCGContext(IntPtr port, ref IntPtr context);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial int CGContextClipToRect(IntPtr context, Rect clip);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial int CGContextClipToRects(IntPtr context, Rect[] clip_rects, int count);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void CGContextTranslateCTM(IntPtr context, float tx, float ty);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void CGContextScaleCTM(IntPtr context, float x, float y);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void CGContextFlush(IntPtr context);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void CGContextSynchronize(IntPtr context);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial IntPtr CGPathCreateMutable();
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void CGPathAddRects(IntPtr path, IntPtr _void, Rect[] rects, int count);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void CGPathAddRect(IntPtr path, IntPtr _void, Rect rect);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void CGContextAddRects(IntPtr context, Rect[] rects, int count);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void CGContextAddRect(IntPtr context, Rect rect);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void CGContextBeginPath(IntPtr context);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void CGContextClosePath(IntPtr context);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void CGContextAddPath(IntPtr context, IntPtr path);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void CGContextClip(IntPtr context);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void CGContextEOClip(IntPtr context);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void CGContextEOFillPath(IntPtr context);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void CGContextSaveGState(IntPtr context);
-        [GeneratedDllImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
+        [LibraryImport("/System/Library/Frameworks/Carbon.framework/Versions/Current/Carbon")]
         internal static partial void CGContextRestoreGState(IntPtr context);
     }
 

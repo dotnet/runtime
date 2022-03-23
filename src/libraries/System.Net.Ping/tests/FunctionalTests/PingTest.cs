@@ -43,12 +43,9 @@ namespace System.Net.NetworkInformation.Tests
             _output = output;
         }
 
-        private void PingResultValidator(PingReply pingReply, IPAddress localIpAddress)
-        {
-            PingResultValidator(pingReply, new IPAddress[] { localIpAddress },  _output);
-        }
+        private void PingResultValidator(PingReply pingReply, IPAddress localIpAddress) => PingResultValidator(pingReply, new IPAddress[] { localIpAddress }, _output);
 
-        private void PingResultValidator(PingReply pingReply, IPAddress[] localIpAddresses)  =>  PingResultValidator(pingReply, localIpAddresses, null);
+        private void PingResultValidator(PingReply pingReply, IPAddress[] localIpAddresses) => PingResultValidator(pingReply, localIpAddresses, null);
 
         private static void PingResultValidator(PingReply pingReply, IPAddress[] localIpAddresses, ITestOutputHelper output)
         {
@@ -78,9 +75,10 @@ namespace System.Net.NetworkInformation.Tests
                 ? TestSettings.PayloadAsBytes
                 : Array.Empty<byte>();
 
-        public static bool DoesNotUsePingUtility => !UsesPingUtility;
-
-        public static bool UsesPingUtility => (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) && !Capability.CanUseRawSockets(TestSettings.GetLocalIPAddress().AddressFamily);
+        public static bool DoesNotUsePingUtility => OperatingSystem.IsWindows() ||
+                                OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsWatchOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() ||
+                                Capability.CanUseRawSockets(TestSettings.GetLocalIPAddress().AddressFamily);
+        public static bool UsesPingUtility => !DoesNotUsePingUtility;
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsync_InvalidArgs()
@@ -395,65 +393,61 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64963", TestPlatforms.OSX)]
         public void SendPingWithHostAndTimeoutAndBuffer()
         {
-            IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
-            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
+            IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
+            byte[] buffer = GetPingPayload(localIpAddresses[0].AddressFamily);
 
             SendBatchPing(
                 (ping) => ping.Send(TestSettings.LocalHost, TestSettings.PingTimeout, buffer),
                 (pingReply) =>
                 {
-                    PingResultValidator(pingReply, localIpAddress);
+                    PingResultValidator(pingReply, localIpAddresses);
                     Assert.Equal(buffer, pingReply.Buffer);
                 });
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64963", TestPlatforms.OSX)]
         public async Task SendPingAsyncWithHostAndTimeoutAndBuffer()
         {
-            IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
-            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
+            IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
+            byte[] buffer = GetPingPayload(localIpAddresses[0].AddressFamily);
 
             await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout, buffer),
                 (pingReply) =>
                 {
-                    PingResultValidator(pingReply, localIpAddress);
+                    PingResultValidator(pingReply, localIpAddresses);
                     Assert.Equal(buffer, pingReply.Buffer);
                 });
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64963", TestPlatforms.OSX)]
         public void SendPingWithHostAndTimeoutAndBufferAndPingOptions()
         {
-            IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
-            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
+            IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
+            byte[] buffer = GetPingPayload(localIpAddresses[0].AddressFamily);
 
             SendBatchPing(
                 (ping) => ping.Send(TestSettings.LocalHost, TestSettings.PingTimeout, buffer, new PingOptions()),
                 (pingReply) =>
                 {
-                    PingResultValidator(pingReply, localIpAddress);
+                    PingResultValidator(pingReply, localIpAddresses);
                     Assert.Equal(buffer, pingReply.Buffer);
                 });
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64963", TestPlatforms.OSX)]
         public async Task SendPingAsyncWithHostAndTimeoutAndBufferAndPingOptions()
         {
-            IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
-            byte[] buffer = GetPingPayload(localIpAddress.AddressFamily);
+            IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
+            byte[] buffer = GetPingPayload(localIpAddresses[0].AddressFamily);
 
             await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout, buffer, new PingOptions()),
                 (pingReply) =>
                 {
-                    PingResultValidator(pingReply, localIpAddress);
+                    PingResultValidator(pingReply, localIpAddresses);
 
                     Assert.Equal(buffer, pingReply.Buffer);
                 });
@@ -650,10 +644,9 @@ namespace System.Net.NetworkInformation.Tests
         public async Task SendPingAsyncWithHostAndTtlAndFragmentPingOptions(bool fragment)
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
-
             byte[] buffer = GetPingPayload(localIpAddresses[0].AddressFamily);
 
-            PingOptions  options = new PingOptions();
+            PingOptions options = new PingOptions();
             options.Ttl = 32;
             options.DontFragment = fragment;
 
@@ -674,10 +667,12 @@ namespace System.Net.NetworkInformation.Tests
             PingOptions options = new PingOptions();
             bool reachable = false;
 
+            byte[] payload = UsesPingUtility ? Array.Empty<byte>() : TestSettings.PayloadAsBytesShort;
+
             Ping ping = new Ping();
             for (int i = 0; i < s_pingcount; i++)
             {
-                pingReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, TestSettings.PayloadAsBytesShort);
+                pingReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, payload);
                 if (pingReply.Status == IPStatus.Success)
                 {
                     reachable = true;
@@ -691,7 +686,7 @@ namespace System.Net.NetworkInformation.Tests
 
             options.Ttl = 1;
             // This should always fail unless host is one IP hop away.
-            pingReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, TestSettings.PayloadAsBytesShort, options);
+            pingReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, payload, options);
             Assert.True(pingReply.Status == IPStatus.TimeExceeded || pingReply.Status == IPStatus.TtlExpired);
             Assert.NotEqual(IPAddress.Any, pingReply.Address);
         }
@@ -761,7 +756,7 @@ namespace System.Net.NetworkInformation.Tests
 
             _output.WriteLine($"pinging '{localIpAddress}'");
 
-            RemoteExecutor.Invoke(address  =>
+            RemoteExecutor.Invoke(address =>
             {
                 byte[] buffer = TestSettings.PayloadAsBytes;
                 SendBatchPing(

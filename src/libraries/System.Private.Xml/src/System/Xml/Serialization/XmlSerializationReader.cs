@@ -947,7 +947,7 @@ namespace System.Xml.Serialization
         {
             if (GetNullAttr()) return 0;
             string? arrayType = _r.GetAttribute(_arrayTypeID, _soapNsID);
-            SoapArrayInfo arrayInfo = ParseArrayType(arrayType);
+            SoapArrayInfo arrayInfo = ParseArrayType(arrayType!);
             if (arrayInfo.dimensions != 1) throw new InvalidOperationException(SR.Format(SR.XmlInvalidArrayDimentions, CurrentTag()));
             XmlQualifiedName qname = ToXmlQualifiedName(arrayInfo.qname, false);
             if (qname.Name != name) throw new InvalidOperationException(SR.Format(SR.XmlInvalidArrayTypeName, qname.Name, name, CurrentTag()));
@@ -963,7 +963,7 @@ namespace System.Xml.Serialization
             public int jaggedDimensions;
         }
 
-        private SoapArrayInfo ParseArrayType(string? value)
+        private SoapArrayInfo ParseArrayType(string value)
         {
             if (value == null)
             {

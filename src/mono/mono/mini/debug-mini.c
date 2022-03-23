@@ -10,7 +10,7 @@
 
 #include "mini.h"
 #include "mini-runtime.h"
-#include "jit.h"
+#include <mono/jit/jit.h>
 #include "config.h"
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mono-config.h>

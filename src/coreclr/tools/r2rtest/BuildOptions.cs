@@ -8,50 +8,10 @@ using System.IO;
 
 namespace R2RTest
 {
-    public class BuildOptions
+    public partial class BuildOptions
     {
-        public DirectoryInfo InputDirectory { get; set; }
-        public DirectoryInfo OutputDirectory { get; set; }
-        public DirectoryInfo CoreRootDirectory { get; set; }
-        public FileInfo Crossgen2Path { get; set; }
-        public bool VerifyTypeAndFieldLayout { get; set; }
-        public string TargetArch { get; set; }
-        public bool Exe { get; set; }
-        public bool NoJit { get; set; }
-        public bool NoCrossgen2 { get; set; }
-        public bool NoExe { get; set; }
-        public bool NoEtw { get; set; }
-        public bool NoCleanup { get; set; }
-        public bool Map { get; set; }
-        public bool Pdb { get; set; }
-
-        public bool Perfmap { get; set; }
-        public int PerfmapFormatVersion { get; set; } = 1;
-        public FileInfo PackageList { get; set; }
-        public int DegreeOfParallelism { get; set; }
-        public bool Sequential { get; set; }
-        public int Iterations { get; set; } = 1;
-        public bool Framework { get; set; }
-        public bool UseFramework { get; set; }
-        public bool Release { get; set; }
-        public bool LargeBubble { get; set; }
-        public bool Composite { get; set; }
-        public int Crossgen2Parallelism { get; set; }
-        public FileInfo Crossgen2JitPath { get; set; }
-        public int CompilationTimeoutMinutes { get; set; }
-        public int ExecutionTimeoutMinutes { get; set; }
-        public DirectoryInfo[] ReferencePath { get; set; }
-        public FileInfo[] IssuesPath { get; set; }
-        public FileInfo R2RDumpPath { get; set; }
-        public FileInfo CrossgenResponseFile { get; set; }
-        public DirectoryInfo[] RewriteOldPath { get; set; }
-        public DirectoryInfo[] RewriteNewPath { get; set; }
-        public DirectoryInfo AspNetPath { get; set; }
-        public bool MeasurePerf { get; set; }
-        public string InputFileSearchString { get; set; }
         public string ConfigurationSuffix => (Release ? "-ret.out" : "-chk.out");
-        public string GCStress { get; set; }
-        public FileInfo[] MibcPath { get; set; }
+
         public string DotNetCli
         {
             get

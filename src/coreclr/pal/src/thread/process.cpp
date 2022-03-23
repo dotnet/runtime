@@ -73,6 +73,8 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #   define __NR_membarrier  389
 #  elif defined(__aarch64__)
 #   define __NR_membarrier  283
+#  elif defined(__loongarch64)
+#   define __NR_membarrier  283
 #  else
 #   error Unknown architecture
 #  endif

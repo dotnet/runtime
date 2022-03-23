@@ -13,16 +13,16 @@
 #include <alloca.h>
 #endif
 
-#include "object.h"
-#include "loader.h"
+#include <mono/metadata/object.h>
+#include <mono/metadata/loader.h>
 #include "cil-coff.h"
 #include "metadata/abi-details.h"
 #include "metadata/cominterop.h"
 #include "metadata/marshal.h"
 #include "metadata/method-builder.h"
 #include "metadata/tabledefs.h"
-#include "metadata/exception.h"
-#include "metadata/appdomain.h"
+#include <mono/metadata/exception.h>
+#include <mono/metadata/appdomain.h>
 #include "metadata/reflection-internals.h"
 #include "mono/metadata/class-init.h"
 #include "mono/metadata/class-internals.h"
@@ -3110,7 +3110,7 @@ mono_ptr_to_ansibstr (const char *ptr, size_t slen)
 	char *s = (char *)mono_bstr_alloc ((slen + 1) * sizeof(char));
 	if (s == NULL)
 		return NULL;
-	*((guint32 *)s - 1) = slen * sizeof (char);
+	*((guint32 *)s - 1) = (guint32)(slen * sizeof (char));
 	if (ptr)
 		memcpy (s, ptr, slen * sizeof (char));
 	s [slen] = 0;

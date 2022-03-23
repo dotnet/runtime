@@ -51,11 +51,7 @@ namespace System.Runtime.Serialization
             get => _rootTypeName;
             set
             {
-                if (null == value)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
+                ArgumentNullException.ThrowIfNull(value);
                 _rootTypeName = value;
                 IsFullTypeNameSetExplicit = true;
             }
@@ -66,10 +62,7 @@ namespace System.Runtime.Serialization
             get => _rootTypeAssemblyName;
             set
             {
-                if (null == value)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 _rootTypeAssemblyName = value;
                 IsAssemblyNameSetExplicit = true;
             }

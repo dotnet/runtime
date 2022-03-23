@@ -17,7 +17,7 @@ namespace System.Xml.Serialization
     using System.Xml.Extensions;
     using System.Diagnostics.CodeAnalysis;
 
-    internal sealed class XmlSerializationReaderILGen : XmlSerializationILGen
+    internal sealed partial class XmlSerializationReaderILGen : XmlSerializationILGen
     {
         private readonly Dictionary<string, string> _idNames = new Dictionary<string, string>();
         // Mapping name->id_XXXNN field
@@ -2725,6 +2725,12 @@ namespace System.Xml.Serialization
             WriteSourceBegin(source);
         }
 
+        [RegexGenerator("(?<locA1>[^ ]+) = .+EnsureArrayIndex[(](?<locA2>[^,]+), (?<locI1>[^,]+),[^;]+;(?<locA3>[^[]+)[[](?<locI2>[^+]+)[+][+][]]")]
+        private static partial Regex EnsureArrayIndexRegex();
+
+        [RegexGenerator("(?<a>[^[]+)[[](?<ia>.+)[]]")]
+        private static partial Regex P0Regex();
+
         private void WriteSourceBegin(string source)
         {
             object? variable;
@@ -2745,8 +2751,7 @@ namespace System.Xml.Serialization
                 return;
             }
             // a_0_0 = (global::System.Object[])EnsureArrayIndex(a_0_0, ca_0_0, typeof(global::System.Object));a_0_0[ca_0_0++]
-            Regex regex = NewRegex("(?<locA1>[^ ]+) = .+EnsureArrayIndex[(](?<locA2>[^,]+), (?<locI1>[^,]+),[^;]+;(?<locA3>[^[]+)[[](?<locI2>[^+]+)[+][+][]]");
-            Match match = regex.Match(source);
+            Match match = EnsureArrayIndexRegex().Match(source);
             if (match.Success)
             {
                 Debug.Assert(match.Groups["locA1"].Value == match.Groups["locA2"].Value);
@@ -2792,8 +2797,7 @@ namespace System.Xml.Serialization
             }
 
             // p[0]
-            regex = NewRegex("(?<a>[^[]+)[[](?<ia>.+)[]]");
-            match = regex.Match(source);
+            match = P0Regex().Match(source);
             if (match.Success)
             {
                 System.Diagnostics.Debug.Assert(ilg.GetVariableType(ilg.GetVariable(match.Groups["a"].Value)).IsArray);
@@ -2839,8 +2843,7 @@ namespace System.Xml.Serialization
                 return;
             }
             // a_0_0 = (global::System.Object[])EnsureArrayIndex(a_0_0, ca_0_0, typeof(global::System.Object));a_0_0[ca_0_0++]
-            Regex regex = NewRegex("(?<locA1>[^ ]+) = .+EnsureArrayIndex[(](?<locA2>[^,]+), (?<locI1>[^,]+),[^;]+;(?<locA3>[^[]+)[[](?<locI2>[^+]+)[+][+][]]");
-            Match match = regex.Match(source);
+            Match match = EnsureArrayIndexRegex().Match(source);
             if (match.Success)
             {
                 object oVar = ilg.GetVariable(match.Groups["locA1"].Value);
@@ -2876,8 +2879,7 @@ namespace System.Xml.Serialization
                 return;
             }
             // p[0]
-            regex = NewRegex("(?<a>[^[]+)[[](?<ia>.+)[]]");
-            match = regex.Match(source);
+            match = P0Regex().Match(source);
             if (match.Success)
             {
                 Type varType = ilg.GetVariableType(ilg.GetVariable(match.Groups["a"].Value));
@@ -3525,6 +3527,22 @@ namespace System.Xml.Serialization
         {
             RaCodeGen.WriteLocalDecl(variableName, initValue);
         }
+
+        [RegexGenerator("UnknownNode[(]null, @[\"](?<qnames>[^\"]*)[\"][)];")]
+        private static partial Regex UnknownNodeNullAnyTypeRegex();
+
+        [RegexGenerator("UnknownNode[(][(]object[)](?<o>[^,]+), @[\"](?<qnames>[^\"]*)[\"][)];")]
+        private static partial Regex UnknownNodeObjectEmptyRegex();
+
+        [RegexGenerator("UnknownNode[(][(]object[)](?<o>[^,]+), null[)];")]
+        private static partial Regex UnknownNodeObjectNullRegex();
+
+        [RegexGenerator("UnknownNode[(][(]object[)](?<o>[^)]+)[)];")]
+        private static partial Regex UnknownNodeObjectRegex();
+
+        [RegexGenerator("paramsRead\\[(?<index>[0-9]+)\\]")]
+        private static partial Regex ParamsReadRegex();
+
         private void ILGenElseString(string elseString)
         {
             MethodInfo XmlSerializationReader_UnknownNode1 = typeof(XmlSerializationReader).GetMethod(
@@ -3538,8 +3556,7 @@ namespace System.Xml.Serialization
                   new Type[] { typeof(object), typeof(string) }
                   )!;
             // UnknownNode(null, @":anyType");
-            Regex regex = NewRegex("UnknownNode[(]null, @[\"](?<qnames>[^\"]*)[\"][)];");
-            Match match = regex.Match(elseString);
+            Match match = UnknownNodeNullAnyTypeRegex().Match(elseString);
             if (match.Success)
             {
                 ilg.Ldarg(0);
@@ -3549,8 +3566,7 @@ namespace System.Xml.Serialization
                 return;
             }
             // UnknownNode((object)o, @"");
-            regex = NewRegex("UnknownNode[(][(]object[)](?<o>[^,]+), @[\"](?<qnames>[^\"]*)[\"][)];");
-            match = regex.Match(elseString);
+            match = UnknownNodeObjectEmptyRegex().Match(elseString);
             if (match.Success)
             {
                 ilg.Ldarg(0);
@@ -3562,8 +3578,7 @@ namespace System.Xml.Serialization
                 return;
             }
             // UnknownNode((object)o, null);
-            regex = NewRegex("UnknownNode[(][(]object[)](?<o>[^,]+), null[)];");
-            match = regex.Match(elseString);
+            match = UnknownNodeObjectNullRegex().Match(elseString);
             if (match.Success)
             {
                 ilg.Ldarg(0);
@@ -3575,8 +3590,7 @@ namespace System.Xml.Serialization
                 return;
             }
             // "UnknownNode((object)o);"
-            regex = NewRegex("UnknownNode[(][(]object[)](?<o>[^)]+)[)];");
-            match = regex.Match(elseString);
+            match = UnknownNodeObjectRegex().Match(elseString);
             if (match.Success)
             {
                 ilg.Ldarg(0);
@@ -3590,8 +3604,7 @@ namespace System.Xml.Serialization
         }
         private void ILGenParamsReadSource(string paramsReadSource)
         {
-            Regex regex = NewRegex("paramsRead\\[(?<index>[0-9]+)\\]");
-            Match match = regex.Match(paramsReadSource);
+            Match match = ParamsReadRegex().Match(paramsReadSource);
             if (match.Success)
             {
                 ilg.LoadArrayElement(ilg.GetLocal("paramsRead"), int.Parse(match.Groups["index"].Value, CultureInfo.InvariantCulture));
@@ -3601,8 +3614,7 @@ namespace System.Xml.Serialization
         }
         private void ILGenParamsReadSource(string paramsReadSource, bool value)
         {
-            Regex regex = NewRegex("paramsRead\\[(?<index>[0-9]+)\\]");
-            Match match = regex.Match(paramsReadSource);
+            Match match = ParamsReadRegex().Match(paramsReadSource);
             if (match.Success)
             {
                 ilg.StoreArrayElement(ilg.GetLocal("paramsRead"), int.Parse(match.Groups["index"].Value, CultureInfo.InvariantCulture), value);

@@ -57,7 +57,7 @@ jobs:
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: release
+      buildConfig: Release
       runtimeFlavor: mono
       platforms:
       - Browser_wasm
@@ -65,20 +65,15 @@ jobs:
         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
         nameSuffix: wasm
         isOfficialBuild: false
-        extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
+        extraStepsTemplate: /eng/pipelines/coreclr/perf-wasm-prepare-artifacts-steps.yml
         extraStepsParameters:
-          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-          includeRootFolder: true
-          displayName: Browser Wasm Artifacts
-          artifactName: BrowserWasm
-          archiveType: zip
-          archiveExtension: .zip
+          configForBuild: Release
 
   #run mono wasm microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
-      buildConfig: release
+      buildConfig: Release
       runtimeFlavor: wasm
       platforms:
       - Linux_x64
@@ -97,13 +92,14 @@ jobs:
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobtemplate: /eng/pipelines/coreclr/templates/perf-job.yml # note: should we move this file out of coreclr tempelates because it contains mono jobs?
-      buildconfig: release
+      buildconfig: Release
       runtimeflavor: wasm
       platforms:
       - linux_x64
       jobparameters:
         testgroup: perf
         livelibrariesbuildconfig: Release
+        skipLiveLibrariesDownload: true
         runtimetype: wasm
         codegentype: 'aot'
         projectfile: microbenchmarks.proj
@@ -131,7 +127,7 @@ jobs:
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: release
+      buildConfig: Release
       runtimeFlavor: mono
       platforms:
       - Browser_wasm
@@ -139,14 +135,9 @@ jobs:
         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
         nameSuffix: wasm
         isOfficialBuild: false
-        extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
+        extraStepsTemplate: /eng/pipelines/coreclr/perf-wasm-prepare-artifacts-steps.yml
         extraStepsParameters:
-          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-          includeRootFolder: true
-          displayName: Browser Wasm Artifacts
-          artifactName: BrowserWasm
-          archiveType: zip
-          archiveExtension: .zip
+          configForBuild: Release
 
   # build mono for AOT
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -231,6 +222,9 @@ jobs:
       runtimeFlavor: mono
       platforms:
         - Windows_x64
+      variables:
+        - name: mauiVersion
+          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMaui.outputs['getMauiVersion.mauiVersion'] ]
       jobParameters:
         testGroup: perf
         runtimeType: AndroidMono
@@ -238,6 +232,7 @@ jobs:
         runKind: android_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfpixel4a'
+        additionalSetupParameters: "-MauiVersion $env:mauiVersion"
 
   # run mono iOS scenarios and maui iOS scenarios
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -247,6 +242,9 @@ jobs:
       runtimeFlavor: mono
       platforms:
         - Windows_x64
+      variables:
+        - name: mauiVersion
+          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMaui.outputs['getMauiVersion.mauiVersion'] ]
       jobParameters:
         testGroup: perf
         runtimeType: iOSMono
@@ -255,6 +253,7 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfpixel4a'
         iosLlvmBuild: False
+        additionalSetupParameters: "-MauiVersion $env:mauiVersion"
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -318,6 +317,7 @@ jobs:
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
+        skipLiveLibrariesDownload: true
         runtimeType: wasm
         codeGenType: 'wasm'
         projectFile: microbenchmarks.proj
@@ -337,6 +337,7 @@ jobs:
       jobparameters:
         testgroup: perf
         livelibrariesbuildconfig: Release
+        skipLiveLibrariesDownload: true
         runtimetype: wasm
         codegentype: 'aot'
         projectfile: microbenchmarks.proj
@@ -477,6 +478,7 @@ jobs:
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
+        skipLiveLibrariesDownload: true
         runtimeType: wasm
         projectFile: blazor_perf.proj
         runKind: blazor_scenarios
@@ -484,28 +486,29 @@ jobs:
         additionalSetupParameters: '--latestdotnet'
         logicalmachine: 'perftiger'
 
-  # build maui runtime packs
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: release
-      runtimeFlavor: mono
-      platforms:
-      - Android_x86
-      - Android_x64
-      - Android_arm
-      - Android_arm64
-      - MacCatalyst_x64
-      - iOSSimulator_x64
-      - iOS_arm64
-      - iOS_arm
-      jobParameters:
-        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-        nameSuffix: Maui_Packs_Mono
-        isOfficialBuild: false
-        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-        extraStepsParameters:
-          name: MonoRuntimePacks
+  # Uncomment to reenable package replacement
+  ## build maui runtime packs
+  #- template: /eng/pipelines/common/platform-matrix.yml
+  #  parameters:
+  #    jobTemplate: /eng/pipelines/common/global-build-job.yml
+  #    buildConfig: release
+  #    runtimeFlavor: mono
+  #    platforms:
+  #    - Android_x86
+  #    - Android_x64
+  #    - Android_arm
+  #    - Android_arm64
+  #    - MacCatalyst_x64
+  #    - iOSSimulator_x64
+  #    - iOS_arm64
+  #    - iOS_arm
+  #    jobParameters:
+  #      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+  #      nameSuffix: Maui_Packs_Mono
+  #      isOfficialBuild: false
+  #      extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+  #      extraStepsParameters:
+  #        name: MonoRuntimePacks
   
   # build maui app
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -516,15 +519,16 @@ jobs:
       platforms:
       - iOS_arm64
       jobParameters:
-        dependsOn:
-          - Build_Android_arm_release_Maui_Packs_Mono
-          - Build_Android_arm64_release_Maui_Packs_Mono
-          - Build_Android_x86_release_Maui_Packs_Mono
-          - Build_Android_x64_release_Maui_Packs_Mono
-          - Build_MacCatalyst_x64_release_Maui_Packs_Mono
-          - Build_iOSSimulator_x64_release_Maui_Packs_Mono
-          - Build_iOS_arm_release_Maui_Packs_Mono
-          - Build_iOS_arm64_release_Maui_Packs_Mono
+      # Uncomment to reenable package replacement
+        #dependsOn:
+        #  - Build_Android_arm_release_Maui_Packs_Mono
+        #  - Build_Android_arm64_release_Maui_Packs_Mono
+        #  - Build_Android_x86_release_Maui_Packs_Mono
+        #  - Build_Android_x64_release_Maui_Packs_Mono
+        #  - Build_MacCatalyst_x64_release_Maui_Packs_Mono
+        #  - Build_iOSSimulator_x64_release_Maui_Packs_Mono
+        #  - Build_iOS_arm_release_Maui_Packs_Mono
+        #  - Build_iOS_arm64_release_Maui_Packs_Mono
         buildArgs: -s mono -c $(_BuildConfig)
         nameSuffix: MACiOSAndroidMaui
         isOfficialBuild: false

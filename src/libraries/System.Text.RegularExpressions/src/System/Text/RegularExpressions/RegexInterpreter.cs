@@ -8,12 +8,26 @@ using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions
 {
+    /// <summary>A <see cref="RegexRunnerFactory"/> for creating <see cref="RegexInterpreter"/>s.</summary>
+    internal sealed class RegexInterpreterFactory : RegexRunnerFactory
+    {
+        private readonly RegexInterpreterCode _code;
+
+        public RegexInterpreterFactory(RegexTree tree, CultureInfo culture) =>
+            // Generate and store the RegexInterpretedCode for the RegexTree and the specified culture
+            _code = RegexWriter.Write(tree, culture);
+
+        protected internal override RegexRunner CreateInstance() =>
+            // Create a new interpreter instance.
+            new RegexInterpreter(_code, RegexParser.GetTargetCulture(_code.Options));
+    }
+
     /// <summary>Executes a block of regular expression codes while consuming input.</summary>
     internal sealed class RegexInterpreter : RegexRunner
     {
         private const int LoopTimeoutCheckCount = 2048; // conservative value to provide reasonably-accurate timeout handling.
 
-        private readonly RegexCode _code;
+        private readonly RegexInterpreterCode _code;
         private readonly TextInfo _textInfo;
 
         private RegexOpcode _operator;
@@ -21,7 +35,7 @@ namespace System.Text.RegularExpressions
         private bool _rightToLeft;
         private bool _caseInsensitive;
 
-        public RegexInterpreter(RegexCode code, CultureInfo culture)
+        public RegexInterpreter(RegexInterpreterCode code, CultureInfo culture)
         {
             Debug.Assert(code != null, "code must not be null.");
             Debug.Assert(culture != null, "culture must not be null.");
@@ -194,13 +208,9 @@ namespace System.Text.RegularExpressions
 
         private int Operand(int i) => _code.Codes[_codepos + i + 1];
 
-        private int Leftchars() => runtextpos - runtextbeg;
-
-        private int Rightchars() => runtextend - runtextpos;
-
         private int Bump() => _rightToLeft ? -1 : 1;
 
-        private int Forwardchars() => _rightToLeft ? runtextpos - runtextbeg : runtextend - runtextpos;
+        private int Forwardchars() => _rightToLeft ? runtextpos : runtextend - runtextpos;
 
         private char Forwardcharnext(ReadOnlySpan<char> inputSpan)
         {
@@ -216,7 +226,7 @@ namespace System.Text.RegularExpressions
 
             if (!_rightToLeft)
             {
-                if (runtextend - runtextpos < c)
+                if (inputSpan.Length - runtextpos < c)
                 {
                     return false;
                 }
@@ -225,7 +235,7 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                if (runtextpos - runtextbeg < c)
+                if (runtextpos < c)
                 {
                     return false;
                 }
@@ -270,7 +280,7 @@ namespace System.Text.RegularExpressions
             int pos;
             if (!_rightToLeft)
             {
-                if (runtextend - runtextpos < length)
+                if (inputSpan.Length - runtextpos < length)
                 {
                     return false;
                 }
@@ -279,7 +289,7 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                if (runtextpos - runtextbeg < length)
+                if (runtextpos < length)
                 {
                     return false;
                 }
@@ -324,15 +334,46 @@ namespace System.Text.RegularExpressions
 
         private void Backwardnext() => runtextpos += _rightToLeft ? 1 : -1;
 
-        protected override bool FindFirstChar() =>
-            _code.FindOptimizations.TryFindNextStartingPosition(runtext!, ref runtextpos, runtextbeg, runtextstart, runtextend);
+        protected internal override void Scan(ReadOnlySpan<char> text)
+        {
+            Debug.Assert(runregex is not null);
+            Debug.Assert(runtrack is not null);
+            Debug.Assert(runstack is not null);
+            Debug.Assert(runcrawl is not null);
 
-        protected override void Go()
+            // Configure the additional value to "bump" the position along each time we loop around
+            // to call TryFindNextStartingPosition again, as well as the stopping position for the loop.  We generally
+            // bump by 1 and stop at textend, but if we're examining right-to-left, we instead bump
+            // by -1 and stop at textbeg.
+            int bump = 1, stoppos = text.Length;
+            if (runregex.RightToLeft)
+            {
+                bump = -1;
+                stoppos = 0;
+            }
+
+            while (_code.FindOptimizations.TryFindNextStartingPosition(text, ref runtextpos, runtextstart))
+            {
+                CheckTimeout();
+
+                if (TryMatchAtCurrentPosition(text) || runtextpos == stoppos)
+                {
+                    return;
+                }
+
+                // Reset state for another iteration.
+                runtrackpos = runtrack.Length;
+                runstackpos = runstack.Length;
+                runcrawlpos = runcrawl.Length;
+                runtextpos += bump;
+            }
+        }
+
+        private bool TryMatchAtCurrentPosition(ReadOnlySpan<char> inputSpan)
         {
             SetOperator((RegexOpcode)_code.Codes[0]);
             _codepos = 0;
             int advance = -1;
-            ReadOnlySpan<char> inputSpan = runtext;
 
             while (true)
             {
@@ -354,7 +395,7 @@ namespace System.Text.RegularExpressions
                 switch (_operator)
                 {
                     case RegexOpcode.Stop:
-                        return;
+                        return runmatch!.FoundMatch;
 
                     case RegexOpcode.Nothing:
                         break;
@@ -695,23 +736,29 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case RegexOpcode.Bol:
-                        if (Leftchars() > 0 && inputSpan[runtextpos - 1] != '\n')
                         {
-                            break;
+                            int m1 = runtextpos - 1;
+                            if ((uint)m1 < (uint)inputSpan.Length && inputSpan[m1] != '\n')
+                            {
+                                break;
+                            }
+                            advance = 0;
+                            continue;
                         }
-                        advance = 0;
-                        continue;
 
                     case RegexOpcode.Eol:
-                        if (Rightchars() > 0 && inputSpan[runtextpos] != '\n')
                         {
-                            break;
+                            int runtextpos = this.runtextpos;
+                            if ((uint)runtextpos < (uint)inputSpan.Length && inputSpan[runtextpos] != '\n')
+                            {
+                                break;
+                            }
+                            advance = 0;
+                            continue;
                         }
-                        advance = 0;
-                        continue;
 
                     case RegexOpcode.Boundary:
-                        if (!IsBoundary(runtextpos, runtextbeg, runtextend))
+                        if (!IsBoundary(inputSpan, runtextpos))
                         {
                             break;
                         }
@@ -719,7 +766,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexOpcode.NonBoundary:
-                        if (IsBoundary(runtextpos, runtextbeg, runtextend))
+                        if (IsBoundary(inputSpan, runtextpos))
                         {
                             break;
                         }
@@ -727,7 +774,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexOpcode.ECMABoundary:
-                        if (!IsECMABoundary(runtextpos, runtextbeg, runtextend))
+                        if (!IsECMABoundary(inputSpan, runtextpos))
                         {
                             break;
                         }
@@ -735,7 +782,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexOpcode.NonECMABoundary:
-                        if (IsECMABoundary(runtextpos, runtextbeg, runtextend))
+                        if (IsECMABoundary(inputSpan, runtextpos))
                         {
                             break;
                         }
@@ -743,7 +790,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexOpcode.Beginning:
-                        if (Leftchars() > 0)
+                        if (runtextpos > 0)
                         {
                             break;
                         }
@@ -759,15 +806,18 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexOpcode.EndZ:
-                        if (Rightchars() > 1 || Rightchars() == 1 && inputSpan[runtextpos] != '\n')
                         {
-                            break;
+                            int runtextpos = this.runtextpos;
+                            if (runtextpos < inputSpan.Length - 1 || ((uint)runtextpos < (uint)inputSpan.Length && inputSpan[runtextpos] != '\n'))
+                            {
+                                break;
+                            }
+                            advance = 0;
+                            continue;
                         }
-                        advance = 0;
-                        continue;
 
                     case RegexOpcode.End:
-                        if (Rightchars() > 0)
+                        if (runtextpos < inputSpan.Length)
                         {
                             break;
                         }

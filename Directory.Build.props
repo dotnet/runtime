@@ -304,6 +304,6 @@
 
   <PropertyGroup>
     <CustomBeforeNoTargets>$(RepositoryEngineeringDir)NoTargetsSdk.BeforeTargets.targets</CustomBeforeNoTargets>
-    <CustomAfterTraversalProps>$(RepositoryEngineeringDir)TraversalSdk.AfterProps.props</CustomAfterTraversalProps>
+    <CustomAfterTraversalTargets>$(RepositoryEngineeringDir)TraversalSdk.AfterTargets.targets</CustomAfterTraversalTargets>
   </PropertyGroup>
 </Project>

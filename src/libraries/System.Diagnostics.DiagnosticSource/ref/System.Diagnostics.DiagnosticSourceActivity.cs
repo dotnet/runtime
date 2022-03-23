@@ -24,6 +24,7 @@ namespace System.Diagnostics
             get { throw null; }
         }
 
+        public bool HasRemoteParent { get { throw null; } }
         public bool IsAllDataRequested { get { throw null; } set { throw null; } }
         public bool IsStopped { get { throw null; } }
         public System.Diagnostics.ActivityIdFormat IdFormat { get { throw null; } }
@@ -244,6 +245,7 @@ namespace System.Diagnostics
         public System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? Links  { get { throw null; } }
         public System.Diagnostics.ActivityTagsCollection SamplingTags { get { throw null; } }
         public System.Diagnostics.ActivityTraceId TraceId { get { throw null; } }
+        public string? TraceState { get { throw null; } init { throw null; } }
     }
     public delegate System.Diagnostics.ActivitySamplingResult SampleActivity<T>(ref System.Diagnostics.ActivityCreationOptions<T> options);
     public sealed class ActivityListener : IDisposable

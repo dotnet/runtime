@@ -4,6 +4,10 @@ project(monodroid)
 
 enable_language(C ASM)
 
+if(ANDROID_NDK_MAJOR VERSION_LESS "23")
+    message(FATAL_ERROR "Error: need at least Android NDK 23, got ${ANDROID_NDK_REVISION}!")
+endif()
+
 add_library(
     monodroid
     SHARED

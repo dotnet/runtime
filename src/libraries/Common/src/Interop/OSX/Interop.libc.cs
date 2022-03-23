@@ -23,11 +23,8 @@ internal static partial class Interop
             public const uint ATTR_CMN_CRTIME = 0x00000200;
         }
 
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we annotate blittable types used in interop in CoreLib (like CULong)
-        [DllImport(Libraries.libc, EntryPoint = "setattrlist", SetLastError = true)]
-        internal static unsafe extern int setattrlist(string path, AttrList* attrList, void* attrBuf, nint attrBufSize, CULong options);
-#pragma warning restore DLLIMPORTGENANALYZER015
+        [LibraryImport(Libraries.libc, EntryPoint = "setattrlist", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        internal static unsafe partial int setattrlist(string path, AttrList* attrList, void* attrBuf, nint attrBufSize, CULong options);
 
         internal const uint FSOPT_NOFOLLOW = 0x00000001;
     }

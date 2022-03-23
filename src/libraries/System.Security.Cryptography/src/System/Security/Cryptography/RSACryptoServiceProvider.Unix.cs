@@ -107,13 +107,13 @@ namespace System.Security.Cryptography
             _impl.ExportParameters(includePrivateParameters);
 
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-            AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
+            HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
 
         protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-            AsymmetricAlgorithmHelpers.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
+            HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
 
         protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-            AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
+            HashOneShotHelpers.HashData(hashAlgorithm, data);
 
         public override void FromXmlString(string xmlString) => _impl.FromXmlString(xmlString);
 

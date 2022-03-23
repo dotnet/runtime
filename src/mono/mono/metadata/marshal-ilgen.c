@@ -10,15 +10,15 @@
 
 #include "metadata/method-builder-ilgen.h"
 #include "metadata/method-builder-ilgen-internals.h"
-#include "object.h"
-#include "loader.h"
+#include <mono/metadata/object.h>
+#include <mono/metadata/loader.h>
 #include "cil-coff.h"
 #include "metadata/marshal.h"
 #include "metadata/marshal-internals.h"
 #include "metadata/marshal-ilgen.h"
 #include "metadata/tabledefs.h"
-#include "metadata/exception.h"
-#include "metadata/appdomain.h"
+#include <mono/metadata/exception.h>
+#include <mono/metadata/appdomain.h>
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/class-abi-details.h"
 #include "mono/metadata/class-init.h"
@@ -155,13 +155,18 @@ mono_mb_emit_exception_marshal_directive (MonoMethodBuilder *mb, char *msg)
 static int
 offset_of_first_nonstatic_field (MonoClass *klass)
 {
-	int i;
-	int fcount = mono_class_get_field_count (klass);
 	mono_class_setup_fields (klass);
-	MonoClassField *klass_fields = m_class_get_fields (klass);
-	for (i = 0; i < fcount; i++) {
-		if (!(klass_fields[i].type->attrs & FIELD_ATTRIBUTE_STATIC) && !mono_field_is_deleted (&klass_fields[i]))
-			return klass_fields[i].offset - MONO_ABI_SIZEOF (MonoObject);
+	gpointer iter = NULL;
+	MonoClassField *field;
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC) && !mono_field_is_deleted (field)) {
+			/*
+			 * metadata-update: adding fields to existing structs isn't supported.  In
+			 * newly-added structs, the "from update" field won't be set.
+			 */
+			g_assert (!m_field_is_from_update (field));
+			return m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject);
+		}
 	}
 
 	return 0;
@@ -1135,10 +1140,10 @@ emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_obje
 		ntype = (MonoMarshalNative)mono_type_to_unmanaged (ftype, info->fields [i].mspec, TRUE, m_class_is_unicode (klass), &conv);
 
 		if (last_field) {
-			msize = m_class_get_instance_size (klass) - info->fields [i].field->offset;
+			msize = m_class_get_instance_size (klass) - m_field_get_offset (info->fields [i].field);
 			usize = info->native_size - info->fields [i].offset;
 		} else {
-			msize = info->fields [i + 1].field->offset - info->fields [i].field->offset;
+			msize = m_field_get_offset (info->fields [i + 1].field) - m_field_get_offset (info->fields [i].field);
 			usize = info->fields [i + 1].offset - info->fields [i].offset;
 		}
 
@@ -3221,6 +3226,10 @@ emit_marshal_scalar_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	case MARSHAL_ACTION_CONV_RESULT:
 		/* no conversions necessary */
+		mono_mb_emit_stloc (mb, 3);
+		break;
+
+	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
 		mono_mb_emit_stloc (mb, 3);
 		break;
 
@@ -6317,7 +6326,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	/* ret = method (...) */
 	mono_mb_emit_managed_call (mb, method, NULL);
 
-	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+	if (MONO_TYPE_ISSTRUCT (sig->ret) && sig->ret->type != MONO_TYPE_GENERICINST) {
 		MonoClass *klass = mono_class_from_mono_type_internal (sig->ret);
 		mono_class_init_internal (klass);
 		if (!(mono_class_is_explicit_layout (klass) || m_class_is_blittable (klass))) {
@@ -6361,6 +6370,10 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		case MONO_TYPE_SZARRAY:
 			mono_emit_marshal (m, 0, sig->ret, mspecs [0], 0, NULL, MARSHAL_ACTION_MANAGED_CONV_RESULT);
 			break;
+		case MONO_TYPE_GENERICINST: {
+			mono_mb_emit_byte (mb, CEE_POP);
+			break;
+		}
 		default:
 			g_warning ("return type 0x%02x unknown", sig->ret->type);
 			g_assert_not_reached ();

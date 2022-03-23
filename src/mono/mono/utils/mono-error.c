@@ -10,7 +10,7 @@
 #include <glib.h>
 
 #include <config.h>
-#include "mono-error.h"
+#include <mono/utils/mono-error.h>
 #include "mono-error-internals.h"
 
 #include <mono/metadata/exception.h>

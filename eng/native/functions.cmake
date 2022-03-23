@@ -15,7 +15,7 @@ function(h2inc filename output)
     get_filename_component(path "${filename}" DIRECTORY)
     file(RELATIVE_PATH relative_filename "${CLR_REPO_ROOT_DIR}" "${filename}")
 
-    file(APPEND "${output}" "// File start: ${relative_filename}\n")
+    file(WRITE "${output}" "// File start: ${relative_filename}\n")
 
     # Use of NEWLINE_CONSUME is needed for lines with trailing backslash
     file(STRINGS ${filename} contents NEWLINE_CONSUME)

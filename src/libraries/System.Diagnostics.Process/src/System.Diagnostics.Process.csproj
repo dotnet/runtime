@@ -2,17 +2,16 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent);$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <!-- Suppress unused field warnings when using PlatformNotSupportedException stubs -->
   </PropertyGroup>
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true'">SR.Process_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.Process_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <IsiOSLike Condition="'$(TargetPlatformIdentifier)' == 'MacCatalyst' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">true</IsiOSLike>
   </PropertyGroup>
-  <PropertyGroup>
-    <IsiOSLike Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</IsiOSLike>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.cs" />
     <Compile Include="System\Collections\Specialized\DictionaryWrapper.cs" />
     <Compile Include="System\Diagnostics\AsyncStreamReader.cs" />
@@ -33,6 +32,8 @@
     <Compile Include="System\Diagnostics\ThreadWaitReason.cs" />
     <Compile Include="System\Diagnostics\MonitoringDescriptionAttribute.cs" />
     <Compile Include="System\Collections\Specialized\StringDictionaryWrapper.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\Runtime\Serialization\SerializationGuard.cs"
              Link="Common\System\Runtime\Serialization\SerializationGuard.cs" />
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.cs"
@@ -42,7 +43,7 @@
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.EnumProcessModules.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.EnumProcessModules.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
@@ -75,8 +76,6 @@
              Link="Common\Interop\Windows\User32\Interop.SendMessageTimeout.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.WaitForInputIdle.cs"
              Link="Common\Interop\Windows\User32\Interop.WaitForInputIdle.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeTokenHandle.cs"
              Link="Microsoft\Win32\SafeHandles\SafeTokenHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
@@ -146,7 +145,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetPriorityClass.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.SetPriorityClass.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_SafeFileHandle.cs"
-         Link="Common\Interop\Windows\kernel32\Interop.DuplicateHandle_SafeFileHandle.cs" />
+             Link="Common\Interop\Windows\kernel32\Interop.DuplicateHandle_SafeFileHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_SafeWaitHandle.cs"
              Link="Common\Interop\Windows\kernel32\Interop.DuplicateHandle_SafeWaitHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ProcessWaitHandle.cs"
@@ -220,7 +219,7 @@
     <Compile Include="System\Diagnostics\ProcessThread.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessThreadTimes.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Unix.cs" />
     <Compile Include="System\Diagnostics\Process.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Unix.cs" />
@@ -283,15 +282,15 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IsMemberOfGroup.cs"
              Link="Common\Interop\Unix\Interop.IsMemberOfGroup.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(IsiOSLike)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(IsiOSLike)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ConfigureTerminalForChildProcess.cs"
              Link="Common\Interop\Unix\Interop.ConfigureTerminalForChildProcess.cs" />
     <Compile Include="System\Diagnostics\Process.ConfigureTerminalForChildProcesses.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(IsiOSLike)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(IsiOSLike)' == 'true'">
     <Compile Include="System\Diagnostics\Process.ConfigureTerminalForChildProcesses.iOS.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Linux'">
     <Compile Include="System\Diagnostics\Process.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Linux.cs" />
@@ -306,7 +305,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SchedGetSetAffinity.cs"
              Link="Common\Interop\Linux\Interop.SchedGetSetAffinity.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'OSX' or '$(TargetPlatformIdentifier)' == 'MacCatalyst'">
     <Compile Include="System\Diagnostics\Process.BSD.cs" />
     <Compile Include="System\Diagnostics\Process.OSX.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.BSD.cs" />
@@ -319,17 +318,17 @@
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.ShellExecuteExW.cs"
              Link="Common\Interop\Windows\Shell32\Interop.ShellExecuteExW.cs" />
     <Compile Include="System\Diagnostics\Process.Win32.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Win32.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.Win32.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'iOS' and '$(TargetPlatformIdentifier)' != 'tvOS'">
     <Compile Include="System\Diagnostics\Process.NonUap.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'FreeBSD'">
     <Compile Include="System\Diagnostics\Process.BSD.cs" />
     <Compile Include="System\Diagnostics\Process.FreeBSD.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.BSD.cs" />
@@ -342,12 +341,12 @@
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Process.GetProcInfo.cs"
              Link="Common\Interop\FreeBSD\Interop.Process.GetProcInfo.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">
     <Compile Include="System\Diagnostics\Process.iOS.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.iOS.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.iOS.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnknownUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'UnknownUnix'">
     <Compile Include="System\Diagnostics\Process.UnknownUnix.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.UnknownUnix.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.UnknownUnix.cs" />

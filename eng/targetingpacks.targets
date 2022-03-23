@@ -23,7 +23,7 @@
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <GenerateErrorForMissingTargetingPacks>false</GenerateErrorForMissingTargetingPacks>
     <!-- Hardcode the apphost version until the SDK understands the net7.0 tfm. -->
-    <_AppHostBaselinePackVersion Condition="'$(UseLocalAppHostPack)' != 'true'">6.0.0-rc.1.21411.2</_AppHostBaselinePackVersion>
+    <_AppHostBaselinePackVersion Condition="'$(UseLocalAppHostPack)' != 'true'">6.0.3</_AppHostBaselinePackVersion>
   </PropertyGroup>
 
   <!-- Add Known* items if the SDK doesn't support the TargetFramework yet. -->
@@ -142,16 +142,25 @@
           AfterTargets="ResolveTargetingPackAssets">
     <ItemGroup>
       <_targetingPackReferenceExclusion Include="$(TargetName)" />
-      <_targetingPackReferenceExclusion Include="@(_ResolvedProjectReferencePaths->'%(Filename)')" />
+      <_targetingPackReferenceExclusion Include="@(_ResolvedProjectReferencePaths->Metadata('Filename'))" />
       <_targetingPackReferenceExclusion Include="@(DefaultReferenceExclusion)" />
     </ItemGroup>
 
+    <!-- Filter out shims from the targeting pack references as an opt-in. -->
+    <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                          '$(SkipTargetingPackShimReferences)' == 'true'">
+      <_targetingPackReferenceExclusion Include="@(NetFxReference)" />
+      <_targetingPackReferenceExclusion Include="netstandard" />
+    </ItemGroup>
+
     <ItemGroup>
-      <_targetingPackReferenceWithExclusion Include="@(Reference)">
-        <Exclusion>%(_targetingPackReferenceExclusion.Identity)</Exclusion>
-      </_targetingPackReferenceWithExclusion>
-      <Reference Remove="@(_targetingPackReferenceWithExclusion)"
-                 Condition="'%(_targetingPackReferenceWithExclusion.ExternallyResolved)' == 'true' and '%(_targetingPackReferenceWithExclusion.Filename)' == '%(_targetingPackReferenceWithExclusion.Exclusion)'" />
+      <_targetingPackReferenceWithProjectName Include="@(Reference->WithMetadataValue('ExternallyResolved', 'true')->Metadata('Filename'))"
+                                              OriginalIdentity="%(Identity)" />
+      <_targetingPackIncludedReferenceWithProjectName Include="@(_targetingPackReferenceWithProjectName)"
+                                                      Exclude="@(_targetingPackReferenceExclusion)" />
+      <_targetingPackExcludedReferenceWithProjectName Include="@(_targetingPackReferenceWithProjectName)"
+                                                      Exclude="@(_targetingPackIncludedReferenceWithProjectName)" />
+      <Reference Remove="@(_targetingPackExcludedReferenceWithProjectName->Metadata('OriginalIdentity'))" />
     </ItemGroup>
   </Target>
 </Project>

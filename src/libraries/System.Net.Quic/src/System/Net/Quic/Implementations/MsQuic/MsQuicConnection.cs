@@ -24,7 +24,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private const uint DefaultResetValue = 0xffffffff; // Arbitrary value unlikely to conflict with application protocols.
 
         // Delegate that wraps the static function that will be called when receiving an event.
-        private static readonly ConnectionCallbackDelegate s_connectionDelegate = new ConnectionCallbackDelegate(NativeCallbackHandler);
+        private static unsafe readonly ConnectionCallbackDelegate s_connectionDelegate = new ConnectionCallbackDelegate(NativeCallbackHandler);
 
         // TODO: remove this.
         // This is only used for client-initiated connections, and isn't needed even then once Connect() has been called.
@@ -748,10 +748,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        private static uint NativeCallbackHandler(
+        private static unsafe uint NativeCallbackHandler(
             IntPtr connection,
             IntPtr context,
-            ref ConnectionEvent connectionEvent)
+            ConnectionEvent* connectionEvent)
         {
             GCHandle gcHandle = GCHandle.FromIntPtr(context);
             Debug.Assert(gcHandle.IsAllocated);
@@ -760,27 +760,27 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(state, $"{state.TraceId} Connection received event {connectionEvent.Type}");
+                NetEventSource.Info(state, $"{state.TraceId} Connection received event {connectionEvent->Type}");
             }
 
             try
             {
-                switch (connectionEvent.Type)
+                switch (connectionEvent->Type)
                 {
                     case QUIC_CONNECTION_EVENT_TYPE.CONNECTED:
-                        return HandleEventConnected(state, ref connectionEvent);
+                        return HandleEventConnected(state, ref *connectionEvent);
                     case QUIC_CONNECTION_EVENT_TYPE.SHUTDOWN_INITIATED_BY_TRANSPORT:
-                        return HandleEventShutdownInitiatedByTransport(state, ref connectionEvent);
+                        return HandleEventShutdownInitiatedByTransport(state, ref *connectionEvent);
                     case QUIC_CONNECTION_EVENT_TYPE.SHUTDOWN_INITIATED_BY_PEER:
-                        return HandleEventShutdownInitiatedByPeer(state, ref connectionEvent);
+                        return HandleEventShutdownInitiatedByPeer(state, ref *connectionEvent);
                     case QUIC_CONNECTION_EVENT_TYPE.SHUTDOWN_COMPLETE:
-                        return HandleEventShutdownComplete(state, ref connectionEvent);
+                        return HandleEventShutdownComplete(state, ref *connectionEvent);
                     case QUIC_CONNECTION_EVENT_TYPE.PEER_STREAM_STARTED:
-                        return HandleEventNewStream(state, ref connectionEvent);
+                        return HandleEventNewStream(state, ref *connectionEvent);
                     case QUIC_CONNECTION_EVENT_TYPE.STREAMS_AVAILABLE:
-                        return HandleEventStreamsAvailable(state, ref connectionEvent);
+                        return HandleEventStreamsAvailable(state, ref *connectionEvent);
                     case QUIC_CONNECTION_EVENT_TYPE.PEER_CERTIFICATE_RECEIVED:
-                        return HandleEventPeerCertificateReceived(state, ref connectionEvent);
+                        return HandleEventPeerCertificateReceived(state, ref *connectionEvent);
                     default:
                         return MsQuicStatusCodes.Success;
                 }
@@ -789,7 +789,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Error(state, $"{state.TraceId} Exception occurred during handling {connectionEvent.Type} connection callback: {ex}");
+                    NetEventSource.Error(state, $"{state.TraceId} Exception occurred during handling {connectionEvent->Type} connection callback: {ex}");
                 }
 
                 if (state.ConnectTcs != null)
@@ -801,7 +801,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
                 else
                 {
-                    Debug.Fail($"{state.TraceId} Exception occurred during handling {connectionEvent.Type} connection callback: {ex}");
+                    Debug.Fail($"{state.TraceId} Exception occurred during handling {connectionEvent->Type} connection callback: {ex}");
                 }
 
                 // TODO: trigger an exception on any outstanding async calls.
