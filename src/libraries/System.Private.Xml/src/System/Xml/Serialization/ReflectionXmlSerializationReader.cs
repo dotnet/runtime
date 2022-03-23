@@ -639,7 +639,7 @@ namespace System.Xml.Serialization
             Debug.Assert(o != null, "Object o should not be null");
             Debug.Assert(!string.IsNullOrEmpty(memberName), "memberName must have a value");
             Type type = o.GetType();
-            var delegateCacheForType = s_setMemberValueDelegateCache.GetOrCreateValue(type, () => new Hashtable());
+            var delegateCacheForType = s_setMemberValueDelegateCache.GetOrCreateValue(type, _ => new Hashtable());
             var result = delegateCacheForType[memberName];
             if (result == null)
             {

@@ -1466,7 +1466,7 @@ namespace System.Xml.Serialization
         // It's OK to suppress the SxS warning.
         internal static bool IsTypeDynamic(Type type)
         {
-            object oIsTypeDynamic = s_tableIsTypeDynamic.GetOrCreateValue(type, () =>
+            object oIsTypeDynamic = s_tableIsTypeDynamic.GetOrCreateValue(type, static type =>
             {
                 Assembly assembly = type.Assembly;
                 bool isTypeDynamic = assembly.IsDynamic /*|| string.IsNullOrEmpty(assembly.Location)*/;
