@@ -6953,6 +6953,44 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		}
 		break;
 	}
+	case MONO_PATCH_INFO_GSHARED_METHOD_INFO: {
+		MonoGSharedMethodInfo *info = (MonoGSharedMethodInfo*)patch_info->data.target;
+
+		encode_method_ref (acfg, info->method, p, &p);
+		encode_value (info->num_entries, p, &p);
+
+		for (int i = 0; i < info->num_entries; ++i) {
+			MonoRuntimeGenericContextInfoTemplate *entry = &info->entries [i];
+			MonoRgctxInfoType info_type = entry->info_type;
+			gpointer data = entry->data;
+			MonoJumpInfo tmp;
+			MonoJumpInfoType patch_type;
+
+			encode_value (info_type, p, &p);
+
+			patch_type = mini_rgctx_info_type_to_patch_info_type (info_type);
+			switch (patch_type) {
+			case MONO_PATCH_INFO_CLASS:
+				encode_klass_ref (acfg, mono_class_from_mono_type_internal ((MonoType*)data), p, &p);
+				break;
+			case MONO_PATCH_INFO_FIELD:
+			case MONO_PATCH_INFO_METHOD:
+			case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+			case MONO_PATCH_INFO_VIRT_METHOD:
+			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
+			case MONO_PATCH_INFO_GSHAREDVT_CALL: {
+				tmp.type = patch_type;
+				tmp.data.target = data;
+				encode_patch (acfg, &tmp, p, &p);
+				break;
+			}
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+		}
+		break;
+	}
 	case MONO_PATCH_INFO_VIRT_METHOD:
 		encode_klass_ref (acfg, patch_info->data.virt_method->klass, p, &p);
 		encode_method_ref (acfg, patch_info->data.virt_method->method, p, &p);

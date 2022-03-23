@@ -54,7 +54,6 @@ typedef struct {
 	MonoInternalHashTable interp_code_hash;
 	/* Maps MonoMethod -> 	MonoMethodRuntimeGenericContext */
 	GHashTable *mrgctx_hash;
-	GHashTable *method_rgctx_hash;
 	/* Maps gpointer -> InterpMethod */
 	GHashTable *interp_method_pointer_hash;
 	/* Protected by 'jit_code_hash_lock' */
@@ -567,6 +566,7 @@ gint  mono_patch_info_equal (gconstpointer ka, gconstpointer kb);
 MonoJumpInfo *mono_patch_info_list_prepend  (MonoJumpInfo *list, int ip, MonoJumpInfoType type, gconstpointer target);
 MonoJumpInfoToken* mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token);
 MonoJumpInfoToken* mono_jump_info_token_new2 (MonoMemPool *mp, MonoImage *image, guint32 token, MonoGenericContext *context);
+MonoGSharedMethodInfo* mini_gshared_method_info_dup (MonoMemoryManager *mem_manager, MonoGSharedMethodInfo *info);
 gpointer  mono_resolve_patch_target         (MonoMethod *method, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors, MonoError *error);
 gpointer  mono_resolve_patch_target_ext     (MonoMemoryManager *mem_manager, MonoMethod *method, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors, MonoError *error);
 void mini_register_jump_site                (MonoMethod *method, gpointer ip);

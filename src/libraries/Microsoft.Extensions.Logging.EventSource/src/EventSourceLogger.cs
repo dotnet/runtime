@@ -117,7 +117,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             }
         }
 
-        public IDisposable BeginScope<TState>(TState state)
+        public IDisposable BeginScope<TState>(TState state) where TState : notnull
         {
             if (!IsEnabled(LogLevel.Critical))
             {
