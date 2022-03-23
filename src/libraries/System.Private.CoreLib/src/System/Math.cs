@@ -321,8 +321,8 @@ namespace System
 #if !MONO
             if (X86Base.IsSupported)
             {
-                (int quitient, result) = X86Base.DivRem((uint)a, a >> 31, b);
-                return quitient;
+                (int quotient, result) = X86Base.DivRem((uint)a, a >> 31, b);
+                return quotient;
             }
 #endif
 
@@ -337,8 +337,8 @@ namespace System
 #if !MONO
             if (X86Base.X64.IsSupported)
             {
-                (long quitient, result) = X86Base.X64.DivRem((ulong)a, a >> 63, b);
-                return quitient;
+                (long quotient, result) = X86Base.X64.DivRem((ulong)a, a >> 63, b);
+                return quotient;
             }
 #endif
 
@@ -361,8 +361,8 @@ namespace System
             if (X86Base.IsSupported)
             {
                 int dividend = left;
-                (int quitient, int remainder) = X86Base.DivRem((uint)dividend, dividend >> 31, right);
-                return ((sbyte)quitient, (sbyte)remainder);
+                (int q, int r) = X86Base.DivRem((uint)dividend, dividend >> 31, right);
+                return ((sbyte)q, (sbyte)r);
             }
 #endif
 
@@ -382,8 +382,8 @@ namespace System
 #if !MONO
             if (X86Base.IsSupported)
             {
-                (uint quitient, uint remainder) = X86Base.DivRem(left, 0u, right);
-                return ((byte)quitient, (byte)remainder);
+                (uint q, uint r) = X86Base.DivRem(left, 0u, right);
+                return ((byte)q, (byte)r);
             }
 #endif
 
@@ -404,8 +404,8 @@ namespace System
             if (X86Base.IsSupported)
             {
                 int dividend = left;
-                (int quitient, int remainder) = X86Base.DivRem((uint)dividend, dividend >> 31, right);
-                return ((short)quitient, (short)remainder);
+                (int q, int r) = X86Base.DivRem((uint)dividend, dividend >> 31, right);
+                return ((short)q, (short)r);
             }
 #endif
 
@@ -426,8 +426,8 @@ namespace System
 #if !MONO
             if (X86Base.IsSupported)
             {
-                (uint quitient, uint remainder) = X86Base.DivRem(left, 0u, right);
-                return ((ushort)quitient, (ushort)remainder);
+                (uint q, uint r) = X86Base.DivRem(left, 0u, right);
+                return ((ushort)q, (ushort)r);
             }
 #endif
 
