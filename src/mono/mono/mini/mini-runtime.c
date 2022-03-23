@@ -2831,7 +2831,9 @@ static gpointer
 get_ftnptr_for_method (MonoMethod *method, MonoError *error)
 {
 	if (!mono_llvm_only) {
-		return mono_jit_compile_method (method, error);
+		gpointer res = mono_jit_compile_method (method, error);
+		res = mini_add_method_trampoline (method, res, mono_method_needs_static_rgctx_invoke (method, TRUE), FALSE);
+		return res;
 	} else {
 		return mini_llvmonly_load_method_ftndesc (method, FALSE, FALSE, error);
 	}
