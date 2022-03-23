@@ -757,13 +757,27 @@ netcore_check_alc_cache (MonoAssemblyLoadContext *alc, const char *scope)
 	return result;
 }
 
+static MonoDl*
+netcore_lookup_self_native_handle()
+{
+	char *error_msg = NULL;
+	if (!internal_module)
+		internal_module = mono_dl_open_self (&error_msg);
+
+	if (!internal_module) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT, "DllImport error loading library '__Internal': '%s'.", error_msg);
+		g_free (error_msg);
+	}
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found via __Internal.");
+	return internal_module;
+}
+
 static MonoDl *
 netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, const char *scope, guint32 flags)
 {
 	MonoDl *module = NULL;
 	MonoDl *cached;
 	MonoAssembly *assembly = mono_image_get_assembly (image);
-	char *error_msg = NULL;
 
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -771,18 +785,7 @@ netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, c
 
 	// We allow a special name to dlopen from the running process namespace, which is not present in CoreCLR
 	if (strcmp (scope, "__Internal") == 0) {
-		if (!internal_module)
-			internal_module = mono_dl_open_self (&error_msg);
-		module = internal_module;
-
-		if (!module) {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT, "DllImport error loading library '__Internal': '%s'.", error_msg);
-			g_free (error_msg);
-		}
-
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found via __Internal: '%s'.", scope);
-
-		return module;
+		return netcore_lookup_self_native_handle();
 	}
 
 	/*
@@ -1219,9 +1222,9 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_FreeLib (gpointer lib, Mo
 		g_hash_table_add (native_library_module_blocklist, module);
 		mono_dl_close (module);
 	} else {
-		MonoDl raw_module = { { 0 } };
-		raw_module.handle = lib;
-		mono_dl_close (&raw_module);
+		MonoDl* raw_module = g_new0(MonoDl, 1);
+		raw_module->handle = lib;
+		mono_dl_close (raw_module);
 	}
 
 leave:

@@ -646,7 +646,8 @@ OPDEF(MINT_SHR_I4_IMM, "shr.i4.imm", 4, 1, 1, MintOpShortInt)
 OPDEF(MINT_SHR_I8_IMM, "shr.i8.imm", 4, 1, 1, MintOpShortInt)
 
 
-OPDEF(MINT_CKFINITE, "ckfinite", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_CKFINITE_R4, "ckfinite.r4", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_CKFINITE_R8, "ckfinite.r8", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_MKREFANY, "mkrefany", 4, 1, 1, MintOpClassToken)
 OPDEF(MINT_REFANYTYPE, "refanytype", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_REFANYVAL, "refanyval", 4, 1, 1, MintOpNoArgs)

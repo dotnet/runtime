@@ -10120,7 +10120,7 @@ void CodeGen::genCodeForBfiz(GenTreeOp* tree)
 //
 void CodeGen::genCodeForAddEx(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_ADDEX) && !(tree->gtFlags & GTF_SET_FLAGS));
+    assert(tree->OperIs(GT_ADDEX));
     genConsumeOperands(tree);
 
     GenTree* op;
@@ -10146,13 +10146,15 @@ void CodeGen::genCodeForAddEx(GenTreeOp* tree)
         GenTreeCast* cast = containedOp->AsCast();
         assert(varTypeIsLong(cast->CastToType()));
         insOpts opts = cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW;
-        GetEmitter()->emitIns_R_R_R(INS_add, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, opts);
+        GetEmitter()->emitIns_R_R_R(tree->gtSetFlags() ? INS_adds : INS_add, emitActualTypeSize(tree), dstReg, op1Reg,
+                                    op2Reg, opts);
     }
     else
     {
         assert(containedOp->OperIs(GT_LSH));
         ssize_t cns = containedOp->gtGetOp2()->AsIntCon()->IconValue();
-        GetEmitter()->emitIns_R_R_R_I(INS_add, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, cns, INS_OPTS_LSL);
+        GetEmitter()->emitIns_R_R_R_I(tree->gtSetFlags() ? INS_adds : INS_add, emitActualTypeSize(tree), dstReg, op1Reg,
+                                      op2Reg, cns, INS_OPTS_LSL);
     }
     genProduceReg(tree);
 }

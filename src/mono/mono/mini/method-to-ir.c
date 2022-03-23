@@ -6496,17 +6496,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		mono_emit_method_call (cfg, wrapper, args, NULL);
 	}
 
-	if (cfg->llvm_only && cfg->interp && cfg->method == method && !cfg->deopt) {
-		if (header->num_clauses) {
-			for (int i = 0; i < header->num_clauses; ++i) {
-				MonoExceptionClause *clause = &header->clauses [i];
-				/* Finally clauses are checked after the remove_finally pass */
-
-				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
-					cfg->interp_entry_only = TRUE;
-			}
-		}
-	}
+	if (cfg->llvm_only)
+		g_assert (cfg->interp);
 
 	/* we use a separate basic block for the initialization code */
 	NEW_BBLOCK (cfg, init_localsbb);
@@ -8147,7 +8138,6 @@ call_end:
 
 #ifdef TARGET_WASM
 			if (common_call && needs_stack_walk && !cfg->deopt)
-				/* If an exception is thrown, the LMF is popped by a call to mini_llvmonly_pop_lmf () */
 				emit_pop_lmf (cfg);
 #endif
 
@@ -11695,7 +11685,6 @@ mono_ldptr:
 
 #ifdef TARGET_WASM
 	if (cfg->lmf_var && !cfg->deopt) {
-		// mini_llvmonly_pop_lmf () might be called before emit_push_lmf () so initialize the LMF
 		cfg->cbb = init_localsbb;
 		EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
 		int lmf_reg = ins->dreg;

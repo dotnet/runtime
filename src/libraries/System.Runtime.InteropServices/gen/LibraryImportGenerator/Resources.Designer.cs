@@ -10,8 +10,8 @@
 
 namespace Microsoft.Interop {
     using System;
-
-
+    
+    
     /// <summary>
     ///   A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
@@ -23,15 +23,15 @@ namespace Microsoft.Interop {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Resources {
-
+        
         private static global::System.Resources.ResourceManager resourceMan;
-
+        
         private static global::System.Globalization.CultureInfo resourceCulture;
-
+        
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal Resources() {
         }
-
+        
         /// <summary>
         ///   Returns the cached ResourceManager instance used by this class.
         /// </summary>
@@ -45,7 +45,7 @@ namespace Microsoft.Interop {
                 return resourceMan;
             }
         }
-
+        
         /// <summary>
         ///   Overrides the current thread's CurrentUICulture property for all
         ///   resource lookups using this strongly typed resource class.
@@ -59,43 +59,61 @@ namespace Microsoft.Interop {
                 resourceCulture = value;
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to A type marked with &apos;BlittableTypeAttribute&apos; must be blittable..
+        ///   Looks up a localized string similar to Add missing custom type marshaller members.
         /// </summary>
-        internal static string BlittableTypeMustBeBlittableDescription {
+        internal static string AddMissingCustomTypeMarshallerMembers {
             get {
-                return ResourceManager.GetString("BlittableTypeMustBeBlittableDescription", resourceCulture);
+                return ResourceManager.GetString("AddMissingCustomTypeMarshallerMembers", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to Type &apos;{0}&apos; is marked with &apos;BlittableTypeAttribute&apos; but is not blittable.
+        ///   Looks up a localized string similar to Add missing features to the &apos;CustomTypeMarshallerAttribute&apos; attribute.
         /// </summary>
-        internal static string BlittableTypeMustBeBlittableMessage {
+        internal static string AddMissingFeaturesToCustomTypeMarshaller {
             get {
-                return ResourceManager.GetString("BlittableTypeMustBeBlittableMessage", resourceCulture);
+                return ResourceManager.GetString("AddMissingFeaturesToCustomTypeMarshaller", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to When a constructor taking a Span&lt;byte&gt; is specified on the native type, the type must also have a public integer constant named BufferSize to provide the size of the caller-allocated buffer..
+        ///   Looks up a localized string similar to A marshaller type that provides a constructor taking a caller-allocated &apos;Span&lt;byte&gt;&apos; should specify that it supports the &apos;CallerAllocatedBuffer&apos; feature..
         /// </summary>
-        internal static string CallerAllocConstructorMustHaveBufferSizeConstantDescription {
+        internal static string CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureDescription {
             get {
-                return ResourceManager.GetString("CallerAllocConstructorMustHaveBufferSizeConstantDescription", resourceCulture);
+                return ResourceManager.GetString("CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must have a &apos;public const int BufferSize&apos; field that specifies the size of the stack buffer because it has a constructor that takes a caller-allocated Span&lt;byte&gt;.
+        ///   Looks up a localized string similar to The type &apos;{0}&apos; provides a constructor taking a caller-allocated &apos;Span&lt;byte&gt;&apos; but does not specify that it supports the &apos;CallerAllocatedBuffer&apos; feature. The constructor will not be used unless the feature is specified..
         /// </summary>
-        internal static string CallerAllocConstructorMustHaveBufferSizeConstantMessage {
+        internal static string CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureMessage {
             get {
-                return ResourceManager.GetString("CallerAllocConstructorMustHaveBufferSizeConstantMessage", resourceCulture);
+                return ResourceManager.GetString("CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureMessage", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   Looks up a localized string similar to When a constructor taking a &apos;Span&lt;byte&gt;&apos; is specified on the native type, the type must set the BufferSize field on the &apos;System.Runtime.InteropServices.CustomTypeMarshallerAttribute&apos; to provide the size of the caller-allocated buffer..
+        /// </summary>
+        internal static string CallerAllocConstructorMustHaveBufferSizeDescription {
+            get {
+                return ResourceManager.GetString("CallerAllocConstructorMustHaveBufferSizeDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must set the &apos;BufferSize&apos; field on the applied &apos;System.Runtime.InteropServices.CustomTypeMarshallerAttribute&apos; to specify the size of the caller-allocated buffer because it has a constructor that takes a caller-allocated &apos;Span&lt;byte&gt;&apos;.
+        /// </summary>
+        internal static string CallerAllocConstructorMustHaveBufferSizeMessage {
+            get {
+                return ResourceManager.GetString("CallerAllocConstructorMustHaveBufferSizeMessage", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   Looks up a localized string similar to A type that supports marshalling from managed to native using a caller-allocated buffer should also support marshalling from managed to native where using a caller-allocated buffer is impossible..
         /// </summary>
@@ -104,7 +122,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Native type &apos;{0}&apos; has a constructor taking a caller-allocated buffer, but does not support marshalling in scenarios where using a caller-allocated buffer is impossible.
         /// </summary>
@@ -113,7 +131,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The generated &apos;DllImportAttribute&apos; will not have a value corresponding to &apos;{0}&apos;..
         /// </summary>
@@ -122,7 +140,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("CannotForwardToDllImportDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to &apos;{0}&apos; has no equivalent in &apos;DllImportAtttribute&apos; and will not be forwarded.
         /// </summary>
@@ -131,7 +149,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("CannotForwardToDllImportMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Specified &apos;LibraryImportAttribute&apos; arguments cannot be forwarded to &apos;DllImportAttribute&apos;.
         /// </summary>
@@ -140,43 +158,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("CannotForwardToDllImportTitle", resourceCulture);
             }
         }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The &apos;BlittableTypeAttribute&apos; and &apos;NativeMarshallingAttribute&apos; attributes are mutually exclusive..
-        /// </summary>
-        internal static string CannotHaveMultipleMarshallingAttributesDescription {
-            get {
-                return ResourceManager.GetString("CannotHaveMultipleMarshallingAttributesDescription", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Type &apos;{0}&apos; is marked with &apos;BlittableTypeAttribute&apos; and &apos;NativeMarshallingAttribute&apos;. A type can only have one of these two attributes..
-        /// </summary>
-        internal static string CannotHaveMultipleMarshallingAttributesMessage {
-            get {
-                return ResourceManager.GetString("CannotHaveMultipleMarshallingAttributesMessage", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to A native type with the &apos;GenericContiguousCollectionMarshallerAttribute&apos; must have at least one of the two marshalling methods as well as a &apos;ManagedValues&apos; property of type &apos;Span&lt;T&gt;&apos; for some &apos;T&apos; and a &apos;NativeValueStorage&apos; property of type &apos;Span&lt;byte&gt;&apos; to enable marshalling the managed type..
-        /// </summary>
-        internal static string CollectionNativeTypeMustHaveRequiredShapeDescription {
-            get {
-                return ResourceManager.GetString("CollectionNativeTypeMustHaveRequiredShapeDescription", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must be a value type and have a constructor that takes two parameters, one of type &apos;{1}&apos; and an &apos;int&apos;, or have a parameterless instance method named &apos;ToManaged&apos; that returns &apos;{1}&apos; as well as a &apos;ManagedValues&apos; property of type &apos;Span&lt;T&gt;&apos; for some &apos;T&apos; and a &apos;NativeValueStorage&apos; property of type &apos;Span&lt;byte&gt;&apos;.
-        /// </summary>
-        internal static string CollectionNativeTypeMustHaveRequiredShapeMessage {
-            get {
-                return ResourceManager.GetString("CollectionNativeTypeMustHaveRequiredShapeMessage", resourceCulture);
-            }
-        }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Source-generated P/Invokes will ignore any configuration that is not supported..
         /// </summary>
@@ -185,7 +167,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("ConfigurationNotSupportedDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The &apos;{0}&apos; configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead..
         /// </summary>
@@ -194,7 +176,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("ConfigurationNotSupportedMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The specified marshalling configuration is not supported by source-generated P/Invokes. {0}..
         /// </summary>
@@ -203,7 +185,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("ConfigurationNotSupportedMessageMarshallingInfo", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The specified &apos;{0}&apos; configuration for parameter &apos;{1}&apos; is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead..
         /// </summary>
@@ -212,7 +194,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("ConfigurationNotSupportedMessageParameter", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The specified &apos;{0}&apos; configuration for the return value of method &apos;{1}&apos; is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead..
         /// </summary>
@@ -221,7 +203,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("ConfigurationNotSupportedMessageReturn", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The specified value &apos;{0}&apos; for &apos;{1}&apos; is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead..
         /// </summary>
@@ -230,7 +212,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("ConfigurationNotSupportedMessageValue", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Specified configuration is not supported by source-generated P/Invokes..
         /// </summary>
@@ -239,16 +221,16 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("ConfigurationNotSupportedTitle", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to Only one of &apos;ConstantElementCount&apos; or &apos;ElementCountInfo&apos; may be used in a &apos;MarshalUsingAttribute&apos; for a given &apos;ElementIndirectionLevel&apos;.
+        ///   Looks up a localized string similar to Only one of &apos;ConstantElementCount&apos; or &apos;ElementCountInfo&apos; may be used in a &apos;MarshalUsingAttribute&apos; for a given &apos;ElementIndirectionDepth&apos;.
         /// </summary>
         internal static string ConstantAndElementCountInfoDisallowed {
             get {
                 return ResourceManager.GetString("ConstantAndElementCountInfoDisallowed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Automatically converting a P/Invoke with &apos;PreserveSig&apos; set to &apos;false&apos; to a source-generated P/Invoke may produce invalid code.
         /// </summary>
@@ -257,7 +239,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Convert to &apos;LibraryImport&apos;.
         /// </summary>
@@ -266,7 +248,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("ConvertToLibraryImport", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Use &apos;LibraryImportAttribute&apos; instead of &apos;DllImportAttribute&apos; to generate P/Invoke marshalling code at compile time.
         /// </summary>
@@ -275,7 +257,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("ConvertToLibraryImportDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Mark the method &apos;{0}&apos; with &apos;LibraryImportAttribute&apos; instead of &apos;DllImportAttribute&apos; to generate P/Invoke marshalling code at compile time.
         /// </summary>
@@ -284,7 +266,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("ConvertToLibraryImportMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Use &apos;LibraryImportAttribute&apos; instead of &apos;DllImportAttribute&apos; to generate P/Invoke marshalling code at compile time.
         /// </summary>
@@ -293,7 +275,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("ConvertToLibraryImportTitle", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Conversion to &apos;LibraryImport&apos; may change behavior and compatibility. See {0} for more information..
         /// </summary>
@@ -302,7 +284,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("ConvertToLibraryImportWarning", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Convert to &apos;LibraryImport&apos; with &apos;{0}&apos; suffix.
         /// </summary>
@@ -311,7 +293,43 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("ConvertToLibraryImportWithSuffix", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A native must set the &apos;Direction&apos; property on the &apos;CustomTypeMarshallerAttribute&apos; to a value that sets at least one known flag value on the &apos;CustomTypeMarshallerDirection&apos; enum.
+        /// </summary>
+        internal static string CustomMarshallerTypeMustSupportDirectionDescription {
+            get {
+                return ResourceManager.GetString("CustomMarshallerTypeMustSupportDirectionDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must set the &apos;Direction&apos; property on the &apos;CustomTypeMarshallerAttribute&apos; to a value that sets at least one known flag value on the &apos;CustomTypeMarshallerDirection&apos; enum.
+        /// </summary>
+        internal static string CustomMarshallerTypeMustSupportDirectionMessage {
+            get {
+                return ResourceManager.GetString("CustomMarshallerTypeMustSupportDirectionMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The &apos;CustomTypeMarshallerAttribute&apos; attribute must be semantically valid.
+        /// </summary>
+        internal static string CustomTypeMarshallerAttributeMustBeValidDescription {
+            get {
+                return ResourceManager.GetString("CustomTypeMarshallerAttributeMustBeValidDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The &apos;CustomTypeMarshallerAttribute&apos; on &apos;{0}&apos; is semantically invalid.
+        /// </summary>
+        internal static string CustomTypeMarshallerAttributeMustBeValidMessage {
+            get {
+                return ResourceManager.GetString("CustomTypeMarshallerAttributeMustBeValidMessage", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   Looks up a localized string similar to The specified parameter needs to be marshalled from managed to native, but the native type &apos;{0}&apos; does not support it..
         /// </summary>
@@ -320,7 +338,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("CustomTypeMarshallingManagedToNativeUnsupported", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The specified parameter needs to be marshalled from native to managed, but the native type &apos;{0}&apos; does not support it..
         /// </summary>
@@ -329,7 +347,43 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("CustomTypeMarshallingNativeToManagedUnsupported", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A marshaller type that provides a &apos;FreeNative&apos; method should specify that it supports the &apos;UnmanagedResources&apos; feature..
+        /// </summary>
+        internal static string FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureDescription {
+            get {
+                return ResourceManager.GetString("FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The type &apos;{0}&apos; provides a &apos;FreeNative&apos; method but does not specify that it supports the &apos;UnmanagedResources&apos; feature. The method will not be used unless the feature is specified..
+        /// </summary>
+        internal static string FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureMessage {
+            get {
+                return ResourceManager.GetString("FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A marshaller type that provides a &apos;FromNativeValue&apos; method should specify that it supports the &apos;TwoStageMarshalling&apos; feature..
+        /// </summary>
+        internal static string FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription {
+            get {
+                return ResourceManager.GetString("FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The type &apos;{0}&apos; provides a &apos;FromNativeValue&apos; method but does not specify that it supports the &apos;TwoStageMarshalling&apos; feature. The method will not be used unless the feature is specified..
+        /// </summary>
+        internal static string FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage {
+            get {
+                return ResourceManager.GetString("FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   Looks up a localized string similar to The return type of &apos;GetPinnableReference&apos; (after accounting for &apos;ref&apos;) must be blittable..
         /// </summary>
@@ -338,7 +392,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("GetPinnableReferenceReturnTypeBlittableDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The dereferenced type of the return type of the &apos;GetPinnableReference&apos; method must be blittable.
         /// </summary>
@@ -347,7 +401,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("GetPinnableReferenceReturnTypeBlittableMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to A type that supports marshalling from managed to native by pinning should also support marshalling from managed to native where pinning is impossible..
         /// </summary>
@@ -356,7 +410,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Type &apos;{0}&apos; has a &apos;GetPinnableReference&apos; method but its native type does not support marshalling in scenarios where pinning is impossible.
         /// </summary>
@@ -365,7 +419,25 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The &apos;TwoStageMarshalling&apos; feature requires a &apos;TNativeType ToNativeValue()&apos; method for the &apos;In&apos; direction..
+        /// </summary>
+        internal static string InTwoStageMarshallingRequiresToNativeValueDescription {
+            get {
+                return ResourceManager.GetString("InTwoStageMarshallingRequiresToNativeValueDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The marshaller type &apos;{0}&apos; supports marshalling in the &apos;In&apos; direction with the &apos;TwoStageMarshalling&apos; feature must provide a &apos;ToNativeValue&apos; instance method that returns the native value.
+        /// </summary>
+        internal static string InTwoStageMarshallingRequiresToNativeValueMessage {
+            get {
+                return ResourceManager.GetString("InTwoStageMarshallingRequiresToNativeValueMessage", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   Looks up a localized string similar to Method &apos;{0}&apos; is contained in a type &apos;{1}&apos; that is not marked &apos;partial&apos;. P/Invoke source generation will ignore method &apos;{0}&apos;..
         /// </summary>
@@ -374,7 +446,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("InvalidAttributedMethodContainingTypeMissingModifiersMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Methods marked with &apos;LibraryImportAttribute&apos; should be &apos;static&apos;, &apos;partial&apos;, and non-generic. P/Invoke source generation will ignore methods that are non-&apos;static&apos;, non-&apos;partial&apos;, or generic..
         /// </summary>
@@ -383,7 +455,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("InvalidAttributedMethodDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Method &apos;{0}&apos; should be &apos;static&apos;, &apos;partial&apos;, and non-generic when marked with &apos;LibraryImportAttribute&apos;. P/Invoke source generation will ignore method &apos;{0}&apos;..
         /// </summary>
@@ -392,7 +464,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("InvalidAttributedMethodSignatureMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Invalid &apos;LibraryImportAttribute&apos; usage.
         /// </summary>
@@ -401,7 +473,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("InvalidLibraryImportAttributeUsageTitle", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The configuration of &apos;StringMarshalling&apos; and &apos;StringMarshallingCustomType&apos; is invalid..
         /// </summary>
@@ -410,7 +482,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("InvalidStringMarshallingConfigurationDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The configuration of &apos;StringMarshalling&apos; and &apos;StringMarshallingCustomType&apos; on method &apos;{0}&apos; is invalid. {1}.
         /// </summary>
@@ -419,7 +491,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("InvalidStringMarshallingConfigurationMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to &apos;StringMarshallingCustomType&apos; must be specified when &apos;StringMarshalling&apos; is set to &apos;StringMarshalling.Custom&apos;..
         /// </summary>
@@ -428,7 +500,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("InvalidStringMarshallingConfigurationMissingCustomType", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to &apos;StringMarshalling&apos; should be set to &apos;StringMarshalling.Custom&apos; when &apos;StringMarshallingCustomType&apos; is specified..
         /// </summary>
@@ -437,34 +509,187 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("InvalidStringMarshallingConfigurationNotCustom", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to The use cases for &apos;GetPinnableReference&apos; are not applicable in any scenarios where a &apos;Value&apos; property is not also required..
+        ///   Looks up a localized string similar to The element type of the &apos;ReadOnlySpan&apos; returned by &apos;GetManagedValuesSource&apos; must be the same as the element type returned by &apos;GetManagedValuesDestination&apos;..
         /// </summary>
-        internal static string MarshallerGetPinnableReferenceRequiresValuePropertyDescription {
+        internal static string LinearCollectionElementTypesMustMatchDescription {
             get {
-                return ResourceManager.GetString("MarshallerGetPinnableReferenceRequiresValuePropertyDescription", resourceCulture);
+                return ResourceManager.GetString("LinearCollectionElementTypesMustMatchDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to The &apos;GetPinnableReference&apos; method cannot be provided on the native type &apos;{0}&apos; unless a &apos;Value&apos; property is also provided.
+        ///   Looks up a localized string similar to The element type of the &apos;ReadOnlySpan&apos; returned by &apos;GetManagedValuesSource&apos; must be the same as the element type returned by &apos;GetManagedValuesDestination&apos;.
         /// </summary>
-        internal static string MarshallerGetPinnableReferenceRequiresValuePropertyMessage {
+        internal static string LinearCollectionElementTypesMustMatchMessage {
             get {
-                return ResourceManager.GetString("MarshallerGetPinnableReferenceRequiresValuePropertyMessage", resourceCulture);
+                return ResourceManager.GetString("LinearCollectionElementTypesMustMatchMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must be a closed generic so the emitted code can use a specific instantiation..
+        ///   Looks up a localized string similar to A &apos;LinearCollection&apos;-kind native type that supports the &apos;CallerAllocatedBuffer&apos; feature must provide a three-parameter constructor taking the managed type as the first parameter, a &apos;Span&lt;byte&gt;&apos; as the second parameter, and the native size of the element as the third parameter.
         /// </summary>
-        internal static string NativeGenericTypeMustBeClosedDescription {
+        internal static string LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorDescription {
             get {
-                return ResourceManager.GetString("NativeGenericTypeMustBeClosedDescription", resourceCulture);
+                return ResourceManager.GetString("LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorDescription", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The type &apos;{0}&apos; specifies that it supports &apos;In&apos; marshalling with the &apos;CallerAllocatedBuffer&apos; feature for &apos;{1}&apos; but does not provide a three-parameter constructor that takes a &apos;{1}&apos; , a &apos;Span&lt;byte&gt;&apos;, and an &apos;int&apos;.
+        /// </summary>
+        internal static string LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorMessage {
+            get {
+                return ResourceManager.GetString("LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A &apos;LinearCollection&apos;-kind native type that supports marshalling in the &apos;In&apos; direction must provide a &apos;GetManagedValuesSource&apos; that returns a &apos;ReadOnlySpan&lt;&gt;&apos; and a &apos;GetNativeValuesDestination&apos; method that returns a &apos;Span&lt;byte&gt;&apos;..
+        /// </summary>
+        internal static string LinearCollectionInRequiresCollectionMethodsDescription {
+            get {
+                return ResourceManager.GetString("LinearCollectionInRequiresCollectionMethodsDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The type &apos;{0}&apos; specifies that is supports marshalling in the &apos;In&apos; direction, but it does not provide a &apos;GetManagedValuesSource&apos; that returns a &apos;ReadOnlySpan&lt;&gt;&apos; and a &apos;GetNativeValuesDestination&apos; method that returns a &apos;Span&lt;byte&gt;&apos;.
+        /// </summary>
+        internal static string LinearCollectionInRequiresCollectionMethodsMessage {
+            get {
+                return ResourceManager.GetString("LinearCollectionInRequiresCollectionMethodsMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A &apos;LinearCollection&apos;-kind native type must provide a two-parameter constructor taking the managed type as the first parameter and the native size of the element as the second parameter.
+        /// </summary>
+        internal static string LinearCollectionInRequiresTwoParameterConstructorDescription {
+            get {
+                return ResourceManager.GetString("LinearCollectionInRequiresTwoParameterConstructorDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The type &apos;{0}&apos; specifies that it supports &apos;In&apos; marshalling of &apos;{1}&apos; but does not provide a two-parameter constructor that takes a &apos;{1}&apos; as the first parameter and an &apos;int&apos; as the second parameter.
+        /// </summary>
+        internal static string LinearCollectionInRequiresTwoParameterConstructorMessage {
+            get {
+                return ResourceManager.GetString("LinearCollectionInRequiresTwoParameterConstructorMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A &apos;LinearCollection&apos;-kind native type that supports marshalling in the &apos;Out&apos; direction must provide a &apos;GetManagedValuesDestination&apos; that takes an &apos;int&apos; and returns a &apos;Span&lt;&gt;&apos; and a &apos;GetNativeValuesSource&apos; method that takes an &apos;int&apos; and rreturns a &apos;ReadOnlySpan&lt;byte&gt;&apos;..
+        /// </summary>
+        internal static string LinearCollectionOutRequiresCollectionMethodsDescription {
+            get {
+                return ResourceManager.GetString("LinearCollectionOutRequiresCollectionMethodsDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The type &apos;{0}&apos; specifies that it supports marshalling in the &apos;Out&apos; direction, but it does not provide a &apos;GetManagedValuesDestination&apos; that takes an &apos;int&apos; and returns a &apos;Span&lt;&gt;&apos; and a &apos;GetNativeValuesSource&apos; method that takes an &apos;int&apos; and rreturns a &apos;ReadOnlySpan&lt;byte&gt;&apos;.
+        /// </summary>
+        internal static string LinearCollectionOutRequiresCollectionMethodsMessage {
+            get {
+                return ResourceManager.GetString("LinearCollectionOutRequiresCollectionMethodsMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A &apos;LinearCollection&apos;-kind native type that supports marshalling in the &apos;Out&apos; direction must provide a constructor that takes the size of the native element as an &apos;int&apos;..
+        /// </summary>
+        internal static string LinearCollectionOutRequiresIntConstructorDescription {
+            get {
+                return ResourceManager.GetString("LinearCollectionOutRequiresIntConstructorDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The type &apos;{0}&apos; specifies that it supports marshalling in the &apos;Out&apos; direction, but it does not provide a constructor that takes the size of the native element as an &apos;int&apos;..
+        /// </summary>
+        internal static string LinearCollectionOutRequiresIntConstructorMessage {
+            get {
+                return ResourceManager.GetString("LinearCollectionOutRequiresIntConstructorMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The specified marshaller direction must be a valid value of the &apos;System.Runtime.InteropServices.CustomMarshallerDirection&apos; enum..
+        /// </summary>
+        internal static string MarshallerDirectionMustBeValidDescription {
+            get {
+                return ResourceManager.GetString("MarshallerDirectionMustBeValidDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The specified custom marshaller direction for &apos;{0}&apos; is invalid.
+        /// </summary>
+        internal static string MarshallerDirectionMustBeValidMessage {
+            get {
+                return ResourceManager.GetString("MarshallerDirectionMustBeValidMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The use cases for &apos;GetPinnableReference&apos; are not applicable in any scenarios where &apos;TwoStageMarshalling&apos; is not also required..
+        /// </summary>
+        internal static string MarshallerGetPinnableReferenceRequiresTwoStageMarshallingDescription {
+            get {
+                return ResourceManager.GetString("MarshallerGetPinnableReferenceRequiresTwoStageMarshallingDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The &apos;GetPinnableReference&apos; method cannot be provided on the native type &apos;{0}&apos; unless the &apos;TwoStageMarshalling&apos; feature is also supported.
+        /// </summary>
+        internal static string MarshallerGetPinnableReferenceRequiresTwoStageMarshallingMessage {
+            get {
+                return ResourceManager.GetString("MarshallerGetPinnableReferenceRequiresTwoStageMarshallingMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The specified marshaller kind must be a valid value of the &apos;System.Runtime.InteropServices.CustomMarshallerKind&apos; enum..
+        /// </summary>
+        internal static string MarshallerKindMustBeValidDescription {
+            get {
+                return ResourceManager.GetString("MarshallerKindMustBeValidDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The specified custom marshaller kind for &apos;{0}&apos; is invalid.
+        /// </summary>
+        internal static string MarshallerKindMustBeValidMessage {
+            get {
+                return ResourceManager.GetString("MarshallerKindMustBeValidMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A type with a &apos;System.Runtime.InteropServices.CustomTypeMarshallerAttribute&apos; must specify a managed type.
+        /// </summary>
+        internal static string MarshallerTypeMustSpecifyManagedTypeDescription {
+            get {
+                return ResourceManager.GetString("MarshallerTypeMustSpecifyManagedTypeDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The type &apos;{0}&apos; does not specify a managed type in the &apos;System.Runtime.InteropServices.CustomTypeMarshallerAttribute&apos; applied to the type.
+        /// </summary>
+        internal static string MarshallerTypeMustSpecifyManagedTypeMessage {
+            get {
+                return ResourceManager.GetString("MarshallerTypeMustSpecifyManagedTypeMessage", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   Looks up a localized string similar to The native type &apos;{0}&apos; must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation..
         /// </summary>
@@ -473,7 +698,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("NativeGenericTypeMustBeClosedOrMatchArityDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The native type &apos;{0}&apos; for managed type &apos;{1}&apos; must be a closed generic type or have the same arity as the managed type..
         /// </summary>
@@ -482,43 +707,25 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("NativeGenericTypeMustBeClosedOrMatchArityMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to A native type for a given type must be blittable..
+        ///   Looks up a localized string similar to A native type must be blittable..
         /// </summary>
         internal static string NativeTypeMustBeBlittableDescription {
             get {
                 return ResourceManager.GetString("NativeTypeMustBeBlittableDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to The native type &apos;{0}&apos; for the type &apos;{1}&apos; is not blittable.
+        ///   Looks up a localized string similar to The native type &apos;{0}&apos; for type &apos;{1}&apos; must be blittable.
         /// </summary>
         internal static string NativeTypeMustBeBlittableMessage {
             get {
                 return ResourceManager.GetString("NativeTypeMustBeBlittableMessage", resourceCulture);
             }
         }
-
-        /// <summary>
-        ///   Looks up a localized string similar to A native type for a given type must be non-null..
-        /// </summary>
-        internal static string NativeTypeMustBeNonNullDescription {
-            get {
-                return ResourceManager.GetString("NativeTypeMustBeNonNullDescription", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The native type for the type &apos;{0}&apos; is null.
-        /// </summary>
-        internal static string NativeTypeMustBeNonNullMessage {
-            get {
-                return ResourceManager.GetString("NativeTypeMustBeNonNullMessage", resourceCulture);
-            }
-        }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The native type must be pointer sized so the pinned result of &apos;GetPinnableReference&apos; can be cast to the native type..
         /// </summary>
@@ -527,7 +734,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("NativeTypeMustBePointerSizedDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The native type &apos;{0}&apos; must be pointer sized because the managed type &apos;{1}&apos; has a &apos;GetPinnableReference&apos; method.
         /// </summary>
@@ -536,52 +743,79 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("NativeTypeMustBePointerSizedMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to The native type must have at least one of the two marshalling methods to enable marshalling the managed type..
+        ///   Looks up a localized string similar to A native type for a given type must have the &apos;System.Runtime.InteropServices.CustomTypeMarshallerAttribute&apos; that specifies this type as the managed type..
         /// </summary>
-        internal static string NativeTypeMustHaveRequiredShapeDescription {
+        internal static string NativeTypeMustHaveCustomTypeMarshallerAttributeDescription {
             get {
-                return ResourceManager.GetString("NativeTypeMustHaveRequiredShapeDescription", resourceCulture);
+                return ResourceManager.GetString("NativeTypeMustHaveCustomTypeMarshallerAttributeDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must be a value type and have a constructor that takes one parameter of type &apos;{1}&apos; or a parameterless instance method named &apos;ToManaged&apos; that returns &apos;{1}&apos;.
+        ///   Looks up a localized string similar to The native type for the type &apos;{0}&apos; must be a type with the &apos;System.Runtime.InteropServices.CustomTypeMarshallerAttribute&apos; that specifies this type as the managed type.
         /// </summary>
-        internal static string NativeTypeMustHaveRequiredShapeMessage {
+        internal static string NativeTypeMustHaveCustomTypeMarshallerAttributeMessage {
             get {
-                return ResourceManager.GetString("NativeTypeMustHaveRequiredShapeMessage", resourceCulture);
+                return ResourceManager.GetString("NativeTypeMustHaveCustomTypeMarshallerAttributeMessage", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A &apos;Value&apos; or &apos;LinearCollection&apos;-kind native type that supports marshalling in the &apos;Out&apos; direction must provide a &apos;ToManaged&apos; method that returns the managed type..
+        /// </summary>
+        internal static string OutRequiresToManagedDescription {
+            get {
+                return ResourceManager.GetString("OutRequiresToManagedDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The type &apos;{0}&apos; specifies it supports marshalling in the &apos;Out&apos; direction, but it does not provide a &apos;ToManaged&apos; method that returns the managed type.
+        /// </summary>
+        internal static string OutRequiresToManagedMessage {
+            get {
+                return ResourceManager.GetString("OutRequiresToManagedMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The &apos;TwoStageMarshalling&apos; feature requires a &apos;void FromNativeValue(TNativeType value)&apos; method for the &apos;Out&apos; direction..
+        /// </summary>
+        internal static string OutTwoStageMarshallingRequiresFromNativeValueDescription {
+            get {
+                return ResourceManager.GetString("OutTwoStageMarshallingRequiresFromNativeValueDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The marshaller type &apos;{0}&apos; supports marshalling in the &apos;Out&apos; direction with the &apos;TwoStageMarshalling&apos; feature, but it does not provide a &apos;FromNativeValue&apos; instance method that returns &apos;void&apos; and takes one parameter..
+        /// </summary>
+        internal static string OutTwoStageMarshallingRequiresFromNativeValueMessage {
+            get {
+                return ResourceManager.GetString("OutTwoStageMarshallingRequiresFromNativeValueMessage", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   Looks up a localized string similar to The &apos;Value&apos; property must not be a &apos;ref&apos; or &apos;readonly ref&apos; property..
         /// </summary>
-        internal static string RefValuePropertyUnsupportedDescription {
+        internal static string RefNativeValueUnsupportedDescription {
             get {
-                return ResourceManager.GetString("RefValuePropertyUnsupportedDescription", resourceCulture);
+                return ResourceManager.GetString("RefNativeValueUnsupportedDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The &apos;Value&apos; property on the native type &apos;{0}&apos; must not be a &apos;ref&apos; or &apos;readonly ref&apos; property..
         /// </summary>
-        internal static string RefValuePropertyUnsupportedMessage {
+        internal static string RefNativeValueUnsupportedMessage {
             get {
-                return ResourceManager.GetString("RefValuePropertyUnsupportedMessage", resourceCulture);
+                return ResourceManager.GetString("RefNativeValueUnsupportedMessage", resourceCulture);
             }
         }
-
-        /// <summary>
-        ///   Looks up a localized string similar to .
-        /// </summary>
-        internal static string RuntimeMarshallingMustBeDisabled {
-            get {
-                return ResourceManager.GetString("RuntimeMarshallingMustBeDisabled", resourceCulture);
-            }
-        }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to An abstract type derived from &apos;SafeHandle&apos; cannot be marshalled by reference. The provided type must be concrete..
         /// </summary>
@@ -590,7 +824,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("SafeHandleByRefMustBeConcrete", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to P/Invoke source generation is not supported on unknown target framework v{0}. The generated source will not be compatible with other frameworks..
         /// </summary>
@@ -599,7 +833,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("TargetFrameworkNotSupportedDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to &apos;LibraryImportAttribute&apos; cannot be used for source-generated P/Invokes on an unknown target framework v{0}..
         /// </summary>
@@ -608,7 +842,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("TargetFrameworkNotSupportedMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Current target framework is not supported by source-generated P/Invokes.
         /// </summary>
@@ -617,7 +851,43 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("TargetFrameworkNotSupportedTitle", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A marshaller type that provides a &apos;ToNativeValue&apos; method should specify that it supports the &apos;TwoStageMarshalling&apos; feature..
+        /// </summary>
+        internal static string ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription {
+            get {
+                return ResourceManager.GetString("ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The type &apos;{0}&apos; provides a &apos;ToNativeValue&apos; method but does not specify that it supports the &apos;TwoStageMarshalling&apos; feature. The method will not be used unless the feature is specified..
+        /// </summary>
+        internal static string ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage {
+            get {
+                return ResourceManager.GetString("ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The return type of &apos;ToNativeValue&apos; and the parameter type of &apos;FromNativeValue&apos; must be the same..
+        /// </summary>
+        internal static string TwoStageMarshallingNativeTypesMustMatchDescription {
+            get {
+                return ResourceManager.GetString("TwoStageMarshallingNativeTypesMustMatchDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The return type of &apos;ToNativeValue&apos; and the parameter type of &apos;FromNativeValue&apos; must be the same.
+        /// </summary>
+        internal static string TwoStageMarshallingNativeTypesMustMatchMessage {
+            get {
+                return ResourceManager.GetString("TwoStageMarshallingNativeTypesMustMatchMessage", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   Looks up a localized string similar to For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type..
         /// </summary>
@@ -626,7 +896,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("TypeNotSupportedDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The type &apos;{0}&apos; is not supported by source-generated P/Invokes. The generated source will not handle marshalling of parameter &apos;{1}&apos;..
         /// </summary>
@@ -635,7 +905,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("TypeNotSupportedMessageParameter", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to {0} The generated source will not handle marshalling of parameter &apos;{1}&apos;..
         /// </summary>
@@ -644,7 +914,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("TypeNotSupportedMessageParameterWithDetails", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The type &apos;{0}&apos; is not supported by source-generated P/Invokes. The generated source will not handle marshalling of the return value of method &apos;{1}&apos;..
         /// </summary>
@@ -653,7 +923,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("TypeNotSupportedMessageReturn", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to {0} The generated source will not handle marshalling of the return value of method &apos;{1}&apos;..
         /// </summary>
@@ -662,7 +932,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("TypeNotSupportedMessageReturnWithDetails", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Specified type is not supported by source-generated P/Invokes.
         /// </summary>
@@ -671,40 +941,58 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("TypeNotSupportedTitle", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to The native type&apos;s &apos;Value&apos; property must have a getter to support marshalling from managed to native..
+        ///   Looks up a localized string similar to The &apos;UnmanagedResources&apos; feature requires a &apos;void FreeNative()&apos; method..
         /// </summary>
-        internal static string ValuePropertyMustHaveGetterDescription {
+        internal static string UnmanagedResourcesRequiresFreeNativeDescription {
             get {
-                return ResourceManager.GetString("ValuePropertyMustHaveGetterDescription", resourceCulture);
+                return ResourceManager.GetString("UnmanagedResourcesRequiresFreeNativeDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to The &apos;Value&apos; property on the native type &apos;{0}&apos; must have a getter.
+        ///   Looks up a localized string similar to The marshaller type &apos;{0}&apos; supports marshalling with the &apos;UnmanagedResources&apos; feature, but it does not provide a parameterless &apos;FreeNative&apos; instance method that returns &apos;void&apos;.
         /// </summary>
-        internal static string ValuePropertyMustHaveGetterMessage {
+        internal static string UnmanagedResourcesRequiresFreeNativeMessage {
             get {
-                return ResourceManager.GetString("ValuePropertyMustHaveGetterMessage", resourceCulture);
+                return ResourceManager.GetString("UnmanagedResourcesRequiresFreeNativeMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to The native type&apos;s &apos;Value&apos; property must have a setter to support marshalling from native to managed..
+        ///   Looks up a localized string similar to A &apos;Value&apos;-kind native type that supports the &apos;CallerAllocatedBuffer&apos; feature must provide a two-parameter constructor taking the managed type and a &apos;Span&lt;byte&gt;&apos; as parameters.
         /// </summary>
-        internal static string ValuePropertyMustHaveSetterDescription {
+        internal static string ValueInCallerAllocatedBufferRequiresSpanConstructorDescription {
             get {
-                return ResourceManager.GetString("ValuePropertyMustHaveSetterDescription", resourceCulture);
+                return ResourceManager.GetString("ValueInCallerAllocatedBufferRequiresSpanConstructorDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to The &apos;Value&apos; property on the native type &apos;{0}&apos; must have a setter.
+        ///   Looks up a localized string similar to The type &apos;{0}&apos; specifies that it supports &apos;In&apos; marshalling with the &apos;CallerAllocatedBuffer&apos; feature for &apos;{1}&apos; but does not provide a one-parameter constructor that takes a &apos;{1}&apos; and &apos;Span&lt;byte&gt;&apos; as parameters.
         /// </summary>
-        internal static string ValuePropertyMustHaveSetterMessage {
+        internal static string ValueInCallerAllocatedBufferRequiresSpanConstructorMessage {
             get {
-                return ResourceManager.GetString("ValuePropertyMustHaveSetterMessage", resourceCulture);
+                return ResourceManager.GetString("ValueInCallerAllocatedBufferRequiresSpanConstructorMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A &apos;Value&apos;-kind native type must provide a one-parameter constructor taking the managed type as a parameter.
+        /// </summary>
+        internal static string ValueInRequiresOneParameterConstructorDescription {
+            get {
+                return ResourceManager.GetString("ValueInRequiresOneParameterConstructorDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The type &apos;{0}&apos; specifies that it supports &apos;In&apos; marshalling of &apos;{1}&apos; but does not provide a one-parameter constructor that takes a &apos;{1}&apos; as a parameter.
+        /// </summary>
+        internal static string ValueInRequiresOneParameterConstructorMessage {
+            get {
+                return ResourceManager.GetString("ValueInRequiresOneParameterConstructorMessage", resourceCulture);
             }
         }
     }

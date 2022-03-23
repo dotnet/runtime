@@ -182,6 +182,6 @@ jobs:
 
     # WebAssembly windows
     - ${{ if eq(parameters.platform, 'Browser_wasm_win') }}:
-      - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h2.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-webassembly-amd64-20210702131541-6837048
+      - (Windows.Amd64.Server2022.Open)windows.amd64.server2022.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2022-helix-webassembly-20220118164817-dc6e6f1
 
     ${{ insert }}: ${{ parameters.jobParameters }}

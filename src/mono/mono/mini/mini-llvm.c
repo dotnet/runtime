@@ -4765,105 +4765,6 @@ emit_throw (EmitContext *ctx, MonoBasicBlock *bb, gboolean rethrow, LLVMValueRef
 	emit_call (ctx, bb, &ctx->builder, callee, &arg, 1);
 }
 
-static void
-emit_resume_eh (EmitContext *ctx, MonoBasicBlock *bb)
-{
-	const MonoJitICallId icall_id = MONO_JIT_ICALL_mini_llvmonly_resume_exception;
-	LLVMValueRef callee;
-
-	LLVMTypeRef fun_sig = LLVMFunctionType0 (LLVMVoidType (), FALSE);
-
-	g_assert (ctx->cfg->compile_aot);
-	callee = get_callee (ctx, fun_sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id));
-
-	emit_call (ctx, bb, &ctx->builder, callee, NULL, 0);
-
-	LLVMBuildUnreachable (ctx->builder);
-
-	ctx->builder = create_builder (ctx);
-}
-
-static LLVMValueRef
-mono_llvm_emit_clear_exception_call (EmitContext *ctx, LLVMBuilderRef builder)
-{
-	const MonoJitICallId icall_id = MONO_JIT_ICALL_mini_llvmonly_clear_exception;
-
-	LLVMTypeRef call_sig = LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE);
-	LLVMValueRef callee = NULL;
-
-	if (!callee) {
-		callee = get_callee (ctx, call_sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id));
-	}
-
-	g_assert (builder && callee);
-
-	return LLVMBuildCall (builder, callee, NULL, 0, "");
-}
-
-static LLVMValueRef
-mono_llvm_emit_load_exception_call (EmitContext *ctx, LLVMBuilderRef builder)
-{
-	const MonoJitICallId icall_id = MONO_JIT_ICALL_mini_llvmonly_load_exception;
-
-	LLVMTypeRef call_sig = LLVMFunctionType (ObjRefType (), NULL, 0, FALSE);
-	LLVMValueRef callee = NULL;
-
-	g_assert (ctx->cfg->compile_aot);
-
-	if (!callee) {
-		callee = get_callee (ctx, call_sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id));
-	}
-
-	g_assert (builder && callee);
-
-	return LLVMBuildCall (builder, callee, NULL, 0, "load_exception");
-}
-
-
-static LLVMValueRef
-mono_llvm_emit_match_exception_call (EmitContext *ctx, LLVMBuilderRef builder, gint32 region_start, gint32 region_end)
-{
-	const char *icall_name = "mini_llvmonly_match_exception";
-	const MonoJitICallId icall_id = MONO_JIT_ICALL_mini_llvmonly_match_exception;
-
-	ctx->builder = builder;
-
-	LLVMValueRef args[5];
-	const int num_args = G_N_ELEMENTS (args);
-
-	args [0] = convert (ctx, get_aotconst (ctx, MONO_PATCH_INFO_AOT_JIT_INFO, GINT_TO_POINTER (ctx->cfg->method_index), LLVMPointerType (IntPtrType (), 0)), IntPtrType ());
-	args [1] = LLVMConstInt (LLVMInt32Type (), region_start, 0);
-	args [2] = LLVMConstInt (LLVMInt32Type (), region_end, 0);
-	if (ctx->cfg->rgctx_var) {
-		if (ctx->cfg->llvm_only) {
-			args [3] = convert (ctx, ctx->rgctx_arg, IntPtrType ());
-		} else {
-			LLVMValueRef rgctx_alloc = ctx->addresses [ctx->cfg->rgctx_var->dreg];
-			g_assert (rgctx_alloc);
-			args [3] = LLVMBuildLoad (builder, convert (ctx, rgctx_alloc, LLVMPointerType (IntPtrType (), 0)), "");
-		}
-	} else {
-		args [3] = LLVMConstInt (IntPtrType (), 0, 0);
-	}
-	if (ctx->this_arg)
-		args [4] = convert (ctx, ctx->this_arg, IntPtrType ());
-	else
-		args [4] = LLVMConstInt (IntPtrType (), 0, 0);
-
-	LLVMTypeRef match_sig = LLVMFunctionType5 (LLVMInt32Type (), IntPtrType (), LLVMInt32Type (), LLVMInt32Type (), IntPtrType (), IntPtrType (), FALSE);
-	LLVMValueRef callee;
-	g_assert (ctx->cfg->compile_aot);
-	ctx->builder = builder;
-	// get_callee expects ctx->builder to be the emitting builder
-	callee = get_callee (ctx, match_sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id));
-
-	g_assert (builder && callee);
-
-	g_assert (ctx->ex_var);
-
-	return LLVMBuildCall (builder, callee, args, num_args, icall_name);
-}
-
 // FIXME: This won't work because the code-finding makes this
 // not a constant.
 /*#define MONO_PERSONALITY_DEBUG*/
@@ -4958,100 +4859,96 @@ emit_llvmonly_landing_pad (EmitContext *ctx, int group_index, int group_size)
 		LLVMAddClause (landing_pad, cast);
 	}
 
-	if (ctx->cfg->deopt) {
-		/*
-		 * Call mini_llvmonly_resume_exception_il_state (lmf, il_state)
-		 *
-		 *   The call will execute the catch clause and the rest of the method and store the return
-		 * value into ctx->il_state_ret.
-		 */
-		if (!ctx->has_catch) {
-			/* Unused */
-			LLVMBuildUnreachable (builder);
-			return lpad_bb;
-		}
+	g_assert (ctx->cfg->deopt);
 
-		if (mono_opt_wasm_exceptions) {
-			bb_name = g_strdup_printf ("CATCH_CONT%d_BB", group_index);
-			LLVMBasicBlockRef catch_cont_bb = gen_bb (ctx, bb_name);
-			g_free (bb_name);
-			LLVMBuildCatchRet (builder, catchpad, catch_cont_bb);
-			LLVMPositionBuilderAtEnd (builder, catch_cont_bb);
-		}
-
-		const MonoJitICallId icall_id = MONO_JIT_ICALL_mini_llvmonly_resume_exception_il_state;
-		LLVMValueRef callee;
-		LLVMValueRef args [2];
-
-		LLVMTypeRef fun_sig = LLVMFunctionType2 (LLVMVoidType (), IntPtrType (), IntPtrType (), FALSE);
-
-		callee = get_callee (ctx, fun_sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id));
-
-		g_assert (ctx->cfg->lmf_var);
-		g_assert (ctx->addresses [ctx->cfg->lmf_var->dreg]);
-		args [0] = LLVMBuildPtrToInt (ctx->builder, ctx->addresses [ctx->cfg->lmf_var->dreg], IntPtrType (), "");
-		args [1] = LLVMBuildPtrToInt (ctx->builder, ctx->il_state, IntPtrType (), "");
-		emit_call (ctx, NULL, &ctx->builder, callee, args, 2);
-
-		/* Return the value set in ctx->il_state_ret */
-
-		LLVMTypeRef ret_type = LLVMGetReturnType (LLVMGetElementType (LLVMTypeOf (ctx->lmethod)));
-		LLVMBuilderRef builder = ctx->builder;
-		LLVMValueRef addr, retval, gep, indexes [2];
-
-		switch (ctx->linfo->ret.storage) {
-		case LLVMArgNone:
-			LLVMBuildRetVoid (builder);
-			break;
-		case LLVMArgNormal:
-		case LLVMArgWasmVtypeAsScalar:
-		case LLVMArgVtypeInReg: {
-			if (ctx->sig->ret->type == MONO_TYPE_VOID) {
-				LLVMBuildRetVoid (builder);
-				break;
-			}
-
-			addr = ctx->il_state_ret;
-			g_assert (addr);
-
-			addr = convert (ctx, ctx->il_state_ret, LLVMPointerType (ret_type, 0));
-			indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-			indexes [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-			gep = LLVMBuildGEP (builder, addr, indexes, 1, "");
-
-			LLVMBuildRet (builder, LLVMBuildLoad (builder, gep, ""));
-			break;
-		}
-		case LLVMArgVtypeRetAddr: {
-			LLVMValueRef ret_addr;
-
-			g_assert (cfg->vret_addr);
-			ret_addr = ctx->values [cfg->vret_addr->dreg];
-
-			addr = ctx->il_state_ret;
-			g_assert (addr);
-
-			/* The ret value is in il_state_ret, copy it to the memory pointed to by the vret arg */
-			ret_type = type_to_llvm_type (ctx, ctx->sig->ret);
-			indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-			indexes [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-			gep = LLVMBuildGEP (builder, addr, indexes, 1, "");
-			retval = convert (ctx, LLVMBuildLoad (builder, gep, ""), ret_type);
-
-			LLVMBuildStore (builder, retval, convert (ctx, ret_addr, LLVMPointerType (ret_type, 0)));
-			LLVMBuildRetVoid (builder);
-			break;
-		}
-		default:
-			g_assert_not_reached ();
-			break;
-		}
-
+	/*
+	 * Call mini_llvmonly_resume_exception_il_state (lmf, il_state)
+	 *
+	 *   The call will execute the catch clause and the rest of the method and store the return
+	 * value into ctx->il_state_ret.
+	 */
+	if (!ctx->has_catch) {
+		/* Unused */
+		LLVMBuildUnreachable (builder);
 		return lpad_bb;
 	}
 
-	/* Non interp based EH doesn't work */
-	g_assert_not_reached ();
+	if (mono_opt_wasm_exceptions) {
+		bb_name = g_strdup_printf ("CATCH_CONT%d_BB", group_index);
+		LLVMBasicBlockRef catch_cont_bb = gen_bb (ctx, bb_name);
+		g_free (bb_name);
+		LLVMBuildCatchRet (builder, catchpad, catch_cont_bb);
+		LLVMPositionBuilderAtEnd (builder, catch_cont_bb);
+	}
+
+	const MonoJitICallId icall_id = MONO_JIT_ICALL_mini_llvmonly_resume_exception_il_state;
+	LLVMValueRef callee;
+	LLVMValueRef args [2];
+
+	LLVMTypeRef fun_sig = LLVMFunctionType2 (LLVMVoidType (), IntPtrType (), IntPtrType (), FALSE);
+
+	callee = get_callee (ctx, fun_sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id));
+
+	g_assert (ctx->cfg->lmf_var);
+	g_assert (ctx->addresses [ctx->cfg->lmf_var->dreg]);
+	args [0] = LLVMBuildPtrToInt (ctx->builder, ctx->addresses [ctx->cfg->lmf_var->dreg], IntPtrType (), "");
+	args [1] = LLVMBuildPtrToInt (ctx->builder, ctx->il_state, IntPtrType (), "");
+	emit_call (ctx, NULL, &ctx->builder, callee, args, 2);
+
+	/* Return the value set in ctx->il_state_ret */
+
+	LLVMTypeRef ret_type = LLVMGetReturnType (LLVMGetElementType (LLVMTypeOf (ctx->lmethod)));
+	LLVMValueRef addr, retval, gep, indexes [2];
+
+	builder = ctx->builder;
+
+	switch (ctx->linfo->ret.storage) {
+	case LLVMArgNone:
+		LLVMBuildRetVoid (builder);
+		break;
+	case LLVMArgNormal:
+	case LLVMArgWasmVtypeAsScalar:
+	case LLVMArgVtypeInReg: {
+		if (ctx->sig->ret->type == MONO_TYPE_VOID) {
+			LLVMBuildRetVoid (builder);
+			break;
+		}
+
+		addr = ctx->il_state_ret;
+		g_assert (addr);
+
+		addr = convert (ctx, ctx->il_state_ret, LLVMPointerType (ret_type, 0));
+		indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+		indexes [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+		gep = LLVMBuildGEP (builder, addr, indexes, 1, "");
+
+		LLVMBuildRet (builder, LLVMBuildLoad (builder, gep, ""));
+		break;
+	}
+	case LLVMArgVtypeRetAddr: {
+		LLVMValueRef ret_addr;
+
+		g_assert (cfg->vret_addr);
+		ret_addr = ctx->values [cfg->vret_addr->dreg];
+
+		addr = ctx->il_state_ret;
+		g_assert (addr);
+
+		/* The ret value is in il_state_ret, copy it to the memory pointed to by the vret arg */
+		ret_type = type_to_llvm_type (ctx, ctx->sig->ret);
+		indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+		indexes [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+		gep = LLVMBuildGEP (builder, addr, indexes, 1, "");
+		retval = convert (ctx, LLVMBuildLoad (builder, gep, ""), ret_type);
+
+		LLVMBuildStore (builder, retval, convert (ctx, ret_addr, LLVMPointerType (ret_type, 0)));
+		LLVMBuildRetVoid (builder);
+		break;
+	}
+	default:
+		g_assert_not_reached ();
+		break;
+	}
 
 	return lpad_bb;
 }
@@ -5340,41 +5237,18 @@ emit_llvmonly_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBasicBloc
 	int clause_index = MONO_REGION_CLAUSE_INDEX (bb->region);
 	MonoExceptionClause *clause = &ctx->cfg->header->clauses [clause_index];
 
-	// Make exception available to catch blocks
+	g_assert (ctx->cfg->deopt);
+
+	/* This code is not executed becase the landing pad transitions to the intepreter */
+
 	if (!(clause->flags & MONO_EXCEPTION_CLAUSE_FINALLY || clause->flags & MONO_EXCEPTION_CLAUSE_FAULT)) {
-		LLVMValueRef mono_exc = mono_llvm_emit_load_exception_call (ctx, ctx->builder);
-
-		g_assert (ctx->ex_var);
-		LLVMBuildStore (ctx->builder, LLVMBuildBitCast (ctx->builder, mono_exc, ObjRefType (), ""), ctx->ex_var);
-
 		if (bb->in_scount == 1) {
 			MonoInst *exvar = bb->in_stack [0];
 			g_assert (!ctx->values [exvar->dreg]);
-			g_assert (ctx->ex_var);
-			ctx->values [exvar->dreg] = LLVMBuildLoad (ctx->builder, ctx->ex_var, "save_exception");
+			ctx->values [exvar->dreg] = LLVMConstNull (ObjRefType ());
 			emit_volatile_store (ctx, exvar->dreg);
 		}
-
-		mono_llvm_emit_clear_exception_call (ctx, ctx->builder);
 	}
-
-#ifdef TARGET_WASM
-	if (ctx->cfg->lmf_var && !ctx->cfg->deopt) {
-		LLVMValueRef callee;
-		LLVMValueRef args [1];
-		LLVMTypeRef sig = LLVMFunctionType1 (LLVMVoidType (), ctx->module->ptr_type, FALSE);
-
-		/*
-		 * There might be an LMF on the stack inserted to enable stack walking, see
-		 * method_needs_stack_walk (). If an exception is thrown, the LMF popping code
-		 * is not executed, so do it here.
-		 */
-		g_assert (ctx->addresses [ctx->cfg->lmf_var->dreg]);
-		callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mini_llvmonly_pop_lmf));
-		args [0] = convert (ctx, ctx->addresses [ctx->cfg->lmf_var->dreg], ctx->module->ptr_type);
-		emit_call (ctx, bb, &ctx->builder, callee, args, 1);
-	}
-#endif
 
 	LLVMBuilderRef handler_builder = create_builder (ctx);
 	LLVMBasicBlockRef target_bb = ctx->bblocks [bb->block_num].call_handler_target_bb;
@@ -11260,12 +11134,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			}
 
 			if (ctx->llvm_only) {
-				if (!cfg->deopt) {
-					emit_resume_eh (ctx, bb);
-				} else {
-					/* Not needed */
-					LLVMBuildUnreachable (builder);
-				}
+				g_assert (cfg->deopt);
+				/* Not needed */
+				LLVMBuildUnreachable (builder);
 			} else {
 				LLVMTypeRef icall_sig = LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE);
 				if (ctx->cfg->compile_aot) {

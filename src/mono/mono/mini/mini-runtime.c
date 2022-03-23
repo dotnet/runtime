@@ -4688,11 +4688,7 @@ register_icalls (void)
 	register_icall (mini_llvmonly_throw_exception, mono_icall_sig_void_object, TRUE);
 	register_icall (mini_llvmonly_rethrow_exception, mono_icall_sig_void_object, TRUE);
 	register_icall (mini_llvmonly_throw_corlib_exception, mono_icall_sig_void_int, TRUE);
-	register_icall (mini_llvmonly_resume_exception, mono_icall_sig_void, TRUE);
 	register_icall (mini_llvmonly_resume_exception_il_state, mono_icall_sig_void_ptr_ptr, TRUE);
-	register_icall (mini_llvmonly_load_exception, mono_icall_sig_object, TRUE);
-	register_icall (mini_llvmonly_clear_exception, NULL, TRUE);
-	register_icall (mini_llvmonly_match_exception, mono_icall_sig_int_ptr_int_int_ptr_object, TRUE);
 
 #if defined(ENABLE_LLVM) && defined(HAVE_UNWIND_H)
 	register_icall (mono_llvm_set_unhandled_exception_handler, NULL, TRUE);
@@ -4895,7 +4891,6 @@ register_icalls (void)
 	register_icall (mini_llvmonly_init_delegate_virtual, mono_icall_sig_void_object_object_ptr, TRUE);
 	register_icall (mini_llvmonly_throw_nullref_exception, mono_icall_sig_void, TRUE);
 	register_icall (mini_llvmonly_throw_aot_failed_exception, mono_icall_sig_void_ptr, TRUE);
-	register_icall (mini_llvmonly_pop_lmf, mono_icall_sig_void_ptr, TRUE);
 	register_icall (mini_llvmonly_interp_entry_gsharedvt, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 
 	register_icall (mono_get_assembly_object, mono_icall_sig_object_ptr, TRUE);

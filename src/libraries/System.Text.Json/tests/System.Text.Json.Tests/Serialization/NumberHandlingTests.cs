@@ -1825,41 +1825,41 @@ namespace System.Text.Json.Serialization.Tests
 
     public class NumberHandlingTests_AsyncStreamOverload : NumberHandlingTests_OverloadSpecific
     {
-        public NumberHandlingTests_AsyncStreamOverload() : base(JsonSerializerWrapperForString.AsyncStreamSerializer) { }
+        public NumberHandlingTests_AsyncStreamOverload() : base(JsonSerializerWrapper.AsyncStreamSerializer) { }
     }
 
     public class NumberHandlingTests_SyncStreamOverload : NumberHandlingTests_OverloadSpecific
     {
-        public NumberHandlingTests_SyncStreamOverload() : base(JsonSerializerWrapperForString.SyncStreamSerializer) { }
+        public NumberHandlingTests_SyncStreamOverload() : base(JsonSerializerWrapper.SyncStreamSerializer) { }
     }
 
     public class NumberHandlingTests_SyncOverload : NumberHandlingTests_OverloadSpecific
     {
-        public NumberHandlingTests_SyncOverload() : base(JsonSerializerWrapperForString.StringSerializer) { }
+        public NumberHandlingTests_SyncOverload() : base(JsonSerializerWrapper.StringSerializer) { }
     }
 
     public class NumberHandlingTests_Document : NumberHandlingTests_OverloadSpecific
     {
-        public NumberHandlingTests_Document() : base(JsonSerializerWrapperForString.DocumentSerializer) { }
+        public NumberHandlingTests_Document() : base(JsonSerializerWrapper.DocumentSerializer) { }
     }
 
     public class NumberHandlingTests_Element : NumberHandlingTests_OverloadSpecific
     {
-        public NumberHandlingTests_Element() : base(JsonSerializerWrapperForString.ElementSerializer) { }
+        public NumberHandlingTests_Element() : base(JsonSerializerWrapper.ElementSerializer) { }
     }
 
     public class NumberHandlingTests_Node : NumberHandlingTests_OverloadSpecific
     {
-        public NumberHandlingTests_Node() : base(JsonSerializerWrapperForString.NodeSerializer) { }
+        public NumberHandlingTests_Node() : base(JsonSerializerWrapper.NodeSerializer) { }
     }
 
     public abstract class NumberHandlingTests_OverloadSpecific
     {
-        private JsonSerializerWrapperForString Deserializer { get; }
+        private JsonSerializerWrapper Serializer { get; }
 
-        public NumberHandlingTests_OverloadSpecific(JsonSerializerWrapperForString deserializer)
+        public NumberHandlingTests_OverloadSpecific(JsonSerializerWrapper deserializer)
         {
-            Deserializer = deserializer;
+            Serializer = deserializer;
         }
 
         [Theory]
@@ -1872,7 +1872,7 @@ namespace System.Text.Json.Serialization.Tests
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             };
 
-            Result result = await Deserializer.DeserializeWrapper<Result>(json, options);
+            Result result = await Serializer.DeserializeWrapper<Result>(json, options);
             JsonTestHelper.AssertJsonEqual(json, JsonSerializer.Serialize(result, options));
         }
 

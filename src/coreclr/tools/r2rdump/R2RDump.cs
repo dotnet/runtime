@@ -5,7 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.CommandLine;
+using System.CommandLine.Builder;
 using System.CommandLine.Invocation;
+using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
@@ -26,53 +28,9 @@ using OperatingSystem = ILCompiler.Reflection.ReadyToRun.OperatingSystem;
 
 namespace R2RDump
 {
-    public class DumpOptions : IAssemblyResolver
+    public partial class DumpOptions : IAssemblyResolver
     {
-        public FileInfo[] In { get; set; }
-        public FileInfo Out { get; set; }
-        public bool Raw { get; set; }
-        public bool Header { get; set; }
-        public bool Disasm { get; set; }
-        public bool Naked { get; set; }
-        public bool HideOffsets { get; set; }
-
-        public string[] Query { get; set; }
-        public string[] Keyword { get; set; }
-        public string[] RuntimeFunction { get; set; }
-        public string[] Section { get; set; }
-
-        public bool Unwind { get; set; }
-        public bool GC { get; set; }
-        public bool Pgo { get; set; }
-        public bool SectionContents { get; set; }
-        public bool EntryPoints { get; set; }
-        public bool Normalize { get; set; }
-        public bool HideTransitions { get; set; }
-        public bool Verbose { get; set; }
-        public bool Diff { get; set; }
-        public bool DiffHideSameDisasm { get; set; }
-        public bool IgnoreSensitive { get; set; }
-
-        public bool CreatePDB { get; set; }
-        public string PdbPath { get; set; }
-
-        public bool CreatePerfmap { get; set; }
-        public string PerfmapPath { get; set; }
-        public int PerfmapFormatVersion { get; set; }
-
-
-        public FileInfo[] Reference { get; set; }
-        public DirectoryInfo[] ReferencePath { get; set; }
-
-        public bool SignatureBinary { get; set; }
-        public bool InlineSignatureBinary { get; set; }
-
         private SignatureFormattingOptions signatureFormattingOptions;
-
-        public DumpOptions()
-        {
-            PerfmapFormatVersion = PerfMapWriter.CurrentFormatVersion;
-        }
 
         /// <summary>
         /// Probing extensions to use when looking up assemblies under reference paths.
@@ -232,7 +190,7 @@ namespace R2RDump
         public Disassembler Disassembler => _disassembler;
     }
 
-    class R2RDump
+    public class R2RDump
     {
         private readonly DumpOptions _options;
         private readonly Dictionary<ReadyToRunSectionType, bool> _selectedSections = new Dictionary<ReadyToRunSectionType, bool>();
@@ -240,19 +198,10 @@ namespace R2RDump
         private readonly TextWriter _writer;
         private Dumper _dumper;
 
-        private R2RDump(DumpOptions options)
+        public R2RDump(DumpOptions options)
         {
             _options = options;
             _encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
-
-            if (_options.Verbose)
-            {
-                _options.Disasm = true;
-                _options.Unwind = true;
-                _options.GC = true;
-                _options.Pgo = true;
-                _options.SectionContents = true;
-            }
 
             if (_options.Out != null)
             {
@@ -606,7 +555,7 @@ namespace R2RDump
             return null;
         }
 
-        private int Run()
+        public int Run()
         {
             Disassembler disassembler = null;
 
@@ -678,11 +627,15 @@ namespace R2RDump
             return 0;
         }
 
-        public static async Task<int> Main(string[] args)
-        {
-            var command = CommandLineOptions.RootCommand();
-            command.Handler = CommandHandler.Create<DumpOptions>((DumpOptions options) => new R2RDump(options).Run());
-            return await command.InvokeAsync(args);
-        }
+        //
+        // Command line parsing
+        //
+
+        public static int Main(string[] args) =>
+            new CommandLineBuilder(new R2RDumpRootCommand())
+                    .UseHelp()
+                    .UseParseErrorReporting()
+                    .Build()
+                    .Invoke(args);
     }
 }
