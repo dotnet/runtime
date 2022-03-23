@@ -147,6 +147,9 @@ $__EndLabelName
 
     LEAF_END $FuncName
 
+    ; make sure this symbol gets its own address
+    nop
+
     MEND
 ;-----------------------------------------------------------------------------
 ; Macro use for enabling C++ to know where to patch code at runtime.

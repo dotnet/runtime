@@ -145,7 +145,7 @@ steps:
   - script: |
       set -x
       pwd
-      git clone https://github.com/naricc/dotnet-podcasts.git
+      git clone https://github.com/microsoft/dotnet-podcasts.git -b maui/perf --single-branch
       cd dotnet-podcasts
       cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
       cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
