@@ -1639,11 +1639,48 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Theory]
-        [InlineData("a", 1)]
-        [InlineData("b", 2)]
-        [InlineData("y", 1)]
-        public void CheckSignature_MultipleEnvelopedSignatures(string signatureParent, int expectedPosition)
+        [InlineData("a" /*, 1*/)]
+        [InlineData("b" /*, 2*/)]
+        [InlineData("y" /*, 1*/)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "SignedXml has been failing validation on nested signatures all the time with .NET Framework and .NET (Core) up to .NET 6. This test was added together with a fix for .NET 7.")]
+        public void CheckSignatureMultipleEnvelopedSignatures(string signatureParent/*, int expectedPosition*/)
         {
+            // To reduce running time, the test data is a pre-calculated string. For anyone that want to
+            // make adjustments to it, this is the small program that was used to generate the data.
+
+            //void Main()
+            //{
+            //	var xml = "<root><x ID=\"a\"/><x ID=\"b\"><x ID=\"c\"><x ID=\"y\"/></x></x></root>";
+            //
+            //	var xd = new XmlDocument();
+            //	xd.LoadXml(xml);
+            //
+            //	Sign(xd, "c", "y");
+            //	Sign(xd, "b", "b");
+            //	Sign(xd, "a", "a");
+            //}
+            //
+            //void Sign(XmlDocument xd, string id, string signaturePlacement)
+            //{
+            //	var sx = new SignedXml(xd);
+            //	var key = RSA.Create();
+            //	sx.SigningKey = key;
+            //
+            //	var reference = new Reference("#" + id);
+            //	reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
+            //	reference.AddTransform(new XmlDsigExcC14NTransform());
+            //	sx.AddReference(reference);
+            //
+            //	sx.ComputeSignature();
+            //	sx.KeyInfo.AddClause(new RSAKeyValue(key));
+            //
+            //	var node = xd.SelectSingleNode("//x[@ID=\'" + signaturePlacement + "']");
+            //
+            //	var signatureElement = sx.GetXml();
+            //
+            //	node.AppendChild(sx.GetXml());
+            //}
+
             // Note that signatures were created/added in an order so that all should validate.
             var xml =
                 @"<root>
@@ -1680,13 +1717,15 @@ namespace System.Security.Cryptography.Xml.Tests
 
             subject.LoadXml(signatureElement);
 
-            var transform = (XmlDsigEnvelopedSignatureTransform)((Reference)subject.Signature.SignedInfo.References[0]).TransformChain[0];
+            // When debugging this test, it might make sense to validate the actual signature
+            // position rather than the external-visible behaviour. The test relies on private
+            // reflection so I don't think it belongs in the normal test run. Comment out these
+            // lines  and the expectedPosition parameter to enable the validation
 
-            var signaturePositionField = typeof(XmlDsigEnvelopedSignatureTransform).GetField("_signaturePosition", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
-
-            var actualPositiom = (int)signaturePositionField.GetValue(transform);
-
-            Assert.Equal(expectedPosition, actualPositiom);
+            //var transform = (XmlDsigEnvelopedSignatureTransform)((Reference)subject.Signature.SignedInfo.References[0]).TransformChain[0];
+            //var signaturePositionField = typeof(XmlDsigEnvelopedSignatureTransform).GetField("_signaturePosition", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+            //var actualPosition = (int)signaturePositionField.GetValue(transform);
+            //Assert.Equal(expectedPosition, actualPosition);
 
             Assert.True(subject.CheckSignature(), "Multiple signatures, validating " + signatureParent);
         }
