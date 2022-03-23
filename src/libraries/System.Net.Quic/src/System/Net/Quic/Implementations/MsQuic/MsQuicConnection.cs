@@ -346,11 +346,19 @@ namespace System.Net.Quic.Implementations.MsQuic
         private static uint HandleEventNewStream(State state, ref ConnectionEvent connectionEvent)
         {
             var streamHandle = new SafeMsQuicStreamHandle(connectionEvent.Data.PeerStreamStarted.Stream);
-            if (!state.TryQueueNewStream(streamHandle, connectionEvent.Data.PeerStreamStarted.Flags))
+            bool success = false;
+            try
             {
-                // This will call StreamCloseDelegate and free the stream.
-                // We will return Success to the MsQuic to prevent double free.
-                streamHandle.Dispose();
+                success = state.TryQueueNewStream(streamHandle, connectionEvent.Data.PeerStreamStarted.Flags);
+            }
+            finally
+            {
+                if (!success)
+                {
+                    // This will call StreamCloseDelegate and free the stream.
+                    // We will return Success to the MsQuic to prevent double free.
+                    streamHandle.Dispose();
+                }
             }
 
             return MsQuicStatusCodes.Success;
@@ -389,7 +397,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEventPeerCertificateReceived(State state, ref ConnectionEvent connectionEvent)
         {
-            SslPolicyErrors sslPolicyErrors  = SslPolicyErrors.None;
+            SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
             X509Chain? chain = null;
             X509Certificate2? certificate = null;
             X509Certificate2Collection? additionalCertificates = null;
