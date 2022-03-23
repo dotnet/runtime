@@ -269,9 +269,9 @@ namespace System.Security.Cryptography.Xml
 
                             // Resolve the reference to get starting point for position calculation.
                             XmlNode referenceTarget =
-                                _uri == ""
+                                _uri.Length == 0
                                 ? transformElement.OwnerDocument
-                                : SignedXml.GetIdElement(transformElement.OwnerDocument, Utils.GetIdFromLocalUri(_uri, out var _));
+                                : SignedXml.GetIdElement(transformElement.OwnerDocument, Utils.GetIdFromLocalUri(_uri, out bool _));
 
                             XmlNodeList signatureList = referenceTarget.SelectNodes(".//ds:Signature", nsm);
                             if (signatureList != null)

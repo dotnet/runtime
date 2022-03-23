@@ -1644,29 +1644,41 @@ namespace System.Security.Cryptography.Xml.Tests
         [InlineData("y")]
         public void CheckSignature_MultipleEnvelopedSignatures(string signatureParent)
         {
-            // Test xml structure:
-            // <root ID="r">
-            //   <x ID="a"><Signature Reference="#a"/></x>
-            //   <x ID="b">
-            //     <x ID="c">
-            //       <x ID="y"><Signature reference="#c"></x>
-            //     </x>
-            //     <Signature reference="#b">
-            //   </x>
-            //   </Signature Reference="r"/>
-            // </root>
             // Note that signatures were created/added in an order so that all should validate.
-
-            var xml = "<root><x ID=\"a\"><Signature xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><SignedInfo><CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\" /><SignatureMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#rsa-sha1\" /><Reference URI=\"#a\"><Transforms><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\" /><Transform Algorithm=\"http://www.w3.org/2001/10/xml-exc-c14n#\" /></Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>2US57VqBEH0lqyIYKTxbq2deDTA=</DigestValue></Reference></SignedInfo><SignatureValue>g7tNDQModj88VVKBF/s9olPNnC6WtxdBUOnwzgKCBs3XWqUXqe38E6XZiZYFaqeC6RLN5ceEXeNj8ld+90QMSKXMzdS2IjZlYm0OKoIZsGWa8QPCgFWVHxca8D89DfDX6Wb88Dy7pVZMoHKFT7nO3W12FdKHdhYmXmy3S3mcieU=</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>l9UvGZDXyXyRejbbRWFs3RMJMmgxLdXatJld25E8rg2WMTo11B+Pv0Ha+mEf2erByT2dvH6LNqkt/vLpM1yi93JvhGanVnAHLxYY9HcaZ1q7UcVF4CPaSuQPF5hrlN6YDw+EFyt0zftJSw9WrqtpZHIcwhkAzuIjO+p3aqrXOfE=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue></KeyInfo></Signature></x><x ID=\"b\"><x ID=\"c\"><x ID=\"y\"><Signature xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><SignedInfo><CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\" /><SignatureMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#rsa-sha1\" /><Reference URI=\"#c\"><Transforms><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\" /><Transform Algorithm=\"http://www.w3.org/2001/10/xml-exc-c14n#\" /></Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>NGqdYOU+AMF8pwX09mfN7GfG9lA=</DigestValue></Reference></SignedInfo><SignatureValue>mPdD2cjCWQkOB0PRw3dorKz8l+oIuNBPE/qigV2f54JOE9VUBvFcb58QKAZ+nWlXb8YJP8BFQNOUnq6G9/LDU0yXFQwqPqarO7HbK1QwaVR6priZt1pbFEC4pDxKseESrqrmUfqyk7jwp1DNUZ1W0Hyikvx4VKFw2vw5Dz5SsF4=</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>x8W5+qq1UoMGlVntuUCkFgc8+ugoxxoDMhEAMxzmRD2IcyKkaUeUJVmqwgrNnyfn9Xq6szKehtRE7lp/p5yMA8YTP9pYZKuz6uYggodWib1nw+eiGFFIKXxDpwGLg06a/4zb+wbENvajSlEeukgoGuXth5pHlHj8ZGl8gov+XiU=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue></KeyInfo></Signature></x></x><Signature xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><SignedInfo><CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\" /><SignatureMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#rsa-sha1\" /><Reference URI=\"#b\"><Transforms><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\" /><Transform Algorithm=\"http://www.w3.org/2001/10/xml-exc-c14n#\" /></Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>Ga9azU1oo+h4yVWLu9iW470t+G4=</DigestValue></Reference></SignedInfo><SignatureValue>hDoJcGuX8bIh2n/hrBrUBBgGHkC/jpb9blZ7beugEGpdhX+ZAMI6tqAa0LDKwc/93dUxvBjqPXqq9etuZczvvbsfUH4zimc2yI6OvSCk68rv7k+3DDOXSPP9WOzrDxrj2V3g0YMGjzQsgvehgUeJtvS02XI5sHjqz+Q8kVOAEZk=</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>wfthZwoX41wkyo7lCI3BcXLMk5pl2izbqTJVm6wjTfu8LCuICqs6UyQ7vOl56HblMYSASC5pBI3JjKbyzMNvSwQ59Hp6qpGfm5ZAtawvDGYpQRZ9nyBe38uZZatvn/MuNADNH6QroA0m7KA9Ct8FHySUpOpnje3pIu7VbJUqflk=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue></KeyInfo></Signature></x></root>";
+            var xml =
+                @"<root>
+                    <x ID=""a"">
+                        <Signature xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                            <SignedInfo><CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" /><SignatureMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#rsa-sha1"" />
+                                <Reference URI=""#a""><Transforms><Transform Algorithm=""http://www.w3.org/2000/09/xmldsig#enveloped-signature"" /><Transform Algorithm=""http://www.w3.org/2001/10/xml-exc-c14n#"" /></Transforms><DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1"" /><DigestValue>2US57VqBEH0lqyIYKTxbq2deDTA=</DigestValue></Reference>
+                            </SignedInfo><SignatureValue>g7tNDQModj88VVKBF/s9olPNnC6WtxdBUOnwzgKCBs3XWqUXqe38E6XZiZYFaqeC6RLN5ceEXeNj8ld+90QMSKXMzdS2IjZlYm0OKoIZsGWa8QPCgFWVHxca8D89DfDX6Wb88Dy7pVZMoHKFT7nO3W12FdKHdhYmXmy3S3mcieU=</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>l9UvGZDXyXyRejbbRWFs3RMJMmgxLdXatJld25E8rg2WMTo11B+Pv0Ha+mEf2erByT2dvH6LNqkt/vLpM1yi93JvhGanVnAHLxYY9HcaZ1q7UcVF4CPaSuQPF5hrlN6YDw+EFyt0zftJSw9WrqtpZHIcwhkAzuIjO+p3aqrXOfE=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue></KeyInfo>
+                        </Signature>
+                    </x>
+                    <x ID=""b"">
+                        <x ID=""c"">
+                            <x ID=""y"">
+                                <Signature xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                                    <SignedInfo><CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" /><SignatureMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#rsa-sha1"" />
+                                    <Reference URI=""#c""><Transforms><Transform Algorithm=""http://www.w3.org/2000/09/xmldsig#enveloped-signature"" /><Transform Algorithm=""http://www.w3.org/2001/10/xml-exc-c14n#"" /></Transforms><DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1"" /><DigestValue>NGqdYOU+AMF8pwX09mfN7GfG9lA=</DigestValue>
+                                    </Reference></SignedInfo><SignatureValue>mPdD2cjCWQkOB0PRw3dorKz8l+oIuNBPE/qigV2f54JOE9VUBvFcb58QKAZ+nWlXb8YJP8BFQNOUnq6G9/LDU0yXFQwqPqarO7HbK1QwaVR6priZt1pbFEC4pDxKseESrqrmUfqyk7jwp1DNUZ1W0Hyikvx4VKFw2vw5Dz5SsF4=</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>x8W5+qq1UoMGlVntuUCkFgc8+ugoxxoDMhEAMxzmRD2IcyKkaUeUJVmqwgrNnyfn9Xq6szKehtRE7lp/p5yMA8YTP9pYZKuz6uYggodWib1nw+eiGFFIKXxDpwGLg06a/4zb+wbENvajSlEeukgoGuXth5pHlHj8ZGl8gov+XiU=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue></KeyInfo>
+                                </Signature>
+                            </x>
+                        </x>
+                        <Signature xmlns=""http://www.w3.org/2000/09/xmldsig#""><SignedInfo><CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" /><SignatureMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#rsa-sha1"" />
+                            <Reference URI=""#b""><Transforms><Transform Algorithm=""http://www.w3.org/2000/09/xmldsig#enveloped-signature"" /><Transform Algorithm=""http://www.w3.org/2001/10/xml-exc-c14n#"" /></Transforms><DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1"" /><DigestValue>Ga9azU1oo+h4yVWLu9iW470t+G4=</DigestValue></Reference></SignedInfo><SignatureValue>hDoJcGuX8bIh2n/hrBrUBBgGHkC/jpb9blZ7beugEGpdhX+ZAMI6tqAa0LDKwc/93dUxvBjqPXqq9etuZczvvbsfUH4zimc2yI6OvSCk68rv7k+3DDOXSPP9WOzrDxrj2V3g0YMGjzQsgvehgUeJtvS02XI5sHjqz+Q8kVOAEZk=</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>wfthZwoX41wkyo7lCI3BcXLMk5pl2izbqTJVm6wjTfu8LCuICqs6UyQ7vOl56HblMYSASC5pBI3JjKbyzMNvSwQ59Hp6qpGfm5ZAtawvDGYpQRZ9nyBe38uZZatvn/MuNADNH6QroA0m7KA9Ct8FHySUpOpnje3pIu7VbJUqflk=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue></KeyInfo>
+                        </Signature>
+                    </x>
+                </root>";
 
             var doc = new XmlDocument();
             doc.LoadXml(xml);
 
             var subject = new SignedXml(doc);
 
-            var parentNode = doc.SelectSingleNode("//x[@ID='" + signatureParent + "']");
+            XmlNode parentNode = doc.SelectSingleNode("//x[@ID='" + signatureParent + "']");
+            XmlElement signatureElement = parentNode["Signature"];
 
-            subject.LoadXml(parentNode["Signature"]);
+            subject.LoadXml(signatureElement);
 
             Assert.True(subject.CheckSignature(), "Multiple signatures, validating " + signatureParent);
         }
