@@ -15,21 +15,13 @@
     <ProjectReference Include="$(CoreClrProjectRoot)tools/InjectResource/InjectResource.csproj" ReferenceOutputAssembly="false" OutputItemType="InjectResourceTool"/>
   </ItemGroup>
 
-  <PropertyGroup>
-    <SingleFileHostPath>$(CoreCLRArtifactsPath)\corehost\singlefilehost.exe</SingleFileHostPath>
-    <SingleFileHostSymbolsPath>$(CoreCLRArtifactsPath)\corehost\PDB\singlefilehost.pdb</SingleFileHostSymbolsPath>
-    <DacPath>$(CoreCLRArtifactsPath)\mscordaccore.dll</DacPath>
-    <SingleFileHostDestinationPath>$(DotNetHostBinDir)\singlefilehost.exe</SingleFileHostDestinationPath>
-    <SingleFileHostSymbolsDestinationPath>$(DotNetHostBinDir)\PDB\singlefilehost.pdb</SingleFileHostSymbolsDestinationPath>
-  </PropertyGroup>
-
   <Target Name="PrepareSingleFileHostWithEmbeddedDacPrereqs">
     <PropertyGroup>
-      <SingleFileHostPath>$(CoreCLRArtifactsPath)\corehost\singlefilehost.exe</SingleFileHostPath>
-      <SingleFileHostSymbolsPath>$(CoreCLRArtifactsPath)\corehost\PDB\singlefilehost.pdb</SingleFileHostSymbolsPath>
-      <DacPath>$(CoreCLRArtifactsPath)\mscordaccore.dll</DacPath>
-      <SingleFileHostDestinationPath>$(DotNetHostBinDir)\singlefilehost.exe</SingleFileHostDestinationPath>
-      <SingleFileHostSymbolsDestinationPath>$(DotNetHostBinDir)\PDB\singlefilehost.pdb</SingleFileHostSymbolsDestinationPath>
+      <SingleFileHostPath>$(CoreCLRArtifactsPath)/corehost/singlefilehost$(ExeSuffix)</SingleFileHostPath>
+      <SingleFileHostSymbolsPath>$(CoreCLRArtifactsPath)/corehost/PDB/singlefilehost$(SymbolsSuffix)</SingleFileHostSymbolsPath>
+      <DacPath>$(CoreCLRArtifactsPath)/mscordaccore$(LibSuffix)</DacPath>
+      <SingleFileHostDestinationPath>$(DotNetHostBinDir)/singlefilehost$(ExeSuffix)</SingleFileHostDestinationPath>
+      <SingleFileHostSymbolsDestinationPath>$(DotNetHostBinDir)/PDB/singlefilehost$(SymbolsSuffix)</SingleFileHostSymbolsDestinationPath>
     </PropertyGroup>
   </Target>
 
@@ -43,10 +35,11 @@
             $(DacPath);
             @(InjectResourceTool)"
     Outputs="$(SingleFileHostDestinationPath);$(SingleFileHostSymbolsDestinationPath)"
-    Condition="'$(RuntimeFlavor)' != 'Mono' and '$(TargetOS)' == 'windows'"
-    DependsOnTargets="ResolveProjectReferences">
+    DependsOnTargets="ResolveProjectReferences"
+    Condition="'$(RuntimeFlavor)' != 'Mono'">
     <Copy SourceFiles="$(SingleFileHostPath);$(SingleFileHostSymbolsPath)" DestinationFiles="$(SingleFileHostDestinationPath);$(SingleFileHostSymbolsPath)" />
-    <Exec Command="$(NetCoreRoot)dotnet exec @(InjectResourceTool) --bin &quot;$(DacPath)&quot; --image &quot;$(SingleFileHostDestinationPath)&quot; --name MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER" />
+    <Exec Condition="'$(TargetOS)' == 'windows'"
+          Command="$(NetCoreRoot)dotnet exec @(InjectResourceTool) --bin &quot;$(DacPath)&quot; --image &quot;$(SingleFileHostDestinationPath)&quot; --name MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER" />
   </Target>
   
   <Target Name="PrepareSingleFileHostWithEmbeddedDac"
