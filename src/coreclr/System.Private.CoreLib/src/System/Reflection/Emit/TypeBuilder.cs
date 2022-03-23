@@ -573,7 +573,7 @@ namespace System.Reflection.Emit
             ThrowIfCreated();
 
             // form the value class name
-            strValueClassName = "$ArrayType$" + size.ToString();
+            strValueClassName = $"$ArrayType${size}";
 
             // Is this already defined in this module?
             Type? temp = m_module.FindTypeBuilderWithName(strValueClassName, false);
