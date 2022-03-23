@@ -12,7 +12,7 @@ internal static partial class Interop
 #if DEBUG
         static Sys()
         {
-            foreach (string name in Enum.GetNames(typeof(UnixFileSystemTypes)))
+            foreach (string name in Enum.GetNames<UnixFileSystemTypes>())
             {
                 System.Diagnostics.Debug.Assert(GetDriveType(name) != DriveType.Unknown,
                     $"Expected {nameof(UnixFileSystemTypes)}.{name} to have an entry in {nameof(GetDriveType)}.");
