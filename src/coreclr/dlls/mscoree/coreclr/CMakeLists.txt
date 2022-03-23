@@ -211,6 +211,10 @@ if(CLR_CMAKE_TARGET_WIN32)
         clr_unknown_arch()
     endif()
 
+    # dacess.h defines this constant
+    # The value is a constract between the DAC and the runtime
+    set (DACCESS_TABLE_RESOURCE COREXTERNALDATAACCESSRESOURCE)
+
     add_custom_command(
         DEPENDS coreclr mscordaccore mscordbi ${CLR_DIR}/debug/daccess/daccess.cpp
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources_coreclr.timestamp
@@ -218,7 +222,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 
         # make and inject dactable for coreclr
         COMMAND cmd /c ${CLR_REPO_ROOT_DIR}/dotnet.cmd exec ${CMAKE_INSTALL_PREFIX}/DacTableGen/DacTableGen.dll /dac:${CMAKE_CURRENT_BINARY_DIR}/daccess.i /pdb:$<TARGET_PDB_FILE:coreclr> /dll:$<TARGET_FILE:coreclr> /bin:${CMAKE_CURRENT_BINARY_DIR}/wks.bin
-        COMMAND cmd /c ${CLR_REPO_ROOT_DIR}/dotnet.cmd exec ${CMAKE_INSTALL_PREFIX}/InjectResource/InjectResource.dll --bin ${CMAKE_CURRENT_BINARY_DIR}/wks.bin --image $<TARGET_FILE:coreclr> --name COREXTERNALDATAACCESSRESOURCE
+        COMMAND cmd /c ${CLR_REPO_ROOT_DIR}/dotnet.cmd exec ${CMAKE_INSTALL_PREFIX}/InjectResource/InjectResource.dll --bin ${CMAKE_CURRENT_BINARY_DIR}/wks.bin --image $<TARGET_FILE:coreclr> --name ${DACCESS_TABLE_RESOURCE}
 
         COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources_coreclr.timestamp
         COMMENT Add dactable to coreclr
@@ -236,7 +240,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 
         # make and inject dactable for singlefilehost
         COMMAND cmd /c ${CLR_REPO_ROOT_DIR}/dotnet.cmd exec ${CMAKE_INSTALL_PREFIX}/DacTableGen/DacTableGen.dll /dac:${CMAKE_CURRENT_BINARY_DIR}/daccess.i /pdb:$<TARGET_PDB_FILE:singlefilehost> /dll:$<TARGET_FILE:singlefilehost> /bin:${CMAKE_CURRENT_BINARY_DIR}/sfh.bin
-        COMMAND cmd /c ${CLR_REPO_ROOT_DIR}/dotnet.cmd exec ${CMAKE_INSTALL_PREFIX}/InjectResource/InjectResource.dll --bin ${CMAKE_CURRENT_BINARY_DIR}/sfh.bin --image $<TARGET_FILE:singlefilehost> --name COREXTERNALDATAACCESSRESOURCE
+        COMMAND cmd /c ${CLR_REPO_ROOT_DIR}/dotnet.cmd exec ${CMAKE_INSTALL_PREFIX}/InjectResource/InjectResource.dll --bin ${CMAKE_CURRENT_BINARY_DIR}/sfh.bin --image $<TARGET_FILE:singlefilehost> --name ${DACCESS_TABLE_RESOURCE}
 
         COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources_singlefilehost.timestamp
         COMMENT Add dactable to singlefilehost

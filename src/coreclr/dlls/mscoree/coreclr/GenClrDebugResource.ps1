@@ -18,6 +18,17 @@ function Parse-Int {
 $clrDebugResource = [System.IO.BinaryWriter]::new([System.IO.File]::OpenWrite($out))
 
 try {
+    # We're creating the resource with the following layout (represented as a C struct)
+    # struct CLR_DEBUG_RESOURCE
+    # {
+    #   int version;
+    #   GUID clrSkuGuid;
+    #   int dacTimeStamp;
+    #   int dacImageSize;
+    #   int dbiTimeStamp;
+    #   int dacImageSize;
+    # };
+
     # Write the debug resource version
     $clrDebugResource.Write(0);
     # Write the GUID for CoreCLR (should match the CLR_ID_ONECORE_CLR GUID in clrinternal.idl)
