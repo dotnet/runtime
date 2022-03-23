@@ -1606,7 +1606,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			LLVMArgInfo *ainfo = &cinfo->args [0];
 			switch (ainfo->storage) {
 			case LLVMArgVtypeInReg:
-				for (j = 0; j < 2; ++j) {
+				for (int j = 0; j < 2; ++j) {
 					if (ainfo->pair_storage [j] == LLVMArgInIReg)
 						vret_arg_pindex ++;
 				}
