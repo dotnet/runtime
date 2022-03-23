@@ -112,6 +112,10 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public IConfigurationSection DerivedSection { get; set; }
         }
 
+#if NETCOREAPP        
+        public record RecordTypeOptions(string Color, int Length);
+#endif
+
         public struct ValueTypeOptions
         {
             public int MyInt32 { get; set; }
@@ -993,6 +997,25 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(42, options.MyInt32);
             Assert.Equal("hello world", options.MyString);
         }
+
+#if NETCOREAPP
+        [Fact]
+        public void CanBindRecordOptions()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<RecordTypeOptions>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+        }
+#endif
 
         [Fact]
         public void CanBindByteArray()

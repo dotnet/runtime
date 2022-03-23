@@ -422,7 +422,10 @@ namespace Microsoft.Extensions.Configuration
                 bool hasDefaultConstructor = type.GetConstructors(DeclaredOnlyLookup).Any(ctor => ctor.IsPublic && ctor.GetParameters().Length == 0);
                 if (!hasDefaultConstructor)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
+                    //steve: records don't have default constructors, and there's no way to differentiate between a record and
+                    //any other type -- or is there...?
+                    return Activator.CreateInstance(type, new object[] {"", 0});
+                    //throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
                 }
             }
 
