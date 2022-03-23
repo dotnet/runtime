@@ -19,9 +19,11 @@ namespace System.Net.Security
         RequireEncryption = 0,
 
         // Add null ciphers to current system defaults
+        [System.ObsoleteAttribute(Obsoletions.EncryptionPolicyMessage, DiagnosticId = Obsoletions.EncryptionPolicyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         AllowNoEncryption,
 
         // Request null ciphers only
+        [System.ObsoleteAttribute(Obsoletions.EncryptionPolicyMessage, DiagnosticId = Obsoletions.EncryptionPolicyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         NoEncryption
     }
 
@@ -211,10 +213,12 @@ namespace System.Net.Security
             LocalCertificateSelectionCallback? userCertificateSelectionCallback, EncryptionPolicy encryptionPolicy)
             : base(innerStream, leaveInnerStreamOpen)
         {
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
             if (encryptionPolicy != EncryptionPolicy.RequireEncryption && encryptionPolicy != EncryptionPolicy.AllowNoEncryption && encryptionPolicy != EncryptionPolicy.NoEncryption)
             {
                 throw new ArgumentException(SR.Format(SR.net_invalid_enum, "EncryptionPolicy"), nameof(encryptionPolicy));
             }
+#pragma warning restore SYSLIB0040
 
             _userCertificateValidationCallback = userCertificateValidationCallback;
             _userCertificateSelectionCallback = userCertificateSelectionCallback;

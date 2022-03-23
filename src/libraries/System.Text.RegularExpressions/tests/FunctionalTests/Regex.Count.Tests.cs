@@ -16,11 +16,14 @@ namespace System.Text.RegularExpressions.Tests
         {
             Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
             Assert.Equal(expectedCount, r.Count(input));
+            Assert.Equal(expectedCount, r.Count(input.AsSpan()));
             Assert.Equal(r.Count(input), r.Matches(input).Count);
+            Assert.Equal(r.Count(input.AsSpan()), r.Matches(input).Count);
 
             if (options == RegexOptions.None && engine == RegexEngine.Interpreter)
             {
                 Assert.Equal(expectedCount, Regex.Count(input, pattern));
+                Assert.Equal(expectedCount, Regex.Count(input.AsSpan(), pattern));
             }
 
             switch (engine)
@@ -30,7 +33,9 @@ namespace System.Text.RegularExpressions.Tests
                 case RegexEngine.NonBacktracking:
                     RegexOptions engineOptions = RegexHelpers.OptionsFromEngine(engine);
                     Assert.Equal(expectedCount, Regex.Count(input, pattern, options | engineOptions));
+                    Assert.Equal(expectedCount, Regex.Count(input.AsSpan(), pattern, options | engineOptions));
                     Assert.Equal(expectedCount, Regex.Count(input, pattern, options | engineOptions, Regex.InfiniteMatchTimeout));
+                    Assert.Equal(expectedCount, Regex.Count(input.AsSpan(), pattern, options | engineOptions, Regex.InfiniteMatchTimeout));
                     break;
             }
         }
@@ -69,22 +74,31 @@ namespace System.Text.RegularExpressions.Tests
 
             // pattern is null
             AssertExtensions.Throws<ArgumentNullException>("pattern", () => Regex.Count("input", null));
+            AssertExtensions.Throws<ArgumentNullException>("pattern", () => Regex.Count("input".AsSpan(), null));
             AssertExtensions.Throws<ArgumentNullException>("pattern", () => Regex.Count("input", null, RegexOptions.None));
+            AssertExtensions.Throws<ArgumentNullException>("pattern", () => Regex.Count("input".AsSpan(), null, RegexOptions.None));
             AssertExtensions.Throws<ArgumentNullException>("pattern", () => Regex.Count("input", null, RegexOptions.None, TimeSpan.FromMilliseconds(1)));
+            AssertExtensions.Throws<ArgumentNullException>("pattern", () => Regex.Count("input".AsSpan(), null, RegexOptions.None, TimeSpan.FromMilliseconds(1)));
 
             // pattern is invalid
 #pragma warning disable RE0001 // invalid regex pattern
             AssertExtensions.Throws<RegexParseException>(() => Regex.Count("input", @"[abc"));
+            AssertExtensions.Throws<RegexParseException>(() => Regex.Count("input".AsSpan(), @"[abc"));
             AssertExtensions.Throws<RegexParseException>(() => Regex.Count("input", @"[abc", RegexOptions.None));
+            AssertExtensions.Throws<RegexParseException>(() => Regex.Count("input".AsSpan(), @"[abc", RegexOptions.None));
             AssertExtensions.Throws<RegexParseException>(() => Regex.Count("input", @"[abc", RegexOptions.None, TimeSpan.FromMilliseconds(1)));
+            AssertExtensions.Throws<RegexParseException>(() => Regex.Count("input".AsSpan(), @"[abc", RegexOptions.None, TimeSpan.FromMilliseconds(1)));
 #pragma warning restore RE0001
 
             // options is invalid
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Count("input", @"[abc]", (RegexOptions)(-1)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Count("input".AsSpan(), @"[abc]", (RegexOptions)(-1)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Count("input", @"[abc]", (RegexOptions)(-1), TimeSpan.FromMilliseconds(1)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Count("input".AsSpan(), @"[abc]", (RegexOptions)(-1), TimeSpan.FromMilliseconds(1)));
 
             // matchTimeout is invalid
             AssertExtensions.Throws<ArgumentOutOfRangeException>("matchTimeout", () => Regex.Count("input", @"[abc]", RegexOptions.None, TimeSpan.FromMilliseconds(-2)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("matchTimeout", () => Regex.Count("input".AsSpan(), @"[abc]", RegexOptions.None, TimeSpan.FromMilliseconds(-2)));
         }
 
         [Theory]
@@ -104,6 +118,7 @@ namespace System.Text.RegularExpressions.Tests
 
             Stopwatch sw = Stopwatch.StartNew();
             Assert.Throws<RegexMatchTimeoutException>(() => r.Count(Input));
+            Assert.Throws<RegexMatchTimeoutException>(() => r.Count(Input.AsSpan()));
             Assert.InRange(sw.Elapsed.TotalSeconds, 0, 10); // arbitrary upper bound that should be well above what's needed with a 1ms timeout
 
             switch (engine)
@@ -112,6 +127,7 @@ namespace System.Text.RegularExpressions.Tests
                 case RegexEngine.Compiled:
                     sw = Stopwatch.StartNew();
                     Assert.Throws<RegexMatchTimeoutException>(() => Regex.Count(Input, Pattern, RegexHelpers.OptionsFromEngine(engine), TimeSpan.FromMilliseconds(1)));
+                    Assert.Throws<RegexMatchTimeoutException>(() => Regex.Count(Input.AsSpan(), Pattern, RegexHelpers.OptionsFromEngine(engine), TimeSpan.FromMilliseconds(1)));
                     Assert.InRange(sw.Elapsed.TotalSeconds, 0, 10); // arbitrary upper bound that should be well above what's needed with a 1ms timeout
                     break;
             }

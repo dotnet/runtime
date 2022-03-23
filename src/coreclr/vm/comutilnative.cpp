@@ -1123,7 +1123,7 @@ FCIMPL1(INT64, GCInterface::GetTotalAllocatedBytes, CLR_BOOL precise)
         return current_high;
     }
 
-    INT64 allocated;
+    INT64 allocated = 0;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 

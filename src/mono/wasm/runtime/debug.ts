@@ -149,6 +149,10 @@ export function mono_wasm_get_loaded_files(): string[] {
 function _create_proxy_from_object_id(objectId: string, details: any) {
     if (objectId.startsWith("dotnet:array:")) {
         let ret: Array<any>;
+        if (details.items === undefined) {
+            ret = details.map ((p: any) => p.value);
+            return ret;
+        }
         if (details.dimensionsDetails === undefined || details.dimensionsDetails.length === 1) {
             ret = details.items.map((p: any) => p.value);
             return ret;

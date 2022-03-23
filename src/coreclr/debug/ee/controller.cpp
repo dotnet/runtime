@@ -1306,8 +1306,8 @@ bool DebuggerController::BindPatch(DebuggerControllerPatch *patch,
             return false;
         }
 
-        LOG((LF_CORDB,LL_INFO10000, "DC::BindPa: For startAddr 0x%x, got DJI "
-             "0x%x, from 0x%x size: 0x%x\n", startAddr, info, info->m_addrOfCode, info->m_sizeOfCode));
+        LOG((LF_CORDB,LL_INFO10000, "DC::BindPa: For startAddr 0x%p, got DJI "
+             "0x%p, from 0x%p size: 0x%x\n", startAddr, info, info->m_addrOfCode, info->m_sizeOfCode));
     }
 
     LOG((LF_CORDB, LL_INFO10000, "DC::BP:Trying to bind patch in %s::%s version %d\n",
@@ -1946,6 +1946,10 @@ BOOL DebuggerController::AddILPatch(AppDomain * pAppDomain, Module *module,
     BOOL fOk = FALSE;
 
     DebuggerMethodInfo *dmi = g_pDebugger->GetOrCreateMethodInfo(module, md); // throws
+    LOG((LF_CORDB,LL_INFO10000,"DC::AILP: dmi:0x%p, mdToken:0x%x, mdFilter:0x%p, "
+            "encVer:%zu, offset:0x%zx <- isIL:%d, Mod:0x%p\n",
+            dmi, md, pMethodDescFilter, encVersion, offset, offsetIsIL, module));
+
     if (dmi == NULL)
     {
         return false;
@@ -7173,7 +7177,7 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
                 else
                 {
                     LOG((LF_CORDB, LL_INFO10000,
-                         "TSO for TRACE_MGR_PUSH case."));
+                         "TSO for TRACE_MGR_PUSH case. RetAddr: 0x%p\n", traceManagerRetAddr));
 
                     // We'd better have a valid return address.
                     _ASSERTE(traceManagerRetAddr != NULL);
@@ -7184,14 +7188,32 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
                         DebuggerJitInfo *dji;
                         dji = g_pDebugger->GetJitInfoFromAddr((TADDR) traceManagerRetAddr);
 
-                        MethodDesc * mdNative = (dji == NULL) ?
-                            g_pEEInterface->GetNativeCodeMethodDesc(dac_cast<PCODE>(traceManagerRetAddr)) : dji->m_nativeCodeVersion.GetMethodDesc();
-                        _ASSERTE(mdNative != NULL);
+                        MethodDesc* mdNative = NULL;
+                        PCODE pcodeNative = NULL;
+                        if (dji != NULL)
+                        {
+                            mdNative = dji->m_nativeCodeVersion.GetMethodDesc();
+                            pcodeNative = dji->m_nativeCodeVersion.GetNativeCode();
+                        }
+                        else
+                        {
+                            // Find the method that the return is to.
+                            mdNative = g_pEEInterface->GetNativeCodeMethodDesc(dac_cast<PCODE>(traceManagerRetAddr));
+                            _ASSERTE(g_pEEInterface->GetFunctionAddress(mdNative) != NULL);
+                            pcodeNative = g_pEEInterface->GetFunctionAddress(mdNative);
+                        }
 
-                        // Find the method that the return is to.
-                        _ASSERTE(g_pEEInterface->GetFunctionAddress(mdNative) != NULL);
-                        SIZE_T offsetRet = dac_cast<TADDR>(traceManagerRetAddr -
-                            g_pEEInterface->GetFunctionAddress(mdNative));
+                        _ASSERTE(mdNative != NULL && pcodeNative != NULL);
+                        SIZE_T offsetRet = dac_cast<TADDR>(traceManagerRetAddr - pcodeNative);
+                        LOG((LF_CORDB, LL_INFO10000,
+                             "DS::TP: Before normally managed code AddPatch"
+                             " in %s::%s \n\tmd=0x%p, offset 0x%x, pcode=0x%p, dji=0x%p\n",
+                             mdNative->m_pszDebugClassName,
+                             mdNative->m_pszDebugMethodName,
+                             mdNative,
+                             offsetRet,
+                             pcodeNative,
+                             dji));
 
                         // Place the patch.
                         AddBindAndActivateNativeManagedPatch(mdNative,
@@ -7199,13 +7221,6 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
                                  offsetRet,
                                  LEAF_MOST_FRAME,
                                  NULL);
-
-                        LOG((LF_CORDB, LL_INFO10000,
-                             "DS::TP: normally managed code AddPatch"
-                             " in %s::%s, offset 0x%x\n",
-                             mdNative->m_pszDebugClassName,
-                             mdNative->m_pszDebugMethodName,
-                             offsetRet));
                     }
                     else
                     {

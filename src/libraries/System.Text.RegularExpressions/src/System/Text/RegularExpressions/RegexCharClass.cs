@@ -887,6 +887,20 @@ namespace System.Text.RegularExpressions
             return false;
         }
 
+        /// <summary>Gets whether the specified span contains only ASCII.</summary>
+        public static bool IsAscii(ReadOnlySpan<char> s) // TODO https://github.com/dotnet/runtime/issues/28230: Replace once Ascii is available
+        {
+            foreach (char c in s)
+            {
+                if (c >= 128)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>Gets whether we can iterate through the set list pairs in order to completely enumerate the set's contents.</summary>
         /// <remarks>This may enumerate negated characters if the set is negated.</remarks>
         private static bool CanEasilyEnumerateSetContents(string set) =>

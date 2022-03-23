@@ -2525,6 +2525,21 @@ namespace System.Security.Cryptography.X509Certificates
         public string Decode(System.Security.Cryptography.X509Certificates.X500DistinguishedNameFlags flag) { throw null; }
         public override string Format(bool multiLine) { throw null; }
     }
+    public sealed partial class X500DistinguishedNameBuilder
+    {
+        public X500DistinguishedNameBuilder() { }
+        public void Add(System.Security.Cryptography.Oid oid, string value, System.Formats.Asn1.UniversalTagNumber? stringEncodingType = default(System.Formats.Asn1.UniversalTagNumber?)) { }
+        public void Add(string oidValue, string value, System.Formats.Asn1.UniversalTagNumber? stringEncodingType = default(System.Formats.Asn1.UniversalTagNumber?)) { }
+        public void AddCommonName(string commonName) { }
+        public void AddCountryOrRegion(string twoLetterCode) { }
+        public void AddDomainComponent(string domainComponent) { }
+        public void AddEmailAddress(string emailAddress) { }
+        public void AddLocalityName(string localityName) { }
+        public void AddOrganizationalUnitName(string organizationalUnitName) { }
+        public void AddOrganizationName(string organizationName) { }
+        public void AddStateOrProvinceName(string stateOrProvinceName) { }
+        public System.Security.Cryptography.X509Certificates.X500DistinguishedName Build() { throw null; }
+    }
     [System.FlagsAttribute]
     public enum X500DistinguishedNameFlags
     {

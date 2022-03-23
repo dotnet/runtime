@@ -12,7 +12,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Security;
-using Microsoft.Extensions.Internal;
 
 namespace System.Net.Http
 {
@@ -170,7 +169,7 @@ namespace System.Net.Http
             }
         }
 
-        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, ValueStopwatch queueDuration, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, long queueStartingTimestamp, CancellationToken cancellationToken)
         {
             // Allocate an active request
             QuicStream? quicStream = null;
@@ -201,10 +200,10 @@ namespace System.Net.Http
                             waitTask = _connection.WaitForAvailableBidirectionalStreamsAsync(cancellationToken);
                         }
 
-                        if (HttpTelemetry.Log.IsEnabled() && !waitTask.IsCompleted && !queueDuration.IsActive)
+                        if (HttpTelemetry.Log.IsEnabled() && !waitTask.IsCompleted && queueStartingTimestamp == 0)
                         {
                             // We avoid logging RequestLeftQueue if a stream was available immediately (synchronously)
-                            queueDuration = ValueStopwatch.StartNew();
+                            queueStartingTimestamp = Stopwatch.GetTimestamp();
                         }
 
                         // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
@@ -213,9 +212,9 @@ namespace System.Net.Http
                 }
                 finally
                 {
-                    if (HttpTelemetry.Log.IsEnabled() && queueDuration.IsActive)
+                    if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp != 0)
                     {
-                        HttpTelemetry.Log.Http30RequestLeftQueue(queueDuration.GetElapsedTime().TotalMilliseconds);
+                        HttpTelemetry.Log.Http30RequestLeftQueue(Stopwatch.GetElapsedTime(queueStartingTimestamp).TotalMilliseconds);
                     }
                 }
 

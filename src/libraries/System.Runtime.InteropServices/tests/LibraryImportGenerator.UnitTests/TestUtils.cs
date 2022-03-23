@@ -75,8 +75,8 @@ namespace LibraryImportGenerator.UnitTests
             var allowedDiagnostics = new HashSet<string>()
             {
                 "CS8795", // Partial method impl missing
-                "CS0234", // Missing type or namespace - GeneratedDllImportAttribute
-                "CS0246", // Missing type or namespace - GeneratedDllImportAttribute
+                "CS0234", // Missing type or namespace - LibraryImportAttribute
+                "CS0246", // Missing type or namespace - LibraryImportAttribute
                 "CS8019", // Unnecessary using
             };
 
@@ -183,7 +183,7 @@ namespace LibraryImportGenerator.UnitTests
         {
             // Include the assembly containing the new attribute and all of its references.
             // [TODO] Remove once the attribute has been added to the BCL
-            var attrAssem = typeof(GeneratedDllImportAttribute).GetTypeInfo().Assembly;
+            var attrAssem = typeof(MarshalUsingAttribute).GetTypeInfo().Assembly;
             return MetadataReference.CreateFromFile(attrAssem.Location);
         }
 
@@ -220,26 +220,12 @@ namespace LibraryImportGenerator.UnitTests
                 optionsProvider: options,
                 driverOptions: driverOptions);
 
-        // The non-configurable test-packages folder may be incomplete/corrupt.
-        // - https://github.com/dotnet/roslyn-sdk/issues/487
-        // - https://github.com/dotnet/roslyn-sdk/issues/590
-        internal static void ThrowSkipExceptionIfPackagingException(Exception e)
-        {
-            if (e.GetType().FullName == "NuGet.Packaging.Core.PackagingException")
-                throw new SkipTestException($"Skipping test due to issue with test-packages ({e.Message}). See https://github.com/dotnet/roslyn-sdk/issues/590.");
-        }
-
         private static async Task<ImmutableArray<MetadataReference>> ResolveReferenceAssemblies(ReferenceAssemblies referenceAssemblies)
         {
             try
             {
                 ResolveRedirect.Instance.Start();
                 return await referenceAssemblies.ResolveAsync(LanguageNames.CSharp, CancellationToken.None);
-            }
-            catch (Exception e)
-            {
-                ThrowSkipExceptionIfPackagingException(e);
-                throw;
             }
             finally
             {

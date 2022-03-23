@@ -6,7 +6,6 @@ using System.Diagnostics.Tracing;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Authentication;
 using System.Threading;
-using Microsoft.Extensions.Internal;
 
 namespace System.Net.Security
 {
@@ -153,21 +152,21 @@ namespace System.Net.Security
 
 
         [NonEvent]
-        public void HandshakeFailed(bool isServer, ValueStopwatch stopwatch, string exceptionMessage)
+        public void HandshakeFailed(bool isServer, long startingTimestamp, string exceptionMessage)
         {
             Interlocked.Increment(ref _finishedTlsHandshakes);
             Interlocked.Increment(ref _failedTlsHandshakes);
 
             if (IsEnabled(EventLevel.Error, EventKeywords.None))
             {
-                HandshakeFailed(isServer, stopwatch.GetElapsedTime().TotalMilliseconds, exceptionMessage);
+                HandshakeFailed(isServer, Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds, exceptionMessage);
             }
 
             HandshakeStop(SslProtocols.None);
         }
 
         [NonEvent]
-        public void HandshakeCompleted(SslProtocols protocol, ValueStopwatch stopwatch, bool connectionOpen)
+        public void HandshakeCompleted(SslProtocols protocol, long startingTimestamp, bool connectionOpen)
         {
             Interlocked.Increment(ref _finishedTlsHandshakes);
 
@@ -208,7 +207,7 @@ namespace System.Net.Security
                 Interlocked.Increment(ref _sessionsOpen);
             }
 
-            double duration = stopwatch.GetElapsedTime().TotalMilliseconds;
+            double duration = Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds;
             handshakeDurationCounter?.WriteMetric(duration);
             _handshakeDurationCounter!.WriteMetric(duration);
 

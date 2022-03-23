@@ -59,7 +59,7 @@ Introduce a new attribute named `GenericContiguousCollectionMarshallerAttribute`
 
 ```csharp
 namespace System.Runtime.InteropServices
-{ 
+{
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
     public sealed class GenericContiguousCollectionMarshallerAttribute : Attribute
     {
@@ -99,7 +99,7 @@ public struct GenericContiguousCollectionMarshallerImpl<T, U, V,...>
     // these constructors are required if marshalling from managed to native is supported.
     public GenericContiguousCollectionMarshallerImpl(GenericCollection<T, U, V, ...> collection, int nativeSizeOfElement);
     public GenericContiguousCollectionMarshallerImpl(GenericCollection<T, U, V, ...> collection, Span<byte> stackSpace, int nativeSizeOfElement); // optional
-    
+
     public const int StackBufferSize = /* */; // required if the span-based constructor is supplied.
 
     /// <summary>
@@ -227,7 +227,7 @@ struct WrappedInt
   public int ToManaged() => value;
 }
 
-[GeneratedDllImport("Native")]
+[LibraryImport("Native")]
 [return:MarshalUsing(CountElementName = nameof(length))]
 public static partial Span<int> DuplicateValues([MarshalUsing(typeof(WrappedInt), ElementIndirectionLevel = 1)] Span<int> values, int length);
 
@@ -271,7 +271,7 @@ public struct GenericContiguousCollectionMarshallerImpl<T, U, V,...>
     // these constructors are required if marshalling from managed to native is supported.
     public GenericContiguousCollectionMarshallerImpl(GenericCollection<T, U, V, ...> collection, int nativeSizeOfElements);
     public GenericContiguousCollectionMarshallerImpl(GenericCollection<T, U, V, ...> collection, Span<byte> stackSpace, int nativeSizeOfElements); // optional
-    
+
     public const int StackBufferSize = /* */; // required if the span-based constructor is supplied.
 
 -    public Span<TCollectionElement> ManagedValues { get; }

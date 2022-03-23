@@ -20,30 +20,14 @@ namespace Microsoft.Interop
 
         private static readonly TypeSyntax s_nativeType = PointerType(PredefinedType(Token(SyntaxKind.UShortKeyword)));
 
-        private static string PinnedIdentifier(string nativeIdentifier) => $"{nativeIdentifier}__pinned";
-
-        public override ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
+        public override SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info)
         {
-            string identifier = context.GetIdentifiers(info).native;
-            if (info.IsByRef)
-            {
-                // &<nativeIdentifier>
-                return Argument(
-                    PrefixUnaryExpression(
-                        SyntaxKind.AddressOfExpression,
-                        IdentifierName(identifier)));
-            }
-            else if (context.SingleFrameSpansNativeContext)
-            {
-                // (ushort*)<pinned>
-                return Argument(
-                    CastExpression(
-                        AsNativeType(info),
-                        IdentifierName(PinnedIdentifier(identifier))));
-            }
+            return info.IsByRef ? SignatureBehavior.PointerToNativeType : SignatureBehavior.NativeType;
+        }
 
-            // <nativeIdentifier>
-            return Argument(IdentifierName(identifier));
+        public override ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
+        {
+            return info.IsByRef ? ValueBoundaryBehavior.AddressOfNativeIdentifier : ValueBoundaryBehavior.NativeIdentifier;
         }
 
         public override TypeSyntax AsNativeType(TypePositionInfo info)
@@ -52,37 +36,9 @@ namespace Microsoft.Interop
             return s_nativeType;
         }
 
-        public override ParameterSyntax AsParameter(TypePositionInfo info)
-        {
-            // ushort**
-            // or
-            // ushort*
-            TypeSyntax type = info.IsByRef
-                ? PointerType(AsNativeType(info))
-                : AsNativeType(info);
-            return Parameter(Identifier(info.InstanceIdentifier))
-                .WithType(type);
-        }
-
         public override IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
         {
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
-            if (context.SingleFrameSpansNativeContext && !info.IsByRef && !info.IsManagedReturnPosition)
-            {
-                if (context.CurrentStage == StubCodeContext.Stage.Pin)
-                {
-                    // fixed (char* <pinned> = <managedIdentifier>)
-                    yield return FixedStatement(
-                        VariableDeclaration(
-                            PointerType(PredefinedType(Token(SyntaxKind.CharKeyword))),
-                            SingletonSeparatedList(
-                                VariableDeclarator(Identifier(PinnedIdentifier(nativeIdentifier)))
-                                    .WithInitializer(EqualsValueClause(IdentifierName(managedIdentifier))))),
-                        EmptyStatement());
-                }
-
-                yield break;
-            }
 
             switch (context.CurrentStage)
             {
@@ -135,7 +91,7 @@ namespace Microsoft.Interop
         }
 
         public override bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
-            => info.IsManagedReturnPosition || info.IsByRef || !context.SingleFrameSpansNativeContext;
+            => true;
 
         public override bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
 
@@ -216,7 +172,7 @@ namespace Microsoft.Interop
                                     PointerType(PredefinedType(Token(SyntaxKind.CharKeyword))),
                                     IdentifierName(stackAllocPtrIdentifier))),
                             BracketedArgumentList(
-                                SingletonSeparatedList<ArgumentSyntax>(
+                                SingletonSeparatedList(
                                     Argument(
                                         MemberAccessExpression(
                                             SyntaxKind.SimpleMemberAccessExpression,

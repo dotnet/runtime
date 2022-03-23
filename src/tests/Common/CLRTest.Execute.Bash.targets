@@ -306,6 +306,8 @@ $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreApp
     <![CDATA[
 $(BashLinkerTestLaunchCmds)
 
+export TestExclusionListPath=$CORE_ROOT/TestExclusionList.txt
+
 _DebuggerArgsSeparator=
 if [[ "$_DebuggerFullPath" == *lldb* ]];
 then

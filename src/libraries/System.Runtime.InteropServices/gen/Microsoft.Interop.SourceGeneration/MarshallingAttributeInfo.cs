@@ -791,7 +791,7 @@ namespace Microsoft.Interop
                 if (_defaultInfo.CharEncoding == CharEncoding.Custom && _defaultInfo.StringMarshallingCustomType is not null)
                 {
                     AttributeData attrData = _contextSymbol is IMethodSymbol
-                        ? _contextSymbol.GetAttributes().First(a => a.AttributeClass.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
+                        ? _contextSymbol.GetAttributes().First(a => a.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
                         : default;
                     marshallingInfo = CreateNativeMarshallingInfo(type, _defaultInfo.StringMarshallingCustomType, attrData, true, indirectionLevel, parsedCountInfo, useSiteAttributes, inspectedElements, ref maxIndirectionLevelUsed);
                     return true;

@@ -95,10 +95,12 @@ namespace System.Text.RegularExpressions.Tests
 
             comp = comp.AddSyntaxTrees(generatorResults.GeneratedTrees.ToArray());
             EmitResult results = comp.Emit(Stream.Null, cancellationToken: cancellationToken);
-            if (!results.Success || results.Diagnostics.Length != 0 || generatorResults.Diagnostics.Length != 0)
+            ImmutableArray<Diagnostic> generatorDiagnostics = generatorResults.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
+            ImmutableArray<Diagnostic> resultsDiagnostics = results.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
+            if (!results.Success || resultsDiagnostics.Length != 0 || generatorDiagnostics.Length != 0)
             {
                 throw new ArgumentException(
-                    string.Join(Environment.NewLine, results.Diagnostics.Concat(generatorResults.Diagnostics)) + Environment.NewLine +
+                    string.Join(Environment.NewLine, resultsDiagnostics.Concat(generatorDiagnostics)) + Environment.NewLine +
                     string.Join(Environment.NewLine, generatorResults.GeneratedTrees.Select(t => t.ToString())));
             }
 
@@ -196,11 +198,12 @@ namespace System.Text.RegularExpressions.Tests
             var dll = new MemoryStream();
             comp = comp.AddSyntaxTrees(generatorResults.GeneratedTrees.ToArray());
             EmitResult results = comp.Emit(dll, options: s_emitOptions, cancellationToken: cancellationToken);
-            if (!results.Success || results.Diagnostics.Length != 0)
+            ImmutableArray<Diagnostic> resultsDiagnostics = results.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
+            if (!results.Success || resultsDiagnostics.Length != 0)
             {
                 throw new ArgumentException(
                     string.Join(Environment.NewLine, generatorResults.GeneratedTrees.Select(t => NumberLines(t.ToString()))) + Environment.NewLine +
-                    string.Join(Environment.NewLine, results.Diagnostics.Concat(generatorDiagnostics)));
+                    string.Join(Environment.NewLine, resultsDiagnostics.Concat(generatorDiagnostics)));
             }
             dll.Position = 0;
 

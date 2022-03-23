@@ -1152,6 +1152,9 @@ HRESULT ClrDataAccess::GetTieredVersions(
                 case NativeCodeVersion::OptimizationTier1:
                     nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_OptimizedTier1;
                     break;
+                case NativeCodeVersion::OptimizationTier1OSR:
+                    nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_OptimizedTier1OSR;
+                    break;
                 case NativeCodeVersion::OptimizationTierOptimized:
                     nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Optimized;
                     break;
@@ -5140,6 +5143,22 @@ HRESULT ClrDataAccess::GetTaggedMemory(
         hr = S_FALSE;
     }
 
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetGlobalAllocationContext(
+        CLRDATA_ADDRESS *allocPtr,
+        CLRDATA_ADDRESS *allocLimit)
+{
+    if (allocPtr == nullptr || allocLimit == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+    *allocPtr = (CLRDATA_ADDRESS)((&g_global_alloc_context)->alloc_ptr);
+    *allocLimit = (CLRDATA_ADDRESS)((&g_global_alloc_context)->alloc_limit);
     SOSDacLeave();
     return hr;
 }

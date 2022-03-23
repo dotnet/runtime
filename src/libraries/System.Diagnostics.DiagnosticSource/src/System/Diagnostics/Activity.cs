@@ -98,6 +98,11 @@ namespace System.Diagnostics
         public string? StatusDescription => _statusDescription;
 
         /// <summary>
+        /// Gets whether the parent context was created from remote propagation.
+        /// </summary>
+        public bool HasRemoteParent { get; private set; }
+
+        /// <summary>
         /// Sets the status code and description on the current activity object.
         /// </summary>
         /// <param name="code">The status code</param>
@@ -1075,6 +1080,7 @@ namespace System.Diagnostics
 
                 activity.ActivityTraceFlags = parentContext.TraceFlags;
                 activity._parentTraceFlags = (byte) parentContext.TraceFlags;
+                activity.HasRemoteParent = parentContext.IsRemote;
             }
 
             activity.IsAllDataRequested = request == ActivitySamplingResult.AllData || request == ActivitySamplingResult.AllDataAndRecorded;

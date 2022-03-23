@@ -164,7 +164,7 @@ namespace System.Reflection.Emit
                                                  assemblyAttributes);
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AppDomain_CreateDynamicAssembly")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppDomain_CreateDynamicAssembly")]
         private static partial void CreateDynamicAssembly(ObjectHandleOnStack name,
                                                          int access,
                                                          ObjectHandleOnStack assemblyLoadContext,

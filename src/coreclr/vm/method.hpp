@@ -283,8 +283,8 @@ public:
     {
         CONTRACTL
         {
-            THROWS;
-            GC_TRIGGERS;
+            NOTHROW;
+            GC_NOTRIGGER;
             MODE_ANY;
         }
         CONTRACTL_END
@@ -2260,7 +2260,7 @@ public:
         m_methodTable = pMT;
     }
 
-    inline void SetSizeAndCount(ULONG sizeOfMethodDescs, COUNT_T methodDescCount)
+    inline void SetSizeAndCount(SIZE_T sizeOfMethodDescs, COUNT_T methodDescCount)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -2722,7 +2722,7 @@ class NDirectImportThunkGlue
     PVOID m_dummy; // Dummy field to make the alignment right
 
 public:
-    LPVOID GetEntrypoint()
+    LPVOID GetEntryPoint()
     {
         LIMITED_METHOD_CONTRACT;
         return NULL;

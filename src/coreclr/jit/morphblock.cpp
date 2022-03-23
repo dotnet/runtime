@@ -1282,12 +1282,10 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         GenTree* srcFld = nullptr;
         if (m_srcDoFldAsg)
         {
-            noway_assert(m_srcLclNum != BAD_VAR_NUM);
+            noway_assert((m_srcLclNum != BAD_VAR_NUM) && (m_srcLclNode != nullptr));
             unsigned srcFieldLclNum = m_comp->lvaGetDesc(m_srcLclNum)->lvFieldLclStart + i;
-            srcFld = m_comp->gtNewLclvNode(srcFieldLclNum, m_comp->lvaGetDesc(srcFieldLclNum)->TypeGet());
 
-            noway_assert(m_srcLclNode != nullptr);
-            srcFld->gtFlags |= m_srcLclNode->gtFlags & ~GTF_NODE_MASK;
+            srcFld = m_comp->gtNewLclvNode(srcFieldLclNum, m_comp->lvaGetDesc(srcFieldLclNum)->TypeGet());
         }
         else
         {

@@ -222,7 +222,7 @@ lock_word_decrement_nest (LockWord lw)
 static gint32
 lock_word_get_owner (LockWord lw)
 {
-	return lw.lock_word >> LOCK_WORD_OWNER_SHIFT;
+	return (gint32)(lw.lock_word >> LOCK_WORD_OWNER_SHIFT);
 }
 
 static LockWord
@@ -407,7 +407,7 @@ mon_new (gsize id)
 	new_ = monitor_freelist;
 	monitor_freelist = (MonoThreadsSync *)new_->data;
 
-	new_->status = mon_status_set_owner (0, id);
+	new_->status = mon_status_set_owner (0, (guint32)id);
 	new_->status = mon_status_init_entry_count (new_->status);
 	new_->nest = 1;
 	new_->data = NULL;

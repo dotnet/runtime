@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -48,7 +49,7 @@ namespace System.Text.RegularExpressions.Tests
             return start == 0;
         }
 
-        public static async Task<Regex> GetRegexAsync(RegexEngine engine, string pattern, RegexOptions options, Globalization.CultureInfo culture)
+        public static async Task<Regex> GetRegexAsync(RegexEngine engine, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern, RegexOptions options, Globalization.CultureInfo culture)
         {
             using (new System.Tests.ThreadCultureChange(culture))
             {
@@ -100,7 +101,7 @@ namespace System.Text.RegularExpressions.Tests
         public static bool IsNonBacktracking(RegexEngine engine) =>
             engine is RegexEngine.NonBacktracking or RegexEngine.NonBacktrackingSourceGenerated;
 
-        public static async Task<Regex> GetRegexAsync(RegexEngine engine, string pattern, RegexOptions? options = null, TimeSpan? matchTimeout = null)
+        public static async Task<Regex> GetRegexAsync(RegexEngine engine, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern, RegexOptions? options = null, TimeSpan? matchTimeout = null)
         {
             if (options is null)
             {

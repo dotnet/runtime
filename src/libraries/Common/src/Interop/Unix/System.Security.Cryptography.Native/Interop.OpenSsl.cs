@@ -477,10 +477,6 @@ internal static partial class Interop
 
         internal static int Encrypt(SafeSslHandle context, ReadOnlySpan<byte> input, ref byte[] output, out Ssl.SslErrorCode errorCode)
         {
-#if DEBUG
-            ulong assertNoError = Crypto.ErrPeekError();
-            Debug.Assert(assertNoError == 0, $"OpenSsl error queue is not empty, run: 'openssl errstr {assertNoError:X}' for original error.");
-#endif
             int retVal = Ssl.SslWrite(context, ref MemoryMarshal.GetReference(input), input.Length, out errorCode);
 
             if (retVal != input.Length)
@@ -521,10 +517,6 @@ internal static partial class Interop
 
         internal static int Decrypt(SafeSslHandle context, Span<byte> buffer, out Ssl.SslErrorCode errorCode)
         {
-#if DEBUG
-            ulong assertNoError = Crypto.ErrPeekError();
-            Debug.Assert(assertNoError == 0, $"OpenSsl error queue is not empty, run: 'openssl errstr {assertNoError:X}' for original error.");
-#endif
             BioWrite(context.InputBio!, buffer);
 
             int retVal = Ssl.SslRead(context, ref MemoryMarshal.GetReference(buffer), buffer.Length, out errorCode);

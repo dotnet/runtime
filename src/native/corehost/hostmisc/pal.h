@@ -158,21 +158,24 @@ namespace pal
 
     inline size_t strlen(const char_t* str) { return ::wcslen(str); }
 
-#pragma warning(suppress : 4996)  // error C4996: '_wfopen': This function or variable may be unsafe.
-    inline FILE* file_open(const string_t& path, const char_t* mode) { return ::_wfopen(path.c_str(), mode); }
+    inline FILE* file_open(const string_t& path, const char_t* mode) { return ::_wfsopen(path.c_str(), mode, _SH_DENYNO); }
 
     inline void file_vprintf(FILE* f, const char_t* format, va_list vl) { ::vfwprintf(f, format, vl); ::fputwc(_X('\n'), f); }
     inline void err_fputs(const char_t* message) { ::fputws(message, stderr); ::fputwc(_X('\n'), stderr); }
     inline void out_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stdout, format, vl); ::fputwc(_X('\n'), stdout); }
 
-    // This API is being used correctly and querying for needed size first.
-#pragma warning(suppress : 4996)  // error C4996: '_vsnwprintf': This function or variable may be unsafe.
-    inline int str_vprintf(char_t* buffer, size_t count, const char_t* format, va_list vl) { return ::_vsnwprintf(buffer, count, format, vl); }
+    inline int str_vprintf(char_t* buffer, size_t count, const char_t* format, va_list vl) { return ::_vsnwprintf_s(buffer, count, _TRUNCATE, format, vl); }
+    inline int strlen_vprintf(const char_t* format, va_list vl) { return ::_vscwprintf(format, vl); }
 
-    // Suppressing warning since the 'safe' version requires an input buffer that is unnecessary for
-    // uses of this function.
-#pragma warning(suppress : 4996) //  error C4996: '_wcserror': This function or variable may be unsafe.
-    inline const char_t* strerror(int errnum) { return ::_wcserror(errnum); }
+    inline const string_t strerror(int errnum)
+    {
+        // Windows does not provide strerrorlen to get the actual error length.
+        // Use 1024 as the buffer size based on the buffer size used by glibc.
+        // _wcserror_s truncates (and null-terminates) if the buffer is too small
+        char_t buffer[1024];
+        ::_wcserror_s(buffer, sizeof(buffer) / sizeof(char_t), errnum);
+        return buffer;
+    }
 
     bool pal_utf8string(const string_t& str, std::vector<char>* out);
     bool pal_clrstring(const string_t& str, std::vector<char>* out);
@@ -226,7 +229,9 @@ namespace pal
     inline void err_fputs(const char_t* message) { ::fputs(message, stderr); ::fputc(_X('\n'), stderr); }
     inline void out_vprintf(const char_t* format, va_list vl) { ::vfprintf(stdout, format, vl); ::fputc('\n', stdout); }
     inline int str_vprintf(char_t* str, size_t size, const char_t* format, va_list vl) { return ::vsnprintf(str, size, format, vl); }
-    inline const char_t* strerror(int errnum) { return ::strerror(errnum); }
+    inline int strlen_vprintf(const char_t* format, va_list vl) { return ::vsnprintf(nullptr, 0, format, vl); }
+
+    inline const string_t strerror(int errnum) { return ::strerror(errnum); }
 
     inline bool pal_utf8string(const string_t& str, std::vector<char>* out) { out->assign(str.begin(), str.end()); out->push_back('\0'); return true; }
     inline bool pal_clrstring(const string_t& str, std::vector<char>* out) { return pal_utf8string(str, out); }

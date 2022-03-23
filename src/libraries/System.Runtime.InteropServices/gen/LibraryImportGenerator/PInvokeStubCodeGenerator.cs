@@ -19,7 +19,7 @@ namespace Microsoft.Interop
     /// This type enables multiple code generators for P/Invoke-style marshalling
     /// to reuse the same basic method body, but with different designs of how to emit the target native method.
     /// This enables users to write code generators that work with slightly different semantics.
-    /// For example, the source generator for [GeneratedDllImport] emits the target P/Invoke as
+    /// For example, the source generator for [LibraryImport] emits the target P/Invoke as
     /// a local function inside the generated stub body.
     /// However, other managed-to-native code generators using a P/Invoke style might want to define
     /// the target DllImport outside of the stub as a static non-local function or as a function pointer field.
@@ -143,7 +143,7 @@ namespace Microsoft.Interop
             // for our lengths.
             // Here's an example signature where the dependency shows up:
             //
-            // [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "transpose_matrix")]
+            // [LibraryImport(NativeExportsNE_Binary, EntryPoint = "transpose_matrix")]
             // [return: MarshalUsing(CountElementName = "numColumns")]
             // [return: MarshalUsing(CountElementName = "numRows", ElementIndirectionLevel = 1)]
             // public static partial int[][] TransposeMatrix(
@@ -512,10 +512,8 @@ namespace Microsoft.Interop
                 ParameterList(
                     SeparatedList(
                         _paramMarshallers.Select(marshaler => marshaler.Generator.AsParameter(marshaler.TypeInfo)))),
-                _retMarshaller.Generator.AsNativeType(_retMarshaller.TypeInfo),
-                _retMarshaller.Generator is IAttributedReturnTypeMarshallingGenerator attributedReturn
-                ? attributedReturn.GenerateAttributesForReturnType(_retMarshaller.TypeInfo)
-                : null
+                _retMarshaller.Generator.AsReturnType(_retMarshaller.TypeInfo),
+                _retMarshaller.Generator.GenerateAttributesForReturnType(_retMarshaller.TypeInfo)
             );
         }
 
