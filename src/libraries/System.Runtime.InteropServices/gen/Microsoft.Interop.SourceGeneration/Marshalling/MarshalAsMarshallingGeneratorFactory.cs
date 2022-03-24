@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 
@@ -78,7 +79,7 @@ namespace Microsoft.Interop
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: NoMarshallingInfo }:
                     throw new MarshallingNotSupportedException(info, context)
                     {
-                        NotSupportedDetails = Resources.MarshallingBoolAsUndefinedNotSupported
+                        NotSupportedDetails = SR.MarshallingBoolAsUndefinedNotSupported
                     };
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I1 or UnmanagedType.U1, _) }:
                     return s_byteBool;
@@ -99,7 +100,7 @@ namespace Microsoft.Interop
                     {
                         throw new MarshallingNotSupportedException(info, context)
                         {
-                            NotSupportedDetails = Resources.SafeHandleByRefMustBeConcrete
+                            NotSupportedDetails = SR.SafeHandleByRefMustBeConcrete
                         };
                     }
                     return s_safeHandle;
@@ -126,7 +127,7 @@ namespace Microsoft.Interop
                 // [Compat] Require explicit marshalling information.
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = Resources.MarshallingStringOrCharAsUndefinedNotSupported
+                    NotSupportedDetails = SR.MarshallingStringOrCharAsUndefinedNotSupported
                 };
             }
 
@@ -149,7 +150,7 @@ namespace Microsoft.Interop
                     case CharEncoding.Ansi:
                         throw new MarshallingNotSupportedException(info, context) // [Compat] ANSI is not supported for char
                         {
-                            NotSupportedDetails = string.Format(Resources.MarshallingCharAsSpecifiedCharSetNotSupported, CharSet.Ansi)
+                            NotSupportedDetails = string.Format(SR.MarshallingCharAsSpecifiedCharSetNotSupported, CharSet.Ansi)
                         };
                 }
             }
@@ -165,7 +166,7 @@ namespace Microsoft.Interop
                 // [Compat] Require explicit marshalling information.
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = Resources.MarshallingStringOrCharAsUndefinedNotSupported
+                    NotSupportedDetails = SR.MarshallingStringOrCharAsUndefinedNotSupported
                 };
             }
 

@@ -115,7 +115,7 @@ namespace Microsoft.Interop.Analyzers
             {
                 context.RegisterCodeFix(
                     CodeAction.Create(
-                        Resources.AddMissingCustomTypeMarshallerMembers,
+                        SR.AddMissingCustomTypeMarshallerMembers,
                         ct => AddMissingMembers(doc, node, missingMemberNames, ct),
                         AddMissingCustomTypeMarshallerMembersKey),
                     missingMembersDiagnostics);
@@ -127,7 +127,7 @@ namespace Microsoft.Interop.Analyzers
             {
                 context.RegisterCodeFix(
                     CodeAction.Create(
-                        Resources.AddMissingFeaturesToCustomTypeMarshaller,
+                        SR.AddMissingFeaturesToCustomTypeMarshaller,
                         ct => AddMissingFeatures(doc, node, featuresToAdd, ct),
                         AddMissingCustomTypeMarshallerFeaturesKey),
                     featuresToAddDiagnostics);
