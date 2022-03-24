@@ -348,6 +348,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private void Hit()
         {
             if (_allStats is not null)
@@ -359,6 +360,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private void Miss()
         {
             if (_allStats is not null)

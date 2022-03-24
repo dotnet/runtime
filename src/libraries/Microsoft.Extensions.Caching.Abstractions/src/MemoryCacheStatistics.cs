@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public long? CurrentEstimatedSize { get; init; }
 
         /// <summary>
-        /// Gets the total number of cache hits.
+        /// Gets the total number of cache misses.
         /// </summary>
         public long TotalMisses { get; init; }
 
