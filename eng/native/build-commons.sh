@@ -229,7 +229,6 @@ usage()
 source "$__RepoRootDir/eng/native/init-os-and-arch.sh"
 
 __TargetArch=$arch
-__HostArch=$arch
 __TargetOS=$os
 __HostOS=$os
 __BuildOS=$os
@@ -424,6 +423,8 @@ while :; do
 
     shift
 done
+
+__HostArch=$__TargetArch
 
 __CommonMSBuildArgs="/p:TargetArchitecture=$__TargetArch /p:Configuration=$__BuildType /p:TargetOS=$__TargetOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
 

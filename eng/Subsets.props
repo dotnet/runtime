@@ -58,7 +58,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefaultCoreClrSubsets>clr.native+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets>clr.native+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
     <DefaultCoreClrSubsets Condition="'$(PrimaryRuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
 
@@ -108,6 +108,7 @@
     <SubsetName Include="Clr.Native" Description="All CoreCLR native non-test components, including the runtime, jits, and other native tools. Includes clr.hosts, clr.runtime, clr.jit, clr.alljits, clr.paltests, clr.iltools, clr.nativeaotruntime, clr.spmi." />
     <SubsetName Include="Clr.NativeAotLibs" Description="The CoreCLR native AOT CoreLib and other low level class libraries." />
     <SubsetName Include="Clr.NativeAotRuntime" Description="The stripped-down CoreCLR native AOT runtime." />
+    <SubsetName Include="Clr.CrossArchTools" Description="The cross-targetted CoreCLR tools." />
     <SubsetName Include="Clr.PalTests" OnDemand="true" Description="The CoreCLR PAL tests." />
     <SubsetName Include="Clr.PalTestList" OnDemand="true" Description="Generate the list of the CoreCLR PAL tests. When using the command line, use Clr.PalTests instead." />
     <SubsetName Include="Clr.Hosts" Description="The CoreCLR corerun test host." />
@@ -226,7 +227,7 @@
       Category="clr" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(BuildArchitecture)' != '$(TargetArchitecture)'">
+  <ItemGroup Condition="('$(ClrRuntimeBuildSubsets)' != '' or $(_subset.Contains('+clr.crossarchtools+'))) and '$(BuildArchitecture)' != '$(TargetArchitecture)'">
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
       AdditionalProperties="%(AdditionalProperties);
@@ -234,11 +235,12 @@
                             HostArchitecture=$(BuildArchitecture);
                             PgoInstrument=false;
                             NativeOptimizationDataSupported=false;
+                            CrossBuild=false;
                             CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
       Category="clr" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' == 'x64'">
+  <ItemGroup Condition="('$(ClrRuntimeBuildSubsets)' != '' or $(_subset.Contains('+clr.crossarchtools+'))) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' == 'x64'">
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
       AdditionalProperties="%(AdditionalProperties);
@@ -246,6 +248,7 @@
                             HostArchitecture=x86;
                             PgoInstrument=false;
                             NativeOptimizationDataSupported=false;
+                            CrossBuild=false;
                             CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
       Category="clr" />
   </ItemGroup>

@@ -32,38 +32,6 @@ setup_dirs_local()
     mkdir -p "$__MsbuildDebugLogsDir"
 }
 
-build_cross_architecture_components()
-{
-    local intermediatesForBuild="$__IntermediatesDir/Host$__CrossArch/crossgen"
-    local crossArchBinDir="$__BinDir/$__CrossArch"
-
-    mkdir -p "$intermediatesForBuild"
-    mkdir -p "$crossArchBinDir"
-
-    __SkipCrossArchBuild=1
-    # check supported cross-architecture components host(__HostArch)/target(__TargetArch) pair
-    if [[ ("$__TargetArch" == "arm" || "$__TargetArch" == "armel") && ("$__CrossArch" == "x86" || "$__CrossArch" == "x64") ]]; then
-        __SkipCrossArchBuild=0
-    elif [[ "$__TargetArch" == "arm64" && "$__CrossArch" == "x64" ]]; then
-        __SkipCrossArchBuild=0
-    elif [[ "$__TargetArch" == "loongarch64" && "$__CrossArch" == "x64" ]]; then
-        __SkipCrossArchBuild=0
-    else
-        # not supported
-        return
-    fi
-
-    __CMakeBinDir="$crossArchBinDir"
-    CROSSCOMPILE=0
-    export __CMakeBinDir CROSSCOMPILE
-
-    __CMakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__TargetArch -DCLR_CROSS_COMPONENTS_BUILD=1 $__CMakeArgs"
-    build_native "$__TargetOS" "$__CrossArch" "$__ProjectRoot" "$intermediatesForBuild" "crosscomponents" "$__CMakeArgs" "cross-architecture components"
-
-    CROSSCOMPILE=1
-    export CROSSCOMPILE
-}
-
 handle_arguments_local() {
     case "$1" in
 
@@ -146,9 +114,9 @@ __IntermediatesDir="$__ArtifactsIntermediatesDir/$__ConfigTriplet"
 
 export __IntermediatesDir __ArtifactsIntermediatesDir
 
-__CrossArch="$__HostArch"
-if [[ "$__CrossBuild" == 1 ]]; then
-    __BinDir="$__BinDir/$__CrossArch"
+if [[ "$__TargetArch" != "$__HostArch" ]]; then
+    __IntermediatesDir="$__IntermediatesDir/$__HostArch"
+    __BinDir="$__BinDir/$__HostArch"
 fi
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.
