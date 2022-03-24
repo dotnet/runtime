@@ -483,6 +483,7 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled())
             {
                 Trace($"Available HTTP/1.1 connections: {_availableHttp11Connections.Count}, Requests in the queue: {_http11RequestQueue.Count}, " +
+                    $"Requests without a connection attempt: {_http11RequestQueue.RequestsWithoutAConnectionAttempt}, " +
                     $"Pending HTTP/1.1 connections: {_pendingHttp11ConnectionCount}, Total associated HTTP/1.1 connections: {_associatedHttp11ConnectionCount}, " +
                     $"Max HTTP/1.1 connection limit: {_maxHttp11Connections}.");
             }
@@ -490,12 +491,12 @@ namespace System.Net.Http
             // Determine if we can and should add a new connection to the pool.
             if (_availableHttp11Connections.Count == 0 &&                           // No available connections
                 _http11RequestQueue.Count > _pendingHttp11ConnectionCount &&        // More requests queued than pending connections
-                _associatedHttp11ConnectionCount < _maxHttp11Connections &&         // Under the connection limit
-                _http11RequestQueue.TryPeekNextRequestForConnectionAttempt(out RequestQueueItem<HttpConnection> queueItem))
+                _associatedHttp11ConnectionCount < _maxHttp11Connections)           // Under the connection limit
             {
-                // There are still requests we haven't issued a connection attempt for
                 _associatedHttp11ConnectionCount++;
                 _pendingHttp11ConnectionCount++;
+
+                RequestQueueItem<HttpConnection> queueItem = _http11RequestQueue.PeekNextRequestForConnectionAttempt();
 
                 Task.Run(() => AddHttp11ConnectionAsync(queueItem));
             }
@@ -710,12 +711,13 @@ namespace System.Net.Http
             // Determine if we can and should add a new connection to the pool.
             if ((_availableHttp2Connections?.Count ?? 0) == 0 &&                            // No available connections
                 !_pendingHttp2Connection &&                                                 // Only allow one pending HTTP2 connection at a time
-                (_associatedHttp2ConnectionCount == 0 || EnableMultipleHttp2Connections) && // We allow multiple connections, or don't have a connection currently
-                _http2RequestQueue.TryPeekNextRequestForConnectionAttempt(out RequestQueueItem<Http2Connection?> queueItem))
+                _http2RequestQueue.Count > 0 &&                                             // There are requests left on the queue
+                (_associatedHttp2ConnectionCount == 0 || EnableMultipleHttp2Connections))   // We allow multiple connections, or don't have a connection currently
             {
-                // There are still requests we haven't issued a connection attempt for
                 _associatedHttp2ConnectionCount++;
                 _pendingHttp2Connection = true;
+
+                RequestQueueItem<Http2Connection?> queueItem = _http2RequestQueue.PeekNextRequestForConnectionAttempt();
 
                 Task.Run(() => AddHttp2ConnectionAsync(queueItem));
             }
@@ -2382,31 +2384,25 @@ namespace System.Net.Http
                 }
             }
 
-            public bool TryPeekNextRequestForConnectionAttempt(out RequestQueueItem<T> queueItem)
+            public RequestQueueItem<T> PeekNextRequestForConnectionAttempt()
             {
-                Debug.Assert((uint)_attemptedConnectionsOffset <= _size, $"{(uint)_attemptedConnectionsOffset} <= {_size}");
-
-                if (_attemptedConnectionsOffset == _size)
-                {
-                    queueItem = default;
-                    return false;
-                }
+                Debug.Assert(_attemptedConnectionsOffset >= 0);
+                Debug.Assert(_attemptedConnectionsOffset < _size, $"{_attemptedConnectionsOffset} < {_size}");
 
                 int index = _head + _attemptedConnectionsOffset;
                 _attemptedConnectionsOffset++;
 
-                RequestQueueItem<T>[] array = _array;
-
-                if (index >= array.Length)
+                if (index >= _array.Length)
                 {
-                    index -= array.Length;
+                    index -= _array.Length;
                 }
 
-                queueItem = array[index];
-                return true;
+                return _array[index];
             }
 
             public int Count => _size;
+
+            public int RequestsWithoutAConnectionAttempt => _size - _attemptedConnectionsOffset;
         }
     }
 }
