@@ -68,6 +68,11 @@ jobs:
       - ${{ 'build_iOS_arm64_release_iOSMono' }}
       - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMaui' }}
 
+    - ${{ if eq(parameters.runtimeType, 'wasm') }}:
+      helixTypeSuffix: '/wasm'
+    - ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(codeGetType, 'aot')) }}:
+      helixTypeSuffix: '/wasm/aot'
+
     ${{ if and(eq(parameters.osGroup, 'windows'), not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono'))) }}:
       ${{ if eq(parameters.runtimeType, 'mono') }}:
         extraSetupParameters: -Architecture ${{ parameters.archType }} -MonoDotnet $(Build.SourcesDirectory)\.dotnet-mono
