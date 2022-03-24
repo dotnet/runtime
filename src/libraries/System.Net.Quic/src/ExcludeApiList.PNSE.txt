@@ -1,1 +1,3 @@
-M:System.Net.Quic.QuicConnection.IsSupported
+M:System.Net.Quic.QuicImplementationProviders.Default
+M:System.Net.Quic.QuicImplementationProviders.Mock
+M:System.Net.Quic.QuicImplementationProviders.MsQuic
