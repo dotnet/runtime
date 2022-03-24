@@ -237,7 +237,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("Read", obj.Status);
 
             ClassWithAsyncEnumerableConverter poco = new();
-            poco.MyAsyncEnumerable = new();
+            poco.MyAsyncEnumerable = new ClassThatImplementsIAsyncEnumerable();
             Assert.Equal("Created", poco.MyAsyncEnumerable.Status);
             serialized = await Serializer.SerializeWrapper(poco, options);
             Assert.Equal(Json, serialized);
@@ -252,7 +252,7 @@ namespace System.Text.Json.Serialization.Tests
             const string Json = "{\"MyAsyncEnumerable\":[]}";
 
             ClassWithAsyncEnumerableConverter obj = new();
-            obj.MyAsyncEnumerable = new();
+            obj.MyAsyncEnumerable = new ClassThatImplementsIAsyncEnumerable();
             Assert.Equal("Created", obj.MyAsyncEnumerable.Status);
 
             string serialized = await Serializer.SerializeWrapper(obj);

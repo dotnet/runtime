@@ -62,6 +62,7 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/bsearch.h>
 #include <mono/utils/mono-tls-inline.h>
+#include <mono/utils/options.h>
 
 #include "mini.h"
 #include "seq-points.h"
@@ -1905,7 +1906,6 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	gpointer *globals = NULL;
 	MonoAotFileInfo *info = NULL;
 	int i, version;
-	gboolean do_load_image = TRUE;
 	int align_double, align_int64;
 	guint8 *aot_data = NULL;
 
@@ -2299,7 +2299,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	 * non-lazily, since we can't handle out-of-date errors later.
 	 * The cached class info also depends on the exact assemblies.
 	 */
-	if (do_load_image) {
+	if (!mono_opt_aot_lazy_assembly_load) {
 		for (i = 0; i < amodule->image_table_len; ++i) {
 			ERROR_DECL (error);
 			load_image (amodule, i, error);
@@ -3922,6 +3922,58 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 				if (!template_->data)
 					goto cleanup;
 				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+		}
+		ji->data.target = info;
+		break;
+	}
+	case MONO_PATCH_INFO_GSHARED_METHOD_INFO: {
+		MonoGSharedMethodInfo *info = (MonoGSharedMethodInfo *)mono_mempool_alloc0 (mp, sizeof (MonoGSharedMethodInfo));
+
+		info->method = decode_resolve_method_ref (aot_module, p, &p, error);
+		mono_error_assert_ok (error);
+
+		info->num_entries = decode_value (p, &p);
+		info->count_entries = info->num_entries;
+		info->entries = (MonoRuntimeGenericContextInfoTemplate *)mono_mempool_alloc0 (mp, sizeof (MonoRuntimeGenericContextInfoTemplate) * info->num_entries);
+		for (int i = 0; i < info->num_entries; ++i) {
+			MonoRuntimeGenericContextInfoTemplate *entry = &info->entries [i];
+			MonoJumpInfoType patch_type;
+
+			entry->info_type = (MonoRgctxInfoType)decode_value (p, &p);
+			patch_type = mini_rgctx_info_type_to_patch_info_type (entry->info_type);
+			switch (patch_type) {
+			case MONO_PATCH_INFO_CLASS: {
+				MonoClass *klass = decode_klass_ref (aot_module, p, &p, error);
+				mono_error_cleanup (error); /* FIXME don't swallow the error */
+				if (!klass)
+					goto cleanup;
+				entry->data = m_class_get_byval_arg (klass);
+				break;
+			}
+			case MONO_PATCH_INFO_FIELD:
+				entry->data = decode_field_info (aot_module, p, &p);
+				if (!entry->data)
+					goto cleanup;
+				break;
+			case MONO_PATCH_INFO_METHOD:
+				entry->data = decode_resolve_method_ref (aot_module, p, &p, error);
+				mono_error_assert_ok (error);
+				break;
+			case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+			case MONO_PATCH_INFO_VIRT_METHOD:
+			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
+			case MONO_PATCH_INFO_GSHAREDVT_CALL: {
+				MonoJumpInfo tmp;
+				tmp.type = patch_type;
+				if (!decode_patch (aot_module, mp, &tmp, p, &p))
+					goto cleanup;
+				entry->data = (gpointer)tmp.data.target;
+				break;
+			}
 			default:
 				g_assert_not_reached ();
 				break;

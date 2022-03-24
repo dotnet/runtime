@@ -1767,7 +1767,7 @@ namespace System.Text.Json.Serialization.Tests
                 Converters = { new AdaptableInt32Converter() }
             };
 
-            obj = new() { Prop = new List<int>() { 1 } };
+            obj = new PlainClassWithList() { Prop = new List<int>() { 1 } };
             json = JsonSerializer.Serialize(obj, options);
             Assert.Equal("{\"Prop\":[101]}", json);
 
@@ -1775,13 +1775,13 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(1, obj.Prop[0]);
 
             // Then with strings
-            options = new()
+            options = new JsonSerializerOptions()
             {
                 NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString,
                 Converters = { new AdaptableInt32Converter() }
             };
 
-            obj = new() { Prop = new List<int>() { 1 } };
+            obj = new PlainClassWithList() { Prop = new List<int>() { 1 } };
             json = JsonSerializer.Serialize(obj, options);
             Assert.Equal("{\"Prop\":[\"101\"]}", json);
 
