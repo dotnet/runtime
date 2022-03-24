@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)</TargetFrameworks>
@@ -52,6 +52,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates_types.cs" Link="Common\Interop\Windows\Crypt32\Interop.certificates_types.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs" Link="Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.MsgEncodingType.cs" Link="Common\Interop\Windows\Crypt32\Interop.Interop.MsgEncodingType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs" Link="Common\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Windows.cs" Link="Common\System\Net\Security\CertificateValidation.Windows.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusCodes.Windows.cs" />
   </ItemGroup>
