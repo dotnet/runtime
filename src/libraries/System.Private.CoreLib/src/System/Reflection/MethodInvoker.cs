@@ -13,26 +13,14 @@ namespace System.Reflection
         public MethodInvoker(RuntimeMethodInfo methodInfo)
         {
             _methodInfo = methodInfo;
-
-            RuntimeType[] sigTypes = methodInfo.ArgumentTypes;
-            for (int i = 0; i < sigTypes.Length; i++)
-            {
-                if (sigTypes[i].IsByRef)
-                {
-                    HasRefs = true;
-                    break;
-                }
-            }
         }
-
-        public bool HasRefs { get; }
 
         [DebuggerStepThrough]
         [DebuggerHidden]
-        public unsafe object? InvokeUnsafe(object? obj, IntPtr** args, BindingFlags invokeAttr)
+        public unsafe object? InvokeUnsafe(object? obj, IntPtr* args, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
         {
             // Todo: add strategy for calling IL Emit-based version
-            return _methodInfo.InvokeNonEmitUnsafe(obj, args, invokeAttr);
+            return _methodInfo.InvokeNonEmitUnsafe(obj, args, argsForTemporaryMonoSupport, invokeAttr);
         }
     }
 }

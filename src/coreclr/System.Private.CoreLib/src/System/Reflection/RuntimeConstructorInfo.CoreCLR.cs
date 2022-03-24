@@ -98,7 +98,7 @@ namespace System.Reflection
 
         [DebuggerStepThrough]
         [DebuggerHidden]
-        internal unsafe object InvokeNonEmitUnsafe(object? obj, IntPtr** args, BindingFlags invokeAttr)
+        internal unsafe object InvokeNonEmitUnsafe(object? obj, IntPtr* args, Span<object?> argsForTemporaryMonoSuppor, BindingFlags invokeAttr)
         {
             if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {

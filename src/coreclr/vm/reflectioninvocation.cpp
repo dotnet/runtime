@@ -369,7 +369,7 @@ struct ByRefToNullable  {
     }
 };
 
-static OBJECTREF InvokeArrayConstructor(TypeHandle th, OBJECTREF** objs, int argCnt)
+static OBJECTREF InvokeArrayConstructor(TypeHandle th, PVOID* args, int argCnt)
 {
     CONTRACTL {
         THROWS;
@@ -392,18 +392,10 @@ static OBJECTREF InvokeArrayConstructor(TypeHandle th, OBJECTREF** objs, int arg
 
     for (DWORD i=0; i<(DWORD)argCnt; i++)
     {
-        if (!*objs[i])
+        if (!args[i])
             COMPlusThrowArgumentException(W("parameters"), W("Arg_NullIndex"));
 
-        MethodTable* pMT = (*objs[i])->GetMethodTable();
-        CorElementType oType = TypeHandle(pMT).GetVerifierCorElementType();
-
-        if (!InvokeUtil::IsPrimitiveType(oType) || !InvokeUtil::CanPrimitiveWiden(ELEMENT_TYPE_I4,oType))
-            COMPlusThrow(kArgumentException,W("Arg_PrimWiden"));
-
-        ARG_SLOT value;
-        InvokeUtil::CreatePrimitiveValue(ELEMENT_TYPE_I4, oType, *objs[i], &value);
-        memcpyNoGCRefs(indexes + i, ArgSlotEndianessFixup(&value, sizeof(INT32)), sizeof(INT32));
+        memcpyNoGCRefs(indexes + i, *(PVOID **)args[i], sizeof(INT32));
     }
 
     return AllocateArrayEx(th, indexes, argCnt);
@@ -538,7 +530,7 @@ public:
 
 FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     Object *target,
-    OBJECTREF** objs, // An array of byrefs
+    PVOID* args, // An array of byrefs
     SignatureNative* pSigUNSAFE,
     CLR_BOOL fConstructor,
     CLR_BOOL* pRethrow)
@@ -581,7 +573,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         // handle this specially.
         if (ownerType.IsArray()) {
             gc.retVal = InvokeArrayConstructor(ownerType,
-                                               objs,
+                                               args,
                                                gc.pSig->NumFixedArgs());
             goto Done;
         }
@@ -700,8 +692,8 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
             if (pMeth->IsUnboxingStub())
                 pThisPtr = OBJECTREFToObject(gc.target);
             else {
-                    // Create a true boxed Nullable<T> and use that as the 'this' pointer.
-                    // since what is passed in is just a boxed T
+                // Create a true boxed Nullable<T> and use that as the 'this' pointer.
+                // since what is passed in is just a boxed T
                 MethodTable* pMT = pMeth->GetMethodTable();
                 if (Nullable::IsNullableType(pMT)) {
                     OBJECTREF bufferObj = pMT->Allocate();
@@ -741,7 +733,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     // copy args
     UINT nNumArgs = gc.pSig->NumFixedArgs();
     for (UINT i = 0 ; i < nNumArgs; i++) {
-
         TypeHandle th = gc.pSig->GetArgumentAt(i);
 
         int ofs = argit.GetNextOffset();
@@ -769,6 +760,8 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
 
         bool needsStackCopy = false;
 
+        MethodTable * pMT = th.GetMethodTable();
+
         // A boxed Nullable<T> is represented as boxed T. So to pass a Nullable<T> by reference,
         // we have to create a Nullable<T> on stack, copy the T into it, then pass it to the callee and
         // after returning from the call, copy the T out of the Nullable<T> back to the boxed T.
@@ -776,6 +769,11 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         if (!nullableType.IsNull()) {
             th = nullableType;
             structSize = th.GetSize();
+            needsStackCopy = true;
+        }
+        else if (pMT->IsByRefLike()) {
+            // A byref-like type can't be boxed but can be passed as a null reference in which
+            // case we return a zero-filled ref struct and not do call the default ctor.
             needsStackCopy = true;
         }
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
@@ -787,16 +785,11 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
 
         ArgDestination argDest(pTransitionBlock, ofs, argit.GetArgLocDescForStructInRegs());
 
-        if(needsStackCopy)
+        if (needsStackCopy)
         {
-            MethodTable * pMT = th.GetMethodTable();
             _ASSERTE(pMT && pMT->IsValueType());
 
-            PVOID pArgDst = argDest.GetDestinationAddress();
-
             PVOID pStackCopy = _alloca(structSize);
-            *(PVOID *)pArgDst = pStackCopy;
-            pArgDst = pStackCopy;
 
             if (!nullableType.IsNull())
             {
@@ -813,7 +806,15 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
             argDest = ArgDestination(pStackCopy, 0, NULL);
         }
 
-        InvokeUtil::CopyArg(th, objs[i], &argDest);
+        if (pMT->IsByRefLike())
+        {
+            InitValueClassArg(&argDest, pMT);
+        }
+        else
+        {
+            PVOID pArgDst = argDest.GetDestinationAddress();
+            *(PVOID *)pArgDst = *(PVOID **)args[i];
+        }
     }
 
     ENDFORBIDGC();
@@ -889,7 +890,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
 
     while (byRefToNullables != NULL) {
         OBJECTREF obj = Nullable::Box(byRefToNullables->data, byRefToNullables->type.GetMethodTable());
-        SetObjectReference(objs[byRefToNullables->argNum], obj);
+        SetObjectReference((OBJECTREF*)args[byRefToNullables->argNum], obj);
         byRefToNullables = byRefToNullables->next;
     }
 
@@ -1945,7 +1946,7 @@ FCIMPL1(Object*, ReflectionInvocation::TypedReferenceToObject, TypedByRef * valu
     if (pMT->IsValueType())
     {
         // value->data is protected by the caller
-    HELPER_METHOD_FRAME_BEGIN_RET_1(Obj);
+        HELPER_METHOD_FRAME_BEGIN_RET_1(Obj);
 
         Obj = pMT->Box(value->data);
 

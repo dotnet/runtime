@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ObjectiveC;
 using System.Text;
 
 namespace System.Reflection
@@ -141,9 +142,9 @@ namespace System.Reflection
         }
 
         private protected unsafe void CheckArguments(
-            ref Span<object?> parametersOut,
-            IntPtr** unsafeByrefParameters,
-            ref bool copyBack,
+            Span<object?> copyOfParameters,
+            Span<IntPtr> byrefParameters,
+            Span<bool> shouldCopyBack,
             ReadOnlySpan<object?> parameters,
             RuntimeType[] sigTypes,
             Binder? binder,
@@ -156,6 +157,7 @@ namespace System.Reflection
             ParameterInfo[]? p = null;
             for (int i = 0; i < parameters.Length; i++)
             {
+                bool copyBackArg = false;
                 object? arg = parameters[i];
                 if (arg == Type.Missing)
                 {
@@ -165,11 +167,15 @@ namespace System.Reflection
                         throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
                     }
 
-                    copyBack = true;
-                    arg = p[i].DefaultValue!;
+                    copyBackArg = true;
+                    arg = p[i].DefaultValue;
                 }
 
-                sigTypes[i].CheckValue(ref arg, ref copyBack, binder, culture, invokeAttr);
+                RuntimeType sigType = sigTypes[i];
+                if (!ReferenceEquals(arg?.GetType(), sigType))
+                {
+                    sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
+                }
 
                 // We need to perform type safety validation against the incoming arguments, but we also need
                 // to be resilient against the possibility that some other thread (or even the binder itself!)
@@ -177,9 +183,33 @@ namespace System.Reflection
                 // the method. The solution is to copy the arguments to a different, not-user-visible buffer
                 // as we validate them. n.b. This disallows use of ArrayPool, as ArrayPool-rented arrays are
                 // considered user-visible to threads which may still be holding on to returned instances.
-                parametersOut[i] = arg;
+                shouldCopyBack[i] = copyBackArg;
+                copyOfParameters[i] = arg;
 
-                unsafeByrefParameters[i] = (IntPtr*)Unsafe.AsPointer(ref parametersOut[i]);
+                if (RuntimeTypeHandle.IsValueType(sigType))
+                {
+                    if (arg is null)
+                    {
+                        Debug.Assert(sigType.IsByRefLike);
+                        Debug.Assert(!copyBackArg);
+
+                        p ??= GetParametersNoCopy();
+                        if (p[i].IsOut)
+                        {
+                            throw new NotSupportedException(SR.NotSupported_ByRefLike);
+                        }
+
+                        byrefParameters[i] = (IntPtr)Unsafe.AsPointer(ref copyOfParameters[i]);
+                    }
+                    else
+                    {
+                        byrefParameters[i] = (IntPtr)Unsafe.AsPointer(ref copyOfParameters[i]!.GetRawData());
+                    }
+                }
+                else
+                {
+                    byrefParameters[i] = (IntPtr)Unsafe.AsPointer(ref copyOfParameters[i]);
+                }
             }
         }
 
@@ -190,6 +220,7 @@ namespace System.Reflection
         // and pass it to CheckArguments().
         // For argument count > MaxStackAllocArgCount, do a stackalloc of void* pointers along with
         // GCReportingRegistration to safely track references.
+        [StructLayout(LayoutKind.Sequential)]
         private protected ref struct StackAllocedArguments
         {
             internal object? _arg0;
@@ -198,9 +229,16 @@ namespace System.Reflection
             private object? _arg2;
             private object? _arg3;
 #pragma warning restore CA1823, CS0169, IDE0051
+            internal bool _copyBack0;
+#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
+            private bool _copyBack1;
+            private bool _copyBack2;
+            private bool _copyBack3;
+#pragma warning restore CA1823, CS0169, IDE0051
         }
 
         // Helper struct to avoid intermediate IntPtr[] allocation and RegisterForGCReporting in calls to the native reflection stack.
+        [StructLayout(LayoutKind.Sequential)]
         private protected ref struct StackAllocatedByRefs
         {
             internal ByReference<byte> _arg0;

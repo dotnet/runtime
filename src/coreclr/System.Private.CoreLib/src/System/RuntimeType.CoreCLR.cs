@@ -803,7 +803,7 @@ namespace System
                     return list.ToArray();
                 }
 
-                [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
                     Justification = "Calls to GetInterfaces technically require all interfaces on ReflectedType" +
                         "But this is not a public API to enumerate reflection items, all the public APIs which do that" +
                         "should be annotated accordingly.")]
@@ -3474,9 +3474,8 @@ namespace System
         private static extern object AllocateValueType(RuntimeType type, object? value, bool fForceTypeChange);
 
         /// <summary>
-        /// Verify <paramref name="value"/> and optionally change it for special cases.
+        /// Verify <paramref name="value"/> and optionally convert the value for special cases.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void CheckValue(
             ref object? value,
             ref bool copyBack,
@@ -3484,16 +3483,16 @@ namespace System
             CultureInfo? culture,
             BindingFlags invokeAttr)
         {
-            // This method is used by invocation in reflection to check whether a value can be assigned to type.
+            Debug.Assert(!ReferenceEquals(value?.GetType(), this));
+
+            // Check whether a value can be assigned to type.
             if (IsInstanceOfType(value))
             {
                 // Since this cannot be a generic parameter, we use RuntimeTypeHandle.IsValueType here
                 // because it is faster than IsValueType
                 Debug.Assert(!IsGenericParameter);
 
-                Type type = value!.GetType();
-
-                if (!ReferenceEquals(type, this) && RuntimeTypeHandle.IsValueType(this))
+                if (RuntimeTypeHandle.IsValueType(this))
                 {
                     // Must be an equivalent type, re-box to the target type
                     value = AllocateValueType(this, value, fForceTypeChange: true);
@@ -3503,38 +3502,78 @@ namespace System
                 return;
             }
 
-            TryChangeType(ref value, ref copyBack, binder, culture, invokeAttr);
+            if (TryChangeType(ref value, ref copyBack))
+            {
+                return;
+            }
+
+            Debug.Assert(value != null);
+
+            if ((invokeAttr & BindingFlags.ExactBinding) == 0)
+            {
+                // Use the binder
+                if (binder != null && binder != DefaultBinder)
+                {
+                    value = binder.ChangeType(value, this, culture);
+                    if (IsInstanceOfType(value))
+                    {
+                        copyBack = true;
+                        return;
+                    }
+
+                    if (TryChangeType(ref value, ref copyBack))
+                    {
+                        return;
+                    }
+                }
+            }
+
+            Debug.Assert(value != null);
+            throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value.GetType(), this));
         }
 
-        private void TryChangeType(
+        private bool TryChangeType(
             ref object? value,
-            ref bool copyBack,
-            Binder? binder,
-            CultureInfo? culture,
-            BindingFlags invokeAttr)
+            ref bool copyBack)
         {
+            RuntimeType sigElementType = this;
+
             // If this is a ByRef get the element type and check if it's compatible
             bool isByRef = IsByRef;
             if (isByRef)
             {
-                RuntimeType elementType = RuntimeTypeHandle.GetElementType(this);
-                if (elementType.IsInstanceOfType(value) || value == null)
+                sigElementType = RuntimeTypeHandle.GetElementType(this);
+                if (sigElementType.IsInstanceOfType(value))
                 {
                     // Need to create an instance of the ByRef if null was provided, but only if primitive, enum or value type
-                    value = AllocateValueType(elementType, value, fForceTypeChange: false);
                     copyBack = true;
-                    return;
+                    value = AllocateValueType(sigElementType, value, fForceTypeChange: false);
+                    return true;
                 }
-            }
-            else if (value == null)
-            {
-                return;
             }
             else if (this == s_typedRef)
             {
                 // Everything works for a typedref
-                return;
+                return true;
             }
+
+            if (value == null)
+            {
+                if (RuntimeTypeHandle.IsValueType(sigElementType))
+                {
+                    // Need to create an instance of the value type if null was provided.
+                    // For a byref-like parameter pass null to the runtime which will create a default value.
+                    if (!RuntimeTypeHandle.IsByRefLike(sigElementType))
+                    {
+                        value = AllocateValueType(sigElementType, value: null, fForceTypeChange: false);
+                        // Don't copy the value back
+                    }
+                }
+
+                return true;
+            }
+
+            Debug.Assert(value != null);
 
             // Check the strange ones courtesy of reflection:
             // - implicit cast between primitives
@@ -3544,79 +3583,45 @@ namespace System
             if (needsSpecialCast)
             {
                 Pointer? pointer = value as Pointer;
-                RuntimeType valueType = pointer != null ? pointer.GetPointerType() : (RuntimeType)value.GetType();
+                RuntimeType srcType = pointer != null ? pointer.GetPointerType() : (RuntimeType)value.GetType();
 
-                if (CanValueSpecialCast(valueType, this))
+                if (CanValueSpecialCast(srcType, this))
                 {
                     if (pointer != null)
                     {
                         value = pointer.GetPointerValue();
                         copyBack = true;
-                        return;
+                        return true;
                     }
                     else
                     {
-                        return;
-                    }
-                }
-            }
-
-            if ((invokeAttr & BindingFlags.ExactBinding) == BindingFlags.ExactBinding)
-            {
-                throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value.GetType(), this));
-            }
-
-            // Use the binder
-            if (binder != null && binder != Type.DefaultBinder)
-            {
-                copyBack = true;
-
-                value = binder.ChangeType(value, this, culture);
-                if (IsInstanceOfType(value))
-                {
-                    return;
-                }
-
-                // if this is a ByRef get the element type and check if it's compatible
-                if (IsByRef)
-                {
-                    RuntimeType elementType = RuntimeTypeHandle.GetElementType(this);
-                    if (elementType.IsInstanceOfType(value) || value == null)
-                    {
-                        value = AllocateValueType(elementType, value, fForceTypeChange: false);
-                        return;
-                    }
-                }
-                else if (value == null)
-                {
-                    return;
-                }
-                if (needsSpecialCast)
-                {
-                    RuntimeType valueType;
-                    Pointer? pointer = value as Pointer;
-                    if (pointer != null)
-                    {
-                        valueType = pointer.GetPointerType();
-                    }
-                    else
-                    {
-                        valueType = (RuntimeType)value.GetType();
-                    }
-
-                    if (CanValueSpecialCast(valueType, this))
-                    {
-                        if (pointer != null)
+                        if (!isByRef)
                         {
-                            value = pointer.GetPointerValue();
+                            CorElementType srcElementType = GetUnderlyingType(srcType);
+                            CorElementType dstElementType = GetUnderlyingType(this);
+                            if (dstElementType != srcElementType)
+                            {
+                                value = InvokeUtils.ConvertOrWiden(srcType, srcElementType, value, this, dstElementType);
+                                // Do not copy back.
+                            }
                         }
-
-                        return;
                     }
                 }
+
+                return true;
             }
 
-            throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value.GetType(), this));
+            return false;
+        }
+
+        private static CorElementType GetUnderlyingType(RuntimeType type)
+        {
+            if (type.IsEnum)
+            {
+                type = (RuntimeType)Enum.GetUnderlyingType(type);
+            }
+
+            return RuntimeTypeHandle.GetCorElementType(type);
         }
 
         #endregion

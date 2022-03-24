@@ -340,35 +340,57 @@ namespace System.Reflection
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
             }
 
-            bool _ = false;
             object? retValue;
 
             unsafe
             {
-                StackAllocatedByRefs byrefStorage = default;
-                IntPtr** unsafeByrefParameters = (IntPtr**)&byrefStorage;
                 StackAllocedArguments argStorage = default;
-                Span<object?> parametersOut = new(ref argStorage._arg0, 1);
+                Span<object?> copyOfParameters = new(ref argStorage._arg0, 1);
                 Span<object?> parameters = new(ref parameter, 1);
+                Span<bool> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
+
+                StackAllocatedByRefs byrefStorage = default;
+                Span<IntPtr> unsafeByrefParameters = new Span<IntPtr>(&byrefStorage, 1);
 
                 CheckArguments(
-                    ref parametersOut,
+                    copyOfParameters,
                     unsafeByrefParameters,
-                    ref _,
+                    shouldCopyBackParameters,
                     parameters,
                     ArgumentTypes,
                     binder,
                     culture,
                     invokeAttr);
 
-                retValue = Invoker.InvokeUnsafe(obj, unsafeByrefParameters, invokeAttr);
+                retValue = Invoker.InvokeUnsafe(obj, (IntPtr*)(void**)&byrefStorage, copyOfParameters, invokeAttr);
             }
 
             return retValue;
         }
 
-        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr** arguments, BindingFlags invokeAttr)
+        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* arguments, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
         {
+            if ((invokeAttr & BindingFlags.SuppressChangeType) == 0)
+            {
+                if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+                {
+                    bool rethrow = false;
+
+                    try
+                    {
+                        return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false, out rethrow);
+                    }
+                    catch (Exception e) when (!rethrow)
+                    {
+                        throw new TargetInvocationException(e);
+                    }
+                }
+                else
+                {
+                    return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false, out _);
+                }
+            }
+
             if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
                 bool rethrow = false;

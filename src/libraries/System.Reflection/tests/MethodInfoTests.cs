@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -218,7 +219,7 @@ namespace System.Reflection.Tests
         public static IEnumerable<object[]> TestEqualityMethodData2()
         {
             //Verify two different MethodInfo objects with same name from two different classes are not equal
-            yield return new object[] { typeof(Sample), typeof(SampleG<>), "Method1", "Method1", false};
+            yield return new object[] { typeof(Sample), typeof(SampleG<>), "Method1", "Method1", false };
             //Verify two different MethodInfo objects with same name from two different classes are not equal
             yield return new object[] { typeof(Sample), typeof(SampleG<string>), "Method2", "Method2", false };
         }
@@ -633,240 +634,401 @@ namespace System.Reflection.Tests
         {
             return type.GetTypeInfo().GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance).First(method => method.Name.Equals(name));
         }
-    }
+
+        [Fact]
+        public static void InvokeNullableRefs()
+        {
+            object?[] args;
+
+            int? iNull = null;
+            args = new object[] { iNull };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.Null)).Invoke(null, args));
+            Assert.Null(args[0]);
+            Assert.False(((int?)args[0]).HasValue);
+
+            args = new object[] { iNull };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullBoxed)).Invoke(null, args));
+            Assert.Null(args[0]);
+
+            args = new object[] { iNull, 10 };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullToValue)).Invoke(null, args));
+            Assert.IsType<int>(args[0]);
+            Assert.Equal(10, (int)args[0]);
+
+            iNull = 42;
+            args = new object[] { iNull, 42 };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.ValueToNull)).Invoke(null, args));
+            Assert.Null(args[0]);
+
+            iNull = null;
+            args = new object[] { iNull, 10 };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullToValueBoxed)).Invoke(null, args));
+            Assert.IsType<int>(args[0]);
+            Assert.Equal(10, (int)args[0]);
+
+            static MethodInfo GetMethod(string name) => typeof(NullableRefMethods).GetMethod(
+                name, BindingFlags.Public | BindingFlags.Static)!;
+        }
+
+        [Fact]
+        public static void InvokeBoxedNullableRefs()
+        {
+            object?[] args;
+
+            object? iNull = null;
+            args = new object[] { iNull };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.Null)).Invoke(null, args));
+            Assert.Null(args[0]);
+
+            args = new object[] { iNull };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullBoxed)).Invoke(null, args));
+            Assert.Null(args[0]);
+
+            args = new object[] { iNull, 10 };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullToValue)).Invoke(null, args));
+            Assert.IsType<int>(args[0]);
+            Assert.Equal(10, (int)args[0]);
+
+            iNull = 42;
+            args = new object[] { iNull, 42 };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.ValueToNull)).Invoke(null, args));
+            Assert.Null(args[0]);
+
+            iNull = null;
+            args = new object[] { iNull, 10 };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullToValueBoxed)).Invoke(null, args));
+            Assert.IsType<int>(args[0]);
+            Assert.Equal(10, (int)args[0]);
+
+            static MethodInfo GetMethod(string name) => typeof(NullableRefMethods).GetMethod(
+                name, BindingFlags.Public | BindingFlags.Static)!;
+        }
+
+        [Fact]
+        public static void InvokeEnum()
+        {
+            // Enums only need to match by primitive type.
+            Assert.True((bool)GetMethod(nameof(EnumMethods.PassColorsInt)).
+                Invoke(null, new object[] { OtherColorsInt.Red }));
+
+            // Widening allowed
+            Assert.True((bool)GetMethod(nameof(EnumMethods.PassColorsInt)).
+                Invoke(null, new object[] { ColorsShort.Red }));
+
+            // Narrowing not allowed
+            Assert.Throws<ArgumentException>(() => GetMethod(nameof(EnumMethods.PassColorsShort)).
+                Invoke(null, new object[] { OtherColorsInt.Red }));
+
+            static MethodInfo GetMethod(string name) => typeof(EnumMethods).GetMethod(
+                name, BindingFlags.Public | BindingFlags.Static)!;
+        }
 
 #pragma warning disable 0414
-    public interface MI_Interface
-    {
-        int IMethod();
-        int IMethodNew();
-    }
-
-    public class MI_BaseClass : MI_Interface
-    {
-        public int IMethod() => 10;
-        public int IMethodNew() => 20;
-
-        public static bool StaticIntMethodReturningBool(int int4a) => int4a % 2 == 0;
-        public virtual int VirtualReturnIntMethod() => 0;
-
-        public virtual int VirtualMethod() => 0;
-        private int PrivateInstanceMethod() => 21;
-        public static string PublicStaticMethod(string x) => x;
-        public string PublicStructMethod(DateTime dt) => dt.ToString();
-    }
-
-    public class MI_SubClass : MI_BaseClass
-    {
-        public override int VirtualReturnIntMethod() => 2;
-
-        public PublicEnum EnumMethodReturningEnum(PublicEnum myenum) => myenum == PublicEnum.Case1 ? PublicEnum.Case2 : PublicEnum.Case1;
-        public string ObjectMethodReturningString(object obj) => obj.ToString();
-        public int VoidMethodReturningInt() => 3;
-        public long VoidMethodReturningLong() => long.MaxValue;
-        public long IntLongMethodReturningLong(int i, long l) => i + l;
-        public static int StaticIntIntMethodReturningInt(int i1, int i2) => i1 + i2;
-
-        public static void StaticGenericMethod<T>(T t) { }
-
-        public new int IMethodNew() => 200;
-
-        public override int VirtualMethod() => 1;
-
-        public void ReturnVoidMethod(DateTime dt) { }
-        public virtual string[] VirtualReturnStringArrayMethod() => new string[0];
-        public virtual bool VirtualReturnBoolMethod() => true;
-
-        public string Method2<T, S>(string t2, T t1, S t3) => "";
-
-        public IntPtr ReturnIntPtrMethod() => new IntPtr(200);
-        public int[] ReturnArrayMethod() => new int[] { 2, 3, 5, 7, 11 };
-
-        public void GenericMethod1<T>(T t) { }
-        public void GenericMethod2<T, U>(T t, U u) { }
-
-        public void StringArrayMethod(string[] strArray) { }
-
-        [Attr(77, name = "AttrSimple"),
-        Int32Attr(77, name = "Int32AttrSimple"),
-        Int64Attr(77, name = "Int64AttrSimple"),
-        StringAttr("hello", name = "StringAttrSimple"),
-        EnumAttr(PublicEnum.Case1, name = "EnumAttrSimple"),
-        TypeAttr(typeof(object), name = "TypeAttrSimple")]
-        public void MethodWithAttributes() { }
-    }
-
-    public class MethodInfoDummySubClass : MI_BaseClass
-    {
-        public override int VirtualReturnIntMethod() => 1;
-    }
-
-    public class MI_Interlocked
-    {
-        public static int Increment(ref int location) => 0;
-        public static int Decrement(ref int location) => 0;
-        public static int Exchange(ref int location1, int value) => 0;
-        public static int CompareExchange(ref int location1, int value, int comparand) => 0;
-
-        public static float Exchange(ref float location1, float value) => 0;
-        public static float CompareExchange(ref float location1, float value, float comparand) => 0;
-
-        public static object Exchange(ref object location1, object value) => null;
-        public static object CompareExchange(ref object location1, object value, object comparand) => null;
-    }
-
-    public class MI_GenericClass<T>
-    {
-        public T GenericMethod1(T t) => t;
-        public T GenericMethod2<S>(S s1, T t, string s2) => t;
-        public static S GenericMethod3<S>(S s) => s;
-    }
-
-    public interface MethodInfoBaseDefinitionInterface
-    {
-        void InterfaceMethod1();
-        void InterfaceMethod2();
-    }
-
-    public class MethodInfoBaseDefinitionBaseClass : MethodInfoBaseDefinitionInterface
-    {
-        public void InterfaceMethod1() { }
-        void MethodInfoBaseDefinitionInterface.InterfaceMethod2() { }
-
-        public virtual void BaseClassVirtualMethod() { }
-        public virtual void BaseClassMethod() { }
-
-        public override string ToString() => base.ToString();
-    }
-
-    public class MethodInfoBaseDefinitionSubClass : MethodInfoBaseDefinitionBaseClass
-    {
-        public override void BaseClassVirtualMethod() => base.BaseClassVirtualMethod();
-        public new void BaseClassMethod() { }
-        public override string ToString() => base.ToString();
-
-        public void DerivedClassMethod() { }
-    }
-
-    public abstract class MI_AbstractBaseClass
-    {
-        public abstract void AbstractMethod();
-        public virtual void VirtualMethod() { }
-    }
-
-    public class MI_AbstractSubClass : MI_AbstractBaseClass
-    {
-        public sealed override void VirtualMethod() { }
-        public override void AbstractMethod() { }
-    }
-
-    public interface MethodInfoDefaultParametersInterface
-    {
-        string InterfaceMethod(int p1 = 1, string p2 = "test", decimal p3 = 3.14m);
-    }
-
-    public class MethodInfoDefaultParameters : MethodInfoDefaultParametersInterface
-    {
-        public int Integer(int parameter = 1)
+        public interface MI_Interface
         {
-            return parameter;
+            int IMethod();
+            int IMethodNew();
         }
 
-        public string AllPrimitives(
-            bool boolean = true,
-            string str = "test",
-            char character = 'c',
-            byte unsignedbyte = 2,
-            sbyte signedbyte = -1,
-            short int16 = -3,
-            ushort uint16 = 4,
-            int int32 = -5,
-            uint uint32 = 6,
-            long int64 = -7,
-            ulong uint64 = 8,
-            float single = 9.1f,
-            double dbl = 11.12)
+        public class MI_BaseClass : MI_Interface
         {
-            return FormattableString.Invariant($"{boolean}, {str}, {character}, {unsignedbyte}, {signedbyte}, {int16}, {uint16}, {int32}, {uint32}, {int64}, {uint64}, {single}, {dbl}");
+            public int IMethod() => 10;
+            public int IMethodNew() => 20;
+
+            public static bool StaticIntMethodReturningBool(int int4a) => int4a % 2 == 0;
+            public virtual int VirtualReturnIntMethod() => 0;
+
+            public virtual int VirtualMethod() => 0;
+            private int PrivateInstanceMethod() => 21;
+            public static string PublicStaticMethod(string x) => x;
+            public string PublicStructMethod(DateTime dt) => dt.ToString();
         }
 
-        public string String(string parameter = "test") => parameter;
-
-        public class CustomReferenceType
+        public class MI_SubClass : MI_BaseClass
         {
-            public override bool Equals(object obj) => ReferenceEquals(this, obj);
-            public override int GetHashCode() => 0;
+            public override int VirtualReturnIntMethod() => 2;
+
+            public PublicEnum EnumMethodReturningEnum(PublicEnum myenum) => myenum == PublicEnum.Case1 ? PublicEnum.Case2 : PublicEnum.Case1;
+            public string ObjectMethodReturningString(object obj) => obj.ToString();
+            public int VoidMethodReturningInt() => 3;
+            public long VoidMethodReturningLong() => long.MaxValue;
+            public long IntLongMethodReturningLong(int i, long l) => i + l;
+            public static int StaticIntIntMethodReturningInt(int i1, int i2) => i1 + i2;
+
+            public static void StaticGenericMethod<T>(T t) { }
+
+            public new int IMethodNew() => 200;
+
+            public override int VirtualMethod() => 1;
+
+            public void ReturnVoidMethod(DateTime dt) { }
+            public virtual string[] VirtualReturnStringArrayMethod() => new string[0];
+            public virtual bool VirtualReturnBoolMethod() => true;
+
+            public string Method2<T, S>(string t2, T t1, S t3) => "";
+
+            public IntPtr ReturnIntPtrMethod() => new IntPtr(200);
+            public int[] ReturnArrayMethod() => new int[] { 2, 3, 5, 7, 11 };
+
+            public void GenericMethod1<T>(T t) { }
+            public void GenericMethod2<T, U>(T t, U u) { }
+
+            public void StringArrayMethod(string[] strArray) { }
+
+            [Attr(77, name = "AttrSimple"),
+            Int32Attr(77, name = "Int32AttrSimple"),
+            Int64Attr(77, name = "Int64AttrSimple"),
+            StringAttr("hello", name = "StringAttrSimple"),
+            EnumAttr(PublicEnum.Case1, name = "EnumAttrSimple"),
+            TypeAttr(typeof(object), name = "TypeAttrSimple")]
+            public void MethodWithAttributes() { }
         }
 
-        public CustomReferenceType Reference(CustomReferenceType parameter = null) => parameter;
-
-        public struct CustomValueType
+        public class MethodInfoDummySubClass : MI_BaseClass
         {
-            public int Id;
-            public override bool Equals(object obj) => Id == ((CustomValueType)obj).Id;
-            public override int GetHashCode() => Id.GetHashCode();
+            public override int VirtualReturnIntMethod() => 1;
         }
 
-        public CustomValueType ValueType(CustomValueType parameter = default(CustomValueType)) => parameter;
-
-        public DateTime DateTime([DateTimeConstant(42)] DateTime parameter) => parameter;
-
-        public decimal DecimalWithAttribute([DecimalConstant(1, 1, 2, 3, 4)] decimal parameter) => parameter;
-
-        public decimal Decimal(decimal parameter = 3.14m) => parameter;
-
-        public int? NullableInt(int? parameter = null) => parameter;
-
-        public PublicEnum Enum(PublicEnum parameter = PublicEnum.Case1) => parameter;
-
-        string MethodInfoDefaultParametersInterface.InterfaceMethod(int p1, string p2, decimal p3)
+        public class MI_Interlocked
         {
-            return FormattableString.Invariant($"{p1}, {p2}, {p3}");
+            public static int Increment(ref int location) => 0;
+            public static int Decrement(ref int location) => 0;
+            public static int Exchange(ref int location1, int value) => 0;
+            public static int CompareExchange(ref int location1, int value, int comparand) => 0;
+
+            public static float Exchange(ref float location1, float value) => 0;
+            public static float CompareExchange(ref float location1, float value, float comparand) => 0;
+
+            public static object Exchange(ref object location1, object value) => null;
+            public static object CompareExchange(ref object location1, object value, object comparand) => null;
         }
 
-        public static string StaticMethod(int p1 = 1, string p2 = "test", decimal p3 = 3.14m)
+        public class MI_GenericClass<T>
         {
-            return FormattableString.Invariant($"{p1}, {p2}, {p3}");
+            public T GenericMethod1(T t) => t;
+            public T GenericMethod2<S>(S s1, T t, string s2) => t;
+            public static S GenericMethod3<S>(S s) => s;
         }
 
-        public object OptionalObjectParameter([Optional]object parameter) => parameter;
-        public string OptionalStringParameter([Optional]string parameter) => parameter;
-    }
-
-    public delegate int Delegate_TC_Int(MI_BaseClass tc);
-    public delegate int Delegate_Void_Int();
-    public delegate string Delegate_Str_Str(string x);
-    public delegate string Delegate_Void_Str();
-    public delegate string Delegate_DateTime_Str(MI_BaseClass tc, DateTime dt);
-
-    public delegate T Delegate_GC_T_T<T>(MI_GenericClass<T> gc, T x);
-    public delegate T Delegate_T_T<T>(T x);
-    public delegate T Delegate_Void_T<T>();
-
-    public class DummyClass { }
-
-    public class Sample
-    {
-        public string Method1(DateTime t)
+        public interface MethodInfoBaseDefinitionInterface
         {
-            return "";
+            void InterfaceMethod1();
+            void InterfaceMethod2();
         }
-        public string Method2<T, S>(string t2, T t1, S t3)
-        {
-            return "";
-        }
-    }
 
-    public class SampleG<T>
-    {
-        public T Method1(T t)
+        public class MethodInfoBaseDefinitionBaseClass : MethodInfoBaseDefinitionInterface
         {
-            return t;
+            public void InterfaceMethod1() { }
+            void MethodInfoBaseDefinitionInterface.InterfaceMethod2() { }
+
+            public virtual void BaseClassVirtualMethod() { }
+            public virtual void BaseClassMethod() { }
+
+            public override string ToString() => base.ToString();
         }
-        public T Method2<S>(S t1, T t2, string t3)
+
+        public class MethodInfoBaseDefinitionSubClass : MethodInfoBaseDefinitionBaseClass
         {
-            return t2;
+            public override void BaseClassVirtualMethod() => base.BaseClassVirtualMethod();
+            public new void BaseClassMethod() { }
+            public override string ToString() => base.ToString();
+
+            public void DerivedClassMethod() { }
         }
-    }
+
+        public abstract class MI_AbstractBaseClass
+        {
+            public abstract void AbstractMethod();
+            public virtual void VirtualMethod() { }
+        }
+
+        public class MI_AbstractSubClass : MI_AbstractBaseClass
+        {
+            public sealed override void VirtualMethod() { }
+            public override void AbstractMethod() { }
+        }
+
+        public interface MethodInfoDefaultParametersInterface
+        {
+            string InterfaceMethod(int p1 = 1, string p2 = "test", decimal p3 = 3.14m);
+        }
+
+        public class MethodInfoDefaultParameters : MethodInfoDefaultParametersInterface
+        {
+            public int Integer(int parameter = 1)
+            {
+                return parameter;
+            }
+
+            public string AllPrimitives(
+                bool boolean = true,
+                string str = "test",
+                char character = 'c',
+                byte unsignedbyte = 2,
+                sbyte signedbyte = -1,
+                short int16 = -3,
+                ushort uint16 = 4,
+                int int32 = -5,
+                uint uint32 = 6,
+                long int64 = -7,
+                ulong uint64 = 8,
+                float single = 9.1f,
+                double dbl = 11.12)
+            {
+                return FormattableString.Invariant($"{boolean}, {str}, {character}, {unsignedbyte}, {signedbyte}, {int16}, {uint16}, {int32}, {uint32}, {int64}, {uint64}, {single}, {dbl}");
+            }
+
+            public string String(string parameter = "test") => parameter;
+
+            public class CustomReferenceType
+            {
+                public override bool Equals(object obj) => ReferenceEquals(this, obj);
+                public override int GetHashCode() => 0;
+            }
+
+            public CustomReferenceType Reference(CustomReferenceType parameter = null) => parameter;
+
+            public struct CustomValueType
+            {
+                public int Id;
+                public override bool Equals(object obj) => Id == ((CustomValueType)obj).Id;
+                public override int GetHashCode() => Id.GetHashCode();
+            }
+
+            public CustomValueType ValueType(CustomValueType parameter = default(CustomValueType)) => parameter;
+
+            public DateTime DateTime([DateTimeConstant(42)] DateTime parameter) => parameter;
+
+            public decimal DecimalWithAttribute([DecimalConstant(1, 1, 2, 3, 4)] decimal parameter) => parameter;
+
+            public decimal Decimal(decimal parameter = 3.14m) => parameter;
+
+            public int? NullableInt(int? parameter = null) => parameter;
+
+            public PublicEnum Enum(PublicEnum parameter = PublicEnum.Case1) => parameter;
+
+            string MethodInfoDefaultParametersInterface.InterfaceMethod(int p1, string p2, decimal p3)
+            {
+                return FormattableString.Invariant($"{p1}, {p2}, {p3}");
+            }
+
+            public static string StaticMethod(int p1 = 1, string p2 = "test", decimal p3 = 3.14m)
+            {
+                return FormattableString.Invariant($"{p1}, {p2}, {p3}");
+            }
+
+            public object OptionalObjectParameter([Optional] object parameter) => parameter;
+            public string OptionalStringParameter([Optional] string parameter) => parameter;
+        }
+
+        public delegate int Delegate_TC_Int(MI_BaseClass tc);
+        public delegate int Delegate_Void_Int();
+        public delegate string Delegate_Str_Str(string x);
+        public delegate string Delegate_Void_Str();
+        public delegate string Delegate_DateTime_Str(MI_BaseClass tc, DateTime dt);
+
+        public delegate T Delegate_GC_T_T<T>(MI_GenericClass<T> gc, T x);
+        public delegate T Delegate_T_T<T>(T x);
+        public delegate T Delegate_Void_T<T>();
+
+        public class DummyClass { }
+
+        public class Sample
+        {
+            public string Method1(DateTime t)
+            {
+                return "";
+            }
+            public string Method2<T, S>(string t2, T t1, S t3)
+            {
+                return "";
+            }
+        }
+
+        public class SampleG<T>
+        {
+            public T Method1(T t)
+            {
+                return t;
+            }
+            public T Method2<S>(S t1, T t2, string t3)
+            {
+                return t2;
+            }
+        }
+
+        private static class NullableRefMethods
+        {
+            public static bool Null(ref int? i)
+            {
+                Assert.Null(i);
+                return true;
+            }
+
+            public static bool NullBoxed(ref object? i)
+            {
+                Assert.Null(i);
+                return true;
+            }
+
+            public static bool NullToValue(ref int? i, int value)
+            {
+                Assert.Null(i);
+                i = value;
+                return true;
+            }
+
+            public static bool NullToValueBoxed(ref object? i, int value)
+            {
+                Assert.Null(i);
+                i = value;
+                return true;
+            }
+
+            public static bool ValueToNull(ref int? i, int expected)
+            {
+                Assert.Equal(expected, i);
+                i = null;
+                return true;
+            }
+
+            public static bool ValueToNullBoxed(ref int? i, int expected)
+            {
+                Assert.Equal(expected, i);
+                i = null;
+                return true;
+            }
+        }
+
+        private enum ColorsInt : int
+        {
+            Red = 1
+        }
+
+        private enum ColorsShort : short
+        {
+            Red = 1
+        }
+
+        private enum OtherColorsInt : int
+        {
+            Red = 1
+        }
+
+        private static class EnumMethods
+        {
+            public static bool PassColorsInt(ColorsInt color)
+            {
+                Assert.Equal(ColorsInt.Red, color);
+                return true;
+            }
+
+            public static bool PassColorsShort(ColorsShort color)
+            {
+                Assert.Equal(ColorsShort.Red, color);
+                return true;
+            }
+        }
 #pragma warning restore 0414
+    }
 }

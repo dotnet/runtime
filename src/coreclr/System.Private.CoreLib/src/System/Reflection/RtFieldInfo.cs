@@ -237,8 +237,11 @@ namespace System.Reflection
             CheckConsistency(obj);
 
             RuntimeType fieldType = (RuntimeType)FieldType;
-            bool _ = false;
-            fieldType.CheckValue(ref value, ref _, binder, culture, invokeAttr);
+            if (!ReferenceEquals(value?.GetType(), fieldType))
+            {
+                bool _b = false;
+                fieldType.CheckValue(ref value, ref _b, binder, culture, invokeAttr);
+            }
 
             Invoker.SetValue(obj, value);
         }

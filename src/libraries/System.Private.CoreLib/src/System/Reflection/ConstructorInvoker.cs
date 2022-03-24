@@ -13,26 +13,14 @@ namespace System.Reflection
         public ConstructorInvoker(RuntimeConstructorInfo constructorInfo)
         {
             _constructorInfo = constructorInfo;
-
-            RuntimeType[] argTypes = constructorInfo.ArgumentTypes;
-            for (int i = 0; i < argTypes.Length; i++)
-            {
-                if (argTypes[i].IsByRef)
-                {
-                    HasRefs = true;
-                    break;
-                }
-            }
         }
-
-        public bool HasRefs { get; }
 
         [DebuggerStepThrough]
         [DebuggerHidden]
-        public unsafe object? InvokeUnsafe(object? obj, IntPtr** args, BindingFlags invokeAttr)
+        public unsafe object? InvokeUnsafe(object? obj, IntPtr* args, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
         {
             // Todo: add strategy for calling IL Emit-based version
-            return _constructorInfo.InvokeNonEmitUnsafe(obj, args, invokeAttr);
+            return _constructorInfo.InvokeNonEmitUnsafe(obj, args, argsForTemporaryMonoSupport, invokeAttr);
         }
     }
 }

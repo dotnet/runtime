@@ -13,21 +13,9 @@ namespace System.Reflection.Emit
         public DynamicMethodInvoker(DynamicMethod dynamicMethod)
         {
             _dynamicMethod = dynamicMethod;
-
-            RuntimeType[] sigTypes = dynamicMethod.Signature.Arguments;
-            for (int i = 0; i < sigTypes.Length; i++)
-            {
-                if (sigTypes[i].IsByRef)
-                {
-                    HasRefs = true;
-                    break;
-                }
-            }
         }
 
-        public bool HasRefs { get; }
-
-        public unsafe object? InvokeUnsafe(object? obj, IntPtr** args, BindingFlags invokeAttr)
+        public unsafe object? InvokeUnsafe(object? obj, IntPtr* args, BindingFlags invokeAttr)
         {
             // Todo: add strategy for calling IL Emit-based version
             return _dynamicMethod.InvokeNonEmitUnsafe(obj, args, invokeAttr);

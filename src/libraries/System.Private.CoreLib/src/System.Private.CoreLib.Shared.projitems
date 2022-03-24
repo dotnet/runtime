@@ -614,6 +614,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IntrospectionExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvalidFilterCriteriaException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvocationFlags.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvokeUtils.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IReflect.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IReflectableType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\LocalVariableInfo.cs" />

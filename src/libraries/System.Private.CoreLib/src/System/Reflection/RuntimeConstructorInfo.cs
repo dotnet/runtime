@@ -128,53 +128,65 @@ namespace System.Reflection
             {
                 if (argCount == 0)
                 {
-                    Invoker.InvokeUnsafe(obj, args: default, invokeAttr);
+                    Invoker.InvokeUnsafe(obj, args: default, argsForTemporaryMonoSupport: default, invokeAttr);
                 }
                 else
                 {
                     Debug.Assert(parameters != null);
-                    Span<object?> parametersOut;
-                    bool copyBack = Invoker.HasRefs;
+                    Span<object?> copyOfParameters;
+                    Span<bool> shouldCopyBackParameters;
+                    Span<IntPtr> byrefParameters;
 
                     if (argCount <= MaxStackAllocArgCount)
                     {
-                        StackAllocatedByRefs byrefStorage = default;
-                        IntPtr** unsafeByrefParameters = (IntPtr**)&byrefStorage;
                         StackAllocedArguments argStorage = default;
-                        parametersOut = new Span<object?>(ref argStorage._arg0, argCount);
+                        copyOfParameters = new Span<object?>(ref argStorage._arg0, argCount);
+                        shouldCopyBackParameters = new Span<bool>(ref argStorage._copyBack0, argCount);
+
+                        StackAllocatedByRefs byrefStorage = default;
+                        byrefParameters = new Span<IntPtr>(&byrefStorage, argCount);
 
                         CheckArguments(
-                            ref parametersOut,
-                            unsafeByrefParameters,
-                            ref copyBack,
+                            copyOfParameters,
+                            byrefParameters,
+                            shouldCopyBackParameters,
                             parameters,
                             ArgumentTypes,
                             binder,
                             culture,
                             invokeAttr);
 
-                        Invoker.InvokeUnsafe(obj, unsafeByrefParameters, invokeAttr);
+                        Invoker.InvokeUnsafe(obj, (IntPtr*)(void**)&byrefStorage, copyOfParameters, invokeAttr);
                     }
                     else
                     {
-                        parametersOut = new Span<object?>(new object[argCount]);
-                        IntPtr** unsafeByrefParameters = stackalloc IntPtr*[argCount];
-                        GCFrameRegistration reg = new(unsafeByrefParameters, (uint)argCount, areByRefs: true);
+                        object[] objHolder = new object[argCount];
+                        copyOfParameters = new Span<object?>(objHolder, 0, argCount);
+
+                        // We don't check a max stack size since we are invoking a method which
+                        // natually requires a stack size that is dependent on the arg count\size.
+                        IntPtr* byrefStorage = stackalloc IntPtr[argCount];
+                        byrefParameters = new Span<IntPtr>(byrefStorage, argCount);
+
+                        bool* boolHolder = stackalloc bool[argCount];
+                        shouldCopyBackParameters = new Span<bool>(boolHolder, argCount);
+
+                        GCFrameRegistration reg = new(byrefStorage, (uint)argCount, areByRefs: true);
 
                         try
                         {
                             RegisterForGCReporting(&reg);
                             CheckArguments(
-                                ref parametersOut,
-                                unsafeByrefParameters,
-                                ref copyBack,
+                                copyOfParameters,
+                                byrefParameters,
+                                shouldCopyBackParameters,
                                 parameters,
                                 ArgumentTypes,
                                 binder,
                                 culture,
                                 invokeAttr);
 
-                            Invoker.InvokeUnsafe(obj, unsafeByrefParameters, invokeAttr);
+                            Invoker.InvokeUnsafe(obj, (IntPtr*)(void*)byrefStorage, copyOfParameters, invokeAttr);
                         }
                         finally
                         {
@@ -182,13 +194,12 @@ namespace System.Reflection
                         }
                     }
 
-                    if (copyBack)
+                    // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
+                    for (int i = 0; i < argCount; i++)
                     {
-                        // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
-                        // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
-                        for (int i = 0; i < argCount; i++)
+                        if (shouldCopyBackParameters[i])
                         {
-                            parameters[i] = parametersOut[i];
+                            parameters[i] = copyOfParameters[i];
                         }
                     }
                 }
@@ -221,53 +232,65 @@ namespace System.Reflection
             {
                 if (argCount == 0)
                 {
-                    retValue = Invoker.InvokeUnsafe(obj: null, args: default, invokeAttr);
+                    retValue = Invoker.InvokeUnsafe(obj: null, args: default, argsForTemporaryMonoSupport: default, invokeAttr);
                 }
                 else
                 {
                     Debug.Assert(parameters != null);
-                    Span<object?> parametersOut;
-                    bool copyBack = Invoker.HasRefs;
+                    Span<object?> copyOfParameters;
+                    Span<bool> shouldCopyBackParameters;
+                    Span<IntPtr> byrefParameters;
 
                     if (argCount <= MaxStackAllocArgCount)
                     {
-                        StackAllocatedByRefs byrefStorage = default;
-                        IntPtr** unsafeByrefParameters = (IntPtr**)&byrefStorage;
                         StackAllocedArguments argStorage = default;
-                        parametersOut = new Span<object?>(ref argStorage._arg0, argCount);
+                        copyOfParameters = new Span<object?>(ref argStorage._arg0, argCount);
+                        shouldCopyBackParameters = new Span<bool>(ref argStorage._copyBack0, argCount);
+
+                        StackAllocatedByRefs byrefStorage = default;
+                        byrefParameters = new Span<IntPtr>(&byrefStorage, argCount);
 
                         CheckArguments(
-                            ref parametersOut,
-                            unsafeByrefParameters,
-                            ref copyBack,
+                            copyOfParameters,
+                            byrefParameters,
+                            shouldCopyBackParameters,
                             parameters,
                             ArgumentTypes,
                             binder,
                             culture,
                             invokeAttr);
 
-                        retValue = Invoker.InvokeUnsafe(obj: null, unsafeByrefParameters, invokeAttr);
+                        retValue = Invoker.InvokeUnsafe(obj: null, (IntPtr*)(void**)&byrefStorage, copyOfParameters, invokeAttr);
                     }
                     else
                     {
-                        parametersOut = new Span<object?>(new object[argCount]);
-                        IntPtr** unsafeByrefParameters = stackalloc IntPtr*[argCount];
-                        GCFrameRegistration reg = new(unsafeByrefParameters, (uint)argCount, areByRefs: true);
+                        object[] objHolder = new object[argCount];
+                        copyOfParameters = new Span<object?>(objHolder, 0, argCount);
+
+                        // We don't check a max stack size since we are invoking a method which
+                        // natually requires a stack size that is dependent on the arg count\size.
+                        IntPtr* byrefStorage = stackalloc IntPtr[argCount];
+                        byrefParameters = new Span<IntPtr>(byrefStorage, argCount);
+
+                        bool* boolHolder = stackalloc bool[argCount];
+                        shouldCopyBackParameters = new Span<bool>(boolHolder, argCount);
+
+                        GCFrameRegistration reg = new(byrefStorage, (uint)argCount, areByRefs: true);
 
                         try
                         {
                             RegisterForGCReporting(&reg);
                             CheckArguments(
-                                ref parametersOut,
-                                unsafeByrefParameters,
-                                ref copyBack,
+                                copyOfParameters,
+                                byrefParameters,
+                                shouldCopyBackParameters,
                                 parameters,
                                 ArgumentTypes,
                                 binder,
                                 culture,
                                 invokeAttr);
 
-                            retValue = Invoker.InvokeUnsafe(obj: null, unsafeByrefParameters, invokeAttr);
+                            retValue = Invoker.InvokeUnsafe(obj: null, (IntPtr*)(void*)byrefStorage, copyOfParameters, invokeAttr);
                         }
                         finally
                         {
@@ -275,13 +298,12 @@ namespace System.Reflection
                         }
                     }
 
-                    if (copyBack)
+                    // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
+                    for (int i = 0; i < argCount; i++)
                     {
-                        // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
-                        // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
-                        for (int i = 0; i < argCount; i++)
+                        if (shouldCopyBackParameters[i])
                         {
-                            parameters[i] = parametersOut[i];
+                            parameters[i] = copyOfParameters[i];
                         }
                     }
                 }
