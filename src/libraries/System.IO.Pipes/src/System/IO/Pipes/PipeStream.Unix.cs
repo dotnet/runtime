@@ -229,7 +229,7 @@ namespace System.IO.Pipes
 #pragma warning disable CA1822
         /// <summary>Throws an exception if the supplied handle does not represent a valid pipe.</summary>
         /// <param name="safePipeHandle">The handle to validate.</param>
-        private protected void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
+        internal void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
         {
             Interop.Sys.FileStatus status;
             int result = CheckPipeCall(Interop.Sys.FStat(safePipeHandle, out status));
