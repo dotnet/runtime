@@ -5,38 +5,23 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.Specialized;
-using System.IO;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public class DictionaryTests
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+    public partial class CollectionTests
     {
         [Theory]
         [MemberData(nameof(GetTestDictionaries))]
-        public void TestDictionaryKey<TKey, TValue>(Dictionary<TKey, TValue> dictionary, string expectedJson)
+        public async Task TestDictionaryKey<TKey, TValue>(Dictionary<TKey, TValue> dictionary, string expectedJson)
         {
-            string json = JsonSerializer.Serialize(dictionary);
+            string json = await Serializer.SerializeWrapper(dictionary);
             Assert.Equal(expectedJson, json);
 
-            Dictionary<TKey, TValue> deserializedDictionary = JsonSerializer.Deserialize<Dictionary<TKey, TValue>>(json);
-            Assert.Equal(dictionary, deserializedDictionary);
-        }
-
-        [Theory]
-        [MemberData(nameof(GetTestDictionaries))]
-        public async Task TestDictionaryKeyAsync<TKey, TValue>(Dictionary<TKey, TValue> dictionary, string expectedJson)
-        {
-            MemoryStream serializeStream = new MemoryStream();
-            await JsonSerializer.SerializeAsync(serializeStream, dictionary);
-            string json = Encoding.UTF8.GetString(serializeStream.ToArray());
-            Assert.Equal(expectedJson, json);
-
-            byte[] jsonBytes = Encoding.UTF8.GetBytes(json);
-            Stream deserializeStream = new MemoryStream(jsonBytes);
-            Dictionary<TKey, TValue> deserializedDictionary = await JsonSerializer.DeserializeAsync<Dictionary<TKey, TValue>>(deserializeStream);
+            Dictionary<TKey, TValue> deserializedDictionary = await Serializer.DeserializeWrapper<Dictionary<TKey, TValue>>(json);
             Assert.Equal(dictionary, deserializedDictionary);
         }
 
@@ -72,45 +57,23 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetUnsupportedDictionaries))]
-        public void ThrowUnsupported_Serialize<TKey, TValue>(Dictionary<TKey, TValue> dictionary)
-            => Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(dictionary));
-
-
-        [Theory]
-        [MemberData(nameof(GetUnsupportedDictionaries))]
-        public Task ThrowUnsupported_SerializeAsync<TKey, TValue>(Dictionary<TKey, TValue> dictionary)
-            => Assert.ThrowsAsync<NotSupportedException>(() => JsonSerializer.SerializeAsync(new MemoryStream(), dictionary));
+        public Task ThrowUnsupported_Serialize<TKey, TValue>(Dictionary<TKey, TValue> dictionary)
+            => Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(dictionary));
 
         [Theory]
         [MemberData(nameof(GetUnsupportedDictionaries))]
-        public void DoesNotThrowIfEmpty_Serialize<TKey, TValue>(Dictionary<TKey, TValue> dictionary)
+        public Task DoesNotThrowIfEmpty_Serialize<TKey, TValue>(Dictionary<TKey, TValue> dictionary)
         {
             _ = dictionary; // argument only needed to infer generic parameters
-            JsonSerializer.Serialize(new Dictionary<TKey, TValue>());
+            return Serializer.SerializeWrapper(new Dictionary<TKey, TValue>());
         }
 
         [Theory]
         [MemberData(nameof(GetUnsupportedDictionaries))]
-        public Task DoesNotThrowIfEmpty_SerializeAsync<TKey, TValue>(Dictionary<TKey, TValue> dictionary)
+        public Task DoesNotThrowIfEmpty_Deserialize<TKey, TValue>(Dictionary<TKey, TValue> dictionary)
         {
             _ = dictionary; // argument only needed to infer generic parameters
-            return JsonSerializer.SerializeAsync(new MemoryStream(), new Dictionary<TKey, TValue>());
-        }
-
-        [Theory]
-        [MemberData(nameof(GetUnsupportedDictionaries))]
-        public void DoesNotThrowIfEmpty_Deserialize<TKey, TValue>(Dictionary<TKey, TValue> dictionary)
-        {
-            _ = dictionary; // argument only needed to infer generic parameters
-            JsonSerializer.Deserialize<Dictionary<TKey, TValue>>("{}");
-        }
-
-        [Theory]
-        [MemberData(nameof(GetUnsupportedDictionaries))]
-        public Task DoesNotThrowIfEmpty_DeserializeAsync<TKey, TValue>(Dictionary<TKey, TValue> dictionary)
-        {
-            _ = dictionary; // argument only needed to infer generic parameters
-            return JsonSerializer.DeserializeAsync<Dictionary<TKey, TValue>>(new MemoryStream(Encoding.UTF8.GetBytes("{}"))).AsTask();
+            return Serializer.DeserializeWrapper<Dictionary<TKey, TValue>>("{}");
         }
 
         public static IEnumerable<object[]> GetUnsupportedDictionaries()
@@ -125,7 +88,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void TestGenericDictionaryKeyObject()
+        public async Task TestGenericDictionaryKeyObject()
         {
             var dictionary = new Dictionary<object, object>();
             // Add multiple supported types.
@@ -137,19 +100,19 @@ namespace System.Text.Json.Serialization.Tests
 
             const string expected = @"{""1"":1,""08314fa2-b1fe-4792-bcd1-6e62338ac7f3"":2,""KeyString"":3,""Foo"":4,""Foo, Bar"":5}";
 
-            string json = JsonSerializer.Serialize(dictionary);
+            string json = await Serializer.SerializeWrapper(dictionary);
             Assert.Equal(expected, json);
             // object type is not supported on deserialization.
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Dictionary<object, object>>(json));
+            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<Dictionary<object, object>>(json));
 
             var @object = new ClassWithDictionary { Dictionary = dictionary };
-            json = JsonSerializer.Serialize(@object);
+            json = await Serializer.SerializeWrapper(@object);
             Assert.Equal($@"{{""Dictionary"":{expected}}}", json);
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithDictionary>(json));
+            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<ClassWithDictionary>(json));
         }
 
         [Fact]
-        public void TestNonGenericDictionaryKeyObject()
+        public async Task TestNonGenericDictionaryKeyObject()
         {
             IDictionary dictionary = new OrderedDictionary();
             // Add multiple supported types.
@@ -160,23 +123,23 @@ namespace System.Text.Json.Serialization.Tests
             dictionary.Add(MyEnumFlags.Foo | MyEnumFlags.Bar, 5);
 
             const string expected = @"{""1"":1,""08314fa2-b1fe-4792-bcd1-6e62338ac7f3"":2,""KeyString"":3,""Foo"":4,""Foo, Bar"":5}";
-            string json = JsonSerializer.Serialize(dictionary);
+            string json = await Serializer.SerializeWrapper(dictionary);
             Assert.Equal(expected, json);
 
-            dictionary = JsonSerializer.Deserialize<IDictionary>(json);
+            dictionary = await Serializer.DeserializeWrapper<IDictionary>(json);
             Assert.IsType<Dictionary<string, object>>(dictionary);
 
-            dictionary = JsonSerializer.Deserialize<OrderedDictionary>(json);
+            dictionary = await Serializer.DeserializeWrapper<OrderedDictionary>(json);
             foreach (object key in dictionary.Keys)
             {
                 Assert.IsType<string>(key);
             }
 
             var @object = new ClassWithIDictionary { Dictionary = dictionary };
-            json = JsonSerializer.Serialize(@object);
+            json = await Serializer.SerializeWrapper(@object);
             Assert.Equal($@"{{""Dictionary"":{expected}}}", json);
 
-            @object = JsonSerializer.Deserialize<ClassWithIDictionary>(json);
+            @object = await Serializer.DeserializeWrapper<ClassWithIDictionary>(json);
             Assert.IsType<Dictionary<string, object>>(@object.Dictionary);
         }
 
@@ -185,56 +148,39 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("42", typeof(bool))]
         [InlineData("false", typeof(double))]
         [InlineData("{00000000-0000-0000-0000-000000000000}", typeof(Guid))]
-        public void ThrowOnInvalidFormat(string keyValue, Type keyType)
+        public async Task ThrowOnInvalidFormat(string keyValue, Type keyType)
         {
             Type dictionaryType = typeof(Dictionary<,>).MakeGenericType(keyType, typeof(int));
             string json = $@"{{ ""{keyValue}"" : 1 }}";
             string expectedJsonPath = keyValue.Contains(".") ? $"$['{keyValue}']" : $"$.{keyValue}";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(json, dictionaryType));
-            Assert.Contains(keyType.ToString(), ex.Message);
-            Assert.Contains(expectedJsonPath, ex.Message);
-        }
-
-        [Theory]
-        [InlineData("1.1", typeof(int))]
-        [InlineData("42", typeof(bool))]
-        [InlineData("false", typeof(double))]
-        [InlineData("{00000000-0000-0000-0000-000000000000}", typeof(Guid))]
-        public async Task ThrowOnInvalidFormatAsync(string keyValue, Type keyType)
-        {
-            Type dictionaryType = typeof(Dictionary<,>).MakeGenericType(keyType, typeof(int));
-            string json = $@"{{ ""{keyValue}"" : 1 }}";
-            string expectedJsonPath = keyValue.Contains(".") ? $"$['{keyValue}']" : $"$.{keyValue}";
-
-            using var stream = new Utf8MemoryStream(json);
-            JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.DeserializeAsync(stream, dictionaryType));
+            JsonException ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper(json, dictionaryType));
             Assert.Contains(keyType.ToString(), ex.Message);
             Assert.Contains(expectedJsonPath, ex.Message);
         }
 
         [Fact]
-        public static void TestNotSuportedExceptionIsThrown()
+        public async Task TestNotSuportedExceptionIsThrown()
         {
             // Dictionary<int[], int>>
-            Assert.Null(JsonSerializer.Deserialize<Dictionary<int[], int>>("null"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<int[], int>>("\"\""));
-            Assert.NotNull(JsonSerializer.Deserialize<Dictionary<int[], int>>("{}"));
+            Assert.Null(await Serializer.DeserializeWrapper<Dictionary<int[], int>>("null"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Dictionary<int[], int>>("\"\""));
+            Assert.NotNull(await Serializer.DeserializeWrapper<Dictionary<int[], int>>("{}"));
 
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Dictionary<int[], int>>(@"{""Foo"":1}"));
+            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<Dictionary<int[], int>>(@"{""Foo"":1}"));
 
             // UnsupportedDictionaryWrapper
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<UnsupportedDictionaryWrapper>("\"\""));
-            Assert.NotNull(JsonSerializer.Deserialize<UnsupportedDictionaryWrapper>("{}"));
-            Assert.Null(JsonSerializer.Deserialize<UnsupportedDictionaryWrapper>("null"));
-            Assert.NotNull(JsonSerializer.Deserialize<UnsupportedDictionaryWrapper>(@"{""Dictionary"":null}"));
-            Assert.NotNull(JsonSerializer.Deserialize<UnsupportedDictionaryWrapper>(@"{""Dictionary"":{}}"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<UnsupportedDictionaryWrapper>("\"\""));
+            Assert.NotNull(await Serializer.DeserializeWrapper<UnsupportedDictionaryWrapper>("{}"));
+            Assert.Null(await Serializer.DeserializeWrapper<UnsupportedDictionaryWrapper>("null"));
+            Assert.NotNull(await Serializer.DeserializeWrapper<UnsupportedDictionaryWrapper>(@"{""Dictionary"":null}"));
+            Assert.NotNull(await Serializer.DeserializeWrapper<UnsupportedDictionaryWrapper>(@"{""Dictionary"":{}}"));
 
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<UnsupportedDictionaryWrapper>(@"{""Dictionary"":{""Foo"":1}}"));
+            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<UnsupportedDictionaryWrapper>(@"{""Dictionary"":{""Foo"":1}}"));
         }
 
         [Fact]
-        public void TestPolicyOnlyAppliesToString()
+        public async Task TestPolicyOnlyAppliesToString()
         {
             var opts = new JsonSerializerOptions
             {
@@ -242,96 +188,52 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             var stringIntDictionary = new Dictionary<string, int> { { "1", 1 } };
-            string json = JsonSerializer.Serialize(stringIntDictionary, opts);
+            string json = await Serializer.SerializeWrapper(stringIntDictionary, opts);
             Assert.Equal($@"{{""{FixedNamingPolicy.FixedName}"":1}}", json);
 
             var intIntDictionary = new Dictionary<int, int> { { 1, 1 } };
-            json = JsonSerializer.Serialize(intIntDictionary, opts);
+            json = await Serializer.SerializeWrapper(intIntDictionary, opts);
             Assert.Equal(@"{""1"":1}", json);
 
             var objectIntDictionary = new Dictionary<object, int> { { "1", 1 } };
-            json = JsonSerializer.Serialize(objectIntDictionary, opts);
+            json = await Serializer.SerializeWrapper(objectIntDictionary, opts);
             Assert.Equal($@"{{""{FixedNamingPolicy.FixedName}"":1}}", json);
 
             objectIntDictionary = new Dictionary<object, int> { { 1, 1 } };
-            json = JsonSerializer.Serialize(objectIntDictionary, opts);
+            json = await Serializer.SerializeWrapper(objectIntDictionary, opts);
             Assert.Equal(@"{""1"":1}", json);
         }
 
         [Fact]
-        public async Task TestPolicyOnlyAppliesToStringAsync()
-        {
-            var opts = new JsonSerializerOptions
-            {
-                DictionaryKeyPolicy = new FixedNamingPolicy()
-            };
-
-            MemoryStream stream = new MemoryStream();
-
-            var stringIntDictionary = new Dictionary<string, int> { { "1", 1 } };
-            await JsonSerializer.SerializeAsync(stream, stringIntDictionary, opts);
-
-            string json = Encoding.UTF8.GetString(stream.ToArray());
-            Assert.Equal($@"{{""{FixedNamingPolicy.FixedName}"":1}}", json);
-
-            stream.Position = 0;
-            stream.SetLength(0);
-
-            var intIntDictionary = new Dictionary<int, int> { { 1, 1 } };
-            await JsonSerializer.SerializeAsync(stream, intIntDictionary, opts);
-
-            json = Encoding.UTF8.GetString(stream.ToArray());
-            Assert.Equal(@"{""1"":1}", json);
-
-            stream.Position = 0;
-            stream.SetLength(0);
-
-            var objectIntDictionary = new Dictionary<object, int> { { "1", 1 } };
-            await JsonSerializer.SerializeAsync(stream, objectIntDictionary, opts);
-
-            json = Encoding.UTF8.GetString(stream.ToArray());
-            Assert.Equal($@"{{""{FixedNamingPolicy.FixedName}"":1}}", json);
-
-            stream.Position = 0;
-            stream.SetLength(0);
-
-            objectIntDictionary = new Dictionary<object, int> { { 1, 1 } };
-            await JsonSerializer.SerializeAsync(stream, objectIntDictionary, opts);
-
-            json = Encoding.UTF8.GetString(stream.ToArray());
-            Assert.Equal(@"{""1"":1}", json);
-        }
-
-        [Fact]
-        public void TestEnumKeyWithNotValidIdentifier()
+        public async Task TestEnumKeyWithNotValidIdentifier()
         {
             var myEnumIntDictionary = new Dictionary<MyEnum, int>();
             myEnumIntDictionary.Add((MyEnum)(-1), 1);
 
-            string json = JsonSerializer.Serialize(myEnumIntDictionary);
+            string json = await Serializer.SerializeWrapper(myEnumIntDictionary);
             Assert.Equal(@"{""-1"":1}", json);
 
-            myEnumIntDictionary = JsonSerializer.Deserialize<Dictionary<MyEnum, int>>(json);
+            myEnumIntDictionary = await Serializer.DeserializeWrapper<Dictionary<MyEnum, int>>(json);
             Assert.Equal(1, myEnumIntDictionary[(MyEnum)(-1)]);
 
             var myEnumFlagsIntDictionary = new Dictionary<MyEnumFlags, int>();
             myEnumFlagsIntDictionary.Add((MyEnumFlags)(-1), 1);
 
-            json = JsonSerializer.Serialize(myEnumFlagsIntDictionary);
+            json = await Serializer.SerializeWrapper(myEnumFlagsIntDictionary);
             Assert.Equal(@"{""-1"":1}", json);
 
-            myEnumFlagsIntDictionary = JsonSerializer.Deserialize<Dictionary<MyEnumFlags, int>>(json);
+            myEnumFlagsIntDictionary = await Serializer.DeserializeWrapper<Dictionary<MyEnumFlags, int>>(json);
             Assert.Equal(1, myEnumFlagsIntDictionary[(MyEnumFlags)(-1)]);
         }
 
         [Theory]
         [MemberData(nameof(DictionaryKeysWithSpecialCharacters))]
-        public void EnsureNonStringKeysDontGetEscapedOnSerialize(object key, string expectedKeySerialized)
+        public async Task EnsureNonStringKeysDontGetEscapedOnSerialize(object key, string expectedKeySerialized)
         {
             Dictionary<object, int> root = new Dictionary<object, int>();
             root.Add(key, 1);
 
-            string json = JsonSerializer.Serialize(root);
+            string json = await Serializer.SerializeWrapper(root);
             Assert.Contains(expectedKeySerialized, json);
         }
 
@@ -345,23 +247,10 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(EscapedMemberData))]
-        public void TestEscapedValuesOnDeserialize(string escapedPropertyName, object expectedDictionaryKey, Type dictionaryType)
+        public async Task TestEscapedValuesOnDeserialize(string escapedPropertyName, object expectedDictionaryKey, Type dictionaryType)
         {
             string json = $@"{{""{escapedPropertyName}"":1}}";
-            IDictionary root = (IDictionary)JsonSerializer.Deserialize(json, dictionaryType);
-
-            bool containsKey = root.Contains(expectedDictionaryKey);
-            Assert.True(containsKey);
-            Assert.Equal(1, root[expectedDictionaryKey]);
-        }
-
-        [Theory]
-        [MemberData(nameof(EscapedMemberData))]
-        public async Task TestEscapedValuesOnDeserializeAsync(string escapedPropertyName, object expectedDictionaryKey, Type dictionaryType)
-        {
-            string json = $@"{{""{escapedPropertyName}"":1}}";
-            MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-            IDictionary root = (IDictionary)await JsonSerializer.DeserializeAsync(stream, dictionaryType);
+            IDictionary root = (IDictionary) await Serializer.DeserializeWrapper(json, dictionaryType);
 
             bool containsKey = root.Contains(expectedDictionaryKey);
             Assert.True(containsKey);
@@ -435,12 +324,6 @@ namespace System.Text.Json.Serialization.Tests
             public Dictionary<object, object> Dictionary { get; set; }
         }
 
-        private class ClassWithExtensionData
-        {
-            [JsonExtensionData]
-            public Dictionary<int, object> Overflow { get; set; }
-        }
-
         private class UnsupportedDictionaryWrapper
         {
             public Dictionary<int[], int> Dictionary { get; set; }
@@ -459,51 +342,51 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void RoundtripAllDictionaryConverters()
+        public async Task RoundtripAllDictionaryConverters()
         {
             const string Expected = @"{""1"":1}";
 
             foreach (Type type in CollectionTestTypes.DeserializableDictionaryTypes<int, int>())
             {
-                object dict = JsonSerializer.Deserialize(Expected, type);
-                Assert.Equal(Expected, JsonSerializer.Serialize(dict, type));
+                object dict = await Serializer.DeserializeWrapper(Expected, type);
+                Assert.Equal(Expected, await Serializer.SerializeWrapper(dict, type));
             }
         }
 
         [Theory]
         [InlineData(typeof(IDictionary))]
         [InlineData(typeof(Hashtable))]
-        public static void IDictionary_Keys_ShouldBe_String_WhenDeserializing(Type type)
+        public async Task IDictionary_Keys_ShouldBe_String_WhenDeserializing(Type type)
         {
             const string Expected = @"{""1998-02-14"":1}";
 
-            IDictionary dict = (IDictionary)JsonSerializer.Deserialize(Expected, type);
+            IDictionary dict = (IDictionary) await Serializer.DeserializeWrapper(Expected, type);
             Assert.Equal(1, dict.Count);
             JsonElement element = Assert.IsType<JsonElement>(dict["1998-02-14"]);
             Assert.Equal(1, element.GetInt32());
 
-            Assert.Equal(Expected, JsonSerializer.Serialize(dict, type));
+            Assert.Equal(Expected, await Serializer.SerializeWrapper(dict, type));
         }
 
         [Fact]
-        public static void GenericDictionary_WithObjectKeys_Throw_WhenDeserializing()
+        public async Task GenericDictionary_WithObjectKeys_Throw_WhenDeserializing()
         {
             const string Expected = @"{""1998-02-14"":1}";
 
             var dict = new Dictionary<object, int> { ["1998-02-14"] = 1 };
-            RunTest<IDictionary<object, int>>(dict);
-            RunTest<Dictionary<object, int>>(dict);
-            RunTest<ImmutableDictionary<object, int>>(ImmutableDictionary.CreateRange(dict));
+            await RunTest<IDictionary<object, int>>(dict);
+            await RunTest<Dictionary<object, int>>(dict);
+            await RunTest<ImmutableDictionary<object, int>>(ImmutableDictionary.CreateRange(dict));
 
-            void RunTest<T>(T dictionary)
+            async Task RunTest<T>(T dictionary)
             {
-                Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<T>(Expected));
-                Assert.Equal(Expected, JsonSerializer.Serialize(dictionary));
+                await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<T>(Expected));
+                Assert.Equal(Expected, await Serializer.SerializeWrapper(dictionary));
             }
         }
 
         [Fact]
-        public static void KeyWithCustomPrimitiveConverter_FallbackToDefaultConverter()
+        public async Task KeyWithCustomPrimitiveConverter_FallbackToDefaultConverter()
         {
             // Validates .NET 5 primitive custom key converter behavior.
 
@@ -515,26 +398,26 @@ namespace System.Text.Json.Serialization.Tests
             var dictionary = new Dictionary<int, string> { [1] = "1" };
 
             string expectedJson = @"{""1"":""1""}";
-            string actualJson = JsonSerializer.Serialize(dictionary, options);
+            string actualJson = await Serializer.SerializeWrapper(dictionary, options);
             Assert.Equal(expectedJson, actualJson);
 
-            dictionary = JsonSerializer.Deserialize<Dictionary<int, string>>(expectedJson);
+            dictionary = await Serializer.DeserializeWrapper<Dictionary<int, string>>(expectedJson);
             Assert.True(dictionary.ContainsKey(1));
         }
 
         [Fact]
-        public static void KeyWithCustomPrimitiveConverter_JsonTypeInfo_ThrowsNotSupportedException()
+        public async Task KeyWithCustomPrimitiveConverter_JsonTypeInfo_ThrowsNotSupportedException()
         {
             JsonSerializer.Serialize(42); // Ensure default converters are rooted in current process
 
             CustomInt32ConverterSerializerContext ctx = new();
 
             var dictionary = new Dictionary<int, string> { [1] = "1" };
-            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(dictionary, ctx.DictionaryInt32String));
+            NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(dictionary, ctx.DictionaryInt32String));
             ValidateException(ex);
 
             string json = @"{""1"":""1""}";
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Dictionary<int, string>>(json, ctx.DictionaryInt32String));
+            ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<Dictionary<int, string>>(json, ctx.DictionaryInt32String));
             ValidateException(ex);
 
             static void ValidateException(NotSupportedException ex)
@@ -570,7 +453,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void KeyWithCustomClassConverter_ThrowsNotSupportedException()
+        public async Task KeyWithCustomClassConverter_ThrowsNotSupportedException()
         {
             // TODO: update after https://github.com/dotnet/runtime/issues/46520 is implemented.
 
@@ -581,11 +464,11 @@ namespace System.Text.Json.Serialization.Tests
 
             var dictionary = new Dictionary<ClassWithIDictionary, string> { [new ClassWithIDictionary()] = "1" };
 
-            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(dictionary, options));
+            NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(dictionary, options));
             ValidateException(ex);
 
             string json = @"{""SomeStringRepresentation"":""1""}";
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Dictionary<ClassWithIDictionary, string>>(json, options));
+            ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<Dictionary<ClassWithIDictionary, string>>(json, options));
             ValidateException(ex);
 
             static void ValidateException(NotSupportedException ex)
@@ -603,4 +486,5 @@ namespace System.Text.Json.Serialization.Tests
                 => throw new NotImplementedException();
         }
     }
+#endif
 }
