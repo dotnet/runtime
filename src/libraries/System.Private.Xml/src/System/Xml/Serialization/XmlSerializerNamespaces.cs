@@ -68,7 +68,7 @@ namespace System.Xml.Serialization
                 XmlConvert.VerifyNCName(prefix);
 
             if (ns != null && ns.Length > 0)
-                XmlConvert.ToUri(ns); //can throw
+                XmlConvert.ToUri(ns);
             AddInternal(prefix!, ns);
         }
 
