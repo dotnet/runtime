@@ -16,6 +16,7 @@
   <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'Android'">
     <UseAndroidCrypto>true</UseAndroidCrypto>
     <XUnitSingleThreadedMode>true</XUnitSingleThreadedMode>
+    <XUnitUseRandomizedTestOrderer>true</XUnitUseRandomizedTestOrderer>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <ItemGroup>
