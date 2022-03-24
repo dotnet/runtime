@@ -191,10 +191,9 @@ steps:
       cp Microsoft.NetConf2021.Maui.csproj Microsoft.NetConf2021.Maui.csproj.bak
       sed -i'' -e 's/net6.0-ios;net6.0-maccatalyst/net6.0-ios/g' Microsoft.NetConf2021.Maui.csproj
       ../../../dotnet build ../Web/Components/Podcast.Components.Maui.csproj
-      ../../../dotnet build Microsoft.NetConf2021.Maui.csproj -bl:MauiPodcastiOS.binlog -f net6.0-ios --self-contained -r ios-arm64 -c Release /p:_RequireCodeSigning=false
+      ../../../dotnet publish Microsoft.NetConf2021.Maui.csproj -bl:MauiiOSPodcast.binlog -f net6.0-ios --self-contained -r ios-arm64 -c Release /p:_RequireCodeSigning=false
       ls -aR
-      #mv ./bin/Release/net6.0-ios/ios-arm64/publish/MauiTesting.ipa ./MauiiOSPodcast.ipa
-
+      mv ./bin/Release/net6.0-ios/ios-arm64/publish/MauiTesting.ipa ./MauiiOSPodcast.ipa
       cp Microsoft.NetConf2021.Maui.csproj.bak Microsoft.NetConf2021.Maui.csproj
     displayName: Build MAUI Podcast iOS
     workingDirectory: $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile
