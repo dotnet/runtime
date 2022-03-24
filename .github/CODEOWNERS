@@ -10,14 +10,18 @@
 /src/coreclr/inc/corinfo.h @dotnet/jit-contrib
 /src/coreclr/inc/corjit.h @dotnet/jit-contrib
 /src/coreclr/jit/ @dotnet/jit-contrib
+/src/coreclr/nativeaot @MichalStrehovsky
 /src/coreclr/tools/Common @dotnet/crossgen-contrib @MichalStrehovsky
 /src/coreclr/tools/aot @dotnet/crossgen-contrib
+/src/coreclr/tools/aot/ILCompiler.Compiler @MichalStrehovsky
+/src/coreclr/tools/aot/ILCompiler.RyuJit @MichalStrehovsky
+/src/coreclr/tools/aot/ILCompiler.MetadataTransform @MichalStrehovsky
 
 # Mono Code Owners
 
 /src/mono @marek-safar
 
-/src/mono/llvm @vargaz @SamMonoRT @imhameed @EgorBo
+/src/mono/llvm @vargaz @SamMonoRT
 
 /src/mono/mono/arch @vargaz
 /src/mono/mono/eglib @vargaz @lambdageek
@@ -30,13 +34,15 @@
 /src/mono/mono/metadata/thread* @lateralusX @lambdageek
 /src/mono/mono/metadata/w32* @lateralusX @lambdageek
 
-/src/mono/mono/mini @vargaz @lambdageek @SamMonoRT @imhameed
+/src/mono/mono/eventpipe @lateralusX @lambdageek
+
+/src/mono/mono/mini @vargaz @lambdageek @SamMonoRT
 /src/mono/mono/mini/*cfgdump* @vargaz
-/src/mono/mono/mini/*exceptions* @vargaz @BrzVlad @imhameed
-/src/mono/mono/mini/*llvm* @vargaz @imhameed @EgorBo
+/src/mono/mono/mini/*exceptions* @vargaz @BrzVlad
+/src/mono/mono/mini/*llvm* @vargaz
 /src/mono/mono/mini/*ppc* @vargaz
 /src/mono/mono/mini/*profiler* @BrzVlad @lambdageek
-/src/mono/mono/mini/*riscv* @alexrp
+/src/mono/mono/mini/*riscv* @vargaz @lambdageek
 /src/mono/mono/mini/*type-check* @lambdageek
 /src/mono/mono/mini/debugger-agent.c @vargaz @thaystg @lambdageek
 /src/mono/mono/mini/interp/* @BrzVlad @vargaz
@@ -49,11 +55,11 @@
 /src/mono/mono/utils/atomic* @vargaz
 /src/mono/mono/utils/mono-hwcap* @vargaz
 /src/mono/mono/utils/mono-mem* @vargaz
-/src/mono/mono/utils/mono-merp* @lambdageek @naricc @imhameed
-/src/mono/mono/utils/mono-state* @lambdageek
 /src/mono/mono/utils/mono-threads* @lambdageek @vargaz
 
 /src/mono/dlls @thaystg @lambdageek
+
+/src/native/public/mono @marek-safar @lambdageek
 
 # Obsoletions / Custom Diagnostics
 

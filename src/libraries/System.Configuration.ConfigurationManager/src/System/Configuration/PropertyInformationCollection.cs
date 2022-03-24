@@ -39,10 +39,8 @@ namespace System.Configuration
         internal PropertyInformation this[int index] => (PropertyInformation)BaseGet(BaseGetKey(index));
 
 
-        public void CopyTo(PropertyInformation[] array, int index)
+        public void CopyTo(PropertyInformation[] array!!, int index)
         {
-            if (array == null) throw new ArgumentNullException(nameof(array));
-
             if (array.Length < Count + index) throw new ArgumentOutOfRangeException(nameof(index));
 
             foreach (PropertyInformation pi in this) array[index++] = pi;

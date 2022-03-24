@@ -118,14 +118,8 @@ namespace System.Xml
             return true;
         }
 
-        public virtual void AddNamespace(string prefix, string uri)
+        public virtual void AddNamespace(string prefix!!, string uri!!)
         {
-            if (uri == null)
-                throw new ArgumentNullException(nameof(uri));
-
-            if (prefix == null)
-                throw new ArgumentNullException(nameof(prefix));
-
             Debug.Assert(_nameTable != null);
             Debug.Assert(_nsdecls != null);
             prefix = _nameTable.Add(prefix);
@@ -188,17 +182,8 @@ namespace System.Xml
             }
         }
 
-        public virtual void RemoveNamespace(string prefix, string uri)
+        public virtual void RemoveNamespace(string prefix!!, string uri!!)
         {
-            if (uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
-            if (prefix == null)
-            {
-                throw new ArgumentNullException(nameof(prefix));
-            }
-
             Debug.Assert(_nsdecls != null);
 
             int declIndex = LookupNamespaceDecl(prefix);

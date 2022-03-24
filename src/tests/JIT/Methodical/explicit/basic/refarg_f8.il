@@ -18,7 +18,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'refarg_f8.exe'
 // MVID: {37A8EE05-2AD1-417E-ABC1-6C1463EFE15F}
 .namespace Test
 {

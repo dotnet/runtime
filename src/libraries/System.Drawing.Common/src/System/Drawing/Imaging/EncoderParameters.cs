@@ -51,9 +51,9 @@ namespace System.Drawing.Imaging
         /// Also, in 64-bit platforms, 'Count' is aligned in 8 bytes (4 extra padding bytes) so we use IntPtr instead of Int32 to account for
         /// that.
         /// </summary>
-        internal IntPtr ConvertToMemory()
+        internal unsafe IntPtr ConvertToMemory()
         {
-            int size = Marshal.SizeOf(typeof(EncoderParameter));
+            int size = sizeof(EncoderParameterPrivate);
 
             int length = _param.Length;
             IntPtr memory = Marshal.AllocHGlobal(checked(length * size + IntPtr.Size));
@@ -74,27 +74,21 @@ namespace System.Drawing.Imaging
         /// Copy the native GDI+ EncoderParameters data from a chunk of memory into a managed EncoderParameters object.
         /// See ConvertToMemory for more info.
         /// </summary>
-        internal static EncoderParameters ConvertFromMemory(IntPtr memory)
+        internal static unsafe EncoderParameters ConvertFromMemory(IntPtr memory)
         {
             if (memory == IntPtr.Zero)
             {
                 throw Gdip.StatusException(Gdip.InvalidParameter);
             }
 
-            int count = Marshal.ReadInt32(memory);
-
+            int count = *(int*)memory;
+            EncoderParameterPrivate* parameters = (EncoderParameterPrivate*)((byte*)memory + IntPtr.Size);
             EncoderParameters p = new EncoderParameters(count);
-            int size = Marshal.SizeOf(typeof(EncoderParameter));
-            long arrayOffset = (long)memory + IntPtr.Size;
-
             for (int i = 0; i < count; i++)
             {
-                Guid guid = (Guid)Marshal.PtrToStructure((IntPtr)(i * size + arrayOffset), typeof(Guid))!;
-                int numberOfValues = Marshal.ReadInt32((IntPtr)(i * size + arrayOffset + 16));
-                EncoderParameterValueType type = (EncoderParameterValueType)Marshal.ReadInt32((IntPtr)(i * size + arrayOffset + 20));
-                IntPtr value = Marshal.ReadIntPtr((IntPtr)(i * size + arrayOffset + 24));
+                ref readonly EncoderParameterPrivate param = ref parameters[i];
 
-                p._param[i] = new EncoderParameter(new Encoder(guid), numberOfValues, type, value);
+                p._param[i] = new EncoderParameter(new Encoder(param.ParameterGuid), param.NumberOfValues, param.ParameterValueType, param.ParameterValue);
             }
 
             return p;

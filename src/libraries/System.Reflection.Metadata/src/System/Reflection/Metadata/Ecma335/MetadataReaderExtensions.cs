@@ -17,13 +17,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="tableIndex"/> is not a valid table index.</exception>
-        public static int GetTableRowCount(this MetadataReader reader, TableIndex tableIndex)
+        public static int GetTableRowCount(this MetadataReader reader!!, TableIndex tableIndex)
         {
-            if (reader == null)
-            {
-                Throw.ArgumentNull(nameof(reader));
-            }
-
             if ((int)tableIndex >= MetadataTokens.TableCount)
             {
                 Throw.TableIndexOutOfRange();
@@ -37,13 +32,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="tableIndex"/> is not a valid table index.</exception>
-        public static int GetTableRowSize(this MetadataReader reader, TableIndex tableIndex)
+        public static int GetTableRowSize(this MetadataReader reader!!, TableIndex tableIndex)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             return tableIndex switch
             {
                 TableIndex.Module => reader.ModuleTable.RowSize,
@@ -111,13 +101,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="tableIndex"/> is not a valid table index.</exception>
-        public static unsafe int GetTableMetadataOffset(this MetadataReader reader, TableIndex tableIndex)
+        public static unsafe int GetTableMetadataOffset(this MetadataReader reader!!, TableIndex tableIndex)
         {
-            if (reader == null)
-            {
-                Throw.ArgumentNull(nameof(reader));
-            }
-
             return (int)(reader.GetTableMetadataBlock(tableIndex).Pointer - reader.Block.Pointer);
         }
 
@@ -192,13 +177,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="heapIndex"/> is not a valid heap index.</exception>
-        public static int GetHeapSize(this MetadataReader reader, HeapIndex heapIndex)
+        public static int GetHeapSize(this MetadataReader reader!!, HeapIndex heapIndex)
         {
-            if (reader == null)
-            {
-                Throw.ArgumentNull(nameof(reader));
-            }
-
             return reader.GetMetadataBlock(heapIndex).Length;
         }
 
@@ -207,13 +187,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="heapIndex"/> is not a valid heap index.</exception>
-        public static unsafe int GetHeapMetadataOffset(this MetadataReader reader, HeapIndex heapIndex)
+        public static unsafe int GetHeapMetadataOffset(this MetadataReader reader!!, HeapIndex heapIndex)
         {
-            if (reader == null)
-            {
-                Throw.ArgumentNull(nameof(reader));
-            }
-
             return (int)(reader.GetMetadataBlock(heapIndex).Pointer - reader.Block.Pointer);
         }
 
@@ -240,13 +215,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// Returns the a handle to the UserString that follows the given one in the UserString heap or a nil handle if it is the last one.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
-        public static UserStringHandle GetNextHandle(this MetadataReader reader, UserStringHandle handle)
+        public static UserStringHandle GetNextHandle(this MetadataReader reader!!, UserStringHandle handle)
         {
-            if (reader == null)
-            {
-                Throw.ArgumentNull(nameof(reader));
-            }
-
             return reader.UserStringHeap.GetNextHandle(handle);
         }
 
@@ -254,13 +224,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// Returns the a handle to the Blob that follows the given one in the Blob heap or a nil handle if it is the last one.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
-        public static BlobHandle GetNextHandle(this MetadataReader reader, BlobHandle handle)
+        public static BlobHandle GetNextHandle(this MetadataReader reader!!, BlobHandle handle)
         {
-            if (reader == null)
-            {
-                Throw.ArgumentNull(nameof(reader));
-            }
-
             return reader.BlobHeap.GetNextHandle(handle);
         }
 
@@ -268,13 +233,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// Returns the a handle to the String that follows the given one in the String heap or a nil handle if it is the last one.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
-        public static StringHandle GetNextHandle(this MetadataReader reader, StringHandle handle)
+        public static StringHandle GetNextHandle(this MetadataReader reader!!, StringHandle handle)
         {
-            if (reader == null)
-            {
-                Throw.ArgumentNull(nameof(reader));
-            }
-
             return reader.StringHeap.GetNextHandle(handle);
         }
 
@@ -282,13 +242,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// Enumerates entries of EnC log.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
-        public static IEnumerable<EditAndContinueLogEntry> GetEditAndContinueLogEntries(this MetadataReader reader)
+        public static IEnumerable<EditAndContinueLogEntry> GetEditAndContinueLogEntries(this MetadataReader reader!!)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             for (int rid = 1; rid <= reader.EncLogTable.NumberOfRows; rid++)
             {
                 yield return new EditAndContinueLogEntry(
@@ -301,13 +256,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// Enumerates entries of EnC map.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
-        public static IEnumerable<EntityHandle> GetEditAndContinueMapEntries(this MetadataReader reader)
+        public static IEnumerable<EntityHandle> GetEditAndContinueMapEntries(this MetadataReader reader!!)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             for (int rid = 1; rid <= reader.EncMapTable.NumberOfRows; rid++)
             {
                 yield return new EntityHandle(reader.EncMapTable.GetToken(rid));
@@ -321,13 +271,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// The resulting sequence corresponds exactly to entries in PropertyMap table,
         /// i.e. n-th returned <see cref="TypeDefinitionHandle"/> is stored in n-th row of PropertyMap.
         /// </returns>
-        public static IEnumerable<TypeDefinitionHandle> GetTypesWithProperties(this MetadataReader reader)
+        public static IEnumerable<TypeDefinitionHandle> GetTypesWithProperties(this MetadataReader reader!!)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             for (int rid = 1; rid <= reader.PropertyMapTable.NumberOfRows; rid++)
             {
                 yield return reader.PropertyMapTable.GetParentType(rid);
@@ -341,13 +286,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// The resulting sequence corresponds exactly to entries in EventMap table,
         /// i.e. n-th returned <see cref="TypeDefinitionHandle"/> is stored in n-th row of EventMap.
         /// </returns>
-        public static IEnumerable<TypeDefinitionHandle> GetTypesWithEvents(this MetadataReader reader)
+        public static IEnumerable<TypeDefinitionHandle> GetTypesWithEvents(this MetadataReader reader!!)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             for (int rid = 1; rid <= reader.EventMapTable.NumberOfRows; rid++)
             {
                 yield return reader.EventMapTable.GetParentType(rid);
@@ -357,13 +297,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// <summary>
         /// Given a type handle and a raw type kind found in a signature blob determines whether the target type is a value type or a reference type.
         /// </summary>
-        public static SignatureTypeKind ResolveSignatureTypeKind(this MetadataReader reader, EntityHandle typeHandle, byte rawTypeKind)
+        public static SignatureTypeKind ResolveSignatureTypeKind(this MetadataReader reader!!, EntityHandle typeHandle, byte rawTypeKind)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             var typeKind = (SignatureTypeKind)rawTypeKind;
 
             switch (typeKind)

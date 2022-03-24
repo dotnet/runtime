@@ -27,7 +27,7 @@ public struct SecondLevel
 [StructLayout(LayoutKind.Explicit)]
 public struct ThirdLevel
 {
-    [FieldOffset(6)]
+    [FieldOffset(2)]
     public short ConflictingValueTypeField;
 }
 

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Net.NetworkInformation
 {
     /// <summary>
@@ -12,16 +14,19 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// Gets a bool value that indicates whether this interface is configured to send name resolution queries to a Domain Name System (DNS) server.
         /// </summary>
+        [UnsupportedOSPlatform("android")]
         public abstract bool IsDnsEnabled { get; }
 
         /// <summary>
         /// Gets the Domain Name System (DNS) suffix associated with this interface.
         /// </summary>
+        [UnsupportedOSPlatform("android")]
         public abstract string DnsSuffix { get; }
 
         /// <summary>
         /// Gets a bool value that indicates whether this interface is configured to automatically register its IP address information with the Domain Name System (DNS).
         /// </summary>
+        [UnsupportedOSPlatform("android")]
         public abstract bool IsDynamicDnsEnabled { get; }
 
         /// <summary>
@@ -37,26 +42,31 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// The address identifies multiple computers. Packets sent to an anycast address are sent to one of the computers identified by the address.
         /// </summary>
+        [UnsupportedOSPlatform("android")]
         public abstract IPAddressInformationCollection AnycastAddresses { get; }
 
         /// <summary>
         /// The address is that of a Domain Name Service (DNS) server for the local computer.
         /// </summary>
+        [UnsupportedOSPlatform("android")]
         public abstract IPAddressCollection DnsAddresses { get; }
 
         /// <summary>
         /// Gets the network gateway addresses.
         /// </summary>
+        [UnsupportedOSPlatform("android")]
         public abstract GatewayIPAddressInformationCollection GatewayAddresses { get; }
 
         /// <summary>
         /// Gets the addresses for Dynamic Host Configuration Protocol (DHCP) servers.
         /// </summary>
+        [UnsupportedOSPlatform("android")]
         public abstract IPAddressCollection DhcpServerAddresses { get; }
 
         /// <summary>
         /// Gets the list of Wins Servers registered with this interface
         /// </summary>
+        [UnsupportedOSPlatform("android")]
         public abstract IPAddressCollection WinsServersAddresses { get; }
 
         /// <summary>

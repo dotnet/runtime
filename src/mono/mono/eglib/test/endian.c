@@ -7,7 +7,7 @@ test_swap (void)
 	guint64 b = (((guint64)a) << 32) | a, res64;
 	guint64 b_expect = (((guint64)0x1efcdab) << 32) | 0x01efcdab;
 	guint16 c = 0xabcd, res16;
-	
+
 	res32 = GUINT32_SWAP_LE_BE (a);
 	if (res32 != 0x01efcdab)
 		return FAILED ("GUINT32_SWAP_LE_BE returned 0x%x", res32);
@@ -20,8 +20,8 @@ test_swap (void)
 		return FAILED ("GUINT64_SWAP_LE_BE returned 0x%" PRIx64 " (had=0x%" PRIx64 ")", (guint64)res64, (guint64)b);
 	res16 = GUINT16_SWAP_LE_BE(c);
 	if (res16 != 0xcdab)
-		return FAILED ("GUINT16_SWAP_LE_BE returned 0x%x", (guint32) res16);	
-	
+		return FAILED ("GUINT16_SWAP_LE_BE returned 0x%x", (guint32) res16);
+
 	return OK;
 }
 

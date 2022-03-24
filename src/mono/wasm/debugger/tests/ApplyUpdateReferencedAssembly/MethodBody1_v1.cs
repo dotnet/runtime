@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 using System;
-
+//keep the same line number for class in the original file and the updates ones
 namespace ApplyUpdateReferencedAssembly
 {
     public class MethodBody1 {
@@ -41,6 +41,13 @@ namespace ApplyUpdateReferencedAssembly
             Console.WriteLine(a + b);
             Console.WriteLine(a + b);
             Console.WriteLine(a + b);
+        }
+    }
+
+    public class MethodBody5 {
+        public static void StaticMethod1 () {
+            Console.WriteLine("beforeoriginal");
+            Console.WriteLine("original");
         }
     }
 }

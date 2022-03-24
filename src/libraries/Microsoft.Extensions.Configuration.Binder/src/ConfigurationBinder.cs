@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
@@ -42,13 +44,8 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="configureOptions">Configures the binder options.</param>
         /// <returns>The new instance of T if successful, default(T) otherwise.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, Action<BinderOptions>? configureOptions)
+        public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration!!, Action<BinderOptions>? configureOptions)
         {
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
             object? result = configuration.Get(typeof(T), configureOptions);
             if (result == null)
             {
@@ -80,16 +77,11 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The new instance if successful, null otherwise.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static object? Get(
-            this IConfiguration configuration,
+            this IConfiguration configuration!!,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
             Action<BinderOptions>? configureOptions)
         {
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
             var options = new BinderOptions();
             configureOptions?.Invoke(options);
             return BindInstance(type, instance: null, config: configuration, options: options);
@@ -121,13 +113,8 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="instance">The object to bind.</param>
         /// <param name="configureOptions">Configures the binder options.</param>
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
-        public static void Bind(this IConfiguration configuration, object? instance, Action<BinderOptions>? configureOptions)
+        public static void Bind(this IConfiguration configuration!!, object? instance, Action<BinderOptions>? configureOptions)
         {
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
             if (instance != null)
             {
                 var options = new BinderOptions();
@@ -248,17 +235,19 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
+            object? propertyValue = property.GetValue(instance);
             bool hasSetter = property.SetMethod != null && (property.SetMethod.IsPublic || options.BindNonPublicProperties);
 
-            if (!hasSetter)
+            if (propertyValue == null && !hasSetter)
             {
-                // The property cannot be set so there is no point going further
+                // Property doesn't have a value and we cannot set it so there is no
+                // point in going further down the graph
                 return;
             }
 
-            object? propertyValue = GetPropertyValue(property, instance, config, options);
+            propertyValue = GetPropertyValue(property, instance, config, options);
 
-            if (propertyValue != null)
+            if (propertyValue != null && hasSetter)
             {
                 property.SetValue(instance, propertyValue);
             }
@@ -391,10 +380,19 @@ namespace Microsoft.Extensions.Configuration
                     {
                         BindCollection(instance, collectionInterface, config, options);
                     }
-                    // Something else
                     else
                     {
-                        BindNonScalar(config, instance, options);
+                        // See if its an IEnumerable
+                        collectionInterface = FindOpenGenericInterface(typeof(IEnumerable<>), type);
+                        if (collectionInterface != null)
+                        {
+                            instance = BindExistingCollection((IEnumerable)instance!, config, options);
+                        }
+                        // Something else
+                        else
+                        {
+                            BindNonScalar(config, instance, options);
+                        }
                     }
                 }
             }
@@ -455,27 +453,27 @@ namespace Microsoft.Extensions.Configuration
                 // We only support string and enum keys
                 return;
             }
-
+            MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue")!;
             PropertyInfo setter = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
             foreach (IConfigurationSection child in config.GetChildren())
             {
-                object? item = BindInstance(
-                    type: valueType,
-                    instance: null,
-                    config: child,
-                    options: options);
-                if (item != null)
+                try
                 {
-                    if (keyType == typeof(string))
+                    object key = keyTypeIsEnum ? Enum.Parse(keyType, child.Key) : child.Key;
+                    var args = new object?[] { key, null };
+                    _ = tryGetValue.Invoke(dictionary, args);
+                    object? item = BindInstance(
+                        type: valueType,
+                        instance: args[1],
+                        config: child,
+                        options: options);
+                    if (item != null)
                     {
-                        string key = child.Key;
                         setter.SetValue(dictionary, item, new object[] { key });
                     }
-                    else if (keyTypeIsEnum)
-                    {
-                        object key = Enum.Parse(keyType, child.Key);
-                        setter.SetValue(dictionary, item, new object[] { key });
-                    }
+                }
+                catch
+                {
                 }
             }
         }
@@ -509,6 +507,41 @@ namespace Microsoft.Extensions.Configuration
                 {
                 }
             }
+        }
+
+        [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the object collection so its members may be trimmed.")]
+        private static IEnumerable BindExistingCollection(IEnumerable source, IConfiguration config, BinderOptions options)
+        {
+            // find the interface that is IEnumerable<T>
+            Type type = source.GetType().GetInterface("IEnumerable`1", false)!;
+            Type elementType = type.GenericTypeArguments[0];
+            Type genericType = typeof(List<>).MakeGenericType(elementType);
+
+            IList newList = (IList)Activator.CreateInstance(genericType, source)!;
+
+            IConfigurationSection[] children = config.GetChildren().ToArray();
+
+            for (int i = 0; i < children.Length; i++)
+            {
+                try
+                {
+                    object? item = BindInstance(
+                        type: elementType,
+                        instance: null,
+                        config: children[i],
+                        options: options);
+
+                    if (item != null)
+                    {
+                        newList.Add(item);
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return newList;
         }
 
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the Array so its members may be trimmed.")]
@@ -665,13 +698,8 @@ namespace Microsoft.Extensions.Configuration
                 options);
         }
 
-        private static string GetPropertyName(MemberInfo property)
+        private static string GetPropertyName(MemberInfo property!!)
         {
-            if (property == null)
-            {
-                throw new ArgumentNullException(nameof(property));
-            }
-
             // Check for a custom property name used for configuration key binding
             foreach (var attributeData in property.GetCustomAttributesData())
             {

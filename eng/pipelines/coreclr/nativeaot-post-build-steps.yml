@@ -1,0 +1,31 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+  platform: ''
+  pgoType: ''
+  runtimeVariant: ''
+  uploadTests: false
+  testFilter: tree nativeaot
+  runSingleFileTests: true
+
+steps:
+# Can't run arm/arm64 tests on x64 build machines
+- ${{ if and(ne(parameters.archType, 'arm'), ne(parameters.archType, 'arm64')) }}:
+
+  # Build coreclr native test output
+  - ${{ if eq(parameters.osGroup, 'windows') }}:
+    - script: $(Build.SourcesDirectory)/src/tests/build.cmd nativeaot $(buildConfigUpper) ${{ parameters.archType }} ${{ parameters.testFilter }} /p:BuildNativeAotFrameworkObjects=true
+      displayName: Build tests
+  - ${{ if ne(parameters.osGroup, 'windows') }}:
+    - script: $(Build.SourcesDirectory)/src/tests/build.sh nativeaot $(buildConfigUpper) ${{ parameters.archType }} '${{ parameters.testFilter }}'
+      displayName: Build tests
+
+  - ${{ if eq(parameters.runSingleFileTests, true) }}:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - script: $(Build.SourcesDirectory)/src/tests/run.cmd runnativeaottests $(buildConfigUpper) ${{ parameters.archType }}
+        displayName: Run tests in single file mode
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - script: $(Build.SourcesDirectory)/src/tests/run.sh --runnativeaottests $(buildConfigUpper) ${{ parameters.archType }}
+        displayName: Run tests in single file mode

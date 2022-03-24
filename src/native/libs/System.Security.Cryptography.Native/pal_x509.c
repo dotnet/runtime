@@ -69,10 +69,9 @@ c_static_assert(PAL_X509_V_ERR_IP_ADDRESS_MISMATCH == X509_V_ERR_IP_ADDRESS_MISM
 
 EVP_PKEY* CryptoNative_GetX509EvpPublicKey(X509* x509)
 {
-    if (!x509)
-    {
-        return NULL;
-    }
+    assert(x509 != NULL);
+
+    ERR_clear_error();
 
     // X509_get_X509_PUBKEY returns an interior pointer, so should not be freed
     return X509_PUBKEY_get(X509_get_X509_PUBKEY(x509));
@@ -80,7 +79,9 @@ EVP_PKEY* CryptoNative_GetX509EvpPublicKey(X509* x509)
 
 X509_CRL* CryptoNative_DecodeX509Crl(const uint8_t* buf, int32_t len)
 {
-    if (!buf || !len)
+    ERR_clear_error();
+
+    if (buf == NULL || len == 0)
     {
         return NULL;
     }
@@ -90,7 +91,9 @@ X509_CRL* CryptoNative_DecodeX509Crl(const uint8_t* buf, int32_t len)
 
 X509* CryptoNative_DecodeX509(const uint8_t* buf, int32_t len)
 {
-    if (!buf || !len)
+    ERR_clear_error();
+
+    if (buf == NULL || len == 0)
     {
         return NULL;
     }
@@ -100,11 +103,13 @@ X509* CryptoNative_DecodeX509(const uint8_t* buf, int32_t len)
 
 int32_t CryptoNative_GetX509DerSize(X509* x)
 {
+    ERR_clear_error();
     return i2d_X509(x, NULL);
 }
 
 int32_t CryptoNative_EncodeX509(X509* x, uint8_t* buf)
 {
+    ERR_clear_error();
     return i2d_X509(x, &buf);
 }
 
@@ -118,71 +123,86 @@ void CryptoNative_X509Destroy(X509* a)
 
 X509* CryptoNative_X509Duplicate(X509* x509)
 {
+    ERR_clear_error();
     return X509_dup(x509);
 }
 
 X509* CryptoNative_PemReadX509FromBio(BIO* bio)
 {
+    ERR_clear_error();
     return PEM_read_bio_X509(bio, NULL, NULL, NULL);
 }
 
 X509* CryptoNative_PemReadX509FromBioAux(BIO* bio)
 {
+    ERR_clear_error();
     return PEM_read_bio_X509_AUX(bio, NULL, NULL, NULL);
 }
 
 ASN1_INTEGER* CryptoNative_X509GetSerialNumber(X509* x509)
 {
+    // Just a field accessor, no error queue interactions apply.
     return X509_get_serialNumber(x509);
 }
 
 X509_NAME* CryptoNative_X509GetIssuerName(X509* x509)
 {
+    // Just a field accessor, no error queue interactions apply.
     return X509_get_issuer_name(x509);
 }
 
 X509_NAME* CryptoNative_X509GetSubjectName(X509* x509)
 {
+    // Just a field accessor, no error queue interactions apply.
     return X509_get_subject_name(x509);
 }
 
 int32_t CryptoNative_X509CheckPurpose(X509* x, int32_t id, int32_t ca)
 {
+    ERR_clear_error();
     return X509_check_purpose(x, id, ca);
 }
 
 uint64_t CryptoNative_X509IssuerNameHash(X509* x)
 {
+    ERR_clear_error();
     return X509_issuer_name_hash(x);
 }
 
 int32_t CryptoNative_X509GetExtCount(X509* x)
 {
+    // Just a field accessor, no error queue interactions apply.
     return X509_get_ext_count(x);
 }
 
 X509_EXTENSION* CryptoNative_X509GetExt(X509* x, int32_t loc)
 {
+    // Just a field accessor, no error queue interactions apply.
     return X509_get_ext(x, loc);
 }
 
 ASN1_OBJECT* CryptoNative_X509ExtensionGetOid(X509_EXTENSION* x)
 {
+    // Just a field accessor, no error queue interactions apply.
     return X509_EXTENSION_get_object(x);
 }
 
 ASN1_OCTET_STRING* CryptoNative_X509ExtensionGetData(X509_EXTENSION* x)
 {
+    // Just a field accessor, no error queue interactions apply.
     return X509_EXTENSION_get_data(x);
 }
 
 int32_t CryptoNative_X509ExtensionGetCritical(X509_EXTENSION* x)
 {
+    // Just a field accessor, no error queue interactions apply.
     return X509_EXTENSION_get_critical(x);
 }
 
 ASN1_OCTET_STRING* CryptoNative_X509FindExtensionData(X509* x, int32_t nid)
 {
+    ERR_clear_error();
+
     if (x == NULL || nid == NID_undef)
     {
         return NULL;
@@ -215,6 +235,7 @@ void CryptoNative_X509StoreDestory(X509_STORE* v)
 
 int32_t CryptoNative_X509StoreAddCrl(X509_STORE* ctx, X509_CRL* x)
 {
+    ERR_clear_error();
     return X509_STORE_add_crl(ctx, x);
 }
 
@@ -227,11 +248,13 @@ int32_t CryptoNative_X509StoreSetRevocationFlag(X509_STORE* ctx, X509RevocationF
         verifyFlags |= X509_V_FLAG_CRL_CHECK_ALL;
     }
 
+    // Just a field mutator, no error queue interactions apply.
     return X509_STORE_set_flags(ctx, verifyFlags);
 }
 
 X509_STORE_CTX* CryptoNative_X509StoreCtxCreate()
 {
+    ERR_clear_error();
     return X509_STORE_CTX_new();
 }
 
@@ -245,6 +268,8 @@ void CryptoNative_X509StoreCtxDestroy(X509_STORE_CTX* v)
 
 int32_t CryptoNative_X509StoreCtxInit(X509_STORE_CTX* ctx, X509_STORE* store, X509* x509, X509Stack* extraStore)
 {
+    ERR_clear_error();
+
     int32_t val = X509_STORE_CTX_init(ctx, store, x509, extraStore);
 
     if (val != 0)
@@ -257,11 +282,13 @@ int32_t CryptoNative_X509StoreCtxInit(X509_STORE_CTX* ctx, X509_STORE* store, X5
 
 int32_t CryptoNative_X509VerifyCert(X509_STORE_CTX* ctx)
 {
+    ERR_clear_error();
     return X509_verify_cert(ctx);
 }
 
 X509Stack* CryptoNative_X509StoreCtxGetChain(X509_STORE_CTX* ctx)
 {
+    ERR_clear_error();
     return X509_STORE_CTX_get1_chain(ctx);
 }
 
@@ -272,6 +299,7 @@ X509* CryptoNative_X509StoreCtxGetCurrentCert(X509_STORE_CTX* ctx)
         return NULL;
     }
 
+    // Just a field accessor, no error queue interactions apply.
     X509* cert = X509_STORE_CTX_get_current_cert(ctx);
 
     if (cert != NULL)
@@ -286,17 +314,8 @@ X509Stack* CryptoNative_X509StoreCtxGetSharedUntrusted(X509_STORE_CTX* ctx)
 {
     if (ctx)
     {
+        // Just a field accessor, no error queue interactions apply.
         return X509_STORE_CTX_get0_untrusted(ctx);
-    }
-
-    return NULL;
-}
-
-X509* CryptoNative_X509StoreCtxGetTargetCert(X509_STORE_CTX* ctx)
-{
-    if (ctx)
-    {
-        return X509_STORE_CTX_get0_cert(ctx);
     }
 
     return NULL;
@@ -304,11 +323,14 @@ X509* CryptoNative_X509StoreCtxGetTargetCert(X509_STORE_CTX* ctx)
 
 int32_t CryptoNative_X509StoreCtxGetError(X509_STORE_CTX* ctx)
 {
+    // Just a field accessor, no error queue interactions apply.
     return (int32_t)X509_STORE_CTX_get_error(ctx);
 }
 
 int32_t CryptoNative_X509StoreCtxReset(X509_STORE_CTX* ctx)
 {
+    ERR_clear_error();
+
     X509* leaf = X509_STORE_CTX_get0_cert(ctx);
     X509Stack* untrusted = X509_STORE_CTX_get0_untrusted(ctx);
     X509_STORE* store = X509_STORE_CTX_get0_store(ctx);
@@ -319,6 +341,7 @@ int32_t CryptoNative_X509StoreCtxReset(X509_STORE_CTX* ctx)
 
 int32_t CryptoNative_X509StoreCtxRebuildChain(X509_STORE_CTX* ctx)
 {
+    // Callee clears the error queue already
     if (!CryptoNative_X509StoreCtxReset(ctx))
     {
         return -1;
@@ -329,16 +352,19 @@ int32_t CryptoNative_X509StoreCtxRebuildChain(X509_STORE_CTX* ctx)
 
 void CryptoNative_X509StoreCtxSetVerifyCallback(X509_STORE_CTX* ctx, X509StoreVerifyCallback callback)
 {
+    // Just a field mutator, no error queue interactions apply.
     X509_STORE_CTX_set_verify_cb(ctx, callback);
 }
 
 int32_t CryptoNative_X509StoreCtxGetErrorDepth(X509_STORE_CTX* ctx)
 {
+    // Just a field accessor, no error queue interactions apply.
     return X509_STORE_CTX_get_error_depth(ctx);
 }
 
 const char* CryptoNative_X509VerifyCertErrorString(int32_t n)
 {
+    // Called function is a hard-coded lookup table, no error queue interactions apply.
     return X509_verify_cert_error_string((long)n);
 }
 
@@ -352,16 +378,20 @@ void CryptoNative_X509CrlDestroy(X509_CRL* a)
 
 int32_t CryptoNative_PemWriteBioX509Crl(BIO* bio, X509_CRL* crl)
 {
+    ERR_clear_error();
     return PEM_write_bio_X509_CRL(bio, crl);
 }
 
 X509_CRL* CryptoNative_PemReadBioX509Crl(BIO* bio)
 {
+    ERR_clear_error();
     return PEM_read_bio_X509_CRL(bio, NULL, NULL, NULL);
 }
 
 int32_t CryptoNative_GetX509SubjectPublicKeyInfoDerSize(X509* x509)
 {
+    ERR_clear_error();
+
     if (!x509)
     {
         return 0;
@@ -373,6 +403,8 @@ int32_t CryptoNative_GetX509SubjectPublicKeyInfoDerSize(X509* x509)
 
 int32_t CryptoNative_EncodeX509SubjectPublicKeyInfo(X509* x509, uint8_t* buf)
 {
+    ERR_clear_error();
+
     if (!x509)
     {
         return 0;
@@ -386,6 +418,7 @@ X509* CryptoNative_X509UpRef(X509* x509)
 {
     if (x509 != NULL)
     {
+        // Just a field mutator, no error queue interactions apply.
         X509_up_ref(x509);
     }
 
@@ -420,6 +453,8 @@ static DIR* OpenUserStore(const char* storePath, char** pathTmp, size_t* pathTmp
 
 static X509* ReadNextPublicCert(DIR* dir, X509Stack* tmpStack, char* pathTmp, size_t pathTmpSize, char* nextFileWrite)
 {
+    // Callers of this routine are responsible for appropriately clearing the error queue.
+
     struct dirent* next;
     ptrdiff_t offset = nextFileWrite - pathTmp;
     assert(offset > 0);
@@ -485,6 +520,7 @@ static X509* ReadNextPublicCert(DIR* dir, X509Stack* tmpStack, char* pathTmp, si
 
 X509_STORE* CryptoNative_X509ChainNew(X509Stack* systemTrust, X509Stack* userTrust)
 {
+    ERR_clear_error();
     X509_STORE* store = X509_STORE_new();
 
     if (store == NULL)
@@ -544,6 +580,8 @@ int32_t CryptoNative_X509StackAddDirectoryStore(X509Stack* stack, char* storePat
         return -1;
     }
 
+    ERR_clear_error();
+
     int clearError = 1;
     char* pathTmp;
     size_t pathTmpSize;
@@ -554,6 +592,11 @@ int32_t CryptoNative_X509StackAddDirectoryStore(X509Stack* stack, char* storePat
     {
         X509* cert;
         X509Stack* tmpStack = sk_X509_new_null();
+
+        if (tmpStack == NULL)
+        {
+            return 0;
+        }
 
         while ((cert = ReadNextPublicCert(storeDir, tmpStack, pathTmp, pathTmpSize, nextFileWrite)) != NULL)
         {
@@ -590,6 +633,8 @@ int32_t CryptoNative_X509StackAddMultiple(X509Stack* dest, X509Stack* src)
         return -1;
     }
 
+    ERR_clear_error();
+
     int success = 1;
 
     if (src != NULL)
@@ -619,6 +664,7 @@ int32_t CryptoNative_X509StoreCtxCommitToChain(X509_STORE_CTX* storeCtx)
         return -1;
     }
 
+    ERR_clear_error();
     X509Stack* chain = X509_STORE_CTX_get1_chain(storeCtx);
 
     if (chain == NULL)
@@ -673,6 +719,8 @@ int32_t CryptoNative_X509StoreCtxResetForSignatureError(X509_STORE_CTX* storeCtx
     }
 
     *newStore = NULL;
+
+    ERR_clear_error();
 
     int errorDepth = X509_STORE_CTX_get_error_depth(storeCtx);
     X509Stack* chain = X509_STORE_CTX_get0_chain(storeCtx);
@@ -956,6 +1004,8 @@ int32_t CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char
         return -1;
     }
 
+    ERR_clear_error();
+
     X509* subject;
     X509* issuer;
 
@@ -1041,6 +1091,8 @@ OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx, i
         return NULL;
     }
 
+    ERR_clear_error();
+
     X509* subject;
     X509* issuer;
 
@@ -1086,6 +1138,8 @@ CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OC
     {
         return -1;
     }
+
+    ERR_clear_error();
 
     X509* subject;
     X509* issuer;

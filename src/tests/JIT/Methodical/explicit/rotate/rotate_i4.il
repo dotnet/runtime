@@ -18,7 +18,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'rotate_i4.exe'
 // MVID: {A112EBC7-3218-46C8-939E-D43B5ED4DE98}
 .namespace Rotate
 {

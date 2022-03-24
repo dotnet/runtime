@@ -3,7 +3,6 @@
 
 using System.Runtime.CompilerServices;
 using System.Text;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -24,23 +23,13 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern string? IsInterned();
 
-        public static string Intern(string str)
+        public static string Intern(string str!!)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
-
             return str.Intern();
         }
 
-        public static string? IsInterned(string str)
+        public static string? IsInterned(string str!!)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
-
             return str.IsInterned();
         }
 

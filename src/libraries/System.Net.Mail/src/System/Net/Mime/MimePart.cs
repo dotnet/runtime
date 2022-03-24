@@ -101,18 +101,11 @@ namespace System.Net.Mime
             }
         }
 
-        internal void SetContent(Stream stream)
+        internal void SetContent(Stream stream!!)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
             if (_streamSet)
             {
                 _stream!.Close();
-                _stream = null;
-                _streamSet = false;
             }
 
             _stream = stream;
@@ -121,13 +114,8 @@ namespace System.Net.Mime
             TransferEncoding = TransferEncoding.Base64;
         }
 
-        internal void SetContent(Stream stream, string? name, string? mimeType)
+        internal void SetContent(Stream stream!!, string? name, string? mimeType)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
             if (mimeType != null && mimeType != string.Empty)
             {
                 _contentType = new ContentType(mimeType);
@@ -139,12 +127,8 @@ namespace System.Net.Mime
             SetContent(stream);
         }
 
-        internal void SetContent(Stream stream, ContentType? contentType)
+        internal void SetContent(Stream stream!!, ContentType? contentType)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
             _contentType = contentType;
             SetContent(stream);
         }

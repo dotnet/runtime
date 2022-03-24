@@ -270,10 +270,10 @@ public:
  * returns -> number of bytes successfully written, not including the null
  *            terminator.  Calls NO_WAY on error.
  */
-int SimpleSprintf_s(__in_ecount(cbBufSize - (pWriteStart - pBufStart)) char* pWriteStart,
-                    __in_ecount(cbBufSize) char*                             pBufStart,
-                    size_t                                                   cbBufSize,
-                    __in_z const char*                                       fmt,
+int SimpleSprintf_s(_In_reads_(cbBufSize - (pWriteStart - pBufStart)) char* pWriteStart,
+                    _In_reads_(cbBufSize) char*                             pBufStart,
+                    size_t                                                  cbBufSize,
+                    _In_z_ const char*                                      fmt,
                     ...);
 
 #ifdef DEBUG
@@ -690,6 +690,22 @@ public:
     static double infinite_double();
 
     static float infinite_float();
+
+    static bool isNegative(float val);
+
+    static bool isNegative(double val);
+
+    static bool isNaN(float val);
+
+    static bool isNaN(double val);
+
+    static double maximum(double val1, double val2);
+
+    static float maximum(float val1, float val2);
+
+    static double minimum(double val1, double val2);
+
+    static float minimum(float val1, float val2);
 };
 
 // The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but

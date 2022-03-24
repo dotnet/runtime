@@ -20,13 +20,14 @@ namespace System.Reflection
     // The finalization does not have to be done using CriticalFinalizerObject. We have to go over all LoaderAllocators
     // during AppDomain shutdown anyway to avoid leaks e.g. if somebody stores reference to LoaderAllocator in a static.
     //
-    internal sealed class LoaderAllocatorScout
+    internal sealed partial class LoaderAllocatorScout
     {
         // This field is set by the VM to atomically transfer the ownership to the managed loader allocator
         internal IntPtr m_nativeLoaderAllocator;
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "LoaderAllocator_Destroy")]
-        private static extern bool Destroy(IntPtr nativeLoaderAllocator);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "LoaderAllocator_Destroy")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool Destroy(IntPtr nativeLoaderAllocator);
 
         ~LoaderAllocatorScout()
         {

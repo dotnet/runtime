@@ -7,7 +7,7 @@
 .assembly extern System.Threading.Thread { auto }
 .assembly extern legacy library mscorlib { auto }
 
-.assembly ExternalException {}
+.assembly 'SyncGCHole' {}
 .assembly extern xunit.core {}
 .class private auto ansi beforefieldinit ExternalClass
        extends [mscorlib]System.Object

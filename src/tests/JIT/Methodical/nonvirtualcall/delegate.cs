@@ -146,7 +146,7 @@ namespace Test
             Assert.AreEqual("GrandChild.VirtualOverrideFinal", new TestMethod(child.VirtualOverrideFinal));
         }
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             try
             {

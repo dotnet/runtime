@@ -16,17 +16,8 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Creates a new designer serialization attribute.
         /// </summary>
-        public DesignerSerializerAttribute(Type serializerType, Type baseSerializerType)
+        public DesignerSerializerAttribute(Type serializerType!!, Type baseSerializerType!!)
         {
-            if (serializerType == null)
-            {
-                throw new ArgumentNullException(nameof(serializerType));
-            }
-            if (baseSerializerType == null)
-            {
-                throw new ArgumentNullException(nameof(baseSerializerType));
-            }
-
             SerializerTypeName = serializerType.AssemblyQualifiedName;
             SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
         }
@@ -34,13 +25,8 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Creates a new designer serialization attribute.
         /// </summary>
-        public DesignerSerializerAttribute(string? serializerTypeName, Type baseSerializerType)
+        public DesignerSerializerAttribute(string? serializerTypeName, Type baseSerializerType!!)
         {
-            if (baseSerializerType == null)
-            {
-                throw new ArgumentNullException(nameof(baseSerializerType));
-            }
-
             SerializerTypeName = serializerTypeName;
             SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
         }

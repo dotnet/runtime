@@ -20,18 +20,18 @@ namespace System.Runtime.InteropServices
 
         /// External functions that implement the NativeLibrary interface
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_LoadFromPath", CharSet = CharSet.Unicode)]
-        internal static extern IntPtr LoadFromPath(string libraryName, bool throwOnError);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_LoadFromPath", StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial IntPtr LoadFromPath(string libraryName, [MarshalAs(UnmanagedType.Bool)] bool throwOnError);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_LoadByName", CharSet = CharSet.Unicode)]
-        internal static extern IntPtr LoadByName(string libraryName, QCallAssembly callingAssembly,
-                                                 bool hasDllImportSearchPathFlag, uint dllImportSearchPathFlag,
-                                                 bool throwOnError);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_LoadByName", StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial IntPtr LoadByName(string libraryName, QCallAssembly callingAssembly,
+                                                 [MarshalAs(UnmanagedType.Bool)] bool hasDllImportSearchPathFlag, uint dllImportSearchPathFlag,
+                                                 [MarshalAs(UnmanagedType.Bool)] bool throwOnError);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_FreeLib")]
-        internal static extern void FreeLib(IntPtr handle);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_FreeLib")]
+        internal static partial void FreeLib(IntPtr handle);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_GetSymbol", CharSet = CharSet.Unicode)]
-        internal static extern IntPtr GetSymbol(IntPtr handle, string symbolName, bool throwOnError);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_GetSymbol", StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial IntPtr GetSymbol(IntPtr handle, string symbolName, [MarshalAs(UnmanagedType.Bool)] bool throwOnError);
     }
 }

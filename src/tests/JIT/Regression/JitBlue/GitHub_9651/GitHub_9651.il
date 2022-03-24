@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly a {}
+.assembly 'GitHub_9651' {}
 .assembly extern xunit.core {}
-.module a.exe
 
 // Test case triggers reimportation of a leave,
 // leading to an unreachable callfinally pair.

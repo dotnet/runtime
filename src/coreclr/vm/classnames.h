@@ -113,4 +113,6 @@
 
 #define g_CriticalFinalizerObjectName "CriticalFinalizerObject"
 
+#define g_DisableRuntimeMarshallingAttribute "System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute"
+
 #endif //!__CLASSNAMES_H__

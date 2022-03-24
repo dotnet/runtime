@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// </summary>
         /// <param name="key">A string identifying the requested value.</param>
         /// <returns>The located value or null.</returns>
-        byte[] Get(string key);
+        byte[]? Get(string key);
 
         /// <summary>
         /// Gets a value with the given key.
@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <param name="key">A string identifying the requested value.</param>
         /// <param name="token">Optional. The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
         /// <returns>The <see cref="Task"/> that represents the asynchronous operation, containing the located value or null.</returns>
-        Task<byte[]> GetAsync(string key, CancellationToken token = default(CancellationToken));
+        Task<byte[]?> GetAsync(string key, CancellationToken token = default(CancellationToken));
 
         /// <summary>
         /// Sets a value with the given key.

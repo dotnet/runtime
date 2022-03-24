@@ -106,7 +106,7 @@
     <value>Invalid file format.</value>
   </data>
   <data name="FileFormatExceptionWithFileName" xml:space="preserve">
-    <value>Invalid file format.</value>
+    <value>File '{0}' has an invalid file format.</value>
   </data>
   <data name="GetContentTypeCoreNotImplemented" xml:space="preserve">
     <value>PackagePart subclass must implement GetContentTypeCore method if passing a null value for the content type when PackagePart object is constructed.</value>

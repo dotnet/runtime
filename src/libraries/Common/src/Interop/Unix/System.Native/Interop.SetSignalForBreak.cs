@@ -7,11 +7,11 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetSignalForBreak")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetSignalForBreak")]
         [SuppressGCTransition]
         internal static partial int GetSignalForBreak();
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetSignalForBreak")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetSignalForBreak")]
         internal static partial int SetSignalForBreak(int signalForBreak);
     }
 }

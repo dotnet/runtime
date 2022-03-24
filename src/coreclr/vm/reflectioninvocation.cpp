@@ -540,6 +540,7 @@ class ArgIteratorBaseForMethodInvoke
 {
 protected:
     SIGNATURENATIVEREF * m_ppNativeSig;
+    bool m_fHasThis;
 
     FORCEINLINE CorElementType GetReturnType(TypeHandle * pthValueType)
     {
@@ -567,7 +568,7 @@ public:
     BOOL HasThis()
     {
         LIMITED_METHOD_CONTRACT;
-        return (*m_ppNativeSig)->HasThis();
+        return m_fHasThis;
     }
 
     BOOL HasParamType()
@@ -602,9 +603,11 @@ public:
 class ArgIteratorForMethodInvoke : public ArgIteratorTemplate<ArgIteratorBaseForMethodInvoke>
 {
 public:
-    ArgIteratorForMethodInvoke(SIGNATURENATIVEREF * ppNativeSig)
+    ArgIteratorForMethodInvoke(SIGNATURENATIVEREF * ppNativeSig, BOOL fCtorOfVariableSizedObject)
     {
         m_ppNativeSig = ppNativeSig;
+
+        m_fHasThis = (*m_ppNativeSig)->HasThis() && !fCtorOfVariableSizedObject;
 
         DWORD dwFlags = (*m_ppNativeSig)->GetArgIteratorFlags();
 
@@ -803,7 +806,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     }
 
     {
-    ArgIteratorForMethodInvoke argit(&gc.pSig);
+    ArgIteratorForMethodInvoke argit(&gc.pSig, fCtorOfVariableSizedObject);
 
     if (argit.IsActivationNeeded())
         pMeth->EnsureActive();
@@ -888,7 +891,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     }
 
     // Copy "this" pointer
-    if (!pMeth->IsStatic()) {
+    if (!pMeth->IsStatic() && !fCtorOfVariableSizedObject) {
         PVOID pThisPtr;
 
         if (fConstructor)
@@ -1055,6 +1058,11 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         gc.retVal = GET_THROWABLE();
         _ASSERTE(gc.retVal);
 
+#ifdef _MSC_VER
+        // Workaround bogus MSVC warning about uninitialized local variables
+        *(BYTE*)&callDescrData.returnValue = 0;
+#endif
+
         fExceptionThrown = true;
         } EX_END_CATCH(SwallowAllExceptions);
 
@@ -1064,7 +1072,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     {
         CallDescrWorkerWithHandler(&callDescrData);
     }
-
 
     // Now that we are safely out of the catch block, we can create and raise the
     // TargetInvocationException.
@@ -1097,7 +1104,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
             LPVOID pReturnedReference = *(LPVOID*)&callDescrData.returnValue;
             if (pReturnedReference == NULL)
             {
-                COMPlusThrow(kNullReferenceException, IDS_INVOKE_NULLREF_RETURNED);
+                COMPlusThrow(kNullReferenceException, W("NullReference_InvokeNullRefReturned"));
             }
             CopyValueClass(gc.retVal->GetData(), pReturnedReference, gc.retVal->GetMethodTable());
         }
@@ -1120,7 +1127,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         LPVOID pReturnedReference = *(LPVOID*)&callDescrData.returnValue;
         if (pReturnedReference == NULL)
         {
-            COMPlusThrow(kNullReferenceException, IDS_INVOKE_NULLREF_RETURNED);
+            COMPlusThrow(kNullReferenceException, W("NullReference_InvokeNullRefReturned"));
         }
 
         gc.retVal = InvokeUtil::CreateObjectAfterInvoke(refReturnTargetTH, pReturnedReference);
@@ -1480,14 +1487,8 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
         if (gc.oValue != 0) {
             value = 0;
             if (CoreLibBinder::IsClass(gc.oValue->GetMethodTable(), CLASS__POINTER)) {
-                value = (size_t) InvokeUtil::GetPointerValue(gc.oValue);
-#ifdef _MSC_VER
-#pragma warning(disable: 4267) //work-around for compiler
-#endif
-                VolatileStore((size_t*) pDst, (size_t) value);
-#ifdef _MSC_VER
-#pragma warning(default: 4267)
-#endif
+                value = (SIZE_T) InvokeUtil::GetPointerValue(gc.oValue);
+                VolatileStore((SIZE_T*) pDst, (SIZE_T) value);
                 break;
             }
         }
@@ -1499,13 +1500,7 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
             CorElementType objType = gc.oValue->GetTypeHandle().GetInternalCorElementType();
             InvokeUtil::CreatePrimitiveValue(objType, objType, gc.oValue, &value);
         }
-#ifdef _MSC_VER
-#pragma warning(disable: 4267) //work-around for compiler
-#endif
-        VolatileStore((size_t*) pDst, (size_t) value);
-#ifdef _MSC_VER
-#pragma warning(default: 4267)
-#endif
+        VolatileStore((SIZE_T*) pDst, (SIZE_T) value);
     }
     break;
 
@@ -1576,19 +1571,17 @@ extern "C" void QCALLTYPE ReflectionInvocation_RunClassConstructor(QCall::TypeHa
     END_QCALL;
 }
 
-// This method triggers the module constructor for a give module
+// This method triggers the module constructor for a given module
 extern "C" void QCALLTYPE ReflectionInvocation_RunModuleConstructor(QCall::ModuleHandle pModule)
 {
     QCALL_CONTRACT;
 
-    DomainFile *pDomainFile = pModule->GetDomainFile();
-    if (pDomainFile != NULL && pDomainFile->IsActive())
+    DomainAssembly *pDomainAssembly = pModule->GetDomainAssembly();
+    if (pDomainAssembly != NULL && pDomainAssembly->IsActive())
         return;
 
     BEGIN_QCALL;
-    if(pDomainFile == NULL)
-        pDomainFile = pModule->GetDomainFile();
-    pDomainFile->EnsureActive();
+    pDomainAssembly->EnsureActive();
     END_QCALL;
 }
 

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 [StructLayout(LayoutKind.Sequential)]
 internal class AA
@@ -68,4 +69,13 @@ internal class AA
 internal struct BB
 {
     public static AA f_init, f_zero;
+}
+
+public static class Test_seq_gc_byte_1
+{
+    [Fact]
+    public static int TestEntrypoint()
+    {
+        return TestApp.RunAllTests();
+    }
 }

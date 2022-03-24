@@ -10,11 +10,8 @@ namespace System.Security.Cryptography
         private RandomNumberGenerator? RngValue;
 
         public RSAOAEPKeyExchangeFormatter() { }
-        public RSAOAEPKeyExchangeFormatter(AsymmetricAlgorithm key)
+        public RSAOAEPKeyExchangeFormatter(AsymmetricAlgorithm key!!)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-
             _rsaKey = (RSA)key;
         }
 
@@ -53,11 +50,8 @@ namespace System.Security.Cryptography
             set { RngValue = value; }
         }
 
-        public override void SetKey(AsymmetricAlgorithm key)
+        public override void SetKey(AsymmetricAlgorithm key!!)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-
             _rsaKey = (RSA)key;
         }
 

@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
 {
@@ -48,8 +47,8 @@ namespace System.Runtime.CompilerServices
         // This call will generate an exception if the specified class constructor threw an
         // exception when it ran.
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_RunClassConstructor")]
-        private static extern void RunClassConstructor(QCallTypeHandle type);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_RunClassConstructor")]
+        private static partial void RunClassConstructor(QCallTypeHandle type);
 
         [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
         public static void RunClassConstructor(RuntimeTypeHandle type)
@@ -69,8 +68,8 @@ namespace System.Runtime.CompilerServices
         // This call will generate an exception if the specified module constructor threw an
         // exception when it ran.
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_RunModuleConstructor")]
-        private static extern void RunModuleConstructor(QCallModule module);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_RunModuleConstructor")]
+        private static partial void RunModuleConstructor(QCallModule module);
 
         public static void RunModuleConstructor(ModuleHandle module)
         {
@@ -81,11 +80,11 @@ namespace System.Runtime.CompilerServices
             RunModuleConstructor(new QCallModule(ref rm));
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_CompileMethod")]
-        internal static extern void CompileMethod(RuntimeMethodHandleInternal method);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_CompileMethod")]
+        internal static partial void CompileMethod(RuntimeMethodHandleInternal method);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_PrepareMethod")]
-        private static extern unsafe void PrepareMethod(RuntimeMethodHandleInternal method, IntPtr* pInstantiation, int cInstantiation);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_PrepareMethod")]
+        private static unsafe partial void PrepareMethod(RuntimeMethodHandleInternal method, IntPtr* pInstantiation, int cInstantiation);
 
         public static void PrepareMethod(RuntimeMethodHandle method) => PrepareMethod(method, null);
 
@@ -98,10 +97,10 @@ namespace System.Runtime.CompilerServices
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
             instantiation = (RuntimeTypeHandle[]?)instantiation?.Clone();
 
-            IntPtr[]? instantiationHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(instantiation, out int length);
+            ReadOnlySpan<IntPtr> instantiationHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(instantiation, stackScratch: stackalloc IntPtr[8]);
             fixed (IntPtr* pInstantiation = instantiationHandles)
             {
-                PrepareMethod(methodInfo.Value, pInstantiation, length);
+                PrepareMethod(methodInfo.Value, pInstantiation, instantiationHandles.Length);
                 GC.KeepAlive(instantiation);
                 GC.KeepAlive(methodInfo);
             }
@@ -160,11 +159,7 @@ namespace System.Runtime.CompilerServices
         {
             if (type is not RuntimeType rt)
             {
-                if (type is null)
-                {
-                    throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
-                }
-
+                ArgumentNullException.ThrowIfNull(type);
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
             }
 
@@ -173,8 +168,8 @@ namespace System.Runtime.CompilerServices
             return obj!;
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionSerialization_GetUninitializedObject")]
-        private static extern void GetUninitializedObject(QCallTypeHandle type, ObjectHandleOnStack retObject);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionSerialization_GetUninitializedObject")]
+        private static partial void GetUninitializedObject(QCallTypeHandle type, ObjectHandleOnStack retObject);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object AllocateUninitializedClone(object obj);
@@ -305,8 +300,8 @@ namespace System.Runtime.CompilerServices
             return AllocateTypeAssociatedMemory(new QCallTypeHandle(ref rt), (uint)size);
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemory")]
-        private static extern IntPtr AllocateTypeAssociatedMemory(QCallTypeHandle type, uint size);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemory")]
+        private static partial IntPtr AllocateTypeAssociatedMemory(QCallTypeHandle type, uint size);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr AllocTailCallArgBuffer(int size, IntPtr gcDesc);

@@ -21,7 +21,7 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal("System.Runtime", assemblyName.Name);
             Assert.Equal(new Version(4, 0, 0, 0), assemblyName.Version);
             Assert.Equal(new byte[] { 0xB0, 0x3F, 0x5F, 0x7F, 0x11, 0xD5, 0x0A, 0x3A }, assemblyName.GetPublicKeyToken());
-            Assert.Null(assemblyName.CultureName);
+            Assert.Equal("",assemblyName.CultureName);
             Assert.Equal(Configuration.Assemblies.AssemblyHashAlgorithm.None, assemblyName.HashAlgorithm);
             Assert.Null(assemblyName.GetPublicKey());
             Assert.Equal(AssemblyNameFlags.None, assemblyName.Flags);
@@ -70,7 +70,7 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal(expRefs[i], assemblyName.Name);
                 Assert.Equal(expVers[i], assemblyName.Version);
                 Assert.Equal(expKeys[i], assemblyName.GetPublicKeyToken());
-                Assert.Null(assemblyName.CultureName);
+                Assert.Equal("",assemblyName.CultureName);
                 Assert.Equal(Configuration.Assemblies.AssemblyHashAlgorithm.None, assemblyName.HashAlgorithm);
                 Assert.Null(assemblyName.GetPublicKey());
                 Assert.Equal(AssemblyNameFlags.None, assemblyName.Flags);

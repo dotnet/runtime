@@ -191,10 +191,14 @@ const pal::char_t* get_arch()
     return _X("x64");
 #elif defined(TARGET_X86)
     return _X("x86");
+#elif defined(TARGET_ARMV6)
+    return _X("armv6");
 #elif defined(TARGET_ARM)
     return _X("arm");
 #elif defined(TARGET_ARM64)
     return _X("arm64");
+#elif defined(TARGET_LOONGARCH64)
+    return _X("loongarch64");
 #elif defined(TARGET_S390X)
     return _X("s390x");
 #else
@@ -457,13 +461,15 @@ pal::string_t get_download_url(const pal::char_t* framework_name, const pal::cha
 
 pal::string_t to_lower(const pal::char_t* in) {
     pal::string_t ret = in;
-    std::transform(ret.begin(), ret.end(), ret.begin(), ::tolower);
+    std::transform(ret.begin(), ret.end(), ret.begin(),
+        [](pal::char_t c) { return static_cast<pal::char_t>(::tolower(c)); });
     return ret;
 }
 
 pal::string_t to_upper(const pal::char_t* in) {
     pal::string_t ret = in;
-    std::transform(ret.begin(), ret.end(), ret.begin(), ::toupper);
+    std::transform(ret.begin(), ret.end(), ret.begin(),
+        [](pal::char_t c) { return static_cast<pal::char_t>(::toupper(c)); });
     return ret;
 }
 

@@ -351,8 +351,8 @@ class SBuffer
     // Manipulates contents of the buffer via the plugins below, but
     // adds some debugging checks.  Should always call through here rather
     // than directly calling the extensibility points.
-    void DebugMoveBuffer(__out_bcount(size) BYTE *to, BYTE *from, COUNT_T size);
-    void DebugCopyConstructBuffer(__out_bcount(size) BYTE *to, const BYTE *from, COUNT_T size);
+    void DebugMoveBuffer(_Out_writes_bytes_(size) BYTE *to, BYTE *from, COUNT_T size);
+    void DebugCopyConstructBuffer(_Out_writes_bytes_(size) BYTE *to, const BYTE *from, COUNT_T size);
     void DebugConstructBuffer(BYTE *buffer, COUNT_T size);
     void DebugDestructBuffer(BYTE *buffer, COUNT_T size);
 

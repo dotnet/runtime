@@ -86,9 +86,7 @@ namespace System.Data
             while (iSsyncDepth < ssync.Depth)
             {
                 tableBefore = null;
-                string? diffId = null;
-
-                oldRowRecord = -1;
+                string? diffId;
 
                 // the diffgramm always contains sql:before and sql:after pairs
 
@@ -141,7 +139,6 @@ namespace System.Data
                 tableBefore = null;
                 string diffId;
 
-                oldRowRecord = -1;
 
                 // the diffgramm always contains sql:before and sql:after pairs
 
@@ -308,7 +305,7 @@ namespace System.Data
             }
 
             int iRowDepth = row.Depth;
-            string? value = null;
+            string? value;
 
             value = row.GetAttribute(Keywords.ROWORDER, Keywords.MSDNS);
             if (!string.IsNullOrEmpty(value))

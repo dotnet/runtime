@@ -4,6 +4,7 @@
 using System.Collections;
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.Versioning;
@@ -12,7 +13,7 @@ namespace System.Security.Authentication.ExtendedProtection
 {
     public class ExtendedProtectionPolicyTypeConverter : TypeConverter
     {
-        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }

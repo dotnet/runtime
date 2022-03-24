@@ -107,6 +107,7 @@ StubSigDesc::StubSigDesc(MethodDesc *pMD)
 
     m_tkMethodDef = pMD->GetMemberDef();
     SigTypeContext::InitTypeContext(pMD, &m_typeContext);
+    m_pMetadataModule = pMD->GetModule();
     m_pLoaderModule = pMD->GetLoaderModule();   // Used for ILStubCache selection and MethodTable creation.
 
     INDEBUG(InitDebugNames());
@@ -133,11 +134,13 @@ StubSigDesc::StubSigDesc(MethodDesc* pMD, const Signature& sig, Module* pModule)
     {
         m_tkMethodDef = pMD->GetMemberDef();
         SigTypeContext::InitTypeContext(pMD, &m_typeContext);
+        m_pMetadataModule = pMD->GetModule();
         m_pLoaderModule = pMD->GetLoaderModule();   // Used for ILStubCache selection and MethodTable creation.
     }
     else
     {
         m_tkMethodDef = mdMethodDefNil;
+        m_pMetadataModule = m_pModule;
         m_pLoaderModule = m_pModule;
     }
 
@@ -166,7 +169,8 @@ StubSigDesc::StubSigDesc(MethodTable* pMT, const Signature& sig, Module* pModule
     if (pMT != NULL)
     {
         SigTypeContext::InitTypeContext(pMT, &m_typeContext);
-        m_pLoaderModule = pMT->GetLoaderModule();   // Used for ILStubCache selection and MethodTable creation.
+        m_pMetadataModule = pMT->GetModule();
+        m_pLoaderModule = pMT->GetLoaderModule();
     }
     else
     {
@@ -193,6 +197,7 @@ StubSigDesc::StubSigDesc(const Signature& sig, Module* pModule)
     m_sig = sig;
     m_pModule = pModule;
     m_tkMethodDef = mdMethodDefNil;
+    m_pMetadataModule = m_pModule;
     m_pLoaderModule = m_pModule;
 
     INDEBUG(InitDebugNames());
@@ -431,12 +436,12 @@ public:
 
             if (callConvInfo & CORINFO_CALLCONV_HASTHIS)
             {
-                ((PTR_DynamicMethodDesc)pStubMD)->m_dwExtendedFlags &= ~mdStatic;
+                ((PTR_DynamicMethodDesc)pStubMD)->ClearFlags(DynamicMethodDesc::FlagStatic);
                 pStubMD->ClearStatic();
             }
             else
             {
-                ((PTR_DynamicMethodDesc)pStubMD)->m_dwExtendedFlags |= mdStatic;
+                ((PTR_DynamicMethodDesc)pStubMD)->SetFlags(DynamicMethodDesc::FlagStatic);
                 pStubMD->SetStatic();
             }
 
@@ -784,14 +789,11 @@ public:
         {
             // Struct marshal stubs don't actually call anything so they do not need the secrect parameter.
         }
-#ifndef HOST_64BIT
         else if (SF_IsForwardDelegateStub(m_dwStubFlags))
         {
             // Forward delegate stubs get all the context they need in 'this' so they
-            // don't use the secret parameter. Except for AMD64 where we use the secret
-            // argument to pass the real target to the stub-for-host.
+            // don't use the secret parameter.
         }
-#endif // !HOST_64BIT
         else
         {
             // All other IL stubs will need to use the secret parameter.
@@ -962,7 +964,7 @@ public:
         if (pTargetMD)
         {
             pTargetMD->GetMethodInfoWithNewSig(strNamespaceOrClassName, strMethodName, strMethodSignature);
-            uModuleId = (UINT64)pTargetMD->GetModule()->GetAddrModuleID();
+            uModuleId = (UINT64)(TADDR)pTargetMD->GetModule_NoLogging();
         }
 
         //
@@ -2076,22 +2078,12 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
 
     if (SF_IsForwardStub(dwStubFlags)) // managed-to-native
     {
-
         if (SF_IsDelegateStub(dwStubFlags)) // delegate invocation
         {
             // get the delegate unmanaged target - we call a helper instead of just grabbing
             // the _methodPtrAux field because we may need to intercept the call for host, etc.
             pcsEmit->EmitLoadThis();
-#ifdef TARGET_64BIT
-            // on AMD64 GetDelegateTarget will return address of the generic stub for host when we are hosted
-            // and update the secret argument with real target - the secret arg will be embedded in the
-            // InlinedCallFrame by the JIT and fetched via TLS->Thread->Frame->Datum by the stub for host
-            pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT_ADDR, 0, 1);
-#else // !TARGET_64BIT
-            // we don't need to do this on x86 because stub for host is generated dynamically per target
-            pcsEmit->EmitLDNULL();
-#endif // !TARGET_64BIT
-            pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_DELEGATE_TARGET, 2, 1);
+            pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_DELEGATE_TARGET, 1, 1);
         }
         else // direct invocation
         {
@@ -3300,6 +3292,15 @@ BOOL NDirect::MarshalingRequired(
     }
     CollateParamTokens(pMDImport, methodToken, numArgs - 1, pParamTokenArray);
 
+    // We enable the runtime marshalling system whenever it is enabled on the module as a whole
+    // or when the call is a COM interop call. COM interop calls are already using a significant portion of the runtime
+    // marshalling system just to function at all, so we aren't going to disable the parameter marshalling;
+    // we'd rather have developers use the feature flag to diable the whole COM interop subsystem at once.
+    bool runtimeMarshallingEnabled = pModule->IsRuntimeMarshallingEnabled();
+#ifdef FEATURE_COMINTEROP
+    runtimeMarshallingEnabled |= pMD && pMD->IsComPlusCall();
+#endif
+
     for (ULONG i = 0; i < numArgs; i++)
     {
         SigPointer arg = ptr;
@@ -3313,7 +3314,7 @@ BOOL NDirect::MarshalingRequired(
                 IfFailThrow(arg.GetElemType(NULL)); // skip ELEMENT_TYPE_PTR
                 IfFailThrow(arg.PeekElemType(&type));
 
-                if (type == ELEMENT_TYPE_VALUETYPE)
+                if (runtimeMarshallingEnabled && type == ELEMENT_TYPE_VALUETYPE)
                 {
                     if ((arg.HasCustomModifier(pModule,
                                               "Microsoft.VisualC.NeedsCopyConstructorModifier",
@@ -3344,9 +3345,20 @@ BOOL NDirect::MarshalingRequired(
             {
                 TypeHandle hndArgType = arg.GetTypeHandleThrowing(pModule, &emptyTypeContext);
 
-                // JIT can handle internal blittable value types
-                if (!hndArgType.IsBlittable() && !hndArgType.IsEnum())
+                // When the runtime runtime marshalling system is disabled, we don't support
+                // any types that contain gc pointers, but all "unmanaged" types are treated as blittable
+                // as long as they aren't auto-layout and don't have any auto-layout fields.
+                if (!runtimeMarshallingEnabled &&
+                    !hndArgType.IsEnum() &&
+                    (hndArgType.GetMethodTable()->ContainsPointers()
+                        || hndArgType.GetMethodTable()->IsAutoLayoutOrHasAutoLayoutField()))
                 {
+                    return TRUE;
+                }
+                else if (runtimeMarshallingEnabled && !hndArgType.IsBlittable() && !hndArgType.IsEnum())
+                {
+                    // When the runtime runtime marshalling system is enabled, we do special handling
+                    // for any types that aren't blittable or enums.
                     return TRUE;
                 }
 
@@ -3361,10 +3373,15 @@ BOOL NDirect::MarshalingRequired(
             case ELEMENT_TYPE_BOOLEAN:
             case ELEMENT_TYPE_CHAR:
             {
+                // When runtime marshalling is enabled:
                 // Bool requires marshaling
                 // Char may require marshaling (MARSHAL_TYPE_ANSICHAR)
-                return TRUE;
+                if (runtimeMarshallingEnabled)
+                {
+                    return TRUE;
+                }
             }
+            FALLTHROUGH;
 
             default:
             {
@@ -3389,7 +3406,10 @@ BOOL NDirect::MarshalingRequired(
         // check for explicit MarshalAs
         NativeTypeParamInfo paramInfo;
 
-        if (pParamTokenArray[i] != mdParamDefNil)
+        // We only check the MarshalAs info when the runtime marshalling system is enabled.
+        // We ignore MarshalAs when the system is disabled, so no reason to disqualify from inlining
+        // when it is present.
+        if (runtimeMarshallingEnabled && pParamTokenArray[i] != mdParamDefNil)
         {
             if (!ParseNativeTypeInfo(pParamTokenArray[i], pMDImport, &paramInfo) ||
                 paramInfo.m_NativeType != NATIVE_TYPE_DEFAULT)
@@ -3607,6 +3627,7 @@ static void CreateNDirectStubWorker(StubState*               pss,
         CONSISTENCY_CHECK_MSGF(false, ("BreakOnInteropStubSetup: '%s' ", pSigDesc->m_pDebugName));
 #endif // _DEBUG
 
+    bool runtimeMarshallingEnabled = SF_IsCOMStub(dwStubFlags) || pSigDesc->m_pMetadataModule->IsRuntimeMarshallingEnabled();
     if (SF_IsCOMStub(dwStubFlags))
     {
         _ASSERTE(0 == nlType);
@@ -3628,24 +3649,46 @@ static void CreateNDirectStubWorker(StubState*               pss,
                  &pSigDesc->m_typeContext);
 
     if (SF_IsVarArgStub(dwStubFlags))
+    {
+        if (!runtimeMarshallingEnabled)
+        {
+            COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_DISABLEDMARSHAL_VARARGS);
+        }
         msig.SetTreatAsVarArg();
+    }
 
     bool fThisCall = (unmgdCallConv == CorInfoCallConvExtension::Thiscall);
 
-    pss->SetLastError(nlFlags & nlfLastError);
+    if (nlFlags & nlfLastError)
+    {
+        if (!runtimeMarshallingEnabled)
+        {
+            COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_DISABLEDMARSHAL_SETLASTERROR);
+        }
+        pss->SetLastError(TRUE);
+    }
 
     // This has been in the product since forward P/Invoke via delegates was
     // introduced. It's wrong, but please keep it for backward compatibility.
-    if (SF_IsDelegateStub(dwStubFlags))
+    if (runtimeMarshallingEnabled && SF_IsDelegateStub(dwStubFlags))
         pss->SetLastError(TRUE);
 
     pss->BeginEmit(dwStubFlags);
 
     if (-1 != iLCIDArg)
     {
-        // The code to handle the LCID  will call MarshalLCID before calling MarshalArgument
+        if (!runtimeMarshallingEnabled)
+        {
+            COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_DISABLEDMARSHAL_LCID);
+        }
+        // The code to handle the LCID will call MarshalLCID before calling MarshalArgument
         // on the argument the LCID should go after. So we just bump up the index here.
         iLCIDArg++;
+    }
+
+    if (!runtimeMarshallingEnabled && SF_IsHRESULTSwapping(dwStubFlags))
+    {
+        COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_DISABLEDMARSHAL_PRESERVESIG);
     }
 
     int numArgs = msig.NumFixedArgs();
@@ -3782,19 +3825,6 @@ static void CreateNDirectStubWorker(StubState*               pss,
                             DEBUG_ARG(pSigDesc->m_pDebugClassName)
                             );
 
-    // If the return value is a SafeHandle or CriticalHandle, mark the stub method.
-    // Interop methods that use this stub will have an implicit reliability contract
-    // (see code:TAStackCrawlCallBack).
-    if (!SF_IsHRESULTSwapping(dwStubFlags))
-    {
-        if (marshalType == MarshalInfo::MARSHAL_TYPE_SAFEHANDLE ||
-            marshalType == MarshalInfo::MARSHAL_TYPE_CRITICALHANDLE)
-        {
-            if (pMD->IsDynamicMethod())
-                pMD->AsDynamicMethodDesc()->SetUnbreakable(true);
-        }
-    }
-
     if (SF_IsHRESULTSwapping(dwStubFlags))
     {
         if (msig.GetReturnType() != ELEMENT_TYPE_VOID)
@@ -3825,7 +3855,8 @@ static void CreateNDirectStubWorker(StubState*               pss,
         DynamicMethodDesc *pDMD = pMD->AsDynamicMethodDesc();
 
         pDMD->SetNativeStackArgSize(static_cast<WORD>(nativeStackSize));
-        pDMD->SetStubNeedsCOMStarted(fStubNeedsCOM);
+        if (fStubNeedsCOM)
+            pDMD->SetFlags(DynamicMethodDesc::FlagRequiresCOM);
     }
 
     // FinishEmit needs to know the native stack arg size so we call it after the number
@@ -5660,7 +5691,9 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
         UNREACHABLE_MSG("unexpected MethodDesc type");
     }
 
-    if (pStubMD != NULL && pStubMD->IsILStub() && pStubMD->AsDynamicMethodDesc()->IsStubNeedsCOMStarted())
+    if (pStubMD != NULL
+        && pStubMD->IsILStub()
+        && pStubMD->AsDynamicMethodDesc()->HasFlags(DynamicMethodDesc::FlagRequiresCOM))
     {
         // the stub uses COM so make sure that it is started
         EnsureComStarted();

@@ -47,11 +47,6 @@
         <target state="translated">目标数组不够长，无法复制集合中的所有项。请检查数组索引和长度。</target>
         <note />
       </trans-unit>
-      <trans-unit id="ArgumentNull_ArrayWithNullElements">
-        <source>The array cannot contain null elements.</source>
-        <target state="translated">数组不能包含 null 元素。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="BeginIndexNotNegative">
         <source>Start index cannot be less than 0 or greater than input length.</source>
         <target state="translated">起始索引不能小于 0 或大于输入长度。</target>
@@ -123,8 +118,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidLangVersionMessage">
-        <source>C# LangVersion of 10 or greater is required</source>
-        <target state="translated">需要 C# LangVersion 10 或更高版本</target>
+        <source>C# LangVersion of 11 or greater is required</source>
+        <target state="new">C# LangVersion of 11 or greater is required</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidRegexArgumentsMessage">
@@ -150,6 +145,16 @@
       <trans-unit id="LengthNotNegative">
         <source>Length cannot be less than 0 or exceed input length.</source>
         <target state="translated">长度不能小于 0 或超过输入长度。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LimitedSourceGenerationMessage">
+        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</source>
+        <target state="translated">由于不支持的选项或正则表达式过于复杂，RegexGenerator 无法为指定正则表达式生成完整的源实现。实现将在运行时解释正则表达式。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LimitedSourceGenerationTitle">
+        <source>RegexGenerator limitation reached.</source>
+        <target state="translated">已达到 RegexGenerator 限制。</target>
         <note />
       </trans-unit>
       <trans-unit id="MakeException">
@@ -202,11 +207,6 @@
         <target state="translated">集合是只读的。</target>
         <note />
       </trans-unit>
-      <trans-unit id="OnlyAllowedOnce">
-        <source>This operation is only allowed once per object.</source>
-        <target state="translated">对每个对象只能执行一次此操作。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="PlatformNotSupported_CompileToAssembly">
         <source>This platform does not support writing compiled regular expressions to an assembly.</source>
         <target state="translated">此平台不支持将已编译的正则表达式写入程序集。</target>
@@ -228,8 +228,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>Regex method must be partial, parameterless, non-generic, and return Regex</source>
-        <target state="translated">Regex 方法必须是分部、无参数、非泛型，并返回 Regex</target>
+        <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
+        <target state="new">RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</target>
         <note />
       </trans-unit>
       <trans-unit id="ReplacementError">
@@ -280,11 +280,6 @@
       <trans-unit id="UnescapedEndingBackslash">
         <source>Illegal \\ at end of pattern.</source>
         <target state="translated">\\ 在模式末尾非法。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="UnexpectedOpcode">
-        <source>Unexpected opcode in regular expression generation: {0}.</source>
-        <target state="translated">生成正则表达式时出现意外的操作码: {0}。</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">

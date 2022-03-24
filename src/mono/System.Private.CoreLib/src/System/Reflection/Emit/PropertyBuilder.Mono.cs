@@ -77,7 +77,7 @@ namespace System.Reflection.Emit
                 Array.Copy(parameterTypes, this.parameters, this.parameters.Length);
             }
             typeb = tb;
-            table_idx = tb.get_next_table_index(this, 0x17, 1);
+            table_idx = tb.get_next_table_index(0x17, 1);
         }
 
         public override PropertyAttributes Attributes

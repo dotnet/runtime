@@ -767,7 +767,7 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
 {
     noway_assert(conds.Size() > 0);
     assert(slowHead != nullptr);
-    assert((insertAfter->bbJumpKind == BBJ_NONE) || (insertAfter->bbJumpKind == BBJ_COND));
+    assert(insertAfter->KindIs(BBJ_NONE, BBJ_COND));
 
     // Choose how to generate the conditions
     const bool generateOneConditionPerBlock = true;
@@ -1038,17 +1038,18 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
         if (loop->lpFlags & LPFLG_CONST_INIT)
         {
             // Only allowing non-negative const init at this time.
-            // REVIEW: why?
+            // This is because the variable initialized with this constant will be used as an array index,
+            // and array indices must be non-negative.
             if (loop->lpConstInit < 0)
             {
                 JITDUMP("> Init %d is invalid\n", loop->lpConstInit);
                 return false;
             }
         }
-        else if (loop->lpFlags & LPFLG_VAR_INIT)
+        else
         {
-            // initVar >= 0
-            const unsigned initLcl = loop->lpVarInit;
+            // iterVar >= 0
+            const unsigned initLcl = loop->lpIterVar();
             if (!genActualTypeIsInt(lvaGetDesc(initLcl)))
             {
                 JITDUMP("> Init var V%02u not compatible with TYP_INT\n", initLcl);
@@ -1058,11 +1059,6 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
             LC_Condition geZero(GT_GE, LC_Expr(LC_Ident(initLcl, LC_Ident::Var)),
                                 LC_Expr(LC_Ident(0, LC_Ident::Const)));
             context->EnsureConditions(loopNum)->Push(geZero);
-        }
-        else
-        {
-            JITDUMP("> Not variable init\n");
-            return false;
         }
 
         // Limit Conditions
@@ -1096,7 +1092,7 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
             ArrIndex* index = new (getAllocator(CMK_LoopClone)) ArrIndex(getAllocator(CMK_LoopClone));
             if (!loop->lpArrLenLimit(this, index))
             {
-                JITDUMP("> ArrLen not matching");
+                JITDUMP("> ArrLen not matching\n");
                 return false;
             }
             ident = LC_Ident(LC_Array(LC_Array::Jagged, index, LC_Array::ArrLen));
@@ -1447,7 +1443,7 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
                     }
 #endif // DEBUG
 
-                    if (bndsChkNode->gtGetOp1()->OperIsBoundsCheck())
+                    if (bndsChkNode->gtGetOp1()->OperIs(GT_BOUNDS_CHECK))
                     {
                         // This COMMA node will only represent a bounds check if we've haven't already removed this
                         // bounds check in some other nesting cloned loop. For example, consider:
@@ -1592,19 +1588,18 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
         return false;
     }
 
-    BasicBlock* head = loop.lpHead;
-    BasicBlock* end  = loop.lpBottom;
-    BasicBlock* beg  = head->bbNext;
+    BasicBlock* top    = loop.lpTop;
+    BasicBlock* bottom = loop.lpBottom;
 
-    if (end->bbJumpKind != BBJ_COND)
+    if (bottom->bbJumpKind != BBJ_COND)
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Couldn't find termination test.\n", loopInd);
         return false;
     }
 
-    if (end->bbJumpDest != beg)
+    if (bottom->bbJumpDest != top)
     {
-        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Branch at loop 'end' not looping to 'begin'.\n", loopInd);
+        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Branch at loop 'bottom' not looping to 'top'.\n", loopInd);
         return false;
     }
 
@@ -1632,7 +1627,7 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
         return false;
     }
 
-    if (!(loop.lpTestTree->OperKind() & GTK_RELOP) || !(loop.lpTestTree->gtFlags & GTF_RELOP_ZTT))
+    if (!loop.lpTestTree->OperIsCompare() || !(loop.lpTestTree->gtFlags & GTF_RELOP_ZTT))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Loop inversion NOT present, loop test [%06u] may not protect "
                 "entry from head.\n",
@@ -1824,8 +1819,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
 
     // We're going to transform this loop:
     //
-    // H --> E    (or, H conditionally branches around the loop and has fall-through to F == T == E)
-    // F
+    // H --> E    (or, H conditionally branches around the loop and has fall-through to T == E)
     // T
     // E
     // B ?-> T
@@ -1834,21 +1828,19 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // to this pair of loops:
     //
     // H ?-> H3   (all loop failure conditions branch to new slow path loop head)
-    // H2--> E    (Optional; if E == T == F, let H fall through to F/T/E)
-    // F
+    // H2--> E    (Optional; if T == E, let H fall through to T/E)
     // T
     // E
     // B  ?-> T
     // X2--> X
-    // H3 --> E2  (aka slowHead. Or, H3 falls through to F2 == T2 == E2)
-    // F2
+    // H3 --> E2  (aka slowHead. Or, H3 falls through to T2 == E2)
     // T2
     // E2
     // B2 ?-> T2
     // X
 
     BasicBlock* h = loop.lpHead;
-    if (h->bbJumpKind != BBJ_NONE && h->bbJumpKind != BBJ_ALWAYS)
+    if (!h->KindIs(BBJ_NONE, BBJ_ALWAYS))
     {
         // Make a new block to be the unique entry to the loop.
         JITDUMP("Create new unique single-successor entry to loop\n");
@@ -1909,7 +1901,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     BasicBlock* slowHeadPrev = newPred;
 
     // Now we'll make "h2", after "h" to go to "e" -- unless the loop is a do-while,
-    // so that "h" already falls through to "e" (e == t == f).
+    // so that "h" already falls through to "e" (e == t).
     // It might look like this code is unreachable, since "h" must be a BBJ_ALWAYS, but
     // later we will change "h" to a BBJ_COND along with a set of loop conditions.
     // TODO: it still might be unreachable, since cloning currently is restricted to "do-while" loop forms.
@@ -2101,7 +2093,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
 
     BasicBlock* condLast = optInsertLoopChoiceConditions(context, loopInd, slowHead, h);
 
-    // Add the fall-through path pred (either to F/T/E for fall-through from conditions to fast path,
+    // Add the fall-through path pred (either to T/E for fall-through from conditions to fast path,
     // or H2 if branch to E of fast path).
     assert(condLast->bbJumpKind == BBJ_COND);
     JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", condLast->bbNum, condLast->bbNext->bbNum);
@@ -2175,7 +2167,7 @@ bool Compiler::optIsStackLocalInvariant(unsigned loopNum, unsigned lclNum)
 //  Example tree to pattern match:
 //
 // *  COMMA     int
-// +--*  ARR_BOUNDS_CHECK_Rng void
+// +--*  BOUNDS_CHECK_Rng void
 // |  +--*  LCL_VAR   int    V02 loc1
 // |  \--*  ARR_LENGTH int
 // |     \--*  LCL_VAR   ref    V00 arg0
@@ -2192,7 +2184,7 @@ bool Compiler::optIsStackLocalInvariant(unsigned loopNum, unsigned lclNum)
 // Note that byte arrays don't require the LSH to scale the index, so look like this:
 //
 // *  COMMA     ubyte
-// +--*  ARR_BOUNDS_CHECK_Rng void
+// +--*  BOUNDS_CHECK_Rng void
 // |  +--*  LCL_VAR   int    V03 loc2
 // |  \--*  ARR_LENGTH int
 // |     \--*  LCL_VAR   ref    V00 arg0
@@ -2217,7 +2209,7 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
         return false;
     }
     GenTree* before = tree->gtGetOp1();
-    if (before->gtOper != GT_ARR_BOUNDS_CHECK)
+    if (!before->OperIs(GT_BOUNDS_CHECK))
     {
         return false;
     }
@@ -2622,6 +2614,7 @@ PhaseStatus Compiler::optCloneLoops()
     {
         JITDUMP("Recompute reachability and dominators after loop cloning\n");
         constexpr bool computePreds = false;
+        // TODO: recompute the loop table, to include the slow loop path in the table?
         fgUpdateChangedFlowGraph(computePreds);
     }
 

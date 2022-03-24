@@ -15,11 +15,10 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'test'
+.assembly 'huge_objref'
 {
 }
 .assembly extern xunit.core {}
-.module 'test.exe'
 .namespace JitTest
 {
   .class private auto ansi sealed TestClass extends [mscorlib]System.Object

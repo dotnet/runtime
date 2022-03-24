@@ -20,14 +20,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="TOptions">The type of options.</typeparam>
         /// <param name="optionsBuilder">The <see cref="OptionsBuilder{TOptions}"/> to configure options instance.</param>
         /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that additional calls can be chained.</returns>
-        public static OptionsBuilder<TOptions> ValidateOnStart<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions>(this OptionsBuilder<TOptions> optionsBuilder)
+        public static OptionsBuilder<TOptions> ValidateOnStart<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions>(this OptionsBuilder<TOptions> optionsBuilder!!)
             where TOptions : class
         {
-            if (optionsBuilder == null)
-            {
-                throw new ArgumentNullException(nameof(optionsBuilder));
-            }
-
             optionsBuilder.Services.AddHostedService<ValidationHostedService>();
             optionsBuilder.Services.AddOptions<ValidatorOptions>()
                 .Configure<IOptionsMonitor<TOptions>>((vo, options) =>

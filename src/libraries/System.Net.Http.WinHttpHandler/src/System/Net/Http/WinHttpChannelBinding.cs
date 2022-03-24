@@ -18,14 +18,13 @@ namespace System.Net.Http
 
         internal WinHttpChannelBinding(SafeWinHttpHandle requestHandle)
         {
-            IntPtr data = IntPtr.Zero;
             uint dataSize = 0;
 
             if (!Interop.WinHttp.WinHttpQueryOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_SERVER_CBT, IntPtr.Zero, ref dataSize))
             {
                 if (Marshal.GetLastWin32Error() == Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER)
                 {
-                    data = Marshal.AllocHGlobal((int)dataSize);
+                    IntPtr data = Marshal.AllocHGlobal((int)dataSize);
 
                     if (Interop.WinHttp.WinHttpQueryOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_SERVER_CBT, data, ref dataSize))
                     {

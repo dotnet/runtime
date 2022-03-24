@@ -247,15 +247,19 @@ struct MonoLLVMJIT {
 			if (namestr == "___bzero") {
 				return JITSymbol{(uint64_t)(gssize)(void*)bzero, flags};
 			}
+			ERROR_DECL (error);
 			auto namebuf = namestr.c_str ();
-			auto current = mono_dl_open (NULL, 0, NULL);
+			auto current = mono_dl_open (NULL, 0, error);
+			mono_error_cleanup (error);
 			g_assert (current);
 			auto name = namebuf[0] == '_' ? namebuf + 1 : namebuf;
 			void *sym = nullptr;
-			auto err = mono_dl_symbol (current, name, &sym);
+			error_init_reuse (error);
+			sym = mono_dl_symbol (current, name, error);
 			if (!sym) {
-				outs () << "R: " << namestr << " " << err << "\n";
+				outs () << "R: " << namestr << " " << mono_error_get_message_without_fields (error) << "\n";
 			}
+			mono_error_cleanup (error);
 			assert (sym);
 			return JITSymbol{(uint64_t)(gssize)sym, flags};
 		};

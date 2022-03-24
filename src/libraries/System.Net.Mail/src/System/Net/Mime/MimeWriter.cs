@@ -19,20 +19,14 @@ namespace System.Net.Mime
         private readonly byte[] _boundaryBytes;
         private bool _writeBoundary = true;
 
-        internal MimeWriter(Stream stream, string boundary)
+        internal MimeWriter(Stream stream, string boundary!!)
             : base(stream, false) // Unnecessary, the underlying MailWriter stream already encodes dots
         {
-            if (boundary == null)
-                throw new ArgumentNullException(nameof(boundary));
-
             _boundaryBytes = Encoding.ASCII.GetBytes(boundary);
         }
 
-        internal override void WriteHeaders(NameValueCollection headers, bool allowUnicode)
+        internal override void WriteHeaders(NameValueCollection headers!!, bool allowUnicode)
         {
-            if (headers == null)
-                throw new ArgumentNullException(nameof(headers));
-
             foreach (string key in headers)
                 WriteHeader(key, headers[key]!, allowUnicode);
         }

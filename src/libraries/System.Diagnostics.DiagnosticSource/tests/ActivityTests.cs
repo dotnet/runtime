@@ -299,7 +299,6 @@ namespace System.Diagnostics.Tests
             Assert.Equal('#', activity.Id[activity.Id.Length - 1]);
         }
 
-
         /// <summary>
         /// Tests activity start and stop
         /// Checks Activity.Current correctness, Id generation
@@ -318,6 +317,51 @@ namespace System.Diagnostics.Tests
 
             activity.Stop();
             Assert.Null(Activity.Current);
+        }
+
+        /// <summary>
+        /// Tests Activity.IsStopped
+        /// </summary>
+        [Fact]
+        public void IsStoppedTest()
+        {
+            using var activity = new Activity("activity");
+            Assert.False(activity.IsStopped);
+            activity.Start();
+            Assert.False(activity.IsStopped);
+            Assert.Equal(TimeSpan.Zero, activity.Duration);
+            activity.Stop();
+            Assert.NotEqual(TimeSpan.Zero, activity.Duration);
+            Assert.True(activity.IsStopped);
+
+            using var activity1 = new Activity("activity");
+            Assert.False(activity1.IsStopped);
+            activity1.Start();
+            Assert.False(activity1.IsStopped);
+            activity1.SetEndTime(DateTime.UtcNow.AddMinutes(1)); // Setting end time shouldn't mark the activity as stopped
+            Assert.False(activity1.IsStopped);
+            activity1.Stop();
+            Assert.True(activity1.IsStopped);
+
+            //
+            // Validate when receiving Start/Stop Activity events
+            //
+
+            using ActivitySource aSource = new ActivitySource("TestActivityIsStopped");
+            using ActivityListener listener = new ActivityListener();
+
+            listener.ShouldListenTo = (activitySource) => activitySource.Name == "TestActivityIsStopped";
+            listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllData;
+            listener.ActivityStarted = a => Assert.False(a.IsStopped);
+            listener.ActivityStopped = a => Assert.True(a.IsStopped);
+            ActivitySource.AddActivityListener(listener);
+            Activity sourceActivity;
+            using (sourceActivity = aSource.StartActivity("a1"))
+            {
+                Assert.NotNull(sourceActivity);
+                Assert.False(sourceActivity.IsStopped);
+            }
+            Assert.True(sourceActivity.IsStopped);
         }
 
         /// <summary>

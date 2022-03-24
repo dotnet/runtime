@@ -186,9 +186,9 @@ NOINLINE ReflectModuleBaseObject* GetRuntimeModuleHelper(LPVOID __me, Module *pM
     if (pModule == NULL)
         return NULL;
 
-    DomainFile * pDomainFile = pModule->GetDomainFile();
+    DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
 
-    OBJECTREF refModule = (pDomainFile != NULL) ? pDomainFile->GetExposedModuleObjectIfExists() : NULL;
+    OBJECTREF refModule = (pDomainAssembly != NULL) ? pDomainAssembly->GetExposedModuleObjectIfExists() : NULL;
 
     if(refModule != NULL)
         return (ReflectModuleBaseObject*)OBJECTREFToObject(refModule);
@@ -354,7 +354,7 @@ FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle::GetAssembly, ReflectClassBaseObj
     if (refType == NULL)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
-    Module *pModule = refType->GetType().GetAssembly()->GetManifestModule();
+    Module *pModule = refType->GetType().GetAssembly()->GetModule();
     DomainAssembly *pDomainAssembly = pModule->GetDomainAssembly();
 
     FC_RETURN_ASSEMBLY_OBJECT(pDomainAssembly, refType);
@@ -807,12 +807,7 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetAttributes, ReflectClassBaseObject *pTypeUN
     TypeHandle typeHandle = refType->GetType();
 
     if (typeHandle.IsTypeDesc()) {
-
-        if (typeHandle.IsGenericVariable()) {
-            return tdPublic;
-        }
-
-        return 0;
+        return tdPublic;
     }
 
 #ifdef FEATURE_COMINTEROP
@@ -1246,7 +1241,7 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::CanCastTo, ReflectClassBaseObject *pType
         FC_RETURN_BOOL((BOOL)r);
     }
 
-    BOOL iRetVal;
+    BOOL iRetVal = FALSE;
     HELPER_METHOD_FRAME_BEGIN_RET_2(refType, refTarget);
     {
         // We allow T to be cast to Nullable<T>
@@ -1642,9 +1637,9 @@ extern "C" void * QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * 
 
     BEGIN_QCALL;
 
-    // Ensure the method is active so
-    // the function pointer can be used.
+    // Ensure the method is active and all types have been loaded so the function pointer can be used.
     pMethod->EnsureActive();
+    pMethod->PrepareForUseAsAFunctionPointer();
     funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode();
 
     END_QCALL;
@@ -2667,20 +2662,20 @@ FCIMPL1(ReflectModuleBaseObject*, AssemblyHandle::GetManifestModule, AssemblyBas
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
     DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
-    Assembly* currentAssembly = pAssembly->GetCurrentAssembly();
+    Assembly* currentAssembly = pAssembly->GetAssembly();
 
-    Module *pModule = currentAssembly->GetManifestModule();
-    DomainFile * pDomainFile = pModule->GetDomainFile();
+    Module *pModule = currentAssembly->GetModule();
+    DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
 
 #ifdef _DEBUG
     OBJECTREF orModule;
 
     HELPER_METHOD_FRAME_BEGIN_RET_1(refAssembly);
-    orModule = (pDomainFile != NULL) ? pDomainFile->GetExposedModuleObjectIfExists() : NULL;
+    orModule = (pDomainAssembly != NULL) ? pDomainAssembly->GetExposedModuleObjectIfExists() : NULL;
     if (orModule == NULL)
         orModule = pModule->GetExposedObject();
 #else
-    OBJECTREF orModule = (pDomainFile != NULL) ? pDomainFile->GetExposedModuleObjectIfExists() : NULL;
+    OBJECTREF orModule = (pDomainAssembly != NULL) ? pDomainAssembly->GetExposedModuleObjectIfExists() : NULL;
     if (orModule != NULL)
         return (ReflectModuleBaseObject*)OBJECTREFToObject(orModule);
 
@@ -2705,7 +2700,7 @@ FCIMPL1(INT32, AssemblyHandle::GetToken, AssemblyBaseObject* pAssemblyUNSAFE) {
     DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
     mdAssembly token = mdAssemblyNil;
 
-    IMDInternalImport *mdImport = pAssembly->GetCurrentAssembly()->GetManifestImport();
+    IMDInternalImport *mdImport = pAssembly->GetAssembly()->GetMDImport();
 
     if (mdImport != 0)
     {
@@ -2905,7 +2900,7 @@ FCIMPL5(ReflectMethodObject*, ModuleHandle::GetDynamicMethod, ReflectMethodObjec
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
-    DomainFile *pDomainModule = pModule->GetDomainFile();
+    DomainAssembly *pDomainModule = pModule->GetDomainAssembly();
 
     U1ARRAYREF dataArray = (U1ARRAYREF)sig;
     DWORD sigSize = dataArray->GetNumComponents();

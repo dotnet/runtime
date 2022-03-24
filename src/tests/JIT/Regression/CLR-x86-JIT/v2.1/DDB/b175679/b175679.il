@@ -13,7 +13,7 @@
   .ver 2:0:0:0
 }
 
-.assembly nan
+.assembly 'b175679'
 {
 }
 .assembly extern xunit.core {}

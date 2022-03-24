@@ -1,0 +1,17 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="../Directory.Build.props" />
+
+  <PropertyGroup>
+    <OutputPath>$(RuntimeBinDir)/build/</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="*.*" Exclude="$(MSBuildProjectFile)" />
+  </ItemGroup>
+
+  <Target Name="Build">
+    <Copy SourceFiles="@(Content)" DestinationFolder="$(OutputPath)" />
+  </Target>
+
+  <Target Name="Restore" />
+</Project>

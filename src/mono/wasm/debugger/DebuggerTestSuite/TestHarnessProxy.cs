@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,7 +36,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     })
                     .ConfigureLogging(logging =>
                     {
-                        logging.AddSimpleConsole(options => options.SingleLine = true)
+                        logging.AddSimpleConsole(options =>
+                                {
+                                    options.SingleLine = true;
+                                    options.TimestampFormat = "[HH:mm:ss] ";
+                                })
                                .AddFilter(null, LogLevel.Information);
                     })
                     .ConfigureServices((ctx, services) =>

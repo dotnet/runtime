@@ -8,7 +8,7 @@
 #include <config.h>
 #include <glib.h>
 #ifdef HOST_WIN32
-#include "mono-error.h"
+#include <mono/utils/mono-error.h>
 #include "mono-error-internals.h"
 #include "mono-rand.h"
 #include <windows.h>

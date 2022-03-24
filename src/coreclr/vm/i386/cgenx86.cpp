@@ -289,8 +289,6 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HelperMethodFrame::UpdateRegDisplay cached ip:%p, sp:%p\n", m_MachState.GetRetAddr(), m_MachState.esp()));
 
-    pRD->PCTAddr = dac_cast<TADDR>(m_MachState.pRetAddr());
-
 #ifdef FEATURE_EH_FUNCLETS
 
     pRD->IsCallerContextValid = FALSE;
@@ -306,6 +304,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
         InsureInit(false, pUnwoundState);
 
+        pRD->PCTAddr = dac_cast<TADDR>(pUnwoundState->pRetAddr());
         pRD->pCurrentContext->Eip = pRD->ControlPC = pUnwoundState->GetRetAddr();
         pRD->pCurrentContext->Esp = pRD->SP        = pUnwoundState->esp();
 
@@ -325,6 +324,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     }
 #endif // DACCESS_COMPILE
 
+    pRD->PCTAddr = dac_cast<TADDR>(m_MachState.pRetAddr());
     pRD->pCurrentContext->Eip = pRD->ControlPC = m_MachState.GetRetAddr();
     pRD->pCurrentContext->Esp = pRD->SP = (DWORD) m_MachState.esp();
 
@@ -401,6 +401,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pEbx = (DWORD*) m_MachState.pEbx();
     pRD->pEbp = (DWORD*) m_MachState.pEbp();
 
+    pRD->PCTAddr = dac_cast<TADDR>(m_MachState.pRetAddr());
     pRD->ControlPC = m_MachState.GetRetAddr();
     pRD->SP  = (DWORD) m_MachState.esp();
 
@@ -931,58 +932,6 @@ WORD GetUnpatchedCodeData(LPCBYTE pAddr)
 
 #ifndef DACCESS_COMPILE
 
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-//-------------------------------------------------------------------------
-// One-time creation of special prestub to initialize UMEntryThunks.
-//-------------------------------------------------------------------------
-Stub *GenerateUMThunkPrestub()
-{
-    CONTRACT(Stub*)
-    {
-        STANDARD_VM_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    CPUSTUBLINKER sl;
-    CPUSTUBLINKER *psl = &sl;
-
-    CodeLabel* rgRareLabels[] = { psl->NewCodeLabel(),
-                                  psl->NewCodeLabel(),
-                                  psl->NewCodeLabel()
-                                };
-
-
-    CodeLabel* rgRejoinLabels[] = { psl->NewCodeLabel(),
-                                    psl->NewCodeLabel(),
-                                    psl->NewCodeLabel()
-                                };
-
-    // emit the initial prolog
-    psl->EmitComMethodStubProlog(UMThkCallFrame::GetMethodFrameVPtr(), rgRareLabels, rgRejoinLabels, FALSE /*Don't profile*/);
-
-    // mov ecx, [esi+UMThkCallFrame.pUMEntryThunk]
-    psl->X86EmitIndexRegLoad(kECX, kESI, UMThkCallFrame::GetOffsetOfUMEntryThunk());
-
-    // The call conv is a __stdcall
-    psl->X86EmitPushReg(kECX);
-
-    // call UMEntryThunk::DoRunTimeInit
-    psl->X86EmitCall(psl->NewExternalCodeLabel((LPVOID)UMEntryThunk::DoRunTimeInit), 4);
-
-    // mov ecx, [esi+UMThkCallFrame.pUMEntryThunk]
-    psl->X86EmitIndexRegLoad(kEAX, kESI, UMThkCallFrame::GetOffsetOfUMEntryThunk());
-
-    //    lea eax, [eax + UMEntryThunk.m_code]  // point to fixedup UMEntryThunk
-    psl->X86EmitOp(0x8d, kEAX, kEAX,
-                   UMEntryThunk::GetCodeOffset() + UMEntryThunkCode::GetEntryPointOffset());
-
-    psl->EmitComMethodStubEpilog(UMThkCallFrame::GetMethodFrameVPtr(), rgRareLabels, rgRejoinLabels, FALSE /*Don't profile*/);
-
-    RETURN psl->Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
-}
-#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
-
 Stub *GenerateInitPInvokeFrameHelper()
 {
     CONTRACT(Stub*)
@@ -1235,63 +1184,6 @@ UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)
         return NULL;
     }
     return *(UMEntryThunk**)( 1 + (BYTE*)pCallback );
-}
-
-BOOL DoesSlotCallPrestub(PCODE pCode)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(pCode != NULL);
-        PRECONDITION(pCode != GetPreStubEntryPoint());
-    } CONTRACTL_END;
-
-    // x86 has the following possible sequences for prestub logic:
-    // 1. slot -> temporary entrypoint -> prestub
-    // 2. slot -> precode -> prestub
-    // 3. slot -> precode -> jumprel32 (NGEN case) -> prestub
-
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    if (MethodDescChunk::GetMethodDescFromCompactEntryPoint(pCode, TRUE) != NULL)
-    {
-        return TRUE;
-    }
-#endif // HAS_COMPACT_ENTRYPOINTS
-
-    if (!IS_ALIGNED(pCode, PRECODE_ALIGNMENT))
-    {
-        return FALSE;
-    }
-
-#ifdef HAS_FIXUP_PRECODE
-    if (*PTR_BYTE(pCode) == X86_INSTR_CALL_REL32)
-    {
-        // Note that call could have been patched to jmp in the meantime
-        pCode = rel32Decode(pCode+1);
-
-        // NGEN case
-        if (*PTR_BYTE(pCode) == X86_INSTR_JMP_REL32) {
-            pCode = rel32Decode(pCode+1);
-        }
-
-        return pCode == (TADDR)PrecodeFixupThunk;
-    }
-#endif
-
-    if (*PTR_BYTE(pCode) != X86_INSTR_MOV_EAX_IMM32 ||
-        *PTR_BYTE(pCode+5) != X86_INSTR_MOV_RM_R ||
-        *PTR_BYTE(pCode+7) != X86_INSTR_JMP_REL32)
-    {
-        return FALSE;
-    }
-    pCode = rel32Decode(pCode+8);
-
-    // NGEN case
-    if (*PTR_BYTE(pCode) == X86_INSTR_JMP_REL32) {
-        pCode = rel32Decode(pCode+1);
-    }
-
-    return pCode == GetPreStubEntryPoint();
 }
 
 #ifdef FEATURE_READYTORUN

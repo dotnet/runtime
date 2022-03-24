@@ -784,7 +784,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls GetEnumeratorElementType")]
         private TypeDesc ImportTypeDesc(Type type, MemberInfo? memberInfo, bool directReference)
         {
-            TypeDesc? typeDesc = null;
+            TypeDesc? typeDesc;
             TypeKind kind;
             Type? arrayElementType = null;
             Type? baseType = null;
@@ -1164,7 +1164,7 @@ namespace System.Xml.Serialization
             // 2) Do the same thing for the memberMapping array. Note that we need to create a new copy of MemberMapping object since the old one could still be referenced
             //    by the StructMapping of the baseclass, so updating it directly could lead to other issues.
             Dictionary<string, MemberInfo>? replaceList = null;
-            MemberInfo? replacedInfo = null;
+            MemberInfo? replacedInfo;
             foreach (KeyValuePair<string, MemberInfo> pair in memberInfos)
             {
                 if (ShouldBeReplaced(pair.Value, structMapping.TypeDesc!.Type!, out replacedInfo))
@@ -1196,12 +1196,13 @@ namespace System.Xml.Serialization
             }
         }
 
+        // The DynamicallyAccessedMemberTypes.All annotation is required here because the method
+        // tries to access private members on base types (which is normally blocked by reflection)
+        // This doesn't make the requirements worse since the only callers already have the type
+        // annotated as All anyway.
         private static bool ShouldBeReplaced(
             MemberInfo memberInfoToBeReplaced,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties
-                | DynamicallyAccessedMemberTypes.NonPublicProperties
-                | DynamicallyAccessedMemberTypes.PublicFields
-                | DynamicallyAccessedMemberTypes.NonPublicFields)] Type derivedType,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type derivedType,
             out MemberInfo replacedInfo)
         {
             replacedInfo = memberInfoToBeReplaced;

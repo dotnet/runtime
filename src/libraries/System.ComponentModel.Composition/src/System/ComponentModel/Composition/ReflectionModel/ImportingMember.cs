@@ -16,14 +16,9 @@ namespace System.ComponentModel.Composition.ReflectionModel
     {
         private readonly ReflectionWritableMember _member;
 
-        public ImportingMember(ContractBasedImportDefinition definition, ReflectionWritableMember member, ImportType importType)
+        public ImportingMember(ContractBasedImportDefinition definition, ReflectionWritableMember member!!, ImportType importType)
             : base(definition, importType)
         {
-            if (member == null)
-            {
-                throw new ArgumentNullException(nameof(member));
-            }
-
             _member = member;
         }
 
@@ -105,13 +100,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        private void SetCollectionMemberValue(object? instance, IEnumerable values)
+        private void SetCollectionMemberValue(object? instance, IEnumerable values!!)
         {
-            if (values == null)
-            {
-                throw new ArgumentNullException(nameof(values));
-            }
-
             ICollection<object>? collection = null;
             Type? itemType = CollectionServices.GetCollectionElementType(ImportType.ActualType);
             if (itemType != null)
@@ -123,13 +113,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
             PopulateCollection(collection!, values);
         }
 
-        private ICollection<object> GetNormalizedCollection(Type itemType, object? instance)
+        private ICollection<object> GetNormalizedCollection(Type itemType!!, object? instance)
         {
-            if (itemType == null)
-            {
-                throw new ArgumentNullException(nameof(itemType));
-            }
-
             object? collectionObject = null;
 
             if (_member.CanRead)
@@ -219,18 +204,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        private void PopulateCollection(ICollection<object?> collection, IEnumerable values)
+        private void PopulateCollection(ICollection<object?> collection!!, IEnumerable values!!)
         {
-            if (collection == null)
-            {
-                throw new ArgumentNullException(nameof(collection));
-            }
-
-            if (values == null)
-            {
-                throw new ArgumentNullException(nameof(values));
-            }
-
             try
             {
                 collection.Clear();

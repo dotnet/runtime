@@ -16,7 +16,6 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -50,7 +49,7 @@ namespace System
         NotApplicable = 4
     }
 
-    public static class GC
+    public static partial class GC
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void GetMemoryInfo(GCMemoryInfoData data, int kind);
@@ -78,11 +77,11 @@ namespace System
             return new GCMemoryInfo(data);
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_StartNoGCRegion")]
-        internal static extern int _StartNoGCRegion(long totalSize, bool lohSizeKnown, long lohSize, bool disallowFullBlockingGC);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_StartNoGCRegion")]
+        internal static partial int _StartNoGCRegion(long totalSize, [MarshalAs(UnmanagedType.Bool)] bool lohSizeKnown, long lohSize, [MarshalAs(UnmanagedType.Bool)] bool disallowFullBlockingGC);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EndNoGCRegion")]
-        internal static extern int _EndNoGCRegion();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EndNoGCRegion")]
+        internal static partial int _EndNoGCRegion();
 
         // keep in sync with GC_ALLOC_FLAGS in gcinterface.h
         internal enum GC_ALLOC_FLAGS
@@ -98,11 +97,11 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int GetGenerationWR(IntPtr handle);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalMemory")]
-        private static extern long GetTotalMemory();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalMemory")]
+        private static partial long GetTotalMemory();
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_Collect")]
-        private static extern void _Collect(int generation, int mode);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_Collect")]
+        private static partial void _Collect(int generation, int mode);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int GetMaxGeneration();
@@ -119,11 +118,11 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern ulong GetGenerationSize(int gen);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_AddMemoryPressure")]
-        private static extern void _AddMemoryPressure(ulong bytesAllocated);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_AddMemoryPressure")]
+        private static partial void _AddMemoryPressure(ulong bytesAllocated);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RemoveMemoryPressure")]
-        private static extern void _RemoveMemoryPressure(ulong bytesAllocated);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RemoveMemoryPressure")]
+        private static partial void _RemoveMemoryPressure(ulong bytesAllocated);
 
         public static void AddMemoryPressure(long bytesAllocated)
         {
@@ -289,8 +288,8 @@ namespace System
         //
         public static int MaxGeneration => GetMaxGeneration();
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForPendingFinalizers")]
-        private static extern void _WaitForPendingFinalizers();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForPendingFinalizers")]
+        private static partial void _WaitForPendingFinalizers();
 
         public static void WaitForPendingFinalizers()
         {
@@ -303,10 +302,8 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void _SuppressFinalize(object o);
 
-        public static void SuppressFinalize(object obj)
+        public static void SuppressFinalize(object obj!!)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
             _SuppressFinalize(obj);
         }
 
@@ -317,10 +314,8 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void _ReRegisterForFinalize(object o);
 
-        public static void ReRegisterForFinalize(object obj)
+        public static void ReRegisterForFinalize(object obj!!)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
             _ReRegisterForFinalize(obj);
         }
 
@@ -352,11 +347,11 @@ namespace System
             return newSize;
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RegisterFrozenSegment")]
-        private static extern IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, nint sectionSize);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RegisterFrozenSegment")]
+        private static partial IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, nint sectionSize);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_UnregisterFrozenSegment")]
-        private static extern void _UnregisterFrozenSegment(IntPtr segmentHandle);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_UnregisterFrozenSegment")]
+        private static partial void _UnregisterFrozenSegment(IntPtr segmentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern long GetAllocatedBytesForCurrentThread();
@@ -460,19 +455,19 @@ namespace System
         {
             if (totalSize <= 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(totalSize), "totalSize can't be zero or negative");
+                throw new ArgumentOutOfRangeException(nameof(totalSize), SR.ArgumentOutOfRange_MustBePositive);
             }
 
             if (hasLohSize)
             {
                 if (lohSize <= 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(lohSize), "lohSize can't be zero or negative");
+                    throw new ArgumentOutOfRangeException(nameof(lohSize), SR.ArgumentOutOfRange_MustBePositive);
                 }
 
                 if (lohSize > totalSize)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(lohSize), "lohSize can't be greater than totalSize");
+                    throw new ArgumentOutOfRangeException(nameof(lohSize), SR.ArgumentOutOfRange_NoGCLohSizeGreaterTotalSize);
                 }
             }
 
@@ -482,10 +477,9 @@ namespace System
                 case StartNoGCRegionStatus.NotEnoughMemory:
                     return false;
                 case StartNoGCRegionStatus.AlreadyInProgress:
-                    throw new InvalidOperationException("The NoGCRegion mode was already in progress");
+                    throw new InvalidOperationException(SR.InvalidOperationException_AlreadyInNoGCRegion);
                 case StartNoGCRegionStatus.AmountTooLarge:
-                    throw new ArgumentOutOfRangeException(nameof(totalSize),
-                        "totalSize is too large. For more information about setting the maximum size, see \"Latency Modes\" in https://go.microsoft.com/fwlink/?LinkId=522706");
+                    throw new ArgumentOutOfRangeException(nameof(totalSize), SR.ArgumentOutOfRangeException_NoGCRegionSizeTooLarge);
             }
 
             Debug.Assert(status == StartNoGCRegionStatus.Succeeded);
@@ -516,11 +510,11 @@ namespace System
         {
             EndNoGCRegionStatus status = (EndNoGCRegionStatus)_EndNoGCRegion();
             if (status == EndNoGCRegionStatus.NotInProgress)
-                throw new InvalidOperationException("NoGCRegion mode must be set");
+                throw new InvalidOperationException(SR.InvalidOperationException_NoGCRegionNotInProgress);
             else if (status == EndNoGCRegionStatus.GCInduced)
-                throw new InvalidOperationException("Garbage collection was induced in NoGCRegion mode");
+                throw new InvalidOperationException(SR.InvalidOperationException_NoGCRegionInduced);
             else if (status == EndNoGCRegionStatus.AllocationExceeded)
-                throw new InvalidOperationException("Allocated memory exceeds specified memory for NoGCRegion mode");
+                throw new InvalidOperationException(SR.InvalidOperationException_NoGCRegionAllocationExceeded);
         }
 
         private readonly struct MemoryLoadChangeNotification
@@ -610,10 +604,7 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(lowMemoryPercent));
             }
-            if (notification == null)
-            {
-                throw new ArgumentNullException(nameof(notification));
-            }
+            ArgumentNullException.ThrowIfNull(notification);
 
             lock (s_notifications)
             {
@@ -626,13 +617,8 @@ namespace System
             }
         }
 
-        internal static void UnregisterMemoryLoadChangeNotification(Action notification)
+        internal static void UnregisterMemoryLoadChangeNotification(Action notification!!)
         {
-            if (notification == null)
-            {
-                throw new ArgumentNullException(nameof(notification));
-            }
-
             lock (s_notifications)
             {
                 for (int i = 0; i < s_notifications.Count; ++i)

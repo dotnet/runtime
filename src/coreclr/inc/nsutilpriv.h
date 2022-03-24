@@ -96,17 +96,17 @@ void SplitInline(
 static
 int SplitPath(                          // true ok, false trunction.
     const WCHAR *szPath,                // Path to split.
-    __out_ecount_opt (cchNameSpace) WCHAR *szNameSpace,           // Output for namespace value.
+    _Out_writes_opt_ (cchNameSpace) WCHAR *szNameSpace,           // Output for namespace value.
     int         cchNameSpace,           // Max chars for output.
-    __out_ecount_opt (cchName) WCHAR       *szName,                // Output for name.
+    _Out_writes_opt_ (cchName) WCHAR       *szName,                // Output for name.
     int         cchName);               // Max chars for output.
 
 static
 int SplitPath(                          // true ok, false trunction.
     LPCUTF8     szPath,                 // Path to split.
-    __out_ecount_opt (cchNameSpace) LPUTF8 szNameSpace,            // Output for namespace value.
+    _Out_writes_opt_ (cchNameSpace) LPUTF8 szNameSpace,            // Output for namespace value.
     int         cchNameSpace,           // Max chars for output.
-    __out_ecount_opt (cchName) LPUTF8      szName,                 // Output for name.
+    _Out_writes_opt_ (cchName) LPUTF8      szName,                 // Output for name.
     int         cchName);               // Max chars for output.
 
 
@@ -116,21 +116,21 @@ int SplitPath(                          // true ok, false trunction.
 //*****************************************************************************
 static
 int MakePath(                           // true ok, false truncation.
-    __out_ecount(cchChars) WCHAR       *szOut,                 // output path for name.
+    _Out_writes_(cchChars) WCHAR       *szOut,                 // output path for name.
     int         cchChars,               // max chars for output path.
     const WCHAR *szNameSpace,           // Namespace.
     const WCHAR *szName);               // Name.
 
 static
 int MakePath(                           // true ok, false truncation.
-    __out_ecount(cchChars) LPUTF8      szOut,                  // output path for name.
+    _Out_writes_(cchChars) LPUTF8      szOut,                  // output path for name.
     int         cchChars,               // max chars for output path.
     LPCUTF8     szNameSpace,            // Namespace.
     LPCUTF8     szName);                // Name.
 
 static
 int MakePath(                           // true ok, false truncation.
-    __out_ecount(cchChars) WCHAR       *szOut,                 // output path for name.
+    _Out_writes_(cchChars) WCHAR       *szOut,                 // output path for name.
     int         cchChars,               // max chars for output path.
     LPCUTF8     szNameSpace,            // Namespace.
     LPCUTF8     szName);                // Name.
@@ -170,7 +170,7 @@ bool MakeAssemblyQualifiedName(                                  // true if ok, 
 
 static
 bool MakeAssemblyQualifiedName(                                        // true ok, false truncation
-                               __out_ecount (dwBuffer) WCHAR* pBuffer, // Buffer to receive the results
+                               _Out_writes_ (dwBuffer) WCHAR* pBuffer, // Buffer to receive the results
                                int    dwBuffer,                        // Number of characters total in buffer
                                const WCHAR *szTypeName,                // Namespace for name.
                                int   dwTypeName,                       // Number of characters (not including null)
@@ -185,7 +185,7 @@ int MakeNestedTypeName(                 // true ok, false out of memory
 
 static
 int MakeNestedTypeName(                 // true ok, false truncation.
-    __out_ecount (cchChars) LPUTF8      szOut,                  // output path for name.
+    _Out_writes_ (cchChars) LPUTF8      szOut,                  // output path for name.
     int         cchChars,               // max chars for output path.
     LPCUTF8     szEnclosingName,        // Full name for enclosing type
     LPCUTF8     szNestedName);          // Full name for nested type

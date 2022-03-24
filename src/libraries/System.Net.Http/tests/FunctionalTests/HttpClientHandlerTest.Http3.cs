@@ -1349,7 +1349,9 @@ namespace System.Net.Http.Functional.Tests
             new TheoryData<string>
             {
                 { "https://cloudflare-quic.com/" }, // Cloudflare with content
-                { "https://pgjones.dev/" }, // aioquic with content
+                // This endpoint is consistently failing.
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/63009")]
+                //{ "https://pgjones.dev/" }, // aioquic with content
             };
     }
 

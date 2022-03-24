@@ -26,6 +26,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Android, "Expected behavior is different on Android")]
         public void IPGlobalProperties_AccessAllMethods_NoErrors()
         {
             IPGlobalProperties gp = IPGlobalProperties.GetIPGlobalProperties();
@@ -49,8 +50,71 @@ namespace System.Net.NetworkInformation.Tests
             Assert.NotNull(gp.GetUdpIPv6Statistics());
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Android)]
+        public void IPGlobalProperties_AccessAllMethods_NoErrors_Android()
+        {
+            IPGlobalProperties gp = IPGlobalProperties.GetIPGlobalProperties();
+
+            Assert.NotNull(gp.GetIPv4GlobalStatistics());
+            Assert.NotNull(gp.GetIPv6GlobalStatistics());
+
+            Assert.Throws<PlatformNotSupportedException>(() => gp.GetActiveTcpConnections());
+            Assert.Throws<PlatformNotSupportedException>(() => gp.GetActiveTcpListeners());
+            Assert.Throws<PlatformNotSupportedException>(() => gp.GetActiveUdpListeners());
+            Assert.Throws<PlatformNotSupportedException>(() => gp.GetIcmpV4Statistics());
+            Assert.Throws<PlatformNotSupportedException>(() => gp.GetIcmpV6Statistics());
+            Assert.Throws<PlatformNotSupportedException>(() => gp.GetTcpIPv4Statistics());
+            Assert.Throws<PlatformNotSupportedException>(() => gp.GetTcpIPv6Statistics());
+            Assert.Throws<PlatformNotSupportedException>(() => gp.GetUdpIPv4Statistics());
+            Assert.Throws<PlatformNotSupportedException>(() => gp.GetUdpIPv6Statistics());
+        }
+
+        [Theory]
+        [InlineData(4)]
+        [InlineData(6)]
+        [PlatformSpecific(TestPlatforms.Android)]
+        public void IPGlobalProperties_IPv4_IPv6_NoErrors_Android(int ipVersion)
+        {
+            IPGlobalProperties gp = IPGlobalProperties.GetIPGlobalProperties();
+            IPGlobalStatistics statistics = ipVersion switch {
+                4 => gp.GetIPv4GlobalStatistics(),
+                6 => gp.GetIPv6GlobalStatistics(),
+                _ => throw new ArgumentOutOfRangeException()
+            };
+
+            _log.WriteLine($"- IPv{ipVersion} statistics: -");
+            _log.WriteLine($"Number of interfaces: {statistics.NumberOfInterfaces}");
+            _log.WriteLine($"Number of IP addresses: {statistics.NumberOfIPAddresses}");
+
+            Assert.InRange(statistics.NumberOfInterfaces, 1, int.MaxValue);
+            Assert.InRange(statistics.NumberOfIPAddresses, 1, int.MaxValue);
+
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.DefaultTtl);
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.ForwardingEnabled);
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.OutputPacketRequests);
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.OutputPacketRoutingDiscards);
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.OutputPacketsDiscarded);
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.OutputPacketsWithNoRoute);
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.PacketFragmentFailures);
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.PacketReassembliesRequired);
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.PacketReassemblyFailures);
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.PacketReassemblyTimeout);
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.PacketsFragmented);
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.PacketsReassembled);
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.ReceivedPackets);
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.ReceivedPacketsDelivered);
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.ReceivedPacketsDiscarded);
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.ReceivedPacketsForwarded);
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.ReceivedPacketsWithAddressErrors);
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.ReceivedPacketsWithHeadersErrors);
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.ReceivedPacketsWithUnknownProtocol);
+            Assert.Throws<PlatformNotSupportedException>(() => statistics.NumberOfRoutes);
+        }
+
         [Theory]
         [MemberData(nameof(Loopbacks))]
+        [SkipOnPlatform(TestPlatforms.Android, "Unsupported on Android")]
         public void IPGlobalProperties_TcpListeners_Succeed(IPAddress address)
         {
             using (var server = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
@@ -76,7 +140,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS))]
+        [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android))]
         [MemberData(nameof(Loopbacks))]
         public async Task IPGlobalProperties_TcpActiveConnections_Succeed(IPAddress address)
         {
@@ -107,6 +171,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Android, "Unsupported on Android")]
         public void IPGlobalProperties_TcpActiveConnections_NotListening()
         {
             TcpConnectionInformation[] tcpCconnections = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections();
@@ -117,7 +182,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50567", TestPlatforms.Android)]
         public async Task GetUnicastAddresses_NotEmpty()
         {
             IPGlobalProperties props = IPGlobalProperties.GetIPGlobalProperties();

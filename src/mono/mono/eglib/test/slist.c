@@ -21,7 +21,7 @@ test_slist_nth (void)
 	nth = g_slist_nth (list, 1);
 	if (nth->data != bar)
 		return FAILED ("nth failed. #1");
-	
+
 	nth = g_slist_nth (list, 2);
 	if (nth->data != baz)
 		return FAILED ("nth failed. #2");
@@ -53,7 +53,7 @@ test_slist_index (void)
 	i = g_slist_index (list, bar);
 	if (i != 1)
 		return FAILED ("index failed. #1: %d", i);
-	
+
 	i = g_slist_index (list, baz);
 	if (i != 2)
 		return FAILED ("index failed. #2: %d", i);
@@ -102,7 +102,7 @@ test_slist_find (void)
 	GSList *list = g_slist_prepend (NULL, (char*)"three");
 	GSList *found;
 	char *data;
-		
+
 	list = g_slist_prepend (list, (char*)"two");
 	list = g_slist_prepend (list, (char*)"one");
 
@@ -131,18 +131,18 @@ test_slist_find_custom (void)
 	char *foo = (char*)"foo";
 	char *bar = (char*)"bar";
 	char *baz = (char*)"baz";
-	
+
 	list = g_slist_prepend (list, baz);
 	list = g_slist_prepend (list, bar);
 	list = g_slist_prepend (list, foo);
-	
+
 	found = g_slist_find_custom (list, baz, find_custom);
-	
+
 	if (found == NULL)
 		return FAILED ("Find failed");
-	
+
 	g_slist_free (list);
-	
+
 	return OK;
 }
 
@@ -175,7 +175,7 @@ test_slist_remove_link (void)
 	GSList *list = foo;
 
 	foo = g_slist_concat (foo, bar);
-	foo = g_slist_concat (foo, baz);	
+	foo = g_slist_concat (foo, baz);
 
 	list = g_slist_remove_link (list, bar);
 
@@ -185,7 +185,7 @@ test_slist_remove_link (void)
 	if (bar->next != NULL)
 		return FAILED ("remove_link failed #2");
 
-	g_slist_free (list);	
+	g_slist_free (list);
 	g_slist_free (bar);
 
 	return OK;
@@ -224,7 +224,7 @@ test_slist_insert_sorted (void)
 	if (strcmp ("aaaa", g_slist_last (list)->data))
 		return FAILED ("insert_sorted failed #3");
 
-	g_slist_free (list);	
+	g_slist_free (list);
 	return OK;
 }
 

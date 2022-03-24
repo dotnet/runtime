@@ -206,6 +206,7 @@ Crst ExecutableAllocatorLock
 End
 
 Crst ExecuteManRangeLock
+    AcquiredAfter NativeImageEagerFixups
 End
 
 Crst FCall

@@ -11,10 +11,6 @@ using BCRYPT_RSAKEY_BLOB = Interop.BCrypt.BCRYPT_RSAKEY_BLOB;
 
 namespace System.Security.Cryptography
 {
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-    internal static partial class RSAImplementation
-    {
-#endif
     public sealed partial class RSACng : RSA
     {
         /// <summary>
@@ -195,11 +191,8 @@ namespace System.Security.Cryptography
 
             public override byte[] ExportEncryptedPkcs8PrivateKey(
                 ReadOnlySpan<byte> passwordBytes,
-                PbeParameters pbeParameters)
+                PbeParameters pbeParameters!!)
             {
-                if (pbeParameters == null)
-                    throw new ArgumentNullException(nameof(pbeParameters));
-
                 return CngPkcs8.ExportEncryptedPkcs8PrivateKey(
                     this,
                     passwordBytes,
@@ -208,13 +201,8 @@ namespace System.Security.Cryptography
 
             public override byte[] ExportEncryptedPkcs8PrivateKey(
                 ReadOnlySpan<char> password,
-                PbeParameters pbeParameters)
+                PbeParameters pbeParameters!!)
             {
-                if (pbeParameters == null)
-                {
-                    throw new ArgumentNullException(nameof(pbeParameters));
-                }
-
                 PasswordBasedEncryption.ValidatePbeParameters(
                     pbeParameters,
                     password,
@@ -233,13 +221,10 @@ namespace System.Security.Cryptography
 
             public override bool TryExportEncryptedPkcs8PrivateKey(
                 ReadOnlySpan<byte> passwordBytes,
-                PbeParameters pbeParameters,
+                PbeParameters pbeParameters!!,
                 Span<byte> destination,
                 out int bytesWritten)
             {
-                if (pbeParameters == null)
-                    throw new ArgumentNullException(nameof(pbeParameters));
-
                 PasswordBasedEncryption.ValidatePbeParameters(
                     pbeParameters,
                     ReadOnlySpan<char>.Empty,
@@ -255,13 +240,10 @@ namespace System.Security.Cryptography
 
             public override bool TryExportEncryptedPkcs8PrivateKey(
                 ReadOnlySpan<char> password,
-                PbeParameters pbeParameters,
+                PbeParameters pbeParameters!!,
                 Span<byte> destination,
                 out int bytesWritten)
             {
-                if (pbeParameters == null)
-                    throw new ArgumentNullException(nameof(pbeParameters));
-
                 PasswordBasedEncryption.ValidatePbeParameters(
                     pbeParameters,
                     password,
@@ -372,7 +354,4 @@ namespace System.Security.Cryptography
             }
         }
     }
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-    }
-#endif
 }

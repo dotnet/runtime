@@ -108,15 +108,11 @@ namespace System.Security.AccessControl
         // Marshal the ACE header into the given array starting at the given offset
         //
 
-        internal void MarshalHeader(byte[] binaryForm, int offset)
+        internal void MarshalHeader(byte[] binaryForm!!, int offset)
         {
             int Length = BinaryLength; // Invokes the most derived property
 
-            if (binaryForm == null)
-            {
-                throw new ArgumentNullException(nameof(binaryForm));
-            }
-            else if (offset < 0)
+            if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(offset),
@@ -241,13 +237,9 @@ namespace System.Security.AccessControl
         // Sanity-check the ACE header (used by the unmarshaling logic)
         //
 
-        internal static void VerifyHeader(byte[] binaryForm, int offset)
+        internal static void VerifyHeader(byte[] binaryForm!!, int offset)
         {
-            if (binaryForm == null)
-            {
-                throw new ArgumentNullException(nameof(binaryForm));
-            }
-            else if (offset < 0)
+            if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(offset),
@@ -660,14 +652,9 @@ namespace System.Security.AccessControl
 
         #region Constructors
 
-        internal KnownAce(AceType type, AceFlags flags, int accessMask, SecurityIdentifier securityIdentifier)
+        internal KnownAce(AceType type, AceFlags flags, int accessMask, SecurityIdentifier securityIdentifier!!)
             : base(type, flags)
         {
-            if (securityIdentifier == null)
-            {
-                throw new ArgumentNullException(nameof(securityIdentifier));
-            }
-
             //
             // The values are set by invoking the properties.
             //

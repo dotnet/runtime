@@ -33,11 +33,7 @@ typedef BitVec          EXPSET_TP;
 typedef BitVec_ValArg_T EXPSET_VALARG_TP;
 typedef BitVec_ValRet_T EXPSET_VALRET_TP;
 
-#if LARGE_EXPSET
 #define EXPSET_SZ 64
-#else
-#define EXPSET_SZ 32
-#endif
 
 typedef BitVec          ASSERT_TP;
 typedef BitVec_ValArg_T ASSERT_VALARG_TP;
@@ -552,13 +548,16 @@ enum BasicBlockFlags : unsigned __int64
     BBF_PATCHPOINT           = MAKE_BBFLAG(36), // Block is a patchpoint
     BBF_HAS_CLASS_PROFILE    = MAKE_BBFLAG(37), // BB contains a call needing a class profile
     BBF_PARTIAL_COMPILATION_PATCHPOINT  = MAKE_BBFLAG(38), // Block is a partial compilation patchpoint
-    BBF_HAS_ALIGN          = MAKE_BBFLAG(39), // BB ends with 'align' instruction
+    BBF_HAS_ALIGN            = MAKE_BBFLAG(39), // BB ends with 'align' instruction
+    BBF_TAILCALL_SUCCESSOR   = MAKE_BBFLAG(40), // BB has pred that has potential tail call
+
+    BBF_BACKWARD_JUMP_SOURCE = MAKE_BBFLAG(41), // Block is a source of a backward jump
 
     // The following are sets of flags.
 
     // Flags that relate blocks to loop structure.
 
-    BBF_LOOP_FLAGS = BBF_LOOP_PREHEADER | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1,
+    BBF_LOOP_FLAGS = BBF_LOOP_PREHEADER | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_LOOP_ALIGN,
 
     // Flags to update when two blocks are compacted
 
@@ -828,6 +827,17 @@ struct BasicBlock : private LIR::Range
         BBswtDesc*  bbJumpSwt;  // switch descriptor
     };
 
+    bool KindIs(BBjumpKinds kind) const
+    {
+        return bbJumpKind == kind;
+    }
+
+    template <typename... T>
+    bool KindIs(BBjumpKinds kind, T... rest) const
+    {
+        return KindIs(kind) || KindIs(rest...);
+    }
+
     // NumSucc() gives the number of successors, and GetSucc() returns a given numbered successor.
     //
     // There are two versions of these functions: ones that take a Compiler* and ones that don't. You must
@@ -1000,6 +1010,16 @@ struct BasicBlock : private LIR::Range
         bbHndIndex = from->bbHndIndex;
     }
 
+    void copyTryIndex(const BasicBlock* from)
+    {
+        bbTryIndex = from->bbTryIndex;
+    }
+
+    void copyHndIndex(const BasicBlock* from)
+    {
+        bbHndIndex = from->bbHndIndex;
+    }
+
     static bool sameTryRegion(const BasicBlock* blk1, const BasicBlock* blk2)
     {
         return blk1->bbTryIndex == blk2->bbTryIndex;
@@ -1146,24 +1166,18 @@ struct BasicBlock : private LIR::Range
      */
 
     union {
-        EXPSET_TP bbCseGen; // CSEs computed by block
-#if ASSERTION_PROP
+        EXPSET_TP bbCseGen;       // CSEs computed by block
         ASSERT_TP bbAssertionGen; // value assignments computed by block
-#endif
     };
 
     union {
-        EXPSET_TP bbCseIn; // CSEs available on entry
-#if ASSERTION_PROP
+        EXPSET_TP bbCseIn;       // CSEs available on entry
         ASSERT_TP bbAssertionIn; // value assignments available on entry
-#endif
     };
 
     union {
-        EXPSET_TP bbCseOut; // CSEs available on exit
-#if ASSERTION_PROP
+        EXPSET_TP bbCseOut;       // CSEs available on exit
         ASSERT_TP bbAssertionOut; // value assignments available on exit
-#endif
     };
 
     void* bbEmitCookie;
@@ -1560,6 +1574,10 @@ public:
 // BasicBlock specified with both `begin` and `end` blocks. `begin` and `end` are *inclusive*
 // and must be non-null. E.g.,
 //    for (BasicBlock* const block : BasicBlockRangeList(startBlock, endBlock)) ...
+//
+// Note that endBlock->bbNext is captured at the beginning of the iteration. Thus, any blocks
+// inserted before that will continue the iteration. In particular, inserting blocks between endBlock
+// and endBlock->bbNext will yield unexpected results, as the iteration will continue longer than desired.
 //
 class BasicBlockRangeList
 {

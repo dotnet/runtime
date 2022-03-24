@@ -59,7 +59,7 @@ namespace System.Xml
         };
 
         // Note: also used by XmlBinaryWriter
-        internal struct QName
+        internal struct QName : IEquatable<QName>
         {
             public string prefix;
             public string localname;
@@ -95,45 +95,26 @@ namespace System.Xml
                     throw new XmlException(SR.XmlBinary_NoRemapPrefix, new string[] { prefix, this.namespaceUri, namespaceUri });
             }
 
-            public override int GetHashCode()
-            {
-                return this.prefix.GetHashCode() ^ this.localname.GetHashCode();
-            }
+            public int GetNSHashCode() =>
+                HashCode.Combine(this.namespaceUri, this.localname);
 
-            public int GetNSHashCode()
-            {
-                return HashCode.Combine(this.namespaceUri, this.localname);
-            }
+            public override int GetHashCode() =>
+                this.prefix.GetHashCode() ^ this.localname.GetHashCode();
 
+            public override bool Equals([NotNullWhen(true)] object? other) =>
+                other is QName qname && Equals(qname);
 
-            public override bool Equals([NotNullWhen(true)] object? other)
-            {
-                if (other is QName that)
-                {
-                    return this == that;
-                }
-                return false;
-            }
+            public bool Equals(QName other) =>
+                prefix == other.prefix &&
+                localname == other.localname &&
+                namespaceUri == other.namespaceUri;
 
-            public override string ToString()
-            {
-                if (prefix.Length == 0)
-                    return this.localname;
-                else
-                    return $"{this.prefix}:{this.localname}";
-            }
+            public static bool operator ==(QName a, QName b) => a.Equals(b);
 
-            public static bool operator ==(QName a, QName b)
-            {
-                return ((a.prefix == b.prefix)
-                    && (a.localname == b.localname)
-                    && (a.namespaceUri == b.namespaceUri));
-            }
+            public static bool operator !=(QName a, QName b) => !a.Equals(b);
 
-            public static bool operator !=(QName a, QName b)
-            {
-                return !(a == b);
-            }
+            public override string ToString() =>
+                prefix.Length == 0 ? localname : $"{this.prefix}:{this.localname}";
         };
 
         private struct ElemInfo
@@ -674,8 +655,7 @@ namespace System.Xml
             }
             else
             {
-                if (null == name)
-                    throw new ArgumentNullException(nameof(name));
+                ArgumentNullException.ThrowIfNull(name);
                 if (null == ns)
                     ns = string.Empty;
                 int index = LocateAttribute(name, ns);
@@ -725,8 +705,7 @@ namespace System.Xml
             }
             else
             {
-                if (null == name)
-                    throw new ArgumentNullException(nameof(name));
+                ArgumentNullException.ThrowIfNull(name);
                 if (null == ns)
                     ns = string.Empty;
                 int index = LocateAttribute(name, ns);
@@ -1083,7 +1062,7 @@ namespace System.Xml
         public override bool ReadContentAsBoolean()
         {
             int origPos = _pos;
-            bool value = false;
+            bool value;
             try
             {
                 if (SetupContentAsXXX("ReadContentAsBoolean"))
@@ -2536,7 +2515,7 @@ namespace System.Xml
 
         private bool ReadInit(bool skipXmlDecl)
         {
-            string? err = null;
+            string? err;
             if (!_sniffed)
             {
                 // check magic header
@@ -2809,8 +2788,7 @@ namespace System.Xml
                     case BinXmlToken.CData:
                         // skip
                         _pos++;
-                        int pos;
-                        ScanText(out pos);
+                        ScanText(out _);
                         // try again
                         break;
                     case BinXmlToken.EndCData:

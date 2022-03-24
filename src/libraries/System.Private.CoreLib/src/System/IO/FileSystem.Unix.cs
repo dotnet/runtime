@@ -39,6 +39,7 @@ namespace System.IO
             }
         }
 
+#pragma warning disable IDE0060
         public static void Encrypt(string path)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
@@ -48,6 +49,7 @@ namespace System.IO
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
         }
+#pragma warning restore IDE0060
 
         private static void LinkOrCopyFile (string sourceFullPath, string destFullPath)
         {
@@ -106,8 +108,8 @@ namespace System.IO
             }
         }
 
-
-        public static void ReplaceFile(string sourceFullPath, string destFullPath, string? destBackupFullPath, bool ignoreMetadataErrors)
+#pragma warning disable IDE0060
+        public static void ReplaceFile(string sourceFullPath, string destFullPath, string? destBackupFullPath, bool ignoreMetadataErrors /* unused */)
         {
             // Unix rename works in more cases, we limit to what is allowed by Windows File.Replace.
             // These checks are not atomic, the file could change after a check was performed and before it is renamed.
@@ -159,8 +161,7 @@ namespace System.IO
             else
             {
                 // There is no backup file.  Just make sure the destination file exists, throwing if it doesn't.
-                Interop.Sys.FileStatus ignored;
-                if (Interop.Sys.Stat(destFullPath, out ignored) != 0)
+                if (Interop.Sys.Stat(destFullPath, out _) != 0)
                 {
                     Interop.ErrorInfo errno = Interop.Sys.GetLastErrorInfo();
                     if (errno.Error == Interop.Error.ENOENT)
@@ -173,6 +174,7 @@ namespace System.IO
             // Finally, rename the source to the destination, overwriting the destination.
             Interop.CheckIo(Interop.Sys.Rename(sourceFullPath, destFullPath));
         }
+#pragma warning restore IDE0060
 
         public static void MoveFile(string sourceFullPath, string destFullPath)
         {
@@ -388,40 +390,58 @@ namespace System.IO
             }
         }
 
-        public static void MoveDirectory(string sourceFullPath, string destFullPath)
+        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool sameDirectoryDifferentCase)
         {
-            // Windows doesn't care if you try and copy a file via "MoveDirectory"...
-            if (FileExists(sourceFullPath))
-            {
-                // ... but it doesn't like the source to have a trailing slash ...
+            ReadOnlySpan<char> srcNoDirectorySeparator = Path.TrimEndingDirectorySeparator(sourceFullPath.AsSpan());
+            ReadOnlySpan<char> destNoDirectorySeparator = Path.TrimEndingDirectorySeparator(destFullPath.AsSpan());
 
+            if (OperatingSystem.IsBrowser() && Path.EndsInDirectorySeparator(sourceFullPath) && FileExists(sourceFullPath))
+            {
                 // On Windows we end up with ERROR_INVALID_NAME, which is
                 // "The filename, directory name, or volume label syntax is incorrect."
-                //
-                // This surfaces as an IOException, if we let it go beyond here it would
-                // give DirectoryNotFound.
-
-                if (Path.EndsInDirectorySeparator(sourceFullPath))
-                    throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
-
-                // ... but it doesn't care if the destination has a trailing separator.
-                destFullPath = Path.TrimEndingDirectorySeparator(destFullPath);
+                // On Unix, rename fails with ENOTDIR, but on WASM it does not.
+                // So if the path ends with directory separator, but it's a file, we just throw.
+                throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
             }
 
-            if (FileExists(destFullPath))
+            if (!sameDirectoryDifferentCase) // This check is to allow renaming of directories
             {
-                // Some Unix distros will overwrite the destination file if it already exists.
-                // Throwing IOException to match Windows behavior.
-                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
+                if (Interop.Sys.Stat(destNoDirectorySeparator, out _) >= 0)
+                {
+                    // destination exists, but before we throw we need to check whether source exists or not
+
+                    // Windows will throw if the source file/directory doesn't exist, we preemptively check
+                    // to make sure our cross platform behavior matches .NET Framework behavior.
+                    if (Interop.Sys.Stat(srcNoDirectorySeparator, out Interop.Sys.FileStatus sourceFileStatus) < 0)
+                    {
+                        throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+                    }
+                    else if ((sourceFileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFDIR
+                        && Path.EndsInDirectorySeparator(sourceFullPath))
+                    {
+                        throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+                    }
+
+                    // Some Unix distros will overwrite the destination file if it already exists.
+                    // Throwing IOException to match Windows behavior.
+                    throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
+                }
             }
 
-            if (Interop.Sys.Rename(sourceFullPath, destFullPath) < 0)
+            if (Interop.Sys.Rename(sourceFullPath, destNoDirectorySeparator) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 switch (errorInfo.Error)
                 {
                     case Interop.Error.EACCES: // match Win32 exception
                         throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, sourceFullPath), errorInfo.RawErrno);
+                    case Interop.Error.ENOENT:
+                        throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path,
+                            Interop.Sys.Stat(srcNoDirectorySeparator, out _) >= 0
+                                ? destFullPath // the source directory exists, so destination does not. Example: Move("/tmp/existing/", "/tmp/nonExisting1/nonExisting2/")
+                                : sourceFullPath));
+                    case Interop.Error.ENOTDIR: // sourceFullPath exists and it's not a directory
+                        throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
                     default:
                         throw Interop.GetExceptionForIoErrno(errorInfo, isDirectory: true);
                 }
@@ -492,43 +512,45 @@ namespace System.IO
             if (Interop.Sys.RmDir(fullPath) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                switch (errorInfo.Error)
-                {
-                    case Interop.Error.EACCES:
-                    case Interop.Error.EPERM:
-                    case Interop.Error.EROFS:
-                    case Interop.Error.EISDIR:
-                        throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, fullPath)); // match Win32 exception
-                    case Interop.Error.ENOENT:
-                        // When we're recursing, don't throw for items that go missing.
-                        if (!topLevel)
-                        {
-                            return true;
-                        }
-                        goto default;
-                    case Interop.Error.ENOTDIR:
-                        // When the top-level path is a symlink to a directory, delete the link.
-                        // In other cases, throw because we expect path to be a real directory.
-                        if (topLevel)
-                        {
-                            if (!DirectoryExists(fullPath))
-                            {
-                                throw Interop.GetExceptionForIoErrno(Interop.Error.ENOENT.Info(), fullPath, isDirectory: true);
-                            }
 
-                            DeleteFile(fullPath);
-                            return true;
-                        }
-                        goto default;
-                    case Interop.Error.ENOTEMPTY:
-                        if (!throwWhenNotEmpty)
-                        {
-                            return false;
-                        }
-                        goto default;
-                    default:
-                        throw Interop.GetExceptionForIoErrno(errorInfo, fullPath, isDirectory: true);
+                if (errorInfo.Error == Interop.Error.ENOTEMPTY)
+                {
+                    if (!throwWhenNotEmpty)
+                    {
+                        return false;
+                    }
                 }
+                else if (errorInfo.Error == Interop.Error.ENOENT)
+                {
+                    // When we're recursing, don't throw for items that go missing.
+                    if (!topLevel)
+                    {
+                        return true;
+                    }
+                }
+                else if (DirectoryExists(fullPath, out Interop.ErrorInfo existErr))
+                {
+                    // Top-level path is a symlink to a directory, delete the link.
+                    if (topLevel && errorInfo.Error == Interop.Error.ENOTDIR)
+                    {
+                        DeleteFile(fullPath);
+                        return true;
+                    }
+                }
+                else if (existErr.Error == Interop.Error.ENOENT)
+                {
+                    // Prefer throwing DirectoryNotFoundException over other exceptions.
+                    errorInfo = existErr;
+                }
+
+                if (errorInfo.Error == Interop.Error.EACCES ||
+                    errorInfo.Error == Interop.Error.EPERM ||
+                    errorInfo.Error == Interop.Error.EROFS)
+                {
+                    throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, fullPath));
+                }
+
+                throw Interop.GetExceptionForIoErrno(errorInfo, fullPath, isDirectory: true);
             }
 
             return true;
@@ -553,58 +575,34 @@ namespace System.IO
         }
 
         public static void SetAttributes(string fullPath, FileAttributes attributes)
-        {
-            new FileInfo(fullPath, null).Attributes = attributes;
-        }
+            => default(FileStatus).SetAttributes(fullPath, attributes, asDirectory: false);
 
         public static DateTimeOffset GetCreationTime(string fullPath)
-        {
-            return new FileInfo(fullPath, null).CreationTimeUtc;
-        }
+            => default(FileStatus).GetCreationTime(fullPath).UtcDateTime;
 
         public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
-            FileSystemInfo info = asDirectory ?
-                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
-                (FileSystemInfo)new FileInfo(fullPath, null);
-
-            info.CreationTimeCore = time;
-        }
+            => default(FileStatus).SetCreationTime(fullPath, time, asDirectory);
 
         public static DateTimeOffset GetLastAccessTime(string fullPath)
-        {
-            return new FileInfo(fullPath, null).LastAccessTimeUtc;
-        }
+            => default(FileStatus).GetLastAccessTime(fullPath).UtcDateTime;
 
         public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
-            FileSystemInfo info = asDirectory ?
-                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
-                (FileSystemInfo)new FileInfo(fullPath, null);
-
-            info.LastAccessTimeCore = time;
-        }
+            => default(FileStatus).SetLastAccessTime(fullPath, time, asDirectory);
 
         public static DateTimeOffset GetLastWriteTime(string fullPath)
-        {
-            return new FileInfo(fullPath, null).LastWriteTimeUtc;
-        }
+            => default(FileStatus).GetLastWriteTime(fullPath).UtcDateTime;
 
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
-            FileSystemInfo info = asDirectory ?
-                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
-                (FileSystemInfo)new FileInfo(fullPath, null);
-
-            info.LastWriteTimeCore = time;
-        }
+            => default(FileStatus).SetLastWriteTime(fullPath, time, asDirectory);
 
         public static string[] GetLogicalDrives()
         {
             return DriveInfoInternal.GetLogicalDrives();
         }
 
+#pragma warning disable IDE0060
         internal static string? GetLinkTarget(ReadOnlySpan<char> linkPath, bool isDirectory) => Interop.Sys.ReadLink(linkPath);
+#pragma warning restore IDE0060
 
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
@@ -617,7 +615,7 @@ namespace System.IO
             ValueStringBuilder sb = new(Interop.DefaultPathBufferSize);
             sb.Append(linkPath);
 
-            string? linkTarget = GetLinkTarget(linkPath, isDirectory: false /* Irrelevant in Unix */);
+            string? linkTarget = Interop.Sys.ReadLink(linkPath);
             if (linkTarget == null)
             {
                 sb.Dispose();
@@ -650,7 +648,7 @@ namespace System.IO
                     }
 
                     GetLinkTargetFullPath(ref sb, current);
-                    current = GetLinkTarget(sb.AsSpan(), isDirectory: false);
+                    current = Interop.Sys.ReadLink(sb.AsSpan());
                     visitCount++;
                 }
             }

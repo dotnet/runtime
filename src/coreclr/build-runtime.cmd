@@ -324,6 +324,9 @@ if NOT DEFINED PYTHON (
 set __CMakeTarget=
 for /f "delims=" %%a in ("-%__RequestedBuildComponents%-") do (
     set "string=%%a"
+    if not "!string:-hosts-=!"=="!string!" (
+        set __CMakeTarget=!__CMakeTarget! hosts
+    )
     if not "!string:-jit-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! jit
     )
@@ -338,6 +341,12 @@ for /f "delims=" %%a in ("-%__RequestedBuildComponents%-") do (
     )
     if not "!string:-iltools-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! iltools
+    )
+    if not "!string:-nativeaot-=!"=="!string!" (
+        set __CMakeTarget=!__CMakeTarget! nativeaot
+    )
+    if not "!string:-spmi-=!"=="!string!" (
+        set __CMakeTarget=!__CMakeTarget! spmi
     )
 )
 if [!__CMakeTarget!] == [] (
@@ -519,13 +528,9 @@ if %__BuildNative% EQU 1 (
     if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
     if /i "%__BuildArch%" == "arm" (
         set __VCBuildArch=x86_arm
-        set ___CrossBuildDefine="-DCLR_CMAKE_CROSS_ARCH=1" "-DCLR_CMAKE_CROSS_HOST_ARCH=%__CrossArch%"
     )
     if /i "%__BuildArch%" == "arm64" (
         set __VCBuildArch=x86_arm64
-        if defined __CrossArch (
-            set ___CrossBuildDefine="-DCLR_CMAKE_CROSS_ARCH=1" "-DCLR_CMAKE_CROSS_HOST_ARCH=%__CrossArch%"
-        )
     )
 
     echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
@@ -540,7 +545,7 @@ if %__BuildNative% EQU 1 (
         set __ExtraCmakeArgs="-DCMAKE_BUILD_TYPE=!__BuildType!"
     )
 
-    set __ExtraCmakeArgs=!__ExtraCmakeArgs! !___CrossBuildDefine! "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" %__CMakeArgs%
+    set __ExtraCmakeArgs=!__ExtraCmakeArgs! "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" %__CMakeArgs%
     call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
@@ -588,23 +593,6 @@ if %__BuildNative% EQU 1 (
         goto ExitWithCode
     )
 
-    if /i "%__BuildArch%" == "arm64" goto SkipCopyUcrt
-
-    if not defined UCRTVersion (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Please install Windows 10 SDK.
-        goto ExitWithError
-    )
-
-    set "__UCRTDir=%UniversalCRTSdkDir%Redist\%UCRTVersion%\ucrt\DLLs\%__BuildArch%\"
-
-    xcopy /Y/I/E/D/F "!__UCRTDir!*.dll" "%__BinDir%\Redist\ucrt\DLLs\%__BuildArch%"
-    if not !errorlevel! == 0 (
-        set __exitCode=!errorlevel!
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to copy the Universal CRT to the artifacts directory.
-        goto ExitWithCode
-    )
-
-:SkipCopyUcrt
     if %__EnforcePgo% EQU 1 (
         set PgoCheckCmd="!PYTHON!" "!__ProjectDir!\scripts\pgocheck.py" "!__BinDir!\coreclr.dll" "!__BinDir!\clrjit.dll"
         echo !PgoCheckCmd!
@@ -739,7 +727,7 @@ echo -all: Builds all configurations and platforms.
 echo Build architecture: one of -x64, -x86, -arm, -arm64 ^(default: -x64^).
 echo Build type: one of -Debug, -Checked, -Release ^(default: -Debug^).
 echo -component ^<name^> : specify this option one or more times to limit components built to those specified.
-echo                     Allowed ^<name^>: jit alljits runtime paltests iltools
+echo                     Allowed ^<name^>: hosts jit alljits runtime paltests iltools nativeaot spmi
 echo -enforcepgo: verify after the build that PGO was used for key DLLs, and fail the build if not
 echo -pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
 echo -cmakeargs: user-settable additional arguments passed to CMake.

@@ -18,13 +18,8 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="name">The name of the ActivitySource object</param>
         /// <param name="version">The version of the component publishing the tracing info.</param>
-        public ActivitySource(string name, string? version = "")
+        public ActivitySource(string name!!, string? version = "")
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             Name = name;
             Version = version;
 
@@ -176,6 +171,7 @@ namespace System.Diagnostics
 
             Activity? activity = null;
             ActivityTagsCollection? samplerTags;
+            string? traceState;
 
             ActivitySamplingResult samplingResult = ActivitySamplingResult.None;
 
@@ -196,6 +192,8 @@ namespace System.Diagnostics
                     if (sampleUsingParentId != null)
                     {
                         ActivitySamplingResult sr = sampleUsingParentId(ref data);
+                        dataWithContext.SetTraceState(data.TraceState); // Keep the trace state in sync between data and dataWithContext
+
                         if (sr > result)
                         {
                             result = sr;
@@ -211,6 +209,8 @@ namespace System.Diagnostics
                         if (sample != null)
                         {
                             ActivitySamplingResult sr = sample(ref dataWithContext);
+                            data.SetTraceState(dataWithContext.TraceState); // Keep the trace state in sync between data and dataWithContext
+
                             if (sr > result)
                             {
                                 result = sr;
@@ -251,6 +251,7 @@ namespace System.Diagnostics
                 }
 
                 idFormat = aco.IdFormat;
+                traceState = aco.TraceState;
             }
             else
             {
@@ -278,11 +279,12 @@ namespace System.Diagnostics
 
                 samplerTags = aco.GetSamplingTags();
                 idFormat = aco.IdFormat;
+                traceState = aco.TraceState;
             }
 
             if (samplingResult != ActivitySamplingResult.None)
             {
-                activity = Activity.Create(this, name, kind, parentId, context, tags, links, startTime, samplerTags, samplingResult, startIt, idFormat);
+                activity = Activity.Create(this, name, kind, parentId, context, tags, links, startTime, samplerTags, samplingResult, startIt, idFormat, traceState);
             }
 
             return activity;
@@ -301,13 +303,8 @@ namespace System.Diagnostics
         /// Add a listener to the <see cref="Activity"/> starting and stopping events.
         /// </summary>
         /// <param name="listener"> The <see cref="ActivityListener"/> object to use for listening to the <see cref="Activity"/> events.</param>
-        public static void AddActivityListener(ActivityListener listener)
+        public static void AddActivityListener(ActivityListener listener!!)
         {
-            if (listener == null)
-            {
-                throw new ArgumentNullException(nameof(listener));
-            }
-
             if (s_allListeners.AddIfNotExist(listener))
             {
                 s_activeSources.EnumWithAction((source, obj) => {

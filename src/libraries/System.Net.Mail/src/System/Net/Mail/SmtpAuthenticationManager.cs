@@ -18,11 +18,8 @@ namespace System.Net.Mail
             Register(new SmtpLoginAuthenticationModule());
         }
 
-        internal static void Register(ISmtpAuthenticationModule module)
+        internal static void Register(ISmtpAuthenticationModule module!!)
         {
-            if (module == null)
-                throw new ArgumentNullException(nameof(module));
-
             lock (s_modules)
             {
                 s_modules.Add(module);

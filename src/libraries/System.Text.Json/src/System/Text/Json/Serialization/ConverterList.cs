@@ -11,12 +11,13 @@ namespace System.Text.Json.Serialization
     /// </summary>
     internal sealed class ConverterList : IList<JsonConverter>
     {
-        private readonly List<JsonConverter> _list = new List<JsonConverter>();
+        private readonly List<JsonConverter> _list;
         private readonly JsonSerializerOptions _options;
 
         public ConverterList(JsonSerializerOptions options)
         {
             _options = options;
+            _list = new List<JsonConverter>();
         }
 
         public ConverterList(JsonSerializerOptions options, ConverterList source)
@@ -47,13 +48,8 @@ namespace System.Text.Json.Serialization
 
         public bool IsReadOnly => false;
 
-        public void Add(JsonConverter item)
+        public void Add(JsonConverter item!!)
         {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
-
             _options.VerifyMutable();
             _list.Add(item);
         }
@@ -84,13 +80,8 @@ namespace System.Text.Json.Serialization
             return _list.IndexOf(item);
         }
 
-        public void Insert(int index, JsonConverter item)
+        public void Insert(int index, JsonConverter item!!)
         {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
-
             _options.VerifyMutable();
             _list.Insert(index, item);
         }

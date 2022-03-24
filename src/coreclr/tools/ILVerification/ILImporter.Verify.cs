@@ -1119,37 +1119,108 @@ namespace Internal.IL
                 VerificationError(VerifierError.DelegatePattern);
         }
 
-        void CheckIsDelegateAssignable(MethodDesc ftn, TypeDesc delegateType)
-        {
-            if (!IsDelegateAssignable(ftn, delegateType))
-                VerificationError(VerifierError.DelegateCtor);
-        }
-
-        bool IsDelegateAssignable(MethodDesc ftn, TypeDesc delegateType)
+        bool IsDelegateAssignable(MethodDesc targetMethod, TypeDesc delegateType, TypeDesc firstArg)
         {
             var invokeMethod = delegateType.GetMethod("Invoke", null);
             if (invokeMethod == null)
                 return false;
 
-            var ftnSignature = ftn.Signature;
-            var delegateSignature = invokeMethod.Signature;
+            var targetSignature = targetMethod.Signature;
+            var invokeSignature = invokeMethod.Signature;
 
             // Compare calling convention ignoring distinction between static and instance
-            if ((ftnSignature.Flags & ~MethodSignatureFlags.Static) != (delegateSignature.Flags & ~MethodSignatureFlags.Static))
+            if ((targetSignature.Flags & ~MethodSignatureFlags.Static) != (invokeSignature.Flags & ~MethodSignatureFlags.Static))
                 return false;
+
+            // Compare return type
+            if (!IsAssignable(targetSignature.ReturnType, invokeSignature.ReturnType))
+                return false;
+
+            int totalTargetArgs = targetSignature.Length + (targetSignature.IsStatic ? 0 : 1);
 
             // Compare signature parameters
-            if (ftnSignature.Length != delegateSignature.Length)
+
+            bool isOpenDelegate;
+            if (totalTargetArgs == invokeSignature.Length)
+            {
+                // All arguments provided by invoke, delegate must be open.
+                isOpenDelegate = true;
+            }
+            else if (totalTargetArgs == invokeSignature.Length + 1)
+            {
+                // One too few arguments provided by invoke, delegate must be closed.
+                isOpenDelegate = false;
+            }
+            else
+            {
+                return false;
+            }
+
+            // An open static delegate which takes no arguments. In that case we're done.
+            if (totalTargetArgs == 0)
+            {
+                Debug.Assert(isOpenDelegate);
+                return true;
+            }
+
+            int consumedArgs = 0;
+
+            TypeDesc firstInvokeArg;
+            if (isOpenDelegate)
+            {
+                // If we're looking at an open delegate but the caller has provided a target it's not a match.
+                if (firstArg != null)
+                    return false;
+
+                firstInvokeArg = invokeSignature[0];
+                consumedArgs++;
+            }
+            else
+            {
+                // If we're looking at a closed delegate but the caller has not provided a target it's not a match.
+                if (firstArg == null)
+                    return false;
+
+                firstInvokeArg = firstArg;
+            }
+
+            TypeDesc firstTargetArg;
+            if (targetSignature.IsStatic)
+            {
+                // Checked above
+                Debug.Assert(targetSignature.Length != 0);
+
+                // The first argument for a static method is the first fixed arg.
+                firstTargetArg = targetSignature[0];
+                consumedArgs--;
+            }
+            else
+            {
+                // The type of the first argument to an instance method is from the method type.
+                firstTargetArg = targetMethod.OwningType;
+
+                // If the delegate is open and the target method is on a value type or primitive then the first argument of the invoke
+                // method must be a reference to that type. So make the type we got from the reference to a ref. (We don't need to
+                // do this for the closed instance case because there we got the invocation side type from the first arg passed in, i.e.
+                // ref was stripped from it implicitly).
+                if (isOpenDelegate && firstTargetArg.IsValueType)
+                    firstTargetArg = firstTargetArg.MakeByRefType();
+            }
+
+            if (!IsAssignable(firstInvokeArg, firstTargetArg))
                 return false;
 
-            for (int i = 0; i < ftnSignature.Length; i++)
+            // We better have same number of remaining args
+            if (invokeSignature.Length - consumedArgs != targetSignature.Length)
+                return false;
+
+            for (int i = isOpenDelegate ? 1 : 0; i < invokeSignature.Length; i++)
             {
-                if (!IsAssignable(delegateSignature[i], ftnSignature[i]))
+                if (!IsAssignable(invokeSignature[i], targetSignature[i - consumedArgs]))
                     return false;
             }
 
-            // Compare return type
-            return IsAssignable(ftnSignature.ReturnType, delegateSignature.ReturnType);
+            return true;
         }
 
         ILOpcode GetOpcodeAt(int instructionOffset)
@@ -1525,7 +1596,8 @@ namespace Internal.IL
 
                 CheckDelegateCreation(actualFtn, actualObj);
 
-                CheckIsDelegateAssignable(actualFtn.Method, methodType);
+                if (!IsDelegateAssignable(actualFtn.Method, methodType, actualObj.Type))
+                    VerificationError(VerifierError.DelegateCtor);
             }
             else
             {
@@ -2060,7 +2132,7 @@ namespace Internal.IL
                     actualThis = StackValue.CreateByRef(actualThis.Type);
 
                 var declaredThis = owningType.IsValueType ?
-                    StackValue.CreateByRef(owningType) : StackValue.CreateObjRef(owningType);
+                    StackValue.CreateByRef(owningType, readOnly : true) : StackValue.CreateObjRef(owningType);
 
                 CheckIsAssignable(actualThis, declaredThis);
 

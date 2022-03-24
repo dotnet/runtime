@@ -101,7 +101,7 @@ mono_exception_from_name (MonoImage *image, const char *name_space,
  * \returns the initialized exception instance.
  */
 MonoException *
-mono_exception_from_name_domain (MonoDomain *domain, MonoImage *image, 
+mono_exception_from_name_domain (MonoDomain *domain, MonoImage *image,
 				 const char* name_space, const char *name)
 {
 	HANDLE_FUNCTION_ENTER ();
@@ -148,14 +148,14 @@ create_exception_two_strings (MonoClass *klass, MonoStringHandle a1, MonoStringH
 	int const count = 1 + !MONO_HANDLE_IS_NULL (a2);
 	gpointer iter;
 	MonoMethod *m;
-	
+
 	MonoObjectHandle o = mono_object_new_handle (klass, error);
 	mono_error_assert_ok (error);
 
 	iter = NULL;
 	while ((m = mono_class_get_methods (klass, &iter))) {
 		MonoMethodSignature *sig;
-		
+
 		if (strcmp (".ctor", mono_method_get_name (m)))
 			continue;
 		sig = mono_method_signature_internal (m);
@@ -862,7 +862,7 @@ MonoException *
 mono_get_exception_bad_image_format (const char *msg)
 {
 	return mono_exception_from_name_msg (mono_get_corlib (), "System", "BadImageFormatException", msg);
-}	
+}
 
 /**
  * mono_get_exception_bad_image_format2:
@@ -896,7 +896,7 @@ mono_get_exception_bad_image_format2 (const char *msg, MonoString *fname_raw)
 MonoException *
 mono_get_exception_stack_overflow (void)
 {
-	return mono_exception_from_name (mono_get_corlib (), "System", "StackOverflowException");	
+	return mono_exception_from_name (mono_get_corlib (), "System", "StackOverflowException");
 }
 
 /**
@@ -1079,7 +1079,7 @@ append_frame_and_continue (MonoMethod *method, gpointer ip, size_t native_offset
 	if (data->prefix)
 		g_string_append (data->text, data->prefix);
 	if (method) {
-		char *msg = mono_debug_print_stack_frame (method, native_offset, NULL);
+		char *msg = mono_debug_print_stack_frame (method, (uint32_t)native_offset, NULL);
 		g_string_append_printf (data->text, "%s\n", msg);
 		g_free (msg);
 	} else {
@@ -1222,7 +1222,7 @@ mono_invoke_unhandled_exception_hook (MonoObject *exc)
 		MonoObject *other = NULL;
 		MonoString *str = mono_object_try_to_string (exc, &other, inner_error);
 		char *msg = NULL;
-		
+
 		if (str && is_ok (inner_error)) {
 			msg = mono_string_to_utf8_checked_internal (str, inner_error);
 			if (!is_ok (inner_error)) {

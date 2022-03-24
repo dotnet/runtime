@@ -46,7 +46,7 @@
 //
 HRESULT
 RegMeta::GetStringHeapSize(
-    __out ULONG *pcbStringsHeapSize)    // [OUT] Size of the string heap.
+    _Out_ ULONG *pcbStringsHeapSize)    // [OUT] Size of the string heap.
 {
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -65,7 +65,7 @@ RegMeta::GetStringHeapSize(
 //
 HRESULT
 RegMeta::GetBlobHeapSize(
-    __out ULONG *pcbBlobsHeapSize)  // [OUT] Size of the blob heap.
+    _Out_ ULONG *pcbBlobsHeapSize)  // [OUT] Size of the blob heap.
 {
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -84,7 +84,7 @@ RegMeta::GetBlobHeapSize(
 //
 HRESULT
 RegMeta::GetGuidHeapSize(
-    __out ULONG *pcbGuidsHeapSize)      // [OUT] Size of the Guid heap.
+    _Out_ ULONG *pcbGuidsHeapSize)      // [OUT] Size of the Guid heap.
 {
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -103,7 +103,7 @@ RegMeta::GetGuidHeapSize(
 //
 HRESULT
 RegMeta::GetUserStringHeapSize(
-    __out ULONG *pcbUserStringsHeapSize)    // [OUT] Size of the user string heap.
+    _Out_ ULONG *pcbUserStringsHeapSize)    // [OUT] Size of the user string heap.
 {
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -152,8 +152,8 @@ Exit:
 //
 HRESULT RegMeta::GetBlob(
                 ULONG        ixBlob,        // [IN] Value from a blob column.
-    __out       ULONG       *pcbDataSize,   // [OUT] Put size of the blob here.
-    __deref_out const void **ppvData)       // [OUT] Put a pointer to the blob here.
+    _Out_       ULONG       *pcbDataSize,   // [OUT] Put size of the blob here.
+    _Outptr_ const void **ppvData)       // [OUT] Put a pointer to the blob here.
 {
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -225,8 +225,8 @@ ErrExit:
 HRESULT
 RegMeta::GetUserString(
                     ULONG        ixUserString,      // [IN] Value from a UserString column.
-    __out           ULONG       *pcbDataSize,       // [OUT] Put size of the UserString here.
-    __deref_out_opt const void **ppvData)           // [OUT] Put a pointer to the UserString here.
+    _Out_           ULONG       *pcbDataSize,       // [OUT] Put size of the UserString here.
+    _Outptr_opt_ const void **ppvData)           // [OUT] Put a pointer to the UserString here.
 {
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -259,7 +259,7 @@ Exit:
 HRESULT
 RegMeta::GetNextString(
           ULONG  ixString,        // [IN] Value from a string column.
-    __out ULONG *pixNextString)   // [OUT] Put the index of the next string here.
+    _Out_ ULONG *pixNextString)   // [OUT] Put the index of the next string here.
 {
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -307,7 +307,7 @@ Exit:
 HRESULT
 RegMeta::GetNextBlob(
           ULONG  ixBlob,        // [IN] Value from a blob column.
-    __out ULONG *pixNextBlob)   // [OUT] Put the index of the next blob here.
+    _Out_ ULONG *pixNextBlob)   // [OUT] Put the index of the next blob here.
 {
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -358,7 +358,7 @@ Exit:
 HRESULT
 RegMeta::GetNextGuid(
           ULONG  ixGuid,            // [IN] Value from a guid column.
-    __out ULONG *pixNextGuid)       // [OUT] Put the index of the next guid here.
+    _Out_ ULONG *pixNextGuid)       // [OUT] Put the index of the next guid here.
 {
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -402,7 +402,7 @@ Exit:
 HRESULT
 RegMeta::GetNextUserString(
           ULONG  ixUserString,          // [IN] Value from a UserString column.
-    __out ULONG *pixNextUserString)     // [OUT] Put the index of the next user string here.
+    _Out_ ULONG *pixNextUserString)     // [OUT] Put the index of the next user string here.
 {
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -445,7 +445,7 @@ Exit:
 //
 HRESULT
 RegMeta::GetNumTables(
-    __out ULONG *pcTables)  // [OUT] Count of tables.
+    _Out_ ULONG *pcTables)  // [OUT] Count of tables.
 {
     BEGIN_ENTRYPOINT_NOTHROW;
 
@@ -465,7 +465,7 @@ RegMeta::GetNumTables(
 HRESULT
 RegMeta::GetTableIndex(
           ULONG  token,     // [IN] Token for which to get table index.
-    __out ULONG *pixTbl)    // [OUT] Put table index here.
+    _Out_ ULONG *pixTbl)    // [OUT] Put table index here.
 {
     BEGIN_ENTRYPOINT_NOTHROW;
 

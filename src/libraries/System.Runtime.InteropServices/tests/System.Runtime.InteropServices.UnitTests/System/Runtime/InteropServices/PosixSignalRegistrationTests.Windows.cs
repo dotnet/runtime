@@ -4,6 +4,8 @@
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
+using Microsoft.DotNet.RemoteExecutor;
+using Xunit;
 
 namespace System.Tests
 {
@@ -26,5 +28,23 @@ namespace System.Tests
         }
 
         private static IEnumerable<PosixSignal> SupportedPosixSignals => new[] { PosixSignal.SIGINT, PosixSignal.SIGQUIT, PosixSignal.SIGTERM, PosixSignal.SIGHUP };
+
+        [Fact]
+        public void ExternalConsoleManipulation_RegistrationRemoved_UnregisterSucceeds()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                PosixSignalRegistration r = PosixSignalRegistration.Create(PosixSignal.SIGINT, _ => { });
+                FreeConsole();
+                AllocConsole();
+                r.Dispose(); // validate this doesn't throw even though the use of Free/AllocConsole likely removed our registration
+            }).Dispose();
+        }
+
+        [DllImport("kernel32.dll")]
+        private static extern bool FreeConsole();
+
+        [DllImport("kernel32.dll")]
+        private static extern bool AllocConsole();
     }
 }

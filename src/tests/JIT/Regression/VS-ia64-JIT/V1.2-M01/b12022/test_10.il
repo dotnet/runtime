@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly base017{}
+.assembly 'test_10'{}
 .assembly extern xunit.core {}
-.module base017.exe
 
 
   .class public sequential ansi sealed beforefieldinit base017

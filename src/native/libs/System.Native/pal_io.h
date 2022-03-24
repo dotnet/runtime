@@ -745,6 +745,13 @@ PALEXPORT int32_t SystemNative_LChflags(const char* path, uint32_t flags);
 PALEXPORT int32_t SystemNative_LChflagsCanSetHiddenFlag(void);
 
 /**
+ * Determines if the current platform supports getting UF_HIDDEN (0x8000) flag
+ *
+ * Returns true (non-zero) if supported, false (zero) if not.
+ */
+PALEXPORT int32_t SystemNative_CanGetHiddenFlag(void);
+
+/**
  * Reads the psinfo_t struct and converts into ProcessStatus.
  *
  * Returns 1 if the process status was read; otherwise, 0.

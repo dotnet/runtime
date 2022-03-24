@@ -202,6 +202,7 @@ ICALL_SIG (3, (object, ptr, ptr))		\
 ICALL_SIG (3, (object, ptr, sizet))		\
 ICALL_SIG (3, (ptr, int32, ptrref))		\
 ICALL_SIG (3, (ptr, object, ptr))		\
+ICALL_SIG (3, (ptr, object, int))		\
 ICALL_SIG (3, (ptr, ptr, int))			\
 ICALL_SIG (3, (ptr, ptr, int32))		\
 ICALL_SIG (3, (ptr, ptr, ptr))			\

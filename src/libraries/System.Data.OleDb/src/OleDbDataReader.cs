@@ -1261,7 +1261,6 @@ namespace System.Data.OleDb
             List<OleDbException>? exceptions = null;
             if (null != imultipleResults)
             {
-                object result;
                 IntPtr affected;
                 OleDbHResult hr;
 
@@ -1273,7 +1272,7 @@ namespace System.Data.OleDb
                     {
                         break;
                     }
-                    hr = imultipleResults.GetResult(ADP.PtrZero, ODB.DBRESULTFLAG_DEFAULT, ref ODB.IID_NULL, out affected, out result);
+                    hr = imultipleResults.GetResult(ADP.PtrZero, ODB.DBRESULTFLAG_DEFAULT, ref ODB.IID_NULL, out affected, out _);
 
                     // If a provider doesn't support IID_NULL and returns E_NOINTERFACE we want to break out
                     // of the loop without throwing an exception.  Our behavior will match ADODB in that scenario
@@ -1355,7 +1354,7 @@ namespace System.Data.OleDb
                     Debug.Assert(null == _irow, "NextResult: row loop check");
                     Debug.Assert(null == _irowset, "NextResult: rowset loop check");
 
-                    object? result = null;
+                    object? result;
                     OleDbHResult hr;
                     IntPtr affected;
 

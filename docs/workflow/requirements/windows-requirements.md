@@ -37,7 +37,7 @@ Visual Studio 2022 installation process:
 
 A `.vsconfig` file is included in the root of the dotnet/runtime repository that includes all components needed to build the dotnet/runtime repository. You can [import `.vsconfig` in your Visual Studio installer](https://docs.microsoft.com/en-us/visualstudio/install/import-export-installation-configurations?view=vs-2022#import-a-configuration) to install all necessary components. You may get a message saying  'Microsoft.Net.Component.4.5.2.TargetingPack has no matching workload or component found'. This is not an issue as long as you have a newer targeting pack installed.
 
-Visual Studio 2022 Preview 4 or later is required.
+Visual Studio 2022 or later is required.
 
 ## Build Tools
 

@@ -1,49 +1,12 @@
-Build CoreCLR on OS X
+Build CoreCLR on macOS
 =====================
 
-This guide will walk you through building CoreCLR on OS X. We'll start by showing how to set up your environment from scratch.
+This guide will walk you through building CoreCLR on macOS. We'll start by showing how to set up your environment from scratch.
 
 Environment
 ===========
 
-These instructions were validated on macOS 10.12. Sierra. On older versions coreFX will fail to build properly because of SSL API changes.
-
-If your machine has Command Line Tools for XCode 6.3 installed, you'll need to update them to the 6.3.1 version or higher in order to successfully build. There was an issue with the headers that shipped with version 6.3 that was subsequently fixed in 6.3.1.
-
-Git Setup
----------
-
-Clone the CoreCLR and CoreFX repositories (either upstream or a fork).
-
-```sh
-git clone https://github.com/dotnet/runtime
-# Cloning into 'runtime'...
-```
-
-CMake
------
-
-CoreCLR has a dependency on CMake for the build. You can install it with [Homebrew](https://brew.sh/).
-
-```sh
-brew install cmake
-```
-
-ICU
----
-ICU (International Components for Unicode) is also required to build and run. It can be obtained via [Homebrew](https://brew.sh/).
-
-```sh
-brew install icu4c
-```
-
-pkg-config
-----------
-pkg-config is also required to build. It can be obtained via [Homebrew](https://brew.sh/).
-
-```sh
-brew install pkg-config
-```
+Ensure you have all of the prerequisites installed from the [macOS Requirements](/docs/workflow/requirements/macos-requirements.md).
 
 Build the Runtime and System.Private.CoreLib
 ============================================

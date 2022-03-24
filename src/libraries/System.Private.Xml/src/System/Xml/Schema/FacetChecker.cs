@@ -1348,22 +1348,11 @@ namespace System.Xml.Schema
         }
     }
 
-    internal sealed class StringFacetsChecker : FacetsChecker
+    internal sealed partial class StringFacetsChecker : FacetsChecker
     { //All types derived from string & anyURI
-        private static Regex? s_languagePattern;
 
-        private static Regex LanguagePattern
-        {
-            get
-            {
-                if (s_languagePattern == null)
-                {
-                    Regex langRegex = new Regex("^([a-zA-Z]{1,8})(-[a-zA-Z0-9]{1,8})*$");
-                    Interlocked.CompareExchange(ref s_languagePattern, langRegex, null);
-                }
-                return s_languagePattern;
-            }
-        }
+        [RegexGenerator("^([a-zA-Z]{1,8})(-[a-zA-Z0-9]{1,8})*$", RegexOptions.ExplicitCapture)]
+        private static partial Regex LanguageRegex();
 
         internal override Exception? CheckValueFacets(object value, XmlSchemaDatatype datatype)
         {
@@ -1460,8 +1449,7 @@ namespace System.Xml.Schema
                 case XmlTypeCode.AnyUri:
                     if (verifyUri)
                     {
-                        Uri? uri;
-                        exception = XmlConvert.TryToUri(s, out uri);
+                        exception = XmlConvert.TryToUri(s, out _);
                     }
                     break;
 
@@ -1478,7 +1466,7 @@ namespace System.Xml.Schema
                     {
                         return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
                     }
-                    if (!LanguagePattern.IsMatch(s))
+                    if (!LanguageRegex().IsMatch(s))
                     {
                         return new XmlSchemaException(SR.Sch_InvalidLanguageId, string.Empty);
                     }
@@ -1692,14 +1680,29 @@ namespace System.Xml.Schema
 
         internal override bool MatchEnumeration(object value, ArrayList enumeration, XmlSchemaDatatype datatype)
         {
-            for (int i = 0; i < enumeration.Count; ++i)
+            Array values = (value as Array)!;
+            Datatype_List list = (datatype as Datatype_List)!;
+            Debug.Assert(list != null);
+
+            for (int j = 0; j < values.Length; ++j)
             {
-                if (datatype.Compare(value, enumeration[i]!) == 0)
+                bool found = false;
+                for (int i = 0; i < enumeration.Count; ++i)
                 {
-                    return true;
+                    Array enumValue = (enumeration[i] as Array)!;
+                    Debug.Assert(enumValue != null);
+                    if (list.ItemType.Compare(values.GetValue(j)!, enumValue.GetValue(0)!) == 0)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                {
+                    return false;
                 }
             }
-            return false;
+            return true;
         }
     }
 

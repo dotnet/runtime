@@ -18,7 +18,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'refarg_o.exe'
 // MVID: {98C433B3-3689-48CF-A0CC-1320952F1424}
 .namespace Test
 {

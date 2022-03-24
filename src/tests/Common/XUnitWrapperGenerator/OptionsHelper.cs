@@ -10,9 +10,10 @@ public static class OptionsHelper
     private const string PriorityOption = "build_property.Priority";
     private const string RuntimeFlavorOption = "build_property.RuntimeFlavor";
     private const string IsOutOfProcessTestAssemblyOption = "build_metadata.AdditionalFiles.IsOutOfProcessTestAssembly";
-    private const string TestFilterOption = "build_metadata.AdditionalFiles.TestFilter";
+    private const string TestFilterOption = "build_property.TestFilter";
     private const string TestAssemblyRelativePathOption = "build_metadata.AdditionalFiles.TestAssemblyRelativePath";
     private const string TestDisplayNameOption = "build_metadata.AdditionalFiles.TestDisplayName";
+    private const string SingleTestDisplayNameOption = "build_metadata.AdditionalFiles.SingleTestDisplayName";
 
     private static bool GetBoolOption(this AnalyzerConfigOptions options, string key)
     {
@@ -38,7 +39,9 @@ public static class OptionsHelper
 
     internal static string? TestFilter(this AnalyzerConfigOptions options) => options.TryGetValue(TestFilterOption, out string? filter) ? filter : null;
 
-    internal static string? TestAssemblyRelativePath(this AnalyzerConfigOptions options) => options.TryGetValue(TestAssemblyRelativePathOption, out string? flavor) ? flavor : null;
+    internal static string? TestAssemblyRelativePath(this AnalyzerConfigOptions options) => options.TryGetValue(TestAssemblyRelativePathOption, out string? relativePath) ? relativePath : null;
 
-    internal static string? TestDisplayName(this AnalyzerConfigOptions options) => options.TryGetValue(TestDisplayNameOption, out string? flavor) ? flavor : null;
+    internal static string? TestDisplayName(this AnalyzerConfigOptions options) => options.TryGetValue(TestDisplayNameOption, out string? displayName) ? displayName : null;
+
+    internal static string? SingleTestDisplayName(this AnalyzerConfigOptions options) => options.TryGetValue(SingleTestDisplayNameOption, out string? displayName) ? displayName : null;
 }

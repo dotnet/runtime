@@ -53,52 +53,8 @@ int32_t SystemNative_GetUnixVersion(char* version, int* capacity)
     return 0;
 }
 
-/* Returns an int representing the OS Architecture:
- 0 - x86
- 1 - x64
- 2 - ARM
- 3 - ARM64
- 4 - WASM */
+/* Returns an int representing the OS Architecture. -1 if same as process architecture. */
 int32_t SystemNative_GetOSArchitecture()
 {
-#if defined(TARGET_ARM)
-    return ARCH_ARM;
-#elif defined(TARGET_ARM64)
-    return ARCH_ARM64;
-#elif defined(TARGET_AMD64)
-    return ARCH_X64;
-#elif defined(TARGET_X86)
-    return ARCH_X86;
-#elif defined(TARGET_WASM)
-    return ARCH_WASM;
-#elif defined(TARGET_S390X)
-    return ARCH_S390X;
-#else
-#error Unidentified Architecture
-#endif
-}
-
-/* Returns an int representing the OS Architecture:
-0 - x86
-1 - x64
-2 - ARM
-3 - ARM64
-4 - WASM */
-int32_t SystemNative_GetProcessArchitecture()
-{
-#if defined(TARGET_ARM)
-    return ARCH_ARM;
-#elif defined(TARGET_ARM64)
-    return ARCH_ARM64;
-#elif defined(TARGET_AMD64)
-    return ARCH_X64;
-#elif defined(TARGET_X86)
-    return ARCH_X86;
-#elif defined(TARGET_WASM)
-    return ARCH_WASM;
-#elif defined(TARGET_S390X)
-    return ARCH_S390X;
-#else
-#error Unidentified Architecture
-#endif
+    return -1;
 }

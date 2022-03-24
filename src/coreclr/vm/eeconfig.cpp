@@ -818,7 +818,7 @@ bool EEConfig::ExcludeReadyToRun(LPCUTF8 assemblyName) const
 // Ownership of the string buffer passes to ParseMethList
 
 /* static */
-HRESULT EEConfig::ParseMethList(__in_z LPWSTR str, MethodNamesList** out) {
+HRESULT EEConfig::ParseMethList(_In_z_ LPWSTR str, MethodNamesList** out) {
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -899,7 +899,7 @@ bool EEConfig::IsInMethList(MethodNamesList* list, MethodDesc* pMD)
 
 // Ownership of the string buffer passes to ParseTypeList
 /* static */
-HRESULT EEConfig::ParseTypeList(__in_z LPWSTR str, TypeNamesList** out)
+HRESULT EEConfig::ParseTypeList(_In_z_ LPWSTR str, TypeNamesList** out)
 {
     CONTRACTL {
         NOTHROW;
@@ -980,7 +980,7 @@ bool EEConfig::RegexOrExactMatch(LPCUTF8 regex, LPCUTF8 input)
     return strcmp(regex, input) == 0;
 }
 
-HRESULT TypeNamesList::Init(__in_z LPCWSTR str)
+HRESULT TypeNamesList::Init(_In_z_ LPCWSTR str)
 {
     CONTRACTL {
         NOTHROW;

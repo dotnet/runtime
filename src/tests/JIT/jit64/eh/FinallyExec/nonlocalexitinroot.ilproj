@@ -11,6 +11,6 @@
     <Compile Include="nonlocalexitinroot.il" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Common\common.csproj" />
+    <ProjectReference Include="..\..\..\common\eh_common.csproj" />
   </ItemGroup>
 </Project>

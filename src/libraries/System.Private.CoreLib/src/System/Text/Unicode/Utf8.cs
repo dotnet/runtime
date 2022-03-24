@@ -6,10 +6,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#if SYSTEM_PRIVATE_CORELIB
-using Internal.Runtime.CompilerServices;
-#endif
-
 namespace System.Text.Unicode
 {
 #if SYSTEM_PRIVATE_CORELIB

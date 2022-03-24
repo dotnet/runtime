@@ -438,7 +438,7 @@ namespace System.IO.Packaging
             if (corePropertiesRelationship.TargetMode != TargetMode.Internal)
                 throw new FileFormatException(SR.NoExternalTargetForMetadataRelationship);
 
-            PackagePart? propertiesPart = null;
+            PackagePart? propertiesPart;
             Uri propertiesPartUri = PackUriHelper.ResolvePartUri(
                 PackUriHelper.PackageRootUri,
                 corePropertiesRelationship.TargetUri);

@@ -17,7 +17,7 @@ namespace System.Net.Security.Tests
     public class CertificateValidationRemoteServer
     {
         [OuterLoop("Uses external servers")]
-        [ConditionalTheory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls12))] // external server does not support TLS1.1 and below
         [InlineData(false)]
         [InlineData(true)]
         public async Task CertificateValidationRemoteServer_EndToEnd_Ok(bool useAsync)
@@ -73,6 +73,7 @@ namespace System.Net.Security.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls12))]
         [OuterLoop("Uses external servers")]
         [InlineData("api.nuget.org")]
+        [InlineData("www.microsoft.com.")]
         [InlineData("")]
         public async Task DefaultConnect_EndToEnd_Ok(string host)
         {

@@ -19,7 +19,7 @@ namespace System.Net.Http
     [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
-    internal sealed class Http3RequestStream : IHttpHeadersHandler, IAsyncDisposable, IDisposable
+    internal sealed class Http3RequestStream : IHttpStreamHeadersHandler, IAsyncDisposable, IDisposable
     {
         private readonly HttpRequestMessage _request;
         private Http3Connection _connection;
@@ -283,7 +283,7 @@ namespace System.Net.Http
                 if (cancellationToken.IsCancellationRequested)
                 {
                     _stream.AbortWrite((long)Http3ErrorCode.RequestCancelled);
-                    throw new OperationCanceledException(ex.Message, ex, cancellationToken);
+                    throw new TaskCanceledException(ex.Message, ex, cancellationToken);
                 }
                 else
                 {
@@ -321,6 +321,8 @@ namespace System.Net.Http
         /// </summary>
         private async Task ReadResponseAsync(CancellationToken cancellationToken)
         {
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStart();
+
             Debug.Assert(_response == null);
             do
             {
@@ -343,6 +345,8 @@ namespace System.Net.Http
             while ((int)_response.StatusCode < 200);
 
             _headerState = HeaderState.TrailingHeaders;
+
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
         }
 
         private async Task SendContentAsync(HttpContent content, CancellationToken cancellationToken)
@@ -376,12 +380,27 @@ namespace System.Net.Http
                 }
             }
 
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStart();
+
             // If we have a Content-Length, keep track of it so we don't over-send and so we can send in a single DATA frame.
             _requestContentLengthRemaining = content.Headers.ContentLength ?? -1;
 
-            using (var writeStream = new Http3WriteStream(this))
+            var writeStream = new Http3WriteStream(this);
+            try
             {
                 await content.CopyToAsync(writeStream, null, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                writeStream.Dispose();
+            }
+
+            if (_requestContentLengthRemaining > 0)
+            {
+                // The number of bytes we actually sent doesn't match the advertised Content-Length
+                long contentLength = content.Headers.ContentLength.GetValueOrDefault();
+                long sent = contentLength - _requestContentLengthRemaining;
+                throw new HttpRequestException(SR.Format(SR.net_http_request_content_length_mismatch, sent, contentLength));
             }
 
             // Set to 0 to recognize that the whole request body has been sent and therefore there's no need to abort write side in case of a premature disposal.
@@ -398,6 +417,8 @@ namespace System.Net.Http
             {
                 _stream.Shutdown();
             }
+
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(writeStream.BytesWritten);
         }
 
         private async ValueTask WriteRequestContentAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
@@ -414,8 +435,7 @@ namespace System.Net.Http
 
                 if (buffer.Length > _requestContentLengthRemaining)
                 {
-                    string msg = SR.net_http_content_write_larger_than_content_length;
-                    throw new IOException(msg, new HttpRequestException(msg));
+                    throw new HttpRequestException(SR.net_http_content_write_larger_than_content_length);
                 }
                 _requestContentLengthRemaining -= buffer.Length;
 
@@ -523,6 +543,8 @@ namespace System.Net.Http
 
         private void BufferHeaders(HttpRequestMessage request)
         {
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
+
             // Reserve space for the header frame envelope.
             // The envelope needs to be written after headers are serialized, as we need to know the payload length first.
             const int PreHeadersReserveSpace = Http3Frame.MaximumEncodedFrameEnvelopeLength;
@@ -610,19 +632,16 @@ namespace System.Net.Http
             _sendBuffer.ActiveSpan[0] = (byte)Http3FrameType.Headers;
             int actualHeadersLengthEncodedSize = VariableLengthIntegerHelper.WriteInteger(_sendBuffer.ActiveSpan.Slice(1, headersLengthEncodedSize), headersLength);
             Debug.Assert(actualHeadersLengthEncodedSize == headersLengthEncodedSize);
+
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStop();
         }
 
         // TODO: special-case Content-Type for static table values values?
         private void BufferHeaderCollection(HttpHeaders headers)
         {
-            if (headers.HeaderStore == null)
-            {
-                return;
-            }
-
             HeaderEncodingSelector<HttpRequestMessage>? encodingSelector = _connection.Pool.Settings._requestHeaderEncodingSelector;
 
-            foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
+            foreach (HeaderEntry header in headers.GetEntries())
             {
                 int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref _headerValues);
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
@@ -638,7 +657,7 @@ namespace System.Net.Http
                     // The Connection, Upgrade and ProxyConnection headers are also not supported in HTTP/3.
                     if (knownHeader != KnownHeaders.Host && knownHeader != KnownHeaders.Connection && knownHeader != KnownHeaders.Upgrade && knownHeader != KnownHeaders.ProxyConnection)
                     {
-                        if (header.Key.KnownHeader == KnownHeaders.TE)
+                        if (knownHeader == KnownHeaders.TE)
                         {
                             // HTTP/2 allows only 'trailers' TE header. rfc7540 8.1.2.2
                             // HTTP/3 does not mention this one way or another; assume it has the same rule.
@@ -852,7 +871,7 @@ namespace System.Net.Http
 
         private static ReadOnlySpan<byte> StatusHeaderNameBytes => new byte[] { (byte)'s', (byte)'t', (byte)'a', (byte)'t', (byte)'u', (byte)'s' };
 
-        void IHttpHeadersHandler.OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
+        void IHttpStreamHeadersHandler.OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
         {
             Debug.Assert(name.Length > 0);
             if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
@@ -863,16 +882,21 @@ namespace System.Net.Http
             OnHeader(staticIndex: null, descriptor, staticValue: default, literalValue: value);
         }
 
-        void IHttpHeadersHandler.OnStaticIndexedHeader(int index)
+        void IHttpStreamHeadersHandler.OnStaticIndexedHeader(int index)
         {
             GetStaticQPackHeader(index, out HeaderDescriptor descriptor, out string? knownValue);
             OnHeader(index, descriptor, knownValue, literalValue: default);
         }
 
-        void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
+        void IHttpStreamHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
         {
             GetStaticQPackHeader(index, out HeaderDescriptor descriptor, knownValue: out _);
             OnHeader(index, descriptor, staticValue: null, literalValue: value);
+        }
+
+        void IHttpStreamHeadersHandler.OnDynamicIndexedHeader(int? index, ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
+        {
+            ((IHttpStreamHeadersHandler)this).OnHeader(name, value);
         }
 
         private void GetStaticQPackHeader(int index, out HeaderDescriptor descriptor, out string? knownValue)
@@ -893,7 +917,7 @@ namespace System.Net.Http
         {
             if (descriptor.Name[0] == ':')
             {
-                if (descriptor.KnownHeader != KnownHeaders.PseudoStatus)
+                if (!descriptor.Equals(KnownHeaders.PseudoStatus))
                 {
                     if (NetEventSource.Log.IsEnabled()) Trace($"Received unknown pseudo-header '{descriptor.Name}'.");
                     throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);
@@ -1010,7 +1034,7 @@ namespace System.Net.Http
             }
         }
 
-        void IHttpHeadersHandler.OnHeadersComplete(bool endStream)
+        void IHttpStreamHeadersHandler.OnHeadersComplete(bool endStream)
         {
             Debug.Fail($"This has no use in HTTP/3 and should never be called by {nameof(QPackDecoder)}.");
         }
@@ -1337,24 +1361,28 @@ namespace System.Net.Http
 
             public override int Read(Span<byte> buffer)
             {
-                if (_stream == null)
+                Http3RequestStream? stream = _stream;
+
+                if (stream is null)
                 {
                     throw new ObjectDisposedException(nameof(Http3RequestStream));
                 }
 
                 Debug.Assert(_response != null);
-                return _stream.ReadResponseContent(_response, buffer);
+                return stream.ReadResponseContent(_response, buffer);
             }
 
             public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
             {
-                if (_stream == null)
+                Http3RequestStream? stream = _stream;
+
+                if (stream is null)
                 {
                     return ValueTask.FromException<int>(new ObjectDisposedException(nameof(Http3RequestStream)));
                 }
 
                 Debug.Assert(_response != null);
-                return _stream.ReadResponseContentAsync(_response, buffer, cancellationToken);
+                return stream.ReadResponseContentAsync(_response, buffer, cancellationToken);
             }
 
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
@@ -1367,6 +1395,8 @@ namespace System.Net.Http
         private sealed class Http3WriteStream : HttpBaseStream
         {
             private Http3RequestStream? _stream;
+
+            public long BytesWritten { get; private set; }
 
             public override bool CanRead => false;
 
@@ -1395,22 +1425,28 @@ namespace System.Net.Http
 
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             {
-                if (_stream == null)
+                BytesWritten += buffer.Length;
+
+                Http3RequestStream? stream = _stream;
+
+                if (stream is null)
                 {
                     return ValueTask.FromException(new ObjectDisposedException(nameof(Http3WriteStream)));
                 }
 
-                return _stream.WriteRequestContentAsync(buffer, cancellationToken);
+                return stream.WriteRequestContentAsync(buffer, cancellationToken);
             }
 
             public override Task FlushAsync(CancellationToken cancellationToken)
             {
-                if (_stream == null)
+                Http3RequestStream? stream = _stream;
+
+                if (stream is null)
                 {
                     return Task.FromException(new ObjectDisposedException(nameof(Http3WriteStream)));
                 }
 
-                return _stream.FlushSendBufferAsync(endStream: false, cancellationToken).AsTask();
+                return stream.FlushSendBufferAsync(endStream: false, cancellationToken).AsTask();
             }
         }
 

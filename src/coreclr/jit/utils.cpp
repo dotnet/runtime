@@ -1131,10 +1131,10 @@ UINT FixedBitVect::bitVectGetNextAndClear()
     return bitNum;
 }
 
-int SimpleSprintf_s(__in_ecount(cbBufSize - (pWriteStart - pBufStart)) char* pWriteStart,
-                    __in_ecount(cbBufSize) char*                             pBufStart,
-                    size_t                                                   cbBufSize,
-                    __in_z const char*                                       fmt,
+int SimpleSprintf_s(_In_reads_(cbBufSize - (pWriteStart - pBufStart)) char* pWriteStart,
+                    _In_reads_(cbBufSize) char*                             pBufStart,
+                    size_t                                                  cbBufSize,
+                    _In_z_ const char*                                      fmt,
                     ...)
 {
     assert(fmt);
@@ -2209,6 +2209,168 @@ bool FloatingPointUtils::hasPreciseReciprocal(float x)
     uint32_t exponent = (i >> 23) & 0xFFu; // 0xFF mask drops the sign bit
     uint32_t mantissa = i & 0x7FFFFFu;     // 0x7FFFFF mask drops the sign + exponent bits
     return mantissa == 0 && exponent != 0 && exponent != 127;
+}
+
+//------------------------------------------------------------------------
+// isNegative: Determines whether the specified value is negative
+//
+// Arguments:
+//    val - value to check
+//
+// Return Value:
+//    True if val is negative
+//
+
+bool FloatingPointUtils::isNegative(float val)
+{
+    return *reinterpret_cast<INT32*>(&val) < 0;
+}
+
+//------------------------------------------------------------------------
+// isNegative: Determines whether the specified value is negative
+//
+// Arguments:
+//    val - value to check
+//
+// Return Value:
+//    True if val is negative
+//
+
+bool FloatingPointUtils::isNegative(double val)
+{
+    return *reinterpret_cast<INT64*>(&val) < 0;
+}
+
+//------------------------------------------------------------------------
+// isNaN: Determines whether the specified value is NaN
+//
+// Arguments:
+//    val - value to check for NaN
+//
+// Return Value:
+//    True if val is NaN
+//
+
+bool FloatingPointUtils::isNaN(float val)
+{
+    UINT32 bits = *reinterpret_cast<UINT32*>(&val);
+    return (bits & 0x7FFFFFFFU) > 0x7F800000U;
+}
+
+//------------------------------------------------------------------------
+// isNaN: Determines whether the specified value is NaN
+//
+// Arguments:
+//    val - value to check for NaN
+//
+// Return Value:
+//    True if val is NaN
+//
+
+bool FloatingPointUtils::isNaN(double val)
+{
+    UINT64 bits = *reinterpret_cast<UINT64*>(&val);
+    return (bits & 0x7FFFFFFFFFFFFFFFULL) > 0x7FF0000000000000ULL;
+}
+
+//------------------------------------------------------------------------
+// maximum: This matches the IEEE 754:2019 `maximum` function
+//    It propagates NaN inputs back to the caller and
+//    otherwise returns the larger of the inputs. It
+//    treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    val1 - left operand
+//    val2 - right operand
+//
+// Return Value:
+//    Either val1 or val2
+//
+
+double FloatingPointUtils::maximum(double val1, double val2)
+{
+    if (val1 != val2)
+    {
+        if (!isNaN(val1))
+        {
+            return val2 < val1 ? val1 : val2;
+        }
+        return val1;
+    }
+    return isNegative(val2) ? val1 : val2;
+}
+
+//------------------------------------------------------------------------
+// maximum: This matches the IEEE 754:2019 `maximum` function
+//    It propagates NaN inputs back to the caller and
+//    otherwise returns the larger of the inputs. It
+//    treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    val1 - left operand
+//    val2 - right operand
+//
+// Return Value:
+//    Either val1 or val2
+//
+
+float FloatingPointUtils::maximum(float val1, float val2)
+{
+    if (val1 != val2)
+    {
+        if (!isNaN(val1))
+        {
+            return val2 < val1 ? val1 : val2;
+        }
+        return val1;
+    }
+    return isNegative(val2) ? val1 : val2;
+}
+
+//------------------------------------------------------------------------
+// minimum: This matches the IEEE 754:2019 `minimum` function
+//    It propagates NaN inputs back to the caller and
+//    otherwise returns the larger of the inputs. It
+//    treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    val1 - left operand
+//    val2 - right operand
+//
+// Return Value:
+//    Either val1 or val2
+//
+
+double FloatingPointUtils::minimum(double val1, double val2)
+{
+    if (val1 != val2 && !isNaN(val1))
+    {
+        return val1 < val2 ? val1 : val2;
+    }
+    return isNegative(val1) ? val1 : val2;
+}
+
+//------------------------------------------------------------------------
+// minimum: This matches the IEEE 754:2019 `minimum` function
+//    It propagates NaN inputs back to the caller and
+//    otherwise returns the larger of the inputs. It
+//    treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    val1 - left operand
+//    val2 - right operand
+//
+// Return Value:
+//    Either val1 or val2
+//
+
+float FloatingPointUtils::minimum(float val1, float val2)
+{
+    if (val1 != val2 && !isNaN(val1))
+    {
+        return val1 < val2 ? val1 : val2;
+    }
+    return isNegative(val1) ? val1 : val2;
 }
 
 namespace MagicDivide

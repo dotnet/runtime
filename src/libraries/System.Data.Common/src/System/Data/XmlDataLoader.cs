@@ -150,7 +150,6 @@ namespace System.Data
                 {
                     // don't use string builder if only one text node exists
                     value = n.Value;
-                    n = n.NextSibling;
                 }
                 else
                 {
@@ -702,7 +701,7 @@ namespace System.Data
             // If table name we have matches dataset
             // name top node could be a DataSet OR a table.
             // It's a table overwise.
-            DataRow? row = null;                                 // Data row we're going to add to this table
+            DataRow? row;                                 // Data row we're going to add to this table
 
             bool matchFound = false;                            // Assume we found no matching elements
 
@@ -880,7 +879,7 @@ namespace System.Data
 
             Debug.Assert(table != null, "Table to be loaded is null on LoadTable() entry");
 
-            DataRow? row = null;                                 // Data row we're going to add to this table
+            DataRow? row;                                 // Data row we're going to add to this table
 
             int entryDepth = _dataReader!.Depth;                  // Store current reader depth so we know when to stop reading
             int entryChild = _childRowsStack!.Count;              // Memorize child stack level on entry

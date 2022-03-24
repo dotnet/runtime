@@ -10,16 +10,16 @@ test_append_speed (void)
 {
 	GString *s = g_string_new("");
 	gint i;
-	
+
 	for(i = 0; i < 1024; i++) {
 		g_string_append(s, "x");
 	}
-	
+
 	if(strlen (s->str) != 1024) {
-		return FAILED("Incorrect string size, got: %s %d", 
+		return FAILED("Incorrect string size, got: %s %d",
 			s->str, strlen(s->str));
 	}
-	
+
 	g_string_free (s, TRUE);
 
 	return OK;
@@ -30,16 +30,16 @@ test_append_c_speed (void)
 {
 	GString *s = g_string_new("");
 	gint i;
-	
+
 	for(i = 0; i < 1024; i++) {
 		g_string_append_c(s, 'x');
 	}
-	
+
 	if(strlen(s->str) != 1024) {
-		return FAILED("Incorrect string size, got: %s %d", s->str, 
+		return FAILED("Incorrect string size, got: %s %d", s->str,
 			strlen(s->str));
 	}
-	
+
 	g_string_free(s, TRUE);
 
 	return OK;
@@ -90,7 +90,7 @@ test_gstring (void)
 
 	s = g_string_new ("Hola");
 	g_string_printf (s, "Dingus");
-	
+
 	/* Test that it does not release it */
 	ret = g_string_free (s, FALSE);
 	g_free (ret);
@@ -104,7 +104,7 @@ test_gstring (void)
 	sfail ( 0, 4);
 	sfail ('2', 5);
 	g_string_free (s, TRUE);
-	
+
 	return OK;
 }
 
@@ -119,7 +119,7 @@ test_sized (void)
 		return FAILED ("Expected an empty len");
 
 	g_string_free (s, TRUE);
-	
+
 	return NULL;
 }
 
@@ -132,7 +132,7 @@ test_truncate (void)
 	if (strlen (s->str) != 3)
 		return FAILED ("size of string should have been 3, instead it is [%s]\n", s->str);
 	g_string_free (s, TRUE);
-	
+
 	s = g_string_new ("a");
 	s = g_string_truncate (s, 10);
 	if (strlen (s->str) != 1)
@@ -143,7 +143,7 @@ test_truncate (void)
 	g_string_truncate (s, 0);
 	if (strlen (s->str) != 0)
 		return FAILED ("The size is not 0");
-	
+
 	g_string_free (s, TRUE);
 
 	return NULL;
@@ -163,7 +163,7 @@ test_appendlen (void)
 	g_string_append_len (s, "ha", -1);
 	if (s->len != 7)
 		return FAILED ("The length is not seven %d", s->len);
-		
+
 	g_string_free (s, TRUE);
 
 	return NULL;
@@ -175,7 +175,7 @@ test_macros (void)
 	char *s = g_strdup (G_STRLOC);
 	char *p = strchr (s + 2, ':');
 	int n;
-	
+
 	if (p == NULL)
 		return FAILED ("Did not find a separator");
 	n = atoi (p+1);
@@ -185,7 +185,7 @@ test_macros (void)
 	*p = 0;
 	if (strcmp (s + strlen(s) - 8 , "string.c") != 0)
 		return FAILED ("This did not store the filename on G_STRLOC");
-	
+
 	g_free (s);
 	return NULL;
 }

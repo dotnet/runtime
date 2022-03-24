@@ -157,7 +157,7 @@ namespace ILCompiler
             try
             {
                 // Create stream because CreateFromFile(string, ...) uses FileShare.None which is too strict
-                fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, false);
+                fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
                 mappedFile = MemoryMappedFile.CreateFromFile(
                     fileStream, null, fileStream.Length, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
                 accessor = mappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
@@ -174,12 +174,9 @@ namespace ILCompiler
             }
             finally
             {
-                if (accessor != null)
-                    accessor.Dispose();
-                if (mappedFile != null)
-                    mappedFile.Dispose();
-                if (fileStream != null)
-                    fileStream.Dispose();
+                accessor?.Dispose();
+                mappedFile?.Dispose();
+                fileStream?.Dispose();
             }
         }
 
@@ -318,39 +315,39 @@ namespace ILCompiler
 
         private PdbSymbolReader OpenAssociatedSymbolFile(string peFilePath, PEReader peReader)
         {
-            // Assume that the .pdb file is next to the binary
-            var pdbFilename = Path.ChangeExtension(peFilePath, ".pdb");
-            string searchPath = "";
+            string pdbFileName = null;
+            BlobContentId pdbContentId = default;
 
-            if (!File.Exists(pdbFilename))
+            foreach (DebugDirectoryEntry debugEntry in peReader.ReadDebugDirectory())
             {
-                pdbFilename = null;
+                if (debugEntry.Type != DebugDirectoryEntryType.CodeView)
+                    continue;
 
-                // If the file doesn't exist, try the path specified in the CodeView section of the image
-                foreach (DebugDirectoryEntry debugEntry in peReader.ReadDebugDirectory())
+                CodeViewDebugDirectoryData debugDirectoryData = peReader.ReadCodeViewDebugDirectoryData(debugEntry);
+
+                string candidatePath  = debugDirectoryData.Path;
+                if (!Path.IsPathRooted(candidatePath) || !File.Exists(candidatePath))
                 {
-                    if (debugEntry.Type != DebugDirectoryEntryType.CodeView)
+                    // Also check next to the PE file
+                    candidatePath = Path.Combine(Path.GetDirectoryName(peFilePath), Path.GetFileName(candidatePath));
+                    if (!File.Exists(candidatePath))
                         continue;
-
-                    string candidateFileName = peReader.ReadCodeViewDebugDirectoryData(debugEntry).Path;
-                    if (Path.IsPathRooted(candidateFileName) && File.Exists(candidateFileName))
-                    {
-                        pdbFilename = candidateFileName;
-                        searchPath = Path.GetDirectoryName(pdbFilename);
-                        break;
-                    }
                 }
-
-                if (pdbFilename == null)
-                    return null;
+                
+                pdbFileName = candidatePath;
+                pdbContentId = new BlobContentId(debugDirectoryData.Guid, debugEntry.Stamp);
+                break;
             }
 
+            if (pdbFileName == null)
+                return null;
+
             // Try to open the symbol file as portable pdb first
-            PdbSymbolReader reader = PortablePdbSymbolReader.TryOpen(pdbFilename, GetMetadataStringDecoder());
+            PdbSymbolReader reader = PortablePdbSymbolReader.TryOpen(pdbFileName, GetMetadataStringDecoder(), pdbContentId);
             if (reader == null)
             {
                 // Fallback to the diasymreader for non-portable pdbs
-                reader = UnmanagedPdbSymbolReader.TryOpenSymbolReaderForMetadataFile(peFilePath, searchPath);
+                reader = UnmanagedPdbSymbolReader.TryOpenSymbolReaderForMetadataFile(peFilePath, Path.GetDirectoryName(pdbFileName));
             }
 
             return reader;

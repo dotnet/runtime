@@ -6,7 +6,6 @@
 
 .assembly extern mscorlib {}
 .assembly test {}
-.module test.exe
 
 
 // =============== CLASS MEMBERS DECLARATION ===================

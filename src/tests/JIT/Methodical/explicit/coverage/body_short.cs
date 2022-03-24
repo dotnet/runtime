@@ -488,7 +488,7 @@ internal class TestApp
         return AA.call_target_ref(ref (*((AA*)ptr_init)).q);
     }
 
-    private static unsafe int Main()
+    internal static unsafe int RunAllTests()
     {
         AA.reset();
         if (test_0_0(100, new AA(100), new AA(0)) != 100)

@@ -2444,8 +2444,6 @@ heap_segment* gc_heap::reserved_free_regions_sip[max_generation];
 
 int         gc_heap::num_sip_regions = 0;
 
-size_t      gc_heap::committed_in_free = 0;
-
 size_t      gc_heap::end_gen0_region_space = 0;
 
 size_t      gc_heap::gen0_pinned_free_space = 0;
@@ -2522,6 +2520,8 @@ size_t      gc_heap::bgc_loh_size_increased = 0;
 
 size_t      gc_heap::bgc_poh_size_increased = 0;
 
+size_t      gc_heap::background_soh_size_end_mark = 0;
+
 size_t      gc_heap::background_soh_alloc_count = 0;
 
 size_t      gc_heap::background_uoh_alloc_count = 0;
@@ -2532,13 +2532,15 @@ uint8_t**   gc_heap::background_mark_stack_array = 0;
 
 size_t      gc_heap::background_mark_stack_array_length = 0;
 
+BOOL        gc_heap::processed_eph_overflow_p = FALSE;
+
+#ifdef USE_REGIONS
+BOOL        gc_heap::background_overflow_p = FALSE;
+#else //USE_REGIONS
 uint8_t*    gc_heap::background_min_overflow_address =0;
 
 uint8_t*    gc_heap::background_max_overflow_address =0;
 
-BOOL        gc_heap::processed_eph_overflow_p = FALSE;
-
-#ifndef USE_REGIONS
 uint8_t*    gc_heap::background_min_soh_overflow_address =0;
 
 uint8_t*    gc_heap::background_max_soh_overflow_address =0;
@@ -2548,7 +2550,7 @@ heap_segment* gc_heap::saved_overflow_ephemeral_seg = 0;
 heap_segment* gc_heap::saved_sweep_ephemeral_seg = 0;
 
 uint8_t*    gc_heap::saved_sweep_ephemeral_start = 0;
-#endif //!USE_REGIONS
+#endif //USE_REGIONS
 
 Thread*     gc_heap::bgc_thread = 0;
 
@@ -3955,7 +3957,7 @@ void region_allocator::move_highest_free_regions (int64_t n, bool small_region_p
         {
             uint32_t* index = current_index - (current_num_units - 1);
             heap_segment* region = get_region_info (region_address_of (index));
-            if (is_free_region (region))
+            if (is_free_region (region) && !region_free_list::is_on_free_list (region, to_free_list))
             {
                 if (n >= current_num_units)
                 {
@@ -5498,10 +5500,6 @@ gc_heap::compute_new_ephemeral_size()
         padding_size, (total_ephemeral_size - padding_size)));
 }
 
-#ifdef _MSC_VER
-#pragma warning(disable:4706) // "assignment within conditional expression" is intentional in this function.
-#endif // _MSC_VER
-
 heap_segment*
 gc_heap::soh_get_segment_to_expand()
 {
@@ -5619,10 +5617,6 @@ gc_heap::soh_get_segment_to_expand()
     return result;
 }
 #endif //!USE_REGIONS
-
-#ifdef _MSC_VER
-#pragma warning(default:4706)
-#endif // _MSC_VER
 
 //returns 0 in case of allocation failure
 heap_segment*
@@ -5914,6 +5908,14 @@ extern "C" uint64_t __rdtsc();
 #else // _MSC_VER
     extern "C" ptrdiff_t get_cycle_count(void);
 #endif // _MSC_VER
+#elif defined(TARGET_LOONGARCH64)
+    static ptrdiff_t get_cycle_count()
+    {
+        ////FIXME: TODO for LOONGARCH64:
+        //ptrdiff_t  cycle;
+        __asm__ volatile ("break \n");
+        return 0;
+    }
 #else
     static ptrdiff_t get_cycle_count()
     {
@@ -8024,8 +8026,9 @@ uint8_t* gc_heap::brick_address (size_t brick)
 
 void gc_heap::clear_brick_table (uint8_t* from, uint8_t* end)
 {
-    for (size_t i = brick_of (from);i < brick_of (end); i++)
-        brick_table[i] = 0;
+    size_t from_brick = brick_of (from);
+    size_t end_brick = brick_of (end);
+    memset (&brick_table[from_brick], 0, sizeof(brick_table[from_brick])*(end_brick-from_brick));
 }
 
 //codes for the brick entries:
@@ -9400,7 +9403,7 @@ void gc_heap::remove_ro_segment (heap_segment* seg)
 
     enter_spin_lock (&gc_heap::gc_lock);
 
-    seg_table->remove ((uint8_t*)seg);
+    seg_table->remove (heap_segment_mem (seg));
     seg_mapping_table_remove_ro_segment (seg);
 
     // Locate segment (and previous segment) in the list.
@@ -10888,7 +10891,7 @@ void gc_heap::seg_clear_mark_array_bits_soh (heap_segment* seg)
     }
 }
 
-void gc_heap::clear_batch_mark_array_bits (uint8_t* start, uint8_t* end)
+void gc_heap::bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end)
 {
     if ((start < background_saved_highest_address) &&
         (end > background_saved_lowest_address))
@@ -10912,8 +10915,15 @@ void gc_heap::clear_batch_mark_array_bits (uint8_t* start, uint8_t* end)
 
         if (startwrd == endwrd)
         {
-            unsigned int wrd = firstwrd | lastwrd;
-            mark_array[startwrd] &= wrd;
+            if (startbit != endbit)
+            {
+                unsigned int wrd = firstwrd | lastwrd;
+                mark_array[startwrd] &= wrd;
+            }
+            else
+            {
+                assert (start == end);
+            }
             return;
         }
 
@@ -10934,18 +10944,6 @@ void gc_heap::clear_batch_mark_array_bits (uint8_t* start, uint8_t* end)
         {
             mark_array[endwrd] &= lastwrd;
         }
-    }
-}
-
-void gc_heap::bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end)
-{
-    if ((start < background_saved_highest_address) &&
-        (end > background_saved_lowest_address))
-    {
-        start = max (start, background_saved_lowest_address);
-        end = min (end, background_saved_highest_address);
-
-        clear_batch_mark_array_bits (start, end);
     }
 }
 #endif //BACKGROUND_GC
@@ -11098,6 +11096,8 @@ void gc_heap::clear_region_info (heap_segment* region)
                         settings.gc_index, current_bgc_state,
                         seg_deleted);
 
+    bgc_verify_mark_array_cleared (region);
+
     if (dt_high_memory_load_p())
     {
         decommit_mark_array_by_seg (region);
@@ -11111,7 +11111,7 @@ void gc_heap::return_free_region (heap_segment* region)
 {
     clear_region_info (region);
 
-    region_free_list::add_region (region, free_regions);
+    region_free_list::add_region_descending (region, free_regions);
 
     uint8_t* region_start = get_region_start (region);
     uint8_t* region_end = heap_segment_reserved (region);
@@ -11140,9 +11140,6 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
 {
     heap_segment* region = 0;
 
-    // TODO: the update to committed_in_free is incorrect - we'd need synchorization 'cause a thread
-    // could be getting a small and another one could be getting a large region at the same time.
-    // This is only used for recording.
     if (gen_number <= max_generation)
     {
         assert (size == 0);
@@ -11428,6 +11425,7 @@ void gc_heap::init_heap_segment (heap_segment* seg, gc_heap* hp
     heap_segment_plan_allocated (seg) = heap_segment_mem (seg);
     heap_segment_allocated (seg) = heap_segment_mem (seg);
     heap_segment_saved_allocated (seg) = heap_segment_mem (seg);
+    heap_segment_decommit_target (seg) = heap_segment_reserved (seg);
 #ifdef BACKGROUND_GC
     heap_segment_background_allocated (seg) = 0;
     heap_segment_saved_bg_allocated (seg) = 0;
@@ -11519,6 +11517,8 @@ void gc_heap::delete_heap_segment (heap_segment* seg, BOOL consider_hoarding)
         ::record_changed_seg ((uint8_t*)seg, heap_segment_reserved (seg),
                             settings.gc_index, current_bgc_state,
                             seg_deleted);
+        bgc_verify_mark_array_cleared (seg);
+
         decommit_mark_array_by_seg (seg);
 #endif //BACKGROUND_GC
 
@@ -11543,7 +11543,10 @@ void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
 {
     if (use_large_pages_p)
         return;
+
     uint8_t*  page_start = align_on_page (heap_segment_allocated(seg));
+    assert (heap_segment_committed (seg) >= page_start);
+
     size_t size = heap_segment_committed (seg) - page_start;
     extra_space = align_on_page (extra_space);
     if (size >= max ((extra_space + 2*OS_PAGE_SIZE), MIN_DECOMMIT_SIZE))
@@ -11556,18 +11559,12 @@ void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
 size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
                                                     uint8_t* new_committed)
 {
-#ifdef USE_REGIONS
-    if (!dt_high_memory_load_p())
-    {
-        return 0;
-    }
-#endif
     assert (!use_large_pages_p);
     uint8_t* page_start = align_on_page (new_committed);
-    size_t size = heap_segment_committed (seg) - page_start;
+    ptrdiff_t size = heap_segment_committed (seg) - page_start;
     if (size > 0)
     {
-        bool decommit_succeeded_p = virtual_decommit (page_start, size, heap_segment_oh (seg), heap_number);
+        bool decommit_succeeded_p = virtual_decommit (page_start, (size_t)size, heap_segment_oh (seg), heap_number);
         if (decommit_succeeded_p)
         {
             dprintf (3, ("Decommitting heap segment [%Ix, %Ix[(%d)",
@@ -11602,10 +11599,11 @@ void gc_heap::decommit_heap_segment (heap_segment* seg)
 
     dprintf (3, ("Decommitting heap segment %Ix(%Ix)", (size_t)seg, heap_segment_mem (seg)));
 
-#ifdef BACKGROUND_GC
+#if defined(BACKGROUND_GC) && !defined(USE_REGIONS)
     page_start += OS_PAGE_SIZE;
-#endif //BACKGROUND_GC
+#endif //BACKGROUND_GC && !USE_REGIONS
 
+    assert (heap_segment_committed (seg) >= page_start);
     size_t size = heap_segment_committed (seg) - page_start;
     bool decommit_succeeded_p = virtual_decommit (page_start, size, heap_segment_oh (seg), heap_number);
 
@@ -11869,6 +11867,21 @@ void region_free_list::reset()
     tail_free_region = nullptr;
 }
 
+inline
+void region_free_list::update_added_region_info (heap_segment* region)
+{
+    num_free_regions++;
+    num_free_regions_added++;
+
+    size_t region_size = get_region_size (region);
+    size_free_regions += region_size;
+
+    size_t region_committed_size = get_region_committed_size (region);
+    size_committed_in_free_regions += region_committed_size;
+
+    verify (false);
+}
+
 void region_free_list::add_region_front (heap_segment* region)
 {
     assert (heap_segment_containing_free_list (region) == nullptr);
@@ -11886,16 +11899,67 @@ void region_free_list::add_region_front (heap_segment* region)
     head_free_region = region;
     heap_segment_prev_free_region (region) = nullptr;
 
-    num_free_regions++;
-    num_free_regions_added++;
+    update_added_region_info (region);
+}
 
-    size_t region_size = get_region_size (region);
-    size_free_regions += region_size;
+// This inserts fully committed regions at the head, otherwise it goes backward in the list till
+// we find a region whose committed size is >= this region's committed or we reach the head.
+void region_free_list::add_region_in_descending_order (heap_segment* region_to_add)
+{
+    assert (heap_segment_containing_free_list (region_to_add) == nullptr);
+    heap_segment_containing_free_list (region_to_add) = this;
+    heap_segment_age_in_free (region_to_add) = 0;
+    heap_segment* prev_region = nullptr;
+    heap_segment* region = nullptr;
 
-    size_t region_committed_size = get_region_committed_size (region);
-    size_committed_in_free_regions += region_committed_size;
+    // if the region is fully committed, it's inserted at the front
+    if (heap_segment_committed (region_to_add) == heap_segment_reserved (region_to_add))
+    {
+        region = head_free_region;
+    }
+    else
+    {
+        // otherwise we search backwards for a good insertion spot
+        // most regions at the front are fully committed and thus boring to search
 
-    verify (false);
+        size_t region_to_add_committed = get_region_committed_size (region_to_add);
+
+        for (prev_region = tail_free_region; prev_region != nullptr; prev_region = heap_segment_prev_free_region (prev_region))
+        {
+            size_t prev_region_committed = get_region_committed_size (prev_region);
+
+            if (prev_region_committed >= region_to_add_committed)
+            {
+                break;
+            }
+            region = prev_region;
+        }
+    }
+
+    if (prev_region != nullptr)
+    {
+        heap_segment_next (prev_region) = region_to_add;
+    }
+    else
+    {
+        assert (region == head_free_region);
+        head_free_region = region_to_add;
+    }
+
+    heap_segment_prev_free_region (region_to_add) = prev_region;
+    heap_segment_next (region_to_add) = region;
+
+    if (region != nullptr)
+    {
+        heap_segment_prev_free_region (region) = region_to_add;
+    }
+    else
+    {
+        assert (prev_region == tail_free_region);
+        tail_free_region = region_to_add;
+    }
+
+    update_added_region_info (region_to_add);
 }
 
 heap_segment* region_free_list::unlink_region_front()
@@ -12074,6 +12138,156 @@ void region_free_list::add_region (heap_segment* region, region_free_list to_fre
     free_region_kind kind = get_region_kind (region);
     to_free_list[kind].add_region_front (region);
 }
+
+void region_free_list::add_region_descending (heap_segment* region, region_free_list to_free_list[count_free_region_kinds])
+{
+    free_region_kind kind = get_region_kind (region);
+    to_free_list[kind].add_region_in_descending_order (region);
+}
+
+bool region_free_list::is_on_free_list (heap_segment* region, region_free_list free_list[count_free_region_kinds])
+{
+    region_free_list* rfl = heap_segment_containing_free_list (region);
+    free_region_kind kind = get_region_kind (region);
+    return rfl == &free_list[kind];
+}
+
+void region_free_list::age_free_regions()
+{
+    for (heap_segment* region = head_free_region; region != nullptr; region = heap_segment_next (region))
+    {
+        // only age to 99... that's enough for us to decommit this.
+        if (heap_segment_age_in_free (region) < MAX_AGE_IN_FREE)
+            heap_segment_age_in_free (region)++;
+    }
+}
+
+void region_free_list::age_free_regions (region_free_list free_lists[count_free_region_kinds])
+{
+    for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
+    {
+        free_lists[kind].age_free_regions();
+    }
+}
+
+void region_free_list::print (int hn, const char* msg, int* ages)
+{
+    dprintf (3, ("h%2d PRINTING-------------------------------", hn));
+    for (heap_segment* region = head_free_region; region != nullptr; region = heap_segment_next (region))
+    {
+        if (ages)
+        {
+            ages[heap_segment_age_in_free (region)]++;
+        }
+
+        dprintf (3, ("[%s] h%2d age %d region %Ix (%Id)%s",
+            msg, hn, (int)heap_segment_age_in_free (region),
+            heap_segment_mem (region), get_region_committed_size (region),
+            ((heap_segment_committed (region) == heap_segment_reserved (region)) ? "(FC)" : "")));
+    }
+    dprintf (3, ("h%2d PRINTING END-------------------------------", hn));
+}
+
+void region_free_list::print (region_free_list free_lists[count_free_region_kinds], int hn, const char* msg, int* ages)
+{
+    for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
+    {
+        free_lists[kind].print (hn, msg, ages);
+    }
+}
+
+static int compare_by_committed_and_age (heap_segment* l, heap_segment* r)
+{
+    size_t l_committed = get_region_committed_size (l);
+    size_t r_committed = get_region_committed_size (r);
+    if (l_committed > r_committed)
+        return -1;
+    else if (l_committed < r_committed)
+        return 1;
+    int l_age = heap_segment_age_in_free (l);
+    int r_age = heap_segment_age_in_free (r);
+    return (l_age - r_age);
+}
+
+static heap_segment* merge_sort_by_committed_and_age (heap_segment *head, size_t count)
+{
+    if (count <= 1)
+        return head;
+    size_t half = count / 2;
+    heap_segment* mid = nullptr;
+    size_t i = 0;
+    for (heap_segment *region = head; region != nullptr; region = heap_segment_next (region))
+    {
+        i++;
+        if (i == half)
+        {
+            mid = heap_segment_next (region);
+            heap_segment_next (region) = nullptr;
+            break;
+        }
+    }
+    head = merge_sort_by_committed_and_age (head, half);
+    mid = merge_sort_by_committed_and_age (mid, count - half);
+
+    heap_segment* new_head;
+    if (compare_by_committed_and_age (head, mid) <= 0)
+    {
+        new_head = head;
+        head = heap_segment_next (head);
+    }
+    else
+    {
+        new_head = mid;
+        mid = heap_segment_next (mid);
+    }
+    heap_segment* new_tail = new_head;
+    while ((head != nullptr) && (mid != nullptr))
+    {
+        heap_segment* region = nullptr;
+        if (compare_by_committed_and_age (head, mid) <= 0)
+        {
+            region = head;
+            head = heap_segment_next (head);
+        }
+        else
+        {
+            region = mid;
+            mid = heap_segment_next (mid);
+        }
+
+        heap_segment_next (new_tail) = region;
+        new_tail = region;
+    }
+
+    if (head != nullptr)
+    {
+        assert (mid == nullptr);
+        heap_segment_next (new_tail) = head;
+    }
+    else
+    {
+        heap_segment_next (new_tail) = mid;
+    }
+    return new_head;
+}
+
+void region_free_list::sort_by_committed_and_age()
+{
+    if (num_free_regions <= 1)
+        return;
+    heap_segment* new_head = merge_sort_by_committed_and_age (head_free_region, num_free_regions);
+
+    // need to set head, tail, and all the prev links again
+    head_free_region = new_head;
+    heap_segment* prev = nullptr;
+    for (heap_segment* region = new_head; region != nullptr; region = heap_segment_next (region))
+    {
+        heap_segment_prev_free_region (region) = prev;
+        assert ((prev == nullptr) || (compare_by_committed_and_age (prev, region) <= 0));
+        prev = region;
+    }
+    tail_free_region = prev;
+}
 #endif //USE_REGIONS
 
 void gc_heap::distribute_free_regions()
@@ -12084,8 +12298,19 @@ void gc_heap::distribute_free_regions()
     // first step: accumulate the number of free regions and the budget over all heaps
     // and move huge regions to global free list
     size_t total_num_free_regions[kind_count] = { 0, 0 };
-    size_t total_budget[kind_count] = { 0,  0 };
+    size_t total_budget_in_region_units[kind_count] = { 0,  0 };
 
+    size_t num_decommit_regions_by_time = 0;
+    size_t size_decommit_regions_by_time = 0;
+    size_t heap_budget_in_region_units[MAX_SUPPORTED_CPUS][kind_count];
+    size_t region_size[kind_count] = { global_region_allocator.get_region_alignment(), global_region_allocator.get_large_region_alignment() };
+    region_free_list surplus_regions[kind_count];
+    for (int kind = basic_free_region; kind < kind_count; kind++)
+    {
+        // we may still have regions left on the regions_to_decommit list -
+        // use these to fill the budget as well
+        surplus_regions[kind].transfer_regions (&global_regions_to_decommit[kind]);
+    }
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < n_heaps; i++)
     {
@@ -12096,30 +12321,51 @@ void gc_heap::distribute_free_regions()
         // just to reduce the number of #ifdefs in the code below
         const int i = 0;
 #endif //MULTIPLE_HEAPS
+
         for (int kind = basic_free_region; kind < kind_count; kind++)
         {
-            total_num_free_regions[kind] += hp->free_regions[kind].get_num_free_regions();
+            // If there are regions in free that haven't been used in AGE_IN_FREE_TO_DECOMMIT GCs we always decommit them.
+            region_free_list& region_list = hp->free_regions[kind];
+            heap_segment* next_region = nullptr;
+            for (heap_segment* region = region_list.get_first_free_region(); region != nullptr; region = next_region)
+            {
+                next_region = heap_segment_next (region);
+                if (heap_segment_age_in_free (region) >= AGE_IN_FREE_TO_DECOMMIT)
+                {
+                    num_decommit_regions_by_time++;
+                    size_decommit_regions_by_time += get_region_committed_size (region);
+                    dprintf (REGIONS_LOG, ("h%2d region %Ix age %2d, decommit",
+                        i, heap_segment_mem (region), heap_segment_age_in_free (region)));
+                    region_free_list::unlink_region (region);
+                    region_free_list::add_region (region, global_regions_to_decommit);
+                }
+            }
+
+            total_num_free_regions[kind] += region_list.get_num_free_regions();
         }
 
         global_free_huge_regions.transfer_regions (&hp->free_regions[huge_free_region]);
 
+        heap_budget_in_region_units[i][basic_free_region] = 0;
+        heap_budget_in_region_units[i][large_free_region] = 0;
         for (int gen = soh_gen0; gen < total_generation_count; gen++)
         {
-            ptrdiff_t budget_gen = hp->estimate_gen_growth (gen);
-            assert (budget_gen >= 0);
-            total_budget[gen >= loh_generation] += budget_gen;
+            ptrdiff_t budget_gen = max (hp->estimate_gen_growth (gen), 0);
+            int kind = gen >= loh_generation;
+            size_t budget_gen_in_region_units = (budget_gen + (region_size[kind] - 1)) / region_size[kind];
+            dprintf (REGIONS_LOG, ("h%2d gen %d has an estimated growth of %Id bytes (%Id regions)", i, gen, budget_gen, budget_gen_in_region_units));
+            heap_budget_in_region_units[i][kind] += budget_gen_in_region_units;
+            total_budget_in_region_units[kind] += budget_gen_in_region_units;
         }
     }
+
+    dprintf (1, ("moved %2d regions (%8Id) to decommit based on time", num_decommit_regions_by_time, size_decommit_regions_by_time));
 
     global_free_huge_regions.transfer_regions (&global_regions_to_decommit[huge_free_region]);
 
     size_t free_space_in_huge_regions = global_free_huge_regions.get_size_free_regions();
 
-    size_t region_size[kind_count] = { global_region_allocator.get_region_alignment(), global_region_allocator.get_large_region_alignment() };
-    region_free_list surplus_regions[kind_count];
     ptrdiff_t num_regions_to_decommit[kind_count];
-    size_t total_budget_in_region_units[kind_count];
-    size_t target_num_regions[kind_count];
     int region_factor[kind_count] = { 1, LARGE_REGION_FACTOR };
 #ifdef TRACE_GC
     const char* kind_name[count_free_region_kinds] = { "basic", "large", "huge"};
@@ -12134,13 +12380,7 @@ void gc_heap::distribute_free_regions()
 
     for (int kind = basic_free_region; kind < kind_count; kind++)
     {
-        // we may still have regions left on the regions_to_decommit list -
-        // use these to fill the budget as well
-        surplus_regions[kind].transfer_regions (&global_regions_to_decommit[kind]);
-
         num_regions_to_decommit[kind] = surplus_regions[kind].get_num_free_regions();
-
-        total_budget_in_region_units[kind] = (total_budget[kind] + (region_size[kind] - 1)) / region_size[kind];
 
         dprintf(REGIONS_LOG, ("%Id %s free regions, %Id regions budget, %Id regions on decommit list, %Id huge regions to consider",
             total_num_free_regions[kind],
@@ -12153,22 +12393,31 @@ void gc_heap::distribute_free_regions()
         // if so, put the highest free regions on the decommit list
         total_num_free_regions[kind] += num_regions_to_decommit[kind];
 
+        ptrdiff_t balance = total_num_free_regions[kind] + num_huge_region_units_to_consider[kind] - total_budget_in_region_units[kind];
+
         if (
 #ifdef BACKGROUND_GC
             background_running_p() ||
 #endif
-            ((total_num_free_regions[kind] + num_huge_region_units_to_consider[kind]) < total_budget_in_region_units[kind]))
+            (balance < 0))
         {
-            dprintf (REGIONS_LOG, ("distributing the %Id %s regions deficit",
-                total_budget_in_region_units[kind] - total_num_free_regions[kind], kind_name[kind]));
+            dprintf (REGIONS_LOG, ("distributing the %Id %s regions deficit", -balance, kind_name[kind]));
 
-            target_num_regions[kind] = (total_num_free_regions[kind] + (n_heaps - 1)) / n_heaps;
+            // we may have a deficit or  - if background GC is going on - a surplus.
+            // adjust the budget per heap accordingly
+            ptrdiff_t adjustment_per_heap = (balance + (n_heaps - 1)) / n_heaps;
+
+#ifdef MULTIPLE_HEAPS
+            for (int i = 0; i < n_heaps; i++)
+            {
+                ptrdiff_t new_budget = (ptrdiff_t)heap_budget_in_region_units[i][kind] + adjustment_per_heap;
+                heap_budget_in_region_units[i][kind] = max (0, new_budget);
+            }
+#endif //MULTIPLE_HEAPS
         }
         else
         {
-            target_num_regions[kind] = (total_budget_in_region_units[kind] + (n_heaps - 1)) / n_heaps;
-            total_budget_in_region_units[kind] = target_num_regions[kind] * n_heaps;
-            num_regions_to_decommit[kind] = total_num_free_regions[kind] + num_huge_region_units_to_consider[kind] - total_budget_in_region_units[kind];
+            num_regions_to_decommit[kind] = balance;
             dprintf(REGIONS_LOG, ("distributing the %Id %s regions, removing %Id regions",
                 total_budget_in_region_units[kind],
                 kind_name[kind],
@@ -12176,6 +12425,9 @@ void gc_heap::distribute_free_regions()
 
             if (num_regions_to_decommit[kind] > 0)
             {
+                // remember how many regions we had on the decommit list already due to aging
+                size_t num_regions_to_decommit_before = global_regions_to_decommit[kind].get_num_free_regions();
+
                 // put the highest regions on the decommit list
                 global_region_allocator.move_highest_free_regions (num_regions_to_decommit[kind]*region_factor[kind],
                                                                    kind == basic_free_region,
@@ -12186,7 +12438,9 @@ void gc_heap::distribute_free_regions()
 
                 if (kind == basic_free_region)
                 {
-                    assert (global_regions_to_decommit[kind].get_num_free_regions() == (size_t)num_regions_to_decommit[kind]);
+                    // we should now have num_regions_to_decommit[kind] regions more on the decommit list
+                    assert (global_regions_to_decommit[kind].get_num_free_regions() ==
+                            num_regions_to_decommit_before + (size_t)num_regions_to_decommit[kind]);
                 }
                 else
                 {
@@ -12207,14 +12461,15 @@ void gc_heap::distribute_free_regions()
         {
             gc_heap* hp = g_heaps[i];
 
-            if (hp->free_regions[kind].get_num_free_regions() > target_num_regions[kind])
+            if (hp->free_regions[kind].get_num_free_regions() > heap_budget_in_region_units[i][kind])
             {
-                dprintf (REGIONS_LOG, ("removing %Id %s regions from heap %d",
-                    hp->free_regions[kind].get_num_free_regions() - target_num_regions[kind],
+                dprintf (REGIONS_LOG, ("removing %Id %s regions from heap %d with %Id regions",
+                    hp->free_regions[kind].get_num_free_regions() - heap_budget_in_region_units[i][kind],
                     kind_name[kind],
-                    i));
+                    i,
+                    hp->free_regions[kind].get_num_free_regions()));
 
-                remove_surplus_regions (&hp->free_regions[kind], &surplus_regions[kind], target_num_regions[kind]);
+                remove_surplus_regions (&hp->free_regions[kind], &surplus_regions[kind], heap_budget_in_region_units[i][kind]);
             }
         }
         // finally go through all the heaps and distribute any surplus regions to heaps having too few free regions
@@ -12227,18 +12482,26 @@ void gc_heap::distribute_free_regions()
             const int i = 0;
 #endif //MULTIPLE_HEAPS
 
-            if (hp->free_regions[kind].get_num_free_regions() < target_num_regions[kind])
+            if (hp->free_regions[kind].get_num_free_regions() < heap_budget_in_region_units[i][kind])
             {
-                int64_t num_added_regions = add_regions(&hp->free_regions[kind], &surplus_regions[kind], target_num_regions[kind]);
-                dprintf(REGIONS_LOG, ("added %d regions to heap %d", num_added_regions, kind_name[kind], i));
+                int64_t num_added_regions = add_regions (&hp->free_regions[kind], &surplus_regions[kind], heap_budget_in_region_units[i][kind]);
+                dprintf (REGIONS_LOG, ("added %Id %s regions to heap %d - now has %Id",
+                    num_added_regions,
+                    kind_name[kind],
+                    i,
+                    hp->free_regions[kind].get_num_free_regions()));
             }
+            hp->free_regions[kind].sort_by_committed_and_age();
         }
-        // should have exhausted the surplus_regions
-        assert(surplus_regions[kind].get_num_free_regions() == 0);
+
+        if (surplus_regions[kind].get_num_free_regions() > 0)
+        {
+            assert (!"should have exhausted the surplus_regions");
+            global_regions_to_decommit[kind].transfer_regions (&surplus_regions[kind]);
+        }
     }
 
 #ifdef MULTIPLE_HEAPS
-    gradual_decommit_in_progress_p = FALSE;
     for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
     {
         if (global_regions_to_decommit[kind].get_num_free_regions() != 0)
@@ -13564,7 +13827,6 @@ gc_heap::init_gc_heap (int  h_number)
     sip_seg_maxgen_interval = 3;
     num_condemned_regions = 0;
 #endif //STRESS_REGIONS
-    committed_in_free = 0;
     end_gen0_region_space = 0;
     gen0_pinned_free_space = 0;
     gen0_large_chunk_found = false;
@@ -15580,10 +15842,6 @@ BOOL gc_heap::short_on_end_of_seg (heap_segment* seg)
     return !sufficient_p;
 }
 
-#ifdef _MSC_VER
-#pragma warning(disable:4706) // "assignment within conditional expression" is intentional in this function.
-#endif // _MSC_VER
-
 inline
 BOOL gc_heap::a_fit_free_list_p (int gen_number,
                                  size_t size,
@@ -15859,10 +16117,6 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
 exit:
     return can_fit;
 }
-
-#ifdef _MSC_VER
-#pragma warning(default:4706)
-#endif // _MSC_VER
 
 BOOL gc_heap::a_fit_segment_end_p (int gen_number,
                                    heap_segment* seg,
@@ -20424,23 +20678,33 @@ void gc_heap::gc1()
 
     if (n < max_generation)
     {
-        compute_promoted_allocation (1 + n);
+        int highest_gen_number =
+#ifdef USE_REGIONS
+            max_generation;
+#else //USE_REGIONS
+            1 + n;
+#endif //USE_REGIONS
 
-        dynamic_data* dd = dynamic_data_of (1 + n);
-        size_t new_fragmentation = generation_free_list_space (generation_of (1 + n)) +
-                                   generation_free_obj_space (generation_of (1 + n));
+        for (int older_gen_idx = (1 + n); older_gen_idx <= highest_gen_number; older_gen_idx++)
+        {
+            compute_promoted_allocation (older_gen_idx);
+
+            dynamic_data* dd = dynamic_data_of (older_gen_idx);
+            size_t new_fragmentation = generation_free_list_space (generation_of (older_gen_idx)) +
+                                       generation_free_obj_space (generation_of (older_gen_idx));
 
 #ifdef BACKGROUND_GC
-        if (current_c_gc_state != c_gc_state_planning)
+            if (current_c_gc_state != c_gc_state_planning)
 #endif //BACKGROUND_GC
-        {
-            if (settings.promotion)
             {
-                dd_fragmentation (dd) = new_fragmentation;
-            }
-            else
-            {
-                //assert (dd_fragmentation (dd) == new_fragmentation);
+                if (settings.promotion)
+                {
+                    dd_fragmentation (dd) = new_fragmentation;
+                }
+                else
+                {
+                    //assert (dd_fragmentation (dd) == new_fragmentation);
+                }
             }
         }
     }
@@ -20648,6 +20912,7 @@ void gc_heap::gc1()
             for (int gen = 0; gen <= limit; gen++)
             {
                 size_t total_desired = 0;
+                size_t total_already_consumed = 0;
 
                 for (int i = 0; i < gc_heap::n_heaps; i++)
                 {
@@ -20661,10 +20926,21 @@ void gc_heap::gc1()
                         break;
                     }
                     total_desired = temp_total_desired;
+                    // for gen 1 and gen 2, there may have been some incoming size
+                    // already accounted for
+                    assert ((ptrdiff_t)dd_desired_allocation (dd) >= dd_new_allocation (dd));
+                    size_t already_consumed = dd_desired_allocation (dd) - dd_new_allocation (dd);
+                    size_t temp_total_already_consumed = total_already_consumed + already_consumed;
+
+                    // we should never have an overflow here as the consumed size should always fit in a size_t
+                    assert (temp_total_already_consumed >= total_already_consumed);
+                    total_already_consumed = temp_total_already_consumed;
                 }
 
                 size_t desired_per_heap = Align (total_desired/gc_heap::n_heaps,
                                                     get_alignment_constant (gen <= max_generation));
+
+                size_t already_consumed_per_heap = total_already_consumed / gc_heap::n_heaps;
 
                 if (gen == 0)
                 {
@@ -20709,7 +20985,7 @@ void gc_heap::gc1()
                     dynamic_data* dd = hp->dynamic_data_of (gen);
                     dd_desired_allocation (dd) = desired_per_heap;
                     dd_gc_new_allocation (dd) = desired_per_heap;
-                    dd_new_allocation (dd) = desired_per_heap;
+                    dd_new_allocation (dd) = desired_per_heap - already_consumed_per_heap;
 
                     if (gen == 0)
                     {
@@ -20753,6 +21029,25 @@ void gc_heap::gc1()
                 }
             }
 
+            for (int i = 0; i < gc_heap::n_heaps; i++)
+            {
+                g_heaps[i]->descr_generations ("END");
+#ifdef USE_REGIONS
+                if (settings.condemned_generation == max_generation)
+                {
+                    // age and print all kinds of free regions
+                    region_free_list::age_free_regions (g_heaps[i]->free_regions);
+                    region_free_list::print (g_heaps[i]->free_regions, i, "END");
+                }
+                else
+                {
+                    // age and print only basic free regions
+                    g_heaps[i]->free_regions[basic_free_region].age_free_regions();
+                    g_heaps[i]->free_regions[basic_free_region].print (i, "END");
+                }
+#endif //USE_REGIONS
+            }
+
             fire_pevents();
             update_end_ngc_time();
             pm_full_gc_init_or_clear();
@@ -20780,6 +21075,18 @@ void gc_heap::gc1()
     {
 #ifdef USE_REGIONS
         distribute_free_regions();
+        if (settings.condemned_generation == max_generation)
+        {
+            // age and print all kinds of free regions
+            region_free_list::age_free_regions(free_regions);
+            region_free_list::print(free_regions, 0, "END");
+        }
+        else
+        {
+            // age and print only basic free regions
+            free_regions[basic_free_region].age_free_regions();
+            free_regions[basic_free_region].print (0, "END");
+        }
 #endif //USE_REGIONS
 
         rearrange_uoh_segments();
@@ -21841,6 +22148,31 @@ void gc_heap::garbage_collect (int n)
     }
 
     descr_generations ("BEGIN");
+#if defined(TRACE_GC) && defined(USE_REGIONS)
+    if (heap_number == 0)
+    {
+#ifdef MULTIPLE_HEAPS
+        for (int i = 0; i < n_heaps; i++)
+        {
+            gc_heap *hp = g_heaps[i];
+#else //MULTIPLE_HEAPS
+        {
+            gc_heap* hp = pGenGCHeap;
+            const int i = 0;
+#endif //MULTIPLE_HEAPS
+            if (settings.condemned_generation == max_generation)
+            {
+                // print all kinds of free regions
+                region_free_list::print(hp->free_regions, i, "BEGIN");
+            }
+            else
+            {
+                // print only basic free regions
+                hp->free_regions[basic_free_region].print (i, "BEGIN");
+            }
+        }
+    }
+#endif // TRACE_GC && USE_REGIONS
 
 #ifdef VERIFY_HEAP
     if ((GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC) &&
@@ -22142,6 +22474,314 @@ void gc_heap::sync_promoted_bytes()
             }
         }
     }
+}
+
+#ifdef MULTIPLE_HEAPS
+void gc_heap::set_heap_for_contained_basic_regions (heap_segment* region, gc_heap* hp)
+{
+    uint8_t* region_start = get_region_start (region);
+    uint8_t* region_end = heap_segment_reserved (region);
+
+    int num_basic_regions = (int)((region_end - region_start) >> min_segment_size_shr);
+    for (int i = 0; i < num_basic_regions; i++)
+    {
+        uint8_t* basic_region_start = region_start + ((size_t)i << min_segment_size_shr);
+        heap_segment* basic_region = get_region_info (basic_region_start);
+        heap_segment_heap (basic_region) = hp;
+    }
+}
+
+heap_segment* gc_heap::unlink_first_rw_region (int gen_idx)
+{
+    generation* gen = generation_of (gen_idx);
+    heap_segment* prev_region = generation_tail_ro_region (gen);
+    heap_segment* region = nullptr;
+    if (prev_region)
+    {
+        assert (heap_segment_read_only_p (prev_region));
+        region = heap_segment_next (prev_region);
+        assert (region != nullptr);
+        // don't remove the last region in the generation
+        if (heap_segment_next (region) == nullptr)
+        {
+            assert (region == generation_tail_region (gen));
+            return nullptr;
+        }
+        heap_segment_next (prev_region) = heap_segment_next (region);
+    }
+    else
+    {
+        region = generation_start_segment (gen);
+        assert (region != nullptr);
+        // don't remove the last region in the generation
+        if (heap_segment_next (region) == nullptr)
+        {
+            assert (region == generation_tail_region (gen));
+            return nullptr;
+        }
+        generation_start_segment (gen) = heap_segment_next (region);
+    }
+    assert (region != generation_tail_region (gen));
+    assert (!heap_segment_read_only_p (region));
+    dprintf (REGIONS_LOG, ("unlink_first_rw_region on heap: %d gen: %d region: %Ix", heap_number, gen_idx, heap_segment_mem (region)));
+
+    set_heap_for_contained_basic_regions (region, nullptr);
+
+    return region;
+}
+
+void gc_heap::thread_rw_region_front (int gen_idx, heap_segment* region)
+{
+    generation* gen = generation_of (gen_idx);
+    assert (!heap_segment_read_only_p (region));
+    heap_segment* prev_region = generation_tail_ro_region (gen);
+    if (prev_region)
+    {
+        heap_segment_next (region) = heap_segment_next (prev_region);
+        heap_segment_next (prev_region) = region;
+    }
+    else
+    {
+        heap_segment_next (region) = generation_start_segment (gen);
+        generation_start_segment (gen) = region;
+    }
+    dprintf (REGIONS_LOG, ("thread_rw_region_front on heap: %d gen: %d region: %Ix", heap_number, gen_idx, heap_segment_mem (region)));
+
+    set_heap_for_contained_basic_regions (region, this);
+}
+#endif // MULTIPLE_HEAPS
+
+void gc_heap::equalize_promoted_bytes()
+{
+#ifdef MULTIPLE_HEAPS
+    // algorithm to roughly balance promoted bytes across heaps by moving regions between heaps
+    // goal is just to balance roughly, while keeping computational complexity low
+    // hope is to achieve better work balancing in relocate and compact phases
+    //
+    int condemned_gen_number = settings.condemned_generation;
+    int highest_gen_number = ((condemned_gen_number == max_generation) ?
+                              (total_generation_count - 1) : condemned_gen_number);
+    int stop_gen_idx = get_stop_generation_index (condemned_gen_number);
+
+    for (int gen_idx = highest_gen_number; gen_idx >= stop_gen_idx; gen_idx--)
+    {
+        // step 1:
+        //  compute total promoted bytes per gen
+        size_t total_surv = 0;
+        size_t max_surv_per_heap = 0;
+        size_t surv_per_heap[MAX_SUPPORTED_CPUS];
+        for (int i = 0; i < n_heaps; i++)
+        {
+            surv_per_heap[i] = 0;
+
+            gc_heap* hp = g_heaps[i];
+
+            generation* condemned_gen = hp->generation_of (gen_idx);
+            heap_segment* current_region = heap_segment_rw (generation_start_segment (condemned_gen));
+
+            while (current_region)
+            {
+                total_surv += heap_segment_survived (current_region);
+                surv_per_heap[i] += heap_segment_survived (current_region);
+                current_region = heap_segment_next (current_region);
+            }
+
+            max_surv_per_heap = max (max_surv_per_heap, surv_per_heap[i]);
+
+            dprintf (REGIONS_LOG, ("gen: %d heap %d surv: %Id", gen_idx, i, surv_per_heap[i]));
+        }
+        // compute average promoted bytes per heap and per gen
+        // be careful to round up
+        size_t avg_surv_per_heap = (total_surv + n_heaps - 1) / n_heaps;
+
+        if (avg_surv_per_heap != 0)
+        {
+            dprintf (REGIONS_LOG, ("before equalize: gen: %d avg surv: %Id max_surv: %Id imbalance: %d", gen_idx, avg_surv_per_heap, max_surv_per_heap, max_surv_per_heap*100/avg_surv_per_heap));
+        }
+        //
+        // step 2:
+        //   remove regions from surplus heaps until all heaps are <= average
+        //   put removed regions into surplus regions
+        //
+        // step 3:
+        //   put regions into size classes by survivorship
+        //   put deficit heaps into size classes by deficit
+        //
+        // step 4:
+        //   while (surplus regions is non-empty)
+        //     get surplus region from biggest size class
+        //     put it into heap from biggest deficit size class
+        //     re-insert heap by resulting deficit size class
+
+        heap_segment* surplus_regions = nullptr;
+        size_t max_deficit = 0;
+        size_t max_survived = 0;
+
+        //  go through all the heaps
+        for (int i = 0; i < n_heaps; i++)
+        {
+            // remove regions from this heap until it has average or less survivorship
+            while (surv_per_heap[i] > avg_surv_per_heap)
+            {
+                heap_segment* region = g_heaps[i]->unlink_first_rw_region (gen_idx);
+                if (region == nullptr)
+                {
+                    break;
+                }
+                assert (surv_per_heap[i] >= (size_t)heap_segment_survived (region));
+                dprintf (REGIONS_LOG, ("heap: %d surv: %Id - %Id = %Id",
+                    i,
+                    surv_per_heap[i],
+                    heap_segment_survived (region),
+                    surv_per_heap[i] - heap_segment_survived (region)));
+
+                surv_per_heap[i] -= heap_segment_survived (region);
+
+                heap_segment_next (region) = surplus_regions;
+                surplus_regions = region;
+
+                max_survived = max (max_survived, (size_t)heap_segment_survived (region));
+            }
+            if (surv_per_heap[i] < avg_surv_per_heap)
+            {
+                size_t deficit = avg_surv_per_heap - surv_per_heap[i];
+                max_deficit = max (max_deficit, deficit);
+            }
+        }
+
+        // we arrange both surplus regions and deficit heaps by size classes
+        const int NUM_SIZE_CLASSES = 16;
+        heap_segment* surplus_regions_by_size_class[NUM_SIZE_CLASSES];
+        memset (surplus_regions_by_size_class, 0, sizeof(surplus_regions_by_size_class));
+        double survived_scale_factor = ((double)NUM_SIZE_CLASSES) / (max_survived + 1);
+
+        heap_segment* next_region;
+        for (heap_segment* region = surplus_regions; region != nullptr; region = next_region)
+        {
+            int size_class = (int)(heap_segment_survived (region)*survived_scale_factor);
+            assert ((0 <= size_class) && (size_class < NUM_SIZE_CLASSES));
+            next_region = heap_segment_next (region);
+            heap_segment_next (region) = surplus_regions_by_size_class[size_class];
+            surplus_regions_by_size_class[size_class] = region;
+        }
+
+        int next_heap_in_size_class[MAX_SUPPORTED_CPUS];
+        int heaps_by_deficit_size_class[NUM_SIZE_CLASSES];
+        for (int i = 0; i < NUM_SIZE_CLASSES; i++)
+        {
+            heaps_by_deficit_size_class[i] = -1;
+        }
+        double deficit_scale_factor = ((double)NUM_SIZE_CLASSES) / (max_deficit + 1);
+
+        for (int i = 0; i < n_heaps; i++)
+        {
+            if (avg_surv_per_heap > surv_per_heap[i])
+            {
+                size_t deficit = avg_surv_per_heap - surv_per_heap[i];
+                int size_class = (int)(deficit*deficit_scale_factor);
+                assert ((0 <= size_class) && (size_class < NUM_SIZE_CLASSES));
+                next_heap_in_size_class[i] = heaps_by_deficit_size_class[size_class];
+                heaps_by_deficit_size_class[size_class] = i;
+            }
+        }
+
+        int region_size_class = NUM_SIZE_CLASSES - 1;
+        int heap_size_class = NUM_SIZE_CLASSES - 1;
+        while (region_size_class >= 0)
+        {
+            // obtain a region from the biggest size class
+            heap_segment* region = surplus_regions_by_size_class[region_size_class];
+            if (region == nullptr)
+            {
+                region_size_class--;
+                continue;
+            }
+            // and a heap from the biggest deficit size class
+            int heap_num;
+            while (true)
+            {
+                if (heap_size_class < 0)
+                {
+                    // put any remaining regions on heap 0
+                    // rare case, but there may be some 0 surv size regions
+                    heap_num = 0;
+                    break;
+                }
+                heap_num = heaps_by_deficit_size_class[heap_size_class];
+                if (heap_num >= 0)
+                {
+                    break;
+                }
+                heap_size_class--;
+            }
+
+            // now move the region to the heap
+            surplus_regions_by_size_class[region_size_class] = heap_segment_next (region);
+            g_heaps[heap_num]->thread_rw_region_front (gen_idx, region);
+
+            // adjust survival for this heap
+            dprintf (REGIONS_LOG, ("heap: %d surv: %Id + %Id = %Id",
+                heap_num,
+                surv_per_heap[heap_num],
+                heap_segment_survived (region),
+                surv_per_heap[heap_num] + heap_segment_survived (region)));
+
+            surv_per_heap[heap_num] += heap_segment_survived (region);
+
+            if (heap_size_class < 0)
+            {
+                // no need to update size classes for heaps -
+                // just work down the remaining regions, if any
+                continue;
+            }
+
+            // is this heap now average or above?
+            if (surv_per_heap[heap_num] >= avg_surv_per_heap)
+            {
+                // if so, unlink from the current size class
+                heaps_by_deficit_size_class[heap_size_class] = next_heap_in_size_class[heap_num];
+                continue;
+            }
+
+            // otherwise compute the updated deficit
+            size_t new_deficit = avg_surv_per_heap - surv_per_heap[heap_num];
+
+            // check if this heap moves to a differenct deficit size class
+            int new_heap_size_class = (int)(new_deficit*deficit_scale_factor);
+            if (new_heap_size_class != heap_size_class)
+            {
+                // the new deficit size class should be smaller and in range
+                assert (new_heap_size_class < heap_size_class);
+                assert ((0 <= new_heap_size_class) && (new_heap_size_class < NUM_SIZE_CLASSES));
+
+                // if so, unlink from the current size class
+                heaps_by_deficit_size_class[heap_size_class] = next_heap_in_size_class[heap_num];
+
+                // and link to the new size class
+                next_heap_in_size_class[heap_num] = heaps_by_deficit_size_class[new_heap_size_class];
+                heaps_by_deficit_size_class[new_heap_size_class] = heap_num;
+            }
+        }
+        // we will generally be left with some heaps with deficits here, but that's ok
+
+        // check we didn't screw up the data structures
+        for (int i = 0; i < n_heaps; i++)
+        {
+            g_heaps[i]->verify_regions (gen_idx, false);
+        }
+#ifdef TRACE_GC
+        max_surv_per_heap = 0;
+        for (int i = 0; i < n_heaps; i++)
+        {
+            max_surv_per_heap = max (max_surv_per_heap, surv_per_heap[i]);
+        }
+        if (avg_surv_per_heap != 0)
+        {
+            dprintf (REGIONS_LOG, ("after equalize: gen: %d avg surv: %Id max_surv: %Id imbalance: %d", gen_idx, avg_surv_per_heap, max_surv_per_heap, max_surv_per_heap*100/avg_surv_per_heap));
+        }
+#endif // TRACE_GC
+    }
+#endif //MULTIPLE_HEAPS
 }
 #endif //USE_REGIONS
 
@@ -23429,6 +24069,21 @@ void gc_heap::mark_object (uint8_t* o THREAD_NUMBER_DCL)
 
 #ifdef BACKGROUND_GC
 
+#ifdef USE_REGIONS
+void gc_heap::set_background_overflow_p (uint8_t* oo)
+{
+    heap_segment* overflow_region = get_region_info_for_address (oo);
+    overflow_region->flags |= heap_segment_flags_overflow;
+    dprintf (3,("setting overflow flag for region %p", heap_segment_mem (overflow_region)));
+#ifdef MULTIPLE_HEAPS
+    gc_heap* overflow_heap = heap_segment_heap (overflow_region);
+#else
+    gc_heap* overflow_heap = nullptr;
+#endif
+    overflow_heap->background_overflow_p = TRUE;
+}
+#endif //USE_REGIONS
+
 void gc_heap::background_mark_simple1 (uint8_t* oo THREAD_NUMBER_DCL)
 {
     uint8_t** mark_stack_limit = &background_mark_stack_array[background_mark_stack_array_length];
@@ -23495,9 +24150,13 @@ void gc_heap::background_mark_simple1 (uint8_t* oo THREAD_NUMBER_DCL)
                 }
                 else
                 {
-                    dprintf (3,("mark stack overflow for object %Ix ", (size_t)oo));
+                    dprintf (3,("background mark stack overflow for object %Ix ", (size_t)oo));
+#ifdef USE_REGIONS
+                    set_background_overflow_p (oo);
+#else //USE_REGIONS
                     background_min_overflow_address = min (background_min_overflow_address, oo);
                     background_max_overflow_address = max (background_max_overflow_address, oo);
+#endif //USE_REGIONS
                 }
             }
             else
@@ -23609,9 +24268,13 @@ void gc_heap::background_mark_simple1 (uint8_t* oo THREAD_NUMBER_DCL)
                 }
                 else
                 {
-                    dprintf (3,("mark stack overflow for object %Ix ", (size_t)oo));
+                    dprintf (3,("background mark stack overflow for object %Ix ", (size_t)oo));
+#ifdef USE_REGIONS
+                    set_background_overflow_p (oo);
+#else //USE_REGIONS
                     background_min_overflow_address = min (background_min_overflow_address, oo);
                     background_max_overflow_address = max (background_max_overflow_address, oo);
+#endif //USE_REGIONS
                 }
             }
         }
@@ -23887,13 +24550,13 @@ uint8_t* gc_heap::background_first_overflow (uint8_t* min_add,
                                           BOOL concurrent_p,
                                           BOOL small_object_p)
 {
+#ifdef USE_REGIONS
+        return heap_segment_mem (seg);
+#else
     uint8_t* o = 0;
 
     if (small_object_p)
     {
-#ifdef USE_REGIONS
-        return find_first_object (min_add, heap_segment_mem (seg));
-#else
         if (in_range_for_segment (min_add, seg))
         {
             // min_add was the beginning of gen1 when we did the concurrent
@@ -23919,11 +24582,11 @@ uint8_t* gc_heap::background_first_overflow (uint8_t* min_add,
                 }
             }
         }
-#endif //USE_REGIONS
     }
 
     o = max (heap_segment_mem (seg), min_add);
     return o;
+#endif //USE_REGIONS
 }
 
 void gc_heap::background_process_mark_overflow_internal (uint8_t* min_add, uint8_t* max_add,
@@ -23948,7 +24611,9 @@ void gc_heap::background_process_mark_overflow_internal (uint8_t* min_add, uint8
 
     exclusive_sync* loh_alloc_lock = 0;
 
+#ifndef USE_REGIONS
     dprintf (2,("Processing Mark overflow [%Ix %Ix]", (size_t)min_add, (size_t)max_add));
+#endif
 #ifdef MULTIPLE_HEAPS
     // We don't have each heap scan all heaps concurrently because we are worried about
     // multiple threads calling things like find_first_object.
@@ -23981,9 +24646,14 @@ void gc_heap::background_process_mark_overflow_internal (uint8_t* min_add, uint8
 #ifdef USE_REGIONS
                 if (heap_segment_overflow_p (seg))
                 {
-                    assert (!concurrent_p);
-                    current_min_add = max (heap_segment_mem (seg), min_add);
-                    current_max_add = min (heap_segment_allocated (seg), max_add);
+                    seg->flags &= ~heap_segment_flags_overflow;
+                    current_min_add = heap_segment_mem (seg);
+                    current_max_add = heap_segment_allocated (seg);
+                    dprintf (2,("Processing Mark overflow [%Ix %Ix]", (size_t)current_min_add, (size_t)current_max_add));
+                }
+                else
+                {
+                    current_min_add = current_max_add = 0;
                 }
 #endif //USE_REGIONS
                 uint8_t* o = hp->background_first_overflow (current_min_add, seg, concurrent_p, small_object_segments);
@@ -24034,15 +24704,19 @@ void gc_heap::background_process_mark_overflow_internal (uint8_t* min_add, uint8
                     }
                 }
 
-                dprintf (2, ("went through overflow objects in segment %Ix (%d) (so far %Id marked)",
-                    heap_segment_mem (seg), (small_object_segments ? 0 : 1), total_marked_objects));
-
+#ifdef USE_REGIONS
+                if (current_max_add != 0)
+#endif //USE_REGIONS
+                {
+                    dprintf (2, ("went through overflow objects in segment %Ix (%d) (so far %Id marked)",
+                        heap_segment_mem (seg), (small_object_segments ? 0 : 1), total_marked_objects));
+                }
 #ifndef USE_REGIONS
                 if (concurrent_p && (seg == hp->saved_overflow_ephemeral_seg))
                 {
                     break;
                 }
-#endif //USE_REGIONS
+#endif //!USE_REGIONS
                 seg = heap_segment_next_in_range (seg);
             }
 
@@ -24071,36 +24745,18 @@ BOOL gc_heap::background_process_mark_overflow (BOOL concurrent_p)
     if (concurrent_p)
     {
         assert (!processed_eph_overflow_p);
-
+#ifndef USE_REGIONS
         if ((background_max_overflow_address != 0) &&
             (background_min_overflow_address != MAX_PTR))
         {
-#ifdef USE_REGIONS
-            // We don't want to step into the ephemeral regions so remember these regions and
-            // be sure to process them later. An FGC cannot happen while we are going through
-            // the region lists.
-            for (int i = 0; i < max_generation; i++)
-            {
-                heap_segment* region = generation_start_segment (generation_of (i));
-                while (region)
-                {
-                    if ((heap_segment_mem (region) <= background_max_overflow_address) &&
-                        (heap_segment_allocated (region) >= background_min_overflow_address))
-                    {
-                        region->flags |= heap_segment_flags_overflow;
-                    }
-                    region = heap_segment_next (region);
-                }
-            }
-#else //USE_REGIONS
             // We have overflow to process but we know we can't process the ephemeral generations
             // now (we actually could process till the current gen1 start but since we are going to
             // make overflow per segment, for now I'll just stop at the saved gen1 start.
             saved_overflow_ephemeral_seg = ephemeral_heap_segment;
             background_max_soh_overflow_address = heap_segment_reserved (saved_overflow_ephemeral_seg);
             background_min_soh_overflow_address = generation_allocation_start (generation_of (max_generation - 1));
-#endif //USE_REGIONS
         }
+#endif //!USE_REGIONS
     }
     else
     {
@@ -24114,12 +24770,18 @@ BOOL gc_heap::background_process_mark_overflow (BOOL concurrent_p)
         {
             // if there was no more overflow we just need to process what we didn't process
             // on the saved ephemeral segment.
+#ifdef USE_REGIONS
+            if (!background_overflow_p)
+#else
             if ((background_max_overflow_address == 0) && (background_min_overflow_address == MAX_PTR))
+#endif //USE_REGIONS
             {
                 dprintf (2, ("final processing mark overflow - no more overflow since last time"));
                 grow_mark_array_p = FALSE;
             }
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+            background_overflow_p = TRUE;
+#else
             background_min_overflow_address = min (background_min_overflow_address,
                                                 background_min_soh_overflow_address);
             background_max_overflow_address = max (background_max_overflow_address,
@@ -24131,8 +24793,12 @@ BOOL gc_heap::background_process_mark_overflow (BOOL concurrent_p)
 
     BOOL  overflow_p = FALSE;
 recheck:
+#ifdef USE_REGIONS
+    if (background_overflow_p)
+#else
     if ((! ((background_max_overflow_address == 0)) ||
          ! ((background_min_overflow_address == MAX_PTR))))
+#endif
     {
         overflow_p = TRUE;
 
@@ -24155,11 +24821,17 @@ recheck:
             grow_mark_array_p = TRUE;
         }
 
+#ifdef USE_REGIONS
+        uint8_t*  min_add = 0;
+        uint8_t*  max_add = 0;
+        background_overflow_p = FALSE;
+#else
         uint8_t*  min_add = background_min_overflow_address;
         uint8_t*  max_add = background_max_overflow_address;
 
         background_max_overflow_address = 0;
         background_min_overflow_address = MAX_PTR;
+#endif
 
         background_process_mark_overflow_internal (min_add, max_add, concurrent_p);
         if (!concurrent_p)
@@ -24309,27 +24981,46 @@ size_t gc_heap::committed_size()
 {
     size_t total_committed = 0;
 
+    const size_t kB = 1024;
+
     for (int i = get_start_generation_index(); i < total_generation_count; i++)
     {
         generation* gen = generation_of (i);
         heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
+        size_t gen_committed = 0;
+        size_t gen_allocated = 0;
 
         while (seg)
         {
-            total_committed += heap_segment_committed (seg) -
+            uint8_t* start =
 #ifdef USE_REGIONS
                 get_region_start (seg);
 #else
                 (uint8_t*)seg;
 #endif //USE_REGIONS
 
+            gen_committed += heap_segment_committed (seg) - start;
+            gen_allocated += heap_segment_allocated (seg) - start;
+
             seg = heap_segment_next (seg);
         }
+        dprintf (3, ("h%d committed in gen%d %IdkB, allocated %IdkB, committed-allocated %IdkB", heap_number, i, gen_committed/kB, gen_allocated/kB, (gen_committed - gen_allocated)/kB));
+
+        total_committed += gen_committed;
     }
 
 #ifdef USE_REGIONS
+    size_t committed_in_free = 0;
+
+    for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
+    {
+        committed_in_free += free_regions[kind].get_size_committed_in_free();
+    }
+
+    dprintf (3, ("h%d committed in free %IdkB", heap_number, committed_in_free/kB));
+
     total_committed += committed_in_free;
-#endif //USE_REGIO
+#endif //USE_REGIONS
 
     return total_committed;
 }
@@ -25253,6 +25944,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 
 #ifdef USE_REGIONS
         sync_promoted_bytes();
+        equalize_promoted_bytes();
 #endif //USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
@@ -26301,7 +26993,7 @@ void gc_heap::check_loh_compact_mode (BOOL all_heaps_compacted_p)
 BOOL gc_heap::plan_loh()
 {
 #ifdef FEATURE_EVENT_TRACE
-    uint64_t start_time, end_time;
+    uint64_t start_time = 0, end_time;
     if (informational_event_enabled_p)
     {
         memset (loh_compact_info, 0, (sizeof (etw_loh_compact_info) * get_num_heaps()));
@@ -26469,7 +27161,7 @@ void gc_heap::compact_loh()
     assert (loh_compaction_requested() || heap_hard_limit || conserve_mem_setting);
 
 #ifdef FEATURE_EVENT_TRACE
-    uint64_t start_time, end_time;
+    uint64_t start_time = 0, end_time;
     if (informational_event_enabled_p)
     {
         start_time = GetHighPrecisionTimeStamp();
@@ -26632,7 +27324,7 @@ void gc_heap::relocate_in_loh_compact()
 #ifdef FEATURE_EVENT_TRACE
     size_t total_refs = 0;
     size_t zero_refs = 0;
-    uint64_t start_time, end_time;
+    uint64_t start_time = 0, end_time;
     if (informational_event_enabled_p)
     {
         start_time = GetHighPrecisionTimeStamp();
@@ -27417,7 +28109,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         _sort (&mark_list[0], mark_list_index - 1, 0);
 #endif //USE_VXSORT
 
-        dprintf (3, ("using mark list at GC #%d", settings.gc_index));
+        dprintf (3, ("using mark list at GC #%Id", (size_t)settings.gc_index));
         //verify_qsort_array (&mark_list[0], mark_list_index-1);
 #endif //!MULTIPLE_HEAPS
         use_mark_list = TRUE;
@@ -27507,6 +28199,18 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 if (!((heap_segment_reserved (seg) >= slow) &&
                     (heap_segment_mem (seg) <= shigh)))
                 {
+#ifdef BACKGROUND_GC
+                    if (current_c_gc_state == c_gc_state_marking)
+                    {
+#ifdef USE_REGIONS
+                        bgc_clear_batch_mark_array_bits (heap_segment_mem (seg), heap_segment_allocated (seg));
+#else //USE_REGIONS
+                        // This cannot happen with segments as we'd only be on the ephemeral segment if BGC is in
+                        // progress and it's guaranteed shigh/slow would be in range of the ephemeral segment.
+                        assert (!"cannot happen with segments");
+#endif //USE_REGIONS
+                    }
+#endif //BACKGROUND_GC
                     heap_segment_saved_allocated (seg) = heap_segment_allocated (seg);
                     // shorten it to minimum
                     heap_segment_allocated (seg) =  heap_segment_mem (seg);
@@ -28858,6 +29562,14 @@ void gc_heap::plan_phase (int condemned_gen_number)
     {
         dprintf (2,( "**** Doing Compacting GC ****"));
 
+#if defined(USE_REGIONS) && defined(BACKGROUND_GC)
+        if (should_update_end_mark_size())
+        {
+            background_soh_size_end_mark += generation_end_seg_allocated (older_gen) -
+                                            r_older_gen_end_seg_allocated;
+        }
+#endif //USE_REGIONS && BACKGROUND_GC
+
 #ifndef USE_REGIONS
         if (should_expand)
         {
@@ -29013,11 +29725,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #endif //!USE_REGIONS
 
         {
-#ifdef FEATURE_PREMORTEM_FINALIZATION
-            finalize_queue->UpdatePromotedGenerations (condemned_gen_number,
-                                                       (!settings.demotion && settings.promotion));
-#endif // FEATURE_PREMORTEM_FINALIZATION
-
 #ifdef MULTIPLE_HEAPS
             dprintf(3, ("Joining after end of compaction"));
             gc_t_join.join(this, gc_join_adjust_handle_age_compact);
@@ -29039,6 +29746,11 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 gc_t_join.restart();
             }
 #endif //MULTIPLE_HEAPS
+
+#ifdef FEATURE_PREMORTEM_FINALIZATION
+            finalize_queue->UpdatePromotedGenerations (condemned_gen_number,
+                                                       (!settings.demotion && settings.promotion));
+#endif // FEATURE_PREMORTEM_FINALIZATION
 
             ScanContext sc;
             sc.thread_number = heap_number;
@@ -29219,13 +29931,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 generation_free_obj_space (generation_of (max_generation))));
         }
 
-#ifdef FEATURE_PREMORTEM_FINALIZATION
-        if (!special_sweep_p)
-        {
-            finalize_queue->UpdatePromotedGenerations (condemned_gen_number, TRUE);
-        }
-#endif // FEATURE_PREMORTEM_FINALIZATION
-
 #ifdef MULTIPLE_HEAPS
         dprintf(3, ("Joining after end of sweep"));
         gc_t_join.join(this, gc_join_adjust_handle_age_sweep);
@@ -29266,6 +29971,13 @@ void gc_heap::plan_phase (int condemned_gen_number)
             gc_t_join.restart();
 #endif //MULTIPLE_HEAPS
         }
+
+#ifdef FEATURE_PREMORTEM_FINALIZATION
+        if (!special_sweep_p)
+        {
+            finalize_queue->UpdatePromotedGenerations (condemned_gen_number, TRUE);
+        }
+#endif // FEATURE_PREMORTEM_FINALIZATION
 
         if (!special_sweep_p)
         {
@@ -29362,6 +30074,13 @@ void gc_heap::fix_generation_bounds (int condemned_gen_number,
         }
     }
 #endif //MULTIPLE_HEAPS
+
+#ifdef BACKGROUND_GC
+    if (should_update_end_mark_size())
+    {
+        background_soh_size_end_mark = generation_size (max_generation);
+    }
+#endif //BACKGROUND_GC
 #endif //!USE_REGIONS
 
     {
@@ -29520,7 +30239,7 @@ heap_segment* gc_heap::find_first_valid_region (heap_segment* region, bool compa
                 set_region_plan_gen_num (current_region, plan_gen_num);
             }
 
-            if (gen_num != 0)
+            if (gen_num >= soh_gen2)
             {
                 dprintf (REGIONS_LOG, ("  gen%d decommit end of region %Ix(%Ix)",
                     gen_num, current_region, heap_segment_mem (current_region)));
@@ -29580,6 +30299,14 @@ void gc_heap::thread_final_regions (bool compact_p)
         generation_final_regions[gen_idx].tail = generation_tail_region (gen);
     }
 
+#ifdef BACKGROUND_GC
+    heap_segment* max_gen_tail_region = 0;
+    if (should_update_end_mark_size())
+    {
+        max_gen_tail_region = generation_final_regions[max_generation].tail;
+    }
+#endif //BACKGROUND_GC
+
     // Step 2: for each region in the condemned generations, we thread it onto its planned generation
     // in our generation_final_regions array.
     for (int gen_idx = condemned_gen_number; gen_idx >= 0; gen_idx--)
@@ -29630,6 +30357,21 @@ void gc_heap::thread_final_regions (bool compact_p)
         }
     }
 
+#ifdef BACKGROUND_GC
+    if (max_gen_tail_region)
+    {
+        max_gen_tail_region = heap_segment_next (max_gen_tail_region);
+
+        while (max_gen_tail_region)
+        {
+            background_soh_size_end_mark += heap_segment_allocated (max_gen_tail_region) -
+                                            heap_segment_mem (max_gen_tail_region);
+
+            max_gen_tail_region = heap_segment_next (max_gen_tail_region);
+        }
+    }
+#endif //BACKGROUND_GC
+
     // Step 4: if a generation doesn't have any regions, we need to get a new one for it;
     // otherwise we just set the head region as the start region for that generation.
     for (int gen_idx = 0; gen_idx <= max_generation; gen_idx++)
@@ -29667,7 +30409,7 @@ void gc_heap::thread_final_regions (bool compact_p)
         }
     }
 
-    verify_regions (true);
+    verify_regions (true, false);
 }
 
 void gc_heap::thread_start_region (generation* gen, heap_segment* region)
@@ -29718,7 +30460,7 @@ heap_segment* gc_heap::get_new_region (int gen_number, size_t size)
         heap_segment_next (generation_tail_region (gen)) = new_region;
         generation_tail_region (gen) = new_region;
 
-        verify_regions (gen_number, false);
+        verify_regions (gen_number, false, settings.concurrent);
     }
 
     return new_region;
@@ -29745,6 +30487,12 @@ heap_segment* gc_heap::allocate_new_region (gc_heap* hp, int gen_num, bool uoh_p
     heap_segment* res = make_heap_segment (start, (end - start), hp, gen_num);
 
     dprintf (REGIONS_LOG, ("got a new region %Ix %Ix->%Ix", (size_t)res, start, end));
+
+    if (res == nullptr)
+    {
+        global_region_allocator.delete_region (start);
+    }
+
     return res;
 }
 
@@ -29781,7 +30529,7 @@ void gc_heap::update_start_tail_regions (generation* gen,
             (size_t)prev_region, heap_segment_mem (prev_region)));
     }
 
-    verify_regions (false);
+    verify_regions (false, settings.concurrent);
 }
 
 // There's one complication with deciding whether we can make a region SIP or not - if the plan_gen_num of
@@ -30050,12 +30798,19 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
     heap_segment_saved_allocated (region) = heap_segment_allocated (region);
     heap_segment_allocated (region) = last_marked_obj_end;
     heap_segment_plan_allocated (region) = heap_segment_allocated (region);
+
+    int plan_gen_num = heap_segment_plan_gen_num (region);
+    generation_allocation_size (generation_of (plan_gen_num)) += heap_segment_survived (region);
+    dprintf (REGIONS_LOG, ("sip: g%d alloc size is now %Id", plan_gen_num,
+        generation_allocation_size (generation_of (plan_gen_num))));
 }
 
 inline
 void gc_heap::check_demotion_helper_sip (uint8_t** pval, int parent_gen_num, uint8_t* parent_loc)
 {
     uint8_t* child_object = *pval;
+    if (!is_in_heap_range (child_object))
+        return;
     if (!child_object) return;
     int child_object_plan_gen = get_region_plan_gen_num (child_object);
 
@@ -30163,7 +30918,7 @@ void gc_heap::make_free_lists (int condemned_gen_number)
     //Promotion has to happen in sweep case.
     assert (settings.promotion);
 
-    make_free_args args;
+    make_free_args args = {};
     int stop_gen_idx = get_stop_generation_index (condemned_gen_number);
     for (int i = condemned_gen_number; i >= stop_gen_idx; i--)
     {
@@ -32375,6 +33130,7 @@ void gc_heap::background_scan_dependent_handles (ScanContext *sc)
 
             if (!s_fScanRequired)
             {
+#ifndef USE_REGIONS
                 uint8_t* all_heaps_max = 0;
                 uint8_t* all_heaps_min = MAX_PTR;
                 int i;
@@ -32390,6 +33146,7 @@ void gc_heap::background_scan_dependent_handles (ScanContext *sc)
                     g_heaps[i]->background_max_overflow_address = all_heaps_max;
                     g_heaps[i]->background_min_overflow_address = all_heaps_min;
                 }
+#endif //!USE_REGIONS
             }
 
             dprintf(2, ("Starting all gc thread mark stack overflow processing"));
@@ -32891,6 +33648,11 @@ void gc_heap::decommit_mark_array_by_seg (heap_segment* seg)
     }
 }
 
+bool gc_heap::should_update_end_mark_size()
+{
+    return ((settings.condemned_generation == (max_generation - 1)) && (current_c_gc_state == c_gc_state_planning));
+}
+
 void gc_heap::background_mark_phase ()
 {
     verify_mark_array_cleared();
@@ -32920,12 +33682,14 @@ void gc_heap::background_mark_phase ()
     bpromoted_bytes (heap_number) = 0;
     static uint32_t num_sizedrefs = 0;
 
+#ifdef USE_REGIONS
+    background_overflow_p = FALSE;
+#else
     background_min_overflow_address = MAX_PTR;
     background_max_overflow_address = 0;
-#ifndef USE_REGIONS
     background_min_soh_overflow_address = MAX_PTR;
     background_max_soh_overflow_address = 0;
-#endif //!USE_REGIONS
+#endif //USE_REGIONS
     processed_eph_overflow_p = FALSE;
 
     //set up the mark lists from g_mark_list
@@ -32963,6 +33727,7 @@ void gc_heap::background_mark_phase ()
     bgc_begin_poh_size = total_poh_size;
     bgc_loh_size_increased = 0;
     bgc_poh_size_increased = 0;
+    background_soh_size_end_mark = 0;
 
     dprintf (GTC_LOG, ("BM: h%d: loh: %Id, soh: %Id, poh: %Id", heap_number, total_loh_size, total_soh_size, total_poh_size));
 
@@ -33125,7 +33890,7 @@ void gc_heap::background_mark_phase ()
 
     enable_preemptive ();
 
-#ifdef MULTIPLE_HEAPS
+#if defined(MULTIPLE_HEAPS) && !defined(USE_REGIONS)
     bgc_t_join.join(this, gc_join_concurrent_overflow);
     if (bgc_t_join.joined())
     {
@@ -33142,6 +33907,7 @@ void gc_heap::background_mark_phase ()
                 all_heaps_max = g_heaps[i]->background_max_overflow_address;
             if (all_heaps_min > g_heaps[i]->background_min_overflow_address)
                 all_heaps_min = g_heaps[i]->background_min_overflow_address;
+
         }
         for (i = 0; i < n_heaps; i++)
         {
@@ -33151,7 +33917,7 @@ void gc_heap::background_mark_phase ()
         dprintf(3, ("Starting all bgc threads after updating the overflow info"));
         bgc_t_join.restart();
     }
-#endif //MULTIPLE_HEAPS
+#endif //MULTIPLE_HEAPS && !USE_REGIONS
 
     disable_preemptive (true);
 
@@ -33441,6 +34207,8 @@ void gc_heap::background_mark_phase ()
             {
                 heap_segment_background_allocated (seg) = heap_segment_allocated (seg);
             }
+
+            background_soh_size_end_mark += heap_segment_background_allocated (seg) - heap_segment_mem (seg);
 
             dprintf (3333, ("h%d gen%d seg %Ix (%Ix) background allocated is %Ix",
                             heap_number, i, (size_t)(seg), heap_segment_mem (seg),
@@ -33927,7 +34695,7 @@ void gc_heap::background_grow_c_mark_list()
         assert (new_c_mark_list);
         memcpy (new_c_mark_list, c_mark_list, c_mark_list_length*sizeof(uint8_t*));
         c_mark_list_length = c_mark_list_length*2;
-        delete c_mark_list;
+        delete[] c_mark_list;
         c_mark_list = new_c_mark_list;
     }
 }
@@ -35995,6 +36763,8 @@ gc_heap::mark_through_cards_helper (uint8_t** poo, size_t& n_gen,
     if (child_object_gen < current_gen)
     {
         cg_pointers_found++;
+        dprintf (4, ("cg pointer %Ix found, %Id so far",
+                     (size_t)*poo, cg_pointers_found ));
     }
 #else //USE_REGIONS
     assert (condemned_gen == -1);
@@ -36320,11 +37090,16 @@ void gc_heap::mark_through_cards_for_segments (card_fn fn, BOOL relocating CARD_
         {
             if (foundp && (cg_pointers_found == 0))
             {
+#ifndef USE_REGIONS
+                // in the segment case, need to recompute end_card so we don't clear cards
+                // for the next generation
+                end_card = card_of (end);
+#endif
                 dprintf(3,(" Clearing cards [%Ix, %Ix[ ", (size_t)card_address(card),
-                           (size_t)end));
-                clear_cards (card, card_of (end));
-                n_card_set -= (card_of (end) - card);
-                total_cards_cleared += (card_of (end) - card);
+                            (size_t)card_address(end_card)));
+                clear_cards (card, end_card);
+                n_card_set -= (end_card - card);
+                total_cards_cleared += (end_card - card);
             }
             n_eph += cg_pointers_found;
             cg_pointers_found = 0;
@@ -36560,7 +37335,7 @@ go_through_refs:
             hpt->heap_number, heap_number, n_eph, n_gen, n_card_set, total_cards_cleared,
             (n_eph ? (int)(((float)n_gen / (float)n_eph) * 100) : 0)));
         dprintf (3, ("h%d marking h%d Msoh: total cross %Id, useful: %Id, running ratio: %d",
-            hpt->heap_number, heap_number, n_eph_soh, n_gen_soh,
+            hpt->heap_number, heap_number, (size_t)n_eph_soh, (size_t)n_gen_soh,
             (n_eph_soh ? (int)(((float)n_gen_soh / (float)n_eph_soh) * 100) : 0)));
 #else
         generation_skip_ratio = ((n_eph > MIN_SOH_CROSS_GEN_REFS) ? (int)(((float)n_gen / (float)n_eph) * 100) : 100);
@@ -38661,6 +39436,8 @@ void gc_heap::compute_new_dynamic_data (int gen_number)
         // When we are in the low latency mode, we can still be
         // condemning more than gen1's 'cause of induced GCs.
         dd_desired_allocation (dd) = low_latency_alloc;
+        dd_gc_new_allocation (dd) = dd_desired_allocation (dd);
+        dd_new_allocation (dd) = dd_gc_new_allocation (dd);
     }
     else
     {
@@ -38710,13 +39487,15 @@ void gc_heap::compute_new_dynamic_data (int gen_number)
         {
             dd_desired_allocation (dd) = desired_new_allocation (dd, out, gen_number, 0);
         }
+        dd_gc_new_allocation (dd) = dd_desired_allocation (dd);
+
+        // we may have had some incoming objects during this GC -
+        // adjust the consumed budget for these
+        dd_new_allocation (dd) = dd_gc_new_allocation (dd) - in;
     }
 
     gen_data->pinned_surv = dd_pinned_survived_size (dd);
     gen_data->npinned_surv = dd_survived_size (dd) - dd_pinned_survived_size (dd);
-
-    dd_gc_new_allocation (dd) = dd_desired_allocation (dd);
-    dd_new_allocation (dd) = dd_gc_new_allocation (dd);
 
     dd_promoted_size (dd) = out;
     if (gen_number == max_generation)
@@ -38767,18 +39546,45 @@ void gc_heap::trim_youngest_desired_low_memory()
     }
 }
 
-ptrdiff_t gc_heap::estimate_gen_growth (int gen)
+ptrdiff_t gc_heap::estimate_gen_growth (int gen_number)
 {
-    dynamic_data* dd_gen = dynamic_data_of(gen);
-
+    dynamic_data* dd_gen = dynamic_data_of (gen_number);
+    generation *gen = generation_of (gen_number);
     ptrdiff_t new_allocation_gen = dd_new_allocation (dd_gen);
-    ptrdiff_t free_list_space_gen = generation_free_list_space (generation_of (gen));
+    ptrdiff_t free_list_space_gen = generation_free_list_space (gen);
 
+#ifdef USE_REGIONS
+    // in the case of regions, we assume all the space up to reserved gets used before we get a new region for this gen
+    ptrdiff_t reserved_not_in_use = 0;
+    ptrdiff_t allocated_gen = 0;
+
+    for (heap_segment* region = generation_start_segment_rw (gen); region != nullptr; region = heap_segment_next (region))
+    {
+        allocated_gen += heap_segment_allocated (region) - heap_segment_mem (region);
+        reserved_not_in_use += heap_segment_reserved (region) - heap_segment_allocated (region);
+    }
+
+    // compute how much of the allocated space is on the free list
+    double free_list_fraction_gen = (allocated_gen == 0) ? 0.0 : (double)(free_list_space_gen) / (double)allocated_gen;
+
+    // estimate amount of usable free space
+    // e.g. if 90% of the allocated space is free, assume 90% of these 90% can get used
+    // e.g. if 10% of the allocated space is free, assume 10% of these 10% can get used
+    ptrdiff_t usable_free_space = (ptrdiff_t)(free_list_fraction_gen * free_list_space_gen);
+
+    ptrdiff_t budget_gen = new_allocation_gen - usable_free_space - reserved_not_in_use;
+
+    dprintf(1, ("h%2d gen %d budget %8Id allocated: %8Id, FL: %8Id, reserved_not_in_use %8Id budget_gen %8Id",
+        heap_number, gen_number, new_allocation_gen, allocated_gen, free_list_space_gen, reserved_not_in_use, budget_gen));
+
+#else  //USE_REGIONS
     // estimate how we are going to need in this generation - estimate half the free list space gets used
     ptrdiff_t budget_gen = new_allocation_gen - (free_list_space_gen / 2);
-    dprintf (REGIONS_LOG, ("budget for gen %d on heap %d is %Id (new %Id, free %Id)", gen, heap_number, budget_gen, new_allocation_gen, free_list_space_gen));
+    dprintf (REGIONS_LOG, ("budget for gen %d on heap %d is %Id (new %Id, free %Id)",
+        gen_number, heap_number, budget_gen, new_allocation_gen, free_list_space_gen));
+#endif //USE_REGIONS
 
-    return max(0, budget_gen);
+    return budget_gen;
 }
 
 void gc_heap::decommit_ephemeral_segment_pages()
@@ -38789,14 +39595,71 @@ void gc_heap::decommit_ephemeral_segment_pages()
     }
 
 #if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
-    // for regions, this is done at the regions level
-    return;
+    for (int gen_number = soh_gen0; gen_number <= soh_gen1; gen_number++)
+    {
+        generation *gen = generation_of (gen_number);
+        heap_segment* tail_region = generation_tail_region (gen);
+        uint8_t* previous_decommit_target = heap_segment_decommit_target (tail_region);
+
+        // reset the decommit targets to make sure we don't decommit inadvertently
+        for (heap_segment* region = generation_start_segment_rw (gen); region != nullptr; region = heap_segment_next (region))
+        {
+            heap_segment_decommit_target (region) = heap_segment_reserved (region);
+        }
+
+        ptrdiff_t budget_gen = estimate_gen_growth (gen_number) + loh_size_threshold;
+
+        if (budget_gen >= 0)
+        {
+            // we need more than the regions we have - nothing to decommit
+            continue;
+        }
+
+        // we may have too much committed - let's see if we can decommit in the tail region
+        ptrdiff_t tail_region_size = heap_segment_reserved (tail_region) - heap_segment_mem (tail_region);
+        ptrdiff_t unneeded_tail_size = min (-budget_gen, tail_region_size);
+        uint8_t *decommit_target = heap_segment_reserved (tail_region) - unneeded_tail_size;
+        decommit_target = max (decommit_target, heap_segment_allocated (tail_region));
+
+        if (decommit_target < previous_decommit_target)
+        {
+            // we used to have a higher target - do exponential smoothing by computing
+            // essentially decommit_target = 1/3*decommit_target + 2/3*previous_decommit_target
+            // computation below is slightly different to avoid overflow
+            ptrdiff_t target_decrease = previous_decommit_target - decommit_target;
+            decommit_target += target_decrease * 2 / 3;
+        }
+
+//#define STRESS_DECOMMIT 1
+#ifdef STRESS_DECOMMIT
+        // our decommit logic should work for a random decommit target within tail_region - make sure it does
+        decommit_target = heap_segment_mem (tail_region) + gc_rand::get_rand (heap_segment_reserved (tail_region) - heap_segment_mem (tail_region));
+#endif //STRESS_DECOMMIT
+
+        heap_segment_decommit_target (tail_region) = decommit_target;
+
+        if (decommit_target < heap_segment_committed (tail_region))
+        {
+            gradual_decommit_in_progress_p = TRUE;
+
+            dprintf (1, ("h%2d gen %d reduce_commit by %IdkB",
+                heap_number,
+                gen_number,
+                (heap_segment_committed (tail_region) - decommit_target)/1024));
+        }
+        dprintf(3, ("h%2d gen %d allocated: %IdkB committed: %IdkB target: %IdkB",
+            heap_number,
+            gen_number,
+            (heap_segment_allocated (tail_region) - heap_segment_mem (tail_region))/1024,
+            (heap_segment_committed (tail_region) - heap_segment_mem (tail_region))/1024,
+            (decommit_target                      - heap_segment_mem (tail_region))/1024));
+    }
 #else //MULTIPLE_HEAPS && USE_REGIONS
 
     dynamic_data* dd0 = dynamic_data_of (0);
 
     ptrdiff_t desired_allocation = dd_new_allocation (dd0) +
-                                   estimate_gen_growth (soh_gen1) +
+                                   max (estimate_gen_growth (soh_gen1), 0) +
                                    loh_size_threshold;
 
     size_t slack_space =
@@ -38903,7 +39766,11 @@ bool gc_heap::decommit_step ()
             }
         }
     }
-#else //USE_REGIONS
+    if (use_large_pages_p)
+    {
+        return (decommit_size != 0);
+    }
+#endif //USE_REGIONS
 #ifdef MULTIPLE_HEAPS
     // should never get here for large pages because decommit_ephemeral_segment_pages
     // will not do anything if use_large_pages_p is true
@@ -38915,46 +39782,93 @@ bool gc_heap::decommit_step ()
         decommit_size += hp->decommit_ephemeral_segment_pages_step ();
     }
 #endif //MULTIPLE_HEAPS
-#endif //USE_REGIONS
     return (decommit_size != 0);
 }
 
 #ifdef MULTIPLE_HEAPS
 // return the decommitted size
-#ifndef USE_REGIONS
 size_t gc_heap::decommit_ephemeral_segment_pages_step ()
 {
-    // we rely on desired allocation not being changed outside of GC
-    assert (ephemeral_heap_segment->saved_desired_allocation == dd_desired_allocation (dynamic_data_of (0)));
-
-    uint8_t* decommit_target = heap_segment_decommit_target (ephemeral_heap_segment);
-    size_t EXTRA_SPACE = 2 * OS_PAGE_SIZE;
-    decommit_target += EXTRA_SPACE;
-    uint8_t* committed = heap_segment_committed (ephemeral_heap_segment);
-    if (decommit_target < committed)
+    size_t size = 0;
+#ifdef USE_REGIONS
+    for (int gen_number = soh_gen0; gen_number <= soh_gen1; gen_number++)
     {
-        // we rely on other threads not messing with committed if we are about to trim it down
-        assert (ephemeral_heap_segment->saved_committed == heap_segment_committed (ephemeral_heap_segment));
+        generation* gen = generation_of (gen_number);
+        heap_segment* seg = generation_tail_region (gen);
+#else // USE_REGIONS
+    {
+        heap_segment* seg = ephemeral_heap_segment;
+        // we rely on desired allocation not being changed outside of GC
+        assert (seg->saved_desired_allocation == dd_desired_allocation (dynamic_data_of (0)));
+#endif // USE_REGIONS
 
-        // how much would we need to decommit to get to decommit_target in one step?
-        size_t full_decommit_size = (committed - decommit_target);
+        uint8_t* decommit_target = heap_segment_decommit_target (seg);
+        size_t EXTRA_SPACE = 2 * OS_PAGE_SIZE;
+        decommit_target += EXTRA_SPACE;
+#ifdef STRESS_DECOMMIT
+        // our decommit logic should work for a random decommit target within tail_region - make sure it does
+        // tail region now may be different from what decommit_ephemeral_segment_pages saw
+        decommit_target = heap_segment_mem (seg) + gc_rand::get_rand (heap_segment_reserved (seg) - heap_segment_mem (seg));
+#endif //STRESS_DECOMMIT
+        uint8_t* committed = heap_segment_committed (seg);
+        uint8_t* allocated = (seg == ephemeral_heap_segment) ? alloc_allocated : heap_segment_allocated (seg);
+        if ((allocated <= decommit_target) && (decommit_target < committed))
+        {
+#ifdef USE_REGIONS
+            if (gen_number == soh_gen0)
+            {
+                // for gen 0, sync with the allocator by taking the more space lock
+                // and re-read the variables
+                //
+                // we call try_enter_spin_lock here instead of enter_spin_lock because
+                // calling enter_spin_lock from this thread can deadlock at the start
+                // of a GC - if gc_started is already true, we call wait_for_gc_done(),
+                // but we are on GC thread 0, so GC cannot make progress
+                if (!try_enter_spin_lock (&more_space_lock_soh))
+                {
+                    continue;
+                }
+                add_saved_spinlock_info (false, me_acquire, mt_decommit_step);
+                seg = generation_tail_region (gen);
+#ifndef STRESS_DECOMMIT
+                decommit_target = heap_segment_decommit_target (seg);
+                decommit_target += EXTRA_SPACE;
+#endif
+                committed = heap_segment_committed (seg);
+                allocated = (seg == ephemeral_heap_segment) ? alloc_allocated : heap_segment_allocated (seg);
+            }
+            if ((allocated <= decommit_target) && (decommit_target < committed))
+#else // USE_REGIONS
+            // we rely on other threads not messing with committed if we are about to trim it down
+            assert (seg->saved_committed == heap_segment_committed (seg));
+#endif // USE_REGIONS
+            {
+                // how much would we need to decommit to get to decommit_target in one step?
+                size_t full_decommit_size = (committed - decommit_target);
 
-        // don't do more than max_decommit_step_size per step
-        size_t decommit_size = min (max_decommit_step_size, full_decommit_size);
+                // don't do more than max_decommit_step_size per step
+                size_t decommit_size = min (max_decommit_step_size, full_decommit_size);
 
-        // figure out where the new committed should be
-        uint8_t* new_committed = (committed - decommit_size);
-        size_t size = decommit_heap_segment_pages_worker (ephemeral_heap_segment, new_committed);
+                // figure out where the new committed should be
+                uint8_t* new_committed = (committed - decommit_size);
+                size += decommit_heap_segment_pages_worker (seg, new_committed);
 
 #ifdef _DEBUG
-        ephemeral_heap_segment->saved_committed = committed - size;
+                seg->saved_committed = committed - size;
 #endif // _DEBUG
-
-        return size;
+            }
+#ifdef USE_REGIONS
+            if (gen_number == soh_gen0)
+            {
+                // for gen 0, we took the more space lock - leave it again
+                add_saved_spinlock_info (false, me_release, mt_decommit_step);
+                leave_spin_lock (&more_space_lock_soh);
+            }
+#endif // USE_REGIONS
+        }
     }
-    return 0;
+    return size;
 }
-#endif //!USE_REGIONS
 #endif //MULTIPLE_HEAPS
 
 //This is meant to be called by decide_on_compacting.
@@ -41308,7 +42222,7 @@ go_through_refs:
             hpt->heap_number, heap_number, n_eph, n_gen, n_card_set, total_cards_cleared,
             (n_eph ? (int)(((float)n_gen / (float)n_eph) * 100) : 0)));
         dprintf (3, ("h%d marking h%d Mloh: total cross %Id, useful: %Id, running ratio: %d",
-            hpt->heap_number, heap_number, n_eph_loh, n_gen_loh,
+            hpt->heap_number, heap_number, (size_t)n_eph_loh, (size_t)n_gen_loh,
             (n_eph_loh ? (int)(((float)n_gen_loh / (float)n_eph_loh) * 100) : 0)));
 #else
         generation_skip_ratio = min (((n_eph > MIN_LOH_CROSS_GEN_REFS) ?
@@ -41714,9 +42628,8 @@ BOOL gc_heap::bgc_mark_array_range (heap_segment* seg,
 
 void gc_heap::bgc_verify_mark_array_cleared (heap_segment* seg)
 {
-#ifdef VERIFY_HEAP
-    if (gc_heap::background_running_p() &&
-        (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC))
+#ifdef _DEBUG
+    if (gc_heap::background_running_p())
     {
         uint8_t* range_beg = 0;
         uint8_t* range_end = 0;
@@ -42064,7 +42977,7 @@ gc_heap::verify_free_lists ()
     }
 }
 
-void gc_heap::verify_regions (int gen_number, bool can_verify_gen_num)
+void gc_heap::verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail)
 {
 #ifdef USE_REGIONS
     // For the given generation, verify that
@@ -42127,7 +43040,7 @@ void gc_heap::verify_regions (int gen_number, bool can_verify_gen_num)
         FATAL_GC_ERROR();
     }
 
-    if (tail_region != prev_region_in_gen)
+    if (can_verify_tail && (tail_region != prev_region_in_gen))
     {
         dprintf (REGIONS_LOG, ("h%d gen%d tail region is %Ix(%Ix), diff from last region %Ix(%Ix)!!",
             heap_number, gen_number,
@@ -42138,12 +43051,18 @@ void gc_heap::verify_regions (int gen_number, bool can_verify_gen_num)
 #endif //USE_REGIONS
 }
 
-void gc_heap::verify_regions (bool can_verify_gen_num)
+inline bool is_user_alloc_gen (int gen_number)
+{
+    return ((gen_number == soh_gen0) || (gen_number == loh_generation) || (gen_number == poh_generation));
+}
+
+void gc_heap::verify_regions (bool can_verify_gen_num, bool concurrent_p)
 {
 #ifdef USE_REGIONS
     for (int i = 0; i < total_generation_count; i++)
     {
-        verify_regions (i, can_verify_gen_num);
+        bool can_verify_tail = (concurrent_p ? !is_user_alloc_gen (i) : true);
+        verify_regions (i, can_verify_gen_num, can_verify_tail);
     }
 #endif //USE_REGIONS
 }
@@ -42274,7 +43193,7 @@ void gc_heap::verify_heap (BOOL begin_gc_p)
     //verify that the generation structures makes sense
     {
 #ifdef USE_REGIONS
-        verify_regions (true);
+        verify_regions (true, settings.concurrent);
 #else //USE_REGIONS
         generation* gen = generation_of (max_generation);
 
@@ -42799,7 +43718,7 @@ HRESULT GCHeap::Initialize()
     }
 
 #ifdef USE_REGIONS
-    gc_heap::regions_range = (size_t)GCConfig::GetGCRegionsRange();
+    gc_heap::regions_range = (size_t)GCConfig::GetGCRegionRange();
 #endif //USE_REGIONS
 
 #ifdef HOST_64BIT
@@ -43050,7 +43969,7 @@ HRESULT GCHeap::Initialize()
 #ifdef MULTIPLE_HEAPS
     gc_heap::soh_segment_size /= 4;
 #endif //MULTIPLE_HEAPS
-    size_t gc_region_size = (size_t)GCConfig::GetGCRegionsSize();
+    size_t gc_region_size = (size_t)GCConfig::GetGCRegionSize();
     if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * 19) > gc_heap::regions_range))
     {
         return E_OUTOFMEMORY;
@@ -43335,8 +44254,15 @@ void GCHeap::SetYieldProcessorScalingFactor (float scalingFactor)
 
 unsigned int GCHeap::WhichGeneration (Object* object)
 {
-    gc_heap* hp = gc_heap::heap_of ((uint8_t*)object);
-    unsigned int g = hp->object_gennum ((uint8_t*)object);
+    uint8_t* o = (uint8_t*)object;
+#ifdef FEATURE_BASICFREEZE
+    if (!((o < g_gc_highest_address) && (o >= g_gc_lowest_address)))
+    {
+        return max_generation;
+    }
+#endif //FEATURE_BASICFREEZE
+    gc_heap* hp = gc_heap::heap_of (o);
+    unsigned int g = hp->object_gennum (o);
     dprintf (3, ("%Ix is in gen %d", (size_t)object, g));
     return g;
 }
@@ -43447,7 +44373,11 @@ Object * GCHeap::NextObj (Object * object)
 #else //MULTIPLE_HEAPS
     gc_heap* hp = 0;
 #endif //MULTIPLE_HEAPS
+#ifdef USE_REGIONS
+    unsigned int g = heap_segment_gen_num (hs);
+#else
     unsigned int g = hp->object_gennum ((uint8_t*)object);
+#endif
     if ((g == 0) && hp->settings.demotion)
         return NULL;//could be racing with another core allocating.
     int align_const = get_alignment_constant (!large_object_p);
@@ -43978,12 +44908,8 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
     }
 
     CHECK_ALLOC_AND_POSSIBLY_REGISTER_FOR_FINALIZATION(newAlloc, size, flags & GC_ALLOC_FINALIZE);
-
 #ifdef USE_REGIONS
-    if (!IsHeapPointer (newAlloc))
-    {
-        GCToOSInterface::DebugBreak();
-    }
+    assert (IsHeapPointer (newAlloc));
 #endif //USE_REGIONS
 
     return newAlloc;
@@ -45058,11 +45984,11 @@ size_t      GCHeap::GetTotalBytesInUse ()
     for (int i = 0; i < gc_heap::n_heaps; i++)
     {
         GCHeap* Hp = gc_heap::g_heaps [i]->vm_heap;
-        tot_size += Hp->ApproxTotalBytesInUse (FALSE);
+        tot_size += Hp->ApproxTotalBytesInUse();
     }
     return tot_size;
 #else
-    return ApproxTotalBytesInUse ();
+    return ApproxTotalBytesInUse();
 #endif //MULTIPLE_HEAPS
 }
 
@@ -45117,58 +46043,58 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
     size_t totsize = 0;
     enter_spin_lock (&pGenGCHeap->gc_lock);
 
-    // the complication with the following code is that background GC may
-    // remove the ephemeral segment while we are iterating
-    // if so, we retry a couple times and ultimately may report a slightly wrong result
-    for (int tries = 1; tries <= 3; tries++)
+    // For gen0 it's a bit complicated because we are currently allocating in it. We get the fragmentation first
+    // just so that we don't give a negative number for the resulting size.
+    generation* gen = pGenGCHeap->generation_of (0);
+    size_t gen0_frag = generation_free_list_space (gen) + generation_free_obj_space (gen);
+    uint8_t* current_alloc_allocated = pGenGCHeap->alloc_allocated;
+    heap_segment* current_eph_seg = pGenGCHeap->ephemeral_heap_segment;
+    size_t gen0_size = 0;
+#ifdef USE_REGIONS
+    heap_segment* gen0_seg = generation_start_segment (gen);
+    while (gen0_seg)
     {
-        heap_segment* eph_seg = generation_allocation_segment (pGenGCHeap->generation_of (0));
-        // Get small block heap size info
-        totsize = (pGenGCHeap->alloc_allocated - heap_segment_mem (eph_seg));
-        heap_segment* seg1 = generation_start_segment (pGenGCHeap->generation_of (max_generation));
-        while ((seg1 != eph_seg) && (seg1 != nullptr)
-#ifdef BACKGROUND_GC
-         && (seg1 != pGenGCHeap->freeable_soh_segment)
-#endif //BACKGROUND_GC
-        )
+        uint8_t* end = in_range_for_segment (current_alloc_allocated, gen0_seg) ?
+                       current_alloc_allocated : heap_segment_allocated (gen0_seg);
+        gen0_size += end - heap_segment_mem (gen0_seg);
+
+        if (gen0_seg == current_eph_seg)
         {
-#ifdef BACKGROUND_GC
-            if (!heap_segment_decommitted_p (seg1))
-#endif //BACKGROUND_GC
-            {
-                totsize += heap_segment_allocated (seg1) -
-                    heap_segment_mem (seg1);
-            }
-            seg1 = heap_segment_next (seg1);
-        }
-        if (seg1 == eph_seg)
             break;
+        }
+
+        gen0_seg = heap_segment_next (gen0_seg);
+    }
+#else //USE_REGIONS
+    // For segments ephemeral seg does not change.
+    gen0_size = current_alloc_allocated - heap_segment_mem (current_eph_seg);
+#endif //USE_REGIONS
+
+    totsize = gen0_size - gen0_frag;
+
+    int stop_gen_index = max_generation;
+
+    if (gc_heap::current_c_gc_state == c_gc_state_planning)
+    {
+        // During BGC sweep since we can be deleting SOH segments, we avoid walking the segment
+        // list.
+        generation* oldest_gen = pGenGCHeap->generation_of (max_generation);
+        totsize = pGenGCHeap->background_soh_size_end_mark - generation_free_list_space (oldest_gen) - generation_free_obj_space (oldest_gen);
+        stop_gen_index--;
     }
 
-    //discount the fragmentation
-    for (int i = 0; i <= max_generation; i++)
+    for (int i = (max_generation - 1); i <= stop_gen_index; i++)
     {
         generation* gen = pGenGCHeap->generation_of (i);
-        totsize -= (generation_free_list_space (gen) + generation_free_obj_space (gen));
+        totsize += pGenGCHeap->generation_size (i) - generation_free_list_space (gen) - generation_free_obj_space (gen);
     }
 
     if (!small_heap_only)
     {
         for (int i = uoh_start_generation; i < total_generation_count; i++)
         {
-            heap_segment* seg2 = generation_start_segment (pGenGCHeap->generation_of (i));
-
-            while (seg2 != 0)
-            {
-                totsize += heap_segment_allocated (seg2) -
-                    heap_segment_mem (seg2);
-                seg2 = heap_segment_next (seg2);
-            }
-
-            //discount the fragmentation
-            generation* uoh_gen = pGenGCHeap->generation_of (i);
-            size_t frag = generation_free_list_space (uoh_gen) + generation_free_obj_space (uoh_gen);
-            totsize -= frag;
+            generation* gen = pGenGCHeap->generation_of (i);
+            totsize += pGenGCHeap->generation_size (i) - generation_free_list_space (gen) - generation_free_obj_space (gen);
         }
     }
     leave_spin_lock (&pGenGCHeap->gc_lock);

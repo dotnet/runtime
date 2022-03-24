@@ -71,8 +71,7 @@ namespace System.Xml.Linq
         /// </returns>
         public static XName Get(string expandedName)
         {
-            if (expandedName == null) throw new ArgumentNullException(nameof(expandedName));
-            if (expandedName.Length == 0) throw new ArgumentException(SR.Format(SR.Argument_InvalidExpandedName, expandedName));
+            ArgumentException.ThrowIfNullOrEmpty(expandedName);
             if (expandedName[0] == '{')
             {
                 int i = expandedName.LastIndexOf('}');

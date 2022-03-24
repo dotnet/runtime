@@ -494,7 +494,7 @@ namespace System.Data.SqlTypes
 
         void IXmlSerializable.ReadXml(XmlReader r)
         {
-            char[]? value = null;
+            char[]? value;
 
             string? isNull = r.GetAttribute("nil", XmlSchema.InstanceNamespace);
 
@@ -615,7 +615,7 @@ namespace System.Data.SqlTypes
         {
             CheckIfStreamClosed();
 
-            long lPosition = 0;
+            long lPosition;
 
             switch (origin)
             {

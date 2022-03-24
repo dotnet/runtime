@@ -13,11 +13,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'ldsfld_mul'// as "ldsfld_mul"
+.assembly 's_ldsfld_mul'// as "ldsfld_mul"
 {
 }
 .assembly extern xunit.core {}
-.module 'ldsfld_mul.exe'
 // MVID: {72B54BA1-0DAB-469F-8753-50AD9A199FE2}
 .namespace JitTest
 {

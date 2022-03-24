@@ -15,6 +15,7 @@ namespace System.Drawing
         {
             if (_iconData != null)
             {
+                ArgumentNullException.ThrowIfNull(outputStream);
                 outputStream.Write(_iconData, 0, _iconData.Length);
             }
             else
@@ -26,15 +27,14 @@ namespace System.Drawing
                 // OLE to do it for us.
                 PICTDESC pictdesc = PICTDESC.CreateIconPICTDESC(Handle);
                 Guid g = typeof(IPicture).GUID;
-                IPicture picture = OleCreatePictureIndirect(pictdesc, ref g, false);
-
-                if (picture != null)
+                IntPtr iPicturePtr = OleCreatePictureIndirect(pictdesc, ref g, false);
+                if (iPicturePtr != IntPtr.Zero)
                 {
+                    IPicture picture = (IPicture)Marshal.GetObjectForIUnknown(iPicturePtr);
+                    Marshal.Release(iPicturePtr);
                     try
                     {
-                        if (outputStream == null)
-                            throw new ArgumentNullException(nameof(outputStream));
-
+                        ArgumentNullException.ThrowIfNull(outputStream);
                         picture.SaveAsFile(new GPStream(outputStream, makeSeekable: false), -1, out int temp);
                     }
                     finally
@@ -46,8 +46,8 @@ namespace System.Drawing
             }
         }
 
-        [DllImport(Interop.Libraries.Oleaut32, PreserveSig = false)]
-        internal static extern IPicture OleCreatePictureIndirect(PICTDESC pictdesc, [In]ref Guid refiid, bool fOwn);
+        [LibraryImport(Interop.Libraries.Oleaut32, PreserveSig = false)]
+        internal static partial IntPtr OleCreatePictureIndirect(in PICTDESC pictdesc, in Guid refiid, bool fOwn);
 
         [ComImport]
         [Guid("7BF80980-BF32-101A-8BBB-00AA00300CAB")]
@@ -93,7 +93,7 @@ namespace System.Drawing
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal sealed class PICTDESC
+        internal struct PICTDESC
         {
             internal int cbSizeOfStruct;
             public int picType;

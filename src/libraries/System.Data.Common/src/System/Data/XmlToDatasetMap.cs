@@ -457,7 +457,7 @@ namespace System.Data
         public object? GetColumnSchema(XmlNode node, bool fIgnoreNamespace)
         {
             Debug.Assert(node != null, "Argument validation");
-            TableSchemaInfo? tableSchemaInfo = null;
+            TableSchemaInfo? tableSchemaInfo;
 
             XmlNode? nodeRegion = (node.NodeType == XmlNodeType.Attribute) ? ((XmlAttribute)node).OwnerElement : node.ParentNode;
 

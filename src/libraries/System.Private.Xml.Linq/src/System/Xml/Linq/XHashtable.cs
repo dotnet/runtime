@@ -221,11 +221,10 @@ namespace System.Xml.Linq
                 for (int bucketIdx = 0; bucketIdx < _buckets.Length; bucketIdx++)
                 {
                     int entryIdx = _buckets[bucketIdx];
-                    TValue newValue;
 
                     while (entryIdx > EndOfList)
                     {
-                        newHashtable.TryAdd(_entries[entryIdx].Value, out newValue);
+                        newHashtable.TryAdd(_entries[entryIdx].Value, out _);
 
                         entryIdx = _entries[entryIdx].Next;
                     }

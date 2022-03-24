@@ -207,11 +207,7 @@ namespace System.ComponentModel
         {
             Debug.Assert(type != null, "IsValid Type cannot ever be null");
             bool value = ValidateInternal(type, null, false, out License? license);
-            if (license != null)
-            {
-                license.Dispose();
-                license = null;
-            }
+            license?.Dispose();
             return value;
         }
 
@@ -222,11 +218,7 @@ namespace System.ComponentModel
         {
             Debug.Assert(type != null, "IsValid Type cannot ever be null");
             bool value = ValidateInternal(type, null, false, out License? license);
-            if (license != null)
-            {
-                license.Dispose();
-                license = null;
-            }
+            license?.Dispose();
             return value;
         }
 
@@ -273,7 +265,7 @@ namespace System.ComponentModel
                                              instance,
                                              allowExceptions,
                                              out license,
-                                             out string? licenseKey);
+                                             out _);
         }
 
 
@@ -329,10 +321,11 @@ namespace System.ComponentModel
                     if (license != null)
                     {
                         license.Dispose();
+#pragma warning disable IDE0059 // ValidateInternalRecursive does not null licence all the time (https://github.com/dotnet/roslyn/issues/42761)
                         license = null;
+#pragma warning restore IDE0059
                     }
-                    string? temp;
-                    isValid = ValidateInternalRecursive(context, baseType, null, allowExceptions, out license, out temp);
+                    isValid = ValidateInternalRecursive(context, baseType, null, allowExceptions, out license, out _);
                     if (license != null)
                     {
                         license.Dispose();
@@ -355,11 +348,7 @@ namespace System.ComponentModel
                 throw new LicenseException(type);
             }
 
-            if (lic != null)
-            {
-                lic.Dispose();
-                lic = null;
-            }
+            lic?.Dispose();
         }
 
 

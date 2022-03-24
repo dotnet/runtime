@@ -61,7 +61,7 @@ void MagicDeinit(void);
 *
 *           0x<address>: <module>! <symbol> + 0x<offset>
 ******************************************************************** robch */
-void GetStringFromStackLevels(UINT ifrStart, UINT cfrTotal, __out_ecount(cchMaxAssertStackLevelStringLen * cfrTotal) CHAR *pszString, struct _CONTEXT * pContext = NULL);
+void GetStringFromStackLevels(UINT ifrStart, UINT cfrTotal, _Out_writes_(cchMaxAssertStackLevelStringLen * cfrTotal) CHAR *pszString, struct _CONTEXT * pContext = NULL);
 
 /****************************************************************************
 * GetStringFromAddr *
@@ -71,7 +71,7 @@ void GetStringFromStackLevels(UINT ifrStart, UINT cfrTotal, __out_ecount(cchMaxA
 *
 *           0x<address>: <module>! <symbol> + 0x<offset>
 ******************************************************************** robch */
-void GetStringFromAddr(DWORD_PTR dwAddr, __out_ecount(cchMaxAssertStackLevelStringLen) LPSTR szString);
+void GetStringFromAddr(DWORD_PTR dwAddr, _Out_writes_(cchMaxAssertStackLevelStringLen) LPSTR szString);
 
 #if defined(HOST_X86) && !defined(TARGET_UNIX)
 /****************************************************************************
@@ -81,7 +81,7 @@ void GetStringFromAddr(DWORD_PTR dwAddr, __out_ecount(cchMaxAssertStackLevelStri
 *       Exactly the contents of RtlCaptureContext for Win7 - Win2K doesn't
 *       support this, so we need it for CoreCLR 4, if we require Win2K support
 ****************************************************************************/
-extern "C" void __stdcall ClrCaptureContext(__out PCONTEXT ctx);
+extern "C" void __stdcall ClrCaptureContext(_Out_ PCONTEXT ctx);
 #else // HOST_X86 && !TARGET_UNIX
 #define ClrCaptureContext RtlCaptureContext
 #endif // HOST_X86 && !TARGET_UNIX

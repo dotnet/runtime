@@ -84,7 +84,7 @@ class Class1
         Console.WriteLine("    in middle2 L2B");
     }
 
-    static public int Main(string[] args)
+    static public int Main()
     {
         // start recording
         testLog.StartRecording();

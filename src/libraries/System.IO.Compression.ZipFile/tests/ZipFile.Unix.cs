@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    public class ZipFile_Unix : ZipFileTestBase
+    public partial class ZipFile_Unix : ZipFileTestBase
     {
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60581", TestPlatforms.iOS | TestPlatforms.tvOS)]
@@ -140,7 +140,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.tvOS & ~TestPlatforms.iOS)]
         public async Task CanZipNamedPipe()
         {
             string destPath = Path.Combine(TestDirectory, "dest.zip");
@@ -155,7 +155,7 @@ namespace System.IO.Compression.Tests
             await Task.WhenAll(
                 Task.Run(() =>
                 {
-                    using FileStream fs = new (fifoPath, FileMode.Open, FileAccess.Write, FileShare.Read);
+                    using FileStream fs = new (fifoPath, FileMode.Open, FileAccess.Write, FileShare.Read, bufferSize: 0);
                     foreach (byte content in contentBytes)
                     {
                         fs.WriteByte(content);
@@ -196,7 +196,7 @@ namespace System.IO.Compression.Tests
             return expectedPermissions;
         }
 
-        [DllImport("libc", SetLastError = true)]
-        private static extern int mkfifo(string path, int mode);
+        [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        private static partial int mkfifo(string path, int mode);
     }
 }

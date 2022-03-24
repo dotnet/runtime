@@ -20,10 +20,8 @@ namespace System.Reflection
             _ptrType = ptrType;
         }
 
-        public static object Box(void* ptr, Type type)
+        public static object Box(void* ptr, Type type!!)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
             if (!type.IsPointer)
                 throw new ArgumentException(SR.Arg_MustBePointer, nameof(ptr));
             if (type is not RuntimeType rtType)

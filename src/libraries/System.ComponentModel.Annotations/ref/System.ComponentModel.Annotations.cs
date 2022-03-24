@@ -235,7 +235,7 @@ namespace System.ComponentModel.DataAnnotations
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
     public partial class RegularExpressionAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
-        public RegularExpressionAttribute(string pattern) { }
+        public RegularExpressionAttribute([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)] string pattern) { }
         public int MatchTimeoutInMilliseconds { get { throw null; } set { } }
         public string Pattern { get { throw null; } }
         public override string FormatErrorMessage(string name) { throw null; }

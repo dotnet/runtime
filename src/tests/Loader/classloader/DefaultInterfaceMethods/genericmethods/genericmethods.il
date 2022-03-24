@@ -25,7 +25,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module genericmethods.exe
 // MVID: {62CAFB9A-4CDB-4A62-8A4F-DC7648609070}
 .imagebase 0x00400000
 .file alignment 0x00000200

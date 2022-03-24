@@ -1911,5 +1911,91 @@ namespace System.Tests
             Assert.Equal(3.0f, MathF.Truncate(3.14159f));
             Assert.Equal(-3.0f, MathF.Truncate(-3.14159f));
         }
+
+        public static IEnumerable<object[]> Round_ToEven_TestData()
+        {
+            yield return new object[] { 1f, 1f };
+            yield return new object[] { 0.5f, 0f };
+            yield return new object[] { 1.5f, 2f };
+            yield return new object[] { 2.5f, 2f };
+            yield return new object[] { 3.5f, 4f };
+            yield return new object[] { 0.49999997f, 0f };
+            yield return new object[] { 1.5f, 2f };
+            yield return new object[] { 2.5f, 2f };
+            yield return new object[] { 3.5f, 4f };
+            yield return new object[] { 4.5f, 4f };
+            yield return new object[] { 3.1415927f, 3f };
+            yield return new object[] { 2.7182817f, 3f };
+            yield return new object[] { 1385.4557f, 1385f };
+            yield return new object[] { 3423.4343f, 3423f };
+            yield return new object[] { 535345.5f, 535346f };
+            yield return new object[] { 535345.5f, 535346f };
+            yield return new object[] { 535345.5f, 535346f };
+            yield return new object[] { 535345.4f, 535345f };
+            yield return new object[] { 535345.6f, 535346f };
+            yield return new object[] { -2.7182817f, -3f };
+            yield return new object[] { 10f, 10f };
+            yield return new object[] { -10f, -10f };
+            yield return new object[] { -0f, -0f };
+            yield return new object[] { 0f, 0f };
+            yield return new object[] { float.NaN, float.NaN };
+            yield return new object[] { float.PositiveInfinity, float.PositiveInfinity };
+            yield return new object[] { float.NegativeInfinity, float.NegativeInfinity };
+            yield return new object[] { 3.4028235E+38f, 3.4028235E+38f };
+            yield return new object[] { -3.4028235E+38f, -3.4028235E+38f };
+        }
+
+        [Theory]
+        [MemberData(nameof(Round_ToEven_TestData))]
+        public static void Round_ToEven_0(float value, float expected)
+        {
+            // Math.Round has special fast paths when MidpointRounding is a const
+            // Don't replace it with a variable
+            Assert.Equal(expected, MathF.Round(value, MidpointRounding.ToEven));
+            Assert.Equal(expected, MathF.Round(value, 0, MidpointRounding.ToEven));
+        }
+
+        public static IEnumerable<object[]> Round_AwayFromZero_TestData()
+        {
+            yield return new object[] { 1f, 1f };
+            yield return new object[] { 0.5f, 1f };
+            yield return new object[] { 1.5f, 2f };
+            yield return new object[] { 2.5f, 3f };
+            yield return new object[] { 3.5f, 4f };
+            yield return new object[] { 0.49999997f, 0f };
+            yield return new object[] { 1.5f, 2f };
+            yield return new object[] { 2.5f, 3f };
+            yield return new object[] { 3.5f, 4f };
+            yield return new object[] { 4.5f, 5f };
+            yield return new object[] { 3.1415927f, 3f };
+            yield return new object[] { 2.7182817f, 3f };
+            yield return new object[] { 1385.4557f, 1385f };
+            yield return new object[] { 3423.4343f, 3423f };
+            yield return new object[] { 535345.5f, 535346f };
+            yield return new object[] { 535345.5f, 535346f };
+            yield return new object[] { 535345.5f, 535346f };
+            yield return new object[] { 535345.4f, 535345f };
+            yield return new object[] { 535345.6f, 535346f };
+            yield return new object[] { -2.7182817f, -3f };
+            yield return new object[] { 10f, 10f };
+            yield return new object[] { -10f, -10f };
+            yield return new object[] { -0f, -0f };
+            yield return new object[] { 0f, 0f };
+            yield return new object[] { float.NaN, float.NaN };
+            yield return new object[] { float.PositiveInfinity, float.PositiveInfinity };
+            yield return new object[] { float.NegativeInfinity, float.NegativeInfinity };
+            yield return new object[] { 3.4028235E+38f, 3.4028235E+38f };
+            yield return new object[] { -3.4028235E+38f, -3.4028235E+38f };
+        }
+
+        [Theory]
+        [MemberData(nameof(Round_AwayFromZero_TestData))]
+        public static void Round_AwayFromZero_0(float value, float expected)
+        {
+            // Math.Round has special fast paths when MidpointRounding is a const
+            // Don't replace it with a variable
+            Assert.Equal(expected, MathF.Round(value, MidpointRounding.AwayFromZero));
+            Assert.Equal(expected, MathF.Round(value, 0, MidpointRounding.AwayFromZero));
+        }
     }
 }

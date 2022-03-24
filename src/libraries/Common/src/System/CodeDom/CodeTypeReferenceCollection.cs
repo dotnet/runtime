@@ -39,26 +39,16 @@ namespace System.Runtime.Serialization
 
         public void Add(Type value) => Add(new CodeTypeReference(value));
 
-        public void AddRange(CodeTypeReference[] value)
+        public void AddRange(CodeTypeReference[] value!!)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             for (int i = 0; i < value.Length; i++)
             {
                 Add(value[i]);
             }
         }
 
-        public void AddRange(CodeTypeReferenceCollection value)
+        public void AddRange(CodeTypeReferenceCollection value!!)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             int currentCount = value.Count;
             for (int i = 0; i < currentCount; i++)
             {

@@ -332,7 +332,7 @@ namespace System.Globalization
             int seconds = (int)(time / TimeSpan.TicksPerSecond % 60);
             int fraction = (int)(time % TimeSpan.TicksPerSecond);
 
-            long tmp = 0;
+            long tmp;
             int i = 0;
             int tokenLen;
 

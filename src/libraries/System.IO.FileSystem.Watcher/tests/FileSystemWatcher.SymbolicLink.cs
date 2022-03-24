@@ -6,13 +6,13 @@ using Xunit;
 namespace System.IO.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-    [ConditionalClass(typeof(SymbolicLink_Changed_Tests), nameof(CanCreateSymbolicLinks))]
+    [ConditionalClass(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
     public class SymbolicLink_Changed_Tests : FileSystemWatcherTest
     {
         private string CreateSymbolicLinkToTarget(string targetPath, bool isDirectory, string linkPath = null)
         {
-            linkPath ??= GetTestFilePath();
-            Assert.True(CreateSymLink(targetPath, linkPath, isDirectory));
+            linkPath ??= GetRandomLinkPath();
+            Assert.True(MountHelper.CreateSymbolicLink(linkPath, targetPath, isDirectory));
 
             return linkPath;
         }
@@ -48,7 +48,7 @@ namespace System.IO.Tests
         public void FileSystemWatcher_DirectorySymbolicLink_TargetsSelf_Fails()
         {
             // Arrange
-            string linkPath = GetTestFilePath();
+            string linkPath = GetRandomLinkPath();
             CreateSymbolicLinkToTarget(targetPath: linkPath, isDirectory: true, linkPath: linkPath);
             using var watcher = new FileSystemWatcher(linkPath);
 
@@ -112,7 +112,7 @@ namespace System.IO.Tests
             using var dirA = new TempDirectory(GetTestFilePath());
             using var dirB = new TempDirectory(GetTestFilePath());
 
-            string linkPath = Path.Combine(dirA.Path, "linkToDirB");
+            string linkPath = Path.Combine(dirA.Path, GetRandomDirName() + ".link");
             CreateSymbolicLinkToTarget(dirB.Path, isDirectory: true, linkPath);
 
             using var watcher = new FileSystemWatcher(dirA.Path);

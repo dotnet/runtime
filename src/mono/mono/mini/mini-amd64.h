@@ -306,12 +306,12 @@ typedef enum {
 
 typedef struct {
 	gint16 offset;
-	gint8  reg;
+	guint8  reg;
 	ArgStorage storage : 8;
 
 	/* Only if storage == ArgValuetypeInReg */
 	ArgStorage pair_storage [2];
-	gint8 pair_regs [2];
+	guint8 pair_regs [2];
 	/* The size of each pair (bytes) */
 	int pair_size [2];
 	int nregs;
@@ -382,7 +382,7 @@ typedef struct {
 
 #define MONO_ARCH_USE_SIGACTION 1
 
-#ifdef HAVE_WORKING_SIGALTSTACK
+#ifdef ENABLE_SIGALTSTACK
 
 #define MONO_ARCH_SIGSEGV_ON_ALTSTACK
 

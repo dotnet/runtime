@@ -8,8 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, ExactSpelling = true, SetLastError = true)]
-        public static extern IntPtr GlobalFree(IntPtr handle);
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        public static partial IntPtr GlobalFree(IntPtr handle);
 
         public static IntPtr GlobalFree(HandleRef handle)
         {

@@ -14,7 +14,7 @@ static inline GList*
 g_list_prepend_mempool (MonoMemPool *mp, GList *list, gpointer data)
 {
 	GList *new_list;
-	
+
 	new_list = (GList *) mono_mempool_alloc (mp, sizeof (GList));
 	new_list->data = data;
 	new_list->prev = list ? list->prev : NULL;
@@ -32,7 +32,7 @@ static inline GSList*
 g_slist_prepend_mempool (MonoMemPool *mp, GSList *list, gpointer  data)
 {
 	GSList *new_list;
-	
+
 	new_list = (GSList *) mono_mempool_alloc (mp, sizeof (GSList));
 	new_list->data = data;
 	new_list->next = list;

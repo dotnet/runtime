@@ -628,7 +628,7 @@ namespace System.Data.OleDb
             {
             }
 
-            public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+            public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
             {
                 if (typeof(System.ComponentModel.Design.Serialization.InstanceDescriptor) == destinationType)
                 {

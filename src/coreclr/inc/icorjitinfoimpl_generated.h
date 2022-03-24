@@ -21,7 +21,7 @@
 
 public:
 
-bool isJitIntrinsic(
+bool isIntrinsic(
           CORINFO_METHOD_HANDLE ftn) override;
 
 uint32_t getMethodAttribs(
@@ -42,8 +42,7 @@ bool getMethodInfo(
 
 CorInfoInline canInline(
           CORINFO_METHOD_HANDLE callerHnd,
-          CORINFO_METHOD_HANDLE calleeHnd,
-          uint32_t* pRestrictions) override;
+          CORINFO_METHOD_HANDLE calleeHnd) override;
 
 void reportInliningDecision(
           CORINFO_METHOD_HANDLE inlinerHnd,
@@ -97,10 +96,6 @@ CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
 void expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_GENERICHANDLE_RESULT* pResult) override;
-
-CorInfoIntrinsics getIntrinsicID(
-          CORINFO_METHOD_HANDLE method,
-          bool* pMustExpand) override;
 
 bool isIntrinsicType(
           CORINFO_CLASS_HANDLE classHnd) override;
@@ -351,6 +346,9 @@ bool isSDArray(
 unsigned getArrayRank(
           CORINFO_CLASS_HANDLE cls) override;
 
+CorInfoArrayIntrinsic getArrayIntrinsicID(
+          CORINFO_METHOD_HANDLE ftn) override;
+
 void* getArrayInitializationData(
           CORINFO_FIELD_HANDLE field,
           uint32_t size) override;
@@ -482,6 +480,9 @@ bool getSystemVAmd64PassStructInRegisterDescriptor(
           CORINFO_CLASS_HANDLE structHnd,
           SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr) override;
 
+uint32_t getLoongArch64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd) override;
+
 uint32_t getThreadTLSIndex(
           void** ppIndirection) override;
 
@@ -502,6 +503,7 @@ void getFunctionEntryPoint(
 
 void getFunctionFixedEntryPoint(
           CORINFO_METHOD_HANDLE ftn,
+          bool isUnsafeFunctionPointer,
           CORINFO_CONST_LOOKUP* pResult) override;
 
 void* getMethodSync(
@@ -600,10 +602,6 @@ InfoAccessType emptyStringLiteral(
 uint32_t getFieldThreadLocalStoreID(
           CORINFO_FIELD_HANDLE field,
           void** ppIndirection) override;
-
-void setOverride(
-          ICorDynamicInfo* pOverride,
-          CORINFO_METHOD_HANDLE currentMethod) override;
 
 void addActiveDependency(
           CORINFO_MODULE_HANDLE moduleFrom,

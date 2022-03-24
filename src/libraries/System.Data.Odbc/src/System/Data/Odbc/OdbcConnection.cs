@@ -380,7 +380,7 @@ namespace System.Data.Odbc
         internal string GetConnectAttrString(ODBC32.SQL_ATTR attribute)
         {
             string value = "";
-            int cbActual = 0;
+            int cbActual;
             byte[] buffer = new byte[100];
             OdbcConnectionHandle? connectionHandle = ConnectionHandle;
             if (null != connectionHandle)
@@ -413,12 +413,11 @@ namespace System.Data.Odbc
         internal int GetConnectAttr(ODBC32.SQL_ATTR attribute, ODBC32.HANDLER handler)
         {
             int retval = -1;
-            int cbActual = 0;
             byte[] buffer = new byte[4];
             OdbcConnectionHandle? connectionHandle = ConnectionHandle;
             if (null != connectionHandle)
             {
-                ODBC32.SQLRETURN retcode = connectionHandle.GetConnectionAttribute(attribute, buffer, out cbActual);
+                ODBC32.SQLRETURN retcode = connectionHandle.GetConnectionAttribute(attribute, buffer, out _);
 
                 if ((ODBC32.SQLRETURN.SUCCESS == retcode) || (ODBC32.SQLRETURN.SUCCESS_WITH_INFO == retcode))
                 {
@@ -483,7 +482,7 @@ namespace System.Data.Odbc
         {
             //SQLGetInfo
             string? value = null;
-            short cbActual = 0;
+            short cbActual;
             byte[] buffer = new byte[100];
             OdbcConnectionHandle? connectionHandle = ConnectionHandle;
             if (null != connectionHandle)

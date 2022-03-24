@@ -8,7 +8,7 @@
 }
 .assembly extern xunit.core {}
 .assembly extern legacy library mscorlib {}
-.assembly 'vafilt'
+.assembly 'varargsupport'
 {
   
   

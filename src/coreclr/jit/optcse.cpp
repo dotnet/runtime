@@ -242,27 +242,6 @@ bool Compiler::optCSE_canSwap(GenTree* op1, GenTree* op2)
     return canSwap;
 }
 
-//------------------------------------------------------------------------
-// optCSE_canSwap: Determine if the execution order of a node's operands can be swapped.
-//
-// Arguments:
-//    tree - The node of interest
-//
-// Return Value:
-//    Return true iff it safe to swap the execution order of the operands of 'tree',
-//    considering only the locations of the CSE defs and uses.
-//
-bool Compiler::optCSE_canSwap(GenTree* tree)
-{
-    // We must have a binary treenode with non-null op1 and op2
-    assert((tree->OperKind() & GTK_SMPOP) != 0);
-
-    GenTree* op1 = tree->AsOp()->gtOp1;
-    GenTree* op2 = tree->gtGetOp2();
-
-    return optCSE_canSwap(op1, op2);
-}
-
 /*****************************************************************************
  *
  *  Compare function passed to jitstd::sort() by CSE_Heuristic::SortCandidates
@@ -456,7 +435,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         // If the value number for op2 and tree are different, then some new
         // exceptions were produced by op1. For that case we will NOT use the
         // normal value. This allows us to CSE commas with an op1 that is
-        // an ARR_BOUNDS_CHECK.
+        // an BOUNDS_CHECK.
         //
         if (vnOp2Lib != vnLib)
         {
@@ -829,7 +808,8 @@ bool Compiler::optValnumCSE_Locate()
                     continue;
                 }
 
-                if (ValueNumStore::isReservedVN(tree->GetVN(VNK_Liberal)))
+                ValueNum valueVN = vnStore->VNNormalValue(tree->GetVN(VNK_Liberal));
+                if (ValueNumStore::isReservedVN(valueVN) && (valueVN != ValueNumStore::VNForNull()))
                 {
                     continue;
                 }
@@ -2598,17 +2578,18 @@ public:
             cse_use_cost *= slotCount;
         }
 
-        // If this CSE is live across a call then we may need to spill an additional caller save register
+        // If this CSE is live across a call then we may have additional costs
         //
         if (candidate->LiveAcrossCall())
         {
-            if (candidate->Expr()->IsCnsFltOrDbl() && (CNT_CALLEE_SAVED_FLOAT == 0) &&
-                (candidate->CseDsc()->csdUseWtCnt <= 4))
+            // If we have a floating-point CSE that is both live across a call and there
+            // are no callee-saved FP registers available, the RA will have to spill at
+            // the def site and reload at the (first) use site, if the variable is a register
+            // candidate. Account for that.
+            if (varTypeIsFloating(candidate->Expr()) && (CNT_CALLEE_SAVED_FLOAT == 0) && !candidate->IsConservative())
             {
-                // Floating point constants are expected to be contained, so unless there are more than 4 uses
-                // we better not to CSE them, especially on platforms without callee-saved registers
-                // for values living across calls
-                return false;
+                cse_def_cost += 1;
+                cse_use_cost += 1;
             }
 
             // If we don't have a lot of variables to enregister or we have a floating point type
@@ -3188,8 +3169,6 @@ public:
                 }
 #endif // DEBUG
 
-                exp->gtCSEnum = NO_CSE; // clear the gtCSEnum field
-
                 GenTree* val = exp;
                 if (isSharedConst)
                 {
@@ -3227,6 +3206,14 @@ public:
 
                 // Backpatch the SSA def, if we're putting this CSE temp into ssa.
                 asg->AsOp()->gtOp1->AsLclVar()->SetSsaNum(cseSsaNum);
+
+                // Move the information about the CSE def to the assignment; it
+                // now indicates a completed CSE def instead of just a
+                // candidate. optCSE_canSwap uses this information to reason
+                // about evaluation order in between substitutions of CSE
+                // defs/uses.
+                asg->gtCSEnum = exp->gtCSEnum;
+                exp->gtCSEnum = NO_CSE;
 
                 if (cseSsaNum != SsaConfig::RESERVED_SSA_NUM)
                 {
@@ -3515,8 +3502,10 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 
 #if !CSE_CONSTS
     /* Don't bother with constants */
-    if (tree->OperKind() & GTK_CONST)
+    if (tree->OperIsConst())
+    {
         return false;
+    }
 #endif
 
     /* Check for some special cases */
@@ -3812,6 +3801,13 @@ bool Compiler::optConfigDisableCSE2()
 
 void Compiler::optOptimizeCSEs()
 {
+    if (optCSEstart != BAD_VAR_NUM)
+    {
+        // CSE being run multiple times so we may need to clean up old
+        // information.
+        optCleanupCSEs();
+    }
+
     optCSECandidateCount = 0;
     optCSEstart          = lvaCount;
 

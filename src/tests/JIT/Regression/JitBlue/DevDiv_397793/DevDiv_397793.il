@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly ILGEN_MODULE{}
+.assembly 'DevDiv_397793'{}
 .assembly extern xunit.core {}
 
 // This test originally failed compilation during CSE due to value numbers that were discarded during remorphing.

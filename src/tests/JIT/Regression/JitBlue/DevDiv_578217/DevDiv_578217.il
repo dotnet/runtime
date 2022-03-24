@@ -8,7 +8,7 @@
 
 // Metadata version: v4.0.30319
 .assembly extern System.Runtime { auto }
-.assembly DevDiv_524309 {}
+.assembly 'DevDiv_578217' {}
 .assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit DevDiv_578217.Program

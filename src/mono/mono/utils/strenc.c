@@ -14,7 +14,7 @@
 
 #include "strenc.h"
 #include "strenc-internals.h"
-#include "mono-error.h"
+#include <mono/utils/mono-error.h>
 #include "mono-error-internals.h"
 
 static const char trailingBytesForUTF8[256] = {
@@ -35,62 +35,17 @@ static const char trailingBytesForUTF8[256] = {
  * Tries to turn a NULL-terminated string into UTF-16.
  *
  * First, see if it's valid UTF-8, in which case just turn it directly
- * into UTF-16.  Next, run through the colon-separated encodings in
- * \c MONO_EXTERNAL_ENCODINGS and do an \c iconv conversion on each,
- * returning the first successful conversion to UTF-16.  If no
- * conversion succeeds, return NULL.
+ * into UTF-16. If the conversion doesn't succeed, return NULL.
  *
  * Callers must free the returned string if not NULL. \p bytes holds the number
  * of bytes in the returned string, not including the terminator.
  */
 gunichar2 *mono_unicode_from_external (const gchar *in, gsize *bytes)
 {
-	gchar *res=NULL;
-	gchar **encodings;
-	gchar *encoding_list;
-	int i;
-	glong lbytes;
-	
 	if(in==NULL) {
 		return(NULL);
 	}
-	
-	encoding_list=g_getenv ("MONO_EXTERNAL_ENCODINGS");
-	if(encoding_list==NULL) {
-		encoding_list = g_strdup("");
-	}
-	
-	encodings=g_strsplit (encoding_list, ":", 0);
-	g_free (encoding_list);
-	for(i=0;encodings[i]!=NULL; i++) {
-		/* "default_locale" is a special case encoding */
-		if(!strcmp (encodings[i], "default_locale")) {
-			gchar *utf8=g_locale_to_utf8 (in, -1, NULL, NULL, NULL);
-			if(utf8!=NULL) {
-				res=(gchar *) g_utf8_to_utf16 (utf8, -1, NULL, &lbytes, NULL);
-				*bytes = (gsize) lbytes;
-			}
-			g_free (utf8);
-		} else {
-			/* Don't use UTF16 here. It returns the <FF FE> prepended to the string */
-			res = g_convert (in, strlen (in), "UTF8", encodings[i], NULL, bytes, NULL);
-			if (res != NULL) {
-				gchar *ptr = res;
-				res = (gchar *) g_utf8_to_utf16 (res, -1, NULL, &lbytes, NULL);
-				*bytes = (gsize) lbytes;
-				g_free (ptr);
-			}
-		}
 
-		if(res!=NULL) {
-			g_strfreev (encodings);
-			*bytes *= 2;
-			return((gunichar2 *)res);
-		}
-	}
-	
-	g_strfreev (encodings);
-	
 	if(g_utf8_validate (in, -1, NULL)) {
 		glong items_written;
 		gunichar2 *unires=g_utf8_to_utf16 (in, -1, NULL, &items_written, NULL);
@@ -108,10 +63,7 @@ gunichar2 *mono_unicode_from_external (const gchar *in, gsize *bytes)
  * Tries to turn a NULL-terminated string into UTF8.
  *
  * First, see if it's valid UTF-8, in which case there's nothing more
- * to be done.  Next, run through the colon-separated encodings in
- * \c MONO_EXTERNAL_ENCODINGS and do an \c iconv conversion on each,
- * returning the first successful conversion to UTF-8.  If no
- * conversion succeeds, return NULL.
+ * to be done. If the conversion doesn't succeed, return NULL.
  *
  * Callers must free the returned string if not NULL.
  *
@@ -121,44 +73,10 @@ gunichar2 *mono_unicode_from_external (const gchar *in, gsize *bytes)
  */
 gchar *mono_utf8_from_external (const gchar *in)
 {
-	gchar *res=NULL;
-	gchar **encodings;
-	gchar *encoding_list;
-	int i;
-	
 	if(in==NULL) {
 		return(NULL);
 	}
-	
-	encoding_list=g_getenv ("MONO_EXTERNAL_ENCODINGS");
-	if(encoding_list==NULL) {
-		encoding_list = g_strdup("");
-	}
-	
-	encodings=g_strsplit (encoding_list, ":", 0);
-	g_free (encoding_list);
-	for(i=0;encodings[i]!=NULL; i++) {
-		
-		/* "default_locale" is a special case encoding */
-		if(!strcmp (encodings[i], "default_locale")) {
-			res=g_locale_to_utf8 (in, -1, NULL, NULL, NULL);
-			if(res!=NULL && !g_utf8_validate (res, -1, NULL)) {
-				g_free (res);
-				res=NULL;
-			}
-		} else {
-			res=g_convert (in, -1, "UTF8", encodings[i], NULL,
-				       NULL, NULL);
-		}
 
-		if(res!=NULL) {
-			g_strfreev (encodings);
-			return(res);
-		}
-	}
-	
-	g_strfreev (encodings);
-	
 	if(g_utf8_validate (in, -1, NULL)) {
 		return(g_strdup (in));
 	}
@@ -169,9 +87,8 @@ gchar *mono_utf8_from_external (const gchar *in)
 /**
  * mono_unicode_to_external:
  * \param uni a UTF-16 string to convert to an external representation.
- * Turns NULL-terminated UTF-16 into either UTF-8, or the first
- * working item in \c MONO_EXTERNAL_ENCODINGS if set.  If no conversions
- * work, then UTF-8 is returned.
+ * Turns NULL-terminated UTF-16 into UTF-8. If the conversion doesn't
+ * work, then NULL is returned.
  * Callers must free the returned string.
  */
 gchar *mono_unicode_to_external (const gunichar2 *uni)
@@ -182,50 +99,15 @@ gchar *mono_unicode_to_external (const gunichar2 *uni)
 gchar *mono_unicode_to_external_checked (const gunichar2 *uni, MonoError *err)
 {
 	gchar *utf8;
-	gchar *encoding_list;
 	GError *gerr = NULL;
-	
-	/* Turn the unicode into utf8 to start with, because its
-	 * easier to work with gchar * than gunichar2 *
-	 */
+
 	utf8=g_utf16_to_utf8 (uni, -1, NULL, NULL, &gerr);
 	if (utf8 == NULL) {
 		mono_error_set_argument (err, "uni", gerr->message);
 		g_error_free (gerr);
-		return utf8;
+		return NULL;
 	}
-	
-	encoding_list=g_getenv ("MONO_EXTERNAL_ENCODINGS");
-	if(encoding_list==NULL) {
-		/* Do UTF8 */
-		return(utf8);
-	} else {
-		gchar *res, **encodings;
-		int i;
-		
-		encodings=g_strsplit (encoding_list, ":", 0);
-		g_free (encoding_list);
-		for(i=0; encodings[i]!=NULL; i++) {
-			if(!strcmp (encodings[i], "default_locale")) {
-				res=g_locale_from_utf8 (utf8, -1, NULL, NULL,
-							NULL);
-			} else {
-				res=g_convert (utf8, -1, encodings[i], "UTF8",
-					       NULL, NULL, NULL);
-			}
 
-			if(res!=NULL) {
-				g_free (utf8);
-				g_strfreev (encodings);
-				
-				return(res);
-			}
-		}
-	
-		g_strfreev (encodings);
-	}
-	
-	/* Nothing else worked, so just return the utf8 */
 	return(utf8);
 }
 
@@ -333,7 +215,7 @@ mono_utf8_validate_and_len_with_bounds (const gchar *source, glong max_bytes, gl
 	while (*ptr != 0) {
 		length = trailingBytesForUTF8 [*ptr] + 1;
 		srcPtr = (guchar*) ptr + length;
-		
+
 		/* since *ptr is not zero we must ensure that we can decode the current char + the byte after
 		   srcPtr points to the first byte after the current char.*/
 		if (srcPtr >= end) {

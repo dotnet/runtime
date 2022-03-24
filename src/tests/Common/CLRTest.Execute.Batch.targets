@@ -93,7 +93,7 @@ IF NOT "%RunTieringTest%"=="" (
   Exit /b 0
 )
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
-      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true'">
+      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true' And '$(RuntimeFlavor)' != 'mono'">
     <![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)
 REM JitOptimizationSensitive includes our set of tests which cannot run under:
@@ -300,6 +300,8 @@ COPY /y %CORE_ROOT%\CoreShim.dll .
     <![CDATA[
 $(BatchLinkerTestLaunchCmds)
 $(BatchCopyCoreShimLocalCmds)
+
+set TestExclusionListPath=%CORE_ROOT%\TestExclusionList.txt
 
 IF NOT "%CLRCustomTestLauncher%"=="" (
   set LAUNCHER=call %CLRCustomTestLauncher% %scriptPath%

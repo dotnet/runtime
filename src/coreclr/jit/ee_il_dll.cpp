@@ -332,23 +332,14 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
 
 #ifdef FEATURE_SIMD
 #if defined(TARGET_XARCH)
-    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD) &&
+    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) &&
         jitFlags.GetInstructionSetFlags().HasInstructionSet(InstructionSet_AVX2))
     {
-        // Since the ISAs can be disabled individually and since they are hierarchical in nature (that is
-        // disabling SSE also disables SSE2 through AVX2), we need to check each ISA in the hierarchy to
-        // ensure that AVX2 is actually supported. Otherwise, we will end up getting asserts downstream.
-        if ((JitConfig.EnableAVX2() != 0) && (JitConfig.EnableAVX() != 0) && (JitConfig.EnableSSE42() != 0) &&
-            (JitConfig.EnableSSE41() != 0) && (JitConfig.EnableSSSE3() != 0) && (JitConfig.EnableSSE3_4() != 0) &&
-            (JitConfig.EnableSSE3() != 0) && (JitConfig.EnableSSE2() != 0) && (JitConfig.EnableSSE() != 0) &&
-            (JitConfig.EnableHWIntrinsic() != 0))
+        if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
         {
-            if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
-            {
-                JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 32\n");
-            }
-            return 32;
+            JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 32\n");
         }
+        return 32;
     }
 #endif // defined(TARGET_XARCH)
     if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
@@ -465,30 +456,36 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
     {
         argSize = genTypeSize(argType);
     }
-    const unsigned argAlignment       = eeGetArgAlignment(argType, (hfaType == TYP_FLOAT));
-    const unsigned argSizeWithPadding = roundUp(argSize, argAlignment);
-    return argSizeWithPadding;
+
+    const unsigned argSizeAlignment = eeGetArgSizeAlignment(argType, (hfaType == TYP_FLOAT));
+    const unsigned alignedArgSize   = roundUp(argSize, argSizeAlignment);
+    return alignedArgSize;
 
 #endif
 }
 
 //------------------------------------------------------------------------
-// eeGetArgAlignment: Return arg passing alignment for the given type.
+// eeGetArgSizeAlignment: Return alignment for an argument size.
 //
 // Arguments:
 //   type - the argument type
 //   isFloatHfa - is it an HFA<float> type
 //
 // Return value:
-//   the required alignment in bytes.
+//   the required argument size alignment in bytes.
 //
 // Notes:
-//   It currently doesn't return smaller than required alignment for arm32 (4 bytes for double and int64)
-//   but it does not lead to issues because its alignment requirements are satisfied in other code parts.
-//   TODO: fix this function and delete the other code that is handling this.
+//   Usually values passed on the stack are aligned to stack slot (i.e. pointer size), except for
+//   on macOS ARM ABI that allows packing multiple args into a single stack slot.
+//
+//   The arg size alignment can be different from the normal alignment. One
+//   example is on arm32 where a struct containing a double and float can
+//   explicitly have size 12 but with alignment 8, in which case the size is
+//   aligned to 4 (the stack slot size) while frame layout must still handle
+//   aligning the argument to 8.
 //
 // static
-unsigned Compiler::eeGetArgAlignment(var_types type, bool isFloatHfa)
+unsigned Compiler::eeGetArgSizeAlignment(var_types type, bool isFloatHfa)
 {
     if (compMacOsArm64Abi())
     {

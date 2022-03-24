@@ -45,9 +45,8 @@ namespace System.Xml.Linq
         /// <param name="writer">
         /// The <see cref="XmlWriter"/> to write this <see cref="XCData"/> to.
         /// </param>
-        public override void WriteTo(XmlWriter writer)
+        public override void WriteTo(XmlWriter writer!!)
         {
-            if (writer == null) throw new ArgumentNullException(nameof(writer));
             writer.WriteCData(text);
         }
 
@@ -63,10 +62,8 @@ namespace System.Xml.Linq
         /// <returns>
         /// A Task that represents the eventual completion of the operation.
         /// </returns>
-        public override Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken)
+        public override Task WriteToAsync(XmlWriter writer!!, CancellationToken cancellationToken)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
             return writer.WriteCDataAsync(text);

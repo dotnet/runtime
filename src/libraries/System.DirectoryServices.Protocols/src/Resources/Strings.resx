@@ -117,9 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="DsmlNonHttpUri" xml:space="preserve">
-    <value>The URI that is supplied must be either "http" or "https".</value>
-  </data>
   <data name="NoNegativeTimeLimit" xml:space="preserve">
     <value>A negative value is not permitted for the time limit.</value>
   </data>
@@ -129,17 +126,11 @@
   <data name="InvalidDocument" xml:space="preserve">
     <value>The DSML document could not be parsed.</value>
   </data>
-  <data name="MissingSessionId" xml:space="preserve">
-    <value>The server failed to return a session identifier.</value>
-  </data>
   <data name="MissingResponse" xml:space="preserve">
     <value>The server failed to return a DirectoryResponse.</value>
   </data>
   <data name="ErrorResponse" xml:space="preserve">
     <value>An ErrorResponse DSML element was returned.</value>
-  </data>
-  <data name="BadControl" xml:space="preserve">
-    <value>The server returned an invalid DSML control.</value>
   </data>
   <data name="NullDirectoryAttribute" xml:space="preserve">
     <value>A null reference cannot be added to DirectoryAttribute or DirectoryAttributeModification objects. </value>
@@ -162,53 +153,8 @@
   <data name="DefaultOperationsError" xml:space="preserve">
     <value>An unspecified operation error occurred.</value>
   </data>
-  <data name="BadSearchLDAPFilter" xml:space="preserve">
-    <value>The LDAP filter string is invalid.</value>
-  </data>
   <data name="ReadOnlyProperty" xml:space="preserve">
     <value>The property is read-only.</value>
-  </data>
-  <data name="MissingOperationResponseResultCode" xml:space="preserve">
-    <value>The operation response is missing the result code.</value>
-  </data>
-  <data name="MissingSearchResultEntryDN" xml:space="preserve">
-    <value>The distinguished name is missing in the SearchResultEntry of the search response.</value>
-  </data>
-  <data name="MissingSearchResultEntryAttributeName" xml:space="preserve">
-    <value>The search result is missing the attribute name.</value>
-  </data>
-  <data name="BadOperationResponseResultCode" xml:space="preserve">
-    <value>The server returned an unknown result code "{0}".</value>
-  </data>
-  <data name="MissingErrorResponseType" xml:space="preserve">
-    <value>The error response is missing the type attribute.</value>
-  </data>
-  <data name="ErrorResponseInvalidValue" xml:space="preserve">
-    <value>The error response contains an invalid type attribute "{0}".</value>
-  </data>
-  <data name="NotSupportOnDsmlErrRes" xml:space="preserve">
-    <value>This property is not supported on a DsmlErrorResponse.</value>
-  </data>
-  <data name="BadBase64Value" xml:space="preserve">
-    <value>The value is invalid base-64-encoded data.</value>
-  </data>
-  <data name="WrongAuthType" xml:space="preserve">
-    <value>The DsmlSoapHttpConnection does not support "{0}" authentication type.</value>
-  </data>
-  <data name="SessionInUse" xml:space="preserve">
-    <value>An active session already exists for this connection.</value>
-  </data>
-  <data name="ReadOnlyDocument" xml:space="preserve">
-    <value>The document is read-only.</value>
-  </data>
-  <data name="NotWellFormedResponse" xml:space="preserve">
-    <value>The response from the server is not a well-formed DSML document.</value>
-  </data>
-  <data name="NoCurrentSession" xml:space="preserve">
-    <value>No active session exists for this connection.</value>
-  </data>
-  <data name="UnknownResponseElement" xml:space="preserve">
-    <value>The server returned an unknown response element.</value>
   </data>
   <data name="InvalidClientCertificates" xml:space="preserve">
     <value>ClientCertificates can contain only zero or one certificate.</value>
@@ -311,9 +257,6 @@
   </data>
   <data name="LDAP_SUCCESS" xml:space="preserve">
     <value>The call completed successfully.</value>
-  </data>
-  <data name="NoSessionIDReturned" xml:space="preserve">
-    <value>The server failed to return a session identifier.</value>
   </data>
   <data name="LDAP_OPERATIONS_ERROR" xml:space="preserve">
     <value>An operation error occurred.</value>
@@ -447,9 +390,6 @@
   <data name="ValidValueType" xml:space="preserve">
     <value>The value must be a string, byte[], or Uri type.</value>
   </data>
-  <data name="TLSNotSupported" xml:space="preserve">
-    <value>Transport layer security is not supported on Windows 2000.</value>
-  </data>
   <data name="InvalidValueType" xml:space="preserve">
     <value>The specified parameter should be a "{0}" type.</value>
   </data>
@@ -458,9 +398,6 @@
   </data>
   <data name="ContainNullControl" xml:space="preserve">
     <value>The collection cannot contain a null DirectoryControl object.</value>
-  </data>
-  <data name="InvalidFilterType" xml:space="preserve">
-    <value>The filter type "{0}" is invalid.</value>
   </data>
   <data name="NotReturnedAsyncResult" xml:space="preserve">
     <value>The value "{0}" is not the return value from BeginSendRequest.</value>
@@ -473,12 +410,6 @@
   </data>
   <data name="NullValueArray" xml:space="preserve">
     <value>The array should not contain null reference.</value>
-  </data>
-  <data name="NonCLSException" xml:space="preserve">
-    <value>A non-CLSCompliant exception is thrown.</value>
-  </data>
-  <data name="ConcurrentBindNotSupport" xml:space="preserve">
-    <value>Fast concurrent bind is only supported on Windows 2003 and later operating systems.</value>
   </data>
   <data name="TimespanExceedMax" xml:space="preserve">
     <value>The value exceeds the maximum allowed.</value>

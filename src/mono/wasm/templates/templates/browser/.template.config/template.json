@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Microsoft",
+  "classifications": [ "Web", "WebAssembly", "Browser" ],
+  "identity": "WebAssembly.Browser",
+  "name": "WebAssembly Browser App",
+  "shortName": "wasmbrowser",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  }
+}

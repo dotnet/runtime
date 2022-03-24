@@ -38,11 +38,8 @@ namespace System.Text.RegularExpressions
         private const char NullChar = '\0';
         internal const char LastChar = '\uFFFF';
 
-        private const short SpaceConst = 100;
+        internal const short SpaceConst = 100;
         private const short NotSpaceConst = -100;
-
-        private const char ZeroWidthJoiner = '\u200D';
-        private const char ZeroWidthNonJoiner = '\u200C';
 
         private const string InternalRegexIgnoreCase = "__InternalRegexIgnoreCase__";
         private const string Space = "\x64";
@@ -266,7 +263,7 @@ namespace System.Text.RegularExpressions
                 +"\u3041\u3097\u3099\u30A0\u30A1\u30FB\u30FC\u3100\u3105\u312D\u3131\u318F\u3190\u31B8\u31F0\u321D\u3220\u3244\u3251\u327C\u327F\u32CC\u32D0\u32FF\u3300\u3377\u337B\u33DE\u33E0\u33FF\u3400\u4DB6\u4E00\u9FA6\uA000\uA48D\uA490\uA4C7\uAC00\uD7A4\uF900\uFA2E\uFA30\uFA6B\uFB00\uFB07\uFB13\uFB18\uFB1D\uFB37\uFB38\uFB3D\uFB3E\uFB3F\uFB40\uFB42\uFB43\uFB45\uFB46\uFBB2\uFBD3\uFD3E\uFD50\uFD90\uFD92\uFDC8\uFDF0\uFDFD\uFE00\uFE10\uFE20\uFE24\uFE62\uFE63\uFE64\uFE67\uFE69\uFE6A\uFE70\uFE75\uFE76\uFEFD\uFF04\uFF05\uFF0B\uFF0C\uFF10\uFF1A\uFF1C\uFF1F\uFF21\uFF3B\uFF3E\uFF3F\uFF40\uFF5B\uFF5C\uFF5D\uFF5E\uFF5F\uFF66\uFFBF\uFFC2\uFFC8\uFFCA\uFFD0\uFFD2\uFFD8\uFFDA\uFFDD\uFFE0\uFFE7\uFFE8\uFFEF\uFFFC\uFFFE"},
         };
 
-        private List<SingleRange>? _rangelist;
+        private List<(char First, char Last)>? _rangelist;
         private StringBuilder? _categories;
         private RegexCharClass? _subtractor;
         private bool _negate;
@@ -294,7 +291,7 @@ namespace System.Text.RegularExpressions
         {
         }
 
-        private RegexCharClass(bool negate, List<SingleRange>? ranges, StringBuilder? categories, RegexCharClass? subtraction)
+        private RegexCharClass(bool negate, List<(char First, char Last)>? ranges, StringBuilder? categories, RegexCharClass? subtraction)
         {
             _rangelist = ranges;
             _categories = categories;
@@ -346,8 +343,8 @@ namespace System.Text.RegularExpressions
         private StringBuilder EnsureCategories() =>
             _categories ??= new StringBuilder();
 
-        private List<SingleRange> EnsureRangeList() =>
-            _rangelist ??= new List<SingleRange>(6);
+        private List<(char First, char Last)> EnsureRangeList() =>
+            _rangelist ??= new List<(char First, char Last)>(6);
 
         /// <summary>
         /// Adds a set (specified by its string representation) to the class.
@@ -359,17 +356,17 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
-            List<SingleRange> rangeList = EnsureRangeList();
+            List<(char First, char Last)> rangeList = EnsureRangeList();
 
             int i;
             for (i = 0; i < set.Length - 1; i += 2)
             {
-                rangeList.Add(new SingleRange(set[i], (char)(set[i + 1] - 1)));
+                rangeList.Add((set[i], (char)(set[i + 1] - 1)));
             }
 
             if (i < set.Length)
             {
-                rangeList.Add(new SingleRange(set[i], LastChar));
+                rangeList.Add((set[i], LastChar));
             }
         }
 
@@ -383,7 +380,7 @@ namespace System.Text.RegularExpressions
         /// Adds a single range of characters to the class.
         /// </summary>
         public void AddRange(char first, char last) =>
-            EnsureRangeList().Add(new SingleRange(first, last));
+            EnsureRangeList().Add((first, last));
 
         public void AddCategoryFromName(string categoryName, bool invert, bool caseInsensitive, string pattern, int currentPos)
         {
@@ -425,17 +422,17 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public void AddLowercase(CultureInfo culture)
         {
-            List<SingleRange>? rangeList = _rangelist;
+            List<(char First, char Last)>? rangeList = _rangelist;
             if (rangeList != null)
             {
                 int count = rangeList.Count;
                 for (int i = 0; i < count; i++)
                 {
-                    SingleRange range = rangeList[i];
+                    (char First, char Last) range = rangeList[i];
                     if (range.First == range.Last)
                     {
                         char lower = culture.TextInfo.ToLower(range.First);
-                        rangeList[i] = new SingleRange(lower, lower);
+                        rangeList[i] = (lower, lower);
                     }
                     else
                     {
@@ -719,9 +716,8 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         public static int GetSetChars(string set, Span<char> chars)
         {
-            // If the set is negated, it's likely to contain a large number of characters,
-            // so we don't even try.  We also get the characters by enumerating the set
-            // portion, so we validate that it's set up to enable that, e.g. no categories.
+            // We get the characters by enumerating the set portion, so we validate that it's
+            // set up to enable that, e.g. no categories.
             if (!CanEasilyEnumerateSetContents(set))
             {
                 return 0;
@@ -891,6 +887,20 @@ namespace System.Text.RegularExpressions
             return false;
         }
 
+        /// <summary>Gets whether the specified span contains only ASCII.</summary>
+        public static bool IsAscii(ReadOnlySpan<char> s) // TODO https://github.com/dotnet/runtime/issues/28230: Replace once Ascii is available
+        {
+            foreach (char c in s)
+            {
+                if (c >= 128)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>Gets whether we can iterate through the set list pairs in order to completely enumerate the set's contents.</summary>
         /// <remarks>This may enumerate negated characters if the set is negated.</remarks>
         private static bool CanEasilyEnumerateSetContents(string set) =>
@@ -975,25 +985,24 @@ namespace System.Text.RegularExpressions
             ch == '_' || // underscore
             ch == '\u0130'; // latin capital letter I with dot above
 
+        /// <summary>16 bytes, representing the chars 0 through 127, with a 1 for a bit where that char is a word char.</summary>
+        private static ReadOnlySpan<byte> WordCharAsciiLookup => new byte[]
+        {
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,
+            0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
+        };
+
+        /// <summary>Determines whether a character is considered a word character for the purposes of testing the \w set.</summary>
         public static bool IsWordChar(char ch)
         {
-            // According to UTS#18 Unicode Regular Expressions (http://www.unicode.org/reports/tr18/)
-            // RL 1.4 Simple Word Boundaries  The class of <word_character> includes all Alphabetic
-            // values from the Unicode character database, from UnicodeData.txt [UData], plus the U+200C
-            // ZERO WIDTH NON-JOINER and U+200D ZERO WIDTH JOINER.
-
-            // 16 bytes, representing the chars 0 through 127, with a 1 for a bit where that char is a word char
-            static ReadOnlySpan<byte> AsciiLookup() => new byte[]
-            {
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,
-                0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
-            };
+            // This is the same as IsBoundaryWordChar, except that IsBoundaryWordChar also
+            // returns true for \u200c and \u200d.
 
             // Fast lookup in our lookup table for ASCII characters.  This is purely an optimization, and has the
             // behavior as if we fell through to the switch below (which was actually used to produce the lookup table).
-            ReadOnlySpan<byte> asciiLookup = AsciiLookup();
+            ReadOnlySpan<byte> asciiLookup = WordCharAsciiLookup;
             int chDiv8 = ch >> 3;
-            if ((uint)chDiv8 < asciiLookup.Length)
+            if ((uint)chDiv8 < (uint)asciiLookup.Length)
             {
                 return (asciiLookup[chDiv8] & (1 << (ch & 0x7))) != 0;
             }
@@ -1012,8 +1021,52 @@ namespace System.Text.RegularExpressions
                     return true;
 
                 default:
-                    return ch == ZeroWidthJoiner || ch == ZeroWidthNonJoiner;
+                    return false;
             }
+        }
+
+        /// <summary>Determines whether a character is considered a word character for the purposes of testing a word character boundary.</summary>
+        public static bool IsBoundaryWordChar(char ch)
+        {
+            // According to UTS#18 Unicode Regular Expressions (http://www.unicode.org/reports/tr18/)
+            // RL 1.4 Simple Word Boundaries  The class of <word_character> includes all Alphabetic
+            // values from the Unicode character database, from UnicodeData.txt [UData], plus the U+200C
+            // ZERO WIDTH NON-JOINER and U+200D ZERO WIDTH JOINER.
+
+            // Fast lookup in our lookup table for ASCII characters.  This is purely an optimization, and has the
+            // behavior as if we fell through to the switch below (which was actually used to produce the lookup table).
+            ReadOnlySpan<byte> asciiLookup = WordCharAsciiLookup;
+            int chDiv8 = ch >> 3;
+            if ((uint)chDiv8 < (uint)asciiLookup.Length)
+            {
+                return (asciiLookup[chDiv8] & (1 << (ch & 0x7))) != 0;
+            }
+
+            // For non-ASCII, fall back to checking the Unicode category.
+            switch (CharUnicodeInfo.GetUnicodeCategory(ch))
+            {
+                case UnicodeCategory.UppercaseLetter:
+                case UnicodeCategory.LowercaseLetter:
+                case UnicodeCategory.TitlecaseLetter:
+                case UnicodeCategory.ModifierLetter:
+                case UnicodeCategory.OtherLetter:
+                case UnicodeCategory.NonSpacingMark:
+                case UnicodeCategory.DecimalDigitNumber:
+                case UnicodeCategory.ConnectorPunctuation:
+                    return true;
+
+                default:
+                    const char ZeroWidthNonJoiner = '\u200C', ZeroWidthJoiner = '\u200D';
+                    return ch == ZeroWidthJoiner | ch == ZeroWidthNonJoiner;
+            }
+        }
+
+        /// <summary>Determines whether the 'a' and 'b' values differ by only a single bit, setting that bit in 'mask'.</summary>
+        /// <remarks>This isn't specific to RegexCharClass; it's just a convenient place to host it.</remarks>
+        public static bool DifferByOneBit(char a, char b, out int mask)
+        {
+            mask = a ^ b;
+            return mask != 0 && (mask & (mask - 1)) == 0;
         }
 
         /// <summary>Determines a character's membership in a character class (via the string representation of the class).</summary>
@@ -1257,23 +1310,7 @@ namespace System.Text.RegularExpressions
             int i = start + SetStartIndex;
             int end = i + setLength;
 
-            List<SingleRange>? ranges = null;
-            if (setLength > 0)
-            {
-                ranges = new List<SingleRange>(setLength);
-                while (i < end)
-                {
-                    char first = charClass[i];
-                    i++;
-
-                    char last = i < end ?
-                        (char)(charClass[i] - 1) :
-                        LastChar;
-                    i++;
-
-                    ranges.Add(new SingleRange(first, last));
-                }
-            }
+            List<(char First, char Last)>? ranges = ComputeRanges(charClass.AsSpan(start));
 
             RegexCharClass? sub = null;
             if (charClass.Length > endPosition)
@@ -1288,6 +1325,32 @@ namespace System.Text.RegularExpressions
             }
 
             return new RegexCharClass(IsNegated(charClass, start), ranges, categoriesBuilder, sub);
+        }
+
+        /// <summary>Computes a list of all of the character ranges in the set string.</summary>
+        public static List<(char First, char Last)>? ComputeRanges(ReadOnlySpan<char> set)
+        {
+            int setLength = set[SetLengthIndex];
+            int i = SetStartIndex;
+            int end = i + setLength;
+
+            List<(char First, char Last)>? ranges = null;
+            if (setLength > 0)
+            {
+                ranges = new List<(char First, char Last)>(setLength);
+                while (i < end)
+                {
+                    char first = set[i];
+                    i++;
+
+                    char last = i < end ? (char)(set[i] - 1) : LastChar;
+                    i++;
+
+                    ranges.Add((first, last));
+                }
+            }
+
+            return ranges;
         }
 
         #region Perf workaround until https://github.com/dotnet/runtime/issues/61048 and https://github.com/dotnet/runtime/issues/59492 are addressed
@@ -1590,12 +1653,12 @@ namespace System.Text.RegularExpressions
             headerSpan[CategoryLengthIndex] = (char)categoriesLength;
 
             // Append ranges
-            List<SingleRange>? rangelist = _rangelist;
+            List<(char First, char Last)>? rangelist = _rangelist;
             if (rangelist != null)
             {
                 for (int i = 0; i < rangelist.Count; i++)
                 {
-                    SingleRange currentRange = rangelist[i];
+                    (char First, char Last) currentRange = rangelist[i];
                     vsb.Append(currentRange.First);
                     if (currentRange.Last != LastChar)
                     {
@@ -1626,7 +1689,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private void Canonicalize(bool isNonBacktracking)
         {
-            List<SingleRange>? rangelist = _rangelist;
+            List<(char First, char Last)>? rangelist = _rangelist;
             if (rangelist != null)
             {
                 // Find and eliminate overlapping or abutting ranges.
@@ -1648,7 +1711,7 @@ namespace System.Text.RegularExpressions
                                 break;
                             }
 
-                            SingleRange currentRange;
+                            (char First, char Last) currentRange;
                             if ((currentRange = rangelist[i]).First > last + 1)
                             {
                                 break;
@@ -1660,7 +1723,7 @@ namespace System.Text.RegularExpressions
                             }
                         }
 
-                        rangelist[j] = new SingleRange(rangelist[j].First, last);
+                        rangelist[j] = (rangelist[j].First, last);
 
                         j++;
 
@@ -1699,7 +1762,7 @@ namespace System.Text.RegularExpressions
                             rangelist[1].Last == LastChar &&
                             rangelist[0].Last < rangelist[1].First - 1)
                         {
-                            rangelist[0] = new SingleRange((char)(rangelist[0].Last + 1), (char)(rangelist[1].First - 1));
+                            rangelist[0] = ((char)(rangelist[0].Last + 1), (char)(rangelist[1].First - 1));
                             rangelist.RemoveAt(1);
                             _negate = true;
                         }
@@ -1711,7 +1774,7 @@ namespace System.Text.RegularExpressions
                             // There's only one range in the list.  Does it include everything but the last char?
                             if (rangelist[0].Last == LastChar - 1)
                             {
-                                rangelist[0] = new SingleRange(LastChar, LastChar);
+                                rangelist[0] = (LastChar, LastChar);
                                 _negate = true;
                             }
                         }
@@ -1720,7 +1783,7 @@ namespace System.Text.RegularExpressions
                             // Or everything but the first char?
                             if (rangelist[0].Last == LastChar)
                             {
-                                rangelist[0] = new SingleRange('\0', '\0');
+                                rangelist[0] = ('\0', '\0');
                                 _negate = true;
                             }
                         }
@@ -1776,7 +1839,7 @@ namespace System.Text.RegularExpressions
         /// Produces a human-readable description for a set string.
         /// </summary>
         [ExcludeFromCodeCoverage]
-        public static string SetDescription(string set)
+        public static string DescribeSet(string set)
         {
             int setLength = set[SetLengthIndex];
             int categoryLength = set[CategoryLengthIndex];
@@ -1802,7 +1865,7 @@ namespace System.Text.RegularExpressions
                     (char)(set[index + 1] - 1) :
                     LastChar;
 
-                desc.Append(CharDescription(ch1));
+                desc.Append(DescribeChar(ch1));
 
                 if (ch2 != ch1)
                 {
@@ -1811,7 +1874,7 @@ namespace System.Text.RegularExpressions
                         desc.Append('-');
                     }
 
-                    desc.Append(CharDescription(ch2));
+                    desc.Append(DescribeChar(ch2));
                 }
                 index += 2;
             }
@@ -1860,7 +1923,7 @@ namespace System.Text.RegularExpressions
                 }
                 else
                 {
-                    desc.Append(CategoryDescription(ch1));
+                    desc.Append(DescribeCategory(ch1));
                 }
 
                 index++;
@@ -1868,7 +1931,7 @@ namespace System.Text.RegularExpressions
 
             if (set.Length > endPosition)
             {
-                desc.Append('-').Append(SetDescription(set.Substring(endPosition)));
+                desc.Append('-').Append(DescribeSet(set.Substring(endPosition)));
             }
 
             return desc.Append(']').ToString();
@@ -1876,7 +1939,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Produces a human-readable description for a single character.</summary>
         [ExcludeFromCodeCoverage]
-        public static string CharDescription(char ch) =>
+        public static string DescribeChar(char ch) =>
             ch switch
             {
                 '\a' => "\\a",
@@ -1892,39 +1955,15 @@ namespace System.Text.RegularExpressions
             };
 
         [ExcludeFromCodeCoverage]
-        private static string CategoryDescription(char ch)
-        {
-            if (ch == SpaceConst)
+        private static string DescribeCategory(char ch) =>
+            (short)ch switch
             {
-                return "\\s";
-            }
-
-            if ((short)ch == NotSpaceConst)
-            {
-                return "\\S";
-            }
-
-            if ((short)ch < 0)
-            {
-                return "\\P{" + CategoryIdToName[(-((short)ch) - 1)] + "}";
-            }
-
-            return "\\p{" + CategoryIdToName[(ch - 1)] + "}";
-        }
-
-        /// <summary>
-        /// A first/last pair representing a single range of characters.
-        /// </summary>
-        private readonly struct SingleRange
-        {
-            public readonly char First;
-            public readonly char Last;
-
-            internal SingleRange(char first, char last)
-            {
-                First = first;
-                Last = last;
-            }
-        }
+                SpaceConst => @"\s",
+                NotSpaceConst => @"\S",
+                (short)(UnicodeCategory.DecimalDigitNumber + 1) => @"\d",
+                -(short)(UnicodeCategory.DecimalDigitNumber + 1) => @"\D",
+                < 0 => $"\\P{{{CategoryIdToName[-(short)ch - 1]}}}",
+                _ => $"\\p{{{CategoryIdToName[ch - 1]}}}",
+            };
     }
 }

@@ -35,6 +35,7 @@ function print_usage {
     echo '  --printLastResultsOnly           : Print the results of the last run'
     echo '  --runincontext                   : Run each tests in an unloadable AssemblyLoadContext'
     echo '  --tieringtest                    : Run each test to encourage tier1 rejitting'
+    echo '  --runnativeaottests              : Run NativeAOT compiled tests'
     echo '  --limitedDumpGeneration          : '
 }
 
@@ -98,6 +99,7 @@ printLastResultsOnly=
 runSequential=0
 runincontext=0
 tieringtest=0
+nativeaottest=0
 
 for i in "$@"
 do
@@ -197,6 +199,9 @@ do
         --tieringtest)
             tieringtest=1
             ;;
+        --runnativeaottests)
+            nativeaottest=1
+            ;;
         *)
             echo "Unknown switch: $i"
             print_usage
@@ -293,6 +298,11 @@ fi
 if [[ "$tieringtest" -ne 0 ]]; then
     echo "Running to encourage tier1 rejitting"
    runtestPyArguments+=("--tieringtest")
+fi
+
+if [[ "$nativeaottest" -ne 0 ]]; then
+    echo "Running NativeAOT compiled tests"
+   runtestPyArguments+=("--run_nativeaot_tests")
 fi
 
 # Default to python3 if it is installed

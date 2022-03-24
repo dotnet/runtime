@@ -114,12 +114,6 @@
   <data name="BlockingCollection_ValidateCollectionsArray_ZeroSize" xml:space="preserve">
     <value>The collections argument is a zero-length array.</value>
   </data>
-  <data name="ConcurrentBag_Ctor_ArgumentNullException" xml:space="preserve">
-    <value>The collection argument is null.</value>
-  </data>
-  <data name="ConcurrentBag_CopyTo_ArgumentNullException" xml:space="preserve">
-    <value>The array argument is null.</value>
-  </data>
   <data name="Collection_CopyTo_ArgumentOutOfRangeException" xml:space="preserve">
     <value>The index argument must be greater than or equal zero.</value>
   </data>

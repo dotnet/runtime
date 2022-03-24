@@ -1454,9 +1454,10 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     assert(IsCodeAligned(emitCurIGsize));
 
-    /* Make sure we have enough space for the new instruction */
+    // Make sure we have enough space for the new instruction.
+    // `igInsCnt` is currently a byte, so we can't have more than 255 instructions in a single insGroup.
 
-    if ((emitCurIGfreeNext + sz >= emitCurIGfreeEndp) || emitForceNewIG)
+    if ((emitCurIGfreeNext + sz >= emitCurIGfreeEndp) || emitForceNewIG || (emitCurIGinsCnt >= 255))
     {
         emitNxtIG(true);
     }
@@ -1479,7 +1480,9 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     // Make sure that idAddrUnion is just a union of various pointer sized things
     C_ASSERT(sizeof(CORINFO_FIELD_HANDLE) <= sizeof(void*));
     C_ASSERT(sizeof(CORINFO_METHOD_HANDLE) <= sizeof(void*));
+#ifdef TARGET_XARCH
     C_ASSERT(sizeof(emitter::emitAddrMode) <= sizeof(void*));
+#endif // TARGET_XARCH
     C_ASSERT(sizeof(emitLclVarAddr) <= sizeof(void*));
     C_ASSERT(sizeof(emitter::instrDesc) == (SMALL_IDSC_SIZE + sizeof(void*)));
 
@@ -2505,6 +2508,8 @@ bool emitter::emitNoGChelper(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
 
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
+
+        case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             return true;
 
         default:
@@ -2736,13 +2741,29 @@ void emitter::emitSplit(emitLocation*         startLoc,
                 reportCandidate = false;
             }
 
+            // Don't report a zero-size candidate. This will only occur in a stress mode with JitSplitFunctionSize
+            // set to something small, and a zero-sized IG (possibly inserted for use by the alignment code). Normally,
+            // the split size will be much larger than the maximum size of an instruction group. The invariant we want
+            // to maintain is that each fragment contains a non-zero amount of code.
+            if (reportCandidate && (candidateSize == 0))
+            {
+#ifdef DEBUG
+                if (EMITVERBOSE)
+                    printf("emitSplit: can't split at IG%02u; zero-sized candidate\n", igLastCandidate->igNum);
+#endif
+                reportCandidate = false;
+            }
+
             // Report it!
             if (reportCandidate)
             {
 #ifdef DEBUG
-                if (EMITVERBOSE && (candidateSize >= maxSplitSize))
-                    printf("emitSplit: split at IG%02u is size %d, larger than requested maximum size of %d\n",
-                           igLastCandidate->igNum, candidateSize, maxSplitSize);
+                if (EMITVERBOSE)
+                {
+                    printf("emitSplit: split at IG%02u is size %d, %s than requested maximum size of %d\n",
+                           igLastCandidate->igNum, candidateSize, (candidateSize >= maxSplitSize) ? "larger" : "less",
+                           maxSplitSize);
+                }
 #endif
 
                 // hand memory ownership to the callback function
@@ -3185,11 +3206,13 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
     if (!VarSetOps::IsEmpty(emitComp, GCvars) || // any frame GCvars live
         (gcRefRegsInScratch) ||                  // any register gc refs live in scratch regs
         (byrefRegs != 0) ||                      // any register byrefs live
-        (disp < AM_DISP_MIN) ||                  // displacement too negative
-        (disp > AM_DISP_MAX) ||                  // displacement too positive
-        (argCnt > ID_MAX_SMALL_CNS) ||           // too many args
-        (argCnt < 0)                             // caller pops arguments
-                                                 // There is a second ref/byref return register.
+#ifdef TARGET_XARCH
+        (disp < AM_DISP_MIN) ||        // displacement too negative
+        (disp > AM_DISP_MAX) ||        // displacement too positive
+#endif                                 // TARGET_XARCH
+        (argCnt > ID_MAX_SMALL_CNS) || // too many args
+        (argCnt < 0)                   // caller pops arguments
+                                       // There is a second ref/byref return register.
         MULTIREG_HAS_SECOND_GC_RET_ONLY(|| EA_IS_GCREF_OR_BYREF(secondRetSize)))
     {
         instrDescCGCA* id;
@@ -3219,9 +3242,11 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
         /* Make sure we didn't waste space unexpectedly */
         assert(!id->idIsLargeCns());
 
+#ifdef TARGET_XARCH
         /* Store the displacement and make sure the value fit */
         id->idAddr()->iiaAddrMode.amDisp = disp;
         assert(id->idAddr()->iiaAddrMode.amDisp == disp);
+#endif // TARGET_XARCH
 
         /* Save the the live GC registers in the unused register fields */
         emitEncodeCallGCregs(gcrefRegs, id);
@@ -9300,6 +9325,10 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             result = RBM_INIT_PINVOKE_FRAME_TRASH;
             break;
 #endif // defined(TARGET_X86)
+
+        case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
+            result = RBM_VALIDATE_INDIRECT_CALL_TRASH;
+            break;
 
         default:
             result = RBM_CALLEE_TRASH_NOGC;

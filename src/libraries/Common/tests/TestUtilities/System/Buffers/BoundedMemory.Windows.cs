@@ -287,41 +287,41 @@ namespace System.Buffers
                 UnsafeNativeMethods.VirtualFree(handle, IntPtr.Zero, VirtualAllocAllocationType.MEM_RELEASE);
         }
 
-        private static class UnsafeNativeMethods
+        private static partial class UnsafeNativeMethods
         {
             private const string KERNEL32_LIB = "kernel32.dll";
 
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366887(v=vs.85).aspx
-            [DllImport(KERNEL32_LIB, CallingConvention = CallingConvention.Winapi, SetLastError = true)]
-            public static extern VirtualAllocHandle VirtualAlloc(
-                [In] IntPtr lpAddress,
-                [In] IntPtr dwSize,
-                [In] VirtualAllocAllocationType flAllocationType,
-                [In] VirtualAllocProtection flProtect);
+            [LibraryImport(KERNEL32_LIB, SetLastError = true)]
+            public static partial VirtualAllocHandle VirtualAlloc(
+                IntPtr lpAddress,
+                IntPtr dwSize,
+                VirtualAllocAllocationType flAllocationType,
+                VirtualAllocProtection flProtect);
 
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366892(v=vs.85).aspx
-            [DllImport(KERNEL32_LIB, CallingConvention = CallingConvention.Winapi, SetLastError = true)]
+            [LibraryImport(KERNEL32_LIB, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool VirtualFree(
-                [In] IntPtr lpAddress,
-                [In] IntPtr dwSize,
-                [In] VirtualAllocAllocationType dwFreeType);
+            public static partial bool VirtualFree(
+                IntPtr lpAddress,
+                IntPtr dwSize,
+                VirtualAllocAllocationType dwFreeType);
 
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366898(v=vs.85).aspx
-            [DllImport(KERNEL32_LIB, CallingConvention = CallingConvention.Winapi, SetLastError = true)]
+            [LibraryImport(KERNEL32_LIB, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool VirtualProtect(
-                [In] IntPtr lpAddress,
-                [In] IntPtr dwSize,
-                [In] VirtualAllocProtection flNewProtect,
-                [Out] out VirtualAllocProtection lpflOldProtect);
+            public static partial bool VirtualProtect(
+                IntPtr lpAddress,
+                IntPtr dwSize,
+                VirtualAllocProtection flNewProtect,
+                out VirtualAllocProtection lpflOldProtect);
 
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366902(v=vs.85).aspx
-            [DllImport(KERNEL32_LIB, CallingConvention = CallingConvention.Winapi, SetLastError = true)]
-            public static extern IntPtr VirtualQuery(
-                [In] IntPtr lpAddress,
-                [Out] out MEMORY_BASIC_INFORMATION lpBuffer,
-                [In] IntPtr dwLength);
+            [LibraryImport(KERNEL32_LIB, SetLastError = true)]
+            public static partial IntPtr VirtualQuery(
+                IntPtr lpAddress,
+                out MEMORY_BASIC_INFORMATION lpBuffer,
+                IntPtr dwLength);
         }
     }
 }

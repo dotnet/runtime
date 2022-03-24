@@ -390,7 +390,7 @@ void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, Meth
 
     if (argDest->IsHFA())
     {
-        argDest->CopyHFAStructToRegister(src, pMT->GetAlignedNumInstanceFieldBytes());
+        argDest->CopyHFAStructToRegister(src, pMT->GetNumInstanceFieldBytes());
         return;
     }
 
@@ -579,7 +579,7 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
 #ifdef FEATURE_64BIT_ALIGNMENT
         if (pMT->RequiresAlign8())
         {
-            CHECK_AND_TEAR_DOWN((((size_t)this) & 0x7) == (pMT->IsValueType()? 4:0));
+            CHECK_AND_TEAR_DOWN((((size_t)this) & 0x7) == (size_t)(pMT->IsValueType()?4:0));
         }
         lastTest = 9;
 #endif // FEATURE_64BIT_ALIGNMENT
@@ -852,7 +852,7 @@ STRINGREF* StringObject::InitEmptyStringRefPtr() {
 // strAChars must be null-terminated, with an appropriate aLength
 // strBChars must be null-terminated, with an appropriate bLength OR bLength == -1
 // If bLength == -1, we stop on the first null character in strBChars
-BOOL StringObject::CaseInsensitiveCompHelper(__in_ecount(aLength) WCHAR *strAChars, __in_z INT8 *strBChars, INT32 aLength, INT32 bLength, INT32 *result) {
+BOOL StringObject::CaseInsensitiveCompHelper(_In_reads_(aLength) WCHAR *strAChars, _In_z_ INT8 *strBChars, INT32 aLength, INT32 bLength, INT32 *result) {
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -1488,10 +1488,6 @@ void StackTraceArray::EnsureThreadAffinity()
     }
 }
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4267)
-#endif
-
 // Deep copies the stack trace array
 void StackTraceArray::CopyFrom(StackTraceArray const & src)
 {
@@ -1515,11 +1511,6 @@ void StackTraceArray::CopyFrom(StackTraceArray const & src)
                     // another thread might have changed it at the time of copying
     SetObjectThread();  // affinitize the newly created array with the current thread
 }
-
-#ifdef _MSC_VER
-#pragma warning(default: 4267)
-#endif
-
 
 #ifdef _DEBUG
 //===============================================================================
@@ -1916,6 +1907,13 @@ void ExceptionObject::SetStackTrace(I1ARRAYREF stackTrace, PTRARRAYREF dynamicMe
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
+
+#ifdef STRESS_LOG
+    if (StressLog::StressLogOn(~0u, 0))
+    {
+        StressLog::CreateThreadStressLog();
+    }
+#endif
 
     SpinLock::AcquireLock(&g_StackTraceArrayLock);
 

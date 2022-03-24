@@ -119,12 +119,6 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
 void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
 {
 #ifdef FEATURE_SIMD
-    // No lowering is needed for non-SIMD nodes, so early out if SIMD types are not supported.
-    if (!comp->supportSIMDTypes())
-    {
-        return;
-    }
-
     GenTreeIndir* indir = use.Def()->AsIndir();
     assert(indir->OperIs(GT_IND));
     var_types simdType = indir->TypeGet();
@@ -416,13 +410,10 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                 }
                 GenTreeSIMD* simdTree =
                     comp->gtNewSIMDNode(simdType, initVal, SIMDIntrinsicInit, simdBaseJitType, genTypeSize(simdType));
-                assignment->AsOp()->gtOp2 = simdTree;
-                value                     = simdTree;
-                initVal->gtNext           = simdTree;
-                simdTree->gtPrev          = initVal;
+                assignment->gtOp2 = simdTree;
+                value             = simdTree;
 
-                simdTree->gtNext = location;
-                location->gtPrev = simdTree;
+                BlockRange().InsertAfter(initVal, simdTree);
             }
         }
 #endif // FEATURE_SIMD
@@ -456,11 +447,18 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
         case GT_CLS_VAR:
         {
+            bool isVolatile = (location->gtFlags & GTF_CLS_VAR_VOLATILE) != 0;
+
+            location->gtFlags &= ~GTF_CLS_VAR_VOLATILE;
             location->SetOper(GT_CLS_VAR_ADDR);
             location->gtType = TYP_BYREF;
 
             assignment->SetOper(GT_STOREIND);
             assignment->AsStoreInd()->SetRMWStatusDefault();
+            if (isVolatile)
+            {
+                assignment->gtFlags |= GTF_IND_VOLATILE;
+            }
 
             // TODO: JIT dump
         }
@@ -468,7 +466,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
         case GT_BLK:
         case GT_OBJ:
-        case GT_DYN_BLK:
         {
             assert(varTypeIsStruct(location));
             GenTreeBlk* storeBlk = location->AsBlk();
@@ -480,10 +477,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                     break;
                 case GT_OBJ:
                     storeOper = GT_STORE_OBJ;
-                    break;
-                case GT_DYN_BLK:
-                    storeOper                             = GT_STORE_DYN_BLK;
-                    storeBlk->AsDynBlk()->gtEvalSizeFirst = false;
                     break;
                 default:
                     unreached();
@@ -699,7 +692,12 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             if (!isLHSOfAssignment)
             {
                 GenTree* ind = comp->gtNewOperNode(GT_IND, node->TypeGet(), node);
+                if ((node->gtFlags & GTF_CLS_VAR_VOLATILE) != 0)
+                {
+                    ind->gtFlags |= GTF_IND_VOLATILE;
+                }
 
+                node->gtFlags &= ~GTF_CLS_VAR_VOLATILE;
                 node->SetOper(GT_CLS_VAR_ADDR);
                 node->gtType = TYP_BYREF;
 
@@ -720,7 +718,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 #ifdef FEATURE_SIMD
         case GT_SIMD:
         {
-            noway_assert(comp->supportSIMDTypes());
             GenTreeSIMD* simdNode = node->AsSIMD();
             unsigned     simdSize = simdNode->GetSimdSize();
             var_types    simdType = comp->getSIMDTypeForSize(simdSize);
@@ -786,8 +783,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                 break;
             }
 
-            noway_assert(comp->supportSIMDTypes());
-
             // TODO-1stClassStructs: This should be handled more generally for enregistered or promoted
             // structs that are passed or returned in a different register type than their enregistered
             // type(s).
@@ -811,8 +806,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 #endif // FEATURE_HW_INTRINSICS
 
         default:
-            // These nodes should not be present in HIR.
-            assert(!node->OperIs(GT_CMP, GT_SETCC, GT_JCC, GT_JCMP, GT_LOCKADD));
+            // Check that we don't have nodes not allowed in HIR here.
+            assert((node->DebugOperKind() & DBK_NOTHIR) == 0);
             break;
     }
 

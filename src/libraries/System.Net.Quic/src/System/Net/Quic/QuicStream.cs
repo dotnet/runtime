@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.IO;
 using System.Net.Quic.Implementations;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -46,6 +47,12 @@ namespace System.Net.Quic
             return Read(buffer.AsSpan(offset, count));
         }
 
+        public override int ReadByte()
+        {
+            byte b = 0;
+            return Read(MemoryMarshal.CreateSpan(ref b, 1)) != 0 ? b : -1;
+        }
+
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
@@ -56,6 +63,11 @@ namespace System.Net.Quic
         {
             ValidateBufferArguments(buffer, offset, count);
             Write(buffer.AsSpan(offset, count));
+        }
+
+        public override void WriteByte(byte value)
+        {
+            Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)

@@ -1628,7 +1628,7 @@ size_t Interpreter::GetFrameSize(InterpreterMethodInfo* interpMethInfo)
 }
 
 // static
-ARG_SLOT Interpreter::ExecuteMethodWrapper(struct InterpreterMethodInfo* interpMethInfo, bool directCall, BYTE* ilArgs, void* stubContext, __out bool* pDoJmpCall, CORINFO_RESOLVED_TOKEN* pResolvedToken)
+ARG_SLOT Interpreter::ExecuteMethodWrapper(struct InterpreterMethodInfo* interpMethInfo, bool directCall, BYTE* ilArgs, void* stubContext, _Out_ bool* pDoJmpCall, CORINFO_RESOLVED_TOKEN* pResolvedToken)
 {
 #define INTERP_DYNAMIC_CONTRACTS 1
 #if INTERP_DYNAMIC_CONTRACTS
@@ -1995,7 +1995,7 @@ void Interpreter::DoMonitorExitWork()
 }
 
 
-void Interpreter::ExecuteMethod(ARG_SLOT* retVal, __out bool* pDoJmpCall, __out unsigned* pJmpCallToken)
+void Interpreter::ExecuteMethod(ARG_SLOT* retVal, _Out_ bool* pDoJmpCall, _Out_ unsigned* pJmpCallToken)
 {
 #if INTERP_DYNAMIC_CONTRACTS
     CONTRACTL {
@@ -9129,16 +9129,19 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     // Point A in our cycle count.
 
 
+    // TODO: enable when NamedIntrinsic is available to interpreter
+
+    /*
     // Is the method an intrinsic?  If so, and if it's one we've written special-case code for
     // handle intrinsically.
-    CorInfoIntrinsics intrinsicId;
+    NamedIntrinsic intrinsicName;
     {
         GCX_PREEMP();
-        intrinsicId = m_interpCeeInfo.getIntrinsicID(CORINFO_METHOD_HANDLE(methToCall), nullptr);
+        intrinsicName = getIntrinsicName(CORINFO_METHOD_HANDLE(methToCall), nullptr);
     }
 
 #if INTERP_TRACING
-    if (intrinsicId != CORINFO_INTRINSIC_Illegal)
+    if (intrinsicName == NI_Illegal)
         InterlockedIncrement(&s_totalInterpCallsToIntrinsics);
 #endif // INTERP_TRACING
     bool didIntrinsic = false;
@@ -9146,22 +9149,17 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     {
         switch (intrinsicId)
         {
-        case CORINFO_INTRINSIC_ByReference_Ctor:
+        case NI_System_ByReference_ctor:
             DoByReferenceCtor();
             didIntrinsic = true;
             break;
-        case CORINFO_INTRINSIC_ByReference_Value:
+        case NI_System_ByReference_get_Value:
             DoByReferenceValue();
             didIntrinsic = true;
             break;
 #if INTERP_ILSTUBS
-        case CORINFO_INTRINSIC_StubHelpers_GetStubContext:
+        case NI_System_StubHelpers_GetStubContext:
             OpStackSet<void*>(m_curStackHt, GetStubContext());
-            OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_NATIVEINT));
-            m_curStackHt++; didIntrinsic = true;
-            break;
-        case CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr:
-            OpStackSet<void*>(m_curStackHt, GetStubContextAddr());
             OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_NATIVEINT));
             m_curStackHt++; didIntrinsic = true;
             break;
@@ -9213,32 +9211,29 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         }
 
 #if FEATURE_SIMD
-        if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)
+        // Check for the simd class...
+        _ASSERTE(exactClass != NULL);
+        GCX_PREEMP();
+        bool isIntrinsicType = m_interpCeeInfo.isIntrinsicType(exactClass);
+
+        if (isIntrinsicType)
         {
-            // Check for the simd class...
-            _ASSERTE(exactClass != NULL);
-            GCX_PREEMP();
-            bool isIntrinsicType = m_interpCeeInfo.isIntrinsicType(exactClass);
-
-            if (isIntrinsicType)
+            // SIMD intrinsics are recognized by name.
+            const char* namespaceName = NULL;
+            const char* className = NULL;
+            const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
+            if ((strcmp(methodName, "get_IsHardwareAccelerated") == 0) && (strcmp(className, "Vector") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
             {
-                // SIMD intrinsics are recognized by name.
-                const char* namespaceName = NULL;
-                const char* className = NULL;
-                const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
-                if ((strcmp(methodName, "get_IsHardwareAccelerated") == 0) && (strcmp(className, "Vector") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
-                {
-                    GCX_COOP();
-                    DoSIMDHwAccelerated();
-                    didIntrinsic = true;
-                }
+                GCX_COOP();
+                DoSIMDHwAccelerated();
+                didIntrinsic = true;
             }
+        }
 
-            if (didIntrinsic)
-            {
-                // Must block caching or we lose easy access to the class
-                doNotCache = true;
-            }
+        if (didIntrinsic)
+        {
+            // Must block caching or we lose easy access to the class
+            doNotCache = true;
         }
 #endif // FEATURE_SIMD
 
@@ -9255,6 +9250,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         // Now we can return.
         return;
     }
+    */
 
     // Handle other simple special cases:
 

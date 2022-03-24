@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <FeatureGenericMath>false</FeatureGenericMath>
     <NoWarn>$(NoWarn),1718,SYSLIB0013</NoWarn>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
@@ -9,10 +8,11 @@
     <Nullable>disable</Nullable>
     <!-- Disable nullability public only feature for NullabilityInfoContextTests -->
     <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
+    <EnableRegexGenerator>true</EnableRegexGenerator>
   </PropertyGroup>
-  <PropertyGroup>
-    <DefineConstants Condition="'$(FeatureGenericMath)' == 'true'">$(DefineConstants);FEATURE_GENERIC_MATH</DefineConstants>
-  </PropertyGroup>
+  <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\EnumTypes.cs" Link="Common\System\EnumTypes.cs" />
     <Compile Include="$(CommonTestPath)System\MockType.cs" Link="Common\System\MockType.cs" />
@@ -59,6 +59,7 @@
     <Compile Include="System\DBNullTests.cs" />
     <Compile Include="System\DecimalTests.cs" />
     <Compile Include="System\DelegateTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\StringSyntaxAttributeTests.cs" />
     <Compile Include="System\DivideByZeroExceptionTests.cs" />
     <Compile Include="System\DoubleTests.cs" />
     <Compile Include="System\DuplicateWaitObjectExceptionTests.cs" />
@@ -144,8 +145,9 @@
     <Compile Include="System\ValueTypeTests.cs" />
     <Compile Include="System\VersionTests.cs" />
     <Compile Include="System\WeakReferenceTests.cs" />
-    <Compile Include="System\AppContext\AppContext.Switch.cs" />
-    <Compile Include="System\AppContext\AppContext.Switch.Validation.cs" />
+    <Compile Include="System\AppContext\AppContextTests.cs" />
+    <Compile Include="System\AppContext\AppContextTests.Switch.cs" />
+    <Compile Include="System\AppContext\AppContextTests.Switch.Validation.cs" />
     <Compile Include="System\Collections\Generic\KeyNotFoundExceptionTests.cs" />
     <Compile Include="System\Collections\Generic\KeyValuePairTests.cs" />
     <Compile Include="System\Collections\ObjectModel\CollectionTests.cs" />
@@ -154,11 +156,13 @@
     <Compile Include="System\ComponentModel\DefaultValueAttributeTests.cs" />
     <Compile Include="System\ComponentModel\EditorBrowsableAttributeTests.cs" />
     <Compile Include="System\Diagnostics\ConditionalAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\ConstantExpectedAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\DynamicDependencyAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\RequiresAssemblyFilesAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttributeTests.cs" />
     <Compile Include="System\Diagnostics\StackTraceHiddenAttributeTests.cs" />
     <Compile Include="System\IO\DirectoryNotFoundExceptionTests.cs" />
@@ -240,10 +244,10 @@
     <Compile Include="System\Type\TypeTests.Get.cs" />
     <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs" Link="Common\System\RandomDataGenerator.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="System\ExitCodeTests.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureGenericMath)' == 'true'">
+  <ItemGroup>
     <Compile Include="System\ByteTests.GenericMath.cs" />
     <Compile Include="System\CharTests.GenericMath.cs" />
     <Compile Include="System\DoubleTests.GenericMath.cs" />

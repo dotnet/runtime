@@ -1,121 +1,194 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-using Microsoft.Win32.SafeHandles;
-using static Internal.NativeCrypto.BCryptNative;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
-    internal static partial class ECDiffieHellmanImplementation
+    /// <summary>
+    ///     Wrapper for CNG's implementation of elliptic curve Diffie-Hellman key exchange
+    /// </summary>
+    public sealed partial class ECDiffieHellmanCng : ECDiffieHellman
     {
-        public sealed partial class ECDiffieHellmanCng : ECDiffieHellman
+        private CngAlgorithmCore _core = new CngAlgorithmCore(nameof(ECDiffieHellmanCng)) { DefaultKeyType = CngAlgorithm.ECDiffieHellman };
+        private CngAlgorithm _hashAlgorithm = CngAlgorithm.Sha256;
+        private ECDiffieHellmanKeyDerivationFunction _kdf = ECDiffieHellmanKeyDerivationFunction.Hash;
+        private byte[]? _hmacKey;
+        private byte[]? _label;
+        private byte[]? _secretAppend;
+        private byte[]? _secretPrepend;
+        private byte[]? _seed;
+
+        [SupportedOSPlatform("windows")]
+        public ECDiffieHellmanCng(CngKey key!!)
         {
-            protected override void Dispose(bool disposing)
+            if (key.AlgorithmGroup != CngAlgorithmGroup.ECDiffieHellman)
+                throw new ArgumentException(SR.Cryptography_ArgECDHRequiresECDHKey, nameof(key));
+
+            Key = CngAlgorithmCore.Duplicate(key);
+        }
+
+        /// <summary>
+        ///     Hash algorithm used with the Hash and HMAC KDFs
+        /// </summary>
+        public CngAlgorithm HashAlgorithm
+        {
+            get
             {
-                if (disposing)
+                return _hashAlgorithm;
+            }
+
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value, nameof(value));
+
+                _hashAlgorithm = value;
+            }
+        }
+
+        /// <summary>
+        ///     KDF used to transform the secret agreement into key material
+        /// </summary>
+        public ECDiffieHellmanKeyDerivationFunction KeyDerivationFunction
+        {
+            get
+            {
+                return _kdf;
+            }
+
+            set
+            {
+                if (value < ECDiffieHellmanKeyDerivationFunction.Hash || value > ECDiffieHellmanKeyDerivationFunction.Tls)
                 {
-                    _key.FullDispose();
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
-                base.Dispose(disposing);
+                _kdf = value;
             }
+        }
 
-            private void ThrowIfDisposed()
-            {
-                _key.ThrowIfDisposed();
-            }
+        /// <summary>
+        ///     Key used with the HMAC KDF
+        /// </summary>
+        public byte[]? HmacKey
+        {
+            get { return _hmacKey; }
+            set { _hmacKey = value; }
+        }
 
-            private void ImportFullKeyBlob(byte[] ecfullKeyBlob, bool includePrivateParameters)
-            {
-                string blobType = includePrivateParameters ?
-                    Interop.BCrypt.KeyBlobType.BCRYPT_ECCFULLPRIVATE_BLOB :
-                    Interop.BCrypt.KeyBlobType.BCRYPT_ECCFULLPUBLIC_BLOB;
+        /// <summary>
+        ///     Label bytes used for the TLS KDF
+        /// </summary>
+        public byte[]? Label
+        {
+            get { return _label; }
+            set { _label = value; }
+        }
 
-                SafeNCryptKeyHandle keyHandle = CngKeyLite.ImportKeyBlob(blobType, ecfullKeyBlob);
+        /// <summary>
+        ///     Bytes to append to the raw secret agreement before processing by the KDF
+        /// </summary>
+        public byte[]? SecretAppend
+        {
+            get { return _secretAppend; }
+            set { _secretAppend = value; }
+        }
 
-                Debug.Assert(!keyHandle.IsInvalid);
+        /// <summary>
+        ///     Bytes to prepend to the raw secret agreement before processing by the KDF
+        /// </summary>
+        public byte[]? SecretPrepend
+        {
+            get { return _secretPrepend; }
+            set { _secretPrepend = value; }
+        }
 
-                _key.SetHandle(keyHandle, AlgorithmName.ECDH);
-                ForceSetKeySize(_key.KeySize);
-            }
+        /// <summary>
+        ///     Seed bytes used for the TLS KDF
+        /// </summary>
+        public byte[]? Seed
+        {
+            get { return _seed; }
+            set { _seed = value; }
+        }
 
-            private void ImportKeyBlob(byte[] ecKeyBlob, string curveName, bool includePrivateParameters)
-            {
-                string blobType = includePrivateParameters ?
-                    Interop.BCrypt.KeyBlobType.BCRYPT_ECCPRIVATE_BLOB :
-                    Interop.BCrypt.KeyBlobType.BCRYPT_ECCPUBLIC_BLOB;
+        /// <summary>
+        ///     Use the secret agreement as the HMAC key rather than supplying a seperate one
+        /// </summary>
+        public bool UseSecretAgreementAsHmacKey
+        {
+            get { return HmacKey == null; }
+        }
 
-                SafeNCryptKeyHandle keyHandle = CngKeyLite.ImportKeyBlob(blobType, ecKeyBlob, curveName);
+        protected override void Dispose(bool disposing)
+        {
+            _core.Dispose();
+        }
 
-                Debug.Assert(!keyHandle.IsInvalid);
+        private void ThrowIfDisposed()
+        {
+            _core.ThrowIfDisposed();
+        }
 
-                _key.SetHandle(keyHandle, ECCng.EcdhCurveNameToAlgorithm(curveName));
-                ForceSetKeySize(_key.KeySize);
-            }
+        private void DisposeKey()
+        {
+            _core.DisposeKey();
+        }
 
-            private byte[] ExportKeyBlob(bool includePrivateParameters)
-            {
-                string blobType = includePrivateParameters ?
-                    Interop.BCrypt.KeyBlobType.BCRYPT_ECCPRIVATE_BLOB :
-                    Interop.BCrypt.KeyBlobType.BCRYPT_ECCPUBLIC_BLOB;
+        internal string? GetCurveName(out string? oidValue)
+        {
+            return Key.GetCurveName(out oidValue);
+        }
 
-                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
-                {
-                    return CngKeyLite.ExportKeyBlob(keyHandle, blobType);
-                }
-            }
+        private void ImportFullKeyBlob(byte[] ecfullKeyBlob, bool includePrivateParameters)
+        {
+            Key = ECCng.ImportFullKeyBlob(ecfullKeyBlob, includePrivateParameters);
+        }
 
-            private byte[] ExportFullKeyBlob(bool includePrivateParameters)
-            {
-                string blobType = includePrivateParameters ?
-                    Interop.BCrypt.KeyBlobType.BCRYPT_ECCFULLPRIVATE_BLOB :
-                    Interop.BCrypt.KeyBlobType.BCRYPT_ECCFULLPUBLIC_BLOB;
+        private void ImportKeyBlob(byte[] ecfullKeyBlob, string curveName, bool includePrivateParameters)
+        {
+            Key = ECCng.ImportKeyBlob(ecfullKeyBlob, curveName, includePrivateParameters);
+        }
 
-                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
-                {
-                    return CngKeyLite.ExportKeyBlob(keyHandle, blobType);
-                }
-            }
+        private byte[] ExportKeyBlob(bool includePrivateParameters)
+        {
+            return ECCng.ExportKeyBlob(Key, includePrivateParameters);
+        }
 
-            private byte[] ExportEncryptedPkcs8(ReadOnlySpan<char> pkcs8Password, int kdfCount)
-            {
-                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
-                {
-                    return CngKeyLite.ExportPkcs8KeyBlob(keyHandle, pkcs8Password, kdfCount);
-                }
-            }
+        private byte[] ExportFullKeyBlob(bool includePrivateParameters)
+        {
+            return ECCng.ExportFullKeyBlob(Key, includePrivateParameters);
+        }
 
-            private bool TryExportEncryptedPkcs8(
-                ReadOnlySpan<char> pkcs8Password,
-                int kdfCount,
-                Span<byte> destination,
-                out int bytesWritten)
-            {
-                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
-                {
-                    return CngKeyLite.TryExportPkcs8KeyBlob(
-                        keyHandle,
-                        pkcs8Password,
-                        kdfCount,
-                        destination,
-                        out bytesWritten);
-                }
-            }
+        private void AcceptImport(CngPkcs8.Pkcs8Response response)
+        {
+            Key = response.Key;
+        }
 
-            private void AcceptImport(CngPkcs8.Pkcs8Response response)
-            {
-                SafeNCryptKeyHandle keyHandle = response.KeyHandle;
+        public override bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten)
+        {
+            return Key.TryExportKeyBlob(
+                Interop.NCrypt.NCRYPT_PKCS8_PRIVATE_KEY_BLOB,
+                destination,
+                out bytesWritten);
+        }
 
-                _key.SetHandle(
-                    keyHandle,
-                    CngKeyLite.GetPropertyAsString(
-                        keyHandle,
-                        CngKeyLite.KeyPropertyName.Algorithm,
-                        CngPropertyOptions.None));
+        private byte[] ExportEncryptedPkcs8(ReadOnlySpan<char> pkcs8Password, int kdfCount)
+        {
+            return Key.ExportPkcs8KeyBlob(pkcs8Password, kdfCount);
+        }
 
-                ForceSetKeySize(_key.KeySize);
-            }
+        private bool TryExportEncryptedPkcs8(
+            ReadOnlySpan<char> pkcs8Password,
+            int kdfCount,
+            Span<byte> destination,
+            out int bytesWritten)
+        {
+            return Key.TryExportPkcs8KeyBlob(
+                pkcs8Password,
+                kdfCount,
+                destination,
+                out bytesWritten);
         }
     }
 }

@@ -543,7 +543,7 @@ HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 BOOL CLRFreeLibrary(HMODULE hModule);
 
 // Load a string using the resources for the current module.
-STDAPI UtilLoadStringRC(UINT iResouceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax, int bQuiet=FALSE);
+STDAPI UtilLoadStringRC(UINT iResouceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax, int bQuiet=FALSE);
 
 // Specify callbacks so that UtilLoadStringRC can find out which language we're in.
 // If no callbacks specified (or both parameters are NULL), we default to the
@@ -697,8 +697,8 @@ public:
     HRESULT Init(LPCWSTR pResourceFile);
     void Destroy();
 
-    HRESULT LoadString(ResourceCategory eCategory, UINT iResourceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
-    HRESULT LoadString(ResourceCategory eCategory, LocaleID langId, UINT iResourceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax, int *pcwchUsed);
+    HRESULT LoadString(ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
+    HRESULT LoadString(ResourceCategory eCategory, LocaleID langId, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax, int *pcwchUsed);
 
     void SetResourceCultureCallbacks(
         FPGETTHREADUICULTURENAMES fpGetThreadUICultureNames,
@@ -774,7 +774,7 @@ private:
     FPGETTHREADUICULTURENAMES m_fpGetThreadUICultureNames;
 };
 
-HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResouceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax);
+HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResouceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax);
 
 
 int UtilMessageBox(
@@ -976,27 +976,27 @@ void    SplitPath(const WCHAR *path,
 // A much more sensible version that just points to each section of the string.
 //*******************************************************************************
 void    SplitPathInterior(
-    __in      LPCWSTR wszPath,
-    __out_opt LPCWSTR *pwszDrive,    __out_opt size_t *pcchDrive,
-    __out_opt LPCWSTR *pwszDir,      __out_opt size_t *pcchDir,
-    __out_opt LPCWSTR *pwszFileName, __out_opt size_t *pcchFileName,
-    __out_opt LPCWSTR *pwszExt,      __out_opt size_t *pcchExt);
+    _In_      LPCWSTR wszPath,
+    _Out_opt_ LPCWSTR *pwszDrive,    _Out_opt_ size_t *pcchDrive,
+    _Out_opt_ LPCWSTR *pwszDir,      _Out_opt_ size_t *pcchDir,
+    _Out_opt_ LPCWSTR *pwszFileName, _Out_opt_ size_t *pcchFileName,
+    _Out_opt_ LPCWSTR *pwszExt,      _Out_opt_ size_t *pcchExt);
 
 
-void    MakePath(__out CQuickWSTR &path,
-                 __in LPCWSTR drive,
-                 __in LPCWSTR dir,
-                 __in LPCWSTR fname,
-                 __in LPCWSTR ext);
+void    MakePath(_Out_ CQuickWSTR &path,
+                 _In_ LPCWSTR drive,
+                 _In_ LPCWSTR dir,
+                 _In_ LPCWSTR fname,
+                 _In_ LPCWSTR ext);
 
-WCHAR * FullPath(__out_ecount (maxlen) WCHAR *UserBuf, const WCHAR *path, size_t maxlen);
+WCHAR * FullPath(_Out_writes_ (maxlen) WCHAR *UserBuf, const WCHAR *path, size_t maxlen);
 
 //*****************************************************************************
 //
 // SString version of the path functions.
 //
 //*****************************************************************************
-void    SplitPath(__in SString const &path,
+void    SplitPath(_In_ SString const &path,
                   __inout_opt SString *drive,
                   __inout_opt SString *dir,
                   __inout_opt SString *fname,
@@ -3469,7 +3469,7 @@ private:
 //*****************************************************************************
 // Checks if string length exceeds the specified limit
 //*****************************************************************************
-inline BOOL IsStrLongerThan(__in __in_z char* pstr, unsigned N)
+inline BOOL IsStrLongerThan(_In_ _In_z_ char* pstr, unsigned N)
 {
     LIMITED_METHOD_CONTRACT;
     unsigned i = 0;
@@ -3505,7 +3505,7 @@ public:
         return m_pNames == 0;
     }
 
-    AssemblyNamesList(__in LPWSTR list);
+    AssemblyNamesList(_In_ LPWSTR list);
     ~AssemblyNamesList();
 };
 
@@ -3536,7 +3536,7 @@ public:
         pNames = 0;
     }
 
-    void Init(__in __in_z LPWSTR list)
+    void Init(_In_ _In_z_ LPWSTR list)
     {
         WRAPPER_NO_CONTRACT;
         pNames = 0;
@@ -3545,7 +3545,7 @@ public:
 
     void Destroy();
 
-    void Insert(__in __in_z LPWSTR list);
+    void Insert(_In_ _In_z_ LPWSTR list);
 
     bool IsInList(LPCUTF8 methodName, LPCUTF8 className, PCCOR_SIGNATURE sig = NULL);
     bool IsInList(LPCUTF8 methodName, LPCUTF8 className, CORINFO_SIG_INFO* pSigInfo);
@@ -3565,7 +3565,7 @@ public:
         Init();
     }
 
-    MethodNamesList(__in LPWSTR list)
+    MethodNamesList(_In_ LPWSTR list)
     {
         WRAPPER_NO_CONTRACT;
         Init(list);
@@ -3684,7 +3684,7 @@ HRESULT LPCSTRToGuid(                   // Return status.
 //*****************************************************************************
 int GuidToLPWSTR(                  // Return status.
     GUID        Guid,                  // [IN] The GUID to convert.
-    __out_ecount (cchGuid) LPWSTR szGuid, // [OUT] String into which the GUID is stored
+    _Out_writes_ (cchGuid) LPWSTR szGuid, // [OUT] String into which the GUID is stored
     DWORD       cchGuid);              // [IN] Size in wide chars of szGuid
 
 //*****************************************************************************
@@ -3692,7 +3692,7 @@ int GuidToLPWSTR(                  // Return status.
 //*****************************************************************************
 BOOL LPWSTRToGuid(
     GUID      * Guid,                         // [OUT] The GUID to fill in
-    __in_ecount(cchGuid)   LPCWSTR szGuid,    // [IN] String to parse
+    _In_reads_(cchGuid)   LPCWSTR szGuid,    // [IN] String to parse
     DWORD       cchGuid);                     // [IN] Count in wchars in string
 
 typedef VPTR(class RangeList) PTR_RangeList;
@@ -3821,8 +3821,8 @@ inline HRESULT FakeCoCreateInstance(REFCLSID   rclsid,
 // is called at COR setup time. Set is called during EEStartup and by the
 // MetaData dispenser.
 //*****************************************************************************
-HRESULT GetInternalSystemDirectory(__out_ecount_part_opt(*pdwLength,*pdwLength) LPWSTR buffer, __inout DWORD* pdwLength);
-LPCWSTR GetInternalSystemDirectory(__out_opt DWORD * pdwLength = NULL);
+HRESULT GetInternalSystemDirectory(_Out_writes_to_opt_(*pdwLength,*pdwLength) LPWSTR buffer, __inout DWORD* pdwLength);
+LPCWSTR GetInternalSystemDirectory(_Out_opt_ DWORD * pdwLength = NULL);
 
 //*****************************************************************************
 // This function validates the given Method/Field/Standalone signature. (util.cpp)
@@ -3867,7 +3867,7 @@ HRESULT GetCurrentModuleFileName(SString& pBuffer);
 // Retrieve information regarding what registered default debugger
 //*****************************************************************************
 void GetDebuggerSettingInfo(SString &debuggerKeyValue, BOOL *pfAuto);
-HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, *pcchDebuggerString) LPWSTR wszDebuggerString, DWORD * pcchDebuggerString, BOOL * pfAuto);
+HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *pcchDebuggerString) LPWSTR wszDebuggerString, DWORD * pcchDebuggerString, BOOL * pfAuto);
 
 void TrimWhiteSpace(__inout_ecount(*pcch)  LPCWSTR *pwsz, __inout LPDWORD pcch);
 

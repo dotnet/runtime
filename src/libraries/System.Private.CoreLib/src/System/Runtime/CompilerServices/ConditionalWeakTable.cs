@@ -5,8 +5,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Threading;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
 {
@@ -178,15 +178,9 @@ namespace System.Runtime.CompilerServices
         /// This rule permits the table to invoke createValueCallback outside the internal table lock
         /// to prevent deadlocks.
         /// </remarks>
-        public TValue GetValue(TKey key, CreateValueCallback createValueCallback)
+        public TValue GetValue(TKey key, CreateValueCallback createValueCallback!!)
         {
             // key is validated by TryGetValue
-
-            if (createValueCallback is null)
-            {
-                throw new ArgumentNullException(nameof(createValueCallback));
-            }
-
             return TryGetValue(key, out TValue? existingValue) ?
                 existingValue :
                 GetValueLocked(key, createValueCallback);

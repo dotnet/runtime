@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace System.IO.Compression
 {
@@ -17,20 +20,19 @@ namespace System.IO.Compression
 
         private static readonly DateTime s_invalidDateIndicator = new DateTime(ValidZipDate_YearMin, 1, 1, 0, 0, 0);
 
-        internal static bool RequiresUnicode(string test)
+        internal static Encoding GetEncoding(string text)
         {
-            Debug.Assert(test != null);
-
-            foreach (char c in test)
+            foreach (char c in text)
             {
                 // The Zip Format uses code page 437 when the Unicode bit is not set. This format
                 // is the same as ASCII for characters 32-126 but differs otherwise. If we can fit
                 // the string into CP437 then we treat ASCII as acceptable.
                 if (c > 126 || c < 32)
-                    return true;
+                {
+                    return Encoding.UTF8;
+                }
             }
-
-            return false;
+            return Encoding.ASCII;
         }
 
         /// <summary>
@@ -192,6 +194,51 @@ namespace System.IO.Compression
                 bufferPointer = bytesToRead - 1;
                 return true;
             }
+        }
+
+        // Converts the specified string into bytes using the optional specified encoding.
+        // If the encoding null, then the encoding is calculated from the string itself.
+        // If maxBytes is greater than zero, the returned string will be truncated to a total
+        // number of characters whose bytes do not add up to more than that number.
+        internal static byte[] GetEncodedTruncatedBytesFromString(string? text, Encoding? encoding, int maxBytes, out bool isUTF8)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                isUTF8 = false;
+                return Array.Empty<byte>();
+            }
+
+            encoding ??= GetEncoding(text);
+            isUTF8 = encoding.CodePage == 65001;
+
+            if (maxBytes == 0) // No truncation
+            {
+                return encoding.GetBytes(text);
+            }
+
+            byte[] bytes;
+            if (isUTF8)
+            {
+                int totalCodePoints = 0;
+                foreach (Rune rune in text.EnumerateRunes())
+                {
+                    if (totalCodePoints + rune.Utf8SequenceLength > maxBytes)
+                    {
+                        break;
+                    }
+                    totalCodePoints += rune.Utf8SequenceLength;
+                }
+
+                bytes = encoding.GetBytes(text);
+
+                Debug.Assert(totalCodePoints > 0);
+                Debug.Assert(totalCodePoints <= bytes.Length);
+
+                return bytes[0..totalCodePoints];
+            }
+
+            bytes = encoding.GetBytes(text);
+            return maxBytes < bytes.Length ? bytes[0..maxBytes] : bytes;
         }
     }
 }

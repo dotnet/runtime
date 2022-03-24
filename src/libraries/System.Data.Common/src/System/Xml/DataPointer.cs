@@ -650,7 +650,7 @@ namespace System.Xml
                 return;
             }
 
-            XmlNode? n = null;
+            XmlNode? n;
 
             if (_doc.IsTextOnly(_column!))
             {

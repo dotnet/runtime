@@ -225,9 +225,6 @@ namespace System.Net.WebSockets
                 HttpWebSocket.ThrowPlatformNotSupportedException_WSPC();
             }
 
-            IntPtr responseHeadersPtr;
-            uint responseHeaderCount;
-
             // Currently the WSPC doesn't allow to initiate a data session
             // without also being involved in the http handshake
             // There is no information whatsoever, which is needed by the
@@ -243,8 +240,8 @@ namespace System.Net.WebSockets
                 0,
                 s_ServerFakeRequestHeaders!,
                 (uint)s_ServerFakeRequestHeaders!.Length,
-                out responseHeadersPtr,
-                out responseHeaderCount);
+                out _,
+                out _);
 
             ThrowOnError(errorCode);
 
@@ -421,9 +418,7 @@ namespace System.Net.WebSockets
                 "'webSocketHandle' MUST NOT be NULL or INVALID.");
 
             IntPtr actionContext;
-            IntPtr dummy;
             Action action;
-            BufferType bufferType;
 
             while (true)
             {
@@ -434,8 +429,8 @@ namespace System.Net.WebSockets
                     dataBuffers,
                     ref dataBufferCount,
                     out action,
-                    out bufferType,
-                    out dummy,
+                    out _,
+                    out _,
                     out actionContext);
 
                 if (!Succeeded(errorCode))

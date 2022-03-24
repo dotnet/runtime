@@ -74,13 +74,14 @@ namespace System.Net.Sockets
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         AddressListSort = (long)3355443225,
     }
-    public partial struct IPPacketInformation
+    public partial struct IPPacketInformation : System.IEquatable<System.Net.Sockets.IPPacketInformation>
     {
         private object _dummy;
         private int _dummyPrimitive;
         public System.Net.IPAddress Address { get { throw null; } }
         public int Interface { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? comparand) { throw null; }
+        public bool Equals(System.Net.Sockets.IPPacketInformation other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Net.Sockets.IPPacketInformation packetInformation1, System.Net.Sockets.IPPacketInformation packetInformation2) { throw null; }
         public static bool operator !=(System.Net.Sockets.IPPacketInformation packetInformation1, System.Net.Sockets.IPPacketInformation packetInformation2) { throw null; }

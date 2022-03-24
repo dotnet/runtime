@@ -19,7 +19,7 @@ test_array_big (void)
 	for (i = 0; i < 10000; i++)
 		if (g_array_index (garray, gint, i) != i)
 			return FAILED ("array value didn't match");
-	
+
 	g_array_free (garray, TRUE);
 
 	return NULL;
@@ -101,7 +101,7 @@ test_array_insert_val (void)
 	g_array_insert_val (array, 2, array);
 	if (array != g_array_index (array, gpointer, 2))
 		return FAILED ("3 The value in the array is incorrect");
-	
+
 	g_array_free (array, TRUE);
 	array = g_array_new (FALSE, FALSE, sizeof (gpointer));
 	ptr0 = array;

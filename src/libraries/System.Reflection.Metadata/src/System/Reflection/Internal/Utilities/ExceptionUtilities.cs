@@ -14,8 +14,5 @@ namespace System.Reflection.Internal
 
             return new InvalidOperationException(SR.Format(SR.UnexpectedValueUnknownType, value));
         }
-
-        internal static Exception Unreachable =>
-            new InvalidOperationException(SR.UnreachableLocation);
     }
 }

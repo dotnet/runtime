@@ -266,11 +266,6 @@ Returns the interior pointer to the "untrusted" certificates collection for this
 PALEXPORT X509Stack* CryptoNative_X509StoreCtxGetSharedUntrusted(X509_STORE_CTX* ctx);
 
 /*
-Returns the interior pointer to the target certificate for an X509 certificate chain
-*/
-PALEXPORT X509* CryptoNative_X509StoreCtxGetTargetCert(X509_STORE_CTX* ctx);
-
-/*
 Shims the X509_STORE_CTX_get_error method.
 */
 PALEXPORT int32_t CryptoNative_X509StoreCtxGetError(X509_STORE_CTX* ctx);

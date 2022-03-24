@@ -107,9 +107,11 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     // Walk up the dom tree and see if any dominating block has branched on
     // exactly this tree's VN...
     //
-    BasicBlock* prevBlock  = block;
-    BasicBlock* domBlock   = block->bbIDom;
-    int         relopValue = -1;
+    BasicBlock*    prevBlock  = block;
+    BasicBlock*    domBlock   = block->bbIDom;
+    int            relopValue = -1;
+    unsigned       matchCount = 0;
+    const unsigned matchLimit = 4;
 
     if (domBlock == nullptr)
     {
@@ -132,7 +134,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
             assert(domJumpTree->OperIs(GT_JTRUE));
             GenTree* const domCmpTree = domJumpTree->AsOp()->gtGetOp1();
 
-            if (domCmpTree->OperKind() & GTK_RELOP)
+            if (domCmpTree->OperIsCompare())
             {
                 // We can use liberal VNs here, as bounds checks are not yet
                 // manifest explicitly as relops.
@@ -164,6 +166,16 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                 //
                 if (matched)
                 {
+                    // If we have a long skinny dominator tree we may scale poorly,
+                    // and in particular reachability (below) is costly. Give up if
+                    // we've matched a few times and failed to optimize.
+                    //
+                    if (++matchCount > matchLimit)
+                    {
+                        JITDUMP("Bailing out; %d matches found w/o optimizing\n", matchCount);
+                        return false;
+                    }
+
                     // The compare in "tree" is redundant.
                     // Is there a unique path from the dominating compare?
                     //
@@ -1027,7 +1039,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         for (unsigned int i = 0; i < definedLocalsCount; i++)
         {
-            if (gtHasRef(prevTreeRHS, definedLocals[i], /*def only*/ false))
+            if (gtHasRef(prevTreeRHS, definedLocals[i]))
             {
                 JITDUMP(" -- prev tree ref to V%02u interferes\n", definedLocals[i]);
                 interferes = true;

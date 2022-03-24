@@ -88,20 +88,20 @@ mono_inst_name (int op) {
 }
 
 void
-mono_blockset_print (MonoCompile *cfg, MonoBitSet *set, const char *name, guint idom) 
+mono_blockset_print (MonoCompile *cfg, MonoBitSet *set, const char *name, guint idom)
 {
 #ifndef DISABLE_LOGGING
 	int i;
 
 	if (name)
 		g_print ("%s:", name);
-	
+
 	mono_bitset_foreach_bit (set, i, cfg->num_bblocks) {
 		if (idom == i)
 			g_print (" [BB%d]", cfg->bblocks [i]->block_num);
 		else
 			g_print (" BB%d", cfg->bblocks [i]->block_num);
-		
+
 	}
 	g_print ("\n");
 #endif
@@ -129,11 +129,11 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	int unused G_GNUC_UNUSED;
 
 #ifdef HOST_WIN32
-	as_file = g_strdup_printf ("%s/test.s", tmp);    
+	as_file = g_strdup_printf ("%s/test.s", tmp);
 
 	if (!(ofd = fopen (as_file, "w")))
 		g_assert_not_reached ();
-#else	
+#else
 	i = g_file_open_tmp (NULL, &as_file, NULL);
 	ofd = fdopen (i, "w");
 	g_assert (ofd);
@@ -247,14 +247,14 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 
 #ifdef HOST_WIN32
 	o_file = g_strdup_printf ("%s/test.o", tmp);
-#else	
+#else
 	i = g_file_open_tmp (NULL, &o_file, NULL);
 	close (i);
 #endif
 
 #ifdef HAVE_SYSTEM
 	char *cmd = g_strdup_printf (ARCH_PREFIX AS_CMD " %s -o %s", as_file, o_file);
-	unused = system (cmd); 
+	unused = system (cmd);
 	g_free (cmd);
 	char *objdump_args = g_getenv ("MONO_OBJDUMP_ARGS");
 	if (!objdump_args)
@@ -263,8 +263,8 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	fflush (stdout);
 
 #if (defined(__arm__) || defined(__aarch64__)) && !defined(TARGET_OSX)
-	/* 
-	 * The arm assembler inserts ELF directives instructing objdump to display 
+	/*
+	 * The arm assembler inserts ELF directives instructing objdump to display
 	 * everything as data.
 	 */
 	cmd = g_strdup_printf (ARCH_PREFIX "strip -s %s", o_file);

@@ -32,7 +32,9 @@ typedef enum {
 	FRAME_TYPE_INTERP_ENTRY = 7,
 	/* Frame marking transition to native JIT compiler */
 	FRAME_TYPE_JIT_ENTRY = 8,
-	FRAME_TYPE_NUM = 9
+	/* Compiled method with IL state */
+	FRAME_TYPE_IL_STATE = 9,
+	FRAME_TYPE_NUM = 10
 } MonoStackFrameType;
 
 typedef enum {
@@ -53,7 +55,7 @@ typedef enum {
 
 typedef struct {
 	MonoStackFrameType type;
-	/* 
+	/*
 	 * For FRAME_TYPE_MANAGED, otherwise NULL.
 	 */
 	MonoJitInfo *ji;
@@ -77,7 +79,7 @@ typedef struct {
 	int native_offset;
 	/*
 	 * IL offset of this frame.
-	 * Only available if the runtime have debugging enabled (--debug switch) and 
+	 * Only available if the runtime have debugging enabled (--debug switch) and
 	 *  il offset resultion was requested (MONO_UNWIND_LOOKUP_IL_OFFSET)
 	 */
 	int il_offset;
@@ -103,13 +105,16 @@ typedef struct {
 	guint8 *unwind_info;
 
 	host_mgreg_t **reg_locations;
+
+	/* For FRAME_TYPE_IL_STATE */
+	gpointer il_state; /* MonoMethodILState */
 } MonoStackFrameInfo;
 
 /*Index into MonoThreadState::unwind_data. */
 enum {
 	MONO_UNWIND_DATA_DOMAIN,
 	MONO_UNWIND_DATA_LMF,
-	MONO_UNWIND_DATA_JIT_TLS,	
+	MONO_UNWIND_DATA_JIT_TLS,
 };
 
 /*

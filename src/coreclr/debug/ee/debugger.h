@@ -472,7 +472,7 @@ typedef DPTR(class DebuggerModule) PTR_DebuggerModule;
 class DebuggerModule
 {
   public:
-    DebuggerModule(Module * pRuntimeModule, DomainFile * pDomainFile, AppDomain * pAppDomain);
+    DebuggerModule(Module * pRuntimeModule, DomainAssembly * pDomainAssembly, AppDomain * pAppDomain);
 
     // Do we have any optimized code in the module?
     // JMC-probes aren't emitted in optimized code,
@@ -504,16 +504,16 @@ class DebuggerModule
     // If the Runtime module is shared, then this gives a common DM.
     // If the runtime module is not shared, then this is an identity function.
     //
-    // The runtime has the notion of "DomainFile", which is 1:1 with DebuggerModule
+    // The runtime has the notion of "DomainAssembly", which is 1:1 with DebuggerModule
     // and thus 1:1 with CordbModule.  The CordbModule hash table on the RS now uses
-    // the DomainFile as the key instead of DebuggerModule.  This is a temporary
+    // the DomainAssembly as the key instead of DebuggerModule.  This is a temporary
     // workaround to facilitate the removal of DebuggerModule.
     // </TODO>
     DebuggerModule * GetPrimaryModule();
-    DomainFile * GetDomainFile()
+    DomainAssembly * GetDomainAssembly()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pRuntimeDomainFile;
+        return m_pRuntimeDomainAssembly;
     }
 
     // Called by DebuggerModuleTable to set our primary module
@@ -528,7 +528,7 @@ class DebuggerModule
     DebuggerModule* m_pPrimaryModule;
 
     PTR_Module     m_pRuntimeModule;
-    PTR_DomainFile m_pRuntimeDomainFile;
+    PTR_DomainAssembly m_pRuntimeDomainAssembly;
 
     AppDomain*     m_pAppDomain;
 
@@ -1604,10 +1604,6 @@ public:
                               DWORD *which,
                               BOOL skipPrologs=FALSE);
 
-    // If a method has multiple copies of code (because of EnC or code-pitching),
-    // this returns the DJI corresponding to 'pbAddr'
-    DebuggerJitInfo *GetJitInfoByAddress(const BYTE *pbAddr );
-
     void Init(TADDR newAddress);
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -1893,9 +1889,9 @@ public:
                     DWORD dwModuleName,
                     Assembly *pAssembly,
                     AppDomain *pAppDomain,
-                    DomainFile * pDomainFile,
+                    DomainAssembly * pDomainAssembly,
                     BOOL fAttaching);
-    DebuggerModule * AddDebuggerModule(DomainFile * pDomainFile);
+    DebuggerModule * AddDebuggerModule(DomainAssembly * pDomainAssembly);
 
 
     void UnloadModule(Module* pRuntimeModule,
@@ -2068,8 +2064,8 @@ public:
 
     bool HandleIPCEvent(DebuggerIPCEvent* event);
 
-    DebuggerModule * LookupOrCreateModule(VMPTR_DomainFile vmDomainFile);
-    DebuggerModule * LookupOrCreateModule(DomainFile * pDomainFile);
+    DebuggerModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssembly);
+    DebuggerModule * LookupOrCreateModule(DomainAssembly * pDomainAssembly);
     DebuggerModule * LookupOrCreateModule(Module * pModule, AppDomain * pAppDomain);
 
     HRESULT GetAndSendInterceptCommand(DebuggerIPCEvent *event);
@@ -2201,7 +2197,7 @@ public:
     void SendInterceptExceptionComplete(Thread *thread);
 
     HRESULT AttachDebuggerForBreakpoint(Thread *thread,
-                                        __in_opt WCHAR *wszLaunchReason);
+                                        _In_opt_ WCHAR *wszLaunchReason);
 
 
     void ThreadIsSafe(Thread *thread);
@@ -2424,8 +2420,8 @@ public:
 
     void SendLogSwitchSetting (int iLevel,
                                int iReason,
-                               __in_z LPCWSTR pLogSwitchName,
-                               __in_z LPCWSTR pParentSwitchName);
+                               _In_z_ LPCWSTR pLogSwitchName,
+                               _In_z_ LPCWSTR pParentSwitchName);
 
     bool IsLoggingEnabled (void)
     {
@@ -2437,7 +2433,7 @@ public:
     }
 
     // send a custom debugger notification to the RS
-    void SendCustomDebuggerNotification(Thread * pThread, DomainFile * pDomain, mdTypeDef classToken);
+    void SendCustomDebuggerNotification(Thread * pThread, DomainAssembly * pDomain, mdTypeDef classToken);
 
     // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
     void SendMDANotification(
@@ -2507,7 +2503,7 @@ public:
     BOOL IsThreadContextInvalid(Thread *pThread, T_CONTEXT *pCtx);
 
     // notification for SQL fiber debugging support
-    void CreateConnection(CONNID dwConnectionId, __in_z WCHAR *wzName);
+    void CreateConnection(CONNID dwConnectionId, _In_z_ WCHAR *wzName);
     void DestroyConnection(CONNID dwConnectionId);
     void ChangeConnection(CONNID dwConnectionId);
 
@@ -3704,7 +3700,7 @@ void DbgLogHelper(DebuggerIPCEventType event);
 // Helpers for cleanup
 // These are various utility functions, mainly where we factor out code.
 //-----------------------------------------------------------------------------
-void GetPidDecoratedName(__out_ecount(cBufSizeInChars) WCHAR * pBuf,
+void GetPidDecoratedName(_Out_writes_(cBufSizeInChars) WCHAR * pBuf,
                          int cBufSizeInChars,
                          const WCHAR * pPrefix);
 

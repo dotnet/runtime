@@ -3,7 +3,6 @@
 
 using System.Runtime;
 using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
 using System.Diagnostics.Tracing;
 
 namespace System

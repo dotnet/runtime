@@ -186,6 +186,13 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
+            // LOCALE_CUSTOM_UNSPECIFIED ia an unspecified custom locale, used to identify all supplemental locales.
+            // Supplemental locales cannot be distinguished from one another by their locale identifiers, but can be distinguished by their locale names.
+            if (culture == CultureInfo.LOCALE_CUSTOM_UNSPECIFIED)
+            {
+                return null;
+            }
+
             char* pBuffer = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1]; // +1 for the null termination
             int length = Interop.Kernel32.LCIDToLocaleName(culture, pBuffer, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1, Interop.Kernel32.LOCALE_ALLOW_NEUTRAL_NAMES);
 

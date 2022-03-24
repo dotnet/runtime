@@ -13,14 +13,17 @@ internal static partial class Interop
 {
     internal static partial class Ssl
     {
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxCreate")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxCreate")]
         internal static partial SafeSslContextHandle SslCtxCreate(IntPtr method);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxDestroy")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxDestroy")]
         internal static partial void SslCtxDestroy(IntPtr ctx);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetAlpnSelectCb")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetAlpnSelectCb")]
         internal static unsafe partial void SslCtxSetAlpnSelectCb(SafeSslContextHandle ctx, delegate* unmanaged<IntPtr, byte**, byte*, byte*, uint, IntPtr, int> callback, IntPtr arg);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetCaching")]
+        internal static unsafe partial void SslCtxSetCaching(SafeSslContextHandle ctx, int mode);
 
         internal static bool AddExtraChainCertificates(SafeSslContextHandle ctx, X509Certificate2[] chain)
         {

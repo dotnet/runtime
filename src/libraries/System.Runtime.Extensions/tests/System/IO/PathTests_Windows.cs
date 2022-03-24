@@ -328,8 +328,8 @@ namespace System.IO.Tests
 
                     // Make sure the shortened name expands back to the original one
                     // Sometimes shortening or GetFullPath is changing the casing of "temp" on some test machines: normalize both sides
-                    tempFilePath = Regex.Replace(tempFilePath, @"\\temp\\", @"\TEMP\", RegexOptions.IgnoreCase);
-                    shortName = Regex.Replace(Path.GetFullPath(shortName), @"\\temp\\", @"\TEMP\", RegexOptions.IgnoreCase);
+                    tempFilePath = tempFilePath.Replace(@"\\temp\\", @"\TEMP\", ignoreCase: true, culture: null);
+                    shortName = Path.GetFullPath(shortName).Replace(@"\\temp\\", @"\TEMP\", ignoreCase: true, culture: null);
                     Assert.Equal(tempFilePath, shortName);
 
                     // Should work with device paths that aren't well-formed extended syntax
@@ -616,7 +616,7 @@ namespace System.IO.Tests
         [Fact]
         public void GetFullPath_ThrowsOnEmbeddedNulls()
         {
-            Assert.Throws<ArgumentException>(null, () => Path.GetFullPath("/gi\0t", @"C:\foo\bar"));
+            AssertExtensions.Throws<ArgumentException>(null, () => Path.GetFullPath("/gi\0t", @"C:\foo\bar"));
         }
 
         public static TheoryData<string, string> TestData_TrimEndingDirectorySeparator => new TheoryData<string, string>

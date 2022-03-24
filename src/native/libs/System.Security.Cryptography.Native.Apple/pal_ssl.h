@@ -15,6 +15,7 @@ enum
     PAL_TlsHandshakeState_WouldBlock = 2,
     PAL_TlsHandshakeState_ServerAuthCompleted = 3,
     PAL_TlsHandshakeState_ClientAuthCompleted = 4,
+    PAL_TlsHandshakeState_ClientCertRequested = 5,
 };
 typedef int32_t PAL_TlsHandshakeState;
 
@@ -99,6 +100,17 @@ pOSStatus: Receives the value returned by SSLSetSessionOption
 */
 PALEXPORT int32_t
 AppleCryptoNative_SslSetBreakOnServerAuth(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus);
+
+/*
+Sets the policy of whether or not to break when certificate request was received on client.
+
+Returns 1 on success, 0 on failure, other values on invalid state.
+
+Output:
+pOSStatus: Receives the value returned by SSLSetSessionOption
+*/
+PALEXPORT int32_t
+AppleCryptoNative_SslSetBreakOnCertRequested(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus);
 
 /*
 Sets the policy of whether or not to break when a client identity has been presented.
@@ -237,3 +249,10 @@ Sets enabled cipher suites for the current session.
 Returns the output of SSLSetEnabledCiphers.
 */
 PALEXPORT int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, const uint32_t* cipherSuites, int32_t numCipherSuites);
+
+/*
+Adds one or more certificates to a server's list of certification authorities (CAs) acceptable for client authentication.
+
+Returns the output of SSLSetCertificateAuthorities.
+*/
+PALEXPORT int32_t AppleCryptoNative_SslSetCertificateAuthorities(SSLContextRef sslContext, CFArrayRef certificates, int32_t replaceExisting);

@@ -81,6 +81,8 @@ int32_t CryptoNative_GetX509Thumbprint(X509* x509, uint8_t* pBuf, int32_t cBuf)
         return -SHA_DIGEST_LENGTH;
     }
 
+    ERR_clear_error();
+
     if (!X509_digest(x509, EVP_sha1(), pBuf, NULL))
     {
         return 0;
@@ -102,6 +104,8 @@ otherwise.
 */
 const ASN1_TIME* CryptoNative_GetX509NotBefore(X509* x509)
 {
+    // No error queue impact.
+
     if (x509)
     {
         return X509_get0_notBefore(x509);
@@ -123,6 +127,8 @@ otherwise.
 */
 const ASN1_TIME* CryptoNative_GetX509NotAfter(X509* x509)
 {
+    // No error queue impact.
+
     if (x509)
     {
         return X509_get0_notAfter(x509);
@@ -144,6 +150,8 @@ otherwise.
 */
 const ASN1_TIME* CryptoNative_GetX509CrlNextUpdate(X509_CRL* crl)
 {
+    // No error queue impact.
+
     if (crl)
     {
         return X509_CRL_get0_nextUpdate(crl);
@@ -168,6 +176,9 @@ The encoded value of the version, otherwise:
 */
 int32_t CryptoNative_GetX509Version(X509* x509)
 {
+    // No errors are expected to be written to the queue on this call,
+    // and the managed caller doesn't check for one.
+
     if (x509)
     {
         return (int32_t)X509_get_version(x509);
@@ -189,6 +200,8 @@ describing the object type.
 */
 ASN1_OBJECT* CryptoNative_GetX509PublicKeyAlgorithm(X509* x509)
 {
+    // No error queue impact, all of the called routines are just field accessors.
+
     if (x509)
     {
         X509_PUBKEY* pubkey = X509_get_X509_PUBKEY(x509);
@@ -216,6 +229,8 @@ describing the object type.
 */
 ASN1_OBJECT* CryptoNative_GetX509SignatureAlgorithm(X509* x509)
 {
+    // No error queue impact.
+
     if (x509)
     {
         const X509_ALGOR* sigAlg = X509_get0_tbs_sigalg(x509);
@@ -243,6 +258,8 @@ Any negative value: The input buffer size was reported as insufficient. A buffer
 */
 int32_t CryptoNative_GetX509PublicKeyParameterBytes(X509* x509, uint8_t* pBuf, int32_t cBuf)
 {
+    ERR_clear_error();
+
     if (!x509)
     {
         return 0;
@@ -302,6 +319,8 @@ the public key.
 */
 ASN1_BIT_STRING* CryptoNative_GetX509PublicKeyBytes(X509* x509)
 {
+    // No error queue impact.
+
     if (x509)
     {
         return X509_get0_pubkey_bitstr(x509);
@@ -345,6 +364,8 @@ Remarks:
 */
 int32_t CryptoNative_GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pBuf, int32_t cBuf)
 {
+    // No error queue impact.
+
     if (!asn1 || cBuf < 0)
     {
         return 0;
@@ -380,6 +401,8 @@ Any negative value: The input buffer size was reported as insufficient. A buffer
 */
 int32_t CryptoNative_GetX509NameRawBytes(X509_NAME* x509Name, uint8_t* pBuf, int32_t cBuf)
 {
+    ERR_clear_error();
+
     const uint8_t* nameBuf;
     size_t nameBufLen;
 
@@ -433,6 +456,7 @@ Note that 0 does not always indicate an error, merely that GetX509EkuField shoul
 */
 int32_t CryptoNative_GetX509EkuFieldCount(EXTENDED_KEY_USAGE* eku)
 {
+    // No error queue impact.
     return sk_ASN1_OBJECT_num(eku);
 }
 
@@ -449,6 +473,7 @@ that particular OID.
 */
 ASN1_OBJECT* CryptoNative_GetX509EkuField(EXTENDED_KEY_USAGE* eku, int32_t loc)
 {
+    // No error queue impact.
     return sk_ASN1_OBJECT_value(eku, loc);
 }
 
@@ -466,6 +491,8 @@ memory-backed BIO structure which contains the answer to the GetNameInfo query
 BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssuer)
 {
     static const char szOidUpn[] = "1.3.6.1.4.1.311.20.2.3";
+
+    ERR_clear_error();
 
     if (!x509 || nameType < NAME_TYPE_SIMPLE || nameType > NAME_TYPE_URL)
     {
@@ -729,6 +756,8 @@ int32_t CryptoNative_CheckX509Hostname(X509* x509, const char* hostname, int32_t
     if (cchHostname < 0)
         return -5;
 
+    ERR_clear_error();
+
     // OpenSSL will treat a target hostname starting with '.' as special.
     // We don't expect target hostnames to start with '.', but if one gets in here, the fallback
     // and the mainline won't be the same... so just make it report false.
@@ -770,6 +799,8 @@ int32_t CryptoNative_CheckX509IpAddress(
         return -5;
     if (!addressBytes)
         return -6;
+
+    ERR_clear_error();
 
     int subjectNid = NID_commonName;
     int sanGenType = GEN_IPADD;
@@ -848,6 +879,7 @@ Note that 0 does not always indicate an error, merely that GetX509StackField sho
 */
 int32_t CryptoNative_GetX509StackFieldCount(STACK_OF(X509) * stack)
 {
+    // No error queue impact.
     return sk_X509_num(stack);
 }
 
@@ -864,6 +896,7 @@ that particular element.
 */
 X509* CryptoNative_GetX509StackField(STACK_OF(X509) * stack, int loc)
 {
+    // No error queue impact.
     return sk_X509_value(stack, loc);
 }
 
@@ -876,6 +909,7 @@ when done with it.
 */
 void CryptoNative_RecursiveFreeX509Stack(STACK_OF(X509) * stack)
 {
+    // No error queue impact.
     sk_X509_pop_free(stack, X509_free);
 }
 
@@ -899,6 +933,8 @@ int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
                                             int32_t second,
                                             int32_t isDst)
 {
+    ERR_clear_error();
+
     if (!ctx)
     {
         return 0;
@@ -935,6 +971,7 @@ otherwise NULL.
 */
 X509* CryptoNative_ReadX509AsDerFromBio(BIO* bio)
 {
+    ERR_clear_error();
     return d2i_X509_bio(bio, NULL);
 }
 
@@ -955,6 +992,8 @@ OpenSSL's BIO_tell
 */
 int32_t CryptoNative_BioTell(BIO* bio)
 {
+    // No error queue impact.
+
     if (!bio)
     {
         return -1;
@@ -982,6 +1021,8 @@ OpenSSL's BIO_seek
 */
 int32_t CryptoNative_BioSeek(BIO* bio, int32_t ofs)
 {
+    // No error queue impact.
+
     if (!bio)
     {
         return -1;
@@ -1002,6 +1043,7 @@ A STACK_OF(X509*) with no comparator.
 */
 STACK_OF(X509) * CryptoNative_NewX509Stack()
 {
+    ERR_clear_error();
     return sk_X509_new_null();
 }
 
@@ -1018,6 +1060,8 @@ Return values:
 */
 int32_t CryptoNative_PushX509StackField(STACK_OF(X509) * stack, X509* x509)
 {
+    ERR_clear_error();
+
     if (!stack)
     {
         return 0;
@@ -1039,6 +1083,7 @@ Returns a bool to managed code.
 */
 int32_t CryptoNative_GetRandomBytes(uint8_t* buf, int32_t num)
 {
+    ERR_clear_error();
     int ret = RAND_bytes(buf, num);
 
     return ret == 1;
@@ -1062,6 +1107,8 @@ int32_t CryptoNative_LookupFriendlyNameByOid(const char* oidValue, const char** 
     ASN1_OBJECT* oid;
     int nid;
     const char* ln;
+
+    ERR_clear_error();
 
     if (!oidValue || !friendlyName)
     {
@@ -1121,6 +1168,7 @@ Version number as MNNFFRBB (major minor fix final beta/patch)
 */
 int64_t CryptoNative_OpenSslVersionNumber()
 {
+    // No error queue impact.
     return (int64_t)OpenSSL_version_num();
 }
 
@@ -1130,6 +1178,9 @@ void CryptoNative_RegisterLegacyAlgorithms()
     if (API_EXISTS(OSSL_PROVIDER_try_load))
     {
         OSSL_PROVIDER_try_load(NULL, "legacy", 1);
+
+        // Doesn't matter if it succeeded or failed.
+        ERR_clear_error();
     }
 #endif
 }

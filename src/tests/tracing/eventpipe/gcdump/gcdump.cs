@@ -33,13 +33,12 @@ namespace Tracing.Tests.EventSourceError
             // This test validates that if an EventSource generates an error
             // during construction it gets emitted over EventPipe
 
-            List<Provider> providers = new List<Provider>
+            List<EventPipeProvider> providers = new List<EventPipeProvider>
             {
-                new Provider("Microsoft-Windows-DotNETRuntime", eventLevel: EventLevel.Verbose, keywords: (ulong)ClrTraceEventParser.Keywords.GCHeapSnapshot)
+                new EventPipeProvider("Microsoft-Windows-DotNETRuntime", eventLevel: EventLevel.Verbose, keywords: (long)ClrTraceEventParser.Keywords.GCHeapSnapshot)
             };
 
-            var configuration = new SessionConfiguration(circularBufferSizeMB: 1024, format: EventPipeSerializationFormat.NetTrace,  providers: providers);
-            return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, configuration, _DoesRundownContainMethodEvents);
+            return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, _DoesRundownContainMethodEvents);
         }
 
         private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()

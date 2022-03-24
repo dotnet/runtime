@@ -11,8 +11,13 @@
 
   <!-- Default priority building values. -->
   <PropertyGroup>
-    <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildAndRun</CLRTestKind>
+    <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and $(BuildAsStandalone)">true</DisableProjectBuild>
+    <OutputType Condition="('$(IsMergedTestRunnerAssembly)' == 'true' and !$(BuildAsStandalone)) or '$(RequiresProcessIsolation)' == 'true'">Exe</OutputType>
+    <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Exe'">BuildAndRun</CLRTestKind>
+    <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildOnly</CLRTestKind>
     <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
+    <!-- Merged test runner assemblies might not have any non-generated sources, and that's okay -->
+    <NoWarn Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">$(NoWarn);CS2008</NoWarn>
   </PropertyGroup>
 
   <!-- All CLRTests need to be of a certain "kind". These kinds are enumerated below.
@@ -62,7 +67,12 @@
   <PropertyGroup>
     <!-- Since bug in Roslyn for Linux empty DebugType property leads to build failure. See issue Roslyn@20343 -->
     <DebugType Condition=" '$(DebugType)' == '' and '$(RunningOnUnix)' == 'true' ">None</DebugType>
+    <TestLibraryProjectPath>$(RepoRoot)\src\tests\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj</TestLibraryProjectPath>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
+  </ItemGroup>
 
   <!--
   If it needs ProjectToRun, turn the project into a ProjectReference so it gets built
@@ -88,12 +98,6 @@
     <_CopyNativeProjectBinaries Condition="'$(_CopyNativeProjectBinaries)' == ''">true</_CopyNativeProjectBinaries>
   </PropertyGroup>
 
-  <!-- if we have determined that there is nothing to build, overwrite the build targets so that nothing happens -->
-  <Import Project="$(MSBuildThisFileDirectory)Common\nobuild.targets" Condition="'$(_WillCLRTestProjectBuild)' == 'false'" />
-
-  <!-- RunOnly projects have a special build for dependent projects -->
-  <Import Project="$(MSBuildThisFileDirectory)Common\runonly.targets" Condition="'$(CLRTestKind)' == 'RunOnly'" />
-
   <!-- We enable auto-unification of assembly references after importing the common targets.  Binding redirects are not needed
        for coreclr since it auto-unifies, so the warnings we get without this setting are just noise -->
   <PropertyGroup>
@@ -109,6 +113,21 @@
     <SkipImportILTargets Condition="'$(CLRTestPriority)' &gt; '$(CLRTestPriorityToBuild)'">true</SkipImportILTargets>
     <SkipImportILTargets Condition="'$(CLRTestBuildAllTargets)' != '' And '$(CLRTestNeedTarget)' != '$(CLRTestBuildAllTargets)'">true</SkipImportILTargets>
   </PropertyGroup>
+
+  <Target Name="CopyMergedWrapperReferences"
+      Condition="'$(IsMergedTestRunnerAssembly)' == 'true'"
+      AfterTargets="Build"
+      BeforeTargets="CopyNativeProjectBinaries">
+    <ItemGroup>
+      <MergedWrapperReferenceFolders Include="@(ProjectReference->'$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)/..', '$(OutDir)/..'))/%(ProjectReference.FileName)')" />
+      <!-- For merged project wrappers, include native libraries in all project references -->
+      <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(LibSuffix)" />
+    </ItemGroup>
+    <Copy SourceFiles="@(MergedWrapperReferenceFiles)"
+        DestinationFiles="@(MergedWrapperReferenceFiles->'$(OutDir)/%(FileName)%(Extension)')"
+        SkipUnchangedFiles="true"
+        />
+  </Target>
 
   <Target Name="CopyNativeProjectBinaries" Condition="'$(_CopyNativeProjectBinaries)' == 'true'">
     <ItemGroup Condition="'$(UseVisualStudioNativeBinariesLayout)' == 'true'">
@@ -184,12 +203,11 @@
      </Copy>
   </Target>
 
-  <Target Name="ResolveCmakeNativeProjectReference"
-          Condition="'@(ProjectReference)' != ''"
+  <Target Name="ResolveCMakeNativeProjectReference"
+          Condition="'@(CMakeProjectReference)' != ''"
           BeforeTargets="ConsolidateNativeProjectReference;BeforeResolveReferences;BeforeClean" >
      <ItemGroup>
-        <NativeProjectReference Include="%(ProjectReference.Identity)" Condition="$([System.String]::Copy(%(ProjectReference.FileName)).ToUpper()) == 'CMAKELISTS'" />
-        <ProjectReference Remove="%(NativeProjectReference.Identity)" />
+        <NativeProjectReference Include="%(CMakeProjectReference.Identity)" Condition="$([System.String]::Copy(%(CMakeProjectReference.FileName)).ToUpper()) == 'CMAKELISTS'" />
         <NativeProjectReferenceNormalized Include="@(NativeProjectReference -> '%(FullPath)')" />
      </ItemGroup>
   </Target>
@@ -209,7 +227,7 @@
 
   </Target>
 
-  <Target Name="CopyAllNativeProjectReferenceBinaries" DependsOnTargets="ResolveCmakeNativeProjectReference;ConsolidateNativeProjectReference" />
+  <Target Name="CopyAllNativeProjectReferenceBinaries" DependsOnTargets="ResolveCMakeNativeProjectReference;ConsolidateNativeProjectReference" />
 
   <!-- Build shell or command scripts whenever we copy native binaries -->
   <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.Execute.targets" />
@@ -245,11 +263,23 @@
      <Copy SourceFiles="$(AssemblyName).reflect.xml"
            DestinationFolder="$(OutputPath)"
        Condition="Exists('$(AssemblyName).reflect.xml')"/>
+
+    <WriteLinesToFile
+        Condition="'$(IsMergedTestRunnerAssembly)' == 'true'"
+        File="$(OutputPath)\$(MSBuildProjectName).MergedTestAssembly"
+        Lines="MergedTestAssembly" />
+
+    <WriteLinesToFile
+        Condition="'$(RequiresProcessIsolation)' == 'true' and '$(BuildAsStandalone)' != 'true'"
+        File="$(OutputPath)\$(MSBuildProjectName).OutOfProcessTest"
+        Lines="OutOfProcessTest" />
   </Target>
 
   <PropertyGroup>
     <ProjectAssetsFile>$(BaseOutputPath)\packages\Common\test_dependencies\test_dependencies\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
+  <Import Project="$(BaseOutputPath)\packages\Common\test_dependencies\test_dependencies\test_dependencies.*.targets" />
+
 
   <PropertyGroup>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
@@ -406,18 +436,18 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="DiscoverProcessIsolatedTestProjectReferences" BeforeTargets="AssignProjectConfiguration">
+  <Target Name="DiscoverProcessIsolatedTestProjectReferences" BeforeTargets="AssignProjectConfiguration" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
     <MSBuild Projects="@(ProjectReference)" Targets="GetRequiresProcessIsolation" SkipNonexistentTargets="true">
       <Output TaskParameter="TargetOutputs" ItemName="ReferencedProjectRequiringProcessIsolation" />
     </MSBuild>
 
     <ItemGroup>
-      <ProjectReference Remove="@(ReferencedProjectRequiringProcessIsolation)" />
-      <ProjectReference Include="@(ReferencedProjectRequiringProcessIsolation)" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" />
+      <ProjectReference Remove="@(ReferencedProjectRequiringProcessIsolation->'%(OriginalItemSpec)')" />
+      <ProjectReference Include="@(ReferencedProjectRequiringProcessIsolation->'%(OriginalItemSpec)')" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" />
     </ItemGroup>
   </Target>
 
-  <PropertyGroup Condition="'$(Language)' == 'C#' and ('$(BuildAsStandalone)' == 'true' or '$(RequiresProcessIsolation)' == 'true' or '$(IsMergedTestAssembly)' == 'true')">
+  <PropertyGroup Condition="'$(Language)' == 'C#' and ('$(BuildAsStandalone)' == 'true' or '$(RequiresProcessIsolation)' == 'true' or '$(IsMergedTestRunnerAssembly)' == 'true')">
     <ReferenceXUnitWrapperGenerator Condition="'$(ReferenceXUnitWrapperGenerator)' == ''">true</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
 
@@ -425,10 +455,59 @@
     <ProjectReference Include="$(RepoRoot)/src/tests/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
+    <ProjectReference Include="$(RepoRoot)/src/tests/Common/XUnitWrapperLibrary/XUnitWrapperLibrary.csproj" />
+  </ItemGroup>
+
   <Import Project="$(RepoRoot)/src/tests/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.props" />
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
   <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
+  <Import Project="$(RepoRoot)/src/tests/Common/mergedrunner.targets" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
+
+  <Target Name="GetBinPlaceTargetFramework" />
 
   <Import Project="$(RepoRoot)src\coreclr\clr.featuredefines.props" />
+
+  <!-- if we have determined that there is nothing to build, overwrite the build targets so that nothing happens -->
+  <Import Project="$(MSBuildThisFileDirectory)Common\nobuild.targets" Condition="'$(_WillCLRTestProjectBuild)' == 'false'" />
+
+  <!-- RunOnly projects have a special build for dependent projects -->
+  <Import Project="$(MSBuildThisFileDirectory)Common\runonly.targets" Condition="'$(CLRTestKind)' == 'RunOnly'" />
+
+  <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
+    <!-- NativeAOT compiled output is placed into a 'native' subdirectory: we need to tweak
+         rpath so that the test can load its native library dependencies if there's any -->
+    <IlcRPath Condition="'$(TargetOS)' != 'OSX'">$ORIGIN/..</IlcRPath>
+    <IlcRPath Condition="'$(TargetOS)' == 'OSX'">@executable_path/..</IlcRPath>
+
+    <!-- Works around "Error: Native compilation can run on x64 and arm64 hosts only"
+      Microsoft.NETCore.Native.targets expect IlcHostArch to be set but it doesn't have to -->
+    <DisableUnsupportedError>true</DisableUnsupportedError>
+
+    <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
+    <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
+    <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
+    <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</IlcFrameworkPath>
+    <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
+    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
+
+    <BuildNativeAotFrameworkObjects Condition="'$(IlcMultiModule)' == 'true'">true</BuildNativeAotFrameworkObjects>
+    <DisableFrameworkLibGeneration Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">true</DisableFrameworkLibGeneration>
+    <FrameworkLibPath Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(IlcSdkPath)</FrameworkLibPath>
+
+    <!-- Forced by ILLink targets; we should fix the SDK -->
+    <SelfContained>true</SelfContained>
+    <HasRuntimeOutput>false</HasRuntimeOutput>
+    <_UsingDefaultForHasRuntimeOutput>false</_UsingDefaultForHasRuntimeOutput>
+  </PropertyGroup>
+
+  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.NETCore.Native.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
+
+  <Target Name="BuildNativeAot"
+          DependsOnTargets="Build;LinkNativeIfBuildAndRun" />
+
+  <Target Name="LinkNativeIfBuildAndRun"
+          Condition="'$(CLRTestTargetUnsupported)' != 'true' and '$(CLRTestKind)' == 'BuildAndRun'"
+          DependsOnTargets="ComputeResolvedFilesToPublishList;LinkNative" />
 
 </Project>

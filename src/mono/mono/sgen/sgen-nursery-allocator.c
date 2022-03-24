@@ -4,7 +4,7 @@
  *
  * Copyright 2009-2010 Novell, Inc.
  *           2011 Rodrigo Kumpera
- * 
+ *
  * Copyright 2011 Xamarin Inc  (http://www.xamarin.com)
  * Copyright (C) 2012 Xamarin Inc
  *
@@ -23,7 +23,7 @@
  * We should start assigning threads very small fragments: if there are many
  * threads the nursery will be full of reserved space that the threads may not
  * use at all, slowing down allocation speed.
- * Thread local allocation is done from areas of memory Hotspot calls Thread Local 
+ * Thread local allocation is done from areas of memory Hotspot calls Thread Local
  * Allocation Buffers (TLABs).
  */
 #include "config.h"
@@ -360,7 +360,7 @@ par_alloc_from_fragment (SgenFragmentAllocator *allocator, SgenFragment *frag, s
 
 	if (frag->fragment_end - end < SGEN_MAX_NURSERY_WASTE) {
 		SgenFragment *next, **prev_ptr;
-		
+
 		/*
 		 * Before we clean the remaining nursery, we must claim the remaining space
 		 * as it could end up been used by the range allocator since it can end up
@@ -422,7 +422,7 @@ serial_alloc_from_fragment (SgenFragment **previous, SgenFragment *frag, size_t 
 
 	if (frag->fragment_end - end < SGEN_MAX_NURSERY_WASTE) {
 		*previous = frag->next;
-		
+
 		/* Clear the remaining space, pinning depends on this. FIXME move this to use phony arrays */
 		memset (end, 0, frag->fragment_end - end);
 
@@ -598,7 +598,7 @@ sgen_clear_allocator_fragments (SgenFragmentAllocator *allocator)
 #ifdef NALLOC_DEBUG
 		add_alloc_record (frag->fragment_next, frag->fragment_end - frag->fragment_next, CLEAR_NURSERY_FRAGS);
 #endif
-	}	
+	}
 }
 
 /* Clear all remaining nursery fragments */

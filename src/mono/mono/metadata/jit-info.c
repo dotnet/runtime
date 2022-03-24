@@ -335,7 +335,7 @@ mono_jit_info_table_find_internal (gpointer addr, gboolean try_aot, gboolean all
 
 	if (ji && ji->is_trampoline && !allow_trampolines)
 		return NULL;
-	
+
 	return ji;
 }
 

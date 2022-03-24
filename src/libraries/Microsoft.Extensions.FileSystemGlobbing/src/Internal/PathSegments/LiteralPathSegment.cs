@@ -13,10 +13,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
 
         public bool CanProduceStem => false;
 
-        public LiteralPathSegment(string value, StringComparison comparisonType)
+        public LiteralPathSegment(string value!!, StringComparison comparisonType)
         {
-            Value = value ?? throw new ArgumentNullException(nameof(value));
-
+            Value = value;
             _comparisonType = comparisonType;
         }
 

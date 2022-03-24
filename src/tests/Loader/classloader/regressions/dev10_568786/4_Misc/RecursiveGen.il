@@ -23,7 +23,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module RecursiveGen.exe
 // MVID: {CCE38E80-73AC-4FAC-A7CD-8B523BD6C64F}
 .imagebase 0x00400000
 .file alignment 0x00000200

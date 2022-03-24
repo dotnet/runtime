@@ -38,7 +38,7 @@ typedef struct {
 	MonoInst *inst;
 } MonoVarUsageInfo;
 
-static void 
+static void
 unlink_target (MonoBasicBlock *bb, MonoBasicBlock *target)
 {
 	int i;
@@ -53,13 +53,13 @@ unlink_target (MonoBasicBlock *bb, MonoBasicBlock *target)
 		if (target->in_bb [i] == bb) {
 			target->in_bb [i] = target->in_bb [--target->in_count];
 			break;
-			
+
 		}
 	}
 }
 
 static void
-unlink_unused_bblocks (MonoCompile *cfg) 
+unlink_unused_bblocks (MonoCompile *cfg)
 {
 	int i, j;
 	MonoBasicBlock *bb;
@@ -72,24 +72,24 @@ unlink_unused_bblocks (MonoCompile *cfg)
 	for (bb = cfg->bb_entry; bb && bb->next_bb;) {
 		if (!(bb->next_bb->flags & BB_REACHABLE)) {
 			bb->next_bb = bb->next_bb->next_bb;
-		} else 
+		} else
 			bb = bb->next_bb;
 	}
 
 	for (i = 1; i < cfg->num_bblocks; i++) {
 		bb = cfg->bblocks [i];
-	       
+
 		if (!(bb->flags & BB_REACHABLE)) {
 			for (j = 0; j < bb->in_count; j++) {
-				unlink_target (bb->in_bb [j], bb);	
+				unlink_target (bb->in_bb [j], bb);
 			}
 			for (j = 0; j < bb->out_count; j++) {
-				unlink_target (bb, bb->out_bb [j]);	
+				unlink_target (bb, bb->out_bb [j]);
 			}
 			if (G_UNLIKELY (cfg->verbose_level > 1))
 				printf ("\tUnlinked BB%d\n", bb->block_num);
 		}
- 
+
 	}
 }
 
@@ -148,11 +148,11 @@ record_use (MonoCompile *cfg, MonoInst *var, MonoBasicBlock *bb, MonoInst *ins)
 	MonoVarUsageInfo *ui = (MonoVarUsageInfo *)mono_mempool_alloc (cfg->mempool, sizeof (MonoVarUsageInfo));
 
 	info = MONO_VARINFO (cfg, var->inst_c0);
-	
+
 	ui->bb = bb;
 	ui->inst = ins;
 	info->uses = g_list_prepend_mempool (cfg->mempool, info->uses, ui);
-}	
+}
 
 typedef struct {
 	MonoInst *var;
@@ -331,7 +331,7 @@ typedef struct {
 /**
  * mono_ssa_rename_vars:
  * Implement renaming of SSA variables. Also compute def-use information in parallel.
- * \p stack_history points to an area of memory which can be used for storing changes 
+ * \p stack_history points to an area of memory which can be used for storing changes
  * made to the stack, so they can be reverted later.
  */
 static void
@@ -476,7 +476,7 @@ mono_ssa_compute (MonoCompile *cfg)
 				mono_blockset_print (cfg, set, "", -1);
 			}
 		}
-			
+
 		mono_bitset_foreach_bit (set, idx, cfg->num_bblocks) {
 			MonoBasicBlock *bb = cfg->bblocks [idx];
 
@@ -675,7 +675,7 @@ mono_ssa_remove (MonoCompile *cfg)
 	}
 
 	/*
-	 * Removal of SSA form introduces many copies. To avoid this, we tyry to coalesce 
+	 * Removal of SSA form introduces many copies. To avoid this, we tyry to coalesce
 	 * the variables if possible. Since the newly introduced SSA variables don't
 	 * have overlapping live ranges (because we don't do agressive optimization), we
 	 * can coalesce them into the original variable.
@@ -697,14 +697,14 @@ mono_ssa_remove (MonoCompile *cfg)
 
 				if (var) {
 					MonoMethodVar *vmv = MONO_VARINFO (cfg, var->inst_c0);
-					
-					/* 
+
+					/*
 					 * The third condition avoids coalescing with variables eliminated
 					 * during deadce.
 					 */
 					if ((vmv->reg != -1) && (vmv->idx != vmv->reg) && (MONO_VARINFO (cfg, vmv->reg)->reg != -1)) {
 						printf ("COALESCE: R%d -> R%d\n", ins->dreg, cfg->varinfo [vmv->reg]->dreg);
-						ins->dreg = cfg->varinfo [vmv->reg]->dreg; 
+						ins->dreg = cfg->varinfo [vmv->reg]->dreg;
 					}
 				}
 			}
@@ -739,7 +739,7 @@ mono_ssa_remove (MonoCompile *cfg)
 }
 
 static void
-mono_ssa_create_def_use (MonoCompile *cfg) 
+mono_ssa_create_def_use (MonoCompile *cfg)
 {
 	MonoBasicBlock *bb;
 	MonoInst *ins;
@@ -999,7 +999,7 @@ visit_inst (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, GList **cvars, 
 				change_varstate (cfg, cvars, info, 2, NULL, carray);
 				break;
 			}
-					
+
 			if (mv->cpstate == 0)
 				continue;
 
@@ -1007,7 +1007,7 @@ visit_inst (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, GList **cvars, 
 
 			if (!c0)
 				c0 = carray [var->dreg];
-		
+
 			/* FIXME: */
 			if (c0->opcode != OP_ICONST) {
 				change_varstate (cfg, cvars, info, 2, NULL, carray);
@@ -1019,7 +1019,7 @@ visit_inst (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, GList **cvars, 
 				break;
 			}
 		}
-				
+
 		if (c0 && info->cpstate < 1) {
 			change_varstate (cfg, cvars, info, 1, c0, carray);
 
@@ -1050,7 +1050,7 @@ visit_inst (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, GList **cvars, 
 		}
 		else if (!var && (ins->dreg != -1)) {
 			/*
-			 * We don't record def-use information for local vregs since it would be 
+			 * We don't record def-use information for local vregs since it would be
 			 * expensive. Instead, we depend on the fact that all uses of the vreg are in
 			 * the same bblock, so they will be examined after the definition.
 			 * FIXME: This isn't true if the ins is visited through an SSA edge.
@@ -1059,7 +1059,7 @@ visit_inst (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, GList **cvars, 
 				carray [ins->dreg] = c0;
 			} else {
 				if (carray [ins->dreg]) {
-					/* 
+					/*
 					 * The state of the vreg changed from constant to non-constant
 					 * -> need to rescan the whole bblock.
 					 */
@@ -1255,7 +1255,7 @@ fold_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst **carray
 				NULLIFY_INS (ins->next->next);
 			}
 		}
-	} 
+	}
 	else if (MONO_IS_COND_BRANCH_OP (ins)) {
 		if (ins->flags & MONO_INST_CFOLD_TAKEN) {
 			remove_bb_from_phis (cfg, bb, ins->inst_false_bb);
@@ -1272,7 +1272,7 @@ fold_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst **carray
 }
 
 void
-mono_ssa_cprop (MonoCompile *cfg) 
+mono_ssa_cprop (MonoCompile *cfg)
 {
 	MonoInst **carray;
 	MonoBasicBlock *bb;
@@ -1317,7 +1317,7 @@ mono_ssa_cprop (MonoCompile *cfg)
 
 		g_assert (bb->flags &  BB_REACHABLE);
 
-		/* 
+		/*
 		 * Some bblocks are linked to 2 others even through they fall through to the
 		 * next bblock.
 		 */
@@ -1334,7 +1334,7 @@ mono_ssa_cprop (MonoCompile *cfg)
 		}
 
 		while (cvars) {
-			MonoMethodVar *info = (MonoMethodVar *)cvars->data;			
+			MonoMethodVar *info = (MonoMethodVar *)cvars->data;
 			cvars = g_list_delete_link (cvars, cvars);
 
 			for (tmp = info->uses; tmp; tmp = tmp->next) {
@@ -1380,11 +1380,11 @@ add_to_dce_worklist (MonoCompile *cfg, MonoMethodVar *var, MonoMethodVar *use, G
 			use->uses = g_list_remove_link (use->uses, tmp);
 			break;
 		}
-	}	
+	}
 }
 
 void
-mono_ssa_deadce (MonoCompile *cfg) 
+mono_ssa_deadce (MonoCompile *cfg)
 {
 	int i;
 	GList *work_list;
@@ -1408,7 +1408,7 @@ mono_ssa_deadce (MonoCompile *cfg)
 		MonoMethodVar *info = (MonoMethodVar *)work_list->data;
 		work_list = g_list_remove_link (work_list, work_list);
 
-		/* 
+		/*
 		 * The second part of the condition happens often when PHI nodes have their dreg
 		 * as one of their arguments due to the fact that we use the original vars.
 		 */
@@ -1466,7 +1466,7 @@ mono_ssa_strength_reduction (MonoCompile *cfg)
 
 			for (i = 0; i < cfg->num_varinfo; i++) {
 				MonoMethodVar *info = MONO_VARINFO (cfg, i);
-			
+
 				if (info->def && info->def->ssa_op == MONO_SSA_STORE &&
 				    info->def->inst_i0->opcode == OP_LOCAL && g_list_find (lp, info->def_bb)) {
 					MonoInst *v = info->def->inst_i1;

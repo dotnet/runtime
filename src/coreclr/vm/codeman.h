@@ -686,7 +686,7 @@ public:
     TaggedMemAllocPtr RealAllocAlignedMem(size_t  dwRequestedSize
                                          ,unsigned  dwAlignment
 #ifdef _DEBUG
-                                         ,__in __in_z const char *szFile
+                                         ,_In_ _In_z_ const char *szFile
                                          ,int  lineNum
 #endif
                                          );
@@ -694,9 +694,9 @@ public:
     virtual void RealBackoutMem(void *pMem
                         , size_t dwSize
 #ifdef _DEBUG
-                        , __in __in_z const char *szFile
+                        , _In_ _In_z_ const char *szFile
                         , int lineNum
-                        , __in __in_z const char *szAllocFile
+                        , _In_ _In_z_ const char *szAllocFile
                         , int allocLineNum
 #endif
                         ) DAC_EMPTY();
@@ -1420,6 +1420,13 @@ private:
     static unsigned m_LCG_JumpStubBlockFullCount;
 
 public:
+
+    static void DumpExecutionManagerUsage()
+    {
+        fprintf(stderr, "JumpStub usage count:\n");
+        fprintf(stderr, "Normal: %u, LCG: %u\n", m_normal_JumpStubLookup, m_LCG_JumpStubLookup);
+    }
+
     struct JumpStubCache
     {
         JumpStubCache()

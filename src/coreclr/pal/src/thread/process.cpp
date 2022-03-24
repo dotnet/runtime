@@ -73,7 +73,9 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #   define __NR_membarrier  389
 #  elif defined(__aarch64__)
 #   define __NR_membarrier  283
-#  elif
+#  elif defined(__loongarch64)
+#   define __NR_membarrier  283
+#  else
 #   error Unknown architecture
 #  endif
 # endif
@@ -83,7 +85,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <libproc.h>
 #include <sys/sysctl.h>
 #include <sys/posix_sem.h>
-#if defined(HOST_ARM64)
 #include <mach/task.h>
 #include <mach/vm_map.h>
 extern "C"
@@ -101,7 +102,6 @@ extern "C"
         }                                                                   \
     } while (false)
 
-#endif // defined(HOST_ARM64)
 #endif // __APPLE__
 
 #ifdef __NetBSD__
@@ -3486,7 +3486,7 @@ InitializeFlushProcessWriteBuffers()
         }
     }
 
-#if defined(TARGET_OSX) && defined(HOST_ARM64)
+#ifdef TARGET_OSX
     return TRUE;
 #else
     s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
@@ -3516,7 +3516,7 @@ InitializeFlushProcessWriteBuffers()
     }
 
     return status == 0;
-#endif // defined(TARGET_OSX) && defined(HOST_ARM64)
+#endif // TARGET_OSX
 }
 
 #define FATAL_ASSERT(e, msg) \
@@ -3566,7 +3566,7 @@ FlushProcessWriteBuffers()
         status = pthread_mutex_unlock(&flushProcessWriteBuffersMutex);
         FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
-#if defined(TARGET_OSX) && defined(HOST_ARM64)
+#ifdef TARGET_OSX
     else
     {
         mach_msg_type_number_t cThreads;
@@ -3592,7 +3592,7 @@ FlushProcessWriteBuffers()
         machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
         CHECK_MACH("vm_deallocate()", machret);
     }
-#endif // defined(TARGET_OSX) && defined(HOST_ARM64)
+#endif // TARGET_OSX
 }
 
 /*++

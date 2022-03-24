@@ -45,11 +45,6 @@ include(../../hostpolicy/files.cmake)
 include(../../hostcommon/files.cmake)
 
 if(MSVC)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4996>)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4267>)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4018>)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4200>)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4244>)
     # Host components don't try to handle asynchronous exceptions
     add_compile_options(/EHsc)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
@@ -107,6 +102,9 @@ if(CLR_CMAKE_TARGET_WIN32)
     # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the
     # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
     add_linker_flag("/INCREMENTAL:NO")
+
+    # Delay load libraries required for WinRT as that is not supported on all platforms
+    add_linker_flag("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
@@ -127,6 +125,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         shell32.lib
         bcrypt.lib
         RuntimeObject.lib
+        delayimp.lib
     )
 
     set(RUNTIMEINFO_LIB runtimeinfo)

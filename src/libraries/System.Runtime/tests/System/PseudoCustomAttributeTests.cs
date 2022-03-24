@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/830", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
     public static partial class PseudoCustomAttributeTests
     {
         [Theory]

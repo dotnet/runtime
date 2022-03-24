@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
@@ -72,9 +73,10 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
         [Obsolete(Obsoletions.CmsSignerCspParamsCtorMessage, DiagnosticId = Obsoletions.CmsSignerCspParamsCtorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
  #endif
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public CmsSigner(CspParameters parameters) => throw new PlatformNotSupportedException();
 
         public CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2? certificate) : this(signerIdentifierType, certificate, null)

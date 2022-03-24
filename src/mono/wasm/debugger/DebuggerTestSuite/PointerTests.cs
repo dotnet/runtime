@@ -40,7 +40,7 @@ namespace DebuggerTests
                    ipp = TPointer("int**"),
                    ipp_null = TPointer("int**"),
 
-                   cvalue0 = TSymbol("113 'q'"),
+                   cvalue0 = TChar('q'),
                    cp = TPointer("char*"),
 
                    vp = TPointer("void*"),
@@ -65,7 +65,7 @@ namespace DebuggerTests
 
                // *cp
                props = await GetObjectOnLocals(locals, "cp");
-               await CheckPointerValue(props, "*cp", TSymbol("113 'q'"));
+               await CheckPointerValue(props, "*cp", TChar('q'));
            });
 
         [Theory]

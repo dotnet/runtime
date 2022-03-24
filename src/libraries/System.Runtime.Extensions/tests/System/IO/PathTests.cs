@@ -157,7 +157,7 @@ namespace System.IO.Tests
             for (int i = 0; i < 100; i++)
             {
                 string s = Path.GetRandomFileName();
-                Assert.Equal(s.Length, 8 + 1 + 3);
+                Assert.Equal(8 + 1 + 3, s.Length);
                 Assert.Equal('.', s[8]);
                 Assert.Equal(-1, s.IndexOfAny(invalidChars));
                 Assert.True(fileNames.Add(s));

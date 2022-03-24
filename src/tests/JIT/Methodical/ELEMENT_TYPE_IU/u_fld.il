@@ -9,10 +9,9 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'qsort'// as "qsort"
+.assembly 'u_fld'// as "qsort"
 { }
 .assembly extern xunit.core {}
-.module 'qsort.exe'
 .namespace Test
 {
   .class private auto ansi AA extends [mscorlib]System.Object

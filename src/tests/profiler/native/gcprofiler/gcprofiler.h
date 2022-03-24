@@ -16,6 +16,7 @@ public:
     GCProfiler() : Profiler(),
         _gcStarts(0),
         _gcFinishes(0),
+        _allocatedByClassCalls(0),
         _failures(0),
         _pohObjectsSeenRootReferences(0),
         _pohObjectsSeenObjectReferences(0),
@@ -28,12 +29,14 @@ public:
     virtual HRESULT STDMETHODCALLTYPE Shutdown();
     virtual HRESULT STDMETHODCALLTYPE GarbageCollectionStarted(int cGenerations, BOOL generationCollected[], COR_PRF_GC_REASON reason);
     virtual HRESULT STDMETHODCALLTYPE GarbageCollectionFinished();
+    virtual HRESULT STDMETHODCALLTYPE ObjectsAllocatedByClass(ULONG cClassCount, ClassID classIds[], ULONG cObjects[]);
     virtual HRESULT STDMETHODCALLTYPE ObjectReferences(ObjectID objectId, ClassID classId, ULONG cObjectRefs, ObjectID objectRefIds[]);
     virtual HRESULT STDMETHODCALLTYPE RootReferences(ULONG cRootRefs, ObjectID rootRefIds[]);
 
 private:
     std::atomic<int> _gcStarts;
     std::atomic<int> _gcFinishes;
+    std::atomic<int> _allocatedByClassCalls;
     std::atomic<int> _failures;
     std::atomic<int> _pohObjectsSeenRootReferences;
     std::atomic<int> _pohObjectsSeenObjectReferences;

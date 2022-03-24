@@ -25,7 +25,8 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        protected const string s_targetFramework = "net6.0";
+        public const string DefaultTargetFramework = "net7.0";
+        public static readonly string NuGetConfigFileNameForDefaultFramework = $"nuget7.config";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected string? _projectDir;
@@ -127,7 +128,8 @@ namespace Wasm.Build.Tests
                                            string? buildDir = null,
                                            int expectedExitCode = 0,
                                            string? args = null,
-                                           Dictionary<string, string>? envVars = null)
+                                           Dictionary<string, string>? envVars = null,
+                                           string targetFramework = DefaultTargetFramework)
         {
             buildDir ??= _projectDir;
             envVars ??= new();
@@ -144,11 +146,12 @@ namespace Wasm.Build.Tests
                     envVars[kvp.Key] = kvp.Value;
             }
 
-            string bundleDir = Path.Combine(GetBinDir(baseDir: buildDir, config: buildArgs.Config), "AppBundle");
+            string bundleDir = Path.Combine(GetBinDir(baseDir: buildDir, config: buildArgs.Config, targetFramework: targetFramework), "AppBundle");
             (string testCommand, string extraXHarnessArgs) = host switch
             {
-                RunHost.V8 => ("wasm test", "--js-file=main.js --engine=V8 -v trace"),
-                _          => ("wasm test-browser", $"-v trace -b {host}")
+                RunHost.V8     => ("wasm test", "--js-file=test-main.js --engine=V8 -v trace"),
+                RunHost.NodeJS => ("wasm test", "--js-file=test-main.js --engine=NodeJS -v trace"),
+                _              => ("wasm test-browser", $"-v trace -b {host}")
             };
 
             string testLogPath = Path.Combine(_logPath, host.ToString());
@@ -244,14 +247,14 @@ namespace Wasm.Build.Tests
             File.WriteAllText(Path.Combine(dir, "Directory.Build.props"), s_buildEnv.DirectoryBuildPropsContents);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.targets"), s_buildEnv.DirectoryBuildTargetsContents);
 
-            File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "nuget6.config"), Path.Combine(dir, "nuget.config"));
+            File.Copy(Path.Combine(BuildEnvironment.TestDataPath, NuGetConfigFileNameForDefaultFramework), Path.Combine(dir, "nuget.config"));
             Directory.CreateDirectory(Path.Combine(dir, ".nuget"));
         }
 
         protected const string SimpleProjectTemplate =
             @$"<Project Sdk=""Microsoft.NET.Sdk"">
               <PropertyGroup>
-                <TargetFramework>{s_targetFramework}</TargetFramework>
+                <TargetFramework>{DefaultTargetFramework}</TargetFramework>
                 <OutputType>Exe</OutputType>
                 <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
                 <WasmMainJSPath>test-main.js</WasmMainJSPath>
@@ -280,18 +283,10 @@ namespace Wasm.Build.Tests
 
         public (string projectDir, string buildOutput) BuildProject(BuildArgs buildArgs,
                                   string id,
-                                  Action? initProject = null,
-                                  bool? dotnetWasmFromRuntimePack = null,
-                                  bool hasIcudt = true,
-                                  bool useCache = true,
-                                  bool expectSuccess = true,
-                                  bool createProject = true,
-                                  bool publish = true,
-                                  string? verbosity=null,
-                                  string? label=null)
+                                  BuildProjectOptions options)
         {
-            string msgPrefix = label != null ? $"[{label}] " : string.Empty;
-            if (useCache && _buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
+            string msgPrefix = options.Label != null ? $"[{options.Label}] " : string.Empty;
+            if (options.UseCache && _buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
             {
                 Console.WriteLine ($"Using existing build found at {product.ProjectDir}, with build log at {product.LogFile}");
 
@@ -303,33 +298,35 @@ namespace Wasm.Build.Tests
                 return (_projectDir, "FIXME");
             }
 
-            if (createProject)
+            if (options.CreateProject)
             {
                 InitPaths(id);
                 InitProjectDir(_projectDir);
-                initProject?.Invoke();
+                options.InitProject?.Invoke();
 
                 File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
                 File.Copy(Path.Combine(AppContext.BaseDirectory, "test-main.js"), Path.Combine(_projectDir, "test-main.js"));
             }
             else if (_projectDir is null)
             {
-                throw new Exception("_projectDir should be set, to use createProject=false");
+                throw new Exception("_projectDir should be set, to use options.createProject=false");
             }
 
             StringBuilder sb = new();
-            sb.Append(publish ? "publish" : "build");
+            sb.Append(options.Publish ? "publish" : "build");
+            if (options.Publish && options.BuildOnlyAfterPublish)
+                sb.Append(" -p:WasmBuildOnlyAfterPublish=true");
             sb.Append($" {s_buildEnv.DefaultBuildArgs}");
 
             sb.Append($" /p:Configuration={buildArgs.Config}");
 
-            string logFileSuffix = label == null ? string.Empty : label.Replace(' ', '_');
+            string logFileSuffix = options.Label == null ? string.Empty : options.Label.Replace(' ', '_');
             string logFilePath = Path.Combine(_logPath, $"{buildArgs.ProjectName}{logFileSuffix}.binlog");
             _testOutput.WriteLine($"-------- Building ---------");
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
             Console.WriteLine($"Binlog path: {logFilePath}");
             sb.Append($" /bl:\"{logFilePath}\" /nologo");
-            sb.Append($" /fl /flp:\"v:diag,LogFile={logFilePath}.log\" /v:{verbosity ?? "minimal"}");
+            sb.Append($" /fl /flp:\"v:diag,LogFile={logFilePath}.log\" /v:{options.Verbosity ?? "minimal"}");
             if (buildArgs.ExtraBuildArgs != null)
                 sb.Append($" {buildArgs.ExtraBuildArgs} ");
 
@@ -338,26 +335,26 @@ namespace Wasm.Build.Tests
             (int exitCode, string buildOutput) result;
             try
             {
-                result = AssertBuild(sb.ToString(), id, expectSuccess: expectSuccess, envVars: s_buildEnv.EnvVars);
+                result = AssertBuild(sb.ToString(), id, expectSuccess: options.ExpectSuccess, envVars: s_buildEnv.EnvVars);
 
                 //AssertRuntimePackPath(result.buildOutput);
 
                 // check that we are using the correct runtime pack!
 
-                if (expectSuccess)
+                if (options.ExpectSuccess)
                 {
-                    string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config), "AppBundle");
-                    AssertBasicAppBundle(bundleDir, buildArgs.ProjectName, buildArgs.Config, hasIcudt, dotnetWasmFromRuntimePack ?? !buildArgs.AOT);
+                    string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config, targetFramework: options.TargetFramework ?? DefaultTargetFramework), "AppBundle");
+                    AssertBasicAppBundle(bundleDir, buildArgs.ProjectName, buildArgs.Config, options.MainJS ?? "test-main.js", options.HasV8Script, options.HasIcudt, options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT);
                 }
 
-                if (useCache)
+                if (options.UseCache)
                     _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir, logFilePath, true));
 
                 return (_projectDir, result.buildOutput);
             }
             catch
             {
-                if (useCache)
+                if (options.UseCache)
                     _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir, logFilePath, false));
                 throw;
             }
@@ -371,9 +368,21 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(_projectDir);
             Directory.CreateDirectory(Path.Combine(_projectDir, ".nuget"));
 
-            File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "nuget6.config"), Path.Combine(_projectDir, "nuget.config"));
+            File.Copy(Path.Combine(BuildEnvironment.TestDataPath, NuGetConfigFileNameForDefaultFramework), Path.Combine(_projectDir, "nuget.config"));
             File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.props"), Path.Combine(_projectDir, "Directory.Build.props"));
             File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.targets"), Path.Combine(_projectDir, "Directory.Build.targets"));
+        }
+
+        public string CreateWasmTemplateProject(string id, string template = "wasmbrowser")
+        {
+            InitPaths(id);
+            InitProjectDir(id);
+            new DotNetCommand(s_buildEnv, useDefaultArgs: false)
+                    .WithWorkingDirectory(_projectDir!)
+                    .ExecuteWithCapturedOutput($"new {template}")
+                    .EnsureSuccessful();
+
+            return Path.Combine(_projectDir!, $"{id}.csproj");
         }
 
         public string CreateBlazorWasmTemplateProject(string id)
@@ -387,22 +396,22 @@ namespace Wasm.Build.Tests
             return Path.Combine(_projectDir!, $"{id}.csproj");
         }
 
-        protected (CommandResult, string) BlazorBuild(string id, string config, NativeFilesType expectedFileType, params string[] extraArgs)
+        protected (CommandResult, string) BlazorBuild(BlazorBuildOptions options, params string[] extraArgs)
         {
-            var res = BuildInternal(id, config, publish: false, extraArgs);
-            AssertDotNetNativeFiles(expectedFileType, config, forPublish: false);
-            AssertBlazorBundle(config, isPublish: false, dotnetWasmFromRuntimePack: expectedFileType == NativeFilesType.FromRuntimePack);
+            var res = BuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, extraArgs);
+            AssertDotNetNativeFiles(options.ExpectedFileType, options.Config, forPublish: false, targetFramework: options.TargetFramework);
+            AssertBlazorBundle(options.Config, isPublish: false, dotnetWasmFromRuntimePack: options.ExpectedFileType == NativeFilesType.FromRuntimePack);
 
             return res;
         }
 
-        protected (CommandResult, string) BlazorPublish(string id, string config, NativeFilesType expectedFileType, params string[] extraArgs)
+        protected (CommandResult, string) BlazorPublish(BlazorBuildOptions options, params string[] extraArgs)
         {
-            var res = BuildInternal(id, config, publish: true, extraArgs);
-            AssertDotNetNativeFiles(expectedFileType, config, forPublish: true);
-            AssertBlazorBundle(config, isPublish: true, dotnetWasmFromRuntimePack: expectedFileType == NativeFilesType.FromRuntimePack);
+            var res = BuildInternal(options.Id, options.Config, publish: true, setWasmDevel: false, extraArgs);
+            AssertDotNetNativeFiles(options.ExpectedFileType, options.Config, forPublish: true, targetFramework: options.TargetFramework);
+            AssertBlazorBundle(options.Config, isPublish: true, dotnetWasmFromRuntimePack: options.ExpectedFileType == NativeFilesType.FromRuntimePack);
 
-            if (expectedFileType == NativeFilesType.AOT)
+            if (options.ExpectedFileType == NativeFilesType.AOT)
             {
                 // check for this too, so we know the format is correct for the negative
                 // test for jsinterop.webassembly.dll
@@ -414,7 +423,7 @@ namespace Wasm.Build.Tests
             return res;
         }
 
-        protected (CommandResult, string) BuildInternal(string id, string config, bool publish=false, params string[] extraArgs)
+        protected (CommandResult, string) BuildInternal(string id, string config, bool publish=false, bool setWasmDevel=true, params string[] extraArgs)
         {
             string label = publish ? "publish" : "build";
             Console.WriteLine($"{Environment.NewLine}** {label} **{Environment.NewLine}");
@@ -426,7 +435,7 @@ namespace Wasm.Build.Tests
                 $"-bl:{logPath}",
                 $"-p:Configuration={config}",
                 "-p:BlazorEnableCompression=false",
-                "-p:_WasmDevel=true"
+                setWasmDevel ? "-p:_WasmDevel=true" : string.Empty
             }.Concat(extraArgs).ToArray();
 
             CommandResult res = new DotNetCommand(s_buildEnv)
@@ -437,10 +446,10 @@ namespace Wasm.Build.Tests
             return (res, logPath);
         }
 
-        protected void AssertDotNetNativeFiles(NativeFilesType type, string config, bool forPublish)
+        protected void AssertDotNetNativeFiles(NativeFilesType type, string config, bool forPublish, string targetFramework = DefaultTargetFramework)
         {
             string label = forPublish ? "publish" : "build";
-            string objBuildDir = Path.Combine(_projectDir!, "obj", config, "net6.0", "wasm", forPublish ? "for-publish" : "for-build");
+            string objBuildDir = Path.Combine(_projectDir!, "obj", config, targetFramework, "wasm", forPublish ? "for-publish" : "for-build");
             string binFrameworkDir = FindBlazorBinFrameworkDir(config, forPublish);
 
             string srcDir = type switch
@@ -481,19 +490,19 @@ namespace Wasm.Build.Tests
                 throw new XunitException($"Runtime pack path doesn't match.{Environment.NewLine}Expected: {s_buildEnv.RuntimePackDir}{Environment.NewLine}Actual:   {actualPath}");
         }
 
-        protected static void AssertBasicAppBundle(string bundleDir, string projectName, string config, bool hasIcudt=true, bool dotnetWasmFromRuntimePack=true)
+        protected static void AssertBasicAppBundle(string bundleDir, string projectName, string config, string mainJS, bool hasV8Script, bool hasIcudt=true, bool dotnetWasmFromRuntimePack=true)
         {
             AssertFilesExist(bundleDir, new []
             {
                 "index.html",
-                "main.js",
+                mainJS,
                 "dotnet.timezones.blat",
                 "dotnet.wasm",
                 "mono-config.json",
-                "dotnet.js",
-                "run-v8.sh"
+                "dotnet.js"
             });
 
+            AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
             AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: hasIcudt);
 
             string managedDir = Path.Combine(bundleDir, "managed");
@@ -622,7 +631,7 @@ namespace Wasm.Build.Tests
                                             $"{msgPrefix} Could not find dotnet.*js in {bootJson}");
         }
 
-        protected string FindBlazorBinFrameworkDir(string config, bool forPublish, string framework="net6.0")
+        protected string FindBlazorBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFramework)
         {
             string basePath = Path.Combine(_projectDir!, "bin", config, framework);
             if (forPublish)
@@ -644,14 +653,14 @@ namespace Wasm.Build.Tests
             return first ?? Path.Combine(parentDir, dirName);
         }
 
-        protected string GetBinDir(string config, string targetFramework=s_targetFramework, string? baseDir=null)
+        protected string GetBinDir(string config, string targetFramework=DefaultTargetFramework, string? baseDir=null)
         {
             var dir = baseDir ?? _projectDir;
             Assert.NotNull(dir);
             return Path.Combine(dir!, "bin", config, targetFramework, "browser-wasm");
         }
 
-        protected string GetObjDir(string config, string targetFramework=s_targetFramework, string? baseDir=null)
+        protected string GetObjDir(string config, string targetFramework=DefaultTargetFramework, string? baseDir=null)
         {
             var dir = baseDir ?? _projectDir;
             Assert.NotNull(dir);
@@ -860,4 +869,29 @@ namespace Wasm.Build.Tests
     public record BuildProduct(string ProjectDir, string LogFile, bool Result);
     internal record FileStat (bool Exists, DateTime LastWriteTimeUtc, long Length, string FullPath);
     internal record BuildPaths(string ObjWasmDir, string ObjDir, string BinDir, string BundleDir);
- }
+
+    public record BuildProjectOptions
+    (
+        Action? InitProject               = null,
+        bool?   DotnetWasmFromRuntimePack = null,
+        bool    HasIcudt                  = true,
+        bool    UseCache                  = true,
+        bool    ExpectSuccess             = true,
+        bool    CreateProject             = true,
+        bool    Publish                   = true,
+        bool    BuildOnlyAfterPublish     = true,
+        bool    HasV8Script               = true,
+        string? Verbosity                 = null,
+        string? Label                     = null,
+        string? TargetFramework           = null,
+        string? MainJS                    = null
+    );
+
+    public record BlazorBuildOptions
+    (
+        string Id,
+        string Config,
+        NativeFilesType ExpectedFileType,
+        string TargetFramework = BuildTestBase.DefaultTargetFramework
+    );
+}

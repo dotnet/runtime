@@ -31,10 +31,10 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public ResourceCollectionInfo(TextSyndicationContent title, Uri link, IEnumerable<CategoriesDocument> categories, IEnumerable<string> accepts)
+        public ResourceCollectionInfo(TextSyndicationContent title!!, Uri link!!, IEnumerable<CategoriesDocument> categories, IEnumerable<string> accepts)
         {
-            Title = title ?? throw new ArgumentNullException(nameof(title));
-            Link = link ?? throw new ArgumentNullException(nameof(link));
+            Title = title;
+            Link = link;
 
             if (categories != null)
             {

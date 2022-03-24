@@ -197,7 +197,7 @@ void DispatchMemberInfo::Init()
     EX_END_CATCH(RethrowTerminalExceptions);
 }
 
-HRESULT DispatchMemberInfo::GetIDsOfParameters(__in_ecount(NumNames) WCHAR **astrNames, int NumNames, DISPID *aDispIds, BOOL bCaseSensitive)
+HRESULT DispatchMemberInfo::GetIDsOfParameters(_In_reads_(NumNames) WCHAR **astrNames, int NumNames, DISPID *aDispIds, BOOL bCaseSensitive)
 {
     CONTRACTL
     {

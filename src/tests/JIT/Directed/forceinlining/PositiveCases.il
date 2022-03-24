@@ -18,7 +18,6 @@
 {
 }
 
-.module PositiveCases.exe
 
 .class public sequential ansi sealed beforefieldinit S
        extends [mscorlib]System.ValueType

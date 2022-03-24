@@ -283,9 +283,10 @@ protected:
     Compiler* m_comp;
     unsigned  m_schemaCount;
     unsigned  m_instrCount;
+    bool      m_modifiedFlow;
 
 protected:
-    Instrumentor(Compiler* comp) : m_comp(comp), m_schemaCount(0), m_instrCount(0)
+    Instrumentor(Compiler* comp) : m_comp(comp), m_schemaCount(0), m_instrCount(0), m_modifiedFlow(false)
     {
     }
 
@@ -309,13 +310,23 @@ public:
     virtual void SuppressProbes()
     {
     }
-    unsigned SchemaCount()
+    unsigned SchemaCount() const
     {
         return m_schemaCount;
     }
-    unsigned InstrCount()
+    unsigned InstrCount() const
     {
         return m_instrCount;
+    }
+
+    void SetModifiedFlow()
+    {
+        m_modifiedFlow = true;
+    }
+
+    bool ModifiedFlow() const
+    {
+        return m_modifiedFlow;
     }
 };
 
@@ -365,6 +376,165 @@ void BlockCountInstrumentor::Prepare(bool preImport)
     if (preImport)
     {
         return;
+    }
+
+    // If this is an OSR method, look for potential tail calls in
+    // blocks that are not BBJ_RETURN.
+    //
+    // If we see any, we need to adjust our instrumentation pattern.
+    //
+    if (m_comp->opts.IsOSR() && ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) != 0))
+    {
+        JITDUMP("OSR + PGO + potential tail call --- preparing to relocate block probes\n");
+
+        // We should be in a root method compiler instance. OSR + PGO does not
+        // currently try and instrument inlinees.
+        //
+        // Relaxing this will require changes below because inlinee compilers
+        // share the root compiler flow graph (and hence bb epoch), and flow
+        // from inlinee tail calls to returns can be more complex.
+        //
+        assert(!m_comp->compIsForInlining());
+
+        // Build cheap preds.
+        //
+        m_comp->fgComputeCheapPreds();
+        m_comp->EnsureBasicBlockEpoch();
+
+        // Keep track of return blocks needing special treatment.
+        // We also need to track of duplicate preds.
+        //
+        JitExpandArrayStack<BasicBlock*> specialReturnBlocks(m_comp->getAllocator(CMK_Pgo));
+        BlockSet                         predsSeen = BlockSetOps::MakeEmpty(m_comp);
+
+        // Walk blocks looking for BBJ_RETURNs that are successors of potential tail calls.
+        //
+        // If any such has a conditional pred, we will need to reroute flow from those preds
+        // via an intermediary block. That block will subsequently hold the relocated block
+        // probe for the return for those preds.
+        //
+        // Scrub the cheap pred list for these blocks so that each pred appears at most once.
+        //
+        for (BasicBlock* const block : m_comp->Blocks())
+        {
+            // Ignore blocks that we won't process.
+            //
+            if (!ShouldProcess(block))
+            {
+                continue;
+            }
+
+            if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) != 0)
+            {
+                JITDUMP("Return " FMT_BB " is successor of possible tail call\n", block->bbNum);
+                assert(block->bbJumpKind == BBJ_RETURN);
+                bool pushed = false;
+                BlockSetOps::ClearD(m_comp, predsSeen);
+                for (BasicBlockList* predEdge = block->bbCheapPreds; predEdge != nullptr; predEdge = predEdge->next)
+                {
+                    BasicBlock* const pred = predEdge->block;
+
+                    // If pred is not to be processed, ignore it and scrub from the pred list.
+                    //
+                    if (!ShouldProcess(pred))
+                    {
+                        JITDUMP(FMT_BB " -> " FMT_BB " is dead edge\n", pred->bbNum, block->bbNum);
+                        predEdge->block = nullptr;
+                        continue;
+                    }
+
+                    BasicBlock* const succ = pred->GetUniqueSucc();
+
+                    if (succ == nullptr)
+                    {
+                        // Flow from pred -> block is conditional, and will require updating.
+                        //
+                        JITDUMP(FMT_BB " -> " FMT_BB " is critical edge\n", pred->bbNum, block->bbNum);
+                        if (!pushed)
+                        {
+                            specialReturnBlocks.Push(block);
+                            pushed = true;
+                        }
+
+                        // Have we seen this pred before?
+                        //
+                        if (BlockSetOps::IsMember(m_comp, predsSeen, pred->bbNum))
+                        {
+                            // Yes, null out the duplicate pred list entry.
+                            //
+                            predEdge->block = nullptr;
+                        }
+                    }
+                    else
+                    {
+                        // We should only ever see one reference to this pred.
+                        //
+                        assert(!BlockSetOps::IsMember(m_comp, predsSeen, pred->bbNum));
+
+                        // Ensure flow from non-critical preds is BBJ_ALWAYS as we
+                        // may add a new block right before block.
+                        //
+                        if (pred->bbJumpKind == BBJ_NONE)
+                        {
+                            pred->bbJumpKind = BBJ_ALWAYS;
+                            pred->bbJumpDest = block;
+                        }
+                        assert(pred->bbJumpKind == BBJ_ALWAYS);
+                    }
+
+                    BlockSetOps::AddElemD(m_comp, predsSeen, pred->bbNum);
+                }
+            }
+        }
+
+        // Now process each special return block.
+        // Create an intermediary that falls through to the return.
+        // Update any critical edges to target the intermediary.
+        //
+        // Note we could also route any non-tail-call pred via the
+        // intermedary. Doing so would cut down on probe duplication.
+        //
+        if (specialReturnBlocks.Size() > 0)
+        {
+            SetModifiedFlow();
+        }
+
+        while (specialReturnBlocks.Size() > 0)
+        {
+            bool              first        = true;
+            BasicBlock* const block        = specialReturnBlocks.Pop();
+            BasicBlock* const intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
+
+            intermediary->bbFlags |= BBF_IMPORTED;
+            intermediary->inheritWeight(block);
+
+            for (BasicBlockList* predEdge = block->bbCheapPreds; predEdge != nullptr; predEdge = predEdge->next)
+            {
+                BasicBlock* const pred = predEdge->block;
+
+                if (pred != nullptr)
+                {
+                    BasicBlock* const succ = pred->GetUniqueSucc();
+
+                    if (succ == nullptr)
+                    {
+                        // This will update all branch targets from pred.
+                        //
+                        m_comp->fgReplaceJumpTarget(pred, intermediary, block);
+
+                        // Patch the pred list. Note we only need one pred list
+                        // entry pointing at intermediary.
+                        //
+                        predEdge->block = first ? intermediary : nullptr;
+                        first           = false;
+                    }
+                    else
+                    {
+                        assert(pred->bbJumpKind == BBJ_ALWAYS);
+                    }
+                }
+            }
+        }
     }
 
 #ifdef DEBUG
@@ -449,7 +619,37 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
     GenTree* lhsNode = m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
     GenTree* asgNode = m_comp->gtNewAssignNode(lhsNode, rhsNode);
 
-    m_comp->fgNewStmtAtBeg(block, asgNode);
+    if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) != 0)
+    {
+        // We should have built and updated cheap preds during the prepare stage.
+        //
+        assert(m_comp->fgCheapPredsValid);
+
+        // Instrument each predecessor.
+        //
+        bool first = true;
+        for (BasicBlockList* predEdge = block->bbCheapPreds; predEdge != nullptr; predEdge = predEdge->next)
+        {
+            BasicBlock* const pred = predEdge->block;
+
+            // We may have scrubbed cheap pred list duplicates during Prepare.
+            //
+            if (pred != nullptr)
+            {
+                JITDUMP("Placing copy of block probe for " FMT_BB " in pred " FMT_BB "\n", block->bbNum, pred->bbNum);
+                if (!first)
+                {
+                    asgNode = m_comp->gtCloneExpr(asgNode);
+                }
+                m_comp->fgNewStmtAtBeg(pred, asgNode);
+                first = false;
+            }
+        }
+    }
+    else
+    {
+        m_comp->fgNewStmtAtBeg(block, asgNode);
+    }
 
     m_instrCount++;
 }
@@ -589,7 +789,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
     // graph. So for BlockSets and NumSucc, we use the root compiler instance.
     //
     Compiler* const comp = impInlineRoot();
-    comp->NewBasicBlockEpoch();
+    comp->EnsureBasicBlockEpoch();
 
     // We will track visited or queued nodes with a bit vector.
     //
@@ -1226,7 +1426,8 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
 }
 
 //------------------------------------------------------------------------
-// ClassProbeVisitor: invoke functor on each virtual call in a tree
+// ClassProbeVisitor: invoke functor on each virtual call or cast-related
+//     helper calls in a tree
 //
 template <class TFunctor>
 class ClassProbeVisitor final : public GenTreeVisitor<ClassProbeVisitor<TFunctor>>
@@ -1247,11 +1448,17 @@ public:
     Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
         GenTree* const node = *use;
-        if (node->IsCall())
+        if (node->IsCall() && (node->AsCall()->gtClassProfileCandidateInfo != nullptr))
         {
             GenTreeCall* const call = node->AsCall();
             if (call->IsVirtual() && (call->gtCallType != CT_INDIRECT))
             {
+                // virtual call
+                m_functor(m_compiler, call);
+            }
+            else if (m_compiler->impIsCastHelperEligibleForClassProbe(call))
+            {
+                // isinst/cast helper
                 m_functor(m_compiler, call);
             }
         }
@@ -1285,7 +1492,7 @@ public:
         }
         else
         {
-            assert(call->IsVirtualVtable());
+            assert(call->IsVirtualVtable() || compiler->impIsCastHelperEligibleForClassProbe(call));
         }
 
         schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
@@ -1340,8 +1547,6 @@ public:
         //         ... args ...)
         //
 
-        assert(call->gtCallThisArg->GetNode()->TypeGet() == TYP_REF);
-
         // Sanity check that we're looking at the right schema entry
         //
         assert(m_schema[*m_currentSchemaIndex].ILOffset == (int32_t)call->gtClassProfileCandidateInfo->ilOffset);
@@ -1355,6 +1560,20 @@ public:
         //
         uint8_t* classProfile = m_schema[*m_currentSchemaIndex].Offset + m_profileMemory;
         *m_currentSchemaIndex += 2; // There are 2 schema entries per class probe
+
+        GenTreeCall::Use* objUse = nullptr;
+        if (compiler->impIsCastHelperEligibleForClassProbe(call))
+        {
+            // Grab the second arg of cast/isinst helper call
+            objUse = call->gtCallArgs->GetNext();
+        }
+        else
+        {
+            // Grab 'this' arg
+            objUse = call->gtCallThisArg;
+        }
+
+        assert(objUse->GetNode()->TypeIs(TYP_REF));
 
         // Grab a temp to hold the 'this' object as it will be used three times
         //
@@ -1372,45 +1591,17 @@ public:
         GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
         GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const asgNode = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, call->gtCallThisArg->GetNode());
-        GenTree* const asgCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
+        GenTree* const asgNode       = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, objUse->GetNode());
+        GenTree* const asgCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
 
         // Update the call
         //
-        call->gtCallThisArg->SetNode(asgCommaNode);
+        objUse->SetNode(asgCommaNode);
 
         JITDUMP("Modified call is now\n");
         DISPTREE(call);
 
-        // Restore the stub address on the call
-        //
-        call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
-
         m_instrCount++;
-    }
-};
-
-//------------------------------------------------------------------------
-// SuppressProbesFunctor: functor that resets IR back to the state
-//   it had if there were no class probes.
-//
-class SuppressProbesFunctor
-{
-private:
-    unsigned& m_cleanupCount;
-
-public:
-    SuppressProbesFunctor(unsigned& cleanupCount) : m_cleanupCount(cleanupCount)
-    {
-    }
-
-    void operator()(Compiler* compiler, GenTreeCall* call)
-    {
-        // Restore the stub address on the call
-        //
-        call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
-
-        m_cleanupCount++;
     }
 };
 
@@ -1431,7 +1622,6 @@ public:
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
     void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override;
-    void SuppressProbes() override;
 };
 
 //------------------------------------------------------------------------
@@ -1520,37 +1710,6 @@ void ClassProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
 }
 
 //------------------------------------------------------------------------
-// ClassProbeInstrumentor::SuppressProbes: clean up if we're not instrumenting
-//
-// Notes:
-//   Currently we're hijacking the gtCallStubAddr of the call node to hold
-//   a pointer to the profile candidate info.
-//
-//   We must undo this, if not instrumenting.
-//
-void ClassProbeInstrumentor::SuppressProbes()
-{
-    unsigned                                 cleanupCount = 0;
-    SuppressProbesFunctor                    suppressProbes(cleanupCount);
-    ClassProbeVisitor<SuppressProbesFunctor> visitor(m_comp, suppressProbes);
-
-    for (BasicBlock* const block : m_comp->Blocks())
-    {
-        if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) == 0)
-        {
-            continue;
-        }
-
-        for (Statement* const stmt : block->Statements())
-        {
-            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
-        }
-    }
-
-    assert(cleanupCount == m_comp->info.compClassProbeCount);
-}
-
-//------------------------------------------------------------------------
 // fgPrepareToInstrumentMethod: prepare for instrumentation
 //
 // Notes:
@@ -1592,17 +1751,27 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     // inlnee), so we'll lose a bit of their profile data. We can support this
     // eventually if it turns out to matter.
     //
-    // Similar issues arise with partially jitted methods. Because we currently
-    // only defer jitting for throw blocks, we currently ignore the impact of partial
-    // jitting on PGO. If we ever implement a broader pattern of deferral -- say deferring
-    // based on static PGO -- we will need to reconsider.
+    // Similar issues arise with partially jitted methods; they must also use
+    // block based profiles.
+    //
+    // Under OSR stress we may add patchpoints even without backedges. So we also
+    // need to change the PGO instrumentation approach if OSR stress is enabled.
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
+#if defined(DEBUG)
+    const bool mayHaveStressPatchpoints =
+        (JitConfig.JitOffsetOnStackReplacement() >= 0) || (JitConfig.JitRandomOnStackReplacement() > 0);
+#else
+    const bool mayHaveStressPatchpoints = false;
+#endif
+
+    const bool mayHavePatchpoints =
+        ((JitConfig.TC_OnStackReplacement() > 0) && (compHasBackwardJump || mayHaveStressPatchpoints)) ||
+        (JitConfig.TC_PartialCompilation() > 0);
     const bool prejit               = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
-    const bool tier0WithPatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
-                                      (JitConfig.TC_OnStackReplacement() > 0) && compHasBackwardJump;
-    const bool osrMethod       = opts.IsOSR();
+    const bool tier0WithPatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && mayHavePatchpoints;
+    const bool osrMethod            = opts.IsOSR();
     const bool useEdgeProfiles = (JitConfig.JitEdgeProfiling() > 0) && !prejit && !tier0WithPatchpoints && !osrMethod;
 
     if (useEdgeProfiles)
@@ -1612,7 +1781,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     else
     {
         JITDUMP("Using block profiling, because %s\n",
-                (JitConfig.JitEdgeProfiling() > 0)
+                (JitConfig.JitEdgeProfiling() == 0)
                     ? "edge profiles disabled"
                     : prejit ? "prejitting" : osrMethod ? "OSR" : "tier0 with patchpoints");
 
@@ -1762,7 +1931,18 @@ PhaseStatus Compiler::fgInstrumentMethod()
         //
         fgCountInstrumentor->SuppressProbes();
         fgClassInstrumentor->SuppressProbes();
-        return PhaseStatus::MODIFIED_NOTHING;
+
+        // If we needed to create cheap preds, we're done with them now.
+        //
+        if (fgCheapPredsValid)
+        {
+            fgRemovePreds();
+        }
+
+        // We may have modified control flow preparing for instrumentation.
+        //
+        const bool modifiedFlow = fgCountInstrumentor->ModifiedFlow() || fgClassInstrumentor->ModifiedFlow();
+        return modifiedFlow ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
 
     JITDUMP("Instrumentation data base address is %p\n", dspPtr(profileMemory));
@@ -1792,6 +1972,13 @@ PhaseStatus Compiler::fgInstrumentMethod()
     //
     fgCountInstrumentor->InstrumentMethodEntry(schema, profileMemory);
     fgClassInstrumentor->InstrumentMethodEntry(schema, profileMemory);
+
+    // If we needed to create cheap preds, we're done with them now.
+    //
+    if (fgCheapPredsValid)
+    {
+        fgRemovePreds();
+    }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -3286,7 +3473,7 @@ weight_t Compiler::fgComputeMissingBlockWeights()
             // Sum up the weights of all of the return blocks and throw blocks
             // This is used when we have a back-edge into block 1
             //
-            if (bDst->hasProfileWeight() && ((bDst->bbJumpKind == BBJ_RETURN) || (bDst->bbJumpKind == BBJ_THROW)))
+            if (bDst->hasProfileWeight() && bDst->KindIs(BBJ_RETURN, BBJ_THROW))
             {
                 returnWeight += bDst->bbWeight;
             }
@@ -3857,7 +4044,7 @@ void Compiler::fgDebugCheckProfileData()
 
         // Exit blocks
         //
-        if ((block->bbJumpKind == BBJ_RETURN) || (block->bbJumpKind == BBJ_THROW))
+        if (block->KindIs(BBJ_RETURN, BBJ_THROW))
         {
             exitWeight += blockWeight;
             exitProfiled   = true;
@@ -4026,7 +4213,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block)
 
     // We won't check finally or filter returns (for now).
     //
-    if ((block->bbJumpKind == BBJ_EHFINALLYRET) || (block->bbJumpKind == BBJ_EHFILTERRET))
+    if (block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFILTERRET))
     {
         return true;
     }

@@ -196,7 +196,7 @@ namespace System.Reflection
             }
 
             int initialSize = Math.Max(res.Length, 16);
-            List<object>? a = null;
+            List<object>? a;
             ICustomAttributeProvider? btype = obj;
             object[] array;
 
@@ -371,7 +371,7 @@ namespace System.Reflection
             }
 
             int initialSize = Math.Max(res.Count, 16);
-            List<CustomAttributeData>? a = null;
+            List<CustomAttributeData>? a;
             ICustomAttributeProvider? btype = obj;
 
             /* Non-inherit case */
@@ -738,7 +738,7 @@ namespace System.Reflection
 
         private static AttributeUsageAttribute RetrieveAttributeUsage(Type attributeType)
         {
-            AttributeUsageAttribute? usageAttribute = null;
+            AttributeUsageAttribute? usageAttribute;
             /* Usage a thread-local cache to speed this up, since it is called a lot from GetCustomAttributes () */
             if (usage_cache == null)
                 usage_cache = new Dictionary<Type, AttributeUsageAttribute>();

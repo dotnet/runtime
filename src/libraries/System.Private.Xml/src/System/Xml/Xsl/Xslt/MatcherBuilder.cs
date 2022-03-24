@@ -186,7 +186,6 @@ namespace System.Xml.Xsl.Xslt
             }
 
             // Recognized pattern A, check for B
-            QilNode x = isType;
             _nodeKind = nodeKinds;
             QilBinary lastAnd = leftPath[idx & 3];
 
@@ -200,7 +199,6 @@ namespace System.Xml.Xsl.Xslt
                 )
                 {
                     // Recognized pattern B
-                    x = lastAnd;
                     _qname = (QilName?)((QilLiteral)eq.Right).Value;
                     idx--;
                 }

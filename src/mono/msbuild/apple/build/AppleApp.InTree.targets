@@ -3,6 +3,11 @@
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
   <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
+  <!-- For MacCatalyst, adhoc is the default.  Set it here so that we don't have to specify when running local -->
+  <PropertyGroup>
+    <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == '' and '$(TargetOS)' == 'MacCatalyst'">adhoc</DevTeamProvisioning>
+  </PropertyGroup>
+
   <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->
   <!--<Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true'"/>-->
   <Import Project="$(MSBuildThisFileDirectory)AppleApp.targets" />

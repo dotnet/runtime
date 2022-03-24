@@ -7,7 +7,6 @@
 .assembly extern mscorlib {}
 .assembly handleMath {}
 .assembly extern xunit.core {}
-.module handleMath.exe
 
 .class public F
 {

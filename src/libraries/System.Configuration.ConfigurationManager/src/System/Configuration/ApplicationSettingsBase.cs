@@ -55,13 +55,8 @@ namespace System.Configuration
         /// <summary>
         /// Convenience overload that takes the owner component and settings key.
         /// </summary>
-        protected ApplicationSettingsBase(IComponent owner, string settingsKey) : this(settingsKey)
+        protected ApplicationSettingsBase(IComponent owner!!, string settingsKey) : this(settingsKey)
         {
-            if (owner == null)
-            {
-                throw new ArgumentNullException(nameof(owner));
-            }
-
             _owner = owner;
 
             if (owner.Site != null)
@@ -519,7 +514,7 @@ namespace System.Configuration
                     //       level and also property level, the latter overrides the former
                     //       for a given setting. This is exactly the behavior we want.
 
-                    settingsProperty.Attributes.Add(attribute.GetType(), attribute);
+                    settingsProperty.Attributes[attribute.GetType()] = attribute;
                 }
             }
 

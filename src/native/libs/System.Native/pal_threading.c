@@ -12,6 +12,9 @@
 #include <errno.h>
 #include <time.h>
 #include <sys/time.h>
+#if HAVE_SCHED_GETCPU
+#include <sched.h>
+#endif
 
 #if defined(TARGET_OSX)
 // So we can use the declaration of pthread_cond_timedwait_relative_np
@@ -213,4 +216,72 @@ void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor* monitor)
     assert(error == 0);
 
     (void)error; // unused in release build
+}
+
+int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(void*), void *parameter)
+{
+    bool result = false;
+    pthread_attr_t attrs;
+
+    int error = pthread_attr_init(&attrs);
+    if (error != 0)
+    {
+        // Do not call pthread_attr_destroy
+        return false;
+    }
+
+    error = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
+    assert(error == 0);
+
+#ifdef ENSURE_PRIMARY_STACK_SIZE
+    // TODO: https://github.com/dotnet/runtimelab/issues/791
+    if (stackSize == 0)
+    {
+        stackSize = 1536 * 1024;
+    }
+#endif
+
+    if (stackSize > 0)
+    {
+        if (stackSize < (uintptr_t)PTHREAD_STACK_MIN)
+        {
+            stackSize = (uintptr_t)PTHREAD_STACK_MIN;
+        }
+
+        error = pthread_attr_setstacksize(&attrs, stackSize);
+        if (error != 0) goto CreateThreadExit;
+    }
+
+    pthread_t threadId;
+    error = pthread_create(&threadId, &attrs, startAddress, parameter);
+    if (error != 0) goto CreateThreadExit;
+
+    result = true;
+
+CreateThreadExit:
+    error = pthread_attr_destroy(&attrs);
+    assert(error == 0);
+
+    return result;
+}
+
+int32_t SystemNative_SchedGetCpu()
+{
+#if HAVE_SCHED_GETCPU
+    return sched_getcpu();
+#else
+    return -1;
+#endif
+}
+
+__attribute__((noreturn))
+void SystemNative_Exit(int32_t exitCode)
+{
+    exit(exitCode);
+}
+
+__attribute__((noreturn))
+void SystemNative_Abort()
+{
+    abort();
 }

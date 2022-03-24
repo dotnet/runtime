@@ -302,7 +302,7 @@ namespace System.Linq.Expressions.Tests
                 VerifyTypeConstant(value, useInterpreter);
             }
 
-            if (PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly)
+            if (PlatformDetection.IsReflectionEmitSupported)
             {
                 VerifyTypeConstant(GetTypeBuilder(), useInterpreter);
             }
@@ -328,13 +328,23 @@ namespace System.Linq.Expressions.Tests
                 typeof(SomePublicMethodsForLdToken).GetMethod(nameof(SomePublicMethodsForLdToken.Qux), BindingFlags.Public | BindingFlags.Static),
                 typeof(SomePublicMethodsForLdToken).GetMethod(nameof(SomePublicMethodsForLdToken.Qux), BindingFlags.Public | BindingFlags.Static).MakeGenericMethod(typeof(int)),
                 typeof(List<>).GetMethod(nameof(List<int>.Add)),
-                typeof(List<int>).GetMethod(nameof(List<int>.Add)),
-                GlobalMethod(Type.EmptyTypes),
-                GlobalMethod(typeof(PrivateGenericClass<int>)),
-                GlobalMethod(typeof(PrivateGenericClass<>))
+                typeof(List<int>).GetMethod(nameof(List<int>.Add))
             })
             {
                 VerifyMethodInfoConstant(value, useInterpreter);
+            }
+
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                foreach (MethodInfo value in new MethodInfo[]
+                {
+                    GlobalMethod(Type.EmptyTypes),
+                    GlobalMethod(typeof(PrivateGenericClass<int>)),
+                    GlobalMethod(typeof(PrivateGenericClass<>))
+                })
+                {
+                    VerifyMethodInfoConstant(value, useInterpreter);
+                }
             }
         }
 

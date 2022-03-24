@@ -251,7 +251,7 @@ exit:
     return rc;
 }
 
-static jobject AndroidCryptoNative_CreateKeyPairFromCurveParameters(
+static jobject CreateKeyPairFromCurveParameters(
     jobject curveParameters, uint8_t* qx, int32_t qxLength, uint8_t* qy, int32_t qyLength, uint8_t* d, int32_t dLength)
 {
     JNIEnv* env = GetJNIEnv();
@@ -360,7 +360,7 @@ int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
     // Release the reference to the generated key pair. We're going to make our own with the explicit keys.
     ReleaseGRef(env, (*key)->keyPair);
     (*key)->keyPair =
-        AndroidCryptoNative_CreateKeyPairFromCurveParameters((*key)->curveParameters, qx, qxLength, qy, qyLength, d, dLength);
+        CreateKeyPairFromCurveParameters((*key)->curveParameters, qx, qxLength, qy, qyLength, d, dLength);
 
     if ((*key)->keyPair == NULL)
     {
@@ -518,7 +518,7 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveTyp
     if ((qx && qy) || d)
     {
         // If we have explicit key parameters, use those.
-        keyPair = AndroidCryptoNative_CreateKeyPairFromCurveParameters(loc[paramSpec], qx, qxLength, qy, qyLength, d, dLength);
+        keyPair = CreateKeyPairFromCurveParameters(loc[paramSpec], qx, qxLength, qy, qyLength, d, dLength);
     }
     else
     {

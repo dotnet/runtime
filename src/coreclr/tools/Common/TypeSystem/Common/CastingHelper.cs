@@ -263,7 +263,7 @@ namespace Internal.TypeSystem
             else if (curTypesParm.IsGenericParameter)
             {
                 var genericVariableFromParam = (GenericParameterDesc)curTypesParm;
-                if (genericVariableFromParam.HasReferenceTypeConstraint)
+                if (genericVariableFromParam.HasReferenceTypeConstraint || IsConstrainedAsGCPointer(genericVariableFromParam))
                 {
                     return genericVariableFromParam.CanCastToInternal(paramType, protect);
                 }
@@ -278,6 +278,30 @@ namespace Internal.TypeSystem
             }
 
             // Anything else is not a match
+            return false;
+        }
+
+        private static bool IsConstrainedAsGCPointer(GenericParameterDesc type)
+        {
+            foreach (var typeConstraint in type.TypeConstraints)
+            {
+                if (typeConstraint.IsGenericParameter)
+                {
+                    if (IsConstrainedAsGCPointer((GenericParameterDesc)typeConstraint))
+                        return true;
+                }
+
+                if (!typeConstraint.IsInterface && typeConstraint.IsGCPointer)
+                {
+                    // Object, ValueType, and Enum are GCPointers but they do not constrain the type to GCPointer!
+                    if (!typeConstraint.IsWellKnownType(WellKnownType.Object) &&
+                        !typeConstraint.IsWellKnownType(WellKnownType.ValueType) &&
+                        !typeConstraint.IsWellKnownType(WellKnownType.Enum))
+                    {
+                        return true;
+                    }
+                }
+            }
             return false;
         }
 
@@ -502,7 +526,7 @@ namespace Internal.TypeSystem
             else if (thisType.IsGenericParameter)
             {
                 var genericVariableFromParam = (GenericParameterDesc)thisType;
-                if (genericVariableFromParam.HasReferenceTypeConstraint)
+                if (genericVariableFromParam.HasReferenceTypeConstraint || IsConstrainedAsGCPointer(genericVariableFromParam))
                 {
                     return genericVariableFromParam.CanCastToInternal(otherType, protect);
                 }

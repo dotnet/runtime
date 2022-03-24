@@ -35,8 +35,8 @@ protected:
         void StealDataFrom(CPillar & src);
         unsigned GetDataLen() const;
         char* GetRawDataStart();
-        BOOL Contains(__in char *ptr);
-        ULONG32 GetOffset(__in char *ptr);
+        BOOL Contains(_In_ char *ptr);
+        ULONG32 GetOffset(_In_ char *ptr);
 
     protected:
         unsigned m_nTargetSize; // when we allocate, make it this large
@@ -78,10 +78,10 @@ public:
     char * ComputePointer(unsigned offset) const;
 
 // Determine if pointer came from this fetcher
-    BOOL ContainsPointer(__in char *ptr) const;
+    BOOL ContainsPointer(_In_ char *ptr) const;
 
 // Find an offset as if this were linear
-    unsigned ComputeOffset(__in char *ptr) const;
+    unsigned ComputeOffset(_In_ char *ptr) const;
 
 // Write out the section to the stream
     HRESULT Write(HANDLE file);
@@ -126,14 +126,14 @@ inline char* CBlobFetcher::CPillar::GetRawDataStart()
     return m_dataStart;
 }
 
-inline BOOL CBlobFetcher::CPillar::Contains(__in char *ptr)
+inline BOOL CBlobFetcher::CPillar::Contains(_In_ char *ptr)
 {
     LIMITED_METHOD_CONTRACT;
 
     return ptr >= m_dataStart && ptr < m_dataCur;
 }
 
-inline ULONG32 CBlobFetcher::CPillar::GetOffset(__in char *ptr)
+inline ULONG32 CBlobFetcher::CPillar::GetOffset(_In_ char *ptr)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(Contains(ptr));

@@ -22,8 +22,12 @@
 #include <unistd.h>
 #endif
 #include <stdlib.h>
-#if defined (HAVE_SYS_ZLIB)
+#ifndef DISABLE_LOG_PROFILER_GZ
+#ifdef INTERNAL_ZLIB
+#include <external/zlib/zlib.h>
+#else
 #include <zlib.h>
+#endif
 #endif
 #include <glib.h>
 #include <mono/metadata/profiler.h>
@@ -1554,7 +1558,7 @@ typedef struct _RemCtxContext RemCtxContext;
 
 typedef struct {
 	FILE *file;
-#if defined (HAVE_SYS_ZLIB)
+#ifndef DISABLE_LOG_PROFILER_GZ
 	gzFile gzfile;
 #endif
 	unsigned char *buf;
@@ -1624,7 +1628,7 @@ static int
 load_data (ProfContext *ctx, int size)
 {
 	ensure_buffer (ctx, size);
-#if defined (HAVE_SYS_ZLIB)
+#ifndef DISABLE_LOG_PROFILER_GZ
 	if (ctx->gzfile) {
 		int r = gzread (ctx->gzfile, ctx->buf, size);
 		if (r == 0)
@@ -2227,7 +2231,7 @@ decode_buffer (ProfContext *ctx)
 	int len, i;
 	ThreadContext *thread;
 
-#ifdef HAVE_SYS_ZLIB
+#ifndef DISABLE_LOG_PROFILER_GZ
 	if (ctx->gzfile)
 		file_offset = gztell (ctx->gzfile);
 	else
@@ -3234,7 +3238,7 @@ load_file (char *name)
 		printf ("Cannot open file: %s\n", name);
 		exit (1);
 	}
-#if defined (HAVE_SYS_ZLIB)
+#ifndef DISABLE_LOG_PROFILER_GZ
 	if (ctx->file != stdin)
 		ctx->gzfile = gzdopen (fileno (ctx->file), "rb");
 #endif

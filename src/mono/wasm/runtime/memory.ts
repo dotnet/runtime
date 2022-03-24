@@ -1,36 +1,44 @@
 import { Module } from "./imports";
-import { VoidPtr, NativePointer } from "./types/emscripten";
+import { VoidPtr, NativePointer, ManagedPointer } from "./types/emscripten";
 
-const _temp_mallocs: Array<Array<VoidPtr> | null> = [];
+const alloca_stack: Array<VoidPtr> = [];
+const alloca_buffer_size = 32 * 1024;
+let alloca_base: VoidPtr, alloca_offset: VoidPtr, alloca_limit: VoidPtr;
+
+function _ensure_allocated(): void {
+    if (alloca_base)
+        return;
+    alloca_base = Module._malloc(alloca_buffer_size);
+    alloca_offset = alloca_base;
+    alloca_limit = <VoidPtr>(<any>alloca_base + alloca_buffer_size);
+}
 
 export function temp_malloc(size: number): VoidPtr {
-    if (!_temp_mallocs || !_temp_mallocs.length)
+    _ensure_allocated();
+    if (!alloca_stack.length)
         throw new Error("No temp frames have been created at this point");
 
-    const frame = _temp_mallocs[_temp_mallocs.length - 1] || [];
-    const result = Module._malloc(size);
-    frame.push(result);
-    _temp_mallocs[_temp_mallocs.length - 1] = frame;
+    const result = alloca_offset;
+    alloca_offset += <any>size;
+    if (alloca_offset >= alloca_limit)
+        throw new Error("Out of temp storage space");
     return result;
 }
 
 export function _create_temp_frame(): void {
-    _temp_mallocs.push(null);
+    _ensure_allocated();
+    alloca_stack.push(alloca_offset);
 }
 
 export function _release_temp_frame(): void {
-    if (!_temp_mallocs.length)
+    if (!alloca_stack.length)
         throw new Error("No temp frames have been created at this point");
 
-    const frame = _temp_mallocs.pop();
-    if (!frame)
-        return;
-
-    for (let i = 0, l = frame.length; i < l; i++)
-        Module._free(frame[i]);
+    alloca_offset = <VoidPtr>alloca_stack.pop();
 }
 
 type _MemOffset = number | VoidPtr | NativePointer;
+type _NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
 
 export function setU8(offset: _MemOffset, value: number): void {
     Module.HEAPU8[<any>offset] = value;
@@ -40,8 +48,8 @@ export function setU16(offset: _MemOffset, value: number): void {
     Module.HEAPU16[<any>offset >>> 1] = value;
 }
 
-export function setU32(offset: _MemOffset, value: number): void {
-    Module.HEAPU32[<any>offset >>> 2] = value;
+export function setU32 (offset: _MemOffset, value: _NumberOrPointer) : void {
+    Module.HEAPU32[<any>offset >>> 2] = <number><any>value;
 }
 
 export function setI8(offset: _MemOffset, value: number): void {
@@ -52,8 +60,8 @@ export function setI16(offset: _MemOffset, value: number): void {
     Module.HEAP16[<any>offset >>> 1] = value;
 }
 
-export function setI32(offset: _MemOffset, value: number): void {
-    Module.HEAP32[<any>offset >>> 2] = value;
+export function setI32 (offset: _MemOffset, value: _NumberOrPointer) : void {
+    Module.HEAP32[<any>offset >>> 2] = <number><any>value;
 }
 
 // NOTE: Accepts a number, not a BigInt, so values over Number.MAX_SAFE_INTEGER will be corrupted

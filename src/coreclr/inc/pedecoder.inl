@@ -100,7 +100,6 @@ inline PEDecoder::PEDecoder(PTR_VOID mappedBase, bool fixedUp /*= FALSE*/)
     {
         CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(mappedBase));
-        PRECONDITION(CheckAligned(mappedBase, GetOsPageSize()));
         PRECONDITION(PEDecoder(mappedBase,fixedUp).CheckNTHeaders());
         THROWS;
         GC_NOTRIGGER;
@@ -172,7 +171,6 @@ inline HRESULT PEDecoder::Init(void *mappedBase, bool fixedUp /*= FALSE*/)
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(mappedBase));
-        PRECONDITION(CheckAligned(mappedBase, GetOsPageSize()));
         PRECONDITION(!HasContents());
     }
     CONTRACTL_END;

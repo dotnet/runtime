@@ -19,14 +19,13 @@
            01 2A 9C E3 )                                     
   
 }
-.assembly legacy library hello
+.assembly legacy library 'test1'
 {
 
 
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module hello.exe
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000
 .file alignment 0x00000200

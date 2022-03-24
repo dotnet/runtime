@@ -642,7 +642,6 @@ namespace MS.Internal.Xml.Cache
                 if (page![idx].HasSibling)
                 {
                     // Then that is the first non-descendant
-                    pageNode = page;
                     idxNode = page[idx].GetSibling(out pageNode!);
                     return true;
                 }
