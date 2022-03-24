@@ -132,7 +132,10 @@ namespace System.Text.RegularExpressions
                     else
                     {
                         // The set may match multiple characters.  Search for that.
-                        FixedDistanceSets = new() { (chars, set.CharClass, 0, set.CaseInsensitive) };
+                        FixedDistanceSets = new List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)>()
+                        {
+                            (chars, set.CharClass, 0, set.CaseInsensitive)
+                        };
                         FindMode = set.CaseInsensitive ?
                             FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseInsensitive :
                             FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseSensitive;

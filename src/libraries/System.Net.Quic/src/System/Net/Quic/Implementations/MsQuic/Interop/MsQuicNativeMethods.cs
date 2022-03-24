@@ -841,7 +841,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     //
                     handle.DangerousAddRef(ref handle__addRefd);
                     IntPtr __handle_gen_native = handle.DangerousGetHandle();
-                    __del_gen_native__marshaller = new(del);
+                    __del_gen_native__marshaller = new AnyDelegateMarshaller(del);
                     IntPtr __del_gen_native = __del_gen_native__marshaller.Value;
                     ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, void>)_functionPointer)(__handle_gen_native, __del_gen_native, context);
                 }
@@ -929,7 +929,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     //
                     // Marshal
                     //
-                    __config_gen_native = new(config);
+                    __config_gen_native = new RegistrationConfig.Native(config);
                     __retVal = ((delegate* unmanaged[Cdecl]<RegistrationConfig.Native*, IntPtr*, uint>)_functionPointer)(&__config_gen_native, &__registrationContext_gen_native);
                     __invokeSucceeded = true;
                     //
@@ -1017,7 +1017,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     //
                     configuration.DangerousAddRef(ref configuration__addRefd);
                     IntPtr __configuration_gen_native = configuration.DangerousGetHandle();
-                    __credConfig_gen_native = new(credConfig);
+                    __credConfig_gen_native = new CredentialConfig.Native(credConfig);
                     __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, CredentialConfig.Native*, uint>)_functionPointer)(__configuration_gen_native, &__credConfig_gen_native);
                     //
                     // Unmarshal
