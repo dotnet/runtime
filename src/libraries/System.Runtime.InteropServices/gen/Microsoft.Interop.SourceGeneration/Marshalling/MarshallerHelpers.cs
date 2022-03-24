@@ -22,9 +22,9 @@ namespace Microsoft.Interop
 
         public static readonly TypeSyntax SystemIntPtrType = ParseTypeName(TypeNames.System_IntPtr);
 
-        public static ForStatementSyntax GetForLoop(string collectionIdentifier, string indexerIdentifier)
+        public static ForStatementSyntax GetForLoop(ExpressionSyntax lengthExpression, string indexerIdentifier)
         {
-            // for(int <indexerIdentifier> = 0; <indexerIdentifier> < <collectionIdentifier>.Length; ++<indexerIdentifier>)
+            // for(int <indexerIdentifier> = 0; <indexerIdentifier> < <lengthIdentifier>; ++<indexerIdentifier>)
             //      ;
             return ForStatement(EmptyStatement())
             .WithDeclaration(
@@ -32,7 +32,7 @@ namespace Microsoft.Interop
                     PredefinedType(
                         Token(SyntaxKind.IntKeyword)))
                 .WithVariables(
-                    SingletonSeparatedList<VariableDeclaratorSyntax>(
+                    SingletonSeparatedList(
                         VariableDeclarator(
                             Identifier(indexerIdentifier))
                         .WithInitializer(
@@ -44,10 +44,7 @@ namespace Microsoft.Interop
                 BinaryExpression(
                     SyntaxKind.LessThanExpression,
                     IdentifierName(indexerIdentifier),
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        IdentifierName(collectionIdentifier),
-                        IdentifierName("Length"))))
+                    lengthExpression))
             .WithIncrementors(
                 SingletonSeparatedList<ExpressionSyntax>(
                     PrefixUnaryExpression(
@@ -100,6 +97,11 @@ namespace Microsoft.Interop
         public static string GetMarshallerIdentifier(TypePositionInfo info, StubCodeContext context)
         {
             return context.GetAdditionalIdentifier(info, "marshaller");
+        }
+
+        public static string GetManagedSpanIdentifier(TypePositionInfo info, StubCodeContext context)
+        {
+            return context.GetAdditionalIdentifier(info, "managedSpan");
         }
 
         public static string GetNativeSpanIdentifier(TypePositionInfo info, StubCodeContext context)
@@ -232,7 +234,7 @@ namespace Microsoft.Interop
         public static IEnumerable<TypePositionInfo> GetDependentElementsOfMarshallingInfo(
             MarshallingInfo elementMarshallingInfo)
         {
-            if (elementMarshallingInfo is NativeContiguousCollectionMarshallingInfo nestedCollection)
+            if (elementMarshallingInfo is NativeLinearCollectionMarshallingInfo nestedCollection)
             {
                 if (nestedCollection.ElementCountInfo is CountElementCountInfo { ElementInfo: TypePositionInfo nestedCountElement })
                 {

@@ -460,6 +460,7 @@ namespace System
 
         public static TimeSpan operator +(TimeSpan t1, TimeSpan t2) => t1.Add(t2);
 
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
         public static TimeSpan operator *(TimeSpan timeSpan, double factor)
         {
             if (double.IsNaN(factor))
@@ -473,8 +474,10 @@ namespace System
             return IntervalFromDoubleTicks(ticks);
         }
 
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
         public static TimeSpan operator *(double factor, TimeSpan timeSpan) => timeSpan * factor;
 
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         public static TimeSpan operator /(TimeSpan timeSpan, double divisor)
         {
             if (double.IsNaN(divisor))
@@ -490,77 +493,50 @@ namespace System
         // if we consider TimeSpan.FromHours(1) / TimeSpan.Zero asks how many zero-second intervals there are in
         // an hour for which infinity is the mathematic correct answer. Having TimeSpan.Zero / TimeSpan.Zero return NaN
         // is perhaps less useful, but no less useful than an exception.
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         public static double operator /(TimeSpan t1, TimeSpan t2) => t1.Ticks / (double)t2.Ticks;
 
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
         public static bool operator ==(TimeSpan t1, TimeSpan t2) => t1._ticks == t2._ticks;
 
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
         public static bool operator !=(TimeSpan t1, TimeSpan t2) => t1._ticks != t2._ticks;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(TimeSpan t1, TimeSpan t2) => t1._ticks < t2._ticks;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(TimeSpan t1, TimeSpan t2) => t1._ticks <= t2._ticks;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(TimeSpan t1, TimeSpan t2) => t1._ticks > t2._ticks;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(TimeSpan t1, TimeSpan t2) => t1._ticks >= t2._ticks;
 
         //
         // IAdditionOperators
         //
 
-        static TimeSpan IAdditionOperators<TimeSpan, TimeSpan, TimeSpan>.operator +(TimeSpan left, TimeSpan right)
-            => left + right;
-
-        // static checked TimeSpan IAdditionOperators<TimeSpan, TimeSpan, TimeSpan>.operator +(TimeSpan left, TimeSpan right)
-        //     => checked(left + right);
+        // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        // static TimeSpan IAdditionOperators<TimeSpan, TimeSpan, TimeSpan>.operator checked +(TimeSpan left, TimeSpan right) => checked(left + right);
 
         //
         // IAdditiveIdentity
         //
 
-        static TimeSpan IAdditiveIdentity<TimeSpan, TimeSpan>.AdditiveIdentity => default;
-
-        //
-        // IComparisonOperators
-        //
-
-        static bool IComparisonOperators<TimeSpan, TimeSpan>.operator <(TimeSpan left, TimeSpan right)
-            => left<right;
-
-        static bool IComparisonOperators<TimeSpan, TimeSpan>.operator <=(TimeSpan left, TimeSpan right)
-            => left <= right;
-
-        static bool IComparisonOperators<TimeSpan, TimeSpan>.operator >(TimeSpan left, TimeSpan right)
-            => left > right;
-
-        static bool IComparisonOperators<TimeSpan, TimeSpan>.operator >=(TimeSpan left, TimeSpan right)
-            => left >= right;
+        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
+        public static TimeSpan AdditiveIdentity => default;
 
         //
         // IDivisionOperators
         //
 
-        static TimeSpan IDivisionOperators<TimeSpan, double, TimeSpan>.operator /(TimeSpan left, double right)
-            => left / right;
+        // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        // static TimeSpan IDivisionOperators<TimeSpan, double, TimeSpan>.operator checked /(TimeSpan left, double right) => checked(left / right);
 
-        // static checked TimeSpan IDivisionOperators<TimeSpan, double, TimeSpan>.operator /(TimeSpan left, double right)
-        //     => checked(left / right);
-
-        static double IDivisionOperators<TimeSpan, TimeSpan, double>.operator /(TimeSpan left, TimeSpan right)
-            => left / right;
-
-        // static checked double IDivisionOperators<TimeSpan, TimeSpan, double>.operator /(TimeSpan left, TimeSpan right)
-        //     => checked(left / right);
-
-        //
-        // IEqualityOperators
-        //
-
-        static bool IEqualityOperators<TimeSpan, TimeSpan>.operator ==(TimeSpan left, TimeSpan right)
-            => left == right;
-
-        static bool IEqualityOperators<TimeSpan, TimeSpan>.operator !=(TimeSpan left, TimeSpan right)
-            => left != right;
+        // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        // static double IDivisionOperators<TimeSpan, TimeSpan, double>.operator checked /(TimeSpan left, TimeSpan right) => checked(left / right);
 
         //
         // IMinMaxValue
@@ -574,66 +550,34 @@ namespace System
         // IMultiplicativeIdentity
         //
 
-        static double IMultiplicativeIdentity<TimeSpan, double>.MultiplicativeIdentity => 1.0;
+        /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
+        public static double MultiplicativeIdentity => 1.0;
 
         //
         // IMultiplyOperators
         //
 
-        static TimeSpan IMultiplyOperators<TimeSpan, double, TimeSpan>.operator *(TimeSpan left, double right)
-            => left * right;
-
-        // static checked TimeSpan IMultiplyOperators<TimeSpan, double, TimeSpan>.operator *(TimeSpan left, double right)
-        //     => checked(left * right);
-
-        //
-        // IParseable
-        //
-
-        static TimeSpan IParseable<TimeSpan>.Parse(string s, IFormatProvider? provider)
-            => Parse(s, provider);
-
-        static bool IParseable<TimeSpan>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out TimeSpan result)
-            => TryParse(s, provider, out result);
-
-        //
-        // ISpanParseable
-        //
-
-        static TimeSpan ISpanParseable<TimeSpan>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s, provider);
-
-        static bool ISpanParseable<TimeSpan>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out TimeSpan result)
-            => TryParse(s, provider, out result);
+        // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        // static TimeSpan IMultiplyOperators<TimeSpan, double, TimeSpan>.operator checked *(TimeSpan left, double right) => checked(left * right);
 
         //
         // ISubtractionOperators
         //
 
-        static TimeSpan ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>.operator -(TimeSpan left, TimeSpan right)
-            => left - right;
-
-        // static checked TimeSpan ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>.operator -(TimeSpan left, TimeSpan right)
-        //     => checked(left - right);
+        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        // static TimeSpan ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>.operator checked -(TimeSpan left, TimeSpan right) => checked(left - right);
 
         //
         // IUnaryNegationOperators
         //
 
-        static TimeSpan IUnaryNegationOperators<TimeSpan, TimeSpan>.operator -(TimeSpan value)
-            => -value;
-
-        // static checked TimeSpan IUnaryNegationOperators<TimeSpan, TimeSpan>.operator -(TimeSpan value)
-        //     => checked(-value);
+        // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        // static TimeSpan IUnaryNegationOperators<TimeSpan, TimeSpan>.operator checked -(TimeSpan value) => checked(-value);
 
         //
-        // IUnaryNegationOperators
+        // IUnaryPlusOperators
         //
 
-        static TimeSpan IUnaryPlusOperators<TimeSpan, TimeSpan>.operator +(TimeSpan value)
-            => +value;
-
-        // static checked TimeSpan IUnaryPlusOperators<TimeSpan, TimeSpan>.operator +(TimeSpan value)
-        //     => checked(+value);
+        // static checked TimeSpan IUnaryPlusOperators<TimeSpan, TimeSpan>.operator +(TimeSpan value) => checked(+value);
     }
 }

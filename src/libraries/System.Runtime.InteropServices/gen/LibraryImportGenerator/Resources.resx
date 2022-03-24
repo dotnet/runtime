@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!--
-    Microsoft ResX Schema
-
+  <!-- 
+    Microsoft ResX Schema 
+    
     Version 2.0
-
-    The primary goals of this format is to allow a simple XML format
-    that is mostly human readable. The generation and parsing of the
-    various data types are done through the TypeConverter classes
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
     associated with the data types.
-
+    
     Example:
-
+    
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-
-    There are any number of "resheader" rows that contain simple
+                
+    There are any number of "resheader" rows that contain simple 
     name/value pairs.
-
-    Each data row contains a name, and value. The row also contains a
-    type or mimetype. Type corresponds to a .NET class that support
-    text/value conversion through the TypeConverter architecture.
-    Classes that don't support this are serialized and stored with the
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
     mimetype set.
-
-    The mimetype is used for serialized objects, and tells the
-    ResXResourceReader how to depersist the object. This is currently not
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
     extensible. For a given mimetype the value must be set accordingly:
-
-    Note - application/x-microsoft.net.object.binary.base64 is the format
-    that the ResXResourceWriter will generate, however the reader can
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
     read any of the formats listed below.
-
+    
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-
+    
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array
+    value   : The object must be serialized into a byte array 
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -117,17 +117,11 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="BlittableTypeMustBeBlittableDescription" xml:space="preserve">
-    <value>A type marked with 'BlittableTypeAttribute' must be blittable.</value>
+  <data name="CallerAllocConstructorMustHaveBufferSizeDescription" xml:space="preserve">
+    <value>When a constructor taking a 'Span&lt;byte&gt;' is specified on the native type, the type must set the BufferSize field on the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to provide the size of the caller-allocated buffer.</value>
   </data>
-  <data name="BlittableTypeMustBeBlittableMessage" xml:space="preserve">
-    <value>Type '{0}' is marked with 'BlittableTypeAttribute' but is not blittable</value>
-  </data>
-  <data name="CallerAllocConstructorMustHaveBufferSizeConstantDescription" xml:space="preserve">
-    <value>When a constructor taking a Span&lt;byte&gt; is specified on the native type, the type must also have a public integer constant named BufferSize to provide the size of the caller-allocated buffer.</value>
-  </data>
-  <data name="CallerAllocConstructorMustHaveBufferSizeConstantMessage" xml:space="preserve">
-    <value>The native type '{0}' must have a 'public const int BufferSize' field that specifies the size of the stack buffer because it has a constructor that takes a caller-allocated Span&lt;byte&gt;</value>
+  <data name="CallerAllocConstructorMustHaveBufferSizeMessage" xml:space="preserve">
+    <value>The native type '{0}' must set the 'BufferSize' field on the applied 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to specify the size of the caller-allocated buffer because it has a constructor that takes a caller-allocated 'Span&lt;byte&gt;'</value>
   </data>
   <data name="CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackDescription" xml:space="preserve">
     <value>A type that supports marshalling from managed to native using a caller-allocated buffer should also support marshalling from managed to native where using a caller-allocated buffer is impossible.</value>
@@ -143,18 +137,6 @@
   </data>
   <data name="CannotForwardToDllImportTitle" xml:space="preserve">
     <value>Specified 'LibraryImportAttribute' arguments cannot be forwarded to 'DllImportAttribute'</value>
-  </data>
-  <data name="CannotHaveMultipleMarshallingAttributesDescription" xml:space="preserve">
-    <value>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</value>
-  </data>
-  <data name="CannotHaveMultipleMarshallingAttributesMessage" xml:space="preserve">
-    <value>Type '{0}' is marked with 'BlittableTypeAttribute' and 'NativeMarshallingAttribute'. A type can only have one of these two attributes.</value>
-  </data>
-  <data name="CollectionNativeTypeMustHaveRequiredShapeDescription" xml:space="preserve">
-    <value>A native type with the 'GenericContiguousCollectionMarshallerAttribute' must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</value>
-  </data>
-  <data name="CollectionNativeTypeMustHaveRequiredShapeMessage" xml:space="preserve">
-    <value>The native type '{0}' must be a value type and have a constructor that takes two parameters, one of type '{1}' and an 'int', or have a parameterless instance method named 'ToManaged' that returns '{1}' as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;'</value>
   </data>
   <data name="ConfigurationNotSupportedDescription" xml:space="preserve">
     <value>Source-generated P/Invokes will ignore any configuration that is not supported.</value>
@@ -178,7 +160,7 @@
     <value>Specified configuration is not supported by source-generated P/Invokes.</value>
   </data>
   <data name="ConstantAndElementCountInfoDisallowed" xml:space="preserve">
-    <value>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionLevel'</value>
+    <value>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</value>
   </data>
   <data name="ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode" xml:space="preserve">
     <value>Automatically converting a P/Invoke with 'PreserveSig' set to 'false' to a source-generated P/Invoke may produce invalid code</value>
@@ -245,14 +227,23 @@
   <data name="InvalidStringMarshallingConfigurationNotCustom" xml:space="preserve">
     <value>'StringMarshalling' should be set to 'StringMarshalling.Custom' when 'StringMarshallingCustomType' is specified.</value>
   </data>
-  <data name="MarshallerGetPinnableReferenceRequiresValuePropertyDescription" xml:space="preserve">
-    <value>The use cases for 'GetPinnableReference' are not applicable in any scenarios where a 'Value' property is not also required.</value>
+  <data name="MarshallerGetPinnableReferenceRequiresTwoStageMarshallingDescription" xml:space="preserve">
+    <value>The use cases for 'GetPinnableReference' are not applicable in any scenarios where 'TwoStageMarshalling' is not also required.</value>
   </data>
-  <data name="MarshallerGetPinnableReferenceRequiresValuePropertyMessage" xml:space="preserve">
-    <value>The 'GetPinnableReference' method cannot be provided on the native type '{0}' unless a 'Value' property is also provided</value>
+  <data name="MarshallerGetPinnableReferenceRequiresTwoStageMarshallingMessage" xml:space="preserve">
+    <value>The 'GetPinnableReference' method cannot be provided on the native type '{0}' unless the 'TwoStageMarshalling' feature is also supported</value>
   </data>
-  <data name="NativeGenericTypeMustBeClosedDescription" xml:space="preserve">
-    <value>The native type '{0}' must be a closed generic so the emitted code can use a specific instantiation.</value>
+  <data name="MarshallerKindMustBeValidDescription" xml:space="preserve">
+    <value>The specified marshaller kind must be a valid value of the 'System.Runtime.InteropServices.CustomMarshallerKind' enum.</value>
+  </data>
+  <data name="MarshallerKindMustBeValidMessage" xml:space="preserve">
+    <value>The specified custom marshaller kind for '{0}' is invalid</value>
+  </data>
+  <data name="MarshallerTypeMustSpecifyManagedTypeDescription" xml:space="preserve">
+    <value>A type with a 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' must specify a managed type</value>
+  </data>
+  <data name="MarshallerTypeMustSpecifyManagedTypeMessage" xml:space="preserve">
+    <value>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' applied to the type</value>
   </data>
   <data name="NativeGenericTypeMustBeClosedOrMatchArityDescription" xml:space="preserve">
     <value>The native type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</value>
@@ -261,16 +252,10 @@
     <value>The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</value>
   </data>
   <data name="NativeTypeMustBeBlittableDescription" xml:space="preserve">
-    <value>A native type for a given type must be blittable.</value>
+    <value>A native type must be blittable.</value>
   </data>
   <data name="NativeTypeMustBeBlittableMessage" xml:space="preserve">
-    <value>The native type '{0}' for the type '{1}' is not blittable</value>
-  </data>
-  <data name="NativeTypeMustBeNonNullDescription" xml:space="preserve">
-    <value>A native type for a given type must be non-null.</value>
-  </data>
-  <data name="NativeTypeMustBeNonNullMessage" xml:space="preserve">
-    <value>The native type for the type '{0}' is null</value>
+    <value>The native type '{0}' for type '{1}' must be blittable</value>
   </data>
   <data name="NativeTypeMustBePointerSizedDescription" xml:space="preserve">
     <value>The native type must be pointer sized so the pinned result of 'GetPinnableReference' can be cast to the native type.</value>
@@ -278,20 +263,23 @@
   <data name="NativeTypeMustBePointerSizedMessage" xml:space="preserve">
     <value>The native type '{0}' must be pointer sized because the managed type '{1}' has a 'GetPinnableReference' method</value>
   </data>
-  <data name="NativeTypeMustHaveRequiredShapeDescription" xml:space="preserve">
-    <value>The native type must have at least one of the two marshalling methods to enable marshalling the managed type.</value>
+  <data name="NativeTypeMustHaveCustomTypeMarshallerAttributeDescription" xml:space="preserve">
+    <value>A native type for a given type must have the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' that specifies this type as the managed type.</value>
   </data>
-  <data name="NativeTypeMustHaveRequiredShapeMessage" xml:space="preserve">
-    <value>The native type '{0}' must be a value type and have a constructor that takes one parameter of type '{1}' or a parameterless instance method named 'ToManaged' that returns '{1}'</value>
+  <data name="NativeTypeMustHaveCustomTypeMarshallerAttributeMessage" xml:space="preserve">
+    <value>The native type for the type '{0}' must be a type with the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' that specifies this type as the managed type</value>
   </data>
-  <data name="RefValuePropertyUnsupportedDescription" xml:space="preserve">
+  <data name="CustomMarshallerTypeMustSupportDirectionDescription" xml:space="preserve">
+    <value>A native must set the 'Direction' property on the 'CustomTypeMarshallerAttribute' to a value that sets at least one known flag value on the 'CustomTypeMarshallerDirection' enum</value>
+  </data>
+  <data name="CustomMarshallerTypeMustSupportDirectionMessage" xml:space="preserve">
+    <value>The native type '{0}' must set the 'Direction' property on the 'CustomTypeMarshallerAttribute' to a value that sets at least one known flag value on the 'CustomTypeMarshallerDirection' enum</value>
+  </data>
+  <data name="RefNativeValueUnsupportedDescription" xml:space="preserve">
     <value>The 'Value' property must not be a 'ref' or 'readonly ref' property.</value>
   </data>
-  <data name="RefValuePropertyUnsupportedMessage" xml:space="preserve">
+  <data name="RefNativeValueUnsupportedMessage" xml:space="preserve">
     <value>The 'Value' property on the native type '{0}' must not be a 'ref' or 'readonly ref' property.</value>
-  </data>
-  <data name="RuntimeMarshallingMustBeDisabled" xml:space="preserve">
-    <value />
   </data>
   <data name="SafeHandleByRefMustBeConcrete" xml:space="preserve">
     <value>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</value>
@@ -329,16 +317,124 @@
   <data name="TypeNotSupportedTitle" xml:space="preserve">
     <value>Specified type is not supported by source-generated P/Invokes</value>
   </data>
-  <data name="ValuePropertyMustHaveGetterDescription" xml:space="preserve">
-    <value>The native type's 'Value' property must have a getter to support marshalling from managed to native.</value>
+  <data name="InTwoStageMarshallingRequiresToNativeValueDescription" xml:space="preserve">
+    <value>The 'TwoStageMarshalling' feature requires a 'TNativeType ToNativeValue()' method for the 'In' direction.</value>
   </data>
-  <data name="ValuePropertyMustHaveGetterMessage" xml:space="preserve">
-    <value>The 'Value' property on the native type '{0}' must have a getter</value>
+  <data name="InTwoStageMarshallingRequiresToNativeValueMessage" xml:space="preserve">
+    <value>The marshaller type '{0}' supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</value>
   </data>
-  <data name="ValuePropertyMustHaveSetterDescription" xml:space="preserve">
-    <value>The native type's 'Value' property must have a setter to support marshalling from native to managed.</value>
+  <data name="OutTwoStageMarshallingRequiresFromNativeValueDescription" xml:space="preserve">
+    <value>The 'TwoStageMarshalling' feature requires a 'void FromNativeValue(TNativeType value)' method for the 'Out' direction.</value>
   </data>
-  <data name="ValuePropertyMustHaveSetterMessage" xml:space="preserve">
-    <value>The 'Value' property on the native type '{0}' must have a setter</value>
+  <data name="OutTwoStageMarshallingRequiresFromNativeValueMessage" xml:space="preserve">
+    <value>The marshaller type '{0}' supports marshalling in the 'Out' direction with the 'TwoStageMarshalling' feature, but it does not provide a 'FromNativeValue' instance method that returns 'void' and takes one parameter.</value>
+  </data>
+  <data name="CustomTypeMarshallerAttributeMustBeValidDescription" xml:space="preserve">
+    <value>The 'CustomTypeMarshallerAttribute' attribute must be semantically valid</value>
+  </data>
+  <data name="CustomTypeMarshallerAttributeMustBeValidMessage" xml:space="preserve">
+    <value>The 'CustomTypeMarshallerAttribute' on '{0}' is semantically invalid</value>
+  </data>
+  <data name="LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorDescription" xml:space="preserve">
+    <value>A 'LinearCollection'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a three-parameter constructor taking the managed type as the first parameter, a 'Span&lt;byte&gt;' as the second parameter, and the native size of the element as the third parameter</value>
+  </data>
+  <data name="LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a three-parameter constructor that takes a '{1}' , a 'Span&lt;byte&gt;', and an 'int'</value>
+  </data>
+  <data name="LinearCollectionInRequiresTwoParameterConstructorDescription" xml:space="preserve">
+    <value>A 'LinearCollection'-kind native type must provide a two-parameter constructor taking the managed type as the first parameter and the native size of the element as the second parameter</value>
+  </data>
+  <data name="LinearCollectionInRequiresTwoParameterConstructorMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports 'In' marshalling of '{1}' but does not provide a two-parameter constructor that takes a '{1}' as the first parameter and an 'int' as the second parameter</value>
+  </data>
+  <data name="MarshallerDirectionMustBeValidDescription" xml:space="preserve">
+    <value>The specified marshaller direction must be a valid value of the 'System.Runtime.InteropServices.CustomMarshallerDirection' enum.</value>
+  </data>
+  <data name="MarshallerDirectionMustBeValidMessage" xml:space="preserve">
+    <value>The specified custom marshaller direction for '{0}' is invalid</value>
+  </data>
+  <data name="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription" xml:space="preserve">
+    <value>A 'Value'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a two-parameter constructor taking the managed type and a 'Span&lt;byte&gt;' as parameters</value>
+  </data>
+  <data name="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span&lt;byte&gt;' as parameters</value>
+  </data>
+  <data name="ValueInRequiresOneParameterConstructorDescription" xml:space="preserve">
+    <value>A 'Value'-kind native type must provide a one-parameter constructor taking the managed type as a parameter</value>
+  </data>
+  <data name="ValueInRequiresOneParameterConstructorMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports 'In' marshalling of '{1}' but does not provide a one-parameter constructor that takes a '{1}' as a parameter</value>
+  </data>
+  <data name="LinearCollectionInRequiresCollectionMethodsDescription" xml:space="preserve">
+    <value>A 'LinearCollection'-kind native type that supports marshalling in the 'In' direction must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetNativeValuesDestination' method that returns a 'Span&lt;byte&gt;'.</value>
+  </data>
+  <data name="LinearCollectionInRequiresCollectionMethodsMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that is supports marshalling in the 'In' direction, but it does not provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetNativeValuesDestination' method that returns a 'Span&lt;byte&gt;'</value>
+  </data>
+  <data name="OutRequiresToManagedDescription" xml:space="preserve">
+    <value>A 'Value' or 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a 'ToManaged' method that returns the managed type.</value>
+  </data>
+  <data name="OutRequiresToManagedMessage" xml:space="preserve">
+    <value>The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</value>
+  </data>
+  <data name="LinearCollectionOutRequiresCollectionMethodsDescription" xml:space="preserve">
+    <value>A 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetNativeValuesSource' method that takes an 'int' and rreturns a 'ReadOnlySpan&lt;byte&gt;'.</value>
+  </data>
+  <data name="LinearCollectionOutRequiresCollectionMethodsMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports marshalling in the 'Out' direction, but it does not provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetNativeValuesSource' method that takes an 'int' and rreturns a 'ReadOnlySpan&lt;byte&gt;'</value>
+  </data>
+  <data name="LinearCollectionOutRequiresIntConstructorDescription" xml:space="preserve">
+    <value>A 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a constructor that takes the size of the native element as an 'int'.</value>
+  </data>
+  <data name="LinearCollectionOutRequiresIntConstructorMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports marshalling in the 'Out' direction, but it does not provide a constructor that takes the size of the native element as an 'int'.</value>
+  </data>
+  <data name="UnmanagedResourcesRequiresFreeNativeDescription" xml:space="preserve">
+    <value>The 'UnmanagedResources' feature requires a 'void FreeNative()' method.</value>
+  </data>
+  <data name="UnmanagedResourcesRequiresFreeNativeMessage" xml:space="preserve">
+    <value>The marshaller type '{0}' supports marshalling with the 'UnmanagedResources' feature, but it does not provide a parameterless 'FreeNative' instance method that returns 'void'</value>
+  </data>
+  <data name="AddMissingCustomTypeMarshallerMembers" xml:space="preserve">
+    <value>Add missing custom type marshaller members</value>
+  </data>
+  <data name="AddMissingFeaturesToCustomTypeMarshaller" xml:space="preserve">
+    <value>Add missing features to the 'CustomTypeMarshallerAttribute' attribute</value>
+  </data>
+  <data name="CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureDescription" xml:space="preserve">
+    <value>A marshaller type that provides a constructor taking a caller-allocated 'Span&lt;byte&gt;' should specify that it supports the 'CallerAllocatedBuffer' feature.</value>
+  </data>
+  <data name="CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureMessage" xml:space="preserve">
+    <value>The type '{0}' provides a constructor taking a caller-allocated 'Span&lt;byte&gt;' but does not specify that it supports the 'CallerAllocatedBuffer' feature. The constructor will not be used unless the feature is specified.</value>
+  </data>
+  <data name="FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureDescription" xml:space="preserve">
+    <value>A marshaller type that provides a 'FreeNative' method should specify that it supports the 'UnmanagedResources' feature.</value>
+  </data>
+  <data name="FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureMessage" xml:space="preserve">
+    <value>The type '{0}' provides a 'FreeNative' method but does not specify that it supports the 'UnmanagedResources' feature. The method will not be used unless the feature is specified.</value>
+  </data>
+  <data name="FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription" xml:space="preserve">
+    <value>A marshaller type that provides a 'FromNativeValue' method should specify that it supports the 'TwoStageMarshalling' feature.</value>
+  </data>
+  <data name="FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage" xml:space="preserve">
+    <value>The type '{0}' provides a 'FromNativeValue' method but does not specify that it supports the 'TwoStageMarshalling' feature. The method will not be used unless the feature is specified.</value>
+  </data>
+  <data name="LinearCollectionElementTypesMustMatchDescription" xml:space="preserve">
+    <value>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'.</value>
+  </data>
+  <data name="LinearCollectionElementTypesMustMatchMessage" xml:space="preserve">
+    <value>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'</value>
+  </data>
+  <data name="ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription" xml:space="preserve">
+    <value>A marshaller type that provides a 'ToNativeValue' method should specify that it supports the 'TwoStageMarshalling' feature.</value>
+  </data>
+  <data name="ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage" xml:space="preserve">
+    <value>The type '{0}' provides a 'ToNativeValue' method but does not specify that it supports the 'TwoStageMarshalling' feature. The method will not be used unless the feature is specified.</value>
+  </data>
+  <data name="TwoStageMarshallingNativeTypesMustMatchDescription" xml:space="preserve">
+    <value>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same.</value>
+  </data>
+  <data name="TwoStageMarshallingNativeTypesMustMatchMessage" xml:space="preserve">
+    <value>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same</value>
   </data>
 </root>

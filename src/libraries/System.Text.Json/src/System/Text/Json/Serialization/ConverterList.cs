@@ -17,7 +17,7 @@ namespace System.Text.Json.Serialization
         public ConverterList(JsonSerializerOptions options)
         {
             _options = options;
-            _list = new();
+            _list = new List<JsonConverter>();
         }
 
         public ConverterList(JsonSerializerOptions options, ConverterList source)
