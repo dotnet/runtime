@@ -17,6 +17,8 @@
 .class public auto ansi Test_switch10
        extends ['mscorlib']System.Object
 {
+  .field private static int32 s_exitCode;
+
   .method private hidebysig static int32
           Square(int32 i) il managed
   {
@@ -59,19 +61,19 @@
     IL_0018:  bne.un.s   IL_002d
 
     IL_001a:  ldc.i4.s   100
-    IL_001c:  call       void ['System.Runtime.Extensions']System.Environment::set_ExitCode(int32)
+    IL_001c:  stsfld     int32 Test_switch10::s_exitCode
     IL_0021:  ldstr      "Test passed"
     IL_0026:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
     IL_002b:  br.s       IL_003d
 
     IL_002d:  ldc.i4.1
-    IL_002e:  call       void ['System.Runtime.Extensions']System.Environment::set_ExitCode(int32)
+    IL_002e:  stsfld     int32 Test_switch10::s_exitCode
     IL_0033:  ldstr      "Test failed"
     IL_0038:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
     IL_003d:  ret
   }
 
-  .method public hidebysig static void Main() il managed
+  .method public hidebysig static int32 Main() il managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
@@ -80,8 +82,7 @@
     .maxstack  8
     IL_0000:  ldc.i4.1
     IL_0001:  call       void Test_switch10::DoSwitch(int32)
-    IL_0006:  call       int32 ['System.Runtime.Extensions']System.Environment::get_ExitCode()
-              call       void ['System.Runtime.Extensions']System.Environment::Exit(int32)
+    IL_0006:  ldsfld     int32 Test_switch10::s_exitCode
               ret
   }
 

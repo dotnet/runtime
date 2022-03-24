@@ -110,10 +110,7 @@ namespace System.Transactions
             {
                 // Note do not add trace notifications to this method.  It is called
                 // at the startup of SQLCLR and tracing has too much working set overhead.
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 lock (ClassSyncObject)
                 {

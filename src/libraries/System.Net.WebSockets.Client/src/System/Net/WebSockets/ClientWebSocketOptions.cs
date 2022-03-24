@@ -84,7 +84,8 @@ namespace System.Net.WebSockets
             set
             {
                 ThrowIfReadOnly();
-                _clientCertificates = value ?? throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
+                _clientCertificates = value;
             }
         }
 

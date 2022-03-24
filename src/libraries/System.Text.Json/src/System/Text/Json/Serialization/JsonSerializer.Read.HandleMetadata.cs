@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
@@ -335,6 +336,11 @@ namespace System.Text.Json
 
             if (state.Current.ObjectState == StackFrameObjectState.ReadValuesStartArray)
             {
+                // Temporary workaround for the state machine accidentally
+                // erasing the JsonPropertyName property in certain async
+                // re-entrancy patterns.
+                state.Current.JsonPropertyName = s_valuesPropertyName;
+
                 if (reader.TokenType != JsonTokenType.StartArray)
                 {
                     ThrowHelper.ThrowJsonException_MetadataValuesInvalidToken(reader.TokenType);
@@ -398,7 +404,7 @@ namespace System.Text.Json
         internal static bool TryGetReferenceFromJsonElement(
             ref ReadStack state,
             JsonElement element,
-            out object? referenceValue)
+            [NotNullWhen(true)] out object? referenceValue)
         {
             bool refMetadataFound = false;
             referenceValue = default;

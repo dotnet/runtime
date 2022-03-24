@@ -13,17 +13,8 @@ namespace System.ComponentModel.Composition.Hosting
             private readonly CompositionScopeDefinition _scopeDefinition;
             private readonly CatalogExportProvider _catalogExportProvider;
 
-            public ScopeManager(CatalogExportProvider catalogExportProvider, CompositionScopeDefinition scopeDefinition)
+            public ScopeManager(CatalogExportProvider catalogExportProvider!!, CompositionScopeDefinition scopeDefinition!!)
             {
-                if (catalogExportProvider == null)
-                {
-                    throw new ArgumentNullException(nameof(catalogExportProvider));
-                }
-                if (scopeDefinition == null)
-                {
-                    throw new ArgumentNullException(nameof(scopeDefinition));
-                }
-
                 _scopeDefinition = scopeDefinition;
                 _catalogExportProvider = catalogExportProvider;
             }

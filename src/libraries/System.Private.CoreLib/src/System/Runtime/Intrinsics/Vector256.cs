@@ -7,8 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 
-using Internal.Runtime.CompilerServices;
-
 namespace System.Runtime.Intrinsics
 {
     // We mark certain methods with AggressiveInlining to ensure that the JIT will

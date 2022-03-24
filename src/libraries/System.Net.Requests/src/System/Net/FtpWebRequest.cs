@@ -325,10 +325,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.net_reqsubmitted);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value == CredentialCache.DefaultNetworkCredentials)
                 {
                     throw new ArgumentException(SR.net_ftp_no_defaultcreds, nameof(value));
@@ -686,15 +683,11 @@ namespace System.Net
         /// <summary>
         /// <para>Returns result of query for the Response of an FTP request [async version]</para>
         /// </summary>
-        public override WebResponse EndGetResponse(IAsyncResult asyncResult)
+        public override WebResponse EndGetResponse(IAsyncResult asyncResult!!)
         {
             try
             {
                 // parameter validation
-                if (asyncResult == null)
-                {
-                    throw new ArgumentNullException(nameof(asyncResult));
-                }
                 LazyAsyncResult? castedAsyncResult = asyncResult as LazyAsyncResult;
                 if (castedAsyncResult == null)
                 {
@@ -810,16 +803,11 @@ namespace System.Net
             return asyncResult;
         }
 
-        public override Stream EndGetRequestStream(IAsyncResult asyncResult)
+        public override Stream EndGetRequestStream(IAsyncResult asyncResult!!)
         {
             Stream? requestStream;
             try
             {
-                if (asyncResult == null)
-                {
-                    throw new ArgumentNullException(nameof(asyncResult));
-                }
-
                 LazyAsyncResult? castedAsyncResult = asyncResult as LazyAsyncResult;
 
                 if (castedAsyncResult == null)
@@ -1561,10 +1549,7 @@ namespace System.Net
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 _clientCertificates = value;
             }
         }

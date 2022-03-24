@@ -11,7 +11,7 @@ internal static partial class Interop
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private unsafe delegate void MountPointFound(byte* name);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetAllMountPoints", SetLastError = true)]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetAllMountPoints", SetLastError = true)]
         private static partial int GetAllMountPoints(MountPointFound mpf);
 
         internal static string[] GetAllMountPoints()

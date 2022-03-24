@@ -10,8 +10,7 @@
 }
 .assembly extern mscorlib {}
 .assembly extern eh_common {}
-.assembly test {}
-.module test.exe
+.assembly 'tryfaulttrycatchfn' {}
 
 .method public static void middle() {
     .maxstack  1
@@ -38,6 +37,7 @@ done:
 }
 
 
+.class public auto ansi Test_tryfaulttrycatchfn extends [mscorlib] System.Object {
 .method public static int32 main() {
     .entrypoint
     .maxstack  2
@@ -88,4 +88,5 @@ done:
     callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
     
     ret
+}
 }

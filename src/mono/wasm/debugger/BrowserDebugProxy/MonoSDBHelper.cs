@@ -17,6 +17,7 @@ using System.Reflection;
 using System.Text;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -435,10 +436,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         public static MonoBinaryReader From(Result result)
         {
             byte[] newBytes = Array.Empty<byte>();
-            if (!result.IsErr) {
+            if (result.IsOk) {
                 newBytes = Convert.FromBase64String(result.Value?["result"]?["value"]?["value"]?.Value<string>());
             }
-            return new MonoBinaryReader(new MemoryStream(newBytes), result.IsErr);
+            return new MonoBinaryReader(new MemoryStream(newBytes), !result.IsOk);
         }
 
         public override string ReadString()
@@ -525,6 +526,50 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             Write(bytes.Length);
             Write(bytes);
+        }
+
+        public async Task<bool> WriteConst(ElementType? type, object value, MonoSDBHelper SdbHelper, CancellationToken token)
+        {
+            switch (type)
+            {
+                case ElementType.Boolean:
+                case ElementType.Char:
+                case ElementType.U1:
+                case ElementType.I2:
+                case ElementType.I4:
+                    Write((ElementType)type, (int)value);
+                    return true;
+                case ElementType.I1:
+                case ElementType.U2:
+                case ElementType.U4:
+                    Write((ElementType)type, (uint)value);
+                    return true;
+                case ElementType.I8:
+                    Write((ElementType)type, (long)value);
+                    return true;
+                case ElementType.U8:
+                    Write((ElementType)type, (ulong)value);
+                    return true;
+                case ElementType.R4:
+                    Write((ElementType)type, (float)value);
+                    return true;
+                case ElementType.R8:
+                    Write((ElementType)type, (double)value);
+                    return true;
+                case ElementType.String:
+                    int stringId = await SdbHelper.CreateString((string)value, token);
+                    Write(ElementType.String, stringId);
+                    return true;
+                case null:
+                    if (value == null)
+                        return false;
+                    //ConstantTypeCode.NullReference
+                    Write((byte)value);
+                    Write((byte)0); //not used
+                    Write((int)0);  //not used
+                    return true;
+            }
+            return false;
         }
 
         public async Task<bool> WriteConst(LiteralExpressionSyntax constValue, MonoSDBHelper SdbHelper, CancellationToken token)
@@ -700,8 +745,8 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal class MonoSDBHelper
     {
         private static int debuggerObjectId;
-        private static int cmdId;
-        private static int GetId() {return cmdId++;}
+        private static int cmdId = 1; //cmdId == 0 is used by events which come from runtime
+        private static int GetNewId() {return cmdId++;}
         private static int MINOR_VERSION = 61;
         private static int MAJOR_VERSION = 2;
 
@@ -862,7 +907,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         internal async Task<MonoBinaryReader> SendDebuggerAgentCommand<T>(T command, MonoBinaryWriter arguments, CancellationToken token) =>
-            MonoBinaryReader.From (await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(proxy.RuntimeId, GetId(), (int)GetCommandSetForCommand(command), (int)(object)command, arguments?.ToBase64().data ?? string.Empty), token));
+            MonoBinaryReader.From (await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(proxy.RuntimeId, GetNewId(), (int)GetCommandSetForCommand(command), (int)(object)command, arguments?.ToBase64().data ?? string.Empty), token));
 
         internal CommandSet GetCommandSetForCommand<T>(T command) =>
             command switch {
@@ -885,7 +930,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             };
 
         internal async Task<MonoBinaryReader> SendDebuggerAgentCommandWithParms<T>(T command, (string data, int length) encoded, int type, string extraParm, CancellationToken token) =>
-            MonoBinaryReader.From(await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommandWithParms(proxy.RuntimeId, GetId(), (int)GetCommandSetForCommand(command), (int)(object)command, encoded.data, encoded.length, type, extraParm), token));
+            MonoBinaryReader.From(await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommandWithParms(proxy.RuntimeId, GetNewId(), (int)GetCommandSetForCommand(command), (int)(object)command, encoded.data, encoded.length, type, extraParm), token));
 
         public async Task<int> CreateString(string value, CancellationToken token)
         {
@@ -1720,8 +1765,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public JObject CreateJObjectForChar(int value)
         {
-            var description = $"{value.ToString()} '{Convert.ToChar(value)}'";
-            return CreateJObject<string>(description, "symbol", description, true);
+            char charValue = Convert.ToChar(value);
+            var description = $"{value} '{charValue}'";
+            return CreateJObject<char>(charValue, "symbol", description, true);
         }
 
         public async Task<JObject> CreateJObjectForPtr(ElementType etype, MonoBinaryReader retDebuggerCmdReader, string name, CancellationToken token)
@@ -2121,8 +2167,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             using var localsDebuggerCmdReader = await SendDebuggerAgentCommand(CmdFrame.GetValues, commandParamsWriter, token);
             foreach (var var in varIds)
             {
-                var var_json = await CreateJObjectForVariableValue(localsDebuggerCmdReader, var.Name, false, -1, false, token);
-                locals.Add(var_json);
+                try
+                {
+                    var var_json = await CreateJObjectForVariableValue(localsDebuggerCmdReader, var.Name, false, -1, false, token);
+                    locals.Add(var_json);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogDebug($"Failed to create value for local var {var}: {ex}");
+                    continue;
+                }
             }
             if (!method.Info.IsStatic())
             {
@@ -2180,6 +2234,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 command = CmdVM.InvokeMethod,
                                 buffer = data,
                                 length = length,
+                                id = GetNewId()
                                 }),
                             name = propertyNameStr
                         }));
@@ -2505,7 +2560,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                             command = CmdObject.RefSetValues,
                             buffer = data,
                             valtype,
-                            length = length
+                            length,
+                            id = GetNewId()
                         }));
                     }
                     if (!isRootHidden)
@@ -2636,7 +2692,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                         command = CmdVM.InvokeMethod,
                                         buffer = data,
                                         valtype = attr["set"]["valtype"],
-                                        length = length
+                                        length,
+                                        id = GetNewId()
                                 });
                         }
                         continue;
@@ -2655,7 +2712,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     commandSet = CommandSet.Vm,
                                     command = CmdVM.InvokeMethod,
                                     buffer = data,
-                                    length = length
+                                    length = length,
+                                    id = GetNewId()
                                     }),
                                 name = propertyNameStr
                             }));
@@ -2681,6 +2739,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (setDebuggerCmdReader.HasError)
                 return false;
             return true;
+        }
+
+        public async Task<bool> SetNextIP(MethodInfoWithDebugInformation method, int threadId, IlLocation ilOffset, CancellationToken token)
+        {
+            using var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(threadId);
+            commandParamsWriter.Write(method.DebugId);
+            commandParamsWriter.Write((long)ilOffset.Offset);
+            using var getDebuggerCmdReader = await SendDebuggerAgentCommand(CmdThread.SetIp, commandParamsWriter, token);
+            return !getDebuggerCmdReader.HasError;
         }
 
         public async Task<int> CreateByteArray(string diff, CancellationToken token)

@@ -120,8 +120,6 @@ namespace System.IO.Strategies
             return ValueTask.CompletedTask;
         }
 
-        internal sealed override void DisposeInternal(bool disposing) => Dispose(disposing);
-
         // this method just disposes everything (no buffer, no need to flush)
         protected sealed override void Dispose(bool disposing)
         {

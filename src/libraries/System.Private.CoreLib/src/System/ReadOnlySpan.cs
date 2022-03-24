@@ -5,10 +5,9 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Text;
+
 using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
 using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
-using Internal.Runtime.CompilerServices;
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 
@@ -168,7 +167,7 @@ namespace System
         /// Always thrown by this method.
         /// </exception>
         /// </summary>
-        [Obsolete("Equals() on ReadOnlySpan has will always throw an exception. Use the equality operator instead.")]
+        [Obsolete("Equals() on ReadOnlySpan will always throw an exception. Use the equality operator instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override bool Equals(object? obj) =>
             throw new NotSupportedException(SR.NotSupported_CannotCallEqualsOnSpan);

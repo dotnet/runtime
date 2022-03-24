@@ -55,9 +55,9 @@ namespace System.Security.Cryptography.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => wrapperDsa.SignData(new byte[1], 2, 0, HashAlgorithmName.SHA1));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => wrapperDsa.SignData(new byte[1], 0, -1, HashAlgorithmName.SHA1));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => wrapperDsa.SignData(new byte[1], 0, 2, HashAlgorithmName.SHA1));
-                AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => wrapperDsa.SignData(new byte[1], new HashAlgorithmName(null)));
+                AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => wrapperDsa.SignData(new byte[1], new HashAlgorithmName(null)));
                 AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => wrapperDsa.SignData(new byte[1], new HashAlgorithmName("")));
-                AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => wrapperDsa.SignData(new MemoryStream(new byte[1]), new HashAlgorithmName(null)));
+                AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => wrapperDsa.SignData(new MemoryStream(new byte[1]), new HashAlgorithmName(null)));
                 AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => wrapperDsa.SignData(new MemoryStream(new byte[1]), new HashAlgorithmName("")));
             }
         }
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.Tests
                 byte[] initialSig = wrapperDsa.SignData(input, HashAlgorithmName.SHA1);
                 byte[] actualSig = new byte[initialSig.Length];
 
-                AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => wrapperDsa.TrySignData(new byte[1], new byte[1], new HashAlgorithmName(null), out int _));
+                AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => wrapperDsa.TrySignData(new byte[1], new byte[1], new HashAlgorithmName(null), out int _));
                 AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => wrapperDsa.TrySignData(new byte[1], new byte[1], new HashAlgorithmName(""), out int _));
 
                 Assert.False(wrapperDsa.TrySignData(input, new Span<byte>(actualSig, 0, 1), HashAlgorithmName.SHA1, out bytesWritten));
@@ -102,7 +102,7 @@ namespace System.Security.Cryptography.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => wrapperDsa.VerifyData(new byte[1], 0, -1, null, HashAlgorithmName.SHA1));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => wrapperDsa.VerifyData(new byte[1], 0, 2, null, HashAlgorithmName.SHA1));
                 AssertExtensions.Throws<ArgumentNullException>("signature", () => wrapperDsa.VerifyData(new byte[1], 0, 1, null, HashAlgorithmName.SHA1));
-                AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => wrapperDsa.VerifyData(new byte[1], new byte[1], new HashAlgorithmName(null)));
+                AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => wrapperDsa.VerifyData(new byte[1], new byte[1], new HashAlgorithmName(null)));
                 AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => wrapperDsa.VerifyData(new byte[1], new byte[1], new HashAlgorithmName("")));
 
                 byte[] signature = wrapperDsa.SignData(input, HashAlgorithmName.SHA1);
@@ -121,7 +121,7 @@ namespace System.Security.Cryptography.Tests
             {
                 AssertExtensions.Throws<ArgumentNullException>("data", () => wrapperDsa.VerifyData((Stream)null, null, HashAlgorithmName.SHA1));
                 AssertExtensions.Throws<ArgumentNullException>("signature", () => wrapperDsa.VerifyData(new MemoryStream(new byte[1]), null, HashAlgorithmName.SHA1));
-                AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => wrapperDsa.VerifyData(new MemoryStream(new byte[1]), new byte[1], new HashAlgorithmName(null)));
+                AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => wrapperDsa.VerifyData(new MemoryStream(new byte[1]), new byte[1], new HashAlgorithmName(null)));
                 AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => wrapperDsa.VerifyData(new MemoryStream(new byte[1]), new byte[1], new HashAlgorithmName("")));
 
                 byte[] signature = wrapperDsa.SignData(new MemoryStream(input), HashAlgorithmName.SHA1);
@@ -138,7 +138,7 @@ namespace System.Security.Cryptography.Tests
 
             using (var wrapperDsa = new OverrideAbstractDSA(DSA.Create(1024)))
             {
-                AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => wrapperDsa.VerifyData((Span<byte>)new byte[1], new byte[1], new HashAlgorithmName(null)));
+                AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => wrapperDsa.VerifyData((Span<byte>)new byte[1], new byte[1], new HashAlgorithmName(null)));
                 AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => wrapperDsa.VerifyData((Span<byte>)new byte[1], new byte[1], new HashAlgorithmName("")));
 
                 byte[] signature = wrapperDsa.SignData(input, HashAlgorithmName.SHA1);

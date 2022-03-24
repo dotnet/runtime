@@ -210,7 +210,7 @@ namespace ILCompiler
                     Logger.LogWarning(method, DiagnosticId.COMInteropNotSupportedInFullAOT);
                 }
                 if ((_compilationOptions & RyuJitCompilationOptions.UseResilience) != 0)
-                    Logger.LogMessage($"Ignoring unresolved method {method}, because: {exception.Message}");
+                    Logger.LogMessage($"Method '{method}' will always throw because: {exception.Message}");
                 else
                     Logger.LogError($"Method will always throw because: {exception.Message}", 1005, method, MessageSubCategory.AotAnalysis);
             }

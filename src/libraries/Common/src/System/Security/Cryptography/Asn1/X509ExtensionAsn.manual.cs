@@ -7,13 +7,8 @@ namespace System.Security.Cryptography.Asn1
 {
     internal partial struct X509ExtensionAsn
     {
-        public X509ExtensionAsn(X509Extension extension)
+        public X509ExtensionAsn(X509Extension extension!!)
         {
-            if (extension == null)
-            {
-                throw new ArgumentNullException(nameof(extension));
-            }
-
             ExtnId = extension.Oid!.Value!;
             Critical = extension.Critical;
             ExtnValue = extension.RawData;

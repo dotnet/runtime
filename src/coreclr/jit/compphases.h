@@ -43,6 +43,7 @@ CompPhaseNameMacro(PHASE_UPDATE_FINALLY_FLAGS,   "Update finally target flags", 
 CompPhaseNameMacro(PHASE_COMPUTE_PREDS,          "Compute preds",                  "PREDS",    false, -1, false)
 CompPhaseNameMacro(PHASE_EARLY_UPDATE_FLOW_GRAPH,"Update flow graph early pass",   "UPD-FG-E", false, -1, false)
 CompPhaseNameMacro(PHASE_STR_ADRLCL,             "Morph - Structs/AddrExp",        "MOR-STRAL",false, -1, false)
+CompPhaseNameMacro(PHASE_FWD_SUB,                "Forward Substitution",           "FWD-SUB",  false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_IMPBYREF,         "Morph - ByRefs",                 "MOR-BYREF",false, -1, false)
 CompPhaseNameMacro(PHASE_PROMOTE_STRUCTS,        "Morph - Promote Structs",        "PROMOTER" ,false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_GLOBAL,           "Morph - Global",                 "MOR-GLOB", false, -1, false)

@@ -72,15 +72,18 @@ internal struct AA
         BB.f_init = new AA(100);
         BB.f_zero = new AA(0);
     }
-
-    [Fact]
-    public static int TestEntrypoint()
-    {
-        return TestApp.RunAllTests();
-    }
 }
 
 internal struct BB
 {
     public static AA f_init, f_zero;
+}
+
+public static class Test_seq_long_1
+{
+    [Fact]
+    public static int TestEntrypoint()
+    {
+        return TestApp.RunAllTests();
+    }
 }

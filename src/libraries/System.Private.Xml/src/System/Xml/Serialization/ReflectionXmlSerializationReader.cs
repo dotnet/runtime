@@ -29,8 +29,12 @@ namespace System.Xml.Serialization
     {
         private readonly XmlMapping _mapping;
 
+        // Suppressed for the linker by the assembly-level UnconditionalSuppressMessageAttribute
+        // https://github.com/dotnet/linker/issues/2648
+#pragma warning disable IL2026
         internal static TypeDesc StringTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(string));
         internal static TypeDesc QnameTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));
+#pragma warning restore IL2026
 
         public ReflectionXmlSerializationReader(XmlMapping mapping, XmlReader xmlReader, XmlDeserializationEvents events, string? encodingStyle)
         {
@@ -635,7 +639,7 @@ namespace System.Xml.Serialization
             Debug.Assert(o != null, "Object o should not be null");
             Debug.Assert(!string.IsNullOrEmpty(memberName), "memberName must have a value");
             Type type = o.GetType();
-            var delegateCacheForType = s_setMemberValueDelegateCache.GetOrCreateValue(type, () => new Hashtable());
+            var delegateCacheForType = s_setMemberValueDelegateCache.GetOrCreateValue(type, _ => new Hashtable());
             var result = delegateCacheForType[memberName];
             if (result == null)
             {

@@ -132,13 +132,11 @@ namespace System.Security.Principal
                 {
                     if (!Interop.Advapi32.AllocateLocallyUniqueId(&sourceContext.SourceIdentifier))
                         throw new SecurityException(new Win32Exception().Message);
+
+                    sourceName.AsSpan().CopyTo(new Span<byte>(sourceContext.SourceName, TOKEN_SOURCE.TOKEN_SOURCE_LENGTH));
                 }
 
-                sourceContext.SourceName = new byte[TOKEN_SOURCE.TOKEN_SOURCE_LENGTH];
-                Buffer.BlockCopy(sourceName, 0, sourceContext.SourceName, 0, sourceName.Length);
-
-                if (sUserPrincipalName == null)
-                    throw new ArgumentNullException(nameof(sUserPrincipalName));
+                ArgumentNullException.ThrowIfNull(sUserPrincipalName);
 
                 byte[] upnBytes = Encoding.Unicode.GetBytes(sUserPrincipalName);
                 if (upnBytes.Length > ushort.MaxValue)
@@ -179,13 +177,13 @@ namespace System.Security.Principal
 
                             int ntStatus = Interop.SspiCli.LsaLogonUser(
                                 lsaHandle,
-                                ref lsaOriginName,
+                                lsaOriginName,
                                 SECURITY_LOGON_TYPE.Network,
                                 packageId,
                                 authenticationInfo.DangerousGetHandle(),
                                 authenticationInfoLength,
                                 IntPtr.Zero,
-                                ref sourceContext,
+                                sourceContext,
                                 out SafeLsaReturnBufferHandle profileBuffer,
                                 out int profileBufferLength,
                                 out LUID logonId,
@@ -680,20 +678,14 @@ namespace System.Security.Principal
         // Public methods.
         //
 
-        public static void RunImpersonated(SafeAccessTokenHandle safeAccessTokenHandle, Action action)
+        public static void RunImpersonated(SafeAccessTokenHandle safeAccessTokenHandle, Action action!!)
         {
-            if (action == null)
-                throw new ArgumentNullException(nameof(action));
-
             RunImpersonatedInternal(safeAccessTokenHandle, action);
         }
 
 
-        public static T RunImpersonated<T>(SafeAccessTokenHandle safeAccessTokenHandle, Func<T> func)
+        public static T RunImpersonated<T>(SafeAccessTokenHandle safeAccessTokenHandle, Func<T> func!!)
         {
-            if (func == null)
-                throw new ArgumentNullException(nameof(func));
-
             T result = default!;
             RunImpersonatedInternal(safeAccessTokenHandle, () => result = func());
             return result;
@@ -922,12 +914,8 @@ namespace System.Security.Principal
             return safeLocalAllocHandle;
         }
 
-        private static string? GetAuthType(WindowsIdentity identity)
+        private static string? GetAuthType(WindowsIdentity identity!!)
         {
-            if (identity == null)
-            {
-                throw new ArgumentNullException(nameof(identity));
-            }
             return identity._authType;
         }
 

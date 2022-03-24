@@ -11,6 +11,41 @@
     <IntermediateOutputRootPath>$(ArtifactsObjDir)$(OutputRid).$(Configuration)\</IntermediateOutputRootPath>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="$(CoreClrProjectRoot)tools/InjectResource/InjectResource.csproj" ReferenceOutputAssembly="false" OutputItemType="InjectResourceTool"/>
+  </ItemGroup>
+
+  <Target Name="PrepareSingleFileHostWithEmbeddedDacPrereqs">
+    <PropertyGroup>
+      <SingleFileHostPath>$(CoreCLRArtifactsPath)/corehost/singlefilehost$(ExeSuffix)</SingleFileHostPath>
+      <SingleFileHostSymbolsPath>$(CoreCLRArtifactsPath)/corehost/PDB/singlefilehost$(SymbolsSuffix)</SingleFileHostSymbolsPath>
+      <DacPath>$(CoreCLRArtifactsPath)/mscordaccore$(LibSuffix)</DacPath>
+      <SingleFileHostDestinationPath>$(DotNetHostBinDir)/singlefilehost$(ExeSuffix)</SingleFileHostDestinationPath>
+      <SingleFileHostSymbolsDestinationPath>$(DotNetHostBinDir)/PDB/singlefilehost$(SymbolsSuffix)</SingleFileHostSymbolsDestinationPath>
+    </PropertyGroup>
+  </Target>
+
+  <!--
+    Target that copies the singlefilehost and embeds the DAC into it.
+    We embed the DAC now instead of during the native build because we need to sign the DAC and signing the DAC during CMake would be ugly.
+  -->
+  <Target Name="PrepareSingleFileHostWithEmbeddedDacCore"
+    Inputs="$(SingleFileHostPath);
+            $(SingleFileHostSymbolsPath);
+            $(DacPath);
+            @(InjectResourceTool)"
+    Outputs="$(SingleFileHostDestinationPath);$(SingleFileHostSymbolsDestinationPath)"
+    DependsOnTargets="ResolveProjectReferences"
+    Condition="'$(RuntimeFlavor)' != 'Mono'">
+    <Copy SourceFiles="$(SingleFileHostPath);$(SingleFileHostSymbolsPath)" DestinationFiles="$(SingleFileHostDestinationPath);$(SingleFileHostSymbolsPath)" />
+    <Exec Condition="'$(TargetOS)' == 'windows'"
+          Command="$(NetCoreRoot)dotnet exec @(InjectResourceTool) --bin &quot;$(DacPath)&quot; --image &quot;$(SingleFileHostDestinationPath)&quot; --name MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER" />
+  </Target>
+  
+  <Target Name="PrepareSingleFileHostWithEmbeddedDac"
+          DependsOnTargets="PrepareSingleFileHostWithEmbeddedDacPrereqs;PrepareSingleFileHostWithEmbeddedDacCore"
+          AfterTargets="Build"/>
+
   <!-- Target that builds dotnet, hostfxr and hostpolicy with the same version as what NetCoreApp will be built for
        since the build produced artifacts should always version the same (even if they may not get used).
   -->
@@ -30,7 +65,6 @@
       <BuildArgs Condition="'$(CrossBuild)' == 'true'">$(BuildArgs) -cross</BuildArgs>
       <BuildArgs Condition="'$(Compiler)' != ''">$(BuildArgs) $(Compiler)</BuildArgs>
       <BuildArgs Condition="'$(CMakeArgs)' != ''">$(BuildArgs) $(CMakeArgs)</BuildArgs>
-      <BuildArgs>$(BuildArgs) -coreclrartifacts $(CoreCLRArtifactsPath)</BuildArgs>
       <BuildArgs Condition="'$(Ninja)' == 'true'">$(BuildArgs) -ninja</BuildArgs>
       <BuildArgs>$(BuildArgs) -runtimeflavor $(RuntimeFlavor)</BuildArgs>
       <BuildArgs Condition="'$(OfficialBuildId)' != ''">$(BuildArgs) /p:OfficialBuildId="$(OfficialBuildId)"</BuildArgs>
@@ -89,7 +123,6 @@
       <BuildArgs Condition="'$(PortableBuild)' == 'true'">$(BuildArgs) portable</BuildArgs>
       <BuildArgs Condition="'$(IncrementalNativeBuild)' == 'true'">$(BuildArgs) incremental-native-build</BuildArgs>
       <BuildArgs>$(BuildArgs) rootdir $(RepoRoot)</BuildArgs>
-      <BuildArgs>$(BuildArgs) coreclrartifacts $(CoreCLRArtifactsPath)</BuildArgs>
       <BuildArgs Condition="'$(Ninja)' == 'false'">$(BuildArgs) msbuild</BuildArgs>
       <BuildArgs>$(BuildArgs) runtimeflavor $(RuntimeFlavor)</BuildArgs>
       <BuildArgs>$(BuildArgs) runtimeconfiguration $(RuntimeConfiguration)</BuildArgs>

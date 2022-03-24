@@ -414,7 +414,8 @@ static gboolean buffer_replies;
 	DebuggerTlsData *tls; \
 	tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
 #else
-#define GET_TLS_DATA_FROM_THREAD(thread) \
+/* the thread argument is omitted on wasm, to avoid compiler warning */
+#define GET_TLS_DATA_FROM_THREAD(...) \
 	DebuggerTlsData *tls; \
 	tls = &debugger_wasm_thread;
 #define GET_DEBUGGER_TLS() \
@@ -529,7 +530,7 @@ is_debugger_thread (void)
 	if (!internal)
 		return FALSE;
 
-	return internal->debugger_thread;
+	return internal->debugger_thread ? TRUE : FALSE;
 }
 
 static int
@@ -1398,13 +1399,13 @@ transport_handshake (void)
 	sprintf (handshake_msg, "DWP-Handshake");
 
 	do {
-		res = transport_send (handshake_msg, strlen (handshake_msg));
+		res = transport_send (handshake_msg, (int)strlen (handshake_msg));
 	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
 
 	g_assert (res != -1);
 
 	/* Read answer */
-	res = transport_recv (buf, strlen (handshake_msg));
+	res = transport_recv (buf, (int)strlen (handshake_msg));
 	if ((res != strlen (handshake_msg)) || (memcmp (buf, handshake_msg, strlen (handshake_msg)) != 0)) {
 		PRINT_ERROR_MSG ("debugger-agent: DWP handshake failed.\n");
 		return FALSE;
@@ -1609,10 +1610,20 @@ mono_init_debugger_agent_for_wasm (int log_level_parm, MonoProfilerHandle *prof)
 	event_requests = g_ptr_array_new ();
 	vm_start_event_sent = TRUE;
 	transport = &transports [0];
+
 	memset(&debugger_wasm_thread, 0, sizeof(DebuggerTlsData));
+	mono_native_tls_alloc (&debugger_tls_id, NULL);
+	mono_native_tls_set_value (debugger_tls_id, &debugger_wasm_thread);
+
 	agent_config.enabled = TRUE;
 
 	mono_profiler_set_jit_done_callback (*prof, jit_done);
+}
+
+void
+mono_change_log_level (int new_log_level)
+{
+	log_level = new_log_level;
 }
 #endif
 
@@ -3686,6 +3697,10 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			/* This will keep this object alive */
 			get_objref (keepalive_obj);
 	}
+
+#ifdef TARGET_WASM
+	PRINT_DEBUG_MSG (1, "[%p] Sent %d events %s(%d), suspend=%d.\n", (gpointer) (gsize) mono_native_thread_id_get (), nevents, event_to_string (event), ecount, suspend_policy);
+#endif
 
 	send_success = send_packet (CMD_SET_EVENT, CMD_COMPOSITE, &buf);
 
@@ -6968,7 +6983,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case MDBGPROT_CMD_GET_ASSEMBLY_BY_NAME: {
-		int i;
+		size_t i;
 		char* assembly_name = decode_string (p, &p, end);
 		//we get 'foo.dll' but mono_assembly_load expects 'foo' so we strip the last dot
 		char *lookup_name = g_strdup (assembly_name);
@@ -7811,6 +7826,9 @@ static int get_static_field_value(MonoClassField* f, MonoClass* klass, MonoDomai
 	if (!is_ok(error))
 		return -1;
 
+	/* TODO: metadata-update.  implement support for added fields */
+	g_assert (!m_field_is_from_update (f));
+
 	if (CHECK_ICORDBG (TRUE))
 	{
 		void *src;
@@ -7818,13 +7836,13 @@ static int get_static_field_value(MonoClassField* f, MonoClass* klass, MonoDomai
 			return -1;
 		}
 
-		if (f->offset == -1) {
+		if (m_field_get_offset (f) == -1) {
 			/* Special static */
 			gpointer addr = mono_special_static_field_get_offset (f, error);
 			mono_error_assert_ok (error);
 			src = mono_get_special_static_data_for_thread (thread, GPOINTER_TO_UINT (addr));
 		} else {
-			src = (char*)mono_vtable_get_static_field_data (vtable) + f->offset;
+			src = (char*)mono_vtable_get_static_field_data (vtable) + m_field_get_offset (f);
 		}
 		buffer_add_value(buf, f->type, src, domain);
 	}
@@ -7995,7 +8013,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			buffer_add_string (buf, p->name);
 			buffer_add_methodid (buf, domain, p->get);
 			buffer_add_methodid (buf, domain, p->set);
-			buffer_add_int (buf, p->attrs);
+			buffer_add_int (buf, p->attrs & ~MONO_PROPERTY_META_FLAG_MASK);
 			i ++;
 		}
 		g_assert (i == nprops);
@@ -8895,8 +8913,8 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			buffer_add_int (buf, 0);
 		} else {
 			const size_t len = strlen (s);
-			buffer_add_int (buf, len);
-			buffer_add_data (buf, (guint8*)s, len);
+			buffer_add_int (buf, (guint32)len);
+			buffer_add_data (buf, (guint8*)s, (uint32_t)len);
 			g_free (s);
 		}
 		break;
@@ -9002,7 +9020,6 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_long (buf, (guint64)thread->tid);
 		break;
 	case CMD_THREAD_SET_IP: {
-		DebuggerTlsData *tls;
 		MonoMethod *method;
 		MonoDomain *domain;
 		MonoSeqPointInfo *seq_points;
@@ -9020,9 +9037,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				wait_for_suspend ();
 		}
 
-		mono_loader_lock ();
-		tls = (DebuggerTlsData *)mono_g_hash_table_lookup (thread_to_tls, thread);
-		mono_loader_unlock ();
+		GET_TLS_DATA_FROM_THREAD (thread);
 		g_assert (tls);
 
 		compute_frame_info (thread, tls, FALSE);
@@ -9138,7 +9153,9 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	int objid;
 	ErrorCode err;
 	MonoThread *thread_obj;
+#ifndef TARGET_WASM
 	MonoInternalThread *thread;
+#endif
 	int pos, i, len, frame_idx;
 	StackFrame *frame;
 	MonoDebugMethodJitInfo *jit;
@@ -9152,11 +9169,16 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	if (err != ERR_NONE)
 		return err;
 
+#ifndef TARGET_WASM
 	thread = THREAD_TO_INTERNAL (thread_obj);
-
+#endif
 	id = decode_id (p, &p, end);
 
+#ifndef TARGET_WASM
 	GET_TLS_DATA_FROM_THREAD (thread);
+#else
+	GET_TLS_DATA_FROM_THREAD ();
+#endif
 	g_assert (tls);
 
 	for (i = 0; i < tls->frame_count; ++i) {
@@ -9645,6 +9667,8 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			if (!found)
 				goto invalid_fieldid;
 get_field_value:
+			/* TODO: metadata-update: implement support for added fields */
+			g_assert (!m_field_is_from_update (f));
 			if (f->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 				guint8 *val;
 				MonoVTable *vtable;
@@ -9667,7 +9691,7 @@ get_field_value:
 				buffer_add_value (buf, f->type, val, obj->vtable->domain);
 				g_free (val);
 			} else {
-				void *field_value = (guint8*)obj + f->offset;
+				void *field_value = (guint8*)obj + m_field_get_offset (f);
 
 				buffer_add_value (buf, f->type, field_value, obj->vtable->domain);
 			}
@@ -9692,6 +9716,9 @@ get_field_value:
 			if (!found)
 				goto invalid_fieldid;
 
+			/* TODO: metadata-update: implement support for added fields. */
+			g_assert (!m_field_is_from_update (f));
+
 			if (f->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 				guint8 *val;
 				MonoVTable *vtable;
@@ -9715,7 +9742,7 @@ get_field_value:
 				mono_field_static_set_value_internal (vtable, f, val);
 				g_free (val);
 			} else {
-				err = decode_value (f->type, obj->vtable->domain, (guint8*)obj + f->offset, p, &p, end, TRUE);
+				err = decode_value (f->type, obj->vtable->domain, (guint8*)obj + m_field_get_offset (f), p, &p, end, TRUE);
 				if (err != ERR_NONE)
 					goto exit;
 			}

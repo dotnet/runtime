@@ -16,7 +16,7 @@ namespace System.Text.Json
             return string.Create(name.Length, name, (chars, name) =>
             {
                 name
-#if !NET6_0_OR_GREATER
+#if !NETCOREAPP
                 .AsSpan()
 #endif
                 .CopyTo(chars);

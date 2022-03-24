@@ -692,6 +692,11 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.GetCurrentManagedThreadId;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_VALIDATE_INDIRECT_CALL:
+                    return _compilation.NodeFactory.ExternIndirectSymbol("__guard_check_icall_fptr");
+                case CorInfoHelpFunc.CORINFO_HELP_DISPATCH_INDIRECT_CALL:
+                    return _compilation.NodeFactory.ExternIndirectSymbol("__guard_dispatch_icall_fptr");
+
                 default:
                     throw new NotImplementedException(ftnNum.ToString());
             }
@@ -748,8 +753,17 @@ namespace Internal.JitInterface
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
         {
             MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);
-            object literal = methodIL.GetObject((int)metaTok);
-            ISymbolNode stringObject = _compilation.NodeFactory.SerializedStringObject((string)literal);
+
+            ISymbolNode stringObject;
+            if (metaTok == (mdToken)CorConstants.CorTokenType.mdtString)
+            {
+                stringObject = _compilation.NodeFactory.SerializedStringObject("");
+            }
+            else
+            {
+                object literal = methodIL.GetObject((int)metaTok);
+                stringObject = _compilation.NodeFactory.SerializedStringObject((string)literal);
+            }
             ppValue = (void*)ObjectToHandle(stringObject);
             return stringObject.RepresentsIndirectionCell ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
         }
@@ -1108,7 +1122,7 @@ namespace Internal.JitInterface
             TypeDesc exactType = HandleToObject(pResolvedToken.hClass);
 
             TypeDesc constrainedType = null;
-            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0 && pConstrainedResolvedToken != null)
+            if (pConstrainedResolvedToken != null)
             {
                 constrainedType = HandleToObject(pConstrainedResolvedToken->hClass);
             }
@@ -1152,6 +1166,11 @@ namespace Internal.JitInterface
                     resolvedConstraint = true;
                     pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
 
+                    exactType = constrainedType;
+                }
+                else if (method.Signature.IsStatic)
+                {
+                    Debug.Assert(method.OwningType.IsInterface);
                     exactType = constrainedType;
                 }
                 else if (constrainedType.IsValueType)
@@ -1208,8 +1227,16 @@ namespace Internal.JitInterface
 
             if (targetMethod.Signature.IsStatic)
             {
-                // Static methods are always direct calls
-                directCall = true;
+                if (constrainedType != null && (!resolvedConstraint || forceUseRuntimeLookup))
+                {
+                    // Constrained call to static virtual interface method we didn't resolve statically
+                    Debug.Assert(targetMethod.IsVirtual && targetMethod.OwningType.IsInterface);
+                }
+                else
+                {
+                    // Static methods are always direct calls
+                    directCall = true;
+                }
             }
             else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) == 0 || resolvedConstraint)
             {
@@ -1280,7 +1307,7 @@ namespace Internal.JitInterface
 
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
                 pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
-                pResult->nullInstanceCheck = true;
+                pResult->nullInstanceCheck = !targetMethod.Signature.IsStatic;
 
                 // We have the canonical version of the method - find the runtime determined version.
                 // This is simplified because we know the method is on a valuetype.
@@ -1301,8 +1328,10 @@ namespace Internal.JitInterface
                 MethodDesc targetOfLookup;
                 if (runtimeDeterminedConstrainedType.IsRuntimeDeterminedType)
                     targetOfLookup = _compilation.TypeSystemContext.GetMethodForRuntimeDeterminedType(targetMethod.GetTypicalMethodDefinition(), (RuntimeDeterminedType)runtimeDeterminedConstrainedType);
-                else
+                else if (runtimeDeterminedConstrainedType.HasInstantiation)
                     targetOfLookup = _compilation.TypeSystemContext.GetMethodForInstantiatedType(targetMethod.GetTypicalMethodDefinition(), (InstantiatedType)runtimeDeterminedConstrainedType);
+                else
+                    targetOfLookup = targetMethod.GetMethodDefinition();
                 if (targetOfLookup.HasInstantiation)
                 {
                     var methodToGetInstantiation = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
@@ -1398,6 +1427,26 @@ namespace Internal.JitInterface
                 }
 
                 pResult->nullInstanceCheck = resolvedCallVirt;
+            }
+            else if (targetMethod.Signature.IsStatic)
+            {
+                // This should be an unresolved static virtual interface method call. Other static methods should
+                // have been handled as a directCall above.
+                Debug.Assert(targetMethod.OwningType.IsInterface && targetMethod.IsVirtual && constrainedType != null);
+
+                pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
+
+                TypeDesc runtimeDeterminedConstrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *pConstrainedResolvedToken);
+                MethodDesc runtimeDeterminedInterfaceMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+
+                ComputeLookup(ref pResolvedToken,
+                    new ConstrainedCallInfo(runtimeDeterminedConstrainedType, runtimeDeterminedInterfaceMethod),
+                    ReadyToRunHelperId.ConstrainedDirectCall,
+                    ref pResult->codePointerOrStubLookup);
+
+                targetIsFatFunctionPointer = true;
+                useFatCallTransform = true;
+                pResult->nullInstanceCheck = false;
             }
             else if (targetMethod.HasInstantiation)
             {

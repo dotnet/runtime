@@ -506,7 +506,6 @@ struct ProcessModIter
     bool m_nextDomain;
     AppDomain::AssemblyIterator m_assemIter;
     Assembly* m_curAssem;
-    Assembly::ModuleIterator m_modIter;
 
     ProcessModIter(void)
         : m_domainIter(FALSE)
@@ -542,7 +541,7 @@ struct ProcessModIter
             }
 
             // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
-            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetLoadedAssembly();
+            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
             return pAssembly;
         }
         return NULL;
@@ -551,27 +550,13 @@ struct ProcessModIter
     Module* NextModule(void)
     {
         SUPPORTS_DAC;
-        for (;;)
+        m_curAssem = NextAssem();
+        if (!m_curAssem)
         {
-            if (!m_curAssem)
-            {
-                m_curAssem = NextAssem();
-                if (!m_curAssem)
-                {
-                    return NULL;
-                }
-
-                m_modIter = m_curAssem->IterateModules();
-            }
-
-            if (!m_modIter.Next())
-            {
-                m_curAssem = NULL;
-                continue;
-            }
-
-            return m_modIter.GetModule();
+            return NULL;
         }
+
+        return m_curAssem->GetModule();
     }
 };
 
@@ -837,7 +822,8 @@ class ClrDataAccess
       public ISOSDacInterface8,
       public ISOSDacInterface9,
       public ISOSDacInterface10,
-      public ISOSDacInterface11
+      public ISOSDacInterface11,
+      public ISOSDacInterface12
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1221,6 +1207,12 @@ public:
         CLRDATA_ADDRESS objAddr,
         CLRDATA_ADDRESS *taggedMemory,
         size_t *taggedMemorySizeInBytes);
+
+    // ISOSDacInterface12
+    virtual HRESULT STDMETHODCALLTYPE GetGlobalAllocationContext( 
+        CLRDATA_ADDRESS *allocPtr,
+        CLRDATA_ADDRESS *allocLimit);
+
     //
     // ClrDataAccess.
     //

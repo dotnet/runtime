@@ -344,14 +344,7 @@ namespace System.Net
         public override void Add(string name, string? value)
 #pragma warning restore CS8765
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-            if (name.Length == 0)
-            {
-                throw new ArgumentException(SR.Format(SR.net_emptyStringCall, nameof(name)), nameof(name));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             name = HttpValidationHelpers.CheckBadHeaderNameChars(name);
             value = HttpValidationHelpers.CheckBadHeaderValueChars(value);

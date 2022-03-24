@@ -6993,13 +6993,6 @@ void emitter::emitIns_R_R_R_Ext(instruction ins,
         shiftAmount = insOptsLSL(opt) ? scale : 0;
     }
 
-    // If target reg is ZR - it means we're doing an implicit nullcheck
-    // where target type was ignored and set to TYP_INT.
-    if ((reg1 == REG_ZR) && (shiftAmount > 0))
-    {
-        shiftAmount = scale;
-    }
-
     assert((shiftAmount == scale) || (shiftAmount == 0));
 
     reg2 = encodingSPtoZR(reg2);
@@ -12282,9 +12275,17 @@ void emitter::emitDispIns(
 
     emitDispInsOffs(offset, doffs);
 
-    /* Display the instruction hex code */
+    BYTE* pCodeRW = nullptr;
+    if (pCode != nullptr)
+    {
+        /* Display the instruction hex code */
+        assert(((pCode >= emitCodeBlock) && (pCode < emitCodeBlock + emitTotalHotCodeSize)) ||
+               ((pCode >= emitColdCodeBlock) && (pCode < emitColdCodeBlock + emitTotalColdCodeSize)));
 
-    emitDispInsHex(id, pCode, sz);
+        pCodeRW = pCode + writeableOffset;
+    }
+
+    emitDispInsHex(id, pCodeRW, sz);
 
     printf("      ");
 
@@ -12971,7 +12972,7 @@ void emitter::emitDispIns(
                 emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
                 emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             }
-            if (ins == INS_fcmeq)
+            if (ins == INS_fcmeq || ins == INS_fcmge || ins == INS_fcmgt || ins == INS_fcmle || ins == INS_fcmlt)
             {
                 printf(", ");
                 emitDispImm(0, false);
@@ -12995,7 +12996,7 @@ void emitter::emitDispIns(
                 emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
                 emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             }
-            if (ins == INS_cmeq)
+            if (ins == INS_cmeq || ins == INS_cmge || ins == INS_cmgt || ins == INS_cmle || ins == INS_cmlt)
             {
                 printf(", ");
                 emitDispImm(0, false);
@@ -13136,7 +13137,8 @@ void emitter::emitDispIns(
                 emitDispReg(id->idReg1(), size, true);
                 emitDispReg(id->idReg2(), size, false);
             }
-            if (fmt == IF_DV_2L && ins == INS_cmeq)
+            if (fmt == IF_DV_2L &&
+                (ins == INS_cmeq || ins == INS_cmge || ins == INS_cmgt || ins == INS_cmle || ins == INS_cmlt))
             {
                 printf(", ");
                 emitDispImm(0, false);
@@ -13546,17 +13548,28 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 }
                 else // no scale
                 {
-                    if (index->OperIs(GT_BFIZ) && index->isContained())
+                    if (index->OperIs(GT_BFIZ, GT_CAST) && index->isContained())
                     {
                         // Then load/store dataReg from/to [memBase + index*scale with sign/zero extension]
-                        GenTreeCast* cast = index->gtGetOp1()->AsCast();
+                        GenTreeCast* cast;
+                        int          cns;
+
+                        if (index->OperIs(GT_BFIZ))
+                        {
+                            cast = index->gtGetOp1()->AsCast();
+                            cns  = (int)index->gtGetOp2()->AsIntCon()->IconValue();
+                        }
+                        else
+                        {
+                            cast = index->AsCast();
+                            cns  = 0;
+                        }
 
                         // For now, this code only supports extensions from i32/u32
-                        assert(cast->isContained() && varTypeIsInt(cast->CastFromType()));
+                        assert(cast->isContained());
 
                         emitIns_R_R_R_Ext(ins, attr, dataReg, memBase->GetRegNum(), cast->CastOp()->GetRegNum(),
-                                          cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW,
-                                          (int)index->gtGetOp2()->AsIntCon()->IconValue());
+                                          cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW, cns);
                     }
                     else
                     {

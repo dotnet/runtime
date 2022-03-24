@@ -455,10 +455,8 @@ namespace System.Xml.XPath
             return null;
         }
 
-        public override string? GetAttribute(string localName, string? namespaceURI)
+        public override string? GetAttribute(string localName!!, string? namespaceURI)
         {
-            if (null == localName)
-                throw new ArgumentNullException(nameof(localName));
             // reader allows calling GetAttribute, even when positioned inside attributes
             XPathNavigator nav = _nav;
             switch (nav.NodeType)
@@ -554,10 +552,8 @@ namespace System.Xml.XPath
         }
 
 
-        public override bool MoveToAttribute(string localName, string? namespaceName)
+        public override bool MoveToAttribute(string localName!!, string? namespaceName)
         {
-            if (null == localName)
-                throw new ArgumentNullException(nameof(localName));
             int depth;
             XPathNavigator? nav = GetElemNav(out depth);
             if (null != nav)

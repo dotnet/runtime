@@ -117,7 +117,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             int assemId;
             int objectId = (int)nameInfo._objectId;
 
-            Debug.Assert(typeNameInfo != null); // Explicitly called with null, asserting for now https://github.com/dotnet/runtime/issues/31402
+            Debug.Assert(typeNameInfo != null); // Explicitly called with null. Potential bug, but closed as Won't Fix: https://github.com/dotnet/runtime/issues/31402
             string? objectName = objectId < 0 ?
                 typeNameInfo.NIname : // Nested Object
                 nameInfo.NIname; // Non-Nested

@@ -12,15 +12,15 @@ namespace Microsoft.Extensions.Hosting.Internal
         private readonly Func<HostBuilderContext> _contextResolver;
         private Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> _factoryResolver;
 
-        public ServiceFactoryAdapter(IServiceProviderFactory<TContainerBuilder> serviceProviderFactory)
+        public ServiceFactoryAdapter(IServiceProviderFactory<TContainerBuilder> serviceProviderFactory!!)
         {
-            _serviceProviderFactory = serviceProviderFactory ?? throw new ArgumentNullException(nameof(serviceProviderFactory));
+            _serviceProviderFactory = serviceProviderFactory;
         }
 
-        public ServiceFactoryAdapter(Func<HostBuilderContext> contextResolver, Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factoryResolver)
+        public ServiceFactoryAdapter(Func<HostBuilderContext> contextResolver!!, Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factoryResolver!!)
         {
-            _contextResolver = contextResolver ?? throw new ArgumentNullException(nameof(contextResolver));
-            _factoryResolver = factoryResolver ?? throw new ArgumentNullException(nameof(factoryResolver));
+            _contextResolver = contextResolver;
+            _factoryResolver = factoryResolver;
         }
 
         public object CreateBuilder(IServiceCollection services)

@@ -540,7 +540,7 @@ namespace Internal.TypeSystem
             // Add to hash, use a volatile write to ensure that
             // the contents of the value are fully published to all
             // threads before adding to the hashtable
-            Volatile.Write(ref hashTableLocal[tableIndex], null);
+            Volatile.Write(ref hashTableLocal[tableIndex], default(TValue)!);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

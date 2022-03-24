@@ -1344,7 +1344,6 @@ _Done:
     compLocallocUsed |= InlineeCompiler->compLocallocUsed;
     compLocallocOptimized |= InlineeCompiler->compLocallocOptimized;
     compQmarkUsed |= InlineeCompiler->compQmarkUsed;
-    compUnsafeCastUsed |= InlineeCompiler->compUnsafeCastUsed;
     compGSReorderStackLayout |= InlineeCompiler->compGSReorderStackLayout;
     compHasBackwardJump |= InlineeCompiler->compHasBackwardJump;
 

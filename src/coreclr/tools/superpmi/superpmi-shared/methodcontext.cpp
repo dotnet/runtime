@@ -1293,7 +1293,6 @@ LPCWSTR MethodContext::repGetJitTimeLogFilename()
 
 void MethodContext::recCanInline(CORINFO_METHOD_HANDLE callerHnd,
                                  CORINFO_METHOD_HANDLE calleeHnd,
-                                 uint32_t*                pRestrictions,
                                  CorInfoInline         response,
                                  DWORD                 exceptionCode)
 {
@@ -1306,10 +1305,6 @@ void MethodContext::recCanInline(CORINFO_METHOD_HANDLE callerHnd,
     key.B = CastHandle(calleeHnd);
 
     Agnostic_CanInline value;
-    if (pRestrictions != nullptr)
-        value.Restrictions = (DWORD)*pRestrictions;
-    else
-        value.Restrictions = (DWORD)0;
     value.result           = (DWORD)response;
     value.exceptionCode    = (DWORD)exceptionCode;
 
@@ -1318,12 +1313,11 @@ void MethodContext::recCanInline(CORINFO_METHOD_HANDLE callerHnd,
 }
 void MethodContext::dmpCanInline(DLDL key, const Agnostic_CanInline& value)
 {
-    printf("CanInline key - callerHnd-%016llX calleeHnd-%016llX, value pRestrictions-%u result-%u exceptionCode-%08X",
-           key.A, key.B, value.Restrictions, value.result, value.exceptionCode);
+    printf("CanInline key - callerHnd-%016llX calleeHnd-%016llX, value result-%u exceptionCode-%08X",
+           key.A, key.B, value.result, value.exceptionCode);
 }
 CorInfoInline MethodContext::repCanInline(CORINFO_METHOD_HANDLE callerHnd,
                                           CORINFO_METHOD_HANDLE calleeHnd,
-                                          uint32_t*             pRestrictions,
                                           DWORD*                exceptionCode)
 {
     DLDL key;
@@ -1347,8 +1341,6 @@ CorInfoInline MethodContext::repCanInline(CORINFO_METHOD_HANDLE callerHnd,
 
     *exceptionCode = value.exceptionCode;
 
-    if (pRestrictions != nullptr)
-        *pRestrictions     = (DWORD)value.Restrictions;
     CorInfoInline response = (CorInfoInline)value.result;
     return response;
 }
@@ -2669,6 +2661,7 @@ void MethodContext::recGetArgType(CORINFO_SIG_INFO*       sig,
     GetArgType->Add(key, value);
     DEBUG_REC(dmpGetArgType(key, value));
 }
+
 void MethodContext::dmpGetArgType(const Agnostic_GetArgType_Key& key, const Agnostic_GetArgType_Value& value)
 {
     printf("GetArgType key flg-%08X na-%u %s %s msig-%016llX scp-%016llX arg-%016llX",
@@ -2678,6 +2671,7 @@ void MethodContext::dmpGetArgType(const Agnostic_GetArgType_Key& key, const Agno
         key.methodSignature, key.scope, key.args);
     printf(", value result(cit)-%u(%s) vcType-%016llX excp-%08X", value.result, toString((CorInfoTypeWithMod)value.result), value.vcTypeRet, value.exceptionCode);
 }
+
 CorInfoTypeWithMod MethodContext::repGetArgType(CORINFO_SIG_INFO*       sig,
                                                 CORINFO_ARG_LIST_HANDLE args,
                                                 CORINFO_CLASS_HANDLE*   vcTypeRet,
@@ -6126,6 +6120,31 @@ bool MethodContext::repGetSystemVAmd64PassStructInRegisterDescriptor(
     }
 
     return value.result ? true : false;
+}
+
+void MethodContext::recGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value)
+{
+    if (GetLoongArch64PassStructInRegisterFlags == nullptr)
+        GetLoongArch64PassStructInRegisterFlags = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(structHnd);
+
+    GetLoongArch64PassStructInRegisterFlags->Add(key, value);
+    DEBUG_REC(dmpGetLoongArch64PassStructInRegisterFlags(key, value));
+}
+
+void MethodContext::dmpGetLoongArch64PassStructInRegisterFlags(DWORDLONG key, DWORD value)
+{
+    printf("GetLoongArch64PassStructInRegisterFlags key %016llX value-%08X", key, value);
+}
+
+DWORD MethodContext::repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+{
+    DWORDLONG key = CastHandle(structHnd);
+
+    DWORD value = GetLoongArch64PassStructInRegisterFlags->Get(key);
+    DEBUG_REP(dmpGetLoongArch64PassStructInRegisterFlags(key, value));
+    return value;
 }
 
 void MethodContext::recGetRelocTypeHint(void* target, WORD result)

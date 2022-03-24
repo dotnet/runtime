@@ -11,9 +11,9 @@
 #include <wintrust.h>
 #include <Softpub.h>
 
+#include <json_parser.h>
 #include <external/rapidjson/document.h>
 #include <external/rapidjson/istreamwrapper.h>
-#include <json_parser.h>
 
 using comhost::clsid_map_entry;
 using comhost::clsid_map;

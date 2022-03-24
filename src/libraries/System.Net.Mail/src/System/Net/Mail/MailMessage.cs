@@ -37,17 +37,8 @@ namespace System.Net.Mail
 
         public MailMessage(string from, string to)
         {
-            if (from == null)
-                throw new ArgumentNullException(nameof(from));
-
-            if (to == null)
-                throw new ArgumentNullException(nameof(to));
-
-            if (from.Length == 0)
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(from)), nameof(from));
-
-            if (to.Length == 0)
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(to)), nameof(to));
+            ArgumentException.ThrowIfNullOrEmpty(from);
+            ArgumentException.ThrowIfNullOrEmpty(to);
 
             _message = new Message(from, to);
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _message);
@@ -61,14 +52,8 @@ namespace System.Net.Mail
         }
 
 
-        public MailMessage(MailAddress from, MailAddress to)
+        public MailMessage(MailAddress from!!, MailAddress to!!)
         {
-            if (from == null)
-                throw new ArgumentNullException(nameof(from));
-
-            if (to == null)
-                throw new ArgumentNullException(nameof(to));
-
             _message = new Message(from, to);
         }
 
@@ -81,10 +66,7 @@ namespace System.Net.Mail
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 _message.From = value;
             }
         }

@@ -5,7 +5,7 @@
 using System;
 namespace Precise
 {
-    class Driver
+    class Driver_xprecise1b
     {
         public static int Main()
         {

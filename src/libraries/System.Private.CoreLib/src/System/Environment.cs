@@ -21,11 +21,8 @@ namespace System
         // Unconditionally return false since .NET Core does not support object finalization during shutdown.
         public static bool HasShutdownStarted => false;
 
-        public static string? GetEnvironmentVariable(string variable)
+        public static string? GetEnvironmentVariable(string variable!!)
         {
-            if (variable == null)
-                throw new ArgumentNullException(nameof(variable));
-
             return GetEnvironmentVariableCore(variable);
         }
 
@@ -34,8 +31,7 @@ namespace System
             if (target == EnvironmentVariableTarget.Process)
                 return GetEnvironmentVariable(variable);
 
-            if (variable == null)
-                throw new ArgumentNullException(nameof(variable));
+            ArgumentNullException.ThrowIfNull(variable);
 
             bool fromMachine = ValidateAndConvertRegistryTarget(target);
             return GetEnvironmentVariableFromRegistry(variable, fromMachine);
@@ -77,21 +73,13 @@ namespace System
             get => CurrentDirectoryCore;
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-
-                if (value.Length == 0)
-                    throw new ArgumentException(SR.Argument_PathEmpty, nameof(value));
-
+                ArgumentException.ThrowIfNullOrEmpty(value);
                 CurrentDirectoryCore = value;
             }
         }
 
-        public static string ExpandEnvironmentVariables(string name)
+        public static string ExpandEnvironmentVariables(string name!!)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             if (name.Length == 0)
                 return name;
 
@@ -239,11 +227,7 @@ namespace System
 
         private static void ValidateVariableAndValue(string variable, ref string? value)
         {
-            if (variable == null)
-                throw new ArgumentNullException(nameof(variable));
-
-            if (variable.Length == 0)
-                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(variable));
+            ArgumentException.ThrowIfNullOrEmpty(variable);
 
             if (variable[0] == '\0')
                 throw new ArgumentException(SR.Argument_StringFirstCharIsZero, nameof(variable));

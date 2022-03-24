@@ -24,16 +24,8 @@ namespace System.Runtime.Caching
             get { return _source; }
         }
 
-        public CacheEntryRemovedArguments(ObjectCache source, CacheEntryRemovedReason reason, CacheItem cacheItem)
+        public CacheEntryRemovedArguments(ObjectCache source!!, CacheEntryRemovedReason reason, CacheItem cacheItem!!)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-            if (cacheItem == null)
-            {
-                throw new ArgumentNullException(nameof(cacheItem));
-            }
             _source = source;
             _reason = reason;
             _cacheItem = cacheItem;

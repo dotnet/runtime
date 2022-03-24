@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Internal.Runtime;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime
 {
@@ -1054,7 +1053,7 @@ assigningNull:
                     return true;
 
                 Key key = new Key(pSourceType, pTargetType, variation);
-                Entry entry = LookupInCache(s_cache, ref key);
+                Entry? entry = LookupInCache(s_cache, ref key);
                 if (entry == null)
                     return CacheMiss(ref key, pVisited);
 
@@ -1072,7 +1071,7 @@ assigningNull:
             {
                 Debug.Assert(pSourceType != pTargetType, "target is source");
                 Key key = new Key(pSourceType, pTargetType, AssignmentVariation.BoxedSource);
-                Entry entry = LookupInCache(s_cache, ref key);
+                Entry? entry = LookupInCache(s_cache, ref key);
                 if (entry == null)
                     return CacheMiss(ref key, pVisited);
 
@@ -1113,7 +1112,7 @@ assigningNull:
                     Entry[] previousCache = Unsafe.As<Entry[]>(s_previousCache.Target);
                     if (previousCache != null)
                     {
-                        Entry previousEntry = LookupInCache(previousCache, ref key);
+                        Entry? previousEntry = LookupInCache(previousCache, ref key);
                         if (previousEntry != null)
                         {
                             result = previousEntry.Result;
@@ -1140,7 +1139,7 @@ assigningNull:
                     try
                     {
                         // Avoid duplicate entries
-                        Entry existingEntry = LookupInCache(s_cache, ref key);
+                        Entry? existingEntry = LookupInCache(s_cache, ref key);
                         if (existingEntry != null)
                             return existingEntry.Result;
 

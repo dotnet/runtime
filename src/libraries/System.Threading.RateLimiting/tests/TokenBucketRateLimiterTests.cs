@@ -354,7 +354,8 @@ namespace System.Threading.RateLimiting.Test
             var wait = limiter.WaitAsync(1, cts.Token);
 
             cts.Cancel();
-            await Assert.ThrowsAsync<OperationCanceledException>(() => wait.AsTask());
+            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
+            Assert.Equal(cts.Token, ex.CancellationToken);
 
             lease.Dispose();
             Assert.True(limiter.TryReplenish());
@@ -373,12 +374,36 @@ namespace System.Threading.RateLimiting.Test
             var cts = new CancellationTokenSource();
             cts.Cancel();
 
-            await Assert.ThrowsAsync<TaskCanceledException>(() => limiter.WaitAsync(1, cts.Token).AsTask());
+            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => limiter.WaitAsync(1, cts.Token).AsTask());
+            Assert.Equal(cts.Token, ex.CancellationToken);
 
             lease.Dispose();
             Assert.True(limiter.TryReplenish());
 
             Assert.Equal(1, limiter.GetAvailablePermits());
+        }
+
+        [Fact]
+        public override async Task CancelUpdatesQueueLimit()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1,
+                TimeSpan.Zero, 1, autoReplenishment: false));
+            var lease = limiter.Acquire(1);
+            Assert.True(lease.IsAcquired);
+
+            var cts = new CancellationTokenSource();
+            var wait = limiter.WaitAsync(1, cts.Token);
+
+            cts.Cancel();
+            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
+            Assert.Equal(cts.Token, ex.CancellationToken);
+
+            wait = limiter.WaitAsync(1);
+            Assert.False(wait.IsCompleted);
+
+            limiter.TryReplenish();
+            lease = await wait;
+            Assert.True(lease.IsAcquired);
         }
 
         [Fact]

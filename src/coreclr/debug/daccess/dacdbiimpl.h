@@ -96,7 +96,7 @@ public:
         IStringHolder * pStrName);
 
     // Get the values of the JIT Optimization and EnC flags.
-    void GetCompilerFlags (VMPTR_DomainFile vmDomainFile,
+    void GetCompilerFlags (VMPTR_DomainAssembly vmDomainAssembly,
                            BOOL * pfAllowJITOpts,
                            BOOL * pfEnableEnC);
 
@@ -104,7 +104,7 @@ public:
     bool CanSetEnCBits(Module * pModule);
 
     // Set the values of the JIT optimization and EnC flags.
-    HRESULT SetCompilerFlags(VMPTR_DomainFile vmDomainFile,
+    HRESULT SetCompilerFlags(VMPTR_DomainAssembly vmDomainAssembly,
                              BOOL             fAllowJitOpts,
                              BOOL             fEnableEnC);
 
@@ -133,7 +133,7 @@ public:
 
     bool IsValidObject(CORDB_ADDRESS obj);
 
-    bool GetAppDomainForObject(CORDB_ADDRESS obj, OUT VMPTR_AppDomain * pApp, OUT VMPTR_Module *pModule, OUT VMPTR_DomainFile *mod);
+    bool GetAppDomainForObject(CORDB_ADDRESS obj, OUT VMPTR_AppDomain * pApp, OUT VMPTR_Module *pModule, OUT VMPTR_DomainAssembly *mod);
 
 
 
@@ -218,7 +218,7 @@ public:
     // a module and a token. The info will come from a MethodDesc, if
     // one exists or from metadata.
     //
-    void GetILCodeAndSig(VMPTR_DomainFile vmDomainFile,
+    void GetILCodeAndSig(VMPTR_DomainAssembly vmDomainAssembly,
                          mdToken          functionToken,
                          TargetBuffer *   pCodeInfo,
                          mdToken *        pLocalSigToken);
@@ -229,7 +229,7 @@ public:
     //    whether it's an instantiated generic
     //    its EnC version number
     //    hot and cold region information.
-    void GetNativeCodeInfo(VMPTR_DomainFile         vmDomainFile,
+    void GetNativeCodeInfo(VMPTR_DomainAssembly         vmDomainAssembly,
                            mdToken                  functionToken,
                            NativeCodeFunctionData * pCodeInfo);
 
@@ -260,7 +260,7 @@ public:
                        ClassInfo *      pData);
 
     // get field information and object size for an instantiated generic type
-    void GetInstantiationFieldInfo (VMPTR_DomainFile             vmDomainFile,
+    void GetInstantiationFieldInfo (VMPTR_DomainAssembly             vmDomainAssembly,
                                     VMPTR_TypeHandle             vmThExact,
                                     VMPTR_TypeHandle             vmThApprox,
                                     DacDbiArrayList<FieldData> * pFieldList,
@@ -336,7 +336,7 @@ public:
                        CorElementType     simpleType,
                        mdTypeDef *        pMetadataToken,
                        VMPTR_Module     * pVmModule,
-                       VMPTR_DomainFile * pVmDomainFile);
+                       VMPTR_DomainAssembly * pVmDomainAssembly);
 
     BOOL IsExceptionObject(VMPTR_Object vmObject);
 
@@ -352,7 +352,7 @@ public:
     HRESULT GetDelegateFunctionData(
         DelegateType delegateType,
         VMPTR_Object delegateObject,
-        OUT VMPTR_DomainFile *ppFunctionDomainFile,
+        OUT VMPTR_DomainAssembly *ppFunctionDomainAssembly,
         OUT mdMethodDef *pMethodDef);
 
     HRESULT GetDelegateTargetObject(
@@ -730,10 +730,10 @@ public:
     // Gets properties for a module
     void GetModuleData(VMPTR_Module vmModule, ModuleInfo * pData);
 
-    // Gets properties for a domainfile
-    void GetDomainFileData(VMPTR_DomainFile vmDomainFile, DomainFileInfo * pData);
+    // Gets properties for a domain assembly
+    void GetDomainAssemblyData(VMPTR_DomainAssembly vmDomainAssembly, DomainAssemblyInfo * pData);
 
-    void GetModuleForDomainFile(VMPTR_DomainFile vmDomainFile, OUT VMPTR_Module * pModule);
+    void GetModuleForDomainAssembly(VMPTR_DomainAssembly vmDomainAssembly, OUT VMPTR_Module * pModule);
 
     // Yields true if the address is a CLR stub.
     BOOL IsTransitionStub(CORDB_ADDRESS address);
@@ -829,8 +829,8 @@ public:
     // Return the current appdomain the specified thread is in.
     VMPTR_AppDomain GetCurrentAppDomain(VMPTR_Thread vmThread);
 
-    // Given an assembly ref token and metadata scope (via the DomainFile), resolve the assembly.
-    VMPTR_DomainAssembly ResolveAssembly(VMPTR_DomainFile vmScope, mdToken tkAssemblyRef);
+    // Given an assembly ref token and metadata scope (via the DomainAssembly), resolve the assembly.
+    VMPTR_DomainAssembly ResolveAssembly(VMPTR_DomainAssembly vmScope, mdToken tkAssemblyRef);
 
 
     // Hijack the thread

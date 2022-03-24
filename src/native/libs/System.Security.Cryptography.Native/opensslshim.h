@@ -298,7 +298,6 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     LEGACY_FUNCTION(EVP_CIPHER_CTX_cleanup) \
     REQUIRED_FUNCTION(EVP_CIPHER_CTX_ctrl) \
     FALLBACK_FUNCTION(EVP_CIPHER_CTX_free) \
-    LIGHTUP_FUNCTION(EVP_CIPHER_CTX_get_original_iv) \
     LEGACY_FUNCTION(EVP_CIPHER_CTX_init) \
     FALLBACK_FUNCTION(EVP_CIPHER_CTX_new) \
     FALLBACK_FUNCTION(EVP_CIPHER_CTX_reset) \
@@ -461,6 +460,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     LIGHTUP_FUNCTION(SSL_CIPHER_get_name) \
     LIGHTUP_FUNCTION(SSL_CIPHER_get_version) \
     REQUIRED_FUNCTION(SSL_ctrl) \
+    REQUIRED_FUNCTION(SSL_add_client_CA) \
     REQUIRED_FUNCTION(SSL_set_alpn_protos) \
     REQUIRED_FUNCTION(SSL_set_quiet_shutdown) \
     REQUIRED_FUNCTION(SSL_CTX_check_private_key) \
@@ -518,6 +518,9 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(SSL_write) \
     REQUIRED_FUNCTION(SSL_use_certificate) \
     REQUIRED_FUNCTION(SSL_use_PrivateKey) \
+    LIGHTUP_FUNCTION(SSL_verify_client_post_handshake) \
+    LIGHTUP_FUNCTION(SSL_set_post_handshake_auth) \
+    REQUIRED_FUNCTION(SSL_version) \
     FALLBACK_FUNCTION(X509_check_host) \
     REQUIRED_FUNCTION(X509_check_purpose) \
     REQUIRED_FUNCTION(X509_cmp_current_time) \
@@ -757,7 +760,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_CIPHER_CTX_cleanup EVP_CIPHER_CTX_cleanup_ptr
 #define EVP_CIPHER_CTX_ctrl EVP_CIPHER_CTX_ctrl_ptr
 #define EVP_CIPHER_CTX_free EVP_CIPHER_CTX_free_ptr
-#define EVP_CIPHER_CTX_get_original_iv EVP_CIPHER_CTX_get_original_iv_ptr
 #define EVP_CIPHER_CTX_init EVP_CIPHER_CTX_init_ptr
 #define EVP_CIPHER_CTX_new EVP_CIPHER_CTX_new_ptr
 #define EVP_CIPHER_CTX_reset EVP_CIPHER_CTX_reset_ptr
@@ -922,6 +924,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CIPHER_get_name SSL_CIPHER_get_name_ptr
 #define SSL_CIPHER_get_version SSL_CIPHER_get_version_ptr
 #define SSL_ctrl SSL_ctrl_ptr
+#define SSL_add_client_CA SSL_add_client_CA_ptr
 #define SSL_set_alpn_protos SSL_set_alpn_protos_ptr
 #define SSL_set_quiet_shutdown SSL_set_quiet_shutdown_ptr
 #define SSL_CTX_check_private_key SSL_CTX_check_private_key_ptr
@@ -979,6 +982,9 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_write SSL_write_ptr
 #define SSL_use_certificate SSL_use_certificate_ptr
 #define SSL_use_PrivateKey SSL_use_PrivateKey_ptr
+#define SSL_verify_client_post_handshake SSL_verify_client_post_handshake_ptr
+#define SSL_set_post_handshake_auth SSL_set_post_handshake_auth_ptr
+#define SSL_version SSL_version_ptr
 #define TLS_method TLS_method_ptr
 #define X509_check_host X509_check_host_ptr
 #define X509_check_purpose X509_check_purpose_ptr

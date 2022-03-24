@@ -5,11 +5,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -41,13 +41,8 @@ namespace System
         public static string Concat(object? arg0, object? arg1, object? arg2) =>
             Concat(arg0?.ToString(), arg1?.ToString(), arg2?.ToString());
 
-        public static string Concat(params object?[] args)
+        public static string Concat(params object?[] args!!)
         {
-            if (args == null)
-            {
-                throw new ArgumentNullException(nameof(args));
-            }
-
             if (args.Length <= 1)
             {
                 return args.Length == 0 ?
@@ -106,11 +101,8 @@ namespace System
             return result;
         }
 
-        public static string Concat<T>(IEnumerable<T> values)
+        public static string Concat<T>(IEnumerable<T> values!!)
         {
-            if (values == null)
-                throw new ArgumentNullException(nameof(values));
-
             if (typeof(T) == typeof(char))
             {
                 // Special-case T==char, as we can handle that case much more efficiently,
@@ -190,11 +182,8 @@ namespace System
             }
         }
 
-        public static string Concat(IEnumerable<string?> values)
+        public static string Concat(IEnumerable<string?> values!!)
         {
-            if (values == null)
-                throw new ArgumentNullException(nameof(values));
-
             using (IEnumerator<string?> en = values.GetEnumerator())
             {
                 if (!en.MoveNext())
@@ -371,11 +360,8 @@ namespace System
             return result;
         }
 
-        public static string Concat(params string?[] values)
+        public static string Concat(params string?[] values!!)
         {
-            if (values == null)
-                throw new ArgumentNullException(nameof(values));
-
             if (values.Length <= 1)
             {
                 return values.Length == 0 ?
@@ -456,11 +442,11 @@ namespace System
 
         public static string Format(string format, params object?[] args)
         {
-            if (args == null)
+            if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in FormatHelper.
-                throw new ArgumentNullException((format == null) ? nameof(format) : nameof(args));
+                ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
             return FormatHelper(null, format, new ParamsArray(args));
@@ -483,31 +469,26 @@ namespace System
 
         public static string Format(IFormatProvider? provider, string format, params object?[] args)
         {
-            if (args == null)
+            if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in FormatHelper.
-                throw new ArgumentNullException((format == null) ? nameof(format) : nameof(args));
+                ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
             return FormatHelper(provider, format, new ParamsArray(args));
         }
 
-        private static string FormatHelper(IFormatProvider? provider, string format, ParamsArray args)
+        private static string FormatHelper(IFormatProvider? provider, string format!!, ParamsArray args)
         {
-            if (format == null)
-                throw new ArgumentNullException(nameof(format));
-
             var sb = new ValueStringBuilder(stackalloc char[256]);
             sb.EnsureCapacity(format.Length + args.Length * 8);
             sb.AppendFormatHelper(provider, format, args);
             return sb.ToString();
         }
 
-        public string Insert(int startIndex, string value)
+        public string Insert(int startIndex, string value!!)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
             if ((uint)startIndex > Length)
                 throw new ArgumentOutOfRangeException(nameof(startIndex));
 
@@ -556,12 +537,8 @@ namespace System
         public static string Join(string? separator, string?[] value, int startIndex, int count) =>
             JoinCore(separator.AsSpan(), value, startIndex, count);
 
-        private static string JoinCore(ReadOnlySpan<char> separator, string?[] value, int startIndex, int count)
+        private static string JoinCore(ReadOnlySpan<char> separator, string?[] value!!, int startIndex, int count)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
             if (startIndex < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
@@ -925,15 +902,7 @@ namespace System
 
         private string ReplaceCore(string oldValue, string? newValue, CompareInfo? ci, CompareOptions options)
         {
-            if (oldValue is null)
-            {
-                throw new ArgumentNullException(nameof(oldValue));
-            }
-
-            if (oldValue.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(oldValue));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(oldValue);
 
             // If they asked to replace oldValue with a null, replace all occurrences
             // with the empty string. AsSpan() will normalize appropriately.
@@ -1054,14 +1023,7 @@ namespace System
 
         public string Replace(string oldValue, string? newValue)
         {
-            if (oldValue is null)
-            {
-                throw new ArgumentNullException(nameof(oldValue));
-            }
-            if (oldValue.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(oldValue));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(oldValue);
 
             // If newValue is null, treat it as an empty string.  Callers use this to remove the oldValue.
             newValue ??= Empty;
@@ -1217,13 +1179,8 @@ namespace System
         /// This method is guaranteed O(n * r) complexity, where <em>n</em> is the length of the input string,
         /// and where <em>r</em> is the length of <paramref name="replacementText"/>.
         /// </remarks>
-        public string ReplaceLineEndings(string replacementText)
+        public string ReplaceLineEndings(string replacementText!!)
         {
-            if (replacementText is null)
-            {
-                throw new ArgumentNullException(nameof(replacementText));
-            }
-
             // Early-exit: do we need to do anything at all?
             // If not, return this string as-is.
 
@@ -1658,8 +1615,7 @@ namespace System
                 sep0 = separators[0];
                 sep1 = separators.Length > 1 ? separators[1] : sep0;
                 sep2 = separators.Length > 2 ? separators[2] : sep1;
-
-                if (Length >= 16 && Sse41.IsSupported)
+                if (Vector128.IsHardwareAccelerated && Length >= Vector128<ushort>.Count * 2)
                 {
                     MakeSeparatorListVectorized(ref sepListBuilder, sep0, sep1, sep2);
                     return;
@@ -1702,75 +1658,54 @@ namespace System
         private void MakeSeparatorListVectorized(ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
         {
             // Redundant test so we won't prejit remainder of this method
-            // on platforms without SSE.
-            if (!Sse41.IsSupported)
+            // on platforms where it is not supported
+            if (!Vector128.IsHardwareAccelerated)
             {
                 throw new PlatformNotSupportedException();
             }
 
-            // Constant that allows for the truncation of 16-bit (FFFF/0000) values within a register to 4-bit (F/0)
-            Vector128<byte> shuffleConstant = Vector128.Create(0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
+            Debug.Assert(Length >= Vector128<ushort>.Count);
+
+            nuint offset = 0;
+            nuint lengthToExamine = (nuint)(uint)Length;
+
+            ref ushort source = ref Unsafe.As<char, ushort>(ref _firstChar);
 
             Vector128<ushort> v1 = Vector128.Create((ushort)c);
             Vector128<ushort> v2 = Vector128.Create((ushort)c2);
             Vector128<ushort> v3 = Vector128.Create((ushort)c3);
 
-            ref char c0 = ref MemoryMarshal.GetReference(this.AsSpan());
-            int cond = Length & -Vector128<ushort>.Count;
-            int i = 0;
-
-            for (; i < cond; i += Vector128<ushort>.Count)
+            do
             {
-                Vector128<ushort> charVector = ReadVector(ref c0, i);
-                Vector128<ushort> cmp = Sse2.CompareEqual(charVector, v1);
+                Vector128<ushort> vector = Vector128.LoadUnsafe(ref source, offset);
+                Vector128<ushort> v1Eq = Vector128.Equals(vector, v1);
+                Vector128<ushort> v2Eq = Vector128.Equals(vector, v2);
+                Vector128<ushort> v3Eq = Vector128.Equals(vector, v3);
+                Vector128<byte> cmp = (v1Eq | v2Eq | v3Eq).AsByte();
 
-                cmp = Sse2.Or(Sse2.CompareEqual(charVector, v2), cmp);
-                cmp = Sse2.Or(Sse2.CompareEqual(charVector, v3), cmp);
-
-                if (Sse41.TestZ(cmp, cmp)) { continue; }
-
-                Vector128<byte> mask = Sse2.ShiftRightLogical(cmp.AsUInt64(), 4).AsByte();
-                mask = Ssse3.Shuffle(mask, shuffleConstant);
-
-                uint lowBits = Sse2.ConvertToUInt32(mask.AsUInt32());
-                mask = Sse2.ShiftRightLogical(mask.AsUInt64(), 32).AsByte();
-                uint highBits = Sse2.ConvertToUInt32(mask.AsUInt32());
-
-                for (int idx = i; lowBits != 0; idx++)
+                if (cmp != Vector128<byte>.Zero)
                 {
-                    if ((lowBits & 0xF) != 0)
+                    // Skip every other bit
+                    uint mask = cmp.ExtractMostSignificantBits() & 0x5555;
+                    do
                     {
-                        sepListBuilder.Append(idx);
-                    }
-
-                    lowBits >>= 8;
+                        uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                        sepListBuilder.Append((int)(offset + bitPos));
+                        mask = BitOperations.ResetLowestSetBit(mask);
+                    } while (mask != 0);
                 }
 
-                for (int idx = i + 4; highBits != 0; idx++)
-                {
-                    if ((highBits & 0xF) != 0)
-                    {
-                        sepListBuilder.Append(idx);
-                    }
+                offset += (nuint)Vector128<ushort>.Count;
+            } while (offset <= lengthToExamine - (nuint)Vector128<ushort>.Count);
 
-                    highBits >>= 8;
-                }
-            }
-
-            for (; i < Length; i++)
+            while (offset < lengthToExamine)
             {
-                char curr = Unsafe.Add(ref c0, (IntPtr)(uint)i);
+                char curr = (char)Unsafe.Add(ref source, offset);
                 if (curr == c || curr == c2 || curr == c3)
                 {
-                    sepListBuilder.Append(i);
+                    sepListBuilder.Append((int)offset);
                 }
-            }
-
-            static Vector128<ushort> ReadVector(ref char c0, int offset)
-            {
-                ref char ci = ref Unsafe.Add(ref c0, (IntPtr)(uint)offset);
-                ref byte b = ref Unsafe.As<char, byte>(ref ci);
-                return Unsafe.ReadUnaligned<Vector128<ushort>>(ref b);
+                offset++;
             }
         }
 

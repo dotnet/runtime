@@ -583,7 +583,7 @@ mono_threads_platform_yield (void)
 void
 mono_threads_platform_exit (gsize exit_code)
 {
-	ExitThread (exit_code);
+	ExitThread ((DWORD)exit_code);
 }
 
 int

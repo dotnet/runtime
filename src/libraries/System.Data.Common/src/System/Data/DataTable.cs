@@ -210,6 +210,12 @@ namespace System.Data
                 }
             }
 
+            if (remotingFormat == SerializationFormat.Binary &&
+                !LocalAppContextSwitches.AllowUnsafeSerializationFormatBinary)
+            {
+                throw ExceptionBuilder.SerializationFormatBinaryNotSupported();
+            }
+
             DeserializeDataTable(info, context, isSingleTable, remotingFormat);
         }
 
@@ -1127,10 +1133,22 @@ namespace System.Data
             get { return _remotingFormat; }
             set
             {
-                if (value != SerializationFormat.Binary && value != SerializationFormat.Xml)
+                switch (value)
                 {
-                    throw ExceptionBuilder.InvalidRemotingFormat(value);
+                    case SerializationFormat.Xml:
+                        break;
+
+                    case SerializationFormat.Binary:
+                        if (LocalAppContextSwitches.AllowUnsafeSerializationFormatBinary)
+                        {
+                            break;
+                        }
+                        throw ExceptionBuilder.SerializationFormatBinaryNotSupported();
+
+                    default:
+                        throw ExceptionBuilder.InvalidRemotingFormat(value);
                 }
+
                 // table can not have different format than its dataset, unless it is stand alone datatable
                 if (DataSet != null && value != DataSet.RemotingFormat)
                 {
@@ -6686,7 +6704,9 @@ namespace System.Data
             return type;
         }
 
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
         XmlSchema? IXmlSerializable.GetSchema() => GetXmlSchema();
+#pragma warning restore IL2026
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2046:UnrecognizedReflectionPattern",
@@ -6723,7 +6743,9 @@ namespace System.Data
                 fNormalization = textReader.Normalized;
                 textReader.Normalized = false;
             }
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
             ReadXmlSerializableInternal(reader);
+#pragma warning restore IL2026
 
             if (textReader != null)
             {
@@ -6739,7 +6761,9 @@ namespace System.Data
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
             WriteXmlInternal(writer);
+#pragma warning restore IL2026
         }
 
         [RequiresUnreferencedCode("DataTable.WriteXml uses XmlSerialization underneath which is not trimming safe. Members from serialized types may be trimmed if not referenced directly.")]

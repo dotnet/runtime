@@ -9,8 +9,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly initblk2 {}
-.module initblk2.exe
+.assembly 'initblk3' {}
 
 .class public explicit ansi sealed $MultiByte$size$5000 extends [mscorlib]System.ValueType
 {

@@ -18,11 +18,8 @@ namespace System.Text
         {
         }
 
-        public DecoderReplacementFallback(string replacement)
+        public DecoderReplacementFallback(string replacement!!)
         {
-            if (replacement == null)
-                throw new ArgumentNullException(nameof(replacement));
-
             // Make sure it doesn't have bad surrogate pairs
             bool bFoundHigh = false;
             foreach (char c in replacement)

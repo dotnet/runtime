@@ -35,9 +35,9 @@ namespace System.Reflection.PortableExecutable
         private Blob _lazyStrongNameSignature;
 
         public ManagedPEBuilder(
-            PEHeaderBuilder header,
-            MetadataRootBuilder metadataRootBuilder,
-            BlobBuilder ilStream,
+            PEHeaderBuilder header!!,
+            MetadataRootBuilder metadataRootBuilder!!,
+            BlobBuilder ilStream!!,
             BlobBuilder? mappedFieldData = null,
             BlobBuilder? managedResources = null,
             ResourceSectionBuilder? nativeResources = null,
@@ -48,21 +48,6 @@ namespace System.Reflection.PortableExecutable
             Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider = null)
             : base(header, deterministicIdProvider)
         {
-            if (header == null)
-            {
-                Throw.ArgumentNull(nameof(header));
-            }
-
-            if (metadataRootBuilder == null)
-            {
-                Throw.ArgumentNull(nameof(metadataRootBuilder));
-            }
-
-            if (ilStream == null)
-            {
-                Throw.ArgumentNull(nameof(ilStream));
-            }
-
             if (strongNameSignatureSize < 0)
             {
                 Throw.ArgumentOutOfRange(nameof(strongNameSignatureSize));
@@ -227,18 +212,8 @@ namespace System.Reflection.PortableExecutable
             return _peDirectoriesBuilder;
         }
 
-        public void Sign(BlobBuilder peImage, Func<IEnumerable<Blob>, byte[]> signatureProvider)
+        public void Sign(BlobBuilder peImage!!, Func<IEnumerable<Blob>, byte[]> signatureProvider!!)
         {
-            if (peImage == null)
-            {
-                Throw.ArgumentNull(nameof(peImage));
-            }
-
-            if (signatureProvider == null)
-            {
-                Throw.ArgumentNull(nameof(signatureProvider));
-            }
-
             Sign(peImage!, _lazyStrongNameSignature, signatureProvider!);
         }
     }

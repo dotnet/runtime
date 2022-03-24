@@ -37,12 +37,8 @@ namespace Internal.TypeSystem
 
                 TypeDesc fieldType = field.FieldType;
 
-                // ByRef instance fields are not allowed.
-                if (fieldType.IsByRef)
-                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-
-                // ByRef-like instance fields on non-byref-like types are not allowed.
-                if (fieldType.IsByRefLike && !type.IsByRefLike)
+                // ByRef and byref-like instance fields on non-byref-like types are not allowed.
+                if ((fieldType.IsByRef || fieldType.IsByRefLike) && !type.IsByRefLike)
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
 
                 numInstanceFields++;
@@ -481,7 +477,7 @@ namespace Internal.TypeSystem
                 }
                 else
                 {
-                    Debug.Assert(fieldType.IsPrimitive || fieldType.IsPointer || fieldType.IsFunctionPointer || fieldType.IsEnum);
+                    Debug.Assert(fieldType.IsPrimitive || fieldType.IsPointer || fieldType.IsFunctionPointer || fieldType.IsEnum || fieldType.IsByRef);
 
                     var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, hasLayout, packingSize, out bool _, out bool _);
                     instanceNonGCPointerFieldsCount[CalculateLog2(fieldSizeAndAlignment.Size.AsInt)]++;
@@ -815,7 +811,7 @@ namespace Internal.TypeSystem
             }
             else
             {
-                Debug.Assert(fieldType.IsPointer || fieldType.IsFunctionPointer);
+                Debug.Assert(fieldType.IsPointer || fieldType.IsFunctionPointer || fieldType.IsByRef);
                 result.Size = fieldType.Context.Target.LayoutPointerSize;
                 result.Alignment = fieldType.Context.Target.LayoutPointerSize;
             }

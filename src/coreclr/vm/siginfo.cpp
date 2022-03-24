@@ -4903,20 +4903,67 @@ void PromoteCarefully(promote_func   fn,
     (*fn) (ppObj, sc, flags);
 }
 
+class ByRefPointerOffsetsReporter
+{
+    promote_func* _fn;
+    ScanContext* _sc;
+    PTR_VOID _src;
+
+    void Report(SIZE_T pointerOffset)
+    {
+        WRAPPER_NO_CONTRACT;
+        PTR_PTR_Object fieldRef = dac_cast<PTR_PTR_Object>(PTR_BYTE(_src) + pointerOffset);
+        (*_fn)(fieldRef, _sc, GC_CALL_INTERIOR);
+    }
+
+public:
+    ByRefPointerOffsetsReporter(promote_func* fn, ScanContext* sc, PTR_VOID pSrc)
+        : _fn{fn}
+        , _sc{sc}
+        , _src{pSrc}
+    {
+        WRAPPER_NO_CONTRACT;
+    }
+
+    void Find(PTR_MethodTable pMT, SIZE_T baseOffset)
+    {
+        WRAPPER_NO_CONTRACT;
+        _ASSERTE(pMT != nullptr);
+        _ASSERTE(pMT->IsByRefLike());
+
+        if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
+        {
+            Report(baseOffset);
+            return;
+        }
+
+        ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
+        for (FieldDesc* pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
+        {
+            if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+            {
+                PTR_MethodTable pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+                if (pFieldMT->IsByRefLike())
+                {
+                    Find(pFieldMT, baseOffset + pFD->GetOffset());
+                }
+            }
+            else if (pFD->IsByRef())
+            {
+                Report(baseOffset + pFD->GetOffset());
+            }
+        }
+    }
+};
+
 void ReportPointersFromValueType(promote_func *fn, ScanContext *sc, PTR_MethodTable pMT, PTR_VOID pSrc)
 {
     WRAPPER_NO_CONTRACT;
 
     if (pMT->IsByRefLike())
     {
-        FindByRefPointerOffsetsInByRefLikeObject(
-            pMT,
-            0 /* baseOffset */,
-            [&](SIZE_T pointerOffset)
-            {
-                PTR_PTR_Object fieldRef = dac_cast<PTR_PTR_Object>(PTR_BYTE(pSrc) + pointerOffset);
-                (*fn)(fieldRef, sc, GC_CALL_INTERIOR);
-            });
+        ByRefPointerOffsetsReporter reporter{fn, sc, pSrc};
+        reporter.Find(pMT, 0 /* baseOffset */);
     }
 
     if (!pMT->ContainsPointers())

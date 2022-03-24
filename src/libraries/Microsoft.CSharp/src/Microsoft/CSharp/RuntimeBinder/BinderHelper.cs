@@ -146,11 +146,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public static void ValidateBindArgument(DynamicMetaObject argument, string paramName)
         {
-            if (argument == null)
-            {
-                throw Error.ArgumentNull(paramName);
-            }
-
+            ArgumentNullException.ThrowIfNull(argument, paramName);
             if (!argument.HasValue)
             {
                 throw Error.DynamicArgumentNeedsValue(paramName);

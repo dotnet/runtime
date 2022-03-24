@@ -7,6 +7,6 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="oddpower.il" />
+    <Compile Include="_simpleoddpower.il" />
   </ItemGroup>
 </Project>

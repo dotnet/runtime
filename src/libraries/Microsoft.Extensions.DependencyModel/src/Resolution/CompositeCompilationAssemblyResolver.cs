@@ -10,9 +10,9 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
     {
         private readonly ICompilationAssemblyResolver[] _resolvers;
 
-        public CompositeCompilationAssemblyResolver(ICompilationAssemblyResolver[] resolvers)
+        public CompositeCompilationAssemblyResolver(ICompilationAssemblyResolver[] resolvers!!)
         {
-            _resolvers = resolvers ?? throw new ArgumentNullException(nameof(resolvers));
+            _resolvers = resolvers;
         }
 
         public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string>? assemblies)

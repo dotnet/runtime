@@ -66,7 +66,6 @@ struct DLDL
 
 struct Agnostic_CanInline
 {
-    DWORD Restrictions;
     DWORD result;
     DWORD exceptionCode;
 };

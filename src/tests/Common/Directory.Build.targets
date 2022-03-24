@@ -31,7 +31,7 @@
           DependsOnTargets="ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
 
     <ItemGroup>
-      <RunTimeDependencyExclude Include="$(CORE_ROOT)\**\*.*" Exclude="$(CORE_ROOT)\nativeaot\**\*.*" />
+      <RunTimeDependencyExclude Include="$(CORE_ROOT)\**\*.*" />
       <RunTimeDependencyExcludeFiles Include="@(RunTimeDependencyExclude -> '%(FileName)%(Extension)')" />
       <RunTimeDependencyExcludeFiles Include="@(RunTimeDependencyExclude -> '%(FileName).ni%(Extension)')" />
       <RunTimeDependencyExcludeFiles Include="@(RunTimeDependencyExclude -> '%(FileName).pdb')" />
@@ -171,16 +171,9 @@
       <RunTimeDependencyCopyLocal Include="$(CoreDisToolsLibrary)" Condition="$(CopyCoreDisToolsToCoreRoot)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
-      <AotCompilerCopyLocal Include="$(CoreCLRArtifactsPath)ilc/**/*" TargetDir="nativeaot/tools/" />
-      <AotCompilerCopyLocal Include="$(CoreCLRArtifactsPath)aotsdk/**/*" TargetDir="nativeaot/sdk/" />
-      <AotCompilerCopyLocal Include="$(CoreCLRArtifactsPath)build/**/*" TargetDir="nativeaot/build/" />
-      <AotCompilerCopyLocal Include="$(TargetingPackPath)/*" TargetDir="nativeaot/framework/" />
-      <AotCompilerCopyLocal Include="@(RuntimeCopyLocalItems)" TargetDir="nativeaot/framework/" />
-    </ItemGroup>
-
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(IsDesktopOS)' == 'true' " >
-      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libcoreclr$(LibSuffix)" TargetDir=""  />
+      <RuntimeDependencyCopyLocal Condition="'$(TargetOS)' != 'windows'" Include="$(MonoArtifactsPath)/libcoreclr$(LibSuffix)" TargetDir=""  />
+      <RuntimeDependencyCopyLocal Condition="'$(TargetOS)' == 'windows'" Include="$(MonoArtifactsPath)coreclr$(LibSuffix)" TargetDir=""  />
       <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libmono-component-*" TargetDir=""  />
        <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/*.dll" TargetDir="/"  />
     </ItemGroup>
@@ -188,17 +181,6 @@
     <Copy
       SourceFiles="@(RunTimeDependencyCopyLocal)"
       DestinationFiles="@(RunTimeDependencyCopyLocal -> '$(CORE_ROOT)/%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')"
-      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
-      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
-      Retries="$(CopyRetryCount)"
-      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
-      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
-      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
-    </Copy>
-
-    <Copy
-      SourceFiles="@(AotCompilerCopyLocal)"
-      DestinationFiles="@(AotCompilerCopyLocal -> '$(CORE_ROOT)/%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')"
       SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
       OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
       Retries="$(CopyRetryCount)"

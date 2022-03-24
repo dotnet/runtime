@@ -6,8 +6,7 @@
   -->
 
   <PropertyGroup>
-    <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
-    <WindowsShell Condition="'$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows'">true</WindowsShell>
+    <WindowsShell Condition="'$(TargetOS)' == 'windows' or '$(BrowserHost)' == 'windows'">true</WindowsShell>
 
     <!-- Set Helix build to build number if available -->
     <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
@@ -35,7 +34,7 @@
         '$(Scenario)' == 'gcstress0xc_zapdisable_heapverify1' or
         '$(Scenario)' == 'gcstress0xc_jitstress1' or
         '$(Scenario)' == 'gcstress0xc_jitstress2' or
-        '$(Scenario)' == 'gcstress0xc_jitminopts_heapverify1'">01:30:00</_workItemTimeout>
+        '$(Scenario)' == 'gcstress0xc_jitminopts_heapverify1'">06:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and ('$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'Android')">00:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS')">00:45:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">00:45:00</_workItemTimeout>
@@ -98,15 +97,15 @@
          (which is when this project is invoked to call the "CreateTestEnvFile" target).
     -->
     <TestEnvFileName></TestEnvFileName>
-    <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetsWindows)' == 'true'">SetStressModes_$(Scenario).cmd</TestEnvFileName>
-    <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetsWindows)' != 'true' and '$(TargetOS)' != 'Browser'">SetStressModes_$(Scenario).sh</TestEnvFileName>
+    <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetOS)' == 'windows'">SetStressModes_$(Scenario).cmd</TestEnvFileName>
+    <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'Browser'">SetStressModes_$(Scenario).sh</TestEnvFileName>
   </PropertyGroup>
 
   <!-- HelixPreCommands is a set of commands run before the work item command. We use it here to inject
        setting up the per-scenario environment.
   -->
 
-  <ItemGroup Condition=" '$(TestEnvFileName)' != '' and '$(TargetsWindows)' == 'true' ">
+  <ItemGroup Condition=" '$(TestEnvFileName)' != '' and '$(TargetOS)' == 'windows' ">
     <HelixPreCommand Include="set __TestEnv=%HELIX_CORRELATION_PAYLOAD%\$(TestEnvFileName)" />
     <HelixPreCommand Include="type %__TestEnv%" />
     <HelixPreCommand Include="call %__TestEnv%" />
@@ -114,7 +113,7 @@
     <HelixPreCommand Include="set COMPlus" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TestEnvFileName)' != '' and '$(TargetsWindows)' != 'true' ">
+  <ItemGroup Condition=" '$(TestEnvFileName)' != '' and '$(TargetOS)' != 'windows' ">
     <HelixPreCommand Include="export __TestEnv=$HELIX_CORRELATION_PAYLOAD/$(TestEnvFileName)" />
     <HelixPreCommand Include="cat $__TestEnv" />
     <HelixPreCommand Include=". $__TestEnv" /> <!-- Use "." not "source"; some clients appear to run scripts with "sh" not "bash" -->
@@ -213,11 +212,11 @@
     <Message Importance="High" Text="Using Timeout: $(_workItemTimeout)" />
 
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(BUILD_BUILDID)' != ''">
-      <HelixPostCommands Condition="'$(TargetsWindows)' == 'true'">
+      <HelixPostCommands Condition="'$(TargetOS)' == 'windows'">
         $(HelixPostCommands);
         %HELIX_PYTHONPATH% %HELIX_CORRELATION_PAYLOAD%\gen-debug-dump-docs.py -buildid $(BUILD_BUILDID) -workitem %HELIX_WORKITEM_FRIENDLYNAME% -jobid %HELIX_CORRELATION_ID% -outdir %HELIX_WORKITEM_UPLOAD_ROOT% -templatedir %HELIX_CORRELATION_PAYLOAD% -dumpdir %HELIX_DUMP_FOLDER% -productver $(ProductVersion)
       </HelixPostCommands>
-      <HelixPostCommands Condition="'$(TargetsWindows)' != 'true'">
+      <HelixPostCommands Condition="'$(TargetOS)' != 'windows'">
         $(HelixPostCommands);
         $HELIX_PYTHONPATH $HELIX_CORRELATION_PAYLOAD/gen-debug-dump-docs.py -buildid $(BUILD_BUILDID) -workitem $HELIX_WORKITEM_FRIENDLYNAME -jobid $HELIX_CORRELATION_ID -outdir $HELIX_WORKITEM_UPLOAD_ROOT -templatedir $HELIX_CORRELATION_PAYLOAD -dumpdir $HELIX_DUMP_FOLDER -productver $(ProductVersion)
       </HelixPostCommands>

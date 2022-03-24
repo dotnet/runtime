@@ -390,9 +390,6 @@
   <data name="Xml_NotEnoughSpaceForSurrogatePair" xml:space="preserve">
     <value>The buffer is not large enough to fit a surrogate pair. Please provide a buffer of size at least 2 characters.</value>
   </data>
-  <data name="Xml_EmptyUrl" xml:space="preserve">
-    <value>The URL cannot be empty.</value>
-  </data>
   <data name="Xml_UnexpectedNodeInSimpleContent" xml:space="preserve">
     <value>Unexpected node type {0}. {1} method can only be called on elements with simple or empty content.</value>
   </data>

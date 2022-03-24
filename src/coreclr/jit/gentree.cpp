@@ -21,9 +21,16 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 const unsigned char GenTree::gtOperKindTable[] = {
-#define GTNODE(en, st, cm, ok) (ok) + GTK_COMMUTE *cm,
+#define GTNODE(en, st, cm, ok) ((ok)&GTK_MASK) + GTK_COMMUTE *cm,
 #include "gtlist.h"
 };
+
+#ifdef DEBUG
+const GenTreeDebugOperKind GenTree::gtDebugOperKindTable[] = {
+#define GTNODE(en, st, cm, ok) static_cast<GenTreeDebugOperKind>((ok)&DBK_MASK),
+#include "gtlist.h"
+};
+#endif // DEBUG
 
 /*****************************************************************************
  *
@@ -595,23 +602,25 @@ void GenTree::CopyReg(GenTree* from)
 }
 
 //------------------------------------------------------------------
-// gtHasReg: Whether node beeen assigned a register by LSRA
+// gtHasReg: Whether node been assigned a register by LSRA
 //
 // Arguments:
-//    None
+//    comp - Compiler instance. Required for multi-reg lcl var; ignored otherwise.
 //
 // Return Value:
 //    Returns true if the node was assigned a register.
 //
-//    In case of multi-reg call nodes, it is considered
-//    having a reg if regs are allocated for all its
+//    In case of multi-reg call nodes, it is considered having a reg if regs are allocated for ALL its
 //    return values.
+//    REVIEW: why is this ALL and the other cases are ANY? Explain.
 //
-//    In case of GT_COPY or GT_RELOAD of a multi-reg call,
-//    GT_COPY/GT_RELOAD is considered having a reg if it
-//    has a reg assigned to any of its positions.
+//    In case of GT_COPY or GT_RELOAD of a multi-reg call, GT_COPY/GT_RELOAD is considered having a reg if it
+//    has a reg assigned to ANY of its positions.
 //
-bool GenTree::gtHasReg() const
+//    In case of multi-reg local vars, it is considered having a reg if it has a reg assigned for ANY
+//    of its positions.
+//
+bool GenTree::gtHasReg(Compiler* comp) const
 {
     bool hasReg = false;
 
@@ -642,6 +651,22 @@ bool GenTree::gtHasReg() const
         for (unsigned i = 0; i < regCount; ++i)
         {
             hasReg = (copyOrReload->GetRegNumByIdx(i) != REG_NA);
+            if (hasReg)
+            {
+                break;
+            }
+        }
+    }
+    else if (IsMultiRegLclVar())
+    {
+        assert(comp != nullptr);
+        const GenTreeLclVar* lclNode  = AsLclVar();
+        const unsigned       regCount = GetMultiRegCount(comp);
+        // A Multi-reg local vars is said to have regs,
+        // if it has valid regs in any of the positions.
+        for (unsigned i = 0; i < regCount; i++)
+        {
+            hasReg = (lclNode->GetRegNumByIdx(i) != REG_NA);
             if (hasReg)
             {
                 break;
@@ -706,20 +731,160 @@ int GenTree::GetRegisterDstCount(Compiler* compiler) const
 #endif
     }
 #endif
-
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (OperIs(GT_HWINTRINSIC))
+#ifdef FEATURE_HW_INTRINSICS
+    else if (OperIsHWIntrinsic())
     {
-        assert(TypeGet() == TYP_STRUCT);
-        return 2;
+        assert(TypeIs(TYP_STRUCT));
+
+        const GenTreeHWIntrinsic* intrinsic   = AsHWIntrinsic();
+        const NamedIntrinsic      intrinsicId = intrinsic->GetHWIntrinsicId();
+        assert(HWIntrinsicInfo::IsMultiReg(intrinsicId));
+
+        return HWIntrinsicInfo::GetMultiRegCount(intrinsicId);
     }
-#endif
+#endif // FEATURE_HW_INTRINSICS
+
     if (OperIsScalarLocal())
     {
         return AsLclVar()->GetFieldCount(compiler);
     }
     assert(!"Unexpected multi-reg node");
     return 0;
+}
+
+//-----------------------------------------------------------------------------------
+// IsMultiRegNode: whether a node returning its value in more than one register
+//
+// Arguments:
+//     None
+//
+// Return Value:
+//     Returns true if this GenTree is a multi-reg node.
+//
+// Notes:
+//     All targets that support multi-reg ops of any kind also support multi-reg return
+//     values for calls. Should that change with a future target, this method will need
+//     to change accordingly.
+//
+bool GenTree::IsMultiRegNode() const
+{
+#if FEATURE_MULTIREG_RET
+    if (IsMultiRegCall())
+    {
+        return true;
+    }
+
+#if FEATURE_ARG_SPLIT
+    if (OperIsPutArgSplit())
+    {
+        return true;
+    }
+#endif
+
+#if !defined(TARGET_64BIT)
+    if (OperIsMultiRegOp())
+    {
+        return true;
+    }
+#endif
+
+    if (OperIs(GT_COPY, GT_RELOAD))
+    {
+        return true;
+    }
+#endif // FEATURE_MULTIREG_RET
+
+#ifdef FEATURE_HW_INTRINSICS
+    if (OperIsHWIntrinsic())
+    {
+        return HWIntrinsicInfo::IsMultiReg(AsHWIntrinsic()->GetHWIntrinsicId());
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    if (IsMultiRegLclVar())
+    {
+        return true;
+    }
+    return false;
+}
+
+//-----------------------------------------------------------------------------------
+// GetMultiRegCount: Return the register count for a multi-reg node.
+//
+// Arguments:
+//     comp - Compiler instance. Required for MultiRegLclVar, unused otherwise.
+//
+// Return Value:
+//     Returns the number of registers defined by this node.
+//
+unsigned GenTree::GetMultiRegCount(Compiler* comp) const
+{
+#if FEATURE_MULTIREG_RET
+    if (IsMultiRegCall())
+    {
+        return AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
+    }
+
+#if FEATURE_ARG_SPLIT
+    if (OperIsPutArgSplit())
+    {
+        return AsPutArgSplit()->gtNumRegs;
+    }
+#endif
+
+#if !defined(TARGET_64BIT)
+    if (OperIsMultiRegOp())
+    {
+        return AsMultiRegOp()->GetRegCount();
+    }
+#endif
+
+    if (OperIs(GT_COPY, GT_RELOAD))
+    {
+        return AsCopyOrReload()->GetRegCount();
+    }
+#endif // FEATURE_MULTIREG_RET
+
+#ifdef FEATURE_HW_INTRINSICS
+    if (OperIsHWIntrinsic())
+    {
+        return HWIntrinsicInfo::GetMultiRegCount(AsHWIntrinsic()->GetHWIntrinsicId());
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    if (IsMultiRegLclVar())
+    {
+        assert(comp != nullptr);
+        return AsLclVar()->GetFieldCount(comp);
+    }
+
+    assert(!"GetMultiRegCount called with non-multireg node");
+    return 1;
+}
+
+//---------------------------------------------------------------
+// gtGetContainedRegMask: Get the reg mask of the node including
+//    contained nodes (recursive).
+//
+// Arguments:
+//    None
+//
+// Return Value:
+//    Reg Mask of GenTree node.
+//
+regMaskTP GenTree::gtGetContainedRegMask()
+{
+    if (!isContained())
+    {
+        return gtGetRegMask();
+    }
+
+    regMaskTP mask = 0;
+    for (GenTree* operand : Operands())
+    {
+        mask |= operand->gtGetContainedRegMask();
+    }
+    return mask;
 }
 
 //---------------------------------------------------------------
@@ -1099,6 +1264,16 @@ bool GenTreeCall::AreArgsComplete() const
 #endif
 
     return false;
+}
+
+//-------------------------------------------------------------------------
+// SetRetBufArg: Sets the "return buffer" argument use.
+//
+void GenTreeCall::SetLclRetBufArg(Use* retBufArg)
+{
+    assert(retBufArg->GetNode()->TypeIs(TYP_I_IMPL, TYP_BYREF) && retBufArg->GetNode()->OperIs(GT_ADDR, GT_ASG));
+    assert(HasRetBufArg());
+    gtRetBufArg = retBufArg;
 }
 
 //--------------------------------------------------------------------------
@@ -2415,8 +2590,9 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
             costEx = IND_COST_EX;
             costSz = 2;
 
-            GenTree* addr = hwTree->Op(1)->gtEffectiveVal();
-            level         = gtSetEvalOrder(addr);
+            GenTree* const addrNode = hwTree->Op(1);
+            level                   = gtSetEvalOrder(addrNode);
+            GenTree* const addr     = addrNode->gtEffectiveVal();
 
             // See if we can form a complex addressing mode.
             if (addr->OperIs(GT_ADD) && gtMarkAddrMode(addr, &costEx, &costSz, hwTree->TypeGet()))
@@ -3727,6 +3903,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_System_Math_Log:
                         case NI_System_Math_Log2:
                         case NI_System_Math_Log10:
+                        case NI_System_Math_Max:
+                        case NI_System_Math_Min:
                         case NI_System_Math_Pow:
                         case NI_System_Math_Round:
                         case NI_System_Math_Sin:
@@ -3734,6 +3912,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_System_Math_Sqrt:
                         case NI_System_Math_Tan:
                         case NI_System_Math_Tanh:
+                        case NI_System_Math_Truncate:
                         {
                             // Giving intrinsics a large fixed execution cost is because we'd like to CSE
                             // them, even if they are implemented by calls. This is different from modeling
@@ -4132,28 +4311,24 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 case GT_IND:
                 case GT_BLK:
                 case GT_OBJ:
-
-                    // In an indirection, the destination address is evaluated prior to the source.
-                    // If we have any side effects on the target indirection,
-                    // we have to evaluate op1 first.
-                    // However, if the LHS is a lclVar address, SSA relies on using evaluation order for its
-                    // renaming, and therefore the RHS must be evaluated first.
-                    // If we have an assignment involving a lclVar address, the LHS may be marked as having
-                    // side-effects.
-                    // However the side-effects won't require that we evaluate the LHS address first:
-                    // - The GTF_GLOB_REF might have been conservatively set on a FIELD of a local.
-                    // - The local might be address-exposed, but that side-effect happens at the actual assignment (not
-                    //   when its address is "evaluated") so it doesn't change the side effect to "evaluate" the address
-                    //   after the RHS (note that in this case it won't be renamed by SSA anyway, but the reordering is
-                    //   safe).
+                {
+                    // In an ASG(IND(addr), ...), the "IND" is a pure syntactical element,
+                    // the actual indirection will only be realized at the point of the ASG
+                    // itself. As such, we can disard any side effects "induced" by it in
+                    // this logic.
                     //
-                    if (op1Val->AsIndir()->Addr()->IsLocalAddrExpr())
+                    // Note that for local "addr"s, liveness depends on seeing the defs and
+                    // uses in correct order, and so we MUST reverse the ASG in that case.
+                    //
+                    GenTree* op1Addr = op1->AsIndir()->Addr();
+
+                    if (op1Addr->IsLocalAddrExpr() || op1Addr->IsInvariant())
                     {
                         bReverseInAssignment = true;
                         tree->gtFlags |= GTF_REVERSE_OPS;
                         break;
                     }
-                    if (op1Val->AsIndir()->Addr()->gtFlags & GTF_ALL_EFFECT)
+                    if (op1Addr->gtFlags & GTF_ALL_EFFECT)
                     {
                         break;
                     }
@@ -4170,7 +4345,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     {
                         break;
                     }
-
+                }
                     // fall through and set GTF_REVERSE_OPS
                     FALLTHROUGH;
 
@@ -4243,6 +4418,12 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         // register requirement.
                         level += 2;
                         break;
+
+                    case NI_System_Math_Max:
+                    case NI_System_Math_Min:
+                        level++;
+                        break;
+
                     default:
                         assert(!"Unknown binary GT_INTRINSIC operator");
                         break;
@@ -4675,6 +4856,35 @@ DONE:
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
+
+#ifdef DEBUG
+bool GenTree::OperSupportsReverseOpEvalOrder(Compiler* comp) const
+{
+    if (OperIsBinary())
+    {
+        if ((AsOp()->gtGetOp1() == nullptr) || (AsOp()->gtGetOp2() == nullptr))
+        {
+            return false;
+        }
+        if (OperIs(GT_COMMA, GT_BOUNDS_CHECK))
+        {
+            return false;
+        }
+        if (OperIs(GT_INTRINSIC))
+        {
+            return !comp->IsIntrinsicImplementedByUserCall(AsIntrinsic()->gtIntrinsicName);
+        }
+        return true;
+    }
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+    if (OperIsMultiOp())
+    {
+        return AsMultiOp()->GetOperandCount() == 2;
+    }
+#endif // FEATURE_SIMD || FEATURE_HW_INTRINSICS
+    return false;
+}
+#endif // DEBUG
 
 /*****************************************************************************
  *
@@ -5176,6 +5386,12 @@ bool GenTree::OperRequiresAsgFlag()
         }
     }
 #endif // FEATURE_HW_INTRINSICS
+    if (gtOper == GT_CALL)
+    {
+        // If the call has return buffer argument, it produced a definition and hence
+        // should be marked with assignment.
+        return AsCall()->GetLclRetBufArgNode() != nullptr;
+    }
     return false;
 }
 
@@ -5556,6 +5772,11 @@ GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, 
     return node;
 }
 
+GenTreeColon* Compiler::gtNewColonNode(var_types type, GenTree* elseNode, GenTree* thenNode)
+{
+    return new (this, GT_COLON) GenTreeColon(TYP_INT, elseNode, thenNode);
+}
+
 GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon)
 {
     compQmarkUsed        = true;
@@ -5572,6 +5793,21 @@ GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeCol
 GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
 {
     return new (this, GT_CNS_INT) GenTreeIntCon(type, value);
+}
+
+GenTreeIntCon* Compiler::gtNewNull()
+{
+    return gtNewIconNode(0, TYP_REF);
+}
+
+GenTreeIntCon* Compiler::gtNewTrue()
+{
+    return gtNewIconNode(1, TYP_INT);
+}
+
+GenTreeIntCon* Compiler::gtNewFalse()
+{
+    return gtNewIconNode(0, TYP_INT);
 }
 
 GenTreeIntCon* Compiler::gtNewIconNode(unsigned fieldOffset, FieldSeqNode* fieldSeq)
@@ -5655,19 +5891,6 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenT
     //
     indNode->gtFlags |= GTF_IND_NONFAULTING;
 
-    // String Literal handles are indirections that return a TYP_REF, and
-    // these are pointers into the GC heap.  We don't currently have any
-    // TYP_BYREF pointers, but if we did they also must be pointers into the GC heap.
-    //
-    // Also every GTF_ICON_STATIC_HDL also must be a pointer into the GC heap
-    // we will set GTF_GLOB_REF for these kinds of references.
-    //
-    if ((varTypeIsGC(indType)) || (iconFlags == GTF_ICON_STATIC_HDL))
-    {
-        // This indirection also points into the gloabal heap
-        indNode->gtFlags |= GTF_GLOB_REF;
-    }
-
     if (isInvariant)
     {
         assert(iconFlags != GTF_ICON_STATIC_HDL); // Pointer to a mutable class Static variable
@@ -5683,6 +5906,13 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenT
             indNode->gtFlags |= GTF_IND_NONNULL;
         }
     }
+    else
+    {
+        // GLOB_REF needs to be set for indirections returning values from mutable
+        // locations, so that e. g. args sorting does not reorder them with calls.
+        indNode->gtFlags |= GTF_GLOB_REF;
+    }
+
     return indNode;
 }
 
@@ -5793,6 +6023,12 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
 //
 GenTreeIntCon* Compiler::gtNewStringLiteralLength(GenTreeStrCon* node)
 {
+    if (node->IsStringEmptyField())
+    {
+        JITDUMP("Folded String.Empty.Length to 0\n");
+        return gtNewIconNode(0);
+    }
+
     int             length = -1;
     const char16_t* str    = info.compCompHnd->getStringLiteral(node->gtScpHnd, node->gtSconCPX, &length);
     if (length >= 0)
@@ -5802,11 +6038,11 @@ GenTreeIntCon* Compiler::gtNewStringLiteralLength(GenTreeStrCon* node)
         // str can be NULL for dynamic context
         if (str != nullptr)
         {
-            JITDUMP("String '\"%ws\".Length' is '%d'\n", str, length)
+            JITDUMP("Folded '\"%ws\".Length' to '%d'\n", str, length)
         }
         else
         {
-            JITDUMP("String 'CNS_STR.Length' is '%d'\n", length)
+            JITDUMP("Folded 'CNS_STR.Length' to '%d'\n", length)
         }
         return iconNode;
     }
@@ -7722,20 +7958,45 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     copy->gtCallMoreFlags = tree->gtCallMoreFlags;
     copy->gtCallArgs      = nullptr;
     copy->gtCallLateArgs  = nullptr;
+    copy->gtRetBufArg     = nullptr;
 
     GenTreeCall::Use** argsTail = &copy->gtCallArgs;
     for (GenTreeCall::Use& use : tree->Args())
     {
-        *argsTail = gtNewCallArgs(gtCloneExpr(use.GetNode(), addFlags, deepVarNum, deepVarVal));
-        argsTail  = &((*argsTail)->NextRef());
+        GenTree* argNode     = use.GetNode();
+        GenTree* copyArgNode = gtCloneExpr(argNode, addFlags, deepVarNum, deepVarVal);
+        *argsTail            = gtNewCallArgs(copyArgNode);
+
+        if (tree->gtRetBufArg == &use)
+        {
+            // Set the return buffer arg, if any.
+            assert(copy->gtRetBufArg == nullptr);
+            copy->gtRetBufArg = *argsTail;
+        }
+
+        argsTail = &((*argsTail)->NextRef());
     }
 
     argsTail = &copy->gtCallLateArgs;
     for (GenTreeCall::Use& use : tree->LateArgs())
     {
-        *argsTail = gtNewCallArgs(gtCloneExpr(use.GetNode(), addFlags, deepVarNum, deepVarVal));
-        argsTail  = &((*argsTail)->NextRef());
+        GenTree* argNode     = use.GetNode();
+        GenTree* copyArgNode = gtCloneExpr(argNode, addFlags, deepVarNum, deepVarVal);
+        *argsTail            = gtNewCallArgs(copyArgNode);
+
+        if (tree->gtRetBufArg == &use)
+        {
+            // Set the return buffer arg, if any.
+            assert(copy->gtRetBufArg == nullptr);
+            copy->gtRetBufArg = *argsTail;
+        }
+
+        argsTail = &((*argsTail)->NextRef());
     }
+
+    // Either there was not return buffer for the "tree" or else we successfully set the
+    // return buffer in the copy.
+    assert((tree->gtRetBufArg == nullptr) || (copy->gtRetBufArg != nullptr));
 
     // The call sig comes from the EE and doesn't change throughout the compilation process, meaning
     // we only really need one physical copy of it. Therefore a shallow pointer copy will suffice.
@@ -9043,7 +9304,7 @@ void Compiler::gtDispZeroFieldSeq(GenTree* tree)
         if (map->Lookup(tree, &fldSeq))
         {
             printf(" Zero");
-            gtDispFieldSeq(fldSeq);
+            gtDispAnyFieldSeq(fldSeq);
         }
     }
 }
@@ -9561,7 +9822,10 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 {
                     printf("(AX)"); // Variable has address exposed.
                 }
-
+                if (varDsc->IsHiddenBufferStructArg())
+                {
+                    printf("(RB)"); // Variable is hidden return buffer
+                }
                 if (varDsc->lvUnusedStruct)
                 {
                     assert(varDsc->lvPromoted);
@@ -9626,10 +9890,10 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
 
 #if FEATURE_MULTIREG_RET
 //----------------------------------------------------------------------------------
-// gtDispRegCount: determine how many registers to print for a multi-reg node
+// gtDispMultiRegCount: determine how many registers to print for a multi-reg node
 //
 // Arguments:
-//    tree  -  Gentree node whose registers we want to print
+//    tree  -  GenTree node whose registers we want to print
 //
 // Return Value:
 //    The number of registers to print
@@ -9640,13 +9904,13 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
 //    and for CALL, it will return 0 if the ReturnTypeDesc hasn't yet been initialized.
 //    But we want to print all register positions.
 //
-unsigned Compiler::gtDispRegCount(GenTree* tree)
+unsigned Compiler::gtDispMultiRegCount(GenTree* tree)
 {
     if (tree->IsCopyOrReload())
     {
         // GetRegCount() will return only the number of valid regs for COPY or RELOAD,
         // but we want to print all positions, so we get the reg count for op1.
-        return gtDispRegCount(tree->gtGetOp1());
+        return gtDispMultiRegCount(tree->gtGetOp1());
     }
     else if (!tree->IsMultiRegNode())
     {
@@ -9654,10 +9918,6 @@ unsigned Compiler::gtDispRegCount(GenTree* tree)
         // even if its op1 is not multireg.
         // Note that this method won't be called for non-register-producing nodes.
         return 1;
-    }
-    else if (tree->IsMultiRegLclVar())
-    {
-        return tree->AsLclVar()->GetFieldCount(this);
     }
     else if (tree->OperIs(GT_CALL))
     {
@@ -9671,7 +9931,7 @@ unsigned Compiler::gtDispRegCount(GenTree* tree)
     }
     else
     {
-        return tree->GetMultiRegCount();
+        return tree->GetMultiRegCount(this);
     }
 }
 #endif // FEATURE_MULTIREG_RET
@@ -9702,7 +9962,7 @@ void Compiler::gtDispRegVal(GenTree* tree)
     {
         // 0th reg is GetRegNum(), which is already printed above.
         // Print the remaining regs of a multi-reg node.
-        unsigned regCount = gtDispRegCount(tree);
+        unsigned regCount = gtDispMultiRegCount(tree);
 
         // For some nodes, e.g. COPY, RELOAD or CALL, we may not have valid regs for all positions.
         for (unsigned i = 1; i < regCount; ++i)
@@ -10160,9 +10420,28 @@ void Compiler::gtDispConst(GenTree* tree)
     }
 }
 
+//------------------------------------------------------------------------
+// gtDispFieldSeq: "gtDispFieldSeq" that also prints "<NotAField>".
+//
+// Useful for printing zero-offset field sequences.
+//
+void Compiler::gtDispAnyFieldSeq(FieldSeqNode* fieldSeq)
+{
+    if (fieldSeq == FieldSeqStore::NotAField())
+    {
+        printf(" Fseq<NotAField>");
+        return;
+    }
+
+    gtDispFieldSeq(fieldSeq);
+}
+
+//------------------------------------------------------------------------
+// gtDispFieldSeq: Print out the fields in this field sequence.
+//
 void Compiler::gtDispFieldSeq(FieldSeqNode* pfsn)
 {
-    if (pfsn == FieldSeqStore::NotAField() || (pfsn == nullptr))
+    if ((pfsn == nullptr) || (pfsn == FieldSeqStore::NotAField()))
     {
         return;
     }
@@ -10623,6 +10902,9 @@ void Compiler::gtDispTree(GenTree*     tree,
                     case GenTreePutArgStk::Kind::RepInstr:
                         printf(" (RepInstr)");
                         break;
+                    case GenTreePutArgStk::Kind::PartialRepInstr:
+                        printf(" (PartialRepInstr)");
+                        break;
                     case GenTreePutArgStk::Kind::Unroll:
                         printf(" (Unroll)");
                         break;
@@ -10736,6 +11018,12 @@ void Compiler::gtDispTree(GenTree*     tree,
                 case NI_System_Math_Log10:
                     printf(" log10");
                     break;
+                case NI_System_Math_Max:
+                    printf(" max");
+                    break;
+                case NI_System_Math_Min:
+                    printf(" min");
+                    break;
                 case NI_System_Math_Pow:
                     printf(" pow");
                     break;
@@ -10756,6 +11044,9 @@ void Compiler::gtDispTree(GenTree*     tree,
                     break;
                 case NI_System_Math_Tanh:
                     printf(" tanh");
+                    break;
+                case NI_System_Math_Truncate:
+                    printf(" truncate");
                     break;
                 case NI_System_Object_GetType:
                     printf(" objGetType");
@@ -11685,11 +11976,34 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
         return tree;
     }
 
-    /* Currently we can only fold when the two subtrees exactly match */
-
-    if ((tree->gtFlags & GTF_SIDE_EFFECT) || GenTree::Compare(op1, op2, true) == false)
+    // Currently we can only fold when the two subtrees exactly match
+    // and everything is side effect free.
+    //
+    if (((tree->gtFlags & GTF_SIDE_EFFECT) != 0) || !GenTree::Compare(op1, op2, true))
     {
-        return tree; /* return unfolded tree */
+        // No folding.
+        //
+        return tree;
+    }
+
+    // GTF_ORDER_SIDEEFF here may indicate volatile subtrees.
+    // Or it may indicate a non-null assertion prop into an indir subtree.
+    //
+    // Check the operands.
+    //
+    if ((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0)
+    {
+        // If op1 is "volatle" and op2 is not, we can still fold.
+        //
+        const bool op1MayBeVolatile = (op1->gtFlags & GTF_ORDER_SIDEEFF) != 0;
+        const bool op2MayBeVolatile = (op2->gtFlags & GTF_ORDER_SIDEEFF) != 0;
+
+        if (!op1MayBeVolatile || op2MayBeVolatile)
+        {
+            // No folding.
+            //
+            return tree;
+        }
     }
 
     GenTree* cons;
@@ -15191,6 +15505,17 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
             blkNode = AsOp()->gtOp1->AsBlk();
         }
     }
+    else if (OperIs(GT_CALL))
+    {
+        GenTree* retBufArg = AsCall()->GetLclRetBufArgNode();
+        if (retBufArg == nullptr)
+        {
+            return false;
+        }
+
+        unsigned size = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
+        return retBufArg->DefinesLocalAddr(comp, size, pLclVarTree, pIsEntire);
+    }
     else if (OperIsBlk())
     {
         blkNode = this->AsBlk();
@@ -15562,29 +15887,37 @@ unsigned GenTree::IsLclVarUpdateTree(GenTree** pOtherTree, genTreeOps* pOper)
     return lclNum;
 }
 
+#ifdef DEBUG
 //------------------------------------------------------------------------
 // canBeContained: check whether this tree node may be a subcomponent of its parent for purposes
 //                 of code generation.
 //
-// Return value: returns true if it is possible to contain this node and false otherwise.
+// Return Value:
+//    True if it is possible to contain this node and false otherwise.
+//
 bool GenTree::canBeContained() const
 {
-    assert(IsLIR());
+    assert(OperIsLIR());
 
-    if (gtHasReg())
+    if (IsMultiRegLclVar())
     {
         return false;
     }
 
-    // It is not possible for nodes that do not produce values or that are not containable values
-    // to be contained.
-    if (((OperKind() & (GTK_NOVALUE | GTK_NOCONTAIN)) != 0) || (OperIsHWIntrinsic() && !isContainableHWIntrinsic()))
+    if (gtHasReg(nullptr))
+    {
+        return false;
+    }
+
+    // It is not possible for nodes that do not produce values or that are not containable values to be contained.
+    if (!IsValue() || ((DebugOperKind() & DBK_NOCONTAIN) != 0) || (OperIsHWIntrinsic() && !isContainableHWIntrinsic()))
     {
         return false;
     }
 
     return true;
 }
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // isContained: check whether this tree node is a subcomponent of its parent for codegen purposes
@@ -15601,7 +15934,7 @@ bool GenTree::canBeContained() const
 //
 bool GenTree::isContained() const
 {
-    assert(IsLIR());
+    assert(OperIsLIR());
     const bool isMarkedContained = ((gtFlags & GTF_CONTAINED) != 0);
 
 #ifdef DEBUG
@@ -15838,10 +16171,11 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
 //------------------------------------------------------------------------
 // IsFieldAddr: Is "this" a static or class field address?
 //
-// Recognizes the following three patterns:
-//    this: [Zero FldSeq]
-//    this: ADD(baseAddr, CONST FldSeq)
-//    this: ADD(CONST FldSeq, baseAddr)
+// Recognizes the following patterns:
+//    this: ADD(baseAddr, CONST [FldSeq])
+//    this: ADD(CONST [FldSeq], baseAddr)
+//    this: CONST [FldSeq]
+//    this: Zero [FldSeq]
 //
 // Arguments:
 //    comp      - the Compiler object
@@ -15866,7 +16200,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
     *pFldSeq   = FieldSeqStore::NotAField();
 
     GenTree*      baseAddr = nullptr;
-    FieldSeqNode* fldSeq   = nullptr;
+    FieldSeqNode* fldSeq   = FieldSeqStore::NotAField();
 
     if (OperIs(GT_ADD))
     {
@@ -15890,25 +16224,27 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
             assert(!baseAddr->TypeIs(TYP_REF) || !comp->GetZeroOffsetFieldMap()->Lookup(baseAddr));
         }
     }
+    else if (IsCnsIntOrI() && IsIconHandle(GTF_ICON_STATIC_HDL))
+    {
+        assert(!comp->GetZeroOffsetFieldMap()->Lookup(this) && (AsIntCon()->gtFieldSeq != nullptr));
+        fldSeq   = AsIntCon()->gtFieldSeq;
+        baseAddr = nullptr;
+    }
     else if (comp->GetZeroOffsetFieldMap()->Lookup(this, &fldSeq))
     {
         baseAddr = this;
     }
     else
     {
-        // TODO-VNTypes-CQ: recognize the simple GTF_ICON_STATIC_HDL case here. It
-        // is not recognized right now to preserve previous behavior of this method.
         return false;
     }
 
-    // If we don't have a valid sequence, bail. Note that above we have overloaded an empty
-    // ("nullptr") sequence as "NotAField", as that's the way it is treated on tree nodes.
-    if ((fldSeq == nullptr) || (fldSeq == FieldSeqStore::NotAField()) || fldSeq->IsPseudoField())
+    assert(fldSeq != nullptr);
+
+    if ((fldSeq == FieldSeqStore::NotAField()) || fldSeq->IsPseudoField())
     {
         return false;
     }
-
-    assert(baseAddr != nullptr);
 
     // The above screens out obviously invalid cases, but we have more checks to perform. The
     // sequence returned from this method *must* start with either a class (NOT struct) field
@@ -15917,6 +16253,9 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
     // will effectively treat such cases ("possible" in unsafe code) as undefined behavior.
     if (comp->eeIsFieldStatic(fldSeq->GetFieldHandle()))
     {
+        // TODO-VNTypes: this code is out of sync w.r.t. boxed statics that are numbered with
+        // VNF_PtrToStatic and treated as "simple" while here we treat them as "complex".
+
         // TODO-VNTypes: we will always return the "baseAddr" here for now, but strictly speaking,
         // we only need to do that if we have a shared field, to encode the logical "instantiation"
         // argument. In all other cases, this serves no purpose and just leads to redundant maps.
@@ -20551,7 +20890,8 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
     else if (varTypeIsFloating(simdBaseType))
     {
         // var tmp1 = op1.ToVector128Unsafe();
-        // return AdvSimd.Arm64.ConvertToSingleLower(tmp1);
+        // var tmp2 = AdvSimd.InsertScalar(tmp1, op2);
+        // return AdvSimd.Arm64.ConvertToSingleLower(tmp2);
 
         CorInfoType tmp2BaseJitType = CORINFO_TYPE_DOUBLE;
 
@@ -20566,8 +20906,9 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
     else
     {
         // var tmp1 = op1.ToVector128Unsafe();
-        // var tmp2 = AdvSimd.InsertScalar(tmp1.AsUInt64(), 1, op2.AsUInt64());
-        // return AdvSimd.ExtractNarrowingUpper(tmp2).As<T>();
+        // var tmp2 = AdvSimd.InsertScalar(tmp1.AsUInt64(), 1, op2.AsUInt64()).As<T>(); - signed integer use int64,
+        // unsigned integer use uint64
+        // return AdvSimd.ExtractNarrowingLower(tmp2);
 
         CorInfoType tmp2BaseJitType = varTypeIsSigned(simdBaseType) ? CORINFO_TYPE_LONG : CORINFO_TYPE_ULONG;
 
@@ -21329,7 +21670,7 @@ GenTree* Compiler::gtNewSimdZeroNode(var_types   type,
 #if defined(TARGET_XARCH)
     intrinsic = (simdSize == 32) ? NI_Vector256_get_Zero : NI_Vector128_get_Zero;
 #elif defined(TARGET_ARM64)
-    intrinsic     = (simdSize == 16) ? NI_Vector128_get_Zero : NI_Vector64_get_Zero;
+    intrinsic     = (simdSize > 8) ? NI_Vector128_get_Zero : NI_Vector64_get_Zero;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -21724,14 +22065,14 @@ void ReturnTypeDesc::InitializeLongReturnType()
 }
 
 //-------------------------------------------------------------------
-// GetABIReturnReg:  Return ith return register as per target ABI
+// GetABIReturnReg:  Return i'th return register as per target ABI
 //
 // Arguments:
 //     idx   -   Index of the return register.
 //               The first return register has an index of 0 and so on.
 //
 // Return Value:
-//     Returns ith return register as per target ABI.
+//     Returns i'th return register as per target ABI.
 //
 // Notes:
 //     x86 and ARM return long in multiple registers.

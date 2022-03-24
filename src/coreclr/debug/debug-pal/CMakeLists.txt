@@ -1,6 +1,6 @@
-
 include_directories(../inc)
 include_directories(../../pal/inc)
+include_directories(${EP_GENERATED_HEADER_PATH})
 
 add_definitions(-DPAL_STDCPP_COMPAT)
 

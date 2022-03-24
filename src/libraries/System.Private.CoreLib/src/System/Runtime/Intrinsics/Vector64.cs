@@ -7,8 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
 
-using Internal.Runtime.CompilerServices;
-
 namespace System.Runtime.Intrinsics
 {
     public static class Vector64

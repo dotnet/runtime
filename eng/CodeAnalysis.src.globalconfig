@@ -774,7 +774,7 @@ dotnet_diagnostic.CA5383.severity = none
 # CA5384: Do Not Use Digital Signature Algorithm (DSA)
 dotnet_diagnostic.CA5384.severity = warning
 
-# CA5385: Use Rivest–Shamir–Adleman (RSA) Algorithm With Sufficient Key Size
+# CA5385: Use Rivest-Shamir-Adleman (RSA) Algorithm With Sufficient Key Size
 dotnet_diagnostic.CA5385.severity = warning
 
 # CA5386: Avoid hardcoding SecurityProtocolType value
@@ -1448,6 +1448,7 @@ dotnet_diagnostic.IDE0059.severity = warning
 
 # IDE0060: Remove unused parameter
 dotnet_diagnostic.IDE0060.severity = silent
+dotnet_code_quality_unused_parameters = non_public
 
 # IDE0061: Use expression body for local functions
 dotnet_diagnostic.IDE0061.severity = silent
@@ -1538,6 +1539,9 @@ dotnet_diagnostic.IDE0160.severity = silent
 
 # IDE0161: Convert to file-scoped namespace
 dotnet_diagnostic.IDE0161.severity = silent
+
+# IDE0190: Null check can be simplified
+dotnet_diagnostic.IDE0190.severity = suggestion
 
 # IDE1005: Delegate invocation can be simplified.
 dotnet_diagnostic.IDE1005.severity = suggestion

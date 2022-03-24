@@ -864,6 +864,21 @@ public:
         return (GetGCType_NoThrow(type) == TYPE_GC_REF);
     }
 
+    static BOOL IsByRef(CorElementType type)
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        return (GetGCType(type) == TYPE_GC_BYREF);
+    }
+    static BOOL IsByRef_NoThrow(CorElementType type)
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        return (GetGCType_NoThrow(type) == TYPE_GC_BYREF);
+    }
+
     FORCEINLINE static BOOL IsGenericVariable(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;

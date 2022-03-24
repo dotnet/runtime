@@ -1,0 +1,21 @@
+# This is a wrapper yml for `runtime-extra-platforms-wasm.yml`, which
+# has all the wasm jobs. This file is essentially so we can have point
+# the pipeline in azdo UI to this, and thus avoid any scheduled triggers
+
+trigger: none
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+jobs:
+
+#
+# Evaluate paths
+#
+- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+  - template: /eng/pipelines/common/evaluate-default-paths.yml
+
+- template: /eng/pipelines/runtime-extra-platforms-wasm.yml
+  parameters:
+    isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
+    isRollingBuild: ${{ variables.isRollingBuild }}

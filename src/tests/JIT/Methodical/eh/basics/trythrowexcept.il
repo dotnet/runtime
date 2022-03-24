@@ -10,9 +10,9 @@
 }
 .assembly extern mscorlib {}
 .assembly extern eh_common {}
-.assembly test {}
-.module test.exe
+.assembly 'trythrowexcept' {}
 
+.class public auto ansi Test_trythrowexcept extends [mscorlib] System.Object {
 .method public static int32 main() {
     .entrypoint
     .maxstack  2
@@ -79,4 +79,5 @@ handler_begin:  pop
 
          ret
   .try try_start to filter_begin filter filter_begin handler handler_begin to done
+}
 }

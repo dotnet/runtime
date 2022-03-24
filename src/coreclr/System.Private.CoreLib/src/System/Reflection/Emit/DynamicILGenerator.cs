@@ -32,11 +32,9 @@ namespace System.Reflection.Emit
 
         // *** ILGenerator api ***
 
-        public override LocalBuilder DeclareLocal(Type localType, bool pinned)
+        public override LocalBuilder DeclareLocal(Type localType!!, bool pinned)
         {
             LocalBuilder localBuilder;
-            if (localType == null)
-                throw new ArgumentNullException(nameof(localType));
 
             RuntimeType? rtType = localType as RuntimeType;
 
@@ -55,11 +53,8 @@ namespace System.Reflection.Emit
         // Token resolution calls
         //
         //
-        public override void Emit(OpCode opcode, MethodInfo meth)
+        public override void Emit(OpCode opcode, MethodInfo meth!!)
         {
-            if (meth == null)
-                throw new ArgumentNullException(nameof(meth));
-
             int stackchange = 0;
             int token;
             DynamicMethod? dynMeth = meth as DynamicMethod;
@@ -110,11 +105,8 @@ namespace System.Reflection.Emit
             PutInteger4(token);
         }
 
-        public override void Emit(OpCode opcode, ConstructorInfo con)
+        public override void Emit(OpCode opcode, ConstructorInfo con!!)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
-
             RuntimeConstructorInfo? rtConstructor = con as RuntimeConstructorInfo;
             if (rtConstructor == null)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(con));
@@ -137,11 +129,8 @@ namespace System.Reflection.Emit
             PutInteger4(token);
         }
 
-        public override void Emit(OpCode opcode, Type type)
+        public override void Emit(OpCode opcode, Type type!!)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
             RuntimeType? rtType = type as RuntimeType;
 
             if (rtType == null)
@@ -153,11 +142,8 @@ namespace System.Reflection.Emit
             PutInteger4(token);
         }
 
-        public override void Emit(OpCode opcode, FieldInfo field)
+        public override void Emit(OpCode opcode, FieldInfo field!!)
         {
-            if (field == null)
-                throw new ArgumentNullException(nameof(field));
-
             RuntimeFieldInfo? runtimeField = field as RuntimeFieldInfo;
             if (runtimeField == null)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(field));
@@ -173,11 +159,8 @@ namespace System.Reflection.Emit
             PutInteger4(token);
         }
 
-        public override void Emit(OpCode opcode, string str)
+        public override void Emit(OpCode opcode, string str!!)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
-
             int tempVal = GetTokenForString(str);
             EnsureCapacity(7);
             InternalEmit(opcode);
@@ -264,11 +247,8 @@ namespace System.Reflection.Emit
             PutInteger4(token);
         }
 
-        public override void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
+        public override void EmitCall(OpCode opcode, MethodInfo methodInfo!!, Type[]? optionalParameterTypes)
         {
-            if (methodInfo == null)
-                throw new ArgumentNullException(nameof(methodInfo));
-
             if (!(opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj)))
                 throw new ArgumentException(SR.Argument_NotMethodCallOpcode, nameof(opcode));
 
@@ -303,11 +283,8 @@ namespace System.Reflection.Emit
             PutInteger4(tk);
         }
 
-        public override void Emit(OpCode opcode, SignatureHelper signature)
+        public override void Emit(OpCode opcode, SignatureHelper signature!!)
         {
-            if (signature == null)
-                throw new ArgumentNullException(nameof(signature));
-
             int stackchange = 0;
             EnsureCapacity(7);
             InternalEmit(opcode);
@@ -376,8 +353,7 @@ namespace System.Reflection.Emit
             else
             {
                 // execute this branch if previous clause is Catch or Fault
-                if (exceptionType == null)
-                    throw new ArgumentNullException(nameof(exceptionType));
+                ArgumentNullException.ThrowIfNull(exceptionType);
 
                 if (rtType == null)
                     throw new ArgumentException(SR.Argument_MustBeRuntimeType);
@@ -895,8 +871,8 @@ namespace System.Reflection.Emit
         {
             if (codeSize < 0)
                 throw new ArgumentOutOfRangeException(nameof(codeSize), SR.ArgumentOutOfRange_GenericPositive);
-            if (codeSize > 0 && code == null)
-                throw new ArgumentNullException(nameof(code));
+            if (codeSize > 0)
+                ArgumentNullException.ThrowIfNull(code);
 
             m_code = new Span<byte>(code, codeSize).ToArray();
             m_maxStackSize = maxStackSize;
@@ -913,8 +889,8 @@ namespace System.Reflection.Emit
             if (exceptionsSize < 0)
                 throw new ArgumentOutOfRangeException(nameof(exceptionsSize), SR.ArgumentOutOfRange_GenericPositive);
 
-            if (exceptionsSize > 0 && exceptions == null)
-                throw new ArgumentNullException(nameof(exceptions));
+            if (exceptionsSize > 0)
+                ArgumentNullException.ThrowIfNull(exceptions);
 
             m_exceptions = new Span<byte>(exceptions, exceptionsSize).ToArray();
         }
@@ -930,8 +906,8 @@ namespace System.Reflection.Emit
             if (signatureSize < 0)
                 throw new ArgumentOutOfRangeException(nameof(signatureSize), SR.ArgumentOutOfRange_GenericPositive);
 
-            if (signatureSize > 0 && localSignature == null)
-                throw new ArgumentNullException(nameof(localSignature));
+            if (signatureSize > 0)
+                ArgumentNullException.ThrowIfNull(localSignature);
 
             m_localSignature = new Span<byte>(localSignature, signatureSize).ToArray();
         }

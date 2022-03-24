@@ -278,7 +278,7 @@ namespace ILCompiler
             {
                 // BoxedValueType has the same genericness as the valuetype it's wrapping.
                 // Making BoxedValueType wrap the genericness (and be itself nongeneric) would
-                // require a crazy name mangling scheme to allow generating stable and unique names
+                // require a name mangling scheme to allow generating stable and unique names
                 // for the wrappers.
                 Debug.Assert(valuetype.IsTypeDefinition);
 
@@ -390,7 +390,7 @@ namespace ILCompiler
             {
                 Debug.Assert(targetMethod.OwningType.IsValueType);
                 Debug.Assert(!targetMethod.Signature.IsStatic);
-                
+
                 _owningType = owningType;
                 _targetMethod = targetMethod;
                 _nakedTargetMethod = new ValueTypeInstanceMethodWithHiddenParameter(targetMethod);
@@ -574,7 +574,7 @@ namespace ILCompiler
             {
                 Debug.Assert(methodRepresented.OwningType.IsValueType);
                 Debug.Assert(!methodRepresented.Signature.IsStatic);
-                
+
                 _methodRepresented = methodRepresented;
             }
 

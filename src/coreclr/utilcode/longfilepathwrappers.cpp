@@ -50,7 +50,7 @@ LoadLibraryExWrapper(
 
     HRESULT hr   = S_OK;
     HMODULE ret = NULL;
-    DWORD lastError;
+    DWORD lastError = 0;
 
     EX_TRY
     {
@@ -102,7 +102,7 @@ CreateFileWrapper(
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
-    DWORD lastError;
+    DWORD lastError = 0;
     HANDLE ret = INVALID_HANDLE_VALUE;
 
     EX_TRY
@@ -150,7 +150,7 @@ GetFileAttributesWrapper(
 
     HRESULT hr = S_OK;
     DWORD  ret = INVALID_FILE_ATTRIBUTES;
-    DWORD lastError;
+    DWORD lastError = 0;
 
     EX_TRY
     {
@@ -194,7 +194,7 @@ GetFileAttributesExWrapper(
 
     HRESULT hr = S_OK;
     BOOL   ret = FALSE;
-    DWORD lastError;
+    DWORD lastError = 0;
 
     EX_TRY
     {
@@ -239,7 +239,7 @@ DeleteFileWrapper(
 
     HRESULT hr = S_OK;
     BOOL   ret = FALSE;
-    DWORD lastError;
+    DWORD lastError = 0;
 
     EX_TRY
     {
@@ -283,7 +283,7 @@ MoveFileExWrapper(
 
     HRESULT hr  = S_OK;
     BOOL    ret = FALSE;
-    DWORD lastError;
+    DWORD lastError = 0;
 
     EX_TRY
     {
@@ -334,7 +334,7 @@ SearchPathWrapper(
 
     HRESULT hr  = S_OK;
     DWORD    ret = 0;
-    DWORD lastError;
+    DWORD lastError = 0;
 
     EX_TRY
     {
@@ -424,7 +424,7 @@ GetModuleFileNameWrapper(
 
     HRESULT hr = S_OK;
     DWORD ret = 0;
-    DWORD lastError;
+    DWORD lastError = 0;
 
     EX_TRY
     {
@@ -482,7 +482,7 @@ UINT WINAPI GetTempFileNameWrapper(
 
     HRESULT hr = S_OK;
     UINT ret = 0;
-    DWORD lastError;
+    DWORD lastError = 0;
 
     EX_TRY
     {
@@ -526,7 +526,7 @@ DWORD WINAPI GetTempPathWrapper(
 
     HRESULT hr = S_OK;
     DWORD ret = 0;
-    DWORD lastError;
+    DWORD lastError = 0;
 
     EX_TRY
     {
@@ -567,7 +567,7 @@ DWORD WINAPI GetCurrentDirectoryWrapper(
 
     HRESULT hr = S_OK;
     DWORD ret = 0;
-    DWORD lastError;
+    DWORD lastError = 0;
 
     EX_TRY
     {
@@ -609,7 +609,7 @@ DWORD WINAPI GetEnvironmentVariableWrapper(
 
     HRESULT hr = S_OK;
     DWORD ret = 0;
-    DWORD lastError;
+    DWORD lastError = 0;
 
     EX_TRY
     {
@@ -677,7 +677,7 @@ CopyFileExWrapper(
 
     HRESULT hr  = S_OK;
     BOOL    ret = FALSE;
-    DWORD lastError;
+    DWORD lastError = 0;
 
     EX_TRY
     {
@@ -730,7 +730,7 @@ FindFirstFileExWrapper(
 
     HRESULT hr = S_OK;
     HANDLE ret = INVALID_HANDLE_VALUE;
-    DWORD lastError;
+    DWORD lastError = 0;
 
     EX_TRY
     {

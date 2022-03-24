@@ -215,9 +215,6 @@
   <data name="PendingAsyncOperation" xml:space="preserve">
     <value>An async read operation has already been started on the stream.</value>
   </data>
-  <data name="InvalidParameter" xml:space="preserve">
-    <value>Invalid value '{1}' for parameter '{0}'.</value>
-  </data>
   <data name="CategoryHelpCorrupt" xml:space="preserve">
     <value>Cannot load Category Help data because an invalid index '{0}' was read from the registry.</value>
   </data>
@@ -271,9 +268,6 @@
   </data>
   <data name="CantSetDuplicatePassword" xml:space="preserve">
     <value>ProcessStartInfo.Password and ProcessStartInfo.PasswordInClearText cannot both be set. Use only one of them.</value>
-  </data>
-  <data name="ArgumentNull_Array" xml:space="preserve">
-    <value>Array cannot be null.</value>
   </data>
   <data name="ArgumentOutOfRange_IndexCountBuffer" xml:space="preserve">
     <value>Index and count must refer to a location within the buffer.</value>

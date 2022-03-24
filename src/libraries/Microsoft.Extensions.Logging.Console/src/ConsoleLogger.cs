@@ -14,13 +14,8 @@ namespace Microsoft.Extensions.Logging.Console
         private readonly string _name;
         private readonly ConsoleLoggerProcessor _queueProcessor;
 
-        internal ConsoleLogger(string name, ConsoleLoggerProcessor loggerProcessor)
+        internal ConsoleLogger(string name!!, ConsoleLoggerProcessor loggerProcessor)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             _name = name;
             _queueProcessor = loggerProcessor;
         }

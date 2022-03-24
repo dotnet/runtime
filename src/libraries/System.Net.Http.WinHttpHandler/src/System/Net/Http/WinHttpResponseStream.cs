@@ -172,13 +172,8 @@ namespace System.Net.Http
             // request is made with a different buffer or when the state is cleared.
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken token)
+        public override Task<int> ReadAsync(byte[] buffer!!, int offset, int count, CancellationToken token)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));

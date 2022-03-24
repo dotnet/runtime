@@ -9,8 +9,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Text;
 
-using Internal.Runtime.CompilerServices;
-
 namespace System.Numerics
 {
     /* Note: The following patterns are used throughout the code here and are described here

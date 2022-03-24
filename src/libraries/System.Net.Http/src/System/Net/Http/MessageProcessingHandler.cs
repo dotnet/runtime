@@ -27,14 +27,9 @@ namespace System.Net.Http
         protected abstract HttpResponseMessage ProcessResponse(HttpResponseMessage response,
             CancellationToken cancellationToken);
 
-        protected internal sealed override HttpResponseMessage Send(HttpRequestMessage request,
+        protected internal sealed override HttpResponseMessage Send(HttpRequestMessage request!!,
             CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
-            }
-
             // Since most of the SendAsync code is just Task handling, there's no reason to share the code.
             HttpRequestMessage newRequestMessage = ProcessRequest(request, cancellationToken);
             HttpResponseMessage response = base.Send(newRequestMessage, cancellationToken);
@@ -42,14 +37,9 @@ namespace System.Net.Http
             return newResponseMessage;
         }
 
-        protected internal sealed override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+        protected internal sealed override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request!!,
             CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
-            }
-
             // ProcessRequest() and ProcessResponse() are supposed to be fast, so we call ProcessRequest() on the same
             // thread SendAsync() was invoked to avoid context switches. However, if ProcessRequest() throws, we have
             // to catch the exception since the caller doesn't expect exceptions when calling SendAsync(): The

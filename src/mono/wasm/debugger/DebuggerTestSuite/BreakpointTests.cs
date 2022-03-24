@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using Xunit;
-using System.Threading;
+using Xunit.Sdk;
 
 namespace DebuggerTests
 {
@@ -155,6 +154,12 @@ namespace DebuggerTests
                     Assert.Equal("object", scope["object"]["type"]);
                     CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
                     CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 14, 4, scripts, scope["endLocation"]);
+
+                    foreach (var frame in pause_location["callFrames"])
+                    {
+                        Assert.Equal(false, frame["url"].Value<string>().Contains(".wasm"));
+                        Assert.Equal(false, frame["url"].Value<string>().Contains("wasm://"));
+                    }
                     return Task.CompletedTask;
                 }
             );
@@ -294,11 +299,12 @@ namespace DebuggerTests
         }
 
         [Fact]
-        [Trait("Category", "windows-failing")] // https://github.com/dotnet/runtime/issues/62823
-        [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/62823
         public async Task BreakpointInAssemblyUsingTypeFromAnotherAssembly_BothDynamicallyLoaded()
         {
             int line = 7;
+
+            // Start the task earlier than loading the assemblies, so we don't miss the event
+            Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
             await SetBreakpoint(".*/library-dependency-debugger-test1.cs$", line, 0, use_regex: true);
             await LoadAssemblyDynamically(
                     Path.Combine(DebuggerTestAppPath, "library-dependency-debugger-test2.dll"),
@@ -309,6 +315,8 @@ namespace DebuggerTests
 
             var source_location = "dotnet://library-dependency-debugger-test1.dll/library-dependency-debugger-test1.cs";
             Assert.Contains(source_location, scripts.Values);
+
+            await bpResolved;
 
             var pause_location = await EvaluateAndCheck(
                "window.setTimeout(function () { invoke_static_method('[library-dependency-debugger-test1] TestDependency:IntAdd', 5, 10); }, 1);",
@@ -1089,14 +1097,15 @@ namespace DebuggerTests
                 expression = "window.setTimeout(function() { load_wasm_page_without_assets(); }, 1);"
             });
             await cli.SendCommand("Runtime.evaluate", run_method, token);
-            await Task.Delay(1000, token);
+            await insp.WaitFor(Inspector.READY);
+
             run_method = JObject.FromObject(new
             {
                 expression = "window.setTimeout(function() { reload_wasm_page(); }, 1);"
             });
             await cli.SendCommand("Runtime.evaluate", run_method, token);
-            await Task.Delay(1000, token);
             await insp.WaitFor(Inspector.READY);
+
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
@@ -1123,6 +1132,32 @@ namespace DebuggerTests
                     await Task.CompletedTask;
                 }
             );
+        }
+
+        [Fact]
+        public async Task DebugHotReloadMethod_CheckBreakpointLineUpdated_ByVS_Simulated()
+        {
+            string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
+            string pdb_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb");
+            string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll");
+
+            var bp = await SetBreakpoint(".*/MethodBody1.cs$", 48, 12, use_regex: true);
+            var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
+                    asm_file, pdb_file, "MethodBody5", "StaticMethod1");
+
+            //apply first update
+            pause_location = await LoadAssemblyAndTestHotReloadUsingSDB(
+                    asm_file_hot_reload, "MethodBody5", "StaticMethod1", 1, 
+                    rebindBreakpoint : async () =>
+                    {
+                        await RemoveBreakpoint(bp.Value["breakpointId"].Value<string>());
+                        await SetBreakpoint(".*/MethodBody1.cs$", 49, 12, use_regex: true);
+                    });
+
+            JToken top_frame = pause_location["callFrames"]?[0];
+            AssertEqual("StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 49, 12, scripts, top_frame["location"]);
+
         }
     }
 }

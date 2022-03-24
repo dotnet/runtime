@@ -30,12 +30,8 @@ namespace System.ComponentModel.Composition.Hosting
             private readonly ContractBasedImportDefinition _sourceDefinition;
             private IDictionary<string, object?>? _metadata;
 
-            public NonImportSourceImportDefinition(ContractBasedImportDefinition sourceDefinition)
+            public NonImportSourceImportDefinition(ContractBasedImportDefinition sourceDefinition!!)
             {
-                if (sourceDefinition == null)
-                {
-                    throw new ArgumentNullException(nameof(sourceDefinition));
-                }
                 _sourceDefinition = sourceDefinition;
                 _metadata = null;
             }

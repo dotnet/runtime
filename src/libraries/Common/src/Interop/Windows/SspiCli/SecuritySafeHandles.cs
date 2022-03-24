@@ -171,17 +171,21 @@ namespace System.Net.Security
     {
 #endif
 
+        internal DateTime _expiry;
         internal Interop.SspiCli.CredHandle _handle;    //should be always used as by ref in PInvokes parameters
 
         protected SafeFreeCredentials() : base(IntPtr.Zero, true)
         {
             _handle = default;
+            _expiry = DateTime.MaxValue;
         }
 
         public override bool IsInvalid
         {
             get { return IsClosed || _handle.IsZero; }
         }
+
+        public DateTime Expiry => _expiry;
 
 #if DEBUG
         public new IntPtr DangerousGetHandle()
@@ -348,10 +352,7 @@ namespace System.Net.Security
             ref SecurityBuffer outSecBuffer,
             ref Interop.SspiCli.ContextFlags outFlags)
         {
-            if (inCredentials == null)
-            {
-                throw new ArgumentNullException(nameof(inCredentials));
-            }
+            ArgumentNullException.ThrowIfNull(inCredentials);
 
             Debug.Assert(inSecBuffers.Count <= 3);
             Interop.SspiCli.SecBufferDesc inSecurityBufferDescriptor = new Interop.SspiCli.SecBufferDesc(inSecBuffers.Count);
@@ -665,10 +666,7 @@ namespace System.Net.Security
             ref SecurityBuffer outSecBuffer,
             ref Interop.SspiCli.ContextFlags outFlags)
         {
-            if (inCredentials == null)
-            {
-                throw new ArgumentNullException(nameof(inCredentials));
-            }
+            ArgumentNullException.ThrowIfNull(inCredentials);
 
             Debug.Assert(inSecBuffers.Count <= 3);
             Interop.SspiCli.SecBufferDesc inSecurityBufferDescriptor = new Interop.SspiCli.SecBufferDesc(inSecBuffers.Count);

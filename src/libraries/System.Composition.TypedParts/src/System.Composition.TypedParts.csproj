@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RootNamespace>System.Composition</RootNamespace>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <SetIsTrimmable>false</SetIsTrimmable>
+    <IsTrimmable>false</IsTrimmable>
     <IsPackable>true</IsPackable>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <PackageDescription>Provides some extension methods for the Managed Extensibility Framework.
@@ -18,6 +18,8 @@ System.Composition.Hosting.ContainerConfiguration</PackageDescription>
     <Compile Include="System\Composition\Debugging\ContainerConfigurationDebuggerProxy.cs" />
     <Compile Include="System\Composition\Debugging\DiscoveredPartDebuggerProxy.cs" />
     <Compile Include="System\Composition\Hosting\ContainerConfiguration.cs" />
+    <Compile Include="System\Composition\Hosting\InstanceExportDescriptorProvider.cs" />
+    <Compile Include="System\Composition\Hosting\SinglePartExportDescriptorProvider.cs" />
     <Compile Include="System\Composition\TypedParts\ActivationFeatures\ActivationFeature.cs" />
     <Compile Include="System\Composition\TypedParts\ActivationFeatures\DisposalFeature.cs" />
     <Compile Include="System\Composition\TypedParts\ActivationFeatures\LifetimeFeature.cs" />

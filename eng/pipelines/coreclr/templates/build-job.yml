@@ -112,7 +112,7 @@ jobs:
         value: true
     - name: officialBuildIdArg
       value: ''
-    - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+    - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - name: officialBuildIdArg
         value: '/p:OfficialBuildId=$(Build.BuildNumber)'
     - name: enforcePgoArg
@@ -163,10 +163,6 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup) ${{ parameters.archType }} azDO
         displayName: Install native dependencies
-    - ${{ if eq(parameters.osGroup, 'windows') }}:
-      # Necessary to install python
-      - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
-        displayName: Install native dependencies
 
     # Install internal tools on official builds
     # Since our internal tools are behind an authenticated feed,
@@ -212,7 +208,7 @@ jobs:
 
     # Build CoreCLR Managed Components
     - ${{ if or(ne(parameters.osGroup, 'Linux'), ne(parameters.archType, 'x86')) }}:
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.paltestlist $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+clr.paltestlist $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
         displayName: Build managed product components and packages
     - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'x86')) }}:
       - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
@@ -220,7 +216,7 @@ jobs:
 
     # Run CoreCLR Tools unit tests
     - ${{ if eq(parameters.testGroup, 'clrTools') }}:
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.tools $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci -test
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.toolstests $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci -test
         displayName: Run CoreCLR Tools unit tests
 
     # Build native test components
@@ -317,7 +313,7 @@ jobs:
           SecretsFilter: 'dotnetfeed-storage-access-key-1,microsoft-symbol-server-pat,symweb-symbol-server-pat'
 
     # Save packages using the prepare-signed-artifacts format.
-    - ${{ if and(eq(parameters.isOfficialBuild, true), ne(parameters.testGroup, 'clrTools')) }}:
+    - ${{ if and(eq(parameters.isOfficialBuild, true), ne(parameters.testGroup, 'clrTools'), eq(parameters.pgoType, '')) }}:
       - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         parameters:
           name: ${{ parameters.platform }}

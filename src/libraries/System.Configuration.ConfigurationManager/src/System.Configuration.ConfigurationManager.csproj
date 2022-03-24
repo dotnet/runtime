@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <!-- opt-out of trimming until it works https://github.com/dotnet/runtime/issues/49062 -->
-    <SetIsTrimmable>false</SetIsTrimmable>
+    <IsTrimmable>false</IsTrimmable>
     <NoWarn>$(NoWarn);CA1847</NoWarn>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides types that support using configuration files.

@@ -318,13 +318,8 @@ namespace System.ComponentModel.Composition.Hosting
             result.ThrowOnErrors();
         }
 
-        private List<ComposablePart> GetUpdatedPartsList(ref CompositionBatch batch)
+        private List<ComposablePart> GetUpdatedPartsList(ref CompositionBatch batch!!)
         {
-            if (batch == null)
-            {
-                throw new ArgumentNullException(nameof(batch));
-            }
-
             // Copy the current list of parts - we are about to modify it
             // This is an OK thing to do as this is the only method that can modify the List AND Compose can
             // only be executed on one thread at a time - thus two different threads cannot tramp over each other
@@ -361,13 +356,8 @@ namespace System.ComponentModel.Composition.Hosting
             return parts;
         }
 
-        private void Recompose(CompositionBatch batch, AtomicComposition atomicComposition)
+        private void Recompose(CompositionBatch batch!!, AtomicComposition atomicComposition)
         {
-            if (batch == null)
-            {
-                throw new ArgumentNullException(nameof(batch));
-            }
-
             // Unregister any removed component parts
             foreach (ComposablePart part in batch.PartsToRemove)
             {

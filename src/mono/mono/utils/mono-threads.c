@@ -33,6 +33,7 @@
 #include <mono/utils/mono-threads-debug.h>
 #include <mono/utils/os-event.h>
 #include <mono/utils/w32api.h>
+#include <glib.h>
 
 #include <errno.h>
 #include <mono/utils/mono-errno.h>
@@ -309,7 +310,7 @@ gboolean
 mono_threads_wait_pending_operations (void)
 {
 	int i;
-	int c = pending_suspends;
+	size_t c = pending_suspends;
 
 	/* Wait threads to park */
 	THREADS_SUSPEND_DEBUG ("[INITIATOR-WAIT-COUNT] %d\n", c);
@@ -1748,7 +1749,7 @@ mono_thread_info_sleep (guint32 ms, gboolean *alerted)
 		}
 
 		do {
-			ret = clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &target, NULL);
+			ret = g_clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &target, NULL);
 		} while (ret != 0);
 #elif HOST_WIN32
 		Sleep (ms);

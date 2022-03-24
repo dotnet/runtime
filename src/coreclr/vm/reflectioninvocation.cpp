@@ -1058,6 +1058,11 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         gc.retVal = GET_THROWABLE();
         _ASSERTE(gc.retVal);
 
+#ifdef _MSC_VER
+        // Workaround bogus MSVC warning about uninitialized local variables
+        *(BYTE*)&callDescrData.returnValue = 0;
+#endif
+
         fExceptionThrown = true;
         } EX_END_CATCH(SwallowAllExceptions);
 
@@ -1067,7 +1072,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     {
         CallDescrWorkerWithHandler(&callDescrData);
     }
-
 
     // Now that we are safely out of the catch block, we can create and raise the
     // TargetInvocationException.
@@ -1483,14 +1487,8 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
         if (gc.oValue != 0) {
             value = 0;
             if (CoreLibBinder::IsClass(gc.oValue->GetMethodTable(), CLASS__POINTER)) {
-                value = (size_t) InvokeUtil::GetPointerValue(gc.oValue);
-#ifdef _MSC_VER
-#pragma warning(disable: 4267) //work-around for compiler
-#endif
-                VolatileStore((size_t*) pDst, (size_t) value);
-#ifdef _MSC_VER
-#pragma warning(default: 4267)
-#endif
+                value = (SIZE_T) InvokeUtil::GetPointerValue(gc.oValue);
+                VolatileStore((SIZE_T*) pDst, (SIZE_T) value);
                 break;
             }
         }
@@ -1502,13 +1500,7 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
             CorElementType objType = gc.oValue->GetTypeHandle().GetInternalCorElementType();
             InvokeUtil::CreatePrimitiveValue(objType, objType, gc.oValue, &value);
         }
-#ifdef _MSC_VER
-#pragma warning(disable: 4267) //work-around for compiler
-#endif
-        VolatileStore((size_t*) pDst, (size_t) value);
-#ifdef _MSC_VER
-#pragma warning(default: 4267)
-#endif
+        VolatileStore((SIZE_T*) pDst, (SIZE_T) value);
     }
     break;
 
@@ -1579,19 +1571,17 @@ extern "C" void QCALLTYPE ReflectionInvocation_RunClassConstructor(QCall::TypeHa
     END_QCALL;
 }
 
-// This method triggers the module constructor for a give module
+// This method triggers the module constructor for a given module
 extern "C" void QCALLTYPE ReflectionInvocation_RunModuleConstructor(QCall::ModuleHandle pModule)
 {
     QCALL_CONTRACT;
 
-    DomainFile *pDomainFile = pModule->GetDomainFile();
-    if (pDomainFile != NULL && pDomainFile->IsActive())
+    DomainAssembly *pDomainAssembly = pModule->GetDomainAssembly();
+    if (pDomainAssembly != NULL && pDomainAssembly->IsActive())
         return;
 
     BEGIN_QCALL;
-    if(pDomainFile == NULL)
-        pDomainFile = pModule->GetDomainFile();
-    pDomainFile->EnsureActive();
+    pDomainAssembly->EnsureActive();
     END_QCALL;
 }
 
