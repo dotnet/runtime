@@ -7,10 +7,14 @@
     <Compile Include="ConcurrencyLimiterTests.cs" />
     <Compile Include="PartitionedRateLimiterTests.cs" />
     <Compile Include="FixedWindowRateLimiterTests.cs" />
+    <Compile Include="RateLimiterPartitionTests.cs" />
     <Compile Include="SlidingWindowRateLimiterTests.cs" />
     <Compile Include="TokenBucketRateLimiterTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Threading.RateLimiting.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
 </Project>

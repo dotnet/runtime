@@ -40,6 +40,10 @@ namespace System.Threading.RateLimiting
         public static bool operator !=(System.Threading.RateLimiting.MetadataName<T> left, System.Threading.RateLimiting.MetadataName<T> right) { throw null; }
         public override string ToString() { throw null; }
     }
+    public static partial class PartitionedRateLimiter
+    {
+        public static System.Threading.RateLimiting.PartitionedRateLimiter<TResource> Create<TResource, TPartitionKey>(System.Func<TResource, System.Threading.RateLimiting.RateLimitPartition<TPartitionKey>> partitioner, System.Collections.Generic.IEqualityComparer<TPartitionKey>? equalityComparer = null) where TPartitionKey : notnull { throw null; }
+    }
     public abstract partial class PartitionedRateLimiter<TResource> : System.IAsyncDisposable, System.IDisposable
     {
         protected PartitionedRateLimiter() { }
@@ -82,6 +86,21 @@ namespace System.Threading.RateLimiting
         public virtual System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> GetAllMetadata() { throw null; }
         public abstract bool TryGetMetadata(string metadataName, out object? metadata);
         public bool TryGetMetadata<T>(System.Threading.RateLimiting.MetadataName<T> metadataName, [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] out T metadata) { throw null; }
+    }
+    public static partial class RateLimitPartition
+    {
+        public static System.Threading.RateLimiting.RateLimitPartition<TKey> CreateConcurrencyLimiter<TKey>(TKey partitionKey, System.Func<TKey, System.Threading.RateLimiting.ConcurrencyLimiterOptions> factory) { throw null; }
+        public static System.Threading.RateLimiting.RateLimitPartition<TKey> CreateNoLimiter<TKey>(TKey partitionKey) { throw null; }
+        public static System.Threading.RateLimiting.RateLimitPartition<TKey> CreateTokenBucketLimiter<TKey>(TKey partitionKey, System.Func<TKey, System.Threading.RateLimiting.TokenBucketRateLimiterOptions> factory) { throw null; }
+        public static System.Threading.RateLimiting.RateLimitPartition<TKey> Create<TKey>(TKey partitionKey, System.Func<TKey, System.Threading.RateLimiting.RateLimiter> factory) { throw null; }
+    }
+    public partial struct RateLimitPartition<TKey>
+    {
+        private readonly TKey _PartitionKey_k__BackingField;
+        private object _dummy;
+        private int _dummyPrimitive;
+        public RateLimitPartition(TKey partitionKey, System.Func<TKey, System.Threading.RateLimiting.RateLimiter> factory) { throw null; }
+        public readonly TKey PartitionKey { get { throw null; } }
     }
     public abstract partial class ReplenishingRateLimiter : System.Threading.RateLimiting.RateLimiter
     {
