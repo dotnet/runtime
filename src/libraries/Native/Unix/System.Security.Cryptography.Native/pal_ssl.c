@@ -69,7 +69,7 @@ static uint64_t SSL_set_options_dynamic(SSL* s, uint64_t options)
 {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wcast-function-type"
-    if (ERR_new) // OpenSSL 3.0 sentinel function
+    if (API_EXISTS(ERR_new))
     {
         // OpenSSL 3.0 and newer, use uint64_t for options
         uint64_t (*func)(SSL* s, uint64_t op) = (uint64_t(*)(SSL*, uint64_t))SSL_set_options_ptr;
