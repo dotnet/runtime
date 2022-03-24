@@ -54,6 +54,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             _serWriter = serWriter;
 
+            serWriter.WriteBegin();
             long headerId;
             object? obj;
 
@@ -234,6 +235,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
             if (memberNameInfo != null)
             {
                 memberNameInfo._objectId = objectInfo._objectId;
+                _serWriter.WriteObjectEnd(memberNameInfo, typeNameInfo);
+            }
+            else if (!ReferenceEquals(objectInfo._objectType, Converter.s_typeofString))
+            {
+                _serWriter.WriteObjectEnd(typeNameInfo, typeNameInfo);
             }
         }
 
@@ -550,6 +556,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
                 _serWriter.WriteItemEnd();
             }
+
+            _serWriter.WriteObjectEnd(memberNameInfo, arrayNameInfo);
 
             PutNameInfo(arrayElemTypeNameInfo);
             if (isAllocatedMemberNameInfo)
@@ -995,7 +1003,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             return assemId;
         }
 
-        private static Type GetType(object obj) => obj.GetType();
+        private Type GetType(object obj) => obj.GetType();
 
         private readonly SerStack _niPool = new SerStack("NameInfo Pool");
 
@@ -1016,7 +1024,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             return nameInfo;
         }
 
-        private static bool CheckTypeFormat(FormatterTypeStyle test, FormatterTypeStyle want) => (test & want) == want;
+        private bool CheckTypeFormat(FormatterTypeStyle test, FormatterTypeStyle want) => (test & want) == want;
 
         private void PutNameInfo(NameInfo nameInfo) => _niPool.Push(nameInfo);
     }

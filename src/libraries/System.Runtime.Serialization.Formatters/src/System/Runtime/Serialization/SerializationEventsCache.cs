@@ -24,7 +24,7 @@ namespace System.Runtime.Serialization
             _onDeserializedMethods = GetMethodsWithAttribute(typeof(OnDeserializedAttribute), t);
         }
 
-        private static List<MethodInfo>? GetMethodsWithAttribute(
+        private List<MethodInfo>? GetMethodsWithAttribute(
             Type attribute,
             // currently the only way to preserve base, non-public methods is to use All
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? t)

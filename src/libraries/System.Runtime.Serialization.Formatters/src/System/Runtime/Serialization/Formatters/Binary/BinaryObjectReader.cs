@@ -204,7 +204,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Styled ParseError output
-        private static void ParseError(ParseRecord processing, ParseRecord onStack)
+        private void ParseError(ParseRecord processing, ParseRecord onStack)
         {
             throw new SerializationException(SR.Format(SR.Serialization_ParseError, onStack._name + " " + onStack._parseTypeEnum + " " + processing._name + " " + processing._parseTypeEnum));
         }
@@ -354,6 +354,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 TopObject = objectPr._newObj;
             }
+
+            objectPr._objectInfo.ObjectEnd();
         }
 
         // Array object encountered in stream
@@ -490,7 +492,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Builds a map for each item in an incoming rectangle array. The map specifies where the item is placed in the output Array Object
-        private static void NextRectangleMap(ParseRecord pr)
+        private void NextRectangleMap(ParseRecord pr)
         {
             Debug.Assert(pr._rectangularMap != null && pr._lengthA != null && pr._indexMap != null);
             // For each invocation, calculate the next rectangular array position

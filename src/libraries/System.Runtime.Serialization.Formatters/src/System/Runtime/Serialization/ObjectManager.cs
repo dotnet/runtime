@@ -35,6 +35,8 @@ namespace System.Runtime.Serialization
             _context = context;
         }
 
+        private bool CanCallGetType(object? obj) => true;
+
         internal object? TopObject
         {
             get { return _topObject; }
@@ -438,7 +440,14 @@ namespace System.Runtime.Serialization
                             //at this point is set the member into the Object
                             object? holderValue = tempObjectHolder.ObjectValue;
                             Debug.Assert(holderValue != null);
-                            si.UpdateValue((string)fixupInfo, holderValue, holderValue.GetType());
+                            if (CanCallGetType(holderValue))
+                            {
+                                si.UpdateValue((string)fixupInfo, holderValue, holderValue.GetType());
+                            }
+                            else
+                            {
+                                si.UpdateValue((string)fixupInfo, holderValue, typeof(MarshalByRefObject));
+                            }
                             //Decrement our total number of fixups left to do.
                             fixupsPerformed++;
                             fixups._values[i] = null;
@@ -666,7 +675,9 @@ namespace System.Runtime.Serialization
 
             if (_selector != null)
             {
-                Type selectorType = obj.GetType();
+                Type selectorType = CanCallGetType(obj) ?
+                    obj.GetType() :
+                    typeof(MarshalByRefObject);
 
                 //If we need a surrogate for this object, lets find it now.
                 surrogate = _selector.GetSurrogate(selectorType, _context, out useless);
@@ -756,7 +767,7 @@ namespace System.Runtime.Serialization
         /// <param name="info">The SerializationInfo containing all info for obj.</param>
         /// <param name="context">The streaming context in which the serialization is taking place.</param>
         [RequiresUnreferencedCode(ObjectManagerUnreferencedCodeMessage)]
-        internal static void CompleteISerializableObject(object obj!!, SerializationInfo? info, StreamingContext context)
+        internal void CompleteISerializableObject(object obj!!, SerializationInfo? info, StreamingContext context)
         {
             if (!(obj is ISerializable))
             {

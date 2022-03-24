@@ -43,6 +43,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _dataWriter = new BinaryWriter(outputStream, Encoding.UTF8);
         }
 
+        internal void WriteBegin() { }
+
         internal void WriteEnd()
         {
             _dataWriter.Flush();
@@ -94,6 +96,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal void WriteUInt32(uint value) => _dataWriter.Write(value);
 
         internal void WriteUInt64(ulong value) => _dataWriter.Write(value);
+
+        internal void WriteObjectEnd(NameInfo memberNameInfo, NameInfo typeNameInfo) { }
 
         internal void WriteSerializationHeaderEnd()
         {

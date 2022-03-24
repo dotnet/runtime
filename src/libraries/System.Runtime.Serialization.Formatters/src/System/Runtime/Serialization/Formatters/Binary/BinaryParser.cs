@@ -75,6 +75,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             try
             {
                 bool isLoop = true;
+                ReadBegin();
                 ReadSerializationHeaderRecord();
                 while (isLoop)
                 {
@@ -134,6 +135,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                                 case BinaryHeaderEnum.MessageEnd:
                                     isLoop = false;
                                     ReadMessageEnd();
+                                    ReadEnd();
                                     break;
                                 default:
                                     throw new SerializationException(SR.Format(SR.Serialization_BinaryHeader, inByte));
@@ -206,6 +208,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 throw new SerializationException(SR.Serialization_StreamEnd);
             }
         }
+
+        internal void ReadBegin() { }
+
+        internal void ReadEnd() { }
 
         // Primitive Reads from Stream
 
