@@ -269,6 +269,7 @@
     <Compile Include="Sha384ManagedTests.cs" />
     <Compile Include="Sha512Tests.cs" />
     <Compile Include="Sha512ManagedTests.cs" />
+    <Compile Include="SignatureAlgorithmHashTests.cs" />
     <Compile Include="SignatureDescriptionTests.cs" />
     <Compile Include="SimpleHashAlgorithmTest.cs" />
     <Compile Include="StreamHelpers.cs" />
