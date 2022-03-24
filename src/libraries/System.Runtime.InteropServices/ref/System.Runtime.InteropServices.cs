@@ -328,7 +328,7 @@ namespace System.Runtime.InteropServices
         Failed = 2,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
-    public sealed partial class CustomTypeMarshallerAttribute : Attribute
+    public sealed partial class CustomTypeMarshallerAttribute : System.Attribute
     {
         public CustomTypeMarshallerAttribute(System.Type managedType, System.Runtime.InteropServices.CustomTypeMarshallerKind marshallerKind = System.Runtime.InteropServices.CustomTypeMarshallerKind.Value) { }
         public System.Type ManagedType { get { throw null; } }
@@ -817,7 +817,7 @@ namespace System.Runtime.InteropServices
         public MarshalDirectiveException(string? message, System.Exception? inner) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
-    public sealed partial class MarshalUsingAttribute : Attribute
+    public sealed partial class MarshalUsingAttribute : System.Attribute
     {
         public MarshalUsingAttribute() { }
         public MarshalUsingAttribute(System.Type nativeType) { }
@@ -840,10 +840,10 @@ namespace System.Runtime.InteropServices
         public static bool TryLoad(string libraryName, System.Reflection.Assembly assembly, System.Runtime.InteropServices.DllImportSearchPath? searchPath, out System.IntPtr handle) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Delegate)]
-    public sealed partial class NativeMarshallingAttribute : Attribute
+    public sealed partial class NativeMarshallingAttribute : System.Attribute
     {
-        public NativeMarshallingAttribute(Type nativeType) { }
-        public Type NativeType { get { throw null; } }
+        public NativeMarshallingAttribute(System.Type nativeType) { }
+        public System.Type NativeType { get { throw null; } }
     }
     public static unsafe partial class NativeMemory
     {
