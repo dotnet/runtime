@@ -124,17 +124,7 @@ namespace System.Net.NetworkInformation.Tests
                 _log.WriteLine($"listening on {server.LocalEndPoint}");
 
                 IPEndPoint[] tcpListeners = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners();
-                bool found = false;
-                foreach (IPEndPoint ep in tcpListeners)
-                {
-                    if (ep.Equals(server.LocalEndPoint))
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-
-                Assert.True(found);
+                Assert.Contains(server.LocalEndPoint, tcpListeners);
             }
         }
 
@@ -149,17 +139,7 @@ namespace System.Net.NetworkInformation.Tests
                 _log.WriteLine($"listening on {server.LocalEndPoint}");
 
                 IPEndPoint[] udpListeners = IPGlobalProperties.GetIPGlobalProperties().GetActiveUdpListeners();
-                bool found = false;
-                foreach (IPEndPoint ep in udpListeners)
-                {
-                    if (ep.Equals(server.LocalEndPoint))
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-
-                Assert.True(found);
+                Assert.Contains(server.LocalEndPoint, udpListeners);
             }
         }
 
