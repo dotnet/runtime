@@ -227,7 +227,8 @@
       Category="clr" />
   </ItemGroup>
 
-  <ItemGroup Condition="('$(ClrRuntimeBuildSubsets)' != '' or $(_subset.Contains('+clr.crossarchtools+'))) and '$(BuildArchitecture)' != '$(TargetArchitecture)'">
+  <!-- Build the CoreCLR cross-arch tools when we're doing a cross-architecture build and either we're building any CoreCLR native tools for platforms CoreCLR fully supports or when someone explicitly requests them -->
+  <ItemGroup Condition="(('$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' != 'CoreCLR' or '$(TargetsMobile)' != 'true')) or $(_subset.Contains('+clr.crossarchtools+'))) and '$(BuildArchitecture)' != '$(TargetArchitecture)'">
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
       AdditionalProperties="%(AdditionalProperties);
@@ -240,7 +241,7 @@
       Category="clr" />
   </ItemGroup>
 
-  <ItemGroup Condition="('$(ClrRuntimeBuildSubsets)' != '' or $(_subset.Contains('+clr.crossarchtools+'))) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' == 'x64'">
+  <ItemGroup Condition="(('$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' != 'CoreCLR' or '$(TargetsMobile)' != 'true')) or $(_subset.Contains('+clr.crossarchtools+'))) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' == 'x64'">
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
       AdditionalProperties="%(AdditionalProperties);
