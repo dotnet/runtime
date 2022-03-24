@@ -70,7 +70,7 @@ jobs:
 
     - ${{ if eq(parameters.runtimeType, 'wasm') }}:
       helixTypeSuffix: '/wasm'
-    - ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(codeGenType, 'aot')) }}:
+    - ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'aot')) }}:
       helixTypeSuffix: '/wasm/aot'
 
     ${{ if and(eq(parameters.osGroup, 'windows'), not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono'))) }}:
