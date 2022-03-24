@@ -13,7 +13,18 @@ namespace System.Net.Quic
 
         private class UnsupportedQuicImplementationProvider : QuicImplementationProvider
         {
+            internal UnsupportedQuicImplementationProvider() : base(false) { }
             public override bool IsSupported => false;
         }
+    }
+}
+
+namespace System.Net.Quic.Implementations
+{
+    public abstract partial class QuicImplementationProvider
+    {
+        // alternative constructor because currently it is not possible to exlude ctors from
+        // PNSE autogeneration
+        internal QuicImplementationProvider(bool dummy) { }
     }
 }
