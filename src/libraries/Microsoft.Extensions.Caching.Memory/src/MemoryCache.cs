@@ -374,19 +374,19 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal sealed class Stats
         {
+            private readonly MemoryCache? _memoryCache;
             public long Hits;
             public long Misses;
-            private readonly MemoryCache? _memoryCache;
+
             public Stats() { }
+
             public Stats(MemoryCache memoryCache)
             {
                 _memoryCache = memoryCache;
                 _memoryCache.AddToStats(this);
             }
-            ~Stats()
-            {
-                _memoryCache?.RemoveFromStats(this);
-            }
+
+            ~Stats() => _memoryCache?.RemoveFromStats(this);
         }
 
         private void RemoveFromStats(Stats current)
