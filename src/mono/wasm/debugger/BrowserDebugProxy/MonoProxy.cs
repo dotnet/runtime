@@ -783,7 +783,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             catch (Exception ex)
             {
-                logger.LogDebug($"Error on getting properties of object {objectId} with scheme {objectId.Scheme}. {ex.Message}.");
+                logger.LogDebug($"Error on getting properties of object {objectId} with scheme {objectId.Scheme}. {ex}.");
                 return null;
             }
         }
