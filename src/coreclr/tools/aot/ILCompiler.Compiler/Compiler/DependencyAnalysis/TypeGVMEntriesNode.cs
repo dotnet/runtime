@@ -44,6 +44,8 @@ namespace ILCompiler.DependencyAnalysis
         private readonly TypeDesc _associatedType;
         private DependencyList _staticDependencies;
 
+        public TypeDesc AssociatedType => _associatedType;
+
         public TypeGVMEntriesNode(TypeDesc associatedType)
         {
             Debug.Assert(associatedType.IsTypeDefinition);
