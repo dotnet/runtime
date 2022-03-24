@@ -33,7 +33,7 @@ public:
     const pal::string_t& get_path() const { return m_path; }
     const pal::string_t& get_dev_path() const { return m_dev_path; }
     const pal::string_t& get_tfm() const;
-    const int get_compat_major_version_from_tfm() const;
+    const unsigned long get_compat_major_version_from_tfm() const;
     bool get_is_multilevel_lookup_disabled() const;
     const std::list<pal::string_t>& get_probe_paths() const;
     bool get_is_framework_dependent() const;

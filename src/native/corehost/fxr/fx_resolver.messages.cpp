@@ -121,8 +121,7 @@ void fx_resolver_t::display_missing_framework_error(
         trace::error(_X("Framework: '%s', (%s)"), fx_name.c_str(), get_arch());
     }
 
-    trace::error(_X("Location: %s"), dotnet_root.c_str());
-    trace::error(_X(""));
+    trace::error(_X("Location: %s\n"), dotnet_root.c_str());
 
     if (framework_infos.size())
     {
@@ -138,12 +137,14 @@ void fx_resolver_t::display_missing_framework_error(
     }
 
     pal::string_t url = get_download_url(fx_name.c_str(), fx_version.c_str());
-    trace::error(_X(""));
-    trace::error(_X("Learn about framework resolution:"));
-    trace::error(DOTNET_APP_LAUNCH_FAILED_URL);
-    trace::error(_X(""));
-    trace::error(_X("Download framework:"));
-    trace::error(url.c_str());
+    trace::error(
+        _X("\n")
+        _X("Learn about framework resolution:\n")
+        DOTNET_APP_LAUNCH_FAILED_URL
+        _X("\n\n")
+        _X("Download framework:\n")
+        _X("%s"),
+        url.c_str());
 }
 
 void fx_resolver_t::display_incompatible_loaded_framework_error(

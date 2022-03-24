@@ -52,17 +52,17 @@ namespace
 
     bool try_get_url_from_line(const pal::string_t& line, pal::string_t& url)
     {
-        const pal::string_t url_prefix = DOTNET_CORE_APPLAUNCH_URL _X("?");
-        if (starts_with(line, url_prefix, true))
+        const pal::char_t url_prefix[] = DOTNET_CORE_APPLAUNCH_URL _X("?");
+        if (utils::starts_with(line, url_prefix, true))
         {
             url.assign(line);
             return true;
         }
 
-        const pal::string_t url_prefix_before_7_0 = _X("  - ") DOTNET_CORE_APPLAUNCH_URL _X("?");
-        if (starts_with(line, url_prefix_before_7_0, true))
+        const pal::char_t url_prefix_before_7_0[] = _X("  - ") DOTNET_CORE_APPLAUNCH_URL _X("?");
+        if (utils::starts_with(line, url_prefix_before_7_0, true))
         {
-            size_t offset = url_prefix_before_7_0.length() - pal::strlen(DOTNET_CORE_APPLAUNCH_URL) - 1;
+            size_t offset = utils::strlen(url_prefix_before_7_0) - utils::strlen(DOTNET_CORE_APPLAUNCH_URL) - 1;
             url.assign(line.substr(offset, line.length() - offset));
             return true;
         }
@@ -100,20 +100,20 @@ namespace
             pal::stringstream_t ss(g_buffered_errors);
             while (std::getline(ss, line, _X('\n')))
             {
-                const pal::string_t prefix = _X("Framework: '");
-                const pal::string_t prefix_before_7_0 = _X("The framework '");
-                const pal::string_t suffix_before_7_0 = _X(" was not found.");
-                const pal::string_t custom_prefix = _X("  _ ");
-                if (starts_with(line, prefix, true)
-                    || (starts_with(line, prefix_before_7_0, true) && ends_with(line, suffix_before_7_0, true)))
+                const pal::char_t prefix[] = _X("Framework: '");
+                const pal::char_t prefix_before_7_0[] = _X("The framework '");
+                const pal::char_t suffix_before_7_0[] = _X(" was not found.");
+                const pal::char_t custom_prefix[] = _X("  _ ");
+                if (utils::starts_with(line, prefix, true)
+                    || (utils::starts_with(line, prefix_before_7_0, true) && utils::ends_with(line, suffix_before_7_0, true)))
                 {
                     dialogMsg.append(line);
                     dialogMsg.append(_X("\n\n"));
                 }
-                else if (starts_with(line, custom_prefix, true))
+                else if (utils::starts_with(line, custom_prefix, true))
                 {
                     dialogMsg.erase();
-                    dialogMsg.append(line.substr(custom_prefix.length()));
+                    dialogMsg.append(line.substr(utils::strlen(custom_prefix)));
                     dialogMsg.append(_X("\n\n"));
                 }
                 else if (try_get_url_from_line(line, url))
@@ -128,7 +128,7 @@ namespace
             pal::stringstream_t ss(g_buffered_errors);
             while (std::getline(ss, line, _X('\n')))
             {
-                if (starts_with(line, _X("Bundle header version compatibility check failed."), true))
+                if (utils::starts_with(line, _X("Bundle header version compatibility check failed."), true))
                 {
                     dialogMsg = pal::string_t(_X("To run this application, you must install .NET Desktop Runtime ")) + _STRINGIFY(COMMON_HOST_PKG_VER) + _X(" (") + get_arch() + _X(").\n\n");
                     url = get_download_url();
@@ -145,9 +145,10 @@ namespace
             return;
         }
 
-        dialogMsg.append(_X("Would you like to download it now?\n\n"));
-        dialogMsg.append(_X("Learn about framework resolution:\n"));
-        dialogMsg.append(DOTNET_APP_LAUNCH_FAILED_URL);
+        dialogMsg.append(
+            _X("Would you like to download it now?\n\n")
+            _X("Learn about framework resolution:\n")
+            DOTNET_APP_LAUNCH_FAILED_URL);
 
         assert(url.length() > 0);
         assert(is_gui_application());

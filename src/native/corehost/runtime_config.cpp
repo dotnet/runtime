@@ -429,7 +429,7 @@ const pal::string_t& runtime_config_t::get_tfm() const
     return m_tfm;
 }
 
-const int runtime_config_t::get_compat_major_version_from_tfm() const
+const unsigned long runtime_config_t::get_compat_major_version_from_tfm() const
 {
     assert(m_valid);
 
@@ -443,13 +443,14 @@ const int runtime_config_t::get_compat_major_version_from_tfm() const
         return runtime_config_t::unknown_version;
 
     size_t majorVersionStartIndex;
-    if (m_tfm.rfind(_X("netcoreapp"), 0) == 0) // this is StartsWith("netcoreapp") in std speak
+    const pal::char_t netcoreapp_prefix[] = _X("netcoreapp");
+    if (utils::starts_with(m_tfm, netcoreapp_prefix, true))
     {
-        majorVersionStartIndex = 10;  // "netcoreapp".Length
+        majorVersionStartIndex = utils::strlen(netcoreapp_prefix);
     }
     else
     {
-        majorVersionStartIndex = 3;  // "net".Length
+        majorVersionStartIndex = utils::strlen(_X("net"));
     }
 
     if (majorVersionStartIndex >= m_tfm.length())
@@ -465,7 +466,7 @@ const int runtime_config_t::get_compat_major_version_from_tfm() const
 bool runtime_config_t::get_is_multilevel_lookup_disabled() const
 {
     // Starting with .NET 7, multi-level lookup is fully disabled
-    int compat_major_version = get_compat_major_version_from_tfm();
+    unsigned long compat_major_version = get_compat_major_version_from_tfm();
     return (compat_major_version >= 7 || compat_major_version == runtime_config_t::unknown_version);
 }
 

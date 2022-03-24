@@ -1070,10 +1070,12 @@ int fx_muxer_t::handle_cli(
             return StatusCode::Success;
         }
 
-        trace::error(_X("The command could not be loaded, possibly because:"));
-        trace::error(_X("  * You intended to execute a .NET program:"));
-        trace::error(_X("      The application '%s' does not exist."), app_candidate.c_str());
-        trace::error(_X("  * You intended to execute a .NET SDK command:"));
+        trace::error(
+            _X("The command could not be loaded, possibly because:\n")
+            _X("  * You intended to execute a .NET program:\n")
+            _X("      The application '%s' does not exist.\n")
+            _X("  * You intended to execute a .NET SDK command:"),
+            app_candidate.c_str());
         resolver.print_resolution_error(host_info.dotnet_root, _X("      "));
 
         return StatusCode::LibHostSdkFindFailure;

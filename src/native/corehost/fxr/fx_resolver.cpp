@@ -287,6 +287,7 @@ namespace
 
         if (selected_fx_dir.empty())
         {
+            trace::verbose(_X("It was not possible to find any compatible framework version"));
             return nullptr;
         }
 

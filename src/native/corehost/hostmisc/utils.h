@@ -30,6 +30,31 @@
 
 bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);
 bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case);
+
+namespace utils
+{
+    template<size_t L>
+    inline constexpr size_t strlen(const pal::char_t(&)[L])
+    {
+        return L - 1;
+    }
+
+    bool ends_with(const pal::string_t& value, const pal::char_t *suffix, size_t suffix_len, bool match_case);
+    bool starts_with(const pal::string_t& value, const pal::char_t* prefix, size_t prefix_len, bool match_case);
+
+    template<size_t L>
+    bool ends_with(const pal::string_t& value, const pal::char_t (&suffix)[L], bool match_case)
+    {
+        return ends_with(value, suffix, L - 1, match_case);
+    }
+
+    template<size_t L>
+    bool starts_with(const pal::string_t& value, const pal::char_t (&prefix)[L], bool match_case)
+    {
+        return starts_with(value, prefix, L - 1, match_case);
+    }
+}
+
 pal::string_t strip_executable_ext(const pal::string_t& filename);
 pal::string_t get_directory(const pal::string_t& path);
 pal::string_t strip_file_ext(const pal::string_t& path);
