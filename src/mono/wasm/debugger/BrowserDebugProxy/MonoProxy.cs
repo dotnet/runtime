@@ -648,7 +648,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                     args["details"] = await context.SdbAgent.GetObjectProxy(objectId.Value, token);
                     break;
                 case "valuetype":
-                    args["details"] = await context.SdbAgent.valueTypes[objectId.Value].GetProxy(token);
+                    var valueType = context.SdbAgent.GetValueTypeClass(objectId.Value);
+                    if (valueType == null)
+                        throw new Exception($"Internal Error: No valuetype found for {objectId}.");
+                    args["details"] = await valueType.GetProxy(token);
                     break;
                 case "pointer":
                     args["details"] = await context.SdbAgent.GetPointerContent(objectId.Value, token);
@@ -745,7 +748,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     case "valuetype":
                     {
-                        var resValType = await context.SdbAgent.valueTypes[objectId.Value].GetValueTypeValues(accessorPropertiesOnly, token);
+                        var valueType = context.SdbAgent.GetValueTypeClass(objectId.Value);
+                        if (valueType == null)
+                            throw new Exception($"Internal Error: No valuetype found for {objectId}.");
+                        var resValType = await valueType.GetValueTypeValues(accessorPropertiesOnly, token);
                         return sortByAccessLevel ? JObject.FromObject(new { result = resValType }) : resValType;
                     }
                     case "array":

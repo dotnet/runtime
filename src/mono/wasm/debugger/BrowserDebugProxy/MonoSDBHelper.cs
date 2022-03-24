@@ -2246,6 +2246,13 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         }
 
+        public ValueTypeClass GetValueTypeClass(int valueTypeId)
+        {
+            if (valueTypes.TryGetValue(valueTypeId, out ValueTypeClass value))
+                return value;
+            return null;
+        }
+
         public async Task<JArray> GetArrayValues(int arrayId, CancellationToken token)
         {
             var dimensions = await GetArrayDimensions(arrayId, token);
