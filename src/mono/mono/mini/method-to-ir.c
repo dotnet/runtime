@@ -11323,11 +11323,13 @@ mono_ldptr:
 				cmethod = get_constrained_method (cfg, image, n, cmethod, constrained_class, generic_context);
 				constrained_class = NULL;
 				CHECK_CFG_ERROR;
+			} else {
+				// we can't save token info if we have a constrained_class since
+				// n no longer represents the token for cmethod
+				mono_save_token_info (cfg, image, n, cmethod);
 			}
 
 			mono_class_init_internal (cmethod->klass);
-
-			mono_save_token_info (cfg, image, n, cmethod);
 
 			context_used = mini_method_check_context_used (cfg, cmethod);
 
