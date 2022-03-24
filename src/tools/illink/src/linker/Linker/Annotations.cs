@@ -618,8 +618,10 @@ namespace Mono.Linker
 		/// instance methods (not just statics and .ctors).</remarks>
 		internal bool IsMethodInRequiresUnreferencedCodeScope (MethodDefinition method)
 		{
-			if (HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method) ||
-				(method.DeclaringType is not null && HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method.DeclaringType)))
+			if (HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method) && !method.IsStaticConstructor ())
+				return true;
+
+			if (method.DeclaringType is not null && HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method.DeclaringType))
 				return true;
 
 			return false;

@@ -57,11 +57,12 @@ namespace ILLink.RoslynAnalyzer
 			if (member is ITypeSymbol)
 				return false;
 
-			if (member.HasAttribute (requiresAttribute)
-				|| (member.ContainingType is ITypeSymbol containingType &&
-					containingType.HasAttribute (requiresAttribute))) {
+			if (member.HasAttribute (requiresAttribute) && !member.IsStaticConstructor ())
 				return true;
-			}
+
+			if (member.ContainingType is ITypeSymbol containingType && containingType.HasAttribute (requiresAttribute))
+				return true;
+
 			// Only check associated symbol if not override or virtual method
 			if (checkAssociatedSymbol && member is IMethodSymbol { AssociatedSymbol: { } associated } && associated.HasAttribute (requiresAttribute))
 				return true;
