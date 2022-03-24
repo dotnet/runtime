@@ -197,8 +197,16 @@ jobs:
       - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrRuntimeComponentsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(clrRuntimePortableBuildArg) $(CoreClrPgoDataArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg)
         displayName: Build CoreCLR Runtime
+
+    - ${{ if ne(parameters.archType, 'x64') }}:
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch x64 $(osArg) -ci $(compilerArg) -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" $(officialBuildIdArg) $(clrRuntimePortableBuildArg)
+        displayName: Build CoreCLR Cross-Arch Tools (Tools that run on x64 targetting x86)
+
+    - ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm')) }}:
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch x86 $(osArg) -ci $(compilerArg) -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" $(officialBuildIdArg) $(clrRuntimePortableBuildArg)
+        displayName: Build CoreCLR Cross-Arch Tools (Tools that run on x86 targetting arm)
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: |
