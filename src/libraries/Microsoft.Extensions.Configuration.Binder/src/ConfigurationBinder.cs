@@ -238,12 +238,32 @@ namespace Microsoft.Extensions.Configuration
             object? propertyValue = property.GetValue(instance);
             bool hasSetter = property.SetMethod != null && (property.SetMethod.IsPublic || options.BindNonPublicProperties);
 
-            if (propertyValue == null && !hasSetter)
+            if (!hasSetter)
             {
-                // Property doesn't have a value and we cannot set it so there is no
-                // point in going further down the graph
+                var backingField = property.DeclaringType?.GetField($"<{property.Name}>k__BackingField", DeclaredOnlyLookup);
+                if (backingField != null)
+                {
+                    // Property doesn't have a value and we cannot set it so there is no
+                    // point in going further down the graph
+                    backingField!.SetValue(instance, propertyValue);
+
+                    propertyValue = GetFieldValue(property, backingField, instance, config, options);
+
+                    if (propertyValue != null)
+                    {
+                        backingField.SetValue(instance, propertyValue);
+                    }
+
+                    return;
+                }
+
                 return;
             }
+
+            // if (propertyValue == null)
+            // {
+            //     return;
+            // }
 
             propertyValue = GetPropertyValue(property, instance, config, options);
 
@@ -419,12 +439,37 @@ namespace Microsoft.Extensions.Configuration
 
             if (!type.IsValueType)
             {
-                bool hasDefaultConstructor = type.GetConstructors(DeclaredOnlyLookup).Any(ctor => ctor.IsPublic && ctor.GetParameters().Length == 0);
+                ConstructorInfo[] constructors = type.GetConstructors(DeclaredOnlyLookup);
+
+                bool hasDefaultConstructor = constructors.Any(ctor => ctor.IsPublic && ctor.GetParameters().Length == 0);
+
                 if (!hasDefaultConstructor)
                 {
+                    if (constructors.Length == 1 && !constructors[0].IsPublic )
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
+                    }
                     //steve: records don't have default constructors, and there's no way to differentiate between a record and
+
+                    // call the one with the least amount of parameters
+
+                    ParameterInfo[] smallestParameters = constructors[0].GetParameters();
+
+                    for (int index = 1; index < constructors.Length; index++)
+                    {
+                        ParameterInfo[] parameterInfos = constructors[index].GetParameters();
+
+                        // we want the smallest amount of parameters, but we don't the copy constructor (a constructor with 1 parameter of the same type as the containing type)
+                        if (parameterInfos.Length < smallestParameters.Length && (parameterInfos.Length != 1 && parameterInfos[0].ParameterType != type))
+                        {
+                            smallestParameters = parameterInfos;
+                        }
+                    }
+
+                    object?[] parameters = smallestParameters.Select(p => GetDefault(p.ParameterType)).ToArray();
+
                     //any other type -- or is there...?
-                    return Activator.CreateInstance(type, new object[] {"", 0});
+                    return Activator.CreateInstance(type, parameters);
                     //throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
                 }
             }
@@ -437,6 +482,16 @@ namespace Microsoft.Extensions.Configuration
             {
                 throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type), ex);
             }
+        }
+
+        private static object? GetDefault(Type type)
+        {
+            if (type.IsValueType)
+            {
+                return Activator.CreateInstance(type);
+            }
+
+            return null;
         }
 
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
@@ -698,6 +753,18 @@ namespace Microsoft.Extensions.Configuration
                 property.PropertyType,
                 property.GetValue(instance),
                 config.GetSection(propertyName),
+                options);
+        }
+
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
+        private static object? GetFieldValue(MemberInfo propertyInfo, FieldInfo field, object instance,
+            IConfiguration config, BinderOptions options)
+        {
+            string fieldName = GetPropertyName(propertyInfo);
+            return BindInstance(
+                field.FieldType,
+                field.GetValue(instance),
+                config.GetSection(fieldName),
                 options);
         }
 

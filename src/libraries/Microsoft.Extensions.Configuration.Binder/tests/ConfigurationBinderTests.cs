@@ -116,6 +116,18 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         public record RecordTypeOptions(string Color, int Length);
 #endif
 
+        public class ImmutableLengthAndColorClass
+        {
+            public ImmutableLengthAndColorClass(string color, int length)
+            {
+                Color = color;
+                Length = length;
+            }
+
+            public string Color { get; }
+            public int Length { get; }
+        }
+
         public struct ValueTypeOptions
         {
             public int MyInt32 { get; set; }
@@ -996,6 +1008,23 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = config.Get<ValueTypeOptions>();
             Assert.Equal(42, options.MyInt32);
             Assert.Equal("hello world", options.MyString);
+        }
+
+        [Fact]
+        public void CanBindImmutableClass()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ImmutableLengthAndColorClass>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
         }
 
 #if NETCOREAPP
