@@ -523,5 +523,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return duplicate != null;
             }
         }
+
+        public JObject TryGetEvaluationResult(string id)
+        {
+            JObject val;
+            if (!scopeCache.EvaluationResults.TryGetValue(id, out val))
+                logger.LogError($"EvaluationResult of ID: {id} does not exist in the cache.");
+            return val;
+        }
     }
 }

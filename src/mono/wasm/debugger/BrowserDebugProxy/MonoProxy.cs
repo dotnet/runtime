@@ -776,6 +776,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 (sortByAccessLevel ? JObject.FromObject(new { result = JArray.Parse(value_json_str) }) : JArray.Parse(value_json_str)) :
                                 null;
                     }
+                    case "evaluationResult":
+                    {
+                        var res = context.SdbAgent.GetEvaluationResultProperties(objectId.ToString());
+                        return sortByAccessLevel ? JObject.FromObject(new { result = res }) : res;
+                    }
                     default:
                         return null;
 
