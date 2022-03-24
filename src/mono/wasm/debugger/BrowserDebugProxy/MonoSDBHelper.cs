@@ -821,7 +821,6 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         private static int debuggerObjectId;
         private static int cmdId = 1; //cmdId == 0 is used by events which come from runtime
-        public static int GetNewId() {return cmdId++;}
         private static int MINOR_VERSION = 61;
         private static int MAJOR_VERSION = 2;
 
@@ -838,6 +837,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private readonly ILogger logger;
         private Regex regexForAsyncLocals = new Regex(@"\<([^)]*)\>", RegexOptions.Singleline);
+
+        public static int GetNewId() { return cmdId++; }
 
         public MonoSDBHelper(MonoProxy proxy, ILogger logger, SessionId sessionId)
         {
