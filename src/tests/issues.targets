@@ -193,6 +193,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/**">
             <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/nested/nestedtry/throwinnestedtrycatch_il_r/*">
+            <Issue>https://github.com/dotnet/runtime/issues/66327</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm64 All OS -->
