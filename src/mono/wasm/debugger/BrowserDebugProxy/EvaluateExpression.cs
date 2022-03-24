@@ -436,6 +436,24 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return new { type = "number", value = v, description = Convert.ToDouble(v).ToString(CultureInfo.InvariantCulture) };
             if (v is JObject)
                 return v;
+            if (v is Array arr)
+            {
+                return resolver.CacheEvaluationResult(
+                    JObject.FromObject(
+                        new
+                        {
+                            type = "object",
+                            subtype = "array",
+                            value = new JArray(arr.Cast<object>().Select((val, idx) => JObject.FromObject(
+                                new
+                                {
+                                    value = ConvertCSharpToJSType(resolver, val, val.GetType()),
+                                    name = $"{idx}"
+                                }))),
+                            description = v.ToString(),
+                            className = type.ToString()
+                        }));
+            }
             return new { type = "object", value = v, description = v.ToString(), className = type.ToString() };
         }
 
