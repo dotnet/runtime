@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <AssemblyName>Microsoft.Interop.Ancillary</AssemblyName>
-    <TargetFramework>$(NetCoreAppMinimum)</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RootNamespace>System.Runtime.InteropServices</RootNamespace>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
