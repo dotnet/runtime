@@ -1066,6 +1066,7 @@ int fx_muxer_t::handle_cli(
         }
         else if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
         {
+            resolver.print_global_file_path();
             command_line::print_muxer_info(host_info.dotnet_root);
             return StatusCode::Success;
         }
@@ -1123,13 +1124,7 @@ int fx_muxer_t::handle_cli(
 
     if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
     {
-        if (!resolver.global_file_path().empty())
-        {
-            trace::println();
-            trace::println(_X("global.json file:"));
-            trace::println(_X("  %s"), resolver.global_file_path().c_str());
-        }
-
+        resolver.print_global_file_path();
         command_line::print_muxer_info(host_info.dotnet_root);
     }
 

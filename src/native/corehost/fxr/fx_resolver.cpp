@@ -444,7 +444,13 @@ StatusCode fx_resolver_t::read_framework(
             fx_definition_t* fx = resolve_framework_reference(new_effective_fx_ref, m_oldest_fx_references[fx_name].get_fx_version(), host_info.dotnet_root, disable_multilevel_lookup);
             if (fx == nullptr)
             {
-                trace::error(INSTALL_OR_UPDATE_NET_ERROR_MESSAGE);
+                trace::error(
+                    INSTALL_OR_UPDATE_NET_ERROR_MESSAGE
+                    _X("\n\n")
+                    _X("App: %s\n")
+                    _X("Architecture: %s"),
+                    host_info.host_path.c_str(),
+                    get_arch());
                 display_missing_framework_error(fx_name, new_effective_fx_ref.get_fx_version(), pal::string_t(), host_info.dotnet_root, disable_multilevel_lookup);
                 return FrameworkMissingFailure;
             }

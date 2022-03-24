@@ -111,7 +111,6 @@ void fx_resolver_t::display_missing_framework_error(
     framework_info::get_all_framework_infos(dotnet_root, fx_name, disable_multilevel_lookup, &framework_infos);
 
     // Display the error message about missing FX.
-    trace::error(_X(""));
     if (fx_version.length())
     {
         trace::error(_X("Framework: '%s', version '%s' (%s)"), fx_name.c_str(), fx_version.c_str(), get_arch());
@@ -121,7 +120,7 @@ void fx_resolver_t::display_missing_framework_error(
         trace::error(_X("Framework: '%s', (%s)"), fx_name.c_str(), get_arch());
     }
 
-    trace::error(_X("Location: %s\n"), dotnet_root.c_str());
+    trace::error(_X(".NET location: %s\n"), dotnet_root.c_str());
 
     if (framework_infos.size())
     {
