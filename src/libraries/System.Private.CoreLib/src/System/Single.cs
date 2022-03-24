@@ -672,10 +672,10 @@ namespace System
         public static float Pow(float x, float y) => MathF.Pow(x, y);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ReciprocalEstimate(TSelf)" />
-        public static float IFloatingPoint<float>.ReciprocalEstimate(float x) => MathF.ReciprocalEstimate(x);
+        public static float ReciprocalEstimate(float x) => MathF.ReciprocalEstimate(x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
-        public static float IFloatingPoint<float>.ReciprocalSqrtEstimate(float x) => MathF.ReciprocalSqrtEstimate(x);
+        public static float ReciprocalSqrtEstimate(float x) => MathF.ReciprocalSqrtEstimate(x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
         public static float Round(float x) => MathF.Round(x);
