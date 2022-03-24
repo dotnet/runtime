@@ -183,27 +183,27 @@ jobs:
   #        archiveType: tar
   #        tarCompression: gz
     
-  ## build mono iOS scenarios
-  #- template: /eng/pipelines/common/platform-matrix.yml
-  #  parameters:
-  #    jobTemplate: /eng/pipelines/common/global-build-job.yml
-  #    buildConfig: release
-  #    runtimeFlavor: mono
-  #    platforms:
-  #    - iOS_arm64
-  #    jobParameters:
-  #      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-  #      nameSuffix: iOSMono
-  #      isOfficialBuild: false
-  #      extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
-  #      extraStepsParameters:
-  #        rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-  #        includeRootFolder: true
-  #        displayName: iOS Mono Artifacts
-  #        artifactName: iOSMonoarm64
-  #        archiveExtension: '.tar.gz'
-  #        archiveType: tar
-  #        tarCompression: gz
+  # build mono iOS scenarios
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - iOS_arm64
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        nameSuffix: iOSMono
+        isOfficialBuild: false
+        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
+        extraStepsParameters:
+          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+          includeRootFolder: true
+          displayName: iOS Mono Artifacts
+          artifactName: iOSMonoarm64
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
 
   ## build mono
   #- template: /eng/pipelines/common/platform-matrix.yml
@@ -234,26 +234,26 @@ jobs:
   #      logicalmachine: 'perfpixel4a'
   #      additionalSetupParameters: "-MauiVersion $env:mauiVersion"
 
-  ## run mono iOS scenarios and maui iOS scenarios
-  #- template: /eng/pipelines/common/platform-matrix.yml
-  #  parameters:
-  #    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-  #    buildConfig: release
-  #    runtimeFlavor: mono
-  #    platforms:
-  #      - Windows_x64
-  #    variables:
-  #      - name: mauiVersion
-  #        value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMaui.outputs['getMauiVersion.mauiVersion'] ]
-  #    jobParameters:
-  #      testGroup: perf
-  #      runtimeType: iOSMono
-  #      projectFile: ios_scenarios.proj
-  #      runKind: ios_scenarios
-  #      runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-  #      logicalmachine: 'perfpixel4a'
-  #      iosLlvmBuild: False
-  #      additionalSetupParameters: "-MauiVersion $env:mauiVersion"
+  # run mono iOS scenarios and maui iOS scenarios
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+        - Windows_x64
+      variables:
+        - name: mauiVersion
+          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMaui.outputs['getMauiVersion.mauiVersion'] ]
+      jobParameters:
+        testGroup: perf
+        runtimeType: iOSMono
+        projectFile: ios_scenarios.proj
+        runKind: ios_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfpixel4a'
+        iosLlvmBuild: False
+        additionalSetupParameters: "-MauiVersion $env:mauiVersion"
 
   #- template: /eng/pipelines/common/platform-matrix.yml
   #  parameters:
