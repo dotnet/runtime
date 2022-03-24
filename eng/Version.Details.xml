@@ -4,9 +4,9 @@
       <Uri>https://github.com/dotnet/icu</Uri>
       <Sha>e7811491dea737579d531549d46591c0616e13b7</Sha>
     </Dependency>
-    <Dependency Name="System.Net.MsQuic.Transport" Version="7.0.0-alpha.1.22160.2">
+    <Dependency Name="System.Net.MsQuic.Transport" Version="7.0.0-alpha.1.22173.2">
       <Uri>https://github.com/dotnet/msquic</Uri>
-      <Sha>4fe73fcad4b0af91cc49fd1f5576f0111f15f6fd</Sha>
+      <Sha>03def3e4f051aa09f9642a6a839a0c806682536e</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-7.0.100" Version="7.0.0-preview.4.22172.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
@@ -238,17 +238,17 @@
       <Uri>https://github.com/dotnet/linker</Uri>
       <Sha>04c49c9d7c244d7c73d6dbb438c4885fa72e830b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="1.0.0-prerelease.22164.2">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="1.0.0-prerelease.22173.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>7842fe3b43c21443de152b900fa3640c2893bc1c</Sha>
+      <Sha>c57d7c5ac2fa85f8d44a3549e7d6f553f124915d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.22164.2">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.22173.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>7842fe3b43c21443de152b900fa3640c2893bc1c</Sha>
+      <Sha>c57d7c5ac2fa85f8d44a3549e7d6f553f124915d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.22164.2">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.22173.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>7842fe3b43c21443de152b900fa3640c2893bc1c</Sha>
+      <Sha>c57d7c5ac2fa85f8d44a3549e7d6f553f124915d</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="7.0.0-beta.22171.2">
       <Uri>https://github.com/dotnet/arcade</Uri>
