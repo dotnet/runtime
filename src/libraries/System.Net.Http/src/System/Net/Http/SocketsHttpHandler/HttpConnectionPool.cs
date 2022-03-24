@@ -491,7 +491,8 @@ namespace System.Net.Http
             // Determine if we can and should add a new connection to the pool.
             if (_availableHttp11Connections.Count == 0 &&                           // No available connections
                 _http11RequestQueue.Count > _pendingHttp11ConnectionCount &&        // More requests queued than pending connections
-                _associatedHttp11ConnectionCount < _maxHttp11Connections)           // Under the connection limit
+                _associatedHttp11ConnectionCount < _maxHttp11Connections &&         // Under the connection limit
+                _http11RequestQueue.RequestsWithoutAConnectionAttempt != 0)         // There are requests we haven't issued a connection attempt for
             {
                 _associatedHttp11ConnectionCount++;
                 _pendingHttp11ConnectionCount++;
@@ -712,7 +713,8 @@ namespace System.Net.Http
             if ((_availableHttp2Connections?.Count ?? 0) == 0 &&                            // No available connections
                 !_pendingHttp2Connection &&                                                 // Only allow one pending HTTP2 connection at a time
                 _http2RequestQueue.Count > 0 &&                                             // There are requests left on the queue
-                (_associatedHttp2ConnectionCount == 0 || EnableMultipleHttp2Connections))   // We allow multiple connections, or don't have a connection currently
+                (_associatedHttp2ConnectionCount == 0 || EnableMultipleHttp2Connections) && // We allow multiple connections, or don't have a connection currently
+                _http2RequestQueue.RequestsWithoutAConnectionAttempt != 0)                  // There are requests we haven't issued a connection attempt for
             {
                 _associatedHttp2ConnectionCount++;
                 _pendingHttp2Connection = true;
