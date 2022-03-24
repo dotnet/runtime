@@ -679,7 +679,7 @@ namespace System.Text.Json.Serialization.Tests
                 JsonTypeInfo<string> valueInfo = JsonMetadataServices.CreateValueInfo<string>(Options, JsonMetadataServices.StringConverter);
                 JsonCollectionInfoValues<Dictionary<int, string>> info = new()
                 {
-                    ObjectCreator = () => new(),
+                    ObjectCreator = () => new Dictionary<int, string>(),
                     KeyInfo = keyInfo,
                     ElementInfo = valueInfo,
                 };
