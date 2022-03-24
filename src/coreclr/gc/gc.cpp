@@ -17909,6 +17909,8 @@ BOOL gc_heap::allocate_more_space(alloc_context* acontext, size_t size,
                                    uint32_t flags, int alloc_generation_number)
 {
     allocation_state status = a_state_start;
+    int retry_count = 0;
+
     do
     {
 #ifdef MULTIPLE_HEAPS
@@ -17923,7 +17925,7 @@ BOOL gc_heap::allocate_more_space(alloc_context* acontext, size_t size,
             if (heap_hard_limit && (status == a_state_retry_allocate))
             {
                 alloc_heap = balance_heaps_uoh_hard_limit_retry (acontext, size, alloc_generation_number);
-                if (alloc_heap == nullptr)
+                if (alloc_heap == nullptr || retry_count++ == 2)
                 {
                     return false;
                 }
