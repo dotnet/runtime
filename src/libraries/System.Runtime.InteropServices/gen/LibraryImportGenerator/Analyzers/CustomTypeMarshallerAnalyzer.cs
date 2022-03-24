@@ -404,9 +404,9 @@ namespace Microsoft.Interop.Analyzers
                 var perCompilationAnalyzer = new PerCompilationAnalyzer(spanOfT, spanOfByte, readOnlySpanOfT, readOnlySpanOfByte);
 
                 // Analyze NativeMarshalling/MarshalUsing for correctness
-                context.RegisterSymbolAction(perCompilationAnalyzer.AnalyzeTypeDefinition, SymbolKind.NamedType);
-                context.RegisterSymbolAction(perCompilationAnalyzer.AnalyzeElement, SymbolKind.Parameter, SymbolKind.Field);
-                context.RegisterSymbolAction(perCompilationAnalyzer.AnalyzeReturnType, SymbolKind.Method);
+                context.RegisterSymbolAction(PerCompilationAnalyzer.AnalyzeTypeDefinition, SymbolKind.NamedType);
+                context.RegisterSymbolAction(PerCompilationAnalyzer.AnalyzeElement, SymbolKind.Parameter, SymbolKind.Field);
+                context.RegisterSymbolAction(PerCompilationAnalyzer.AnalyzeReturnType, SymbolKind.Method);
 
                 // Analyze marshaller type to validate shape.
                 context.RegisterSymbolAction(perCompilationAnalyzer.AnalyzeMarshallerType, SymbolKind.NamedType);
@@ -428,7 +428,7 @@ namespace Microsoft.Interop.Analyzers
                 _readOnlySpanOfByte = readOnlySpanOfByte;
             }
 
-            public void AnalyzeTypeDefinition(SymbolAnalysisContext context)
+            public static void AnalyzeTypeDefinition(SymbolAnalysisContext context)
             {
                 INamedTypeSymbol type = (INamedTypeSymbol)context.Symbol;
 
@@ -442,7 +442,7 @@ namespace Microsoft.Interop.Analyzers
                 AnalyzeManagedTypeMarshallingInfo(context, type, attributeData, marshallerType);
             }
 
-            public void AnalyzeElement(SymbolAnalysisContext context)
+            public static void AnalyzeElement(SymbolAnalysisContext context)
             {
                 ITypeSymbol managedType = context.Symbol switch
                 {
@@ -458,7 +458,7 @@ namespace Microsoft.Interop.Analyzers
                 AnalyzeManagedTypeMarshallingInfo(context, managedType, attributeData, attributeData.ConstructorArguments[0].Value as INamedTypeSymbol);
             }
 
-            public void AnalyzeReturnType(SymbolAnalysisContext context)
+            public static void AnalyzeReturnType(SymbolAnalysisContext context)
             {
                 IMethodSymbol method = (IMethodSymbol)context.Symbol;
                 ITypeSymbol managedType = method.ReturnType;
@@ -880,25 +880,25 @@ namespace Microsoft.Interop.Analyzers
                 }
             }
 
-            private DiagnosticDescriptor GetInConstructorShapeRule(CustomTypeMarshallerKind kind) => kind switch
+            private static DiagnosticDescriptor GetInConstructorShapeRule(CustomTypeMarshallerKind kind) => kind switch
             {
                 CustomTypeMarshallerKind.Value => ValueInRequiresOneParameterConstructorRule,
                 CustomTypeMarshallerKind.LinearCollection => LinearCollectionInRequiresTwoParameterConstructorRule,
                 _ => throw new UnreachableException()
             };
-            private string GetInConstructorMissingMemberName(CustomTypeMarshallerKind kind) => kind switch
+            private static string GetInConstructorMissingMemberName(CustomTypeMarshallerKind kind) => kind switch
             {
                 CustomTypeMarshallerKind.Value => MissingMemberNames.ValueManagedToNativeConstructor,
                 CustomTypeMarshallerKind.LinearCollection => MissingMemberNames.CollectionManagedToNativeConstructor,
                 _ => throw new UnreachableException()
             };
-            private DiagnosticDescriptor GetCallerAllocatedBufferConstructorShapeRule(CustomTypeMarshallerKind kind) => kind switch
+            private static DiagnosticDescriptor GetCallerAllocatedBufferConstructorShapeRule(CustomTypeMarshallerKind kind) => kind switch
             {
                 CustomTypeMarshallerKind.Value => ValueInCallerAllocatedBufferRequiresSpanConstructorRule,
                 CustomTypeMarshallerKind.LinearCollection => LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorRule,
                 _ => throw new UnreachableException()
             };
-            private string GetCallerAllocatedBufferConstructorMissingMemberName(CustomTypeMarshallerKind kind) => kind switch
+            private static string GetCallerAllocatedBufferConstructorMissingMemberName(CustomTypeMarshallerKind kind) => kind switch
             {
                 CustomTypeMarshallerKind.Value => MissingMemberNames.ValueCallerAllocatedBufferConstructor,
                 CustomTypeMarshallerKind.LinearCollection => MissingMemberNames.CollectionCallerAllocatedBufferConstructor,

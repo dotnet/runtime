@@ -67,7 +67,7 @@ namespace Microsoft.Interop
             return context.SingleFrameSpansNativeContext && !info.IsByRef && !info.IsManagedReturnPosition;
         }
 
-        private static IEnumerable<StatementSyntax> GeneratePinningPath(TypePositionInfo info, StubCodeContext context)
+        private IEnumerable<StatementSyntax> GeneratePinningPath(TypePositionInfo info, StubCodeContext context)
         {
             if (context.CurrentStage == StubCodeContext.Stage.Pin)
             {
