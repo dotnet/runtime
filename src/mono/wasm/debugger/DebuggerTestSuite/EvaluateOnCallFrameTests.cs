@@ -1110,6 +1110,25 @@ namespace DebuggerTests
                    ("test.listToLinq.ToList()", TObject("System.Collections.Generic.List<int>", description: "Count = 11"))
                    );
            });
+
+        [Fact]
+        public async Task EvaluateMethodsOnPrimitiveTypesReturningObjects() =>  await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.PrimitiveTypeMethods", "Evaluate", 11, "Evaluate",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.PrimitiveTypeMethods:Evaluate'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                var (res, _) = await EvaluateOnCallFrame(id, "test.propString.Split('_', 3, System.StringSplitOptions.None)");
+                var props = await GetProperties(res["objectId"]?.Value<string>());
+                var expected_props = new [] { TString("s"), TString("t"), TString("r") };
+                await CheckProps(props, expected_props, "props#1");
+
+                (res, _) = await EvaluateOnCallFrame(id, "localString.Split('*', 3, System.StringSplitOptions.None)");
+                props = await GetProperties(res["objectId"]?.Value<string>());
+                expected_props = new [] { TString("S"), TString("T"), TString("R") };
+                await CheckProps(props, expected_props, "props#1");
+             });
     }
 
 }
