@@ -106,7 +106,7 @@ We do not plan on supporting `IDispatch` integration with C# `dynamic`, at least
 
 ### Checkpoint 5: .NET 6-compatible output
 
-A very important component of source generators is determining how to trigger them. For the DllImportGenerator, we trigger on a new attribute type, `GeneratedDllImportAttribute`, that is applied in place of the previous `DllImportAttribute`. For the JSON source generator, the team decided to have developers define an empty `JsonSerializerContext`-derived class and add `JsonSerializableAttribute` attribute on that context type that each point to a type that the generated serialization context should support. Below are the potential API designs we considered. All options below would support the `GuidAttribute` attribute to specify an IID, the `InterfaceTypeAttribute` attribute with the `InterfaceIsIUnknown` member (and `InterfaceIsIDispatch` if Checkpoint 4 is achieved), and the `DispIdAttribute` for `IDispatch` scenarios. We selected Option 5 as it gives us the most flexibility to express the switches we want to express to the user without tying us down to legacy requirements or requiring additional metadata in basic scenarios.
+A very important component of source generators is determining how to trigger them. For the DllImportGenerator, we trigger on a new attribute type, `LibraryImportAttribute`, that is applied in place of the previous `DllImportAttribute`. For the JSON source generator, the team decided to have developers define an empty `JsonSerializerContext`-derived class and add `JsonSerializableAttribute` attribute on that context type that each point to a type that the generated serialization context should support. Below are the potential API designs we considered. All options below would support the `GuidAttribute` attribute to specify an IID, the `InterfaceTypeAttribute` attribute with the `InterfaceIsIUnknown` member (and `InterfaceIsIDispatch` if Checkpoint 4 is achieved), and the `DispIdAttribute` for `IDispatch` scenarios. We selected Option 5 as it gives us the most flexibility to express the switches we want to express to the user without tying us down to legacy requirements or requiring additional metadata in basic scenarios.
 
 #### Option 1: Annotated ComWrappers stub
 
@@ -362,7 +362,7 @@ partial class MyComWrappers : ComWrappers
 
 Pros:
 
-- Similar experience to the `GeneratedDllImportAttribute`, where it basically replaces its built-in equivalent as a drop-in.
+- Similar experience to the `LibraryImportAttribute`, where it basically replaces its built-in equivalent as a drop-in.
 - Very easy to automatically hook up generated marshalling and to provide an easy process for other source generators to duplicate to support side-by-side as the policy is very simple.
 - Since we only generate a single `ComWrappers`-derived type, we could also decide to make the `ComObject` type public for .NET 7+ scenarios and make it private for .NET 6 scenarios as we know there will only ever be one.
 - The `GeneratedComImportAttribute` and `GeneratedComVisibleAttribute` attributes mirror the existing `ComImportAttribute` and `ComVisibleAttribute`, which will help provide a more intuitive view of the types and how to hook in tools that process C# -> TLB or TLB -> C# into the generator's flow.
@@ -480,7 +480,7 @@ partial class MyComWrappers : ComWrappers
 
 Pros:
 
-- Similar experience to the `GeneratedDllImportAttribute`, where it basically replaces its built-in equivalent as a drop-in.
+- Similar experience to the `LibraryImportAttribute`, where it basically replaces its built-in equivalent as a drop-in.
 - The `GeneratedComImportAttribute` and `GeneratedComVisibleAttribute` attributes mirror the existing `ComImportAttribute` and `ComVisibleAttribute`, which will help provide a more intuitive view of the types and how to hook in tools that process C# -> TLB or TLB -> C# into the generator's flow.
 
 Cons:

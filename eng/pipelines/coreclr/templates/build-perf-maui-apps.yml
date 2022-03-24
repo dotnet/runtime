@@ -110,21 +110,19 @@ steps:
   #      overwriteExistingFiles: true
   #      cleanDestinationFolder: false
 
-  # Get the current maui nuget config so all things can be found, and add the Emscription version to the rollback file
-  # Add emscription line using sed based on https://stackoverflow.com/questions/6739258/how-do-i-add-a-line-of-text-to-the-middle-of-a-file-using-bash.
-  # This is a workaround as the current
+  # Get the current maui nuget config so all things can be found and darc based package sources are kept up to date.
   - script: |
       curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/main/NuGet.config'
-      curl -o rollback.json 'https://maui.blob.core.windows.net/metadata/rollbacks/main.json'
-      sed -n 'H;${x;s/^\n//;s/  "microsoft.net.sdk.android".*$/  "microsoft.net.workload.emscripten": "6.0.2",\n&/;p;}' rollback.json > updated_rollback.json
-      cat updated_rollback.json
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
       chmod -R a+rx .
-      ./dotnet-install.sh --channel 6.0.2xx --quality daily --install-dir .
+      ./dotnet-install.sh --channel 6.0.3xx --quality daily --install-dir .
       ./dotnet --info
-      ./dotnet workload install maui --from-rollback-file ./updated_rollback.json --configfile NuGet.config
+      ./dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/main.json --configfile NuGet.config
     displayName: Install MAUI workload
     workingDirectory: $(Build.SourcesDirectory)
+
+  - script: $(Build.SourcesDirectory)/eng/testing/performance/create-provisioning-profile.sh
+    displayName: Create iOS code signing and provisioning profile
 
   - script: |
       ./dotnet new maui -n MauiTesting
@@ -144,6 +142,27 @@ steps:
     displayName: Build MAUI Android
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
+  - script: |
+      set -x
+      pwd
+      git clone https://github.com/microsoft/dotnet-podcasts.git -b maui/perf --single-branch
+      cd dotnet-podcasts
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
+    displayName:  Clone podcast app
+    workingDirectory: $(Build.SourcesDirectory)
+
+  - script: |
+      set -x
+      pwd
+      chmod -R a+r .
+      ../../../dotnet restore Microsoft.NetConf2021.Maui.csproj
+      ../../../dotnet publish Microsoft.NetConf2021.Maui.csproj -bl:MauiAndroid.binlog -r android-arm64 --self-contained --no-restore -f net6.0-android -c Release
+      mv ./bin/Release/net6.0-android/android-arm64/com.Microsoft.NetConf2021.Maui-Signed.apk $(Build.SourcesDirectory)/MauiTesting/MauiAndroidPodcast.apk
+    displayName: Build podcast app for MAUI
+    workingDirectory:  $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile
+
+
     # This step pulls the product version from the used Microsoft.Maui.dll file properties and saves it for upload with the maui test counter.
     # We pull from this file as we did not find another place to reliably get the version information pre or post build.
   - powershell: |
@@ -156,8 +175,14 @@ steps:
 
   - script: |
       chmod -R a+r .
-      ../dotnet build -bl:MauiiOS.binlog -f net6.0-ios -c Release
-      mv ./bin/Release/net6.0-ios/iossimulator-x64/MauiTesting.app ./MauiiOSDefault.app
+      # remove net6.0-maccatalyst to work around https://github.com/dotnet/sdk/issues/21877
+      cp MauiTesting.csproj MauiTesting.csproj.bak
+      sed -i'' -e 's/net6.0-ios;net6.0-maccatalyst/net6.0-ios/g' MauiTesting.csproj
+
+      ../dotnet publish -bl:MauiiOS.binlog -f net6.0-ios --self-contained -r ios-arm64 -c Release /p:_RequireCodeSigning=false
+      mv ./bin/Release/net6.0-ios/ios-arm64/publish/MauiTesting.ipa ./MauiiOSDefault.ipa
+
+      cp MauiTesting.csproj.bak MauiTesting.csproj
     displayName: Build MAUI iOS
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
@@ -201,10 +226,21 @@ steps:
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
-        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiiOSDefault.app
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidPodcast.apk
         includeRootFolder: true
-        displayName: Maui iOS App
-        artifactName: MauiiOSDefault
+        displayName: Maui Android Podcast
+        artifactName: MauiAndroidPodcast
+        archiveExtension: '.tar.gz'
+        archiveType: tar
+        tarCompression: gz
+
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiiOSDefault.ipa
+        includeRootFolder: true
+        displayName: Maui iOS IPA
+        artifactName: MauiiOSDefaultIPA
         archiveExtension: '.tar.gz'
         archiveType: tar
         tarCompression: gz

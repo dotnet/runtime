@@ -81,6 +81,7 @@ namespace System.Text.RegularExpressions.Symbolic
             SymbolicRegexSet<TElement>?,
             SymbolicRegexInfo), SymbolicRegexNode<TElement>> _nodeCache = new();
 
+#if DEBUG
         internal readonly Dictionary<(TransitionRegexKind, // _kind
             TElement?,                                     // _test
             TransitionRegex<TElement>?,                    // _first
@@ -88,6 +89,7 @@ namespace System.Text.RegularExpressions.Symbolic
             SymbolicRegexNode<TElement>?,                  // _leaf
             DerivativeEffect?),                            // _effect
             TransitionRegex<TElement>> _trCache = new();
+#endif
 
         /// <summary>
         /// Maps state ids to states, initial capacity is 1024 states.
@@ -102,7 +104,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// contributing non-trivial overhead (https://github.com/dotnet/runtime/issues/65789).
         /// </remarks>
         internal DfaMatchingState<TElement>?[]? _delta;
-        internal List<(DfaMatchingState<TElement>, List<DerivativeEffect>)>?[]? _capturingDelta;
+        internal List<(DfaMatchingState<TElement>, DerivativeEffect[])>?[]? _capturingDelta;
         private const int InitialStateLimit = 1024;
 
         /// <summary>1 + Log2(_minterms.Length), the smallest k s.t. 2^k >= minterms.Length + 1</summary>
@@ -154,7 +156,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // the extra +1 slot with id minterms.Length is reserved for \Z (last occurrence of \n)
                 _mintermsLog = BitOperations.Log2((uint)_minterms.Length) + 1;
                 _delta = new DfaMatchingState<TElement>[InitialStateLimit << _mintermsLog];
-                _capturingDelta = new List<(DfaMatchingState<TElement>, List<DerivativeEffect>)>[InitialStateLimit << _mintermsLog];
+                _capturingDelta = new List<(DfaMatchingState<TElement>, DerivativeEffect[])>[InitialStateLimit << _mintermsLog];
             }
 
             // initialized to False but updated later to the actual condition ony if \b or \B occurs anywhere in the regex
@@ -198,15 +200,22 @@ namespace System.Text.RegularExpressions.Symbolic
         internal SymbolicRegexNode<TElement> OrderedOr(params SymbolicRegexNode<TElement>[] nodes)
         {
             SymbolicRegexNode<TElement>? or = null;
-            foreach (SymbolicRegexNode<TElement> elem in nodes)
+            // Iterate backwards to avoid quadratic rebuilding of the Or nodes, which are always simplified to
+            // right associative form. Concretely:
+            // In (a|(b|c)) | d -> (a|(b|(c|d)) the first argument is not a subtree of the result.
+            // In a | (b|(c|d)) -> (a|(b|(c|d)) the second argument is a subtree of the result.
+            // The first case performs linear work for each element, leading to a quadratic blowup.
+            for (int i = nodes.Length - 1; i >= 0; --i)
             {
+                SymbolicRegexNode<TElement> elem = nodes[i];
+
                 if (elem.IsNothing)
                     continue;
 
-                or = or is null ? elem : SymbolicRegexNode<TElement>.OrderedOr(this, or, elem);
+                or = or is null ? elem : SymbolicRegexNode<TElement>.OrderedOr(this, elem, or);
 
                 if (elem.IsAnyStar)
-                    break; // .* is the absorbing element
+                    or = elem; // .* is the absorbing element
             }
 
             return or ?? _nothing;
@@ -355,7 +364,14 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal SymbolicRegexNode<TElement> CreateCaptureEnd(int captureNum) => SymbolicRegexNode<TElement>.CreateCaptureEnd(this, captureNum);
 
-        internal SymbolicRegexNode<T> Transform<T>(SymbolicRegexNode<TElement> sr, SymbolicRegexBuilder<T> builder, Func<TElement, T> predicateTransformer) where T : notnull
+        internal SymbolicRegexNode<TElement> CreateDisableBacktrackingSimulation(SymbolicRegexNode<TElement> child)
+        {
+            if (child == _nothing)
+                return _nothing;
+            return SymbolicRegexNode<TElement>.CreateDisableBacktrackingSimulation(this, child);
+        }
+
+        internal SymbolicRegexNode<T> Transform<T>(SymbolicRegexNode<TElement> sr, SymbolicRegexBuilder<T> builder, Func<SymbolicRegexBuilder<T>, TElement, T> predicateTransformer) where T : notnull
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
@@ -396,7 +412,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 case SymbolicRegexNodeKind.Singleton:
                     Debug.Assert(sr._set is not null);
-                    return builder.CreateSingleton(predicateTransformer(sr._set));
+                    return builder.CreateSingleton(predicateTransformer(builder, sr._set));
 
                 case SymbolicRegexNodeKind.Loop:
                     Debug.Assert(sr._left is not null);
@@ -430,6 +446,10 @@ namespace System.Text.RegularExpressions.Symbolic
                         }
                         return builder.CreateConcat(sr_elems_trasformed, false);
                     }
+
+                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                    Debug.Assert(sr._left is not null);
+                    return builder.CreateDisableBacktrackingSimulation(Transform(sr._left, builder, predicateTransformer));
 
                 default:
                     Debug.Assert(sr._kind == SymbolicRegexNodeKind.Not);

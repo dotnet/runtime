@@ -209,15 +209,8 @@ GetFullMethodNameFromMetadata(IMDInternalImport* mdImport,
 
     LPCUTF8 methodName;
     IfFailRet(mdImport->GetNameOfMethodDef(methodToken, &methodName));
-// Review conversion of size_t to ULONG32.
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4267)
-#endif
+
     len = strlen(methodName);
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
     if (len >= bufferChars)
     {
         return E_OUTOFMEMORY;
@@ -3290,6 +3283,10 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface11*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface12)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface12*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -4384,7 +4381,7 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
     ClrDataModule* pubModule = NULL;
     ClrDataMethodInstance* pubMethodInst = NULL;
     ClrDataExceptionState* pubExState = NULL;
-    GcEvtArgs pubGcEvtArgs;
+    GcEvtArgs pubGcEvtArgs = {};
     ULONG32 notifyType = 0;
     DWORD catcherNativeOffset = 0;
     TADDR nativeCodeLocation = NULL;
@@ -5498,7 +5495,7 @@ HRESULT
 ClrDataAccess::Initialize(void)
 {
     HRESULT hr;
-    CLRDATA_ADDRESS base;
+    CLRDATA_ADDRESS base = { 0 };
 
     //
     // We do not currently support cross-platform
@@ -6465,7 +6462,7 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
 {
     SUPPORTS_DAC_HOST_ONLY;
     PEImage *mdImage = NULL;
-    PEImageLayout   *layout;
+    PEImageLayout   *layout = NULL;
     IMAGE_DATA_DIRECTORY *pDir = NULL;
     COUNT_T uniPathChars = 0;
 

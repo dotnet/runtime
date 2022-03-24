@@ -1046,7 +1046,7 @@ namespace System.Net.Http.Headers
 
             if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
             {
-                throw new FormatException(SR.net_http_headers_invalid_header_name);
+                throw new FormatException(string.Format(SR.net_http_headers_invalid_header_name, name));
             }
 
             if ((descriptor.HeaderType & _allowedHeaderTypes) != 0)

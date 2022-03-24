@@ -1,6 +1,6 @@
 # P/Invoke Generation Pipeline
 
-The P/Invoke source generator is responsible for finding all methods marked with `GeneratedDllImportAttribute` and generating code for their implementations (stubs) and corresponding P/Invokes that will be called by the stubs. For every method, the steps are:
+The P/Invoke source generator is responsible for finding all methods marked with `LibraryImportAttribute` and generating code for their implementations (stubs) and corresponding P/Invokes that will be called by the stubs. For every method, the steps are:
 
 1. [Process the symbols and metadata](#symbols-and-metadata-processing) for the method, its parameters, and its return type.
 1. [Determine the marshalling generators](#marshalling-generators) that will be responsible for generating the stub code for each parameter and return
@@ -12,7 +12,7 @@ The pipeline uses the Roslyn [Syntax APIs](https://docs.microsoft.com/dotnet/api
 
 ## Symbol and metadata processing
 
-The generator processes the method's `GeneratedDllImportAttribute` data, the method's parameter and return types, and the metadata on them (e.g. [`LCIDConversionAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.lcidconversionattribute), [`MarshalAsAttribute`][MarshalAsAttribute], [struct marshalling attributes](StructMarshalling.md)). This information is used to determine the corresponding native type for each managed parameter/return type and how they will be marshalled.
+The generator processes the method's `LibraryImportAttribute` data, the method's parameter and return types, and the metadata on them (e.g. [`LCIDConversionAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.lcidconversionattribute), [`MarshalAsAttribute`][MarshalAsAttribute], [struct marshalling attributes](StructMarshalling.md)). This information is used to determine the corresponding native type for each managed parameter/return type and how they will be marshalled.
 
 A [`TypePositionInfo`][src-TypePositionInfo] is created for each type that needs to be marshalled. For each parameter and return type, this captures the managed type, managed and native positions (return or index in parameter list), and marshalling information.
 
@@ -25,7 +25,7 @@ The processing step also includes handling any implicit parameter/return types t
 The below signature indicates that the native function returns an HRESULT, but has no other return value (out parameter).
 
 ```C#
-[GeneratedDllImport("Lib", PreserveSig = false)]
+[LibraryImport("Lib", PreserveSig = false)]
 static partial void Method();
 ```
 Processing the above signature would create a `TypePositionInfo` for the HRESULT return type for native call, with properties indicating that it is in the native return position and has no managed position. The actual P/Invoke would be:
@@ -38,7 +38,7 @@ static partial int Method__PInvoke__();
 The below signature indicates that the native function returns an HRESULT and also has an out parameter to be used as the managed return value.
 
 ```C#
-[GeneratedDllImport("Lib", PreserveSig = false)]
+[LibraryImport("Lib", PreserveSig = false)]
 [return: MarshalAs(UnmanagedType.U1)]
 static partial bool MethodWithReturn();
 ```
@@ -158,7 +158,7 @@ Clearing the system error (1) is necessary because the native method may not set
 
 The P/Invoke called by the stub is created based on the user's original declaration of the stub. The signature is generated using the syntax returned by `AsNativeType` and `AsParameter` of the marshalling generators for the return and parameters. Any marshalling attributes on the return and parameters of the managed method - [`MarshalAsAttribute`][MarshalAsAttribute], [`InAttribute`][InAttribute], [`OutAttribute`][OutAttribute] - are dropped.
 
-The fields of the [`DllImportAttribute`][DllImportAttribute] are set based on the fields of `GeneratedDllImportAttribute` as follows:
+The fields of the [`DllImportAttribute`][DllImportAttribute] are set based on the fields of `LibraryImportAttribute` as follows:
 
 | Field                                             | Behaviour |
 | ------------------------------------------------- | --------- |
@@ -177,7 +177,7 @@ Explicit `EntryPoint`:
 
 ```C#
 // Original declaration
-[GeneratedDllImport("Lib")]
+[LibraryImport("Lib")]
 static partial void Method(out int i);
 
 // Generated P/Invoke
@@ -189,7 +189,7 @@ Passed through:
 
 ```C#
 // Original declaration
-[GeneratedDllImport("Lib", EntryPoint = "EntryPoint", CharSet = CharSet.Unicode)]
+[LibraryImport("Lib", EntryPoint = "EntryPoint", CharSet = CharSet.Unicode)]
 static partial int Method(string s);
 
 // Generated P/Invoke
@@ -201,7 +201,7 @@ Handled by generated source (dropped from `DllImport`):
 
 ```C#
 // Original declaration
-[GeneratedDllImport("Lib", SetLastError = true)]
+[LibraryImport("Lib", SetLastError = true)]
 [return: [MarshalAs(UnmanagedType.U1)]
 static partial bool Method([In][MarshasAs(UnmanagedType.LPWStr)] string s);
 

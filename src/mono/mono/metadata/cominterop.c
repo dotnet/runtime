@@ -3110,7 +3110,7 @@ mono_ptr_to_ansibstr (const char *ptr, size_t slen)
 	char *s = (char *)mono_bstr_alloc ((slen + 1) * sizeof(char));
 	if (s == NULL)
 		return NULL;
-	*((guint32 *)s - 1) = slen * sizeof (char);
+	*((guint32 *)s - 1) = (guint32)(slen * sizeof (char));
 	if (ptr)
 		memcpy (s, ptr, slen * sizeof (char));
 	s [slen] = 0;

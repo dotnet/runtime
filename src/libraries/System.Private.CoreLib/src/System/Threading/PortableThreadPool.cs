@@ -339,12 +339,8 @@ namespace System.Threading
                     return;
                 }
 
-
-                long startTime = _currentSampleStartTime;
                 long endTime = Stopwatch.GetTimestamp();
-                long freq = Stopwatch.Frequency;
-
-                double elapsedSeconds = (double)(endTime - startTime) / freq;
+                double elapsedSeconds = Stopwatch.GetElapsedTime(_currentSampleStartTime, endTime).TotalSeconds;
 
                 if (elapsedSeconds * 1000 >= _threadAdjustmentIntervalMs / 2)
                 {

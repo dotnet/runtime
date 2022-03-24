@@ -46,7 +46,7 @@ namespace System.Drawing
             }
         }
 
-        [GeneratedDllImport(Interop.Libraries.Oleaut32, PreserveSig = false)]
+        [LibraryImport(Interop.Libraries.Oleaut32, PreserveSig = false)]
         internal static partial IntPtr OleCreatePictureIndirect(in PICTDESC pictdesc, in Guid refiid, bool fOwn);
 
         [ComImport]

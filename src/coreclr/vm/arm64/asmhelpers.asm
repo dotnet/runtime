@@ -210,27 +210,6 @@ Done
         NESTED_END
 
 ; ------------------------------------------------------------------
-; The call in fixup precode initally points to this function.
-; The pupose of this function is to load the MethodDesc and forward the call to prestub.
-        NESTED_ENTRY PrecodeFixupThunk
-
-        ; x12 = FixupPrecode *
-        ; On Exit
-        ; x12 = MethodDesc*
-        ; x13, x14 Trashed
-        ; Inline computation done by FixupPrecode::GetMethodDesc()
-        ldrb    w13, [x12, #Offset_PrecodeChunkIndex]              ; m_PrecodeChunkIndex
-        ldrb    w14, [x12, #Offset_MethodDescChunkIndex]           ; m_MethodDescChunkIndex
-
-        add     x12,x12,w13,uxtw #FixupPrecode_ALIGNMENT_SHIFT_1
-        add     x13,x12,w13,uxtw #FixupPrecode_ALIGNMENT_SHIFT_2
-        ldr     x13, [x13,#SIZEOF__FixupPrecode]
-        add     x12,x13,w14,uxtw #MethodDesc_ALIGNMENT_SHIFT
-
-        b ThePreStub
-
-        NESTED_END
-; ------------------------------------------------------------------
 
         NESTED_ENTRY ThePreStub
 
@@ -1391,7 +1370,7 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
         PROLOG_WITH_TRANSITION_BLOCK
 
         add     x0, sp, #__PWTB_TransitionBlock ; TransitionBlock *
-        mov     x1, x10 ; stub-identifying token
+        mov     x1, x9 ; stub-identifying token
         bl      OnCallCountThresholdReached
         mov     x9, x0
 

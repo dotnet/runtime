@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class PerfCounter
     {
-        [GeneratedDllImport(Libraries.Advapi32)]
+        [LibraryImport(Libraries.Advapi32)]
         internal static partial uint PerfStopProvider(
             IntPtr hProvider
         );
@@ -53,14 +53,14 @@ internal static partial class Interop
             internal uint InstanceNameSize;
         }
 
-        [GeneratedDllImport(Libraries.Advapi32)]
+        [LibraryImport(Libraries.Advapi32)]
         internal static partial uint PerfStartProvider(
             ref Guid ProviderGuid,
             PERFLIBREQUEST ControlCallback,
             out SafePerfProviderHandle phProvider
         );
 
-        [GeneratedDllImport(Libraries.Advapi32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Advapi32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial PerfCounterSetInstanceStruct* PerfCreateInstance(
             SafePerfProviderHandle hProvider,
             ref Guid CounterSetGuid,
@@ -68,20 +68,20 @@ internal static partial class Interop
             uint dwInstance
         );
 
-        [GeneratedDllImport(Libraries.Advapi32)]
+        [LibraryImport(Libraries.Advapi32)]
         internal static unsafe partial uint PerfSetCounterSetInfo(
             SafePerfProviderHandle hProvider,
             PerfCounterSetInfoStruct* pTemplate,
             uint dwTemplateSize
         );
 
-        [GeneratedDllImport(Libraries.Advapi32)]
+        [LibraryImport(Libraries.Advapi32)]
         internal static unsafe partial uint PerfDeleteInstance(
             SafePerfProviderHandle hProvider,
             PerfCounterSetInstanceStruct* InstanceBlock
         );
 
-        [GeneratedDllImport(Libraries.Advapi32)]
+        [LibraryImport(Libraries.Advapi32)]
         internal static unsafe partial uint PerfSetCounterRefValue(
             SafePerfProviderHandle hProvider,
             PerfCounterSetInstanceStruct* pInstance,

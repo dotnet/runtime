@@ -176,7 +176,7 @@ namespace System.Text.RegularExpressions.Tests
                     }
                 };
 
-                // Using ^ with multiline
+                // Using ^ and $ with multiline
                 yield return new object[]
                 {
                     engine,
@@ -242,6 +242,38 @@ namespace System.Text.RegularExpressions.Tests
                         new CaptureData("abc", 0, 3),
                         new CaptureData("", 3, 0)
                     }
+                };
+
+                yield return new object[]
+                {
+                    engine,
+                     @"^[^a]a", "bar\n", RegexOptions.Multiline,
+                     new[]
+                     {
+                         new CaptureData("ba", 0, 2)
+                     }
+                };
+
+                yield return new object[]
+                {
+                    engine,
+                     @"^[^a]a", "car\nbar\n", RegexOptions.Multiline,
+                     new[]
+                     {
+                         new CaptureData("ca", 0, 2),
+                         new CaptureData("ba", 4, 2)
+                     }
+                };
+
+                yield return new object[]
+                {
+                    engine,
+                     @"[0-9]cat$", "1cat\n2cat", RegexOptions.Multiline,
+                     new[]
+                     {
+                         new CaptureData("1cat", 0, 4),
+                         new CaptureData("2cat", 5, 4)
+                     }
                 };
 
                 if (!PlatformDetection.IsNetFramework)
