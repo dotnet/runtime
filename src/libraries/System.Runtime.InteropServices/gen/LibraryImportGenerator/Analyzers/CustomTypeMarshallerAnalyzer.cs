@@ -36,321 +36,321 @@ namespace Microsoft.Interop.Analyzers
             new DiagnosticDescriptor(
                 Ids.MarshallerTypeMustSpecifyManagedType,
                 "MarshallerTypeMustSpecifyManagedType",
-                GetResourceString(nameof(Resources.MarshallerTypeMustSpecifyManagedTypeMessage)),
+                GetResourceString(nameof(SR.MarshallerTypeMustSpecifyManagedTypeMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.MarshallerTypeMustSpecifyManagedTypeDescription)));
+                description: GetResourceString(nameof(SR.MarshallerTypeMustSpecifyManagedTypeDescription)));
 
         public static readonly DiagnosticDescriptor CustomTypeMarshallerAttributeMustBeValidRule =
             new DiagnosticDescriptor(
                 Ids.CustomTypeMarshallerAttributeMustBeValid,
                 "CustomTypeMarshallerAttributeMustBeValid",
-                GetResourceString(nameof(Resources.CustomTypeMarshallerAttributeMustBeValidMessage)),
+                GetResourceString(nameof(SR.CustomTypeMarshallerAttributeMustBeValidMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.CustomTypeMarshallerAttributeMustBeValidDescription)));
+                description: GetResourceString(nameof(SR.CustomTypeMarshallerAttributeMustBeValidDescription)));
 
         public static readonly DiagnosticDescriptor MarshallerKindMustBeValidRule =
             new DiagnosticDescriptor(
                 Ids.CustomTypeMarshallerAttributeMustBeValid,
                 "CustomTypeMarshallerAttributeMustBeValid",
-                GetResourceString(nameof(Resources.MarshallerKindMustBeValidMessage)),
+                GetResourceString(nameof(SR.MarshallerKindMustBeValidMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.MarshallerKindMustBeValidDescription)));
+                description: GetResourceString(nameof(SR.MarshallerKindMustBeValidDescription)));
 
         public static readonly DiagnosticDescriptor MarshallerDirectionMustBeValidRule =
             new DiagnosticDescriptor(
                 Ids.CustomTypeMarshallerAttributeMustBeValid,
                 "CustomTypeMarshallerAttributeMustBeValid",
-                GetResourceString(nameof(Resources.MarshallerDirectionMustBeValidMessage)),
+                GetResourceString(nameof(SR.MarshallerDirectionMustBeValidMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.MarshallerDirectionMustBeValidDescription)));
+                description: GetResourceString(nameof(SR.MarshallerDirectionMustBeValidDescription)));
 
         public static readonly DiagnosticDescriptor NativeTypeMustHaveCustomTypeMarshallerAttributeRule =
             new DiagnosticDescriptor(
                 Ids.InvalidNativeType,
                 "InvalidNativeType",
-                GetResourceString(nameof(Resources.NativeTypeMustHaveCustomTypeMarshallerAttributeMessage)),
+                GetResourceString(nameof(SR.NativeTypeMustHaveCustomTypeMarshallerAttributeMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.NativeTypeMustHaveCustomTypeMarshallerAttributeDescription)));
+                description: GetResourceString(nameof(SR.NativeTypeMustHaveCustomTypeMarshallerAttributeDescription)));
 
         public static readonly DiagnosticDescriptor NativeTypeMustBeBlittableRule =
             new DiagnosticDescriptor(
                 Ids.InvalidNativeType,
                 "InvalidNativeType",
-                GetResourceString(nameof(Resources.NativeTypeMustBeBlittableMessage)),
+                GetResourceString(nameof(SR.NativeTypeMustBeBlittableMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.NativeTypeMustBeBlittableDescription)));
+                description: GetResourceString(nameof(SR.NativeTypeMustBeBlittableDescription)));
 
         public static readonly DiagnosticDescriptor GetPinnableReferenceReturnTypeBlittableRule =
             new DiagnosticDescriptor(
                 Ids.GetPinnableReferenceReturnTypeBlittable,
                 "GetPinnableReferenceReturnTypeBlittable",
-                GetResourceString(nameof(Resources.GetPinnableReferenceReturnTypeBlittableMessage)),
+                GetResourceString(nameof(SR.GetPinnableReferenceReturnTypeBlittableMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.GetPinnableReferenceReturnTypeBlittableDescription)));
+                description: GetResourceString(nameof(SR.GetPinnableReferenceReturnTypeBlittableDescription)));
 
         public static readonly DiagnosticDescriptor NativeTypeMustBePointerSizedRule =
             new DiagnosticDescriptor(
                 Ids.InvalidNativeType,
                 "InvalidNativeType",
-                GetResourceString(nameof(Resources.NativeTypeMustBePointerSizedMessage)),
+                GetResourceString(nameof(SR.NativeTypeMustBePointerSizedMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.NativeTypeMustBePointerSizedDescription)));
+                description: GetResourceString(nameof(SR.NativeTypeMustBePointerSizedDescription)));
 
         public static readonly DiagnosticDescriptor CustomMarshallerTypeMustSupportDirectionRule =
             new DiagnosticDescriptor(
                 Ids.CustomMarshallerTypeMustSupportDirection,
                 "CustomMarshallerTypeMustSupportDirection",
-                GetResourceString(nameof(Resources.CustomMarshallerTypeMustSupportDirectionMessage)),
+                GetResourceString(nameof(SR.CustomMarshallerTypeMustSupportDirectionMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.CustomMarshallerTypeMustSupportDirectionDescription)));
+                description: GetResourceString(nameof(SR.CustomMarshallerTypeMustSupportDirectionDescription)));
 
         public static readonly DiagnosticDescriptor ValueInRequiresOneParameterConstructorRule =
             new DiagnosticDescriptor(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 "CustomMarshallerTypeMustHaveRequiredShape",
-                GetResourceString(nameof(Resources.ValueInRequiresOneParameterConstructorMessage)),
+                GetResourceString(nameof(SR.ValueInRequiresOneParameterConstructorMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.ValueInRequiresOneParameterConstructorDescription)));
+                description: GetResourceString(nameof(SR.ValueInRequiresOneParameterConstructorDescription)));
 
         public static readonly DiagnosticDescriptor LinearCollectionInRequiresTwoParameterConstructorRule =
             new DiagnosticDescriptor(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 "CustomMarshallerTypeMustHaveRequiredShape",
-                GetResourceString(nameof(Resources.LinearCollectionInRequiresTwoParameterConstructorMessage)),
+                GetResourceString(nameof(SR.LinearCollectionInRequiresTwoParameterConstructorMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.LinearCollectionInRequiresTwoParameterConstructorDescription)));
+                description: GetResourceString(nameof(SR.LinearCollectionInRequiresTwoParameterConstructorDescription)));
 
         public static readonly DiagnosticDescriptor ValueInCallerAllocatedBufferRequiresSpanConstructorRule =
             new DiagnosticDescriptor(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 "CustomMarshallerTypeMustHaveRequiredShape",
-                GetResourceString(nameof(Resources.ValueInCallerAllocatedBufferRequiresSpanConstructorMessage)),
+                GetResourceString(nameof(SR.ValueInCallerAllocatedBufferRequiresSpanConstructorMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.ValueInCallerAllocatedBufferRequiresSpanConstructorDescription)));
+                description: GetResourceString(nameof(SR.ValueInCallerAllocatedBufferRequiresSpanConstructorDescription)));
 
         public static readonly DiagnosticDescriptor LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorRule =
             new DiagnosticDescriptor(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 "CustomMarshallerTypeMustHaveRequiredShape",
-                GetResourceString(nameof(Resources.LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorMessage)),
+                GetResourceString(nameof(SR.LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorDescription)));
+                description: GetResourceString(nameof(SR.LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorDescription)));
 
         public static readonly DiagnosticDescriptor OutRequiresToManagedRule =
             new DiagnosticDescriptor(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 "CustomMarshallerTypeMustHaveRequiredShape",
-                GetResourceString(nameof(Resources.OutRequiresToManagedMessage)),
+                GetResourceString(nameof(SR.OutRequiresToManagedMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.OutRequiresToManagedDescription)));
+                description: GetResourceString(nameof(SR.OutRequiresToManagedDescription)));
 
         public static readonly DiagnosticDescriptor LinearCollectionInRequiresCollectionMethodsRule =
             new DiagnosticDescriptor(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 "CustomMarshallerTypeMustHaveRequiredShape",
-                GetResourceString(nameof(Resources.LinearCollectionInRequiresCollectionMethodsMessage)),
+                GetResourceString(nameof(SR.LinearCollectionInRequiresCollectionMethodsMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.LinearCollectionInRequiresCollectionMethodsDescription)));
+                description: GetResourceString(nameof(SR.LinearCollectionInRequiresCollectionMethodsDescription)));
 
         public static readonly DiagnosticDescriptor LinearCollectionOutRequiresCollectionMethodsRule =
             new DiagnosticDescriptor(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 "CustomMarshallerTypeMustHaveRequiredShape",
-                GetResourceString(nameof(Resources.LinearCollectionOutRequiresCollectionMethodsMessage)),
+                GetResourceString(nameof(SR.LinearCollectionOutRequiresCollectionMethodsMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.LinearCollectionOutRequiresCollectionMethodsDescription)));
+                description: GetResourceString(nameof(SR.LinearCollectionOutRequiresCollectionMethodsDescription)));
 
         public static readonly DiagnosticDescriptor LinearCollectionOutRequiresIntConstructorRule =
             new DiagnosticDescriptor(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 "CustomMarshallerTypeMustHaveRequiredShape",
-                GetResourceString(nameof(Resources.LinearCollectionOutRequiresIntConstructorMessage)),
+                GetResourceString(nameof(SR.LinearCollectionOutRequiresIntConstructorMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.LinearCollectionOutRequiresIntConstructorDescription)));
+                description: GetResourceString(nameof(SR.LinearCollectionOutRequiresIntConstructorDescription)));
 
         public static readonly DiagnosticDescriptor UnmanagedResourcesRequiresFreeNativeRule =
             new DiagnosticDescriptor(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 "CustomMarshallerTypeMustHaveRequiredShape",
-                GetResourceString(nameof(Resources.UnmanagedResourcesRequiresFreeNativeMessage)),
+                GetResourceString(nameof(SR.UnmanagedResourcesRequiresFreeNativeMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.UnmanagedResourcesRequiresFreeNativeDescription)));
+                description: GetResourceString(nameof(SR.UnmanagedResourcesRequiresFreeNativeDescription)));
 
         public static readonly DiagnosticDescriptor OutTwoStageMarshallingRequiresFromNativeValueRule =
             new DiagnosticDescriptor(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 "CustomMarshallerTypeMustHaveRequiredShape",
-                GetResourceString(nameof(Resources.OutTwoStageMarshallingRequiresFromNativeValueMessage)),
+                GetResourceString(nameof(SR.OutTwoStageMarshallingRequiresFromNativeValueMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.OutTwoStageMarshallingRequiresFromNativeValueDescription)));
+                description: GetResourceString(nameof(SR.OutTwoStageMarshallingRequiresFromNativeValueDescription)));
 
         public static readonly DiagnosticDescriptor InTwoStageMarshallingRequiresToNativeValueRule =
             new DiagnosticDescriptor(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 "CustomMarshallerTypeMustHaveRequiredShape",
-                GetResourceString(nameof(Resources.InTwoStageMarshallingRequiresToNativeValueMessage)),
+                GetResourceString(nameof(SR.InTwoStageMarshallingRequiresToNativeValueMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.InTwoStageMarshallingRequiresToNativeValueDescription)));
+                description: GetResourceString(nameof(SR.InTwoStageMarshallingRequiresToNativeValueDescription)));
 
         public static readonly DiagnosticDescriptor GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackRule =
             new DiagnosticDescriptor(
                 Ids.MissingAllocatingMarshallingFallback,
                 "GetPinnableReferenceShouldSupportAllocatingMarshallingFallback",
-                GetResourceString(nameof(Resources.GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage)),
+                GetResourceString(nameof(SR.GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage)),
                 Category,
                 DiagnosticSeverity.Warning,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackDescription)));
+                description: GetResourceString(nameof(SR.GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackDescription)));
 
         public static readonly DiagnosticDescriptor CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackRule =
             new DiagnosticDescriptor(
                 Ids.MissingAllocatingMarshallingFallback,
                 "CallerAllocMarshallingShouldSupportAllocatingMarshallingFallback",
-                GetResourceString(nameof(Resources.CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackMessage)),
+                GetResourceString(nameof(SR.CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackMessage)),
                 Category,
                 DiagnosticSeverity.Warning,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackDescription)));
+                description: GetResourceString(nameof(SR.CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackDescription)));
 
         public static readonly DiagnosticDescriptor CallerAllocConstructorMustHaveBufferSizeRule =
             new DiagnosticDescriptor(
                 Ids.CallerAllocConstructorMustHaveBufferSize,
                 "CallerAllocConstructorMustHaveBufferSize",
-                GetResourceString(nameof(Resources.CallerAllocConstructorMustHaveBufferSizeMessage)),
+                GetResourceString(nameof(SR.CallerAllocConstructorMustHaveBufferSizeMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.CallerAllocConstructorMustHaveBufferSizeDescription)));
+                description: GetResourceString(nameof(SR.CallerAllocConstructorMustHaveBufferSizeDescription)));
 
         public static readonly DiagnosticDescriptor RefNativeValueUnsupportedRule =
             new DiagnosticDescriptor(
                 Ids.InvalidSignaturesInMarshallerShape,
                 "InvalidSignaturesInMarshallerShape",
-                GetResourceString(nameof(Resources.RefNativeValueUnsupportedMessage)),
+                GetResourceString(nameof(SR.RefNativeValueUnsupportedMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.RefNativeValueUnsupportedDescription)));
+                description: GetResourceString(nameof(SR.RefNativeValueUnsupportedDescription)));
 
         public static readonly DiagnosticDescriptor NativeGenericTypeMustBeClosedOrMatchArityRule =
             new DiagnosticDescriptor(
                 Ids.InvalidNativeType,
                 "NativeGenericTypeMustBeClosedOrMatchArity",
-                GetResourceString(nameof(Resources.NativeGenericTypeMustBeClosedOrMatchArityMessage)),
+                GetResourceString(nameof(SR.NativeGenericTypeMustBeClosedOrMatchArityMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.NativeGenericTypeMustBeClosedOrMatchArityDescription)));
+                description: GetResourceString(nameof(SR.NativeGenericTypeMustBeClosedOrMatchArityDescription)));
 
         public static readonly DiagnosticDescriptor MarshallerGetPinnableReferenceRequiresTwoStageMarshallingRule =
             new DiagnosticDescriptor(
                 Ids.MarshallerGetPinnableReferenceRequiresTwoStageMarshalling,
                 "MarshallerGetPinnableReferenceRequiresTwoStageMarshalling",
-                GetResourceString(nameof(Resources.MarshallerGetPinnableReferenceRequiresTwoStageMarshallingMessage)),
+                GetResourceString(nameof(SR.MarshallerGetPinnableReferenceRequiresTwoStageMarshallingMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.MarshallerGetPinnableReferenceRequiresTwoStageMarshallingDescription)));
+                description: GetResourceString(nameof(SR.MarshallerGetPinnableReferenceRequiresTwoStageMarshallingDescription)));
 
         public static readonly DiagnosticDescriptor FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureRule =
             new DiagnosticDescriptor(
                 Ids.ProvidedMethodsNotSpecifiedInShape,
                 "ProvidedMethodsNotSpecifiedInShape",
-                GetResourceString(nameof(Resources.FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureMessage)),
+                GetResourceString(nameof(SR.FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureMessage)),
                 Category,
                 DiagnosticSeverity.Warning,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureDescription)));
+                description: GetResourceString(nameof(SR.FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureDescription)));
 
         public static readonly DiagnosticDescriptor ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureRule =
             new DiagnosticDescriptor(
                 Ids.ProvidedMethodsNotSpecifiedInShape,
                 "ProvidedMethodsNotSpecifiedInShape",
-                GetResourceString(nameof(Resources.ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage)),
+                GetResourceString(nameof(SR.ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage)),
                 Category,
                 DiagnosticSeverity.Warning,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription)));
+                description: GetResourceString(nameof(SR.ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription)));
 
         public static readonly DiagnosticDescriptor FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureRule =
             new DiagnosticDescriptor(
                 Ids.ProvidedMethodsNotSpecifiedInShape,
                 "ProvidedMethodsNotSpecifiedInShape",
-                GetResourceString(nameof(Resources.FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage)),
+                GetResourceString(nameof(SR.FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage)),
                 Category,
                 DiagnosticSeverity.Warning,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription)));
+                description: GetResourceString(nameof(SR.FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription)));
 
         public static readonly DiagnosticDescriptor CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureRule =
             new DiagnosticDescriptor(
                 Ids.ProvidedMethodsNotSpecifiedInShape,
                 "ProvidedMethodsNotSpecifiedInShape",
-                GetResourceString(nameof(Resources.CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureMessage)),
+                GetResourceString(nameof(SR.CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureMessage)),
                 Category,
                 DiagnosticSeverity.Warning,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureDescription)));
+                description: GetResourceString(nameof(SR.CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureDescription)));
 
         public static readonly DiagnosticDescriptor TwoStageMarshallingNativeTypesMustMatchRule =
             new DiagnosticDescriptor(
                 Ids.InvalidSignaturesInMarshallerShape,
                 "InvalidSignaturesInMarshallerShape",
-                GetResourceString(nameof(Resources.TwoStageMarshallingNativeTypesMustMatchMessage)),
+                GetResourceString(nameof(SR.TwoStageMarshallingNativeTypesMustMatchMessage)),
                 Category,
                 DiagnosticSeverity.Warning,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.TwoStageMarshallingNativeTypesMustMatchDescription)));
+                description: GetResourceString(nameof(SR.TwoStageMarshallingNativeTypesMustMatchDescription)));
 
         public static readonly DiagnosticDescriptor LinearCollectionElementTypesMustMatchRule =
             new DiagnosticDescriptor(
                 Ids.InvalidSignaturesInMarshallerShape,
                 "InvalidSignaturesInMarshallerShape",
-                GetResourceString(nameof(Resources.LinearCollectionElementTypesMustMatchMessage)),
+                GetResourceString(nameof(SR.LinearCollectionElementTypesMustMatchMessage)),
                 Category,
                 DiagnosticSeverity.Warning,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.LinearCollectionElementTypesMustMatchDescription)));
+                description: GetResourceString(nameof(SR.LinearCollectionElementTypesMustMatchDescription)));
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
             ImmutableArray.Create(

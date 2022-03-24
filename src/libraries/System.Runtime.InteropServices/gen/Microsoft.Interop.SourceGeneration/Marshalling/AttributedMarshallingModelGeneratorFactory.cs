@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
@@ -54,7 +55,7 @@ namespace Microsoft.Interop
                 UnmanagedBlittableMarshallingInfo or NativeMarshallingAttributeInfo when !Options.RuntimeMarshallingDisabled =>
                     throw new MarshallingNotSupportedException(info, context)
                     {
-                        NotSupportedDetails = Resources.RuntimeMarshallingMustBeDisabled
+                        NotSupportedDetails = SR.RuntimeMarshallingMustBeDisabled
                     },
                 GeneratedNativeMarshallingAttributeInfo => s_forwarder,
                 MissingSupportMarshallingInfo => s_forwarder,
@@ -73,7 +74,7 @@ namespace Microsoft.Interop
                 CountElementCountInfo(TypePositionInfo elementInfo) => CheckedExpression(SyntaxKind.CheckedExpression, GetExpressionForParam(elementInfo)),
                 _ => throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = Resources.ArraySizeMustBeSpecified
+                    NotSupportedDetails = SR.ArraySizeMustBeSpecified
                 },
             };
 
@@ -103,7 +104,7 @@ namespace Microsoft.Interop
                     {
                         throw new MarshallingNotSupportedException(info, context)
                         {
-                            NotSupportedDetails = Resources.CollectionSizeParamTypeMustBeIntegral
+                            NotSupportedDetails = SR.CollectionSizeParamTypeMustBeIntegral
                         };
                     }
                 }
@@ -112,7 +113,7 @@ namespace Microsoft.Interop
                 {
                     throw new MarshallingNotSupportedException(info, context)
                     {
-                        NotSupportedDetails = Resources.CollectionSizeParamTypeMustBeIntegral
+                        NotSupportedDetails = SR.CollectionSizeParamTypeMustBeIntegral
                     };
                 }
 
@@ -202,7 +203,7 @@ namespace Microsoft.Interop
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingNativeToManagedUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
+                    NotSupportedDetails = string.Format(SR.CustomTypeMarshallingNativeToManagedUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
                 };
             }
             // The marshalling method for this type doesn't support marshalling from managed to native by value,
@@ -215,7 +216,7 @@ namespace Microsoft.Interop
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
+                    NotSupportedDetails = string.Format(SR.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
                 };
             }
             // The marshalling method for this type doesn't support marshalling from managed to native by reference,
@@ -227,7 +228,7 @@ namespace Microsoft.Interop
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
+                    NotSupportedDetails = string.Format(SR.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
                 };
             }
             // The marshalling method for this type doesn't support marshalling from managed to native by reference,
@@ -239,7 +240,7 @@ namespace Microsoft.Interop
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
+                    NotSupportedDetails = string.Format(SR.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
                 };
             }
         }
