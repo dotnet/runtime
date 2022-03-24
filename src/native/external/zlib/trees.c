@@ -32,6 +32,12 @@
 
 /* @(#) $Id$ */
 
+#ifdef _MSC_VER
+__pragma(warning (disable:4005)) /* macro redefinition */
+__pragma(warning (disable:4131)) /* uses old-style declarator */
+__pragma(warning (disable:4244)) /* conversion from 'int' to 'ush', possible loss of data */
+#endif
+
 /* #define GEN_TREES_H */
 
 #include "deflate.h"

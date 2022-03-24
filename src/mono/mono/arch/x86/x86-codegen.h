@@ -1803,12 +1803,12 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 
 #define x86_branch(inst,cond,target,is_signed)	\
 	do {	\
-		int offset = (target) - (inst) - 2;	\
-		if (x86_is_imm8 ((offset)))	\
-			x86_branch8 ((inst), (cond), offset, (is_signed));	\
+		int __offset = (target) - (inst) - 2;	\
+		if (x86_is_imm8 ((__offset)))	\
+			x86_branch8 ((inst), (cond), __offset, (is_signed));	\
 		else {	\
-			offset = (target) - (inst) - 6;	\
-			x86_branch32 ((inst), (cond), offset, (is_signed));	\
+			__offset = (target) - (inst) - 6;	\
+			x86_branch32 ((inst), (cond), __offset, (is_signed));	\
 		}	\
 	} while (0)
 
@@ -1816,12 +1816,12 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 
 #define x86_branch_disp(inst,cond,disp,is_signed)	\
 	do {	\
-		int offset = (disp) - 2;	\
-		if (x86_is_imm8 ((offset)))	\
-			x86_branch8 ((inst), (cond), offset, (is_signed));	\
+		int __offset = (disp) - 2;	\
+		if (x86_is_imm8 ((__offset)))	\
+			x86_branch8 ((inst), (cond), __offset, (is_signed));	\
 		else {	\
-			offset -= 4;	\
-			x86_branch32 ((inst), (cond), offset, (is_signed));	\
+			__offset -= 4;	\
+			x86_branch32 ((inst), (cond), __offset, (is_signed));	\
 		}	\
 	} while (0)
 

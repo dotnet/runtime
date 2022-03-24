@@ -49,6 +49,13 @@
 
 /* @(#) $Id$ */
 
+#ifdef _MSC_VER
+__pragma(warning (disable:4005)) /* macro redefinition */
+__pragma(warning (disable:4127)) /* conditional expression is constant */
+__pragma(warning (disable:4131)) /* uses old-style declarator */
+__pragma(warning (disable:4244)) /* conversion from 'unsigned int' to 'Bytef', possible loss of data */
+#endif
+
 #include "deflate.h"
 
 const char deflate_copyright[] =

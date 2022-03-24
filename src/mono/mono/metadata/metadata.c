@@ -2150,6 +2150,8 @@ do_mono_metadata_parse_type_with_cmods (MonoType *type, int cmod_count, MonoImag
 	return TRUE;
 }
 
+MONO_DISABLE_WARNING(4701) /* potentially uninitialized local variable 'stype' used */
+
 /**
  * mono_metadata_parse_type:
  * \param m metadata context
@@ -2248,6 +2250,7 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 	return type;
 }
 
+MONO_RESTORE_WARNING
 
 MonoType*
 mono_metadata_parse_type_checked (MonoImage *m, MonoGenericContainer *container,
@@ -4996,6 +4999,7 @@ mono_metadata_nested_in_typedef (MonoImage *meta, guint32 index)
 	loc.idx = mono_metadata_token_index (index);
 	loc.col_idx = MONO_NESTED_CLASS_NESTED;
 	loc.t = tdef;
+	loc.result = 0;
 
 	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
 	if (!found && !meta->has_updates)
@@ -5101,6 +5105,7 @@ mono_metadata_custom_attrs_from_index (MonoImage *meta, guint32 index)
 	loc.idx = index;
 	loc.col_idx = MONO_CUSTOM_ATTR_PARENT;
 	loc.t = tdef;
+	loc.result = 0;
 
 	/* FIXME: Index translation */
 

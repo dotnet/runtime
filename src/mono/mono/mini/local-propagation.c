@@ -962,12 +962,12 @@ mono_local_deadce (MonoCompile *cfg)
 					MONO_INS_HAS_NO_SIDE_EFFECT (ins)) {
 					/* Happens with CMOV instructions */
 					if (prev_f && prev_f->opcode == OP_ICOMPARE_IMM) {
-						MonoInst *prev = prev_f;
+						MonoInst *prev_ins = prev_f;
 						/*
 						 * Can't use DELETE_INS since that would interfere with the
 						 * FOR_EACH_INS loop.
 						 */
-						NULLIFY_INS (prev);
+						NULLIFY_INS (prev_ins);
 					}
 					//printf ("DEADCE: "); mono_print_ins (ins);
 					MONO_DELETE_INS (bb, ins);

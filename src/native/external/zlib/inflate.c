@@ -3,6 +3,11 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
+#ifdef _MSC_VER
+__pragma(warning (disable:4005)) /* macro redefinition */
+__pragma(warning (disable:4131)) /* uses old-style declarator */
+#endif
+
 /*
  * Change history:
  *

@@ -62,10 +62,10 @@ recursively_make_pred_seq_points (MonoCompile *cfg, MonoBasicBlock *bb)
 			recursively_make_pred_seq_points (cfg, in_bb);
 
 		// Union sequence points with incoming bb's
-		for (int i=0; i < in_bb->num_pred_seq_points; i++) {
-			if (!g_hash_table_lookup (seen, in_bb->pred_seq_points [i])) {
-				g_array_append_val (predecessors, in_bb->pred_seq_points [i]);
-				g_hash_table_insert (seen, in_bb->pred_seq_points [i], (gpointer)&MONO_SEQ_SEEN_LOOP);
+		for (int j=0; j < in_bb->num_pred_seq_points; j++) {
+			if (!g_hash_table_lookup (seen, in_bb->pred_seq_points [j])) {
+				g_array_append_val (predecessors, in_bb->pred_seq_points [j]);
+				g_hash_table_insert (seen, in_bb->pred_seq_points [j], (gpointer)&MONO_SEQ_SEEN_LOOP);
 			}
 		}
 		// predecessors = g_array_append_vals (predecessors, in_bb->pred_seq_points, in_bb->num_pred_seq_points);
@@ -171,8 +171,7 @@ mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo)
 					endfinally_seq_point = (MonoInst *)l->data;
 
 					for (bb2 = bb->next_bb; bb2; bb2 = bb2->next_bb) {
-						GSList *l = g_slist_last (bb2->seq_points);
-
+						l = g_slist_last (bb2->seq_points);
 						if (l) {
 							MonoInst *ins = (MonoInst *)l->data;
 
@@ -189,7 +188,6 @@ mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo)
 
 			for (i = 0; i < cfg->seq_points->len; ++i) {
 				SeqPoint *sp = &seq_points [i];
-				GSList *l;
 
 				if (!next [i])
 					continue;

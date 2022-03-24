@@ -23,6 +23,8 @@
 
 #ifndef DISABLE_JIT
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 /*
  * Decompose complex long opcodes on 64 bit machines.
  * This is also used on 32 bit machines when using LLVM, so it needs to handle I/U correctly.
@@ -287,6 +289,8 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 	*repl_ins = repl;
 	return TRUE;
 }
+
+MONO_RESTORE_WARNING
 
 /*
  * mono_decompose_opcode:
@@ -1145,6 +1149,8 @@ mono_decompose_long_opts (MonoCompile *cfg)
 	*/
 }
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 /**
  * mono_decompose_vtype_opts:
  *
@@ -1432,8 +1438,6 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 				}
 				case OP_BOX:
 				case OP_BOX_ICONST: {
-					MonoInst *src;
-
 					/* Temporary value required by emit_box () */
 					if (ins->opcode == OP_BOX_ICONST) {
 						NEW_ICONST (cfg, src, ins->inst_c0);
@@ -1479,6 +1483,8 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 		if (cfg->verbose_level > 2) mono_print_bb (bb, "AFTER LOWER-VTYPE-OPTS ");
 	}
 }
+
+MONO_RESTORE_WARNING
 
 /**
  * mono_decompose_array_access_opts:

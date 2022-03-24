@@ -3076,7 +3076,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	MonoMethodHeader *header;
 	MonoMethodSignature *sig;
 	MonoCompile *cfg;
-	int i;
 	gboolean try_generic_shared, try_llvm = FALSE;
 	MonoMethod *method_to_compile, *method_to_register;
 	gboolean method_is_gshared = FALSE;
@@ -3393,9 +3392,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		verbose_method_inited = TRUE;
 	}
 	if (verbose_method_names) {
-		int i;
-
-		for (i = 0; verbose_method_names [i] != NULL; i++){
+		for (int i = 0; verbose_method_names [i] != NULL; i++){
 			const char *name = verbose_method_names [i];
 
 			if ((strchr (name, '.') > name) || strchr (name, ':') || strchr (name, '*')) {
@@ -3463,7 +3460,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	mono_cfg_dump_create_context (cfg);
 	mono_cfg_dump_begin_group (cfg);
 
-	MONO_TIME_TRACK (mono_jit_stats.jit_method_to_ir, i = mono_method_to_ir (cfg, method_to_compile, NULL, NULL, NULL, NULL, 0, FALSE));
+	int inline_cost;
+	MONO_TIME_TRACK (mono_jit_stats.jit_method_to_ir, inline_cost = mono_method_to_ir (cfg, method_to_compile, NULL, NULL, NULL, NULL, 0, FALSE));
 	mono_cfg_dump_ir (cfg, "method-to-ir");
 
 	if (cfg->gdump_ctx != NULL) {
@@ -3472,7 +3470,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		mono_cfg_dump_ir (cfg, "mono_insert_nop_in_empty_bb");
 	}
 
-	if (i < 0) {
+	if (inline_cost < 0) {
 		if (try_generic_shared && cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
 			if (compile_aot) {
 				if (MONO_METHOD_COMPILE_END_ENABLED ())
@@ -3915,7 +3913,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 
 	if (cfg->extend_live_ranges) {
 		/* Extend live ranges to cover the whole method */
-		for (i = 0; i < cfg->num_varinfo; ++i)
+		for (int i = 0; i < cfg->num_varinfo; ++i)
 			MONO_VARINFO (cfg, i)->live_range_end = cfg->code_len;
 	}
 

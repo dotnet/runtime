@@ -527,7 +527,6 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 {
 	gpointer data = oti->data;
 	MonoRgctxInfoType info_type = oti->info_type;
-	ERROR_DECL (error);
 
 	g_assert (data);
 
@@ -553,6 +552,7 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 	case MONO_RGCTX_INFO_LOCAL_OFFSET:
 	case MONO_RGCTX_INFO_NULLABLE_CLASS_BOX:
 	case MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX: {
+		ERROR_DECL (error);
 		gpointer result = mono_class_inflate_generic_type_with_mempool (temporary ? NULL : m_class_get_image (klass),
 			(MonoType *)data, context, error);
 		mono_error_assert_msg_ok (error, "Could not inflate generic type"); /* FIXME proper error handling */
@@ -569,6 +569,7 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 	case MONO_RGCTX_INFO_METHOD_DELEGATE_CODE:
 	case MONO_RGCTX_INFO_INTERP_METHOD:
 	case MONO_RGCTX_INFO_LLVMONLY_INTERP_ENTRY: {
+		ERROR_DECL (error);
 		MonoMethod *method = (MonoMethod *)data;
 		MonoMethod *inflated_method;
 		MonoType *inflated_type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (method->klass), context, error);
@@ -587,7 +588,6 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 			inflated_method = mono_method_search_in_array_class (inflated_class,
 				method->name, method->signature);
 		} else {
-			ERROR_DECL (error);
 			inflated_method = mono_class_inflate_generic_method_checked (method, context, error);
 			g_assert (is_ok (error)); /* FIXME don't swallow the error */
 		}
@@ -620,6 +620,7 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 	}
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE:
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT: {
+		ERROR_DECL (error);
 		MonoJumpInfoGSharedVtCall *info = (MonoJumpInfoGSharedVtCall *)data;
 		MonoMethod *method = info->method;
 		MonoMethod *inflated_method;
@@ -651,7 +652,6 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 			inflated_method = mono_method_search_in_array_class (inflated_class,
 				method->name, method->signature);
 		} else {
-			ERROR_DECL (error);
 			inflated_method = mono_class_inflate_generic_method_checked (method, context, error);
 			g_assert (is_ok (error)); /* FIXME don't swallow the error */
 		}
@@ -727,20 +727,20 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 		ERROR_DECL (error);
 		MonoDelegateClassMethodPair *dele_info = (MonoDelegateClassMethodPair*)data;
 
-		MonoType *t = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (dele_info->klass), context, error);
+		MonoType *dele_t = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (dele_info->klass), context, error);
 		mono_error_assert_msg_ok (error, "Could not inflate generic type"); /* FIXME proper error handling */
 
-		MonoClass *klass = mono_class_from_mono_type_internal (t);
-		mono_metadata_free_type (t);
+		MonoClass *dele_klass = mono_class_from_mono_type_internal (dele_t);
+		mono_metadata_free_type (dele_t);
 
-		MonoMethod *method = mono_class_inflate_generic_method_checked (dele_info->method, context, error);
+		MonoMethod *dele_method = mono_class_inflate_generic_method_checked (dele_info->method, context, error);
 		mono_error_assert_msg_ok (error, "Could not inflate generic method"); /* FIXME proper error handling */
 
 		// FIXME: Temporary
 		MonoDelegateClassMethodPair *res = (MonoDelegateClassMethodPair *)mono_mem_manager_alloc0 (mem_manager, sizeof (MonoDelegateClassMethodPair));
 		res->is_virtual = dele_info->is_virtual;
-		res->method = method;
-		res->klass = klass;
+		res->method = dele_method;
+		res->klass = dele_klass;
 		return res;
 
 	}
@@ -1472,7 +1472,7 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 	MonoMethod *res, *cached;
 	WrapperInfo *info;
 	MonoMethodSignature *csig, *gsharedvt_sig;
-	int i, pindex;
+	int pindex;
 	static GHashTable *cache;
 
 	// FIXME: Memory management
@@ -1511,7 +1511,7 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 		gsharedvt_sig->params [pindex ++] = mono_get_int_type ();
 		gsharedvt_sig->ret = mono_get_void_type ();
 	}
-	for (i = 0; i < sig->param_count; i++) {
+	for (int i = 0; i < sig->param_count; i++) {
 		gsharedvt_sig->params [pindex] = sig->params [i];
 		if (!m_type_is_byref (sig->params [i])) {
 			gsharedvt_sig->params [pindex] = mono_metadata_type_dup (NULL, gsharedvt_sig->params [pindex]);
@@ -1539,7 +1539,7 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 		mono_mb_emit_ldarg (mb, 0);
 	if (sig->ret->type != MONO_TYPE_VOID)
 		mono_mb_emit_ldloc_addr (mb, retval_var);
-	for (i = 0; i < sig->param_count; i++) {
+	for (int i = 0; i < sig->param_count; i++) {
 		if (m_type_is_byref (sig->params [i]))
 			mono_mb_emit_ldarg (mb, i + (sig->hasthis == TRUE));
 		else
@@ -1591,7 +1591,7 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 	MonoMethod *res, *cached;
 	WrapperInfo *info;
 	MonoMethodSignature *normal_sig, *csig;
-	int i, pindex, args_start;
+	int pindex, args_start;
 	static GHashTable *cache;
 
 	// FIXME: Memory management
@@ -1624,7 +1624,7 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 	args_start = pindex;
 	if (sig->hasthis)
 		args_start ++;
-	for (i = 0; i < sig->param_count; i++) {
+	for (int i = 0; i < sig->param_count; i++) {
 		csig->params [pindex] = sig->params [i];
 		param_names [pindex] = g_strdup_printf ("%d", i);
 		if (!m_type_is_byref (sig->params [i])) {
@@ -1660,7 +1660,7 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 	/* Make the call */
 	if (sig->hasthis)
 		mono_mb_emit_ldarg (mb, 0);
-	for (i = 0; i < sig->param_count; i++) {
+	for (int i = 0; i < sig->param_count; i++) {
 		if (m_type_is_byref (sig->params [i])) {
 			mono_mb_emit_ldarg (mb, args_start + i);
 		} else {
@@ -2727,7 +2727,6 @@ register_info (MonoClass *klass, int type_argc, gpointer data, MonoRgctxInfoType
 	parent = m_class_get_parent (klass);
 	while (parent != NULL) {
 		MonoRuntimeGenericContextTemplate *parent_template;
-		MonoRuntimeGenericContextInfoTemplate *oti;
 
 		if (mono_class_is_ginst (parent))
 			parent = mono_class_get_generic_class (parent)->container_class;

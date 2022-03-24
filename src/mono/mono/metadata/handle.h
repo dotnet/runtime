@@ -428,9 +428,11 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 // but it is not widely enough implemented (i.e. Microsoft C).
 // The value copy is needed in cases computing value causes a GC
 #define MONO_HANDLE_SETVAL(HANDLE, FIELD, TYPE, VALUE) do {	\
-		TYPE __val = (VALUE);	\
+	MONO_DISABLE_WARNING(4189) \
+	TYPE __val = (VALUE);	\
 		if (0) { TYPE * typecheck G_GNUC_UNUSED = &MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (HANDLE)->FIELD); } \
 		MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (HANDLE))->FIELD = __val); \
+		MONO_RESTORE_WARNING \
 	 } while (0)
 
 // handle [idx] = value (for managed pointers)
