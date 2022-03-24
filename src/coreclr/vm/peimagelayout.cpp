@@ -223,6 +223,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 
         BYTE * pageAddress = (BYTE *)GetBase() + rva;
 
+#if !defined(__APPLE__) && !defined(HOST_ARM64)
         // Check whether the page is outside the unprotected region
         if ((SIZE_T)(pageAddress - pWriteableRegion) >= cbWriteableRegion)
         {
@@ -268,6 +269,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 #endif // TARGET_UNIX
             }
         }
+#endif // !__APPLE__ && !HOST_ARM64
 
         BYTE* pEndAddressToFlush = NULL;
         for (COUNT_T fixupIndex = 0; fixupIndex < fixupsCount; fixupIndex++)
@@ -279,7 +281,14 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
             switch (fixup>>12)
             {
             case IMAGE_REL_BASED_PTR:
+#if defined(__APPLE__) && defined(HOST_ARM64)
+                {
+                    ExecutableWriterHolder<TADDR> addressWriterHolder((TADDR *) address, sizeof(TADDR));
+                    *addressWriterHolder.GetRW() += delta;
+                }
+#else
                 *(TADDR *)address += delta;
+#endif
                 pEndAddressToFlush = max(pEndAddressToFlush, address + sizeof(TADDR));
                 break;
 
