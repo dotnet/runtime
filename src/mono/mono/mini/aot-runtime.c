@@ -1506,10 +1506,9 @@ find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *valu
 		if (symbol != name)
 			g_free (symbol);
 	} else {
-		char *err = mono_dl_symbol (module, name, value);
-
-		if (err)
-			g_free (err);
+		ERROR_DECL (symbol_error);
+		*value = mono_dl_symbol (module, name, symbol_error);
+		mono_error_cleanup (symbol_error);
 	}
 }
 
@@ -1963,17 +1962,18 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		}
 		found_aot_name = g_strdup (aot_name);
 	} else {
-		char *err;
-
 		aot_name = g_strdup_printf ("%s%s", assembly->image->name, MONO_SOLIB_EXT);
 
-		sofile = mono_dl_open (aot_name, MONO_DL_LAZY, &err);
-		if (sofile) {
-			found_aot_name = g_strdup (aot_name);
-		} else {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, err);
-			g_free (err);
+		{
+			ERROR_DECL (load_error);
+			sofile = mono_dl_open (aot_name, MONO_DL_LAZY, load_error);
+			if (sofile)
+				found_aot_name = g_strdup (aot_name);
+			else
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, mono_error_get_message_without_fields (load_error));
+			mono_error_cleanup (load_error);
 		}
+
 		g_free (aot_name);
 		if (!sofile) {
 			GList *l;
@@ -1983,19 +1983,22 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 
 				char *basename = g_path_get_basename (assembly->image->name);
 				aot_name = g_strdup_printf ("%s/%s%s", path, basename, MONO_SOLIB_EXT);
-				sofile = mono_dl_open (aot_name, MONO_DL_LAZY, &err);
-				if (sofile) {
+
+				ERROR_DECL (load_error);
+				sofile = mono_dl_open (aot_name, MONO_DL_LAZY, load_error);
+				if (sofile)
 					found_aot_name = g_strdup (aot_name);
-				} else {
-					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, err);
-					g_free (err);
-				}
+				else
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, mono_error_get_message_without_fields (load_error));
+				mono_error_cleanup (load_error);
+
 				g_free (basename);
 				g_free (aot_name);
 				if (sofile)
 					break;
 			}
 		}
+
 		if (!sofile) {
 			// Maybe do these on more platforms ?
 #ifndef HOST_WASM
@@ -2051,8 +2054,11 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		}
 		g_free (msg);
 		g_free (found_aot_name);
-		if (sofile)
-			mono_dl_close (sofile);
+		if (sofile) {
+			ERROR_DECL (close_error);
+			mono_dl_close (sofile, close_error);
+			mono_error_cleanup (close_error);
+		}
 		assembly->image->aot_module = NULL;
 		return;
 	}

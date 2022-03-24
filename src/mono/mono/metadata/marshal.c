@@ -3837,9 +3837,9 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
  * THIS_LOC is the memory location where the target of the delegate is stored.
  */
 void
-mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle)
+mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, MonoError *error)
 {
-	get_marshal_cb ()->emit_managed_wrapper (mb, invoke_sig, mspecs, m, method, target_handle);
+	get_marshal_cb ()->emit_managed_wrapper (mb, invoke_sig, mspecs, m, method, target_handle, error);
 }
 
 static gboolean
@@ -4121,23 +4121,27 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 			mono_custom_attrs_free (cinfo);
 	}
 
-	mono_marshal_emit_managed_wrapper (mb, invoke_sig, mspecs, &m, method, target_handle);
+	mono_marshal_emit_managed_wrapper (mb, invoke_sig, mspecs, &m, method, target_handle, error);
 
-	if (!target_handle) {
-		WrapperInfo *info;
+	res = NULL;
+	if (is_ok (error)) {
+		if (!target_handle) {
+			WrapperInfo *info;
 
-		// FIXME: Associate it with the method+delegate_klass pair
-		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
-		info->d.native_to_managed.method = method;
-		info->d.native_to_managed.klass = delegate_klass;
+			// FIXME: Associate it with the method+delegate_klass pair
+			info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+			info->d.native_to_managed.method = method;
+			info->d.native_to_managed.klass = delegate_klass;
 
-		res = mono_mb_create_and_cache_full (cache, method,
-											 mb, csig, sig->param_count + 16,
-											 info, NULL);
-	} else {
-		get_marshal_cb ()->mb_set_dynamic (mb);
-		res = mono_mb_create (mb, csig, sig->param_count + 16, NULL);
+			res = mono_mb_create_and_cache_full (cache, method,
+												 mb, csig, sig->param_count + 16,
+												 info, NULL);
+		} else {
+			get_marshal_cb ()->mb_set_dynamic (mb);
+			res = mono_mb_create (mb, csig, sig->param_count + 16, NULL);
+		}
 	}
+
 	mono_mb_free (mb);
 
 	for (i = invoke_sig->param_count; i >= 0; i--)
@@ -4198,7 +4202,8 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 
 		/* FIXME: Implement VTFIXUP_TYPE_FROM_UNMANAGED_RETAIN_APPDOMAIN. */
 
-		mono_marshal_emit_managed_wrapper (mb, sig, mspecs, &m, method, 0);
+		mono_marshal_emit_managed_wrapper (mb, sig, mspecs, &m, method, 0, error);
+		mono_error_assert_ok (error);
 
 		get_marshal_cb ()->mb_set_dynamic (mb);
 		method = mono_mb_create (mb, csig, sig->param_count + 16, NULL);
@@ -5333,6 +5338,12 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 
 	info = mono_marshal_load_type_info (klass);
 
+	if (info->native_size == 0)
+		return;
+
+	if (m_class_is_blittable (klass))
+		return;
+
 	for (i = 0; i < info->num_fields; i++) {
 		MonoMarshalConv conv;
 		MonoType *ftype = info->fields [i].field->type;
@@ -5349,7 +5360,7 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 		switch (conv) {
 		case MONO_MARSHAL_CONV_NONE:
 			if (MONO_TYPE_ISSTRUCT (ftype)) {
-				mono_struct_delete_old (ftype->data.klass, cpos);
+				mono_struct_delete_old (mono_class_from_mono_type_internal (ftype), cpos);
 				continue;
 			}
 			break;
