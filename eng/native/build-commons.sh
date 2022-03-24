@@ -424,7 +424,9 @@ while :; do
     shift
 done
 
-__HostArch=$__TargetArch
+if [[ -z "$__HostArch" ]]; then
+    __HostArch=$__TargetArch
+fi
 
 __CommonMSBuildArgs="/p:TargetArchitecture=$__TargetArch /p:Configuration=$__BuildType /p:TargetOS=$__TargetOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
 
