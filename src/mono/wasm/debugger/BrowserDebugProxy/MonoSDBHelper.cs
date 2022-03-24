@@ -1588,9 +1588,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             return await CreateJObjectForVariableValue(retDebuggerCmdReader, varName, false, -1, false, token);
         }
 
-        public async Task<JObject> InvokeMethodInObject(int objectId, int methodId, ElementType elementType, string varName, CancellationToken token)
+        public async Task<JObject> InvokeMethodInObject(int objectId, int methodId, bool isValueType, string varName, CancellationToken token)
         {
-            if (elementType == ElementType.ValueType)
+            if (isValueType)
                 return await InvokeMethod(valueTypes[objectId].valueTypeBuffer, methodId, varName, token);
             using var commandParamsObjWriter = new MonoBinaryWriter();
             commandParamsObjWriter.Write(ElementType.Class, objectId);
@@ -2640,7 +2640,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         case DebuggerBrowsableState.RootHidden:
                             DotnetObjectId rootObjId;
                             DotnetObjectId.TryParse(p["get"]["objectId"].Value<string>(), out rootObjId);
-                            var rootObject = await InvokeMethodInObject(rootObjId.Value, rootObjId.SubValue, ElementType.Class, propName, token);
+                            var rootObject = await InvokeMethodInObject(rootObjId.Value, rootObjId.SubValue, rootObjId.IsValueType, propName, token);
                             await AppendRootHiddenChildren(rootObject, regularProps);
                             break;
                         case DebuggerBrowsableState.Collapsed:
