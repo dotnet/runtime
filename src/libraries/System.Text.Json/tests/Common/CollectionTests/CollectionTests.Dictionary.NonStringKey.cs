@@ -310,25 +310,37 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.IsType<Dictionary<string, object>>(@object.Dictionary);
             }
 
-            [Theory] // Extend this test when support for more types is added.
-            [InlineData(@"{""1.1"":1}", typeof(Dictionary<int, int>))]
-            [InlineData(@"{""{00000000-0000-0000-0000-000000000000}"":1}", typeof(Dictionary<Guid, int>))]
-            public void ThrowOnInvalidFormat(string json, Type typeToConvert)
+            [Theory]
+            [InlineData("1.1", typeof(int))]
+            [InlineData("42", typeof(bool))]
+            [InlineData("false", typeof(double))]
+            [InlineData("{00000000-0000-0000-0000-000000000000}", typeof(Guid))]
+            public void ThrowOnInvalidFormat(string keyValue, Type keyType)
             {
-                JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(json, typeToConvert));
-                Assert.Contains(typeToConvert.ToString(), ex.Message);
+                Type dictionaryType = typeof(Dictionary<,>).MakeGenericType(keyType, typeof(int));
+                string json = $@"{{ ""{keyValue}"" : 1 }}";
+                string expectedJsonPath = keyValue.Contains(".") ? $"$['{keyValue}']" : $"$.{keyValue}";
+
+                JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(json, dictionaryType));
+                Assert.Contains(keyType.ToString(), ex.Message);
+                Assert.Contains(expectedJsonPath, ex.Message);
             }
 
-            [Theory] // Extend this test when support for more types is added.
-            [InlineData(@"{""1.1"":1}", typeof(Dictionary<int, int>))]
-            [InlineData(@"{""{00000000-0000-0000-0000-000000000000}"":1}", typeof(Dictionary<Guid, int>))]
-            public async Task ThrowOnInvalidFormatAsync(string json, Type typeToConvert)
+            [Theory]
+            [InlineData("1.1", typeof(int))]
+            [InlineData("42", typeof(bool))]
+            [InlineData("false", typeof(double))]
+            [InlineData("{00000000-0000-0000-0000-000000000000}", typeof(Guid))]
+            public async Task ThrowOnInvalidFormatAsync(string keyValue, Type keyType)
             {
-                byte[] jsonBytes = Encoding.UTF8.GetBytes(json);
-                Stream stream = new MemoryStream(jsonBytes);
+                Type dictionaryType = typeof(Dictionary<,>).MakeGenericType(keyType, typeof(int));
+                string json = $@"{{ ""{keyValue}"" : 1 }}";
+                string expectedJsonPath = keyValue.Contains(".") ? $"$['{keyValue}']" : $"$.{keyValue}";
 
-                JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.DeserializeAsync(stream, typeToConvert));
-                Assert.Contains(typeToConvert.ToString(), ex.Message);
+                using var stream = new Utf8MemoryStream(json);
+                JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.DeserializeAsync(stream, dictionaryType));
+                Assert.Contains(keyType.ToString(), ex.Message);
+                Assert.Contains(expectedJsonPath, ex.Message);
             }
 
             [Fact]
