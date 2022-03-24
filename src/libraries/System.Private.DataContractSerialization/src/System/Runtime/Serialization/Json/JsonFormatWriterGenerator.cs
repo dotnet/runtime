@@ -727,6 +727,7 @@ namespace System.Runtime.Serialization.Json
                 _ilg.Call(methodInfo);
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private LocalBuilder UnwrapNullableObject(LocalBuilder memberValue)// Leaves !HasValue on stack
             {
                 Type memberType = memberValue.LocalType;

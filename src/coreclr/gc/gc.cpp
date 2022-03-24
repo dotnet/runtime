@@ -3957,7 +3957,7 @@ void region_allocator::move_highest_free_regions (int64_t n, bool small_region_p
         {
             uint32_t* index = current_index - (current_num_units - 1);
             heap_segment* region = get_region_info (region_address_of (index));
-            if (is_free_region (region))
+            if (is_free_region (region) && !region_free_list::is_on_free_list (region, to_free_list))
             {
                 if (n >= current_num_units)
                 {
@@ -11096,6 +11096,8 @@ void gc_heap::clear_region_info (heap_segment* region)
                         settings.gc_index, current_bgc_state,
                         seg_deleted);
 
+    bgc_verify_mark_array_cleared (region);
+
     if (dt_high_memory_load_p())
     {
         decommit_mark_array_by_seg (region);
@@ -11515,6 +11517,8 @@ void gc_heap::delete_heap_segment (heap_segment* seg, BOOL consider_hoarding)
         ::record_changed_seg ((uint8_t*)seg, heap_segment_reserved (seg),
                             settings.gc_index, current_bgc_state,
                             seg_deleted);
+        bgc_verify_mark_array_cleared (seg);
+
         decommit_mark_array_by_seg (seg);
 #endif //BACKGROUND_GC
 
@@ -12141,6 +12145,13 @@ void region_free_list::add_region_descending (heap_segment* region, region_free_
     to_free_list[kind].add_region_in_descending_order (region);
 }
 
+bool region_free_list::is_on_free_list (heap_segment* region, region_free_list free_list[count_free_region_kinds])
+{
+    region_free_list* rfl = heap_segment_containing_free_list (region);
+    free_region_kind kind = get_region_kind (region);
+    return rfl == &free_list[kind];
+}
+
 void region_free_list::age_free_regions()
 {
     for (heap_segment* region = head_free_region; region != nullptr; region = heap_segment_next (region))
@@ -12414,6 +12425,9 @@ void gc_heap::distribute_free_regions()
 
             if (num_regions_to_decommit[kind] > 0)
             {
+                // remember how many regions we had on the decommit list already due to aging
+                size_t num_regions_to_decommit_before = global_regions_to_decommit[kind].get_num_free_regions();
+
                 // put the highest regions on the decommit list
                 global_region_allocator.move_highest_free_regions (num_regions_to_decommit[kind]*region_factor[kind],
                                                                    kind == basic_free_region,
@@ -12424,7 +12438,9 @@ void gc_heap::distribute_free_regions()
 
                 if (kind == basic_free_region)
                 {
-                    assert (global_regions_to_decommit[kind].get_num_free_regions() == (size_t)num_regions_to_decommit[kind]);
+                    // we should now have num_regions_to_decommit[kind] regions more on the decommit list
+                    assert (global_regions_to_decommit[kind].get_num_free_regions() ==
+                            num_regions_to_decommit_before + (size_t)num_regions_to_decommit[kind]);
                 }
                 else
                 {
@@ -26977,7 +26993,7 @@ void gc_heap::check_loh_compact_mode (BOOL all_heaps_compacted_p)
 BOOL gc_heap::plan_loh()
 {
 #ifdef FEATURE_EVENT_TRACE
-    uint64_t start_time, end_time;
+    uint64_t start_time = 0, end_time;
     if (informational_event_enabled_p)
     {
         memset (loh_compact_info, 0, (sizeof (etw_loh_compact_info) * get_num_heaps()));
@@ -27145,7 +27161,7 @@ void gc_heap::compact_loh()
     assert (loh_compaction_requested() || heap_hard_limit || conserve_mem_setting);
 
 #ifdef FEATURE_EVENT_TRACE
-    uint64_t start_time, end_time;
+    uint64_t start_time = 0, end_time;
     if (informational_event_enabled_p)
     {
         start_time = GetHighPrecisionTimeStamp();
@@ -27308,7 +27324,7 @@ void gc_heap::relocate_in_loh_compact()
 #ifdef FEATURE_EVENT_TRACE
     size_t total_refs = 0;
     size_t zero_refs = 0;
-    uint64_t start_time, end_time;
+    uint64_t start_time = 0, end_time;
     if (informational_event_enabled_p)
     {
         start_time = GetHighPrecisionTimeStamp();
@@ -28183,6 +28199,18 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 if (!((heap_segment_reserved (seg) >= slow) &&
                     (heap_segment_mem (seg) <= shigh)))
                 {
+#ifdef BACKGROUND_GC
+                    if (current_c_gc_state == c_gc_state_marking)
+                    {
+#ifdef USE_REGIONS
+                        bgc_clear_batch_mark_array_bits (heap_segment_mem (seg), heap_segment_allocated (seg));
+#else //USE_REGIONS
+                        // This cannot happen with segments as we'd only be on the ephemeral segment if BGC is in
+                        // progress and it's guaranteed shigh/slow would be in range of the ephemeral segment.
+                        assert (!"cannot happen with segments");
+#endif //USE_REGIONS
+                    }
+#endif //BACKGROUND_GC
                     heap_segment_saved_allocated (seg) = heap_segment_allocated (seg);
                     // shorten it to minimum
                     heap_segment_allocated (seg) =  heap_segment_mem (seg);
@@ -30890,7 +30918,7 @@ void gc_heap::make_free_lists (int condemned_gen_number)
     //Promotion has to happen in sweep case.
     assert (settings.promotion);
 
-    make_free_args args;
+    make_free_args args = {};
     int stop_gen_idx = get_stop_generation_index (condemned_gen_number);
     for (int i = condemned_gen_number; i >= stop_gen_idx; i--)
     {
@@ -34667,7 +34695,7 @@ void gc_heap::background_grow_c_mark_list()
         assert (new_c_mark_list);
         memcpy (new_c_mark_list, c_mark_list, c_mark_list_length*sizeof(uint8_t*));
         c_mark_list_length = c_mark_list_length*2;
-        delete c_mark_list;
+        delete[] c_mark_list;
         c_mark_list = new_c_mark_list;
     }
 }
@@ -42600,9 +42628,8 @@ BOOL gc_heap::bgc_mark_array_range (heap_segment* seg,
 
 void gc_heap::bgc_verify_mark_array_cleared (heap_segment* seg)
 {
-#ifdef VERIFY_HEAP
-    if (gc_heap::background_running_p() &&
-        (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC))
+#ifdef _DEBUG
+    if (gc_heap::background_running_p())
     {
         uint8_t* range_beg = 0;
         uint8_t* range_end = 0;

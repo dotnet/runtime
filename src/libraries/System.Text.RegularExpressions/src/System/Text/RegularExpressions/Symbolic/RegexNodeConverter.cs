@@ -26,11 +26,11 @@ namespace System.Text.RegularExpressions.Symbolic
         private Dictionary<(bool IgnoreCase, string Set), BDD>? _setBddCache;
 
         /// <summary>Constructs a regex to symbolic finite automata converter</summary>
-        public RegexNodeConverter(CultureInfo culture, Hashtable? captureSparseMapping)
+        public RegexNodeConverter(SymbolicRegexBuilder<BDD> builder, CultureInfo culture, Hashtable? captureSparseMapping)
         {
+            _builder = builder;
             _culture = culture;
             _captureSparseMapping = captureSparseMapping;
-            _builder = new SymbolicRegexBuilder<BDD>(CharSetSolver.Instance);
         }
 
         /// <summary>Converts a <see cref="RegexNode"/> into its corresponding <see cref="SymbolicRegexNode{S}"/>.</summary>
@@ -263,7 +263,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     return false;
                 }
 
-                conjuncts = new();
+                conjuncts = new List<RegexNode>();
                 conjuncts.Add(node.Child(0));
                 node = node.Child(1);
                 while (IsIntersect(node))
@@ -293,7 +293,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             // Lazily-initialize the set cache on first use, since some expressions may not have character classes in them.
-            _setBddCache ??= new();
+            _setBddCache ??= new Dictionary<(bool IgnoreCase, string Set), BDD>();
 
             // Try to get the cached BDD for the combined ignoreCase+set key.
             // If one doesn't yet exist, compute and populate it.

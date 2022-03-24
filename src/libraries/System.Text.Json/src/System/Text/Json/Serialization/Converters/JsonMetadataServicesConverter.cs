@@ -41,6 +41,8 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override bool ConstructorIsParameterized => Converter.ConstructorIsParameterized;
 
+        internal override bool CanHaveIdMetadata => Converter.CanHaveIdMetadata;
+
         public JsonMetadataServicesConverter(Func<JsonConverter<T>> converterCreator!!, ConverterStrategy converterStrategy)
         {
             _converterCreator = converterCreator;
@@ -92,5 +94,8 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
             => Converter.ConfigureJsonTypeInfo(jsonTypeInfo, options);
+
+        internal override void CreateInstanceForReferenceResolver(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+            => Converter.CreateInstanceForReferenceResolver(ref reader, ref state, options);
     }
 }

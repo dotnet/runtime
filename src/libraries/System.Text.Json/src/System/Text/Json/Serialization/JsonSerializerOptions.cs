@@ -9,6 +9,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 
 namespace System.Text.Json
 {
@@ -579,7 +580,7 @@ namespace System.Text.Json
         /// <summary>
         /// Whether the options instance has been primed for reflection-based serialization.
         /// </summary>
-        internal bool IsInitializedForReflectionSerializer { get; private set; }
+        internal bool IsInitializedForReflectionSerializer;
 
         /// <summary>
         /// Initializes the converters for the reflection-based serializer.
@@ -589,7 +590,7 @@ namespace System.Text.Json
         internal void InitializeForReflectionSerializer()
         {
             RootReflectionSerializerDependencies();
-            IsInitializedForReflectionSerializer = true;
+            Volatile.Write(ref IsInitializedForReflectionSerializer, true);
             if (_cachingContext != null)
             {
                 _cachingContext.Options.IsInitializedForReflectionSerializer = true;
@@ -610,7 +611,9 @@ namespace System.Text.Json
                 return null!;
             }
 
-            Debug.Assert(s_typeInfoCreationFunc != null);
+            Debug.Assert(
+                s_typeInfoCreationFunc != null,
+                "Reflection-based JsonTypeInfo creator should be initialized if IsInitializedForReflectionSerializer is true.");
             return s_typeInfoCreationFunc(type, this);
         }
 

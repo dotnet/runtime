@@ -1076,9 +1076,9 @@ gboolean   g_file_test (const gchar *filename, GFileTest test);
 #define g_write write
 #endif
 #ifdef G_OS_WIN32
-#define g_read _read
+#define g_read(fd, buffer, buffer_size) _read(fd, buffer, (unsigned)buffer_size)
 #else
-#define g_read read
+#define g_read(fd, buffer, buffer_size) (int)read(fd, buffer, buffer_size)
 #endif
 
 #define g_fopen fopen

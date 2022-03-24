@@ -1196,12 +1196,13 @@ namespace System.Xml.Serialization
             }
         }
 
+        // The DynamicallyAccessedMemberTypes.All annotation is required here because the method
+        // tries to access private members on base types (which is normally blocked by reflection)
+        // This doesn't make the requirements worse since the only callers already have the type
+        // annotated as All anyway.
         private static bool ShouldBeReplaced(
             MemberInfo memberInfoToBeReplaced,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties
-                | DynamicallyAccessedMemberTypes.NonPublicProperties
-                | DynamicallyAccessedMemberTypes.PublicFields
-                | DynamicallyAccessedMemberTypes.NonPublicFields)] Type derivedType,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type derivedType,
             out MemberInfo replacedInfo)
         {
             replacedInfo = memberInfoToBeReplaced;

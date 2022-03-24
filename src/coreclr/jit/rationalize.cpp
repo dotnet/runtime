@@ -119,12 +119,6 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
 void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
 {
 #ifdef FEATURE_SIMD
-    // No lowering is needed for non-SIMD nodes, so early out if SIMD types are not supported.
-    if (!comp->supportSIMDTypes())
-    {
-        return;
-    }
-
     GenTreeIndir* indir = use.Def()->AsIndir();
     assert(indir->OperIs(GT_IND));
     var_types simdType = indir->TypeGet();
@@ -724,7 +718,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 #ifdef FEATURE_SIMD
         case GT_SIMD:
         {
-            noway_assert(comp->supportSIMDTypes());
             GenTreeSIMD* simdNode = node->AsSIMD();
             unsigned     simdSize = simdNode->GetSimdSize();
             var_types    simdType = comp->getSIMDTypeForSize(simdSize);
@@ -789,8 +782,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             {
                 break;
             }
-
-            noway_assert(comp->supportSIMDTypes());
 
             // TODO-1stClassStructs: This should be handled more generally for enregistered or promoted
             // structs that are passed or returned in a different register type than their enregistered

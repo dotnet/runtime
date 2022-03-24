@@ -75,14 +75,14 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Do not internalize top level Or-nodes or else NFA mode will become ineffective
                 if (kind == SymbolicRegexNodeKind.Or)
                 {
-                    node = new(builder, kind, left, right, lower, upper, set, alts, info);
+                    node = new SymbolicRegexNode<S>(builder, kind, left, right, lower, upper, set, alts, info);
                     return node;
                 }
 
                 left = left == null || left._kind != SymbolicRegexNodeKind.Or || left._isInternalizedUnion ? left : Internalize(left);
                 right = right == null || right._kind != SymbolicRegexNodeKind.Or || right._isInternalizedUnion ? right : Internalize(right);
 
-                node = new(builder, kind, left, right, lower, upper, set, alts, info);
+                node = new SymbolicRegexNode<S>(builder, kind, left, right, lower, upper, set, alts, info);
                 builder._nodeCache[key] = node;
             }
 

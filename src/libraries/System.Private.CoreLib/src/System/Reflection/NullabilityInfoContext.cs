@@ -389,11 +389,11 @@ namespace System.Reflection
                     attribute.AttributeType.Namespace == CompilerServicesNameSpace &&
                     attribute.ConstructorArguments.Count == 1)
                 {
-                    return new(attribute.ConstructorArguments[0].Value);
+                    return new NullableAttributeStateParser(attribute.ConstructorArguments[0].Value);
                 }
             }
 
-            return new(null);
+            return new NullableAttributeStateParser(null);
         }
 
         private void TryLoadGenericMetaTypeNullability(MemberInfo memberInfo, NullabilityInfo nullability)

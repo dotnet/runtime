@@ -25,7 +25,7 @@
   <ItemGroup>
     <!-- Common generator support -->
     <Compile Include="$(CommonPath)Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
-    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
 
     <!-- Code included from System.Text.RegularExpressions -->
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Production\HexConverter.cs" />

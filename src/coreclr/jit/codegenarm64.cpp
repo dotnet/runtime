@@ -1425,7 +1425,14 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     {
         assert(genFuncletInfo.fiFrameType == 5);
 
-        // Nothing to do here; the first SP adjustment will be done by saving the callee-saved registers.
+        if (compiler->opts.IsOSR())
+        {
+            genStackPointerAdjustment(genFuncletInfo.fiSpDelta1, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
+        }
+        else
+        {
+            // Nothing to do here; the first SP adjustment will be done by saving the callee-saved registers.
+        }
     }
 
     int lowestCalleeSavedOffset = genFuncletInfo.fiSP_to_CalleeSave_delta +
@@ -1617,10 +1624,20 @@ void CodeGen::genFuncletEpilog()
         // Same work as fiFrameType==4, but different asserts.
 
         assert(genFuncletInfo.fiSpDelta1 < 0);
-        assert(genFuncletInfo.fiSpDelta1 >= -240);
 
-        // generate add SP,SP,imm
-        genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, REG_NA, nullptr, /* reportUnwindData */ true);
+        // With OSR we may see large values for fiSpDelta1 as the funclet
+        // frame currently must pad with the Tier0 frame size.
+        //
+        if (compiler->opts.IsOSR())
+        {
+            genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
+        }
+        else
+        {
+            // generate add SP,SP,imm
+            assert(genFuncletInfo.fiSpDelta1 >= -240);
+            genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, REG_NA, nullptr, /* reportUnwindData */ true);
+        }
     }
 
     inst_RV(INS_ret, REG_LR, TYP_I_IMPL);
@@ -10103,7 +10120,7 @@ void CodeGen::genCodeForBfiz(GenTreeOp* tree)
 //
 void CodeGen::genCodeForAddEx(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_ADDEX) && !(tree->gtFlags & GTF_SET_FLAGS));
+    assert(tree->OperIs(GT_ADDEX));
     genConsumeOperands(tree);
 
     GenTree* op;
@@ -10129,13 +10146,15 @@ void CodeGen::genCodeForAddEx(GenTreeOp* tree)
         GenTreeCast* cast = containedOp->AsCast();
         assert(varTypeIsLong(cast->CastToType()));
         insOpts opts = cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW;
-        GetEmitter()->emitIns_R_R_R(INS_add, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, opts);
+        GetEmitter()->emitIns_R_R_R(tree->gtSetFlags() ? INS_adds : INS_add, emitActualTypeSize(tree), dstReg, op1Reg,
+                                    op2Reg, opts);
     }
     else
     {
         assert(containedOp->OperIs(GT_LSH));
         ssize_t cns = containedOp->gtGetOp2()->AsIntCon()->IconValue();
-        GetEmitter()->emitIns_R_R_R_I(INS_add, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, cns, INS_OPTS_LSL);
+        GetEmitter()->emitIns_R_R_R_I(tree->gtSetFlags() ? INS_adds : INS_add, emitActualTypeSize(tree), dstReg, op1Reg,
+                                      op2Reg, cns, INS_OPTS_LSL);
     }
     genProduceReg(tree);
 }

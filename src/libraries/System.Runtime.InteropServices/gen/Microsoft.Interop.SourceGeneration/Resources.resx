@@ -165,32 +165,11 @@
   <data name="OutByValueNotSupportedMessage" xml:space="preserve">
     <value>The '[Out]' attribute is not supported on the '{0}' parameter.</value>
   </data>
-  <data name="RefValuePropertyUnsupportedDescription" xml:space="preserve">
-    <value>The 'Value' property must not be a 'ref' or 'readonly ref' property.</value>
-  </data>
-  <data name="RefValuePropertyUnsupportedMessage" xml:space="preserve">
-    <value>The 'Value' property on the native type '{0}' must not be a 'ref' or 'readonly ref' property.</value>
-  </data>
   <data name="SafeHandleByRefMustBeConcrete" xml:space="preserve">
     <value>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</value>
   </data>
   <data name="TypeNotSupportedTitle" xml:space="preserve">
     <value>Specified type is not supported by source-generated P/Invokes</value>
-  </data>
-  <data name="ValuePropertyMarshallingRequiresAdditionalState" xml:space="preserve">
-    <value>Marshalling a value between managed and native with a native type with a 'Value' property requires extra state, which is not supported in this context.</value>
-  </data>
-  <data name="ValuePropertyMustHaveGetterDescription" xml:space="preserve">
-    <value>The native type's 'Value' property must have a getter to support marshalling from managed to native.</value>
-  </data>
-  <data name="ValuePropertyMustHaveGetterMessage" xml:space="preserve">
-    <value>The 'Value' property on the native type '{0}' must have a getter</value>
-  </data>
-  <data name="ValuePropertyMustHaveSetterDescription" xml:space="preserve">
-    <value>The native type's 'Value' property must have a setter to support marshalling from native to managed.</value>
-  </data>
-  <data name="ValuePropertyMustHaveSetterMessage" xml:space="preserve">
-    <value>The 'Value' property on the native type '{0}' must have a setter</value>
   </data>
   <data name="CyclicalCountInfo" xml:space="preserve">
     <value>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</value>
@@ -202,16 +181,10 @@
     <value>Multiple marshalling attributes per element per indirection level is unsupported, but duplicate information was provided for indirection level {0}</value>
   </data>
   <data name="ExtraneousMarshallingInfo" xml:space="preserve">
-    <value>Marshalling info was specified for 'ElementIndirectionLevel' {0}, but marshalling info was only needed for {1} level(s) of indirection</value>
+    <value>Marshalling info was specified for 'ElementIndirectionDepth' {0}, but marshalling info was only needed for {1} level(s) of indirection</value>
   </data>
   <data name="NativeGenericTypeMustBeClosedOrMatchArityMessage" xml:space="preserve">
     <value>The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</value>
-  </data>
-  <data name="NativeTypeMustHaveRequiredShapeDescription" xml:space="preserve">
-    <value>The native type must have at least one of the two marshalling methods to enable marshalling the managed type.</value>
-  </data>
-  <data name="NativeTypeMustHaveRequiredShapeMessage" xml:space="preserve">
-    <value>The native type '{0}' must be a value type and have a constructor that takes one parameter of type '{1}' or a parameterless instance method named 'ToManaged' that returns '{1}'</value>
   </data>
   <data name="CollectionNativeTypeMustHaveRequiredShapeDescription" xml:space="preserve">
     <value>A native type with the 'GenericContiguousCollectionMarshallerAttribute' must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</value>
@@ -220,7 +193,7 @@
     <value>The native type '{0}' must be a value type and have a constructor that takes two parameters, one of type '{1}' and an 'int', or have a parameterless instance method named 'ToManaged' that returns '{1}' as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;'</value>
   </data>
   <data name="ConstantAndElementCountInfoDisallowed" xml:space="preserve">
-    <value>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionLevel'</value>
+    <value>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</value>
   </data>
   <data name="RuntimeMarshallingMustBeDisabled" xml:space="preserve">
     <value>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</value>

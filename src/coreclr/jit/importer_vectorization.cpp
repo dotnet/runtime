@@ -142,9 +142,9 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     constexpr int maxPossibleLength = 32;
     assert(len >= 8 && len <= maxPossibleLength);
 
-    if (!compOpportunisticallyDependsOn(InstructionSet_Vector128))
+    if (!IsBaselineSimdIsaSupported())
     {
-        // We need SSE2 or ADVSIMD at least
+        // We need baseline SIMD support at least
         return nullptr;
     }
 
@@ -481,14 +481,6 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVar*   data,
     {
         // Not profitable to expand
         JITDUMP("impExpandHalfConstEquals: block is cold - not profitable to expand.\n");
-        return nullptr;
-    }
-
-    if ((compIsForInlining() ? (fgBBcount + impInlineRoot()->fgBBcount) : (fgBBcount)) > 20)
-    {
-        // We don't want to unroll too much and in big methods
-        // TODO-Unroll-CQ: come up with some better heuristic/budget
-        JITDUMP("impExpandHalfConstEquals: method has too many BBs (>20) - not profitable to expand.\n");
         return nullptr;
     }
 

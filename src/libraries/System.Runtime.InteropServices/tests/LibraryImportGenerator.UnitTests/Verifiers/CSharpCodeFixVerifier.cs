@@ -66,6 +66,34 @@ namespace LibraryImportGenerator.UnitTests.Verifiers
             await test.RunAsync(CancellationToken.None);
         }
 
+        /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, DiagnosticResult[], string)"/>
+        public static async Task VerifyCodeFixAsync(string source, string fixedSource, params DiagnosticResult[] expected)
+        {
+            var test = new Test
+            {
+                TestCode = source,
+                FixedCode = fixedSource,
+            };
+
+            test.ExpectedDiagnostics.AddRange(expected);
+            await test.RunAsync(CancellationToken.None);
+        }
+
+        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult[] expected, string fixedSource,
+            int numIncrementalIterations, int numFixAllIterations)
+        {
+            var test = new Test
+            {
+                TestCode = source,
+                FixedCode = fixedSource,
+                NumberOfIncrementalIterations = numIncrementalIterations,
+                NumberOfFixAllIterations = numFixAllIterations
+            };
+
+            test.ExpectedDiagnostics.AddRange(expected);
+            await test.RunAsync(CancellationToken.None);
+        }
+
         internal class Test : CSharpCodeFixTest<TAnalyzer, TCodeFix, XUnitVerifier>
         {
             public Test()
@@ -142,19 +170,6 @@ namespace LibraryImportGenerator.UnitTests.Verifiers
                             }
                             return true;
                         }));
-            }
-
-            protected override async Task RunImplAsync(CancellationToken cancellationToken)
-            {
-                try
-                {
-                    await base.RunImplAsync(cancellationToken);
-                }
-                catch (System.Exception e)
-                {
-                    TestUtils.ThrowSkipExceptionIfPackagingException(e);
-                    throw;
-                }
             }
         }
     }

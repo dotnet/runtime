@@ -27,14 +27,13 @@ namespace Microsoft.Interop
             return target is TargetFramework.Net && version.Major >= 7;
         }
 
-        public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
+        public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
             if (IsPinningPathSupported(info, context))
             {
-                string identifier = context.GetIdentifiers(info).native;
-                return Argument(CastExpression(AsNativeType(info), IdentifierName(identifier)));
+                return ValueBoundaryBehavior.NativeIdentifier;
             }
-            return _manualMarshallingGenerator.AsArgument(info, context);
+            return _manualMarshallingGenerator.GetValueBoundaryBehavior(info, context);
         }
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
@@ -42,9 +41,9 @@ namespace Microsoft.Interop
             return _manualMarshallingGenerator.AsNativeType(info);
         }
 
-        public ParameterSyntax AsParameter(TypePositionInfo info)
+        public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info)
         {
-            return _manualMarshallingGenerator.AsParameter(info);
+            return _manualMarshallingGenerator.GetNativeSignatureBehavior(info);
         }
 
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)

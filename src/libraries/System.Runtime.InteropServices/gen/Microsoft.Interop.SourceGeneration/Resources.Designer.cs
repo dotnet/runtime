@@ -124,7 +124,7 @@ namespace Microsoft.Interop {
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Only one of &apos;ConstantElementCount&apos; or &apos;ElementCountInfo&apos; may be used in a &apos;MarshalUsingAttribute&apos; for a given &apos;ElementIndirectionLevel&apos;.
+        ///   Looks up a localized string similar to Only one of &apos;ConstantElementCount&apos; or &apos;ElementCountInfo&apos; may be used in a &apos;MarshalUsingAttribute&apos; for a given &apos;ElementIndirectionDepth&apos;.
         /// </summary>
         internal static string ConstantAndElementCountInfoDisallowed {
             get {
@@ -178,7 +178,7 @@ namespace Microsoft.Interop {
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Marshalling info was specified for &apos;ElementIndirectionLevel&apos; {0}, but marshalling info was only needed for {1} level(s) of indirection.
+        ///   Looks up a localized string similar to Marshalling info was specified for &apos;ElementIndirectionDepth&apos; {0}, but marshalling info was only needed for {1} level(s) of indirection.
         /// </summary>
         internal static string ExtraneousMarshallingInfo {
             get {
@@ -223,7 +223,7 @@ namespace Microsoft.Interop {
         }
 
         /// <summary>
-        ///   Marshalling bool without explicit marshalling information is not supported. Specify either &apos;MarshalUsingAttribute&apos; or &apos;MarshalAsAttribute&apos;..
+        ///   Looks up a localized string similar to Marshalling bool without explicit marshalling information is not supported. Specify either &apos;MarshalUsingAttribute&apos; or &apos;MarshalAsAttribute&apos;..
         /// </summary>
         internal static string MarshallingBoolAsUndefinedNotSupported {
             get {
@@ -297,18 +297,18 @@ namespace Microsoft.Interop {
         /// <summary>
         ///   Looks up a localized string similar to The &apos;Value&apos; property must not be a &apos;ref&apos; or &apos;readonly ref&apos; property..
         /// </summary>
-        internal static string RefValuePropertyUnsupportedDescription {
+        internal static string RefNativeValueUnsupportedDescription {
             get {
-                return ResourceManager.GetString("RefValuePropertyUnsupportedDescription", resourceCulture);
+                return ResourceManager.GetString("RefNativeValueUnsupportedDescription", resourceCulture);
             }
         }
 
         /// <summary>
         ///   Looks up a localized string similar to The &apos;Value&apos; property on the native type &apos;{0}&apos; must not be a &apos;ref&apos; or &apos;readonly ref&apos; property..
         /// </summary>
-        internal static string RefValuePropertyUnsupportedMessage {
+        internal static string RefNativeValueUnsupportedMessage {
             get {
-                return ResourceManager.GetString("RefValuePropertyUnsupportedMessage", resourceCulture);
+                return ResourceManager.GetString("RefNativeValueUnsupportedMessage", resourceCulture);
             }
         }
 

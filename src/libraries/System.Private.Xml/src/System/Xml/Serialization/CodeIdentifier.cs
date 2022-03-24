@@ -74,7 +74,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public static string MakeValid(string identifier)
         {
-            StringBuilder builder = new StringBuilder();
+            var builder = new ValueStringBuilder(stackalloc char[MaxIdentifierLength]);
             for (int i = 0; i < identifier.Length && builder.Length < MaxIdentifierLength; i++)
             {
                 char c = identifier[i];
