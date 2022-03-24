@@ -2079,7 +2079,7 @@ namespace System
         public static System.Double ScaleB<TInteger>(System.Double x, TInteger n) where TInteger : IBinaryInteger<TInteger> { throw null; }
         public static System.Double Sign(System.Double value) { throw null; }
         public static System.Double Sin(System.Double x) { throw null; }
-        public static System.Double SinCos(System.Double x) { throw null; }
+        public static (System.Double Sin, System.Double Cos) SinCos(System.Double x) { throw null; }
         public static System.Double Sinh(System.Double x) { throw null; }
         public static System.Double Sqrt(System.Double x) { throw null; }
         static System.Double System.IAdditionOperators<System.Double,System.Double,System.Double>.operator +(System.Double left, System.Double right) { throw null; }
@@ -2661,7 +2661,7 @@ namespace System
         public static System.Half ScaleB<TInteger>(System.Half x, TInteger n) where TInteger : IBinaryInteger<TInteger> { throw null; }
         public static System.Half Sign(System.Half value) { throw null; }
         public static System.Half Sin(System.Half x) { throw null; }
-        public static System.Half SinCos(System.Half x) { throw null; }
+        public static (System.Half Sin, System.Half Cos) SinCos(System.Half x) { throw null; }
         public static System.Half Sinh(System.Half x) { throw null; }
         public static System.Half Sqrt(System.Half x) { throw null; }
         static System.Half System.IBitwiseOperators<System.Half,System.Half,System.Half>.operator &(System.Half left, System.Half right) { throw null; }
@@ -2824,7 +2824,7 @@ namespace System
         static abstract TSelf Round<TInteger>(TSelf x, TInteger digits, MidpointRounding mode) where TInteger : IBinaryInteger<TInteger>;
         static abstract TSelf ScaleB<TInteger>(TSelf x, TInteger n) where TInteger : IBinaryInteger<TInteger>;
         static abstract TSelf Sin(TSelf x);
-        static abstract (TSelf, TSelf) SinCos(TSelf x);
+        static abstract (TSelf Sin, TSelf Cos) SinCos(TSelf x);
         static abstract TSelf Sinh(TSelf x);
         static abstract TSelf Sqrt(TSelf x);
         static abstract TSelf Tan(TSelf x);
@@ -4387,7 +4387,7 @@ namespace System
         public static System.Single ScaleB<TInteger>(System.Single x, TInteger n) where TInteger : IBinaryInteger<TInteger>  { throw null; }
         public static System.Single Sign(System.Single value) { throw null; }
         public static System.Single Sin(System.Single x) { throw null; }
-        public static System.Single SinCos(System.Single x) { throw null; }
+        public static (System.Single Sin, System.Single Cos) SinCos(System.Single x) { throw null; }
         public static System.Single Sinh(System.Single x) { throw null; }
         public static System.Single Sqrt(System.Single x) { throw null; }
         static System.Single System.IAdditionOperators<System.Single,System.Single,System.Single>.operator +(System.Single left, System.Single right) { throw null; }

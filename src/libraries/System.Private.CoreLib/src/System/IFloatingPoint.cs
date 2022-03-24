@@ -266,7 +266,7 @@ namespace System
         /// <summary>Computes the sine and cosine of a value.</summary>
         /// <param name="x">The value, in radians, whose sine and cosine are to be computed.</param>
         /// <returns>The sine and cosine of <paramref name="x" />.</returns>
-        static abstract (TSelf, TSelf) SinCos(TSelf x);
+        static abstract (TSelf Sin, TSelf Cos) SinCos(TSelf x);
 
         /// <summary>Computes the hyperbolic sine of a value.</summary>
         /// <param name="x">The value, in radians, whose hyperbolic sine is to be computed.</param>

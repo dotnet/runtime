@@ -704,7 +704,7 @@ namespace System
         public static double Sin(double x) => Math.Sin(x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.SinCos(TSelf)" />
-        public static (double, double) SinCos(double x) => Math.SinCos(x);
+        public static (double Sin, double Cos) SinCos(double x) => Math.SinCos(x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Sinh(TSelf)" />
         public static double Sinh(double x) => Math.Sinh(x);

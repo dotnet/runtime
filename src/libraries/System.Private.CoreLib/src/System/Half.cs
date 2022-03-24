@@ -927,7 +927,7 @@ namespace System
         public static Half Sin(Half x) => (Half)MathF.Sin((float)x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.SinCos(TSelf)" />
-        public static (Half, Half) SinCos(Half x)
+        public static (Half Sin, Half Cos) SinCos(Half x)
         {
             var (sin, cos) = MathF.SinCos((float)x);
             return ((Half)sin, (Half)cos);

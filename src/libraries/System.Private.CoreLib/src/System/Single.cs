@@ -699,7 +699,7 @@ namespace System
         public static float Sin(float x) => MathF.Sin(x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.SinCos(TSelf)" />
-        public static (float, float) SinCos(float x) => MathF.SinCos(x);
+        public static (float Sin, float Cos) SinCos(float x) => MathF.SinCos(x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Sinh(TSelf)" />
         public static float Sinh(float x) => MathF.Sinh(x);
