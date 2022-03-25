@@ -3,18 +3,26 @@
 
 It can show sections overview in the summary output, disassemble function(s) code, show information about dotnet AOT. It is available as [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools).
 
+# wa-diff
+
+`wa-diff` is a tool to compare WebAssembly binary files
+
 ### Installation
 
-To install `wa-info` as dotnet tool run:
+To install `wa-info` and `wa-diff` as dotnet tool run:
 ```
 dotnet tool install -g wa-info
+dotnet tool install -g wa-diff
 ```
 to update use:
 ```
 dotnet tool update -g wa-info
+dotnet tool update -g wa-diff
 ```
+
 ### Command line options
 
+wa-info:
 ```
 Usage: wa-info.exe OPTIONS* file.wasm [file2.wasm ...]
 
@@ -33,6 +41,22 @@ Options:
   -h, --help, -?             Show this message and exit
   -o, --instruction-offsets  Show instruction offsets
   -t, --type-filter=REGEX    Filter types and process only those matching REGEX
+  -v, --verbose              Output information about progress during the run
+                               of the tool
+```
+
+wa-diff:
+```
+Usage: wa-diff OPTIONS* file1.wasm file2.wasm
+
+Compares WebAssembly binary file(s)
+
+Copyright 2021 Microsoft Corporation
+
+Options:
+  -d, --disassemble          Show functions(s) disassembled code
+  -f, --function-filter=REGEX
+                             Filter wasm functions REGEX
   -v, --verbose              Output information about progress during the run
                                of the tool
 ```
@@ -106,4 +130,31 @@ Get AOT stats
 ```
 > wa-info --aot-stats dotnet.wasm
 AOT stats: 5005 function(s) call(s) interpreter, 2.96% of 169215 functions
+```
+
+Compare functions
+```
+> wa-diff -d -f corlib_System_RuntimeType_IsDelegate dotnet1.wasm dotnet2.wasm
+(func corlib_System_RuntimeType_IsDelegate(param i32 i32) (result i32))
+...
+   local.tee $2
+   global.set $__stack_pointer
+-  i32.const 1573600
++  i32.const 1573760
+   i32.load8.u
+   i32.eqz
+...
+    i32.const 25177
+    call aot_wrapper_pinvoke_corlib__Interop_sl_Sys___le_PosixFAdvise_gt_g____PInvoke___verbar_83_0_pinvoke_i4_iii8i8cl1a_Interop_2fSys_2fFileAdvice_i4_iii8i8cl1a_Interop_2fSys_2fFileAdvice_
+-   i32.const 1573600
++   i32.const 1573760
+    i32.const 1
+    i32.store8
+...
+   i32.store offset:12 align:2
+   local.get $2
+-  i32.const 1516792
++  i32.const 1516952
+   i32.load align:2
+   local.tee $3
 ```
