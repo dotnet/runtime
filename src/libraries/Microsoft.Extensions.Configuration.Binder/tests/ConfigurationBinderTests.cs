@@ -116,6 +116,12 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         public record RecordTypeOptions(string Color, int Length);
 #endif
 
+        public class ContainerWithNestedImmutableObject
+        {
+            public string ContainerName { get; set; }
+            public ImmutableLengthAndColorClass LengthAndColor { get; set; }
+        }
+        
         public class ImmutableLengthAndColorClass
         {
             public ImmutableLengthAndColorClass(string color, int length)
@@ -1055,6 +1061,25 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = config.Get<ImmutableLengthAndColorClass>();
             Assert.Equal(42, options.Length);
             Assert.Equal("Green", options.Color);
+        }
+
+        [Fact]
+        public void CanBindMutableClassWitNestedImmutableObject()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"ContainerName", "Container123"},
+                {"LengthAndColor:Length", "42"},
+                {"LengthAndColor:Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ContainerWithNestedImmutableObject>();
+            Assert.Equal("Container123", options.ContainerName);
+            Assert.Equal(42, options.LengthAndColor.Length);
+            Assert.Equal("Green", options.LengthAndColor.Color);
         }
 
         // If the immutable type has multiple constructors,
