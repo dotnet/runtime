@@ -409,55 +409,51 @@ namespace System
 
         public static void Reverse(ref int buf, nuint length)
         {
-            int numBytes = (int)length * sizeof(int);
-            int numBytesWritten = 0;
-            ref byte first = ref Unsafe.As<int, byte>(ref buf);
-            ref byte last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, numBytes), sizeof(int));
-            if (Avx2.IsSupported && Vector256<byte>.Count * 2 <= numBytes)
+            if (Avx2.IsSupported && (nuint)Vector256<int>.Count * 2 <= length)
             {
-                last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, numBytes), Vector256<byte>.Count);
-                do
+                nuint numElements = (nuint)Vector256<int>.Count;
+                nuint numIters = (length / numElements) / 2;
+                Vector256<int> reverseMask = Vector256.Create(7, 6, 5, 4, 3, 2, 1, 0);
+                for (nuint i = 0; i < numIters; i++)
                 {
-                    // Load in values from beginning and end of the array.
-                    Vector256<int> tempFirst = Unsafe.As<byte, Vector256<int>>(ref first);
-                    Vector256<int> tempLast = Unsafe.As<byte, Vector256<int>>(ref last);
+                    nuint firstOffset = i * numElements;
+                    nuint lastOffset = length - ((1 + i) * numElements);
+
+                    // Load the values into vectors
+                    Vector256<int> tempFirst = Vector256.LoadUnsafe(ref buf, firstOffset);
+                    Vector256<int> tempLast = Vector256.LoadUnsafe(ref buf, lastOffset);
 
                     // Avx2 operates on two 128-bit lanes rather than the full 256-bit vector.
                     // Perform a shuffle to reverse each 128-bit lane, then permute to finish reversing the vector:
                     //     +-------------------------------+
                     //     | A | B | C | D | E | F | G | H |
                     //     +-------------------------------+
-                    //         Shuffle --->
-                    //     +-------------------------------+
-                    //     | D | C | B | A | H | G | F | E |
-                    //     +-------------------------------+
-                    //         Permute --->
+                    //         --->
                     //     +-------------------------------+
                     //     | H | G | F | E | D | C | B | A |
                     //     +-------------------------------+
-                    tempFirst = Avx2.Shuffle(tempFirst, 0b00011011);
-                    tempFirst = Avx2.Permute2x128(tempFirst, tempFirst, 1);
-                    tempLast = Avx2.Shuffle(tempLast, 0b00011011);
-                    tempLast = Avx2.Permute2x128(tempLast, tempLast, 1);
+                    tempFirst = Avx2.PermuteVar8x32(tempFirst, reverseMask);
+                    tempLast = Avx2.PermuteVar8x32(tempLast, reverseMask);
 
-                    // Store the reversed vectors
-                    Unsafe.As<byte, Vector256<int>>(ref first) = tempLast;
-                    Unsafe.As<byte, Vector256<int>>(ref last) = tempFirst;
-
-                    // Adjust the references to point to the next vector
-                    first = ref Unsafe.Add(ref first, Vector256<byte>.Count);
-                    last = ref Unsafe.Subtract(ref last, Vector256<byte>.Count);
-                    numBytesWritten += Vector256<byte>.Count * 2;
-                } while (numBytes - numBytesWritten >= Vector256<byte>.Count * 2);
+                    // Store the values into final location
+                    Vector256.StoreUnsafe(tempLast, ref buf, firstOffset);
+                    Vector256.StoreUnsafe(tempFirst, ref buf, lastOffset);
+                }
+                buf = ref Unsafe.Add(ref buf, numIters * numElements);
+                length -= numIters * numElements * 2;
             }
-            else if (Sse2.IsSupported && Vector128<byte>.Count * 2 <= numBytes)
+            else if (Sse2.IsSupported && (nuint)Vector128<int>.Count * 2 <= length)
             {
-                last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, numBytes), Vector128<byte>.Count);
-                do
+                nuint numElements = (nuint)Vector128<int>.Count;
+                nuint numIters = (length / numElements) / 2;
+                for (nuint i = 0; i < numIters; i++)
                 {
-                    // Load in values from beginning and end of the array.
-                    Vector128<int> tempFirst = Unsafe.As<byte, Vector128<int>>(ref first);
-                    Vector128<int> tempLast = Unsafe.As<byte, Vector128<int>>(ref last);
+                    nuint firstOffset = i * numElements;
+                    nuint lastOffset = length - ((1 + i) * numElements);
+
+                    // Load the values into vectors
+                    Vector128<int> tempFirst = Vector128.LoadUnsafe(ref buf, firstOffset);
+                    Vector128<int> tempLast = Vector128.LoadUnsafe(ref buf, lastOffset);
 
                     // Shuffle to reverse each vector:
                     //     +---------------+
@@ -467,84 +463,72 @@ namespace System
                     //     +---------------+
                     //     | D | C | B | A |
                     //     +---------------+
-                    tempFirst = Sse2.Shuffle(tempFirst, 0b00011011);
-                    tempLast = Sse2.Shuffle(tempLast, 0b00011011);
+                    tempFirst = Sse2.Shuffle(tempFirst, 0b00_01_10_11);
+                    tempLast = Sse2.Shuffle(tempLast, 0b00_01_10_11);
 
-                    // Store the reversed vectors
-                    Unsafe.As<byte, Vector128<int>>(ref first) = tempLast;
-                    Unsafe.As<byte, Vector128<int>>(ref last) = tempFirst;
-
-                    // Adjust the references to point to the next vector
-                    first = ref Unsafe.Add(ref first, Vector128<byte>.Count);
-                    last = ref Unsafe.Subtract(ref last, Vector128<byte>.Count);
-                    numBytesWritten += Vector128<byte>.Count * 2;
-                } while ((numBytes - numBytesWritten) >= Vector128<byte>.Count * 2);
+                    // Store the values into final location
+                    Vector128.StoreUnsafe(tempLast, ref buf, firstOffset);
+                    Vector128.StoreUnsafe(tempFirst, ref buf, lastOffset);
+                }
+                buf = ref Unsafe.Add(ref buf, numIters * numElements);
+                length -= numIters * numElements * 2;
             }
 
             // Store any remaining values one-by-one
-            last = ref Unsafe.Add(ref first, (numBytes - numBytesWritten) - sizeof(int));
-            ref int firstInt = ref Unsafe.As<byte, int>(ref first);
-            ref int lastInt = ref Unsafe.As<byte, int>(ref last);
-            while (numBytes - numBytesWritten > sizeof(int))
+            for (nuint i = 0; i < (length / 2); i++)
             {
+                ref int firstInt = ref Unsafe.Add(ref buf, i);
+                ref int lastInt = ref Unsafe.Add(ref buf, length - 1 - i);
                 (lastInt, firstInt) = (firstInt, lastInt);
-                firstInt = ref Unsafe.Add(ref firstInt, 1);
-                lastInt = ref Unsafe.Subtract(ref lastInt, 1);
-                numBytesWritten += sizeof(int) * 2;
             }
         }
 
         public static void Reverse(ref long buf, nuint length)
         {
-            nint numBytes = (int)length * sizeof(long);
-            int numBytesWritten = 0;
-            ref byte first = ref Unsafe.As<long, byte>(ref buf);
-            ref byte last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, numBytes), sizeof(long));
-            if (Avx2.IsSupported && Vector256<byte>.Count * 2 <= numBytes)
+            if (Avx2.IsSupported && (nuint)Vector256<long>.Count * 2 <= length)
             {
-                last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, numBytes), Vector256<byte>.Count);
-                do
+                nuint numElements = (nuint)Vector256<long>.Count;
+                nuint numIters = (length / numElements) / 2;
+                for (nuint i = 0; i < numIters; i++)
                 {
-                    // Load in values from beginning and end of the array.
-                    Vector256<int> tempFirst = Unsafe.As<byte, Vector256<int>>(ref first);
-                    Vector256<int> tempLast = Unsafe.As<byte, Vector256<int>>(ref last);
+                    nuint firstOffset = i * numElements;
+                    nuint lastOffset = length - ((1 + i) * numElements);
+                    // Load the values into vectors
+                    Vector256<long> tempFirst = Vector256.LoadUnsafe(ref buf, firstOffset);
+                    Vector256<long> tempLast = Vector256.LoadUnsafe(ref buf, lastOffset);
 
                     // Avx2 operates on two 128-bit lanes rather than the full 256-bit vector.
                     // Perform a shuffle to reverse each 128-bit lane, then permute to finish reversing the vector:
                     //     +---------------+
                     //     | A | B | C | D |
                     //     +---------------+
-                    //         Shuffle --->
-                    //     +---------------+
-                    //     | B | A | D | C |
-                    //     +---------------+
-                    //         Permute --->
+                    //         --->
                     //     +---------------+
                     //     | D | C | B | A |
                     //     +---------------+
-                    tempFirst = Avx2.Shuffle(tempFirst, 0b01001110);
-                    tempFirst = Avx2.Permute2x128(tempFirst, tempFirst, 1);
-                    tempLast = Avx2.Shuffle(tempLast, 0b01001110);
-                    tempLast = Avx2.Permute2x128(tempLast, tempLast, 1);
+                    tempFirst = Avx2.Permute4x64(tempFirst, 0b00_01_10_11);
+                    tempLast = Avx2.Permute4x64(tempLast, 0b00_01_10_11);
 
-                    // Store the reversed vectors
-                    Unsafe.As<byte, Vector256<int>>(ref first) = tempLast;
-                    Unsafe.As<byte, Vector256<int>>(ref last) = tempFirst;
-
-                    // Adjust the references to point to the next vector
-                    first = ref Unsafe.Add(ref first, Vector256<byte>.Count);
-                    last = ref Unsafe.Subtract(ref last, Vector256<byte>.Count);
-                    numBytesWritten += Vector256<byte>.Count * 2;
-                } while (numBytes - numBytesWritten >= Vector256<byte>.Count * 2);
+                    // Store the values into final location
+                    Vector256.StoreUnsafe(tempLast, ref buf, firstOffset);
+                    Vector256.StoreUnsafe(tempFirst, ref buf, lastOffset);
+                }
+                buf = ref Unsafe.Add(ref buf, numIters * numElements);
+                length -= numIters * numElements * 2;
             }
-            else if (Sse2.IsSupported && Vector128<byte>.Count * 2 <= numBytes)
+            else if (Sse2.IsSupported && (nuint)Vector128<long>.Count * 2 <= length)
             {
-                last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, numBytes), Vector128<byte>.Count);
-                do
+                ref int bufInt = ref Unsafe.As<long, int>(ref buf);
+                nuint intLength = length * (sizeof(long) / sizeof(int));
+                nuint numElements = (nuint)Vector128<int>.Count;
+                nuint numIters = (intLength / numElements) / 2;
+                for (nuint i = 0; i < numIters; i++)
                 {
-                    // Load in values from beginning and end of the array.
-                    Vector128<int> tempFirst = Unsafe.As<byte, Vector128<int>>(ref first);
-                    Vector128<int> tempLast = Unsafe.As<byte, Vector128<int>>(ref last);
+                    nuint firstOffset = i * numElements;
+                    nuint lastOffset = intLength - ((1 + i) * numElements);
+                    // Load the values into vectors
+                    Vector128<int> tempFirst = Vector128.LoadUnsafe(ref bufInt, firstOffset);
+                    Vector128<int> tempLast = Vector128.LoadUnsafe(ref bufInt, lastOffset);
 
                     // Shuffle to reverse each vector:
                     //     +-------+
@@ -554,30 +538,24 @@ namespace System
                     //     +-------+
                     //     | B | A |
                     //     +-------+
-                    tempFirst = Sse2.Shuffle(tempFirst, 0b01001110);
-                    tempLast = Sse2.Shuffle(tempLast, 0b01001110);
+                    tempFirst = Sse2.Shuffle(tempFirst, 0b0100_1110);
+                    tempLast = Sse2.Shuffle(tempLast, 0b0100_1110);
 
-                    // Store the reversed vectors
-                    Unsafe.As<byte, Vector128<int>>(ref first) = tempLast;
-                    Unsafe.As<byte, Vector128<int>>(ref last) = tempFirst;
-
-                    // Adjust the references to point to the next vector
-                    first = ref Unsafe.Add(ref first, Vector128<byte>.Count);
-                    last = ref Unsafe.Subtract(ref last, Vector128<byte>.Count);
-                    numBytesWritten += Vector128<byte>.Count * 2;
-                } while ((numBytes - numBytesWritten) >= Vector128<byte>.Count * 2);
+                    // Store the values into final location
+                    Vector128.StoreUnsafe(tempLast, ref bufInt, firstOffset);
+                    Vector128.StoreUnsafe(tempFirst, ref bufInt, lastOffset);
+                }
+                bufInt = ref Unsafe.Add(ref bufInt, numIters * numElements);
+                buf = ref Unsafe.As<int, long>(ref bufInt);
+                length -= numIters * (nuint)Vector128<long>.Count * 2;
             }
 
             // Store any remaining values one-by-one
-            last = ref Unsafe.Add(ref first, (numBytes - numBytesWritten) - sizeof(long));
-            ref long firstLong = ref Unsafe.As<byte, long>(ref first);
-            ref long lastLong = ref Unsafe.As<byte, long>(ref last);
-            while (numBytes - numBytesWritten > sizeof(long))
+            for (nuint i = 0; i < (length / 2); i++)
             {
+                ref long firstLong = ref Unsafe.Add(ref buf, i);
+                ref long lastLong = ref Unsafe.Add(ref buf, length - 1 - i);
                 (lastLong, firstLong) = (firstLong, lastLong);
-                firstLong = ref Unsafe.Add(ref firstLong, 1);
-                lastLong = ref Unsafe.Subtract(ref lastLong, 1);
-                numBytesWritten += sizeof(long) * 2;
             }
         }
 
