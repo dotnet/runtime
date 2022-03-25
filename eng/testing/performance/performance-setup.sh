@@ -191,7 +191,7 @@ payload_directory=$source_directory/Payload
 performance_directory=$payload_directory/performance
 benchmark_directory=$payload_directory/BenchmarkDotNet
 workitem_directory=$source_directory/workitem
-extra_benchmark_dotnet_arguments="--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --stopOnFirstError true --logBuildOutput"
+extra_benchmark_dotnet_arguments="--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --stopOnFirstError true"
 perflab_arguments=
 queue=Ubuntu.1804.Amd64.Open
 creator=$BUILD_DEFINITIONNAME
@@ -308,6 +308,8 @@ if [[ "$monoaot" == "true" ]]; then
     mv $monoaot_path $monoaot_dotnet_path
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --runtimes monoaotllvm --aotcompilerpath \$HELIX_CORRELATION_PAYLOAD/monoaot/sgen/mini/mono-sgen --customruntimepack \$HELIX_CORRELATION_PAYLOAD/monoaot/pack --aotcompilermode llvm"
 fi
+
+extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --logBuildOutput"
 
 if [[ "$use_core_run" == true ]]; then
     new_core_root=$payload_directory/Core_Root
