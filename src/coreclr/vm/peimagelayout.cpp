@@ -193,10 +193,15 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     COUNT_T dirSize;
     TADDR dir = GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_BASERELOC, &dirSize);
 
+#if defined(__APPLE__) && defined(HOST_ARM64)
+    // Enable writing on Apple Silicon
+    PAL_JitWriteProtect(true);
+#else
     // Minimize number of calls to VirtualProtect by keeping a whole section unprotected at a time.
     BYTE * pWriteableRegion = NULL;
     SIZE_T cbWriteableRegion = 0;
     DWORD dwOldProtection = 0;
+#endif
 
     BYTE * pFlushRegion = NULL;
     SIZE_T cbFlushRegion = 0;
@@ -281,14 +286,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
             switch (fixup>>12)
             {
             case IMAGE_REL_BASED_PTR:
-#if defined(__APPLE__) && defined(HOST_ARM64)
-                {
-                    ExecutableWriterHolder<TADDR> addressWriterHolder((TADDR *) address, sizeof(TADDR));
-                    *addressWriterHolder.GetRW() += delta;
-                }
-#else
                 *(TADDR *)address += delta;
-#endif
                 pEndAddressToFlush = max(pEndAddressToFlush, address + sizeof(TADDR));
                 break;
 
@@ -330,6 +328,10 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     }
     _ASSERTE(dirSize == dirPos);
 
+#if defined(__APPLE__) && defined(HOST_ARM64)
+    // Disable writing on Apple Silicon
+    PAL_JitWriteProtect(false);
+#else
     if (dwOldProtection != 0)
     {
         BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
@@ -340,6 +342,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
                                dwOldProtection, &dwOldProtection))
             ThrowLastError();
     }
+#endif
 #ifdef TARGET_UNIX
     PAL_LOADMarkSectionAsNotNeeded((void*)dir);
 #endif // TARGET_UNIX
