@@ -1656,7 +1656,7 @@ BOOL Nullable::UnBox(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
     if (boxedVal == NULL)
     {
         // Logically we are doing *dest->HasValueAddr(destMT) = false;
-        // We zero out the whole structure becasue it may contain GC references
+        // We zero out the whole structure because it may contain GC references
         // and these need to be initialized to zero.   (could optimize in the non-GC case)
         InitValueClass(destPtr, destMT);
         fRet = TRUE;
@@ -1703,16 +1703,16 @@ BOOL Nullable::UnBoxNoGC(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
     CONTRACTL_END;
     Nullable* dest = (Nullable*) destPtr;
 
-        // We should only get here if we are unboxing a T as a Nullable<T>
+    // We should only get here if we are unboxing a T as a Nullable<T>
     _ASSERTE(IsNullableType(destMT));
 
-        // We better have a concrete instantiation, or our field offset asserts are not useful
+    // We better have a concrete instantiation, or our field offset asserts are not useful
     _ASSERTE(!destMT->ContainsGenericVariables());
 
     if (boxedVal == NULL)
     {
         // Logically we are doing *dest->HasValueAddr(destMT) = false;
-        // We zero out the whole structure becasue it may contain GC references
+        // We zero out the whole structure because it may contain GC references
         // and these need to be initialized to zero.   (could optimize in the non-GC case)
         InitValueClass(destPtr, destMT);
     }
@@ -1733,6 +1733,51 @@ BOOL Nullable::UnBoxNoGC(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
         *dest->HasValueAddr(destMT) = true;
         CopyValueClass(dest->ValueAddr(destMT), boxedVal->UnBox(), boxedVal->GetMethodTable());
     }
+    return TRUE;
+}
+
+BOOL Nullable::UnBoxNoGC(void* destPtr, PVOID pValUnsafe, MethodTable* destMT, MethodTable* srcMT)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+    Nullable* dest = (Nullable*) destPtr;
+
+    // We should only get here if we are unboxing a T as a Nullable<T>
+    _ASSERTE(IsNullableType(destMT));
+
+    // We better have a concrete instantiation, or our field offset asserts are not useful
+    _ASSERTE(!destMT->ContainsGenericVariables());
+
+    if (pValUnsafe == NULL)
+    {
+        // Logically we are doing *dest->HasValueAddr(destMT) = false;
+        // We zero out the whole structure because it may contain GC references
+        // and these need to be initialized to zero.   (could optimize in the non-GC case)
+        InitValueClass(destPtr, destMT);
+    }
+    else
+    {
+        if (!IsNullableForTypeNoGC(destMT, srcMT))
+        {
+            // For safety's sake, also allow true nullables to be unboxed normally.
+            // This should not happen normally, but we want to be robust
+            if (destMT == srcMT)
+            {
+                CopyValueClass(dest, pValUnsafe, destMT);
+                return TRUE;
+            }
+            return FALSE;
+        }
+
+        *dest->HasValueAddr(destMT) = true;
+        CopyValueClass(dest->ValueAddr(destMT), pValUnsafe, srcMT);
+    }
+
     return TRUE;
 }
 
@@ -1762,7 +1807,7 @@ BOOL Nullable::UnBoxIntoArgNoGC(ArgDestination *argDest, OBJECTREF boxedVal, Met
         if (boxedVal == NULL)
         {
             // Logically we are doing *dest->HasValueAddr(destMT) = false;
-            // We zero out the whole structure becasue it may contain GC references
+            // We zero out the whole structure because it may contain GC references
             // and these need to be initialized to zero.   (could optimize in the non-GC case)
             InitValueClassArg(argDest, destMT);
         }
@@ -1793,6 +1838,48 @@ BOOL Nullable::UnBoxIntoArgNoGC(ArgDestination *argDest, OBJECTREF boxedVal, Met
     return UnBoxNoGC(argDest->GetDestinationAddress(), boxedVal, destMT);
 }
 
+BOOL Nullable::UnBoxIntoArgNoGC(ArgDestination *argDest, PVOID pValUnsafe, MethodTable* destMT, MethodTable* srcMT)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+#if defined(UNIX_AMD64_ABI)
+    if (argDest->IsStructPassedInRegs())
+    {
+        // We should only get here if we are unboxing a T as a Nullable<T>
+        _ASSERTE(IsNullableType(destMT));
+
+        // We better have a concrete instantiation, or our field offset asserts are not useful
+        _ASSERTE(!destMT->ContainsGenericVariables());
+
+        if (pValUnsafe == NULL)
+        {
+            // Logically we are doing *dest->HasValueAddr(destMT) = false;
+            // We zero out the whole structure because it may contain GC references
+            // and these need to be initialized to zero.   (could optimize in the non-GC case)
+            InitValueClassArg(argDest, destMT);
+        }
+        else
+        {
+            Nullable* dest = (Nullable*)argDest->GetStructGenRegDestinationAddress();
+            *dest->HasValueAddr(destMT) = true;
+            int destOffset = (BYTE*)dest->ValueAddr(destMT) - (BYTE*)dest;
+            CopyValueClassArg(argDest, pValUnsafe, srcMT, destOffset);
+        }
+
+        return TRUE;
+    }
+
+#endif // UNIX_AMD64_ABI
+
+    return UnBoxNoGC(argDest->GetDestinationAddress(), pValUnsafe, destMT, srcMT);
+}
+
 //===============================================================================
 // Special Logic to unbox a boxed T as a nullable<T>
 // Does not do any type checks.
@@ -1816,7 +1903,7 @@ void Nullable::UnBoxNoCheck(void* destPtr, OBJECTREF boxedVal, MethodTable* dest
     if (boxedVal == NULL)
     {
         // Logically we are doing *dest->HasValueAddr(destMT) = false;
-        // We zero out the whole structure becasue it may contain GC references
+        // We zero out the whole structure because it may contain GC references
         // and these need to be initialized to zero.   (could optimize in the non-GC case)
         InitValueClass(destPtr, destMT);
     }

@@ -240,7 +240,7 @@ namespace System.Reflection
             if (!ReferenceEquals(value?.GetType(), fieldType))
             {
                 bool _b = false;
-                fieldType.CheckValue(ref value, ref _b, binder, culture, invokeAttr);
+                fieldType.CheckValue(ref value, ref _b, paramInfo: null, binder, culture, invokeAttr);
             }
 
             Invoker.SetValue(obj, value);

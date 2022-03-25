@@ -124,6 +124,155 @@ void *InvokeUtil::GetIntPtrValue(OBJECTREF pObj) {
     RETURN *(void **)((pObj)->UnBox());
 }
 
+void InvokeUtil::CopyArg(TypeHandle th, PVOID *pArgUnsafe, ArgDestination *argDest) {
+    CONTRACTL {
+        THROWS;
+        GC_NOTRIGGER; // Caller does not protect object references
+        MODE_COOPERATIVE;
+        PRECONDITION(!th.IsNull());
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACTL_END;
+
+    void *pArgDst = argDest->GetDestinationAddress();
+
+    MethodTable* pMT = th.GetMethodTable();
+    CorElementType oType;
+    CorElementType type;
+
+    oType = pMT->GetInternalCorElementType();
+    type = th.GetVerifierCorElementType();
+
+    // This basically maps the Signature type our type and calls the CreatePrimitiveValue
+    //  method.  We can omit this if we get alignment on these types.
+    switch (type) {
+    case ELEMENT_TYPE_BOOLEAN:
+    case ELEMENT_TYPE_I1:
+    case ELEMENT_TYPE_U1:
+    case ELEMENT_TYPE_I2:
+    case ELEMENT_TYPE_U2:
+    case ELEMENT_TYPE_CHAR:
+    case ELEMENT_TYPE_I4:
+    case ELEMENT_TYPE_U4:
+    case ELEMENT_TYPE_R4:
+    IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
+    IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
+    {
+        {
+            _ASSERTE(pArgUnsafe != NULL);
+            ARG_SLOT slot;
+            CreatePrimitiveValue(type, oType, pArgUnsafe, pMT, &slot);
+            *(PVOID *)pArgDst = (PVOID)slot;
+        }
+        break;
+    }
+
+    case ELEMENT_TYPE_I8:
+    case ELEMENT_TYPE_U8:
+    case ELEMENT_TYPE_R8:
+    IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
+    IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
+    {
+        {
+            _ASSERTE(pArgUnsafe != NULL);
+            ARG_SLOT slot;
+            CreatePrimitiveValue(type, oType, pArgUnsafe, pMT, &slot);
+            *(INT64 *)pArgDst = (INT64)slot;
+        }
+        break;
+    }
+
+    case ELEMENT_TYPE_VALUETYPE:
+    {
+        // pArgUnsafe can be NULL but only for Nullable types; UnBoxIntoArg verifies that.
+        {
+            if (!th.AsMethodTable()->UnBoxIntoArg(argDest, pArgUnsafe))
+                COMPlusThrow(kArgumentException, W("Arg_ObjObj"));
+        }
+        break;
+    }
+
+    case ELEMENT_TYPE_SZARRAY:          // Single Dim
+    case ELEMENT_TYPE_ARRAY:            // General Array
+    case ELEMENT_TYPE_CLASS:            // Class
+    case ELEMENT_TYPE_OBJECT:
+    case ELEMENT_TYPE_STRING:           // System.String
+    case ELEMENT_TYPE_VAR:
+    {
+        if (pArgUnsafe == NULL)
+            *(PVOID *)pArgDst = 0;
+        else
+            *(PVOID *)pArgDst = OBJECTREFToObject((OBJECTREF)(Object*)*pArgUnsafe);
+        break;
+    }
+
+    case ELEMENT_TYPE_BYREF:
+    {
+        // We should never get here for nullable types.  Instead invoke
+        // heads these off and morphs the type handle to not be byref anymore
+        _ASSERTE(!Nullable::IsNullableType(th.AsTypeDesc()->GetTypeParam()));
+
+        *(PVOID *)pArgDst = pArgUnsafe;
+        break;
+    }
+
+    //case ELEMENT_TYPE_TYPEDBYREF:
+    //{
+    //    TypedByRef* ptr = (TypedByRef*) pArgDst;
+    //    TypeHandle srcTH;
+    //    BOOL bIsZero = FALSE;
+
+    //    // If we got the univeral zero...Then assign it and exit.
+    //    if (rObj== 0) {
+    //        bIsZero = TRUE;
+    //        ptr->data = 0;
+    //        ptr->type = TypeHandle();
+    //    }
+    //    else {
+    //        bIsZero = FALSE;
+    //        srcTH = rObj->GetTypeHandle();
+    //        ptr->type = rObj->GetTypeHandle();
+    //    }
+
+    //    if (!bIsZero)
+    //    {
+    //        //CreateByRef only triggers GC in throw path
+    //        ptr->data = CreateByRef(srcTH, oType, srcTH, rObj, pObjUNSAFE);
+    //    }
+
+    //    break;
+    //}
+
+    case ELEMENT_TYPE_PTR:
+    case ELEMENT_TYPE_FNPTR:
+    {
+        // If we got the univeral zero...Then assign it and exit.
+        if (pArgUnsafe == NULL) {
+            *(PVOID *)pArgDst = 0;
+        }
+        else {
+            OBJECTREF rObj = (OBJECTREF)(Object*)*pArgUnsafe;
+            if (rObj->GetMethodTable() == CoreLibBinder::GetClassIfExist(CLASS__POINTER) && type == ELEMENT_TYPE_PTR)
+                *(PVOID *)pArgDst = GetPointerValue(rObj);
+            else if (rObj->GetTypeHandle().AsMethodTable() == CoreLibBinder::GetElementType(ELEMENT_TYPE_I))
+            {
+                ARG_SLOT slot;
+                CreatePrimitiveValue(oType, oType, rObj, &slot);
+                *(PVOID *)pArgDst = (PVOID)slot;
+            }
+            else
+                COMPlusThrow(kArgumentException,W("Arg_ObjObj"));
+        }
+        break;
+    }
+
+    case ELEMENT_TYPE_VOID:
+    default:
+        _ASSERTE(!"Unknown Type");
+        COMPlusThrow(kNotSupportedException);
+    }
+}
+
 // CreatePrimitiveValue
 // This routine will validate the object and then place the value into
 //  the destination
@@ -153,7 +302,6 @@ void InvokeUtil::CreatePrimitiveValue(CorElementType dstType,
                                       MethodTable *pSrcMT,
                                       ARG_SLOT* pDst)
 {
-
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
@@ -305,46 +453,6 @@ void InvokeUtil::CreatePrimitiveValue(CorElementType dstType,
     default:
         _ASSERTE(!"Unknown conversion");
     }
-}
-
-void* InvokeUtil::CreateByRef(TypeHandle dstTh,
-                              CorElementType srcType,
-                              TypeHandle srcTH,
-                              OBJECTREF srcObj,
-                              OBJECTREF *pIncomingObj) {
-    CONTRACTL {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-        PRECONDITION(!dstTh.IsNull());
-        PRECONDITION(CheckPointer(pIncomingObj));
-
-        INJECT_FAULT(COMPlusThrowOM());
-    }
-    CONTRACTL_END;
-
-    CorElementType dstType = dstTh.GetSignatureCorElementType();
-    if (IsPrimitiveType(srcType) && IsPrimitiveType(dstType)) {
-        if (dstType != srcType)
-        {
-            CONTRACT_VIOLATION (GCViolation);
-            COMPlusThrow(kArgumentException,W("Arg_PrimWiden"));
-        }
-
-        return srcObj->UnBox();
-    }
-
-    if (srcTH.IsNull()) {
-        return pIncomingObj;
-    }
-
-    _ASSERTE(srcObj != NULL);
-
-    if (dstType == ELEMENT_TYPE_VALUETYPE) {
-        return srcObj->UnBox();
-    }
-    else
-        return pIncomingObj;
 }
 
 //ValidField

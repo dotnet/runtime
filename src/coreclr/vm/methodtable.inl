@@ -1307,6 +1307,35 @@ inline BOOL MethodTable::UnBoxIntoArg(ArgDestination *argDest, OBJECTREF src)
     return TRUE;
 }
 
+inline BOOL MethodTable::UnBoxIntoArg(ArgDestination *argDest, PVOID pSrcUnsafe)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    TypeHandle th = TypeHandle(this);
+    if (Nullable::IsNullableType(th))
+    {
+        // ASSUMPTION: we only receive T or NULL values, not Nullable<T> values.
+        TypeHandle thSrc = th.AsTypeDesc()->GetTypeParam();
+        MethodTable *srcMT = thSrc.GetMethodTable();
+
+        return Nullable::UnBoxIntoArgNoGC(argDest, pSrcUnsafe, this, srcMT);
+    }
+    else
+    {
+        if (pSrcUnsafe == NULL)
+            return FALSE;
+
+        CopyValueClassArg(argDest, pSrcUnsafe, this, 0);
+    }
+    return TRUE;
+}
+
 //==========================================================================================
 // unbox src into dest, No checks are done
 

@@ -389,13 +389,16 @@ static OBJECTREF InvokeArrayConstructor(TypeHandle th, PVOID* args, int argCnt)
 
     INT32* indexes = (INT32*) _alloca((size_t)allocSize);
     ZeroMemory(indexes, allocSize);
+    MethodTable* pMT = CoreLibBinder::GetElementType(ELEMENT_TYPE_I4);
 
     for (DWORD i=0; i<(DWORD)argCnt; i++)
     {
         if (!args[i])
             COMPlusThrowArgumentException(W("parameters"), W("Arg_NullIndex"));
 
-        memcpyNoGCRefs(indexes + i, *(PVOID **)args[i], sizeof(INT32));
+        ARG_SLOT value;
+        InvokeUtil::CreatePrimitiveValue(ELEMENT_TYPE_I4, ELEMENT_TYPE_I4, args[i], pMT, &value);
+        memcpyNoGCRefs(indexes + i, ArgSlotEndianessFixup(&value, sizeof(INT32)), sizeof(INT32));
     }
 
     return AllocateArrayEx(th, indexes, argCnt);
@@ -759,22 +762,23 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         UINT structSize = argit.GetArgSize();
 
         bool needsStackCopy = false;
+        bool needsToInitValueClass = false;
 
         MethodTable * pMT = th.GetMethodTable();
 
-        // A boxed Nullable<T> is represented as boxed T. So to pass a Nullable<T> by reference,
-        // we have to create a Nullable<T> on stack, copy the T into it, then pass it to the callee and
-        // after returning from the call, copy the T out of the Nullable<T> back to the boxed T.
         TypeHandle nullableType = NullableTypeOfByref(th);
         if (!nullableType.IsNull()) {
+            // A boxed Nullable<T> is represented as boxed T. So to pass a Nullable<T> by reference,
+            // we have to create a Nullable<T> on stack, copy the T into it, then pass it to the callee and
+            // after returning from the call, copy the T out of the Nullable<T> back to the boxed T.
             th = nullableType;
             structSize = th.GetSize();
             needsStackCopy = true;
         }
-        else if (pMT->IsByRefLike()) {
-            // A byref-like type can't be boxed but can be passed as a null reference in which
-            // case we return a zero-filled ref struct and not do call the default ctor.
-            needsStackCopy = true;
+        else if (args[i] == NULL && pMT->IsByRefLike()) {
+            // A byref-like type can't be boxed but the arg value can be passed as a null in which
+            // case we need to initialize the ref struct.
+            needsToInitValueClass = true;
         }
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
         else if (argit.IsArgPassedByRef())
@@ -789,7 +793,9 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         {
             _ASSERTE(pMT && pMT->IsValueType());
 
+            PVOID pArgDst = argDest.GetDestinationAddress();
             PVOID pStackCopy = _alloca(structSize);
+            *(PVOID *)pArgDst = pStackCopy;
 
             if (!nullableType.IsNull())
             {
@@ -806,14 +812,13 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
             argDest = ArgDestination(pStackCopy, 0, NULL);
         }
 
-        if (pMT->IsByRefLike())
+        if (needsToInitValueClass)
         {
             InitValueClassArg(&argDest, pMT);
         }
         else
         {
-            PVOID pArgDst = argDest.GetDestinationAddress();
-            *(PVOID *)pArgDst = *(PVOID **)args[i];
+            InvokeUtil::CopyArg(th, (PVOID *)args[i], &argDest);
         }
     }
 

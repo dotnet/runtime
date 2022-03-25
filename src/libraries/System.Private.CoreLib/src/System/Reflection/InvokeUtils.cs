@@ -13,6 +13,18 @@ namespace System.Reflection
         public static object ConvertOrWiden(Type srcType, CorElementType srcElementType, object srcObject, Type dstType, CorElementType dstElementType)
         {
             object dstObject;
+
+            if (dstType.IsPointer)
+            {
+                if (TryConvertPointer(srcObject, srcElementType, dstElementType, out IntPtr dstIntPtr))
+                {
+                    return dstIntPtr;
+                }
+
+                Debug.Fail($"Unexpected CorElementType: {dstElementType}. Not a valid widening target.");
+                throw new NotSupportedException();
+            }
+
             switch (dstElementType)
             {
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
@@ -95,6 +107,28 @@ namespace System.Reflection
             Debug.Assert(dstObject != null);
             Debug.Assert(dstObject.GetType() == dstType);
             return dstObject;
+        }
+
+        private static bool TryConvertPointer(object srcObject, CorElementType srcEEType, CorElementType dstEEType, out IntPtr dstIntPtr)
+        {
+            if (srcObject is IntPtr srcIntPtr)
+            {
+                dstIntPtr = srcIntPtr;
+                return true;
+            }
+
+            if (srcObject is Pointer srcPointer)
+            {
+                //CorElementType dstElementType = RuntimeTypeHandle.GetCorElementType((RuntimeType)typeof(void*));
+                //if (dstEEType == dstElementType || RuntimeImports.AreTypesAssignable(pSourceType: srcPointer.GetPointerType().TypeHandle.ToEETypePtr(), pTargetType: dstEEType))
+                {
+                    dstIntPtr = srcPointer.GetPointerValue();
+                    return true;
+                }
+            }
+
+            dstIntPtr = IntPtr.Zero;
+            return false;
         }
     }
 }

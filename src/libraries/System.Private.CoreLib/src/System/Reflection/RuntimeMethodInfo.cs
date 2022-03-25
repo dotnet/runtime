@@ -155,15 +155,6 @@ namespace System.Reflection
                             invokeAttr);
 
                         retValue = Invoker.InvokeUnsafe(obj, (IntPtr*)(void*)&byrefStorage, copyOfParameters, invokeAttr);
-
-                        // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
-                        for (int i = 0; i < argCount; i++)
-                        {
-                            if (shouldCopyBackParameters[i])
-                            {
-                                parameters[i] = copyOfParameters[i];
-                            }
-                        }
                     }
                     else
                     {
@@ -199,18 +190,16 @@ namespace System.Reflection
                         {
                             UnregisterForGCReporting(&reg);
                         }
-
-                        // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
-                        for (int i = 0; i < argCount; i++)
-                        {
-                            if (shouldCopyBackParameters[i])
-                            {
-                                parameters[i] = copyOfParameters[i];
-                            }
-                        }
                     }
 
-
+                    // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
+                    for (int i = 0; i < argCount; i++)
+                    {
+                        if (shouldCopyBackParameters[i])
+                        {
+                            parameters[i] = copyOfParameters[i];
+                        }
+                    }
                 }
             }
 

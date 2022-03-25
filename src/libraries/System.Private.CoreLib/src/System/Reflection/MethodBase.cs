@@ -154,27 +154,35 @@ namespace System.Reflection
         {
             Debug.Assert(!parameters.IsEmpty);
 
-            ParameterInfo[]? p = null;
+            ParameterInfo[]? paramInfos = null;
             for (int i = 0; i < parameters.Length; i++)
             {
                 bool copyBackArg = false;
                 object? arg = parameters[i];
                 if (arg == Type.Missing)
                 {
-                    p ??= GetParametersNoCopy();
-                    if (p[i].DefaultValue == DBNull.Value)
+                    paramInfos ??= GetParametersNoCopy();
+                    if (paramInfos[i].DefaultValue == DBNull.Value)
                     {
                         throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
                     }
 
                     copyBackArg = true;
-                    arg = p[i].DefaultValue;
+                    arg = paramInfos[i].DefaultValue;
                 }
 
+                bool isValueType;
                 RuntimeType sigType = sigTypes[i];
-                if (!ReferenceEquals(arg?.GetType(), sigType))
+
+                if (ReferenceEquals(arg?.GetType(), sigType))
                 {
-                    sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
+                    // Fast path that avoids calling CheckValue()
+                    isValueType = RuntimeTypeHandle.IsValueType(sigType);
+                }
+                else
+                {
+                    paramInfos ??= GetParametersNoCopy();
+                    isValueType = sigType.CheckValue(ref arg, ref copyBackArg, paramInfos[i], binder, culture, invokeAttr);
                 }
 
                 // We need to perform type safety validation against the incoming arguments, but we also need
@@ -186,20 +194,14 @@ namespace System.Reflection
                 shouldCopyBack[i] = copyBackArg;
                 copyOfParameters[i] = arg;
 
-                if (RuntimeTypeHandle.IsValueType(sigType))
+                if (isValueType)
                 {
                     if (arg is null)
                     {
-                        Debug.Assert(sigType.IsByRefLike);
+                        // This is a special case where we pass null for a null Nullable<T> and for
+                        // the case to create a default ref struct when 'null' is passed.
                         Debug.Assert(!copyBackArg);
-
-                        p ??= GetParametersNoCopy();
-                        if (p[i].IsOut)
-                        {
-                            throw new NotSupportedException(SR.NotSupported_ByRefLike);
-                        }
-
-                        byrefParameters[i] = (IntPtr)Unsafe.AsPointer(ref copyOfParameters[i]);
+                        byrefParameters[i] = IntPtr.Zero;
                     }
                     else
                     {
