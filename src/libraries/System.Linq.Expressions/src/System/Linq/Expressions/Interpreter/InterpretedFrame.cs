@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Interpreter
@@ -124,12 +123,6 @@ namespace System.Linq.Expressions.Interpreter
 
         public InterpretedFrame? Parent => _parent;
 
-        public static bool IsInterpretedFrame(MethodBase method)
-        {
-            //ContractUtils.RequiresNotNull(method, nameof(method));
-            return method.DeclaringType == typeof(Interpreter) && method.Name == "Run";
-        }
-
         public IEnumerable<InterpretedFrameInfo> GetStackTraceDebugInfo()
         {
             InterpretedFrame? frame = this;
@@ -146,11 +139,6 @@ namespace System.Linq.Expressions.Interpreter
             {
                 exception.Data[typeof(InterpretedFrameInfo)] = new List<InterpretedFrameInfo>(GetStackTraceDebugInfo()).ToArray();
             }
-        }
-
-        public static InterpretedFrameInfo[]? GetExceptionStackTrace(Exception exception)
-        {
-            return exception.Data[typeof(InterpretedFrameInfo)] as InterpretedFrameInfo[];
         }
 
 #if DEBUG
