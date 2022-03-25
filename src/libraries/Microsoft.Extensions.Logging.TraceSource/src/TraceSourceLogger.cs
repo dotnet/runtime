@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Logging.TraceSource
             _traceSource = traceSource;
         }
 
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string>? formatter)
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
             if (!IsEnabled(logLevel))
             {
@@ -72,7 +72,7 @@ namespace Microsoft.Extensions.Logging.TraceSource
 
         public IDisposable BeginScope<TState>(TState state) where TState : notnull
         {
-            return new TraceSourceScope(state!);
+            return new TraceSourceScope(state);
         }
     }
 }
