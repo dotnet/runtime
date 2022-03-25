@@ -71,13 +71,9 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             // see if we've created one w/ a delegate
-            CallInstruction? res;
-            if (ShouldCache(info))
+            if (s_cache.TryGetValue(info, out CallInstruction? res))
             {
-                if (s_cache.TryGetValue(info, out res))
-                {
-                    return res;
-                }
+                return res;
             }
 
             // create it
@@ -113,10 +109,7 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             // cache it for future users if it's a reasonable method to cache
-            if (ShouldCache(info))
-            {
-                s_cache[info] = res;
-            }
+            s_cache[info] = res;
 
             return res;
         }
@@ -169,11 +162,6 @@ namespace System.Linq.Expressions.Interpreter
         public static void ArrayItemSetter3(Array array, int index0, int index1, int index2, object value)
         {
             array.SetValue(value, index0, index1, index2);
-        }
-
-        private static bool ShouldCache(MethodInfo info)
-        {
-            return true;
         }
 
 #if FEATURE_FAST_CREATE
