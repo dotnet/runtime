@@ -930,7 +930,7 @@ namespace System.DirectoryServices.Protocols
             // If the user specify certificate through property and not though option, we don't need to check the certificate authority.
             if (SessionOptions._clientCertificateDelegate == null)
             {
-                certificate = ClientCertificates[0].Handle;
+                *certificate = ClientCertificates[0].Handle;
                 return Interop.BOOL.TRUE;
             }
 
@@ -965,11 +965,11 @@ namespace System.DirectoryServices.Protocols
             X509Certificate cert = SessionOptions._clientCertificateDelegate(this, certAuthorities);
             if (cert != null)
             {
-                certificate = cert.Handle;
+                *certificate = cert.Handle;
                 return Interop.BOOL.TRUE;
             }
 
-            certificate = IntPtr.Zero;
+            *certificate = IntPtr.Zero;
             return Interop.BOOL.FALSE;
         }
 
