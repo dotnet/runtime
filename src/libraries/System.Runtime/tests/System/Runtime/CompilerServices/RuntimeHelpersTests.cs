@@ -179,6 +179,7 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/66118", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public static void TryEnsureSufficientExecutionStack_NoSpaceAvailable_ReturnsFalse()
         {
             FillStack(depth: 0);
