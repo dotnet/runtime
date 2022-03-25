@@ -35,12 +35,12 @@ jobs:
         dotnet pack -c Release wa-info; dotnet pack -c Release wa-diff
     - name: Artifacts
       if: startsWith(github.ref, 'refs/tags/v')
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: NuGets
-        path:
-          - wa-info\nupkg\*.nupkg
-          - wa-diff\nupkg\*.nupkg
+        path: |
+          wa-info\nupkg\*.nupkg
+          wa-diff\nupkg\*.nupkg
     - name: Setup NuGet
       if: startsWith(github.ref, 'refs/tags/v')
       uses: nuget/setup-nuget@v1
