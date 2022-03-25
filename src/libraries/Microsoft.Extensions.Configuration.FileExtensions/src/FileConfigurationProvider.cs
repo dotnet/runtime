@@ -34,8 +34,7 @@ namespace Microsoft.Extensions.Configuration
                     () =>
                     {
                         Thread.Sleep(Source.ReloadDelay);
-                        throw new NotImplementedException("Need to know the separator string here...");
-                        // Load(reload: true, ":");
+                        Load(reload: true);
                     });
             }
         }
