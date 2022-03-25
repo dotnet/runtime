@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <!-- Crossgen is not used for Mono, and does not currently create freebsd packages -->
-    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono' or ('$(DotNetBuildFromSource)' != 'true' and '$(RuntimeIdentifier)' == 'freebsd-x64')">true</SkipBuild>
+    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono' or '$(RuntimeIdentifier)' == 'freebsd-x64'">true</SkipBuild>
     <PlatformPackageType>ToolPack</PlatformPackageType>
     <SharedFrameworkName>$(SharedFrameworkName).Crossgen2</SharedFrameworkName>
     <PgoSuffix Condition="'$(PgoInstrument)' != ''">.PGO</PgoSuffix>
@@ -16,21 +16,9 @@
     <GenerateInstallers>false</GenerateInstallers>
     <HostJsonTargetPath>tools/</HostJsonTargetPath>
     <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
+    <!-- Publishing as single-file or NativeAOT means we can't examine the interior DLLs -->
+    <ShouldVerifyClosure>false</ShouldVerifyClosure>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(NativeAotSupported)' != 'true'">
-    <!-- If we're publishing self-contained, we include all the binaries produced by publish, including facades. -->
-    <ExcludeFromClosure Remove="@(ExcludeFromClosure)" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(NativeAotSupported)' != 'true'">
-    <IgnoredReference Include="@(WindowsDesktopCoreAppLibrary)" />
-    <IgnoredReference Include="System.Data.SqlClient" />
-    <IgnoredReference Include="System.Data.Odbc" />
-    <IgnoredReference Include="System.Data.OleDb" />
-    <IgnoredReference Include="System.ServiceModel.Syndication" />
-    <IgnoredReference Include="System.ServiceProcess.ServiceController" />
-    <IgnoredReference Include="System.IO.Ports" />
-  </ItemGroup>
 
   <Target Name="PublishCrossgen"
           BeforeTargets="GetFilesToPackage">
