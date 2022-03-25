@@ -429,7 +429,7 @@ const pal::string_t& runtime_config_t::get_tfm() const
     return m_tfm;
 }
 
-const unsigned long runtime_config_t::get_compat_major_version_from_tfm() const
+const uint32_t runtime_config_t::get_compat_major_version_from_tfm() const
 {
     assert(m_valid);
 
@@ -460,7 +460,7 @@ const unsigned long runtime_config_t::get_compat_major_version_from_tfm() const
     if (majorVersionEndIndex == pal::string_t::npos || majorVersionEndIndex == majorVersionStartIndex)
         return runtime_config_t::unknown_version;
 
-    return std::stoul(m_tfm.substr(majorVersionStartIndex, majorVersionEndIndex - majorVersionStartIndex));
+    return static_cast<uint32_t>(std::stoul(m_tfm.substr(majorVersionStartIndex, majorVersionEndIndex - majorVersionStartIndex)));
 }
 
 bool runtime_config_t::get_is_multilevel_lookup_disabled() const
