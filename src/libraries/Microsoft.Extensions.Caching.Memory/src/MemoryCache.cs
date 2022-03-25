@@ -229,7 +229,15 @@ namespace Microsoft.Extensions.Caching.Memory
                     }
 
                     StartScanForExpiredItemsIfNeeded(utcNow);
-                    Hit();
+                    // Hit
+                    if (_allStats is not null)
+                    {
+                        if (IntPtr.Size == 4)
+                            Interlocked.Increment(ref GetStats().Hits);
+                        else
+                            GetStats().Hits++;
+                    }
+
                     return true;
                 }
                 else
@@ -242,7 +250,14 @@ namespace Microsoft.Extensions.Caching.Memory
             StartScanForExpiredItemsIfNeeded(utcNow);
 
             result = null;
-            Miss();
+            // Miss
+            if (_allStats is not null)
+            {
+                if (IntPtr.Size == 4)
+                    Interlocked.Increment(ref GetStats().Misses);
+                else
+                    GetStats().Misses++;
+            }
 
             return false;
         }
@@ -345,30 +360,6 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
 
                 return (hits, misses);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private void Hit()
-        {
-            if (_allStats is not null)
-            {
-                if (IntPtr.Size == 4)
-                    Interlocked.Increment(ref GetStats().Hits);
-                else
-                    GetStats().Hits++;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private void Miss()
-        {
-            if (_allStats is not null)
-            {
-                if (IntPtr.Size == 4)
-                    Interlocked.Increment(ref GetStats().Misses);
-                else
-                    GetStats().Misses++;
             }
         }
 
