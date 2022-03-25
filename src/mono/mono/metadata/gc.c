@@ -147,7 +147,7 @@ break_coop_alertable_wait (gpointer user_data)
 static gint
 coop_cond_timedwait_alertable (MonoCoopCond *cond, MonoCoopMutex *mutex, guint32 timeout_ms, gboolean *alertable)
 {
-	BreakCoopAlertableWaitUD *ud;
+	BreakCoopAlertableWaitUD *ud = NULL;
 	int res;
 
 	if (alertable) {
