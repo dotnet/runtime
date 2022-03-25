@@ -306,8 +306,12 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
             }
         }
 
+#if defined(__APPLE__) && defined(HOST_ARM64)
+        BOOL bExecRegion = true;
+#else
         BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
             PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
+#endif
 
         if (bExecRegion && pEndAddressToFlush != NULL)
         {
