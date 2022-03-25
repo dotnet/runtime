@@ -645,7 +645,7 @@ namespace System.Data.OleDb
                 return base.ConvertFrom(context, culture, value);
             }
 
-            public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+            public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
             {
                 // Only know how to convert to the NetworkLibrary enumeration
                 return ((typeof(string) == destinationType) || base.CanConvertTo(context, destinationType));
@@ -697,7 +697,7 @@ namespace System.Data.OleDb
             {
             }
 
-            public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+            public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
             {
                 if (typeof(System.ComponentModel.Design.Serialization.InstanceDescriptor) == destinationType)
                 {
@@ -723,7 +723,7 @@ namespace System.Data.OleDb
                 return base.ConvertTo(context, culture, value, destinationType);
             }
 
-            private System.ComponentModel.Design.Serialization.InstanceDescriptor ConvertToInstanceDescriptor(OleDbConnectionStringBuilder options)
+            private static System.ComponentModel.Design.Serialization.InstanceDescriptor ConvertToInstanceDescriptor(OleDbConnectionStringBuilder options)
             {
                 Type[] ctorParams = new Type[] { typeof(string) };
                 object[] ctorValues = new object[] { options.ConnectionString };

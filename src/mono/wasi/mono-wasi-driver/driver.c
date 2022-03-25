@@ -8,6 +8,9 @@
 #include <assert.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <sys/time.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #define INVARIANT_GLOBALIZATION 1
 
@@ -111,6 +114,45 @@ struct WasmSatelliteAssembly_ {
 static WasmSatelliteAssembly *satellite_assemblies;
 static int satellite_assembly_count;
 
+int32_t time(int32_t x) {
+	// In the current prototype, libSystem.Native.a is built using Emscripten, whereas the WASI-enabled runtime is being built
+	// using WASI SDK. Emscripten says that time() returns int32, whereas WASI SDK says it returns int64.
+	// TODO: Build libSystem.Native.a using WASI SDK.
+	// In the meantime, as a workaround we can define an int32-returning implementation for time() here.
+	struct timeval time;
+	return (gettimeofday(&time, NULL) == 0) ? time.tv_sec : 0;
+}
+
+typedef struct
+{
+    int32_t Flags;     // flags for testing if some members are present (see FileStatusFlags)
+    int32_t Mode;      // file mode (see S_I* constants above for bit values)
+    uint32_t Uid;      // user ID of owner
+    uint32_t Gid;      // group ID of owner
+    int64_t Size;      // total size, in bytes
+    int64_t ATime;     // time of last access
+    int64_t ATimeNsec; //     nanosecond part
+    int64_t MTime;     // time of last modification
+    int64_t MTimeNsec; //     nanosecond part
+    int64_t CTime;     // time of last status change
+    int64_t CTimeNsec; //     nanosecond part
+    int64_t BirthTime; // time the file was created
+    int64_t BirthTimeNsec; // nanosecond part
+    int64_t Dev;       // ID of the device containing the file
+    int64_t Ino;       // inode number of the file
+    uint32_t UserFlags; // user defined flags
+} FileStatus;
+
+char* gai_strerror(int code) {
+    char result[256];
+    sprintf(result, "Error code %i", code);
+    return result;
+}
+
+int32_t dotnet_browser_entropy(uint8_t* buffer, int32_t bufferLength) {
+    return getentropy (buffer, bufferLength);
+}
+
 void
 mono_wasm_add_satellite_assembly (const char *name, const char *culture, const unsigned char *data, unsigned int size)
 {
@@ -130,10 +172,13 @@ mono_wasm_setenv (const char *name, const char *value)
 static void *sysglobal_native_handle;
 int32_t SystemNative_LChflagsCanSetHiddenFlag(void);
 char* SystemNative_GetEnv(char* name);
+char* SystemNative_GetEnviron(char* name);
+void SystemNative_FreeEnviron(char* name);
 intptr_t SystemNative_Dup(intptr_t oldfd);
 int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize);
 int64_t SystemNative_GetSystemTimeAsTicks();
-int32_t SystemNative_LStat(const char* path, int output);
+int32_t SystemNative_Stat(const char* path, void* output);
+int32_t SystemNative_LStat(const char* path, void* output);
 int32_t SystemNative_ConvertErrorPlatformToPal(int32_t platformErrno);
 void* SystemNative_LowLevelMonitor_Create();
 void SystemNative_LowLevelMonitor_Acquire(void* monitor);
@@ -142,19 +187,89 @@ int32_t SystemNative_LowLevelMonitor_TimedWait(void *monitor, int32_t timeoutMil
 void SystemNative_LowLevelMonitor_Wait(void* monitor);
 int SystemNative_GetErrNo();
 void SystemNative_SetErrNo(int value);
+char* SystemNative_GetCwd();
+void SystemNative_GetNonCryptographicallySecureRandomBytes();
+void SystemNative_GetCryptographicallySecureRandomBytes();
+int32_t SystemNative_Open(const char* path, int x, int y);
+void SystemNative_ConvertErrorPalToPlatform();
+void SystemNative_StrErrorR();
+void SystemNative_Close();
+void SystemNative_FStat();
+void SystemNative_LSeek();
+void SystemNative_PRead();
+void SystemNative_CanGetHiddenFlag();
+int32_t SystemNative_Access(const char* path, int32_t mode);
+void SystemNative_Malloc();
+void SystemNative_Free();
+void SystemNative_SysLog();
+
+#define PAL_O_RDONLY 0x0000
+#define PAL_O_WRONLY 0x0001
+#define PAL_O_RDWR 0x0002
+#define PAL_O_ACCESS_MODE_MASK 0x000F
+
+int32_t SystemNative_Open2(const char* path, int flags, int mode) {
+	//printf ("In SystemNative_Open2 for %s\n", path);
+	// The implementation in libSystemNative tries to use PAL_O_CLOEXEC, which isn't supported here, so override it
+	if ((flags & PAL_O_ACCESS_MODE_MASK) == PAL_O_RDONLY) {
+		flags = O_RDONLY;
+	} else if ((flags & PAL_O_ACCESS_MODE_MASK) == PAL_O_RDWR) {
+		flags = O_RDWR;
+	} else if ((flags & PAL_O_ACCESS_MODE_MASK) == PAL_O_WRONLY) {
+		flags = O_WRONLY;
+	}
+
+	int result;
+    while ((result = open(path, flags, (mode_t)mode)) < 0 && errno == EINTR);
+	return result;
+}
+
+int32_t SystemNative_Stat2(const char* path, FileStatus* output)
+{
+	// For some reason the libSystemNative SystemNative_Stat doesn't seem to work. Maybe I did something wrong elsewhere,
+	// or maybe it's hardcoded to something specific to browser wasm
+	struct stat stat_result;
+	int ret;
+    while ((ret = stat(path, &stat_result)) < 0 && errno == EINTR);
+
+	output->Size = stat_result.st_size;
+	output->ATime = stat_result.st_atime;
+	output->MTime = stat_result.st_mtime;
+	output->CTime = stat_result.st_ctime;
+	output->Mode = S_ISDIR (stat_result.st_mode)
+		? 0x4000  // Dir
+		: 0x8000; // File
+
+	//printf("SystemNative_Stat2 for %s has ISDIR=%i and will return mode %i; ret=%i\n", path, S_ISDIR (stat_result.st_mode), output->Mode, ret);
+
+	return ret;
+}
 
 int32_t SystemNative_Write2(intptr_t fd, const void* buffer, int32_t bufferSize) {
 	// Not sure why, but am getting fd=-1 when trying to write to stdout (which fails), so here's a workaround
 	return SystemNative_Write((int)fd == -1 ? 1: fd, buffer, bufferSize);
 }
 
+int64_t SystemNative_GetTimestamp2() {
+	// libSystemNative's implementation of SystemNative_GetTimestamp causes the process to exit. It probably
+	// relies on calling into JS.
+	struct timeval time;
+	return (gettimeofday(&time, NULL) == 0)
+		? (int64_t)(time.tv_sec) * 1000000000 + (time.tv_usec * 1000)
+		: 0;
+}
+
 static PinvokeImport SystemNativeImports [] = {
 	{"SystemNative_GetEnv", SystemNative_GetEnv },
+	{"SystemNative_GetEnviron", SystemNative_GetEnviron },
+	{"SystemNative_FreeEnviron", SystemNative_FreeEnviron },
 	{"SystemNative_LChflagsCanSetHiddenFlag", SystemNative_LChflagsCanSetHiddenFlag },
 	{"SystemNative_Dup", SystemNative_Dup},
 	{"SystemNative_Write", SystemNative_Write2},
 	{"SystemNative_GetSystemTimeAsTicks", SystemNative_GetSystemTimeAsTicks},
-	{"SystemNative_LStat", SystemNative_LStat},
+	{"SystemNative_LStat", SystemNative_Stat2},
+	{"SystemNative_FStat", SystemNative_FStat},
+	{"SystemNative_LSeek", SystemNative_LSeek},
 	{"SystemNative_ConvertErrorPlatformToPal", SystemNative_ConvertErrorPlatformToPal},
 	{"SystemNative_LowLevelMonitor_Create", SystemNative_LowLevelMonitor_Create},
 	{"SystemNative_LowLevelMonitor_Acquire", SystemNative_LowLevelMonitor_Acquire},
@@ -163,6 +278,21 @@ static PinvokeImport SystemNativeImports [] = {
 	{"SystemNative_LowLevelMonitor_Wait", SystemNative_LowLevelMonitor_Wait},
 	{"SystemNative_GetErrNo", SystemNative_GetErrNo},
 	{"SystemNative_SetErrNo", SystemNative_SetErrNo},
+	{"SystemNative_GetCwd", SystemNative_GetCwd},
+	{"SystemNative_GetNonCryptographicallySecureRandomBytes", SystemNative_GetNonCryptographicallySecureRandomBytes},
+	{"SystemNative_GetCryptographicallySecureRandomBytes", SystemNative_GetCryptographicallySecureRandomBytes},
+	{"SystemNative_Stat", SystemNative_Stat2},
+	{"SystemNative_Open", SystemNative_Open2},
+	{"SystemNative_Close", SystemNative_Close},
+	{"SystemNative_ConvertErrorPalToPlatform", SystemNative_ConvertErrorPalToPlatform},
+	{"SystemNative_StrErrorR", SystemNative_StrErrorR},
+	{"SystemNative_PRead", SystemNative_PRead},
+	{"SystemNative_CanGetHiddenFlag", SystemNative_CanGetHiddenFlag},
+	{"SystemNative_GetTimestamp", SystemNative_GetTimestamp2},
+	{"SystemNative_Access", SystemNative_Access},
+	{"SystemNative_Malloc", SystemNative_Malloc},
+	{"SystemNative_Free", SystemNative_Free},
+	{"SystemNative_SysLog", SystemNative_SysLog},
 	{NULL, NULL}
 };
 
@@ -288,7 +418,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	appctx_values [0] = "/";
 	appctx_values [1] = "browser-wasm";
 
-	char *file_name = RUNTIMECONFIG_BIN_FILE;
+	const char *file_name = RUNTIMECONFIG_BIN_FILE;
 	int str_len = strlen (file_name) + 1; // +1 is for the "/"
 	char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
 	int num_char = snprintf (file_path, (str_len + 1), "/%s", file_name);

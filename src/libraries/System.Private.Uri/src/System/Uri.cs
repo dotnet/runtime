@@ -3055,7 +3055,7 @@ namespace System
         }
 
         // Cut trailing spaces
-        private void GetLengthWithoutTrailingSpaces(string str, ref int length, int idx)
+        private static void GetLengthWithoutTrailingSpaces(string str, ref int length, int idx)
         {
             // to avoid dereferencing ref length parameter for every update
             int local = length;
@@ -4207,7 +4207,7 @@ namespace System
             return end;
         }
 
-        private unsafe void CheckAuthorityHelperHandleDnsIri(char* pString, int start, int end,
+        private static unsafe void CheckAuthorityHelperHandleDnsIri(char* pString, int start, int end,
             bool hasUnicode, ref Flags flags,
             ref bool justNormalized, ref string? newHost, ref ParsingError err)
         {
@@ -5153,7 +5153,7 @@ namespace System
         //  UTF-8 sequences (e.g. %C4%D2 == 'Latin capital Ligature Ij')
         //
         /// <internalonly/>
-        [Obsolete("Uri.Unescape has been deprecated. Use GetComponents() or static UnescapeDataString() to unescape a Uri component or a string.")]
+        [Obsolete("Uri.Unescape has been deprecated. Use GetComponents() or Uri.UnescapeDataString() to unescape a Uri component or a string.")]
         protected virtual string Unescape(string path)
         {
             // This method is dangerous since it gives path unescaping control

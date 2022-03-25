@@ -2558,7 +2558,7 @@ MisMatch:
             Return ObjectUserDefinedConversion(Expression, TargetType)
         End Function
 
-        <Obsolete("do not use this method", True)>
+        <Obsolete("FallbackUserDefinedConversion has been deprecated and is not supported.", True)>
         <DebuggerHidden()>
         <DebuggerStepThrough()>
         <RequiresUnreferencedCode(ConversionsTrimmerMessage)>

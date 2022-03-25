@@ -288,12 +288,14 @@ namespace System
                 obj = (object)(((ErrorWrapper)obj).ErrorCode);
                 Debug.Assert(obj != null, "obj != null");
             }
+#pragma warning disable 0618 // CurrencyWrapper is obsolete
             else if (obj is CurrencyWrapper)
             {
                 vt = VarEnum.VT_CY;
                 obj = (object)(((CurrencyWrapper)obj).WrappedObject);
                 Debug.Assert(obj != null, "obj != null");
             }
+#pragma warning restore 0618
             else if (obj is BStrWrapper)
             {
                 vt = VarEnum.VT_BSTR;
@@ -441,7 +443,9 @@ namespace System
                     3 => /*VT_I4*/ new Variant(iv.ToInt32(provider)),
                     4 => /*VT_R4*/ new Variant(iv.ToSingle(provider)),
                     5 => /*VT_R8*/ new Variant(iv.ToDouble(provider)),
+#pragma warning disable 0618 // CurrencyWrapper is obsolete
                     6 => /*VT_CY*/ new Variant(new CurrencyWrapper(iv.ToDecimal(provider))),
+#pragma warning restore 0618
                     7 => /*VT_DATE*/ new Variant(iv.ToDateTime(provider)),
                     8 => /*VT_BSTR*/ new Variant(iv.ToString(provider)),
 #pragma warning disable CA1416 // Validate platform compatibility

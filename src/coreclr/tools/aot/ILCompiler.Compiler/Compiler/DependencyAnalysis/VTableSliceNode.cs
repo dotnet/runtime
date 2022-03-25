@@ -225,6 +225,10 @@ namespace ILCompiler.DependencyAnalysis
                 if (method.HasInstantiation)
                     continue;
 
+                // Static interface methods don't go into vtables
+                if (method.Signature.IsStatic)
+                    continue;
+
                 // Current type doesn't define this slot. Another VTableSlice will take care of this.
                 if (method.OwningType != defType)
                     continue;

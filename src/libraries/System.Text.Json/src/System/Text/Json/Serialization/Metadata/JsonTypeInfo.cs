@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Metadata
     /// Provides JSON serialization-related metadata about a type.
     /// </summary>
     /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
-    [DebuggerDisplay("ConverterStrategy.{ConverterStrategy}, {Type.Name}")]
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public partial class JsonTypeInfo
     {
@@ -632,5 +632,8 @@ namespace System.Text.Json.Serialization.Metadata
 
             return numberHandlingAttribute?.Handling;
         }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private string DebuggerDisplay => $"ConverterStrategy.{PropertyInfoForTypeInfo.ConverterStrategy}, {Type.Name}";
     }
 }

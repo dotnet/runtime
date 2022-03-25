@@ -11,22 +11,22 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrClearError")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrClearError")]
         internal static partial ulong ErrClearError();
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrGetExceptionError")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrGetExceptionError")]
         private static partial ulong ErrGetExceptionError([MarshalAs(UnmanagedType.Bool)] out bool isAllocFailure);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrPeekError")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrPeekError")]
         internal static partial ulong ErrPeekError();
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrPeekLastError")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrPeekLastError")]
         internal static partial ulong ErrPeekLastError();
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrReasonErrorString")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrReasonErrorString")]
         internal static partial IntPtr ErrReasonErrorString(ulong error);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrErrorStringN")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrErrorStringN")]
         private static unsafe partial void ErrErrorStringN(ulong e, byte* buf, int len);
 
         private static unsafe string ErrErrorStringN(ulong error)

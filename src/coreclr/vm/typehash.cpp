@@ -16,11 +16,6 @@
 #include "typekey.h"
 #include "dacenumerablehash.inl"
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4244)
-#endif // _MSC_VER
-
 #ifndef DACCESS_COMPILE
 
 // ============================================================================
@@ -168,7 +163,7 @@ static DWORD HashPossiblyInstantiatedType(mdTypeDef token, Instantiation inst)
         }
     }
 
-    return dwHash;
+    return (DWORD)dwHash;
 }
 
 // Calculate hash value for a function pointer type
@@ -187,7 +182,7 @@ static DWORD HashFnPtrType(BYTE callConv, DWORD numArgs, TypeHandle *retAndArgTy
         dwHash = ((dwHash << 5) + dwHash) ^ retAndArgTypes[i].AsTAddr();
     }
 
-    return dwHash;
+    return (DWORD)dwHash;
 }
 
 // Calculate hash value for an array/pointer/byref type
@@ -199,7 +194,7 @@ static DWORD HashParamType(CorElementType kind, TypeHandle typeParam)
     dwHash = ((dwHash << 5) + dwHash) ^ kind;
     dwHash = ((dwHash << 5) + dwHash) ^ typeParam.AsTAddr();
 
-    return dwHash;
+    return (DWORD)dwHash;
 }
 
 // Calculate hash value from type handle
@@ -234,10 +229,12 @@ static DWORD HashTypeHandle(TypeHandle t)
     else if (t.IsGenericVariable())
     {
         _ASSERTE(!"Generic variables are unexpected here.");
-        retVal = t.AsTAddr();
+        retVal = 0;
     }
     else
+    {
         retVal = HashPossiblyInstantiatedType(t.GetCl(), Instantiation());
+    }
 
     return retVal;
 }
@@ -578,7 +575,3 @@ void EETypeHashEntry::SetTypeHandle(TypeHandle handle)
     m_data = handle.AsPtr();
 }
 #endif // !DACCESS_COMPILE
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif // _MSC_VER: warning C4244

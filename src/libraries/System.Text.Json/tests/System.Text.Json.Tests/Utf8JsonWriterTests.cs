@@ -6195,7 +6195,7 @@ namespace System.Text.Json.Tests
                 var output = new ArrayBufferWriter<byte>(1024);
                 using var jsonUtf8 = new Utf8JsonWriter(output, options);
                 jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(key, DateTime.Now));
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(key, DateTimeTestHelpers.FixedDateTimeValue));
                 Assert.Equal(0, output.WrittenCount);
             }
 
@@ -6304,7 +6304,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public void WriteDateTime_TrimsFractionCorrectly_SerializerRoundtrip()
         {
-            DateTime utcNow = DateTime.UtcNow;
+            DateTime utcNow = DateTimeTestHelpers.FixedDateTimeValue;
             Assert.Equal(utcNow, JsonSerializer.Deserialize(JsonSerializer.SerializeToUtf8Bytes(utcNow), typeof(DateTime)));
         }
 

@@ -116,7 +116,6 @@ namespace System.Xml.Serialization
             _r = r;
             _d = null;
             _soap12 = (encodingStyle == Soap12.Encoding);
-            Init(tempAssembly);
 
             _schemaNsID = r.NameTable.Add(XmlSchema.Namespace);
             _schemaNs2000ID = r.NameTable.Add("http://www.w3.org/2000/10/XMLSchema");
@@ -1047,7 +1046,7 @@ namespace System.Xml.Serialization
             return soapArrayInfo;
         }
 
-        private SoapArrayInfo ParseSoap12ArrayType(string? itemType, string? arraySize)
+        private static SoapArrayInfo ParseSoap12ArrayType(string? itemType, string? arraySize)
         {
             SoapArrayInfo soapArrayInfo = default;
 
@@ -2456,7 +2455,7 @@ namespace System.Xml.Serialization
                 return GenerateLiteralMembersElement(xmlMembersMapping);
         }
 
-        private string? GetChoiceIdentifierSource(MemberMapping[] mappings, MemberMapping member)
+        private static string? GetChoiceIdentifierSource(MemberMapping[] mappings, MemberMapping member)
         {
             string? choiceSource = null;
             if (member.ChoiceIdentifier != null)
@@ -3991,7 +3990,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private string ExpectedElements(Member[] members)
+        private static string ExpectedElements(Member[] members)
         {
             if (IsSequence(members))
                 return "null";
@@ -4193,7 +4192,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private bool IsSequence(Member[] members)
+        private static bool IsSequence(Member[] members)
         {
             for (int i = 0; i < members.Length; i++)
             {
@@ -4983,7 +4982,10 @@ namespace System.Xml.Serialization
 
         private void WriteParamsRead(int length)
         {
-            Writer.Write("bool[] paramsRead = new bool[");
+            const int StackallocLimit = 32; // arbitrary limit
+            Writer.Write(length <= StackallocLimit ?
+                "System.Span<bool> paramsRead = stackalloc bool[" :
+                "System.Span<bool> paramsRead = new bool[");
             Writer.Write(length.ToString(CultureInfo.InvariantCulture));
             Writer.WriteLine("];");
         }

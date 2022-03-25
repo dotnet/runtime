@@ -23,13 +23,22 @@ namespace Microsoft.Interop
         }
 
         public static Diagnostic CreateDiagnostic(
+            this ISymbol symbol,
+            DiagnosticDescriptor descriptor,
+            ImmutableDictionary<string, string> properties,
+            params object[] args)
+        {
+            return symbol.Locations.CreateDiagnostic(descriptor, properties, args);
+        }
+
+        public static Diagnostic CreateDiagnostic(
             this AttributeData attributeData,
             DiagnosticDescriptor descriptor,
             params object[] args)
         {
             SyntaxReference? syntaxReference = attributeData.ApplicationSyntaxReference;
             Location location = syntaxReference is not null
-                ? syntaxReference.GetSyntax().GetLocation()
+                ? syntaxReference.SyntaxTree.GetLocation(syntaxReference.Span)
                 : Location.None;
 
             return location.CreateDiagnostic(descriptor, args);
@@ -48,6 +57,24 @@ namespace Microsoft.Interop
                 descriptor,
                 location: locationsInSource.First(),
                 additionalLocations: locationsInSource.Skip(1),
+                messageArgs: args);
+        }
+
+        public static Diagnostic CreateDiagnostic(
+            this ImmutableArray<Location> locations,
+            DiagnosticDescriptor descriptor,
+            ImmutableDictionary<string, string> properties,
+            params object[] args)
+        {
+            IEnumerable<Location> locationsInSource = locations.Where(l => l.IsInSource);
+            if (!locationsInSource.Any())
+                return Diagnostic.Create(descriptor, Location.None, args);
+
+            return Diagnostic.Create(
+                descriptor,
+                location: locationsInSource.First(),
+                additionalLocations: locationsInSource.Skip(1),
+                properties: properties,
                 messageArgs: args);
         }
 

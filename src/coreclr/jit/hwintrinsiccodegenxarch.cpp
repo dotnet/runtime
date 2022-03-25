@@ -899,7 +899,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
                 simdType = TYP_SIMD16;
             }
 
-            // Optimize the case of op1 is in memory and trying to access ith element.
+            // Optimize the case of op1 is in memory and trying to access i'th element.
             if (!op1->isUsedFromReg())
             {
                 assert(op1->isContained());

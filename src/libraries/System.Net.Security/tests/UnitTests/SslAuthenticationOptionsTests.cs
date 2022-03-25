@@ -150,11 +150,13 @@ namespace System.Net.Security.Tests
             Assert.Equal(EncryptionPolicy.RequireEncryption, _clientOptions.EncryptionPolicy);
             Assert.Equal(EncryptionPolicy.RequireEncryption, _serverOptions.EncryptionPolicy);
 
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
             _clientOptions.EncryptionPolicy = EncryptionPolicy.AllowNoEncryption;
             _serverOptions.EncryptionPolicy = EncryptionPolicy.NoEncryption;
 
             Assert.Equal(EncryptionPolicy.AllowNoEncryption, _clientOptions.EncryptionPolicy);
             Assert.Equal(EncryptionPolicy.NoEncryption, _serverOptions.EncryptionPolicy);
+#pragma warning restore SYSLIB0040
 
             Assert.Throws<ArgumentException>(() => _clientOptions.EncryptionPolicy = (EncryptionPolicy)3);
             Assert.Throws<ArgumentException>(() => _serverOptions.EncryptionPolicy = (EncryptionPolicy)3);

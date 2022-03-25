@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(Libraries.Kernel32)]
+        [LibraryImport(Libraries.Kernel32)]
         internal static partial uint GetConsoleCP();
     }
 }

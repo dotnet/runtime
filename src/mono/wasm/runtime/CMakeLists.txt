@@ -20,6 +20,7 @@ target_link_libraries(dotnet
     ${MONO_ARTIFACTS_DIR}/libmonosgen-2.0.a
     ${MONO_ARTIFACTS_DIR}/libmono-ilgen.a
     ${MONO_ARTIFACTS_DIR}/libmono-icall-table.a
+    ${MONO_ARTIFACTS_DIR}/libmono-wasm-eh-js.a
     ${MONO_ARTIFACTS_DIR}/libmono-profiler-aot.a
     ${NATIVE_BIN_DIR}/libSystem.Native.a
     ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a)
@@ -30,5 +31,5 @@ set_target_properties(dotnet PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${NATIVE_BIN_DIR}")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_custom_command(TARGET dotnet POST_BUILD COMMAND ${EMSDK_PATH}/upstream/bin/wasm-opt --strip-dwarf ${NATIVE_BIN_DIR}/dotnet.wasm -o ${NATIVE_BIN_DIR}/dotnet.wasm)
+    add_custom_command(TARGET dotnet POST_BUILD COMMAND ${EMSDK_PATH}/upstream/bin/wasm-opt --enable-exception-handling --strip-dwarf ${NATIVE_BIN_DIR}/dotnet.wasm -o ${NATIVE_BIN_DIR}/dotnet.wasm)
 endif()

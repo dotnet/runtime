@@ -3467,18 +3467,30 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_ldgr (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_MOVE_F_TO_I4:
-			s390_lgdr (code, ins->dreg, ins->sreg1);
+			if (!cfg->r4fp) {
+				s390_ledbr (code, s390_f0, ins->sreg1);
+				s390_lgdr (code, ins->dreg, s390_f0);
+			} else {
+				s390_lgdr (code, ins->dreg, ins->sreg1);
+			}
 			s390_srag (code, ins->dreg, ins->dreg, 0, 32);
 			break;
 		case OP_MOVE_I4_TO_F:
 			s390_slag (code, s390_r0, ins->sreg1, 0, 32);
 			s390_ldgr (code, ins->dreg, s390_r0);
+			if (!cfg->r4fp)
+				s390_ldebr (code, ins->dreg, ins->dreg);
 			break;
 		case OP_FCONV_TO_R4:
 			s390_ledbr (code, ins->dreg, ins->sreg1);
+			if (!cfg->r4fp)
+				s390_ldebr (code, ins->dreg, ins->dreg);
 			break;
 		case OP_S390_SETF4RET:
-			s390_ldr (code, ins->dreg, ins->sreg1);
+			if (!cfg->r4fp)
+				s390_ledbr (code, ins->dreg, ins->sreg1);
+                       else
+                               s390_ldr (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_TLS_GET: {
 			if (s390_is_imm16 (ins->inst_offset)) {
@@ -3598,16 +3610,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			call = (MonoCallInst *) ins;
 			const MonoJumpInfoTarget patch = mono_call_to_patch (call);
 			code = emit_call (cfg, code, patch.type, patch.target);
+			if (!cfg->r4fp && call->signature->ret->type == MONO_TYPE_R4)
+				s390_ldebr (code, s390_f0, s390_f0);
 		}
 			break;
-		case OP_RCALL: {
-			call = (MonoCallInst *) ins;
-			const MonoJumpInfoTarget patch = mono_call_to_patch (call);
-			code = emit_call (cfg, code, patch.type, patch.target);
-			if (ins->dreg != s390_f0)
-				s390_ldr (code, ins->dreg, s390_f0);
-			break;
-		}
+               case OP_RCALL: {
+                       call = (MonoCallInst *) ins;
+                       const MonoJumpInfoTarget patch = mono_call_to_patch (call);
+                       code = emit_call (cfg, code, patch.type, patch.target);
+                       if (ins->dreg != s390_f0)
+                               s390_ldr (code, ins->dreg, s390_f0);
+                       break;
+               }
 		case OP_LCALL:
 		case OP_VCALL:
 		case OP_VCALL2:
@@ -3622,14 +3636,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			call = (MonoCallInst*)ins;
 			s390_lgr  (code, s390_r1, ins->sreg1);
 			s390_basr (code, s390_r14, s390_r1);
+			if (!cfg->r4fp && call->signature->ret->type == MONO_TYPE_R4)
+				s390_ldebr (code, s390_f0, s390_f0);
 			break;
-		case OP_RCALL_REG:
-			call = (MonoCallInst*)ins;
-			s390_lgr  (code, s390_r1, ins->sreg1);
-			s390_basr (code, s390_r14, s390_r1);
-			if (ins->dreg != s390_f0)
-				s390_ldr (code, ins->dreg, s390_f0);
-			break;
+               case OP_RCALL_REG:
+                       call = (MonoCallInst*)ins;
+                       s390_lgr  (code, s390_r1, ins->sreg1);
+                       s390_basr (code, s390_r14, s390_r1);
+                       if (ins->dreg != s390_f0)
+                               s390_ldr (code, ins->dreg, s390_f0);
+                        break;
 		case OP_LCALL_REG:
 		case OP_VCALL_REG:
 		case OP_VCALL2_REG:
@@ -3643,13 +3659,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			call = (MonoCallInst*)ins;
 			s390_lg   (code, s390_r1, 0, ins->sreg1, ins->inst_offset);
 			s390_basr (code, s390_r14, s390_r1);
-			break;
-		case OP_RCALL_MEMBASE:
-			call = (MonoCallInst*)ins;
-			s390_lg   (code, s390_r1, 0, ins->sreg1, ins->inst_offset);
-			s390_basr (code, s390_r14, s390_r1);
-			if (ins->dreg != s390_f0)
-				s390_ldr (code, ins->dreg, s390_f0);
+			if (!cfg->r4fp && call->signature->ret->type == MONO_TYPE_R4)
+				s390_ldebr (code, s390_f0, s390_f0);
+                       break;
+               case OP_RCALL_MEMBASE:
+                       call = (MonoCallInst*)ins;
+                       s390_lg   (code, s390_r1, 0, ins->sreg1, ins->inst_offset);
+                       s390_basr (code, s390_r14, s390_r1);
+                       if (ins->dreg != s390_f0)
+                               s390_ldr (code, ins->dreg, s390_f0);
 			break;
 		case OP_LCALL_MEMBASE:
 		case OP_VCALL_MEMBASE:
@@ -4132,13 +4150,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_R4CONST: {
 			float f = *(float *) ins->inst_p0;
 			if (f == 0) {
-				s390_lzer (code, ins->dreg);
-				if (mono_signbit (f) != 0)
-					s390_lnebr (code, ins->dreg, ins->dreg);
+				if (cfg->r4fp) {
+					s390_lzer (code, ins->dreg);
+					if (mono_signbit (f) != 0)
+						s390_lnebr (code, ins->dreg, ins->dreg);
+				} else {
+					s390_lzdr (code, ins->dreg);
+					if (mono_signbit (f) != 0)
+						s390_lndbr (code, ins->dreg, ins->dreg);
+				}
 			} else {
 				S390_SET (code, s390_r13, ins->inst_p0);
 				s390_le (code, ins->dreg, 0, s390_r13, 0);
-				s390_le (code, ins->dreg, 0, s390_r13, 0);
+				if (!cfg->r4fp)
+					s390_ldebr (code, ins->dreg, ins->dreg);
+                               else
+                                       s390_le (code, ins->dreg, 0, s390_r13, 0);
 			}
 		}
 			break;
@@ -4153,13 +4180,26 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_STORER4_MEMBASE_REG: {
-			S390_LONG (code, stey, ste, ins->sreg1, 0,
+			if (cfg->r4fp) {
+				S390_LONG (code, stey, ste, ins->sreg1, 0,
 					   ins->inst_destbasereg, ins->inst_offset);
+			} else {
+				s390_ledbr (code, ins->sreg1, ins->sreg1);
+				S390_LONG (code, stey, ste, ins->sreg1, 0,
+					   ins->inst_destbasereg, ins->inst_offset);
+				s390_ldebr (code, ins->sreg1, ins->sreg1);
+			}
 		}
 			break;
 		case OP_LOADR4_MEMBASE: {
-			S390_LONG (code, ley, le, ins->dreg, 0,
+			if (cfg->r4fp) {
+				S390_LONG (code, ley, le, ins->dreg, 0,
 					   ins->inst_basereg, ins->inst_offset);
+			} else {
+				S390_LONG (code, ley, le, ins->dreg, 0,
+					   ins->inst_basereg, ins->inst_offset);
+				s390_ldebr (code, ins->dreg, ins->dreg);
+			}
 		}
 			break;
 		case OP_ICONV_TO_R_UN: {
@@ -4197,9 +4237,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_ICONV_TO_R4:
 			s390_cefbr (code, ins->dreg, ins->sreg1);
+			if (!cfg->r4fp)
+				s390_ldebr (code, ins->dreg, ins->dreg);
 			break;
 		case OP_LCONV_TO_R4:
 			s390_cegbr (code, ins->dreg, ins->sreg1);
+			if (!cfg->r4fp)
+				s390_ldebr (code, ins->dreg, ins->dreg);
 			break;
 		case OP_ICONV_TO_R8:
 			s390_cdfbr (code, ins->dreg, ins->sreg1);
@@ -4252,7 +4296,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_FCONV_TO_I8:
-		case OP_FCONV_TO_I:
 			s390_cgdbr (code, ins->dreg, 5, ins->sreg1);
 			break;
 		case OP_FCONV_TO_U8:
@@ -4307,7 +4350,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_RCONV_TO_I8:
-		case OP_RCONV_TO_I:
 			s390_cgebr (code, ins->dreg, 5, ins->sreg1);
 			break;
 		case OP_RCONV_TO_U8:
@@ -4494,56 +4536,80 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_RCEQ: {
-			s390_cebr  (code, ins->sreg1, ins->sreg2);
+                        if (cfg->r4fp)
+                                s390_cebr  (code, ins->sreg1, ins->sreg2);
+                        else
+                                s390_cdbr  (code, ins->sreg1, ins->sreg2);
 			s390_lghi  (code, ins->dreg, 1);
 			s390_je    (code, 4);
 			s390_lghi  (code, ins->dreg, 0);
 		}
 			break;
 		case OP_RCLT: {
-			s390_cebr  (code, ins->sreg1, ins->sreg2);
+                        if (cfg->r4fp)
+                                s390_cebr  (code, ins->sreg1, ins->sreg2);
+                        else
+                                s390_cdbr  (code, ins->sreg1, ins->sreg2);
 			s390_lghi  (code, ins->dreg, 1);
 			s390_jl    (code, 4);
 			s390_lghi  (code, ins->dreg, 0);
 		}
 			break;
 		case OP_RCLT_UN: {
-			s390_cebr  (code, ins->sreg1, ins->sreg2);
+                        if (cfg->r4fp)
+                                s390_cebr  (code, ins->sreg1, ins->sreg2);
+                        else
+                                s390_cdbr  (code, ins->sreg1, ins->sreg2);
 			s390_lghi  (code, ins->dreg, 1);
 			s390_jlo   (code, 4);
 			s390_lghi  (code, ins->dreg, 0);
 		}
 			break;
 		case OP_RCGT: {
-			s390_cebr  (code, ins->sreg1, ins->sreg2);
+                        if (cfg->r4fp)
+                                s390_cebr  (code, ins->sreg1, ins->sreg2);
+                        else
+                                s390_cdbr  (code, ins->sreg1, ins->sreg2);
 			s390_lghi  (code, ins->dreg, 1);
 			s390_jh    (code, 4);
 			s390_lghi  (code, ins->dreg, 0);
 		}
 			break;
 		case OP_RCGT_UN: {
-			s390_cebr  (code, ins->sreg1, ins->sreg2);
+                        if (cfg->r4fp)
+                                s390_cebr  (code, ins->sreg1, ins->sreg2);
+                        else
+                                s390_cdbr  (code, ins->sreg1, ins->sreg2);
 			s390_lghi  (code, ins->dreg, 1);
 			s390_jho   (code, 4);
 			s390_lghi  (code, ins->dreg, 0);
 		}
 			break;
 		case OP_RCNEQ: {
-			s390_cebr  (code, ins->sreg1, ins->sreg2);
+                        if (cfg->r4fp)
+                                s390_cebr  (code, ins->sreg1, ins->sreg2);
+                        else
+                                s390_cdbr  (code, ins->sreg1, ins->sreg2);
 			s390_lghi  (code, ins->dreg, 1);
 			s390_jne   (code, 4);
 			s390_lghi  (code, ins->dreg, 0);
 		}
 			break;
 		case OP_RCGE: {
-			s390_cebr  (code, ins->sreg1, ins->sreg2);
+                        if (cfg->r4fp)
+                                s390_cebr  (code, ins->sreg1, ins->sreg2);
+                        else
+                                s390_cdbr  (code, ins->sreg1, ins->sreg2);
 			s390_lghi  (code, ins->dreg, 1);
 			s390_jhe   (code, 4);
 			s390_lghi  (code, ins->dreg, 0);
 		}
 			break;
 		case OP_RCLE: {
-			s390_cebr  (code, ins->sreg1, ins->sreg2);
+                        if (cfg->r4fp)
+                                s390_cebr  (code, ins->sreg1, ins->sreg2);
+                        else
+                                s390_cdbr  (code, ins->sreg1, ins->sreg2);
 			s390_lghi  (code, ins->dreg, 1);
 			s390_jle   (code, 4);
 			s390_lghi  (code, ins->dreg, 0);
@@ -5274,21 +5340,33 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_INSERTX_R4_SLOW:
 			switch (ins->inst_c0) {
 			case 0:
-				s390x_movss (code, ins->dreg, ins->sreg2);
+				if (cfg->r4fp)
+					s390x_movss (code, ins->dreg, ins->sreg2);
+				else
+					s390x_cvtsd2ss (code, ins->dreg, ins->sreg2);
 				break;
 			case 1:
 				s390x_pshufd_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(1, 0, 2, 3));
-				s390x_movss (code, ins->dreg, ins->sreg2);
+				if (cfg->r4fp)
+					s390x_movss (code, ins->dreg, ins->sreg2);
+				else
+					s390x_cvtsd2ss (code, ins->dreg, ins->sreg2);
 				s390x_pshufd_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(1, 0, 2, 3));
 				break;
 			case 2:
 				s390x_pshufd_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(2, 1, 0, 3));
-				s390x_movss (code, ins->dreg, ins->sreg2);
+				if (cfg->r4fp)
+					s390x_movss (code, ins->dreg, ins->sreg2);
+				else
+					s390x_cvtsd2ss (code, ins->dreg, ins->sreg2);
 				s390x_pshufd_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(2, 1, 0, 3));
 				break;
 			case 3:
 				s390x_pshufd_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(3, 1, 2, 0));
-				s390x_movss (code, ins->dreg, ins->sreg2);
+				if (cfg->r4fp)
+					s390x_movss (code, ins->dreg, ins->sreg2);
+				else
+					s390x_cvtsd2ss (code, ins->dreg, ins->sreg2);
 				s390x_pshufd_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(3, 1, 2, 0));
 				break;
 			}
@@ -5367,7 +5445,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390x_pshufd_imm (code, ins->dreg, ins->dreg, 0x44);
 			break;
 		case OP_EXPAND_R4:
-			s390x_movsd (code, ins->dreg, ins->sreg1);
+			if (cfg->r4fp) {
+				s390x_movsd (code, ins->dreg, ins->sreg1);
+			} else {
+				s390x_movsd (code, ins->dreg, ins->sreg1);
+				s390x_cvtsd2ss (code, ins->dreg, ins->dreg);
+			}
 			s390x_pshufd_imm (code, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_EXPAND_R8:
@@ -5690,6 +5773,8 @@ printf("ns: %s k: %s m: %s\n",method->klass->name_space,method->klass->name,meth
 					s390_ldr   (code, inst->dreg, ainfo->reg);
 				}
 			} else if (ainfo->regtype == RegTypeFPR4) {
+					if (!cfg->r4fp)
+						s390_ledbr (code, inst->dreg, ainfo->reg);
 			} else if (ainfo->regtype == RegTypeBase) {
 				s390_lgr  (code, s390_r13, STK_BASE);
 				s390_aghi (code, s390_r13, alloc_size);
@@ -6167,8 +6252,12 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 		// unary float (overloaded)
 		else if (fsig->param_count == 1 && fsig->params [0]->type == MONO_TYPE_R4) {
 			if (strcmp (cmethod->name, "Abs") == 0) {
-				opcode = OP_ABSF;
-				stack_type = STACK_R4;
+				if (cfg->r4fp) {
+					opcode = OP_ABSF;
+					stack_type = STACK_R4;
+				} else {
+					opcode = OP_ABS;
+				}
 			}
 		}
 		// binary double
@@ -6181,20 +6270,41 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 		if (fsig->param_count == 1) {
 			stack_type = STACK_R4;
 			if (strcmp (cmethod->name, "Abs") == 0) {
-				opcode = OP_ABSF;
-				stack_type = STACK_R4;
+				if (cfg->r4fp) {
+					opcode = OP_ABSF;
+					stack_type = STACK_R4;
+				} else {
+					opcode = OP_ABS;
+				}
 			} else if (strcmp (cmethod->name, "Ceiling") == 0) {
-				opcode = OP_CEILF;
-				stack_type = STACK_R4;
+				if (cfg->r4fp) {
+					opcode = OP_CEILF;
+					stack_type = STACK_R4;
+				} else {
+					opcode = OP_CEIL;
+				}
 			} else if (strcmp (cmethod->name, "Floor") == 0) {
-				opcode = OP_FLOORF;
-				stack_type = STACK_R4;
+				if (cfg->r4fp) {
+					opcode = OP_FLOORF;
+					stack_type = STACK_R4;
+				} else {
+					opcode = OP_FLOOR;
+				}
 			} else if (strcmp (cmethod->name, "Sqrt") == 0) {
-				opcode = OP_SQRTF;
-				stack_type = STACK_R4;
+				if (cfg->r4fp) {
+					opcode = OP_SQRTF;
+					stack_type = STACK_R4;
+				} else {
+					opcode = OP_SQRT;
+				}
 			} else if (strcmp (cmethod->name, "Truncate") == 0) {
+				if (cfg->r4fp) {
+					opcode = OP_TRUNCF;
+					stack_type = STACK_R4;
+				} else {
+					opcode = OP_TRUNC;
+				}
 				opcode = OP_TRUNCF;
-				stack_type = STACK_R4;
 			}
 		}
 	}

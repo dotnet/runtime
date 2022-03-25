@@ -323,10 +323,10 @@ namespace DebuggerTests
             await CheckValue(l["value"], TString(value), name);
         }
 
-        internal async Task<JToken> CheckSymbol(JToken locals, string name, string value)
+        internal async Task<JToken> CheckSymbol(JToken locals, string name, char value)
         {
             var l = GetAndAssertObjectWithName(locals, name);
-            await CheckValue(l["value"], TSymbol(value), name);
+            await CheckValue(l["value"], TChar(value), name);
             return l;
         }
 
@@ -1171,6 +1171,8 @@ namespace DebuggerTests
         internal static JObject TBool(bool value) => JObject.FromObject(new { type = "boolean", value = @value, description = @value ? "true" : "false" });
 
         internal static JObject TSymbol(string value) => JObject.FromObject(new { type = "symbol", value = @value, description = @value });
+        
+        internal static JObject TChar(char value) => JObject.FromObject(new { type = "symbol", value = @value, description = $"{(int)value} '{@value}'" });
 
         /*
         	For target names with generated method names like

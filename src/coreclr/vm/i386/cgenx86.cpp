@@ -1186,63 +1186,6 @@ UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)
     return *(UMEntryThunk**)( 1 + (BYTE*)pCallback );
 }
 
-BOOL DoesSlotCallPrestub(PCODE pCode)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(pCode != NULL);
-        PRECONDITION(pCode != GetPreStubEntryPoint());
-    } CONTRACTL_END;
-
-    // x86 has the following possible sequences for prestub logic:
-    // 1. slot -> temporary entrypoint -> prestub
-    // 2. slot -> precode -> prestub
-    // 3. slot -> precode -> jumprel32 (NGEN case) -> prestub
-
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    if (MethodDescChunk::GetMethodDescFromCompactEntryPoint(pCode, TRUE) != NULL)
-    {
-        return TRUE;
-    }
-#endif // HAS_COMPACT_ENTRYPOINTS
-
-    if (!IS_ALIGNED(pCode, PRECODE_ALIGNMENT))
-    {
-        return FALSE;
-    }
-
-#ifdef HAS_FIXUP_PRECODE
-    if (*PTR_BYTE(pCode) == X86_INSTR_CALL_REL32)
-    {
-        // Note that call could have been patched to jmp in the meantime
-        pCode = rel32Decode(pCode+1);
-
-        // NGEN case
-        if (*PTR_BYTE(pCode) == X86_INSTR_JMP_REL32) {
-            pCode = rel32Decode(pCode+1);
-        }
-
-        return pCode == (TADDR)PrecodeFixupThunk;
-    }
-#endif
-
-    if (*PTR_BYTE(pCode) != X86_INSTR_MOV_EAX_IMM32 ||
-        *PTR_BYTE(pCode+5) != X86_INSTR_MOV_RM_R ||
-        *PTR_BYTE(pCode+7) != X86_INSTR_JMP_REL32)
-    {
-        return FALSE;
-    }
-    pCode = rel32Decode(pCode+8);
-
-    // NGEN case
-    if (*PTR_BYTE(pCode) == X86_INSTR_JMP_REL32) {
-        pCode = rel32Decode(pCode+1);
-    }
-
-    return pCode == GetPreStubEntryPoint();
-}
-
 #ifdef FEATURE_READYTORUN
 
 //

@@ -4936,49 +4936,86 @@ bool ValueNumStore::IsVNRelop(ValueNum vn)
 
 bool ValueNumStore::IsVNConstantBound(ValueNum vn)
 {
-    // Do we have "var < 100"?
-    if (vn == NoVN)
+    VNFuncApp funcApp;
+    if ((vn != NoVN) && GetVNFunc(vn, &funcApp))
     {
-        return false;
+        if ((funcApp.m_func == (VNFunc)GT_LE) || (funcApp.m_func == (VNFunc)GT_GE) ||
+            (funcApp.m_func == (VNFunc)GT_LT) || (funcApp.m_func == (VNFunc)GT_GT))
+        {
+            const bool op1IsConst = IsVNInt32Constant(funcApp.m_args[0]);
+            const bool op2IsConst = IsVNInt32Constant(funcApp.m_args[1]);
+            return op1IsConst != op2IsConst;
+        }
     }
+    return false;
+}
 
-    VNFuncApp funcAttr;
-    if (!GetVNFunc(vn, &funcAttr))
+bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
+{
+    VNFuncApp funcApp;
+    if ((vn != NoVN) && GetVNFunc(vn, &funcApp))
     {
-        return false;
+        const bool op1IsPositiveConst = IsVNPositiveInt32Constant(funcApp.m_args[0]);
+        const bool op2IsPositiveConst = IsVNPositiveInt32Constant(funcApp.m_args[1]);
+        if (!op1IsPositiveConst && op2IsPositiveConst)
+        {
+            // (uint)index < CNS
+            // (uint)index >= CNS
+            return (funcApp.m_func == VNF_LT_UN) || (funcApp.m_func == VNF_GE_UN);
+        }
+        else if (op1IsPositiveConst && !op2IsPositiveConst)
+        {
+            // CNS > (uint)index
+            // CNS <= (uint)index
+            return (funcApp.m_func == VNF_GT_UN) || (funcApp.m_func == VNF_LE_UN);
+        }
     }
-    if (funcAttr.m_func != (VNFunc)GT_LE && funcAttr.m_func != (VNFunc)GT_GE && funcAttr.m_func != (VNFunc)GT_LT &&
-        funcAttr.m_func != (VNFunc)GT_GT)
-    {
-        return false;
-    }
-
-    return IsVNInt32Constant(funcAttr.m_args[0]) != IsVNInt32Constant(funcAttr.m_args[1]);
+    return false;
 }
 
 void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
 {
-    assert(IsVNConstantBound(vn));
+    assert(IsVNConstantBound(vn) || IsVNConstantBoundUnsigned(vn));
     assert(info);
 
-    // Do we have var < 100?
     VNFuncApp funcAttr;
     GetVNFunc(vn, &funcAttr);
 
-    bool isOp1Const = IsVNInt32Constant(funcAttr.m_args[1]);
-
-    if (isOp1Const)
+    bool       isUnsigned = true;
+    genTreeOps op;
+    switch (funcAttr.m_func)
     {
-        info->cmpOper  = funcAttr.m_func;
+        case VNF_GT_UN:
+            op = GT_GT;
+            break;
+        case VNF_GE_UN:
+            op = GT_GE;
+            break;
+        case VNF_LT_UN:
+            op = GT_LT;
+            break;
+        case VNF_LE_UN:
+            op = GT_LE;
+            break;
+        default:
+            op         = (genTreeOps)funcAttr.m_func;
+            isUnsigned = false;
+            break;
+    }
+
+    if (IsVNInt32Constant(funcAttr.m_args[1]))
+    {
+        info->cmpOper  = op;
         info->cmpOpVN  = funcAttr.m_args[0];
         info->constVal = GetConstantInt32(funcAttr.m_args[1]);
     }
     else
     {
-        info->cmpOper  = GenTree::SwapRelop((genTreeOps)funcAttr.m_func);
+        info->cmpOper  = GenTree::SwapRelop(op);
         info->cmpOpVN  = funcAttr.m_args[1];
         info->constVal = GetConstantInt32(funcAttr.m_args[0]);
     }
+    info->isUnsigned = isUnsigned;
 }
 
 //------------------------------------------------------------------------
@@ -7693,25 +7730,14 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
             {
                 // Should not have been recorded as updating ByrefExposed mem.
                 assert(!GetMemorySsaMap(ByrefExposed)->Lookup(tree));
+                assert(rhsVNPair.BothDefined());
 
-                assert(rhsVNPair.GetLiberal() != ValueNumStore::NoVN);
-
-                lhs->gtVNPair                                                    = rhsVNPair;
                 lvaTable[lcl->GetLclNum()].GetPerSsaData(lclDefSsaNum)->m_vnPair = rhsVNPair;
 
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("N%03u ", lhs->gtSeqNum);
-                    Compiler::printTreeID(lhs);
-                    printf(" ");
-                    gtDispNodeName(lhs);
-                    gtDispLeaf(lhs, nullptr);
-                    printf(" => ");
-                    vnpPrint(lhs->gtVNPair, 1);
-                    printf("\n");
-                }
-#endif // DEBUG
+                JITDUMP("Tree [%06u] assigned VN to local var V%02u/%d: ", dspTreeID(tree), lcl->GetLclNum(),
+                        lclDefSsaNum);
+                JITDUMPEXEC(vnpPrint(rhsVNPair, 1));
+                JITDUMP("\n");
             }
             else if (lvaVarAddrExposed(lcl->GetLclNum()))
             {
@@ -7723,19 +7749,12 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                 ValueNum heapVN = vnStore->VNForExpr(compCurBB, TYP_HEAP);
                 recordAddressExposedLocalStore(tree, heapVN DEBUGARG("local assign"));
             }
-#ifdef DEBUG
             else
             {
-                if (verbose)
-                {
-                    JITDUMP("Tree ");
-                    Compiler::printTreeID(tree);
-                    printf(" assigns to non-address-taken local var V%02u; excluded from SSA, so value not "
-                           "tracked.\n",
-                           lcl->GetLclNum());
-                }
+                JITDUMP("Tree [%06u] assigns to non-address-taken local var V%02u; excluded from SSA, so value not"
+                        "tracked.\n",
+                        dspTreeID(tree), lcl->GetLclNum());
             }
-#endif // DEBUG
         }
         break;
         case GT_LCL_FLD:
@@ -7778,24 +7797,13 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                                                                            lclFld->TypeGet());
                     }
                 }
+
                 lvaTable[lclFld->GetLclNum()].GetPerSsaData(lclDefSsaNum)->m_vnPair = newLhsVNPair;
-                lhs->gtVNPair                                                       = newLhsVNPair;
-#ifdef DEBUG
-                if (verbose)
-                {
-                    if (lhs->gtVNPair.GetLiberal() != ValueNumStore::NoVN)
-                    {
-                        printf("N%03u ", lhs->gtSeqNum);
-                        Compiler::printTreeID(lhs);
-                        printf(" ");
-                        gtDispNodeName(lhs);
-                        gtDispLeaf(lhs, nullptr);
-                        printf(" => ");
-                        vnpPrint(lhs->gtVNPair, 1);
-                        printf("\n");
-                    }
-                }
-#endif // DEBUG
+
+                JITDUMP("Tree [%06u] assigned VN to local var V%02u/%d: ", dspTreeID(tree), lclFld->GetLclNum(),
+                        lclDefSsaNum);
+                JITDUMPEXEC(vnpPrint(newLhsVNPair, 1));
+                JITDUMP("\n");
             }
             else if (lvaVarAddrExposed(lclFld->GetLclNum()))
             {
@@ -7805,6 +7813,12 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                 // whose fields can be disambiguated.
                 ValueNum heapVN = vnStore->VNForExpr(compCurBB, TYP_HEAP);
                 recordAddressExposedLocalStore(tree, heapVN DEBUGARG("local field assign"));
+            }
+            else
+            {
+                JITDUMP("Tree [%06u] assigns to non-address-taken local var V%02u; excluded from SSA, so value not"
+                        "tracked.\n",
+                        dspTreeID(tree), lclFld->GetLclNum());
             }
         }
         break;
@@ -8492,12 +8506,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 }
                 else
                 {
+                    // Location nodes get the "Void" VN.
                     assert((lcl->gtFlags & GTF_VAR_DEF) != 0);
-
-                    // Give location nodes VNForVoid. Note that for non-struct
-                    // locals, this will get overriden in "fgValueNumberAssignment",
-                    // because some code (notably copy propagation) depends on that.
-                    // TODO-Cleanup: get rid of this dependency.
                     lcl->SetVNs(vnStore->VNPForVoid());
                 }
             }
@@ -10047,6 +10057,28 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
 
         // For now, arbitrary side effect on GcHeap/ByrefExposed.
         fgMutateGcHeap(call DEBUGARG("CALL"));
+    }
+
+    // If the call generates a definition, because it uses "return buffer", then VN the local
+    // as well.
+    GenTreeLclVarCommon* lclVarTree;
+    if (call->DefinesLocal(this, &lclVarTree))
+    {
+        assert((lclVarTree->gtFlags & GTF_VAR_DEF) != 0);
+
+        unsigned   hiddenArgLclNum = lclVarTree->GetLclNum();
+        LclVarDsc* hiddenArgVarDsc = lvaGetDesc(hiddenArgLclNum);
+        unsigned   lclDefSsaNum    = GetSsaNumForLocalVarDef(lclVarTree);
+
+        if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
+        {
+            // TODO-CQ: for now, we assign a simple "new, unique" VN to the whole local. We should
+            // instead look at the field sequence (if one is present) and be more precise if the
+            // store is to a field.
+            ValueNumPair newHiddenArgLclVNPair = ValueNumPair();
+            newHiddenArgLclVNPair.SetBoth(vnStore->VNForExpr(compCurBB, hiddenArgVarDsc->TypeGet()));
+            hiddenArgVarDsc->GetPerSsaData(lclDefSsaNum)->m_vnPair = newHiddenArgLclVNPair;
+        }
     }
 }
 

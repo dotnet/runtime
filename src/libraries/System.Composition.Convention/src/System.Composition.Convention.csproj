@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <SetIsTrimmable>false</SetIsTrimmable>
+    <IsTrimmable>false</IsTrimmable>
     <IsPackable>true</IsPackable>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <PackageDescription>Provides types that support using Managed Extensibility Framework with a convention-based configuration model.

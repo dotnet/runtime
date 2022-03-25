@@ -24,8 +24,6 @@
 #endif // INTERNAL_BUILD
 
 #ifdef _MSC_VER
-#pragma warning(disable : 4996) // The compiler encountered a deprecated declaration.
-
 // On Windows, we build against PAL macros that convert to Windows SEH. But we don't want all the
 // Contract stuff that normally gets pulled it. Defining JIT_BUILD prevents this, just as it does
 // when building the JIT using parts of utilcode.

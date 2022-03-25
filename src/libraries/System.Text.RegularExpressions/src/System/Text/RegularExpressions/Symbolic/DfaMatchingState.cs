@@ -25,9 +25,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal bool IsInitialState { get; set; }
 
-        /// <summary>State is lazy</summary>
-        internal bool IsLazy => Node._info.IsLazy;
-
         /// <summary>This is a deadend state</summary>
         internal bool IsDeadend => Node.IsNothing;
 
@@ -84,7 +81,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // If the previous state was the start state, mark this as the very FIRST \n.
                 // Essentially, this looks the same as the very last \n and is used to nullify
                 // rev(\Z) in the conext of a reversed automaton.
-                nextCharKind = PrevCharKind == CharKind.StartStop ?
+                nextCharKind = PrevCharKind == CharKind.BeginningEnd ?
                     CharKind.NewLineS :
                     CharKind.Newline;
             }
@@ -108,7 +105,7 @@ namespace System.Text.RegularExpressions.Symbolic
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the derivative of the node for the given context
-            SymbolicRegexNode<T> derivative = Node.CreateDerivativeWithEffects(eager: true).TransitionOrdered(minterm, context);
+            SymbolicRegexNode<T> derivative = Node.CreateDerivative(minterm, context);
 
             // nextCharKind will be the PrevCharKind of the target state
             // use an existing state instead if one exists already
@@ -121,7 +118,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         /// <param name="minterm">minterm corresponding to some input character or False corresponding to last \n</param>
         /// <returns>an enumeration of the transitions as pairs of the target state and a list of effects to be applied</returns>
-        internal List<(DfaMatchingState<T> derivative, List<DerivativeEffect> effects)> AntimirovEagerNextWithEffects(T minterm)
+        internal List<(DfaMatchingState<T> State, DerivativeEffect[] Effects)> NfaNextWithEffects(T minterm)
         {
             uint nextCharKind = GetNextCharKind(ref minterm);
 
@@ -129,16 +126,15 @@ namespace System.Text.RegularExpressions.Symbolic
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the transitions for the given context
-            IEnumerable<(SymbolicRegexNode<T>, List<DerivativeEffect>)> derivativesAndEffects =
-                Node.CreateDerivativeWithEffects(eager: true).TransitionsWithEffects(minterm, context);
+            List<(SymbolicRegexNode<T>, DerivativeEffect[])> nodesAndEffects = Node.CreateNfaDerivativeWithEffects(minterm, context);
 
-            var list = new List<(DfaMatchingState<T> derivative, List<DerivativeEffect> effects)>();
-            foreach ((SymbolicRegexNode<T> derivative, List<DerivativeEffect> effects) in derivativesAndEffects)
+            var list = new List<(DfaMatchingState<T> State, DerivativeEffect[] Effects)>();
+            foreach ((SymbolicRegexNode<T> node, DerivativeEffect[]? effects) in nodesAndEffects)
             {
                 // nextCharKind will be the PrevCharKind of the target state
                 // use an existing state instead if one exists already
                 // otherwise create a new new id for it
-                list.Add((Node._builder.CreateState(derivative, nextCharKind, capturing: true), effects));
+                list.Add((Node._builder.CreateState(node, nextCharKind, capturing: true), effects));
             }
             return list;
         }
@@ -146,7 +142,7 @@ namespace System.Text.RegularExpressions.Symbolic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsNullable(uint nextCharKind)
         {
-            Debug.Assert(nextCharKind is 0 or CharKind.StartStop or CharKind.Newline or CharKind.WordLetter or CharKind.NewLineS);
+            Debug.Assert(nextCharKind is 0 or CharKind.BeginningEnd or CharKind.Newline or CharKind.WordLetter or CharKind.NewLineS);
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
             return Node.IsNullableFor(context);
         }

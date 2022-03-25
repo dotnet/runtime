@@ -11,7 +11,7 @@ using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching
 {
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
     [UnsupportedOSPlatform("browser")]
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("tvos")]

@@ -914,7 +914,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         : MonoBinaryReader.From(res);
         }
 
-        internal CommandSet GetCommandSetForCommand<T>(T command) =>
+        private static CommandSet GetCommandSetForCommand<T>(T command) =>
             command switch {
                 CmdVM => CommandSet.Vm,
                 CmdObject => CommandSet.ObjectRef,
@@ -1321,7 +1321,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return ret;
         }
 
-        public string ReplaceCommonClassNames(string className) =>
+        private static string ReplaceCommonClassNames(string className) =>
             new StringBuilder(className)
                 .Replace("System.String", "string")
                 .Replace("System.Boolean", "bool")
@@ -1720,7 +1720,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return ret;
         }
 
-        public bool AutoExpandable(string className) {
+        private static bool AutoExpandable(string className) {
             if (className == "System.DateTime" ||
                 className == "System.DateTimeOffset" ||
                 className == "System.TimeSpan")
@@ -1728,7 +1728,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
-        public bool AutoInvokeToString(string className) {
+        private static bool AutoInvokeToString(string className) {
             if (className == "System.DateTime" ||
                 className == "System.DateTimeOffset" ||
                 className == "System.TimeSpan" ||
@@ -1738,7 +1738,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
-        public JObject CreateJObject<T>(T value, string type, string description, bool writable, string className = null, string objectId = null, string __custom_type = null, string subtype = null, bool isValueType = false, bool expanded = false, bool isEnum = false)
+        private static JObject CreateJObject<T>(T value, string type, string description, bool writable, string className = null, string objectId = null, string __custom_type = null, string subtype = null, bool isValueType = false, bool expanded = false, bool isEnum = false)
         {
             var ret = JObject.FromObject(new {
                     value = new
@@ -1766,20 +1766,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             return ret;
 
         }
-        public JObject CreateJObjectForBoolean(int value)
+
+        private static JObject CreateJObjectForBoolean(int value)
         {
             return CreateJObject<bool>(value == 0 ? false : true, "boolean", value == 0 ? "false" : "true", true);
         }
 
-        public JObject CreateJObjectForNumber<T>(T value)
+        private static JObject CreateJObjectForNumber<T>(T value)
         {
             return CreateJObject<T>(value, "number", value.ToString(), true);
         }
 
-        public JObject CreateJObjectForChar(int value)
+        private static JObject CreateJObjectForChar(int value)
         {
-            var description = $"{value.ToString()} '{Convert.ToChar(value)}'";
-            return CreateJObject<string>(description, "symbol", description, true);
+            char charValue = Convert.ToChar(value);
+            var description = $"{value} '{charValue}'";
+            return CreateJObject<char>(charValue, "symbol", description, true);
         }
 
         public async Task<JObject> CreateJObjectForPtr(ElementType etype, MonoBinaryReader retDebuggerCmdReader, string name, CancellationToken token)
@@ -2098,7 +2100,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return methodInfo.Info.IsAsync == 1;
         }
 
-        private bool IsClosureReferenceField (string fieldName)
+        private static bool IsClosureReferenceField (string fieldName)
         {
             // mcs is "$locvar"
             // old mcs is "<>f__ref"

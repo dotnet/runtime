@@ -242,7 +242,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End If
         End Function
 
-        <ObsoleteAttribute("do not use this method", True)>
+        <ObsoleteAttribute("FallbackInvokeUserDefinedOperator has been deprecated and is not supported.", True)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode("The object types cannot be statically analyzed so their operators may be trimmed")>
         Public Shared Function FallbackInvokeUserDefinedOperator(

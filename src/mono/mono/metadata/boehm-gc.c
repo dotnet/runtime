@@ -35,7 +35,6 @@
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/dtrace.h>
-#include <mono/utils/gc_wrapper.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-compiler.h>
@@ -1006,7 +1005,7 @@ mono_gc_invoke_with_gc_lock (MonoGCLockedCallbackFunc func, void *data)
 char*
 mono_gc_get_description (void)
 {
-	return g_strdup (DEFAULT_GC_NAME);
+	return g_strdup ("boehm");
 }
 
 void

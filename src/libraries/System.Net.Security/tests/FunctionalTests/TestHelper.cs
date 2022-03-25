@@ -46,6 +46,11 @@ namespace System.Net.Security.Tests
         public static readonly byte[] s_ping = Encoding.UTF8.GetBytes("PING");
         public static readonly byte[] s_pong = Encoding.UTF8.GetBytes("PONG");
 
+        public static bool AllowAnyServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            return true;
+        }
+
         public static (SslStream ClientStream, SslStream ServerStream) GetConnectedSslStreams()
         {
             (Stream clientStream, Stream serverStream) = GetConnectedStreams();
@@ -79,7 +84,25 @@ namespace System.Net.Security.Tests
 
                 return (new NetworkStream(clientSocket, ownsSocket: true), new NetworkStream(serverSocket, ownsSocket: true));
             }
+        }
 
+        internal static async Task<(NetworkStream ClientStream, NetworkStream ServerStream)> GetConnectedTcpStreamsAsync()
+        {
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+
+                var clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                Task<Socket> acceptTask = listener.AcceptAsync(CancellationToken.None).AsTask();
+                await clientSocket.ConnectAsync(listener.LocalEndPoint).WaitAsync(TestConfiguration.PassingTestTimeout);
+                Socket serverSocket = await acceptTask.WaitAsync(TestConfiguration.PassingTestTimeout);
+
+                serverSocket.NoDelay = true;
+                clientSocket.NoDelay = true;
+
+                return (new NetworkStream(clientSocket, ownsSocket: true), new NetworkStream(serverSocket, ownsSocket: true));
+            }
         }
 
         internal static void CleanupCertificates([CallerMemberName] string? testName = null)

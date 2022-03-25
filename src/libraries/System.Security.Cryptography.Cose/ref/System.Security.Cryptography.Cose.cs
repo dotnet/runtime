@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Cose
     {
         internal CoseSign1Message() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static byte[] Sign(byte[] content, System.Security.Cryptography.Cose.CoseHeaderMap protectedHeaders, System.Security.Cryptography.Cose.CoseHeaderMap unprotectedHeaders, System.Security.Cryptography.AsymmetricAlgorithm key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, bool isDetached = false) { throw null; }
+        public static byte[] Sign(byte[] content, System.Security.Cryptography.AsymmetricAlgorithm key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static byte[] Sign(byte[] content, System.Security.Cryptography.ECDsa key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, bool isDetached = false) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]

@@ -28,16 +28,7 @@ namespace Microsoft.Interop
             {
                 if (!field.IsStatic)
                 {
-                    bool fieldBlittable = field switch
-                    {
-                        // Assume that type parameters that can be blittable are blittable.
-                        // We'll re-evaluate blittability for generic fields of generic types at instantation time.
-                        { Type: ITypeParameterSymbol { IsReferenceType: false } } => true,
-                        { Type.IsUnmanagedType: false } => false,
-                        _ => IsConsideredBlittable(field.Type, seenTypes.Add(type))
-                    };
-
-                    if (!fieldBlittable)
+                    if (!IsConsideredBlittable(field.Type, seenTypes.Add(type)))
                     {
                         return false;
                     }
@@ -51,6 +42,12 @@ namespace Microsoft.Interop
 
         private static bool IsConsideredBlittable(this ITypeSymbol type, ImmutableHashSet<ITypeSymbol> seenTypes)
         {
+            // Assume that type parameters that can be blittable are blittable.
+            // We'll re-evaluate blittability for generic fields of generic types at instantation time.
+            if (type.TypeKind == TypeKind.TypeParameter && !type.IsReferenceType)
+            {
+                return true;
+            }
             if (!type.IsUnmanagedType || type.IsAutoLayout())
             {
                 return false;

@@ -31,7 +31,7 @@ namespace System.Xml
     ///    Encodes and decodes XML names according to
     ///    the "Encoding of arbitrary Unicode Characters in XML Names" specification.
     /// </devdoc>
-    public class XmlConvert
+    public partial class XmlConvert
     {
         internal static char[] crt = new char[] { '\n', '\r', '\t' };
 
@@ -88,12 +88,7 @@ namespace System.Xml
             IEnumerator? en;
             if (underscorePos >= 0)
             {
-                if (s_decodeCharPattern == null)
-                {
-                    s_decodeCharPattern = new Regex("_[Xx]([0-9a-fA-F]{4}|[0-9a-fA-F]{8})_");
-                }
-
-                mc = s_decodeCharPattern.Matches(name, underscorePos);
+                mc = DecodeCharRegex().Matches(name, underscorePos);
                 en = mc.GetEnumerator();
             }
             else
@@ -200,12 +195,7 @@ namespace System.Xml
             IEnumerator? en = null;
             if (underscorePos >= 0)
             {
-                if (s_encodeCharPattern == null)
-                {
-                    s_encodeCharPattern = new Regex("(?<=_)[Xx]([0-9a-fA-F]{4}|[0-9a-fA-F]{8})_");
-                }
-
-                mc = s_encodeCharPattern.Matches(name, underscorePos);
+                mc = EncodeCharRegex().Matches(name, underscorePos);
                 en = mc.GetEnumerator();
             }
 
@@ -305,8 +295,13 @@ namespace System.Xml
         }
 
         private const int EncodedCharLength = 7; // ("_xFFFF_".Length);
-        private static volatile Regex? s_encodeCharPattern;
-        private static volatile Regex? s_decodeCharPattern;
+
+        [RegexGenerator("_[Xx][0-9a-fA-F]{4}(?:_|[0-9a-fA-F]{4}_)")]
+        private static partial Regex DecodeCharRegex();
+
+        [RegexGenerator("(?<=_)[Xx][0-9a-fA-F]{4}(?:_|[0-9a-fA-F]{4}_)")]
+        private static partial Regex EncodeCharRegex();
+
         private static int FromHex(char digit)
         {
             return HexConverter.FromChar(digit);

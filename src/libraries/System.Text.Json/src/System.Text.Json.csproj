@@ -122,6 +122,7 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Node.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerContext.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.Caching.cs" />
+    <Compile Include="System\Text\Json\Serialization\PolymorphicSerializationState.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceEqualsWrapper.cs" />
     <Compile Include="System\Text\Json\Serialization\ConverterStrategy.cs" />
     <Compile Include="System\Text\Json\Serialization\ConverterList.cs" />
@@ -165,6 +166,7 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\Converters\Node\JsonValueConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\JsonObjectConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\KeyValuePairConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Object\ObjectConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\ObjectConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\ObjectWithParameterizedConstructorConverter.cs" />
@@ -189,7 +191,6 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\Converters\Value\JsonElementConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\NullableConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\NullableConverterFactory.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Value\ObjectConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\SByteConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\SingleConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\StringConverter.cs" />
@@ -308,8 +309,8 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs" Link="Common\System\Collections\Generic\ReferenceEqualityComparer.cs" />
-    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ReferenceEqualityComparer.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />

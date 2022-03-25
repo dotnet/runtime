@@ -7,7 +7,7 @@
     <!-- The library is not supported on mobile platforms (PNSE) -->
     <IgnoreForCI Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">true</IgnoreForCI>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EcDsaOpenSslTests.cs" />

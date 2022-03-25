@@ -31,6 +31,7 @@
 #define MONO_ARCH_EMULATE_FCONV_TO_U4 1
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS 1
 #define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS 1
+#define MONO_ARCH_FLOAT32_SUPPORTED 1
 
 //mini-codegen stubs - this doesn't do anything
 #define MONO_ARCH_CALLEE_REGS (1 << 0)

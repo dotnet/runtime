@@ -67,10 +67,11 @@
   <PropertyGroup>
     <!-- Since bug in Roslyn for Linux empty DebugType property leads to build failure. See issue Roslyn@20343 -->
     <DebugType Condition=" '$(DebugType)' == '' and '$(RunningOnUnix)' == 'true' ">None</DebugType>
+    <TestLibraryProjectPath>$(RepoRoot)\src\tests\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj</TestLibraryProjectPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(RepoRoot)\src\tests\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
   </ItemGroup>
 
   <!--
@@ -123,7 +124,7 @@
       <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(LibSuffix)" />
     </ItemGroup>
     <Copy SourceFiles="@(MergedWrapperReferenceFiles)"
-        DestinationFiles="@(MergedWrapperReferenceFiles->'$(OutDir)/%(FileName)%(Extension)')" 
+        DestinationFiles="@(MergedWrapperReferenceFiles->'$(OutDir)/%(FileName)%(Extension)')"
         SkipUnchangedFiles="true"
         />
   </Target>
@@ -202,12 +203,11 @@
      </Copy>
   </Target>
 
-  <Target Name="ResolveCmakeNativeProjectReference"
-          Condition="'@(ProjectReference)' != ''"
+  <Target Name="ResolveCMakeNativeProjectReference"
+          Condition="'@(CMakeProjectReference)' != ''"
           BeforeTargets="ConsolidateNativeProjectReference;BeforeResolveReferences;BeforeClean" >
      <ItemGroup>
-        <NativeProjectReference Include="%(ProjectReference.Identity)" Condition="$([System.String]::Copy(%(ProjectReference.FileName)).ToUpper()) == 'CMAKELISTS'" />
-        <ProjectReference Remove="%(NativeProjectReference.Identity)" />
+        <NativeProjectReference Include="%(CMakeProjectReference.Identity)" Condition="$([System.String]::Copy(%(CMakeProjectReference.FileName)).ToUpper()) == 'CMAKELISTS'" />
         <NativeProjectReferenceNormalized Include="@(NativeProjectReference -> '%(FullPath)')" />
      </ItemGroup>
   </Target>
@@ -227,7 +227,7 @@
 
   </Target>
 
-  <Target Name="CopyAllNativeProjectReferenceBinaries" DependsOnTargets="ResolveCmakeNativeProjectReference;ConsolidateNativeProjectReference" />
+  <Target Name="CopyAllNativeProjectReferenceBinaries" DependsOnTargets="ResolveCMakeNativeProjectReference;ConsolidateNativeProjectReference" />
 
   <!-- Build shell or command scripts whenever we copy native binaries -->
   <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.Execute.targets" />
@@ -278,6 +278,8 @@
   <PropertyGroup>
     <ProjectAssetsFile>$(BaseOutputPath)\packages\Common\test_dependencies\test_dependencies\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
+  <Import Project="$(BaseOutputPath)\packages\Common\test_dependencies\test_dependencies\test_dependencies.*.targets" />
+
 
   <PropertyGroup>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
@@ -460,7 +462,7 @@
   <Import Project="$(RepoRoot)/src/tests/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.props" />
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
   <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
-  <Import Project="$(RepoRoot)/src/tests/Common/mergedrunnermobile.targets" Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '$(TargetsMobile)' == 'true'" />
+  <Import Project="$(RepoRoot)/src/tests/Common/mergedrunner.targets" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
 
   <Target Name="GetBinPlaceTargetFramework" />
 

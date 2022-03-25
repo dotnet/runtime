@@ -65,14 +65,62 @@
   </Target>
 
   <Target Name="GenerateEmccPropsAndRspFiles">
+
+    <!-- Generate emcc-props.json -->
+
+    <RunWithEmSdkEnv Command="$(EmccCmd) --version"
+          ConsoleToMsBuild="true"
+          EmSdkPath="$(EMSDK_PATH)"
+          IgnoreStandardErrorWarningFormat="true">
+      <Output TaskParameter="ConsoleOutput" ItemName="_VersionLines" />
+    </RunWithEmSdkEnv>
+
+    <!-- we want to get the first line from the output, which has the version.
+         Rest of the lines are the license -->
+    <ItemGroup>
+      <_ReversedVersionLines Include="@(_VersionLines->Reverse())" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_EmccVersionRaw>%(_ReversedVersionLines.Identity)</_EmccVersionRaw>
+
+      <_EmccVersionRegexPattern>^ *emcc \([^\)]+\) *([0-9\.]+).*\(([^\)]+)\)$</_EmccVersionRegexPattern>
+      <_EmccVersion>$([System.Text.RegularExpressions.Regex]::Match($(_EmccVersionRaw), $(_EmccVersionRegexPattern)).Groups[1].Value)</_EmccVersion>
+      <_EmccVersionHash>$([System.Text.RegularExpressions.Regex]::Match($(_EmccVersionRaw), $(_EmccVersionRegexPattern)).Groups[2].Value)</_EmccVersionHash>
+    </PropertyGroup>
+
+    <Error Text="Failed to parse emcc version, and hash from the full version string: '$(_EmccVersionRaw)'"
+           Condition="'$(_EmccVersion)' == '' or '$(_EmccVersionHash)' == ''" />
+
+    <PropertyGroup>
+      <_EmccPropsJson>
+<![CDATA[
+{
+  "items": {
+    "EmccProperties": [
+      { "identity": "RuntimeEmccVersion",     "value": "$(_EmccVersion)" },
+      { "identity": "RuntimeEmccVersionRaw",  "value": "$(_EmccVersionRaw)" },
+      { "identity": "RuntimeEmccVersionHash", "value": "$(_EmccVersionHash)" }
+    ]
+  }
+}
+]]>
+      </_EmccPropsJson>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="$(NativeBinDir)src\emcc-props.json"
+                      Lines="$(_EmccPropsJson)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+
     <ItemGroup>
       <_EmccLinkFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' == 'true'" />
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
       <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
-      <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=&quot;['FS','print','ccall','cwrap','setValue','getValue','UTF8ToString','UTF8ArrayToString','FS_createPath','FS_createDataFile','removeRunDependency','addRunDependency']&quot;" />
+      <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=&quot;['FS','print','ccall','cwrap','setValue','getValue','UTF8ToString','UTF8ArrayToString','FS_createPath','FS_createDataFile','removeRunDependency','addRunDependency', 'FS_readFile']&quot;"  />
       <!-- _htons,_ntohs,__get_daylight,__get_timezone,__get_tzname are exported temporarily, until the issue is fixed in emscripten, https://github.com/dotnet/runtime/issues/64724  -->
-      <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=_free,_malloc,_htons,_ntohs,__get_daylight,__get_timezone,__get_tzname,_memalign" />
+      <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=_free,_malloc,_memalign,_memset,_htons,_ntohs,__get_daylight,__get_timezone,__get_tzname" Condition="$([MSBuild]::VersionGreaterThan('$(_EmccVersion)', '3.0'))" />
+      <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=_free,_malloc,_htons,_ntohs,__get_daylight,__get_timezone,__get_tzname,_memalign" Condition="$([MSBuild]::VersionLessThan('$(_EmccVersion)', '3.0'))" />
       <_EmccLinkFlags Include="--source-map-base http://example.com" />
       <_EmccLinkFlags Include="-s STRICT_JS=1" />
       <_EmccLinkFlags Include="-s EXPORT_NAME=&quot;'createDotnetRuntime'&quot;" />
@@ -102,50 +150,6 @@
                       Lines="@(_EmccLinkFlags)"
                       WriteOnlyWhenDifferent="true"
                       Overwrite="true" />
-
-    <!-- Generate emcc-props.json -->
-
-    <RunWithEmSdkEnv Command="$(EmccCmd) --version"
-          ConsoleToMsBuild="true"
-          EmSdkPath="$(EMSDK_PATH)"
-          IgnoreStandardErrorWarningFormat="true">
-      <Output TaskParameter="ConsoleOutput" ItemName="_VersionLines" />
-    </RunWithEmSdkEnv>
-
-    <!-- we want to get the first line from the output, which has the version.
-         Rest of the lines are the license -->
-    <ItemGroup>
-      <_ReversedVersionLines Include="@(_VersionLines->Reverse())" />
-    </ItemGroup>
-    <PropertyGroup>
-      <_EmccVersionRaw>%(_ReversedVersionLines.Identity)</_EmccVersionRaw>
-
-      <_EmccVersionRegexPattern>^ *emcc \([^\)]+\) *([0-9\.]+).*\(([^\)]+)\)$</_EmccVersionRegexPattern>
-      <_EmccVersion>$([System.Text.RegularExpressions.Regex]::Match($(_EmccVersionRaw), $(_EmccVersionRegexPattern)).Groups[1].Value)</_EmccVersion>
-      <_EmccVersionHash>$([System.Text.RegularExpressions.Regex]::Match($(_EmccVersionRaw), $(_EmccVersionRegexPattern)).Groups[2].Value)</_EmccVersionHash>
-
-      <_EmccPropsJson>
-<![CDATA[
-{
-  "items": {
-    "EmccProperties": [
-      { "identity": "RuntimeEmccVersion",     "value": "$(_EmccVersion)" },
-      { "identity": "RuntimeEmccVersionRaw",  "value": "$(_EmccVersionRaw)" },
-      { "identity": "RuntimeEmccVersionHash", "value": "$(_EmccVersionHash)" }
-    ]
-  }
-}
-]]>
-      </_EmccPropsJson>
-    </PropertyGroup>
-
-    <Error Text="Failed to parse emcc version, and hash from the full version string: '$(_EmccVersionRaw)'"
-           Condition="'$(_EmccVersion)' == '' or '$(_EmccVersionHash)' == ''" />
-
-    <WriteLinesToFile File="$(NativeBinDir)src\emcc-props.json"
-                      Lines="$(_EmccPropsJson)"
-                      Overwrite="true"
-                      WriteOnlyWhenDifferent="true" />
   </Target>
 
   <!-- This is a documented target that is invoked by developers in their innerloop work. -->

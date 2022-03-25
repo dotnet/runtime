@@ -2796,7 +2796,7 @@ void DacDbiInterfaceImpl::GetMethodDescParams(
     *pcGenericClassTypeParams = cGenericClassTypeParams;
 
     TypeHandle   thSpecificClass;
-    MethodDesc * pSpecificMethod;
+    MethodDesc * pSpecificMethod = NULL;
 
     // Try to retrieve a more specific MethodDesc and TypeHandle via the generics type token.
     // The generics token is not always guaranteed to be available.
@@ -5416,11 +5416,11 @@ GENERICS_TYPE_TOKEN DacDbiInterfaceImpl::ResolveExactGenericArgsToken(DWORD     
 
     if (dwExactGenericArgsTokenIndex == 0)
     {
-        // In a rare case of VS4Mac debugging VS4Mac ARM64 optimized code we get a null generics argument token. We aren't sure 
-        // why the token is null, it may be a bug or it may be by design in the runtime. In the interest of time we are working 
-        // around the issue rather than investigating the root cause. This workaround should only cause us to degrade generic 
-        // types from exact type parameters to approximate or canonical type parameters. In the future if we discover this issue 
-        // is happening more frequently than we expect or the workaround is more impactful than we expect we may need to remove 
+        // In a rare case of VS4Mac debugging VS4Mac ARM64 optimized code we get a null generics argument token. We aren't sure
+        // why the token is null, it may be a bug or it may be by design in the runtime. In the interest of time we are working
+        // around the issue rather than investigating the root cause. This workaround should only cause us to degrade generic
+        // types from exact type parameters to approximate or canonical type parameters. In the future if we discover this issue
+        // is happening more frequently than we expect or the workaround is more impactful than we expect we may need to remove
         // this workaround and resolve the underlying issue.
         if (rawToken == 0)
         {
@@ -6388,7 +6388,7 @@ HRESULT DacHeapWalker::MoveToNextObject()
         mCurrObj += mCurrSize;
 
         // Check to see if we are in the correct bounds.
-        bool isGen0 = IsRegionGCEnabled() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) : 
+        bool isGen0 = IsRegionGCEnabled() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) :
                                    (mHeaps[mCurrHeap].Gen0Start <= mCurrObj && mHeaps[mCurrHeap].Gen0End > mCurrObj);
 
         if (isGen0)
@@ -6480,7 +6480,7 @@ HRESULT DacHeapWalker::NextSegment()
 
         mCurrObj = mHeaps[mCurrHeap].Segments[mCurrSeg].Start;
 
-        bool isGen0 = IsRegionGCEnabled() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) : 
+        bool isGen0 = IsRegionGCEnabled() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) :
                                    (mHeaps[mCurrHeap].Gen0Start <= mCurrObj && mHeaps[mCurrHeap].Gen0End > mCurrObj);
 
         if (isGen0)
@@ -6524,7 +6524,7 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
     if (threadStore != NULL)
     {
         int count = (int)threadStore->ThreadCountInEE();
-        mAllocInfo = new (nothrow) AllocInfo[count];
+        mAllocInfo = new (nothrow) AllocInfo[count + 1];
         if (mAllocInfo == NULL)
             return E_OUTOFMEMORY;
 
@@ -6550,6 +6550,11 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
                 mAllocInfo[j].Limit = (CORDB_ADDRESS)ctx->alloc_limit;
                 j++;
             }
+        }
+        if ((&g_global_alloc_context)->alloc_ptr != nullptr)
+        {
+            mAllocInfo[j].Ptr = (CORDB_ADDRESS)(&g_global_alloc_context)->alloc_ptr;
+            mAllocInfo[j].Limit = (CORDB_ADDRESS)(&g_global_alloc_context)->alloc_limit;
         }
 
         mThreadCount = j;
@@ -6904,7 +6909,7 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
             _ASSERTE(eph < heaps[i].SegmentCount);
             if (heaps[i].Segments[eph].Start != heaps[i].Gen1Start)
                 total++;
-        }        
+        }
     }
 
     pSegments->Alloc(total);
@@ -7124,7 +7129,7 @@ HRESULT DacDbiInterfaceImpl::GetTypeIDForType(VMPTR_TypeHandle vmTypeHandle, COR
 
 HRESULT DacDbiInterfaceImpl::GetObjectFields(COR_TYPEID id, ULONG32 celt, COR_FIELD *layout, ULONG32 *pceltFetched)
 {
-    if (layout == NULL || pceltFetched == NULL)
+    if (pceltFetched == NULL)
         return E_POINTER;
 
     if (id.token1 == 0)
@@ -7166,33 +7171,33 @@ HRESULT DacDbiInterfaceImpl::GetObjectFields(COR_TYPEID id, ULONG32 celt, COR_FI
     for (ULONG32 i = 0; i < cFields; ++i)
     {
         FieldDesc *pField = fieldDescIterator.Next();
-        layout[i].token = pField->GetMemberDef();
-        layout[i].offset = (ULONG32)pField->GetOffset() + (fReferenceType ? Object::GetOffsetOfFirstField() : 0);
+
+        COR_FIELD* corField = layout + i;
+        corField->token = pField->GetMemberDef();
+        corField->offset = (ULONG32)pField->GetOffset() + (fReferenceType ? Object::GetOffsetOfFirstField() : 0);
 
         TypeHandle fieldHandle = pField->LookupFieldTypeHandle();
 
         if (fieldHandle.IsNull())
         {
-            layout[i].id.token1 = 0;
-            layout[i].id.token2 = 0;
-            layout[i].fieldType = (CorElementType)0;
+            corField->id = {};
+            corField->fieldType = (CorElementType)0;
+        }
+        else if (fieldHandle.IsByRef())
+        {
+            corField->fieldType = ELEMENT_TYPE_BYREF;
+            // All ByRefs intentionally return IntPtr's MethodTable.
+            corField->id.token1 = CoreLibBinder::GetElementType(ELEMENT_TYPE_I).GetAddr();
+            corField->id.token2 = 0;
         }
         else
         {
+            // Note that pointer types are handled in this path.
+            // IntPtr's MethodTable is set for all pointer types and is expected.
             PTR_MethodTable mt = fieldHandle.GetMethodTable();
-            layout[i].fieldType = mt->GetInternalCorElementType();
-            layout[i].id.token1 = (ULONG64)mt.GetAddr();
-
-            if (!mt->IsArray())
-            {
-                layout[i].id.token2 = 0;
-            }
-            else
-            {
-                TypeHandle hnd = mt->GetArrayElementTypeHandle();
-                PTR_MethodTable cmt = hnd.GetMethodTable();
-                layout[i].id.token2 = (ULONG64)cmt.GetAddr();
-            }
+            corField->fieldType = mt->GetInternalCorElementType();
+            corField->id.token1 = (ULONG64)mt.GetAddr();
+            corField->id.token2 = 0;
         }
     }
 

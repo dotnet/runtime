@@ -137,7 +137,7 @@ namespace System.IO.Hashing
 
             while (true)
             {
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
                 int read = await stream.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false);
 #else
                 int read = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);

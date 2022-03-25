@@ -74,6 +74,10 @@ namespace System.Text.Json
         private void InitializeCachingContext()
         {
             _cachingContext = TrackedCachingContexts.GetOrCreate(this);
+            if (IsInitializedForReflectionSerializer)
+            {
+                _cachingContext.Options.IsInitializedForReflectionSerializer = true;
+            }
         }
 
         /// <summary>
@@ -159,11 +163,16 @@ namespace System.Text.Json
 
                     // Use a defensive copy of the options instance as key to
                     // avoid capturing references to any caching contexts.
-                    var key = new JsonSerializerOptions(options) { _serializerContext = options._serializerContext };
+                    var key = new JsonSerializerOptions(options)
+                    {
+                        // Copy fields ignored by the copy constructor
+                        // but are necessary to determine equivalence.
+                        _serializerContext = options._serializerContext,
+                    };
                     Debug.Assert(key._cachingContext == null);
 
                     ctx = new CachingContext(options);
-                    bool success = cache.TryAdd(key, new(ctx));
+                    bool success = cache.TryAdd(key, new WeakReference<CachingContext>(ctx));
                     Debug.Assert(success);
 
                     return ctx;

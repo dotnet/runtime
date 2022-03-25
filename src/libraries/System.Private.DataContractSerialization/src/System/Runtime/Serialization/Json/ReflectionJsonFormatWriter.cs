@@ -25,7 +25,7 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public void ReflectionWriteCollection(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, CollectionDataContract collectionContract)
+        public static void ReflectionWriteCollection(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, CollectionDataContract collectionContract)
         {
             JsonWriterDelegator? jsonWriter = xmlWriter as JsonWriterDelegator;
             if (jsonWriter == null)
@@ -33,7 +33,7 @@ namespace System.Runtime.Serialization.Json
                 throw new ArgumentException(nameof(xmlWriter));
             }
 
-            XmlDictionaryString itemName = context.CollectionItemName;
+            XmlDictionaryString itemName = XmlObjectSerializerWriteContextComplexJson.CollectionItemName;
 
             if (collectionContract.Kind == CollectionKind.Array)
             {
@@ -47,9 +47,9 @@ namespace System.Runtime.Serialization.Json
                     PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(itemType);
                     for (int i = 0; i < array.Length; ++i)
                     {
-                        _reflectionClassWriter.ReflectionWriteStartElement(jsonWriter, itemName);
-                        _reflectionClassWriter.ReflectionWriteValue(jsonWriter, context, itemType, array.GetValue(i), false, primitiveContract);
-                        _reflectionClassWriter.ReflectionWriteEndElement(jsonWriter);
+                        ReflectionJsonClassWriter.ReflectionWriteStartElement(jsonWriter, itemName);
+                        ReflectionJsonClassWriter.ReflectionWriteValue(jsonWriter, context, itemType, array.GetValue(i), false, primitiveContract);
+                        ReflectionJsonClassWriter.ReflectionWriteEndElement(jsonWriter);
                     }
                 }
             }
@@ -75,9 +75,9 @@ namespace System.Runtime.Serialization.Json
                         object current = enumerator.Current;
                         object key = ((IKeyValue)current).Key!;
                         object value = ((IKeyValue)current).Value!;
-                        _reflectionClassWriter.ReflectionWriteStartElement(jsonWriter, key.ToString()!);
-                        _reflectionClassWriter.ReflectionWriteValue(jsonWriter, context, dictionaryValueType ?? value.GetType(), value, false, primitiveContractForParamType: null);
-                        _reflectionClassWriter.ReflectionWriteEndElement(jsonWriter);
+                        ReflectionJsonClassWriter.ReflectionWriteStartElement(jsonWriter, key.ToString()!);
+                        ReflectionJsonClassWriter.ReflectionWriteValue(jsonWriter, context, dictionaryValueType ?? value.GetType(), value, false, primitiveContractForParamType: null);
+                        ReflectionJsonClassWriter.ReflectionWriteEndElement(jsonWriter);
                     }
                 }
                 else
@@ -111,24 +111,24 @@ namespace System.Runtime.Serialization.Json
                         {
                             object current = enumerator.Current;
                             context.IncrementItemCount(1);
-                            _reflectionClassWriter.ReflectionWriteStartElement(jsonWriter, itemName);
+                            ReflectionJsonClassWriter.ReflectionWriteStartElement(jsonWriter, itemName);
                             if (isDictionary)
                             {
                                 jsonDataContract!.WriteJsonValue(jsonWriter, current, context, collectionContract.ItemType.TypeHandle);
                             }
                             else
                             {
-                                _reflectionClassWriter.ReflectionWriteValue(jsonWriter, context, elementType, current, false, primitiveContractForParamType: null);
+                                ReflectionJsonClassWriter.ReflectionWriteValue(jsonWriter, context, elementType, current, false, primitiveContractForParamType: null);
                             }
 
-                            _reflectionClassWriter.ReflectionWriteEndElement(jsonWriter);
+                            ReflectionJsonClassWriter.ReflectionWriteEndElement(jsonWriter);
                         }
                     }
                 }
             }
         }
 
-        private void ReflectionWriteObjectAttribute(XmlWriterDelegator xmlWriter)
+        private static void ReflectionWriteObjectAttribute(XmlWriterDelegator xmlWriter)
         {
             xmlWriter.WriteAttributeString(
                 prefix: null,
@@ -138,7 +138,7 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private bool ReflectionTryWritePrimitiveArray(JsonWriterDelegator jsonWriter, object obj, Type underlyingType, Type itemType, XmlDictionaryString collectionItemName)
+        private static bool ReflectionTryWritePrimitiveArray(JsonWriterDelegator jsonWriter, object obj, Type underlyingType, Type itemType, XmlDictionaryString collectionItemName)
         {
             PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(itemType);
             if (primitiveContract == null)
@@ -182,7 +182,7 @@ namespace System.Runtime.Serialization.Json
             return true;
         }
 
-        private void ReflectionWriteArrayAttribute(XmlWriterDelegator xmlWriter)
+        private static void ReflectionWriteArrayAttribute(XmlWriterDelegator xmlWriter)
         {
             xmlWriter.WriteAttributeString(
                 prefix: null,
@@ -272,17 +272,17 @@ namespace System.Runtime.Serialization.Json
             return memberCount;
         }
 
-        public void ReflectionWriteStartElement(XmlWriterDelegator xmlWriter, XmlDictionaryString name)
+        public static void ReflectionWriteStartElement(XmlWriterDelegator xmlWriter, XmlDictionaryString name)
         {
             xmlWriter.WriteStartElement(name, null);
         }
 
-        public void ReflectionWriteStartElement(XmlWriterDelegator xmlWriter, string name)
+        public static void ReflectionWriteStartElement(XmlWriterDelegator xmlWriter, string name)
         {
             xmlWriter.WriteStartElement(name, null);
         }
 
-        public void ReflectionWriteEndElement(XmlWriterDelegator xmlWriter)
+        public static void ReflectionWriteEndElement(XmlWriterDelegator xmlWriter)
         {
             xmlWriter.WriteEndElement();
         }

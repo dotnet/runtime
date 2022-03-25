@@ -38,6 +38,53 @@ static void EnsureLibSsl10Initialized()
 }
 #endif
 
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+// redirect all SSL_CTX_set_options and SSL_set_options calls via dynamic shims
+// to work around ABI breaking change between 1.1 and 3.0
+
+#undef SSL_CTX_set_options
+#define SSL_CTX_set_options SSL_CTX_set_options_dynamic
+static uint64_t SSL_CTX_set_options_dynamic(SSL_CTX* ctx, uint64_t options)
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-function-type"
+    if (API_EXISTS(ERR_new)) // OpenSSL 3.0 sentinel function
+    {
+        // OpenSSL 3.0 and newer, use uint64_t for options
+        uint64_t (*func)(SSL_CTX* ctx, uint64_t op) = (uint64_t(*)(SSL_CTX*, uint64_t))SSL_CTX_set_options_ptr;
+        return func(ctx, options);
+    }
+    else
+    {
+        // OpenSSL 1.1 and earlier, use uint32_t for options
+        uint32_t (*func)(SSL_CTX* ctx, uint32_t op) = (uint32_t(*)(SSL_CTX*, uint32_t))SSL_CTX_set_options_ptr;
+        return func(ctx, (uint32_t)options);
+    }
+#pragma clang diagnostic pop
+}
+
+#undef SSL_set_options
+#define SSL_set_options SSL_set_options_dynamic
+static uint64_t SSL_set_options_dynamic(SSL* s, uint64_t options)
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-function-type"
+    if (API_EXISTS(ERR_new)) // OpenSSL 3.0 sentinel function
+    {
+        // OpenSSL 3.0 and newer, use uint64_t for options
+        uint64_t (*func)(SSL* s, uint64_t op) = (uint64_t(*)(SSL*, uint64_t))SSL_set_options_ptr;
+        return func(s, options);
+    }
+    else
+    {
+        // OpenSSL 1.1 and earlier, use uint32_t for options
+        uint32_t (*func)(SSL* s, uint32_t op) = (uint32_t(*)(SSL*, uint32_t))SSL_set_options_ptr;
+        return func(s, (uint32_t)options);
+    }
+#pragma clang diagnostic pop
+}
+#endif
+
 static int32_t g_config_specified_ciphersuites = 0;
 static char* g_emptyAlpn = "";
 

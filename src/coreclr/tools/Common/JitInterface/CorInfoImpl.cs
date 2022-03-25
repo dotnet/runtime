@@ -642,7 +642,8 @@ namespace Internal.JitInterface
             methodInfo->ILCode = (byte*)GetPin(ilCode);
             methodInfo->ILCodeSize = (uint)ilCode.Length;
             methodInfo->maxStack = (uint)methodIL.MaxStack;
-            methodInfo->EHcount = (uint)methodIL.GetExceptionRegions().Length;
+            var exceptionRegions = methodIL.GetExceptionRegions();
+            methodInfo->EHcount = (uint)exceptionRegions.Length;
             methodInfo->options = methodIL.IsInitLocals ? CorInfoOptions.CORINFO_OPT_INIT_LOCALS : (CorInfoOptions)0;
 
             if (method.AcquiresInstMethodTableFromThis())
@@ -660,6 +661,24 @@ namespace Internal.JitInterface
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
             Get_CORINFO_SIG_INFO(method, sig: &methodInfo->args, methodIL);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
+
+#if READYTORUN
+            if ((methodInfo->options & CorInfoOptions.CORINFO_GENERICS_CTXT_MASK) != 0)
+            {
+                foreach (var region in exceptionRegions)
+                {
+                    if (region.Kind == ILExceptionRegionKind.Catch)
+                    {
+                        TypeDesc catchType = (TypeDesc)methodIL.GetObject(region.ClassToken);
+                        if (catchType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        {
+                            methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_KEEP_ALIVE;
+                            break;
+                        }
+                    }
+                }
+            }
+#endif
 
             return true;
         }
@@ -3725,17 +3744,11 @@ namespace Internal.JitInterface
                 case TargetArchitecture.X64:
                 case TargetArchitecture.X86:
                     Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
-                    if (_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2))
-                    {
-                        flags.Set(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
-                    }
+                    Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2));
                     break;
 
                 case TargetArchitecture.ARM64:
-                    if (_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.ARM64_AdvSimd))
-                    {
-                        flags.Set(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
-                    }
+                    Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.ARM64_AdvSimd));
                     break;
             }
 

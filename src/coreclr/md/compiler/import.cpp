@@ -2549,8 +2549,8 @@ STDMETHODIMP RegMeta::GetPinvokeMap(          // S_OK or error.
     {
         IfFailGo( CLDB_E_RECORD_NOTFOUND );
     }
-    else
-        IfFailGo(m_pStgdb->m_MiniMd.GetImplMapRecord(iRecord, &pRecord));
+
+    IfFailGo(m_pStgdb->m_MiniMd.GetImplMapRecord(iRecord, &pRecord));
 
     if (pdwMappingFlags)
         *pdwMappingFlags = m_pStgdb->m_MiniMd.getMappingFlagsOfImplMap(pRecord);

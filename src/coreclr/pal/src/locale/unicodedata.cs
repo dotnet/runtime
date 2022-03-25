@@ -20,6 +20,7 @@ class Program
         Console.WriteLine();
         Console.WriteLine("//");
         Console.WriteLine("// THIS FILE IS GENERATED. DO NOT HAND EDIT.");
+        Console.WriteLine("// IF YOU NEED TO UPDATE UNICODE VERSION FOLLOW THE GUIDE AT src/libraries/System.Private.CoreLib/Tools/GenUnicodeProp/Updating-Unicode-Versions.md");
         Console.WriteLine("//");
         Console.WriteLine();
 

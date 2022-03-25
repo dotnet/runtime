@@ -7,7 +7,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    public sealed partial class RSACng : RSA
+    public sealed partial class RSACng : RSA, IRuntimeAlgorithm
     {
         /// <summary>
         ///     Create an RSACng algorithm with a random 2048 bit key pair.
@@ -44,15 +44,6 @@ namespace System.Security.Cryptography
                 };
             }
         }
-
-        protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-            CngCommon.HashData(data, offset, count, hashAlgorithm);
-
-        protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-            CngCommon.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
-
-        protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-            CngCommon.HashData(data, hashAlgorithm);
 
         private void ForceSetKeySize(int newKeySize)
         {

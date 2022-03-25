@@ -309,7 +309,6 @@ namespace System.Xml.Xsl.XsltOld
 
         internal virtual void PopScope()
         {
-            _currentTemplate!.ReleaseVariableSlots(_scopeManager.CurrentScope!.GetVeriablesCount());
             _scopeManager.PopScope();
         }
 

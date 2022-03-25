@@ -191,7 +191,7 @@ namespace System.IO
         public void DirectoryInfo_Create_NotFound()
         {
             using var tempRootDir = new TempAclDirectory();
-            string dirPath = Path.Combine(tempRootDir.Path, Guid.NewGuid().ToString(), "ParentDoesNotExist");
+            string dirPath = Path.Combine(tempRootDir.GenerateSubItemPath(), "ParentDoesNotExist");
 
             var dirInfo = new DirectoryInfo(dirPath);
             var security = new DirectorySecurity();
@@ -203,7 +203,7 @@ namespace System.IO
         public void DirectoryInfo_Create_NotFound_FullControl()
         {
             using var tempRootDir = new TempAclDirectory();
-            string dirPath = Path.Combine(tempRootDir.Path, Guid.NewGuid().ToString(), "ParentDoesNotExist");
+            string dirPath = Path.Combine(tempRootDir.GenerateSubItemPath(), "ParentDoesNotExist");
 
             var dirInfo = new DirectoryInfo(dirPath);
             var security = GetDirectorySecurity(FileSystemRights.FullControl);
@@ -292,7 +292,7 @@ namespace System.IO
         public void FileInfo_Create_DirectoryNotFound()
         {
             using var tempRootDir = new TempAclDirectory();
-            string path = Path.Combine(tempRootDir.Path, Guid.NewGuid().ToString(), "file.txt");
+            string path = Path.Combine(tempRootDir.GenerateSubItemPath(), "file.txt");
             var info = new FileInfo(path);
             var security = new FileSecurity();
             Assert.Throws<DirectoryNotFoundException>(() =>
@@ -397,7 +397,7 @@ namespace System.IO
             // - In .NET, throws IOException: "The parameter is incorrect"
 
             var security = new FileSecurity();
-            var info = new FileInfo(Guid.NewGuid().ToString());
+            var info = new FileInfo(PathGenerator.GenerateTestFileName());
             Assert.Throws<IOException>(() => info.Create(FileMode.Truncate, FileSystemRights.Write | FileSystemRights.ReadData, FileShare.None, DefaultBufferSize, FileOptions.None, security));
         }
 
@@ -410,7 +410,7 @@ namespace System.IO
                     (mode == FileMode.Append || mode == FileMode.Create || mode == FileMode.CreateNew)) &&
                   !(mode == FileMode.Truncate && rights != FileSystemRights.Write) &&
                   (options != FileOptions.Encrypted && // Using FileOptions.Encrypted throws UnauthorizedAccessException when attempting to read the created file
-                  !(options == FileOptions.Asynchronous && !PlatformDetection.IsAsyncFileIOSupported))// Async IO not supported on Windows using Mono runtime https://github.com/dotnet/runtime/issues/34582
+                  !(options == FileOptions.Asynchronous && !PlatformDetection.IsAsyncFileIOSupported))
             select new object[] { mode, rights, share, options };
 
         [Theory]
@@ -434,7 +434,7 @@ namespace System.IO
             from share in Enum.GetValues<FileShare>()
             from options in Enum.GetValues<FileOptions>()
             where options != FileOptions.Encrypted && // Using FileOptions.Encrypted throws UnauthorizedAccessException when attempting to read the created file
-            !(options == FileOptions.Asynchronous && !PlatformDetection.IsAsyncFileIOSupported) // Async IO not supported on Windows using Mono runtime https://github.com/dotnet/runtime/issues/34582
+            !(options == FileOptions.Asynchronous && !PlatformDetection.IsAsyncFileIOSupported)
             select new object[] { mode, rights, share, options };
 
         [Theory]
@@ -469,7 +469,7 @@ namespace System.IO
 
             using var tempRootDir = new TempAclDirectory();
 
-            string path = Path.Combine(tempRootDir.Path, Guid.NewGuid().ToString());
+            string path = tempRootDir.GenerateSubItemPath();
             var fileInfo = new FileInfo(path);
 
             using FileStream stream = fileInfo.Create(
@@ -515,7 +515,7 @@ namespace System.IO
         public void DirectorySecurity_CreateDirectory_DirectoryAlreadyExists()
         {
             using var tempRootDir = new TempAclDirectory();
-            string path = Path.Combine(tempRootDir.Path, Guid.NewGuid().ToString());
+            string path = tempRootDir.GenerateSubItemPath();
 
             DirectorySecurity expectedSecurity = GetDirectorySecurity(FileSystemRights.FullControl);
             DirectoryInfo dirInfo = expectedSecurity.CreateDirectory(path);
@@ -618,7 +618,7 @@ namespace System.IO
         private void FileInfo_Create_FileSecurity_ArgumentOutOfRangeException(string paramName, FileMode mode = FileMode.CreateNew, FileShare share = FileShare.None, int bufferSize = DefaultBufferSize)
         {
             var security = new FileSecurity();
-            var info = new FileInfo(Guid.NewGuid().ToString());
+            var info = new FileInfo(PathGenerator.GenerateTestFileName());
             Assert.Throws<ArgumentOutOfRangeException>(paramName, () =>
                 info.Create(mode, FileSystemRights.FullControl, share, bufferSize, FileOptions.None, security));
         }
@@ -626,7 +626,7 @@ namespace System.IO
         private void FileInfo_Create_FileSecurity_ArgumentException(FileMode mode, FileSystemRights rights)
         {
             var security = new FileSecurity();
-            var info = new FileInfo(Guid.NewGuid().ToString());
+            var info = new FileInfo(PathGenerator.GenerateTestFileName());
             Assert.Throws<ArgumentException>(() =>
                 info.Create(mode, rights, FileShare.None, DefaultBufferSize, FileOptions.None, security));
         }
@@ -634,14 +634,14 @@ namespace System.IO
         private void FileInfo_Create_FileSecurity_Successful(FileMode mode, FileSystemRights rights)
         {
             var security = new FileSecurity();
-            var info = new FileInfo(Guid.NewGuid().ToString());
-            info.Create(mode, rights, FileShare.None, DefaultBufferSize, FileOptions.None, security).Dispose();
+            var info = new FileInfo(PathGenerator.GenerateTestFileName());
+            info.Create(mode, rights, FileShare.None, DefaultBufferSize, FileOptions.DeleteOnClose, security).Dispose();
         }
 
         private void Verify_FileSecurity_CreateFile(FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity expectedSecurity)
         {
             using var tempRootDir = new TempAclDirectory();
-            string path = Path.Combine(tempRootDir.Path, Guid.NewGuid().ToString());
+            string path = tempRootDir.GenerateSubItemPath();
             var fileInfo = new FileInfo(path);
 
             using (FileStream fs = fileInfo.Create(mode, rights, share, bufferSize, options, expectedSecurity))
@@ -667,7 +667,7 @@ namespace System.IO
         private void Verify_DirectorySecurity_CreateDirectory(DirectorySecurity expectedSecurity)
         {
             using var tempRootDir = new TempAclDirectory();
-            string path = Path.Combine(tempRootDir.Path, Guid.NewGuid().ToString());
+            string path = tempRootDir.GenerateSubItemPath();
             DirectoryInfo dirInfo = expectedSecurity.CreateDirectory(path);
             Assert.True(dirInfo.Exists);
             tempRootDir.CreatedSubdirectories.Add(dirInfo);

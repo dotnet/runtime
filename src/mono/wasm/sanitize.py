@@ -38,7 +38,7 @@ upgrade = True
 
 # Add the local node bin directory to the path so that
 # npm can find it when doing the updating or pruning
-os.environ["PATH"] += os.pathsep + os.path.join(node_paths[0], "bin")
+os.environ["PATH"] = os.path.join(node_paths[0], "bin") + os.pathsep + os.environ["PATH"]
 
 def update_npm(path):
     try:

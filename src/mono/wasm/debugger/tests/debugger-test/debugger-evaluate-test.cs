@@ -366,6 +366,11 @@ namespace DebuggerTests
                 return a;
             }
 
+            public char CallMethodReturningChar()
+            {
+                return 'A';
+            }
+
             public int CallMethodWithParm(int parm)
             {
                 return a + parm;

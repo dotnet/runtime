@@ -1873,8 +1873,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     regNumber dst       = lclNode->GetRegNum();
     GenTree*  op1       = lclNode->gtGetOp1();
     GenTree*  actualOp1 = op1->gtSkipReloadOrCopy();
-    unsigned  regCount =
-        actualOp1->IsMultiRegLclVar() ? actualOp1->AsLclVar()->GetFieldCount(compiler) : actualOp1->GetMultiRegCount();
+    unsigned  regCount  = actualOp1->GetMultiRegCount(compiler);
     assert(op1->IsMultiRegNode());
     genConsumeRegs(op1);
 
@@ -4204,7 +4203,9 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
     {
         assert(offsetNode->isContained());
     }
+
     regNumber indexReg = genConsumeReg(indexNode);
+
     // Although arrReg may not be used in the constant-index case, if we have generated
     // the value into a register, we must consume it, otherwise we will fail to end the
     // live range of the gc ptr.
@@ -4212,7 +4213,7 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
     // We could avoid allocating a register for it, which would be of value if the arrObj
     // is an on-stack lclVar.
     regNumber arrReg = REG_NA;
-    if (arrObj->gtHasReg())
+    if (arrObj->gtHasReg(compiler))
     {
         arrReg = genConsumeReg(arrObj);
     }
@@ -5110,7 +5111,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                     assert(rmwSrc == data->gtGetOp2());
                     genCodeForShiftRMW(tree);
                 }
-                else if (data->OperGet() == GT_ADD && (rmwSrc->IsIntegralConst(1) || rmwSrc->IsIntegralConst(-1)))
+                else if (data->OperIs(GT_ADD) && rmwSrc->isContainedIntOrIImmed() &&
+                         (rmwSrc->IsIntegralConst(1) || rmwSrc->IsIntegralConst(-1)))
                 {
                     // Generate "inc/dec [mem]" instead of "add/sub [mem], 1".
                     //
@@ -5122,7 +5124,6 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                     //     addr modes with inc/dec.  For this reason, inc/dec [mem]
                     //     is not generated while generating debuggable code.  Update
                     //     the above if condition once Decode() routine is fixed.
-                    assert(rmwSrc->isContainedIntOrIImmed());
                     instruction ins = rmwSrc->IsIntegralConst(1) ? INS_inc : INS_dec;
                     GetEmitter()->emitInsRMW(ins, emitTypeSize(tree), tree);
                 }
@@ -6293,6 +6294,19 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
     ins     = (op1Type == TYP_FLOAT) ? INS_ucomiss : INS_ucomisd;
     cmpAttr = emitTypeSize(op1Type);
 
+    var_types targetType = treeNode->TypeGet();
+
+    // Clear target reg in advance via "xor reg,reg" to avoid movzx after SETCC
+    if ((targetReg != REG_NA) && (op1->GetRegNum() != targetReg) && (op2->GetRegNum() != targetReg) &&
+        !varTypeIsByte(targetType))
+    {
+        regMaskTP targetRegMask = genRegMask(targetReg);
+        if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
+        {
+            instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
+            targetType = TYP_BOOL; // just a tip for inst_SETCC that movzx is not needed
+        }
+    }
     GetEmitter()->emitInsBinary(ins, cmpAttr, op1, op2);
 
     // Are we evaluating this into a register?
@@ -6308,7 +6322,7 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
             condition = GenCondition(GenCondition::P);
         }
 
-        inst_SETCC(condition, treeNode->TypeGet(), targetReg);
+        inst_SETCC(condition, targetType, targetReg);
         genProduceReg(tree);
     }
 }
@@ -6437,6 +6451,8 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     // Sign jump optimization should only be set the following check
     assert((tree->gtFlags & GTF_RELOP_SJUMP_OPT) == 0);
 
+    var_types targetType = tree->TypeGet();
+
     if (canReuseFlags && emit->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(type), tree->OperGet()))
     {
         JITDUMP("Not emitting compare due to flags being already set\n");
@@ -6448,13 +6464,24 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     }
     else
     {
+        // Clear target reg in advance via "xor reg,reg" to avoid movzx after SETCC
+        if ((targetReg != REG_NA) && (op1->GetRegNum() != targetReg) && (op2->GetRegNum() != targetReg) &&
+            !varTypeIsByte(targetType))
+        {
+            regMaskTP targetRegMask = genRegMask(targetReg);
+            if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
+            {
+                instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
+                targetType = TYP_BOOL; // just a tip for inst_SETCC that movzx is not needed
+            }
+        }
         emit->emitInsBinary(ins, emitTypeSize(type), op1, op2);
     }
 
     // Are we evaluating this into a register?
     if (targetReg != REG_NA)
     {
-        inst_SETCC(GenCondition::FromIntegralRelop(tree), tree->TypeGet(), targetReg);
+        inst_SETCC(GenCondition::FromIntegralRelop(tree), targetType, targetReg);
         genProduceReg(tree);
     }
 }

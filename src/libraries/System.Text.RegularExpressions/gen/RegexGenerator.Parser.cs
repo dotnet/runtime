@@ -131,6 +131,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             if (!regexMethodSymbol.IsPartialDefinition ||
+                regexMethodSymbol.IsAbstract ||
                 regexMethodSymbol.Parameters.Length != 0 ||
                 regexMethodSymbol.Arity != 0 ||
                 !regexMethodSymbol.ReturnType.Equals(regexSymbol))
@@ -138,12 +139,12 @@ namespace System.Text.RegularExpressions.Generator
                 return Diagnostic.Create(DiagnosticDescriptors.RegexMethodMustHaveValidSignature, methodSyntax.GetLocation());
             }
 
-            if (typeDec.SyntaxTree.Options is CSharpParseOptions { LanguageVersion: < LanguageVersion.CSharp10 })
+            if (typeDec.SyntaxTree.Options is CSharpParseOptions { LanguageVersion: <= LanguageVersion.CSharp10 })
             {
                 return Diagnostic.Create(DiagnosticDescriptors.InvalidLangVersion, methodSyntax.GetLocation());
             }
 
-            RegexOptions regexOptions = RegexOptions.Compiled | (options is not null ? (RegexOptions)options : RegexOptions.None);
+            RegexOptions regexOptions = options is not null ? (RegexOptions)options : RegexOptions.None;
 
             // TODO: This is going to include the culture that's current at the time of compilation.
             // What should we do about that?  We could:
@@ -178,10 +179,10 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Parse the input pattern
-            RegexCode code;
+            RegexTree regexTree;
             try
             {
-                code = RegexWriter.Write(RegexParser.Parse(pattern, regexOptions, culture), culture);
+                regexTree = RegexParser.Parse(pattern, regexOptions | RegexOptions.Compiled, culture); // make sure Compiled is included to get all optimizations applied to it
             }
             catch (Exception e)
             {
@@ -192,37 +193,36 @@ namespace System.Text.RegularExpressions.Generator
             string? ns = regexMethodSymbol.ContainingType?.ContainingNamespace?.ToDisplayString(
                 SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted));
 
+            var regexType = new RegexType(
+                typeDec is RecordDeclarationSyntax rds ? $"{typeDec.Keyword.ValueText} {rds.ClassOrStructKeyword}" : typeDec.Keyword.ValueText,
+                ns ?? string.Empty,
+                $"{typeDec.Identifier}{typeDec.TypeParameterList}");
+
             var regexMethod = new RegexMethod(
+                regexType,
                 methodSyntax,
                 regexMethodSymbol.Name,
                 methodSyntax.Modifiers.ToString(),
                 pattern,
                 regexOptions,
                 matchTimeout ?? Timeout.Infinite,
-                code);
-
-            var regexType = new RegexType(
-                regexMethod,
-                typeDec is RecordDeclarationSyntax rds ? $"{typeDec.Keyword.ValueText} {rds.ClassOrStructKeyword}" : typeDec.Keyword.ValueText,
-                ns ?? string.Empty,
-                $"{typeDec.Identifier}{typeDec.TypeParameterList}");
+                regexTree);
 
             RegexType current = regexType;
             var parent = typeDec.Parent as TypeDeclarationSyntax;
 
             while (parent is not null && IsAllowedKind(parent.Kind()))
             {
-                current.ParentClass = new RegexType(
-                    null,
+                current.Parent = new RegexType(
                     parent is RecordDeclarationSyntax rds2 ? $"{parent.Keyword.ValueText} {rds2.ClassOrStructKeyword}" : parent.Keyword.ValueText,
                     ns ?? string.Empty,
                     $"{parent.Identifier}{parent.TypeParameterList}");
 
-                current = current.ParentClass;
+                current = current.Parent;
                 parent = parent.Parent as TypeDeclarationSyntax;
             }
 
-            return regexType;
+            return regexMethod;
 
             static bool IsAllowedKind(SyntaxKind kind) =>
                 kind == SyntaxKind.ClassDeclaration ||
@@ -233,12 +233,16 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>A regex method.</summary>
-        internal sealed record RegexMethod(MethodDeclarationSyntax MethodSyntax, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int MatchTimeout, RegexCode Code);
+        internal sealed record RegexMethod(RegexType DeclaringType, MethodDeclarationSyntax MethodSyntax, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int MatchTimeout, RegexTree Tree)
+        {
+            public string GeneratedName { get; set; }
+            public bool IsDuplicate { get; set; }
+        }
 
         /// <summary>A type holding a regex method.</summary>
-        internal sealed record RegexType(RegexMethod? Method, string Keyword, string Namespace, string Name)
+        internal sealed record RegexType(string Keyword, string Namespace, string Name)
         {
-            public RegexType? ParentClass { get; set; }
+            public RegexType? Parent { get; set; }
         }
     }
 }

@@ -132,10 +132,10 @@
     <value>The specified regex is invalid. '{0}'</value>
   </data>
   <data name="RegexMethodMustHaveValidSignatureMessage" xml:space="preserve">
-    <value>Regex method must be partial, parameterless, non-generic, and return Regex</value>
+    <value>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</value>
   </data>
   <data name="InvalidLangVersionMessage" xml:space="preserve">
-    <value>C# LangVersion of 10 or greater is required</value>
+    <value>C# LangVersion of 11 or greater is required</value>
   </data>
   <data name="LimitedSourceGenerationTitle" xml:space="preserve">
     <value>RegexGenerator limitation reached.</value>

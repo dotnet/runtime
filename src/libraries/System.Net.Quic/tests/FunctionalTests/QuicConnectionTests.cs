@@ -28,7 +28,7 @@ namespace System.Net.Quic.Tests
             ValueTask connectTask = clientConnection.ConnectAsync();
             ValueTask<QuicConnection> acceptTask = listener.AcceptConnectionAsync();
 
-            await new Task[] { connectTask.AsTask(), acceptTask.AsTask()}.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+            await new Task[] { connectTask.AsTask(), acceptTask.AsTask() }.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
             QuicConnection serverConnection = acceptTask.Result;
 
             Assert.True(clientConnection.Connected);
@@ -285,6 +285,7 @@ namespace System.Net.Quic.Tests
         }
     }
 
+    [ConditionalClass(typeof(QuicTestBase<MockProviderFactory>), nameof(QuicTestBase<MockProviderFactory>.IsSupported))]
     public sealed class QuicConnectionTests_MockProvider : QuicConnectionTests<MockProviderFactory>
     {
         public QuicConnectionTests_MockProvider(ITestOutputHelper output) : base(output) { }

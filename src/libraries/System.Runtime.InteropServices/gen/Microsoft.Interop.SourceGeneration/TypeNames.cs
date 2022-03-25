@@ -6,7 +6,7 @@ namespace Microsoft.Interop
     public static class TypeNames
     {
         public const string DllImportAttribute = "System.Runtime.InteropServices.DllImportAttribute";
-        public const string GeneratedDllImportAttribute = "System.Runtime.InteropServices.GeneratedDllImportAttribute";
+        public const string LibraryImportAttribute = "System.Runtime.InteropServices.LibraryImportAttribute";
         public const string StringMarshalling = "System.Runtime.InteropServices.StringMarshalling";
 
         public const string GeneratedMarshallingAttribute = "System.Runtime.InteropServices.GeneratedMarshallingAttribute";
@@ -15,7 +15,9 @@ namespace Microsoft.Interop
 
         public const string MarshalUsingAttribute = "System.Runtime.InteropServices.MarshalUsingAttribute";
 
-        public const string GenericContiguousCollectionMarshallerAttribute = "System.Runtime.InteropServices.GenericContiguousCollectionMarshallerAttribute";
+        public const string CustomTypeMarshallerAttribute = "System.Runtime.InteropServices.CustomTypeMarshallerAttribute";
+
+        public const string CustomTypeMarshallerAttributeGenericPlaceholder = "System.Runtime.InteropServices.CustomTypeMarshallerAttribute.GenericPlaceholder";
 
         public const string LCIDConversionAttribute = "System.Runtime.InteropServices.LCIDConversionAttribute";
 
@@ -24,6 +26,8 @@ namespace Microsoft.Interop
         public const string UnmanagedCallConvAttribute = "System.Runtime.InteropServices.UnmanagedCallConvAttribute";
         public const string System_Span_Metadata = "System.Span`1";
         public const string System_Span = "System.Span";
+        public const string System_ReadOnlySpan_Metadata = "System.ReadOnlySpan`1";
+        public const string System_ReadOnlySpan = "System.ReadOnlySpan";
 
         public const string System_IntPtr = "System.IntPtr";
 
@@ -67,5 +71,7 @@ namespace Microsoft.Interop
         public const string DefaultDllImportSearchPathsAttribute = "System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute";
 
         public const string DllImportSearchPath = "System.Runtime.InteropServices.DllImportSearchPath";
+
+        public const string System_CodeDom_Compiler_GeneratedCodeAttribute = "System.CodeDom.Compiler.GeneratedCodeAttribute";
     }
 }

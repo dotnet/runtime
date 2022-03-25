@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);REGISTRY_ASSEMBLY</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>

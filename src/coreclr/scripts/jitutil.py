@@ -123,7 +123,7 @@ def decode_and_print(str_to_decode):
     finally:
         return output
 
-def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=None):
+def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=None, _env=None):
     """ Runs the command.
 
     Args:
@@ -131,6 +131,7 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=Non
         _cwd (string): Current working directory.
         _exit_on_fail (bool): If it should exit on failure.
         _output_file (): 
+        _env: environment for sub-process, passed to subprocess.Popen()
     Returns:
         (string, string, int): Returns a tuple of stdout, stderr, and command return code if _output_file= None
         Otherwise stdout, stderr are empty.
@@ -138,10 +139,16 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=Non
     print("Running: " + " ".join(command_to_run))
     command_stdout = ""
     command_stderr = ""
+
+    if _env:
+        print("  with environment:")
+        for name, value in _env.items():
+            print("    {0}={1}".format(name,value))
+
     return_code = 1
 
     output_type = subprocess.STDOUT if _output_file else subprocess.PIPE
-    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=output_type, cwd=_cwd) as proc:
+    with subprocess.Popen(command_to_run, env=_env, stdout=subprocess.PIPE, stderr=output_type, cwd=_cwd) as proc:
 
         # For long running command, continuously print the output
         if _output_file:

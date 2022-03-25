@@ -14,7 +14,7 @@
          netstandard.dll doesn't need to do this since it has no dangling dependencies -->
     <GenFacadesForceZeroVersionSeeds Condition="'$(MSBuildProjectName)' != 'netstandard'">true</GenFacadesForceZeroVersionSeeds>
     <!-- Opt out of some features which are on by default. -->
-    <EnableDllImportGenerator>false</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>false</EnableLibraryImportGenerator>
     <RunApiCompat>false</RunApiCompat>
     <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
     <AddOSPlatformAttributes>false</AddOSPlatformAttributes>
@@ -35,10 +35,6 @@
              Condition="Exists('$(MSBuildThisFileDirectory)$(MSBuildProjectName).forwards.cs')" />
   </ItemGroup>
 
-  <!-- Include any props setting files needed by both ref and src projects.-->
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildProjectName).props"
-          Condition="Exists('$(MSBuildThisFileDirectory)$(MSBuildProjectName).props')" />
-
   <ItemGroup>
     <ProjectReference Include="$(MSBuildThisFileDirectory)..\sfx-src.proj" Condition="'$(RefOnly)' != 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)..\sfx-ref.proj" Condition="'$(RefOnly)' == 'true'" />
@@ -50,7 +46,7 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)..\oob-src.proj" Condition="'$(RefOnly)' != 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)..\oob-ref.proj" Condition="'$(RefOnly)' == 'true'" />
   </ItemGroup>
-                      
+
   <ItemGroup>
     <!-- System.Data.SqlClient is not live built anymore, reference it manually to avoid tfm nuget selection fallback errors
          when the TargetOS i.e. is MacCatalyst. Set Private false so that it doesn't flow down to consuming projects. -->
