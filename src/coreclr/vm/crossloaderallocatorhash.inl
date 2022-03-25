@@ -584,7 +584,7 @@ bool CrossLoaderAllocatorHash<TRAITS>::VisitValuesOfKey(TKey key, Visitor &visit
     {
         LAHashDependentHashTrackerHash *dependentTrackerHash =
             static_cast<LAHashDependentHashTrackerSetWrapper *>(hashKeyToTrackers->_trackerOrTrackerSet)->GetTrackerSet();
-        for (LAHashDependentHashTrackerHash::Iterator it = dependentTrackerHash->Begin(),
+        for (typename LAHashDependentHashTrackerHash::Iterator it = dependentTrackerHash->Begin(),
                 itEnd = dependentTrackerHash->End();
             it != itEnd;
             ++it)
@@ -607,7 +607,7 @@ bool CrossLoaderAllocatorHash<TRAITS>::VisitAllKeyValuePairs(Visitor &visitor)
     WRAPPER_NO_CONTRACT;
 
     KeyToValuesHash &keyToTrackersHash = m_keyToDependentTrackersHash;
-    for (KeyToValuesHash::Iterator it = keyToTrackersHash.Begin(), itEnd = keyToTrackersHash.End(); it != itEnd; ++it)
+    for (typename KeyToValuesHash::Iterator it = keyToTrackersHash.Begin(), itEnd = keyToTrackersHash.End(); it != itEnd; ++it)
     {
         KeyValueStoreOrLAHashKeyToTrackers *hashKeyEntry = *it;
         if (!VisitKeyToTrackerAllLALocalEntries(hashKeyEntry, visitor))
@@ -617,7 +617,8 @@ bool CrossLoaderAllocatorHash<TRAITS>::VisitAllKeyValuePairs(Visitor &visitor)
     }
 
     LAHashDependentHashTrackerHash &dependentTrackerHash = m_loaderAllocatorToDependentTrackerHash;
-    for (LAHashDependentHashTrackerHash::Iterator it = dependentTrackerHash.Begin(), itEnd = dependentTrackerHash.End();
+    for (typename LAHashDependentHashTrackerHash::Iterator it = dependentTrackerHash.Begin(),
+            itEnd = dependentTrackerHash.End();
         it != itEnd;
         ++it)
     {
@@ -685,7 +686,7 @@ void CrossLoaderAllocatorHash<TRAITS>::RemoveAll(TKey key)
         {
             LAHashDependentHashTrackerHash *dependentTrackerHash =
                 static_cast<LAHashDependentHashTrackerSetWrapper *>(hashKeyToTrackers->_trackerOrTrackerSet)->GetTrackerSet();
-            for (LAHashDependentHashTrackerHash::Iterator it = dependentTrackerHash->Begin(),
+            for (typename LAHashDependentHashTrackerHash::Iterator it = dependentTrackerHash->Begin(),
                     itEnd = dependentTrackerHash->End();
                 it != itEnd;
                 ++it)
@@ -747,7 +748,9 @@ template <class Visitor>
     if (keyToValuesHash != NULL)
     {
         LoaderAllocator *loaderAllocator = tracker->GetLoaderAllocatorUnsafe();
-        for (KeyToValuesHash::Iterator it = keyToValuesHash->Begin(), itEnd = keyToValuesHash->End(); it != itEnd; ++it)
+        for (typename KeyToValuesHash::Iterator it = keyToValuesHash->Begin(), itEnd = keyToValuesHash->End();
+            it != itEnd;
+            ++it)
         {
             KeyValueStoreOrLAHashKeyToTrackers *hashKeyEntry = *it;
             _ASSERTE(!hashKeyEntry->IsLAHashKeyToTrackers());
@@ -821,7 +824,7 @@ CrossLoaderAllocatorHash<TRAITS>::GetDependentTrackerForLoaderAllocator(LoaderAl
     }
 
     NewHolder<LADependentKeyToValuesHash> laDependentKeyToValuesHashHolder = new LADependentKeyToValuesHash();
-    LAHashDependentHashTracker::NewTrackerHolder dependentTrackerHolder =
+    typename LAHashDependentHashTracker::NewTrackerHolder dependentTrackerHolder =
         new LAHashDependentHashTracker(pLoaderAllocator, laDependentKeyToValuesHashHolder);
     laDependentKeyToValuesHashHolder.SuppressRelease();
 

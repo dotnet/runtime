@@ -504,9 +504,9 @@ class EMPTY_BASES_DECL SHash : public TRAITS
 
                 if (!TRAITS::IsDeleted(this->m_table[this->m_index]))
                 {
-                    if (TRAITS::s_supports_autoremove && TRAITS::ShouldDelete(m_table[m_index]))
+                    if (TRAITS::s_supports_autoremove && TRAITS::ShouldDelete(this->m_table[this->m_index]))
                     {
-                        m_hash->RemoveElement(m_table, m_tableSize, &m_table[m_index]);
+                        this->m_hash->RemoveElement(this->m_table, this->m_tableSize, &this->m_table[this->m_index]);
                     }
                     else if (TRAITS::Equals(m_key, TRAITS::GetKey(this->m_table[this->m_index])))
                     {
@@ -539,9 +539,9 @@ class EMPTY_BASES_DECL SHash : public TRAITS
                     continue;
                 }
 
-                if (TRAITS::s_supports_autoremove && TRAITS::ShouldDelete(m_table[m_index]))
+                if (TRAITS::s_supports_autoremove && TRAITS::ShouldDelete(this->m_table[this->m_index]))
                 {
-                    m_hash->RemoveElement(m_table, m_tableSize, &m_table[m_index]);
+                    this->m_hash->RemoveElement(this->m_table, this->m_tableSize, &this->m_table[this->m_index]);
                     continue;
                 }
 
