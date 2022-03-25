@@ -2044,7 +2044,7 @@ MAPmmapAndRecord(
         // Set the requested mapping with forced PROT_WRITE, mmap the file, and copy its contents there.
         // PROT_WRITE can then be removed on Intel, but not on Apple Silicon which requires the use of
         // pthread_jit_write_protect to switch between executable and writable.
-        LPVOID pvMappedFile = mmap(NULL, len + adjust, PROT_READ, MAP_SHARED, fd, offset - adjust);
+        LPVOID pvMappedFile = mmap(NULL, len + adjust, PROT_READ, MAP_PRIVATE, fd, offset - adjust);
         if (pvMappedFile == MAP_FAILED ||
             (mprotect(pvBaseAddress, len + adjust, prot | PROT_WRITE) == -1))
         {
