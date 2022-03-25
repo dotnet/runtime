@@ -30,13 +30,16 @@ jobs:
     - name: Pack nuget
       run: dotnet pack -c Release
     - name: Artifacts
+      if: startsWith(github.ref, 'refs/tags/v')
       uses: actions/upload-artifact@v2
       with:
         name: NuGets
         path: |
           nupkg\*.nupkg
     - name: Setup NuGet
+      if: startsWith(github.ref, 'refs/tags/v')
       uses: nuget/setup-nuget@v1
     - name: Publish to nuget
+      if: startsWith(github.ref, 'refs/tags/v')
       run: |
         dotnet nuget push nupkg\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --no-symbols --skip-duplicate --source "https://api.nuget.org/v3/index.json"
