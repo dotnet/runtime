@@ -68,7 +68,7 @@ newobj instance void System.InvalidProgramException::.ctor()
 throw
 ```
 
-When boxing due to a constrained call that cannot be made, instead of allocating a normal boxed object, an object of `InvalidBoxedObject` type will be created. It will have implementations of the various overridable object methods which throw `InvalidProgramException`, and interface dispatch shall have a special case for attempting to invoke an interface method on such an object, that will also throw an `InvalidProgramException`. 
+When boxing due to a constrained call that cannot be made, instead of allocating a normal boxed object, an object of `InvalidBoxedObject` type will be created. It will have implementations of the various overridable object methods which throw `InvalidProgramException`, and interface dispatch shall have a special case for attempting to invoke an interface method on such an object, that will also throw an `InvalidProgramException`.
 
 ## Open questions
 
