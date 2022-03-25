@@ -214,7 +214,7 @@ namespace WebAssemblyInfo
             }
         }
 
-        Code[]? funcsCode;
+        protected Code[]? funcsCode;
         void ReadCodeSection()
         {
             UInt32 count = ReadU32();
@@ -995,9 +995,9 @@ namespace WebAssemblyInfo
             return Encoding.UTF8.GetString(Reader.ReadBytes((int)ReadU32()));
         }
 
-        Function[]? functions;
+        protected Function[]? functions;
 
-        FunctionType[]? functionTypes;
+        protected FunctionType[]? functionTypes;
 
         void ReadTypeSection()
         {
@@ -1122,7 +1122,33 @@ namespace WebAssemblyInfo
             return value;
         }
 
-        public void PrintFunctions()
+        public bool HasFunctionNames { get { return functionNames != null && functionNames.Count > 0; } }
+
+        public string? GetFunctionName(UInt32 idx)
+        {
+            string? name = HasFunctionNames ? functionNames[FunctionOffset(idx)] : null;
+            if (string.IsNullOrEmpty(name))
+                name = $"idx:{idx}";
+
+            return name;
+        }
+
+        public bool GetFunctionIdx(string name, out UInt32 idx)
+        {
+            if (!nameToFunction.ContainsKey(name))
+            {
+                idx = 0;
+                return false;
+            }
+
+            idx = nameToFunction[name];
+
+            return true;
+        }
+
+        protected delegate void ProcessFunction(UInt32 idx, string name, object? data);
+
+        protected void FilterFunctions(ProcessFunction processFunction, object? data = null)
         {
             if (functions == null)
                 return;
@@ -1133,10 +1159,10 @@ namespace WebAssemblyInfo
 
                 if (Program.FunctionFilter != null)
                 {
-                    if (functionNames == null || functionNames.Count < 1)
+                    if (!HasFunctionNames)
                         continue;
 
-                    name = functionNames[FunctionOffset(idx)];
+                    name = GetFunctionName(idx);
                     if (name == null)
                         continue;
 
@@ -1144,22 +1170,29 @@ namespace WebAssemblyInfo
                         continue;
                 }
                 else
-                    name = FunctionName(FunctionOffset(idx));
+                    name = GetFunctionName(idx);
 
-                PrintFunction(idx, name);
+                processFunction(idx, name, data);
             }
         }
 
-        void PrintFunction(UInt32 idx, string? name)
+        public void PrintFunctions()
+        {
+            FilterFunctions(PrintFunction);
+        }
+
+        protected void PrintFunctionWithPrefix(UInt32 idx, string? name, string? prefix = null)
         {
             if (functions == null || functionTypes == null || funcsCode == null)
                 return;
 
-            if (string.IsNullOrEmpty(name))
-                name = $"idx:{idx}";
-
             //Console.WriteLine($"read func {name}");
-            Console.WriteLine($"{functionTypes[functions[idx].TypeIdx].ToString(name)}\n{funcsCode[idx].ToString(this)}");
+            Console.WriteLine($"{prefix}{functionTypes[functions[idx].TypeIdx].ToString(name)}\n{funcsCode[idx].ToString(this).Indent(prefix)}");
+        }
+
+        protected void PrintFunction(UInt32 idx, string? name, object? _ = null)
+        {
+            PrintFunctionWithPrefix(idx, name, null);
         }
 
         UInt32 FunctionOffset(UInt32 idx)
@@ -1181,7 +1214,7 @@ namespace WebAssemblyInfo
 
         public string GlobalName(UInt32 idx)
         {
-            return globalNames[idx];
+            return (globalNames != null && globalNames.ContainsKey(idx)) ? globalNames[idx] : $"global:{idx}";
         }
 
         public void FindFunctionsCallingInterp()
