@@ -16,10 +16,6 @@ struct version_t
     int get_minor() const { return m_minor; }
     int get_build() const { return m_build; }
 
-    void set_major(int m) { m_major = m; }
-    void set_minor(int m) { m_minor = m; }
-    void set_build(int m) { m_build = m; }
-
     pal::string_t as_str() const;
 
     bool operator ==(const version_t& b) const;
