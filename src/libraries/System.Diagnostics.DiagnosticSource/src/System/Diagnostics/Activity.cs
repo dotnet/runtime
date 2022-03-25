@@ -294,7 +294,7 @@ namespace System.Diagnostics
         /// List of the tags which represent information that will be logged along with the Activity to the logging system.
         /// This information however is NOT passed on to the children of this activity.
         /// </summary>
-        public DiagnosticEnumerable<KeyValuePair<string, object?>> TagObjects
+        public IEnumerable<KeyValuePair<string, object?>> TagObjects
         {
             get => _tags ?? s_emptyTagObjects;
         }
@@ -303,7 +303,7 @@ namespace System.Diagnostics
         /// Events is the list of all <see cref="ActivityEvent" /> objects attached to this Activity object.
         /// If there is not any <see cref="ActivityEvent" /> object attached to the Activity object, Events will return empty list.
         /// </summary>
-        public DiagnosticEnumerable<ActivityEvent> Events
+        public IEnumerable<ActivityEvent> Events
         {
             get => _events ?? s_emptyEvents;
         }
@@ -312,7 +312,7 @@ namespace System.Diagnostics
         /// Links is the list of all <see cref="ActivityLink" /> objects attached to this Activity object.
         /// If there is no any <see cref="ActivityLink" /> object attached to the Activity object, Links will return empty list.
         /// </summary>
-        public DiagnosticEnumerable<ActivityLink> Links
+        public IEnumerable<ActivityLink> Links
         {
             get => _links ?? s_emptyLinks;
         }

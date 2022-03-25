@@ -42,9 +42,9 @@ namespace System.Diagnostics
         public System.Diagnostics.ActivityStatusCode Status { get { throw null; } }
         public string? StatusDescription  { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> Tags { get { throw null; } }
-        public System.Diagnostics.DiagnosticEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> TagObjects { get { throw null; } }
-        public System.Diagnostics.DiagnosticEnumerable<System.Diagnostics.ActivityEvent> Events { get { throw null; } }
-        public System.Diagnostics.DiagnosticEnumerable<System.Diagnostics.ActivityLink> Links { get { throw null; } }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> TagObjects { get { throw null; } }
+        public System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityEvent> Events { get { throw null; } }
+        public System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink> Links { get { throw null; } }
         public System.Diagnostics.ActivityTraceId TraceId { get { throw null; } }
         public string? TraceStateString { get { throw null; } set { } }
         public System.Diagnostics.Activity AddBaggage(string key, string? value) { throw null; }
