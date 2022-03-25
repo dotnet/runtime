@@ -71,16 +71,7 @@ namespace System.Linq.Expressions.Compiler
             EmitExpression(node, CompilationFlags.EmitAsNoTail | CompilationFlags.EmitExpressionStart);
         }
 
-        /// <summary>
-        /// Emits an expression and discards the result.  For some nodes this emits
-        /// more optimal code then EmitExpression/Pop
-        /// </summary>
-        private void EmitExpressionAsVoid(Expression node)
-        {
-            EmitExpressionAsVoid(node, CompilationFlags.EmitAsNoTail);
-        }
-
-        private void EmitExpressionAsVoid(Expression node, CompilationFlags flags)
+        private void EmitExpressionAsVoid(Expression node, CompilationFlags flags = CompilationFlags.EmitAsNoTail)
         {
             Debug.Assert(node != null);
 

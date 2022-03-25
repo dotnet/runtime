@@ -11,12 +11,7 @@ namespace System.Linq.Expressions.Compiler
 {
     internal sealed partial class LambdaCompiler
     {
-        private void EmitBinaryExpression(Expression expr)
-        {
-            EmitBinaryExpression(expr, CompilationFlags.EmitAsNoTail);
-        }
-
-        private void EmitBinaryExpression(Expression expr, CompilationFlags flags)
+        private void EmitBinaryExpression(Expression expr, CompilationFlags flags = CompilationFlags.EmitAsNoTail)
         {
             BinaryExpression b = (BinaryExpression)expr;
 
