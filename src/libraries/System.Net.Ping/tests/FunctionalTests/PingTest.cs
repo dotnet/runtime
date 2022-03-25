@@ -820,9 +820,11 @@ namespace System.Net.NetworkInformation.Tests
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
 
-            var remoteInvokeStartInfo = new ProcessStartInfo { EnvironmentVariables =
+            var remoteInvokeStartInfo = new ProcessStartInfo {
+                EnvironmentVariables =
                 {
-                    ["LANG"] = envVar_LANG, ["LC_MESSAGES"] = envVar_LC_MESSAGES,
+                    ["LANG"] = envVar_LANG,
+                    ["LC_MESSAGES"] = envVar_LC_MESSAGES,
                     ["LC_ALL"] = envVar_LC_ALL
                 }
             };
