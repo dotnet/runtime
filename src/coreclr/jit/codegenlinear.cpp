@@ -2517,8 +2517,9 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
         }
 
 #ifdef TARGET_LOONGARCH64
-        m_extendKind = castUnsigned ? ZERO_EXTEND_INT : SIGN_EXTEND_INT;
-        cast->gtFlags |= castUnsigned ? GTF_UNSIGNED : GTF_EMPTY;
+        // For LoongArch64's ISA which is same with the MIPS64 ISA, even the instructions of 32bits operation need
+        // the upper 32bits be sign-extended to 64 bits.
+        m_extendKind = SIGN_EXTEND_INT;
 #else
         m_extendKind = COPY;
 #endif

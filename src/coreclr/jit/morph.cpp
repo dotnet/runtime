@@ -3815,17 +3815,18 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 assert(!"Structs are not passed by reference on x64/ux");
 #endif // UNIX_AMD64_ABI
             }
-#if defined(DEBUG) && defined(TARGET_LOONGARCH64)
-            else if ((structBaseType == TYP_STRUCT) && (originalSize == TARGET_POINTER_SIZE) && (size == 2))
-            {
-                DEBUG_ARG_SLOTS_ASSERT(size == argEntry->numRegs);
-            }
-#endif
             else // This is passed by value.
             {
+#if defined(TARGET_LOONGARCH64)
+                // For LoongArch64 the struct {float a; float b;} can be passed by two float registers.
+                DEBUG_ARG_SLOTS_ASSERT((size == roundupSize / TARGET_POINTER_SIZE) ||
+                                       ((structBaseType == TYP_STRUCT) && (originalSize == TARGET_POINTER_SIZE) &&
+                                        (size == 2) && (size == argEntry->numRegs)));
+#else
                 // Check to see if we can transform this into load of a primitive type.
                 // 'size' must be the number of pointer sized items
                 DEBUG_ARG_SLOTS_ASSERT(size == roundupSize / TARGET_POINTER_SIZE);
+#endif
 
                 structSize           = originalSize;
                 unsigned passingSize = originalSize;

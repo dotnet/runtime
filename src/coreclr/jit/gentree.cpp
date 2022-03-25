@@ -3208,11 +3208,11 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
             *pCostEx += idx->GetCostEx();
             *pCostSz += idx->GetCostSz();
         }
-        // TODO-LOONGARCH64: workround, should amend for LoongArch64.
         if (cns != 0)
         {
-            if (cns >= (4096 * genTypeSize(type)))
+            if (!emitter::isValidSimm12(cns))
             {
+                // TODO-LoongArch64-CQ: tune for LoongArch64.
                 *pCostEx += 1;
                 *pCostSz += 4;
             }
@@ -3632,11 +3632,15 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 goto COMMON_CNS;
 
 #elif defined(TARGET_LOONGARCH64)
+            // TODO-LoongArch64-CQ: tune the costs.
             case GT_CNS_STR:
+                costEx = IND_COST_EX + 2;
+                costSz = 4;
+                goto COMMON_CNS;
+
             case GT_CNS_LNG:
             case GT_CNS_INT:
-                // TODO-LOONGARCH64: workround, should amend for LoongArch64.
-                costEx = 4;
+                costEx = 1;
                 costSz = 4;
                 goto COMMON_CNS;
 #else
@@ -3701,7 +3705,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 4;
                 }
 #elif defined(TARGET_LOONGARCH64)
-                // TODO-LOONGARCH64: workround, should amend for LoongArch64.
+                // TODO-LoongArch64-CQ: tune the costs.
                 costEx = 2;
                 costSz = 8;
 #else
@@ -3878,14 +3882,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costSz = 6;
                     }
 #elif defined(TARGET_LOONGARCH64)
-                    // TODO-LOONGARCH64: workround, should amend for LoongArch64.
+                    // TODO-LoongArch64-CQ: tune the costs.
                     costEx = 1;
-                    costSz = 2;
-                    if (isflt || varTypeIsFloating(op1->TypeGet()))
-                    {
-                        costEx = 2;
-                        costSz = 4;
-                    }
+                    costSz = 4;
 #else
 #error "Unknown TARGET"
 #endif
@@ -22273,11 +22272,17 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
     }
     else
     {
-        noway_assert(idx < 2); // Up to 2 return registers for two-float-field structs
+        noway_assert(idx == 1); // Up to 2 return registers for two-float-field structs
+
+        // If the first return register is from the same register file, return the one next to it.
         if (varTypeIsIntegralOrI(regType))
+        {
             resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_INTRET_1 : REG_INTRET; // A0 or A1
-        else // if (!varTypeIsIntegralOrI(regType))
+        }
+        else // varTypeUsesFloatReg(regType)
+        {
             resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // F0 or F1
+        }
     }
 
 #endif // TARGET_XXX

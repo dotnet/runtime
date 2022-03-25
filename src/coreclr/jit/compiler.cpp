@@ -749,33 +749,13 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                     useType         = TYP_UNKNOWN;
                 }
 
-#elif defined(TARGET_X86) || defined(TARGET_ARM)
+#elif defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
 
                 // Otherwise we pass this struct by value on the stack
                 // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
+                // On LOONGARCH64 struct that is 1-16 bytes is passed by value in one/two register(s)
                 howToPassStruct = SPK_ByValue;
                 useType         = TYP_STRUCT;
-
-#elif defined(TARGET_LOONGARCH64)
-                // Structs that are pointer sized or smaller.
-                // assert(structSize > TARGET_POINTER_SIZE);
-
-                // On LOONGARCH64 structs that are 1-16 bytes are passed by value in one/multiple register(s)
-                if (structSize <= (TARGET_POINTER_SIZE * 2))
-                {
-                    // setup wbPassType and useType indicate that this is passed by value in multiple registers
-                    //  (when all of the parameters registers are used, then the stack will be used)
-                    howToPassStruct = SPK_ByValue;
-                    useType         = TYP_STRUCT;
-                }
-                else // a structSize that is 17-32 bytes in size
-                {
-                    // Otherwise we pass this struct by reference to a copy
-                    // setup wbPassType and useType indicate that this is passed using one register
-                    //  (by reference to a copy)
-                    howToPassStruct = SPK_ByReference;
-                    useType         = TYP_UNKNOWN;
-                }
 
 #else //  TARGET_XXX
 
@@ -1084,21 +1064,9 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 
 #elif defined(TARGET_LOONGARCH64)
 
-                // On LOONGARCH64 structs that are 1-16 bytes are returned by value in one/multiple register(s)
-                if (structSize <= (TARGET_POINTER_SIZE * 2))
-                {
-                    // setup wbPassType and useType indicate that this is return by value in multiple registers
-                    howToReturnStruct = SPK_ByValue;
-                    useType           = TYP_STRUCT;
-                }
-                else // a structSize that is 17-32 bytes in size
-                {
-                    // Otherwise we return this struct using a return buffer/byreference.
-                    // setup wbPassType and useType indicate that this is returned using a return buffer register
-                    //  (reference to a return buffer)
-                    howToReturnStruct = SPK_ByReference;
-                    useType           = TYP_UNKNOWN;
-                }
+                // On LOONGARCH64 struct that is 1-16 bytes is returned by value in one/two register(s)
+                howToReturnStruct = SPK_ByValue;
+                useType           = TYP_STRUCT;
 
 #else //  TARGET_XXX
 
@@ -2276,8 +2244,11 @@ void Compiler::compSetProcessor()
         info.genCPU = CPU_X86_PENTIUM_4;
     else
         info.genCPU = CPU_X86;
+
 #elif defined(TARGET_LOONGARCH64)
+
     info.genCPU = CPU_LOONGARCH64;
+
 #endif
 
     //

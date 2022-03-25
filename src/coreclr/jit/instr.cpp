@@ -906,19 +906,7 @@ AGAIN:
                     regSet.verifyRegUsed(regTmp);
                     return;
             }
-#else // !TARGET_ARM
-#ifdef TARGET_LOONGARCH64
-            // For LoongArch64-ABI, the float arg might be passed by integer register,
-            // when there is no float register left but there is integer register(s) left.
-            if (emitter::isFloatReg(reg))
-            {
-                assert((ins == INS_fld_d) || (ins == INS_fld_s));
-            }
-            else if (emitter::isGeneralRegister(reg) && (ins != INS_lea))
-            {
-                ins = size == EA_4BYTE ? INS_ld_w : INS_ld_d;
-            }
-#endif
+#else  // !TARGET_ARM
             GetEmitter()->emitIns_R_S(ins, size, reg, varNum, offs);
             return;
 #endif // !TARGET_ARM
@@ -1725,10 +1713,6 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
     {
         ins = INS_ld_w;
     }
-    else if (TYP_UINT == srcType)
-    {
-        ins = INS_ld_wu;
-    }
     else
     {
         ins = INS_ld_d; // default ld_d.
@@ -1956,7 +1940,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         ins = aligned ? INS_stx_b : INS_st_b;
     else if (varTypeIsShort(dstType))
         ins = aligned ? INS_stx_h : INS_st_h;
-    else if ((TYP_INT == dstType) || (TYP_UINT == dstType))
+    else if (TYP_INT == dstType)
         ins = aligned ? INS_stx_w : INS_st_w;
     else
         ins = aligned ? INS_stx_d : INS_st_d;

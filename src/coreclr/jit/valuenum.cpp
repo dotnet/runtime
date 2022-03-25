@@ -2845,14 +2845,7 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             }
             else
             {
-#ifdef TARGET_LOONGARCH64
-                // For LoongArch64, the int32 will signed-extend default,
-                // e.g. `ld_w $r4, $r5, 4` loading a int32 from the addr `$r5+4`.
-                // So there is no need to signed-extend.
-                assert(typ == TYP_INT || typ == TYP_LONG);
-#else
                 assert(typ == TYP_INT);
-#endif
                 int resultVal = EvalOp<int>(func, arg0Val, arg1Val);
                 // Bin op on a handle results in a handle.
                 ValueNum handleVN = IsVNHandle(arg0VN) ? arg0VN : IsVNHandle(arg1VN) ? arg1VN : NoVN;

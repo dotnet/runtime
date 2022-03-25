@@ -5874,11 +5874,7 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
     GenTree* dividend = divMod->gtGetOp1();
     GenTree* divisor  = divMod->gtGetOp2();
 
-#if defined(TARGET_LOONGARCH64)
-    const var_types type = genActualType(divMod->TypeGet());
-#else
     const var_types type = divMod->TypeGet();
-#endif
     assert((type == TYP_INT) || (type == TYP_LONG));
 
 #if defined(USE_HELPERS_FOR_INT_DIV)
