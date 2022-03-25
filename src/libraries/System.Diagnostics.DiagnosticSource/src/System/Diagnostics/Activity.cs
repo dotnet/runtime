@@ -35,9 +35,9 @@ namespace System.Diagnostics
     {
 #pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
         private static readonly IEnumerable<KeyValuePair<string, string?>> s_emptyBaggageTags = new KeyValuePair<string, string?>[0];
-        private static readonly IEnumerable<KeyValuePair<string, object?>> s_emptyTagObjects = new KeyValuePair<string, object?>[0];
-        private static readonly IEnumerable<ActivityLink> s_emptyLinks = new ActivityLink[0];
-        private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new ActivityEvent[0];
+        private static readonly DiagnosticEnumerable<KeyValuePair<string, object?>> s_emptyTagObjects = new DiagLinkedList<KeyValuePair<string, object?>>();
+        private static readonly DiagnosticEnumerable<ActivityLink> s_emptyLinks = new DiagLinkedList<ActivityLink>();
+        private static readonly DiagnosticEnumerable<ActivityEvent> s_emptyEvents = new DiagLinkedList<ActivityEvent>();
 #pragma warning restore CA1825
         private static readonly ActivitySource s_defaultSource = new ActivitySource(string.Empty);
 
@@ -294,7 +294,7 @@ namespace System.Diagnostics
         /// List of the tags which represent information that will be logged along with the Activity to the logging system.
         /// This information however is NOT passed on to the children of this activity.
         /// </summary>
-        public IEnumerable<KeyValuePair<string, object?>> TagObjects
+        public DiagnosticEnumerable<KeyValuePair<string, object?>> TagObjects
         {
             get => _tags ?? s_emptyTagObjects;
         }
@@ -303,7 +303,7 @@ namespace System.Diagnostics
         /// Events is the list of all <see cref="ActivityEvent" /> objects attached to this Activity object.
         /// If there is not any <see cref="ActivityEvent" /> object attached to the Activity object, Events will return empty list.
         /// </summary>
-        public IEnumerable<ActivityEvent> Events
+        public DiagnosticEnumerable<ActivityEvent> Events
         {
             get => _events ?? s_emptyEvents;
         }
@@ -312,7 +312,7 @@ namespace System.Diagnostics
         /// Links is the list of all <see cref="ActivityLink" /> objects attached to this Activity object.
         /// If there is no any <see cref="ActivityLink" /> object attached to the Activity object, Links will return empty list.
         /// </summary>
-        public IEnumerable<ActivityLink> Links
+        public DiagnosticEnumerable<ActivityLink> Links
         {
             get => _links ?? s_emptyLinks;
         }
@@ -1339,7 +1339,7 @@ namespace System.Diagnostics
             private set => _state = (_state & ~State.FormatFlags) | (State)((byte)value & (byte)State.FormatFlags);
         }
 
-        private sealed class BaggageLinkedList : IEnumerable<KeyValuePair<string, string?>>
+        private sealed class BaggageLinkedList : DiagnosticEnumerable<KeyValuePair<string, string?>>
         {
             private DiagNode<KeyValuePair<string, string?>>? _first;
 
@@ -1415,13 +1415,10 @@ namespace System.Diagnostics
                 }
             }
 
-            // Note: Some consumers use this GetEnumerator dynamically to avoid allocations.
-            public Enumerator<KeyValuePair<string, string?>> GetEnumerator() => new Enumerator<KeyValuePair<string, string?>>(_first);
-            IEnumerator<KeyValuePair<string, string?>> IEnumerable<KeyValuePair<string, string?>>.GetEnumerator() => GetEnumerator();
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            public override Enumerator GetEnumerator() => new Enumerator(_first);
         }
 
-        private sealed class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
+        private sealed class TagsLinkedList : DiagnosticEnumerable<KeyValuePair<string, object?>>
         {
             private DiagNode<KeyValuePair<string, object?>>? _first;
             private DiagNode<KeyValuePair<string, object?>>? _last;
@@ -1577,10 +1574,7 @@ namespace System.Diagnostics
                 }
             }
 
-            // Note: Some consumers use this GetEnumerator dynamically to avoid allocations.
-            public Enumerator<KeyValuePair<string, object?>> GetEnumerator() => new Enumerator<KeyValuePair<string, object?>>(_first);
-            IEnumerator<KeyValuePair<string, object?>> IEnumerable<KeyValuePair<string, object?>>.GetEnumerator() => GetEnumerator();
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            public override Enumerator GetEnumerator() => new Enumerator(_first);
 
             public IEnumerable<KeyValuePair<string, string?>> EnumerateStringValues()
             {

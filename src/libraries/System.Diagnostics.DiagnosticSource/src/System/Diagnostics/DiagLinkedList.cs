@@ -3,7 +3,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
@@ -15,7 +14,7 @@ namespace System.Diagnostics
     }
 
     // We are not using the public LinkedList<T> because we need to ensure thread safety operation on the list.
-    internal sealed class DiagLinkedList<T> : IEnumerable<T>
+    internal sealed class DiagLinkedList<T> : DiagnosticEnumerable<T>
     {
         private DiagNode<T>? _first;
         private DiagNode<T>? _last;
@@ -147,48 +146,52 @@ namespace System.Diagnostics
             }
         }
 
-        // Note: Some consumers use this GetEnumerator dynamically to avoid allocations.
-        public Enumerator<T> GetEnumerator() => new Enumerator<T>(_first);
+        public override Enumerator GetEnumerator() => new Enumerator(_first);
+    }
+
+    public abstract class DiagnosticEnumerable<T> : IEnumerable<T>
+    {
+        public abstract Enumerator GetEnumerator();
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    }
 
-    // Note: Some consumers use this Enumerator dynamically to avoid allocations.
-    internal struct Enumerator<T> : IEnumerator<T>
-    {
-        private static readonly DiagNode<T> s_Empty = new DiagNode<T>(default!);
-
-        private DiagNode<T>? _nextNode;
-        private DiagNode<T> _currentNode;
-
-        public Enumerator(DiagNode<T>? head)
+        public struct Enumerator : IEnumerator<T>
         {
-            _nextNode = head;
-            _currentNode = s_Empty;
-        }
+            private static readonly DiagNode<T> s_Empty = new DiagNode<T>(default!);
 
-        public T Current => _currentNode.Value;
+            private DiagNode<T>? _nextNode;
+            private DiagNode<T> _currentNode;
 
-        object? IEnumerator.Current => Current;
-
-        public bool MoveNext()
-        {
-            if (_nextNode == null)
+            internal Enumerator(DiagNode<T>? head)
             {
+                _nextNode = head;
                 _currentNode = s_Empty;
-                return false;
             }
 
-            _currentNode = _nextNode;
-            _nextNode = _nextNode.Next;
-            return true;
-        }
+            public readonly ref T Current => ref _currentNode.Value;
 
-        public void Reset() => throw new NotSupportedException();
+            T IEnumerator<T>.Current => Current;
 
-        public void Dispose()
-        {
+            object? IEnumerator.Current => Current;
+
+            public bool MoveNext()
+            {
+                if (_nextNode == null)
+                {
+                    _currentNode = s_Empty;
+                    return false;
+                }
+
+                _currentNode = _nextNode;
+                _nextNode = _nextNode.Next;
+                return true;
+            }
+
+            public void Reset() => throw new NotSupportedException();
+
+            public void Dispose()
+            {
+            }
         }
     }
-
 }
