@@ -3339,6 +3339,13 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
     GenTree* addr = mem->Addr();
     GenTree* data = mem->Data();
 
+    if (data->OperIs(GT_BSWAP) && data->isContained())
+    {
+        assert(ins == INS_movbe);
+
+        data = data->gtGetOp1();
+    }
+
     if (addr->OperGet() == GT_CLS_VAR_ADDR)
     {
         if (data->isContainedIntOrIImmed())
@@ -3387,11 +3394,6 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
     }
     else
     {
-        if (data->OperIs(GT_BSWAP) && data->isContained())
-        {
-            data = data->gtGetOp1();
-        }
-
         assert(!data->isContained());
         id = emitNewInstrAmd(attr, offset);
         id->idIns(ins);

@@ -3945,23 +3945,37 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
     return andnNode;
 }
 
+//----------------------------------------------------------------------------------------------
+// Lowering::LowerBswapOp: Tries to contain GT_BSWAP node when possible
+//
+// Arguments:
+//    node - GT_BSWAP node to contain
+//
+// Notes:
+//    Containment is not performed when optimizations are disabled
+//    or when MOVBE instruction set is not found
+//
 void Lowering::LowerBswapOp(GenTreeOp* node)
 {
     assert(node->OperIs(GT_BSWAP));
 
-    if (!comp->compOpportunisticallyDependsOn(InstructionSet_MOVBE))
+    if (!comp->opts.OptimizationEnabled() || !comp->compOpportunisticallyDependsOn(InstructionSet_MOVBE))
     {
         return;
     }
 
     GenTree* operand = node->gtGetOp1();
-    if (operand->OperIs(GT_IND))
+    if (IsContainableMemoryOp(operand) && IsSafeToContainMem(node, operand))
     {
-        operand->SetContained();
+        MakeSrcContained(node, operand);
 
+        // Return early so we don't do double-containing
         return;
     }
 
+    // Due to this instruction being rare we can perform TryGetUse here
+    // to simplify the pattern recognition required for GT_STOREIND
+    // In cases where TP matters, it should be performed inside the user
     LIR::Use use;
     if (!BlockRange().TryGetUse(node, &use))
     {
@@ -3971,7 +3985,7 @@ void Lowering::LowerBswapOp(GenTreeOp* node)
     GenTree* user = use.User();
     if (user->OperIs(GT_STOREIND))
     {
-        node->SetContained();
+        MakeSrcContained(user, node);
     }
 }
 

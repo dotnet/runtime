@@ -560,22 +560,12 @@ void CodeGen::genCodeForBswap(GenTree* tree)
 
     GenTree* operand = tree->gtGetOp1();
 
-    if (operand->isUsedFromReg())
-    {
-        regNumber operandReg = genConsumeReg(operand);
-
-        inst_Mov(targetType, targetReg, operandReg, /* canSkip */ true);
-    }
-    else
-    {
-        assert(operand->OperIs(GT_IND));
-
-        genConsumeReg(operand->gtGetOp1());
-        GetEmitter()->emitInsBinary(INS_movbe, emitTypeSize(operand), tree, operand);
-    }
+    genConsumeRegs(operand);
 
     if (operand->isUsedFromReg())
     {
+        inst_Mov(targetType, targetReg, operand->GetRegNum(), /* canSkip */ true);
+
         if (tree->OperIs(GT_BSWAP))
         {
             // 32-bit and 64-bit byte swaps use "bswap reg"
@@ -586,6 +576,10 @@ void CodeGen::genCodeForBswap(GenTree* tree)
             // 16-bit byte swaps use "ror reg.16, 8"
             inst_RV_IV(INS_ror_N, targetReg, 8 /* val */, emitAttr::EA_2BYTE);
         }
+    }
+    else
+    {
+        GetEmitter()->emitInsBinary(INS_movbe, emitTypeSize(operand), tree, operand);
     }
 
     genProduceReg(tree);

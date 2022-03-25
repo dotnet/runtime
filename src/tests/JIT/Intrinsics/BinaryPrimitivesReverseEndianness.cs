@@ -150,6 +150,37 @@ namespace BinaryPrimitivesReverseEndianness
                 return Fail;
             }
 
+            /*
+             * WRITE TESTS LEA
+             */
+
+            ushort writeLeaUInt16Output = default;
+            ushort writeLeaUInt16Input = ByteSwapUInt16_WriteLea(ref writeLeaUInt16Output, 0);
+            ushort writeLeaUInt16Expected = ByteSwapUInt16_Control(writeLeaUInt16Input);
+            if (writeLeaUInt16Output != writeLeaUInt16Expected)
+            {
+                ReportError("write lea UInt16", writeLeaUInt16Input, writeLeaUInt16Output, writeLeaUInt16Expected);
+                return Fail;
+            }
+
+            uint writeLeaUInt32Output = default;
+            uint writeLeaUInt32Input = ByteSwapUInt32_WriteLea(ref writeLeaUInt32Output, 0);
+            uint writeLeaUInt32Expected = ByteSwapUInt32_Control(writeLeaUInt32Input);
+            if (writeLeaUInt32Output != writeLeaUInt32Expected)
+            {
+                ReportError("write lea UInt32", writeLeaUInt32Input, writeLeaUInt32Output, writeLeaUInt32Expected);
+                return Fail;
+            }
+
+            ulong writeLeaUInt64Output = default;
+            ulong writeLeaUInt64Input = ByteSwapUInt64_WriteLea(ref writeLeaUInt64Output, 0);
+            ulong writeLeaUInt64Expected = ByteSwapUInt64_Control(writeLeaUInt64Input);
+            if (writeLeaUInt64Output != writeLeaUInt64Expected)
+            {
+                ReportError("write lea UInt64", writeLeaUInt64Input, writeLeaUInt64Output, writeLeaUInt64Expected);
+                return Fail;
+            }
+
             return Pass;
         }
 
@@ -215,6 +246,37 @@ namespace BinaryPrimitivesReverseEndianness
             ulong input = (ulong)DateTime.UtcNow.Ticks;
 
             output = BinaryPrimitives.ReverseEndianness(input);
+
+            return input;
+        }
+
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ushort ByteSwapUInt16_WriteLea(ref ushort output, int offset)
+        {
+            ushort input = (ushort)DateTime.UtcNow.Ticks;
+
+            Unsafe.Add(ref output, offset) = BinaryPrimitives.ReverseEndianness(input);
+
+            return input;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static uint ByteSwapUInt32_WriteLea(ref uint output, int offset)
+        {
+            uint input = (uint)DateTime.UtcNow.Ticks;
+
+            Unsafe.Add(ref output, offset) = BinaryPrimitives.ReverseEndianness(input);
+
+            return input;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ulong ByteSwapUInt64_WriteLea(ref ulong output, int offset)
+        {
+            ulong input = (ulong)DateTime.UtcNow.Ticks;
+
+            Unsafe.Add(ref output, offset) = BinaryPrimitives.ReverseEndianness(input);
 
             return input;
         }
