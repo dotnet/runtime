@@ -86,10 +86,10 @@ namespace System.IO.Tests
             {
                 if (enabledBeforeWait) fsw.EnableRaisingEvents = true;
 
-                const int timeoutMillis = 0;
+                const int timeoutMilliseconds = 0;
                 AssertTimedOut(useTimeSpan
-                    ? fsw.WaitForChanged(WatcherChangeTypes.All, TimeSpan.FromMilliseconds(timeoutMillis))
-                    : fsw.WaitForChanged(WatcherChangeTypes.All, timeoutMillis));
+                    ? fsw.WaitForChanged(WatcherChangeTypes.All, TimeSpan.FromMilliseconds(timeoutMilliseconds))
+                    : fsw.WaitForChanged(WatcherChangeTypes.All, timeoutMilliseconds));
                 Assert.Equal(enabledBeforeWait, fsw.EnableRaisingEvents);
             }
         }
@@ -104,10 +104,10 @@ namespace System.IO.Tests
             using (var fsw = new FileSystemWatcher(testDirectory.Path))
             {
                 if (enabledBeforeWait) fsw.EnableRaisingEvents = true;
-                const int timeoutMillis = 1;
+                const int timeoutMilliseconds = 1;
                 AssertTimedOut(useTimeSpan
-                    ? fsw.WaitForChanged(0, TimeSpan.FromMilliseconds(timeoutMillis))
-                    : fsw.WaitForChanged(0, timeoutMillis));
+                    ? fsw.WaitForChanged(0, TimeSpan.FromMilliseconds(timeoutMilliseconds))
+                    : fsw.WaitForChanged(0, timeoutMilliseconds));
                 Assert.Equal(enabledBeforeWait, fsw.EnableRaisingEvents);
             }
         }
@@ -126,10 +126,10 @@ namespace System.IO.Tests
             using (var fsw = new FileSystemWatcher(testDirectory.Path))
             {
                 if (enabledBeforeWait) fsw.EnableRaisingEvents = true;
-                const int timeoutMillis = 1;
+                const int timeoutMilliseconds = 1;
                 AssertTimedOut(useTimeSpan
-                    ? fsw.WaitForChanged(changeType, TimeSpan.FromMilliseconds(timeoutMillis))
-                    : fsw.WaitForChanged(changeType, timeoutMillis));
+                    ? fsw.WaitForChanged(changeType, TimeSpan.FromMilliseconds(timeoutMilliseconds))
+                    : fsw.WaitForChanged(changeType, timeoutMilliseconds));
                 Assert.Equal(enabledBeforeWait, fsw.EnableRaisingEvents);
             }
         }
