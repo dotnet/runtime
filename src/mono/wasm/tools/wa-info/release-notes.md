@@ -1,3 +1,9 @@
+### Release version 0.0.7
+
+Changes:
+
+ * new wa-diff tool to compare .wasm files
+
 ### Release version 0.0.6
 
 Changes:
