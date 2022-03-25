@@ -1435,6 +1435,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     }
     else if (expr->OperIs(GT_CAST) && expr->AsCast()->CastOp()->OperIs(GT_LCL_VAR))
     {
+        range = Range(Limit(Limit::keUnknown));
         var_types castType = expr->AsCast()->CastToType();
         if (expr->AsCast()->IsUnsigned())
         {
