@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Configuration.Xml
         /// <summary>
         /// Returns an XmlReader that decrypts data transparently.
         /// </summary>
-        public XmlReader CreateDecryptingXmlReader(Stream input, XmlReaderSettings settings)
+        public XmlReader CreateDecryptingXmlReader(Stream input, XmlReaderSettings? settings)
         {
             // XML-based configurations aren't really all that big, so we can buffer
             // the whole thing in memory while we determine decryption operations.
