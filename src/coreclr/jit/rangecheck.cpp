@@ -1034,7 +1034,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     }
     else if (binop->OperIs(GT_RSH))
     {
-        r = RangeOps::ShiftRigth(op1Range, op2Range);
+        r = RangeOps::ShiftRight(op1Range, op2Range);
         JITDUMP("BinOp multiply ranges %s %s = %s\n", op1Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
                 op2Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
                 r.ToString(m_pCompiler->getAllocatorDebugOnly()));
@@ -1277,6 +1277,25 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
     else if (expr->OperGet() == GT_PHI)
     {
         overflows = DoesPhiOverflow(block, expr);
+    }
+    else if (expr->OperIs(GT_CAST) && expr->AsCast()->CastOp()->OperIs(GT_LCL_VAR))
+    {
+        var_types castType = expr->AsCast()->CastToType();
+        if (expr->AsCast()->IsUnsigned())
+        {
+            castType = varTypeToUnsigned(castType);
+        }
+
+        // See if this is a cast on top of an argument - in this case we won't ever overflow
+        GenTreeLclVar* lcl = expr->gtGetOp1()->AsLclVar();
+        if ((lcl->GetSsaNum() == SsaConfig::FIRST_SSA_NUM)) // make sure it's the first def of the arg
+        {
+            const LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lcl->GetLclNum());
+            if (varDsc->lvIsParam && (varDsc->TypeGet() == castType) && varTypeIsSmallInt(castType))
+            {
+                overflows = false;
+            }
+        }
     }
     GetOverflowMap()->Set(expr, overflows, OverflowMap::Overwrite);
     m_pSearchPath->Remove(expr);

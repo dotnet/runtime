@@ -308,7 +308,7 @@ struct RangeOps
     }
 
     // Given a constant limit in "l1", do ">>" it to l2 and mutate "l2".
-    static Limit RightShiftConstantLimit(Limit& l1, Limit& l2)
+    static Limit ShiftRightConstantLimit(Limit& l1, Limit& l2)
     {
         assert(l1.IsConstant());
         Limit l = l2;
@@ -363,7 +363,7 @@ struct RangeOps
         return result;
     }
 
-    static Range ShiftRigth(Range& r1, Range& r2)
+    static Range ShiftRight(Range& r1, Range& r2)
     {
         Limit& r1lo = r1.LowerLimit();
         Limit& r1hi = r1.UpperLimit();
@@ -385,7 +385,7 @@ struct RangeOps
         }
         else if (r1lo.IsConstant())
         {
-            result.lLimit = RightShiftConstantLimit(r2lo, r1lo);
+            result.lLimit = ShiftRightConstantLimit(r2lo, r1lo);
         }
 
         if (r1hi.IsDependent())
@@ -394,7 +394,7 @@ struct RangeOps
         }
         else if (r1hi.IsConstant())
         {
-            result.uLimit = RightShiftConstantLimit(r2hi, r1hi);
+            result.uLimit = ShiftRightConstantLimit(r2hi, r1hi);
         }
 
         return result;
