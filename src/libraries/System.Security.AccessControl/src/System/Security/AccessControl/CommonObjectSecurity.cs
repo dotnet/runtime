@@ -181,7 +181,7 @@ namespace System.Security.AccessControl
             }
         }
 
-        private bool AceNeedsTranslation([NotNullWhen(true)] CommonAce? ace, bool isAccessAce, bool includeExplicit, bool includeInherited)
+        private static bool AceNeedsTranslation([NotNullWhen(true)] CommonAce? ace, bool isAccessAce, bool includeExplicit, bool includeInherited)
         {
             if (ace == null)
             {

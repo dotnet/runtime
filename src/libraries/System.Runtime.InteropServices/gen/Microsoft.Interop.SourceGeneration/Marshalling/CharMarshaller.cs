@@ -123,7 +123,7 @@ namespace Microsoft.Interop
 
         public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
 
-        private bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
+        private static bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
         {
             return context.SingleFrameSpansNativeContext
                 && !info.IsManagedReturnPosition

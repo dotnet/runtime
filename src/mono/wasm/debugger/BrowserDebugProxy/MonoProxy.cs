@@ -837,7 +837,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var assemblyName = await context.SdbAgent.GetAssemblyNameFromModule(moduleId, token);
             DebugStore store = await LoadStore(sessionId, token);
             AssemblyInfo asm = store.GetAssemblyByName(assemblyName);
-            foreach (var method in store.EnC(asm, meta_buf, pdb_buf))
+            foreach (var method in DebugStore.EnC(asm, meta_buf, pdb_buf))
                 await ResetBreakpoint(sessionId, method, token);
             return true;
         }
@@ -1549,7 +1549,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         continue;
                     if (method.IsLexicallyContainedInMethod(scope.Method.Info))
                         continue;
-                    SourceLocation newFoundLocation = store.FindBreakpointLocations(targetLocation, targetLocation, scope.Method.Info)
+                    SourceLocation newFoundLocation = DebugStore.FindBreakpointLocations(targetLocation, targetLocation, scope.Method.Info)
                                                 .FirstOrDefault();
                     if (!(newFoundLocation is null))
                         return true;
@@ -1564,7 +1564,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             ExecutionContext context = GetContext(sessionId);
             Frame scope = context.CallStack.First<Frame>();
 
-            SourceLocation foundLocation = store.FindBreakpointLocations(targetLocation, targetLocation, scope.Method.Info)
+            SourceLocation foundLocation = DebugStore.FindBreakpointLocations(targetLocation, targetLocation, scope.Method.Info)
                                                     .FirstOrDefault();
 
             if (foundLocation is null)

@@ -316,6 +316,7 @@ MONO_JIT_ICALL (mono_value_copy_internal) \
 MONO_JIT_ICALL (mono_x86_start_gsharedvt_call)	\
 MONO_JIT_ICALL (mono_x86_throw_corlib_exception)	\
 MONO_JIT_ICALL (mono_x86_throw_exception)	\
+MONO_JIT_ICALL (mini_init_method_rgctx)		\
 MONO_JIT_ICALL (native_to_interp_trampoline)	\
 MONO_JIT_ICALL (personality) \
 MONO_JIT_ICALL (pthread_getspecific) \

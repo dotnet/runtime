@@ -191,7 +191,7 @@ namespace Microsoft.Interop
             // If we have edges left, then we have a cycle.
             if (edgeMap.AnyEdges)
             {
-                throw new InvalidOperationException(Resources.GraphHasCycles);
+                throw new InvalidOperationException(SR.GraphHasCycles);
             }
 
             // If we make it here, we have a topologically sorted list.

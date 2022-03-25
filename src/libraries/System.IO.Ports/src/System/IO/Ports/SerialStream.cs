@@ -88,7 +88,7 @@ namespace System.IO.Ports
             Dispose(false);
         }
 
-        private void CheckArrayArguments(byte[] array!!, int offset, int count)
+        private static void CheckArrayArguments(byte[] array!!, int offset, int count)
         {
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNumRequired);

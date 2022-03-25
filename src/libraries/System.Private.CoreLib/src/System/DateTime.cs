@@ -209,7 +209,7 @@ namespace System
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new(year, month, day, hour, minute, 59);
+                this = new DateTime(year, month, day, hour, minute, 59);
                 ValidateLeapSecond();
             }
         }
@@ -226,7 +226,7 @@ namespace System
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new(year, month, day, hour, minute, 59, kind);
+                this = new DateTime(year, month, day, hour, minute, 59, kind);
                 ValidateLeapSecond();
             }
         }
@@ -243,7 +243,7 @@ namespace System
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new(year, month, day, hour, minute, 59, calendar);
+                this = new DateTime(year, month, day, hour, minute, 59, calendar);
                 ValidateLeapSecond();
             }
         }
@@ -265,7 +265,7 @@ namespace System
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new(year, month, day, hour, minute, 59, millisecond);
+                this = new DateTime(year, month, day, hour, minute, 59, millisecond);
                 ValidateLeapSecond();
             }
         }
@@ -285,7 +285,7 @@ namespace System
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new(year, month, day, hour, minute, 59, millisecond, kind);
+                this = new DateTime(year, month, day, hour, minute, 59, millisecond, kind);
                 ValidateLeapSecond();
             }
         }
@@ -302,7 +302,7 @@ namespace System
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new(year, month, day, hour, minute, 59, millisecond, calendar);
+                this = new DateTime(year, month, day, hour, minute, 59, millisecond, calendar);
                 ValidateLeapSecond();
             }
         }
@@ -320,7 +320,7 @@ namespace System
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new(year, month, day, hour, minute, 59, millisecond, calendar, kind);
+                this = new DateTime(year, month, day, hour, minute, 59, millisecond, calendar, kind);
                 ValidateLeapSecond();
             }
         }

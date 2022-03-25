@@ -43,7 +43,7 @@ namespace System.Text.RegularExpressions
                         case RegexNodeKind.Alternate:
                         case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when node.M != node.N:
                         case RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop or RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy when node.M != node.N:
-                            (results._mayBacktrack ??= new()).Add(node);
+                            (results._mayBacktrack ??= new HashSet<RegexNode>()).Add(node);
                             break;
                     }
                 }
@@ -120,7 +120,7 @@ namespace System.Text.RegularExpressions
                     // will be visible from this node to it.
                     if (!isAtomicBySelf && (results._mayBacktrack?.Contains(child) == true))
                     {
-                        (results._mayBacktrack ??= new()).Add(node);
+                        (results._mayBacktrack ??= new HashSet<RegexNode>()).Add(node);
                     }
                 }
 
