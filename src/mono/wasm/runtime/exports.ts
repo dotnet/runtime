@@ -22,7 +22,6 @@ const __initializeImportsAndExports: any = initializeImportsAndExports; // don't
 const __setEmscriptenEntrypoint: any = setEmscriptenEntrypoint; // don't want to export the type
 let __linker_exports: any = null;
 
-
 // this is executed early during load of emscripten runtime
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
 // At runtime this will be referred to as 'createDotnetRuntime'

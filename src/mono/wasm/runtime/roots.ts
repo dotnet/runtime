@@ -5,7 +5,7 @@ import cwraps from "./cwraps";
 import { Module } from "./imports";
 import { VoidPtr, ManagedPointer, NativePointer } from "./types/emscripten";
 import { MonoObjectRef, MonoObjectRefNull, MonoObject, is_nullish, WasmRoot, WasmRootBuffer } from "./types";
-import { _zero_region } from "./memory";
+import { _zero_region, getU32 } from "./memory";
 
 const maxScratchRoots = 8192;
 let _scratch_root_buffer: WasmRootBuffer | null = null;
@@ -33,7 +33,7 @@ export function mono_wasm_new_root_buffer(capacity: number, name?: string): Wasm
 
     _zero_region(offset, capacityBytes);
 
-    return new WasmRootBufferImpl(offset, capacity, true, name);
+    return new WasmRootBufferImpl(<any>offset, capacity, WasmRootBufferType.Owned, name);
 }
 
 /**
@@ -52,7 +52,7 @@ export function mono_wasm_new_root_buffer_from_pointer(offset: VoidPtr, capacity
 
     _zero_region(offset, capacityBytes);
 
-    return new WasmRootBufferImpl(offset, capacity, false, name);
+    return new WasmRootBufferImpl(<any>offset, capacity, WasmRootBufferType.External, name);
 }
 
 /**
@@ -146,6 +146,108 @@ export function mono_wasm_release_roots(...args: WasmRoot<any>[]): void {
     }
 }
 
+let _scratch_hazard_buffer_wrapper: WasmRootBuffer | null = null;
+
+/**
+ * Specific overloads for good tsc type info and errors
+ * If we merely exported the implementation below, it would be possible to do:
+ *  mono_wasm_with_hazard_buffer(n, (buf: ..., a: string, b: number) => (a + b), "hello") and
+ *  despite the fact that we omitted the 2nd userdata (a number) tsc would happily roll along,
+ *  and the userdata callback would receive an undefined where a number should have been.
+ * Providing these specific overloads ensures that the number of userdata parameters must match
+ *  the number of userdata parameters accepted by the callback.
+ * At this point you may be wondering: Why not just use a single '...args' signature?
+ * Because spread, args arrays, etc all have significant JS runtime overhead! :-)
+ * The underlying implementation will always try and pass 3 userdata values, even if it only got
+ *  one value or the callback only wants one. This is fine, because the JS runtime will discard
+ *  any extra parameters that the caller doesn't want.
+ */
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function mono_wasm_with_hazard_buffer<TFunc extends (buffer: WasmRootBuffer) => any>(
+    num_elements: number,
+    func: TFunc
+): ReturnType<TFunc>;
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function mono_wasm_with_hazard_buffer<TFunc extends (buffer: WasmRootBuffer, userdata1: any) => any>(
+    num_elements: number,
+    func: TFunc,
+    userdata1: Parameters<TFunc>[1]
+): ReturnType<TFunc>;
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function mono_wasm_with_hazard_buffer<TFunc extends (buffer: WasmRootBuffer, userdata1: any, userdata2: any) => any>(
+    num_elements: number,
+    func: TFunc,
+    userdata1: Parameters<TFunc>[1],
+    userdata2: Parameters<TFunc>[2]
+): ReturnType<TFunc>;
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function mono_wasm_with_hazard_buffer<TFunc extends (buffer: WasmRootBuffer, userdata1: any, userdata2: any, userdata3: any) => any>(
+    num_elements: number,
+    func: TFunc,
+    userdata1: Parameters<TFunc>[1],
+    userdata2: Parameters<TFunc>[2],
+    userdata3: Parameters<TFunc>[3]
+): ReturnType<TFunc>;
+
+/**
+ * Invokes func(hazard_buffer, [userdata1], [userdata2], [userdata3]), where:
+ *  hazard_buffer is a WasmRootBuffer with space for at least num_elements managed pointers to be stored in it
+ *  hazard_buffer is stored on the stack and cannot be used after func returns
+ * Any managed pointers stored inside hazard_buffer will not be moved or destroyed by the GC until func returns.
+ * func's return value (if any) will be returned by mono_wasm_with_hazard_buffer.
+ */
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function mono_wasm_with_hazard_buffer<TFunc extends (buffer: WasmRootBuffer, ...userdata: any) => any>(
+    num_elements: number,
+    func: TFunc,
+    userdata1?: Parameters<TFunc>[1],
+    userdata2?: Parameters<TFunc>[2],
+    userdata3?: Parameters<TFunc>[3]
+): ReturnType<TFunc> {
+    const sizeBytes = num_elements * 4;
+    const oldStackTop = Module.stackSave();
+    let wrapper = _scratch_hazard_buffer_wrapper;
+    _scratch_hazard_buffer_wrapper = null;
+    try {
+        const offset = Module.stackAlloc(sizeBytes);
+        if (!wrapper)
+            wrapper = new WasmRootBufferImpl(<any>offset, num_elements, WasmRootBufferType.Stack);
+        else
+            (<WasmRootBufferImpl>wrapper)._unsafe_change_address(<any>offset, num_elements);
+        wrapper.clear();
+
+        return func(wrapper, userdata1, userdata2, userdata3);
+    } finally {
+        if (wrapper) {
+            wrapper.release();
+            if (!_scratch_hazard_buffer_wrapper)
+                _scratch_hazard_buffer_wrapper = wrapper;
+        }
+        Module.stackRestore(oldStackTop);
+    }
+}
+
+/**
+ * Pins the object pointed to by root and then invokes func(obj, userdata).
+ * Until func returns, the object is guaranteed to not move or be collected by the GC.
+ */
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function mono_wasm_with_pinned_object<T extends MonoObject, TFunc extends (ptr: T, userdata?: any) => any>(
+    root: WasmRoot<T>,
+    func: TFunc,
+    userdata?: Parameters<TFunc>[1]
+): ReturnType<TFunc> {
+    const oldStackTop = Module.stackSave();
+    try {
+        const offset = Module.stackAlloc(4);
+        root.copy_to_address(<any>offset);
+        // We read-back after the copy since the object may have been moved by the GC
+        return func(<any>getU32(offset), userdata);
+    } finally {
+        Module.stackRestore(oldStackTop);
+    }
+}
+
 function _mono_wasm_release_scratch_index(index: number) {
     if (index === undefined)
         return;
@@ -173,27 +275,49 @@ function _mono_wasm_claim_scratch_index() {
     return result;
 }
 
+const enum WasmRootBufferType {
+    // A root buffer with its storage controlled by the WasmRootBuffer instance. The release method will deallocate it.
+    Owned,
+    // A root buffer with its storage controlled elsewhere. The release method will unregister the root but not deallocate it.
+    External,
+    // A root buffer present on the stack. The release method will do nothing.
+    Stack
+}
+
 export class WasmRootBufferImpl implements WasmRootBuffer {
     private __count: number;
-    private length: number;
-    private __offset: VoidPtr;
+    private __offset: MonoObjectRef;
     private __offset32: number;
-    private __handle: number;
-    private __ownsAllocation: boolean;
+    private __type: WasmRootBufferType;
 
-    constructor(offset: VoidPtr, capacity: number, ownsAllocation: boolean, name?: string) {
-        const capacityBytes = capacity * 4;
+    constructor(offset: MonoObjectRef, capacity: number, type: WasmRootBufferType, name?: string) {
+        // silence tsc warnings
+        this.__offset = <any>(this.__count = this.__offset32 = 0);
 
+        if (type !== WasmRootBufferType.Stack) {
+            const capacityBytes = capacity * 4;
+            cwraps.mono_wasm_register_root(offset as any, capacityBytes, name || "noname");
+        }
+
+        this._unsafe_change_address(offset, capacity);
+        this.__type = type;
+    }
+
+    get length(): number {
+        return this.__count;
+    }
+
+    _unsafe_change_address(offset: MonoObjectRef, capacity: number): void {
         this.__offset = offset;
         this.__offset32 = <number><any>offset >>> 2;
         this.__count = capacity;
-        this.length = capacity;
-        this.__handle = cwraps.mono_wasm_register_root(offset, capacityBytes, name || "noname");
-        this.__ownsAllocation = ownsAllocation;
     }
 
     _throw_index_out_of_range(): void {
-        throw new Error("index out of range");
+        if (this.__offset)
+            throw new Error("index out of range");
+        else
+            throw new Error("root buffer already released");
     }
 
     _check_in_range(index: number): void {
@@ -214,13 +338,13 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
     // NOTE: These functions do not use the helpers from memory.ts because WasmRoot.get and WasmRoot.set
     //  are hot-spots when you profile any application that uses the bindings extensively.
 
-    get(index: number): ManagedPointer {
+    get(index: number): MonoObject {
         this._check_in_range(index);
         const offset = this.get_address_32(index);
         return <any>Module.HEAPU32[offset];
     }
 
-    set(index: number, value: ManagedPointer): ManagedPointer {
+    set(index: number, value: MonoObject): MonoObject {
         const address = this.get_address(index);
         cwraps.mono_wasm_write_managed_pointer_unsafe(address, value);
         return value;
@@ -242,17 +366,21 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
 
     clear(): void {
         if (this.__offset)
-            _zero_region(this.__offset, this.__count * 4);
+            _zero_region(<any>this.__offset, this.__count * 4);
     }
 
     release(): void {
-        if (this.__offset && this.__ownsAllocation) {
-            cwraps.mono_wasm_deregister_root(this.__offset);
-            _zero_region(this.__offset, this.__count * 4);
-            Module._free(this.__offset);
+        switch (this.__type) {
+            case WasmRootBufferType.Owned:
+                cwraps.mono_wasm_deregister_root(<any>this.__offset);
+                _zero_region(<any>this.__offset, this.__count * 4);
+                Module._free(<any>this.__offset);
+                break;
+            default:
+                break;
         }
 
-        this.__handle = (<any>this.__offset) = this.__count = this.__offset32 = 0;
+        this.__offset = <any>(this.__count = this.__offset32 = 0);
     }
 
     toString(): string {

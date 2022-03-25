@@ -12,6 +12,9 @@ export declare interface NativePointer {
 export declare interface VoidPtr extends NativePointer {
     __brand: "VoidPtr"
 }
+export declare interface VoidPtrPtr extends NativePointer {
+    __brand: "VoidPtrPtr"
+}
 export declare interface CharPtr extends NativePointer {
     __brand: "CharPtr"
 }

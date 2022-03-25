@@ -8,12 +8,18 @@ import { wrap_error_root } from "../invoke-js";
 import { ManagedObject } from "../marshal";
 import { getU32, getI32, getF32, getF64, setI32_unchecked } from "../memory";
 import { createPromiseController } from "../promise-controller";
-import { mono_wasm_new_root, mono_wasm_new_external_root } from "../roots";
 import { conv_string_root } from "../strings";
-import { MarshalType, MonoType, MarshalError, MonoTypeNull, MonoArray, MonoArrayNull, MonoObject, MonoObjectNull, GCHandle, MonoStringRef, MonoObjectRef, MonoString, JSHandleDisposed, is_nullish, WasmRoot } from "../types";
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { legacyManagedExports } from "./corebindings";
 import { legacyHelpers } from "./imports";
+import { Module } from "../imports";
+import { mono_wasm_new_root, mono_wasm_new_external_root } from "../roots";
+import {
+    GCHandle, JSHandleDisposed, MarshalError, MarshalType, MonoArray,
+    MonoArrayNull, MonoObject, MonoObjectNull, MonoString,
+    MonoType, MonoTypeNull, MonoObjectRef, MonoStringRef, is_nullish,
+    WasmRoot
+} from "../types";
 import { js_to_mono_obj_root } from "./js-to-cs";
 import { mono_bind_method, mono_method_get_call_signature_ref } from "./method-binding";
 
@@ -342,4 +348,47 @@ export function get_js_owned_object_by_gc_handle_ref(gc_handle: GCHandle, result
     }
     // this is always strong gc_handle
     legacyManagedExports._get_js_owned_object_by_gc_handle_ref(gc_handle, result);
+}
+
+export function mono_primitive_array_to_js_typed_array_ref<T extends ArrayBufferView> (
+    type: {
+        new(length: number): T,
+        new(buffer: ArrayBuffer, byteOffset: number, length: number): T,
+        BYTES_PER_ELEMENT: number,
+    },
+    array: MonoObjectRef,
+    // default: true
+    copy?: boolean,
+    // default: false
+    coerce?: boolean
+): T {
+    const oldStackTop = Module.stackSave();
+    try {
+        const tempBuf = <any>Module.stackAlloc(16);
+        // We copy the array address into our stack buffer to pin it so that we can safely manipulate its
+        //  elements for the remainder of our execution
+        cwraps.mono_wasm_copy_managed_pointer(tempBuf, array);
+        cwraps.mono_wasm_array_info_ref(tempBuf, tempBuf + 4, <any>0, tempBuf + 8, tempBuf + 12);
+
+        const lengthInElements = getU32(tempBuf + 4),
+            elementSizeBytes = getU32(tempBuf + 8),
+            firstElementOffset = getU32(tempBuf + 12),
+            viewLengthInElements = coerce === true
+                ? (lengthInElements * elementSizeBytes) / type.BYTES_PER_ELEMENT
+                : lengthInElements;
+
+        if ((coerce !== true) && (elementSizeBytes !== type.BYTES_PER_ELEMENT))
+            throw new Error(`Expected array type ${type.name || type} to have an element size of ${elementSizeBytes} but it was ${type.BYTES_PER_ELEMENT}`);
+        else if ((viewLengthInElements | 0) !== viewLengthInElements)
+            throw new Error(`Size of coerced array (${viewLengthInElements} elements) is not integral`);
+
+        const sourceView = new type(Module.HEAPU8.buffer, firstElementOffset, viewLengthInElements);
+        if (copy)
+            // TypedArrayView.slice() returns a shallow copy of the whole source array with a new backing buffer
+            return (sourceView as any).slice();
+        else
+            return sourceView;
+    } finally {
+        Module.stackRestore(oldStackTop);
+    }
 }

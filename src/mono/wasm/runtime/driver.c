@@ -21,6 +21,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/debug-helpers.h>
 // FIXME: unavailable in emscripten
+// #include <mono/metadata/abi-details.h>
 // #include <mono/metadata/gc-internals.h>
 
 #include <mono/metadata/mono-private-unstable.h>
@@ -46,6 +47,7 @@ extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int 
 
 // Blazor specific custom routines - see dotnet_support.js for backing code
 extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2);
+extern void mono_wasm_invoke_js_blazor_ref (void *callInfo, void **result, MonoString **exceptionMessage, void* arg0, void* arg1, void* arg2);
 
 void mono_wasm_enable_debugging (int);
 
@@ -128,6 +130,9 @@ int mono_wasm_enable_gc = 1;
 
 /* Not part of public headers */
 #define MONO_ICALL_TABLE_CALLBACKS_VERSION 2
+
+// HACK
+#define MONO_ABI_SIZEOF(T) ((int)sizeof(void*) * 2)
 
 typedef struct {
 	int version;
@@ -456,6 +461,7 @@ void mono_initialize_internals ()
 {
 	// Blazor specific custom routines - see dotnet_support.js for backing code
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
+	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJSRef", mono_wasm_invoke_js_blazor_ref);
 
 #ifdef CORE_BINDINGS
 	core_initialize_internals();
@@ -1226,6 +1232,23 @@ mono_wasm_try_unbox_primitive_and_get_type_ref (MonoObject **objRef, void *resul
 	return retval;
 }
 
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_array_info_ref (PPVOLATILE(MonoArray) array, uintptr_t *length, MonoType **element_type_out, int32_t *element_size_out, void **first_element)
+{
+	MONO_ENTER_GC_UNSAFE;
+	MonoClass* array_class = mono_object_get_class ((MonoObject *)*array);
+	int32_t element_size = mono_array_element_size (array_class);
+	if (length)
+		*length = mono_array_length (*array);
+	if (element_size_out)
+		*element_size_out = element_size;
+	if (element_type_out)
+		*element_type_out = mono_class_get_type (mono_class_get_element_class (array_class));
+	if (first_element)
+		*first_element = mono_array_addr_with_size (*array, element_size, 0);
+	MONO_EXIT_GC_UNSAFE;
+}
+
 // FIXME: Ref
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_array_length (MonoArray *array)
@@ -1240,7 +1263,7 @@ mono_wasm_array_get (MonoArray *array, int idx)
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_array_get_ref (MonoArray **array, int idx, MonoObject **result)
+mono_wasm_array_get_ref (PPVOLATILE(MonoArray) array, int idx, MonoObject **result)
 {
 	MONO_ENTER_GC_UNSAFE;
 	mono_gc_wbarrier_generic_store_atomic(result, mono_array_get (*array, MonoObject*, idx));
@@ -1396,13 +1419,123 @@ mono_wasm_get_type_aqn (MonoType * typePtr) {
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_write_managed_pointer_unsafe (PPVOLATILE(MonoObject) destination, PVOLATILE(MonoObject) source) {
+mono_wasm_write_managed_pointer_unsafe (PPVOLATILE(MonoObject) destination, PVOLATILE(const MonoObject) source) {
 	store_volatile(destination, source);
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_copy_managed_pointer (PPVOLATILE(MonoObject) destination, PPVOLATILE(MonoObject) source) {
+mono_wasm_copy_managed_pointer (PPVOLATILE(MonoObject) destination, PPVOLATILE(const MonoObject) source) {
 	copy_volatile(destination, source);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_memcpy_from_managed_object (
+	PVOLATILE(void) destination, int destination_offset, int destination_size_bytes,
+	PPVOLATILE(const MonoObject) source_object_ref, int source_offset, int count_bytes
+) {
+	if (count_bytes == 0)
+		return;
+
+	assert(destination_offset >= 0);
+	assert(destination_size_bytes > 0);
+	assert(source_offset >= 0);
+	assert(count_bytes > 0);
+	assert(destination_size_bytes >= count_bytes + destination_offset);
+	assert(source_object_ref);
+	assert(destination);
+	// TODO: Check that source range is within the object body
+
+	// TODO: The gc unsafe region might not actually be necessary
+	MONO_ENTER_GC_UNSAFE;
+
+	// The caller is not in a position to do the following pointer arithmetic safely, but we are
+	// Now we pin the source object directly
+	PVOLATILE(const MonoObject) source_object = *source_object_ref;
+	assert(source_object);
+	// We store these offset addresses in separate locals so the base addresses are still on the stack
+	//  in case they point to managed objects
+	PVOLATILE(void) actual_destination = (char *)destination + destination_offset;
+	PVOLATILE(const void) actual_source = (const char *)source_object + MONO_ABI_SIZEOF(MonoObject) + source_offset;
+
+	memcpy(actual_destination, actual_source, count_bytes);
+
+	MONO_EXIT_GC_UNSAFE;
+}
+
+EMSCRIPTEN_KEEPALIVE int32_t
+mono_wasm_get_object_field_i32 (
+	PPVOLATILE(const MonoObject) source_object_ref, int source_offset
+) {
+	int32_t result;
+
+	assert(source_offset >= 0);
+	assert(source_object_ref);
+	// TODO: Check that field offset is within the object body
+
+	// TODO: The gc unsafe region might not actually be necessary
+	MONO_ENTER_GC_UNSAFE;
+
+	// The caller is not in a position to do the following pointer arithmetic safely, but we are
+	// Now we pin the source object directly
+	PVOLATILE(const MonoObject) source_object = *source_object_ref;
+	assert(source_object);
+	// We store these offset addresses in separate locals so the base addresses are still on the stack
+	//  in case they point to managed objects
+	PVOLATILE(const void) actual_source = (const char *)source_object + MONO_ABI_SIZEOF(MonoObject) + source_offset;
+
+	result = *(int32_t*)actual_source;
+
+	MONO_EXIT_GC_UNSAFE;
+
+	return result;
+}
+
+EMSCRIPTEN_KEEPALIVE double
+mono_wasm_get_object_field_f64 (
+	PPVOLATILE(const MonoObject) source_object_ref, int source_offset
+) {
+	double result;
+
+	assert(source_offset >= 0);
+	assert(source_object_ref);
+	// TODO: Check that field offset is within the object body
+
+	// TODO: The gc unsafe region might not actually be necessary
+	MONO_ENTER_GC_UNSAFE;
+
+	// The caller is not in a position to do the following pointer arithmetic safely, but we are
+	// Now we pin the source object directly
+	PVOLATILE(const MonoObject) source_object = *source_object_ref;
+	assert(source_object);
+	// We store these offset addresses in separate locals so the base addresses are still on the stack
+	//  in case they point to managed objects
+	PVOLATILE(const void) actual_source = (const char *)source_object + MONO_ABI_SIZEOF(MonoObject) + source_offset;
+
+	result = *(double*)actual_source;
+
+	MONO_EXIT_GC_UNSAFE;
+
+	return result;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_copy_managed_pointer_from_field (
+	PPVOLATILE(MonoObject) destination, PPVOLATILE(const MonoObject) source_object_ref, int field_offset
+) {
+	assert(destination);
+	assert(source_object_ref);
+	assert(field_offset >= 0);
+	// TODO: Check that field offset is within the object body
+
+	// TODO: The gc unsafe region might not actually be necessary
+	MONO_ENTER_GC_UNSAFE;
+
+	PVOLATILE(const MonoObject) source_object = *source_object_ref;
+	assert(source_object);
+	PVOLATILE(const char) actual_source = (const char *)source_object + MONO_ABI_SIZEOF(MonoObject) + field_offset;
+	copy_volatile(destination, (PPVOLATILE(const MonoObject))actual_source);
+
+	MONO_EXIT_GC_UNSAFE;
 }
 
 #ifdef ENABLE_AOT_PROFILER

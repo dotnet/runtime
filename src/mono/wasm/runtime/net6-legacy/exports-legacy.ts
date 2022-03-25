@@ -39,6 +39,11 @@ export function export_mono_api(): MONOType {
         mono_wasm_add_assembly: <any>null,
         mono_wasm_load_runtime,
 
+        mono_wasm_memcpy_from_managed_object: cwraps.mono_wasm_memcpy_from_managed_object,
+        mono_wasm_get_object_field_i32: cwraps.mono_wasm_get_object_field_i32,
+        mono_wasm_get_object_field_f64: cwraps.mono_wasm_get_object_field_f64,
+        mono_wasm_copy_managed_pointer_from_field: cwraps.mono_wasm_copy_managed_pointer_from_field,
+
         config: <MonoConfig | MonoConfigError>runtimeHelpers.config,
         loaded_files: <string[]>[],
 

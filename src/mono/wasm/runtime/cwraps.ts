@@ -7,7 +7,7 @@ import {
     MonoType, MonoObjectRef, MonoStringRef, JSMarshalerArguments
 } from "./types";
 import { ENVIRONMENT_IS_PTHREAD, Module } from "./imports";
-import { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
+import { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer, VoidPtrPtr } from "./types/emscripten";
 
 type SigLine = [lazy: boolean, name: string, returnType: string | null, argTypes?: string[], opts?: any];
 
@@ -66,6 +66,11 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_type_get_class", "number", ["number"]],
     [true, "mono_wasm_get_type_name", "string", ["number"]],
     [true, "mono_wasm_get_type_aqn", "string", ["number"]],
+    [true, "mono_wasm_array_info_ref", "void", ["number", "number", "number", "number", "number"]],
+    [true, "mono_wasm_memcpy_from_managed_object", "void", ["number", "number", "number", "number", "number", "number"]],
+    [true, "mono_wasm_copy_managed_pointer_from_field", "void", ["number", "number", "number"]],
+    [true, "mono_wasm_get_object_field_i32", "number", ["number", "number"]],
+    [true, "mono_wasm_get_object_field_f64", "number", ["number", "number"]],
 
     // MONO.diagnostics
     [true, "mono_wasm_event_pipe_enable", "bool", ["string", "number", "number", "string", "bool", "number"]],
@@ -97,8 +102,8 @@ const fn_signatures: SigLine[] = [
 
 export interface t_Cwraps {
     // MONO
-    mono_wasm_register_root(start: VoidPtr, size: number, name: string): number;
-    mono_wasm_deregister_root(addr: VoidPtr): void;
+    mono_wasm_register_root(start: MonoObjectRef, size: number, name: string): number;
+    mono_wasm_deregister_root(addr: MonoObjectRef): void;
     mono_wasm_string_get_data_ref(stringRef: MonoStringRef, outChars: CharPtrPtr, outLengthBytes: Int32Ptr, outIsInterned: Int32Ptr): void;
     mono_wasm_set_is_debugger_attached(value: boolean): void;
     mono_wasm_send_dbg_command(id: number, command_set: number, command: number, data: VoidPtr, size: number): boolean;
@@ -139,6 +144,10 @@ export interface t_Cwraps {
     mono_wasm_array_get_ref(array: MonoObjectRef, idx: number, result: MonoObjectRef): void;
     mono_wasm_obj_array_new_ref(size: number, result: MonoObjectRef): void;
     mono_wasm_obj_array_set_ref(array: MonoObjectRef, idx: number, obj: MonoObjectRef): void;
+    /**
+     * It is your responsibility to ensure that this array is pinned until you are done with it.
+     */
+    mono_wasm_array_info_ref(array: MonoObjectRef, length_out: Int32Ptr, element_type_out: VoidPtrPtr, element_size_out: Int32Ptr, first_element_out: VoidPtrPtr): void;
     mono_wasm_register_bundled_satellite_assemblies(): void;
     mono_wasm_try_unbox_primitive_and_get_type_ref(obj: MonoObjectRef, buffer: VoidPtr, buffer_size: number): number;
     mono_wasm_box_primitive_ref(klass: MonoClass, value: VoidPtr, value_size: number, result: MonoObjectRef): void;
@@ -203,6 +212,13 @@ export interface t_Cwraps {
     mono_wasm_f64_to_i52(destination: VoidPtr, value: number): I52Error;
     mono_wasm_f64_to_u52(destination: VoidPtr, value: number): I52Error;
     mono_wasm_runtime_run_module_cctor(assembly: MonoAssembly): void;
+    mono_wasm_memcpy_from_managed_object (
+        destination: VoidPtr, destination_offset: number, destination_size_bytes: number,
+        source_object: MonoObjectRef, source_offset: number, count_bytes: number
+    ): void;
+    mono_wasm_get_object_field_i32 (source_object: MonoObjectRef, source_offset: number): number;
+    mono_wasm_get_object_field_f64 (source_object: MonoObjectRef, source_offset: number): number;
+    mono_wasm_copy_managed_pointer_from_field (destination: MonoObjectRef, source_object: MonoObjectRef, field_offset: number): void;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};

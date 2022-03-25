@@ -302,6 +302,10 @@ declare type MONOType = {
      * @deprecated Please use getHeapF64
      */
     getF64: (offset: MemOffset) => number;
+    mono_wasm_memcpy_from_managed_object(destination: VoidPtr, destination_offset: number, destination_size_bytes: number, source_object: MonoObjectRef, source_offset: number, count_bytes: number): void;
+    mono_wasm_get_object_field_i32(source_object: MonoObjectRef, source_offset: number): number;
+    mono_wasm_get_object_field_f64(source_object: MonoObjectRef, source_offset: number): number;
+    mono_wasm_copy_managed_pointer_from_field(destination: MonoObjectRef, source_object: MonoObjectRef, field_offset: number): void;
 };
 
 export { BINDINGType, MONOType, MonoArray, MonoObject, MonoString };

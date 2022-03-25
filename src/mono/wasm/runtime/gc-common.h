@@ -53,12 +53,12 @@ mono_threads_assert_gc_safe_region (void);
 #endif /* DISABLE_THREADS */
 
 static void
-store_volatile (PPVOLATILE(MonoObject) destination, PVOLATILE(MonoObject) source) {
+store_volatile (PPVOLATILE(MonoObject) destination, PVOLATILE(const MonoObject) source) {
 	mono_gc_wbarrier_generic_store_atomic((void*)destination, (MonoObject*)source);
 }
 
 static void
-copy_volatile (PPVOLATILE(MonoObject) destination, PPVOLATILE(MonoObject) source) {
+copy_volatile (PPVOLATILE(MonoObject) destination, PPVOLATILE(const MonoObject) source) {
 	mono_gc_wbarrier_generic_store_atomic((void*)destination, (MonoObject*)(*source));
 }
 
