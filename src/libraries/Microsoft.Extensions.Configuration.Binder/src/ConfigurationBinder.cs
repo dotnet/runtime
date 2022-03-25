@@ -435,8 +435,7 @@ namespace Microsoft.Extensions.Configuration
                         throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
                     }
 
-                    // find the constructor that most closely matches the amount of fields in config
-
+                    // find the biggest constructor so that we can bind to the most parameters
                     ParameterInfo[] parameters = constructors[0].GetParameters();
 
                     for (int index = 1; index < constructors.Length; index++)
