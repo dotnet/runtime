@@ -4429,7 +4429,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         regNumber shiftByReg = shiftBy->GetRegNum();
         emitAttr  size       = emitTypeSize(tree);
 
-        GetEmitter()->emitIns_R_R_R(ins, size, tree->GetRegNum(), operandReg, shiftByReg);
+        GetEmitter()->emitIns_R_R_R(ins, size, tree->GetRegNum(), shiftByReg, operandReg);
         genProduceReg(tree);
         return;
     }
