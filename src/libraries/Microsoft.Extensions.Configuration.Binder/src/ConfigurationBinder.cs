@@ -5,7 +5,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
@@ -238,32 +237,10 @@ namespace Microsoft.Extensions.Configuration
             object? propertyValue = property.GetValue(instance);
             bool hasSetter = property.SetMethod != null && (property.SetMethod.IsPublic || options.BindNonPublicProperties);
 
-            if (!hasSetter)
+            if (propertyValue == null && !hasSetter)
             {
-                var backingField = property.DeclaringType?.GetField($"<{property.Name}>k__BackingField", DeclaredOnlyLookup);
-                if (backingField != null)
-                {
-                    // Property doesn't have a value and we cannot set it so there is no
-                    // point in going further down the graph
-                    backingField!.SetValue(instance, propertyValue);
-
-                    propertyValue = GetFieldValue(property, backingField, instance, config, options);
-
-                    if (propertyValue != null)
-                    {
-                        backingField.SetValue(instance, propertyValue);
-                    }
-
-                    return;
-                }
-
                 return;
             }
-
-            // if (propertyValue == null)
-            // {
-            //     return;
-            // }
 
             propertyValue = GetPropertyValue(property, instance, config, options);
 
@@ -379,7 +356,7 @@ namespace Microsoft.Extensions.Configuration
                         return instance;
                     }
 
-                    instance = CreateInstance(type);
+                    instance = CreateInstance(type, config, options);
                 }
 
                 // See if its a Dictionary
@@ -420,7 +397,12 @@ namespace Microsoft.Extensions.Configuration
             return instance;
         }
 
-        private static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type)
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
+        private static object? CreateInstance(
+            [DynamicallyAccessedMembers(
+                DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type,
+            IConfiguration config,
+            BinderOptions options)
         {
             if (type.IsInterface || type.IsAbstract)
             {
@@ -441,36 +423,26 @@ namespace Microsoft.Extensions.Configuration
             {
                 ConstructorInfo[] constructors = type.GetConstructors(DeclaredOnlyLookup);
 
-                bool hasDefaultConstructor = constructors.Any(ctor => ctor.IsPublic && ctor.GetParameters().Length == 0);
+                bool hasParameterlessPublicConstructor = constructors.Any(ctor => ctor.IsPublic && ctor.GetParameters().Length == 0);
 
-                if (!hasDefaultConstructor)
+                if (!hasParameterlessPublicConstructor)
                 {
-                    if (constructors.Length == 1 && !constructors[0].IsPublic )
+                    // if the only constructor is private, then throw
+                    if (constructors.Length == 1 && !constructors[0].IsPublic)
                     {
                         throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
                     }
-                    //steve: records don't have default constructors, and there's no way to differentiate between a record and
 
-                    // call the one with the least amount of parameters
+                    ParameterInfo[] parametersForFirstConstructor = constructors[0].GetParameters();
 
-                    ParameterInfo[] smallestParameters = constructors[0].GetParameters();
+                    List<object?> parameterValues = new List<object?>();
 
-                    for (int index = 1; index < constructors.Length; index++)
+                    foreach (var parameter in parametersForFirstConstructor)
                     {
-                        ParameterInfo[] parameterInfos = constructors[index].GetParameters();
-
-                        // we want the smallest amount of parameters, but we don't the copy constructor (a constructor with 1 parameter of the same type as the containing type)
-                        if (parameterInfos.Length < smallestParameters.Length && (parameterInfos.Length != 1 && parameterInfos[0].ParameterType != type))
-                        {
-                            smallestParameters = parameterInfos;
-                        }
+                        parameterValues.Add(GetParameterValue(parameter, config, options));
                     }
 
-                    object?[] parameters = smallestParameters.Select(p => GetDefault(p.ParameterType)).ToArray();
-
-                    //any other type -- or is there...?
-                    return Activator.CreateInstance(type, parameters);
-                    //throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
+                    return Activator.CreateInstance(type, parameterValues.ToArray());
                 }
             }
 
@@ -482,16 +454,6 @@ namespace Microsoft.Extensions.Configuration
             {
                 throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type), ex);
             }
-        }
-
-        private static object? GetDefault(Type type)
-        {
-            if (type.IsValueType)
-            {
-                return Activator.CreateInstance(type);
-            }
-
-            return null;
         }
 
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
@@ -746,6 +708,18 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
+        private static object? GetParameterValue(ParameterInfo property, IConfiguration config, BinderOptions options)
+        {
+            string parameterName = GetParameterName(property);
+
+            return BindInstance(
+                property.ParameterType,
+                null,
+                config.GetSection(parameterName),
+                options);
+        }
+
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static object? GetPropertyValue(PropertyInfo property, object instance, IConfiguration config, BinderOptions options)
         {
             string propertyName = GetPropertyName(property);
@@ -766,6 +740,37 @@ namespace Microsoft.Extensions.Configuration
                 field.GetValue(instance),
                 config.GetSection(fieldName),
                 options);
+        }
+
+        // todo: steve - we might not need this; currently, these attributes are only applicable to properties and
+        // not parameters. We might be able to get rid of this method once confirm whether it's needed or not.
+
+        private static string GetParameterName(ParameterInfo parameter)
+        {
+            // Check for a custom property name used for configuration key binding
+            foreach (var attributeData in parameter.GetCustomAttributesData())
+            {
+                if (attributeData.AttributeType != typeof(ConfigurationKeyNameAttribute))
+                {
+                    continue;
+                }
+
+                // Ensure ConfigurationKeyName constructor signature matches expectations
+                if (attributeData.ConstructorArguments.Count != 1)
+                {
+                    break;
+                }
+
+                // Assumes ConfigurationKeyName constructor first arg is the string key name
+                string? name = attributeData
+                    .ConstructorArguments[0]
+                    .Value?
+                    .ToString();
+
+                return !string.IsNullOrWhiteSpace(name) ? name : parameter.Name!;
+            }
+
+            return parameter.Name!;
         }
 
         private static string GetPropertyName(MemberInfo property!!)
