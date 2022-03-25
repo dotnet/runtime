@@ -48,7 +48,7 @@ namespace WebAssemblyInfo
         {
             var help = false;
             var options = new OptionSet {
-                $"Usage: wa-diff OPTIONS* file.wasm [file2.wasm ...]",
+                $"Usage: wa-diff OPTIONS* file1.wasm file2.wasm",
                 "",
                 "Compares WebAssembly binary file(s)",
                 "",

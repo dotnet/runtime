@@ -118,26 +118,28 @@ namespace WebAssemblyInfo
             var diff = InlineDiffBuilder.Diff(code1, code2);
             string? lineM1 = null, lineM2 = null;
             int after = 0;
+            var origColor = Console.ForegroundColor;
             foreach (var line in diff.Lines)
             {
                 switch (line.Type)
                 {
                     case ChangeType.Inserted:
-                        Console.ForegroundColor = ConsoleColor.Green;
                         PrintPrevLines(lineM2, lineM1);
                         lineM1 = lineM2 = null;
+                        Console.ForegroundColor = ConsoleColor.Green;
                         Console.WriteLine($"+ {line.Text}");
+                        Console.ForegroundColor = origColor;
                         after = 2;
                         break;
                     case ChangeType.Deleted:
-                        Console.ForegroundColor = ConsoleColor.Red;
                         PrintPrevLines(lineM2, lineM1);
                         lineM1 = lineM2 = null;
+                        Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine($"- {line.Text}");
+                        Console.ForegroundColor = origColor;
                         after = 2;
                         break;
                     default:
-                        Console.ForegroundColor = ConsoleColor.Gray; // compromise for dark or light background
                         if (after > 0)
                         {
                             Console.WriteLine($"  {line.Text}");
