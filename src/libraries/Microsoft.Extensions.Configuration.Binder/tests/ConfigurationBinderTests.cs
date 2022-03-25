@@ -128,6 +128,36 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public int Length { get; }
         }
 
+        public class ImmutableClassWithConstructorOverloads
+        {
+            public ImmutableClassWithConstructorOverloads(string color)
+            {
+                Color = color;
+            }
+
+            public ImmutableClassWithConstructorOverloads(string color, int length)
+            {
+                Color = color;
+                Length = length;
+            }
+
+            public string Color { get; }
+            public int Length { get; }
+        }
+
+        public class SemiImmutableType
+        {
+            public SemiImmutableType(string color, int length)
+            {
+                Color = color;
+                Length = length;
+            }
+
+            public string Color { get; }
+            public int Length { get; }
+            public decimal Thickness { get; set; }
+        }
+
         public struct ValueTypeOptions
         {
             public int MyInt32 { get; set; }
@@ -1025,6 +1055,48 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = config.Get<ImmutableLengthAndColorClass>();
             Assert.Equal(42, options.Length);
             Assert.Equal("Green", options.Color);
+        }
+
+        // If the immutable type has multiple constructors,
+        // then pick the one with the most parameters
+        // and try to bind as many as possible.
+        // The example below has a type that has two constructors, one
+        // that just sets one property, and one that sets both.
+        // It should pick the one that sets both.
+        [Fact]
+        public void CanBindImmutableClass_PicksBiggestNonParameterlessConstructor()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ImmutableClassWithConstructorOverloads>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+        }
+
+        [Fact]
+        public void CanBindSemiImmutableClass()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+                {"Thickness", "1.23"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<SemiImmutableType>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+            Assert.Equal(1.23m, options.Thickness);
         }
 
 #if NETCOREAPP

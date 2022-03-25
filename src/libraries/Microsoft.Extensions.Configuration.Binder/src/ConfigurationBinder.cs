@@ -435,11 +435,22 @@ namespace Microsoft.Extensions.Configuration
                         throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
                     }
 
-                    ParameterInfo[] parametersForFirstConstructor = constructors[0].GetParameters();
+                    // find the constructor that most closely matches the amount of fields in config
+
+                    ParameterInfo[] parameters = constructors[0].GetParameters();
+
+                    for (int index = 1; index < constructors.Length; index++)
+                    {
+                        ParameterInfo[] constructorParameters = constructors[index].GetParameters();
+                        if (constructorParameters.Length > parameters.Length)
+                        {
+                            parameters = constructorParameters;
+                        }
+                    }
 
                     List<object?> parameterValues = new List<object?>();
 
-                    foreach (var parameter in parametersForFirstConstructor)
+                    foreach (var parameter in parameters)
                     {
                         parameterValues.Add(GetParameterValue(parameter, config, options));
                     }
