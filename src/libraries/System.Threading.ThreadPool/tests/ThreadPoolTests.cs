@@ -912,7 +912,7 @@ namespace System.Threading.ThreadPools.Tests
     [Collection(nameof(DisableParallelization))] // these tests may be sensitive to timing
     public class ThreadPoolTests_NonParallel
     {
-        [ConditionalFact(nameof(ThreadPoolTests.IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(ThreadPoolTests), nameof(ThreadPoolTests.IsThreadingAndRemoteExecutorSupported))]
         public static void CooperativeBlockingCanCreateThreadsFaster()
         {
             // Run in a separate process to test in a clean thread pool environment such that work items queued by the test
@@ -975,7 +975,7 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(nameof(ThreadPoolTests.IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(ThreadPoolTests), nameof(ThreadPoolTests.IsThreadingAndRemoteExecutorSupported))]
         public static void CooperativeBlockingWithProcessingThreadsAndGoalThreadsAndAddWorkerRaceTest()
         {
             // Avoid contaminating the main process' environment
