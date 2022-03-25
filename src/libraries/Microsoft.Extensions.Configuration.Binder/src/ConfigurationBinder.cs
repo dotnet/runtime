@@ -732,18 +732,6 @@ namespace Microsoft.Extensions.Configuration
                 options);
         }
 
-        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
-        private static object? GetFieldValue(MemberInfo propertyInfo, FieldInfo field, object instance,
-            IConfiguration config, BinderOptions options)
-        {
-            string fieldName = GetPropertyName(propertyInfo);
-            return BindInstance(
-                field.FieldType,
-                field.GetValue(instance),
-                config.GetSection(fieldName),
-                options);
-        }
-
         // todo: steve - we might not need this; currently, these attributes are only applicable to properties and
         // not parameters. We might be able to get rid of this method once confirm whether it's needed or not.
 
