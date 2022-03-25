@@ -1513,9 +1513,6 @@
   <data name="Argument_TypeNotComObject" xml:space="preserve">
     <value>The type must be __ComObject or be derived from __ComObject.</value>
   </data>
-  <data name="Argument_TypeNotValid" xml:space="preserve">
-    <value>The Type object is not valid.</value>
-  </data>
   <data name="Argument_UnclosedExceptionBlock" xml:space="preserve">
     <value>The IL Generator cannot be used while there are unclosed exceptions.</value>
   </data>

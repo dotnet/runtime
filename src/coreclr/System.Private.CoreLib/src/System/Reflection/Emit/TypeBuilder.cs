@@ -1171,8 +1171,6 @@ namespace System.Reflection.Emit
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] typeArguments)
         {
-            AssemblyBuilder.CheckContext(typeArguments);
-
             return TypeBuilderInstantiation.MakeGenericType(this, typeArguments);
         }
 
@@ -1255,11 +1253,6 @@ namespace System.Reflection.Emit
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            AssemblyBuilder.CheckContext(returnType);
-            AssemblyBuilder.CheckContext(returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes);
-            AssemblyBuilder.CheckContext(parameterTypeRequiredCustomModifiers);
-            AssemblyBuilder.CheckContext(parameterTypeOptionalCustomModifiers);
-
             if (parameterTypes != null)
             {
                 if (parameterTypeOptionalCustomModifiers != null && parameterTypeOptionalCustomModifiers.Length != parameterTypes.Length)
@@ -1334,11 +1327,6 @@ namespace System.Reflection.Emit
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers,
             CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
-            AssemblyBuilder.CheckContext(returnType);
-            AssemblyBuilder.CheckContext(returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes);
-            AssemblyBuilder.CheckContext(parameterTypeRequiredCustomModifiers);
-            AssemblyBuilder.CheckContext(parameterTypeOptionalCustomModifiers);
-
             lock (SyncRoot)
             {
                 ArgumentException.ThrowIfNullOrEmpty(name);
@@ -1539,10 +1527,6 @@ namespace System.Reflection.Emit
         private ConstructorBuilder DefineConstructorNoLock(MethodAttributes attributes, CallingConventions callingConvention,
             Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
         {
-            AssemblyBuilder.CheckContext(parameterTypes);
-            AssemblyBuilder.CheckContext(requiredCustomModifiers);
-            AssemblyBuilder.CheckContext(optionalCustomModifiers);
-
             ThrowIfCreated();
 
             string name;
@@ -1582,10 +1566,6 @@ namespace System.Reflection.Emit
         {
             lock (SyncRoot)
             {
-                // Why do we only call CheckContext here? Why don't we call it in the other overloads?
-                AssemblyBuilder.CheckContext(parent);
-                AssemblyBuilder.CheckContext(interfaces);
-
                 return DefineNestedTypeNoLock(name, attr, parent, interfaces, PackingSize.Unspecified, UnspecifiedTypeSize);
             }
         }
@@ -1656,8 +1636,6 @@ namespace System.Reflection.Emit
             Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
             ThrowIfCreated();
-            AssemblyBuilder.CheckContext(type);
-            AssemblyBuilder.CheckContext(requiredCustomModifiers);
 
             if (m_enumUnderlyingType == null && IsEnum)
             {
@@ -1744,11 +1722,6 @@ namespace System.Reflection.Emit
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            AssemblyBuilder.CheckContext(returnType);
-            AssemblyBuilder.CheckContext(returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes);
-            AssemblyBuilder.CheckContext(parameterTypeRequiredCustomModifiers);
-            AssemblyBuilder.CheckContext(parameterTypeOptionalCustomModifiers);
-
             SignatureHelper sigHelper;
             byte[] sigBytes;
 
@@ -1799,8 +1772,6 @@ namespace System.Reflection.Emit
 
             int tkType;
             int evToken;
-
-            AssemblyBuilder.CheckContext(eventtype);
 
             ThrowIfCreated();
 
@@ -2047,8 +2018,6 @@ namespace System.Reflection.Emit
 
             if (parent != null)
             {
-                AssemblyBuilder.CheckContext(parent);
-
                 if (parent.IsInterface)
                     throw new ArgumentException(SR.Argument_CannotSetParentToInterface);
 
@@ -2073,8 +2042,6 @@ namespace System.Reflection.Emit
 
         public void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType!!)
         {
-            AssemblyBuilder.CheckContext(interfaceType);
-
             ThrowIfCreated();
 
             int tkInterface = m_module.GetTypeTokenInternal(interfaceType);

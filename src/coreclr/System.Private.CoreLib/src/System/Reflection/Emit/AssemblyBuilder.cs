@@ -202,48 +202,6 @@ namespace System.Reflection.Emit
             _manifestModuleBuilder.CheckTypeNameConflict(strTypeName, enclosingType);
         }
 
-        internal static void CheckContext(params Type[]?[]? typess)
-        {
-            if (typess == null)
-            {
-                return;
-            }
-
-            foreach (Type[]? types in typess)
-            {
-                if (types != null)
-                {
-                    CheckContext(types);
-                }
-            }
-        }
-
-        internal static void CheckContext(params Type?[]? types)
-        {
-            if (types == null)
-            {
-                return;
-            }
-
-            foreach (Type? type in types)
-            {
-                if (type == null)
-                {
-                    continue;
-                }
-
-                if (type.Module == null || type.Module.Assembly == null)
-                {
-                    throw new ArgumentException(SR.Argument_TypeNotValid);
-                }
-
-                if (type.Module.Assembly == typeof(object).Module.Assembly)
-                {
-                    continue;
-                }
-            }
-        }
-
         public override bool Equals(object? obj) => base.Equals(obj);
 
         public override int GetHashCode() => base.GetHashCode();
