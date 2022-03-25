@@ -3454,8 +3454,22 @@ namespace System.Xml.Serialization
 
         private void WriteParamsRead(int length)
         {
-            LocalBuilder paramsRead = ilg.DeclareLocal(typeof(bool[]), "paramsRead");
-            ilg.NewArray(typeof(bool), length);
+            const int StackallocLimit =
+#if DEBUG
+                3; // lower limit in debug to help test both stackalloc and array code paths
+#else
+                32; // arbitrary limit
+#endif
+            LocalBuilder paramsRead = ilg.DeclareLocal(typeof(Span<bool>), "paramsRead");
+            if (length <= StackallocLimit)
+            {
+                ilg.StackallocSpan(typeof(bool), length);
+            }
+            else
+            {
+                ilg.NewArray(typeof(bool), length);
+                ilg.New(typeof(Span<bool>).GetConstructor(new[] { typeof(bool[]) })!);
+            }
             ilg.Stloc(paramsRead);
         }
 
@@ -3607,7 +3621,10 @@ namespace System.Xml.Serialization
             Match match = ParamsReadRegex().Match(paramsReadSource);
             if (match.Success)
             {
-                ilg.LoadArrayElement(ilg.GetLocal("paramsRead"), int.Parse(match.Groups["index"].Value, CultureInfo.InvariantCulture));
+                ilg.Ldloca(ilg.GetLocal("paramsRead"));
+                ilg.Ldc(int.Parse(match.Groups["index"].Value, CultureInfo.InvariantCulture));
+                ilg.Call(typeof(Span<bool>).GetMethod("get_Item")!);
+                ilg.LdindU1();
                 return;
             }
             throw Globals.NotSupported($"Unexpected: {paramsReadSource}");
@@ -3617,7 +3634,11 @@ namespace System.Xml.Serialization
             Match match = ParamsReadRegex().Match(paramsReadSource);
             if (match.Success)
             {
-                ilg.StoreArrayElement(ilg.GetLocal("paramsRead"), int.Parse(match.Groups["index"].Value, CultureInfo.InvariantCulture), value);
+                ilg.Ldloca(ilg.GetLocal("paramsRead"));
+                ilg.Ldc(int.Parse(match.Groups["index"].Value, CultureInfo.InvariantCulture));
+                ilg.Call(typeof(Span<bool>).GetMethod("get_Item")!);
+                ilg.Ldc(value);
+                ilg.StindI1();
                 return;
             }
             throw Globals.NotSupported($"Unexpected: {paramsReadSource}");

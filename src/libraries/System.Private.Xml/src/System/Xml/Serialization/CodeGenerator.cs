@@ -433,6 +433,15 @@ namespace System.Xml.Serialization
             _ilGen!.Emit(OpCodes.Newarr, elementType);
         }
 
+        internal void StackallocSpan(Type elementType, int len)
+        {
+            Ldc(len);
+            _ilGen!.Emit(OpCodes.Conv_U);
+            _ilGen!.Emit(OpCodes.Localloc);
+            Ldc(len);
+            _ilGen!.Emit(OpCodes.Newobj, typeof(Span<>).MakeGenericType(elementType).GetConstructor(new Type[] { typeof(void*), typeof(int) })!);
+        }
+
         internal void LoadArrayElement(object obj, object arrayIndex)
         {
             Type objType = GetVariableType(obj).GetElementType()!;
@@ -728,6 +737,16 @@ namespace System.Xml.Serialization
             {
                 _ilGen!.Emit(OpCodes.Ldobj, type);
             }
+        }
+
+        internal void LdindU1()
+        {
+            _ilGen!.Emit(OpCodes.Ldind_U1);
+        }
+
+        internal void StindI1()
+        {
+            _ilGen!.Emit(OpCodes.Stind_I1);
         }
 
         internal void Stobj(Type type)
