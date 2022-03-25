@@ -2178,7 +2178,7 @@ namespace System.Net.Sockets
 
         private static int ToTimeoutMicroseconds(TimeSpan timeout)
         {
-            long totalMicroseconds = (long)timeout.TotalMilliseconds * 1000;
+            long totalMicroseconds = timeout.Ticks / 10;
             if (totalMicroseconds < -1 || totalMicroseconds > int.MaxValue)
             {
                 throw new ArgumentOutOfRangeException(nameof(timeout));
