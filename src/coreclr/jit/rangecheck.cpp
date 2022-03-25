@@ -907,6 +907,8 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
 
+    bool isRshPositiveCns = false;
+
     // Special cases for binops where op2 is a constant
     if (binop->OperIs(GT_AND, GT_RSH, GT_LSH, GT_UMOD))
     {
@@ -937,8 +939,16 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
                 icon = binop->OperIs(GT_RSH) ? (icon1 >> icon2) : (icon1 << icon2);
             }
         }
+        else if (binop->OperIs(GT_RSH) && op2->IsIntCnsFitsInI32() && (op2->AsIntConCommon()->IconValue() >= 0))
+        {
+            isRshPositiveCns = true;
+        }
 
-        if (icon >= 0)
+        if (isRshPositiveCns)
+        {
+            // We're going to special case X << CNS to return X's range with 0 as the lower bound
+        }
+        else if (icon >= 0)
         {
             Range range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, icon));
             JITDUMP("Limit range to %s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
@@ -952,7 +962,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     }
 
     // other operators are expected to be handled above.
-    assert(binop->OperIs(GT_ADD, GT_MUL, GT_LSH));
+    assert(binop->OperIs(GT_ADD, GT_MUL, GT_LSH, GT_RSH));
 
     Range* op1RangeCached = nullptr;
     Range  op1Range       = Limit(Limit::keUndef);
@@ -1021,6 +1031,15 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
         JITDUMP("BinOp multiply ranges %s %s = %s\n", op1Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
                 convertedOp2Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
                 r.ToString(m_pCompiler->getAllocatorDebugOnly()));
+    }
+    else if (isRshPositiveCns)
+    {
+        assert(binop->OperIs(GT_RSH) && op2->IsIntCnsFitsInI32());
+        // Technically, we could properly calculate the range here by introducing RangeOps::Divide
+        // but it's a lot of changes without visible benefits, so let's just say
+        // X >> CNS (CNS is positive) returns X's range where lower limit is zero
+        r = op1Range;
+        r.lLimit = Limit(Limit::keConstant, 0);
     }
     return r;
 }
