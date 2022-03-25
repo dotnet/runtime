@@ -1370,6 +1370,7 @@ struct FilterSuperPMIExceptionsParam_ee_il
     CORINFO_CLASS_HANDLE  clazz;
     const char**          classNamePtr;
     const char*           fieldOrMethodOrClassNamePtr;
+    char16_t*             classNameWidePtr;
     EXCEPTION_POINTERS    exceptionPointers;
 };
 
@@ -1479,6 +1480,70 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
 #endif // DEBUG || FEATURE_JIT_METHOD_PERF
 
 #ifdef DEBUG
+
+//------------------------------------------------------------------------
+// eeGetShortClassName: wraps appendClassName to provide functionality
+// similar to getClassName(), but returns a class name that is shortened,
+// not using full assembly info.
+//
+// Arguments:
+//   clsHnd - the class handle to get the type name of
+//
+// Return value:
+//   string class name. Note: unlike eeGetClassName/getClassName, this string is
+//   allocated from the JIT heap, so care should possibly be taken to avoid leaking it.
+//   It returns a char16_t string, since that's what appendClassName returns.
+//
+const char16_t* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
+{
+    FilterSuperPMIExceptionsParam_ee_il param;
+
+    param.pThis    = this;
+    param.pJitInfo = &info;
+    param.clazz    = clsHnd;
+
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
+            char16_t       dummyClassName[1] = {0};
+            char16_t*      pbuf              = &dummyClassName[0];
+            int            len               = 0;
+            constexpr bool fNamespace        = true;
+            constexpr bool fFullInst         = false;
+            constexpr bool fAssembly         = false;
+
+            // Warning: crossgen2 doesn't fully implement the `appendClassName` API.
+            // If the size passed isn't large enough to the hold the entire string, crossgen2 will copy as much
+            // as possible. However, the EE will assert. So we need to pass zero, get back the actual buffer size
+            // required, allocate that space, and call the API again to get the full string. Both EE and crossgen2
+            // will return the actual string size if *pnBufLen is zero.
+            // The resulting string is guaranteed to be null-terminated.
+            // Returned value is size of requested string, in characters, not including the terminating null
+            // character. This could be larger than the buffer size and thus larger than the number of characters
+            // actually copied to *pBuf (in the case of crossgen2, which doesn't assert on too-small buffers).
+            int cchStrLen = pParam->pJitInfo->compCompHnd->appendClassName(&pbuf, &len, pParam->clazz, fNamespace,
+                                                                           fFullInst, fAssembly);
+
+            size_t cchBufLen         = (size_t)cchStrLen + /* null terminator */ 1;
+            pParam->classNameWidePtr = pParam->pThis->getAllocator(CMK_DebugOnly).allocate<char16_t>(cchBufLen);
+            pbuf                     = pParam->classNameWidePtr;
+            len                      = (int)cchBufLen;
+
+            int cchResultStrLen = pParam->pJitInfo->compCompHnd->appendClassName(&pbuf, &len, pParam->clazz, fNamespace,
+                                                                                 fFullInst, fAssembly);
+            noway_assert(cchStrLen == cchResultStrLen);
+            noway_assert(pParam->classNameWidePtr[cchResultStrLen] == 0);
+        },
+        &param);
+
+    if (!success)
+    {
+        const char16_t substituteClassName[] = u"hackishClassName";
+        size_t         cchLen                = ArrLen(substituteClassName);
+        param.classNameWidePtr               = getAllocator(CMK_DebugOnly).allocate<char16_t>(cchLen);
+        memcpy(param.classNameWidePtr, substituteClassName, cchLen * sizeof(char16_t));
+    }
+    return param.classNameWidePtr;
+}
 
 const WCHAR* Compiler::eeGetCPString(size_t strHandle)
 {
