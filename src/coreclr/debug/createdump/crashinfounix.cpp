@@ -178,7 +178,7 @@ CrashInfo::EnumerateModuleMappings()
         char* permissions = nullptr;
         char* moduleName = nullptr;
 
-        int c = sscanf(line, "%" PRIx64 "-%" PRIx64 " %m[-rwxsp] %" PRIx64 " %*[:0-9a-f] %*d %ms\n", &start, &end, &permissions, &offset, &moduleName);
+        int c = sscanf(line, "%" PRIx64 "-%" PRIx64 " %m[-rwxsp] %" PRIx64 " %*[:0-9a-f] %*d %m[^\n]\n", &start, &end, &permissions, &offset, &moduleName);
         if (c == 4 || c == 5)
         {
             // r = read
