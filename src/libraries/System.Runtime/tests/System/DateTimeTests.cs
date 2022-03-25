@@ -1284,7 +1284,7 @@ namespace System.Tests
         public static IEnumerable<object[]> ParseExact_TestData_R()
         {
             // Lowest, highest, and random DateTime in lower, upper, and normal casing
-            var pairs = new(DateTime, string)[]
+            var pairs = new (DateTime, string)[]
             {
                 (DateTime.MaxValue, "Fri, 31 Dec 9999 23:59:59"),
                 (DateTime.MinValue, "Mon, 01 Jan 0001 00:00:00"),

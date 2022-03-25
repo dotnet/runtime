@@ -40,17 +40,19 @@ namespace System.Runtime.Loader
         {
         }
 
-        private Assembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
+        private static Assembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
         {
             // TODO: This is not passing down the AssemblyLoadContext,
             // so it won't actually work properly when multiple assemblies with the same identity get loaded.
             return ReflectionAugments.ReflectionCoreCallbacks.Load(assemblyPath);
         }
 
+#pragma warning disable CA1822
         internal Assembly InternalLoad(byte[] arrAssembly, byte[] arrSymbols)
         {
             return ReflectionAugments.ReflectionCoreCallbacks.Load(arrAssembly, arrSymbols);
         }
+#pragma warning restore CA1822
 
         private void ReferenceUnreferencedEvents()
         {

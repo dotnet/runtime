@@ -182,6 +182,31 @@ typedef struct {
 	MonoCCW* ccw;
 } MonoCCWInterface;
 
+/*
+ * COM Callable Wrappers
+ *
+ * CCWs may be called on threads that aren't attached to the runtime, they can
+ * then run managed code or the method implementations may use coop handles.
+ * Use the macros below to setup the thread state.
+ *
+ * For managed methods, the runtime marshaling wrappers handle attaching and
+ * coop state switching.
+ */
+
+#define MONO_CCW_CALL_ENTER do {					\
+	gpointer dummy;							\
+	gpointer orig_domain = mono_threads_attach_coop (mono_domain_get (), &dummy); \
+	MONO_ENTER_GC_UNSAFE;						\
+	HANDLE_FUNCTION_ENTER ();					\
+	do {} while (0)
+
+#define MONO_CCW_CALL_EXIT				\
+	HANDLE_FUNCTION_RETURN ();			\
+	MONO_EXIT_GC_UNSAFE;				\
+	mono_threads_detach_coop (orig_domain, &dummy); \
+	} while (0)
+
+
 /* IUnknown */
 static int STDCALL cominterop_ccw_addref (MonoCCWInterface* ccwe);
 
@@ -2104,12 +2129,16 @@ cominterop_get_ccw_method (MonoClass *iface, MonoMethod *method, MonoError *erro
 	cominterop_setup_marshal_context (&m, adjust_method);
 	m.mb = mb;
 	m.runtime_marshalling_enabled = TRUE;
-	mono_marshal_emit_managed_wrapper (mb, sig_adjusted, mspecs, &m, adjust_method, 0);
-	mono_cominterop_lock ();
-	wrapper_method = mono_mb_create_method (mb, m.csig, m.csig->param_count + 16);
-	mono_cominterop_unlock ();
+	mono_marshal_emit_managed_wrapper (mb, sig_adjusted, mspecs, &m, adjust_method, 0, error);
 
-	gpointer ret = mono_compile_method_checked (wrapper_method, error);
+	gpointer ret = NULL;
+	if (is_ok (error)) {
+		mono_cominterop_lock ();
+		wrapper_method = mono_mb_create_method (mb, m.csig, m.csig->param_count + 16);
+		mono_cominterop_unlock ();
+
+		ret = mono_compile_method_checked (wrapper_method, error);
+	}
 
 	mono_mb_free (mb);
 	for (param_index = sig_adjusted->param_count; param_index >= 0; param_index--)
@@ -2612,12 +2641,9 @@ static int STDCALL
 cominterop_ccw_addref (MonoCCWInterface* ccwe)
 {
 	int result;
-	gpointer dummy;
-	gpointer orig_domain = mono_threads_attach_coop (mono_domain_get (), &dummy);
-	MONO_ENTER_GC_UNSAFE;
+	MONO_CCW_CALL_ENTER;
 	result = cominterop_ccw_addref_impl (ccwe);
-	MONO_EXIT_GC_UNSAFE;
-	mono_threads_detach_coop (orig_domain, &dummy);
+	MONO_CCW_CALL_EXIT;
 	return result;
 }
 
@@ -2646,12 +2672,9 @@ static int STDCALL
 cominterop_ccw_release (MonoCCWInterface* ccwe)
 {
 	int result;
-	gpointer dummy;
-	gpointer orig_domain = mono_threads_attach_coop (mono_domain_get (), &dummy);
-	MONO_ENTER_GC_UNSAFE;
+	MONO_CCW_CALL_ENTER;
 	result = cominterop_ccw_release_impl (ccwe);
-	MONO_EXIT_GC_UNSAFE;
-	mono_threads_detach_coop (orig_domain, &dummy);
+	MONO_CCW_CALL_EXIT;
 	return result;
 }
 
@@ -2698,12 +2721,9 @@ static int STDCALL
 cominterop_ccw_queryinterface (MonoCCWInterface* ccwe, const guint8* riid, gpointer* ppv)
 {
 	int result;
-	gpointer dummy;
-	gpointer orig_domain = mono_threads_attach_coop (mono_domain_get (), &dummy);
-	MONO_ENTER_GC_UNSAFE;
+	MONO_CCW_CALL_ENTER;
 	result = cominterop_ccw_queryinterface_impl (ccwe, riid, ppv);
-	MONO_EXIT_GC_UNSAFE;
-	mono_threads_detach_coop (orig_domain, &dummy);
+	MONO_CCW_CALL_EXIT;
 	return result;
 }
 
@@ -2821,12 +2841,9 @@ cominterop_ccw_get_ids_of_names (MonoCCWInterface* ccwe, gpointer riid,
 											 guint32 lcid, gint32 *rgDispId)
 {
 	int result;
-	gpointer dummy;
-	gpointer orig_domain = mono_threads_attach_coop (mono_domain_get(), &dummy);
-	MONO_ENTER_GC_UNSAFE;
+	MONO_CCW_CALL_ENTER;
 	result = cominterop_ccw_get_ids_of_names_impl (ccwe, riid, rgszNames, cNames, lcid, rgDispId);
-	MONO_EXIT_GC_UNSAFE;
-	mono_threads_detach_coop (orig_domain, &dummy);
+	MONO_CCW_CALL_EXIT;
 	return result;
 }
 
@@ -2936,8 +2953,9 @@ static SafeArrayCreateFunc safe_array_create_ms = NULL;
 static gboolean
 init_com_provider_ms (void)
 {
+	ERROR_DECL (error);
+
 	static gboolean initialized = FALSE;
-	char *error_msg;
 	MonoDl *module = NULL;
 	const char* scope = "liboleaut32.so";
 
@@ -2948,78 +2966,90 @@ init_com_provider_ms (void)
 		return TRUE;
 	}
 
-	module = mono_dl_open(scope, MONO_DL_LAZY, &error_msg);
-	if (error_msg) {
-		g_warning ("Error loading COM support library '%s': %s", scope, error_msg);
-		g_assert_not_reached ();
-		return FALSE;
-	}
-	error_msg = mono_dl_symbol (module, "SysAllocStringLen", (gpointer*)&sys_alloc_string_len_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SysAllocStringLen", scope, error_msg);
+	module = mono_dl_open (scope, MONO_DL_LAZY, error);
+	if (!module) {
+		g_warning ("Error loading COM support library '%s': %s", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}
 
-	error_msg = mono_dl_symbol (module, "SysStringLen", (gpointer*)&sys_string_len_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SysStringLen", scope, error_msg);
+	sys_alloc_string_len_ms = (SysAllocStringLenFunc)mono_dl_symbol (module, "SysAllocStringLen", error);
+	if (!sys_alloc_string_len_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SysAllocStringLen", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}
 
-	error_msg = mono_dl_symbol (module, "SysFreeString", (gpointer*)&sys_free_string_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SysFreeString", scope, error_msg);
+	sys_string_len_ms = (SysStringLenFunc)mono_dl_symbol (module, "SysStringLen", error);
+	if (!sys_string_len_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SysStringLen", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}
 
-	error_msg = mono_dl_symbol (module, "SafeArrayGetDim", (gpointer*)&safe_array_get_dim_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayGetDim", scope, error_msg);
+	sys_free_string_ms = (SysFreeStringFunc)mono_dl_symbol (module, "SysFreeString", error);
+	if (!sys_free_string_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SysFreeString", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}
 
-	error_msg = mono_dl_symbol (module, "SafeArrayGetLBound", (gpointer*)&safe_array_get_lbound_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayGetLBound", scope, error_msg);
+	safe_array_get_dim_ms = (SafeArrayGetDimFunc)mono_dl_symbol (module, "SafeArrayGetDim", error);
+	if (!safe_array_get_dim_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayGetDim", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}
 
-	error_msg = mono_dl_symbol (module, "SafeArrayGetUBound", (gpointer*)&safe_array_get_ubound_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayGetUBound", scope, error_msg);
+	safe_array_get_lbound_ms = (SafeArrayGetLBoundFunc)mono_dl_symbol (module, "SafeArrayGetLBound", error);
+	if (!safe_array_get_lbound_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayGetLBound", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}
 
-	error_msg = mono_dl_symbol (module, "SafeArrayPtrOfIndex", (gpointer*)&safe_array_ptr_of_index_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayPtrOfIndex", scope, error_msg);
+	safe_array_get_ubound_ms = (SafeArrayGetUBoundFunc)mono_dl_symbol (module, "SafeArrayGetUBound", error);
+	if (!safe_array_get_ubound_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayGetUBound", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}
 
-	error_msg = mono_dl_symbol (module, "SafeArrayDestroy", (gpointer*)&safe_array_destroy_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayDestroy", scope, error_msg);
+	safe_array_ptr_of_index_ms = (SafeArrayPtrOfIndexFunc)mono_dl_symbol (module, "SafeArrayPtrOfIndex", error);
+	if (!safe_array_ptr_of_index_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayPtrOfIndex", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}
 
-	error_msg = mono_dl_symbol (module, "SafeArrayPutElement", (gpointer*)&safe_array_put_element_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayPutElement", scope, error_msg);
+	safe_array_destroy_ms = (SafeArrayDestroyFunc)mono_dl_symbol (module, "SafeArrayDestroy", error);
+	if (!safe_array_destroy_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayDestroy", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}
 
-	error_msg = mono_dl_symbol (module, "SafeArrayCreate", (gpointer*)&safe_array_create_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayCreate", scope, error_msg);
+	safe_array_put_element_ms = (SafeArrayPutElementFunc)mono_dl_symbol (module, "SafeArrayPutElement", error);
+	if (!safe_array_put_element_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayPutElement", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
+		g_assert_not_reached ();
+		return FALSE;
+	}
+
+	safe_array_create_ms = (SafeArrayCreateFunc)mono_dl_symbol (module, "SafeArrayCreate", error);
+	if (!safe_array_create_ms) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SafeArrayCreate", scope, mono_error_get_message_without_fields (error));
+		mono_error_cleanup (error);
 		g_assert_not_reached ();
 		return FALSE;
 	}

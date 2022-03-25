@@ -1478,7 +1478,7 @@ namespace System.Xml.Schema
             return typedValue;
         }
 
-        private string GetTypeName(SchemaDeclBase decl)
+        private static string GetTypeName(SchemaDeclBase decl)
         {
             Debug.Assert(decl != null && decl.SchemaType != null);
             string typeName = decl.SchemaType.QualifiedName.ToString();

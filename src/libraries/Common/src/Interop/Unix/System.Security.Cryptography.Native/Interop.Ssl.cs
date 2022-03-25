@@ -57,6 +57,12 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SslSetTlsExtHostName(SafeSslHandle ssl, string host);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetServerName")]
+        internal static unsafe partial IntPtr SslGetServerName(IntPtr ssl);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetSession")]
+        internal static unsafe partial int SslSetSession(SafeSslHandle ssl, IntPtr session);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGet0AlpnSelected")]
         internal static partial void SslGetAlpnSelected(SafeSslHandle ssl, out IntPtr protocol, out int len);
 
@@ -146,6 +152,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetData")]
         internal static partial IntPtr SslGetData(IntPtr ssl);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetData")]
+        internal static partial IntPtr SslGetData(SafeSslHandle ssl);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetData")]
         internal static partial int SslSetData(SafeSslHandle ssl, IntPtr data);
 
@@ -166,6 +175,15 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Tls13Supported")]
         private static partial int Tls13SupportedImpl();
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionGetHostname")]
+        internal static partial IntPtr SessionGetHostname(IntPtr session);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionFree")]
+        internal static partial void SessionFree(IntPtr session);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionSetHostname")]
+        internal static partial int SessionSetHostname(IntPtr session, IntPtr name);
 
         internal static class Capabilities
         {

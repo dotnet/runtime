@@ -191,7 +191,7 @@ namespace Microsoft.Interop
                         ArgumentList())));
         }
 
-        private StatementSyntax GenerateFromNativeValueInvocation(TypePositionInfo info, StubCodeContext context, CustomNativeTypeWithToFromNativeValueContext subContext)
+        private static StatementSyntax GenerateFromNativeValueInvocation(TypePositionInfo info, StubCodeContext context, CustomNativeTypeWithToFromNativeValueContext subContext)
         {
             // <marshalerIdentifier>.FromNativeValue(<nativeIdentifier>);
             return ExpressionStatement(
@@ -425,7 +425,7 @@ namespace Microsoft.Interop
             _nativeValueType = nativeValueType;
         }
 
-        private bool CanPinMarshaller(TypePositionInfo info, StubCodeContext context)
+        private static bool CanPinMarshaller(TypePositionInfo info, StubCodeContext context)
         {
             return context.SingleFrameSpansNativeContext && !info.IsManagedReturnPosition && !info.IsByRef || info.RefKind == RefKind.In;
         }
@@ -508,7 +508,7 @@ namespace Microsoft.Interop
             }
         }
 
-        private StatementSyntax GenerateFromNativeValueInvocation(TypePositionInfo info, StubCodeContext context, CustomNativeTypeWithToFromNativeValueContext subContext)
+        private static StatementSyntax GenerateFromNativeValueInvocation(TypePositionInfo info, StubCodeContext context, CustomNativeTypeWithToFromNativeValueContext subContext)
         {
             // <marshalerIdentifier>.FromNativeValue(<nativeIdentifier>);
             return ExpressionStatement(

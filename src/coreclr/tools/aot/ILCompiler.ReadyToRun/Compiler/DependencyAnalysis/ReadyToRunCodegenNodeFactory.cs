@@ -727,7 +727,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (methodsToInsertInstrumentationDataFor.Count != 0)
                 {
                     MethodDesc[] methodsToInsert = methodsToInsertInstrumentationDataFor.ToArray();
-                    methodsToInsert.MergeSort(new TypeSystemComparer().Compare);
+                    methodsToInsert.MergeSort(TypeSystemComparer.Instance.Compare);
                     InstrumentationDataTable = new InstrumentationDataTableNode(this, methodsToInsert, ProfileDataManager);
                     Header.Add(Internal.Runtime.ReadyToRunSectionType.PgoInstrumentationData, InstrumentationDataTable, InstrumentationDataTable);
                 }

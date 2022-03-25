@@ -12,6 +12,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="threads2.cs" />
-    <ProjectReference Include="testlib.csproj" />
+    <ProjectReference Include="testlib_misc.csproj" />
   </ItemGroup>
 </Project>

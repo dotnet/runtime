@@ -854,7 +854,7 @@ namespace System.Runtime.Serialization
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
                 Justification = "The call to MakeGenericMethod is safe due to the fact that CollectionDataContractCriticalHelper.BuildIncrementCollectionCountDelegate<T> is not annotated.")]
-            private MethodInfo GetBuildIncrementCollectionCountGenericDelegate(Type type) => BuildIncrementCollectionCountDelegateMethod.MakeGenericMethod(type);
+            private static MethodInfo GetBuildIncrementCollectionCountGenericDelegate(Type type) => BuildIncrementCollectionCountDelegateMethod.MakeGenericMethod(type);
 
             private static MethodInfo? s_buildIncrementCollectionCountDelegateMethod;
 

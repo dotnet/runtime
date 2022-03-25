@@ -384,7 +384,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
         // Lazy loadings of hashtables (load on-demand only)
-        private unsafe NativeHashtable LoadHashtable(NativeFormatModuleInfo module, ReflectionMapBlob hashtableBlobId, out ExternalReferencesTable externalFixupsTable)
+        private static unsafe NativeHashtable LoadHashtable(NativeFormatModuleInfo module, ReflectionMapBlob hashtableBlobId, out ExternalReferencesTable externalFixupsTable)
         {
             // Load the common fixups table
             externalFixupsTable = default(ExternalReferencesTable);
@@ -491,7 +491,7 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         /// <param name="type">TypeDesc for the type in question</param>
         /// <returns>Function pointer representing the constructor, IntPtr.Zero when not found</returns>
-        internal IntPtr TryGetDefaultConstructorForType(TypeDesc type)
+        internal static IntPtr TryGetDefaultConstructorForType(TypeDesc type)
         {
             // Try to find the default constructor in metadata first
             IntPtr result = IntPtr.Zero;
@@ -589,7 +589,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Lookup default constructor via the typesystem api surface and such
         /// </summary>
-        private IntPtr TryGetDefaultConstructorForTypeViaMetadata_Inner(TypeDesc type)
+        private static IntPtr TryGetDefaultConstructorForTypeViaMetadata_Inner(TypeDesc type)
         {
             IntPtr metadataLookupResult = IntPtr.Zero;
 
@@ -616,7 +616,7 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="mappingTableModule">Module to search for the constructor</param>
         /// <param name="canonHelper">Canonically equivalent entry locator representing the type</param>
         /// <returns>Function pointer representing the constructor, IntPtr.Zero when not found</returns>
-        internal unsafe IntPtr TryGetDefaultConstructorForType_Inner(NativeFormatModuleInfo mappingTableModule, ref CanonicallyEquivalentEntryLocator canonHelper)
+        internal static unsafe IntPtr TryGetDefaultConstructorForType_Inner(NativeFormatModuleInfo mappingTableModule, ref CanonicallyEquivalentEntryLocator canonHelper)
         {
             NativeReader invokeMapReader;
             if (TryGetNativeReaderForBlob(mappingTableModule, ReflectionMapBlob.InvokeMap, out invokeMapReader))

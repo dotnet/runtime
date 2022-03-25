@@ -251,7 +251,7 @@ namespace System.Runtime.Caching
             }
         }
 
-        private void ValidatePolicy(CacheItemPolicy policy)
+        private static void ValidatePolicy(CacheItemPolicy policy)
         {
             if (policy.AbsoluteExpiration != ObjectCache.InfiniteAbsoluteExpiration
                 && policy.SlidingExpiration != ObjectCache.NoSlidingExpiration)
