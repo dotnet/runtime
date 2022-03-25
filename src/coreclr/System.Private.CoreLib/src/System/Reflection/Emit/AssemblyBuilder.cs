@@ -43,7 +43,7 @@ namespace System.Reflection.Emit
                                  AssemblyBuilderAccess access,
                                  Assembly? callingAssembly,
                                  AssemblyLoadContext? assemblyLoadContext,
-                                 IEnumerable<CustomAttributeBuilder>? unsafeAssemblyAttributes)
+                                 IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
             if (access != AssemblyBuilderAccess.Run && access != AssemblyBuilderAccess.RunAndCollect)
             {
@@ -62,17 +62,6 @@ namespace System.Reflection.Emit
 
             // Clone the name in case the caller modifies it underneath us.
             name = (AssemblyName)name.Clone();
-
-            // Scan the assembly level attributes for any attributes which modify how we create the
-            // assembly. Currently, we look for any attribute which modifies the security transparency
-            // of the assembly.
-            List<CustomAttributeBuilder>? assemblyAttributes = null;
-            if (unsafeAssemblyAttributes != null)
-            {
-                // Create a copy to ensure that it cannot be modified from another thread
-                // as it is used further below.
-                assemblyAttributes = new List<CustomAttributeBuilder>(unsafeAssemblyAttributes);
-            }
 
             RuntimeAssembly? retAssembly = null;
             CreateDynamicAssembly(ObjectHandleOnStack.Create(ref name),
@@ -143,7 +132,7 @@ namespace System.Reflection.Emit
             AssemblyBuilderAccess access,
             Assembly? callingAssembly,
             AssemblyLoadContext? assemblyLoadContext,
-            IEnumerable<CustomAttributeBuilder>? unsafeAssemblyAttributes)
+            IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
             lock (s_assemblyBuilderLock)
             {
@@ -152,7 +141,7 @@ namespace System.Reflection.Emit
                                            access,
                                            callingAssembly,
                                            assemblyLoadContext,
-                                           unsafeAssemblyAttributes);
+                                           assemblyAttributes);
             }
         }
         #endregion
