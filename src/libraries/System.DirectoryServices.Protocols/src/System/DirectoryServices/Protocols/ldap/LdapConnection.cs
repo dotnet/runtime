@@ -1208,7 +1208,7 @@ namespace System.DirectoryServices.Protocols
             _disposed = true;
         }
 
-        internal LdapControl[] BuildControlArray(DirectoryControlCollection controls, bool serverControl)
+        internal static LdapControl[] BuildControlArray(DirectoryControlCollection controls, bool serverControl)
         {
             LdapControl[] managedControls = null;
 
@@ -1274,7 +1274,7 @@ namespace System.DirectoryServices.Protocols
             return managedControls;
         }
 
-        internal LdapMod[] BuildAttributes(CollectionBase directoryAttributes, ArrayList ptrToFree)
+        internal static LdapMod[] BuildAttributes(CollectionBase directoryAttributes, ArrayList ptrToFree)
         {
             LdapMod[] attributes = null;
 
@@ -1958,7 +1958,7 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        private DirectoryControl ConstructControl(IntPtr controlPtr)
+        private static DirectoryControl ConstructControl(IntPtr controlPtr)
         {
             LdapControl control = new LdapControl();
             Marshal.PtrToStructure(controlPtr, control);
@@ -1974,7 +1974,7 @@ namespace System.DirectoryServices.Protocols
             return new DirectoryControl(controlType, bytes, criticality, true);
         }
 
-        private bool SameCredential(NetworkCredential oldCredential, NetworkCredential newCredential)
+        private static bool SameCredential(NetworkCredential oldCredential, NetworkCredential newCredential)
         {
             if (oldCredential == null && newCredential == null)
             {

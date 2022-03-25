@@ -1153,7 +1153,7 @@ namespace System.Xml.Schema
                 builder.CheckDefaultAttValue(builder._AttributeDef._AttDef);
             }
 
-            builder.SetAttributePresence(builder._AttributeDef._AttDef, builder._AttributeDef._Required);
+            XdrBuilder.SetAttributePresence(builder._AttributeDef._AttDef, builder._AttributeDef._Required);
 
         cleanup:
             if (code != null)
@@ -1701,7 +1701,7 @@ namespace System.Xml.Schema
             SetAttributePresence(pAttdef, 1 == decl._MinOccurs);
         }
 
-        private void SetAttributePresence(SchemaAttDef pAttdef, bool fRequired)
+        private static void SetAttributePresence(SchemaAttDef pAttdef, bool fRequired)
         {
             if (SchemaDeclBase.Use.Fixed != pAttdef.Presence)
             {
@@ -1794,7 +1794,7 @@ namespace System.Xml.Schema
             XdrValidator.CheckDefaultValue(str, attDef, _SchemaInfo, _CurNsMgr, _NameTable, null, _validationEventHandler, _reader.BaseURI, _positionInfo.LineNumber, _positionInfo.LinePosition);
         }
 
-        private bool IsGlobal(int flags)
+        private static bool IsGlobal(int flags)
         {
             return flags == SchemaFlagsNs;
         }
