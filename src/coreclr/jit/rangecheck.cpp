@@ -907,8 +907,6 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
 
-    bool isRshPositiveCns = false;
-
     // Special cases for binops where op2 is a constant
     if (binop->OperIs(GT_AND, GT_RSH, GT_LSH, GT_UMOD))
     {
@@ -939,23 +937,15 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
                 icon = binop->OperIs(GT_RSH) ? (icon1 >> icon2) : (icon1 << icon2);
             }
         }
-        else if (binop->OperIs(GT_RSH) && op2->IsIntCnsFitsInI32() && (op2->AsIntConCommon()->IconValue() >= 0))
-        {
-            isRshPositiveCns = true;
-        }
 
-        if (isRshPositiveCns)
-        {
-            // We're going to special case X >> CNS to return [0..X->uLimit] range
-        }
-        else if (icon >= 0)
+        if (icon >= 0)
         {
             Range range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, icon));
             JITDUMP("Limit range to %s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
             return range;
         }
         // Generalized range computation not implemented for these operators
-        else if (binop->OperIs(GT_AND, GT_UMOD, GT_RSH))
+        else if (binop->OperIs(GT_AND, GT_UMOD))
         {
             return Range(Limit::keUnknown);
         }
@@ -1435,7 +1425,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     }
     else if (expr->OperIs(GT_CAST) && expr->AsCast()->CastOp()->OperIs(GT_LCL_VAR))
     {
-        range = Range(Limit(Limit::keUnknown));
+        range              = Range(Limit(Limit::keUnknown));
         var_types castType = expr->AsCast()->CastToType();
         if (expr->AsCast()->IsUnsigned())
         {

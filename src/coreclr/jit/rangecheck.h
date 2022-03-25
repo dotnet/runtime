@@ -373,7 +373,7 @@ struct RangeOps
         Range result = Limit(Limit::keUnknown);
 
         // For now we only support r1 >> positive_cns (to simplify)
-        if (!r2lo.Equals(r2hi) || !r2lo.IsConstant() || r2lo.cns < 0)
+        if (!r2lo.IsConstant() || !r2hi.IsConstant() || (r2lo.cns < 0) || (r2hi.cns < 0))
         {
             return result;
         }
