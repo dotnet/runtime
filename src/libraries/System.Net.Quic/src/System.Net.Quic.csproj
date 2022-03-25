@@ -9,10 +9,22 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'FreeBSD' or '$(TargetPlatformIdentifier)' == 'OSX'">$(DefineConstants);SOCKADDR_HAS_LENGTH</DefineConstants>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.SystemNetQuic_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <ApiExclusionListPath Condition="'$(TargetPlatformIdentifier)' == ''">ExcludeApiList.PNSE.txt</ApiExclusionListPath>
   </PropertyGroup>
   <!-- Source files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
-    <Compile Include="System\Net\Quic\*.cs" />
+    <Compile Include="System\Net\Quic\NetEventSource.Quic.cs" />
+    <Compile Include="System\Net\Quic\QuicClientConnectionOptions.cs" />
+    <Compile Include="System\Net\Quic\QuicConnection.cs" />
+    <Compile Include="System\Net\Quic\QuicConnectionAbortedException.cs" />
+    <Compile Include="System\Net\Quic\QuicException.cs" />
+    <Compile Include="System\Net\Quic\QuicImplementationProviders.cs" />
+    <Compile Include="System\Net\Quic\QuicListener.cs" />
+    <Compile Include="System\Net\Quic\QuicListenerOptions.cs" />
+    <Compile Include="System\Net\Quic\QuicOperationAbortedException.cs" />
+    <Compile Include="System\Net\Quic\QuicOptions.cs" />
+    <Compile Include="System\Net\Quic\QuicStream.cs" />
+    <Compile Include="System\Net\Quic\QuicStreamAbortedException.cs" />
     <Compile Include="System\Net\Quic\Implementations\*.cs" />
     <Compile Include="System\Net\Quic\Implementations\Mock\*.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\*.cs" />
@@ -37,6 +49,10 @@
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs" Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="Common\System\Net\StreamBuffer.cs" />
+  </ItemGroup>
+  <!-- Unsupported platforms -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
+    <Compile Include="System\Net\Quic\QuicImplementationProviders.Unsupported.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
