@@ -10,7 +10,7 @@
     <IlcMultiModule>true</IlcMultiModule>
 
     <!-- https://github.com/dotnet/runtime/issues/66191 -->
-    <DisableProjectBuild>true</DisableProjectBuild>
+    <CLRTestTargetUnsupported>true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MultiModule.cs" />
