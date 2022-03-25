@@ -161,6 +161,7 @@
     <!-- Utility -->
     <SubsetName Include="publish" OnDemand="true" Description="Generate asset manifests and prepare to publish to BAR." />
     <SubsetName Include="RegenerateDownloadTable" OnDemand="true" Description="Regenerates the nightly build download table" />
+    <SubsetName Include="RegenerateThirdPartyNotices" OnDemand="true" Description="Regenerates the THIRD-PARTY-NOTICES.TXT file based on other repos' TPN files." />
 
   </ItemGroup>
 
@@ -406,6 +407,10 @@
   <!-- Utility -->
   <ItemGroup Condition="$(_subset.Contains('+regeneratedownloadtable+'))">
     <ProjectToBuild Include="$(RepositoryEngineeringDir)regenerate-download-table.proj" Pack="true" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('regeneratethirdpartynotices'))">
+    <ProjectToBuild Include="$(RepositoryEngineeringDir)regenerate-third-party-notices.proj" Pack="false" BuildInParallel="false" />
   </ItemGroup>
 
   <!-- Set default configurations. -->
