@@ -76,6 +76,22 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [InlineData(-2)]
+        [InlineData((long)int.MaxValue + 1)]
+        public void TimeSpan_ArgumentValidation(long milliseconds)
+        {
+            TimeSpan timeout = TimeSpan.FromMilliseconds(milliseconds);
+            using var testDirectory = new TempDirectory(GetTestFilePath());
+            using var _ = new TempDirectory(Path.Combine(testDirectory.Path, GetTestFileName()));
+            using var fsw = new FileSystemWatcher(testDirectory.Path);
+
+            ArgumentOutOfRangeException exception =
+                Assert.Throws<ArgumentOutOfRangeException>(
+                    () => fsw.WaitForChanged(WatcherChangeTypes.All, timeout));
+            Assert.Contains("timeout", exception.Message);
+        }
+
+        [Theory]
         [InlineData(false, true)]
         [InlineData(true, false)]
         public void ZeroTimeout_TimesOut(bool enabledBeforeWait, bool useTimeSpan)

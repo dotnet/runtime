@@ -384,12 +384,17 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void Select_LargeList_Throws_ArgumentOutOfRange_TimeSpan()
         {
-            TimeSpan infinity = Timeout.InfiniteTimeSpan;
             var largeList = new LargeList();
 
+            TimeSpan infinity = Timeout.InfiniteTimeSpan;
             Assert.Throws<ArgumentOutOfRangeException>(() => Socket.Select(largeList, null, null, infinity));
             Assert.Throws<ArgumentOutOfRangeException>(() => Socket.Select(null, largeList, null, infinity));
             Assert.Throws<ArgumentOutOfRangeException>(() => Socket.Select(null, null, largeList, infinity));
+
+            TimeSpan negative = TimeSpan.FromMilliseconds(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => Socket.Select(largeList, null, null, negative));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Socket.Select(null, largeList, null, negative));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Socket.Select(null, null, largeList, negative));
         }
 
         [Fact]

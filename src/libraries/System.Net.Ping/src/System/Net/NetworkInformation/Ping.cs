@@ -327,7 +327,7 @@ namespace System.Net.NetworkInformation
         public Task<PingReply> SendPingAsync(IPAddress address, TimeSpan timeout, byte[]? buffer = null,
             PingOptions? options = null, CancellationToken cancellationToken = default)
         {
-            int milliseconds = checked((int)timeout.TotalMilliseconds);
+            int milliseconds = ToTimeoutMilliseconds(timeout);
 
             cancellationToken.ThrowIfCancellationRequested();
             Task<PingReply> task = SendPingAsync(address, milliseconds, buffer ?? DefaultSendBuffer, options);

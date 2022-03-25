@@ -74,6 +74,18 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Theory]
+        [InlineData(-2)]
+        [InlineData((long)int.MaxValue + 1)]
+        public void TestWaitForExitValidation(long milliseconds)
+        {
+            CreateDefaultProcess();
+            TimeSpan timeout = TimeSpan.FromMilliseconds(milliseconds);
+
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => _process.WaitForExit(timeout));
+            Assert.Contains("timeout", exception.Message);
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior varies on Windows and Unix
         public void TestBasePriorityOnWindows()

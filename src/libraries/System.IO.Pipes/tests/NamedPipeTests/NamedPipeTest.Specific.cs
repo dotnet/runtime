@@ -23,8 +23,10 @@ namespace System.IO.Pipes.Tests
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => client.Connect(-111));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(-111); });
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => client.Connect(TimeSpan.FromMilliseconds(-111)));
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(TimeSpan.FromMilliseconds(-111), default); });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => client.Connect(TimeSpan.FromMilliseconds(-2)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(TimeSpan.FromMilliseconds(-2), default); });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => client.Connect(TimeSpan.FromMilliseconds((long)int.MaxValue + 1)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(TimeSpan.FromMilliseconds((long)int.MaxValue + 1), default); });
             }
         }
 
