@@ -31,15 +31,5 @@ namespace System.Runtime.CompilerServices
         /// <param name="ilOffset">IL offset where to mark the sequence point.</param>
         /// <param name="sequencePoint">Debug information corresponding to the sequence point.</param>
         public abstract void MarkSequencePoint(LambdaExpression method, int ilOffset, DebugInfoExpression sequencePoint);
-
-        internal virtual void MarkSequencePoint(LambdaExpression method, MethodBase methodBase, ILGenerator ilg, DebugInfoExpression sequencePoint)
-        {
-            MarkSequencePoint(method, ilg.ILOffset, sequencePoint);
-        }
-
-        internal virtual void SetLocalName(LocalBuilder localBuilder, string name)
-        {
-            // nop
-        }
     }
 }
