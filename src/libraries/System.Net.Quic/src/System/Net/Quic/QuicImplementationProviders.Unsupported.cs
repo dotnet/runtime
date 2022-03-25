@@ -24,7 +24,7 @@ namespace System.Net.Quic.Implementations
     public abstract partial class QuicImplementationProvider
     {
         // alternative constructor because currently it is not possible to exlude ctors from
-        // PNSE autogeneration
-        internal QuicImplementationProvider(bool dummy) { }
+        // PNSE autogeneration (https://github.com/dotnet/arcade/issues/8676)
+        internal QuicImplementationProvider(bool _) { }
     }
 }
