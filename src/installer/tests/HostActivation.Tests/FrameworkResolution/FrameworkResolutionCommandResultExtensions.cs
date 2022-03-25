@@ -35,10 +35,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         /// <returns>Constraint</returns>
         public static AndConstraint<CommandResultAssertions> ShouldHaveResolvedFrameworkOrFailToFind(this CommandResult result, string resolvedFrameworkName, string resolvedFrameworkVersion, string resolvedFrameworkBasePath = null)
         {
-            if (resolvedFrameworkName == null || resolvedFrameworkVersion == null || 
+            if (resolvedFrameworkName == null || resolvedFrameworkVersion == null ||
                 resolvedFrameworkVersion == FrameworkResolutionBase.ResolvedFramework.NotFound)
             {
-                return result.ShouldFailToFindCompatibleFrameworkVersion();
+                return result.ShouldFailToFindCompatibleFrameworkVersion(resolvedFrameworkName);
             }
             else
             {
@@ -46,15 +46,21 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             }
         }
 
-        public static AndConstraint<CommandResultAssertions> DidNotFindCompatibleFrameworkVersion(this CommandResultAssertions assertion)
+        public static AndConstraint<CommandResultAssertions> DidNotFindCompatibleFrameworkVersion(this CommandResultAssertions assertion, string frameworkName, string requestedVersion)
         {
-            return assertion.HaveStdErrContaining("It was not possible to find any compatible framework version");
+            var constraint = assertion.HaveStdErrContaining("You must install or update .NET to run this application.");
+            if (frameworkName is not null)
+            {
+                constraint = constraint.And.HaveStdErrContaining($"Framework: '{frameworkName}', {(requestedVersion is null ? "" : $"version '{requestedVersion}'")}");
+            }
+
+            return constraint;
         }
 
-        public static AndConstraint<CommandResultAssertions> ShouldFailToFindCompatibleFrameworkVersion(this CommandResult result)
+        public static AndConstraint<CommandResultAssertions> ShouldFailToFindCompatibleFrameworkVersion(this CommandResult result, string frameworkName, string requestedVersion = null)
         {
             return result.Should().Fail()
-                .And.DidNotFindCompatibleFrameworkVersion();
+                .And.DidNotFindCompatibleFrameworkVersion(frameworkName, requestedVersion);
         }
 
         public static AndConstraint<CommandResultAssertions> FailedToReconcileFrameworkReference(
@@ -96,7 +102,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             }
             else if (resolvedVersion == FrameworkResolutionBase.ResolvedFramework.NotFound)
             {
-                return result.ShouldFailToFindCompatibleFrameworkVersion();
+                return result.ShouldFailToFindCompatibleFrameworkVersion(frameworkName, null);
             }
             else
             {
