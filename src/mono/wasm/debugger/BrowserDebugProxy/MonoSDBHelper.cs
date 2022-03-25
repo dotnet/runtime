@@ -932,9 +932,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal async Task<MonoBinaryReader> SendDebuggerAgentCommand<T>(T command, MonoBinaryWriter arguments, CancellationToken token) =>
             MonoBinaryReader.From(await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(proxy.RuntimeId, GetNewId(), (int)GetCommandSetForCommand(command), (int)(object)command, arguments?.ToBase64().data ?? string.Empty), token));
 
-        internal CommandSet GetCommandSetForCommand<T>(T command) =>
-            command switch
-            {
+        internal static CommandSet GetCommandSetForCommand<T>(T command) =>
+            command switch {
                 CmdVM => CommandSet.Vm,
                 CmdObject => CommandSet.ObjectRef,
                 CmdString => CommandSet.StringRef,
@@ -1336,7 +1335,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return ret;
         }
 
-        public string ReplaceCommonClassNames(string className) =>
+        private static string ReplaceCommonClassNames(string className) =>
             new StringBuilder(className)
                 .Replace("System.String", "string")
                 .Replace("System.Boolean", "bool")
@@ -1735,9 +1734,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
 
             return ret;
-        }
 
-        public static int GetNextDebuggerObjectId() => Interlocked.Increment(ref debuggerObjectId);
+
+        public JObject CreateJObjectForChar(int value)
 
 
         public async Task<bool> IsAsyncMethod(int methodId, CancellationToken token)
@@ -1756,7 +1755,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return methodInfo.Info.IsAsync == 1;
         }
 
-        private bool IsClosureReferenceField(string fieldName)
+        private bool IsClosureReferenceField (string fieldName)
         {
             // mcs is "$locvar"
             // old mcs is "<>f__ref"

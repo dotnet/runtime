@@ -1328,7 +1328,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the type of node that is under construction given the specified XmlState.
         /// </summary>
-        private XPathNodeType XmlStateToNodeType(XmlState xstate)
+        private static XPathNodeType XmlStateToNodeType(XmlState xstate)
         {
             switch (xstate)
             {

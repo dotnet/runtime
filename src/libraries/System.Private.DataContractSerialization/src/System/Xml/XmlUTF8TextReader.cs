@@ -752,7 +752,7 @@ namespace System.Xml
             BufferReader.Advance(offset - prefixOffset);
         }
 
-        private int ReadAttributeText(byte[] buffer, int offset, int offsetMax)
+        private static int ReadAttributeText(byte[] buffer, int offset, int offsetMax)
         {
             byte[] charType = XmlUTF8TextReader.s_charType;
             int textOffset = offset;
@@ -882,7 +882,7 @@ namespace System.Xml
 
         // NOTE: Call only if 0xEF has been seen in the stream AND there are three valid bytes to check (buffer[offset], buffer[offset + 1], buffer[offset + 2]).
         // 0xFFFE and 0xFFFF are not valid characters per Unicode specification. The first byte in the UTF8 representation is 0xEF.
-        private bool IsNextCharacterNonFFFE(byte[] buffer, int offset)
+        private static bool IsNextCharacterNonFFFE(byte[] buffer, int offset)
         {
             Fx.Assert(buffer[offset] == 0xEF, "buffer[offset] MUST be 0xEF.");
 
@@ -1130,7 +1130,7 @@ namespace System.Xml
             MoveToWhitespaceText().Value.SetValue(ValueHandleType.UTF8, offset, length);
         }
 
-        private int ReadWhitespace(byte[] buffer, int offset, int offsetMax)
+        private static int ReadWhitespace(byte[] buffer, int offset, int offsetMax)
         {
             byte[] charType = XmlUTF8TextReader.s_charType;
             int wsOffset = offset;
@@ -1139,7 +1139,7 @@ namespace System.Xml
             return offset - wsOffset;
         }
 
-        private int ReadText(byte[] buffer, int offset, int offsetMax)
+        private static int ReadText(byte[] buffer, int offset, int offsetMax)
         {
             byte[] charType = XmlUTF8TextReader.s_charType;
             int textOffset = offset;
@@ -1203,7 +1203,7 @@ namespace System.Xml
         // 4       21      11110vvv 10vvvvvv 10vvvvvv 10vvvvvv
         // -----   ----    -----------------------------------
 
-        private int BreakText(byte[] buffer, int offset, int length)
+        private static int BreakText(byte[] buffer, int offset, int length)
         {
             // See if we might be breaking a utf8 sequence
             if (length > 0 && (buffer[offset + length - 1] & 0x80) == 0x80)

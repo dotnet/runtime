@@ -38,6 +38,8 @@ LEAF_END_MARKED macro functionName
     %endMarkerName:
     PUBLIC endMarkerName
     functionName ENDP
+    ; make sure this symbol gets its own address
+    nop
 endm
 
 PATCH_LABEL macro labelName

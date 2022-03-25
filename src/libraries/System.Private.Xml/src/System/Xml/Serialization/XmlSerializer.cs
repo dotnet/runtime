@@ -275,7 +275,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls ImportTypeMapping")]
-        private XmlTypeMapping GenerateXmlTypeMapping(Type type, XmlAttributeOverrides? overrides, Type[]? extraTypes, XmlRootAttribute? root, string? defaultNamespace)
+        private static XmlTypeMapping GenerateXmlTypeMapping(Type type, XmlAttributeOverrides? overrides, Type[]? extraTypes, XmlRootAttribute? root, string? defaultNamespace)
         {
             XmlReflectionImporter importer = new XmlReflectionImporter(overrides, defaultNamespace);
             if (extraTypes != null)
@@ -377,14 +377,7 @@ namespace System.Xml.Serialization
                     // The contion for the block is never true, thus the block is never hit.
                     XmlSerializationWriter writer = CreateWriter();
                     writer.Init(xmlWriter, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id, _tempAssembly);
-                    try
-                    {
-                        Serialize(o, writer);
-                    }
-                    finally
-                    {
-                        writer.Dispose();
-                    }
+                    Serialize(o, writer);
                 }
                 else
                 {
@@ -476,14 +469,7 @@ namespace System.Xml.Serialization
                 {
                     XmlSerializationReader reader = CreateReader();
                     reader.Init(xmlReader, events, encodingStyle, _tempAssembly);
-                    try
-                    {
-                        return Deserialize(reader);
-                    }
-                    finally
-                    {
-                        reader.Dispose();
-                    }
+                    return Deserialize(reader);
                 }
                 else
                 {
@@ -685,7 +671,7 @@ namespace System.Xml.Serialization
             Dictionary<XmlSerializerMappingKey, XmlSerializer>? typedMappingTable = null;
             AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(type.Assembly);
 
-            typedMappingTable = s_xmlSerializerTable.GetOrCreateValue(type, () => new Dictionary<XmlSerializerMappingKey, XmlSerializer>());
+            typedMappingTable = s_xmlSerializerTable.GetOrCreateValue(type, _ => new Dictionary<XmlSerializerMappingKey, XmlSerializer>());
 
             lock (typedMappingTable)
             {

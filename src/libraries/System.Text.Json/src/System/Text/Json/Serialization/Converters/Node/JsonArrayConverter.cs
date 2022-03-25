@@ -26,7 +26,7 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        public JsonArray ReadList(ref Utf8JsonReader reader, JsonNodeOptions? options = null)
+        public static JsonArray ReadList(ref Utf8JsonReader reader, JsonNodeOptions? options = null)
         {
             JsonElement jElement = JsonElement.ParseValue(ref reader);
             return new JsonArray(jElement, options);
