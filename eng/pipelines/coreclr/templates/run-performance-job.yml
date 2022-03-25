@@ -42,7 +42,7 @@ jobs:
       displayName: '${{ parameters.displayName }}'
     ${{ if eq(parameters.displayName, '') }}:
       displayName: '${{ parameters.jobName }}'
-    name: ${{ replace(replace(parameters.jobName, ' ', '_'), '-', ' ') }}
+    name: ${{ replace(replace(parameters.jobName, ' ', '_'), '-', '_') }}
 
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
