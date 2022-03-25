@@ -23,32 +23,32 @@ namespace Microsoft.WebAssembly.Diagnostics
 {
     internal enum TokenType
     {
-        MdtModule = 0x00000000,       //
-        MdtTypeRef = 0x01000000,       //
-        MdtTypeDef = 0x02000000,       //
-        MdtFieldDef = 0x04000000,       //
-        MdtMethodDef = 0x06000000,       //
-        MdtParamDef = 0x08000000,       //
-        MdtInterfaceImpl = 0x09000000,       //
-        MdtMemberRef = 0x0a000000,       //
-        MdtCustomAttribute = 0x0c000000,       //
-        MdtPermission = 0x0e000000,       //
-        MdtSignature = 0x11000000,       //
-        MdtEvent = 0x14000000,       //
-        MdtProperty = 0x17000000,       //
-        MdtModuleRef = 0x1a000000,       //
-        MdtTypeSpec = 0x1b000000,       //
-        MdtAssembly = 0x20000000,       //
-        MdtAssemblyRef = 0x23000000,       //
-        MdtFile = 0x26000000,       //
-        MdtExportedType = 0x27000000,       //
-        MdtManifestResource = 0x28000000,       //
-        MdtGenericParam = 0x2a000000,       //
-        MdtMethodSpec = 0x2b000000,       //
+        MdtModule               = 0x00000000,       //
+        MdtTypeRef              = 0x01000000,       //
+        MdtTypeDef              = 0x02000000,       //
+        MdtFieldDef             = 0x04000000,       //
+        MdtMethodDef            = 0x06000000,       //
+        MdtParamDef             = 0x08000000,       //
+        MdtInterfaceImpl        = 0x09000000,       //
+        MdtMemberRef            = 0x0a000000,       //
+        MdtCustomAttribute      = 0x0c000000,       //
+        MdtPermission           = 0x0e000000,       //
+        MdtSignature            = 0x11000000,       //
+        MdtEvent                = 0x14000000,       //
+        MdtProperty             = 0x17000000,       //
+        MdtModuleRef            = 0x1a000000,       //
+        MdtTypeSpec             = 0x1b000000,       //
+        MdtAssembly             = 0x20000000,       //
+        MdtAssemblyRef          = 0x23000000,       //
+        MdtFile                 = 0x26000000,       //
+        MdtExportedType         = 0x27000000,       //
+        MdtManifestResource     = 0x28000000,       //
+        MdtGenericParam         = 0x2a000000,       //
+        MdtMethodSpec           = 0x2b000000,       //
         MdtGenericParamConstraint = 0x2c000000,
-        MdtString = 0x70000000,       //
-        MdtName = 0x71000000,       //
-        MdtBaseType = 0x72000000,       // Leave this on the high end value. This does not correspond to metadata table
+        MdtString               = 0x70000000,       //
+        MdtName                 = 0x71000000,       //
+        MdtBaseType             = 0x72000000,       // Leave this on the high end value. This does not correspond to metadata table
     }
 
     [Flags]
@@ -63,8 +63,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         WithProperties = 32
     }
 
-    internal enum CommandSet
-    {
+    internal enum CommandSet {
         Vm = 1,
         ObjectRef = 9,
         StringRef = 10,
@@ -82,8 +81,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         Pointer = 65
     }
 
-    internal enum EventKind
-    {
+    internal enum EventKind {
         VmStart = 0,
         VmDeath = 1,
         ThreadStart = 2,
@@ -106,8 +104,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         MethodUpdate = 19
     }
 
-    internal enum ModifierKind
-    {
+    internal enum ModifierKind {
         Count = 1,
         ThreadOnly = 3,
         LocationOnly = 7,
@@ -119,15 +116,13 @@ namespace Microsoft.WebAssembly.Diagnostics
     }
 
 
-    internal enum SuspendPolicy
-    {
+    internal enum SuspendPolicy {
         None = 0,
         EventThread = 1,
         All = 2
     }
 
-    internal enum CmdVM
-    {
+    internal enum CmdVM {
         Version = 1,
         AllThreads = 2,
         Suspend = 3,
@@ -149,8 +144,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         GetModuleByGUID = 19
     }
 
-    internal enum CmdFrame
-    {
+    internal enum CmdFrame {
         GetValues = 1,
         GetThis = 2,
         SetValues = 3,
@@ -160,13 +154,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         GetArguments = 7
     }
 
-    internal enum CmdEvent
-    {
+    internal enum CmdEvent {
         Composite = 100
     }
 
-    internal enum CmdThread
-    {
+    internal enum CmdThread {
         GetFrameInfo = 1,
         GetName = 2,
         GetState = 3,
@@ -179,15 +171,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         GetElapsedTime = 8
     }
 
-    internal enum CmdEventRequest
-    {
+    internal enum CmdEventRequest {
         Set = 1,
         Clear = 2,
         ClearAllBreakpoints = 3
     }
 
-    internal enum CmdAppDomain
-    {
+    internal enum CmdAppDomain {
         GetRootDomain = 1,
         GetFriendlyName = 2,
         GetAssemblies = 3,
@@ -198,8 +188,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         CreateByteArray = 8,
     }
 
-    internal enum CmdAssembly
-    {
+    internal enum CmdAssembly {
         GetLocation = 1,
         GetEntryPoint = 2,
         GetManifestModule = 3,
@@ -215,19 +204,16 @@ namespace Microsoft.WebAssembly.Diagnostics
         HasDebugInfo = 13,
     }
 
-    internal enum CmdModule
-    {
+    internal enum CmdModule {
         GetInfo = 1,
         ApplyChanges = 2,
     }
 
-    internal enum CmdPointer
-    {
+    internal enum CmdPointer {
         GetValue = 1
     }
 
-    internal enum CmdMethod
-    {
+    internal enum CmdMethod {
         GetName = 1,
         GetDeclaringType = 2,
         GetDebugInfo = 3,
@@ -245,8 +231,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         GetNameFull = 15
     }
 
-    internal enum CmdType
-    {
+    internal enum CmdType {
         GetInfo = 1,
         GetMethods = 2,
         GetFields = 3,
@@ -274,8 +259,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         Initialize = 23,
     }
 
-    internal enum CmdArray
-    {
+    internal enum CmdArray {
         GetLength = 1,
         GetValues = 2,
         SetValues = 3,
@@ -283,20 +267,17 @@ namespace Microsoft.WebAssembly.Diagnostics
     }
 
 
-    internal enum CmdField
-    {
+    internal enum CmdField {
         GetInfo = 1
     }
 
-    internal enum CmdString
-    {
+    internal enum CmdString {
         GetValue = 1,
         GetLength = 2,
         GetChars = 3
     }
 
-    internal enum CmdObject
-    {
+    internal enum CmdObject {
         RefGetType = 1,
         RefGetValues = 2,
         RefIsCollected = 3,
@@ -309,8 +290,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         RefIsDelegate = 10
     }
 
-    internal enum ElementType
-    {
+    internal enum ElementType {
         End = 0x00,
         Void = 0x01,
         Boolean = 0x02,
@@ -352,23 +332,20 @@ namespace Microsoft.WebAssembly.Diagnostics
         Enum = 0x55
     }
 
-    internal enum ValueTypeId
-    {
+    internal enum ValueTypeId {
         Null = 0xf0,
         Type = 0xf1,
         VType = 0xf2,
         FixedArray = 0xf3
     }
-    internal enum MonoTypeNameFormat
-    {
+    internal enum MonoTypeNameFormat {
         FormatIL,
         FormatReflection,
         FullName,
         AssemblyQualified
     }
 
-    internal enum StepFilter
-    {
+    internal enum StepFilter {
         None = 0,
         StaticCtor = 1,
         DebuggerHidden = 2,
@@ -385,14 +362,14 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal record ArrayDimensions
     {
         internal int Rank { get; }
-        internal int[] Bounds { get; }
+        internal int [] Bounds { get; }
         internal int TotalLength { get; }
         public ArrayDimensions(int[] rank)
         {
             Rank = rank.Length;
             Bounds = rank;
             TotalLength = 1;
-            for (int i = 0; i < Rank; i++)
+            for (int i = 0 ; i < Rank ; i++)
                 TotalLength *= Bounds[i];
         }
 
@@ -454,13 +431,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             HasError = hasError;
         }
 
-        public MonoBinaryReader(byte[] data) : base(new MemoryStream(data)) { }
+        public MonoBinaryReader(byte [] data) : base(new MemoryStream(data)) { }
 
         public static MonoBinaryReader From(Result result)
         {
             byte[] newBytes = Array.Empty<byte>();
-            if (result.IsOk)
-            {
+            if (result.IsOk) {
                 newBytes = Convert.FromBase64String(result.Value?["result"]?["value"]?["value"]?.Value<string>());
             }
             return new MonoBinaryReader(new MemoryStream(newBytes), !result.IsOk);
@@ -504,7 +480,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class MonoBinaryWriter : BinaryWriter
     {
-        public MonoBinaryWriter() : base(new MemoryStream(20)) { }
+        public MonoBinaryWriter() : base(new MemoryStream(20)) {}
 
         public override void Write(string val)
         {
@@ -601,76 +577,76 @@ namespace Microsoft.WebAssembly.Diagnostics
             switch (constValue.Kind())
             {
                 case SyntaxKind.NumericLiteralExpression:
+                {
+                    switch (constValue.Token.Value)
                     {
-                        switch (constValue.Token.Value)
-                        {
-                            case double d:
-                                Write(ElementType.R8, d);
-                                break;
-                            case float f:
-                                Write(ElementType.R4, f);
-                                break;
-                            case long l:
-                                Write(ElementType.I8, l);
-                                break;
-                            case ulong ul:
-                                Write(ElementType.U8, ul);
-                                break;
-                            case byte b:
-                                Write(ElementType.U1, (int)b);
-                                break;
-                            case sbyte sb:
-                                Write(ElementType.I1, (uint)sb);
-                                break;
-                            case ushort us:
-                                Write(ElementType.U2, (int)us);
-                                break;
-                            case short s:
-                                Write(ElementType.I2, (uint)s);
-                                break;
-                            case uint ui:
-                                Write(ElementType.U4, ui);
-                                break;
-                            case IntPtr ip:
-                                Write(ElementType.I, (int)ip);
-                                break;
-                            case UIntPtr up:
-                                Write(ElementType.U, (uint)up);
-                                break;
-                            default:
-                                Write(ElementType.I4, (int)constValue.Token.Value);
-                                break;
-                        }
-                        return true;
+                        case double d:
+                            Write(ElementType.R8, d);
+                            break;
+                        case float f:
+                            Write(ElementType.R4, f);
+                            break;
+                        case long l:
+                            Write(ElementType.I8, l);
+                            break;
+                        case ulong ul:
+                            Write(ElementType.U8, ul);
+                            break;
+                        case byte b:
+                            Write(ElementType.U1, (int)b);
+                            break;
+                        case sbyte sb:
+                            Write(ElementType.I1, (uint)sb);
+                            break;
+                        case ushort us:
+                            Write(ElementType.U2, (int)us);
+                            break;
+                        case short s:
+                            Write(ElementType.I2, (uint)s);
+                            break;
+                        case uint ui:
+                            Write(ElementType.U4, ui);
+                            break;
+                        case IntPtr ip:
+                            Write(ElementType.I, (int)ip);
+                            break;
+                        case UIntPtr up:
+                            Write(ElementType.U, (uint)up);
+                            break;
+                        default:
+                            Write(ElementType.I4, (int)constValue.Token.Value);
+                            break;
                     }
+                    return true;
+                }
                 case SyntaxKind.StringLiteralExpression:
-                    {
-                        int stringId = await SdbHelper.CreateString((string)constValue.Token.Value, token);
-                        Write(ElementType.String, stringId);
-                        return true;
-                    }
+                {
+                    int stringId = await SdbHelper.CreateString((string)constValue.Token.Value, token);
+                    Write(ElementType.String, stringId);
+                    return true;
+                }
                 case SyntaxKind.TrueLiteralExpression:
-                    {
-                        Write(ElementType.Boolean, 1);
-                        return true;
-                    }
+                {
+                    Write(ElementType.Boolean, 1);
+                    return true;
+                }
                 case SyntaxKind.FalseLiteralExpression:
-                    {
-                        Write(ElementType.Boolean, 0);
-                        return true;
-                    }
+                {
+                    Write(ElementType.Boolean, 0);
+                    return true;
+                }
                 case SyntaxKind.NullLiteralExpression:
-                    {
-                        Write((byte)ValueTypeId.Null);
-                        Write((byte)0); //not used
-                        Write((int)0);  //not used
-                        return true;
-                    }
+                {
+                    Write((byte)ValueTypeId.Null);
+                    Write((byte)0); //not used
+                    Write((int)0);  //not used
+                    return true;
+                }
                 case SyntaxKind.CharacterLiteralExpression:
-                    {
-                        Write(ElementType.Char, (int)(char)constValue.Token.Value);
-                        return true;
-                    }
+                {
+                    Write(ElementType.Char, (int)(char)constValue.Token.Value);
+                    return true;
+                }
             }
             return false;
         }
@@ -680,27 +656,27 @@ namespace Microsoft.WebAssembly.Diagnostics
             switch (objValue["type"].Value<string>())
             {
                 case "number":
-                    {
-                        Write(ElementType.I4, objValue["value"].Value<int>());
-                        return true;
-                    }
+                {
+                    Write(ElementType.I4, objValue["value"].Value<int>());
+                    return true;
+                }
                 case "string":
-                    {
-                        int stringId = await SdbHelper.CreateString(objValue["value"].Value<string>(), token);
-                        Write(ElementType.String, stringId);
-                        return true;
-                    }
+                {
+                    int stringId = await SdbHelper.CreateString(objValue["value"].Value<string>(), token);
+                    Write(ElementType.String, stringId);
+                    return true;
+                }
                 case "boolean":
-                    {
-                        Write(ElementType.Boolean, objValue["value"].Value<bool>() ? 1 : 0);
-                        return true;
-                    }
+                {
+                    Write(ElementType.Boolean, objValue["value"].Value<bool>() ? 1 : 0);
+                    return true;
+                }
                 case "object":
-                    {
-                        DotnetObjectId.TryParse(objValue["objectId"]?.Value<string>(), out DotnetObjectId objectId);
-                        WriteObj(objectId, SdbHelper);
-                        return true;
-                    }
+                {
+                    DotnetObjectId.TryParse(objValue["objectId"]?.Value<string>(), out DotnetObjectId objectId);
+                    WriteObj(objectId, SdbHelper);
+                    return true;
+                }
             }
             return false;
         }
@@ -711,8 +687,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return segment;
         }
 
-        public (string data, int length) ToBase64()
-        {
+        public (string data, int length) ToBase64() {
             var segment = GetParameterBuffer();
             return (Convert.ToBase64String(segment), segment.Count);
         }
@@ -772,7 +747,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         private static int debuggerObjectId;
         private static int cmdId = 1; //cmdId == 0 is used by events which come from runtime
-        private static int GetNewId() { return cmdId++; }
+        private static int GetNewId() {return cmdId++;}
         private static int MINOR_VERSION = 61;
         private static int MAJOR_VERSION = 2;
 
@@ -906,6 +881,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public void ClearCache()
         {
+            ValueCreator.ClearCache();
         }
 
         public async Task<bool> SetProtocolVersion(CancellationToken token)
@@ -949,7 +925,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 CmdField => CommandSet.Field,
                 CmdEvent => CommandSet.Event,
                 CmdPointer => CommandSet.Pointer,
-                _ => throw new Exception("Unknown CommandSet")
+                _ => throw new Exception ("Unknown CommandSet")
             };
 
         internal async Task<MonoBinaryReader> SendDebuggerAgentCommandWithParms<T>(T command, (string data, int length) encoded, int type, string extraParm, CancellationToken token) =>
@@ -1001,7 +977,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write(type_id);
-            commandParamsWriter.Write((int)MonoTypeNameFormat.FormatReflection);
+            commandParamsWriter.Write((int) MonoTypeNameFormat.FormatReflection);
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdType.GetInfo, commandParamsWriter, token);
             retDebuggerCmdReader.ReadString(); //namespace
             retDebuggerCmdReader.ReadString(); //name
@@ -1022,7 +998,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var ret = new List<int>();
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write(typeId);
-            commandParamsWriter.Write((int)MonoTypeNameFormat.FormatReflection);
+            commandParamsWriter.Write((int) MonoTypeNameFormat.FormatReflection);
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdType.GetInfo, commandParamsWriter, token);
 
             retDebuggerCmdReader.ReadString(); //namespace
@@ -1037,13 +1013,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             retDebuggerCmdReader.ReadInt32(); //flags
             retDebuggerCmdReader.ReadByte();
             int nested = retDebuggerCmdReader.ReadInt32();
-            for (int i = 0; i < nested; i++)
+            for (int i = 0 ; i < nested; i++)
             {
                 retDebuggerCmdReader.ReadInt32(); //nested type
             }
             retDebuggerCmdReader.ReadInt32(); //typeid
             int generics = retDebuggerCmdReader.ReadInt32();
-            for (int i = 0; i < generics; i++)
+            for (int i = 0 ; i < generics; i++)
             {
                 ret.Add(retDebuggerCmdReader.ReadInt32()); //generic type
             }
@@ -1127,7 +1103,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.GetNameFull, commandParamsWriter, token);
             var methodName = retDebuggerCmdReader.ReadString();
-            return methodName.Substring(methodName.IndexOf(":") + 1);
+            return methodName.Substring(methodName.IndexOf(":")+1);
         }
 
         public async Task<bool> MethodIsStatic(int methodId, CancellationToken token)
@@ -1180,7 +1156,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             retDebuggerCmdReader.ReadInt32();
             var retType = retDebuggerCmdReader.ReadInt32();
             var parameters = "(";
-            for (int i = 0; i < paramCount; i++)
+            for (int i = 0 ; i < paramCount; i++)
             {
                 var paramType = retDebuggerCmdReader.ReadInt32();
                 parameters += await GetTypeName(paramType, token);
@@ -1209,7 +1185,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write((byte)EventKind.Breakpoint);
-            commandParamsWriter.Write((int)breakpoint_id);
+            commandParamsWriter.Write((int) breakpoint_id);
 
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdEventRequest.Clear, commandParamsWriter, token);
 
@@ -1242,7 +1218,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write((byte)EventKind.Step);
-            commandParamsWriter.Write((int)req_id);
+            commandParamsWriter.Write((int) req_id);
 
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdEventRequest.Clear, commandParamsWriter, token);
             return !retDebuggerCmdReader.HasError ? true : false;
@@ -1299,8 +1275,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var typeInfo = await GetTypeInfo(typeId, token);
 
-            if (typeInfo.FieldsList != null)
-            {
+            if (typeInfo.FieldsList != null) {
                 return typeInfo.FieldsList;
             }
 
@@ -1311,7 +1286,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdType.GetFields, commandParamsWriter, token);
             var nFields = retDebuggerCmdReader.ReadInt32();
 
-            for (int i = 0; i < nFields; i++)
+            for (int i = 0 ; i < nFields; i++)
             {
                 bool isNotPrivate = false;
                 int fieldId = retDebuggerCmdReader.ReadInt32(); //fieldId
@@ -1363,7 +1338,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var count = retDebuggerCmdReader.ReadInt32();
             if (count == 0)
                 return null;
-            for (int i = 0; i < count; i++)
+            for (int i = 0 ; i < count; i++)
             {
                 var methodId = retDebuggerCmdReader.ReadInt32();
                 using var commandCattrParamsWriter = new MonoBinaryWriter();
@@ -1392,7 +1367,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write(type_id);
-            commandParamsWriter.Write((int)MonoTypeNameFormat.FormatReflection);
+            commandParamsWriter.Write((int) MonoTypeNameFormat.FormatReflection);
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdType.GetInfo, commandParamsWriter, token);
 
             retDebuggerCmdReader.ReadString();
@@ -1470,7 +1445,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write(typeId);
-            commandParamsWriter.Write((int)MonoTypeNameFormat.FormatReflection);
+            commandParamsWriter.Write((int) MonoTypeNameFormat.FormatReflection);
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdType.GetInfo, commandParamsWriter, token);
             retDebuggerCmdReader.ReadString(); //namespace
             retDebuggerCmdReader.ReadString(); //class name
@@ -1481,7 +1456,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write(typeId);
-            commandParamsWriter.Write((int)MonoTypeNameFormat.FormatReflection);
+            commandParamsWriter.Write((int) MonoTypeNameFormat.FormatReflection);
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdType.GetInfo, commandParamsWriter, token);
             retDebuggerCmdReader.ReadString(); //namespace
             retDebuggerCmdReader.ReadString(); //class name
@@ -1500,8 +1475,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdString.GetValue, commandParamsWriter, token);
             var isUtf16 = retDebuggerCmdReader.ReadByte();
-            if (isUtf16 == 0)
-            {
+            if (isUtf16 == 0) {
                 return retDebuggerCmdReader.ReadString();
             }
             return null;
@@ -1513,7 +1487,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdArray.GetLength, commandParamsWriter, token);
             var length = retDebuggerCmdReader.ReadInt32();
             var rank = new int[length];
-            for (int i = 0; i < length; i++)
+            for (int i = 0 ; i < length; i++)
             {
                 rank[i] = retDebuggerCmdReader.ReadInt32();
                 retDebuggerCmdReader.ReadInt32(); //lower_bound
@@ -1631,7 +1605,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return -1;
 
             var nProperties = retDebuggerCmdReader.ReadInt32();
-            for (int i = 0; i < nProperties; i++)
+            for (int i = 0 ; i < nProperties; i++)
             {
                 retDebuggerCmdReader.ReadInt32(); //propertyId
                 string propertyNameStr = retDebuggerCmdReader.ReadString();
@@ -1649,13 +1623,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         public async Task<JArray> CreateJArrayForProperties(int typeId, ElementType elementType, ArraySegment<byte> object_buffer, JArray attributes, bool isAutoExpandable, string objectIdStr, bool isOwn, CancellationToken token)
         {
             JArray ret = new JArray();
-            using var retDebuggerCmdReader = await GetTypePropertiesReader(typeId, token);
+            using var retDebuggerCmdReader =  await GetTypePropertiesReader(typeId, token);
             if (retDebuggerCmdReader == null)
                 return null;
             if (!DotnetObjectId.TryParse(objectIdStr, out DotnetObjectId objectId))
                 return null;
             var nProperties = retDebuggerCmdReader.ReadInt32();
-            for (int i = 0; i < nProperties; i++)
+            for (int i = 0 ; i < nProperties; i++)
             {
                 retDebuggerCmdReader.ReadInt32(); //propertyId
                 string propertyNameStr = retDebuggerCmdReader.ReadString();
@@ -1669,8 +1643,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     continue;
                 if (isAutoExpandable)
                 {
-                    try
-                    {
+                    try {
                         propRet = await InvokeMethod(object_buffer, getMethodId, propertyNameStr, token);
                     }
                     catch (Exception)
@@ -1680,19 +1653,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 else
                 {
-                    propRet = JObject.FromObject(new
-                    {
-                        get = new
-                        {
-                            type = "function",
-                            objectId = $"dotnet:methodId:{objectId.Value}:{getMethodId}:{elementType}",
-                            className = "Function",
-                            description = "get " + propertyNameStr + " ()",
-                            methodId = getMethodId,
-                            objectIdValue = objectIdStr
-                        },
-                        name = propertyNameStr
-                    });
+                    propRet = JObject.FromObject(new {
+                            get = new
+                            {
+                                type = "function",
+                                objectId = $"dotnet:methodId:{objectId.Value}:{getMethodId}:{elementType}",
+                                className = "Function",
+                                description = "get " + propertyNameStr + " ()",
+                                methodId = getMethodId,
+                                objectIdValue = objectIdStr
+                            },
+                            name = propertyNameStr
+                        });
                 }
                 if (isOwn)
                     propRet["isOwn"] = true;
@@ -1723,20 +1695,20 @@ namespace Microsoft.WebAssembly.Diagnostics
             var parentsCount = retDebuggerCmdReader.ReadInt32();
             List<int> typesToGetProperties = new List<int>();
             typesToGetProperties.Add(valueType.typeId);
-            for (int i = 0; i < parentsCount; i++)
+            for (int i = 0 ; i < parentsCount; i++)
             {
                 typesToGetProperties.Add(retDebuggerCmdReader.ReadInt32());
             }
-            for (int i = 0; i < typesToGetProperties.Count; i++)
+            for (int i = 0 ; i < typesToGetProperties.Count; i++)
             {
                 var properties = await CreateJArrayForProperties(typesToGetProperties[i], ElementType.ValueType, valueType.valueTypeBuffer, valueType.valueTypeJson, valueType.valueTypeAutoExpand, $"dotnet:valuetype:{valueType.Id}", i == 0, token);
                 ret = new JArray(ret.Union(properties));
             }
 
             return ret;
+        }
 
-
-        public JObject CreateJObjectForChar(int value)
+        public static int GetNextDebuggerObjectId() => Interlocked.Increment(ref debuggerObjectId);
 
 
         public async Task<bool> IsAsyncMethod(int methodId, CancellationToken token)
@@ -1755,16 +1727,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             return methodInfo.Info.IsAsync == 1;
         }
 
-        private bool IsClosureReferenceField (string fieldName)
+        private static bool IsClosureReferenceField (string fieldName)
         {
             // mcs is "$locvar"
             // old mcs is "<>f__ref"
             // csc is "CS$<>"
             // roslyn is "<>8__"
-            return fieldName.StartsWith("CS$<>", StringComparison.Ordinal) ||
-                        fieldName.StartsWith("<>f__ref", StringComparison.Ordinal) ||
-                        fieldName.StartsWith("$locvar", StringComparison.Ordinal) ||
-                        fieldName.StartsWith("<>8__", StringComparison.Ordinal);
+            return fieldName.StartsWith ("CS$<>", StringComparison.Ordinal) ||
+                        fieldName.StartsWith ("<>f__ref", StringComparison.Ordinal) ||
+                        fieldName.StartsWith ("$locvar", StringComparison.Ordinal) ||
+                        fieldName.StartsWith ("<>8__", StringComparison.Ordinal);
         }
 
         public async Task<JArray> GetHoistedLocalVariables(int objectId, JArray asyncLocals, CancellationToken token)
@@ -1926,7 +1898,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             JArray array = new JArray();
             for (int i = 0; i < dimensions.TotalLength; i++)
             {
-                var var_json = await ValueCreator.ReadAsVariableValue(retDebuggerCmdReader, dimensions.GetArrayIndexString(i), isOwn: false, -1, forDebuggerDisplayAttribute: false, token);
+                var var_json = await ValueCreator.ReadAsVariableValue(retDebuggerCmdReader, dimensions.GetArrayIndexString(i), isOwn: false, -1, forDebuggerDisplayAttribute : false, token);
                 array.Add(var_json);
             }
             return array;
@@ -2019,14 +1991,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                             var assemblyIdArg = await GetAssemblyIdFromType(genericTypeArgs[k], token);
                             var assemblyNameArg = await GetFullAssemblyName(assemblyIdArg, token);
                             var classNameArg = await GetTypeNameOriginal(genericTypeArgs[k], token);
-                            typeToSearch += classNameArg + ", " + assemblyNameArg;
+                            typeToSearch += classNameArg +", " + assemblyNameArg;
                             if (k + 1 < genericTypeArgs.Count)
                                 typeToSearch += "], [";
                             else
                                 typeToSearch += "]";
                         }
                         typeToSearch += "]";
-                        typeToSearch += ", " + assemblyName;
+                        typeToSearch +=  ", " + assemblyName;
                         var genericTypeId = await GetTypeByName(typeToSearch, token);
                         if (genericTypeId < 0)
                             return null;
@@ -2058,7 +2030,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var debuggerProxy = await GetValuesFromDebuggerProxyAttribute(objectId, typeIdsIncludingParents[0], token);
                 if (debuggerProxy != null)
                     return sortByAccessLevel ?
-                        new JArray(JObject.FromObject(new { result = debuggerProxy, internalProperties = new JArray(), privateProperties = new JArray() })) :
+                        new JArray(JObject.FromObject( new { result = debuggerProxy, internalProperties = new JArray(), privateProperties = new JArray() })) :
                         debuggerProxy;
             }
             if (await IsDelegate(objectId, token))
@@ -2123,7 +2095,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 // but we are going to ignore that here, because otherwise vscode/chrome don't
                 // seem to ask for inherited fields at all.
                 //if (ownProperties)
-                //break;
+                    //break;
                 /*if (accessorPropertiesOnly)
                     break;*/
             }
@@ -2340,7 +2312,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return null;
 
                 var nProperties = retDebuggerCmdReader.ReadInt32();
-                for (int i = 0; i < nProperties; i++)
+                for (int i = 0 ; i < nProperties; i++)
                 {
                     retDebuggerCmdReader.ReadInt32(); //propertyId
                     string propertyNameStr = retDebuggerCmdReader.ReadString();
@@ -2361,15 +2333,14 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                         if (attr["set"] != null)
                         {
-                            attr["set"] = JObject.FromObject(new
-                            {
-                                commandSet = CommandSet.Vm,
-                                command = CmdVM.InvokeMethod,
-                                buffer = data,
-                                valtype = attr["set"]["valtype"],
-                                length,
-                                id = GetNewId()
-                            });
+                            attr["set"] = JObject.FromObject(new {
+                                        commandSet = CommandSet.Vm,
+                                        command = CmdVM.InvokeMethod,
+                                        buffer = data,
+                                        valtype = attr["set"]["valtype"],
+                                        length,
+                                        id = GetNewId()
+                                });
                         }
                         continue;
                     }
@@ -2382,18 +2353,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                         command_params_writer_to_get.Write(0);
                         var (data, length) = command_params_writer_to_get.ToBase64();
 
-                        ret.Add(JObject.FromObject(new
-                        {
-                            get = JObject.FromObject(new
-                            {
-                                commandSet = CommandSet.Vm,
-                                command = CmdVM.InvokeMethod,
-                                buffer = data,
-                                length = length,
-                                id = GetNewId()
-                            }),
-                            name = propertyNameStr
-                        }));
+                        ret.Add(JObject.FromObject(new {
+                                get = JObject.FromObject(new {
+                                    commandSet = CommandSet.Vm,
+                                    command = CmdVM.InvokeMethod,
+                                    buffer = data,
+                                    length = length,
+                                    id = GetNewId()
+                                    }),
+                                name = propertyNameStr
+                            }));
                     }
                     if (await MethodIsStatic(getMethodId, token))
                         continue;
