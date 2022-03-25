@@ -1294,6 +1294,37 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
 }
 
 //------------------------------------------------------------------------
+// GetRangeFromType: Compute the range from the given type
+//
+// Arguments:
+//   type - input type
+//
+// Return value:
+//   range that represents the values given type allows
+//
+static Range GetRangeFromType(var_types type)
+{
+    switch (type)
+    {
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, BYTE_MAX));
+        case TYP_BYTE:
+            return Range(Limit(Limit::keConstant, INT8_MIN), Limit(Limit::keConstant, INT8_MAX));
+        case TYP_USHORT:
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, USHORT_MAX));
+        case TYP_SHORT:
+            return Range(Limit(Limit::keConstant, SHORT_MIN), Limit(Limit::keConstant, SHORT_MAX));
+        case TYP_UINT:
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, UINT_MAX));
+        case TYP_INT:
+            return Range(Limit(Limit::keConstant, INT_MIN), Limit(Limit::keConstant, INT_MAX));
+        default:
+            return Range(Limit(Limit::keUnknown));
+    }
+}
+
+//------------------------------------------------------------------------
 // ComputeRange: Compute the range recursively by asking for the range of each variable in the dependency chain.
 //
 // Arguments:
@@ -1398,25 +1429,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     }
     else if (varTypeIsSmallInt(expr->TypeGet()))
     {
-        switch (expr->TypeGet())
-        {
-            case TYP_UBYTE:
-                range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, 255));
-                break;
-            case TYP_BYTE:
-                range = Range(Limit(Limit::keConstant, -128), Limit(Limit::keConstant, 127));
-                break;
-            case TYP_USHORT:
-                range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, 65535));
-                break;
-            case TYP_SHORT:
-                range = Range(Limit(Limit::keConstant, -32768), Limit(Limit::keConstant, 32767));
-                break;
-            default:
-                range = Range(Limit(Limit::keUnknown));
-                break;
-        }
-
+        range = GetRangeFromType(expr->TypeGet());
         JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
     }
     else if (expr->OperGet() == GT_COMMA)
@@ -1438,26 +1451,9 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         if ((lcl->GetSsaNum() == SsaConfig::FIRST_SSA_NUM)) // make sure it's the first def of the arg
         {
             const LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lcl->GetLclNum());
-            if (varDsc->lvIsParam && varDsc->TypeGet() == castType)
+            if (varDsc->lvIsParam && (varDsc->TypeGet() == castType))
             {
-                switch (castType)
-                {
-                    case TYP_UBYTE:
-                        range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, 255));
-                        break;
-                    case TYP_BYTE:
-                        range = Range(Limit(Limit::keConstant, -128), Limit(Limit::keConstant, 127));
-                        break;
-                    case TYP_USHORT:
-                        range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, 65535));
-                        break;
-                    case TYP_SHORT:
-                        range = Range(Limit(Limit::keConstant, -32768), Limit(Limit::keConstant, 32767));
-                        break;
-                    default:
-                        range = Range(Limit(Limit::keUnknown));
-                        break;
-                }
+                range = GetRangeFromType(castType);
                 JITDUMP("CAST(arg) is %s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()))
             }
         }
