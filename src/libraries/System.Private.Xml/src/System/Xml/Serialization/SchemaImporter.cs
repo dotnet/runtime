@@ -183,7 +183,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls ImportType")]
         internal abstract void ImportDerivedTypes(XmlQualifiedName baseName);
 
-        internal void AddReference(XmlQualifiedName name, NameTable references, string error)
+        internal static void AddReference(XmlQualifiedName name, NameTable references, string error)
         {
             if (name.Namespace == XmlSchema.Namespace)
                 return;
@@ -194,7 +194,7 @@ namespace System.Xml.Serialization
             references[name] = name;
         }
 
-        internal void RemoveReference(XmlQualifiedName name, NameTable references)
+        internal static void RemoveReference(XmlQualifiedName name, NameTable references)
         {
             references[name] = null;
         }

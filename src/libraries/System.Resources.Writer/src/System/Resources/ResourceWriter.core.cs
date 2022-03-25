@@ -35,10 +35,10 @@ namespace System.Resources
             AddResourceData(name, typeName, (object)serializedData);
         }
 
-        private string ResourceReaderTypeName { get => ResourceReaderFullyQualifiedName; }
-        private string ResourceSetTypeName { get => ResSetTypeName; }
+        private static string ResourceReaderTypeName => ResourceReaderFullyQualifiedName;
+        private static string ResourceSetTypeName => ResSetTypeName;
 
-        private void WriteData(BinaryWriter writer, object dataContext)
+        private static void WriteData(BinaryWriter writer, object dataContext)
         {
             byte[]? data = dataContext as byte[];
 

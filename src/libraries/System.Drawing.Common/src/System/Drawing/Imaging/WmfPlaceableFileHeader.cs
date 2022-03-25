@@ -106,6 +106,7 @@ namespace System.Drawing.Imaging
         internal ref int GetPinnableReference() => ref _key;
 
 #if NET7_0_OR_GREATER
+        [CustomTypeMarshaller(typeof(WmfPlaceableFileHeader), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
         internal unsafe struct PinningMarshaller
         {
             private readonly WmfPlaceableFileHeader _managed;
@@ -116,7 +117,7 @@ namespace System.Drawing.Imaging
 
             public ref int GetPinnableReference() => ref (_managed is null ? ref Unsafe.NullRef<int>() : ref _managed.GetPinnableReference());
 
-            public void* Value => Unsafe.AsPointer(ref GetPinnableReference());
+            public void* ToNativeValue() => Unsafe.AsPointer(ref GetPinnableReference());
         }
 #endif
     }

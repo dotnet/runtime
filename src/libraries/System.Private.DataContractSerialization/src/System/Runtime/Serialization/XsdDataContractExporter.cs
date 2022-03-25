@@ -50,7 +50,7 @@ namespace System.Runtime.Serialization
             return _schemas;
         }
 
-        private DataContractSet DataContractSet
+        private static DataContractSet DataContractSet
         {
             get
             {
@@ -61,23 +61,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private void TraceExportBegin()
-        {
-        }
-
-        private void TraceExportEnd()
-        {
-        }
-
-        private void TraceExportError(Exception exception)
-        {
-        }
-
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void Export(ICollection<Assembly> assemblies!!)
         {
-            TraceExportBegin();
-
             DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
             try
             {
@@ -93,20 +79,16 @@ namespace System.Runtime.Serialization
 
                 Export();
             }
-            catch (Exception ex)
+            catch
             {
                 _dataContractSet = oldValue;
-                TraceExportError(ex);
                 throw;
             }
-            TraceExportEnd();
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void Export(ICollection<Type> types!!)
         {
-            TraceExportBegin();
-
             DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
             try
             {
@@ -119,33 +101,27 @@ namespace System.Runtime.Serialization
 
                 Export();
             }
-            catch (Exception ex)
+            catch
             {
                 _dataContractSet = oldValue;
-                TraceExportError(ex);
                 throw;
             }
-            TraceExportEnd();
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void Export(Type type!!)
         {
-            TraceExportBegin();
-
             DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 AddType(type);
                 Export();
             }
-            catch (Exception ex)
+            catch
             {
                 _dataContractSet = oldValue;
-                TraceExportError(ex);
                 throw;
             }
-            TraceExportEnd();
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -188,7 +164,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private Type GetSurrogatedType(Type type)
+        private static Type GetSurrogatedType(Type type)
         {
 #if SUPPORT_SURROGATE
             IDataContractSurrogate dataContractSurrogate;
@@ -199,7 +175,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private void CheckAndAddType(Type type)
+        private static void CheckAndAddType(Type type)
         {
             type = GetSurrogatedType(type);
             if (!type.ContainsGenericParameters && DataContract.IsTypeSerializable(type))
@@ -207,7 +183,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private void AddType(Type type)
+        private static void AddType(Type type)
         {
             DataContractSet.Add(type);
         }
@@ -263,10 +239,9 @@ namespace System.Runtime.Serialization
                 _dataContractSet = oldValue;
                 return false;
             }
-            catch (Exception ex)
+            catch
             {
                 _dataContractSet = oldValue;
-                TraceExportError(ex);
                 throw;
             }
         }
@@ -291,10 +266,9 @@ namespace System.Runtime.Serialization
                 _dataContractSet = oldValue;
                 return false;
             }
-            catch (Exception ex)
+            catch
             {
                 _dataContractSet = oldValue;
-                TraceExportError(ex);
                 throw;
             }
         }
@@ -314,10 +288,9 @@ namespace System.Runtime.Serialization
                 _dataContractSet = oldValue;
                 return false;
             }
-            catch (Exception ex)
+            catch
             {
                 _dataContractSet = oldValue;
-                TraceExportError(ex);
                 throw;
             }
         }

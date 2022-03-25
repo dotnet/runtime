@@ -7,7 +7,6 @@ using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
 
@@ -1006,7 +1005,7 @@ namespace System.ComponentModel
                 {
                     // Get the type's attributes.
                     //
-                    attrs = type.GetCustomAttributes(typeof(Attribute), false).OfType<Attribute>().ToArray();
+                    attrs = Attribute.GetCustomAttributes(type, typeof(Attribute), inherit: false);
                     attributeCache[type] = attrs;
                 }
             }
@@ -1034,7 +1033,7 @@ namespace System.ComponentModel
                 {
                     // Get the member's attributes.
                     //
-                    attrs = member.GetCustomAttributes(typeof(Attribute), false).OfType<Attribute>().ToArray();
+                    attrs = Attribute.GetCustomAttributes(member, typeof(Attribute), inherit: false);
                     attributeCache[member] = attrs;
                 }
             }
@@ -1292,7 +1291,7 @@ namespace System.ComponentModel
                         properties = newProperties;
                     }
 
-                    Debug.Assert(!properties.Any(dbgProp => dbgProp == null), $"Holes in property array for type {type}");
+                    Debug.Assert(Array.TrueForAll(properties, dbgProp => dbgProp is not null), $"Holes in property array for type {type}");
 
                     propertyCache[type] = properties;
                 }

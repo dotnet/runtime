@@ -158,18 +158,15 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1052`__ | Specified configuration is not supported by source-generated P/Invokes |
 |  __`SYSLIB1053`__ | Current target framework is not supported by source-generated P/Invokes |
 |  __`SYSLIB1054`__ | Specified LibraryImportAttribute arguments cannot be forwarded to DllImportAttribute |
-|  __`SYSLIB1055`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
-|  __`SYSLIB1056`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
-|  __`SYSLIB1057`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
-|  __`SYSLIB1058`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
-|  __`SYSLIB1059`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
-|  __`SYSLIB1060`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
-|  __`SYSLIB1061`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
-|  __`SYSLIB1062`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
-|  __`SYSLIB1063`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
-|  __`SYSLIB1064`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
-|  __`SYSLIB1065`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
-|  __`SYSLIB1066`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
-|  __`SYSLIB1067`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
-|  __`SYSLIB1068`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
-|  __`SYSLIB1069`__ | *_`SYSLIB1055`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1055`__ | *_`SYSLIB1055`-`SYSLIB1066` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1056`__ | *_`SYSLIB1055`-`SYSLIB1066` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1057`__ | *_`SYSLIB1055`-`SYSLIB1066` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1058`__ | *_`SYSLIB1055`-`SYSLIB1066` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1059`__ | *_`SYSLIB1055`-`SYSLIB1066` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1060`__ | *_`SYSLIB1055`-`SYSLIB1066` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1061`__ | *_`SYSLIB1055`-`SYSLIB1066` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1062`__ | *_`SYSLIB1055`-`SYSLIB1066` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1063`__ | *_`SYSLIB1055`-`SYSLIB1066` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1064`__ | *_`SYSLIB1055`-`SYSLIB1066` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1065`__ | *_`SYSLIB1055`-`SYSLIB1066` reserved for Microsoft.Interop.LibraryImportGenerator._* |
+|  __`SYSLIB1066`__ | *_`SYSLIB1055`-`SYSLIB1066` reserved for Microsoft.Interop.LibraryImportGenerator._* |

@@ -1973,6 +1973,46 @@ gc_safe_transition_builder_cleanup (GCSafeTransitionBuilder *builder)
 #endif
 }
 
+static gboolean
+emit_native_wrapper_validate_signature (MonoMethodBuilder *mb, MonoMethodSignature* sig, MonoMarshalSpec** mspecs)
+{
+	if (mspecs) {
+		for (int i = 0; i < sig->param_count; i ++) {
+			if (mspecs [i + 1] && mspecs [i + 1]->native == MONO_NATIVE_CUSTOM) {
+				if (!mspecs [i + 1]->data.custom_data.custom_name || strlen (mspecs [i + 1]->data.custom_data.custom_name) == 0) {
+					mono_mb_emit_exception_full (mb, "System", "TypeLoadException", g_strdup ("Missing ICustomMarshaler type"));
+					return FALSE;
+				}
+
+				switch (sig->params[i]->type) {
+				case MONO_TYPE_CLASS:
+				case MONO_TYPE_OBJECT:
+				case MONO_TYPE_STRING:
+				case MONO_TYPE_ARRAY:
+				case MONO_TYPE_SZARRAY:
+				case MONO_TYPE_VALUETYPE:
+					break;
+
+				default:
+					mono_mb_emit_exception_full (mb, "System.Runtime.InteropServices", "MarshalDirectiveException", g_strdup_printf ("custom marshalling of type %x is currently not supported", sig->params[i]->type));
+					return FALSE;
+				}
+			}
+			else if (sig->params[i]->type == MONO_TYPE_VALUETYPE) {
+				MonoMarshalType *marshal_type = mono_marshal_load_type_info (mono_class_from_mono_type_internal (sig->params [i]));
+				for (int field_idx = 0; field_idx < marshal_type->num_fields; ++field_idx) {
+					if (marshal_type->fields [field_idx].mspec && marshal_type->fields [field_idx].mspec->native == MONO_NATIVE_CUSTOM) {
+						mono_mb_emit_exception_full (mb, "System", "TypeLoadException", g_strdup ("Value type includes custom marshaled fields"));
+						return FALSE;
+					}
+				}
+			}
+		}
+	}
+
+	return TRUE;
+}
+
 /**
  * emit_native_wrapper_ilgen:
  * \param image the image to use for looking up custom marshallers
@@ -2011,6 +2051,9 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	m.mb = mb;
 	m.sig = sig;
 	m.piinfo = piinfo;
+
+	if (!emit_native_wrapper_validate_signature (mb, sig, mspecs))
+		return;
 
 	if (!skip_gc_trans)
 		need_gc_safe = gc_safe_transition_builder_init (&gc_safe_transition_builder, mb, func_param);
@@ -4560,6 +4603,31 @@ emit_marshal_custom_get_instance (MonoMethodBuilder *mb, MonoClass *klass, MonoM
 }
 
 static int
+emit_marshal_custom_ilgen_throw_exception (MonoMethodBuilder *mb, const char *exc_nspace, const char *exc_name, const char *msg, MarshalAction action)
+{
+	/* Throw exception and emit compensation code, if neccesary */
+	switch (action) {
+	case MARSHAL_ACTION_CONV_IN:
+	case MARSHAL_ACTION_MANAGED_CONV_IN:
+	case MARSHAL_ACTION_CONV_RESULT:
+	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
+		if ((action == MARSHAL_ACTION_CONV_RESULT) || (action == MARSHAL_ACTION_MANAGED_CONV_RESULT))
+			mono_mb_emit_byte (mb, CEE_POP);
+
+		mono_mb_emit_exception_full (mb, exc_nspace, exc_name, msg);
+
+		break;
+	case MARSHAL_ACTION_PUSH:
+		mono_mb_emit_byte (mb, CEE_LDNULL);
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+static int
 emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 					 MonoMarshalSpec *spec,
 					 int conv_arg, MonoType **conv_arg_type,
@@ -4581,27 +4649,8 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	if (!ICustomMarshaler) {
 		MonoClass *klass = mono_class_try_get_icustom_marshaler_class ();
-		if (!klass) {
-			char *exception_msg = g_strdup ("Current profile doesn't support ICustomMarshaler");
-			/* Throw exception and emit compensation code if neccesary */
-			switch (action) {
-			case MARSHAL_ACTION_CONV_IN:
-			case MARSHAL_ACTION_CONV_RESULT:
-			case MARSHAL_ACTION_MANAGED_CONV_RESULT:
-				if ((action == MARSHAL_ACTION_CONV_RESULT) || (action == MARSHAL_ACTION_MANAGED_CONV_RESULT))
-					mono_mb_emit_byte (mb, CEE_POP);
-
-				mono_mb_emit_exception_full (mb, "System", "ApplicationException", exception_msg);
-
-				break;
-			case MARSHAL_ACTION_PUSH:
-				mono_mb_emit_byte (mb, CEE_LDNULL);
-				break;
-			default:
-				break;
-			}
-			return 0;
-		}
+		if (!klass)
+			return emit_marshal_custom_ilgen_throw_exception (mb, "System", "ApplicationException", g_strdup ("Current profile doesn't support ICustomMarshaler"), action);
 
 		cleanup_native = get_method_nofail (klass, "CleanUpNativeData", 1, 0);
 		g_assert (cleanup_native);
@@ -4624,8 +4673,9 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	else
 		mtype = mono_reflection_type_from_name_checked (spec->data.custom_data.custom_name, alc, m->image, error);
 
-	g_assert (mtype != NULL);
-	mono_error_assert_ok (error);
+	if (!mtype)
+		return emit_marshal_custom_ilgen_throw_exception (mb, "System", "TypeLoadException", g_strdup ("Failed to load ICustomMarshaler type"), action);
+
 	mklass = mono_class_from_mono_type_internal (mtype);
 	g_assert (mklass != NULL);
 
@@ -4691,7 +4741,20 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_ldloc (mb, conv_arg);
 		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
-		if (m_type_is_byref (t)) {
+		if (m_type_is_byref (t) && !(t->attrs & PARAM_ATTRIBUTE_OUT)) {
+			mono_mb_emit_ldarg (mb, argnum);
+
+			emit_marshal_custom_get_instance (mb, mklass, spec);
+			mono_mb_emit_byte (mb, CEE_DUP);
+
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_byte (mb, CEE_LDIND_REF);
+			mono_mb_emit_op (mb, CEE_CALLVIRT, cleanup_managed);
+
+			mono_mb_emit_ldloc (mb, conv_arg);
+			mono_mb_emit_op (mb, CEE_CALLVIRT, marshal_native_to_managed);
+			mono_mb_emit_byte (mb, CEE_STIND_REF);
+		} else if (m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
 			mono_mb_emit_ldarg (mb, argnum);
 
 			emit_marshal_custom_get_instance (mb, mklass, spec);
@@ -4704,16 +4767,19 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_op (mb, CEE_CALLVIRT, marshal_native_to_managed);
-
 			/* We have nowhere to store the result */
 			mono_mb_emit_byte (mb, CEE_POP);
 		}
 
-		emit_marshal_custom_get_instance (mb, mklass, spec);
+		// Only call cleanup_native if MARSHAL_ACTION_CONV_IN called marshal_managed_to_native.
+		if (!(m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT)) &&
+			!(!m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT) && !(t->attrs & PARAM_ATTRIBUTE_IN))) {
+			emit_marshal_custom_get_instance (mb, mklass, spec);
 
-		mono_mb_emit_ldloc (mb, conv_arg);
+			mono_mb_emit_ldloc (mb, conv_arg);
 
-		mono_mb_emit_op (mb, CEE_CALLVIRT, cleanup_native);
+			mono_mb_emit_op (mb, CEE_CALLVIRT, cleanup_native);
+		}
 
 		mono_mb_patch_branch (mb, pos2);
 		break;
@@ -4726,31 +4792,38 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_CONV_RESULT:
-		loc1 = mono_mb_add_local (mb, int_type);
-
 		mono_mb_emit_stloc (mb, 3);
-
-		mono_mb_emit_ldloc (mb, 3);
-		mono_mb_emit_stloc (mb, loc1);
 
 		/* Check for null */
 		mono_mb_emit_ldloc (mb, 3);
 		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 		emit_marshal_custom_get_instance (mb, mklass, spec);
-		mono_mb_emit_byte (mb, CEE_DUP);
 
 		mono_mb_emit_ldloc (mb, 3);
 		mono_mb_emit_op (mb, CEE_CALLVIRT, marshal_native_to_managed);
 		mono_mb_emit_stloc (mb, 3);
 
-		mono_mb_emit_ldloc (mb, loc1);
-		mono_mb_emit_op (mb, CEE_CALLVIRT, cleanup_native);
-
 		mono_mb_patch_branch (mb, pos2);
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_IN:
+		switch (t->type) {
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_BOOLEAN:
+			break;
+
+		default:
+			g_warning ("custom marshalling of type %x is currently not supported", t->type);
+			g_assert_not_reached ();
+			break;
+		}
+
 		conv_arg = mono_mb_add_local (mb, object_type);
 
 		mono_mb_emit_byte (mb, CEE_LDNULL);
@@ -4820,11 +4893,12 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_byte (mb, CEE_STIND_I);
 		}
 
-		/* Call CleanUpManagedData */
-		emit_marshal_custom_get_instance (mb, mklass, spec);
-
-		mono_mb_emit_ldloc (mb, conv_arg);
-		mono_mb_emit_op (mb, CEE_CALLVIRT, cleanup_managed);
+		// Only call cleanup_managed if MARSHAL_ACTION_MANAGED_CONV_IN called marshal_native_to_managed.
+		if (!(m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT))) {
+			emit_marshal_custom_get_instance (mb, mklass, spec);
+			mono_mb_emit_ldloc (mb, conv_arg);
+			mono_mb_emit_op (mb, CEE_CALLVIRT, cleanup_managed);
+		}
 
 		mono_mb_patch_branch (mb, pos2);
 		break;
@@ -6202,8 +6276,48 @@ emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	return conv_arg;
 }
 
+static gboolean
+emit_managed_wrapper_validate_signature (MonoMethodSignature* sig, MonoMarshalSpec** mspecs, MonoError* error)
+{
+	if (mspecs) {
+		for (int i = 0; i < sig->param_count; i ++) {
+			if (mspecs [i + 1] && mspecs [i + 1]->native == MONO_NATIVE_CUSTOM) {
+				if (!mspecs [i + 1]->data.custom_data.custom_name || strlen (mspecs [i + 1]->data.custom_data.custom_name) == 0) {
+					mono_error_set_generic_error (error, "System", "TypeLoadException", "Missing ICustomMarshaler type");
+					return FALSE;
+				}
+
+				switch (sig->params[i]->type) {
+				case MONO_TYPE_OBJECT:
+				case MONO_TYPE_CLASS:
+				case MONO_TYPE_VALUETYPE:
+				case MONO_TYPE_ARRAY:
+				case MONO_TYPE_SZARRAY:
+				case MONO_TYPE_STRING:
+				case MONO_TYPE_BOOLEAN:
+					break;
+				default:
+					mono_error_set_generic_error (error, "System.Runtime.InteropServices", "MarshalDirectiveException", "custom marshalling of type %x is currently not supported", sig->params[i]->type);
+					return FALSE;
+				}
+			} else if (sig->params[i]->type == MONO_TYPE_VALUETYPE) {
+				MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
+				MonoMarshalType *marshal_type = mono_marshal_load_type_info (klass);
+				for (int field_idx = 0; field_idx < marshal_type->num_fields; ++field_idx) {
+					if (marshal_type->fields [field_idx].mspec && marshal_type->fields [field_idx].mspec->native == MONO_NATIVE_CUSTOM) {
+						mono_error_set_type_load_class (error, klass, "Value type includes custom marshaled fields");
+						return FALSE;
+					}
+				}
+			}
+		}
+	}
+
+	return TRUE;
+}
+
 static void
-emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle)
+emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, MonoError *error)
 {
 	MonoMethodSignature *sig, *csig;
 	int i, *tmp_locals, orig_domain, attach_cookie;
@@ -6211,6 +6325,9 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 
 	sig = m->sig;
 	csig = m->csig;
+
+	if (!emit_managed_wrapper_validate_signature (sig, mspecs, error))
+		return;
 
 	MonoType *int_type = mono_get_int_type ();
 	MonoType *boolean_type = m_class_get_byval_arg (mono_defaults.boolean_class);
@@ -6278,20 +6395,25 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	tmp_locals = g_newa (int, sig->param_count);
 	for (i = 0; i < sig->param_count; i ++) {
 		MonoType *t = sig->params [i];
+		MonoMarshalSpec *spec = mspecs [i + 1];
 
-		switch (t->type) {
-		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_CLASS:
-		case MONO_TYPE_VALUETYPE:
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_SZARRAY:
-		case MONO_TYPE_STRING:
-		case MONO_TYPE_BOOLEAN:
-			tmp_locals [i] = mono_emit_marshal (m, i, sig->params [i], mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
-			break;
-		default:
-			tmp_locals [i] = 0;
-			break;
+		if (spec && spec->native == MONO_NATIVE_CUSTOM) {
+			tmp_locals [i] = mono_emit_marshal (m, i, t, mspecs [i + 1], 0,  &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
+		} else {
+			switch (t->type) {
+			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_VALUETYPE:
+			case MONO_TYPE_ARRAY:
+			case MONO_TYPE_SZARRAY:
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_BOOLEAN:
+				tmp_locals [i] = mono_emit_marshal (m, i, t, mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
+				break;
+			default:
+				tmp_locals [i] = 0;
+				break;
+			}
 		}
 	}
 
