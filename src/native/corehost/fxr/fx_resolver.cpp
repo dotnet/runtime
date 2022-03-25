@@ -399,7 +399,8 @@ StatusCode fx_resolver_t::read_framework(
     const runtime_config_t::settings_t& override_settings,
     const runtime_config_t & config,
     const fx_reference_t * effective_parent_fx_ref,
-    fx_definition_vector_t & fx_definitions)
+    fx_definition_vector_t & fx_definitions,
+    const pal::char_t* app_display_name)
 {
     // This reconciles duplicate references to minimize the number of resolve retries.
     update_newest_references(config);
@@ -449,7 +450,7 @@ StatusCode fx_resolver_t::read_framework(
                     _X("\n\n")
                     _X("App: %s\n")
                     _X("Architecture: %s"),
-                    host_info.host_path.c_str(),
+                    app_display_name != nullptr ? app_display_name : host_info.host_path.c_str(),
                     get_arch());
                 display_missing_framework_error(fx_name, new_effective_fx_ref.get_fx_version(), pal::string_t(), host_info.dotnet_root, disable_multilevel_lookup);
                 return FrameworkMissingFailure;
@@ -480,7 +481,7 @@ StatusCode fx_resolver_t::read_framework(
                 return StatusCode::InvalidConfigFile;
             }
 
-            rc = read_framework(host_info, disable_multilevel_lookup, override_settings, new_config, &new_effective_fx_ref, fx_definitions);
+            rc = read_framework(host_info, disable_multilevel_lookup, override_settings, new_config, &new_effective_fx_ref, fx_definitions, app_display_name);
             if (rc)
             {
                 break; // Error case
@@ -523,7 +524,8 @@ StatusCode fx_resolver_t::resolve_frameworks_for_app(
     bool disable_multilevel_lookup,
     const runtime_config_t::settings_t& override_settings,
     const runtime_config_t & app_config,
-    fx_definition_vector_t & fx_definitions)
+    fx_definition_vector_t & fx_definitions,
+    const pal::char_t* app_display_name)
 {
     fx_resolver_t resolver;
 
@@ -533,7 +535,7 @@ StatusCode fx_resolver_t::resolve_frameworks_for_app(
     do
     {
         fx_definitions.resize(1); // Erase any existing frameworks for re-try
-        rc = resolver.read_framework(host_info, disable_multilevel_lookup, override_settings, app_config, /*effective_parent_fx_ref*/ nullptr, fx_definitions);
+        rc = resolver.read_framework(host_info, disable_multilevel_lookup, override_settings, app_config, /*effective_parent_fx_ref*/ nullptr, fx_definitions, app_display_name);
     } while (rc == StatusCode::FrameworkCompatRetry && retry_count++ < Max_Framework_Resolve_Retries);
 
     assert(retry_count < Max_Framework_Resolve_Retries);

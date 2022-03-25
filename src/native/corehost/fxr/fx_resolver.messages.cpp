@@ -141,7 +141,7 @@ void fx_resolver_t::display_missing_framework_error(
         _X("Learn about framework resolution:\n")
         DOTNET_APP_LAUNCH_FAILED_URL
         _X("\n\n")
-        _X("Download framework:\n")
+        _X("To install missing framework, download:\n")
         _X("%s"),
         url.c_str());
 }

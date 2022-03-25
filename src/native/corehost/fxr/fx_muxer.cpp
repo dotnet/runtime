@@ -466,7 +466,7 @@ namespace
             }
             else
             {
-                rc = fx_resolver_t::resolve_frameworks_for_app(host_info, app_config.get_is_multilevel_lookup_disabled(), override_settings, app_config, fx_definitions);
+                rc = fx_resolver_t::resolve_frameworks_for_app(host_info, app_config.get_is_multilevel_lookup_disabled(), override_settings, app_config, fx_definitions, mode == host_mode_t::muxer ? app_candidate.c_str() : nullptr);
                 if (rc != StatusCode::Success)
                 {
                     return rc;
@@ -1073,7 +1073,7 @@ int fx_muxer_t::handle_cli(
 
         trace::error(
             _X("The command could not be loaded, possibly because:\n")
-            _X("  * You intended to execute a .NET program:\n")
+            _X("  * You intended to execute a .NET application:\n")
             _X("      The application '%s' does not exist.\n")
             _X("  * You intended to execute a .NET SDK command:"),
             app_candidate.c_str());
