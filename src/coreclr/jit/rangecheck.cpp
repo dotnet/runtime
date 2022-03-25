@@ -946,7 +946,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
 
         if (isRshPositiveCns)
         {
-            // We're going to special case X << CNS to return X's range with 0 as the lower bound
+            // We're going to special case X >> CNS to return [0..X->uLimit] range
         }
         else if (icon >= 0)
         {
@@ -1037,8 +1037,8 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
         assert(binop->OperIs(GT_RSH) && op2->IsIntCnsFitsInI32());
         // Technically, we could properly calculate the range here by introducing RangeOps::Divide
         // but it's a lot of changes without visible benefits, so let's just say
-        // X >> CNS (CNS is positive) returns X's range where lower limit is zero
-        r = op1Range;
+        // X >> CNS (CNS is positive) returns [0..X->uLimit] range
+        r        = op1Range;
         r.lLimit = Limit(Limit::keConstant, 0);
     }
     return r;
