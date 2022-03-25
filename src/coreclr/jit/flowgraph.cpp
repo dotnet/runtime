@@ -1047,7 +1047,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 
 GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                                                  CORINFO_CONTEXT_HANDLE* ExactContextHnd,
-                                                 CORINFO_RESOLVED_TOKEN* ldftnToken)
+                                                 methodPointerInfo*      ldftnToken)
 {
     JITDUMP("\nfgOptimizeDelegateConstructor: ");
     noway_assert(call->gtCallType == CT_USER_FUNC);
@@ -1115,14 +1115,14 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     // via the above pattern match, and more...
     if (ldftnToken != nullptr)
     {
-        assert(ldftnToken->hMethod != nullptr);
+        assert(ldftnToken->m_token.hMethod != nullptr);
 
         if (targetMethodHnd != nullptr)
         {
-            assert(targetMethodHnd == ldftnToken->hMethod);
+            assert(targetMethodHnd == ldftnToken->m_token.hMethod);
         }
 
-        targetMethodHnd = ldftnToken->hMethod;
+        targetMethodHnd = ldftnToken->m_token.hMethod;
     }
     else
     {
@@ -1143,7 +1143,8 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                 GenTreeCall::Use*    helperArgs        = nullptr;
                 CORINFO_LOOKUP       pLookup;
                 CORINFO_CONST_LOOKUP entryPoint;
-                info.compCompHnd->getReadyToRunDelegateCtorHelper(ldftnToken, clsHnd, &pLookup);
+                info.compCompHnd->getReadyToRunDelegateCtorHelper(&ldftnToken->m_token, ldftnToken->m_tokenConstraint,
+                                                                  clsHnd, &pLookup);
                 if (!pLookup.lookupKind.needsRuntimeLookup)
                 {
                     helperArgs = gtNewCallArgs(thisPointer, targetObjPointers);
@@ -1153,7 +1154,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                 {
                     assert(oper != GT_FTN_ADDR);
                     CORINFO_CONST_LOOKUP genericLookup;
-                    info.compCompHnd->getReadyToRunHelper(ldftnToken, &pLookup.lookupKind,
+                    info.compCompHnd->getReadyToRunHelper(&ldftnToken->m_token, &pLookup.lookupKind,
                                                           CORINFO_HELP_READYTORUN_GENERIC_HANDLE, &genericLookup);
                     GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
                     helperArgs       = gtNewCallArgs(thisPointer, targetObjPointers, ctxTree);
@@ -1179,7 +1180,8 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, helperArgs);
 
             CORINFO_LOOKUP entryPoint;
-            info.compCompHnd->getReadyToRunDelegateCtorHelper(ldftnToken, clsHnd, &entryPoint);
+            info.compCompHnd->getReadyToRunDelegateCtorHelper(&ldftnToken->m_token, ldftnToken->m_tokenConstraint,
+                                                              clsHnd, &entryPoint);
             assert(!entryPoint.lookupKind.needsRuntimeLookup);
             call->setEntryPoint(entryPoint.constLookup);
         }
