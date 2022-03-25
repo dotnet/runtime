@@ -84,17 +84,17 @@ namespace System.Dynamic.Utils
         private static MethodInfo[] GetActionThunks()
         {
             Type delHelpers = typeof(DelegateHelpers);
-            return new MethodInfo[]{delHelpers.GetMethod("ActionThunk")!,
-                                    delHelpers.GetMethod("ActionThunk1")!,
-                                    delHelpers.GetMethod("ActionThunk2")!};
+            return new MethodInfo[]{delHelpers.GetMethod(nameof(ActionThunk))!,
+                                    delHelpers.GetMethod(nameof(ActionThunk1))!,
+                                    delHelpers.GetMethod(nameof(ActionThunk2))!};
         }
 
         private static MethodInfo[] GetFuncThunks()
         {
             Type delHelpers = typeof(DelegateHelpers);
-            return new MethodInfo[]{delHelpers.GetMethod("FuncThunk")!,
-                                    delHelpers.GetMethod("FuncThunk1")!,
-                                    delHelpers.GetMethod("FuncThunk2")!};
+            return new MethodInfo[]{delHelpers.GetMethod(nameof(FuncThunk))!,
+                                    delHelpers.GetMethod(nameof(FuncThunk1))!,
+                                    delHelpers.GetMethod(nameof(FuncThunk2))!};
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
