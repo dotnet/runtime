@@ -303,7 +303,7 @@ namespace System.Reflection.Emit
                     // The above behaviors might not be the most consistent but we have to live with them.
 
                     Type? underlyingType;
-                    if (destType is EnumBuilder enumBldr)
+                    if (destType is RuntimeEnumBuilder enumBldr)
                     {
                         underlyingType = enumBldr.GetEnumUnderlyingType();
 

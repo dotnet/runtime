@@ -526,13 +526,13 @@ namespace System.Reflection.Emit
 
             foreach (Type builder in _typeBuilderDict.Values)
             {
-                EnumBuilder? enumBldr = builder as EnumBuilder;
-                TypeBuilder tmpTypeBldr;
+                RuntimeEnumBuilder? enumBldr = builder as RuntimeEnumBuilder;
+                RuntimeTypeBuilder tmpTypeBldr;
 
                 if (enumBldr != null)
                     tmpTypeBldr = enumBldr.m_typeBuilder;
                 else
-                    tmpTypeBldr = (TypeBuilder)builder;
+                    tmpTypeBldr = (RuntimeTypeBuilder)builder;
 
                 // We should not return TypeBuilders.
                 // Otherwise anyone can emit code in it.
@@ -771,7 +771,7 @@ namespace System.Reflection.Emit
         {
             lock (SyncRoot)
             {
-                EnumBuilder enumBuilder = new EnumBuilder(name, underlyingType, visibility, this);
+                RuntimeEnumBuilder enumBuilder = new RuntimeEnumBuilder(name, underlyingType, visibility, this);
 
                 // This enum is not generic, nested, and cannot have any element type.
                 // Replace the TypeBuilder object in _typeBuilderDict with this EnumBuilder object.
@@ -936,7 +936,7 @@ namespace System.Reflection.Emit
                 // no need to do anything additional other than defining the TypeRef Token
                 RuntimeTypeBuilder? typeBuilder;
 
-                EnumBuilder? enumBuilder = type as EnumBuilder;
+                RuntimeEnumBuilder? enumBuilder = type as RuntimeEnumBuilder;
                 typeBuilder = enumBuilder != null ? enumBuilder.m_typeBuilder : type as RuntimeTypeBuilder;
 
                 if (typeBuilder != null)

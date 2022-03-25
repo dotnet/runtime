@@ -372,9 +372,9 @@ namespace System.Reflection.Emit
                     InternalAddTypeToken(tkType, CorElementType.ELEMENT_TYPE_CLASS);
                 }
             }
-            else if (clsArgument is EnumBuilder)
+            else if (clsArgument is RuntimeEnumBuilder)
             {
-                RuntimeTypeBuilder clsBuilder = ((EnumBuilder)clsArgument).m_typeBuilder;
+                RuntimeTypeBuilder clsBuilder = ((RuntimeEnumBuilder)clsArgument).m_typeBuilder;
                 int tkType;
 
                 if (clsBuilder.Module.Equals(m_module))
