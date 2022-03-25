@@ -6,17 +6,17 @@ using System.Globalization;
 
 namespace System.Reflection.Emit
 {
-    public sealed class ConstructorBuilder : ConstructorInfo
+    internal sealed class RuntimeConstructorBuilder : ConstructorBuilder
     {
-        private readonly MethodBuilder m_methodBuilder;
+        private readonly RuntimeMethodBuilder m_methodBuilder;
         internal bool m_isDefaultConstructor;
 
         #region Constructor
 
-        internal ConstructorBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
+        internal RuntimeConstructorBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
             Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, RuntimeModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] RuntimeTypeBuilder type)
         {
-            m_methodBuilder = new MethodBuilder(name, attributes, callingConvention, null, null, null,
+            m_methodBuilder = new RuntimeMethodBuilder(name, attributes, callingConvention, null, null, null,
                 parameterTypes, requiredCustomModifiers, optionalCustomModifiers, mod, type);
 
             type.m_listMethods!.Add(m_methodBuilder);
@@ -26,7 +26,7 @@ namespace System.Reflection.Emit
             _ = m_methodBuilder.MetadataToken; // Doubles as "CreateMethod" for MethodBuilder -- analogous to CreateType()
         }
 
-        internal ConstructorBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
+        internal RuntimeConstructorBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
             Type[]? parameterTypes, RuntimeModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] RuntimeTypeBuilder type) :
             this(name, attributes, callingConvention, parameterTypes, null, null, mod, type)
         {
@@ -122,7 +122,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Public Members
-        public ParameterBuilder DefineParameter(int iSequence, ParameterAttributes attributes, string? strParamName)
+        public override ParameterBuilder DefineParameter(int iSequence, ParameterAttributes attributes, string? strParamName)
         {
             // Theoretically we shouldn't allow iSequence to be 0 because in reflection ctors don't have
             // return parameters. But we'll allow it for backward compatibility with V2. The attributes
@@ -133,7 +133,7 @@ namespace System.Reflection.Emit
             return m_methodBuilder.DefineParameter(iSequence, attributes, strParamName);
         }
 
-        public ILGenerator GetILGenerator()
+        public override ILGenerator GetILGenerator()
         {
             if (m_isDefaultConstructor)
                 throw new InvalidOperationException(SR.InvalidOperation_DefaultConstructorILGen);
@@ -141,7 +141,7 @@ namespace System.Reflection.Emit
             return m_methodBuilder.GetILGenerator();
         }
 
-        public ILGenerator GetILGenerator(int streamSize)
+        public override ILGenerator GetILGenerator(int streamSize)
         {
             if (m_isDefaultConstructor)
                 throw new InvalidOperationException(SR.InvalidOperation_DefaultConstructorILGen);
@@ -165,22 +165,22 @@ namespace System.Reflection.Emit
             return m_methodBuilder.ReturnType;
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             m_methodBuilder.SetCustomAttribute(con, binaryAttribute);
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             m_methodBuilder.SetCustomAttribute(customBuilder);
         }
 
-        public void SetImplementationFlags(MethodImplAttributes attributes)
+        public override void SetImplementationFlags(MethodImplAttributes attributes)
         {
             m_methodBuilder.SetImplementationFlags(attributes);
         }
 
-        public bool InitLocals
+        public override bool InitLocals
         {
             get => m_methodBuilder.InitLocals;
             set => m_methodBuilder.InitLocals = value;

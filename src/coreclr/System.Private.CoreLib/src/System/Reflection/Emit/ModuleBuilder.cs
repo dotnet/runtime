@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
-    internal partial class RuntimeModuleBuilder : ModuleBuilder
+    internal sealed partial class RuntimeModuleBuilder : ModuleBuilder
     {
         internal static string UnmangleTypeName(string typeName)
         {
@@ -178,7 +178,7 @@ namespace System.Reflection.Emit
 
         #region Internal Members
 
-        internal virtual Type? FindTypeBuilderWithName(string strTypeName, bool ignoreCase)
+        internal Type? FindTypeBuilderWithName(string strTypeName, bool ignoreCase)
         {
             if (ignoreCase)
             {
@@ -443,16 +443,16 @@ namespace System.Reflection.Emit
         {
             switch (method)
             {
-                case MethodBuilder methodBuilder:
+                case RuntimeMethodBuilder methodBuilder:
                     return methodBuilder.GetMethodSignature();
-                case ConstructorBuilder constructorBuilder:
+                case RuntimeConstructorBuilder constructorBuilder:
                     return constructorBuilder.GetMethodSignature();
-                case MethodOnTypeBuilderInstantiation motbi when motbi.m_method is MethodBuilder methodBuilder:
+                case MethodOnTypeBuilderInstantiation motbi when motbi.m_method is RuntimeMethodBuilder methodBuilder:
                     return methodBuilder.GetMethodSignature();
                 case MethodOnTypeBuilderInstantiation motbi:
                     method = motbi.m_method;
                     break;
-                case ConstructorOnTypeBuilderInstantiation cotbi when cotbi.m_ctor is ConstructorBuilder constructorBuilder:
+                case ConstructorOnTypeBuilderInstantiation cotbi when cotbi.m_ctor is RuntimeConstructorBuilder constructorBuilder:
                     return constructorBuilder.GetMethodSignature();
                 case ConstructorOnTypeBuilderInstantiation cotbi:
                     method = cotbi.m_ctor;

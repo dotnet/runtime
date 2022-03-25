@@ -20,7 +20,7 @@ namespace System.Reflection.Emit
         // https://docs.microsoft.com/en-us/dotnet/api/system.reflection.metadata.ecma335.metadatabuilder
 
         // TODO: Create a new method for loading the assembly as dynamic and attached to the original load context
-        private class ReflectionEmitLoadContext : AssemblyLoadContext
+        private sealed class ReflectionEmitLoadContext : AssemblyLoadContext
         {
             public ReflectionEmitLoadContext(bool isCollectible)
                 : base(isCollectible)
@@ -33,8 +33,8 @@ namespace System.Reflection.Emit
         private RuntimeAssemblyBuilder(
             AssemblyName name,
             AssemblyBuilderAccess access,
-            IEnumerable<CustomAttributeBuilder>? assemblyAttributes,
-            AssemblyLoadContext assemblyLoadContext)
+            AssemblyLoadContext assemblyLoadContext,
+            IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
             var metadata = new MetadataBuilder();
 
@@ -102,6 +102,8 @@ namespace System.Reflection.Emit
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes,
             Assembly? callingAssembly)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (access != AssemblyBuilderAccess.Run && access != AssemblyBuilderAccess.RunAndCollect)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)access), nameof(access));
@@ -122,7 +124,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException();
             }
 
-            return new RuntimeAssemblyBuilder(name, access, assemblyAttributes, assemblyLoadContext);
+            return new RuntimeAssemblyBuilder(name, access, assemblyLoadContext, assemblyAttributes);
         }
 
         internal Assembly InternalAssembly => _internalAssembly;
@@ -192,12 +194,12 @@ namespace System.Reflection.Emit
             throw new NotImplementedException(); // TODO
         }
 
-        public override void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
+        public override void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute)
         {
             throw new NotImplementedException(); // TODO
         }
 
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
+        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             throw new NotImplementedException(); // TODO
         }

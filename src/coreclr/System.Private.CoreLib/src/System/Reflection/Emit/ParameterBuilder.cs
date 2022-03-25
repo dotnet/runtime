@@ -39,7 +39,7 @@ namespace System.Reflection.Emit
         }
 
         internal ParameterBuilder(
-            MethodBuilder methodBuilder,
+            RuntimeMethodBuilder methodBuilder,
             int sequence,
             ParameterAttributes attributes,
             string? paramName)            // can be NULL string
@@ -77,7 +77,7 @@ namespace System.Reflection.Emit
         private readonly string? _name;
         private readonly int _position;
         private readonly ParameterAttributes _attributes;
-        private MethodBuilder _methodBuilder;
+        private RuntimeMethodBuilder _methodBuilder;
         private int _token;
     }
 }

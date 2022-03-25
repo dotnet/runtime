@@ -406,7 +406,7 @@ namespace System.Reflection.Emit
         private List<Type>? m_typeInterfaces;
         private readonly TypeAttributes m_iAttr;
         private GenericParameterAttributes m_genParamAttributes;
-        internal List<MethodBuilder>? m_listMethods;
+        internal List<RuntimeMethodBuilder>? m_listMethods;
         internal int m_lastTokenizedMethod;
         private int m_constructorCount;
         private readonly int m_iTypeSize;
@@ -424,8 +424,8 @@ namespace System.Reflection.Emit
         private readonly int m_genParamPos;
         private GenericTypeParameterBuilder[]? m_inst;
         private readonly bool m_bIsGenParam;
-        private readonly MethodBuilder? m_declMeth;
-        private readonly TypeBuilder? m_genTypeDef;
+        private readonly RuntimeMethodBuilder? m_declMeth;
+        private readonly RuntimeTypeBuilder? m_genTypeDef;
         #endregion
 
         #region Constructor
@@ -435,14 +435,14 @@ namespace System.Reflection.Emit
             m_tdType = ((int)MetadataTokenType.TypeDef);
             m_isHiddenGlobalType = true;
             m_module = module;
-            m_listMethods = new List<MethodBuilder>();
+            m_listMethods = new List<RuntimeMethodBuilder>();
             // No token has been created so let's initialize it to -1
             // The first time we call MethodBuilder.GetToken this will incremented.
             m_lastTokenizedMethod = -1;
         }
 
         // ctor for generic method parameter
-        internal RuntimeTypeBuilder(string szName, int genParamPos, MethodBuilder declMeth)
+        internal RuntimeTypeBuilder(string szName, int genParamPos, RuntimeMethodBuilder declMeth)
         {
             m_strName = szName;
             m_genParamPos = genParamPos;
@@ -531,7 +531,7 @@ namespace System.Reflection.Emit
 
             SetParent(parent);
 
-            m_listMethods = new List<MethodBuilder>();
+            m_listMethods = new List<RuntimeMethodBuilder>();
             m_lastTokenizedMethod = -1;
 
             SetInterfaces(interfaces);
@@ -1249,7 +1249,7 @@ namespace System.Reflection.Emit
             ThrowIfCreated();
 
             // pass in Method attributes
-            MethodBuilder method = new MethodBuilder(
+            RuntimeMethodBuilder method = new RuntimeMethodBuilder(
                 name, attributes, callingConvention,
                 returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers,
                 parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers,
@@ -1291,7 +1291,7 @@ namespace System.Reflection.Emit
                 ThrowIfCreated();
 
                 attributes |= MethodAttributes.PinvokeImpl;
-                MethodBuilder method = new MethodBuilder(name, attributes, callingConvention,
+                RuntimeMethodBuilder method = new RuntimeMethodBuilder(name, attributes, callingConvention,
                     returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers,
                     parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers,
                     m_module, this);
@@ -1375,7 +1375,7 @@ namespace System.Reflection.Emit
             // change the attributes and the class constructor's name
             const MethodAttributes attr = MethodAttributes.Private | MethodAttributes.Static | MethodAttributes.SpecialName;
 
-            ConstructorBuilder constBuilder = new ConstructorBuilder(
+            ConstructorBuilder constBuilder = new RuntimeConstructorBuilder(
                 ConstructorInfo.TypeConstructorName, attr, CallingConventions.Standard, null, m_module, this);
 
             return constBuilder;
@@ -1400,7 +1400,7 @@ namespace System.Reflection.Emit
             Justification = "GetConstructor is only called on a TypeBuilderInstantiation which is not subject to trimming")]
         private ConstructorBuilder DefineDefaultConstructorNoLock(MethodAttributes attributes)
         {
-            ConstructorBuilder constBuilder;
+            RuntimeConstructorBuilder constBuilder;
 
             // get the parent class's default constructor
             // We really don't want(BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic) here.  We really want
@@ -1439,7 +1439,7 @@ namespace System.Reflection.Emit
                 throw new NotSupportedException(SR.NotSupported_NoParentDefaultConstructor);
 
             // Define the constructor Builder
-            constBuilder = DefineConstructor(attributes, CallingConventions.Standard, null);
+            constBuilder = (RuntimeConstructorBuilder)DefineConstructor(attributes, CallingConventions.Standard, null);
             m_constructorCount++;
 
             // generate the code to call the parent's default constructor
@@ -1487,7 +1487,7 @@ namespace System.Reflection.Emit
             attributes |= MethodAttributes.SpecialName;
 
             ConstructorBuilder constBuilder =
-                new ConstructorBuilder(name, attributes, callingConvention,
+                new RuntimeConstructorBuilder(name, attributes, callingConvention,
                     parameterTypes, requiredCustomModifiers, optionalCustomModifiers, m_module, this);
 
             m_constructorCount++;
@@ -1503,29 +1503,7 @@ namespace System.Reflection.Emit
         {
             lock (SyncRoot)
             {
-<<<<<<< HEAD
-                return new TypeBuilder(name, attr, parent, interfaces, m_module, PackingSize.Unspecified, UnspecifiedTypeSize, this);
-            }
-        }
-
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packSize, int typeSize)
-        {
-            lock (SyncRoot)
-            {
-                return new TypeBuilder(name, attr, parent, null, m_module, packSize, typeSize, this);
-            }
-        }
-
-        #endregion
-
-        #region Define Field
-
-        public FieldBuilder DefineField(string fieldName, Type type, Type[]? requiredCustomModifiers,
-=======
-                RuntimeAssemblyBuilder.CheckContext(parent);
-                RuntimeAssemblyBuilder.CheckContext(interfaces);
-
-                return DefineNestedTypeNoLock(name, attr, parent, interfaces, PackingSize.Unspecified, UnspecifiedTypeSize);
+                return new RuntimeTypeBuilder(name, attr, parent, interfaces, m_module, PackingSize.Unspecified, UnspecifiedTypeSize, this);
             }
         }
 
@@ -1533,16 +1511,8 @@ namespace System.Reflection.Emit
         {
             lock (SyncRoot)
             {
-                RuntimeAssemblyBuilder.CheckContext(parent);
-
-                return DefineNestedTypeNoLock(name, attr, parent, null, packSize, typeSize);
+                return new RuntimeTypeBuilder(name, attr, parent, null, m_module, packSize, typeSize, this);
             }
-        }
-
-        private TypeBuilder DefineNestedTypeNoLock(string name, TypeAttributes attr,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packSize, int typeSize)
-        {
-            return new RuntimeTypeBuilder(name, attr, parent, interfaces, m_module, packSize, typeSize, this);
         }
 
         #endregion
@@ -1806,7 +1776,7 @@ namespace System.Reflection.Emit
 
             for (int i = 0; i < size; i++)
             {
-                MethodBuilder meth = m_listMethods[i];
+                RuntimeMethodBuilder meth = m_listMethods[i];
 
                 if (meth.IsGenericMethodDefinition)
                 {

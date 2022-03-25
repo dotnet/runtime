@@ -445,7 +445,7 @@ namespace System.Reflection.Emit
             }
 
             SignatureHelper sig = GetMemberRefSignature(methodInfo.CallingConvention,
-                                                     MethodBuilder.GetMethodBaseReturnType(methodInfo),
+                                                     RuntimeMethodBuilder.GetMethodBaseReturnType(methodInfo),
                                                      parameterTypes,
                                                      requiredCustomModifiers,
                                                      optionalCustomModifiers,

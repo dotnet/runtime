@@ -11,7 +11,7 @@ using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection.Emit
 {
-    public sealed class MethodBuilder : MethodInfo
+    internal sealed class RuntimeMethodBuilder : MethodBuilder
     {
         #region Private Data Members
         // Identity
@@ -56,7 +56,7 @@ namespace System.Reflection.Emit
 
         #region Constructor
 
-        internal MethodBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
+        internal RuntimeMethodBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers,
             RuntimeModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] RuntimeTypeBuilder type)
@@ -362,21 +362,21 @@ namespace System.Reflection.Emit
         #region Object Overrides
         public override bool Equals(object? obj)
         {
-            if (!(obj is MethodBuilder))
+            if (!(obj is RuntimeMethodBuilder))
             {
                 return false;
             }
-            if (!m_strName.Equals(((MethodBuilder)obj).m_strName))
-            {
-                return false;
-            }
-
-            if (m_iAttributes != (((MethodBuilder)obj).m_iAttributes))
+            if (!m_strName.Equals(((RuntimeMethodBuilder)obj).m_strName))
             {
                 return false;
             }
 
-            SignatureHelper thatSig = ((MethodBuilder)obj).GetMethodSignature();
+            if (m_iAttributes != (((RuntimeMethodBuilder)obj).m_iAttributes))
+            {
+                return false;
+            }
+
+            SignatureHelper thatSig = ((RuntimeMethodBuilder)obj).GetMethodSignature();
             if (thatSig.Equals(GetMethodSignature()))
             {
                 return true;
@@ -516,7 +516,7 @@ namespace System.Reflection.Emit
             return MethodBuilderInstantiation.MakeGenericMethod(this, typeArguments);
         }
 
-        public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
+        public override GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
         {
             ArgumentNullException.ThrowIfNull(names);
 
@@ -561,7 +561,7 @@ namespace System.Reflection.Emit
                 return m_token;
             }
 
-            MethodBuilder? currentMethod = null;
+            RuntimeMethodBuilder? currentMethod = null;
             int currentToken = 0;
             int i;
 
@@ -614,17 +614,17 @@ namespace System.Reflection.Emit
             return m_token;
         }
 
-        public void SetParameters(params Type[] parameterTypes)
+        public override void SetParameters(params Type[] parameterTypes)
         {
             SetSignature(null, null, null, parameterTypes, null, null);
         }
 
-        public void SetReturnType(Type? returnType)
+        public override void SetReturnType(Type? returnType)
         {
             SetSignature(returnType, null, null, null, null, null);
         }
 
-        public void SetSignature(
+        public override void SetSignature(
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
@@ -652,7 +652,7 @@ namespace System.Reflection.Emit
             m_parameterTypeOptionalCustomModifiers = parameterTypeOptionalCustomModifiers;
         }
 
-        public ParameterBuilder DefineParameter(int position, ParameterAttributes attributes, string? strParamName)
+        public override ParameterBuilder DefineParameter(int position, ParameterAttributes attributes, string? strParamName)
         {
             if (position < 0)
                 throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_ParamSequence);
@@ -667,7 +667,7 @@ namespace System.Reflection.Emit
             return new ParameterBuilder(this, position, attributes, strParamName);
         }
 
-        public void SetImplementationFlags(MethodImplAttributes attributes)
+        public override void SetImplementationFlags(MethodImplAttributes attributes)
         {
             ThrowIfGeneric();
 
@@ -681,7 +681,7 @@ namespace System.Reflection.Emit
             RuntimeTypeBuilder.SetMethodImpl(new QCallModule(ref module), MetadataToken, attributes);
         }
 
-        public ILGenerator GetILGenerator()
+        public override ILGenerator GetILGenerator()
         {
             ThrowIfGeneric();
             ThrowIfShouldNotHaveBody();
@@ -689,7 +689,7 @@ namespace System.Reflection.Emit
             return m_ilGenerator ??= new ILGenerator(this);
         }
 
-        public ILGenerator GetILGenerator(int size)
+        public override ILGenerator GetILGenerator(int size)
         {
             ThrowIfGeneric();
             ThrowIfShouldNotHaveBody();
@@ -710,7 +710,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public bool InitLocals
+        public override bool InitLocals
         {
             // Property is set to true if user wishes to have zero initialized stack frame for this method. Default to false.
             get { ThrowIfGeneric(); return m_fInitLocals; }
@@ -722,7 +722,7 @@ namespace System.Reflection.Emit
             return GetModuleBuilder();
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             ArgumentNullException.ThrowIfNull(con);
             ArgumentNullException.ThrowIfNull(binaryAttribute);
@@ -737,7 +737,7 @@ namespace System.Reflection.Emit
                 ParseCA(con);
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 

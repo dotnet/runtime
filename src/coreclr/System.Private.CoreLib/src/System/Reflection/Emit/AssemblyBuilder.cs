@@ -35,7 +35,7 @@ namespace System.Reflection.Emit
                 => DefineDynamicAssembly(name, access, null, Assembly.GetCallingAssembly());
 
         private static AssemblyBuilder DefineDynamicAssembly(
-            AssemblyName name!!,
+            AssemblyName name,
             AssemblyBuilderAccess access,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes,
             Assembly? callingAssembly)
@@ -44,6 +44,8 @@ namespace System.Reflection.Emit
             {
                 return (s_defineDynamicAssembly ?? InitDefineDynamicAssembly())(name, access, assemblyAttributes, callingAssembly);
             }
+
+            ArgumentNullException.ThrowIfNull(name);
 
             if (access != AssemblyBuilderAccess.Run && access != AssemblyBuilderAccess.RunAndCollect)
             {
@@ -65,7 +67,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException();
             }
 
-            return new RuntimeAssemblyBuilder(name, access, assemblyAttributes, assemblyLoadContext);
+            return new RuntimeAssemblyBuilder(name, access, assemblyLoadContext, assemblyAttributes);
         }
 
         private static Func<AssemblyName, AssemblyBuilderAccess, IEnumerable<CustomAttributeBuilder>?, Assembly?, AssemblyBuilder>? s_defineDynamicAssembly;
@@ -114,41 +116,25 @@ namespace System.Reflection.Emit
 
         internal RuntimeAssemblyBuilder(AssemblyName name,
                                  AssemblyBuilderAccess access,
-                                 AssemblyLoadContext? assemblyLoadContext,
+                                 AssemblyLoadContext assemblyLoadContext,
                                  IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
-            ArgumentNullException.ThrowIfNull(name);
-
-            if (access != AssemblyBuilderAccess.Run && access != AssemblyBuilderAccess.RunAndCollect)
-            {
-                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)access), nameof(access));
-            }
-            if (callingAssembly == null)
-            {
-                // Called either from interop or async delegate invocation. Rejecting because we don't
-                // know how to set the correct context of the new dynamic assembly.
-                throw new InvalidOperationException();
-            }
-
             _access = access;
 
-            _internalAssembly = CreateDynamicAssembly(assemblyLoadContext ?? AssemblyLoadContext.GetLoadContext(callingAssembly)!, name, access);
+            _internalAssembly = CreateDynamicAssembly(assemblyLoadContext, name, access);
 
             // Make sure that ManifestModule is properly initialized
             // We need to do this before setting any CustomAttribute
             // Note that this ModuleBuilder cannot be used for RefEmit yet
             // because it hasn't been initialized.
             // However, it can be used to set the custom attribute on the Assembly
-            _manifestModuleBuilder = new ModuleBuilder(this, (RuntimeModule)InternalAssembly.ManifestModule);
+            _manifestModuleBuilder = new RuntimeModuleBuilder(this, (RuntimeModule)InternalAssembly.ManifestModule);
 
             if (assemblyAttributes != null)
             {
                 foreach (CustomAttributeBuilder assemblyAttribute in assemblyAttributes)
                 {
-                    foreach (CustomAttributeBuilder assemblyAttribute in assemblyAttributes)
-                    {
-                        SetCustomAttribute(assemblyAttribute);
-                    }
+                    SetCustomAttribute(assemblyAttribute);
                 }
             }
         }
@@ -202,8 +188,7 @@ namespace System.Reflection.Emit
         internal static RuntimeAssemblyBuilder InternalDefineDynamicAssembly(
             AssemblyName name,
             AssemblyBuilderAccess access,
-            Assembly? callingAssembly,
-            AssemblyLoadContext? assemblyLoadContext,
+            AssemblyLoadContext assemblyLoadContext,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
             lock (s_assemblyBuilderLock)
@@ -211,7 +196,6 @@ namespace System.Reflection.Emit
                 // We can only create dynamic assemblies in the current domain
                 return new RuntimeAssemblyBuilder(name,
                                            access,
-                                           callingAssembly,
                                            assemblyLoadContext,
                                            assemblyAttributes);
             }

@@ -91,7 +91,7 @@ namespace System.Reflection.Emit
             m_methodBuilder = methodBuilder;
 
             // initialize local signature
-            MethodBuilder? mb = m_methodBuilder as MethodBuilder;
+            RuntimeMethodBuilder? mb = m_methodBuilder as RuntimeMethodBuilder;
             m_localSignature = SignatureHelper.GetLocalVarSigHelper(mb?.GetTypeBuilder().Module);
         }
 
@@ -1215,7 +1215,7 @@ namespace System.Reflection.Emit
             // Declare a local of type "local". The current active lexical scope
             // will be the scope that local will live.
 
-            MethodBuilder? methodBuilder = m_methodBuilder as MethodBuilder;
+            RuntimeMethodBuilder? methodBuilder = m_methodBuilder as RuntimeMethodBuilder;
             if (methodBuilder == null)
                 throw new NotSupportedException();
 
@@ -1245,7 +1245,7 @@ namespace System.Reflection.Emit
 
             ArgumentException.ThrowIfNullOrEmpty(usingNamespace);
 
-            MethodBuilder? methodBuilder = m_methodBuilder as MethodBuilder;
+            RuntimeMethodBuilder? methodBuilder = m_methodBuilder as RuntimeMethodBuilder;
             if (methodBuilder == null)
                 throw new NotSupportedException();
 

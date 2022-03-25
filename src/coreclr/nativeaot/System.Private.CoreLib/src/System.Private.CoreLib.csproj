@@ -125,14 +125,12 @@
     <Compile Include="System\Reflection\Assembly.CoreRT.cs" />
     <Compile Include="System\Reflection\BinderBundle.cs" />
     <Compile Include="System\Reflection\Emit\AssemblyBuilder.cs" />
-    <Compile Include="System\Reflection\Emit\ConstructorBuilder.cs" />
     <Compile Include="System\Reflection\Emit\CustomAttributeBuilder.cs" />
     <Compile Include="System\Reflection\Emit\DynamicILInfo.cs" />
     <Compile Include="System\Reflection\Emit\DynamicMethod.cs" />
     <Compile Include="System\Reflection\Emit\GenericTypeParameterBuilder.cs" />
     <Compile Include="System\Reflection\Emit\ILGenerator.cs" />
     <Compile Include="System\Reflection\Emit\LocalBuilder.cs" />
-    <Compile Include="System\Reflection\Emit\MethodBuilder.cs" />
     <Compile Include="System\Reflection\Emit\ParameterBuilder.cs" />
     <Compile Include="System\Reflection\Emit\ReflectionEmitThrower.cs" />
     <Compile Include="System\Reflection\Emit\SignatureHelper.cs" />
