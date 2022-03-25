@@ -1032,14 +1032,12 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
                 convertedOp2Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
                 r.ToString(m_pCompiler->getAllocatorDebugOnly()));
     }
-    else if (isRshPositiveCns)
+    else if (binop->OperIs(GT_RSH))
     {
-        assert(binop->OperIs(GT_RSH) && op2->IsIntCnsFitsInI32());
-        // Technically, we could properly calculate the range here by introducing RangeOps::Divide
-        // but it's a lot of changes without visible benefits, so let's just say
-        // X >> CNS (CNS is positive) returns [0..X->uLimit] range
-        r        = op1Range;
-        r.lLimit = Limit(Limit::keConstant, 0);
+        r = RangeOps::ShiftRigth(op1Range, op2Range);
+        JITDUMP("BinOp multiply ranges %s %s = %s\n", op1Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
+                op2Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
+                r.ToString(m_pCompiler->getAllocatorDebugOnly()));
     }
     return r;
 }
@@ -1415,6 +1413,44 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     else if (expr->OperGet() == GT_COMMA)
     {
         range = GetRange(block, expr->gtEffectiveVal(), monIncreasing DEBUGARG(indent + 1));
+    }
+    else if (expr->OperIs(GT_CAST) && expr->AsCast()->CastOp()->OperIs(GT_LCL_VAR))
+    {
+        var_types castType = expr->AsCast()->CastToType();
+        if (expr->AsCast()->IsUnsigned())
+        {
+            castType = varTypeToUnsigned(castType);
+        }
+
+        // See if this is a cast on top of an argument - in this case we won't ever overflow
+        // and can, at least, use castType's range
+        GenTreeLclVar* lcl = expr->gtGetOp1()->AsLclVar();
+        if ((lcl->GetSsaNum() == SsaConfig::FIRST_SSA_NUM)) // make sure it's the first def of the arg
+        {
+            const LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lcl->GetLclNum());
+            if (varDsc->lvIsParam && varDsc->TypeGet() == castType)
+            {
+                switch (castType)
+                {
+                    case TYP_UBYTE:
+                        range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, 255));
+                        break;
+                    case TYP_BYTE:
+                        range = Range(Limit(Limit::keConstant, -128), Limit(Limit::keConstant, 127));
+                        break;
+                    case TYP_USHORT:
+                        range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, 65535));
+                        break;
+                    case TYP_SHORT:
+                        range = Range(Limit(Limit::keConstant, -32768), Limit(Limit::keConstant, 32767));
+                        break;
+                    default:
+                        range = Range(Limit(Limit::keUnknown));
+                        break;
+                }
+                JITDUMP("CAST(arg) is %s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()))
+            }
+        }
     }
     else
     {

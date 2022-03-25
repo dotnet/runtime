@@ -170,6 +170,26 @@ struct Limit
         return false;
     }
 
+    bool ShiftRight(int i)
+    {
+        switch (type)
+        {
+            case keDependent:
+                return true;
+            case keBinOpArray:
+            case keConstant:
+                // >> never overflows
+                cns >>= i;
+                return true;
+            case keUndef:
+            case keUnknown:
+                // For these values of 'type', conservatively return false
+                break;
+        }
+
+        return false;
+    }
+
     bool Equals(Limit& l)
     {
         switch (type)
@@ -287,6 +307,21 @@ struct RangeOps
         }
     }
 
+    // Given a constant limit in "l1", do ">>" it to l2 and mutate "l2".
+    static Limit RightShiftConstantLimit(Limit& l1, Limit& l2)
+    {
+        assert(l1.IsConstant());
+        Limit l = l2;
+        if (l.ShiftRight(l1.GetConstant()))
+        {
+            return l;
+        }
+        else
+        {
+            return Limit(Limit::keUnknown);
+        }
+    }
+
     // Given two ranges "r1" and "r2", perform an add operation on the
     // ranges.
     static Range Add(Range& r1, Range& r2)
@@ -325,6 +360,43 @@ struct RangeOps
         {
             result.uLimit = AddConstantLimit(r2hi, r1hi);
         }
+        return result;
+    }
+
+    static Range ShiftRigth(Range& r1, Range& r2)
+    {
+        Limit& r1lo = r1.LowerLimit();
+        Limit& r1hi = r1.UpperLimit();
+        Limit& r2lo = r2.LowerLimit();
+        Limit& r2hi = r2.UpperLimit();
+
+        Range result = Limit(Limit::keUnknown);
+
+        // For now we only support r1 >> positive_cns (to simplify)
+        if (!r2lo.Equals(r2hi) || !r2lo.IsConstant() || r2lo.cns < 0)
+        {
+            return result;
+        }
+
+        // Check lo ranges if they are dependent and not unknown.
+        if (r1lo.IsDependent())
+        {
+            result.lLimit = Limit(Limit::keDependent);
+        }
+        else if (r1lo.IsConstant())
+        {
+            result.lLimit = RightShiftConstantLimit(r2lo, r1lo);
+        }
+
+        if (r1hi.IsDependent())
+        {
+            result.uLimit = Limit(Limit::keDependent);
+        }
+        else if (r1hi.IsConstant())
+        {
+            result.uLimit = RightShiftConstantLimit(r2hi, r1hi);
+        }
+
         return result;
     }
 
