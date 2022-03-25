@@ -799,7 +799,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var resolver = new MemberReferenceResolver(this, context, sessionId, mono_frame.Id, logger);
                 JObject retValue = await resolver.Resolve(condition, token);
                 if (retValue == null)
-                    retValue = await EvaluateExpression.CompileAndRunTheExpression(condition, resolver, context, token);
+                    retValue = await EvaluateExpression.CompileAndRunTheExpression(condition, resolver, token);
                 if (retValue?["value"]?.Type == JTokenType.Boolean ||
                     retValue?["value"]?.Type == JTokenType.Integer ||
                     retValue?["value"]?.Type == JTokenType.Float) {
@@ -1258,7 +1258,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 JObject retValue = await resolver.Resolve(expression, token);
                 if (retValue == null)
                 {
-                    retValue = await EvaluateExpression.CompileAndRunTheExpression(expression, resolver, context, token);
+                    retValue = await EvaluateExpression.CompileAndRunTheExpression(expression, resolver, token);
                 }
 
                 if (retValue != null)

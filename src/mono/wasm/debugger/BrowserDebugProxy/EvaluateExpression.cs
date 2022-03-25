@@ -119,7 +119,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return SyntaxFactory.IdentifierName(id_name);
                 });
 
-                 // 1.1 Replace all this.a() occurrences with this_a_ABDE
+                // 1.1 Replace all this.a() occurrences with this_a_ABDE
                 root = root.ReplaceNodes(methodCall, (m, _) =>
                 {
                     string iesStr = m.ToString();
@@ -224,19 +224,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                 switch (type)
                 {
                     case "string":
-                    {
-                        var str = value?.Value<string>();
-                        str = str.Replace("\"", "\\\"");
-                        valueRet = $"\"{str}\"";
-                        typeRet = "string";
-                        break;
-                    }
+                        {
+                            var str = value?.Value<string>();
+                            str = str.Replace("\"", "\\\"");
+                            valueRet = $"\"{str}\"";
+                            typeRet = "string";
+                            break;
+                        }
                     case "symbol":
-                     {
-                         valueRet = $"'{value?.Value<char>()}'";
-                         typeRet = "char";
-                         break;
-                     }
+                        {
+                            valueRet = $"'{value?.Value<char>()}'";
+                            typeRet = "char";
+                            break;
+                        }
                     case "number":
                         //casting to double and back to string would loose precision; so casting straight to string
                         valueRet = value?.Value<string>();
@@ -332,7 +332,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return values;
         }
 
-        internal static async Task<JObject> CompileAndRunTheExpression(string expression, MemberReferenceResolver resolver, ExecutionContext context, CancellationToken token)
+        internal static async Task<JObject> CompileAndRunTheExpression(string expression, MemberReferenceResolver resolver, CancellationToken token)
         {
             expression = expression.Trim();
             if (!expression.StartsWith('('))
@@ -404,7 +404,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     string.Join("\n", findVarNMethodCall.variableDefinitions) + "\nreturn " + syntaxTree.ToString());
 
                 var state = await newScript.RunAsync(cancellationToken: token);
-                return JObject.FromObject(ConvertCLRToJSType(state.ReturnValue, context));
+                return JObject.FromObject(ConvertCLRToJSType(state.ReturnValue));
             }
             catch (CompilationErrorException cee)
             {
@@ -416,22 +416,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        private static JObject ConvertCLRToJSType(object v, ExecutionContext context)
+        private static JObject ConvertCLRToJSType(object v)
         {
             if (v is JObject jobj)
                 return jobj;
 
             if (v is null)
-                return context.SdbAgent.ValueCreator.CreateNull("<unknown>")?["value"] as JObject;
+                return JObjectValueCreator.CreateNull("<unknown>")?["value"] as JObject;
 
             string typeName = v.GetType().ToString();
-            jobj = context.SdbAgent.ValueCreator.CreateFromPrimitiveType(v);
+            jobj = JObjectValueCreator.CreateFromPrimitiveType(v);
             return jobj is not null
                 ? jobj["value"] as JObject
-                : context.SdbAgent.ValueCreator.Create<object>(value: null,
-                                                                type: "object",
-                                                                description: v.ToString(),
-                                                                className: typeName)?["value"] as JObject;
+                : JObjectValueCreator.Create<object>(value: null,
+                                                    type: "object",
+                                                    description: v.ToString(),
+                                                    className: typeName)?["value"] as JObject;
         }
     }
 

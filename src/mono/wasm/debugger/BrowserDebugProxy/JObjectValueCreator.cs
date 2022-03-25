@@ -24,7 +24,7 @@ internal class JObjectValueCreator
         _logger = logger;
     }
 
-    public JObject Create<T>(T value,
+    public static JObject Create<T>(T value,
                              string type,
                              string description,
                              string className = null,
@@ -57,7 +57,7 @@ internal class JObjectValueCreator
         return ret;
     }
 
-    public JObject CreateFromPrimitiveType(object v)
+    public static JObject CreateFromPrimitiveType(object v)
         => v switch
         {
             string s => Create(s, type: "string", description: s),
@@ -74,7 +74,7 @@ internal class JObjectValueCreator
             _ => null
         };
 
-    public JObject CreateNull(string className!!)
+    public static JObject CreateNull(string className!!)
         => Create<object>(value: null,
                           type: "object",
                           description: className,
@@ -361,9 +361,9 @@ internal class JObjectValueCreator
     public ValueTypeClass GetValueTypeById(int valueTypeId) => _valueTypes.TryGetValue(valueTypeId, out ValueTypeClass vt) ? vt : null;
     public PointerValue GetPointerValue(int pointerId) => _pointerValues.TryGetValue(pointerId, out PointerValue pv) ? pv : null;
 
-    private JObject CreateJObjectForNumber<T>(T value) => Create(value, "number", value.ToString(), writable: true);
+    private static JObject CreateJObjectForNumber<T>(T value) => Create(value, "number", value.ToString(), writable: true);
 
-    private JObject CreateJObjectForChar(int value)
+    private static JObject CreateJObjectForChar(int value)
     {
         char charValue = Convert.ToChar(value);
         var description = $"{value} '{charValue}'";

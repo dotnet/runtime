@@ -878,10 +878,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return types[typeId];
         }
 
-        public void ClearCache()
-        {
-            ValueCreator.ClearCache();
-        }
+        public void ClearCache() => ValueCreator.ClearCache();
 
         public async Task<bool> SetProtocolVersion(CancellationToken token)
         {
@@ -1395,7 +1392,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 ExecutionContext context = proxy.GetContext(sessionId);
                 JArray objectValues = await GetObjectValues(objectId, GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.ForDebuggerDisplayAttribute, token);
 
-                var thisObj = ValueCreator.Create(value: "", type: "object", description: "", writable: false, objectId: $"dotnet:object:{objectId}");
+                var thisObj = JObjectValueCreator.Create(value: "", type: "object", description: "", writable: false, objectId: $"dotnet:object:{objectId}");
                 thisObj["name"] = "this";
                 objectValues.Add(thisObj);
 
@@ -1414,7 +1411,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 expr = "$\"" + dispAttrStr + "\"";
                 JObject retValue = await resolver.Resolve(expr, token);
                 if (retValue == null)
-                    retValue = await EvaluateExpression.CompileAndRunTheExpression(expr, resolver, context, token);
+                    retValue = await EvaluateExpression.CompileAndRunTheExpression(expr, resolver, token);
 
                 return retValue?["value"]?.Value<string>();
             }
