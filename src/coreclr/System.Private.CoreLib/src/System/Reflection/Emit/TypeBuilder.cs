@@ -1654,7 +1654,7 @@ namespace System.Reflection.Emit
                 sigLength);
 
             // create the property builder now.
-            return new PropertyBuilder(
+            return new RuntimePropertyBuilder(
                     m_module,
                     name,
                     attributes,

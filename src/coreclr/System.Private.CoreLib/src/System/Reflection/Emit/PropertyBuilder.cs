@@ -21,11 +21,11 @@ namespace System.Reflection.Emit
     // A PropertyBuilder is always associated with a TypeBuilder.  The TypeBuilder.DefineProperty
     // method will return a new PropertyBuilder to a client.
     //
-    public sealed class PropertyBuilder : PropertyInfo
+    internal sealed class RuntimePropertyBuilder : PropertyBuilder
     {
         // Constructs a PropertyBuilder.
         //
-        internal PropertyBuilder(
+        internal RuntimePropertyBuilder(
             RuntimeModuleBuilder mod, // the module containing this PropertyBuilder
             string name, // property name
             PropertyAttributes attr, // property attribute such as DefaultProperty, Bindable, DisplayBind, etc
@@ -48,7 +48,7 @@ namespace System.Reflection.Emit
         /// <summary>
         /// Set the default value of the Property
         /// </summary>
-        public void SetConstant(object? defaultValue)
+        public override void SetConstant(object? defaultValue)
         {
             m_containingType.ThrowIfCreated();
 
@@ -79,26 +79,26 @@ namespace System.Reflection.Emit
                 mdBuilder.MetadataToken);
         }
 
-        public void SetGetMethod(MethodBuilder mdBuilder)
+        public override void SetGetMethod(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.Getter);
             m_getMethod = mdBuilder;
         }
 
-        public void SetSetMethod(MethodBuilder mdBuilder)
+        public override void SetSetMethod(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.Setter);
             m_setMethod = mdBuilder;
         }
 
-        public void AddOtherMethod(MethodBuilder mdBuilder)
+        public override void AddOtherMethod(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.Other);
         }
 
         // Use this function if client decides to form the custom attribute blob themselves
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             ArgumentNullException.ThrowIfNull(con);
             ArgumentNullException.ThrowIfNull(binaryAttribute);
@@ -112,7 +112,7 @@ namespace System.Reflection.Emit
         }
 
         // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 
