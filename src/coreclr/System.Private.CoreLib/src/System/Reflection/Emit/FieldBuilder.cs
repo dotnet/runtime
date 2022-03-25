@@ -6,7 +6,7 @@ using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection.Emit
 {
-    public sealed class FieldBuilder : FieldInfo
+    internal sealed class RuntimeFieldBuilder : FieldBuilder
     {
         #region Private Data Members
         private int m_fieldTok;
@@ -17,7 +17,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Constructor
-        internal FieldBuilder(RuntimeTypeBuilder typeBuilder, string fieldName, Type type,
+        internal RuntimeFieldBuilder(RuntimeTypeBuilder typeBuilder, string fieldName, Type type,
             Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
             ArgumentException.ThrowIfNullOrEmpty(fieldName);
@@ -132,7 +132,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Public Members
-        public void SetOffset(int iOffset)
+        public override void SetOffset(int iOffset)
         {
             m_typeBuilder.ThrowIfCreated();
 
@@ -140,7 +140,7 @@ namespace System.Reflection.Emit
             RuntimeTypeBuilder.SetFieldLayoutOffset(new QCallModule(ref module), m_fieldTok, iOffset);
         }
 
-        public void SetConstant(object? defaultValue)
+        public override void SetConstant(object? defaultValue)
         {
             m_typeBuilder.ThrowIfCreated();
 
@@ -154,7 +154,7 @@ namespace System.Reflection.Emit
             RuntimeTypeBuilder.SetConstantValue(m_typeBuilder.GetModuleBuilder(), m_fieldTok, m_fieldType, defaultValue);
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             ArgumentNullException.ThrowIfNull(con);
             ArgumentNullException.ThrowIfNull(binaryAttribute);
@@ -167,7 +167,7 @@ namespace System.Reflection.Emit
                 m_fieldTok, moduleBuilder.GetConstructorToken(con), binaryAttribute);
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 

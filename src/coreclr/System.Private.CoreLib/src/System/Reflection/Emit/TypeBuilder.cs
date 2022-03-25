@@ -592,7 +592,7 @@ namespace System.Reflection.Emit
             fdBuilder = DefineField(name, valueClassType, attributes | FieldAttributes.Static);
 
             // now we need to set the RVA
-            fdBuilder.SetData(data, size);
+            ((RuntimeFieldBuilder)fdBuilder).SetData(data, size);
             return fdBuilder;
         }
 
@@ -1571,7 +1571,7 @@ namespace System.Reflection.Emit
                 }
             }
 
-            return new FieldBuilder(this, fieldName, type, requiredCustomModifiers, optionalCustomModifiers, attributes);
+            return new RuntimeFieldBuilder(this, fieldName, type, requiredCustomModifiers, optionalCustomModifiers, attributes);
         }
 
         public override FieldBuilder DefineInitializedData(string name, byte[] data, FieldAttributes attributes)
