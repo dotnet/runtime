@@ -25,8 +25,6 @@ namespace System.Linq.Expressions.Interpreter
 
         public virtual string ToDebugString(int instructionIndex, object? cookie, Func<int, int> labelIndexer, IReadOnlyList<object>? objects) => ToString();
 
-        public virtual object? GetDebugCookie(LightCompiler compiler) => null;
-
         // throws NRE when o is null
         protected static void NullCheck(object? o)
         {
