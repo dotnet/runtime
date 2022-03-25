@@ -19,6 +19,8 @@ namespace System.Text.Json.Serialization.Tests
         public class Witness<T> { }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", TestPlatforms.Browser)]
         [MemberData(nameof(GetTestedCollectionData))]
         public async Task HandleCollectionsAsync<TCollection, TElement>(TCollection collection, int bufferSize, Witness<TElement> elementType)
         {
