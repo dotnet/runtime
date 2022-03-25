@@ -709,33 +709,33 @@ namespace Microsoft.WebAssembly.Diagnostics
     }
     internal class ValueTypeClass
     {
-        private JArray Json { get; }
-        private int TypeId { get; }
-        private bool AutoExpand { get; }
-        private int Id { get; }
-        private JArray Proxy { get; set; }
-        private JArray JsonProps { get; set; }
+        private readonly JArray json;
+        private readonly int typeId;
+        private readonly bool autoExpand;
+        private readonly int id;
+        private JArray proxy;
+        private JArray jsonProps;
 
         public byte[] Buffer { get; }
 
-        public ValueTypeClass(byte[] buffer, JArray json, int id, bool expand_properties, int valueTypeId)
+        public ValueTypeClass(byte[] buffer, JArray json, int typeId, bool expand_properties, int valueTypeId)
         {
             Buffer = buffer;
-            Json = json;
-            TypeId = id;
-            JsonProps = null;
-            Proxy = null;
-            AutoExpand = expand_properties;
-            Id = valueTypeId;
+            this.json = json;
+            this.typeId = typeId;
+            jsonProps = null;
+            proxy = null;
+            autoExpand = expand_properties;
+            id = valueTypeId;
         }
 
         public async Task<JArray> GetProxy(MonoSDBHelper sdbAgent, CancellationToken token)
         {
-            if (Proxy != null)
-                return Proxy;
-            Proxy = new JArray(Json);
+            if (proxy != null)
+                return proxy;
+            proxy = new JArray(json);
 
-            var retDebuggerCmdReader = await sdbAgent.GetTypePropertiesReader(TypeId, token);
+            var retDebuggerCmdReader = await sdbAgent.GetTypePropertiesReader(typeId, token);
             if (retDebuggerCmdReader == null)
                 return null;
 
@@ -756,7 +756,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 command_params_writer_to_proxy.Write(Buffer);
                 command_params_writer_to_proxy.Write(0);
                 var (data, length) = command_params_writer_to_proxy.ToBase64();
-                Proxy.Add(JObject.FromObject(new
+                proxy.Add(JObject.FromObject(new
                 {
                     get = JObject.FromObject(new
                     {
@@ -769,37 +769,37 @@ namespace Microsoft.WebAssembly.Diagnostics
                     name = propertyNameStr
                 }));
             }
-            return Proxy;
+            return proxy;
         }
 
-        public async Task<JArray> GetPropertiesValuesOfValueType(MonoSDBHelper sdbAgent, CancellationToken token)
+        public async Task<JArray> GetProperties(MonoSDBHelper sdbAgent, CancellationToken token)
         {
             JArray ret = new JArray();
             using var commandParamsWriter = new MonoBinaryWriter();
-            commandParamsWriter.Write(TypeId);
+            commandParamsWriter.Write(typeId);
             using var retDebuggerCmdReader = await sdbAgent.SendDebuggerAgentCommand(CmdType.GetParents, commandParamsWriter, token);
             var parentsCount = retDebuggerCmdReader.ReadInt32();
             List<int> typesToGetProperties = new List<int>();
-            typesToGetProperties.Add(TypeId);
+            typesToGetProperties.Add(typeId);
             for (int i = 0; i < parentsCount; i++)
             {
                 typesToGetProperties.Add(retDebuggerCmdReader.ReadInt32());
             }
             for (int i = 0; i < typesToGetProperties.Count; i++)
             {
-                var properties = await sdbAgent.CreateJArrayForProperties(typesToGetProperties[i], ElementType.ValueType, Buffer, Json, AutoExpand, $"dotnet:valuetype:{Id}", i == 0, token);
+                var properties = await sdbAgent.CreateJArrayForProperties(typesToGetProperties[i], ElementType.ValueType, Buffer, json, autoExpand, $"dotnet:valuetype:{id}", i == 0, token);
                 ret = new JArray(ret.Union(properties));
             }
             return ret;
         }
 
-        public async Task<JArray> GetValueTypeValues(MonoSDBHelper sdbAgent, bool accessorPropertiesOnly, CancellationToken token)
+        public async Task<JArray> GetValues(MonoSDBHelper sdbAgent, bool accessorPropertiesOnly, CancellationToken token)
         {
-            if (JsonProps == null)
-                JsonProps = await GetPropertiesValuesOfValueType(sdbAgent, token);
+            if (jsonProps == null)
+                jsonProps = await GetProperties(sdbAgent, token);
             if (accessorPropertiesOnly)
-                return JsonProps;
-            var ret = new JArray(Json.Union(JsonProps));
+                return jsonProps;
+            var ret = new JArray(json.Union(jsonProps));
             return ret;
         }
     }

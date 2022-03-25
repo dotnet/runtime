@@ -751,7 +751,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var valueType = context.SdbAgent.GetValueTypeClass(objectId.Value);
                         if (valueType == null)
                             throw new Exception($"Internal Error: No valuetype found for {objectId}.");
-                        var resValType = await valueType.GetValueTypeValues(context.SdbAgent, accessorPropertiesOnly, token);
+                        var resValType = await valueType.GetValues(context.SdbAgent, accessorPropertiesOnly, token);
                         return sortByAccessLevel ? JObject.FromObject(new { result = resValType }) : resValType;
                     }
                     case "array":
