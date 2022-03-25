@@ -239,6 +239,8 @@ namespace Microsoft.Extensions.Configuration
 
             if (propertyValue == null && !hasSetter)
             {
+                // Property doesn't have a value and we cannot set it so there is no
+                // point in going further down the graph
                 return;
             }
 
