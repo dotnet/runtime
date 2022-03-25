@@ -193,15 +193,10 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     COUNT_T dirSize;
     TADDR dir = GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_BASERELOC, &dirSize);
 
-#if defined(__APPLE__) && defined(HOST_ARM64)
-    // Enable writing on Apple Silicon
-    PAL_JitWriteProtect(true);
-#else
     // Minimize number of calls to VirtualProtect by keeping a whole section unprotected at a time.
     BYTE * pWriteableRegion = NULL;
     SIZE_T cbWriteableRegion = 0;
     DWORD dwOldProtection = 0;
-#endif
 
     BYTE * pFlushRegion = NULL;
     SIZE_T cbFlushRegion = 0;
@@ -228,17 +223,24 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 
         BYTE * pageAddress = (BYTE *)GetBase() + rva;
 
-#if !(defined(__APPLE__) && defined(HOST_ARM64))
         // Check whether the page is outside the unprotected region
         if ((SIZE_T)(pageAddress - pWriteableRegion) >= cbWriteableRegion)
         {
             // Restore the protection
             if (dwOldProtection != 0)
             {
+#if defined(__APPLE__) && defined(HOST_ARM64)
+                BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
+                    PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
+
+                // Disable writing on Apple Silicon
+                if (bExecRegion)
+                    PAL_JitWriteProtect(false);
+#else
                 if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                        dwOldProtection, &dwOldProtection))
                     ThrowLastError();
-
+#endif // __APPLE__ && HOST_ARM64
                 dwOldProtection = 0;
             }
 
@@ -257,8 +259,9 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 #if defined(TARGET_UNIX)
                 if (((pSection->Characteristics & VAL32(IMAGE_SCN_MEM_EXECUTE)) != 0))
                 {
-#ifdef __APPLE__
-                    dwNewProtection = PAGE_READWRITE;
+#if defined(__APPLE__) && defined(HOST_ARM64)
+                    // Enable writing on Apple Silicon
+                    PAL_JitWriteProtect(true);
 #else
                     // On SELinux, we cannot change protection that doesn't have execute access rights
                     // to one that has it, so we need to set the protection to RWX instead of RW
@@ -266,15 +269,16 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 #endif
                 }
 #endif // TARGET_UNIX
+#if !(defined(__APPLE__) && defined(HOST_ARM64))
                 if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                        dwNewProtection, &dwOldProtection))
                     ThrowLastError();
+#endif // __APPLE__ && HOST_ARM64
 #ifdef TARGET_UNIX
                 dwOldProtection = SectionCharacteristicsToPageProtection(pSection->Characteristics);
 #endif // TARGET_UNIX
             }
         }
-#endif // !(__APPLE__ && HOST_ARM64)
 
         BYTE* pEndAddressToFlush = NULL;
         for (COUNT_T fixupIndex = 0; fixupIndex < fixupsCount; fixupIndex++)
@@ -306,12 +310,8 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
             }
         }
 
-#if defined(__APPLE__) && defined(HOST_ARM64)
-        BOOL bExecRegion = true;
-#else
         BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
             PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
-#endif
 
         if (bExecRegion && pEndAddressToFlush != NULL)
         {
@@ -332,21 +332,22 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     }
     _ASSERTE(dirSize == dirPos);
 
-#if defined(__APPLE__) && defined(HOST_ARM64)
-    // Disable writing on Apple Silicon
-    PAL_JitWriteProtect(false);
-#else
     if (dwOldProtection != 0)
     {
+#if defined(__APPLE__) && defined(HOST_ARM64)
         BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
             PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
 
+        // Disable writing on Apple Silicon
+        if (bExecRegion)
+            PAL_JitWriteProtect(false);
+#else
         // Restore the protection
         if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                dwOldProtection, &dwOldProtection))
             ThrowLastError();
+#endif // __APPLE__ && HOST_ARM64
     }
-#endif
 #ifdef TARGET_UNIX
     PAL_LOADMarkSectionAsNotNeeded((void*)dir);
 #endif // TARGET_UNIX
