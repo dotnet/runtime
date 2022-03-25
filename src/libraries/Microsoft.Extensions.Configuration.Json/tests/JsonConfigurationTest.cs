@@ -49,7 +49,6 @@ namespace Microsoft.Extensions.Configuration
             public string Uri { get; set; }
         }
 
-
         [Fact]
         public void CanHaveColonsInKey()
         {
