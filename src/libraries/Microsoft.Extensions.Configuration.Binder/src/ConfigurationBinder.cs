@@ -690,8 +690,6 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static object? GetPropertyValue(PropertyInfo property, object instance, IConfiguration config, BinderOptions options)
         {
-            // List<string> separators = config.Select(p => (p as ConfigurationProvider)?.GetDelimiter() ?? ":").Distinct().ToList();
-
             string propertyName = GetPropertyName(property);
             return BindInstance(
                 property.PropertyType,
