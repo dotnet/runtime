@@ -1005,19 +1005,8 @@ namespace System.Xml.Serialization
             if (len > 0)
             {
                 ReadOnlySpan<char> lengthStringSpan = value.AsSpan(pos + 1, len);
-                try
-                {
-                    if (!int.TryParse(lengthStringSpan, CultureInfo.InvariantCulture, out soapArrayInfo.length))
-                        throw new ArgumentException(SR.Format(SR.XmlInvalidArrayLength, new string(lengthStringSpan)), nameof(value));
-                }
-                catch (Exception e)
-                {
-                    if (e is OutOfMemoryException)
-                    {
-                        throw;
-                    }
+                if (!int.TryParse(lengthStringSpan, CultureInfo.InvariantCulture, out soapArrayInfo.length))
                     throw new ArgumentException(SR.Format(SR.XmlInvalidArrayLength, new string(lengthStringSpan)), nameof(value));
-                }
             }
             else
             {
