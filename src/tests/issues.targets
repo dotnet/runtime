@@ -917,9 +917,6 @@
 
       <!-- NativeAOT specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr'">
-        <ExcludeList Include="$(XunitTestBinBase)/nativeaot/SmokeTests/MultiModule/MultiModule/*">
-            <Issue>https://github.com/dotnet/runtime/issues/66191</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/callconvs/TestCallingConventions/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/153</Issue>
         </ExcludeList>
