@@ -26,8 +26,8 @@
     <Compile Include="..\WasmStructs.cs" Link="WasmStructs.cs" />
     <PackageReference Include="DiffPlex" Version="1.7.1" />
     <PackageReference Include="Mono.Options" Version="6.12.0.148" />
-    <None Include="README.md" Pack="true" PackagePath="\" />
-    <None Include="LICENSE" Pack="true" PackagePath="\" />
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\LICENSE" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>
