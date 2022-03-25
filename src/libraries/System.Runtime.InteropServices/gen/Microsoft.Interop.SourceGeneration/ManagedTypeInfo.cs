@@ -51,6 +51,7 @@ namespace Microsoft.Interop
 
     public sealed record SpecialTypeInfo(string FullTypeName, string DiagnosticFormattedName, SpecialType SpecialType) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName)
     {
+        public static readonly SpecialTypeInfo Byte = new("byte", "byte", SpecialType.System_Void);
         public static readonly SpecialTypeInfo Int32 = new("int", "int", SpecialType.System_Int32);
         public static readonly SpecialTypeInfo Void = new("void", "void", SpecialType.System_Void);
 
