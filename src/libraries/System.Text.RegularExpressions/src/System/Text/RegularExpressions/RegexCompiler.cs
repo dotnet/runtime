@@ -5020,7 +5020,7 @@ namespace System.Text.RegularExpressions
 
             // ch < 128 ? (bitVectorString[ch >> 4] & (1 << (ch & 0xF))) != 0 :
             Ldloc(tempLocal);
-            Ldc(128);
+            Ldc(analysis.ContainsOnlyAscii ? analysis.UpperBoundExclusiveIfContainsOnlyAscii : 128);
             Bge(comparisonLabel);
             Ldstr(bitVectorString);
             Ldloc(tempLocal);
