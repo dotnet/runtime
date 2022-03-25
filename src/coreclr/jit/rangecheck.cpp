@@ -1270,18 +1270,13 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
     }
     else if (expr->OperIs(GT_CAST) && expr->AsCast()->CastOp()->OperIs(GT_LCL_VAR))
     {
-        var_types castType = expr->AsCast()->CastToType();
-        if (expr->AsCast()->IsUnsigned())
-        {
-            castType = varTypeToUnsigned(castType);
-        }
-
         // See if this is a cast on top of an argument - in this case we won't ever overflow
-        GenTreeLclVar* lcl = expr->gtGetOp1()->AsLclVar();
+        var_types      castType = expr->AsCast()->CastToType();
+        GenTreeLclVar* lcl      = expr->gtGetOp1()->AsLclVar();
         if ((lcl->GetSsaNum() == SsaConfig::FIRST_SSA_NUM)) // make sure it's the first def of the arg
         {
-            const LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lcl->GetLclNum());
-            if (varDsc->lvIsParam && (varDsc->TypeGet() == castType) && varTypeIsSmallInt(castType))
+            LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lcl->GetLclNum());
+            if (varDsc->lvIsParam && (varDsc->TypeGet() == castType) && varTypeIsSmall(castType))
             {
                 overflows = false;
             }
@@ -1312,13 +1307,13 @@ static Range GetRangeFromType(var_types type)
         case TYP_BYTE:
             return Range(Limit(Limit::keConstant, INT8_MIN), Limit(Limit::keConstant, INT8_MAX));
         case TYP_USHORT:
-            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, USHORT_MAX));
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, UINT16_MAX));
         case TYP_SHORT:
-            return Range(Limit(Limit::keConstant, SHORT_MIN), Limit(Limit::keConstant, SHORT_MAX));
+            return Range(Limit(Limit::keConstant, INT16_MIN), Limit(Limit::keConstant, INT16_MAX));
         case TYP_UINT:
-            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, UINT_MAX));
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, UINT32_MAX));
         case TYP_INT:
-            return Range(Limit(Limit::keConstant, INT_MIN), Limit(Limit::keConstant, INT_MAX));
+            return Range(Limit(Limit::keConstant, INT32_MIN), Limit(Limit::keConstant, INT32_MAX));
         default:
             return Range(Limit(Limit::keUnknown));
     }
@@ -1438,19 +1433,16 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     }
     else if (expr->OperIs(GT_CAST) && expr->AsCast()->CastOp()->OperIs(GT_LCL_VAR))
     {
-        range              = Range(Limit(Limit::keUnknown));
-        var_types castType = expr->AsCast()->CastToType();
-        if (expr->AsCast()->IsUnsigned())
-        {
-            castType = varTypeToUnsigned(castType);
-        }
+        range = Range(Limit(Limit::keUnknown));
 
         // See if this is a cast on top of an argument - in this case we won't ever overflow
         // and can, at least, use castType's range
-        GenTreeLclVar* lcl = expr->gtGetOp1()->AsLclVar();
-        if ((lcl->GetSsaNum() == SsaConfig::FIRST_SSA_NUM)) // make sure it's the first def of the arg
+        var_types      castType = expr->AsCast()->CastToType();
+        GenTreeLclVar* lcl      = expr->gtGetOp1()->AsLclVar();
+        if ((lcl->GetSsaNum() == SsaConfig::FIRST_SSA_NUM) &&
+            varTypeIsSmall(castType)) // make sure it's the first def of the arg
         {
-            const LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lcl->GetLclNum());
+            LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lcl->GetLclNum());
             if (varDsc->lvIsParam && (varDsc->TypeGet() == castType))
             {
                 range = GetRangeFromType(castType);
