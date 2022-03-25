@@ -50,9 +50,9 @@ jobs:
     javascriptEngine: ${{ parameters.javascriptEngine }}
     iosLlvmBuild: ${{ parameters.iosLlvmBuild }}
 
-    - ${{ if eq(parameters.runtimeType, 'wasm') }}:
+    ${{ if eq(parameters.runtimeType, 'wasm') }}:
       helixTypeSuffix: '/wasm'
-    - ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'aot')) }}:
+    ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'aot')) }}:
       helixTypeSuffix: '/wasm/aot'
 
     # Test job depends on the corresponding build job
