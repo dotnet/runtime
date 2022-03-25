@@ -10,7 +10,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
-    // deliberately not [serializable]
     public partial class ModuleBuilder : Module
     {
         internal static string UnmangleTypeName(string typeName)
@@ -748,43 +747,11 @@ namespace System.Reflection.Emit
 
         #region Define Type
 
-        public TypeBuilder DefineType(string name)
-        {
-            lock (SyncRoot)
-            {
-                return DefineTypeNoLock(name, TypeAttributes.NotPublic, null, null, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize);
-            }
-        }
-
-        public TypeBuilder DefineType(string name, TypeAttributes attr)
-        {
-            lock (SyncRoot)
-            {
-                return DefineTypeNoLock(name, attr, null, null, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize);
-            }
-        }
-
-        public TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
-        {
-            lock (SyncRoot)
-            {
-                return DefineTypeNoLock(name, attr, parent, null, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize);
-            }
-        }
-
-        public TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, int typesize)
-        {
-            lock (SyncRoot)
-            {
-                return DefineTypeNoLock(name, attr, parent, null, PackingSize.Unspecified, typesize);
-            }
-        }
-
         public TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packingSize, int typesize)
         {
             lock (SyncRoot)
             {
-                return DefineTypeNoLock(name, attr, parent, null, packingSize, typesize);
+                return new TypeBuilder(name, attr, parent, null, this, packingSize, typesize, null);
             }
         }
 
@@ -792,26 +759,8 @@ namespace System.Reflection.Emit
         {
             lock (SyncRoot)
             {
-                return DefineTypeNoLock(name, attr, parent, interfaces, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize);
+                return new TypeBuilder(name, attr, parent, interfaces, this, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize, null);
             }
-        }
-
-        private TypeBuilder DefineTypeNoLock(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
-        {
-            return new TypeBuilder(name, attr, parent, interfaces, this, packingSize, typesize, null);
-        }
-
-        public TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packsize)
-        {
-            lock (SyncRoot)
-            {
-                return DefineTypeNoLock(name, attr, parent, packsize);
-            }
-        }
-
-        private TypeBuilder DefineTypeNoLock(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packsize)
-        {
-            return new TypeBuilder(name, attr, parent, null, this, packsize, TypeBuilder.UnspecifiedTypeSize, null);
         }
 
         #endregion
@@ -824,7 +773,7 @@ namespace System.Reflection.Emit
         {
             lock (SyncRoot)
             {
-                EnumBuilder enumBuilder = DefineEnumNoLock(name, visibility, underlyingType);
+                EnumBuilder enumBuilder = new EnumBuilder(name, underlyingType, visibility, this);
 
                 // This enum is not generic, nested, and cannot have any element type.
                 // Replace the TypeBuilder object in _typeBuilderDict with this EnumBuilder object.
@@ -834,22 +783,9 @@ namespace System.Reflection.Emit
             }
         }
 
-        private EnumBuilder DefineEnumNoLock(string name, TypeAttributes visibility, Type underlyingType)
-        {
-            return new EnumBuilder(name, underlyingType, visibility, this);
-        }
-
         #endregion
 
         #region Define Global Method
-
-        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        public MethodBuilder DefinePInvokeMethod(string name, string dllName, MethodAttributes attributes,
-            CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes,
-            CallingConvention nativeCallConv, CharSet nativeCharSet)
-        {
-            return DefinePInvokeMethod(name, dllName, name, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
-        }
 
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes,
@@ -866,17 +802,6 @@ namespace System.Reflection.Emit
 
                 return _globalTypeBuilder.DefinePInvokeMethod(name, dllName, entryName, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
             }
-        }
-
-        public MethodBuilder DefineGlobalMethod(string name, MethodAttributes attributes, Type? returnType, Type[]? parameterTypes)
-        {
-            return DefineGlobalMethod(name, attributes, CallingConventions.Standard, returnType, parameterTypes);
-        }
-
-        public MethodBuilder DefineGlobalMethod(string name, MethodAttributes attributes, CallingConventions callingConvention,
-            Type? returnType, Type[]? parameterTypes)
-        {
-            return DefineGlobalMethod(name, attributes, callingConvention, returnType, null, null, parameterTypes, null, null);
         }
 
         public MethodBuilder DefineGlobalMethod(string name, MethodAttributes attributes, CallingConventions callingConvention,

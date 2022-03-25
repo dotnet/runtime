@@ -135,10 +135,6 @@ namespace System.Reflection.Emit
         }
         #endregion
 
-        #region Public Const
-        public const int UnspecifiedTypeSize = 0;
-        #endregion
-
         #region Private Static FCalls
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetParentType")]
         private static partial void SetParentType(QCallModule module, int tdTypeDef, int tkParent);
@@ -1212,27 +1208,6 @@ namespace System.Reflection.Emit
             DefineMethodImpl(new QCallModule(ref module), m_tdType, tkBody, tkDecl);
         }
 
-        public MethodBuilder DefineMethod(string name, MethodAttributes attributes, Type? returnType, Type[]? parameterTypes)
-        {
-            return DefineMethod(name, attributes, CallingConventions.Standard, returnType, parameterTypes);
-        }
-
-        public MethodBuilder DefineMethod(string name, MethodAttributes attributes)
-        {
-            return DefineMethod(name, attributes, CallingConventions.Standard, null, null);
-        }
-
-        public MethodBuilder DefineMethod(string name, MethodAttributes attributes, CallingConventions callingConvention)
-        {
-            return DefineMethod(name, attributes, callingConvention, null, null);
-        }
-
-        public MethodBuilder DefineMethod(string name, MethodAttributes attributes, CallingConventions callingConvention,
-            Type? returnType, Type[]? parameterTypes)
-        {
-            return DefineMethod(name, attributes, callingConvention, returnType, null, null, parameterTypes, null, null);
-        }
-
         public MethodBuilder DefineMethod(string name, MethodAttributes attributes, CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
@@ -1286,43 +1261,8 @@ namespace System.Reflection.Emit
         }
 
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        public MethodBuilder DefinePInvokeMethod(string name, string dllName, MethodAttributes attributes,
-            CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes,
-            CallingConvention nativeCallConv, CharSet nativeCharSet)
-        {
-            MethodBuilder method = DefinePInvokeMethodHelper(
-                name, dllName, name, attributes, callingConvention, returnType, null, null,
-                parameterTypes, null, null, nativeCallConv, nativeCharSet);
-            return method;
-        }
-
-        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes,
-            CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes,
-            CallingConvention nativeCallConv, CharSet nativeCharSet)
-        {
-            MethodBuilder method = DefinePInvokeMethodHelper(
-                name, dllName, entryName, attributes, callingConvention, returnType, null, null,
-                parameterTypes, null, null, nativeCallConv, nativeCharSet);
-            return method;
-        }
-
-        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes,
             CallingConventions callingConvention,
-            Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
-            Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers,
-            CallingConvention nativeCallConv, CharSet nativeCharSet)
-        {
-            MethodBuilder method = DefinePInvokeMethodHelper(
-            name, dllName, entryName, attributes, callingConvention, returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers,
-            parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers, nativeCallConv, nativeCharSet);
-            return method;
-        }
-
-        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        private MethodBuilder DefinePInvokeMethodHelper(
-            string name, string dllName, string importName, MethodAttributes attributes, CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers,
             CallingConvention nativeCallConv, CharSet nativeCharSet)
@@ -1331,7 +1271,7 @@ namespace System.Reflection.Emit
             {
                 ArgumentException.ThrowIfNullOrEmpty(name);
                 ArgumentException.ThrowIfNullOrEmpty(dllName);
-                ArgumentException.ThrowIfNullOrEmpty(importName);
+                ArgumentException.ThrowIfNullOrEmpty(entryName);
 
                 if ((attributes & MethodAttributes.Abstract) != 0)
                     throw new ArgumentException(SR.Argument_BadPInvokeMethod);
@@ -1397,7 +1337,7 @@ namespace System.Reflection.Emit
                 ModuleBuilder module = m_module;
                 SetPInvokeData(new QCallModule(ref module),
                     dllName,
-                    importName,
+                    entryName,
                     token,
                     linkFlags);
 
@@ -1503,11 +1443,6 @@ namespace System.Reflection.Emit
             return constBuilder;
         }
 
-        public ConstructorBuilder DefineConstructor(MethodAttributes attributes, CallingConventions callingConvention, Type[]? parameterTypes)
-        {
-            return DefineConstructor(attributes, callingConvention, parameterTypes, null, null);
-        }
-
         public ConstructorBuilder DefineConstructor(MethodAttributes attributes, CallingConventions callingConvention,
             Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
         {
@@ -1554,51 +1489,12 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Define Nested Type
-        public TypeBuilder DefineNestedType(string name)
-        {
-            lock (SyncRoot)
-            {
-                return DefineNestedTypeNoLock(name, TypeAttributes.NestedPrivate, null, null, PackingSize.Unspecified, UnspecifiedTypeSize);
-            }
-        }
 
         public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces)
         {
             lock (SyncRoot)
             {
-                return DefineNestedTypeNoLock(name, attr, parent, interfaces, PackingSize.Unspecified, UnspecifiedTypeSize);
-            }
-        }
-
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
-        {
-            lock (SyncRoot)
-            {
-                return DefineNestedTypeNoLock(name, attr, parent, null, PackingSize.Unspecified, UnspecifiedTypeSize);
-            }
-        }
-
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr)
-        {
-            lock (SyncRoot)
-            {
-                return DefineNestedTypeNoLock(name, attr, null, null, PackingSize.Unspecified, UnspecifiedTypeSize);
-            }
-        }
-
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, int typeSize)
-        {
-            lock (SyncRoot)
-            {
-                return DefineNestedTypeNoLock(name, attr, parent, null, PackingSize.Unspecified, typeSize);
-            }
-        }
-
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packSize)
-        {
-            lock (SyncRoot)
-            {
-                return DefineNestedTypeNoLock(name, attr, parent, null, packSize, UnspecifiedTypeSize);
+                return new TypeBuilder(name, attr, parent, interfaces, m_module, PackingSize.Unspecified, UnspecifiedTypeSize, this);
             }
         }
 
@@ -1606,22 +1502,13 @@ namespace System.Reflection.Emit
         {
             lock (SyncRoot)
             {
-                return DefineNestedTypeNoLock(name, attr, parent, null, packSize, typeSize);
+                return new TypeBuilder(name, attr, parent, null, m_module, packSize, typeSize, this);
             }
-        }
-
-        private TypeBuilder DefineNestedTypeNoLock(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packSize, int typeSize)
-        {
-            return new TypeBuilder(name, attr, parent, interfaces, m_module, packSize, typeSize, this);
         }
 
         #endregion
 
         #region Define Field
-        public FieldBuilder DefineField(string fieldName, Type type, FieldAttributes attributes)
-        {
-            return DefineField(fieldName, type, null, null, attributes);
-        }
 
         public FieldBuilder DefineField(string fieldName, Type type, Type[]? requiredCustomModifiers,
             Type[]? optionalCustomModifiers, FieldAttributes attributes)
@@ -1685,25 +1572,6 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Define Properties and Events
-        public PropertyBuilder DefineProperty(string name, PropertyAttributes attributes, Type returnType, Type[]? parameterTypes)
-        {
-            return DefineProperty(name, attributes, returnType, null, null, parameterTypes, null, null);
-        }
-
-        public PropertyBuilder DefineProperty(string name, PropertyAttributes attributes,
-            CallingConventions callingConvention, Type returnType, Type[]? parameterTypes)
-        {
-            return DefineProperty(name, attributes, callingConvention, returnType, null, null, parameterTypes, null, null);
-        }
-
-        public PropertyBuilder DefineProperty(string name, PropertyAttributes attributes,
-            Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
-            Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
-        {
-            return DefineProperty(name, attributes, (CallingConventions)0, returnType,
-                returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers,
-                parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);
-        }
 
         public PropertyBuilder DefineProperty(string name, PropertyAttributes attributes, CallingConventions callingConvention,
             Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
