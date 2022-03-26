@@ -36694,8 +36694,19 @@ BOOL gc_heap::find_card_dword (size_t& cardw, size_t cardw_end)
                 cardw = (card_word - &card_table[0]);
                 return TRUE;
             }
-            else if ((cardw <= card_bundle_cardw (cardb)) &&
-                     (card_word == &card_table [card_bundle_cardw (cardb+1)]))
+            // explore the beginning of the card bundle so we can possibly clear it
+            if (cardw == (card_bundle_cardw (cardb) + 1) && !card_table[cardw-1])
+            {
+                cardw--;
+            }
+            // explore the end of the card bundle so we can possibly clear it
+            card_word_end = &card_table[card_bundle_cardw (cardb+1)];
+            while ((card_word < card_word_end) && !(*card_word))
+            {
+                card_word++;
+            }
+            if ((cardw <= card_bundle_cardw (cardb)) &&
+                (card_word == card_word_end))
             {
                 // a whole bundle was explored and is empty
                 dprintf  (3, ("gc: %d, find_card_dword clear bundle: %Ix cardw:[%Ix,%Ix[",
