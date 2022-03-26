@@ -26,7 +26,7 @@ The following instructions are already set up to support this feature since thei
 
 ## Proposal
 
-Support for the following would be indicated by the existing `RuntimeFeature.ByRefFields` mechanism.
+Support for the following will be indicated by the `RuntimeFeature.GenericsAcceptByRefLike` property.
 
 A new `GenericParameterAttributes` value will be defined which also represents metadata defined in the `CorGenericParamAttr` enumeration. Space is provided between the existing constraints group to permit constraint growth.
 
@@ -36,7 +36,7 @@ namespace System.Reflection
     [Flags]
     public enum GenericParameterAttributes
     {
-+        SupportsByRefLike = 0x0100
++        AcceptByRefLike = 0x0100
     }
 }
 ```
@@ -44,7 +44,7 @@ namespace System.Reflection
 ```diff
 typedef enum CorGenericParamAttr
 {
-+   gpSupportsByRefLike = 0x0100 // type argument can be ByRefLike
++   gpAcceptByRefLike = 0x0100 // type argument can be ByRefLike
 } CorGenericParamAttr;
 ```
 
