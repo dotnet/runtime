@@ -7407,9 +7407,9 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
     {
         assert(simdNode->GetSimdBaseType() == TYP_FLOAT);
 
-        size_t argCount = simdNode->GetOperandCount();
+        size_t argCount      = simdNode->GetOperandCount();
         size_t constArgCount = 0;
-        float  constArgValues[4]{ 0, 0, 0, 0 };
+        float  constArgValues[4]{0, 0, 0, 0};
 
         for (GenTree* arg : simdNode->Operands())
         {
@@ -7431,7 +7431,7 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 
             assert(sizeof(constArgValues) == 16);
 
-            unsigned cnsSize = sizeof(constArgValues);
+            unsigned cnsSize  = sizeof(constArgValues);
             unsigned cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
 
             CORINFO_FIELD_HANDLE hnd =
