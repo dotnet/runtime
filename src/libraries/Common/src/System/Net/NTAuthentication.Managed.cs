@@ -213,7 +213,6 @@ namespace System.Net
             public fixed byte ClientChallenge[ChallengeLength];
             private int _reserved4;
             public fixed byte ServerInfo[4]; // Has to be non-zero size, so set it to the Z(4) padding
-            //private int _reserved5;
         }
 
         // rfc4178
@@ -268,13 +267,13 @@ namespace System.Net
                 throw new PlatformNotSupportedException(SR.net_securitypackagesupport);
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"package={package}, spn={spn}, requestedContextFlags={requestedContextFlags}");
-
             if (string.IsNullOrWhiteSpace(credential.UserName) || string.IsNullOrWhiteSpace(credential.Password))
             {
                 // NTLM authentication is not possible with default credentials which are no-op
                 throw new PlatformNotSupportedException(SR.net_ntlm_not_possible_default_cred);
             }
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"package={package}, spn={spn}, requestedContextFlags={requestedContextFlags}");
 
             // TODO: requestedContextFlags
             _credential = credential;
@@ -299,10 +298,7 @@ namespace System.Net
 
         internal unsafe string? GetOutgoingBlob(string? incomingBlob)
         {
-            if (IsCompleted)
-            {
-                return null;
-            }
+            Debug.Assert(!IsCompleted);
 
             byte[]? decodedIncomingBlob = null;
             if (incomingBlob != null && incomingBlob.Length > 0)
@@ -507,7 +503,7 @@ namespace System.Net
             }
         }
 
-        private byte[] ProcessTargetInfo(ReadOnlySpan<byte> targetInfo, out DateTime time)
+        private byte[] ProcessTargetInfo(ReadOnlySpan<byte> targetInfo, out DateTime time, out bool hasNbNames)
         {
             int spnSize = _spn != null ? Encoding.Unicode.GetByteCount(_spn) : 0;
 
@@ -516,6 +512,7 @@ namespace System.Net
                 throw new Win32Exception(NTE_FAIL);
             }
 
+            bool hasNbComputerName = false, hasNbDomainName = false;
             byte[] targetInfoBuffer = new byte[targetInfo.Length + 20 /* channel binding */ + 4 + spnSize /* SPN */ + 8 /* flags */];
             int targetInfoOffset = 0;
 
@@ -540,12 +537,19 @@ namespace System.Net
                     {
                         time = DateTime.FromFileTimeUtc(BitConverter.ToInt64(info.Slice(4, 8)));
                     }
-
-                    if (ID == AvId.TargetName || ID == AvId.ChannelBindings)
+                    else if (ID == AvId.TargetName || ID == AvId.ChannelBindings)
                     {
                         // Skip these, we insert them ourselves
                         info = info.Slice(length + 4);
                         continue;
+                    }
+                    else if (ID == AvId.NbComputerName)
+                    {
+                        hasNbComputerName = true;
+                    }
+                    else if (ID == AvId.NbDomainName)
+                    {
+                        hasNbDomainName = true;
                     }
 
                     // Copy attribute-value pair into destination target info
@@ -555,6 +559,8 @@ namespace System.Net
                     info = info.Slice(length + 4);
                 }
             }
+
+            hasNbNames = hasNbComputerName && hasNbDomainName;
 
             // Add new entries into destination target info
 
@@ -630,7 +636,15 @@ namespace System.Net
             }
 
             ReadOnlySpan<byte> targetInfo = GetField(challengeMessage.TargetInfo, asBytes);
-            byte[] targetInfoBuffer = ProcessTargetInfo(targetInfo, out DateTime time);
+            byte[] targetInfoBuffer = ProcessTargetInfo(targetInfo, out DateTime time, out bool hasNbNames);
+
+            // If NTLM v2 authentication is used and the CHALLENGE_MESSAGE does not contain both
+            // MsvAvNbComputerName and MsvAvNbDomainName AVPairs and either Integrity is TRUE or
+            // Confidentiality is TRUE, then return STATUS_LOGON_FAILURE ([MS-ERREF] section 2.3.1).
+            if (!hasNbNames && (flags & (Flags.NegotiateSign | Flags.NegotiateSeal)) != 0)
+            {
+                return null;
+            }
 
             int responseLength =
                 sizeof(AuthenticateMessage) +
@@ -896,7 +910,7 @@ namespace System.Net
                 // message with the challenge blob.
                 if (!NtlmOid.Equals(mech))
                 {
-                    throw new Win32Exception(NTE_FAIL, $"'{mech}' mechanism is not supported");
+                    throw new Win32Exception(NTE_FAIL, SR.Format(SR.net_nego_mechanism_not_supported, mech));
                 }
 
                 // Process decoded NTLM blob.
