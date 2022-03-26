@@ -29,49 +29,35 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>Less than 0 if x is less than y, 0 if x is equal to y and greater than 0 if x is greater than y.</returns>
         public int Compare(string? x, string? y)
         {
-            if (string.IsNullOrWhiteSpace(x))
+            if (x is not null && y is not null)
             {
-                if (string.IsNullOrWhiteSpace(y))
+                if (x!.Contains(ConfigurationPath.KeyDelimiter) && y!.Contains(ConfigurationPath.KeyDelimiter))
                 {
-                    return 0;
+                    string[] xParts = x!.Split(_keyDelimiterArray, StringSplitOptions.RemoveEmptyEntries);
+                    string[] yParts = y!.Split(_keyDelimiterArray, StringSplitOptions.RemoveEmptyEntries);
+
+                    // Compare each part until we get two parts that are not equal
+                    for (int i = 0; i < Math.Min(xParts.Length, yParts.Length); i++)
+                    {
+                        int result = compare(xParts[i], yParts[i]);
+                        if (result != 0)
+                        {
+                            // One of them is different
+                            return result;
+                        }
+                    }
+
+                    // If we get here, the common parts are equal.
+                    // If they are of the same length, then they are totally identical
+                    return xParts.Length - yParts.Length;
                 }
-
-                return -y!.Length;
-            }
-
-            if (string.IsNullOrWhiteSpace(y))
-            {
-                return x!.Length;
-            }
-
-            int result;
-            if (!x!.Contains(ConfigurationPath.KeyDelimiter) || !y!.Contains(ConfigurationPath.KeyDelimiter))
-            {
-                result = compare(x, y);
-                if (result != 0)
+                else
                 {
-                    // One of them is different
-                    return result;
-                }
-            }
-
-            string[] xParts = x.Split(_keyDelimiterArray, StringSplitOptions.RemoveEmptyEntries);
-            string[] yParts = y.Split(_keyDelimiterArray, StringSplitOptions.RemoveEmptyEntries);
-
-            // Compare each part until we get two parts that are not equal
-            for (int i = 0; i < Math.Min(xParts.Length, yParts.Length); i++)
-            {
-                result = compare(xParts[i], yParts[i]);
-                if (result != 0)
-                {
-                    // One of them is different
-                    return result;
+                    return compare(x, y);
                 }
             }
 
-            // If we get here, the common parts are equal.
-            // If they are of the same length, then they are totally identical
-            return xParts.Length - yParts.Length;
+            return x?.Length ?? 0 - y?.Length ?? 0;
 
             static int compare(string? a, string? b)
             {
