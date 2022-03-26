@@ -17,7 +17,7 @@ Supporting ByRefLike type as Generic parameters will impact the following IL ins
 
 If any of the above instructions are attempted to be used with a ByRefLike type, the runtime will throw an `InvalidProgramException`.
 
-The following instructions are already set up to support this feature since their behavior will be to fail as currently defined due to the inability to box a ByRefLike type.
+The following instructions are already set up to support this feature since their behavior will fail as currently defined due to the inability to box a ByRefLike type.
 
 - `throw` &ndash; Requires an object reference to be on stack, which can never be a ByRefLike type.
 - `unbox` / `unbox.any` &ndash; Requires an object reference to be on stack, which can never be a ByRefLike type.
