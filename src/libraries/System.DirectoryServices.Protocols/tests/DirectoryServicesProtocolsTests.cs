@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.DirectoryServices.Tests;
 using System.Globalization;
 using System.Net;
+using System.Text;
 using System.Threading;
 using Xunit;
 
@@ -471,6 +472,41 @@ namespace System.DirectoryServices.Protocols.Tests
                 state.Exception = e;
             }
         }
+
+        [ConditionalFact(nameof(IsLdapConfigurationExist))]
+        public void TestCompareRequest()
+	{
+            using (LdapConnection connection = GetConnection())
+	    {
+		string ou = "ProtocolsGroup10";
+		string dn = "ou=" + ou;
+
+		DeleteEntry(connection, dn);
+		AddOrganizationalUnit(connection, dn);
+
+		dn += "," + LdapConfiguration.Configuration.SearchDn;
+
+		var response = connection.SendRequest(new CompareRequest(dn, "ou", ou));
+		Assert.Equal(ResultCode.CompareTrue, response.ResultCode);
+
+		response = connection.SendRequest(new CompareRequest(dn, "ou", Encoding.UTF8.GetBytes(ou)));
+		Assert.Equal(ResultCode.CompareTrue, response.ResultCode);
+
+		response = connection.SendRequest(new CompareRequest(dn, "ou", "NotFound"));
+		Assert.Equal(ResultCode.CompareFalse, response.ResultCode);
+
+		response = connection.SendRequest(new CompareRequest(dn, "ou", Encoding.UTF8.GetBytes("NotFound")));
+		Assert.Equal(ResultCode.CompareFalse, response.ResultCode);
+
+		response = connection.SendRequest(new CompareRequest(dn, "ou", string.Empty));
+		Assert.Equal(ResultCode.CompareFalse, response.ResultCode);
+
+		response = connection.SendRequest(new CompareRequest(dn, "ou", new byte[0]));
+		Assert.Equal(ResultCode.CompareFalse, response.ResultCode);
+
+		Assert.Throws<DirectoryOperationException>(() => connection.SendRequest(new CompareRequest("ou=NotFound," + LdapConfiguration.Configuration.SearchDn, "ou", "NotFound")));
+	    }
+	}
 
         [ConditionalFact(nameof(IsActiveDirectoryServer))]
         public void TestPageRequests()
