@@ -6884,7 +6884,7 @@ CordbNativeFrame::GetLocalMemoryValue(CORDB_ADDRESS address,
     _ASSERTE(m_nativeCode->GetFunction() != NULL);
     HRESULT hr = S_OK;
 
-    ICorDebugValue *pValue;
+    ICorDebugValue *pValue = NULL;
     EX_TRY
     {
         CordbValue::CreateValueByType(GetCurrentAppDomain(),

@@ -1584,7 +1584,7 @@ namespace System.Net.Http
             }
         }
 
-        private void HandleAsyncException(WinHttpRequestState state, Exception ex)
+        private static void HandleAsyncException(WinHttpRequestState state, Exception ex)
         {
             Debug.Assert(state.Tcs != null);
             if (state.CancellationToken.IsCancellationRequested)
@@ -1703,7 +1703,7 @@ namespace System.Net.Http
             return state.LifecycleAwaitable;
         }
 
-        private async Task InternalSendRequestBodyAsync(WinHttpRequestState state, WinHttpChunkMode chunkedModeForSend)
+        private static async Task InternalSendRequestBodyAsync(WinHttpRequestState state, WinHttpChunkMode chunkedModeForSend)
         {
             Debug.Assert(state.RequestMessage != null);
             Debug.Assert(state.RequestMessage.Content != null);

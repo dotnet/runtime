@@ -975,18 +975,6 @@ mini_llvmonly_throw_aot_failed_exception (const char *name)
 	mini_llvmonly_throw_exception ((MonoObject*)ex);
 }
 
-/*
- * mini_llvmonly_pop_lmf:
- *
- *   Pop LMF off the LMF stack.
- */
-void
-mini_llvmonly_pop_lmf (MonoLMF *lmf)
-{
-	if (lmf->previous_lmf)
-		mono_set_lmf ((MonoLMF*)lmf->previous_lmf);
-}
-
 void
 mini_llvmonly_interp_entry_gsharedvt (gpointer imethod, gpointer res, gpointer *args)
 {

@@ -245,6 +245,8 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             break;
 
         case GT_IND:
+        case GT_OBJ:
+        case GT_BLK:
             // For Volatile indirection, first mutate GcHeap/ByrefExposed
             // see comments in ValueNum.cpp (under case GT_CLS_VAR)
             // This models Volatile reads as def-then-use of memory.

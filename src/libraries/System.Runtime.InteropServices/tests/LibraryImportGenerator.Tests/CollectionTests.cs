@@ -16,46 +16,46 @@ namespace LibraryImportGenerator.IntegrationTests
     {
         public partial class Collections
         {
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
             public static partial int Sum([MarshalUsing(typeof(ListMarshaller<int>))] List<int> values, int numValues);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
             public static partial int Sum(ref int values, int numValues);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array_ref")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array_ref")]
             public static partial int SumInArray([MarshalUsing(typeof(ListMarshaller<int>))] in List<int> values, int numValues);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "duplicate_int_array")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "duplicate_int_array")]
             public static partial void Duplicate([MarshalUsing(typeof(ListMarshaller<int>), CountElementName = "numValues")] ref List<int> values, int numValues);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "create_range_array")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "create_range_array")]
             [return:MarshalUsing(typeof(ListMarshaller<int>), CountElementName = "numValues")]
             public static partial List<int> CreateRange(int start, int end, out int numValues);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "create_range_array_out")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "create_range_array_out")]
             public static partial void CreateRange_Out(int start, int end, out int numValues, [MarshalUsing(typeof(ListMarshaller<int>), CountElementName = "numValues")] out List<int> res);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_string_lengths")]
-            public static partial int SumStringLengths([MarshalUsing(typeof(ListMarshaller<string>)), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionLevel = 1)] List<string> strArray);
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_string_lengths")]
+            public static partial int SumStringLengths([MarshalUsing(typeof(ListMarshaller<string>)), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionDepth = 1)] List<string> strArray);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "reverse_strings_replace")]
-            public static partial void ReverseStrings_Ref([MarshalUsing(typeof(ListMarshaller<string>), CountElementName = "numElements"), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionLevel = 1)] ref List<string> strArray, out int numElements);
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "reverse_strings_replace")]
+            public static partial void ReverseStrings_Ref([MarshalUsing(typeof(ListMarshaller<string>), CountElementName = "numElements"), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionDepth = 1)] ref List<string> strArray, out int numElements);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "reverse_strings_return")]
-            [return: MarshalUsing(typeof(ListMarshaller<string>), CountElementName = "numElements"), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionLevel = 1)]
-            public static partial List<string> ReverseStrings_Return([MarshalUsing(typeof(ListMarshaller<string>), CountElementName = "numElements"), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionLevel = 1)] List<string> strArray, out int numElements);
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "reverse_strings_return")]
+            [return: MarshalUsing(typeof(ListMarshaller<string>), CountElementName = "numElements"), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionDepth = 1)]
+            public static partial List<string> ReverseStrings_Return([MarshalUsing(typeof(ListMarshaller<string>), CountElementName = "numElements"), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionDepth = 1)] List<string> strArray, out int numElements);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "reverse_strings_out")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "reverse_strings_out")]
             public static partial void ReverseStrings_Out(
-                [MarshalUsing(typeof(ListMarshaller<string>)), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionLevel = 1)] List<string> strArray,
+                [MarshalUsing(typeof(ListMarshaller<string>)), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionDepth = 1)] List<string> strArray,
                 out int numElements,
-                [MarshalUsing(typeof(ListMarshaller<string>), CountElementName = "numElements"), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionLevel = 1)] out List<string> res);
+                [MarshalUsing(typeof(ListMarshaller<string>), CountElementName = "numElements"), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionDepth = 1)] out List<string> res);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "get_long_bytes")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "get_long_bytes")]
             [return:MarshalUsing(typeof(ListMarshaller<byte>), ConstantElementCount = sizeof(long))]
             public static partial List<byte> GetLongBytes(long l);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "and_all_members")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_all_members")]
             [return:MarshalAs(UnmanagedType.U1)]
             public static partial bool AndAllMembers([MarshalUsing(typeof(ListMarshaller<BoolStruct>))] List<BoolStruct> pArray, int length);
         }

@@ -27,7 +27,9 @@ namespace System.Net.Security.Tests
             using (serverStream)
             {
                 using (var client = new SslStream(clientStream, false, TestHelper.AllowAnyServerCertificate, null, EncryptionPolicy.RequireEncryption))
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 using (var server = new SslStream(serverStream, false, TestHelper.AllowAnyServerCertificate, null, EncryptionPolicy.AllowNoEncryption))
+#pragma warning restore SYSLIB0040
                 {
                     await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                         client.AuthenticateAsClientAsync("localhost", null, SslProtocols.None, false),
@@ -48,8 +50,10 @@ namespace System.Net.Security.Tests
             using (clientStream)
             using (serverStream)
             {
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 using (var client = new SslStream(clientStream, false, TestHelper.AllowAnyServerCertificate, null, EncryptionPolicy.AllowNoEncryption))
                 using (var server = new SslStream(serverStream, false, TestHelper.AllowAnyServerCertificate, null, EncryptionPolicy.AllowNoEncryption))
+#pragma warning restore SYSLIB0040
                 {
                     await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                         client.AuthenticateAsClientAsync("localhost", null, SslProtocols.None, false),
@@ -70,8 +74,10 @@ namespace System.Net.Security.Tests
             using (clientStream)
             using (serverStream)
             {
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 using (var client = new SslStream(clientStream, false, TestHelper.AllowAnyServerCertificate, null, EncryptionPolicy.NoEncryption))
                 using (var server = new SslStream(serverStream, false, TestHelper.AllowAnyServerCertificate, null, EncryptionPolicy.AllowNoEncryption))
+#pragma warning restore SYSLIB0040
                 {
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                     await TestConfiguration.WhenAllOrAnyFailedWithTimeout(

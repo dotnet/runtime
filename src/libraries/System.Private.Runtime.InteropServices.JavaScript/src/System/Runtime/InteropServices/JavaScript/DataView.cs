@@ -218,7 +218,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="littleEndian">Indicates whether the 32-bit float is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         public void SetUint8(int byteOffset, byte value, bool littleEndian = false) => Invoke("setUint8", byteOffset, value, littleEndian);
 
-        private U UnBoxValue<U>(object jsValue) where U : struct
+        private static U UnBoxValue<U>(object jsValue) where U : struct
         {
             if (jsValue == null)
             {

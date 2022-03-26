@@ -18,7 +18,7 @@ namespace Microsoft.Interop
 
         private static string GetStackAllocIdentifier(TypePositionInfo info, StubCodeContext context) => context.GetAdditionalIdentifier(info, "stackptr");
 
-        protected bool UsesConditionalStackAlloc(TypePositionInfo info, StubCodeContext context)
+        protected static bool UsesConditionalStackAlloc(TypePositionInfo info, StubCodeContext context)
         {
             return context.SingleFrameSpansNativeContext
                 && (!info.IsByRef || info.RefKind == RefKind.In)
@@ -26,7 +26,7 @@ namespace Microsoft.Interop
                 && context.AdditionalTemporaryStateLivesAcrossStages;
         }
 
-        protected bool TryGenerateSetupSyntax(TypePositionInfo info, StubCodeContext context, out StatementSyntax statement)
+        protected static bool TryGenerateSetupSyntax(TypePositionInfo info, StubCodeContext context, out StatementSyntax statement)
         {
             statement = EmptyStatement();
 
@@ -238,10 +238,10 @@ namespace Microsoft.Interop
         public abstract TypeSyntax AsNativeType(TypePositionInfo info);
 
         /// <inheritdoc/>
-        public abstract ParameterSyntax AsParameter(TypePositionInfo info);
+        public abstract SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info);
 
         /// <inheritdoc/>
-        public abstract ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context);
+        public abstract ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context);
 
         /// <inheritdoc/>
         public abstract IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context);

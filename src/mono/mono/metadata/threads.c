@@ -53,7 +53,6 @@
 
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/abi-details.h>
-#include <mono/metadata/w32error.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-os-wait.h>
 #include <mono/metadata/exception-internals.h>
@@ -1270,7 +1269,7 @@ start_wrapper (gpointer data)
 }
 
 static void
-throw_thread_start_exception (guint32 error_code, MonoError *error)
+throw_thread_start_exception (const char *msg, MonoError *error)
 {
 	ERROR_DECL (method_error);
 
@@ -1282,9 +1281,7 @@ throw_thread_start_exception (guint32 error_code, MonoError *error)
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, throw_method)
 	g_assert (throw_method);
 
-	char *msg = g_strdup_printf ("0x%x", error_code);
 	MonoException *ex = mono_get_exception_execution_engine (msg);
-	g_free (msg);
 
 	gpointer args [1];
 	args [0] = ex;
@@ -1365,7 +1362,13 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoThreadStart
 		mono_g_hash_table_remove (threads_starting_up, thread);
 		mono_threads_unlock ();
 
-		throw_thread_start_exception (mono_w32error_get_last(), error);
+#if HOST_WIN32
+		char *err_msg = g_strdup_printf ("0x%x", GetLastError ());
+		throw_thread_start_exception (err_msg, error);
+		g_free (err_msg);
+#else
+		throw_thread_start_exception ("mono_thread_platform_create_thread() failed", error);
+#endif
 
 		/* ref is not going to be decremented in start_wrapper_internal */
 		mono_atomic_dec_i32 (&start_info->ref);
@@ -1887,7 +1890,7 @@ mono_thread_set_name (MonoInternalThread *this_obj,
 
 	if (name8) {
 		this_obj->name.chars = (char*)name8;
-		this_obj->name.length = name8_length;
+		this_obj->name.length = (gint32)name8_length;
 		this_obj->name.free = !constant;
 		if (flags & MonoSetThreadNameFlag_Permanent)
 			this_obj->flags |= MONO_THREAD_FLAG_NAME_SET;
@@ -2055,31 +2058,6 @@ ves_icall_System_Threading_Thread_Join_internal (MonoThreadObjectHandle thread_h
 	THREAD_DEBUG (g_message ("%s: join failed", __func__));
 
 	return FALSE;
-}
-
-#define MANAGED_WAIT_FAILED 0x7fffffff
-
-static gint32
-map_native_wait_result_to_managed (MonoW32HandleWaitRet val, gsize numobjects)
-{
-	if (val >= MONO_W32HANDLE_WAIT_RET_SUCCESS_0 && val < MONO_W32HANDLE_WAIT_RET_SUCCESS_0 + numobjects) {
-		return WAIT_OBJECT_0 + (val - MONO_W32HANDLE_WAIT_RET_SUCCESS_0);
-	} else if (val >= MONO_W32HANDLE_WAIT_RET_ABANDONED_0 && val < MONO_W32HANDLE_WAIT_RET_ABANDONED_0 + numobjects) {
-		return WAIT_ABANDONED_0 + (val - MONO_W32HANDLE_WAIT_RET_ABANDONED_0);
-	} else if (val == MONO_W32HANDLE_WAIT_RET_ALERTED) {
-		return WAIT_IO_COMPLETION;
-	} else if (val == MONO_W32HANDLE_WAIT_RET_TIMEOUT) {
-		return WAIT_TIMEOUT;
-	} else if (val == MONO_W32HANDLE_WAIT_RET_TOO_MANY_POSTS) {
-		return WAIT_TOO_MANY_POSTS;
-	} else if (val == MONO_W32HANDLE_WAIT_RET_NOT_OWNED_BY_CALLER) {
-		return WAIT_NOT_OWNED_BY_CALLER;
-	} else if (val == MONO_W32HANDLE_WAIT_RET_FAILED) {
-		/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
-		return MANAGED_WAIT_FAILED;
-	} else {
-		g_error ("%s: unknown val value %d", __func__, val);
-	}
 }
 
 gint32 ves_icall_System_Threading_Interlocked_Increment_Int (gint32 *location)

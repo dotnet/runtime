@@ -362,7 +362,7 @@ namespace System.Data
         /// <summary>
         /// Makes a default name with the given index.  e.g. Relation1, Relation2, ... Relationi
         /// </summary>
-        private string MakeName(int index) => index == 1 ?
+        private static string MakeName(int index) => index == 1 ?
             "Relation1" :
             "Relation" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
 

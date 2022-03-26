@@ -61,7 +61,7 @@ namespace System.Drawing
             }
         }
 
-        [GeneratedDllImport(Interop.Libraries.Oleaut32)]
+        [LibraryImport(Interop.Libraries.Oleaut32)]
         private static unsafe partial int OleCreatePictureIndirect(PICTDESC* pictdesc, Guid* refiid, int fOwn, IntPtr* lplpvObj);
 
         [StructLayout(LayoutKind.Sequential)]

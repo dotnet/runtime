@@ -16,15 +16,13 @@ namespace System.Text.RegularExpressions.Symbolic
     {
 #if DEBUG
         /// <summary>Unwind the regex of the matcher and save the resulting state graph in DGML</summary>
-        /// <param name="bound">roughly the maximum number of states, 0 means no bound</param>
-        /// <param name="hideStateInfo">if true then hide state info</param>
-        /// <param name="addDotStar">if true then pretend that there is a .* at the beginning</param>
-        /// <param name="inReverse">if true then unwind the regex backwards (addDotStar is then ignored)</param>
-        /// <param name="onlyDFAinfo">if true then compute and save only genral DFA info</param>
-        /// <param name="writer">dgml output is written here</param>
+        /// <param name="writer">Writer to which the DGML is written.</param>
+        /// <param name="nfa">True to create an NFA instead of a DFA.</param>
+        /// <param name="addDotStar">True to prepend .*? onto the pattern (outside of the implicit root capture).</param>
+        /// <param name="reverse">If true, then unwind the regex backwards.</param>
+        /// <param name="maxStates">The approximate maximum number of states to include; less than or equal to 0 for no maximum.</param>
         /// <param name="maxLabelLength">maximum length of labels in nodes anything over that length is indicated with .. </param>
-        /// <param name="asNFA">if true creates NFA instead of DFA</param>
-        public abstract void SaveDGML(TextWriter writer, int bound, bool hideStateInfo, bool addDotStar, bool inReverse, bool onlyDFAinfo, int maxLabelLength, bool asNFA);
+        public abstract void SaveDGML(TextWriter writer, bool nfa, bool addDotStar, bool reverse, int maxStates, int maxLabelLength);
 
         /// <summary>
         /// Generates up to k random strings matched by the regex
@@ -146,32 +144,55 @@ namespace System.Text.RegularExpressions.Symbolic
             return _builder._minterms[_mintermClassifier.GetMintermID(c)];
         }
 
-        /// <summary>Constructs matcher for given symbolic regex.</summary>
-        internal SymbolicRegexMatcher(SymbolicRegexNode<TSetType> sr, RegexTree regexTree, BDD[] minterms, TimeSpan matchTimeout)
+        /// <summary>Creates a new <see cref="SymbolicRegexMatcher{TSetType}"/>.</summary>
+        /// <param name="captureCount">The number of captures in the regular expression.</param>
+        /// <param name="findOptimizations">The find optimizations computed from the expression.</param>
+        /// <param name="bddBuilder">The <see cref="BDD"/>-based builder.</param>
+        /// <param name="rootBddNode">The root <see cref="BDD"/>-based node from the pattern.</param>
+        /// <param name="algebra">The algebra to use.</param>
+        /// <param name="matchTimeout">The match timeout to use.</param>
+        public static SymbolicRegexMatcher<TSetType> Create(
+            int captureCount, RegexFindOptimizations findOptimizations,
+            SymbolicRegexBuilder<BDD> bddBuilder, SymbolicRegexNode<BDD> rootBddNode, ICharAlgebra<TSetType> algebra,
+            TimeSpan matchTimeout)
         {
-            Debug.Assert(sr._builder._solver is BitVector64Algebra or BitVectorAlgebra or CharSetSolver, $"Unsupported algebra: {sr._builder._solver}");
+            // Use BitVector to represent a predicate
+            var builder = new SymbolicRegexBuilder<TSetType>(algebra)
+            {
+                // The default constructor sets the following predicates to False; this update happens after the fact.
+                // It depends on whether anchors where used in the regex whether the predicates are actually different from False.
+                _wordLetterPredicateForAnchors = algebra.ConvertFromCharSet(CharSetSolver.Instance, bddBuilder._wordLetterPredicateForAnchors),
+                _newLinePredicate = algebra.ConvertFromCharSet(CharSetSolver.Instance, bddBuilder._newLinePredicate)
+            };
 
-            _pattern = sr;
-            _builder = sr._builder;
+            // Convert the BDD-based AST to TSetType-based AST
+            SymbolicRegexNode<TSetType> rootNode = bddBuilder.Transform(rootBddNode, builder, static (builder, bdd) => builder._solver.ConvertFromCharSet(CharSetSolver.Instance, bdd));
+            return new SymbolicRegexMatcher<TSetType>(rootNode, captureCount, findOptimizations, matchTimeout);
+        }
+
+        /// <summary>Constructs matcher for given symbolic regex.</summary>
+        private SymbolicRegexMatcher(SymbolicRegexNode<TSetType> rootNode, int captureCount, RegexFindOptimizations findOptimizations, TimeSpan matchTimeout)
+        {
+            Debug.Assert(rootNode._builder._solver is UInt64Algebra or BitVectorAlgebra, $"Unsupported algebra: {rootNode._builder._solver}");
+
+            _pattern = rootNode;
+            _builder = rootNode._builder;
             _checkTimeout = Regex.InfiniteMatchTimeout != matchTimeout;
             _timeout = (int)(matchTimeout.TotalMilliseconds + 0.5); // Round up, so it will be at least 1ms
-            _mintermClassifier = _builder._solver switch
-            {
-                BitVector64Algebra bv64 => bv64._classifier,
-                BitVectorAlgebra bv => bv._classifier,
-                _ => new MintermClassifier((CharSetSolver)(object)_builder._solver, minterms),
-            };
-            _capsize = regexTree.CaptureCount;
+            _mintermClassifier = _builder._solver is UInt64Algebra bv64 ?
+                bv64._classifier :
+                ((BitVectorAlgebra)(object)_builder._solver)._classifier;
+            _capsize = captureCount;
 
-            if (regexTree.FindOptimizations.MinRequiredLength == regexTree.FindOptimizations.MaxPossibleLength)
+            if (findOptimizations.MinRequiredLength == findOptimizations.MaxPossibleLength)
             {
-                _fixedMatchLength = regexTree.FindOptimizations.MinRequiredLength;
+                _fixedMatchLength = findOptimizations.MinRequiredLength;
             }
 
-            if (regexTree.FindOptimizations.FindMode != FindNextStartingPositionMode.NoSearch &&
-                regexTree.FindOptimizations.LeadingAnchor == 0) // If there are any anchors, we're better off letting the DFA quickly do its job of determining whether there's a match.
+            if (findOptimizations.FindMode != FindNextStartingPositionMode.NoSearch &&
+                findOptimizations.LeadingAnchor == 0) // If there are any anchors, we're better off letting the DFA quickly do its job of determining whether there's a match.
             {
-                _findOpts = regexTree.FindOptimizations;
+                _findOpts = findOptimizations;
             }
 
             // Determine the number of initial states. If there's no anchor, only the default previous
@@ -188,8 +209,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // Create the dot-star pattern (a concatenation of any* with the original pattern)
             // and all of its initial states.
-            SymbolicRegexNode<TSetType> unorderedPattern = _pattern.IgnoreOrOrderAndLazyness();
-            _dotStarredPattern = _builder.CreateConcat(_builder._anyStar, unorderedPattern);
+            _dotStarredPattern = _builder.CreateConcat(_builder._anyStar, _pattern);
             var dotstarredInitialStates = new DfaMatchingState<TSetType>[statesCount];
             for (uint i = 0; i < dotstarredInitialStates.Length; i++)
             {
@@ -204,8 +224,10 @@ namespace System.Text.RegularExpressions.Symbolic
             _dotstarredInitialStates = dotstarredInitialStates;
 
             // Create the reverse pattern (the original pattern in reverse order) and all of its
-            // initial states.
-            _reversePattern = unorderedPattern.Reverse();
+            // initial states. Also disable backtracking simulation to ensure the reverse path from
+            // the final state that was found is followed. Not doing so might cause the earliest
+            // starting point to not be found.
+            _reversePattern = _builder.CreateDisableBacktrackingSimulation(_pattern.Reverse());
             var reverseInitialStates = new DfaMatchingState<TSetType>[statesCount];
             for (uint i = 0; i < reverseInitialStates.Length; i++)
             {
@@ -264,18 +286,18 @@ namespace System.Text.RegularExpressions.Symbolic
             return TStateHandler.TakeTransition(builder, ref state, mintermId);
         }
 
-        private List<(DfaMatchingState<TSetType>, List<DerivativeEffect>)> CreateNewCapturingTransitions(DfaMatchingState<TSetType> state, TSetType minterm, int offset)
+        private List<(DfaMatchingState<TSetType>, DerivativeEffect[])> CreateNewCapturingTransitions(DfaMatchingState<TSetType> state, TSetType minterm, int offset)
         {
             Debug.Assert(_builder._capturingDelta is not null);
             lock (this)
             {
                 // Get the next state if it exists.  The caller should have already tried and found it null (not yet created),
                 // but in the interim another thread could have created it.
-                List<(DfaMatchingState<TSetType>, List<DerivativeEffect>)>? p = _builder._capturingDelta[offset];
+                List<(DfaMatchingState<TSetType>, DerivativeEffect[])>? p = _builder._capturingDelta[offset];
                 if (p is null)
                 {
                     // Build the new state and store it into the array.
-                    p = state.NfaEagerNextWithEffects(minterm);
+                    p = state.NfaNextWithEffects(minterm);
                     Volatile.Write(ref _builder._capturingDelta[offset], p);
                 }
 
@@ -550,14 +572,14 @@ namespace System.Text.RegularExpressions.Symbolic
                     // Get or create the transitions
                     int offset = (sourceId << builder._mintermsLog) | mintermId;
                     Debug.Assert(builder._capturingDelta is not null);
-                    List<(DfaMatchingState<TSetType>, List<DerivativeEffect>)>? transitions =
+                    List<(DfaMatchingState<TSetType>, DerivativeEffect[])>? transitions =
                         builder._capturingDelta[offset] ??
                         CreateNewCapturingTransitions(sourceState, minterm, offset);
 
                     // Take the transitions in their prioritized order
                     for (int j = 0; j < transitions.Count; ++j)
                     {
-                        (DfaMatchingState<TSetType> targetState, List<DerivativeEffect> effects) = transitions[j];
+                        (DfaMatchingState<TSetType> targetState, DerivativeEffect[] effects) = transitions[j];
                         if (targetState.IsDeadend)
                             continue;
 
@@ -601,8 +623,8 @@ namespace System.Text.RegularExpressions.Symbolic
 
             Debug.Assert(i_end != input.Length && endState is not null);
             // Apply effects for finishing at the stored end state
-            endState.Node.ApplyEffects(effect => endRegisters.ApplyEffect(effect, i_end + 1),
-                CharKind.Context(endState.PrevCharKind, GetCharKind(input, i_end + 1)));
+            endState.Node.ApplyEffects((effect, args) => args.Registers.ApplyEffect(effect, args.Pos),
+                CharKind.Context(endState.PrevCharKind, GetCharKind(input, i_end + 1)), (Registers: endRegisters, Pos: i_end + 1));
             resultRegisters = endRegisters;
             return i_end;
         }
@@ -783,11 +805,17 @@ namespace System.Text.RegularExpressions.Symbolic
                         }
                     }
 
-                    // Now run the DFA or NFA traversal from the current point using the current state.
+                    // Now run the DFA or NFA traversal from the current point using the current state. If timeouts are being checked,
+                    // we need to pop out of the inner loop every now and then to do the timeout check in this outer loop.
+                    const int CharsPerTimeoutCheck = 10_000;
+                    ReadOnlySpan<char> inputForInnerLoop = _checkTimeout && input.Length - i > CharsPerTimeoutCheck ?
+                        input.Slice(0, i + CharsPerTimeoutCheck) :
+                        input;
+
                     int finalStatePosition;
                     int findResult = currentState.NfaState is not null ?
-                        FindFinalStatePositionDeltas<NfaStateHandler>(builder, input, ref i, ref currentState, ref matchLength, out finalStatePosition) :
-                        FindFinalStatePositionDeltas<DfaStateHandler>(builder, input, ref i, ref currentState, ref matchLength, out finalStatePosition);
+                        FindFinalStatePositionDeltas<NfaStateHandler>(builder, inputForInnerLoop, ref i, ref currentState, ref matchLength, out finalStatePosition) :
+                        FindFinalStatePositionDeltas<DfaStateHandler>(builder, inputForInnerLoop, ref i, ref currentState, ref matchLength, out finalStatePosition);
 
                     // If we reached a final or deadend state, we're done.
                     if (findResult > 0)
@@ -801,17 +829,20 @@ namespace System.Text.RegularExpressions.Symbolic
                     // find result will be 0, otherwise negative.
                     if (findResult < 0)
                     {
-                        if ((uint)i >= (uint)input.Length)
+                        if (i >= input.Length)
                         {
                             // We ran out of input. No match.
                             break;
                         }
 
-                        // We failed to transition. Upgrade to DFA mode.
-                        Debug.Assert(currentState.DfaState is not null);
-                        NfaMatchingState nfaState = perThreadData.NfaState;
-                        nfaState.InitializeFrom(currentState.DfaState);
-                        currentState = new CurrentState(nfaState);
+                        if (i < inputForInnerLoop.Length)
+                        {
+                            // We failed to transition. Upgrade to DFA mode.
+                            Debug.Assert(currentState.DfaState is not null);
+                            NfaMatchingState nfaState = perThreadData.NfaState;
+                            nfaState.InitializeFrom(currentState.DfaState);
+                            currentState = new CurrentState(nfaState);
+                        }
                     }
 
                     // Check for a timeout before continuing.
@@ -949,7 +980,7 @@ namespace System.Text.RegularExpressions.Symbolic
             /// </summary>
             /// <param name="effects">list of effects to be applied</param>
             /// <param name="pos">the current input position to record</param>
-            public void ApplyEffects(List<DerivativeEffect> effects, int pos)
+            public void ApplyEffects(DerivativeEffect[] effects, int pos)
             {
                 foreach (DerivativeEffect effect in effects)
                 {
@@ -1022,8 +1053,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Only create data used for capturing mode if there are subcaptures
                 if (capsize > 1)
                 {
-                    Current = new();
-                    Next = new();
+                    Current = new SparseIntMap<Registers>();
+                    Next = new SparseIntMap<Registers>();
                     InitialRegisters = new Registers(new int[capsize], new int[capsize]);
                 }
             }
@@ -1266,12 +1297,8 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
 #if DEBUG
-        public override void SaveDGML(TextWriter writer, int bound, bool hideStateInfo, bool addDotStar, bool inReverse, bool onlyDFAinfo, int maxLabelLength, bool asNFA)
-        {
-            var graph = new DGML.RegexAutomaton<TSetType>(this, bound, addDotStar, inReverse, asNFA);
-            var dgml = new DGML.DgmlWriter(writer, hideStateInfo, maxLabelLength, onlyDFAinfo);
-            dgml.Write(graph);
-        }
+        public override void SaveDGML(TextWriter writer, bool nfa, bool addDotStar, bool reverse, int maxStates, int maxLabelLength) =>
+            DgmlWriter<TSetType>.Write(writer, this, nfa, addDotStar, reverse, maxStates, maxLabelLength);
 
         public override IEnumerable<string> GenerateRandomMembers(int k, int randomseed, bool negative) =>
             new SymbolicRegexSampler<TSetType>(_pattern, randomseed, negative).GenerateRandomMembers(k);

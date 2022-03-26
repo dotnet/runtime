@@ -207,6 +207,8 @@
     <PlatformManifestFileEntry Include="libmono-icall-table.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-ilgen.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-profiler-aot.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-wasm-eh-js.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-wasm-eh-wasm.a" IsNative="true" />
     <PlatformManifestFileEntry Include="System.Private.Runtime.InteropServices.Javascript.dll" />
     <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js.symbols" IsNative="true" />

@@ -33,7 +33,7 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap*
         for (GenTree* const tree : stmt->TreeList())
         {
             GenTreeLclVarCommon* lclDefNode = nullptr;
-            if (tree->OperIs(GT_ASG) && tree->DefinesLocal(this, &lclDefNode))
+            if (tree->OperIsSsaDef() && tree->DefinesLocal(this, &lclDefNode))
             {
                 const unsigned lclNum = optIsSsaLocal(lclDefNode);
 
@@ -279,12 +279,12 @@ unsigned Compiler::optIsSsaLocal(GenTreeLclVarCommon* lclNode)
 // optCopyPropPushDef: Push the new live SSA def on the stack for "lclNode".
 //
 // Arguments:
-//    asg        - The assignment node for this def (will be "nullptr" for "use" defs)
+//    defNode    - The definition node for this def (GT_ASG/GT_CALL) (will be "nullptr" for "use" defs)
 //    lclNode    - The local tree representing "the def" (that can actually be a use)
 //    lclNum     - The local's number (see "optIsSsaLocal")
 //    curSsaName - The map of local numbers to stacks of their defs
 //
-void Compiler::optCopyPropPushDef(GenTreeOp*           asg,
+void Compiler::optCopyPropPushDef(GenTree*             defNode,
                                   GenTreeLclVarCommon* lclNode,
                                   unsigned             lclNum,
                                   LclNumToLiveDefsMap* curSsaName)
@@ -301,7 +301,7 @@ void Compiler::optCopyPropPushDef(GenTreeOp*           asg,
     }
 
     unsigned ssaDefNum = SsaConfig::RESERVED_SSA_NUM;
-    if (asg == nullptr)
+    if (defNode == nullptr)
     {
         // Parameters, this pointer etc.
         assert((lclNode->gtFlags & GTF_VAR_DEF) == 0);
@@ -312,8 +312,8 @@ void Compiler::optCopyPropPushDef(GenTreeOp*           asg,
     {
         assert((lclNode->gtFlags & GTF_VAR_DEF) != 0);
 
-        // Quirk: do not collect defs from PHIs. Preserves previous behavior.
-        if (!asg->IsPhiDefn())
+        // TODO-CQ: design better heuristics for propagation and remove this condition.
+        if (!defNode->IsPhiDefn())
         {
             ssaDefNum = GetSsaNumForLocalVarDef(lclNode);
 
@@ -377,7 +377,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
             treeLifeUpdater.UpdateLife(tree);
 
             GenTreeLclVarCommon* lclDefNode = nullptr;
-            if (tree->OperIs(GT_ASG) && tree->DefinesLocal(this, &lclDefNode))
+            if (tree->OperIsSsaDef() && tree->DefinesLocal(this, &lclDefNode))
             {
                 const unsigned lclNum = optIsSsaLocal(lclDefNode);
 
@@ -386,7 +386,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
                     continue;
                 }
 
-                optCopyPropPushDef(tree->AsOp(), lclDefNode, lclNum, curSsaName);
+                optCopyPropPushDef(tree, lclDefNode, lclNum, curSsaName);
             }
             // TODO-CQ: propagate on LCL_FLDs too.
             else if (tree->OperIs(GT_LCL_VAR) && ((tree->gtFlags & GTF_VAR_DEF) == 0))
@@ -480,10 +480,27 @@ void Compiler::optVnCopyProp()
             // TODO-Cleanup: Move this function from Compiler to this class.
             m_compiler->optBlockCopyPropPopStacks(block, &m_curSsaName);
         }
+
+        void PropagateCopies()
+        {
+            WalkTree();
+
+#ifdef DEBUG
+            // Verify the definitions remaining are only those we pushed for parameters.
+            for (LclNumToLiveDefsMap::KeyIterator iter = m_curSsaName.Begin(); !iter.Equal(m_curSsaName.End()); ++iter)
+            {
+                unsigned lclNum = iter.Get();
+                assert(m_compiler->lvaGetDesc(lclNum)->lvIsParam || (lclNum == m_compiler->info.compThisArg));
+
+                CopyPropSsaDefStack* defStack = iter.GetValue();
+                assert(defStack->Height() == 1);
+            }
+#endif // DEBUG
+        }
     };
 
     CopyPropDomTreeVisitor visitor(this);
-    visitor.WalkTree();
+    visitor.PropagateCopies();
 
     // Tracked variable count increases after CopyProp, so don't keep a shorter array around.
     // Destroy (release) the varset.

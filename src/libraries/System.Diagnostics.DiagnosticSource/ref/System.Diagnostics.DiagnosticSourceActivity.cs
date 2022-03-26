@@ -24,6 +24,7 @@ namespace System.Diagnostics
             get { throw null; }
         }
 
+        public bool HasRemoteParent { get { throw null; } }
         public bool IsAllDataRequested { get { throw null; } set { throw null; } }
         public bool IsStopped { get { throw null; } }
         public System.Diagnostics.ActivityIdFormat IdFormat { get { throw null; } }

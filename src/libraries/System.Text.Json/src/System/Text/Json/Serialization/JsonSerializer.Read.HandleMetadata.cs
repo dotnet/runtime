@@ -336,6 +336,11 @@ namespace System.Text.Json
 
             if (state.Current.ObjectState == StackFrameObjectState.ReadValuesStartArray)
             {
+                // Temporary workaround for the state machine accidentally
+                // erasing the JsonPropertyName property in certain async
+                // re-entrancy patterns.
+                state.Current.JsonPropertyName = s_valuesPropertyName;
+
                 if (reader.TokenType != JsonTokenType.StartArray)
                 {
                     ThrowHelper.ThrowJsonException_MetadataValuesInvalidToken(reader.TokenType);

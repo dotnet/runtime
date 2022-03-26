@@ -2113,7 +2113,7 @@ namespace System.Xml
             return s;
         }
 
-        private void CheckNCName(string ncname)
+        private static void CheckNCName(string ncname)
         {
             Debug.Assert(ncname != null && ncname.Length > 0);
 

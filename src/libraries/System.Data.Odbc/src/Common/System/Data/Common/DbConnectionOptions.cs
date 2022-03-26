@@ -201,7 +201,7 @@ namespace System.Data.Common
             return ConvertValueToIntegratedSecurityInternal((string)value);
         }
 
-        internal bool ConvertValueToIntegratedSecurityInternal(string stringValue)
+        internal static bool ConvertValueToIntegratedSecurityInternal(string stringValue)
         {
             if (CompareInsensitiveInvariant(stringValue, "sspi") || CompareInsensitiveInvariant(stringValue, "true") || CompareInsensitiveInvariant(stringValue, "yes"))
                 return true;

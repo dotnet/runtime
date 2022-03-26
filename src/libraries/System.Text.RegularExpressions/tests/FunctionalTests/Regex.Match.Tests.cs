@@ -84,14 +84,39 @@ namespace System.Text.RegularExpressions.Tests
 
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
-                    // Zero-width negative lookahead assertion: Actual - "abc(?!XXX)\\w+"
+                    // Zero-width negative lookahead assertion
                     yield return (@"abc(?!XXX)\w+", "abcXXXdef", RegexOptions.None, 0, 9, false, string.Empty);
 
-                    // Zero-width positive lookbehind assertion: Actual - "(\\w){6}(?<=XXX)def"
+                    // Zero-width positive lookbehind assertion
                     yield return (@"(\w){6}(?<=XXX)def", "abcXXXdef", RegexOptions.None, 0, 9, true, "abcXXXdef");
+                    yield return (@"(?<=c)def", "123abcdef", RegexOptions.None, 0, 9, true, "def");
+                    yield return (@"(?<=abc)def", "123abcdef", RegexOptions.None, 0, 9, true, "def");
+                    yield return (@"(?<=a\wc)def", "123abcdef", RegexOptions.None, 0, 9, true, "def");
+                    yield return (@"(?<=\ba\wc)def", "123 abcdef", RegexOptions.None, 0, 10, true, "def");
+                    yield return (@"(?<=.\ba\wc\B)def", "123 abcdef", RegexOptions.None, 0, 10, true, "def");
+                    yield return (@"(?<=^123 abc)def", "123 abcdef", RegexOptions.None, 0, 10, true, "def");
+                    yield return (@"(?<=^123 abc)def", "123 abcdef", RegexOptions.Multiline, 0, 10, true, "def");
+                    yield return (@"(?<=123$\nabc)def", "123\nabcdef", RegexOptions.Multiline, 0, 10, true, "def");
+                    yield return (@"\w{3}(?<=^xyz|^abc)defg", "abcdefg", RegexOptions.None, 0, 7, true, "abcdefg");
+                    yield return (@"(abc)\w(?<=(?(1)d|e))", "abcdabc", RegexOptions.None, 0, 7, true, "abcd");
+                    yield return (@"(abc)\w(?<=(?(cd)d|e))", "abcdabc", RegexOptions.None, 0, 7, true, "abcd");
+                    yield return (@"\w{3}(?<=(\w){6,8})", "abcdefghijklmnop", RegexOptions.None, 0, 16, true, "def");
+                    yield return (@"\w{3}(?<=(?:\d\w){4})", "a1b2c3d4e5", RegexOptions.None, 0, 10, true, "d4e");
+                    yield return (@"\w{3}(?<=(\w){6,8}?)", "abcdefghijklmnop", RegexOptions.None, 0, 16, true, "def");
+                    yield return (@"\w{3}(?<=(?:\d\w){3,4}?\d)", "a1b2c3d4e5", RegexOptions.None, 0, 10, true, "3d4");
+                    yield return (@"(\w{3})\w*(?<=\1)", "---abcdefababc123", RegexOptions.None, 0, 17, true, "abcdefababc");
+                    yield return (@"(?<=\w{3})\w{4}", "abcdefghijklmnop", RegexOptions.None, 0, 16, true, "defg");
+                    yield return (@"(?<=\w{3,8})\w{4}", "abcdefghijklmnop", RegexOptions.None, 0, 16, true, "defg");
+                    yield return (@"(?<=\w*)\w{4}", "abcdefghijklmnop", RegexOptions.None, 0, 16, true, "abcd");
+                    yield return (@"(?<=\w?)\w{4}", "abcdefghijklmnop", RegexOptions.None, 0, 16, true, "abcd");
+                    yield return (@"(?<=\d?)a{4}", "123aaaaaaaaa", RegexOptions.None, 0, 12, true, "aaaa");
+                    yield return (@"(?<=a{3,5}[ab]*)1234", "aaaaaaa1234", RegexOptions.None, 0, 11, true, "1234");
 
                     // Zero-width negative lookbehind assertion: Actual - "(\\w){6}(?<!XXX)def"
                     yield return (@"(\w){6}(?<!XXX)def", "XXXabcdef", RegexOptions.None, 0, 9, true, "XXXabcdef");
+                    yield return (@"123(?<!$) abcdef", "123 abcdef", RegexOptions.None, 0, 10, true, "123 abcdef");
+                    yield return (@"(abc)\w(?<!(?(1)e|d))", "abcdabc", RegexOptions.None, 0, 7, true, "abcd");
+                    yield return (@"(abc)\w(?<!(?(cd)e|d))", "abcdabc", RegexOptions.None, 0, 7, true, "abcd");
 
                     // Nonbacktracking subexpression: Actual - "[^0-9]+(?>[0-9]+)3"
                     // The last 3 causes the match to fail, since the non backtracking subexpression does not give up the last digit it matched
@@ -121,6 +146,13 @@ namespace System.Text.RegularExpressions.Tests
                         yield return (Case("(?>[^z]+)z"), "zzzzxyxyxyz123", options, 4, 9, true, "xyxyxyz");
                         yield return (Case("(?>(?>[^z]+))z"), "zzzzxyxyxyz123", options, 4, 9, true, "xyxyxyz");
                         yield return (Case("(?>[^z]*)z123"), "zzzzxyxyxyz123", options, 4, 10, true, "xyxyxyz123");
+
+                        yield return (Case("(?>[^12]+)1"), "121231", options, 0, 6, true, "31");
+                        yield return (Case("(?>[^123]+)1"), "12312341", options, 0, 8, true, "41");
+                        yield return (Case("(?>[^1234]+)1"), "1234123451", options, 0, 10, true, "51");
+                        yield return (Case("(?>[^12345]+)1"), "123451234561", options, 0, 12, true, "61");
+                        yield return (Case("(?>[^123456]+)1"), "12345612345671", options, 0, 14, true, "71");
+
                         yield return (Case("(?>a+)123"), "aa1234", options, 0, 5, true, "aa123");
                         yield return (Case("(?>a*)123"), "aa1234", options, 0, 5, true, "aa123");
                         yield return (Case("(?>(?>a*))123"), "aa1234", options, 0, 5, true, "aa123");
@@ -168,7 +200,10 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"((\w+))@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com");
                 yield return (@"(\w+)c@\w+.com", "abc@def.comabcdef", RegexOptions.None, 0, 17, true, "abc@def.com");
                 yield return (@"\w+://\w+\.\w+", "test https://dot.net test", RegexOptions.None, 0, 25, true, "https://dot.net");
-                yield return (@"\w+[:|$*&]//\w+\.\w+", "test https://dot.net test", RegexOptions.None, 0, 25, true, "https://dot.net");
+                yield return (@"\w+[:|]//\w+\.\w+", "test https://dot.net test", RegexOptions.None, 0, 25, true, "https://dot.net");
+                yield return (@"\w+[|:$]//\w+\.\w+", "test https://dot.net test", RegexOptions.None, 0, 25, true, "https://dot.net");
+                yield return (@"\w+[|$:*]//\w+\.\w+", "test https://dot.net test", RegexOptions.None, 0, 25, true, "https://dot.net");
+                yield return (@"\w+[|$*:&]//\w+\.\w+", "test https://dot.net test", RegexOptions.None, 0, 25, true, "https://dot.net");
                 yield return (@".+a", "baa", RegexOptions.None, 0, 3, true, "baa");
                 yield return (@"[ab]+a", "cacbaac", RegexOptions.None, 0, 7, true, "baa");
                 yield return (@"^(\d{2,3}){2}$", "1234", RegexOptions.None, 0, 4, true, "1234");
@@ -341,8 +376,11 @@ namespace System.Text.RegularExpressions.Tests
                     yield return (@"^abc|def|^efg", " def", anchorOptions, 0, 4, true, "def");
                     yield return (@"^abc|def", " def", anchorOptions, 0, 4, true, "def");
                     yield return (@"abcd$", "1234567890abcd", anchorOptions, 0, 14, true, "abcd");
-                    yield return (@"abc{1,4}d$", "1234567890abcd", anchorOptions, 0, 14, true, "abcd");
-                    yield return (@"abc{1,4}d$", "1234567890abccccd", anchorOptions, 0, 17, true, "abccccd");
+                    foreach (string endAnchor in new[] { @"$", @"\Z", @"\z" })
+                    {
+                        yield return (@"abc{1,4}d" + endAnchor, "1234567890abcd", anchorOptions, 0, 14, true, "abcd");
+                        yield return (@"abc{1,4}d" + endAnchor, "1234567890abccccd", anchorOptions, 0, 17, true, "abccccd");
+                    }
                 }
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
@@ -557,9 +595,21 @@ namespace System.Text.RegularExpressions.Tests
                     yield return (@"(?(abc)\w+|\w{0,2})dog", "catdog", RegexOptions.None, 0, 6, true, "atdog");
                     yield return (@"(?(abc)cat|\w{0,2})dog", "catdog", RegexOptions.None, 0, 6, true, "atdog");
                     yield return ("(a|ab|abc|abcd)d", "abcd", RegexOptions.RightToLeft, 0, 4, true, "abcd");
+
                     yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.None, 0, 4, false, string.Empty);
                     yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.RightToLeft, 0, 4, true, "abcd");
+
+                    yield return (@"(...)(?(1)\w*)[a1 ]", "zabcaaaaaaa", RegexOptions.None, 0, 11, true, "zabcaaaaaaa");
+                    yield return (@"(...)(?(1)\w*)[a1 ]", "zabcaaaaaaa", RegexOptions.RightToLeft, 0, 11, true, "aaaa");
+                    yield return (@"(...)(?(1)\w*)[a1 ]", "           ", RegexOptions.None, 0, 11, true, "    ");
+                    yield return (@"(...)(?(1)\w*)[a1 ]", "           ", RegexOptions.RightToLeft, 0, 11, true, "    ");
+                    yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "zabcaaaaaaa", RegexOptions.None, 0, 11, true, "zabcaaaaaaa");
+                    yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "----       ", RegexOptions.None, 0, 11, true, "--- ");
+                    yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "zabcaaaaaaa", RegexOptions.RightToLeft, 0, 11, true, "aaaa");
+                    yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "----       ", RegexOptions.RightToLeft, 0, 11, true, "---       ");
                 }
+
+                // Character Class Substraction
 
                 // No Negation
                 yield return ("[abcd-[abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
@@ -616,6 +666,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"[^\P{Lu}-[^\P{Lu}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
                 yield return (@"[^\p{Nd}-[^\p{Nd}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
                 yield return (@"[^\P{Nd}-[^\P{Nd}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[^\p{IsGreek}\p{IsGreekExtended}]", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, true, "a");
 
                 // MixedNegation
                 yield return (@"[^\p{Ll}-[\P{Ll}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
@@ -625,7 +676,6 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"[^\p{Nd}-[\P{Nd}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
                 yield return (@"[\p{Nd}-[^\P{Nd}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
 
-                // Character Class Substraction
                 yield return (@"[ab\-\[cd-[-[]]]]", "[]]", RegexOptions.None, 0, 3, false, string.Empty);
                 yield return (@"[ab\-\[cd-[-[]]]]", "-]]", RegexOptions.None, 0, 3, false, string.Empty);
                 yield return (@"[ab\-\[cd-[-[]]]]", "`]]", RegexOptions.None, 0, 3, false, string.Empty);
@@ -1070,12 +1120,6 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Match_Timeout_Repetition_Throws(RegexEngine engine)
         {
-            if (engine == RegexEngine.NonBacktracking)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/65991")]
-                return;
-            }
-
             int repetitionCount = 800_000_000;
             Regex regex = await RegexHelpers.GetRegexAsync(engine, @"a\s{" + repetitionCount + "}", RegexOptions.None, TimeSpan.FromSeconds(1));
             string input = @"a" + new string(' ', repetitionCount) + @"b";

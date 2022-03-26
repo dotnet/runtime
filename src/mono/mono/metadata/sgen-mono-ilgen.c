@@ -32,7 +32,6 @@
 #include "utils/mono-logger-internals.h"
 #include "utils/mono-threads-coop.h"
 #include "utils/mono-threads.h"
-#include "metadata/w32handle.h"
 #include "icall-decl.h"
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
@@ -464,11 +463,7 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 		mono_mb_emit_ldloc (mb, p_var);
 		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoArray, max_length));
 		mono_mb_emit_ldarg (mb, 1);
-#ifdef MONO_BIG_ARRAYS
-		mono_mb_emit_byte (mb, CEE_STIND_I);
-#else
 		mono_mb_emit_byte (mb, CEE_STIND_I4);
-#endif
 	} else 	if (atype == ATYPE_STRING) {
 		/* need to set length and clear the last char */
 		/* s->length = len; */

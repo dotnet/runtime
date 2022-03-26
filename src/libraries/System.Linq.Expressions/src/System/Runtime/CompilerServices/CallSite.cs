@@ -171,7 +171,7 @@ namespace System.Runtime.CompilerServices
         {
         }
 
-        internal CallSite<T> CreateMatchMaker()
+        internal static CallSite<T> CreateMatchMaker()
         {
             return new CallSite<T>();
         }

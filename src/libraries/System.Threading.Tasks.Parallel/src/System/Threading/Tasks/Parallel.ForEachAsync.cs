@@ -229,7 +229,17 @@ namespace System.Threading.Tasks
                     {
                         // Get the next element from the enumerator.  This requires asynchronously locking around MoveNextAsync/Current.
                         TSource element;
-                        await state.Lock.WaitAsync(state.Cancellation.Token);
+                        try
+                        {
+                            // TODO https://github.com/dotnet/runtime/issues/22144:
+                            // Use a no-throwing await if/when one is available built-in.
+                            await state.Lock.WaitAsync(state.Cancellation.Token);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            break;
+                        }
+
                         try
                         {
                             if (!await state.Enumerator.MoveNextAsync())

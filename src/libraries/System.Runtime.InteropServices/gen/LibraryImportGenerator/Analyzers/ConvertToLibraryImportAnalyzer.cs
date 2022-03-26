@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Runtime.InteropServices;
@@ -27,14 +28,17 @@ namespace Microsoft.Interop.Analyzers
         public static readonly DiagnosticDescriptor ConvertToLibraryImport =
             new DiagnosticDescriptor(
                 Ids.ConvertToLibraryImport,
-                GetResourceString(nameof(Resources.ConvertToLibraryImportTitle)),
-                GetResourceString(nameof(Resources.ConvertToLibraryImportMessage)),
+                GetResourceString(nameof(SR.ConvertToLibraryImportTitle)),
+                GetResourceString(nameof(SR.ConvertToLibraryImportMessage)),
                 Category,
                 DiagnosticSeverity.Info,
                 isEnabledByDefault: false,
-                description: GetResourceString(nameof(Resources.ConvertToLibraryImportDescription)));
+                description: GetResourceString(nameof(SR.ConvertToLibraryImportDescription)));
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(ConvertToLibraryImport);
+
+        public const string CharSet = nameof(CharSet);
+        public const string ExactSpelling = nameof(ExactSpelling);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -44,9 +48,9 @@ namespace Microsoft.Interop.Analyzers
             context.RegisterCompilationStartAction(
                 compilationContext =>
                 {
-                    // Nothing to do if the GeneratedDllImportAttribute is not in the compilation
-                    INamedTypeSymbol? generatedDllImportAttrType = compilationContext.Compilation.GetTypeByMetadataName(TypeNames.GeneratedDllImportAttribute);
-                    if (generatedDllImportAttrType == null)
+                    // Nothing to do if the LibraryImportAttribute is not in the compilation
+                    INamedTypeSymbol? libraryImportAttrType = compilationContext.Compilation.GetTypeByMetadataName(TypeNames.LibraryImportAttribute);
+                    if (libraryImportAttrType == null)
                         return;
 
                     INamedTypeSymbol? marshalAsAttrType = compilationContext.Compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute);
@@ -74,11 +78,11 @@ namespace Microsoft.Interop.Analyzers
             if (dllImportData == null)
                 return;
 
-            // Ignore methods already marked GeneratedDllImport
+            // Ignore methods already marked LibraryImport
             // This can be the case when the generator creates an extern partial function for blittable signatures.
             foreach (AttributeData attr in method.GetAttributes())
             {
-                if (attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
+                if (attr.AttributeClass?.ToDisplayString() == TypeNames.LibraryImportAttribute)
                 {
                     return;
                 }
@@ -101,7 +105,12 @@ namespace Microsoft.Interop.Analyzers
             if (knownUnsupportedTypes.Contains(method.ReturnType) || HasUnsupportedUnmanagedTypeValue(method.GetReturnTypeAttributes(), marshalAsAttrType))
                 return;
 
-            context.ReportDiagnostic(method.CreateDiagnostic(ConvertToLibraryImport, method.Name));
+            ImmutableDictionary<string, string>.Builder properties = ImmutableDictionary.CreateBuilder<string, string>();
+
+            properties.Add(CharSet, dllImportData.CharacterSet.ToString());
+            properties.Add(ExactSpelling, dllImportData.ExactSpelling.ToString());
+
+            context.ReportDiagnostic(method.CreateDiagnostic(ConvertToLibraryImport, properties.ToImmutable(), method.Name));
         }
 
         private static bool HasUnsupportedUnmanagedTypeValue(ImmutableArray<AttributeData> attributes, INamedTypeSymbol? marshalAsAttrType)

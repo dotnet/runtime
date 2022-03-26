@@ -72,7 +72,9 @@ namespace System.Net.Security.Tests
             using (serverStream)
             {
                 using (var client = new SslStream(clientStream, false, TestHelper.AllowAnyServerCertificate, null))
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 using (var server = new SslStream(serverStream, false, TestHelper.AllowAnyServerCertificate, null, EncryptionPolicy.NoEncryption))
+#pragma warning restore SYSLIB0040
                 {
                     Task serverTask = server.AuthenticateAsServerAsync(TestConfiguration.ServerCertificate);
                     await Assert.ThrowsAsync<AuthenticationException>(() =>
