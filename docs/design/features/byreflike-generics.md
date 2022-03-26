@@ -10,56 +10,52 @@ Using ByRefLike types in Generic parameters is possible by building upon support
 Supporting ByRefLike type as Generic parameters will impact the following IL instructions:
 
 - `box` &ndash; Types with ByRefLike parameters used in fields cannot be boxed.
-- `throw` &ndash; Requires an object reference on the stack so not directly impacted since boxing is not permitted.
 - `stsfld` / `ldsfld` &ndash; Type fields of a ByRefLike parameter cannot be marked `static`.
 - `newarr` / `stelem` / `ldelem` / `ldelema` &ndash; Arrays are not able to contain ByRefLike types.
     - `newobj` &ndash; For multi-dimensional array construction.
 - `constrained.callvirt` &ndash; This IL sequence must resolve to a method implemented on `object`, or a default interface method.
-- Use of any Generic which doesn’t expect a ByRefLike parameter as a Generic parameter.
+
+If any of the above instructions are attempted to be used with a ByRefLike type, the runtime will throw an `InvalidProgramException`.
+
+The following instructions are already set up to support this feature since their behavior will be to fail as currently defined due to the inability to box a ByRefLike type.
+
+- `throw` &ndash; Requires an object reference to be on stack, which can never be a ByRefLike type.
+- `unbox` / `unbox.any` &ndash; Requires an object reference to be on stack, which can never be a ByRefLike type.
+- `isinst` &ndash; Will always place `null` on stack.
+- `castclass` &ndash; Will always throw `System.InvalidCastException`.
 
 ## Proposal
 
-A new Attribute API will be defined to indicate which Generic parameters are permissible to be of any type&mdash;including ByRefLike types. The Attribute could be used by the compiler to implement a generic non-constraint.
+Support for the following would be indicated by the existing `RuntimeFeature.ByRefFields` mechanism.
 
-```csharp
-namespace System.Runtime.CompilerServices
-{
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
-    public class GenericParameterSupportsAnyTypeAttribute : Attribute
-    {
-        /// </summary>
-        /// Constructs an instance with a Generic parameter index of 0.
-        /// </summary>
-        public GenericParameterSupportsAnyTypeAttribute()
-            => ParameterIndex = 0;
-
-        /// </summary>
-        /// Constructs an instance with a Generic parameter index.
-        /// </summary>
-        /// <param name="parameterIndex">Non-negative index of Generic parameter to apply to.</param>
-        public GenericParameterSupportsAnyTypeAttribute(int parameterIndex)
-            => ParameterIndex = parameterIndex;
-
-        /// <summary>
-        /// Generic Parameter Index.
-        /// </summary>
-        public int ParameterIndex { get; set; }
-    }
-}
-```
-
-A new API will be implemented as a JIT intrinsic for determining if a parameter is ByRefLike. This API would represent a check to occur at JIT time code-gen to avoid taking paths that would be invalid for some values of `T`.
+A new `GenericParameterAttributes` value will be defined which also represents metadata defined in the `CorGenericParamAttr` enumeration. Space is provided between the existing constraints group to permit constraint growth.
 
 ```diff
-namespace System
+namespace System.Reflection
 {
-    public abstract partial class Type
+    [Flags]
+    public enum GenericParameterAttributes
     {
-+        [Intrinsic]
-+        public static bool IsByRefLike<T>();
++        SupportsByRefLike = 0x0100
     }
 }
 ```
+
+```diff
+typedef enum CorGenericParamAttr
+{
++   gpSupportsByRefLike = 0x0100 // type argument can be ByRefLike
+} CorGenericParamAttr;
+```
+
+The expansion of metadata will impact at least the following:
+
+- ILDasm/ILAsm &ndash; https://github.com/dotnet/runtime
+- Cecil &ndash; https://github.com/jbevain/cecil
+- IL Trimmer &ndash; https://github.com/dotnet/linker
+- C++/CLI &ndash; The MSVC team
+
+An API that is a JIT-time intrinsic will be needed to determine if a parameter is ByRefLike. This API would represent a check to occur at JIT time code-gen to avoid taking paths that would be invalid for some values of `T`. The existing `Type.IsByRefLike` property will be made an intrinsic (e.g., `typeof(T).IsByRefLike`).
 
 For dispatch to object implemented methods and to default interface methods, the behavior shall be that an `InvalidProgramException` should be thrown. The JIT would insert the following IL at code-gen time.
 
@@ -70,6 +66,10 @@ throw
 
 When boxing due to a constrained call that cannot be made, instead of allocating a normal boxed object, an object of `InvalidBoxedObject` type will be created. It will have implementations of the various overridable object methods which throw `InvalidProgramException`, and interface dispatch shall have a special case for attempting to invoke an interface method on such an object, that will also throw an `InvalidProgramException`.
 
+The `Reflection.Emit` API will need to be updated to respect the behavior of this flag. How it will handle support is an open question.
+
 ## Open questions
 
 - This scenario is the inverse of [Generic constraints](https://docs.microsoft.com/dotnet/csharp/programming-guide/generics/constraints-on-type-parameters) as it is an "allow". What does this look like as a general case as to potentially support pointers in the future? See https://github.com/dotnet/runtime/issues/13627.
+
+- Should `Reflection` support this scenario initially? This includes calling and using API calls such as `MakeGenericType` / `MakeGenericMethod`.
