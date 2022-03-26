@@ -58,15 +58,17 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8))
             {
                 // This is an array allocation site. Grab the array length node.
-                arrayLength = gtArgEntryByArgNum(call, 1)->GetNode();
+                arrayLength = call->gtArgs.GetArgByIndex(1)->GetArgNode();
             }
             else if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_READYTORUN_NEWARR_1))
             {
                 // On arm when compiling on certain platforms for ready to run, a handle will be
                 // inserted before the length. To handle this case, we will grab the last argument
-                // as that's always the length. See fgInitArgInfo for where the handle is inserted.
-                int arrLenArgNum = call->fgArgInfo->ArgCount() - 1;
-                arrayLength      = gtArgEntryByArgNum(call, arrLenArgNum)->GetNode();
+                // as that's always the length. See DetermineABIArgInformation for where the handle is inserted.
+                for (CallArg& arg : call->gtArgs.Args())
+                {
+                    arrayLength = arg.GetArgNode();
+                }
             }
 #ifdef DEBUG
             if (arrayLength != nullptr)

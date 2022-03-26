@@ -49,7 +49,8 @@ private:
 #ifdef FEATURE_READYTORUN
                            CORINFO_CONST_LOOKUP entryPoint,
 #endif
-                           GenTreeCall::Use* args);
+                           GenTree* arg1 = nullptr,
+                           GenTree* arg2 = nullptr);
 
     void RewriteIntrinsicAsUserCall(GenTree** use, Compiler::GenTreeStack& parents);
 

@@ -238,16 +238,14 @@ void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* blo
 unsigned StackLevelSetter::PopArgumentsFromCall(GenTreeCall* call)
 {
     unsigned   usedStackSlotsCount = 0;
-    fgArgInfo* argInfo             = call->fgArgInfo;
-    if (argInfo->HasStackArgs())
+    if (call->gtArgs.HasStackArgs())
     {
-        for (unsigned i = 0; i < argInfo->ArgCount(); ++i)
+        for (CallArg& arg : call->gtArgs.Args())
         {
-            const fgArgTabEntry* argTab    = argInfo->ArgTable()[i];
-            const unsigned       slotCount = argTab->GetStackSlotsNumber();
+            const unsigned       slotCount = arg.AbiInfo.GetStackSlotsNumber();
             if (slotCount != 0)
             {
-                GenTree* node = argTab->GetNode();
+                GenTree* node = arg.GetArgNode();
                 assert(node->OperIsPutArgStkOrSplit());
 
                 GenTreePutArgStk* putArg = node->AsPutArgStk();

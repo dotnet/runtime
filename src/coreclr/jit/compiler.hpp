@@ -1002,10 +1002,10 @@ inline GenTree* Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
 // Return Value:
 //    New CT_HELPER node
 
-inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types type, GenTreeCall::Use* args)
+inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types type, GenTree* arg1, GenTree* arg2, GenTree* arg3)
 {
     GenTreeFlags flags  = s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper) ? GTF_EMPTY : GTF_EXCEPT;
-    GenTreeCall* result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type, args);
+    GenTreeCall* result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
     result->gtFlags |= flags;
 
 #if DEBUG
@@ -1013,6 +1013,22 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types typ
 
     result->gtInlineObservation = InlineObservation::CALLSITE_IS_CALL_TO_HELPER;
 #endif
+
+    if (arg1 != nullptr)
+    {
+        result->gtFlags |= arg1->gtFlags & GTF_ALL_EFFECT;
+        CallArg* lastArg = result->gtArgs.PushFront(this, arg1);
+        if (arg2 != nullptr)
+        {
+            lastArg = result->gtArgs.InsertAfter(this, lastArg, arg2);
+            result->gtFlags |= arg2->gtFlags & GTF_ALL_EFFECT;
+            if (arg3 != nullptr)
+            {
+                result->gtArgs.InsertAfter(this, lastArg, arg3);
+                result->gtFlags |= arg3->gtFlags & GTF_ALL_EFFECT;
+            }
+        }
+    }
 
     return result;
 }
@@ -1034,9 +1050,10 @@ inline GenTreeCall* Compiler::gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_L
                                                                void*                   compileTimeHandle)
 {
     GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
-    GenTreeCall::Use* helperArgs = gtNewCallArgs(ctxTree, argNode);
+    GenTreeCall* call = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL);
+    call->gtArgs.PushFront(this, ctxTree, argNode);
 
-    return gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
+    return call;
 }
 
 //------------------------------------------------------------------------
@@ -1349,6 +1366,10 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
         case GT_LCL_FLD:
             AsLclFld()->SetLclOffs(0);
             AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
+            break;
+
+        case GT_CALL:
+            new (&AsCall()->gtArgs, jitstd::placement_t()) CallArgs();
             break;
 
         default:
@@ -4350,22 +4371,18 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_CALL:
         {
             GenTreeCall* const call = this->AsCall();
-            if ((call->gtCallThisArg != nullptr) && (visitor(call->gtCallThisArg->GetNode()) == VisitResult::Abort))
-            {
-                return;
-            }
 
-            for (GenTreeCall::Use& use : call->Args())
+            for (CallArg& arg : call->gtArgs.Args())
             {
-                if (visitor(use.GetNode()) == VisitResult::Abort)
+                if (visitor(arg.GetNode()) == VisitResult::Abort)
                 {
                     return;
                 }
             }
 
-            for (GenTreeCall::Use& use : call->LateArgs())
+            for (LateArg arg : call->gtArgs.LateArgs())
             {
-                if (visitor(use.GetNode()) == VisitResult::Abort)
+                if (visitor(arg.GetNode()) == VisitResult::Abort)
                 {
                     return;
                 }

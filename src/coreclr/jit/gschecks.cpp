@@ -189,20 +189,18 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
             newState.isUnderIndir = false;
             newState.isAssignSrc  = false;
             {
-                if (tree->AsCall()->gtCallThisArg != nullptr)
+                for (CallArg& arg : tree->AsCall()->gtArgs.Args())
                 {
-                    newState.isUnderIndir = true;
-                    comp->fgWalkTreePre(&tree->AsCall()->gtCallThisArg->NodeRef(), gsMarkPtrsAndAssignGroups,
-                                        (void*)&newState);
-                }
+                    if (arg.GetWellKnownArg() == WellKnownArg::ThisPointer)
+                    {
+                        newState.isUnderIndir = true;
+                    }
 
-                for (GenTreeCall::Use& use : tree->AsCall()->Args())
-                {
-                    comp->fgWalkTreePre(&use.NodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
+                    comp->fgWalkTreePre(&arg.NodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
                 }
-                for (GenTreeCall::Use& use : tree->AsCall()->LateArgs())
+                for (LateArg arg : tree->AsCall()->gtArgs.LateArgs())
                 {
-                    comp->fgWalkTreePre(&use.NodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
+                    comp->fgWalkTreePre(&arg.NodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
                 }
 
                 if (tree->AsCall()->gtCallType == CT_INDIRECT)

@@ -179,8 +179,7 @@ private:
         GenTree*          ilOffsetNode  = compiler->gtNewIconNode(ilOffset, TYP_INT);
         GenTree*          ppCounterRef  = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
         GenTree*          ppCounterAddr = compiler->gtNewOperNode(GT_ADDR, TYP_I_IMPL, ppCounterRef);
-        GenTreeCall::Use* helperArgs    = compiler->gtNewCallArgs(ppCounterAddr, ilOffsetNode);
-        GenTreeCall*      helperCall    = compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT, TYP_VOID, helperArgs);
+        GenTreeCall*      helperCall    = compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT, TYP_VOID, ppCounterAddr, ilOffsetNode);
 
         compiler->fgNewStmtAtEnd(helperBlock, helperCall);
     }
@@ -240,9 +239,8 @@ private:
         // call PartialCompilationPatchpointHelper(ilOffset)
         //
         GenTree*          ilOffsetNode = compiler->gtNewIconNode(ilOffset, TYP_INT);
-        GenTreeCall::Use* helperArgs   = compiler->gtNewCallArgs(ilOffsetNode);
         GenTreeCall*      helperCall =
-            compiler->gtNewHelperCallNode(CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT, TYP_VOID, helperArgs);
+            compiler->gtNewHelperCallNode(CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT, TYP_VOID, ilOffsetNode);
 
         compiler->fgNewStmtAtEnd(block, helperCall);
     }

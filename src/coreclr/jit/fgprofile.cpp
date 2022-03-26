@@ -715,8 +715,7 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, uint8_t* prof
     // the first time this method is called. So make the call conditional
     // on the entry block's profile count.
     //
-    GenTreeCall::Use* args = m_comp->gtNewCallArgs(arg);
-    GenTree*          call = m_comp->gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
+    GenTreeCall*          call = m_comp->gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, arg);
 
     var_types typ =
         entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ? TYP_INT : TYP_LONG;
@@ -1561,16 +1560,15 @@ public:
         uint8_t* classProfile = m_schema[*m_currentSchemaIndex].Offset + m_profileMemory;
         *m_currentSchemaIndex += 2; // There are 2 schema entries per class probe
 
-        GenTreeCall::Use* objUse = nullptr;
+        CallArg* objUse = nullptr;
         if (compiler->impIsCastHelperEligibleForClassProbe(call))
         {
-            // Grab the second arg of cast/isinst helper call
-            objUse = call->gtCallArgs->GetNext();
+            // Second arg of cast/isinst helper call is the object instance
+            objUse = call->gtArgs.GetArgByIndex(1);
         }
         else
         {
-            // Grab 'this' arg
-            objUse = call->gtCallThisArg;
+            objUse = call->gtArgs.GetThisArg();
         }
 
         assert(objUse->GetNode()->TypeIs(TYP_REF));
@@ -1584,10 +1582,8 @@ public:
         //
         GenTree* const          classProfileNode = compiler->gtNewIconNode((ssize_t)classProfile, TYP_I_IMPL);
         GenTree* const          tmpNode          = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTreeCall::Use* const args             = compiler->gtNewCallArgs(tmpNode, classProfileNode);
-        GenTree* const          helperCallNode =
-            compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_CLASSPROFILE32 : CORINFO_HELP_CLASSPROFILE64, TYP_VOID,
-                                          args);
+        GenTreeCall* const          helperCallNode =
+            compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_CLASSPROFILE32 : CORINFO_HELP_CLASSPROFILE64, TYP_VOID, tmpNode, classProfileNode);
         GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
         GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);

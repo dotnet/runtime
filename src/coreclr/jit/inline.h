@@ -668,7 +668,6 @@ struct InlineInfo
     }
 
     bool     thisDereferencedFirst;
-    unsigned typeContextArg;
 
 #ifdef FEATURE_SIMD
     bool hasSIMDTypeArgLocalOrReturn;
