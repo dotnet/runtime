@@ -136,19 +136,36 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
         public class ImmutableClassWithConstructorOverloads
         {
-            public ImmutableClassWithConstructorOverloads(string color)
+            public ImmutableClassWithConstructorOverloads(string string1, int int1)
             {
-                Color = color;
+                String1 = string1;
+                Int1 = int1;
             }
 
-            public ImmutableClassWithConstructorOverloads(string color, int length)
+            public ImmutableClassWithConstructorOverloads(string string1, int int1, string string2)
             {
-                Color = color;
-                Length = length;
+                String1 = string1;
+                Int1 = int1;
+                String2 = string2;
             }
 
-            public string Color { get; }
-            public int Length { get; }
+            public ImmutableClassWithConstructorOverloads(string string1, int int1, string string2, int int2)
+            {
+                String1 = string1;
+                Int1 = int1;
+                String2 = string2;
+                Int2 = int2;
+            }
+
+            public ImmutableClassWithConstructorOverloads(string string1)
+            {
+                String1 = string1;
+            }
+
+            public string String1 { get; }
+            public string String2 { get; }
+            public int Int1 { get; }
+            public int Int2 { get; }
         }
 
         public class SemiImmutableType
@@ -1085,24 +1102,28 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         // If the immutable type has multiple constructors,
         // then pick the one with the most parameters
         // and try to bind as many as possible.
-        // The example below has a type that has two constructors, one
-        // that just sets one property, and one that sets both.
-        // It should pick the one that sets both.
+        // The type used in example below has multiple constructors in
+        // an arbitrary order, but/ with the biggest (chosen) one
+        // deliberately not first or last.
         [Fact]
         public void CanBindImmutableClass_PicksBiggestNonParameterlessConstructor()
         {
             var dic = new Dictionary<string, string>
             {
-                {"Length", "42"},
-                {"Color", "Green"},
+                {"String1", "s1"},
+                {"Int1", "1"},
+                {"String2", "s2"},
+                {"Int2", "2"},
             };
             var configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
             var options = config.Get<ImmutableClassWithConstructorOverloads>();
-            Assert.Equal(42, options.Length);
-            Assert.Equal("Green", options.Color);
+            Assert.Equal("s1", options.String1);
+            Assert.Equal("s2", options.String2);
+            Assert.Equal(1, options.Int1);
+            Assert.Equal(2, options.Int2);
         }
 
         [Fact]

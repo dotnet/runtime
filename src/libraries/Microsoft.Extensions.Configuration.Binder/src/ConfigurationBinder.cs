@@ -438,12 +438,15 @@ namespace Microsoft.Extensions.Configuration
                     // find the biggest constructor so that we can bind to the most parameters
                     ParameterInfo[] parameters = constructors[0].GetParameters();
 
+                    int indexOfChosenConstructor = 0;
+
                     for (int index = 1; index < constructors.Length; index++)
                     {
                         ParameterInfo[] constructorParameters = constructors[index].GetParameters();
                         if (constructorParameters.Length > parameters.Length)
                         {
                             parameters = constructorParameters;
+                            indexOfChosenConstructor = index;
                         }
                     }
 
@@ -454,7 +457,7 @@ namespace Microsoft.Extensions.Configuration
                         parameterValues.Add(GetParameterValue(parameter, config, options));
                     }
 
-                    return Activator.CreateInstance(type, parameterValues.ToArray());
+                    return constructors[indexOfChosenConstructor].Invoke(parameterValues.ToArray());
                 }
             }
 
