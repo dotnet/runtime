@@ -18,9 +18,6 @@ namespace System.Reflection.Emit
 {
     public sealed partial class AssemblyBuilder : Assembly
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern RuntimeModule GetInMemoryAssemblyModule(RuntimeAssembly assembly);
-
         #region Internal Data Members
 
         internal readonly AssemblyBuilderAccess _access;
@@ -74,12 +71,10 @@ namespace System.Reflection.Emit
 
             // Make sure that ManifestModule is properly initialized
             // We need to do this before setting any CustomAttribute
-            RuntimeModule internalModule = (RuntimeModule)GetInMemoryAssemblyModule(InternalAssembly);
-
             // Note that this ModuleBuilder cannot be used for RefEmit yet
             // because it hasn't been initialized.
             // However, it can be used to set the custom attribute on the Assembly
-            _manifestModuleBuilder = new ModuleBuilder(this, internalModule);
+            _manifestModuleBuilder = new ModuleBuilder(this, (RuntimeModule)InternalAssembly.ManifestModule);
 
             if (assemblyAttributes != null)
             {
