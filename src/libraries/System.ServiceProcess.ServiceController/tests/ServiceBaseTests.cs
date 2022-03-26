@@ -80,9 +80,7 @@ namespace System.ServiceProcess.Tests
         {
             TimeSpan timeout = TimeSpan.FromMilliseconds(milliseconds);
             using var serviceBase = new ServiceBase();
-            ArgumentOutOfRangeException exception =
-                Assert.Throws<ArgumentOutOfRangeException>(() => serviceBase.RequestAdditionalTime(timeout));
-            Assert.Contains("timeout", exception.Message);
+            Assert.Throws<ArgumentOutOfRangeException>("time", () => serviceBase.RequestAdditionalTime(timeout));
         }
 #endif
 

@@ -2642,10 +2642,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Waits for the <see cref="Task"/> to complete execution.
         /// </summary>
-        /// <param name="timeout">
-        /// A <see cref="TimeSpan"/> that represents the number of milliseconds to wait, or a <see
-        /// cref="TimeSpan"/> that represents -1 milliseconds to wait indefinitely.
-        /// </param>
+        /// <param name="timeout">The time to wait, or <see cref="Timeout.InfiniteTimeSpan"/> to wait indefinitely</param>
         /// <param name="cancellationToken">
         /// A <see cref="CancellationToken"/> to observe while waiting for the task to complete.
         /// </param>

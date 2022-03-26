@@ -80,10 +80,7 @@ namespace System.Diagnostics.Tests
         public void TestWaitForExitValidation(long milliseconds)
         {
             CreateDefaultProcess();
-            TimeSpan timeout = TimeSpan.FromMilliseconds(milliseconds);
-
-            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => _process.WaitForExit(timeout));
-            Assert.Contains("timeout", exception.Message);
+            Assert.Throws<ArgumentOutOfRangeException>("timeout", () => _process.WaitForExit(TimeSpan.FromMilliseconds(milliseconds)));
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

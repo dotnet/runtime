@@ -14,8 +14,7 @@ namespace System.Threading.Tasks.Tests
         {
             TimeSpan timeout = TimeSpan.FromMilliseconds(milliseconds);
             Task task = Task.Run(static () => {});
-            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => task.Wait(timeout));
-            Assert.Contains("timeout", exception.Message);
+            Assert.Throws<ArgumentOutOfRangeException>("timeout", () => task.Wait(timeout));
         }
     }
 }

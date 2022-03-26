@@ -78,15 +78,15 @@ namespace System.ServiceProcess
         /// the specified wait hint is passed to the
         /// Service Control Manager to avoid having the service marked as not responding.
         /// </summary>
-        /// <param name="time"></param>
-        public void RequestAdditionalTime(TimeSpan time) => RequestAdditionalTime(ToTimeoutMilliseconds(time));
+        /// <param name="time">The requested additional time</param>
+        public void RequestAdditionalTime(TimeSpan time) => RequestAdditionalTime(ToIntMilliseconds(time));
 
-        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        private static int ToIntMilliseconds(TimeSpan time)
         {
-            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            long totalMilliseconds = (long)time.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
+                throw new ArgumentOutOfRangeException(nameof(time));
             }
             return (int)totalMilliseconds;
         }

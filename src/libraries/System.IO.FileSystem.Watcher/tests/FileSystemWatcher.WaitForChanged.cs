@@ -85,10 +85,7 @@ namespace System.IO.Tests
             using var _ = new TempDirectory(Path.Combine(testDirectory.Path, GetTestFileName()));
             using var fsw = new FileSystemWatcher(testDirectory.Path);
 
-            ArgumentOutOfRangeException exception =
-                Assert.Throws<ArgumentOutOfRangeException>(
-                    () => fsw.WaitForChanged(WatcherChangeTypes.All, timeout));
-            Assert.Contains("timeout", exception.Message);
+            Assert.Throws<ArgumentOutOfRangeException>("timeout", () => fsw.WaitForChanged(WatcherChangeTypes.All, timeout));
         }
 
         [Theory]
