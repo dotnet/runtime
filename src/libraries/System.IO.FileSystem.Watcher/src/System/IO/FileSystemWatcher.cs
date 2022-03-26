@@ -64,7 +64,7 @@ namespace System.IO
         static FileSystemWatcher()
         {
             int s_notifyFiltersValidMask = 0;
-            foreach (int enumValue in Enum.GetValues(typeof(NotifyFilters)))
+            foreach (int enumValue in Enum.GetValues<NotifyFilters>())
                 s_notifyFiltersValidMask |= enumValue;
             Debug.Assert(c_notifyFiltersValidMask == s_notifyFiltersValidMask, "The NotifyFilters enum has changed. The c_notifyFiltersValidMask must be updated to reflect the values of the NotifyFilters enum.");
         }
