@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.Arm;
 #if SYSTEM_PRIVATE_CORELIB
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -89,7 +90,7 @@ namespace System
         }
 
 #if SYSTEM_PRIVATE_CORELIB
-        private static void EncodeToUtf16_Ssse3(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing)
+        private static void EncodeToUtf16_Vector128(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing)
         {
             Debug.Assert(bytes.Length >= 4);
             nint pos = 0;
@@ -114,20 +115,36 @@ namespace System
                 uint block = Unsafe.ReadUnaligned<uint>(
                     ref Unsafe.Add(ref MemoryMarshal.GetReference(bytes), pos));
 
+                // TODO: Remove once cross-platform Shuffle is landed
+                // https://github.com/dotnet/runtime/issues/63331
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                static Vector128<byte> Shuffle(Vector128<byte> value, Vector128<byte> mask)
+                {
+                    if (Ssse3.IsSupported)
+                    {
+                        return Ssse3.Shuffle(value, mask);
+                    }
+                    Debug.Assert(AdvSimd.Arm64.IsSupported);
+                    return AdvSimd.Arm64.VectorTableLookup(value, mask);
+                }
+
                 // Calculate nibbles
-                Vector128<byte> lowNibbles = Ssse3.Shuffle(
+                Vector128<byte> lowNibbles = Shuffle(
                     Vector128.CreateScalarUnsafe(block).AsByte(), shuffleMask);
-                Vector128<byte> highNibbles = Sse2.ShiftRightLogical(
-                    Sse2.ShiftRightLogical128BitLane(lowNibbles, 2).AsInt32(), 4).AsByte();
+
+                Vector128<byte> shifted = Sse2.IsSupported ?
+                    Sse2.ShiftRightLogical128BitLane(lowNibbles, 2) :
+                    AdvSimd.ExtractVector128(lowNibbles, lowNibbles, 2);
+
+                Vector128<byte> highNibbles = Vector128.ShiftRightLogical(shifted.AsInt32(), 4).AsByte();
 
                 // Lookup the hex values at the positions of the indices
-                Vector128<byte> indices = Sse2.And(
-                    Sse2.Or(lowNibbles, highNibbles), Vector128.Create((byte)0xF));
-                Vector128<byte> hex = Ssse3.Shuffle(asciiTable, indices);
+                Vector128<byte> indices = (lowNibbles | highNibbles) & Vector128.Create((byte)0xF);
+                Vector128<byte> hex = Shuffle(asciiTable, indices);
 
                 // The high bytes (0x00) of the chars have also been converted
                 // to ascii hex '0', so clear them out.
-                hex = Sse2.And(hex, Vector128.Create((ushort)0xFF).AsByte());
+                hex &= Vector128.Create((ushort)0xFF).AsByte();
 
                 // Save to "chars" at pos*2 offset
                 Unsafe.WriteUnaligned(
@@ -150,9 +167,9 @@ namespace System
             Debug.Assert(chars.Length >= bytes.Length * 2);
 
 #if SYSTEM_PRIVATE_CORELIB
-            if (Ssse3.IsSupported && bytes.Length >= 4)
+            if ((AdvSimd.Arm64.IsSupported || Ssse3.IsSupported) && bytes.Length >= 4)
             {
-                EncodeToUtf16_Ssse3(bytes, chars, casing);
+                EncodeToUtf16_Vector128(bytes, chars, casing);
                 return;
             }
 #endif
