@@ -38,7 +38,8 @@ namespace Microsoft.Extensions.Configuration
 
                 return -y!.Length;
             }
-            else if (string.IsNullOrWhiteSpace(y))
+
+            if (string.IsNullOrWhiteSpace(y))
             {
                 return x!.Length;
             }
