@@ -8111,10 +8111,10 @@ void LinearScan::resolveEdges()
                         if (!foundMismatch)
                         {
                             foundMismatch = true;
-                            printf("Found mismatched var locations after resolution!\n");
+                            JITDUMP("Found mismatched var locations after resolution!\n");
                         }
-                        printf(" V%02u: " FMT_BB " to " FMT_BB ": %s to %s\n", interval->varNum, predBlock->bbNum,
-                               block->bbNum, getRegName(fromReg), getRegName(toReg));
+                        JITDUMP(" V%02u: " FMT_BB " to " FMT_BB ": %s to %s\n", interval->varNum, predBlock->bbNum,
+                                block->bbNum, getRegName(fromReg), getRegName(toReg));
                     }
                 }
             }

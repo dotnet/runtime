@@ -8,6 +8,7 @@ using Xunit;
 
 namespace LibraryImportGenerator.IntegrationTests
 {
+    [CustomTypeMarshaller(typeof(int))]
     public struct SetLastErrorMarshaller
     {
         public int val;
@@ -29,14 +30,14 @@ namespace LibraryImportGenerator.IntegrationTests
     {
         public partial class SetLastError
         {
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "set_error", SetLastError = true)]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "set_error", SetLastError = true)]
             public static partial int SetError(int error, byte shouldSetError);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "set_error", SetLastError = true)]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "set_error", SetLastError = true)]
             [return: MarshalUsing(typeof(SetLastErrorMarshaller))]
             public static partial int SetError_CustomMarshallingSetsError(int error, byte shouldSetError);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "set_error_return_string", SetLastError = true)]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "set_error_return_string", SetLastError = true)]
             [return: MarshalAs(UnmanagedType.LPWStr)]
             public static partial string SetError_NonBlittableSignature(int error, [MarshalAs(UnmanagedType.U1)] bool shouldSetError, [MarshalAs(UnmanagedType.LPWStr)] string errorString);
         }

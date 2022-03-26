@@ -1312,6 +1312,12 @@ void CordbProcess::NeuterChildren()
     m_steppers.NeuterAndClear(GetProcessLock());
 
 #ifdef FEATURE_INTEROP_DEBUGGING
+    if (m_lastDispatchedIBEvent != NULL)
+    {
+        m_lastDispatchedIBEvent->m_owner->InternalRelease();
+        m_lastDispatchedIBEvent = NULL;
+    }
+
     m_unmanagedThreads.NeuterAndClear(GetProcessLock());
 #endif // FEATURE_INTEROP_DEBUGGING
 
@@ -2726,7 +2732,7 @@ HRESULT CordbRefEnum::Next(ULONG celt, COR_GC_REFERENCE refs[], ULONG *pceltFetc
                     {
                         CordbAppDomain *pDomain = process->LookupOrCreateAppDomain(dacRefs[i].vmDomain);
 
-                        ICorDebugAppDomain *pAppDomain;
+                        ICorDebugAppDomain *pAppDomain = NULL;
                         ICorDebugValue *pOutObject = NULL;
                         if (dacRefs[i].pObject & 1)
                         {
@@ -11440,9 +11446,6 @@ void CordbWin32EventThread::Win32EventLoop()
 
     LOG((LF_CORDB, LL_INFO1000, "W32ET::W32EL: entered win32 event loop\n"));
 
-
-    DEBUG_EVENT event;
-
     // Allow the timeout for WFDE to be adjustable. Default to 25 ms based off perf numbers (see issue VSWhidbey 132368).
     DWORD dwWFDETimeout = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgWFDETimeout);
 
@@ -11468,7 +11471,7 @@ void CordbWin32EventThread::Win32EventLoop()
         rghWaitSet[0] = m_threadControlEvent;
 
         DWORD dwWaitTimeout = INFINITE;
-
+        DEBUG_EVENT event = {};
         if (m_pProcess != NULL)
         {
             // Process is always built on Native debugging pipeline, so it needs to always be prepared to call WFDE

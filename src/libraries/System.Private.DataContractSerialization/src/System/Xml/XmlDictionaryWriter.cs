@@ -432,7 +432,7 @@ namespace System.Xml
             while (d < reader.Depth || (d == reader.Depth && reader.NodeType == XmlNodeType.EndElement));
         }
 
-        private void CheckArray(Array array!!, int offset, int count)
+        private static void CheckArray(Array array!!, int offset, int count)
         {
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));

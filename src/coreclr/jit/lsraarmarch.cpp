@@ -178,7 +178,11 @@ int LinearScan::BuildCall(GenTreeCall* call)
         {
             // Fast tail call - make sure that call target is always computed in volatile registers
             // that will not be overridden by epilog sequence.
-            ctrlExprCandidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH;
+            ctrlExprCandidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH & ~RBM_LR;
+            if (compiler->getNeedsGSSecurityCookie())
+            {
+                ctrlExprCandidates &= ~(genRegMask(REG_GSCOOKIE_TMP_0) | genRegMask(REG_GSCOOKIE_TMP_1));
+            }
             assert(ctrlExprCandidates != RBM_NONE);
         }
     }

@@ -129,14 +129,14 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             var protectedHeaders = GetHeaderMapWithAlgorithm();
             protectedHeaders.SetValue(CoseHeaderLabel.Critical, ReadOnlySpan<byte>.Empty);
-            byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, protectedHeaders, GetEmptyHeaderMap(), DefaultKey, DefaultHash);
+            byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders, GetEmptyHeaderMap());
 
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
             Assert.Throws<NotSupportedException>(() => msg.Verify(DefaultKey));
 
             var unprotectedHeaders = GetEmptyHeaderMap();
             unprotectedHeaders.SetValue(CoseHeaderLabel.Critical, ReadOnlySpan<byte>.Empty);
-            encodedMsg = CoseSign1Message.Sign(s_sampleContent, GetHeaderMapWithAlgorithm(), unprotectedHeaders, DefaultKey, DefaultHash);
+            encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, GetHeaderMapWithAlgorithm(), unprotectedHeaders);
 
             msg = CoseMessage.DecodeSign1(encodedMsg);
             Assert.Throws<NotSupportedException>(() => msg.Verify(DefaultKey));
@@ -148,14 +148,14 @@ namespace System.Security.Cryptography.Cose.Tests
             var protectedHeaders = GetHeaderMapWithAlgorithm();
             protectedHeaders.SetValue(CoseHeaderLabel.CounterSignature, ReadOnlySpan<byte>.Empty);
 
-            byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, protectedHeaders, GetEmptyHeaderMap(), DefaultKey, DefaultHash);
+            byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders, GetEmptyHeaderMap());
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
 
             Assert.Throws<NotSupportedException>(() => msg.Verify(DefaultKey));
 
             var unprotectedHeaders = GetEmptyHeaderMap();
             unprotectedHeaders.SetValue(CoseHeaderLabel.CounterSignature, ReadOnlySpan<byte>.Empty);
-            encodedMsg = CoseSign1Message.Sign(s_sampleContent, GetHeaderMapWithAlgorithm(), unprotectedHeaders, DefaultKey, DefaultHash);
+            encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, GetHeaderMapWithAlgorithm(), unprotectedHeaders);
 
             msg = CoseMessage.DecodeSign1(encodedMsg);
             Assert.Throws<NotSupportedException>(() => msg.Verify(DefaultKey));

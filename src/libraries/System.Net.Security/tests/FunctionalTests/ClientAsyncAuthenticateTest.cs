@@ -39,7 +39,9 @@ namespace System.Net.Security.Tests
             // Don't use Tls13 since we are trying to use NullEncryption
             await Assert.ThrowsAsync<AuthenticationException>(
                 () => ClientAsyncSslHelper(
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                     EncryptionPolicy.NoEncryption,
+#pragma warning restore SYSLIB0040
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                     SslProtocolSupport.DefaultSslProtocols, SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12));
 #pragma warning restore SYSLIB0039

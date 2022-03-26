@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Http;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography;
@@ -209,8 +208,10 @@ namespace System.Net
             switch (credential.Policy)
             {
                 case EncryptionPolicy.RequireEncryption:
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 case EncryptionPolicy.AllowNoEncryption:
                     break;
+#pragma warning restore SYSLIB0040
                 default:
                     throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, credential.Policy));
             }

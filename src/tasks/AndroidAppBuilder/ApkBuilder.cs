@@ -27,6 +27,7 @@ public class ApkBuilder
     public string? KeyStorePath { get; set; }
     public bool ForceInterpreter { get; set; }
     public bool ForceAOT { get; set; }
+    public ITaskItem[] EnvironmentVariables { get; set; } = Array.Empty<ITaskItem>();
     public bool InvariantGlobalization { get; set; }
     public bool EnableRuntimeLogging { get; set; }
     public bool StaticLinkedRuntime { get; set; }
@@ -371,8 +372,17 @@ public class ApkBuilder
         if (!string.IsNullOrEmpty(NativeMainSource))
             File.Copy(NativeMainSource, javaActivityPath, true);
 
+        string envVariables = "";
+        foreach (ITaskItem item in EnvironmentVariables)
+        {
+            string name = item.ItemSpec;
+            string value = item.GetMetadata("Value");
+            envVariables += $"\t\tsetEnv(\"{name}\", \"{value}\");\n";
+        }
+
         string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
-            .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName));
+            .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName))
+            .Replace("%EnvVariables%", envVariables);
 
         File.WriteAllText(monoRunnerPath, monoRunner);
 

@@ -31,10 +31,10 @@ namespace System.IO.MemoryMappedFiles.Tests
             return pageSize;
         });
 
-        [GeneratedDllImport("libc", SetLastError = true)]
+        [LibraryImport("libc", SetLastError = true)]
         private static partial int sysconf(int name);
 
-        [GeneratedDllImport("libc", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         protected static partial int mkfifo(string path, int mode);
 
         /// <summary>Asserts that the handle's inheritability matches the specified value.</summary>

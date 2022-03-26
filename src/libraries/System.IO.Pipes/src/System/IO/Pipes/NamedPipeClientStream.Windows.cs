@@ -44,21 +44,23 @@ namespace System.IO.Pipes
                 access |= Interop.Kernel32.GenericOperations.GENERIC_WRITE;
             }
 
-            // Let's try to connect first
-            SafePipeHandle handle = Interop.Kernel32.CreateNamedPipeClient(_normalizedPipePath,
-                                        access,           // read and write access
-                                        0,                  // sharing: none
-                                        ref secAttrs,           // security attributes
-                                        FileMode.Open,      // open existing
-                                        _pipeFlags,         // impersonation flags
-                                        IntPtr.Zero);  // template file: null
+            SafePipeHandle handle = CreateNamedPipeClient(_normalizedPipePath, ref secAttrs, _pipeFlags, access);
 
             if (handle.IsInvalid)
             {
                 int errorCode = Marshal.GetLastPInvokeError();
 
-                if (errorCode != Interop.Errors.ERROR_PIPE_BUSY &&
-                    errorCode != Interop.Errors.ERROR_FILE_NOT_FOUND)
+                // CreateFileW: "If the CreateNamedPipe function was not successfully called on the server prior to this operation,
+                // a pipe will not exist and CreateFile will fail with ERROR_FILE_NOT_FOUND"
+                // WaitNamedPipeW: "If no instances of the specified named pipe exist,
+                // the WaitNamedPipe function returns immediately, regardless of the time-out value."
+                // We know that no instances exist, so we just quit without calling WaitNamedPipeW.
+                if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
+                {
+                    return false;
+                }
+
+                if (errorCode != Interop.Errors.ERROR_PIPE_BUSY)
                 {
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                 }
@@ -67,8 +69,7 @@ namespace System.IO.Pipes
                 {
                     errorCode = Marshal.GetLastPInvokeError();
 
-                    // Server is not yet created or a timeout occurred before a pipe instance was available.
-                    if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND ||
+                    if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND || // server has been closed
                         errorCode == Interop.Errors.ERROR_SEM_TIMEOUT)
                     {
                         return false;
@@ -77,22 +78,17 @@ namespace System.IO.Pipes
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                 }
 
-                // Pipe server should be free.  Let's try to connect to it.
-                handle = Interop.Kernel32.CreateNamedPipeClient(_normalizedPipePath,
-                                            access,           // read and write access
-                                            0,                  // sharing: none
-                                            ref secAttrs,           // security attributes
-                                            FileMode.Open,      // open existing
-                                            _pipeFlags,         // impersonation flags
-                                            IntPtr.Zero);  // template file: null
+                // Pipe server should be free. Let's try to connect to it.
+                handle = CreateNamedPipeClient(_normalizedPipePath, ref secAttrs, _pipeFlags, access);
 
                 if (handle.IsInvalid)
                 {
                     errorCode = Marshal.GetLastPInvokeError();
 
-                    // Handle the possible race condition of someone else connecting to the server
-                    // between our calls to WaitNamedPipe & CreateFile.
-                    if (errorCode == Interop.Errors.ERROR_PIPE_BUSY)
+                    // WaitNamedPipe: "A subsequent CreateFile call to the pipe can fail,
+                    // because the instance was closed by the server or opened by another client."
+                    if (errorCode == Interop.Errors.ERROR_PIPE_BUSY || // opened by another client
+                        errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND) // server has been closed
                     {
                         return false;
                     }
@@ -106,6 +102,9 @@ namespace System.IO.Pipes
             State = PipeState.Connected;
             ValidateRemotePipeUser();
             return true;
+
+            static SafePipeHandle CreateNamedPipeClient(string? path, ref Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs, int pipeFlags, int access)
+                => Interop.Kernel32.CreateNamedPipeClient(path, access, FileShare.None, ref secAttrs, FileMode.Open, pipeFlags, hTemplateFile: IntPtr.Zero);
         }
 
         [SupportedOSPlatform("windows")]

@@ -69,7 +69,6 @@ namespace System.Text.RegularExpressions.Tests
             RegexNode atomic = AssertNode(analysis, rootConcat.Child(2), RegexNodeKind.Atomic, atomicByAncestor: false, backtracks: false, captures: false);
             RegexNode ef = AssertNode(analysis, rootConcat.Child(3), RegexNodeKind.Set, atomicByAncestor: true, backtracks: false, captures: false);
 
-            // TODO: fix backtracking for concat
             RegexNode atomicConcat = AssertNode(analysis, atomic.Child(0), RegexNodeKind.Concatenate, atomicByAncestor: true, backtracks: true, captures: false);
 
             RegexNode bcStar = AssertNode(analysis, atomicConcat.Child(0), RegexNodeKind.Setloop, atomicByAncestor: false, backtracks: true, captures: false);

@@ -175,8 +175,13 @@ namespace System.Security.Cryptography.Cose
         }
 
         // Validate duplicate labels https://datatracker.ietf.org/doc/html/rfc8152#section-3.
-        internal static void ThrowIfDuplicateLabels(CoseHeaderMap protectedHeaders, CoseHeaderMap unprotectedHeaders)
+        internal static void ThrowIfDuplicateLabels(CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders)
         {
+            if (protectedHeaders == null || unprotectedHeaders == null)
+            {
+                return;
+            }
+
             foreach ((CoseHeaderLabel Label, ReadOnlyMemory<byte>) header in protectedHeaders)
             {
                 if (unprotectedHeaders.TryGetEncodedValue(header.Label, out _))

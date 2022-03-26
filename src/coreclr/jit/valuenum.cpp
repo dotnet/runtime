@@ -10058,6 +10058,28 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
         // For now, arbitrary side effect on GcHeap/ByrefExposed.
         fgMutateGcHeap(call DEBUGARG("CALL"));
     }
+
+    // If the call generates a definition, because it uses "return buffer", then VN the local
+    // as well.
+    GenTreeLclVarCommon* lclVarTree;
+    if (call->DefinesLocal(this, &lclVarTree))
+    {
+        assert((lclVarTree->gtFlags & GTF_VAR_DEF) != 0);
+
+        unsigned   hiddenArgLclNum = lclVarTree->GetLclNum();
+        LclVarDsc* hiddenArgVarDsc = lvaGetDesc(hiddenArgLclNum);
+        unsigned   lclDefSsaNum    = GetSsaNumForLocalVarDef(lclVarTree);
+
+        if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
+        {
+            // TODO-CQ: for now, we assign a simple "new, unique" VN to the whole local. We should
+            // instead look at the field sequence (if one is present) and be more precise if the
+            // store is to a field.
+            ValueNumPair newHiddenArgLclVNPair = ValueNumPair();
+            newHiddenArgLclVNPair.SetBoth(vnStore->VNForExpr(compCurBB, hiddenArgVarDsc->TypeGet()));
+            hiddenArgVarDsc->GetPerSsaData(lclDefSsaNum)->m_vnPair = newHiddenArgLclVNPair;
+        }
+    }
 }
 
 void Compiler::fgValueNumberCastHelper(GenTreeCall* call)

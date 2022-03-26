@@ -179,7 +179,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal void WriteRootElement(XmlWriterDelegator writer, DataContract contract, XmlDictionaryString? name, XmlDictionaryString? ns, bool needsContractNsAtRoot)
+        internal static void WriteRootElement(XmlWriterDelegator writer, DataContract contract, XmlDictionaryString? name, XmlDictionaryString? ns, bool needsContractNsAtRoot)
         {
             if (name == null) // root name not set explicitly
             {
@@ -197,7 +197,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal bool CheckIfNeedsContractNsAtRoot(XmlDictionaryString? name, XmlDictionaryString? ns, DataContract contract)
+        internal static bool CheckIfNeedsContractNsAtRoot(XmlDictionaryString? name, XmlDictionaryString? ns, DataContract contract)
         {
             if (name == null)
                 return false;
@@ -320,18 +320,18 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal bool IsRootXmlAny(XmlDictionaryString? rootName, DataContract contract)
+        internal static bool IsRootXmlAny(XmlDictionaryString? rootName, DataContract contract)
         {
             return (rootName == null) && !contract.HasRoot;
         }
 
-        internal bool IsStartElement(XmlReaderDelegator reader)
+        internal static bool IsStartElement(XmlReaderDelegator reader)
         {
             return (reader.MoveToElement() || reader.IsStartElement());
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal bool IsRootElement(XmlReaderDelegator reader, DataContract contract, XmlDictionaryString? name, XmlDictionaryString? ns)
+        internal static bool IsRootElement(XmlReaderDelegator reader, DataContract contract, XmlDictionaryString? name, XmlDictionaryString? ns)
         {
             reader.MoveToElement();
             if (name != null) // root name set explicitly

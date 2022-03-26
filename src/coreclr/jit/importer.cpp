@@ -1709,30 +1709,27 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoTyp
     var_types structType = TYP_STRUCT;
 
 #ifdef FEATURE_SIMD
-    if (supportSIMDTypes())
+    const DWORD structFlags = info.compCompHnd->getClassAttribs(structHnd);
+
+    // Don't bother if the struct contains GC references of byrefs, it can't be a SIMD type.
+    if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) == 0)
     {
-        const DWORD structFlags = info.compCompHnd->getClassAttribs(structHnd);
+        unsigned originalSize = info.compCompHnd->getClassSize(structHnd);
 
-        // Don't bother if the struct contains GC references of byrefs, it can't be a SIMD type.
-        if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) == 0)
+        if (structSizeMightRepresentSIMDType(originalSize))
         {
-            unsigned originalSize = info.compCompHnd->getClassSize(structHnd);
-
-            if (structSizeMightRepresentSIMDType(originalSize))
+            unsigned int sizeBytes;
+            CorInfoType  simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
+            if (simdBaseJitType != CORINFO_TYPE_UNDEF)
             {
-                unsigned int sizeBytes;
-                CorInfoType  simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
-                if (simdBaseJitType != CORINFO_TYPE_UNDEF)
+                assert(sizeBytes == originalSize);
+                structType = getSIMDTypeForSize(sizeBytes);
+                if (pSimdBaseJitType != nullptr)
                 {
-                    assert(sizeBytes == originalSize);
-                    structType = getSIMDTypeForSize(sizeBytes);
-                    if (pSimdBaseJitType != nullptr)
-                    {
-                        *pSimdBaseJitType = simdBaseJitType;
-                    }
-                    // Also indicate that we use floating point registers.
-                    compFloatingPointUsed = true;
+                    *pSimdBaseJitType = simdBaseJitType;
                 }
+                // Also indicate that we use floating point registers.
+                compFloatingPointUsed = true;
             }
         }
     }
@@ -4439,7 +4436,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_FusedMultiplyAdd:
             {
 #ifdef TARGET_XARCH
-                if (compExactlyDependsOn(InstructionSet_FMA) && supportSIMDTypes())
+                if (compExactlyDependsOn(InstructionSet_FMA))
                 {
                     assert(varTypeIsFloating(callType));
 
@@ -8541,7 +8538,7 @@ bool Compiler::impTailCallRetTypeCompatible(bool                     allowWideni
         return true;
     }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH)
     // Jit64 compat:
     if (callerRetType == TYP_VOID)
     {
@@ -8571,7 +8568,7 @@ bool Compiler::impTailCallRetTypeCompatible(bool                     allowWideni
     {
         return (varTypeIsIntegral(calleeRetType) || isCalleeRetTypMBEnreg) && (callerRetTypeSize == calleeRetTypeSize);
     }
-#endif // TARGET_AMD64 || TARGET_ARM64
+#endif // TARGET_AMD64 || TARGET_ARMARCH
 
     return false;
 }
@@ -8916,14 +8913,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
 
 #ifdef FEATURE_SIMD
-        if (featureSIMD)
+        call = impSIMDIntrinsic(opcode, newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token);
+        if (call != nullptr)
         {
-            call = impSIMDIntrinsic(opcode, newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token);
-            if (call != nullptr)
-            {
-                bIntrinsicImported = true;
-                goto DONE_CALL;
-            }
+            bIntrinsicImported = true;
+            goto DONE_CALL;
         }
 #endif // FEATURE_SIMD
 
@@ -11873,35 +11867,151 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
         // OSR is not yet supported for methods with explicit tail calls.
         //
-        // But we also do not have to switch these methods to be optimized as we should be
+        // But we also do not have to switch these methods to be optimized, as we should be
         // able to avoid getting trapped in Tier0 code by normal call counting.
         // So instead, just suppress adding patchpoints.
         //
         if (!compTailPrefixSeen)
         {
-            // The normaly policy is only to add patchpoints to the targets of lexically
-            // backwards branches.
+            // We only need to add patchpoints if the method can loop.
             //
             if (compHasBackwardJump)
             {
                 assert(compCanHavePatchpoints());
 
-                // Is the start of this block a suitable patchpoint?
+                // By default we use the "adaptive" strategy.
                 //
-                if (((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) != 0) && (verCurrentState.esStackDepth == 0))
-                {
-                    // We should have noted this earlier and bailed out of OSR.
-                    //
-                    assert(!block->hasHndIndex());
+                // This can create both source and target patchpoints within a given
+                // loop structure, which isn't ideal, but is not incorrect. We will
+                // just have some extra Tier0 overhead.
+                //
+                // Todo: implement support for mid-block patchpoints. If `block`
+                // is truly a backedge source (and not in a handler) then we should be
+                // able to find a stack empty point somewhere in the block.
+                //
+                const int patchpointStrategy      = JitConfig.TC_PatchpointStrategy();
+                bool      addPatchpoint           = false;
+                bool      mustUseTargetPatchpoint = false;
 
-                    block->bbFlags |= BBF_PATCHPOINT;
+                switch (patchpointStrategy)
+                {
+                    default:
+                    {
+                        // Patchpoints at backedge sources, if possible, otherwise targets.
+                        //
+                        addPatchpoint = ((block->bbFlags & BBF_BACKWARD_JUMP_SOURCE) == BBF_BACKWARD_JUMP_SOURCE);
+                        mustUseTargetPatchpoint = (verCurrentState.esStackDepth != 0) || block->hasHndIndex();
+                        break;
+                    }
+
+                    case 1:
+                    {
+                        // Patchpoints at stackempty backedge targets.
+                        // Note if we have loops where the IL stack is not empty on the backedge we can't patchpoint
+                        // them.
+                        //
+                        // We should not have allowed OSR if there were backedges in handlers.
+                        //
+                        assert(!block->hasHndIndex());
+                        addPatchpoint = ((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) == BBF_BACKWARD_JUMP_TARGET) &&
+                                        (verCurrentState.esStackDepth == 0);
+                        break;
+                    }
+
+                    case 2:
+                    {
+                        // Adaptive strategy.
+                        //
+                        // Patchpoints at backedge targets if there are multiple backedges,
+                        // otherwise at backedge sources, if possible. Note a block can be both; if so we
+                        // just need one patchpoint.
+                        //
+                        if ((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) == BBF_BACKWARD_JUMP_TARGET)
+                        {
+                            // We don't know backedge count, so just use ref count.
+                            //
+                            addPatchpoint = (block->bbRefs > 1) && (verCurrentState.esStackDepth == 0);
+                        }
+
+                        if (!addPatchpoint && ((block->bbFlags & BBF_BACKWARD_JUMP_SOURCE) == BBF_BACKWARD_JUMP_SOURCE))
+                        {
+                            addPatchpoint           = true;
+                            mustUseTargetPatchpoint = (verCurrentState.esStackDepth != 0) || block->hasHndIndex();
+
+                            // Also force target patchpoint if target block has multiple (backedge) preds.
+                            //
+                            if (!mustUseTargetPatchpoint)
+                            {
+                                for (BasicBlock* const succBlock : block->Succs(this))
+                                {
+                                    if ((succBlock->bbNum <= block->bbNum) && (succBlock->bbRefs > 1))
+                                    {
+                                        mustUseTargetPatchpoint = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+
+                if (addPatchpoint)
+                {
+                    if (mustUseTargetPatchpoint)
+                    {
+                        // We wanted a source patchpoint, but could not have one.
+                        // So, add patchpoints to the backedge targets.
+                        //
+                        for (BasicBlock* const succBlock : block->Succs(this))
+                        {
+                            if (succBlock->bbNum <= block->bbNum)
+                            {
+                                // The succBlock had better agree it's a target.
+                                //
+                                assert((succBlock->bbFlags & BBF_BACKWARD_JUMP_TARGET) == BBF_BACKWARD_JUMP_TARGET);
+
+                                // We may already have decided to put a patchpoint in succBlock. If not, add one.
+                                //
+                                if ((succBlock->bbFlags & BBF_PATCHPOINT) != 0)
+                                {
+                                    // In some cases the target may not be stack-empty at entry.
+                                    // If so, we will bypass patchpoints for this backedge.
+                                    //
+                                    if (succBlock->bbStackDepthOnEntry() > 0)
+                                    {
+                                        JITDUMP("\nCan't set source patchpoint at " FMT_BB ", can't use target " FMT_BB
+                                                " as it has non-empty stack on entry.\n",
+                                                block->bbNum, succBlock->bbNum);
+                                    }
+                                    else
+                                    {
+                                        JITDUMP("\nCan't set source patchpoint at " FMT_BB ", using target " FMT_BB
+                                                " instead\n",
+                                                block->bbNum, succBlock->bbNum);
+
+                                        assert(!succBlock->hasHndIndex());
+                                        succBlock->bbFlags |= BBF_PATCHPOINT;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        assert(!block->hasHndIndex());
+                        block->bbFlags |= BBF_PATCHPOINT;
+                    }
+
                     setMethodHasPatchpoint();
                 }
             }
             else
             {
-                // Should not see backward branch targets w/o backwards branches
-                assert((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) == 0);
+                // Should not see backward branch targets w/o backwards branches.
+                // So if !compHasBackwardsBranch, these flags should never be set.
+                //
+                assert((block->bbFlags & (BBF_BACKWARD_JUMP_TARGET | BBF_BACKWARD_JUMP_SOURCE)) == 0);
             }
         }
 
@@ -19835,7 +19945,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         if ((!foundSIMDType || (type == TYP_STRUCT)) && isSIMDorHWSIMDClass(&(lclVarInfo[i + argCnt].lclVerTypeInfo)))
         {
             foundSIMDType = true;
-            if (supportSIMDTypes() && type == TYP_STRUCT)
+            if (type == TYP_STRUCT)
             {
                 var_types structType = impNormStructType(lclVarInfo[i + argCnt].lclVerTypeInfo.GetClassHandle());
                 lclVarInfo[i + argCnt].lclTypeInfo = structType;

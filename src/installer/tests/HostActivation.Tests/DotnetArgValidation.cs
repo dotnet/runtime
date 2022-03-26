@@ -79,7 +79,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining($"The application '{fileName}' does not exist")
-                .And.HaveStdErrContaining($"It was not possible to find any installed .NET SDKs");
+                .And.FindAnySdk(false);
         }
 
         // Return a non-exisitent path that contains a mix of / and \

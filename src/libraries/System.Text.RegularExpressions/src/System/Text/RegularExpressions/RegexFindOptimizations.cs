@@ -50,7 +50,7 @@ namespace System.Text.RegularExpressions
 
             // Compute any anchor trailing the expression.  If there is one, and we can also compute a fixed length
             // for the whole expression, we can use that to quickly jump to the right location in the input.
-            if (!_rightToLeft) // haven't added FindNextStartingPositionMode support for RTL
+            if (!_rightToLeft) // haven't added FindNextStartingPositionMode trailing anchor support for RTL
             {
                 bool triedToComputeMaxLength = false;
 
@@ -132,7 +132,10 @@ namespace System.Text.RegularExpressions
                     else
                     {
                         // The set may match multiple characters.  Search for that.
-                        FixedDistanceSets = new() { (chars, set.CharClass, 0, set.CaseInsensitive) };
+                        FixedDistanceSets = new List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)>()
+                        {
+                            (chars, set.CharClass, 0, set.CaseInsensitive)
+                        };
                         FindMode = set.CaseInsensitive ?
                             FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseInsensitive :
                             FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseSensitive;
@@ -281,7 +284,13 @@ namespace System.Text.RegularExpressions
                         return false;
                     }
 
+                    // We've updated the position.  Make sure there's still enough room in the input for a possible match.
                     pos = newline + 1 + pos;
+                    if (pos > textSpan.Length - MinRequiredLength)
+                    {
+                        pos = textSpan.Length;
+                        return false;
+                    }
                 }
             }
 
@@ -291,16 +300,18 @@ namespace System.Text.RegularExpressions
                 // For others, we can jump to the relevant location.
 
                 case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
-                    if (pos > 0)
+                    if (pos != 0)
                     {
+                        // If we're not currently at the beginning, we'll never be, so fail immediately.
                         pos = textSpan.Length;
                         return false;
                     }
                     return true;
 
                 case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start:
-                    if (pos > start)
+                    if (pos != start)
                     {
+                        // If we're not currently at the start, we'll never be, so fail immediately.
                         pos = textSpan.Length;
                         return false;
                     }
@@ -309,6 +320,8 @@ namespace System.Text.RegularExpressions
                 case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ:
                     if (pos < textSpan.Length - 1)
                     {
+                        // If we're not currently at the end (or a newline just before it), skip ahead
+                        // since nothing until then can possibly match.
                         pos = textSpan.Length - 1;
                     }
                     return true;
@@ -316,20 +329,29 @@ namespace System.Text.RegularExpressions
                 case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End:
                     if (pos < textSpan.Length)
                     {
+                        // If we're not currently at the end (or a newline just before it), skip ahead
+                        // since nothing until then can possibly match.
                         pos = textSpan.Length;
                     }
                     return true;
 
                 case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning:
-                    if (pos > 0)
+                    if (pos != 0)
                     {
+                        // If we're not currently at the beginning, skip ahead (or, rather, backwards)
+                        // since nothing until then can possibly match. (We're iterating from the end
+                        // to the beginning in RightToLeft mode.)
                         pos = 0;
                     }
                     return true;
 
                 case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Start:
-                    if (pos < start)
+                    if (pos != start)
                     {
+                        // If we're not currently at the starting position, we'll never be, so fail immediately.
+                        // This is different from beginning, since beginning is the fixed location of 0 whereas
+                        // start is wherever the iteration actually starts from; in left-to-right, that's often
+                        // the same as beginning, but in RightToLeft it rarely is.
                         pos = 0;
                         return false;
                     }
@@ -338,6 +360,8 @@ namespace System.Text.RegularExpressions
                 case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_EndZ:
                     if (pos < textSpan.Length - 1 || ((uint)pos < (uint)textSpan.Length && textSpan[pos] != '\n'))
                     {
+                        // If we're not currently at the end, we'll never be (we're iterating from end to beginning),
+                        // so fail immediately.
                         pos = 0;
                         return false;
                     }
@@ -346,6 +370,8 @@ namespace System.Text.RegularExpressions
                 case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_End:
                     if (pos < textSpan.Length)
                     {
+                        // If we're not currently at the end, we'll never be (we're iterating from end to beginning),
+                        // so fail immediately.
                         pos = 0;
                         return false;
                     }

@@ -180,7 +180,7 @@ namespace Microsoft.Extensions.Primitives
             private int _dummyPrimitive;
             public Enumerator(ref Microsoft.Extensions.Primitives.StringValues values) { throw null; }
             public string? Current { get { throw null; } }
-            object System.Collections.IEnumerator.Current { get { throw null; } }
+            object? System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
             public bool MoveNext() { throw null; }
             void System.Collections.IEnumerator.Reset() { }

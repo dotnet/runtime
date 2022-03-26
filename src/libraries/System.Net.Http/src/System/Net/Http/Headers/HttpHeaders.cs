@@ -575,7 +575,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        private HeaderStoreItemInfo CloneHeaderInfo(HeaderDescriptor descriptor, HeaderStoreItemInfo sourceInfo)
+        private static HeaderStoreItemInfo CloneHeaderInfo(HeaderDescriptor descriptor, HeaderStoreItemInfo sourceInfo)
         {
             var destinationInfo = new HeaderStoreItemInfo
             {
@@ -975,7 +975,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        private void ParseAndAddValue(HeaderDescriptor descriptor, HeaderStoreItemInfo info, string? value)
+        private static void ParseAndAddValue(HeaderDescriptor descriptor, HeaderStoreItemInfo info, string? value)
         {
             Debug.Assert(info != null);
 
@@ -1046,7 +1046,7 @@ namespace System.Net.Http.Headers
 
             if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
             {
-                throw new FormatException(SR.net_http_headers_invalid_header_name);
+                throw new FormatException(string.Format(SR.net_http_headers_invalid_header_name, name));
             }
 
             if ((descriptor.HeaderType & _allowedHeaderTypes) != 0)
@@ -1226,7 +1226,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        private bool AreEqual(object value, object? storeValue, IEqualityComparer? comparer)
+        private static bool AreEqual(object value, object? storeValue, IEqualityComparer? comparer)
         {
             Debug.Assert(value != null);
 

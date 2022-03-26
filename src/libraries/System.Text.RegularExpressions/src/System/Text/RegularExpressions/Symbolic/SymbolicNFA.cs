@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if DEBUG
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -163,7 +164,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// TODO: Explore an unexplored state on transition further.
         /// </summary>
-        public void ExploreState(int state) => new NotImplementedException();
+        public static void ExploreState(int state) => new NotImplementedException();
 
         public static SymbolicNFA<S> Explore(SymbolicRegexNode<S> root, int bound)
         {
@@ -346,7 +347,6 @@ namespace System.Text.RegularExpressions.Symbolic
                         break;
 
                     case TransitionRegexKind.Union:
-                    case TransitionRegexKind.OrderedUnion:
                         Debug.Assert(_first is not null && _second is not null);
                         foreach ((S, SymbolicRegexNode<S>?, int) path in _first.EnumeratePaths(solver, pathCondition))
                         {
@@ -389,3 +389,4 @@ namespace System.Text.RegularExpressions.Symbolic
         }
     }
 }
+#endif

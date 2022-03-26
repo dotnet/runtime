@@ -12,7 +12,7 @@ internal static partial class Interop
         internal const int FORWARDS_READ = 0x4;
         internal const int BACKWARDS_READ = 0x8;
 
-        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "ReadEventLogW", SetLastError = true)]
+        [LibraryImport(Libraries.Advapi32, EntryPoint = "ReadEventLogW", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool ReadEventLog(
             SafeEventLogReadHandle hEventLog,

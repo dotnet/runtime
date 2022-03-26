@@ -18,36 +18,36 @@ namespace LibraryImportGenerator.IntegrationTests
     {
         public partial class Span
         {
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
             public static partial int Sum([MarshalUsing(typeof(SpanMarshaller<int>))] Span<int> values, int numValues);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
             public static partial int SumNeverNull([MarshalUsing(typeof(NeverNullSpanMarshaller<int>))] Span<int> values, int numValues);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
             public static partial int SumNeverNull([MarshalUsing(typeof(NeverNullReadOnlySpanMarshaller<int>))] ReadOnlySpan<int> values, int numValues);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array_ref")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array_ref")]
             public static partial int SumInArray([MarshalUsing(typeof(SpanMarshaller<int>))] in Span<int> values, int numValues);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "duplicate_int_array")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "duplicate_int_array")]
             public static partial void Duplicate([MarshalUsing(typeof(SpanMarshaller<int>), CountElementName = "numValues")] ref Span<int> values, int numValues);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "duplicate_int_array")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "duplicate_int_array")]
             public static partial void DuplicateRaw([MarshalUsing(typeof(DirectSpanMarshaller<int>), CountElementName = "numValues")] ref Span<int> values, int numValues);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "create_range_array")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "create_range_array")]
             [return: MarshalUsing(typeof(SpanMarshaller<int>), CountElementName = "numValues")]
             public static partial Span<int> CreateRange(int start, int end, out int numValues);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "create_range_array_out")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "create_range_array_out")]
             public static partial void CreateRange_Out(int start, int end, out int numValues, [MarshalUsing(typeof(SpanMarshaller<int>), CountElementName = "numValues")] out Span<int> res);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "get_long_bytes")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "get_long_bytes")]
             [return: MarshalUsing(typeof(SpanMarshaller<byte>), ConstantElementCount = sizeof(long))]
             public static partial Span<byte> GetLongBytes(long l);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "and_all_members")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_all_members")]
             [return: MarshalAs(UnmanagedType.U1)]
             public static partial bool AndAllMembers([MarshalUsing(typeof(SpanMarshaller<BoolStruct>))] Span<BoolStruct> pArray, int length);
         }

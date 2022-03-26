@@ -21,9 +21,7 @@
 #include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/w32api.h>
 #include <mono/metadata/assembly.h>
-#include <mono/metadata/w32file.h>
 #include <mono/metadata/w32event.h>
-#include <mono/metadata/environment-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <runtime_version.h>
 #include <mono/metadata/profiler.h>
@@ -152,11 +150,11 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 #define EP_RT_DEFINE_ARRAY_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, alloc) (array_type *ep_array) { \
 		EP_ASSERT (ep_array != NULL); \
-		ep_array->array = g_array_new (FALSE, FALSE, sizeof (item_type)); \
+		ep_array->array = g_array_new (FALSE, FALSE, (guint)sizeof (item_type)); \
 	} \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, alloc_capacity) (array_type *ep_array, size_t capacity) { \
 		EP_ASSERT (ep_array != NULL); \
-		ep_array->array = g_array_sized_new (FALSE, FALSE, sizeof (item_type), capacity); \
+		ep_array->array = g_array_sized_new (FALSE, FALSE, (guint)sizeof (item_type), (guint)capacity); \
 	} \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, free) (array_type *ep_array) { \
 		EP_ASSERT (ep_array != NULL); \
@@ -188,11 +186,11 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 #define EP_RT_DEFINE_LOCAL_ARRAY_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, init) (array_type *ep_array) { \
 		EP_ASSERT (ep_array != NULL); \
-		ep_array->array = g_array_new (FALSE, FALSE, sizeof (item_type)); \
+		ep_array->array = g_array_new (FALSE, FALSE, (guint)sizeof (item_type)); \
 	} \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, init_capacity) (array_type *ep_array, size_t capacity) { \
 		EP_ASSERT (ep_array != NULL); \
-		ep_array->array = g_array_sized_new (FALSE, FALSE, sizeof (item_type), capacity); \
+		ep_array->array = g_array_sized_new (FALSE, FALSE, (guint)sizeof (item_type), (guint)capacity); \
 	} \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, fini) (array_type *ep_array) { \
 		EP_ASSERT (ep_array != NULL); \
@@ -354,6 +352,11 @@ extern mono_lazy_init_t _ep_rt_mono_os_cmd_line_init;
 extern char *_ep_rt_mono_managed_cmd_line;
 extern mono_lazy_init_t _ep_rt_mono_managed_cmd_line_init;
 extern ep_rt_spin_lock_handle_t _ep_rt_mono_config_lock;
+extern char * ep_rt_mono_get_managed_cmd_line (void);
+extern char * ep_rt_mono_get_os_cmd_line (void);
+extern ep_rt_file_handle_t ep_rt_mono_file_open_write (const ep_char8_t *path);
+extern bool ep_rt_mono_file_close (ep_rt_file_handle_t handle);
+extern bool ep_rt_mono_file_write (ep_rt_file_handle_t handle, const uint8_t *buffer, uint32_t numbytes, uint32_t *byteswritten);
 extern void * ep_rt_mono_thread_attach (bool background_thread);
 extern void * ep_rt_mono_thread_attach_2 (bool background_thread, EventPipeThreadType thread_type);
 extern void ep_rt_mono_thread_detach (void);
@@ -382,7 +385,7 @@ inline
 char *
 os_command_line_get (void)
 {
-	return mono_get_os_cmd_line ();
+	return ep_rt_mono_get_os_cmd_line ();
 }
 
 static
@@ -424,7 +427,7 @@ inline
 char *
 managed_command_line_get (void)
 {
-	return mono_runtime_get_managed_cmd_line ();
+	return ep_rt_mono_get_managed_cmd_line ();
 }
 
 static
@@ -509,33 +512,6 @@ gboolean
 ep_rt_mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 {
 	return mono_native_thread_id_equals (id1, id2);
-}
-
-static
-inline
-gpointer
-ep_rt_mono_w32file_create (const gunichar2 *name, guint32 fileaccess, guint32 sharemode, guint32 createmode, guint32 attrs)
-{
-	//TODO, replace with low level PAL implementation.
-	return mono_w32file_create (name, fileaccess, sharemode, createmode, attrs);
-}
-
-static
-inline
-gboolean
-ep_rt_mono_w32file_write (gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *byteswritten, gint32 *win32error)
-{
-	//TODO, replace with low level PAL implementation.
-	return mono_w32file_write (handle, buffer, numbytes, byteswritten, win32error);
-}
-
-static
-inline
-gboolean
-ep_rt_mono_w32file_close (gpointer handle)
-{
-	//TODO, replace with low level PAL implementation.
-	return mono_w32file_close (handle);
 }
 
 static
@@ -1308,7 +1284,7 @@ ep_rt_thread_sleep (uint64_t ns)
 		mono_thread_info_yield ();
 	} else {
 		MONO_ENTER_GC_SAFE;
-		g_usleep (ns / 1000);
+		g_usleep ((gulong)(ns / 1000));
 		MONO_EXIT_GC_SAFE;
 	}
 }
@@ -1407,13 +1383,9 @@ inline
 ep_rt_file_handle_t
 ep_rt_file_open_write (const ep_char8_t *path)
 {
-	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16_string (path, -1);
-	ep_return_null_if_nok (path_utf16 != NULL);
+	ep_rt_file_handle_t res = ep_rt_mono_file_open_write (path);
 
-	gpointer file_handle = ep_rt_mono_w32file_create ((gunichar2 *)path_utf16, GENERIC_WRITE, FILE_SHARE_READ, CREATE_ALWAYS, FileAttributes_Normal);
-	ep_rt_utf16_string_free (path_utf16);
-
-	return file_handle;
+	return (res != INVALID_HANDLE_VALUE) ? res : NULL;
 }
 
 static
@@ -1422,7 +1394,7 @@ bool
 ep_rt_file_close (ep_rt_file_handle_t file_handle)
 {
 	ep_return_false_if_nok (file_handle != NULL);
-	return ep_rt_mono_w32file_close (file_handle);
+	return ep_rt_mono_file_close (file_handle);
 }
 
 static
@@ -1437,8 +1409,7 @@ ep_rt_file_write (
 	ep_return_false_if_nok (file_handle != NULL);
 	EP_ASSERT (buffer != NULL);
 
-	gint32 win32_error;
-	bool result = ep_rt_mono_w32file_write (file_handle, buffer, bytes_to_write, bytes_written, &win32_error);
+	bool result = ep_rt_mono_file_write (file_handle, buffer, bytes_to_write, bytes_written);
 	if (result)
 		*bytes_written = bytes_to_write;
 
@@ -1775,7 +1746,7 @@ ep_rt_utf8_to_utf16_string (
 	const ep_char8_t *str,
 	size_t len)
 {
-	return (ep_char16_t *)(g_utf8_to_utf16 ((const gchar *)str, len, NULL, NULL, NULL));
+	return (ep_char16_t *)(g_utf8_to_utf16 ((const gchar *)str, (glong)len, NULL, NULL, NULL));
 }
 
 static
@@ -1813,7 +1784,7 @@ ep_rt_utf16_to_utf8_string (
 	const ep_char16_t *str,
 	size_t len)
 {
-	return g_utf16_to_utf8 ((const gunichar2 *)str, len, NULL, NULL, NULL);
+	return g_utf16_to_utf8 ((const gunichar2 *)str, (glong)len, NULL, NULL, NULL);
 }
 
 static
@@ -1847,6 +1818,7 @@ ep_rt_diagnostics_command_line_get (void)
 {
 	const ep_char8_t * cmd_line = ep_rt_managed_command_line_get ();
 
+	// if the managed command line isn't available yet (e.g. because we're during runtime startup) then fallback to the OS command line.
 	// Checkout https://github.com/dotnet/coreclr/pull/24433 for more information about this fall back.
 	if (cmd_line == NULL)
 		cmd_line = ep_rt_os_command_line_get ();

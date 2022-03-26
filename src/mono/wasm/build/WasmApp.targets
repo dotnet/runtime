@@ -51,7 +51,8 @@
       - $(EmccFlags)                        - Emcc flags used for both compiling native files, and linking
       - $(EmccExtraLDFlags)                 - Extra emcc flags for linking
       - $(EmccExtraCFlags)                  - Extra emcc flags for compiling native files
-      - $(EmccInitialMemory)                - Initial memory specified with `emcc`. Default value: 536870912
+      - $(EmccInitialHeapSize)              - Initial heap size specified with `emcc`. Default value: 536870912
+                                              Corresponds to `INITIAL_MEMORY` arg for emcc.
                                               (previously named EmccTotalMemory, which is still kept as an alias)
 
       - $(WasmBuildAppAfterThisTarget)      - This target is used as `AfterTargets` for `WasmBuildApp. this
@@ -64,6 +65,7 @@
       - $(RunAOTCompilationAfterBuild)      - Run AOT compilation even after Build. By default, it is run only for publish.
                                               Defaults to false.
       - $(WasmAotProfilePath)               - Path to an AOT profile file.
+      - $(WasmExceptionHandling)            - Enable support for the WASM Exception Handling feature.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -83,6 +85,7 @@
 
   <PropertyGroup>
     <WasmDedup Condition="'$(WasmDedup)' == ''">false</WasmDedup>
+    <WasmExceptionHandling Condition="'$(WasmExceptionHandling)' == ''">false</WasmExceptionHandling>
 
     <!--<WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'LLVMOnlyInterp'">false</WasmStripAOTAssemblies>-->
     <!--<WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>-->

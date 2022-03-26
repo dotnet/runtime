@@ -129,7 +129,9 @@ namespace System.Net.Security.Tests
             {
                 CipherSuitesPolicy = BuildPolicy(TlsCipherSuite.TLS_AES_128_GCM_SHA256,
                                                  SupportedNonTls13CipherSuites[0]),
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 EncryptionPolicy = EncryptionPolicy.NoEncryption,
+#pragma warning restore SYSLIB0040
             };
 
             NegotiatedParams ret = ConnectAndGetNegotiatedParams(p, p);
