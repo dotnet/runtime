@@ -343,7 +343,7 @@ namespace System.Net
             return outgoingBlob;
         }
 
-        private unsafe void CreateNtlmNegotiateMessage(Span<byte> asBytes)
+        private static unsafe void CreateNtlmNegotiateMessage(Span<byte> asBytes)
         {
             Debug.Assert(HeaderLength == NtlmHeader.Length);
             Debug.Assert(asBytes.Length == sizeof(NegotiateMessage));
@@ -357,19 +357,19 @@ namespace System.Net
             message.Version = s_version;
         }
 
-        private unsafe int GetFieldLength(MessageField field)
+        private static unsafe int GetFieldLength(MessageField field)
         {
             ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(&field, sizeof(MessageField));
             return BinaryPrimitives.ReadInt16LittleEndian(span);
         }
 
-        private unsafe int GetFieldOffset(MessageField field)
+        private static unsafe int GetFieldOffset(MessageField field)
         {
             ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(&field, sizeof(MessageField));
             return BinaryPrimitives.ReadInt16LittleEndian(span.Slice(4));
         }
 
-        private ReadOnlySpan<byte> GetField(MessageField field, ReadOnlySpan<byte> payload)
+        private static ReadOnlySpan<byte> GetField(MessageField field, ReadOnlySpan<byte> payload)
         {
             int offset = GetFieldOffset(field);
             int length = GetFieldLength(field);
@@ -598,7 +598,7 @@ namespace System.Net
         }
 
         // Section 3.4.5.2 SIGNKEY, 3.4.5.3 SEALKEY
-        private byte[] DeriveKey(ReadOnlySpan<byte> exportedSessionKey, ReadOnlySpan<byte> magic)
+        private static byte[] DeriveKey(ReadOnlySpan<byte> exportedSessionKey, ReadOnlySpan<byte> magic)
         {
             using (var md5 = IncrementalHash.CreateHash(HashAlgorithmName.MD5))
             {
