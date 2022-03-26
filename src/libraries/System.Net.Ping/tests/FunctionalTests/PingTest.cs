@@ -839,7 +839,7 @@ namespace System.Net.NetworkInformation.Tests
                     (ping) => ping.SendPingAsync(address),
                     (pingReply) =>
                     {
-                        PingResultValidator(pingReply, new[] { IPAddress.Parse(address) }, null);
+                        PingResultValidator(pingReply, new IPAddress[] { IPAddress.Parse(address) }, null);
                     });
             }, localIpAddress.ToString(), new RemoteInvokeOptions { StartInfo = remoteInvokeStartInfo }).Dispose();
         }
