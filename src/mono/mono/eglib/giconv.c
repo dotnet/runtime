@@ -551,7 +551,7 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 			return NULL;
 		}
 
-		len = strlen (str);
+		len = (glong)strlen (str);
 	}
 
 	inptr = (char *) str;
@@ -582,7 +582,7 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 		*items_read = inptr - str;
 
 	if (items_written)
-		*items_written = outlen;
+		*items_written = (glong)outlen;
 
 	if (G_LIKELY (!custom_alloc_func))
 		outptr = outbuf = g_malloc ((outlen + 1) * sizeof (gunichar2));
@@ -680,7 +680,7 @@ g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_wri
 	g_return_val_if_fail (str != NULL, NULL);
 
 	if (len < 0)
-		len = strlen (str);
+		len = (glong)strlen (str);
 
 	inptr = (char *) str;
 	inleft = len;
@@ -714,7 +714,7 @@ g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_wri
 	}
 
 	if (items_written)
-		*items_written = outlen / 4;
+		*items_written = (glong)(outlen / 4);
 
 	if (items_read)
 		*items_read = inptr - str;
@@ -798,7 +798,7 @@ eg_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, gl
 		*items_read = (inptr - (char *) str) / 2;
 
 	if (items_written)
-		*items_written = outlen;
+		*items_written = (glong)outlen;
 
 	if (G_LIKELY (!custom_alloc_func))
 		outptr = outbuf = g_malloc (outlen + 1);
@@ -902,7 +902,7 @@ g_utf16_to_ucs4 (const gunichar2 *str, glong len, glong *items_read, glong *item
 		*items_read = (inptr - (char *) str) / 2;
 
 	if (items_written)
-		*items_written = outlen / 4;
+		*items_written = (glong)(outlen / 4);
 
 	outptr = outbuf = g_malloc (outlen + 4);
 	inptr = (char *) str;
@@ -978,7 +978,7 @@ g_ucs4_to_utf8 (const gunichar *str, glong len, glong *items_read, glong *items_
 	*outptr = 0;
 
 	if (items_written)
-		*items_written = outlen;
+		*items_written = (glong)outlen;
 
 	if (items_read)
 		*items_read = i;
@@ -1040,7 +1040,7 @@ g_ucs4_to_utf16 (const gunichar *str, glong len, glong *items_read, glong *items
 	*outptr = 0;
 
 	if (items_written)
-		*items_written = outlen;
+		*items_written = (glong)outlen;
 
 	if (items_read)
 		*items_read = i;

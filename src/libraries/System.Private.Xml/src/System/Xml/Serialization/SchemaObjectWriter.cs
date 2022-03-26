@@ -580,7 +580,7 @@ namespace System.Xml.Serialization
             WriteEndElement();
         }
 
-        private string Write11_XmlSchemaDerivationMethod(XmlSchemaDerivationMethod v)
+        private static string Write11_XmlSchemaDerivationMethod(XmlSchemaDerivationMethod v)
         {
             return v.ToString();
         }
@@ -729,7 +729,7 @@ namespace System.Xml.Serialization
             WriteEndElement();
         }
 
-        private string? Write30_XmlSchemaUse(XmlSchemaUse v)
+        private static string? Write30_XmlSchemaUse(XmlSchemaUse v)
         {
             string? s = null;
             switch (v)
@@ -786,7 +786,7 @@ namespace System.Xml.Serialization
             WriteEndElement();
         }
 
-        private string? Write34_XmlSchemaContentProcessing(XmlSchemaContentProcessing v)
+        private static string? Write34_XmlSchemaContentProcessing(XmlSchemaContentProcessing v)
         {
             string? s = null;
             switch (v)

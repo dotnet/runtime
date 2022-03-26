@@ -42,7 +42,7 @@ namespace System.IO
             }
         }
 
-        private unsafe Interop.Error SetCreationTimeCore(SafeFileHandle? handle, string path, long seconds, long nanoseconds)
+        private static unsafe Interop.Error SetCreationTimeCore(SafeFileHandle? handle, string path, long seconds, long nanoseconds)
         {
             Interop.Sys.TimeSpec timeSpec = default;
 

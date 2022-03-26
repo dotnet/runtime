@@ -51,7 +51,6 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <mono/metadata/w32error.h>
 
 #define INVALID_ADDRESS 0xffffffff
 
@@ -1085,20 +1084,6 @@ pe_image_load_cli_data (MonoImage *image)
 	return TRUE;
 }
 
-static void
-mono_image_load_time_date_stamp (MonoImage *image)
-{
-	image->time_date_stamp = 0;
-#ifndef HOST_WIN32
-	if (!image->filename)
-		return;
-
-	gunichar2 *uni_name = g_utf8_to_utf16 (image->filename, -1, NULL, NULL, NULL);
-	mono_pe_file_time_date_stamp (uni_name, &image->time_date_stamp);
-	g_free (uni_name);
-#endif
-}
-
 void
 mono_image_load_names (MonoImage *image)
 {
@@ -1235,8 +1220,6 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	dump_encmap (image);
 
 	mono_image_load_names (image);
-
-	mono_image_load_time_date_stamp (image);
 
 done:
 	MONO_PROFILER_RAISE (image_loaded, (image));
@@ -1825,7 +1808,7 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 		fname_utf16 = g_utf8_to_utf16 (absfname, -1, NULL, NULL, NULL);
 		module_handle = MonoLoadImage (fname_utf16);
 		if (status && module_handle == NULL)
-			last_error = mono_w32error_get_last ();
+			last_error = GetLastError ();
 
 		/* mono_image_open_from_module_handle is called by _CorDllMain. */
 		image = (MonoImage*)g_hash_table_lookup (loaded_images, absfname);

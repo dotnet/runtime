@@ -85,20 +85,20 @@ namespace System.Xml.Serialization
                     if (arraySource != null)
                         _arraySource = arraySource;
                     else
-                        _arraySource = outerClass.GetArraySource(mapping.TypeDesc, _arrayName, multiRef);
+                        _arraySource = XmlSerializationReaderILGen.GetArraySource(mapping.TypeDesc, _arrayName, multiRef);
                     _isArray = mapping.TypeDesc.IsArray;
                     _isList = !_isArray;
                     if (mapping.ChoiceIdentifier != null)
                     {
-                        _choiceArraySource = outerClass.GetArraySource(mapping.TypeDesc, _choiceArrayName, multiRef);
+                        _choiceArraySource = XmlSerializationReaderILGen.GetArraySource(mapping.TypeDesc, _choiceArrayName, multiRef);
 
                         string a = _choiceArrayName;
                         string c = $"c{a}";
                         string choiceTypeFullName = mapping.ChoiceIdentifier.Mapping!.TypeDesc!.CSharpName;
                         string castString = $"({choiceTypeFullName}[])";
 
-                        string init = $"{a} = {castString}EnsureArrayIndex({a}, {c}, {outerClass.RaCodeGen.GetStringForTypeof(choiceTypeFullName)});";
-                        _choiceArraySource = init + outerClass.RaCodeGen.GetStringForArrayMember(a, $"{c}++", mapping.ChoiceIdentifier.Mapping.TypeDesc);
+                        string init = $"{a} = {castString}EnsureArrayIndex({a}, {c}, {ReflectionAwareILGen.GetStringForTypeof(choiceTypeFullName)});";
+                        _choiceArraySource = init + ReflectionAwareILGen.GetStringForArrayMember(a, $"{c}++", mapping.ChoiceIdentifier.Mapping.TypeDesc);
                     }
                     else
                     {
@@ -203,7 +203,7 @@ namespace System.Xml.Serialization
                     if (mapping is StructMapping || mapping is EnumMapping || mapping is NullableMapping)
                         MethodNames.Add(mapping, NextMethodName(mapping.TypeDesc!.Name));
                 }
-                RaCodeGen.WriteReflectionInit(scope);
+                ReflectionAwareILGen.WriteReflectionInit(scope);
             }
         }
 
@@ -326,7 +326,7 @@ namespace System.Xml.Serialization
             {
                 object pVar = ilg.GetVariable("p");
                 ilg.Load(pVar);
-                ilg.ConvertValue(ilg.GetVariableType(pVar), typeof(object));
+                ilg.ConvertValue(CodeGenerator.GetVariableType(pVar), typeof(object));
             }
             argTypes.Add(typeof(object));
             if (e != null)
@@ -363,7 +363,7 @@ namespace System.Xml.Serialization
             return GenerateLiteralMembersElement(xmlMembersMapping);
         }
 
-        private string GetChoiceIdentifierSource(MemberMapping[] mappings, MemberMapping member)
+        private static string GetChoiceIdentifierSource(MemberMapping[] mappings, MemberMapping member)
         {
             string? choiceSource = null;
             if (member.ChoiceIdentifier != null)
@@ -385,11 +385,11 @@ namespace System.Xml.Serialization
             return choiceSource!;
         }
 
-        private string GetChoiceIdentifierSource(MemberMapping mapping, string parent, TypeDesc parentTypeDesc)
+        private static string GetChoiceIdentifierSource(MemberMapping mapping, string parent, TypeDesc parentTypeDesc)
         {
             if (mapping.ChoiceIdentifier == null) return "";
             CodeIdentifier.CheckValidIdentifier(mapping.ChoiceIdentifier.MemberName);
-            return RaCodeGen.GetStringForMember(parent, mapping.ChoiceIdentifier.MemberName, parentTypeDesc);
+            return ReflectionAwareILGen.GetStringForMember(parent, mapping.ChoiceIdentifier.MemberName, parentTypeDesc);
         }
 
         [RequiresUnreferencedCode("calls InitializeValueTypes")]
@@ -632,7 +632,7 @@ namespace System.Xml.Serialization
                 LocalBuilder arrayLoc = ilg.GetLocal(arrayName);
                 ilg.Ldloc(arrayLoc);
                 ilg.Ldc(i);
-                RaCodeGen.ILGenForCreateInstance(ilg, mappings[i].TypeDesc!.Type!, false, false);
+                ReflectionAwareILGen.ILGenForCreateInstance(ilg, mappings[i].TypeDesc!.Type!, false, false);
                 ilg.ConvertValue(mappings[i].TypeDesc!.Type!, typeof(object));
                 ilg.Stelem(arrayLoc.LocalType.GetElementType()!);
             }
@@ -1275,7 +1275,7 @@ namespace System.Xml.Serialization
                             LocalBuilder aLoc = ilg.DeclareLocal(mapping.TypeDesc.Type!, aVar);
                             if (mapping.TypeDesc.IsValueType)
                             {
-                                RaCodeGen.ILGenForCreateInstance(ilg, td.Type!, false, false);
+                                ReflectionAwareILGen.ILGenForCreateInstance(ilg, td.Type!, false, false);
                             }
                             else
                                 ilg.Load(null);
@@ -1563,13 +1563,13 @@ namespace System.Xml.Serialization
                 {
                     MemberMapping mapping = mappings[i];
                     CodeIdentifier.CheckValidIdentifier(mapping.Name);
-                    string source = RaCodeGen.GetStringForMember("o", mapping.Name, structMapping.TypeDesc);
+                    string source = ReflectionAwareILGen.GetStringForMember("o", mapping.Name, structMapping.TypeDesc);
                     Member member = new Member(this, source, "a", i, mapping, GetChoiceIdentifierSource(mapping, "o", structMapping.TypeDesc));
                     if (!mapping.IsSequence)
                         member.ParamsReadSource = $"paramsRead[{i}]";
                     member.IsNullable = mapping.TypeDesc!.IsNullable;
                     if (mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
-                        member.CheckSpecifiedSource = RaCodeGen.GetStringForMember("o", $"{mapping.Name}Specified", structMapping.TypeDesc);
+                        member.CheckSpecifiedSource = ReflectionAwareILGen.GetStringForMember("o", $"{mapping.Name}Specified", structMapping.TypeDesc);
                     if (mapping.Text != null)
                         anyText = member;
                     if (mapping.Attribute != null && mapping.Attribute.Any)
@@ -2217,7 +2217,7 @@ namespace System.Xml.Serialization
                                 else
                                 {
                                     WriteSourceBegin(member.Source);
-                                    RaCodeGen.ILGenForCreateInstance(ilg, member.Mapping.TypeDesc.Type!, typeDesc.CannotNew, true);
+                                    ReflectionAwareILGen.ILGenForCreateInstance(ilg, member.Mapping.TypeDesc.Type!, typeDesc.CannotNew, true);
                                     WriteSourceEnd(member.Source, member.Mapping.TypeDesc.Type!);
                                 }
                                 ilg.EndIf(); // if ((object)(member.Source) == null
@@ -2229,7 +2229,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private string ExpectedElements(Member[] members)
+        private static string ExpectedElements(Member[] members)
         {
             if (IsSequence(members))
                 return "null";
@@ -2480,7 +2480,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private bool IsSequence(Member[] members)
+        private static bool IsSequence(Member[] members)
         {
             for (int i = 0; i < members.Length; i++)
             {
@@ -2621,11 +2621,11 @@ namespace System.Xml.Serialization
             }
         }
 
-        private string GetArraySource(TypeDesc typeDesc, string arrayName)
+        private static string GetArraySource(TypeDesc typeDesc, string arrayName)
         {
             return GetArraySource(typeDesc, arrayName, false);
         }
-        private string GetArraySource(TypeDesc typeDesc, string arrayName, bool multiRef)
+        private static string GetArraySource(TypeDesc typeDesc, string arrayName, bool multiRef)
         {
             string a = arrayName;
             string c = $"c{a}";
@@ -2638,8 +2638,8 @@ namespace System.Xml.Serialization
             if (typeDesc.IsArray)
             {
                 string arrayTypeFullName = typeDesc.ArrayElementTypeDesc!.CSharpName;
-                init = $"{init}{a} = ({arrayTypeFullName}[])EnsureArrayIndex({a}, {c}, {RaCodeGen.GetStringForTypeof(arrayTypeFullName)});";
-                string arraySource = RaCodeGen.GetStringForArrayMember(a, $"{c}++", typeDesc);
+                init = $"{init}{a} = ({arrayTypeFullName}[])EnsureArrayIndex({a}, {c}, {ReflectionAwareILGen.GetStringForTypeof(arrayTypeFullName)});";
+                string arraySource = ReflectionAwareILGen.GetStringForArrayMember(a, $"{c}++", typeDesc);
                 if (multiRef)
                 {
                     init = $"{init} soap[1] = {a};";
@@ -2649,7 +2649,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                return RaCodeGen.GetStringForMethod(arrayName, typeDesc.CSharpName, "Add");
+                return ReflectionAwareILGen.GetStringForMethod(arrayName, typeDesc.CSharpName, "Add");
             }
         }
 
@@ -2736,7 +2736,7 @@ namespace System.Xml.Serialization
             object? variable;
             if (ilg.TryGetVariable(source, out variable))
             {
-                Type varType = ilg.GetVariableType(variable);
+                Type varType = CodeGenerator.GetVariableType(variable);
                 if (CodeGenerator.IsNullableGenericType(varType))
                 {
                     // local address to invoke ctor on WriteSourceEnd
@@ -2800,7 +2800,7 @@ namespace System.Xml.Serialization
             match = P0Regex().Match(source);
             if (match.Success)
             {
-                System.Diagnostics.Debug.Assert(ilg.GetVariableType(ilg.GetVariable(match.Groups["a"].Value)).IsArray);
+                System.Diagnostics.Debug.Assert(CodeGenerator.GetVariableType(ilg.GetVariable(match.Groups["a"].Value)).IsArray);
                 ilg.Load(ilg.GetVariable(match.Groups["a"].Value));
                 ilg.Load(ilg.GetVariable(match.Groups["ia"].Value));
                 return;
@@ -2819,7 +2819,7 @@ namespace System.Xml.Serialization
             object? variable;
             if (ilg.TryGetVariable(source, out variable))
             {
-                Type varType = ilg.GetVariableType(variable);
+                Type varType = CodeGenerator.GetVariableType(variable);
                 if (CodeGenerator.IsNullableGenericType(varType))
                 {
                     ilg.Call(varType.GetConstructor(varType.GetGenericArguments())!);
@@ -2847,7 +2847,7 @@ namespace System.Xml.Serialization
             if (match.Success)
             {
                 object oVar = ilg.GetVariable(match.Groups["locA1"].Value);
-                Type arrayElementType = ilg.GetVariableType(oVar).GetElementType()!;
+                Type arrayElementType = CodeGenerator.GetVariableType(oVar).GetElementType()!;
                 ilg.ConvertValue(elementType, arrayElementType);
                 if (CodeGenerator.IsNullableGenericType(arrayElementType) || arrayElementType.IsValueType)
                 {
@@ -2882,7 +2882,7 @@ namespace System.Xml.Serialization
             match = P0Regex().Match(source);
             if (match.Success)
             {
-                Type varType = ilg.GetVariableType(ilg.GetVariable(match.Groups["a"].Value));
+                Type varType = CodeGenerator.GetVariableType(ilg.GetVariable(match.Groups["a"].Value));
                 System.Diagnostics.Debug.Assert(varType.IsArray);
                 Type varElementType = varType.GetElementType()!;
                 ilg.ConvertValue(stackType, varElementType);
@@ -3273,7 +3273,7 @@ namespace System.Xml.Serialization
                              isWrappedAny ? new Type[] { typeof(IXmlSerializable), typeof(bool) } : new Type[] { typeof(IXmlSerializable) }
                              )!;
                         ilg.Ldarg(0);
-                        RaCodeGen.ILGenForCreateInstance(ilg, sm.TypeDesc!.Type!, sm.TypeDesc.CannotNew, false);
+                        ReflectionAwareILGen.ILGenForCreateInstance(ilg, sm.TypeDesc!.Type!, sm.TypeDesc.CannotNew, false);
                         if (sm.TypeDesc.CannotNew)
                             ilg.ConvertValue(typeof(object), typeof(IXmlSerializable));
                         if (isWrappedAny)
@@ -3306,7 +3306,7 @@ namespace System.Xml.Serialization
 
                 WriteSourceBegin(choiceSource!);
                 CodeIdentifier.CheckValidIdentifier(choice.MemberIds![elementIndex]);
-                RaCodeGen.ILGenForEnumMember(ilg, choice.Mapping!.TypeDesc!.Type!, choice.MemberIds[elementIndex]);
+                ReflectionAwareILGen.ILGenForEnumMember(ilg, choice.Mapping!.TypeDesc!.Type!, choice.MemberIds[elementIndex]);
                 WriteSourceEnd(choiceSource!, choice.Mapping.TypeDesc.Type!);
             }
         }
@@ -3345,7 +3345,7 @@ namespace System.Xml.Serialization
                              isWrappedAny ? new Type[] { typeof(IXmlSerializable), typeof(bool) } : new Type[] { typeof(IXmlSerializable) }
                              )!;
                         ilg.Ldarg(0);
-                        RaCodeGen.ILGenForCreateInstance(ilg, derived.TypeDesc!.Type!, derived.TypeDesc.CannotNew, false);
+                        ReflectionAwareILGen.ILGenForCreateInstance(ilg, derived.TypeDesc!.Type!, derived.TypeDesc.CannotNew, false);
                         if (derived.TypeDesc.CannotNew)
                             ilg.ConvertValue(typeof(object), typeof(IXmlSerializable));
                         if (isWrappedAny)
@@ -3454,8 +3454,22 @@ namespace System.Xml.Serialization
 
         private void WriteParamsRead(int length)
         {
-            LocalBuilder paramsRead = ilg.DeclareLocal(typeof(bool[]), "paramsRead");
-            ilg.NewArray(typeof(bool), length);
+            const int StackallocLimit =
+#if DEBUG
+                3; // lower limit in debug to help test both stackalloc and array code paths
+#else
+                32; // arbitrary limit
+#endif
+            LocalBuilder paramsRead = ilg.DeclareLocal(typeof(Span<bool>), "paramsRead");
+            if (length <= StackallocLimit)
+            {
+                ilg.StackallocSpan(typeof(bool), length);
+            }
+            else
+            {
+                ilg.NewArray(typeof(bool), length);
+                ilg.New(typeof(Span<bool>).GetConstructor(new[] { typeof(bool[]) })!);
+            }
             ilg.Stloc(paramsRead);
         }
 
@@ -3473,7 +3487,7 @@ namespace System.Xml.Serialization
             {
                 ilg.BeginExceptionBlock();
             }
-            RaCodeGen.ILGenForCreateInstance(ilg, mapping.TypeDesc.Type!, mapping.TypeDesc.CannotNew, true);
+            ReflectionAwareILGen.ILGenForCreateInstance(ilg, mapping.TypeDesc.Type!, mapping.TypeDesc.CannotNew, true);
             ilg.Stloc(loc);
             if (ctorInaccessible)
             {
@@ -3513,19 +3527,19 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls WriteArrayLocalDecl")]
         private void WriteArrayLocalDecl(string typeName, string variableName, string initValue, TypeDesc arrayTypeDesc)
         {
-            RaCodeGen.WriteArrayLocalDecl(typeName, variableName, new SourceInfo(initValue, initValue, null, arrayTypeDesc.Type, ilg), arrayTypeDesc);
+            ReflectionAwareILGen.WriteArrayLocalDecl(typeName, variableName, new SourceInfo(initValue, initValue, null, arrayTypeDesc.Type, ilg), arrayTypeDesc);
         }
 
         [RequiresUnreferencedCode("calls WriteCreateInstance")]
         private void WriteCreateInstance(string source, bool ctorInaccessible, Type type)
         {
-            RaCodeGen.WriteCreateInstance(source, ctorInaccessible, type, ilg);
+            ReflectionAwareILGen.WriteCreateInstance(source, ctorInaccessible, type, ilg);
         }
 
         [RequiresUnreferencedCode("calls WriteLocalDecl")]
-        private void WriteLocalDecl(string variableName, SourceInfo initValue)
+        private static void WriteLocalDecl(string variableName, SourceInfo initValue)
         {
-            RaCodeGen.WriteLocalDecl(variableName, initValue);
+            ReflectionAwareILGen.WriteLocalDecl(variableName, initValue);
         }
 
         [RegexGenerator("UnknownNode[(]null, @[\"](?<qnames>[^\"]*)[\"][)];")]
@@ -3607,7 +3621,10 @@ namespace System.Xml.Serialization
             Match match = ParamsReadRegex().Match(paramsReadSource);
             if (match.Success)
             {
-                ilg.LoadArrayElement(ilg.GetLocal("paramsRead"), int.Parse(match.Groups["index"].Value, CultureInfo.InvariantCulture));
+                ilg.Ldloca(ilg.GetLocal("paramsRead"));
+                ilg.Ldc(int.Parse(match.Groups["index"].Value, CultureInfo.InvariantCulture));
+                ilg.Call(typeof(Span<bool>).GetMethod("get_Item")!);
+                ilg.LdindU1();
                 return;
             }
             throw Globals.NotSupported($"Unexpected: {paramsReadSource}");
@@ -3617,7 +3634,11 @@ namespace System.Xml.Serialization
             Match match = ParamsReadRegex().Match(paramsReadSource);
             if (match.Success)
             {
-                ilg.StoreArrayElement(ilg.GetLocal("paramsRead"), int.Parse(match.Groups["index"].Value, CultureInfo.InvariantCulture), value);
+                ilg.Ldloca(ilg.GetLocal("paramsRead"));
+                ilg.Ldc(int.Parse(match.Groups["index"].Value, CultureInfo.InvariantCulture));
+                ilg.Call(typeof(Span<bool>).GetMethod("get_Item")!);
+                ilg.Ldc(value);
+                ilg.StindI1();
                 return;
             }
             throw Globals.NotSupported($"Unexpected: {paramsReadSource}");

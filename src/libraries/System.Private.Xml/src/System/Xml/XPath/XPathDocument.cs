@@ -441,7 +441,7 @@ namespace System.Xml.XPath
         /// <summary>
         /// Set properties on the reader so that it is backwards-compatible with V1.
         /// </summary>
-        private XmlTextReaderImpl SetupReader(XmlTextReaderImpl reader)
+        private static XmlTextReaderImpl SetupReader(XmlTextReaderImpl reader)
         {
             reader.EntityHandling = EntityHandling.ExpandEntities;
             reader.XmlValidatingReaderCompatibilityMode = true;

@@ -29,12 +29,22 @@ namespace System.Diagnostics
         {
             // Performance optimization for the local machine:
             // First try to OpenProcess by id, if valid handle is returned verify that process is running
-            // Otherwise enumerate all processes and compare ids
-            if (!IsRemoteMachine(machineName))
+            // When the attempt to open a handle fails due to lack of permissions enumerate all processes and compare ids
+            // Attempt to open handle for Idle process (processId == 0) fails with ERROR_INVALID_PARAMETER
+            if (processId != 0 && !IsRemoteMachine(machineName))
             {
                 using (SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION | ProcessOptions.SYNCHRONIZE, false, processId))
                 {
-                    if (!processHandle.IsInvalid)
+                    if (processHandle.IsInvalid)
+                    {
+                        int error = Marshal.GetLastWin32Error();
+                        if (error == Interop.Errors.ERROR_INVALID_PARAMETER)
+                        {
+                            Debug.Assert(processId != 0, "OpenProcess fails with ERROR_INVALID_PARAMETER for Idle Process");
+                            return false;
+                        }
+                    }
+                    else
                     {
                         bool signaled = false;
                         return !HasExited(processHandle, ref signaled, out _);

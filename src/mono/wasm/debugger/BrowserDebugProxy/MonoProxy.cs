@@ -237,6 +237,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             case var _ when url == "":
                             case var _ when url.StartsWith("wasm://", StringComparison.Ordinal):
+                            case var _ when url.EndsWith(".wasm", StringComparison.Ordinal):
                                 {
                                     Log("verbose", $"ignoring wasm: Debugger.scriptParsed {url}");
                                     return true;
@@ -836,7 +837,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var assemblyName = await context.SdbAgent.GetAssemblyNameFromModule(moduleId, token);
             DebugStore store = await LoadStore(sessionId, token);
             AssemblyInfo asm = store.GetAssemblyByName(assemblyName);
-            foreach (var method in store.EnC(asm, meta_buf, pdb_buf))
+            foreach (var method in DebugStore.EnC(asm, meta_buf, pdb_buf))
                 await ResetBreakpoint(sessionId, method, token);
             return true;
         }
@@ -976,7 +977,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 string function_name = frame["functionName"]?.Value<string>();
                 string url = frame["url"]?.Value<string>();
                 if (!(function_name.StartsWith("wasm-function", StringComparison.Ordinal) ||
-                        url.StartsWith("wasm://wasm/", StringComparison.Ordinal) || function_name == "_mono_wasm_fire_debugger_agent_message"))
+                        url.StartsWith("wasm://", StringComparison.Ordinal) ||
+                        url.EndsWith(".wasm", StringComparison.Ordinal) ||
+                        function_name == "_mono_wasm_fire_debugger_agent_message"))
                 {
                     callFrames.Add(frame);
                 }
@@ -1546,7 +1549,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         continue;
                     if (method.IsLexicallyContainedInMethod(scope.Method.Info))
                         continue;
-                    SourceLocation newFoundLocation = store.FindBreakpointLocations(targetLocation, targetLocation, scope.Method.Info)
+                    SourceLocation newFoundLocation = DebugStore.FindBreakpointLocations(targetLocation, targetLocation, scope.Method.Info)
                                                 .FirstOrDefault();
                     if (!(newFoundLocation is null))
                         return true;
@@ -1561,7 +1564,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             ExecutionContext context = GetContext(sessionId);
             Frame scope = context.CallStack.First<Frame>();
 
-            SourceLocation foundLocation = store.FindBreakpointLocations(targetLocation, targetLocation, scope.Method.Info)
+            SourceLocation foundLocation = DebugStore.FindBreakpointLocations(targetLocation, targetLocation, scope.Method.Info)
                                                     .FirstOrDefault();
 
             if (foundLocation is null)

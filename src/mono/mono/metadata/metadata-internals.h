@@ -335,7 +335,6 @@ struct _MonoImage {
 
 	/* The module name reported in the file for this image (could be NULL for a malformed file) */
 	const char *module_name;
-	guint32 time_date_stamp;
 
 	char *version;
 	gint16 md_version_major, md_version_minor;
@@ -724,6 +723,7 @@ mono_image_strdup_vprintf (MonoImage *image, const char *format, va_list args);
 char*
 mono_image_strdup_printf (MonoImage *image, const char *format, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
 
+MONO_COMPONENT_API
 GList*
 mono_g_list_prepend_image (MonoImage *image, GList *list, gpointer data);
 

@@ -13,7 +13,7 @@ namespace LibraryImportGenerator.UnitTests
 {
     public class AdditionalAttributesOnStub
     {
-        [ConditionalFact]
+        [Fact]
         public async Task SkipLocalsInitAdded()
         {
             string source = @"
@@ -31,6 +31,7 @@ struct S
 {
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s) { }
@@ -45,7 +46,7 @@ struct Native
             Assert.Contains(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task SkipLocalsInitNotAddedOnForwardingStub()
         {
             string source = @"
@@ -64,7 +65,7 @@ partial class C
             Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task GeneratedCodeAdded()
         {
             string source = @"
@@ -82,6 +83,7 @@ struct S
 {
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s) { }
@@ -96,7 +98,7 @@ struct Native
             Assert.Contains(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task GeneratedCodeNotAddedOnForwardingStub()
         {
             string source = @"
@@ -125,7 +127,7 @@ partial class C
             yield return new object[] { TestTargetFramework.Framework, false };
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(GetDownlevelTargetFrameworks))]
         public async Task SkipLocalsInitOnDownlevelTargetFrameworks(TestTargetFramework targetFramework, bool expectSkipLocalsInit)
         {
@@ -154,7 +156,7 @@ partial class C
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task SkipLocalsInitNotAddedWhenDefinedAtModuleLevel()
         {
             string source = @"
@@ -172,6 +174,7 @@ struct S
 {
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s) { }
@@ -186,7 +189,7 @@ struct Native
             Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task SkipLocalsInitNotAddedWhenDefinedAtClassLevel()
         {
             string source = @"
@@ -204,6 +207,7 @@ struct S
 {
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s) { }
@@ -218,7 +222,7 @@ struct Native
             Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task SkipLocalsInitNotAddedWhenDefinedOnMethodByUser()
         {
             string source = @"
@@ -236,6 +240,7 @@ struct S
 {
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s) { }

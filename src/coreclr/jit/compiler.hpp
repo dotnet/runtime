@@ -602,7 +602,7 @@ inline bool isRegParamType(var_types type)
 #endif // !TARGET_X86
 }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH)
 /*****************************************************************************/
 // Returns true if 'type' is a struct that can be enregistered for call args
 //                         or can be returned by value in multiple registers.
@@ -660,7 +660,7 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                typ
 
     return result;
 }
-#endif // TARGET_AMD64 || TARGET_ARM64
+#endif // TARGET_AMD64 || TARGET_ARMARCH
 
 /*****************************************************************************/
 
@@ -4485,9 +4485,9 @@ inline static bool StructHasCustomLayout(DWORD attribs)
     return ((attribs & CORINFO_FLG_CUSTOMLAYOUT) != 0);
 }
 
-inline static bool StructHasDontDigFieldsFlagSet(DWORD attribs)
+inline static bool StructHasNoPromotionFlagSet(DWORD attribs)
 {
-    return ((attribs & CORINFO_FLG_DONT_DIG_FIELDS) != 0);
+    return ((attribs & CORINFO_FLG_DONT_PROMOTE) != 0);
 }
 
 //------------------------------------------------------------------------------

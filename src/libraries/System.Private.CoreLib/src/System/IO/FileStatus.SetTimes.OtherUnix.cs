@@ -18,7 +18,7 @@ namespace System.IO
             SetAccessOrWriteTimeCore(handle, path, time, isAccessTime, checkCreationTime: false, asDirectory);
 
         // This is not used on these platforms, but is needed for source compat
-        private Interop.Error SetCreationTimeCore(SafeFileHandle? handle, string path, long seconds, long nanoseconds) =>
+        private static Interop.Error SetCreationTimeCore(SafeFileHandle? handle, string path, long seconds, long nanoseconds) =>
             throw new InvalidOperationException();
     }
 }

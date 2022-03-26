@@ -48,6 +48,7 @@ namespace System.Net.Http
                 return (bool)streamingSupported.Call();
         }
 
+#pragma warning disable CA1822
         public bool UseCookies
         {
             get => throw new PlatformNotSupportedException();
@@ -96,16 +97,6 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
-        public bool AllowAutoRedirect
-        {
-            get => _allowAutoRedirect;
-            set
-            {
-                _allowAutoRedirect = value;
-                _isAllowAutoRedirectTouched = true;
-            }
-        }
-
         public int MaxAutomaticRedirections
         {
             get => throw new PlatformNotSupportedException();
@@ -128,6 +119,17 @@ namespace System.Net.Http
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
+        }
+#pragma warning restore CA1822
+
+        public bool AllowAutoRedirect
+        {
+            get => _allowAutoRedirect;
+            set
+            {
+                _allowAutoRedirect = value;
+                _isAllowAutoRedirectTouched = true;
+            }
         }
 
         public const bool SupportsAutomaticDecompression = false;

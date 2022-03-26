@@ -563,7 +563,7 @@ namespace System.Drawing
         }
 #endif
 
-        private void CheckErrorStatus(int status)
+        private static void CheckErrorStatus(int status)
         {
             Gdip.CheckStatus(status);
         }

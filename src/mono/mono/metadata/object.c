@@ -39,8 +39,6 @@
 #include <mono/metadata/environment.h>
 #include "mono/metadata/profiler-private.h"
 #include <mono/metadata/reflection-internals.h>
-#include <mono/metadata/w32event.h>
-#include <mono/metadata/w32process.h>
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/runtime.h>
@@ -53,6 +51,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <minipal/getexepath.h>
 #include "cominterop.h"
 #include <mono/utils/w32api.h>
 #include <mono/utils/unlocked.h>
@@ -108,7 +107,7 @@ static GString *
 quote_escape_and_append_string (char *src_str, GString *target_str);
 
 static GString *
-format_cmd_line (int argc, char **argv, gboolean add_host);
+format_cmd_line (int argc, char **argv);
 
 /**
  * mono_runtime_object_init:
@@ -852,11 +851,18 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			if (m_type_is_byref (field->type))
 				break;
 
-			if (static_fields && field->offset == -1)
+			/* metadadta-update: added fields aren't stored in the object, don't
+			 * contribute to the GC descriptor. */
+			if (m_field_is_from_update (field))
+				continue;
+
+			int field_offset = m_field_get_offset (field);
+
+			if (static_fields && field_offset == -1)
 				/* special static */
 				continue;
 
-			pos = field->offset / TARGET_SIZEOF_VOID_P;
+			pos = field_offset / TARGET_SIZEOF_VOID_P;
 			pos += offset;
 
 			type = mono_type_get_underlying_type (field->type);
@@ -871,7 +877,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_OBJECT:
 			case MONO_TYPE_ARRAY:
-				g_assert ((field->offset % wordsize) == 0);
+				g_assert ((m_field_get_offset (field) % wordsize) == 0);
 
 				g_assert (pos < size || pos <= max_size);
 				bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
@@ -879,7 +885,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 				break;
 			case MONO_TYPE_GENERICINST:
 				if (!mono_type_generic_inst_is_valuetype (type)) {
-					g_assert ((field->offset % wordsize) == 0);
+					g_assert ((m_field_get_offset (field) % wordsize) == 0);
 
 					bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
 					*max_set = MAX (*max_set, pos);
@@ -1787,14 +1793,14 @@ mono_method_add_generic_virtual_invocation (MonoVTable *vtable,
 		gpointer imt_trampoline = NULL;
 
 		if ((gpointer)vtable_slot < (gpointer)vtable) {
-			int displacement = (gpointer*)vtable_slot - (gpointer*)vtable;
-			int imt_slot = MONO_IMT_SIZE + displacement;
+			size_t displacement = (gpointer*)vtable_slot - (gpointer*)vtable;
+			size_t imt_slot = MONO_IMT_SIZE + displacement;
 
 			/* Force the rebuild of the trampoline at the next call */
-			imt_trampoline = callbacks.get_imt_trampoline (vtable, imt_slot);
+			imt_trampoline = callbacks.get_imt_trampoline (vtable, (int)imt_slot);
 			*vtable_slot = imt_trampoline;
 		} else {
-			vtable_trampoline = callbacks.get_vtable_trampoline ? callbacks.get_vtable_trampoline (vtable, (gpointer*)vtable_slot - (gpointer*)vtable->vtable) : NULL;
+			vtable_trampoline = callbacks.get_vtable_trampoline ? callbacks.get_vtable_trampoline (vtable, (int)((gpointer*)vtable_slot - (gpointer*)vtable->vtable)) : NULL;
 
 			entries = get_generic_virtual_entries (mem_manager, vtable_slot);
 
@@ -1913,7 +1919,7 @@ alloc_vtable (MonoClass *klass, size_t vtable_size, size_t imt_table_bytes)
 		alloc_offset = 0;
 	}
 
-	return (gpointer*) ((char*)m_class_alloc0 (klass, vtable_size) + alloc_offset);
+	return (gpointer*) ((char*)m_class_alloc0 (klass, (guint)vtable_size) + alloc_offset);
 }
 
 static MonoVTable *
@@ -2004,12 +2010,12 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 		if (use_interpreter)
 			imt_table_bytes *= 2;
 		UnlockedIncrement (&mono_stats.imt_number_of_tables);
-		UnlockedAdd (&mono_stats.imt_tables_size, imt_table_bytes);
+		UnlockedAdd (&mono_stats.imt_tables_size, (gint32)imt_table_bytes);
 	} else {
 		imt_table_bytes = 0;
 	}
 
-	vtable_size = imt_table_bytes + MONO_SIZEOF_VTABLE + vtable_slots * sizeof (gpointer);
+	vtable_size = (guint32)(imt_table_bytes + MONO_SIZEOF_VTABLE + vtable_slots * sizeof (gpointer));
 
 	UnlockedIncrement (&mono_stats.used_class_count);
 	UnlockedAdd (&mono_stats.class_vtable_size, vtable_size);
@@ -2072,6 +2078,9 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			continue;
 		if (mono_field_is_deleted (field))
+			continue;
+		/* metadata-update: added fields are stored external to the object, and don't contribute to the bitmap */
+		if (m_field_is_from_update (field))
 			continue;
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
 			gint32 special_static = m_class_has_no_special_static_fields (klass) ? SPECIAL_STATIC_NONE : field_is_special_static (klass, field);
@@ -2757,7 +2766,10 @@ mono_field_set_value_internal (MonoObject *obj, MonoClassField *field, void *val
 	if ((field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 		return;
 
-	dest = (char*)obj + field->offset;
+	/* TODO: metadata-update: implement support for added fields */
+	g_assert (!m_field_is_from_update (field));
+
+	dest = (char*)obj + m_field_get_offset (field);
 	mono_copy_value (field->type, dest, value, value && field->type->type == MONO_TYPE_PTR);
 }
 
@@ -2845,8 +2857,11 @@ mono_field_get_addr (MonoObject *obj, MonoVTable *vt, MonoClassField *field)
 
 	if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 		return mono_static_field_get_addr (vt, field);
-	else
-		return (guint8*)obj + field->offset;
+	else {
+		/* TODO: metadata-update: implement support for added fields */
+		g_assert (!m_field_is_from_update (field));
+		return (guint8*)obj + m_field_get_offset (field);
+	}
 }
 
 guint8*
@@ -2867,7 +2882,7 @@ mono_static_field_get_addr (MonoVTable *vt, MonoClassField *field)
 		mono_error_assert_ok (error);
 		src = (guint8 *)mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 	} else {
-		src = (guint8*)mono_vtable_get_static_field_data (vt) + field->offset;
+		src = (guint8*)mono_vtable_get_static_field_data (vt) + m_field_get_offset (field);
 	}
 
 	return src;
@@ -2910,7 +2925,10 @@ mono_field_get_value_internal (MonoObject *obj, MonoClassField *field, void *val
 
 	g_return_if_fail (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC));
 
-	src = (char*)obj + field->offset;
+	/* TODO: metadata-update: implement me */
+	g_assert (!m_field_is_from_update (field));
+
+	src = (char*)obj + m_field_get_offset (field);
 	mono_copy_value (field->type, value, src, TRUE);
 }
 
@@ -3906,7 +3924,6 @@ mono_runtime_set_main_args (int argc, char* argv[])
 
 	free_main_args ();
 	main_args = g_new0 (char*, argc);
-	num_main_args = argc;
 
 	for (i = 0; i < argc; ++i) {
 		gchar *utf8_arg;
@@ -3919,6 +3936,8 @@ mono_runtime_set_main_args (int argc, char* argv[])
 
 		main_args [i] = utf8_arg;
 	}
+
+	num_main_args = argc;
 
 	MONO_EXTERNAL_ONLY (int, 0);
 }
@@ -3945,7 +3964,6 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 	mono_thread_set_main (mono_thread_current ());
 
 	main_args = g_new0 (char*, argc);
-	num_main_args = argc;
 
 	if (!g_path_is_absolute (argv [0])) {
 		gchar *basename = g_path_get_basename (argv [0]);
@@ -3988,6 +4006,9 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 
 		main_args [i] = utf8_arg;
 	}
+
+	num_main_args = argc;
+
 	argc--;
 	argv++;
 
@@ -5549,15 +5570,6 @@ mono_array_clone_checked (MonoArray *array_raw, MonoError *error)
 }
 
 /* helper macros to check for overflow when calculating the size of arrays */
-#ifdef MONO_BIG_ARRAYS
-#define MYGUINT64_MAX 0x0000FFFFFFFFFFFFUL
-#define MYGUINT_MAX MYGUINT64_MAX
-#define CHECK_ADD_OVERFLOW_UN(a,b) \
-	    (G_UNLIKELY ((guint64)(MYGUINT64_MAX) - (guint64)(b) < (guint64)(a)))
-#define CHECK_MUL_OVERFLOW_UN(a,b) \
-	    (G_UNLIKELY (((guint64)(a) > 0) && ((guint64)(b) > 0) &&	\
-					 ((guint64)(b) > ((MYGUINT64_MAX) / (guint64)(a)))))
-#else
 #define MYGUINT32_MAX 4294967295U
 #define MYGUINT_MAX MYGUINT32_MAX
 #define CHECK_ADD_OVERFLOW_UN(a,b) \
@@ -5565,7 +5577,6 @@ mono_array_clone_checked (MonoArray *array_raw, MonoError *error)
 #define CHECK_MUL_OVERFLOW_UN(a,b) \
 	    (G_UNLIKELY (((guint32)(a) > 0) && ((guint32)(b) > 0) &&			\
 					 ((guint32)(b) > ((MYGUINT32_MAX) / (guint32)(a)))))
-#endif
 
 gboolean
 mono_array_calc_byte_len (MonoClass *klass, uintptr_t len, uintptr_t *res)
@@ -5691,9 +5702,9 @@ mono_array_new_full_checked (MonoClass *array_class, uintptr_t *lengths, intptr_
 
 	if (bounds_size) {
 		for (i = 0; i < array_class_rank; ++i) {
-			bounds [i].length = lengths [i];
+			bounds [i].length = (mono_array_size_t)lengths [i];
 			if (lower_bounds)
-				bounds [i].lower_bound = lower_bounds [i];
+				bounds [i].lower_bound = (mono_array_lower_bound_t)lower_bounds [i];
 		}
 	}
 
@@ -6009,9 +6020,9 @@ mono_string_new_utf32_checked (const mono_unichar4 *text, gint32 len, MonoError 
 	error_init (error);
 	utf16_output = g_ucs4_to_utf16 (text, len, NULL, NULL, NULL);
 
-	gint32 utf16_len = g_utf16_len (utf16_output);
+	size_t utf16_len = g_utf16_len (utf16_output);
 
-	s = mono_string_new_size_checked (utf16_len, error);
+	s = mono_string_new_size_checked ((gint32)utf16_len, error);
 	goto_if_nok (error, exit);
 
 	memcpy (mono_string_chars_internal (s), utf16_output, utf16_len * 2);
@@ -6208,13 +6219,10 @@ mono_string_new_checked (const char *text, MonoError *error)
 	MonoString *o = NULL;
 	gunichar2 *ut;
 	glong items_written;
-	int len;
 
 	error_init (error);
 
-	len = strlen (text);
-
-	ut = g_utf8_to_utf16 (text, len, NULL, &items_written, &eg_error);
+	ut = g_utf8_to_utf16 (text, (glong)strlen (text), NULL, &items_written, &eg_error);
 
 	if (!eg_error)
 		o = mono_string_new_utf16_checked (ut, items_written, error);
@@ -6504,7 +6512,7 @@ mono_object_get_size_internal (MonoObject* o)
 			size &= ~3;
 			size += sizeof (MonoArrayBounds) * o->vtable->rank;
 		}
-		return size;
+		return (guint)size;
 	} else {
 		return mono_class_instance_size (klass);
 	}
@@ -6730,7 +6738,7 @@ mono_string_get_pinned (MonoStringHandle str, MonoError *error)
 
 	MONO_EXIT_NO_SAFEPOINTS;
 
-	MONO_HANDLE_SETVAL (news, length, int, length);
+	MONO_HANDLE_SETVAL (news, length, int, (int)length);
 	return news;
 }
 
@@ -6919,7 +6927,7 @@ mono_ldstr_metadata_sig (const char* sig, MonoStringHandleOut string_handle, Mon
 
 	// FIXMEcoop excess handle, use mono_string_new_utf16_checked and string_handle parameter
 
-	MonoStringHandle o = mono_string_new_utf16_handle ((gunichar2*)sig, len, error);
+	MonoStringHandle o = mono_string_new_utf16_handle ((gunichar2*)sig, (gint32)len, error);
 	return_if_nok (error);
 
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
@@ -6954,7 +6962,7 @@ mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error)
 	len2 = mono_metadata_decode_blob_size (str, &str);
 	len2 >>= 1;
 
-	as = g_utf16_to_utf8 ((gunichar2*)str, len2, NULL, &written, &gerror);
+	as = g_utf16_to_utf8 ((gunichar2*)str, (glong)len2, NULL, &written, &gerror);
 	if (gerror) {
 		mono_error_set_argument (error, "string", gerror->message);
 		g_error_free (gerror);
@@ -7016,7 +7024,7 @@ mono_utf16_to_utf8len (const gunichar2 *s, gsize slength, gsize *utf8_length, Mo
 	if (!slength)
 		return g_strdup ("");
 
-	as = g_utf16_to_utf8 (s, slength, NULL, &written, &gerror);
+	as = g_utf16_to_utf8 (s, (glong)slength, NULL, &written, &gerror);
 	*utf8_length = written;
 	if (gerror) {
 		mono_error_set_argument (error, "string", gerror->message);
@@ -7226,7 +7234,7 @@ mono_string_from_utf16_checked (const gunichar2 *data, MonoError *error)
 	error_init (error);
 	if (!data)
 		return NULL;
-	return mono_string_new_utf16_checked (data, g_utf16_len (data), error);
+	return mono_string_new_utf16_checked (data, (gint32)g_utf16_len (data), error);
 }
 
 /**
@@ -7285,7 +7293,7 @@ mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, 
 
 	char *r;
 	char *mp_s;
-	int len;
+	size_t len;
 
 	r = mono_string_to_utf8_checked_internal (s, error);
 	if (!is_ok (error))
@@ -7296,9 +7304,9 @@ mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, 
 
 	len = strlen (r) + 1;
 	if (mp)
-		mp_s = (char *)mono_mempool_alloc (mp, len);
+		mp_s = (char *)mono_mempool_alloc (mp, (unsigned int)len);
 	else
-		mp_s = (char *)mono_image_alloc (image, len);
+		mp_s = (char *)mono_image_alloc (image, (guint)len);
 
 	memcpy (mp_s, r, len);
 
@@ -7786,7 +7794,8 @@ mono_class_value_size (MonoClass *klass, guint32 *align)
 gpointer
 mono_vtype_get_field_addr (gpointer vtype, MonoClassField *field)
 {
-	return ((char*)vtype) + field->offset - MONO_ABI_SIZEOF (MonoObject);
+	g_assert (!m_field_is_from_update (field));
+	return ((char*)vtype) + m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject);
 }
 
 static GString *
@@ -7830,24 +7839,14 @@ quote_escape_and_append_string (char *src_str, GString *target_str)
 }
 
 static GString *
-format_cmd_line (int argc, char **argv, gboolean add_host)
+format_cmd_line (int argc, char **argv)
 {
+	// managed cmdline -> native host + managed argv (which includes the entrypoint assembly)
 	size_t total_size = 0;
 	char *host_path = NULL;
 	GString *cmd_line = NULL;
 
-	if (add_host) {
-#if !defined(HOST_WIN32) && defined(HAVE_GETPID)
-		host_path = mono_w32process_get_path (getpid ());
-#elif defined(HOST_WIN32)
-		gunichar2 *host_path_ucs2 = NULL;
-		guint32 host_path_ucs2_len = 0;
-		if (mono_get_module_filename (NULL, &host_path_ucs2, &host_path_ucs2_len)) {
-			host_path = g_utf16_to_utf8 (host_path_ucs2, -1, NULL, NULL, NULL);
-			g_free (host_path_ucs2);
-		}
-#endif
-	}
+	host_path = minipal_getexepath ();
 
 	if (host_path)
 		// quote + string + quote
@@ -7884,24 +7883,21 @@ format_cmd_line (int argc, char **argv, gboolean add_host)
 		}
 	}
 
-	g_free (host_path);
+	// minipal_getexepath doesn't use Mono APIs to allocate strings so we can't use g_free
+	free (host_path);
 
 	return cmd_line;
-}
-
-char *
-mono_runtime_get_cmd_line (int argc, char **argv)
-{
-	MONO_REQ_GC_NEUTRAL_MODE;
-	GString *cmd_line = format_cmd_line (num_main_args, main_args, FALSE);
-	return cmd_line ? g_string_free (cmd_line, FALSE) : NULL;
 }
 
 char *
 mono_runtime_get_managed_cmd_line (void)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
-	GString *cmd_line = format_cmd_line (num_main_args, main_args, TRUE);
+
+	if (num_main_args == 0)
+		return NULL;
+
+	GString *cmd_line = format_cmd_line (num_main_args, main_args);
 	return cmd_line ? g_string_free (cmd_line, FALSE) : NULL;
 }
 

@@ -472,9 +472,16 @@ namespace System.Net.Http
         {
             Debug.Assert(HasSyncObjLock);
 
-            if (!_http11RequestQueue.TryPeekRequest(out HttpRequestMessage? request))
+            if (!_http11RequestQueue.TryPeekUncanceledRequest(this, out HttpRequestMessage? request))
             {
                 return;
+            }
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                Trace($"Available HTTP/1.1 connections: {_availableHttp11Connections.Count}, Requests in the queue: {_http11RequestQueue.Count}, " +
+                    $"Pending HTTP/1.1 connections: {_pendingHttp11ConnectionCount}, Total associated HTTP/1.1 connections: {_associatedHttp11ConnectionCount}, " +
+                    $"Max HTTP/1.1 connection limit: {_maxHttp11Connections}.");
             }
 
             // Determine if we can and should add a new connection to the pool.
@@ -555,7 +562,7 @@ namespace System.Net.Http
             }
         }
 
-        private async Task HandleHttp11Downgrade(HttpRequestMessage request, Socket? socket, Stream stream, TransportContext? transportContext, CancellationToken cancellationToken)
+        private async Task HandleHttp11Downgrade(HttpRequestMessage request, Stream stream, TransportContext? transportContext, CancellationToken cancellationToken)
         {
             if (NetEventSource.Log.IsEnabled()) Trace("Server does not support HTTP2; disabling HTTP2 use and proceeding with HTTP/1.1 connection");
 
@@ -610,7 +617,7 @@ namespace System.Net.Http
             try
             {
                 // Note, the same CancellationToken from the original HTTP2 connection establishment still applies here.
-                http11Connection = await ConstructHttp11ConnectionAsync(true, socket, stream, transportContext, request, cancellationToken).ConfigureAwait(false);
+                http11Connection = await ConstructHttp11ConnectionAsync(true, stream, transportContext, request, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException oce) when (oce.CancellationToken == cancellationToken)
             {
@@ -635,7 +642,7 @@ namespace System.Net.Http
             {
                 try
                 {
-                    (Socket? socket, Stream stream, TransportContext? transportContext) = await ConnectAsync(request, true, cts.Token).ConfigureAwait(false);
+                    (Stream stream, TransportContext? transportContext) = await ConnectAsync(request, true, cts.Token).ConfigureAwait(false);
 
                     if (IsSecure)
                     {
@@ -656,7 +663,7 @@ namespace System.Net.Http
                         else
                         {
                             // We established an SSL connection, but the server denied our request for HTTP2.
-                            await HandleHttp11Downgrade(request, socket, stream, transportContext, cts.Token).ConfigureAwait(false);
+                            await HandleHttp11Downgrade(request, stream, transportContext, cts.Token).ConfigureAwait(false);
                             return;
                         }
                     }
@@ -694,7 +701,7 @@ namespace System.Net.Http
         {
             Debug.Assert(HasSyncObjLock);
 
-            if (!_http2RequestQueue.TryPeekRequest(out HttpRequestMessage? request))
+            if (!_http2RequestQueue.TryPeekUncanceledRequest(this, out HttpRequestMessage? request))
             {
                 return;
             }
@@ -865,8 +872,10 @@ namespace System.Net.Http
                 {
                     quicConnection = await ConnectHelper.ConnectQuicAsync(request, Settings._quicImplementationProvider ?? QuicImplementationProviders.Default, new DnsEndPoint(authority.IdnHost, authority.Port), _sslOptionsHttp3!, cancellationToken).ConfigureAwait(false);
                 }
-                catch
+                catch (Exception e)
                 {
+                    if (NetEventSource.Log.IsEnabled()) Trace($"QUIC connection failed: {e}");
+
                     // Disables HTTP/3 until server announces it can handle it via Alt-Svc.
                     BlocklistAuthority(authority);
                     throw;
@@ -1347,21 +1356,20 @@ namespace System.Net.Http
 
         private CancellationTokenSource GetConnectTimeoutCancellationTokenSource() => new CancellationTokenSource(Settings._connectTimeout);
 
-        private async ValueTask<(Socket?, Stream, TransportContext?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        private async ValueTask<(Stream, TransportContext?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Stream? stream = null;
-            Socket? socket = null;
             switch (_kind)
             {
                 case HttpConnectionKind.Http:
                 case HttpConnectionKind.Https:
                 case HttpConnectionKind.ProxyConnect:
                     Debug.Assert(_originAuthority != null);
-                    (socket, stream) = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
+                    stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
                     break;
 
                 case HttpConnectionKind.Proxy:
-                    (socket, stream) = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+                    stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
                     break;
 
                 case HttpConnectionKind.ProxyTunnel:
@@ -1371,17 +1379,11 @@ namespace System.Net.Http
 
                 case HttpConnectionKind.SocksTunnel:
                 case HttpConnectionKind.SslSocksTunnel:
-                    (socket, stream) = await EstablishSocksTunnel(request, async, cancellationToken).ConfigureAwait(false);
+                    stream = await EstablishSocksTunnel(request, async, cancellationToken).ConfigureAwait(false);
                 break;
             }
 
             Debug.Assert(stream != null);
-            if (socket is null && stream is NetworkStream ns)
-            {
-                // We weren't handed a socket directly.  But if we're able to extract one, do so.
-                // Most likely case here is a ConnectCallback was used and returned a NetworkStream.
-                socket = ns.Socket;
-            }
 
             TransportContext? transportContext = null;
             if (IsSecure)
@@ -1402,15 +1404,14 @@ namespace System.Net.Http
                 stream = sslStream;
             }
 
-            return (socket, stream, transportContext);
+            return (stream, transportContext);
         }
 
-        private async ValueTask<(Socket?, Stream)> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
+        private async ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             var endPoint = new DnsEndPoint(host, port);
-            Socket? socket = null;
             Stream? stream = null;
             try
             {
@@ -1433,28 +1434,34 @@ namespace System.Net.Http
                 else
                 {
                     // Otherwise, create and connect a socket using default settings.
-                    socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
-
-                    if (async)
+                    Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                    try
                     {
-                        await socket.ConnectAsync(endPoint, cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        using (cancellationToken.UnsafeRegister(static s => ((Socket)s!).Dispose(), socket))
+                        if (async)
                         {
-                            socket.Connect(endPoint);
+                            await socket.ConnectAsync(endPoint, cancellationToken).ConfigureAwait(false);
                         }
-                    }
+                        else
+                        {
+                            using (cancellationToken.UnsafeRegister(static s => ((Socket)s!).Dispose(), socket))
+                            {
+                                socket.Connect(endPoint);
+                            }
+                        }
 
-                    stream = new NetworkStream(socket, ownsSocket: true);
+                        stream = new NetworkStream(socket, ownsSocket: true);
+                    }
+                    catch
+                    {
+                        socket.Dispose();
+                        throw;
+                    }
                 }
 
-                return (socket, stream);
+                return stream;
             }
             catch (Exception ex)
             {
-                socket?.Dispose();
                 throw ex is OperationCanceledException oce && oce.CancellationToken == cancellationToken ?
                     CancellationHelper.CreateOperationCanceledException(innerException: null, cancellationToken) :
                     ConnectHelper.CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
@@ -1463,9 +1470,8 @@ namespace System.Net.Http
 
         internal async ValueTask<HttpConnection> CreateHttp11ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            (Socket? socket, Stream stream, TransportContext? transportContext) = await ConnectAsync(request, async, cancellationToken).ConfigureAwait(false);
-
-            return await ConstructHttp11ConnectionAsync(async, socket, stream!, transportContext, request, cancellationToken).ConfigureAwait(false);
+            (Stream stream, TransportContext? transportContext) = await ConnectAsync(request, async, cancellationToken).ConfigureAwait(false);
+            return await ConstructHttp11ConnectionAsync(async, stream, transportContext, request, cancellationToken).ConfigureAwait(false);
         }
 
         private SslClientAuthenticationOptions GetSslOptionsForRequest(HttpRequestMessage request)
@@ -1528,15 +1534,10 @@ namespace System.Net.Http
             return newStream;
         }
 
-        private async ValueTask<HttpConnection> ConstructHttp11ConnectionAsync(bool async, Socket? socket, Stream stream, TransportContext? transportContext, HttpRequestMessage request, CancellationToken cancellationToken)
+        private async ValueTask<HttpConnection> ConstructHttp11ConnectionAsync(bool async, Stream stream, TransportContext? transportContext, HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Stream newStream = await ApplyPlaintextFilterAsync(async, stream, HttpVersion.Version11, request, cancellationToken).ConfigureAwait(false);
-            if (newStream != stream)
-            {
-                // If a plaintext filter created a new stream, we can't trust that the socket is still applicable.
-                socket = null;
-            }
-            return new HttpConnection(this, socket, newStream, transportContext);
+            return new HttpConnection(this, newStream, transportContext);
         }
 
         private async ValueTask<Http2Connection> ConstructHttp2ConnectionAsync(Stream stream, HttpRequestMessage request, CancellationToken cancellationToken)
@@ -1589,12 +1590,12 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<(Socket? socket, Stream stream)> EstablishSocksTunnel(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        private async ValueTask<Stream> EstablishSocksTunnel(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Debug.Assert(_originAuthority != null);
             Debug.Assert(_proxyUri != null);
 
-            (Socket? socket, Stream stream) = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+            Stream stream = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
 
             try
             {
@@ -1606,12 +1607,12 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.net_http_request_aborted, e);
             }
 
-            return (socket, stream);
+            return stream;
         }
 
         private void HandleHttp11ConnectionFailure(HttpRequestMessage request, Exception e)
         {
-            if (NetEventSource.Log.IsEnabled()) Trace("HTTP/1.1 connection failed");
+            if (NetEventSource.Log.IsEnabled()) Trace($"HTTP/1.1 connection failed: {e}");
 
             bool failRequest;
             TaskCompletionSourceWithCancellation<HttpConnection>? waiter;
@@ -1641,7 +1642,7 @@ namespace System.Net.Http
 
         private void HandleHttp2ConnectionFailure(HttpRequestMessage request, Exception e)
         {
-            if (NetEventSource.Log.IsEnabled()) Trace("HTTP2 connection failed");
+            if (NetEventSource.Log.IsEnabled()) Trace($"HTTP2 connection failed: {e}");
 
             bool failRequest;
             TaskCompletionSourceWithCancellation<Http2Connection?>? waiter;
@@ -2272,12 +2273,23 @@ namespace System.Net.Http
                 return false;
             }
 
-            public bool TryPeekRequest([MaybeNullWhen(false)] out HttpRequestMessage request)
+            public bool TryPeekUncanceledRequest(HttpConnectionPool pool, [MaybeNullWhen(false)] out HttpRequestMessage request)
             {
-                if (_queue is not null && _queue.TryPeek(out QueueItem item))
+                if (_queue is not null)
                 {
-                    request = item.Request;
-                    return true;
+                    while (_queue.TryPeek(out QueueItem item))
+                    {
+                        if (item.Waiter.Task.IsCanceled)
+                        {
+                            if (NetEventSource.Log.IsEnabled()) pool.Trace("Discarding canceled request from queue.");
+                            _queue.Dequeue();
+                        }
+                        else
+                        {
+                            request = item.Request;
+                            return true;
+                        }
+                    }
                 }
 
                 request = null;

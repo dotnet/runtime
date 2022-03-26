@@ -184,7 +184,7 @@ namespace Internal.Reflection.Extensions.NonPortable
         //
         // Internal helper to compute the AttributeUsage. This must be coded specially to avoid an infinite recursion.
         //
-        private AttributeUsageAttribute GetAttributeUsage(Type attributeType)
+        private static AttributeUsageAttribute GetAttributeUsage(Type attributeType)
         {
             // This is only invoked when the seacher is called with "inherit: true", thus calling the searcher again
             // with "inherit: false" will not cause infinite recursion.
