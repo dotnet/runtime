@@ -690,7 +690,7 @@ namespace System.Text.Json.Serialization.Tests
             }";
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Employee>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.$ref", ex.Path);
+            Assert.Equal("$", ex.Path);
         }
 
         [Fact()]
@@ -702,7 +702,7 @@ namespace System.Text.Json.Serialization.Tests
             }";
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<List<Employee>>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.$ref", ex.Path);
+            Assert.Equal("$", ex.Path);
         }
 
         [Fact]
@@ -714,7 +714,7 @@ namespace System.Text.Json.Serialization.Tests
             }";
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Dictionary<string, Employee>>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.$ref", ex.Path);
+            Assert.Equal("$", ex.Path);
         }
 
         [Fact]
@@ -728,7 +728,7 @@ namespace System.Text.Json.Serialization.Tests
             }";
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Employee>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.Manager.$ref", ex.Path);
+            Assert.Equal("$.Manager", ex.Path);
         }
 
         [Fact]
@@ -742,7 +742,7 @@ namespace System.Text.Json.Serialization.Tests
             }";
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Employee>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.Subordinates.$ref", ex.Path);
+            Assert.Equal("$.Subordinates", ex.Path);
         }
 
         [Fact]
@@ -756,7 +756,7 @@ namespace System.Text.Json.Serialization.Tests
             }";
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Employee>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.Contacts.$ref", ex.Path);
+            Assert.Equal("$.Contacts", ex.Path);
         }
 
         #endregion
@@ -1235,7 +1235,7 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<List<Employee>>(json, s_deserializerOptionsPreserve));
             Assert.Contains("'1'", ex.Message);
-            Assert.Equal("$[0].$ref", ex.Path);
+            Assert.Equal("$[0]", ex.Path);
         }
 
         [Theory]
@@ -1315,7 +1315,7 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<List<Employee>>(json, s_deserializerOptionsPreserve));
 
-            Assert.Equal("$[1].$id", ex.Path);
+            Assert.Equal("$[1]", ex.Path);
             Assert.Contains("'1'", ex.Message);
         }
 
@@ -1341,7 +1341,7 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ClassWithTwoListProperties>(json, s_deserializerOptionsPreserve));
 
-            Assert.Equal("$.List2.$id", ex.Path);
+            Assert.Equal("$.List2.$values", ex.Path);
             Assert.Contains("'1'", ex.Message);
         }
 
@@ -1520,7 +1520,7 @@ namespace System.Text.Json.Serialization.Tests
             }";
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<List<string>>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.$ref", ex.Path);
+            Assert.Equal("$", ex.Path);
 
             // $id Valid under conditions: must be the first property in the object.
             // $values Valid under conditions: must be after $id.
@@ -1572,5 +1572,85 @@ namespace System.Text.Json.Serialization.Tests
 
         public class Derived : Base { }
         public class Base { }
+
+        [Theory]
+        [InlineData(JsonUnknownTypeHandling.JsonElement)]
+        [InlineData(JsonUnknownTypeHandling.JsonNode)]
+        public async Task ObjectConverter_ShouldHandleReferenceMetadata(JsonUnknownTypeHandling typehandling)
+        {
+            var options = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve, UnknownTypeHandling = typehandling };
+            string json = @"[{ ""$id"" : ""1"" },{ ""$ref"" : ""1""}]";
+            object[] deserialized = await Serializer.DeserializeWrapper<object[]>(json, options);
+            Assert.Same(deserialized[0], deserialized[1]);
+        }
+
+        [Theory]
+        [InlineData(@"{ ""$id""  : 42 }", JsonUnknownTypeHandling.JsonElement)]
+        [InlineData(@"{ ""$id""  : 42 }", JsonUnknownTypeHandling.JsonNode)]
+        [InlineData(@"{ ""$ref"" : 42 }", JsonUnknownTypeHandling.JsonElement)]
+        [InlineData(@"{ ""$ref"" : 42 }", JsonUnknownTypeHandling.JsonNode)]
+        public async Task ObjectConverter_InvalidMetadataPropertyType_ShouldThrowJsonException(string json, JsonUnknownTypeHandling typehandling)
+        {
+            var options = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve, UnknownTypeHandling = typehandling };
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<object>(json, options));
+        }
+
+        [Theory]
+        [InlineData(JsonUnknownTypeHandling.JsonElement)]
+        [InlineData(JsonUnknownTypeHandling.JsonNode)]
+        public async Task ObjectConverter_PropertyTrailingRefMetadata_ShouldThrowJsonException(JsonUnknownTypeHandling typehandling)
+        {
+            var options = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve, UnknownTypeHandling = typehandling };
+            string json = @"[{ ""$id"" : ""1"" }, { ""$ref"" : ""1"", ""trailingProperty"" : true }]";
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<object[]>(json, options));
+        }
+
+        [Fact]
+        public async Task ConstructorDeserialization_ReferencePreservation()
+        {
+            string json = @"[{ ""$id"" : ""1"", ""Value"" : 42, ""Next"" : null }, { ""$ref"" : ""1"" }]";
+            LinkedList<int>[] deserialized = await Serializer.DeserializeWrapper<LinkedList<int>[]>(json, s_serializerOptionsPreserve);
+
+            Assert.Equal(2, deserialized.Length);
+            Assert.Equal(42, deserialized[0].Value);
+            Assert.Null(deserialized[0].Next);
+            Assert.Same(deserialized[0], deserialized[1]);
+        }
+
+        [Theory]
+        [InlineData(@"{ ""Value"" : 1, ""Next"" : { ""$id"" : ""1"", ""Value"" : 2, ""Next"" : null }}", typeof(LinkedList<int>))]
+        [InlineData(@"[{ ""$id"" : ""1"", ""Value"" : 2, ""Next"" : null }, { ""Value"" : 1, ""Next"" : { ""$ref"" : ""1""}}]", typeof(LinkedList<int>[]))]
+        public Task ConstructorDeserialization_NestedConstructorArgumentReference_SupportedScenaria(string json, Type type)
+            => Serializer.DeserializeWrapper(json, type, s_serializerOptionsPreserve);
+
+        [Theory]
+        [InlineData(@"{ ""$id"" : ""1"", ""Value"" : 1, ""Next"" : { ""$id"" : ""2"", ""Value"" : 2, ""Next"" : null }}", typeof(LinkedList<int>))]
+        [InlineData(@"{ ""$id"" : ""1"", ""Value"" : 1, ""Next"" : { ""$ref"" : ""1"" }}", typeof(LinkedList<int>))]
+        [InlineData(@"[{ ""$id"" : ""1"", ""Value"" : 2, ""Next"" : null }, { ""$id"" : ""2"", ""Value"" : 1, ""Next"" : { ""$ref"" : ""1""}}]", typeof(LinkedList<int>[]))]
+        [InlineData(@"{ ""$id"" : ""1"", ""Value"" : [{""$id"" : ""2""}], ""Next"" : null }", typeof(LinkedList<Base[]>))]
+        [InlineData(@"{ ""$id"" : ""1"", ""Value"" : [[{""$id"" : ""2""}]], ""Next"" : null }", typeof(LinkedList<Base[][]>))]
+        [InlineData(@"{ ""$id"" : ""1"", ""Value"" : [{""$ref"" : ""1""}], ""Next"" : null }", typeof(LinkedList<object[]>))]
+        [InlineData(@"{ ""$id"" : ""1"", ""PropertyWithSetter"" : { ""$id"" : ""2"" }}", typeof(LinkedList<object?>))]
+        [InlineData(@"{ ""$id"" : ""1"", ""PropertyWithSetter"" : { ""$ref"" : ""1"" }}", typeof(LinkedList<object?>))]
+        public async Task ConstructorDeserialization_NestedConstructorArgumentReference_ThrowsNotSupportedException(string json, Type type)
+        {
+            NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper(json, type, s_serializerOptionsPreserve));
+            Assert.Contains("LinkedList", ex.Message);
+        }
+
+        public class LinkedList<T>
+        {
+            [JsonConstructor]
+            public LinkedList(T value, LinkedList<T>? next)
+            {
+                Value = value;
+                Next = next;
+            }
+
+            public T Value { get; }
+            public LinkedList<T>? Next { get; }
+
+            public T? PropertyWithSetter { get; set; }
+        }
     }
 }
