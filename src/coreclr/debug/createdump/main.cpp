@@ -248,7 +248,7 @@ printf_error(const char* format, ...)
 
 #ifdef HOST_UNIX
 
-static uint64_t
+uint64_t
 GetTickFrequency()
 {
     LARGE_INTEGER ret;
