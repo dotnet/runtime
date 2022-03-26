@@ -5086,27 +5086,6 @@ void emitter::emitIns_R_R_A(instruction ins, emitAttr attr, regNumber reg1, regN
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_R_A_R(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir, regNumber reg2)
-{
-    assert(IsSSEOrAVXInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins));
-
-    ssize_t    offs = indir->Offset();
-    instrDesc* id   = emitNewInstrAmd(attr, offs);
-
-    id->idIns(ins);
-    id->idReg1(reg1);
-    id->idReg2(reg2);
-
-    emitHandleMemOp(indir, id, IF_RWR_RRD_ARD, ins);
-
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
-    id->idCodeSize(sz);
-
-    dispIns(id);
-    emitCurIGsize += sz;
-}
-
 void emitter::emitIns_R_R_AR(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber base, int offs)
 {
     assert(IsSSEOrAVXInstruction(ins));
@@ -16363,8 +16342,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_sarx:
         case INS_shrx:
         {
-            result.insLatency    = PERFSCORE_LATENCY_1C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             break;
         }
 

@@ -4341,7 +4341,7 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
 //    tree - the bit shift node (that specifies the type of bit shift to perform).
 //
 // Assumptions:
-//    a) All GenTrees are register allocated or source operand in tree->AsOp()->gtOp1 is contained memory address.
+//    a) All GenTrees are register allocated.
 //    b) The shift-by-amount in tree->AsOp()->gtOp2 is either a contained constant or
 //       it's a register-allocated expression. If it is in a register that is
 //       not RCX, it will be moved to RCX (so RCX better not be in use!).
