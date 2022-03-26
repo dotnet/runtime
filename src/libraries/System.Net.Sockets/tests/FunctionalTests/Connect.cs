@@ -341,8 +341,10 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
-        public async Task FailedConnect_ConnectedReturnsFalse()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task FailedConnect_ConnectedReturnsFalse(bool useTimeSpan)
         {
             using Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
@@ -354,27 +356,14 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(SocketError.WouldBlock, se.SocketErrorCode);
 
                 // Give the non-blocking connect some time to complete.
-                socket.Poll(5_000_000 /* microSeconds */, SelectMode.SelectWrite);
-            }
-
-            Assert.False(socket.Connected);
-        }
-
-        [Fact]
-        public async Task FailedConnect_ConnectedReturnsFalse_TimeSpan()
-        {
-            TimeSpan timeSpan = TimeSpan.FromSeconds(30);
-            using Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-            // Connect to port 1 where we expect no server to be listening.
-            SocketException se = await Assert.ThrowsAnyAsync<SocketException>(() => ConnectAsync(socket, new IPEndPoint(IPAddress.Loopback, 1)));
-
-            if (se.SocketErrorCode != SocketError.ConnectionRefused)
-            {
-                Assert.Equal(SocketError.WouldBlock, se.SocketErrorCode);
-
-                // Give the non-blocking connect some time to complete.
-                socket.Poll(timeSpan, SelectMode.SelectWrite);
+                if (useTimeSpan)
+                {
+                    socket.Poll(TimeSpan.FromMilliseconds(5000), SelectMode.SelectWrite);
+                }
+                else
+                {
+                    socket.Poll(5_000_000 /* microSeconds */, SelectMode.SelectWrite);
+                }
             }
 
             Assert.False(socket.Connected);
