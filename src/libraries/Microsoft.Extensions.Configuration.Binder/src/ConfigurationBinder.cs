@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -450,14 +451,14 @@ namespace Microsoft.Extensions.Configuration
                         }
                     }
 
-                    List<object?> parameterValues = new List<object?>();
+                    object?[] parameterValues = new object?[parameters.Length];
 
-                    foreach (var parameter in parameters)
+                    for (int index = 0; index < parameters.Length; index++)
                     {
-                        parameterValues.Add(GetParameterValue(parameter, config, options));
+                        parameterValues[index] = GetParameterValue(parameters[index], config, options);
                     }
 
-                    return constructors[indexOfChosenConstructor].Invoke(parameterValues.ToArray());
+                    return constructors[indexOfChosenConstructor].Invoke(parameterValues);
                 }
             }
 
