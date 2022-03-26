@@ -93,7 +93,7 @@ namespace System
         private static void EncodeToUtf16_Vector128(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing)
         {
             Debug.Assert(bytes.Length >= 4);
-            nint pos = 0;
+            nuint pos = 0;
 
             Vector128<byte> shuffleMask = Vector128.Create(
                 0xFF, 0xFF, 0, 0xFF, 0xFF, 0xFF, 1, 0xFF,
@@ -109,6 +109,8 @@ namespace System
                                  (byte)'8', (byte)'9', (byte)'a', (byte)'b',
                                  (byte)'c', (byte)'d', (byte)'e', (byte)'f');
 
+
+            nuint lengthSubVector128 = (nuint)bytes.Length - (nuint)Vector128<int>.Count;
             do
             {
                 // Read 32bits from "bytes" span at "pos" offset
@@ -118,20 +120,15 @@ namespace System
                 // TODO: Remove once cross-platform Shuffle is landed
                 // https://github.com/dotnet/runtime/issues/63331
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                static Vector128<byte> Shuffle(Vector128<byte> value, Vector128<byte> mask)
-                {
-                    if (Ssse3.IsSupported)
-                    {
-                        return Ssse3.Shuffle(value, mask);
-                    }
-                    Debug.Assert(AdvSimd.Arm64.IsSupported);
-                    return AdvSimd.Arm64.VectorTableLookup(value, mask);
-                }
+                static Vector128<byte> Shuffle(Vector128<byte> value, Vector128<byte> mask) =>
+                    Ssse3.IsSupported ? Ssse3.Shuffle(value, mask) : AdvSimd.Arm64.VectorTableLookup(value, mask);
 
                 // Calculate nibbles
                 Vector128<byte> lowNibbles = Shuffle(
                     Vector128.CreateScalarUnsafe(block).AsByte(), shuffleMask);
 
+                // ExtractVector128 is not entirely the same as ShiftRightLogical128BitLane, but it works here since
+                // first two bytes in lowNibbles are guaranteed to be zeros
                 Vector128<byte> shifted = Sse2.IsSupported ?
                     Sse2.ShiftRightLogical128BitLane(lowNibbles, 2) :
                     AdvSimd.ExtractVector128(lowNibbles, lowNibbles, 2);
@@ -151,14 +148,16 @@ namespace System
                     ref Unsafe.As<char, byte>(
                         ref Unsafe.Add(ref MemoryMarshal.GetReference(chars), pos * 2)), hex);
 
-                pos += 4;
-            } while (pos < bytes.Length - 3);
+                pos += (nuint)Vector128<int>.Count;
 
-            // Process trailing elements (bytes.Length % 4)
-            for (; pos < bytes.Length; pos++)
-            {
-                ToCharsBuffer(Unsafe.Add(ref MemoryMarshal.GetReference(bytes), pos), chars, (int)pos * 2, casing);
-            }
+                if (pos == (nuint)bytes.Length)
+                    return;
+
+                // Overlap with the current chunk for trailing elements
+                if (pos > lengthSubVector128)
+                    pos = lengthSubVector128;
+
+            } while (true);
         }
 #endif
 
