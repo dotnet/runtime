@@ -4341,7 +4341,7 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
 //    tree - the bit shift node (that specifies the type of bit shift to perform).
 //
 // Assumptions:
-//    a) All GenTrees are register allocated.
+//    a) All GenTrees are register allocated or source operand in tree->AsOp()->gtOp1 is contained memory address.
 //    b) The shift-by-amount in tree->AsOp()->gtOp2 is either a contained constant or
 //       it's a register-allocated expression. If it is in a register that is
 //       not RCX, it will be moved to RCX (so RCX better not be in use!).
@@ -4405,7 +4405,8 @@ void CodeGen::genCodeForShift(GenTree* tree)
         }
     }
 #if defined(TARGET_64BIT)
-    else if (compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && tree->OperIs(GT_LSH, GT_RSH, GT_RSZ))
+    else if (compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && tree->OperIs(GT_LSH, GT_RSH, GT_RSZ) &&
+             (genActualType(targetType) == TYP_LONG))
     {
         // Try to emit shlx, sarx, shrx if BMI2 is available instead of mov+shl, mov+sar, mov+shr.
         switch (tree->OperGet())
@@ -4428,9 +4429,9 @@ void CodeGen::genCodeForShift(GenTree* tree)
 
         regNumber shiftByReg = shiftBy->GetRegNum();
         emitAttr  size       = emitTypeSize(tree);
-
         GetEmitter()->emitIns_R_R_R(ins, size, tree->GetRegNum(), shiftByReg, operandReg);
         genProduceReg(tree);
+
         return;
     }
 #endif
