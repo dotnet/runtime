@@ -327,10 +327,8 @@ namespace System.Net.NetworkInformation
         public Task<PingReply> SendPingAsync(IPAddress address, TimeSpan timeout, byte[]? buffer = null,
             PingOptions? options = null, CancellationToken cancellationToken = default)
         {
-            int milliseconds = ToTimeoutMilliseconds(timeout);
-
             cancellationToken.ThrowIfCancellationRequested();
-            Task<PingReply> task = SendPingAsync(address, milliseconds, buffer ?? DefaultSendBuffer, options);
+            Task<PingReply> task = SendPingAsync(address, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options);
 
             return task.WaitAsync(cancellationToken);
         }
@@ -339,9 +337,7 @@ namespace System.Net.NetworkInformation
             PingOptions? options = null, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            int milliseconds = ToTimeoutMilliseconds(timeout);
-            Task<PingReply> task = SendPingAsync(hostNameOrAddress, milliseconds, buffer ?? DefaultSendBuffer, options);
+            Task<PingReply> task = SendPingAsync(hostNameOrAddress, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options);
 
             return task.WaitAsync(cancellationToken);
         }
