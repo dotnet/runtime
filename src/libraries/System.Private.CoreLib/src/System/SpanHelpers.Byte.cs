@@ -1786,7 +1786,7 @@ namespace System
                     nuint offset = 0;
                     nuint lengthToExamine = length - (nuint)Vector256<byte>.Count;
                     // Unsigned, so it shouldn't have overflowed larger than length (rather than negative)
-                    //Debug.Assert(lengthToExamine < length);
+                    Debug.Assert(lengthToExamine < length);
                     if (lengthToExamine != 0)
                     {
                         do
@@ -1816,7 +1816,7 @@ namespace System
                     nuint offset = 0;
                     nuint lengthToExamine = length - (nuint)Vector128<byte>.Count;
                     // Unsigned, so it shouldn't have overflowed larger than length (rather than negative)
-                    //Debug.Assert(lengthToExamine < length);
+                    Debug.Assert(lengthToExamine < length);
                     if (lengthToExamine != 0)
                     {
                         do
@@ -1847,7 +1847,7 @@ namespace System
                 nuint offset = 0;
                 nuint lengthToExamine = length - (nuint)Vector<byte>.Count;
                 // Unsigned, so it shouldn't have overflowed larger than length (rather than negative)
-                //Debug.Assert(lengthToExamine < length);
+                Debug.Assert(lengthToExamine < length);
                 if (lengthToExamine > 0)
                 {
                     do
@@ -1872,9 +1872,9 @@ namespace System
             }
 
 #if TARGET_64BIT
-            if (Sse2.IsSupported)
+            if (Vector128.IsHardwareAccelerated)
             {
-                //Debug.Assert(length <= (nuint)sizeof(nuint) * 2);
+                Debug.Assert(length <= (nuint)sizeof(nuint) * 2);
 
                 nuint offset = length - (nuint)sizeof(nuint);
                 nuint differentBits = LoadNUInt(ref first) - LoadNUInt(ref second);
@@ -1885,12 +1885,12 @@ namespace System
             else
 #endif
             {
-                //Debug.Assert(length >= (nuint)sizeof(nuint));
+                Debug.Assert(length >= (nuint)sizeof(nuint));
                 {
                     nuint offset = 0;
                     nuint lengthToExamine = length - (nuint)sizeof(nuint);
                     // Unsigned, so it shouldn't have overflowed larger than length (rather than negative)
-                    //Debug.Assert(lengthToExamine < length);
+                    Debug.Assert(lengthToExamine < length);
                     if (lengthToExamine > 0)
                     {
                         do
