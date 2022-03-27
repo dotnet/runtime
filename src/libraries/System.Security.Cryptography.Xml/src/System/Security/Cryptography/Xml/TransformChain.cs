@@ -181,14 +181,16 @@ namespace System.Security.Cryptography.Xml
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             nsm.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);
 
-            XmlNodeList transformNodes = value.SelectNodes("ds:Transform", nsm);
-            if (transformNodes.Count == 0)
+            XmlNodeList? transformNodes = value.SelectNodes("ds:Transform", nsm);
+            //red flag
+            if (transformNodes!.Count == 0)
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Transforms");
 
             _transforms.Clear();
             for (int i = 0; i < transformNodes.Count; ++i)
             {
-                XmlElement transformElement = (XmlElement)transformNodes.Item(i);
+                //red flag
+                XmlElement transformElement = (XmlElement)transformNodes.Item(i)!;
                 string algorithm = Utils.GetAttribute(transformElement, "Algorithm", SignedXml.XmlDsigNamespaceUrl);
                 Transform transform = CryptoHelpers.CreateFromName<Transform>(algorithm);
                 if (transform == null)

@@ -654,7 +654,7 @@ namespace System.Security.Cryptography.Xml
             {
                 if (stores[index] != null)
                 {
-                    X509Certificate2Collection filters = null;
+                    X509Certificate2Collection? filters = null;
                     // We don't care if we can't open the store.
                     try
                     {
@@ -736,7 +736,7 @@ namespace System.Security.Cryptography.Xml
             return false;
         }
 
-        internal static AsymmetricAlgorithm GetAnyPublicKey(X509Certificate2 certificate)
+        internal static AsymmetricAlgorithm? GetAnyPublicKey(X509Certificate2 certificate)
         {
             AsymmetricAlgorithm algorithm = (AsymmetricAlgorithm)certificate.GetRSAPublicKey() ?? certificate.GetECDsaPublicKey();
 

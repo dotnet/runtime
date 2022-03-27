@@ -1,16 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 
 namespace System.Security.Cryptography.Xml
 {
     public sealed class EncryptionProperty
     {
-        private string _target;
-        private string _id;
+        private string? _target;
+        private string? _id;
         private XmlElement _elemProp;
-        private XmlElement _cachedXml;
+        private XmlElement? _cachedXml;
 
         // We are being lax here as per the spec
         public EncryptionProperty() { }
@@ -24,12 +25,12 @@ namespace System.Security.Cryptography.Xml
             _cachedXml = null;
         }
 
-        public string Id
+        public string? Id
         {
             get { return _id; }
         }
 
-        public string Target
+        public string? Target
         {
             get { return _target; }
         }
@@ -59,7 +60,8 @@ namespace System.Security.Cryptography.Xml
 
         public XmlElement GetXml()
         {
-            if (CacheValid) return _cachedXml;
+            // red flag
+            if (CacheValid) return _cachedXml!;
 
             XmlDocument document = new XmlDocument();
             document.PreserveWhitespace = true;
@@ -68,7 +70,8 @@ namespace System.Security.Cryptography.Xml
 
         internal XmlElement GetXml(XmlDocument document)
         {
-            return document.ImportNode(_elemProp, true) as XmlElement;
+            //red flag
+            return (document.ImportNode(_elemProp, true) as XmlElement)!;
         }
 
         public void LoadXml(XmlElement value!!)

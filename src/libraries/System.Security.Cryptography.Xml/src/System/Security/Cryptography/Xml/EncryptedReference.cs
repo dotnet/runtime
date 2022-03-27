@@ -9,8 +9,8 @@ namespace System.Security.Cryptography.Xml
     {
         private string _uri;
         private string _referenceType;
-        private TransformChain _transformChain;
-        internal XmlElement _cachedXml;
+        private TransformChain? _transformChain;
+        internal XmlElement? _cachedXml;
 
         protected EncryptedReference() : this(string.Empty, new TransformChain())
         {
@@ -79,7 +79,8 @@ namespace System.Security.Cryptography.Xml
 
         public virtual XmlElement GetXml()
         {
-            if (CacheValid) return _cachedXml;
+            // red flag
+            if (CacheValid) return _cachedXml!;
 
             XmlDocument document = new XmlDocument();
             document.PreserveWhitespace = true;
@@ -115,7 +116,7 @@ namespace System.Security.Cryptography.Xml
             // Transforms
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             nsm.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);
-            XmlNode transformsNode = value.SelectSingleNode("ds:Transforms", nsm);
+            XmlNode? transformsNode = value.SelectSingleNode("ds:Transforms", nsm);
             if (transformsNode != null)
                 TransformChain.LoadXml(transformsNode as XmlElement);
 

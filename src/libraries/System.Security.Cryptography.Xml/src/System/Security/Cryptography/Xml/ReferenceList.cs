@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Xml
             get { return _references.Count; }
         }
 
-        public int Add(object value!!)
+        public int Add(object? value!!)
         {
             if (!(value is DataReference) && !(value is KeyReference))
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
@@ -37,12 +37,12 @@ namespace System.Security.Cryptography.Xml
             _references.Clear();
         }
 
-        public bool Contains(object value)
+        public bool Contains(object? value)
         {
             return _references.Contains(value);
         }
 
-        public int IndexOf(object value)
+        public int IndexOf(object? value)
         {
             return _references.IndexOf(value);
         }
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Xml
             _references.Insert(index, value);
         }
 
-        public void Remove(object value)
+        public void Remove(object? value)
         {
             _references.Remove(value);
         }
@@ -84,7 +84,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         /// <internalonly/>
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get { return _references[index]; }
             set

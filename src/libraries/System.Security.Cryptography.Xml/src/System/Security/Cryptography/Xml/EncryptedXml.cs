@@ -59,8 +59,8 @@ namespace System.Security.Cryptography.Xml
         //
 
         private readonly XmlDocument _document;
-        private Evidence _evidence;
-        private XmlResolver _xmlResolver;
+        private Evidence? _evidence;
+        private XmlResolver? _xmlResolver;
         // hash table defining the key name mapping
         private const int _capacity = 4; // 4 is a reasonable capacity for
                                          // the key name mapping hash table
@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.Xml
 
         public EncryptedXml(XmlDocument document) : this(document, null) { }
 
-        public EncryptedXml(XmlDocument document, Evidence evidence)
+        public EncryptedXml(XmlDocument document, Evidence? evidence)
         {
             _document = document;
             _evidence = evidence;
@@ -124,14 +124,14 @@ namespace System.Security.Cryptography.Xml
         }
 
         // The evidence of the document being loaded: will be used to resolve external URIs
-        public Evidence DocumentEvidence
+        public Evidence? DocumentEvidence
         {
             get { return _evidence; }
             set { _evidence = value; }
         }
 
         // The resolver to use for external entities
-        public XmlResolver Resolver
+        public XmlResolver? Resolver
         {
             get { return _xmlResolver; }
             set { _xmlResolver = value; }
@@ -180,7 +180,7 @@ namespace System.Security.Cryptography.Xml
 
         private byte[] GetCipherValue(CipherData cipherData!!)
         {
-            Stream inputStream = null;
+            Stream? inputStream = null;
 
             if (cipherData.CipherValue != null)
             {
@@ -199,7 +199,7 @@ namespace System.Security.Cryptography.Xml
                 if (cipherData.CipherReference.Uri.Length == 0)
                 {
                     // self referenced Uri
-                    string baseUri = (_document == null ? null : _document.BaseURI);
+                    string? baseUri = (_document == null ? null : _document.BaseURI);
                     TransformChain tc = cipherData.CipherReference.TransformChain;
                     if (tc == null)
                     {
@@ -230,7 +230,7 @@ namespace System.Security.Cryptography.Xml
                     throw new CryptographicException(SR.Cryptography_Xml_UriNotResolved, cipherData.CipherReference.Uri);
                 }
                 // read the output stream into a memory stream
-                byte[] cipherValue = null;
+                byte[]? cipherValue = null;
                 using (MemoryStream ms = new MemoryStream())
                 {
                     Utils.Pump(decInputStream, ms);
@@ -255,13 +255,13 @@ namespace System.Security.Cryptography.Xml
         //
 
         // This describes how the application wants to associate id references to elements
-        public virtual XmlElement GetIdElement(XmlDocument document, string idValue)
+        public virtual XmlElement? GetIdElement(XmlDocument document, string idValue)
         {
             return SignedXml.DefaultGetIdElement(document, idValue);
         }
 
         // default behaviour is to look for the IV in the CipherValue
-        public virtual byte[] GetDecryptionIV(EncryptedData encryptedData!!, string symmetricAlgorithmUri)
+        public virtual byte[] GetDecryptionIV(EncryptedData encryptedData!!, string? symmetricAlgorithmUri)
         {
             int initBytesSize;
             // If the Uri is not provided by the application, try to get it from the EncryptionMethod
@@ -294,15 +294,15 @@ namespace System.Security.Cryptography.Xml
 
         // default behaviour is to look for keys defined by an EncryptedKey clause
         // either directly or through a KeyInfoRetrievalMethod, and key names in the key mapping
-        public virtual SymmetricAlgorithm GetDecryptionKey(EncryptedData encryptedData!!, string symmetricAlgorithmUri)
+        public virtual SymmetricAlgorithm? GetDecryptionKey(EncryptedData encryptedData!!, string symmetricAlgorithmUri)
         {
             if (encryptedData.KeyInfo == null)
                 return null;
             IEnumerator keyInfoEnum = encryptedData.KeyInfo.GetEnumerator();
-            KeyInfoRetrievalMethod kiRetrievalMethod;
-            KeyInfoName kiName;
-            KeyInfoEncryptedKey kiEncKey;
-            EncryptedKey ek = null;
+            KeyInfoRetrievalMethod? kiRetrievalMethod;
+            KeyInfoName? kiName;
+            KeyInfoEncryptedKey? kiEncKey;
+            EncryptedKey? ek = null;
 
             while (keyInfoEnum.MoveNext())
             {
@@ -316,12 +316,12 @@ namespace System.Security.Cryptography.Xml
                     // try to get it from a CarriedKeyName
                     XmlNamespaceManager nsm = new XmlNamespaceManager(_document.NameTable);
                     nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
-                    XmlNodeList encryptedKeyList = _document.SelectNodes("//enc:EncryptedKey", nsm);
+                    XmlNodeList? encryptedKeyList = _document.SelectNodes("//enc:EncryptedKey", nsm);
                     if (encryptedKeyList != null)
                     {
                         foreach (XmlNode encryptedKeyNode in encryptedKeyList)
                         {
-                            XmlElement encryptedKeyElement = encryptedKeyNode as XmlElement;
+                            XmlElement? encryptedKeyElement = encryptedKeyNode as XmlElement;
                             EncryptedKey ek1 = new EncryptedKey();
                             ek1.LoadXml(encryptedKeyElement);
                             if (ek1.CarriedKeyName == keyName && ek1.Recipient == Recipient)
@@ -376,17 +376,17 @@ namespace System.Security.Cryptography.Xml
         }
 
         // Try to decrypt the EncryptedKey given the key mapping
-        public virtual byte[] DecryptEncryptedKey(EncryptedKey encryptedKey!!)
+        public virtual byte[]? DecryptEncryptedKey(EncryptedKey encryptedKey!!)
         {
             if (encryptedKey.KeyInfo == null)
                 return null;
 
             IEnumerator keyInfoEnum = encryptedKey.KeyInfo.GetEnumerator();
-            KeyInfoName kiName;
-            KeyInfoX509Data kiX509Data;
-            KeyInfoRetrievalMethod kiRetrievalMethod;
-            KeyInfoEncryptedKey kiEncKey;
-            EncryptedKey ek;
+            KeyInfoName? kiName;
+            KeyInfoX509Data? kiX509Data;
+            KeyInfoRetrievalMethod? kiRetrievalMethod;
+            KeyInfoEncryptedKey? kiEncKey;
+            EncryptedKey? ek;
             bool fOAEP;
 
             while (keyInfoEnum.MoveNext())
@@ -396,7 +396,7 @@ namespace System.Security.Cryptography.Xml
                 {
                     // Get the decryption key from the key mapping
                     string keyName = kiName.Value;
-                    object kek = _keyNameMapping[keyName];
+                    object? kek = _keyNameMapping[keyName];
                     if (kek != null)
                     {
                         if (encryptedKey.CipherData == null || encryptedKey.CipherData.CipherValue == null)

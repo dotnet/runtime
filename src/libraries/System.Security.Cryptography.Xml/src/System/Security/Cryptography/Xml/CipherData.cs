@@ -7,9 +7,9 @@ namespace System.Security.Cryptography.Xml
 {
     public sealed class CipherData
     {
-        private XmlElement _cachedXml;
-        private CipherReference _cipherReference;
-        private byte[] _cipherValue;
+        private XmlElement? _cachedXml;
+        private CipherReference? _cipherReference;
+        private byte[]? _cipherValue;
 
         public CipherData() { }
 
@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        public CipherReference CipherReference
+        public CipherReference? CipherReference
         {
             get { return _cipherReference; }
             set
