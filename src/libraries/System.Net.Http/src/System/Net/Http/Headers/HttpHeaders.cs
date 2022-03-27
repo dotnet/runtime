@@ -1254,14 +1254,17 @@ namespace System.Net.Http.Headers
             return value.Equals(storeValue);
         }
 
-        internal class InvalidValue
+        internal sealed class InvalidValue
         {
+            private readonly string _value;
+
             public InvalidValue(string value)
             {
-                Value = value;
+                Debug.Assert(value is not null);
+                _value = value;
             }
-            public string Value { get; private set; }
-            public override string ToString() => Value;
+
+            public override string ToString() => _value;
         }
 
         internal sealed class HeaderStoreItemInfo
@@ -1271,7 +1274,7 @@ namespace System.Net.Http.Headers
             internal object? RawValue;
             internal object? ParsedAndInvalidValues;
 
-            internal bool CanAddParsedValue(HttpHeaderParser parser)
+            public bool CanAddParsedValue(HttpHeaderParser parser)
             {
                 Debug.Assert(parser != null, "There should be no reason to call CanAddValue if there is no parser for the current header.");
 
@@ -1306,7 +1309,7 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            internal object? GetSingleParsedValue()
+            public object? GetSingleParsedValue()
             {
                 if (ParsedAndInvalidValues is not null)
                 {
@@ -1348,7 +1351,7 @@ namespace System.Net.Http.Headers
                 Debug.Assert(count == 1, "Only a single parsed value should be stored for this parser");
             }
 
-            internal bool IsEmpty => RawValue == null && ParsedAndInvalidValues == null;
+            public bool IsEmpty => RawValue == null && ParsedAndInvalidValues == null;
         }
 
 

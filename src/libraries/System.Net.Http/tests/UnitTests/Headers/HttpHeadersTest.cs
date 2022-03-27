@@ -206,15 +206,6 @@ namespace System.Net.Http.Tests
             Assert.Equal(1, headers.Count());
             Assert.Equal(2, headers.First().Value.Count());
 
-            // If you compare this test with the previous one: Note that we reversed the order of adding the invalid
-            // string and the valid string. However, when enumerating header values the order is still the same as in
-            // the previous test.
-            // We don't keep track of the order if we have both invalid & valid values. This would add complexity
-            // and additional memory to store the information. Given how rare this scenario is we consider this
-            // by design. Note that this scenario is only an issue if:
-            // - The header value has an invalid format (very rare for standard headers) AND
-            // - There are multiple header values (some valid, some invalid) AND
-            // - The order of the headers matters (e.g. Transfer-Encoding)
             Assert.Equal(invalidHeaderValue, headers.First().Value.ElementAt(0));
             Assert.Equal(parsedPrefix, headers.First().Value.ElementAt(1));            
             Assert.Equal(2, headers.Parser.TryParseValueCallCount);
