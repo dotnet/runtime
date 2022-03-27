@@ -10,12 +10,8 @@ namespace Profiler.Tests
     {
         static readonly Guid GcAllocateEventsProfilerGuid = new Guid("55b9554d-6115-45a2-be1e-c80f7fa35369");
 
-        private static int[] arrayRef1;
-        private static int[] arrayRef2;
-
         public static int RunTest(String[] args) 
         {
-            // Allocate and save to fields to avoid jit optimizations
             int[] large = new int[100000];
             int[] pinned = GC.AllocateArray<int>(32, true);
 
