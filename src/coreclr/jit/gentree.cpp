@@ -1063,14 +1063,22 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
     // Consider array allocators side-effect free for constant length (if it's not negative and fits into i32)
     if (helperProperties.IsAllocator(helper))
     {
-        GenTree* arrLen = compiler->getArrayLengthFromAllocation((GenTree*)this, nullptr);
+        GenTree* arrLen = compiler->getArrayLengthFromAllocation((GenTree*)this DEBUGARG(nullptr));
         // if arrLen is nullptr it means it wasn't an array allocator
         if ((arrLen != nullptr))
         {
             arrLen = arrLen->OperIsPutArg() ? arrLen->gtGetOp1() : arrLen;
-            if (arrLen->IsIntCnsFitsInI32() && arrLen->AsIntConCommon()->IconValue() >= 0)
+            if (arrLen->IsIntCnsFitsInI32())
             {
-                return false;
+                // Array.MaxLength
+                const ssize_t MaxArraySize = 0x7FFFFFC7;
+
+                ssize_t cns = arrLen->AsIntConCommon()->IconValue();
+                if ((cns >= 0) && (cns <= MaxArraySize))
+                {
+                    // Actually the max allowed length is smaller than
+                    return false;
+                }
             }
         }
     }
