@@ -6,7 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ObjectiveC;
 using System.Text;
 
 namespace System.Reflection
@@ -143,7 +142,7 @@ namespace System.Reflection
 
         private protected unsafe void CheckArguments(
             Span<object?> copyOfParameters,
-            Span<IntPtr> byrefParameters,
+            IntPtr* byrefParameters,
             Span<bool> shouldCopyBack,
             ReadOnlySpan<object?> parameters,
             RuntimeType[] sigTypes,
@@ -191,26 +190,32 @@ namespace System.Reflection
                 // the method. The solution is to copy the arguments to a different, not-user-visible buffer
                 // as we validate them. n.b. This disallows use of ArrayPool, as ArrayPool-rented arrays are
                 // considered user-visible to threads which may still be holding on to returned instances.
+                // This separate array is also used to hold default values when 'null' is specified for value
+                // types which should not be applied to the incoming array.
                 shouldCopyBack[i] = copyBackArg;
-                copyOfParameters[i] = arg;
 
                 if (isValueType)
                 {
-                    if (arg is null)
+                    if (arg == null)
                     {
-                        // This is a special case where we pass null for a null Nullable<T> and for
-                        // the case to create a default ref struct when 'null' is passed.
-                        Debug.Assert(!copyBackArg);
+                        // Special case when passing a null to signal the native runtime to create a default ref struct
+                        copyOfParameters[i] = null;
                         byrefParameters[i] = IntPtr.Zero;
                     }
                     else
                     {
-                        byrefParameters[i] = (IntPtr)Unsafe.AsPointer(ref copyOfParameters[i]!.GetRawData());
+                        copyOfParameters[i] = arg;
+
+                        ByReference<byte> valueTypeRef = new(ref copyOfParameters[i]!.GetRawData());
+                        *(ByReference<byte>*)(byrefParameters + i) = valueTypeRef;
                     }
                 }
                 else
                 {
-                    byrefParameters[i] = (IntPtr)Unsafe.AsPointer(ref copyOfParameters[i]);
+                    copyOfParameters[i] = arg;
+
+                    ByReference<object?> objRef = new(ref copyOfParameters[i]);
+                    *(ByReference<object?>*)(byrefParameters + i) = objRef;
                 }
             }
         }

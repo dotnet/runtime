@@ -2387,7 +2387,6 @@ public:
 #ifndef DACCESS_COMPILE
     BOOL UnBoxInto(void *dest, OBJECTREF src);
     BOOL UnBoxIntoArg(ArgDestination *argDest, OBJECTREF src);
-    BOOL UnBoxIntoArg(ArgDestination *argDest, PVOID pSrcUnsafe);
     void UnBoxIntoUnchecked(void *dest, OBJECTREF src);
 #endif
 

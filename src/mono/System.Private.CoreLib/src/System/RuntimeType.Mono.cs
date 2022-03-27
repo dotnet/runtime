@@ -1666,15 +1666,20 @@ namespace System
             }
         }
 
-        internal void CheckValue(
+        /// <summary>
+        /// Verify <paramref name="value"/> and optionally convert the value for special cases.
+        /// </summary>
+        /// <returns>Not yet implemented in Mono: True if the value should be considered a value type, False otherwise</returns>
+        internal bool CheckValue(
             ref object? value,
             ref bool copyBack,
+            ParameterInfo? _,
             Binder? binder,
             CultureInfo? culture,
             BindingFlags invokeAttr)
         {
             if (TryConvertToType(ref value, ref copyBack))
-                return;
+                return false;
 
             if ((invokeAttr & BindingFlags.ExactBinding) == BindingFlags.ExactBinding)
                 throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value!.GetType(), this));
@@ -1683,7 +1688,7 @@ namespace System
             {
                 value = binder.ChangeType(value!, this, culture);
                 copyBack = true;
-                return;
+                return false;
             }
 
             throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value!.GetType(), this));

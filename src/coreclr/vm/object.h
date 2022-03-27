@@ -2669,9 +2669,7 @@ public:
     static OBJECTREF Box(void* src, MethodTable* nullable);
     static BOOL UnBox(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static BOOL UnBoxNoGC(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
-    static BOOL UnBoxNoGC(void* dest, PVOID pValUnsafe, MethodTable* destMT, MethodTable* srcMT);
     static BOOL UnBoxIntoArgNoGC(ArgDestination *argDest, OBJECTREF boxedVal, MethodTable* destMT);
-    static BOOL UnBoxIntoArgNoGC(ArgDestination *argDest, PVOID pValUnsafe, MethodTable* destMT, MethodTable* srcMT);
     static void UnBoxNoCheck(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return 0; }
 

@@ -3443,6 +3443,8 @@ namespace System
         #endregion
 
         #region Misc
+        internal bool IsNullableOfT => Nullable.GetUnderlyingType(this) != null;
+
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeType>(other);
 
         public override Type MakePointerType() => new RuntimeTypeHandle(this).MakePointer();
@@ -3494,7 +3496,7 @@ namespace System
         {
             Debug.Assert(!ReferenceEquals(value?.GetType(), this));
 
-            // Fast path to whethern a value can be assigned to type.
+            // Fast path to whether a value can be assigned to type.
             if (IsInstanceOfType(value))
             {
                 // Since this cannot be a generic parameter, we use RuntimeTypeHandle.IsValueType here
@@ -3503,6 +3505,14 @@ namespace System
 
                 if (RuntimeTypeHandle.IsValueType(this))
                 {
+                    // If a nullable, pass the object even though it's a value type.
+                    if (IsNullableOfT)
+                    {
+                        // Treat as a reference type.
+                        copyBack = false;
+                        return false;
+                    }
+
                     // Must be an equivalent type, re-box to the target type
                     object newValue = AllocateValueType(this, value, fForceTypeChange: true);
                     value = newValue;
@@ -3567,6 +3577,16 @@ namespace System
             if (isByRef)
             {
                 RuntimeType sigElementType = RuntimeTypeHandle.GetElementType(this);
+
+                // If a nullable, pass the object even though it's a value type.
+                if (sigElementType.IsNullableOfT)
+                {
+                    // Treat as a reference type since a null value may be replaced with T or vise-versa.
+                    isValueType = false;
+                    copyBack = true;
+                    return CheckValueStatus.Success;
+                }
+
                 if (sigElementType.IsInstanceOfType(value))
                 {
                     // Need to create an instance of the ByRef if null was provided, but only if primitive, enum or value type
@@ -3604,12 +3624,24 @@ namespace System
 
             if (value == null)
             {
-                if (allowNull)
+                if (!allowNull)
                 {
-                    if (RuntimeTypeHandle.IsValueType(this))
+                    isValueType = copyBack = default;
+                    return IsByRefLike ? CheckValueStatus.NotSupported_ByRefLike : CheckValueStatus.ArgumentException;
+                }
+
+                if (RuntimeTypeHandle.IsValueType(this))
+                {
+                    // If a nullable, pass the null as an object even though it's a value type.
+                    if (IsNullableOfT)
+                    {
+                        // Treat as a reference type.
+                        isValueType = false;
+                        copyBack = false;
+                    }
+                    else
                     {
                         isValueType = true;
-
                         if (RuntimeTypeHandle.IsByRefLike(this))
                         {
                             // For a byref-like parameter pass null to the runtime which will create a default value.
@@ -3622,17 +3654,14 @@ namespace System
                             copyBack = false;
                         }
                     }
-                    else
-                    {
-                        isValueType = false;
-                        copyBack = false;
-                    }
-
-                    return CheckValueStatus.Success;
+                }
+                else
+                {
+                    isValueType = false;
+                    copyBack = false;
                 }
 
-                isValueType = copyBack = default;
-                return IsByRefLike ? CheckValueStatus.NotSupported_ByRefLike : CheckValueStatus.ArgumentException;
+                return CheckValueStatus.Success;
             }
 
             if (this == s_typedRef)
@@ -3674,7 +3703,7 @@ namespace System
 
                 if (pointer != null)
                 {
-                    value = pointer.GetPointerValue();
+                    value = pointer.GetPointerValue(); // Convert source pointer to IntPtr
                 }
                 else
                 {

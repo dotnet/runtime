@@ -350,11 +350,10 @@ namespace System.Reflection
                 Span<bool> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
 
                 StackAllocatedByRefs byrefStorage = default;
-                Span<IntPtr> unsafeByrefParameters = new Span<IntPtr>(&byrefStorage, 1);
 
                 CheckArguments(
                     copyOfParameters,
-                    unsafeByrefParameters,
+                    (IntPtr*)&byrefStorage,
                     shouldCopyBackParameters,
                     parameters,
                     ArgumentTypes,

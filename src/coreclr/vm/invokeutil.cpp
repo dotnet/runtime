@@ -124,7 +124,7 @@ void *InvokeUtil::GetIntPtrValue(OBJECTREF pObj) {
     RETURN *(void **)((pObj)->UnBox());
 }
 
-void InvokeUtil::CopyArg(TypeHandle th, PVOID *pArgUnsafe, ArgDestination *argDest) {
+void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest) {
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER; // Caller does not protect object references
@@ -135,35 +135,24 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID *pArgUnsafe, ArgDestination *argDe
     CONTRACTL_END;
 
     void *pArgDst = argDest->GetDestinationAddress();
+    PVOID *rArg = *pArgRef;
+    CorElementType type = th.GetVerifierCorElementType();
 
-    MethodTable* pMT = th.GetMethodTable();
-    CorElementType oType;
-    CorElementType type;
-
-    oType = pMT->GetInternalCorElementType();
-    type = th.GetVerifierCorElementType();
-
-    // This basically maps the Signature type our type and calls the CreatePrimitiveValue
-    //  method.  We can omit this if we get alignment on these types.
     switch (type) {
+    case ELEMENT_TYPE_I4:
     case ELEMENT_TYPE_BOOLEAN:
-    case ELEMENT_TYPE_I1:
     case ELEMENT_TYPE_U1:
+    case ELEMENT_TYPE_I1:
     case ELEMENT_TYPE_I2:
     case ELEMENT_TYPE_U2:
     case ELEMENT_TYPE_CHAR:
-    case ELEMENT_TYPE_I4:
     case ELEMENT_TYPE_U4:
     case ELEMENT_TYPE_R4:
     IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
     IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
     {
-        {
-            _ASSERTE(pArgUnsafe != NULL);
-            ARG_SLOT slot;
-            CreatePrimitiveValue(type, oType, pArgUnsafe, pMT, &slot);
-            *(PVOID *)pArgDst = (PVOID)slot;
-        }
+        _ASSERTE(rArg != NULL);
+        *(PVOID *)pArgDst = (PVOID)*rArg;
         break;
     }
 
@@ -173,36 +162,45 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID *pArgUnsafe, ArgDestination *argDe
     IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
     IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
     {
-        {
-            _ASSERTE(pArgUnsafe != NULL);
-            ARG_SLOT slot;
-            CreatePrimitiveValue(type, oType, pArgUnsafe, pMT, &slot);
-            *(INT64 *)pArgDst = (INT64)slot;
-        }
+        _ASSERTE(rArg != NULL);
+        *(INT64 *)pArgDst = (INT64)*rArg;
         break;
     }
 
     case ELEMENT_TYPE_VALUETYPE:
     {
-        // pArgUnsafe can be NULL but only for Nullable types; UnBoxIntoArg verifies that.
         {
-            if (!th.AsMethodTable()->UnBoxIntoArg(argDest, pArgUnsafe))
-                COMPlusThrow(kArgumentException, W("Arg_ObjObj"));
+            if (Nullable::IsNullableType(th))
+            {
+                // ASSUMPTION: we only receive T or NULL values, not Nullable<T> values
+                // and the values are boxed, unlike other value types.
+                OBJECTREF src = (OBJECTREF)(Object*)*rArg;
+                if (!th.AsMethodTable()->UnBoxIntoArg(argDest, src))
+                    COMPlusThrow(kArgumentException, W("Arg_ObjObj"));
+            }
+            else
+            {
+                if (rArg == NULL)
+                    COMPlusThrow(kArgumentException, W("Arg_ObjObj"));
+
+                MethodTable* pMT = th.GetMethodTable();
+                CopyValueClassArg(argDest, rArg, pMT, 0);
+            }
         }
         break;
     }
 
+    case ELEMENT_TYPE_STRING:           // System.String
+    case ELEMENT_TYPE_CLASS:            // Class
+    case ELEMENT_TYPE_OBJECT:           // System.Object
     case ELEMENT_TYPE_SZARRAY:          // Single Dim
     case ELEMENT_TYPE_ARRAY:            // General Array
-    case ELEMENT_TYPE_CLASS:            // Class
-    case ELEMENT_TYPE_OBJECT:
-    case ELEMENT_TYPE_STRING:           // System.String
     case ELEMENT_TYPE_VAR:
     {
-        if (pArgUnsafe == NULL)
+        if (rArg == NULL)
             *(PVOID *)pArgDst = 0;
         else
-            *(PVOID *)pArgDst = OBJECTREFToObject((OBJECTREF)(Object*)*pArgUnsafe);
+            *(PVOID *)pArgDst = OBJECTREFToObject((OBJECTREF)(Object*)*rArg);
         break;
     }
 
@@ -212,57 +210,16 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID *pArgUnsafe, ArgDestination *argDe
         // heads these off and morphs the type handle to not be byref anymore
         _ASSERTE(!Nullable::IsNullableType(th.AsTypeDesc()->GetTypeParam()));
 
-        *(PVOID *)pArgDst = pArgUnsafe;
+        *(PVOID *)pArgDst = rArg;
         break;
     }
-
-    //case ELEMENT_TYPE_TYPEDBYREF:
-    //{
-    //    TypedByRef* ptr = (TypedByRef*) pArgDst;
-    //    TypeHandle srcTH;
-    //    BOOL bIsZero = FALSE;
-
-    //    // If we got the univeral zero...Then assign it and exit.
-    //    if (rObj== 0) {
-    //        bIsZero = TRUE;
-    //        ptr->data = 0;
-    //        ptr->type = TypeHandle();
-    //    }
-    //    else {
-    //        bIsZero = FALSE;
-    //        srcTH = rObj->GetTypeHandle();
-    //        ptr->type = rObj->GetTypeHandle();
-    //    }
-
-    //    if (!bIsZero)
-    //    {
-    //        //CreateByRef only triggers GC in throw path
-    //        ptr->data = CreateByRef(srcTH, oType, srcTH, rObj, pObjUNSAFE);
-    //    }
-
-    //    break;
-    //}
 
     case ELEMENT_TYPE_PTR:
     case ELEMENT_TYPE_FNPTR:
     {
-        // If we got the univeral zero...Then assign it and exit.
-        if (pArgUnsafe == NULL) {
-            *(PVOID *)pArgDst = 0;
-        }
-        else {
-            OBJECTREF rObj = (OBJECTREF)(Object*)*pArgUnsafe;
-            if (rObj->GetMethodTable() == CoreLibBinder::GetClassIfExist(CLASS__POINTER) && type == ELEMENT_TYPE_PTR)
-                *(PVOID *)pArgDst = GetPointerValue(rObj);
-            else if (rObj->GetTypeHandle().AsMethodTable() == CoreLibBinder::GetElementType(ELEMENT_TYPE_I))
-            {
-                ARG_SLOT slot;
-                CreatePrimitiveValue(oType, oType, rObj, &slot);
-                *(PVOID *)pArgDst = (PVOID)slot;
-            }
-            else
-                COMPlusThrow(kArgumentException,W("Arg_ObjObj"));
-        }
+        _ASSERTE(rArg != NULL);
+        MethodTable* pMT = th.GetMethodTable();
+        CopyValueClassArg(argDest, rArg, pMT, 0);
         break;
     }
 

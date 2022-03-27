@@ -433,13 +433,21 @@ namespace System.Reflection.Emit
 
         internal Signature Signature
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                Debug.Assert(m_methodHandle != null);
-                Debug.Assert(m_parameterTypes != null);
+                [MethodImpl(MethodImplOptions.NoInlining)] // move lazy sig generation out of the hot path
+                Signature LazyCreateSignature()
+                {
+                    Debug.Assert(m_methodHandle != null);
+                    Debug.Assert(m_parameterTypes != null);
 
-                _signature ??= new Signature(m_methodHandle, m_parameterTypes, m_returnType, CallingConvention);
-                return _signature;
+                    Signature newSig = new Signature(m_methodHandle, m_parameterTypes, m_returnType, CallingConvention);
+                    Volatile.Write(ref _signature, newSig);
+                    return newSig;
+                }
+
+                return _signature ?? LazyCreateSignature();
             }
         }
 
@@ -475,7 +483,6 @@ namespace System.Reflection.Emit
                     Debug.Assert(parameters != null);
                     Span<object?> copyOfParameters;
                     Span<bool> shouldCopyBackParameters;
-                    Span<IntPtr> byrefParameters;
 
                     if (argCount <= MaxStackAllocArgCount)
                     {
@@ -484,11 +491,10 @@ namespace System.Reflection.Emit
                         shouldCopyBackParameters = new Span<bool>(ref argStorage._copyBack0, argCount);
 
                         StackAllocatedByRefs byrefStorage = default;
-                        byrefParameters = new Span<IntPtr>(&byrefStorage, argCount);
 
                         CheckArguments(
                             copyOfParameters,
-                            byrefParameters,
+                            (IntPtr*)&byrefStorage,
                             shouldCopyBackParameters,
                             parameters,
                             Signature.Arguments,
@@ -504,9 +510,9 @@ namespace System.Reflection.Emit
                         copyOfParameters = new Span<object?>(objHolder, 0, argCount);
 
                         // We don't check a max stack size since we are invoking a method which
-                        // natually requires a stack size that is dependent on the arg count\size.
+                        // naturally requires a stack size that is dependent on the arg count\size.
                         IntPtr* byrefStorage = stackalloc IntPtr[argCount];
-                        byrefParameters = new Span<IntPtr>(byrefStorage, argCount);
+                        Buffer.ZeroMemory((byte*)byrefStorage, (uint)(argCount * sizeof(IntPtr)));
 
                         bool* boolHolder = stackalloc bool[argCount];
                         shouldCopyBackParameters = new Span<bool>(boolHolder, argCount);
@@ -518,7 +524,7 @@ namespace System.Reflection.Emit
                             RegisterForGCReporting(&reg);
                             CheckArguments(
                                 copyOfParameters,
-                                byrefParameters,
+                                byrefStorage,
                                 shouldCopyBackParameters,
                                 parameters,
                                 Signature.Arguments,

@@ -133,7 +133,6 @@ namespace System.Reflection
                     Debug.Assert(parameters != null);
                     Span<object?> copyOfParameters;
                     Span<bool> shouldCopyBackParameters;
-                    Span<IntPtr> byrefParameters;
 
                     if (argCount <= MaxStackAllocArgCount)
                     {
@@ -142,11 +141,10 @@ namespace System.Reflection
                         shouldCopyBackParameters = new Span<bool>(ref argStorage._copyBack0, argCount);
 
                         StackAllocatedByRefs byrefStorage = default;
-                        byrefParameters = new Span<IntPtr>(&byrefStorage, argCount);
 
                         CheckArguments(
                             copyOfParameters,
-                            byrefParameters,
+                            (IntPtr*)&byrefStorage,
                             shouldCopyBackParameters,
                             parameters,
                             ArgumentTypes,
@@ -162,9 +160,9 @@ namespace System.Reflection
                         copyOfParameters = new Span<object?>(objHolder, 0, argCount);
 
                         // We don't check a max stack size since we are invoking a method which
-                        // natually requires a stack size that is dependent on the arg count\size.
+                        // naturally requires a stack size that is dependent on the arg count\size.
                         IntPtr* byrefStorage = stackalloc IntPtr[argCount];
-                        byrefParameters = new Span<IntPtr>(byrefStorage, argCount);
+                        Buffer.ZeroMemory((byte*)byrefStorage, (uint)(argCount * sizeof(IntPtr)));
 
                         bool* boolHolder = stackalloc bool[argCount];
                         shouldCopyBackParameters = new Span<bool>(boolHolder, argCount);
@@ -176,7 +174,7 @@ namespace System.Reflection
                             RegisterForGCReporting(&reg);
                             CheckArguments(
                                 copyOfParameters,
-                                byrefParameters,
+                                byrefStorage,
                                 shouldCopyBackParameters,
                                 parameters,
                                 ArgumentTypes,

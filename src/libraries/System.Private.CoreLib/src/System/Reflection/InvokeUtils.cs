@@ -9,7 +9,7 @@ namespace System.Reflection
 {
     internal static class InvokeUtils
     {
-        // This method is similar to the CoreAOT method ConvertOrWidenPrimitivesEnumsAndPointersIfPossible().
+        // This method is similar to the NativeAot method ConvertOrWidenPrimitivesEnumsAndPointersIfPossible().
         public static object ConvertOrWiden(Type srcType, CorElementType srcElementType, object srcObject, Type dstType, CorElementType dstElementType)
         {
             object dstObject;
@@ -117,15 +117,8 @@ namespace System.Reflection
                 return true;
             }
 
-            if (srcObject is Pointer srcPointer)
-            {
-                //CorElementType dstElementType = RuntimeTypeHandle.GetCorElementType((RuntimeType)typeof(void*));
-                //if (dstEEType == dstElementType || RuntimeImports.AreTypesAssignable(pSourceType: srcPointer.GetPointerType().TypeHandle.ToEETypePtr(), pTargetType: dstEEType))
-                {
-                    dstIntPtr = srcPointer.GetPointerValue();
-                    return true;
-                }
-            }
+            // The source pointer should already have been converted to an IntPtr.
+            Debug.Assert(srcObject is not Pointer);
 
             dstIntPtr = IntPtr.Zero;
             return false;

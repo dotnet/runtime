@@ -51,7 +51,7 @@ class InvokeUtil
 {
 
 public:
-    static void CopyArg(TypeHandle th, PVOID *pArgRef, ArgDestination *argDest);
+    static void CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest);
 
     // Given a type, this routine will convert an return value representing that
     //  type into an ObjectReference.  If the type is a primitive, the
@@ -153,9 +153,6 @@ public:
     static TypeHandle GetPointerType(OBJECTREF pObj);
     static void* GetPointerValue(OBJECTREF pObj);
     static void* GetIntPtrValue(OBJECTREF pObj);
-
-private:
-    static void* CreateByRef(TypeHandle dstTh,CorElementType srcType, TypeHandle srcTH,OBJECTREF srcObj, OBJECTREF *pIncomingObj);
 
 private:
     // The Attributes Table

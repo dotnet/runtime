@@ -762,10 +762,9 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         UINT structSize = argit.GetArgSize();
 
         bool needsStackCopy = false;
-        bool needsToInitValueClass = false;
+        ArgDestination argDest(pTransitionBlock, ofs, argit.GetArgLocDescForStructInRegs());
 
-        MethodTable * pMT = th.GetMethodTable();
-
+        MethodTable* pMT = NULL;
         TypeHandle nullableType = NullableTypeOfByref(th);
         if (!nullableType.IsNull()) {
             // A boxed Nullable<T> is represented as boxed T. So to pass a Nullable<T> by reference,
@@ -775,10 +774,11 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
             structSize = th.GetSize();
             needsStackCopy = true;
         }
-        else if (args[i] == NULL && pMT->IsByRefLike()) {
-            // A byref-like type can't be boxed but the arg value can be passed as a null in which
-            // case we need to initialize the ref struct.
-            needsToInitValueClass = true;
+        else if (args[i] == NULL && ((pMT = th.GetMethodTable())->IsByRefLike())) {
+            // A byref-like type can't be boxed but the Invoke() arg value can be passed as a null object where that is
+            // marshalled as a null reference to indicate we need to initialize the byref-like type here.
+            InitValueClassArg(&argDest, pMT);
+            continue;
         }
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
         else if (argit.IsArgPassedByRef())
@@ -787,13 +787,13 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         }
 #endif
 
-        ArgDestination argDest(pTransitionBlock, ofs, argit.GetArgLocDescForStructInRegs());
-
         if (needsStackCopy)
         {
+            pMT = th.GetMethodTable();
             _ASSERTE(pMT && pMT->IsValueType());
 
             PVOID pArgDst = argDest.GetDestinationAddress();
+
             PVOID pStackCopy = _alloca(structSize);
             *(PVOID *)pArgDst = pStackCopy;
 
@@ -812,14 +812,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
             argDest = ArgDestination(pStackCopy, 0, NULL);
         }
 
-        if (needsToInitValueClass)
-        {
-            InitValueClassArg(&argDest, pMT);
-        }
-        else
-        {
-            InvokeUtil::CopyArg(th, (PVOID *)args[i], &argDest);
-        }
+        InvokeUtil::CopyArg(th, (PVOID **)&(args[i]), &argDest);
     }
 
     ENDFORBIDGC();
