@@ -178,6 +178,11 @@ bool DetectCPUFeatures()
                         {
                             g_cpuFeatures |= XArchIntrinsicConstants_Sse42;
 
+                            if ((cpuidInfo[ECX] & (1 << 22)) != 0)                                          // MOVBE
+                            {
+                                g_cpuFeatures |= XArchIntrinsicConstants_Movbe;
+                            }
+
                             if ((cpuidInfo[ECX] & (1 << 23)) != 0)                                          // POPCNT
                             {
                                 g_cpuFeatures |= XArchIntrinsicConstants_Popcnt;
