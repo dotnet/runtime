@@ -6900,22 +6900,15 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                         }
                     }
                 }
-                else if (tree->OperIs(GT_ASG))
+                else if (tree->OperRequiresAsgFlag())
                 {
-                    // If the LHS of the assignment has a global reference, then assume it's a global side effect.
-                    GenTree* lhs = tree->AsOp()->gtOp1;
-                    if (lhs->gtFlags & GTF_GLOB_REF)
+                    // Assume "ASG(<not marked with GLOB_REF>, ...)" stores are not globally visible.
+                    if (!tree->OperIs(GT_ASG) || ((tree->gtGetOp1()->gtFlags & GTF_GLOB_REF) != 0))
                     {
+                        INDEBUG(failReason = "store to globally visible memory");
+                        treeIsHoistable    = false;
                         m_beforeSideEffect = false;
                     }
-                }
-                else if (tree->OperIs(GT_XADD, GT_XORR, GT_XAND, GT_XCHG, GT_LOCKADD, GT_CMPXCHG, GT_MEMORYBARRIER))
-                {
-                    // If this node is a MEMORYBARRIER or an Atomic operation
-                    // then don't hoist and stop any further hoisting after this node
-                    INDEBUG(failReason = "atomic op or memory barrier";)
-                    treeIsHoistable    = false;
-                    m_beforeSideEffect = false;
                 }
             }
 
