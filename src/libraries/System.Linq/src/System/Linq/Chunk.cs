@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
 {
@@ -50,6 +51,24 @@ namespace System.Linq
         private static IEnumerable<TSource[]> ChunkIterator<TSource>(IEnumerable<TSource> source, int size)
         {
             using IEnumerator<TSource> e = source.GetEnumerator();
+
+            // TODO what should the threshold be?
+            if (size > 1000)
+            {
+                if (TryCreateInitialChunkForLargeSize(e, size, out TSource[]? chunk))
+                {
+                    yield return chunk;
+                    if (chunk.Length < size)
+                    {
+                        yield break;
+                    }
+                }
+                else
+                {
+                    yield break;
+                }
+            }
+
             while (e.MoveNext())
             {
                 TSource[] chunk = new TSource[size];
@@ -72,6 +91,29 @@ namespace System.Linq
                     yield break;
                 }
             }
+        }
+
+        /// <summary>
+        /// When <paramref name="size"/> is very large, in many cases there will only be one chunk and that chunk will
+        /// be much smaller than <paramref name="size"/>. Therefore, it is worthwhile to build that chunk incrementally
+        /// rather than pre-allocating a <paramref name="size"/>-length array.
+        /// </summary>
+        private static bool TryCreateInitialChunkForLargeSize<TSource>(IEnumerator<TSource> enumerator, int size, [NotNullWhen(returnValue: true)] out TSource[]? chunk)
+        {
+            LargeArrayBuilder<TSource> builder = new();
+            for (var i = 0; i < size && enumerator.MoveNext(); i++)
+            {
+                builder.Add(enumerator.Current);
+            }
+
+            if (builder.Count == 0)
+            {
+                chunk = null;
+                return false;
+            }
+
+            chunk = builder.ToArray();
+            return true;
         }
     }
 }
