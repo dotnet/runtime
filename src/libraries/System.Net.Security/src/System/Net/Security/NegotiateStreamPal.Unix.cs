@@ -32,7 +32,7 @@ namespace System.Net.Security
 
         }
 
-        internal static string QueryContextAssociatedName(SafeDeleteContext? securityContext)
+        internal static string QueryContextAssociatedName(SafeDeleteContext? _/*securityContext*/)
         {
             throw new PlatformNotSupportedException(SR.net_nego_server_not_supported);
         }

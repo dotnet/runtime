@@ -184,7 +184,7 @@ namespace System.Text.Json.Serialization
                 {
                     if (state.CanContainMetadata)
                     {
-                        JsonSerializer.ValidateMetadataForObjectConverter(this, ref reader, ref state);
+                        JsonSerializer.ValidateMetadataForObjectConverter(ref reader, ref state);
                     }
 
                     if (state.Current.MetadataPropertyNames == MetadataPropertyName.Ref)

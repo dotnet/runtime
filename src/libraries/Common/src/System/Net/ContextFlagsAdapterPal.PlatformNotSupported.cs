@@ -9,6 +9,7 @@ namespace System.Net
     [UnsupportedOSPlatform("tvos")]
     internal static class ContextFlagsAdapterPal
     {
+#pragma warning disable IDE0060
         internal static ContextFlagsPal GetContextFlagsPalFromInterop(Interop.NetSecurityNative.GssFlags gssFlags, bool isServer)
         {
             throw new PlatformNotSupportedException();
@@ -18,5 +19,6 @@ namespace System.Net
         {
             throw new PlatformNotSupportedException();
         }
+#pragma warning restore IDE0060
     }
 }

@@ -96,7 +96,6 @@ namespace System.Security.Cryptography
         {
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.ECB,
-                paddingMode,
                 Key,
                 iv: default,
                 blockSize: BlockSize / BitsPerByte,
@@ -118,7 +117,6 @@ namespace System.Security.Cryptography
         {
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.ECB,
-                paddingMode,
                 Key,
                 iv: default,
                 blockSize: BlockSize / BitsPerByte,
@@ -141,7 +139,6 @@ namespace System.Security.Cryptography
         {
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CBC,
-                paddingMode,
                 Key,
                 iv,
                 blockSize: BlockSize / BitsPerByte,
@@ -164,7 +161,6 @@ namespace System.Security.Cryptography
         {
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CBC,
-                paddingMode,
                 Key,
                 iv,
                 blockSize: BlockSize / BitsPerByte,
@@ -190,7 +186,6 @@ namespace System.Security.Cryptography
 
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CFB,
-                paddingMode,
                 Key,
                 iv,
                 blockSize: BlockSize / BitsPerByte,
@@ -216,7 +211,6 @@ namespace System.Security.Cryptography
 
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CFB,
-                paddingMode,
                 Key,
                 iv,
                 blockSize: BlockSize / BitsPerByte,

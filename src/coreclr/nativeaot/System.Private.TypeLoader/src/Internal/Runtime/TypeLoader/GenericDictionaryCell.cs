@@ -664,7 +664,7 @@ namespace Internal.Runtime.TypeLoader
                         case TypeLoaderEnvironment.MethodAddressType.Canonical:
                             {
                                 bool methodRequestedIsCanonical = Method.IsCanonicalMethod(CanonicalFormKind.Specific);
-                                bool requestedMethodNeedsDictionaryWhenCalledAsCanonical = NeedsDictionaryParameterToCallCanonicalVersion(Method);
+                                bool requestedMethodNeedsDictionaryWhenCalledAsCanonical = NeedsDictionaryParameterToCallCanonicalVersion();
 
                                 if (!requestedMethodNeedsDictionaryWhenCalledAsCanonical || methodRequestedIsCanonical)
                                 {
@@ -676,7 +676,7 @@ namespace Internal.Runtime.TypeLoader
                         case TypeLoaderEnvironment.MethodAddressType.UniversalCanonical:
                             {
                                 if (Method.IsCanonicalMethod(CanonicalFormKind.Universal) &&
-                                    !NeedsDictionaryParameterToCallCanonicalVersion(Method) &&
+                                    !NeedsDictionaryParameterToCallCanonicalVersion() &&
                                     !UniversalGenericParameterLayout.MethodSignatureHasVarsNeedingCallingConventionConverter(
                                         Method.GetTypicalMethodDefinition().Signature))
                                 {
@@ -737,7 +737,7 @@ namespace Internal.Runtime.TypeLoader
                 Debug.Assert((_exactFunctionPointer != IntPtr.Zero) || (Method.FunctionPointer != IntPtr.Zero) || (Method.UsgFunctionPointer != IntPtr.Zero));
             }
 
-            private bool NeedsDictionaryParameterToCallCanonicalVersion(MethodDesc method)
+            private bool NeedsDictionaryParameterToCallCanonicalVersion()
             {
                 if (Method.HasInstantiation)
                     return true;

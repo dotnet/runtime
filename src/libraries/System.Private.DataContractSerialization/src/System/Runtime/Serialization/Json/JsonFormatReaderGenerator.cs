@@ -184,7 +184,7 @@ namespace System.Runtime.Serialization.Json
                     paramTypes[i] = parameters[i].ParameterType;
 
                 DynamicMethod dynamicMethod = new DynamicMethod(methodName, signature.ReturnType, paramTypes, typeof(JsonFormatReaderGenerator).Module, allowPrivateMemberAccess);
-                ilg.BeginMethod(dynamicMethod, delegateType, methodName, paramTypes, allowPrivateMemberAccess);
+                ilg.BeginMethod(dynamicMethod, delegateType, methodName, paramTypes);
             }
 
             private void InitArgs()

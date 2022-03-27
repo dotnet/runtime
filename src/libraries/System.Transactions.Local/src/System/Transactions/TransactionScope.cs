@@ -877,7 +877,7 @@ namespace System.Transactions
                     etwLog.TransactionScopeInternalError("TransactionScopeTimerObjectInvalid");
                 }
 
-                throw TransactionException.Create(TraceSourceType.TraceSourceBase, SR.InternalError + SR.TransactionScopeTimerObjectInvalid, null);
+                throw TransactionException.Create(SR.InternalError + SR.TransactionScopeTimerObjectInvalid, null);
             }
 
             scope.Timeout();
@@ -1074,7 +1074,7 @@ namespace System.Transactions
                     EnterpriseServices.VerifyEnterpriseServicesOk();
                     if (EnterpriseServices.UseServiceDomainForCurrent())
                     {
-                        EnterpriseServices.PushServiceDomain(newCurrent);
+                        EnterpriseServices.PushServiceDomain();
                     }
                     else
                     {
@@ -1084,7 +1084,7 @@ namespace System.Transactions
 
                 case EnterpriseServicesInteropOption.Full:
                     EnterpriseServices.VerifyEnterpriseServicesOk();
-                    EnterpriseServices.PushServiceDomain(newCurrent);
+                    EnterpriseServices.PushServiceDomain();
                     break;
             }
         }

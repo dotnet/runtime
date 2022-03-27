@@ -76,7 +76,7 @@ namespace System.Runtime
 
         // This is a fail-fast function used by the runtime as a last resort that will terminate the process with
         // as little effort as possible. No guarantee is made about the semantics of this fail-fast.
-        internal static void FallbackFailFast(RhFailFastReason reason, object unhandledException)
+        internal static void FallbackFailFast(RhFailFastReason _ /*reason*/, object _1 /*unhandledException*/)
         {
             InternalCalls.RhpFallbackFailFast();
         }
@@ -923,6 +923,7 @@ namespace System.Runtime
             }
         }
 
+#pragma warning disable IDE0060
         [UnmanagedCallersOnly(EntryPoint = "RhpFailFastForPInvokeExceptionPreemp", CallConvs = new Type[] { typeof(CallConvCdecl) })]
         public static void RhpFailFastForPInvokeExceptionPreemp(IntPtr PInvokeCallsiteReturnAddr, void* pExceptionRecord, void* pContextRecord)
         {
@@ -933,5 +934,7 @@ namespace System.Runtime
         {
             FailFastViaClasslib(RhFailFastReason.PN_UnhandledExceptionFromPInvoke, null, classlibBreadcrumb);
         }
+#pragma warning restore IDE0060
+
     } // static class EH
 }

@@ -104,16 +104,16 @@ namespace System.Drawing.Drawing2D
 
         public void Dispose()
         {
-            Dispose(true);
+            DisposeInternal();
             System.GC.SuppressFinalize(this);
         }
 
         ~GraphicsPath()
         {
-            Dispose(false);
+            DisposeInternal();
         }
 
-        private void Dispose(bool disposing)
+        private void DisposeInternal()
         {
             int status;
             if (_nativePath != IntPtr.Zero)

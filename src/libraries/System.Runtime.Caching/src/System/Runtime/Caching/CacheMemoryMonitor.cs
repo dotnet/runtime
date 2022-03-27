@@ -60,7 +60,7 @@ namespace System.Runtime.Caching
             bool dispose = true;
             try
             {
-                _sizedRefMultiple = new SRefMultiple(_memoryCache.AllSRefTargets);
+                _sizedRefMultiple = new SRefMultiple();
                 SetLimit(cacheMemoryLimitMegabytes);
                 InitHistory();
                 dispose = false;

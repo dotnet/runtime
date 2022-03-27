@@ -34,7 +34,7 @@ namespace System.Threading.Tasks
 
         /// <summary>Processes an IAsyncResult returned by Begin.</summary>
         /// <param name="asyncResult">The IAsyncResult to unwrap.</param>
-        public static void End(IAsyncResult asyncResult)
+        public static void End(IAsyncResult asyncResult!!)
         {
             if (GetTask(asyncResult) is Task t)
             {
@@ -42,29 +42,23 @@ namespace System.Threading.Tasks
                 return;
             }
 
-            ThrowArgumentException(asyncResult);
+            throw new ArgumentException(null, nameof(asyncResult));
         }
 
         /// <summary>Processes an IAsyncResult returned by Begin.</summary>
         /// <param name="asyncResult">The IAsyncResult to unwrap.</param>
-        public static TResult End<TResult>(IAsyncResult asyncResult)
+        public static TResult End<TResult>(IAsyncResult asyncResult!!)
         {
             if (GetTask(asyncResult) is Task<TResult> task)
             {
                 return task.GetAwaiter().GetResult();
             }
 
-            ThrowArgumentException(asyncResult);
-            return default!; // unreachable
+            throw new ArgumentException(null, nameof(asyncResult));
         }
 
         /// <summary>Gets the task represented by the IAsyncResult.</summary>
         public static Task? GetTask(IAsyncResult asyncResult) => (asyncResult as TaskAsyncResult)?._task;
-
-        /// <summary>Throws an argument exception for the invalid <paramref name="asyncResult"/>.</summary>
-        [DoesNotReturn]
-        private static void ThrowArgumentException(IAsyncResult asyncResult!!) =>
-            throw new ArgumentException(null, nameof(asyncResult));
 
         /// <summary>Provides a simple IAsyncResult that wraps a Task.</summary>
         /// <remarks>

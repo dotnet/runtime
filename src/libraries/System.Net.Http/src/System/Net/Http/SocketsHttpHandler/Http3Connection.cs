@@ -632,7 +632,7 @@ namespace System.Net.Http
                             }
                             return;
                         default:
-                            await SkipUnknownPayloadAsync(frameType.GetValueOrDefault(), payloadLength).ConfigureAwait(false);
+                            await SkipUnknownPayloadAsync(payloadLength).ConfigureAwait(false);
                             break;
                     }
                 }
@@ -750,7 +750,7 @@ namespace System.Net.Http
                 OnServerGoAway(lastStreamId);
             }
 
-            async ValueTask SkipUnknownPayloadAsync(Http3FrameType frameType, long payloadLength)
+            async ValueTask SkipUnknownPayloadAsync(long payloadLength)
             {
                 while (payloadLength != 0)
                 {

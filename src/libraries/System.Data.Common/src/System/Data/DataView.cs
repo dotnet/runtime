@@ -1203,7 +1203,7 @@ namespace System.Data
             {
                 if (listAccessors == null || listAccessors.Length == 0)
                 {
-                    return _table.GetPropertyDescriptorCollection(null);
+                    return _table.GetPropertyDescriptorCollection();
                 }
                 else
                 {
@@ -1216,7 +1216,7 @@ namespace System.Data
                     DataTable? foundTable = dataSet.FindTable(_table, listAccessors, 0);
                     if (foundTable != null)
                     {
-                        return foundTable.GetPropertyDescriptorCollection(null);
+                        return foundTable.GetPropertyDescriptorCollection();
                     }
                 }
             }

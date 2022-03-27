@@ -18,7 +18,6 @@ namespace System.Net.Quic.Implementations.Mock
         {
             return new MockConnection(options.RemoteEndPoint!,
                                       options.ClientAuthenticationOptions,
-                                      options.LocalEndPoint,
                                       options.MaxUnidirectionalStreams,
                                       options.MaxBidirectionalStreams);
         }

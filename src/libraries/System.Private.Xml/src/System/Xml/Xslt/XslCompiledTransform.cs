@@ -134,7 +134,7 @@ namespace System.Xml.Xsl
             }
             if (!settings.CheckOnly)
             {
-                CompileQilToMsil(settings);
+                CompileQilToMsil();
             }
         }
 
@@ -160,7 +160,7 @@ namespace System.Xml.Xsl
             return null;
         }
 
-        private void CompileQilToMsil(XsltSettings settings)
+        private void CompileQilToMsil()
         {
             _command = new XmlILGenerator().Generate(_qil!, null)!;
             OutputSettings = _command.StaticData.DefaultWriterSettings;

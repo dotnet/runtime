@@ -7,7 +7,7 @@ namespace System
 {
     public partial class MissingMemberException : MemberAccessException
     {
-        internal static string FormatSignature(byte[] signature)
+        internal static string FormatSignature(byte[] _ /*signature*/)
         {
             // This is not the correct implementation, however, it's probably not worth the time to port given that
             //  (1) it's for a diagnostic

@@ -1340,7 +1340,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 //.Replace("System.Decimal", "decimal")
                 .ToString();
 
-        internal async Task<MonoBinaryReader> GetCAttrsFromType(int objectId, int typeId, string attrName, CancellationToken token)
+        internal async Task<MonoBinaryReader> GetCAttrsFromType(int typeId, string attrName, CancellationToken token)
         {
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write(typeId);
@@ -1392,7 +1392,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             string expr = "";
             try {
-                var getCAttrsRetReader = await GetCAttrsFromType(objectId, typeId, "System.Diagnostics.DebuggerDisplayAttribute", token);
+                var getCAttrsRetReader = await GetCAttrsFromType(typeId, "System.Diagnostics.DebuggerDisplayAttribute", token);
                 if (getCAttrsRetReader == null)
                     return null;
 
@@ -2328,7 +2328,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public async Task<JArray> GetValuesFromDebuggerProxyAttribute(int objectId, int typeId, CancellationToken token)
         {
             try {
-                var getCAttrsRetReader = await GetCAttrsFromType(objectId, typeId, "System.Diagnostics.DebuggerTypeProxyAttribute", token);
+                var getCAttrsRetReader = await GetCAttrsFromType(typeId, "System.Diagnostics.DebuggerTypeProxyAttribute", token);
                 var methodId = -1;
                 if (getCAttrsRetReader == null)
                     return null;

@@ -118,7 +118,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (state.CanContainMetadata)
                     {
-                        JsonSerializer.ValidateMetadataForObjectConverter(this, ref reader, ref state);
+                        JsonSerializer.ValidateMetadataForObjectConverter(ref reader, ref state);
                     }
 
                     if (state.Current.MetadataPropertyNames == MetadataPropertyName.Ref)
@@ -127,7 +127,7 @@ namespace System.Text.Json.Serialization.Converters
                         return true;
                     }
 
-                    BeginRead(ref state, ref reader, options);
+                    BeginRead(ref state, options);
 
                     state.Current.ObjectState = StackFrameObjectState.ConstructorArguments;
                 }
@@ -225,7 +225,7 @@ namespace System.Text.Json.Serialization.Converters
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ReadConstructorArguments(ref ReadStack state, ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
-            BeginRead(ref state, ref reader, options);
+            BeginRead(ref state, options);
 
             while (true)
             {
@@ -260,7 +260,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
-                    ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
+                    ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
                     JsonPropertyInfo jsonPropertyInfo = JsonSerializer.LookupProperty(
                         obj: null!,
                         unescapedPropertyName,
@@ -352,7 +352,7 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     else
                     {
-                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
+                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
                         jsonPropertyInfo = JsonSerializer.LookupProperty(
                             obj: null!,
                             unescapedPropertyName,
@@ -503,7 +503,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void BeginRead(ref ReadStack state, ref Utf8JsonReader reader, JsonSerializerOptions options)
+        private void BeginRead(ref ReadStack state, JsonSerializerOptions options)
         {
             if (state.Current.JsonTypeInfo.ParameterCount != state.Current.JsonTypeInfo.ParameterCache!.Count)
             {
@@ -529,7 +529,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             Debug.Assert(state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
 
-            ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
+            ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
 
             jsonParameterInfo = state.Current.JsonTypeInfo.GetParameter(
                 unescapedPropertyName,

@@ -143,16 +143,16 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         public override void Dispose()
         {
-            Dispose(true);
+            DisposeInternal();
             GC.SuppressFinalize(this);
         }
 
         ~MsQuicListener()
         {
-            Dispose(false);
+            DisposeInternal();
         }
 
-        private void Dispose(bool disposing)
+        private void DisposeInternal()
         {
             if (_disposed)
             {

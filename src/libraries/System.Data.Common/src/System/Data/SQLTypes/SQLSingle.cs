@@ -23,7 +23,7 @@ namespace System.Data.SqlTypes
         private float _value;
         // constructor
         // construct a Null
-        private SqlSingle(bool fNull)
+        private SqlSingle(bool _)
         {
             _fNotNull = false;
             _value = (float)0.0;

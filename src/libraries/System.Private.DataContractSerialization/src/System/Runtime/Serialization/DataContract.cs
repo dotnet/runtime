@@ -59,11 +59,6 @@ namespace System.Runtime.Serialization
             return dataContract != null;
         }
 
-        internal static DataContract? GetDataContractFromGeneratedAssembly(Type? type)
-        {
-            return null;
-        }
-
         internal MethodInfo? ParseMethod
         {
             get { return _helper.ParseMethod; }
@@ -72,17 +67,17 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static DataContract GetDataContract(Type type)
         {
-            return GetDataContract(type.TypeHandle, type);
+            return GetDataContract(type.TypeHandle);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static DataContract GetDataContract(RuntimeTypeHandle typeHandle, Type type)
+        internal static DataContract GetDataContract(RuntimeTypeHandle typeHandle)
         {
-            return GetDataContract(typeHandle, type, SerializationMode.SharedContract);
+            return GetDataContract(typeHandle, SerializationMode.SharedContract);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static DataContract GetDataContract(RuntimeTypeHandle typeHandle, Type? type, SerializationMode mode)
+        internal static DataContract GetDataContract(RuntimeTypeHandle typeHandle, SerializationMode mode)
         {
             int id = GetId(typeHandle);
             DataContract dataContract = GetDataContractSkipValidation(id, typeHandle, null);
@@ -489,14 +484,6 @@ namespace System.Runtime.Serialization
                                 type = Type.GetTypeFromHandle(typeHandle)!;
 
                             type = UnwrapNullableType(type);
-
-                            dataContract = DataContract.GetDataContractFromGeneratedAssembly(type);
-                            if (dataContract != null)
-                            {
-                                AssignDataContractToId(dataContract, id);
-                                return dataContract;
-                            }
-
                             dataContract = CreateDataContract(type);
                         }
                     }

@@ -10,10 +10,12 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed partial class StorePal
     {
+#pragma warning disable IDE0060
         internal static partial IStorePal FromHandle(IntPtr storeHandle)
         {
             throw new PlatformNotSupportedException();
         }
+#pragma warning restore IDE0060
 
         internal static partial ILoaderPal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {

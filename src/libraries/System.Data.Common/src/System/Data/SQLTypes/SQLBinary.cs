@@ -17,7 +17,7 @@ namespace System.Data.SqlTypes
         // NOTE: If any instance fields change, update SqlTypeWorkarounds type in System.Data.SqlClient.
         private byte[]? _value;
 
-        private SqlBinary(bool fNull)
+        private SqlBinary(bool _)
         {
             _value = null;
         }
@@ -42,7 +42,7 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Initializes a new instance of the <see cref='SqlBinary'/> class with a binary object to be stored.  This constructor will not copy the value.
         /// </summary>
-        internal SqlBinary(byte[]? value, bool ignored)
+        internal SqlBinary(byte[]? value, bool _)
         {
             // if value is null, this generates a SqlBinary.Null
             _value = value;

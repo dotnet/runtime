@@ -92,6 +92,7 @@ namespace System.Diagnostics.Tracing
             WriteEventCore(eventId, 3, data);
         }
 
+#pragma warning disable IDE0060
         [Event(50, Level = EventLevel.Informational, Message = Messages.WorkerThread, Task = Tasks.ThreadPoolWorkerThread, Opcode = EventOpcode.Start, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         public unsafe void ThreadPoolWorkerThreadStart(
             uint ActiveWorkerThreadCount,
@@ -128,6 +129,7 @@ namespace System.Diagnostics.Tracing
                 WriteThreadEvent(57, ActiveWorkerThreadCount);
             }
         }
+#pragma warning restore IDE0060
 
 #if !ES_BUILD_STANDALONE
         [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",

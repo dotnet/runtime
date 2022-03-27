@@ -87,15 +87,15 @@ namespace System.Drawing.Imaging
                 _nativeImage = IntPtr.Zero;
             }
 
-            ~MetafileHolder() => Dispose(false);
+            ~MetafileHolder() => DisposeInternal();
 
             public void Dispose()
             {
-                Dispose(true);
+                DisposeInternal();
                 GC.SuppressFinalize(this);
             }
 
-            internal void Dispose(bool disposing)
+            internal void DisposeInternal()
             {
                 if (!_disposed)
                 {
@@ -130,11 +130,6 @@ namespace System.Drawing.Imaging
             _metafileHolder = new MetafileHolder();
             return _metafileHolder;
         }
-
-        // Usually called when cloning images that need to have
-        // not only the handle saved, but also the underlying stream
-        // (when using MS GDI+ and IStream we must ensure the stream stays alive for all the life of the Image)
-        internal Metafile(IntPtr ptr, Stream stream) => SetNativeImage(ptr);
 
         public Metafile(Stream stream!!)
         {

@@ -497,7 +497,6 @@ namespace System.Security.Cryptography
 
             return CapiHelper.SignValue(
                 SafeProvHandle,
-                SafeKeyHandle,
                 _parameters.KeyNumber,
                 CapiHelper.CALG_RSA_SIGN,
                 calgHash,

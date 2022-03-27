@@ -27,7 +27,7 @@ namespace System.Composition.Convention
         private List<Tuple<string, Func<Type, object>>> _metadataItemFuncs;
 
         // Constructor selector / configuration
-        private Func<IEnumerable<ConstructorInfo>, ConstructorInfo> _constructorFilter;
+        private Func<ConstructorInfo> _constructorFilter;
         private Action<ParameterInfo, ImportConventionBuilder> _configureConstuctorImports;
 
         //Property Import/Export selection and configuration
@@ -102,7 +102,7 @@ namespace System.Composition.Convention
         /// </summary>
         /// <param name="constructorSelector">Filter that selects a single constructor.</param>
         /// <returns>A part builder allowing further configuration of the part.</returns>
-        public PartConventionBuilder SelectConstructor(Func<IEnumerable<ConstructorInfo>, ConstructorInfo> constructorSelector!!)
+        public PartConventionBuilder SelectConstructor(Func<ConstructorInfo> constructorSelector!!)
         {
             _constructorFilter = constructorSelector;
             return this;
@@ -114,7 +114,7 @@ namespace System.Composition.Convention
         /// <param name="constructorSelector">Filter that selects a single constructor.</param>
         /// <param name="importConfiguration">Action configuring the parameters of the selected constructor.</param>
         /// <returns>A part builder allowing further configuration of the part.</returns>
-        public PartConventionBuilder SelectConstructor(Func<IEnumerable<ConstructorInfo>, ConstructorInfo> constructorSelector,
+        public PartConventionBuilder SelectConstructor(Func<ConstructorInfo> constructorSelector,
             Action<ParameterInfo, ImportConventionBuilder> importConfiguration!!)
         {
             _configureConstuctorImports = importConfiguration;
@@ -512,7 +512,7 @@ namespace System.Composition.Convention
 
             if (_constructorFilter != null)
             {
-                ConstructorInfo constructorInfo = _constructorFilter(constructors);
+                ConstructorInfo constructorInfo = _constructorFilter();
                 if (constructorInfo != null)
                 {
                     ConfigureConstructorAttributes(constructorInfo, ref configuredMembers, _configureConstuctorImports);

@@ -24,7 +24,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             address = address.Slice(0, (int)valueLen);
 
-            return new Internals.SocketAddress(SocketAddressPal.GetAddressFamily(address), address)
+            return new Internals.SocketAddress(address)
                 .GetIPEndPoint();
         }
 

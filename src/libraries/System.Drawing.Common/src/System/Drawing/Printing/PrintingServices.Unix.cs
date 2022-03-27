@@ -259,7 +259,7 @@ namespace System.Drawing.Printing
 
                 settings.DefaultPageSettings.PaperSource = LoadPrinterPaperSources(settings, defsource, paper_sources)!;
                 settings.DefaultPageSettings.PaperSize = LoadPrinterPaperSizes(ppd_handle, settings, defsize, paper_names);
-                LoadPrinterResolutionsAndDefault(printer, settings, ppd_handle);
+                LoadPrinterResolutionsAndDefault(settings, ppd_handle);
 
                 ppd = Marshal.PtrToStructure<PPD_FILE>(ppd_handle)!;
                 settings.landscape_angle = ppd.landscape;
@@ -398,7 +398,7 @@ namespace System.Drawing.Printing
             if (ppd_handle == IntPtr.Zero)
                 return;
 
-            LoadPrinterResolutionsAndDefault(printer, settings, ppd_handle);
+            LoadPrinterResolutionsAndDefault(settings, ppd_handle);
 
             ClosePrinter(ref ppd_handle);
         }
@@ -530,8 +530,7 @@ namespace System.Drawing.Printing
         /// Sets the available resolutions and default resolution from a
         /// printer's PPD file into settings.
         /// </summary>
-        private static void LoadPrinterResolutionsAndDefault(string printer,
-            PrinterSettings settings, IntPtr ppd_handle)
+        private static void LoadPrinterResolutionsAndDefault(PrinterSettings settings, IntPtr ppd_handle)
         {
             if (settings.printer_resolutions == null)
                 settings.printer_resolutions = new PrinterSettings.PrinterResolutionCollection(Array.Empty<PrinterResolution>());
@@ -622,11 +621,9 @@ namespace System.Drawing.Printing
         /// Gets a printer's settings for use in the print dialogue
         /// </summary>
         /// <param name="printer"></param>
-        /// <param name="port"></param>
-        /// <param name="type"></param>
         /// <param name="status"></param>
         /// <param name="comment"></param>
-        internal static void GetPrintDialogInfo(string printer, ref string port, ref string type, ref string status, ref string comment)
+        internal static void GetPrintDialogInfo(string printer, ref string status, ref string comment)
         {
             int count = 0, state = -1;
             bool found = false;
@@ -812,7 +809,7 @@ namespace System.Drawing.Printing
             return LibcupsNative.cupsParseOptions(sb.ToString(), 0, ref options);
         }
 
-        internal static bool StartDoc(GraphicsPrinter gr, string doc_name, string output_file)
+        internal static bool StartDoc(GraphicsPrinter gr, string doc_name)
         {
             DOCINFO doc = (DOCINFO)s_docInfo[gr.Hdc]!;
             doc.title = doc_name;
@@ -840,7 +837,7 @@ namespace System.Drawing.Printing
             return true;
         }
 
-        internal static bool StartPage(GraphicsPrinter gr)
+        internal static bool StartPage()
         {
             return true;
         }
@@ -1028,9 +1025,9 @@ namespace System.Drawing.Printing
 
     internal static class SysPrn
     {
-        internal static void GetPrintDialogInfo(string printer, ref string port, ref string type, ref string status, ref string comment)
+        internal static void GetPrintDialogInfo(string printer, ref string status, ref string comment)
         {
-            PrintingServices.GetPrintDialogInfo(printer, ref port, ref type, ref status, ref comment);
+            PrintingServices.GetPrintDialogInfo(printer, ref status, ref comment);
         }
 
         internal sealed class Printer

@@ -52,7 +52,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract> boundContracts)
+        internal DataContract BindGenericParameters(DataContract[] paramContracts)
         {
             return paramContracts[ParameterPosition];
         }

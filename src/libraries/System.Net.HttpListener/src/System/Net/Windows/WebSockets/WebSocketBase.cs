@@ -1492,7 +1492,7 @@ namespace System.Net.WebSockets
                                     int count = 0;
                                     try
                                     {
-                                        ArraySegment<byte> payload = _webSocket._internalBuffer.ConvertNativeBuffer(action, dataBuffers[0], bufferType);
+                                        ArraySegment<byte> payload = _webSocket._internalBuffer.ConvertNativeBuffer(dataBuffers[0], bufferType);
 
                                         ReleaseLock(_webSocket.SessionHandle, ref sessionHandleLockTaken);
                                         HttpWebSocket.ThrowIfConnectionAborted(_webSocket._innerStream, true);
@@ -1550,7 +1550,7 @@ namespace System.Net.WebSockets
 
                                             List<ArraySegment<byte>> sendBuffers = new List<ArraySegment<byte>>((int)dataBufferCount);
                                             int sendBufferSize = 0;
-                                            ArraySegment<byte> framingBuffer = _webSocket._internalBuffer.ConvertNativeBuffer(action, dataBuffers[0], bufferType);
+                                            ArraySegment<byte> framingBuffer = _webSocket._internalBuffer.ConvertNativeBuffer(dataBuffers[0], bufferType);
                                             sendBuffers.Add(framingBuffer);
                                             sendBufferSize += framingBuffer.Count;
 
@@ -1571,7 +1571,7 @@ namespace System.Net.WebSockets
                                                 }
                                                 else
                                                 {
-                                                    payload = _webSocket._internalBuffer.ConvertNativeBuffer(action, dataBuffers[1], bufferType);
+                                                    payload = _webSocket._internalBuffer.ConvertNativeBuffer(dataBuffers[1], bufferType);
                                                 }
 
                                                 sendBuffers.Add(payload);
@@ -1757,14 +1757,14 @@ namespace System.Net.WebSockets
                         if (bufferType == WebSocketProtocolComponent.BufferType.Close)
                         {
                             payload = ArraySegment<byte>.Empty;
-                            _webSocket._internalBuffer.ConvertCloseBuffer(action, dataBuffers[0], out WebSocketCloseStatus closeStatus, out string? reason);
+                            _webSocket._internalBuffer.ConvertCloseBuffer(dataBuffers[0], out WebSocketCloseStatus closeStatus, out string? reason);
 
                             receiveResult = new WebSocketReceiveResult(bytesTransferred,
                                 messageType, true, closeStatus, reason);
                         }
                         else
                         {
-                            payload = _webSocket._internalBuffer.ConvertNativeBuffer(action, dataBuffers[0], bufferType);
+                            payload = _webSocket._internalBuffer.ConvertNativeBuffer(dataBuffers[0], bufferType);
 
                             bool endOfMessage = bufferType ==
                                 WebSocketProtocolComponent.BufferType.BinaryMessage ||

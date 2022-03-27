@@ -74,6 +74,8 @@ namespace System
 
     internal static class ConsolePal
     {
+#pragma warning disable IDE0060
+
         private static volatile bool s_consoleInitialized;
         private static JSObject? s_console;
 
@@ -224,5 +226,7 @@ namespace System
         public static void SetWindowPosition(int left, int top) => throw new PlatformNotSupportedException();
 
         public static void SetWindowSize(int width, int height) => throw new PlatformNotSupportedException();
+
+#pragma warning restore IDE0060
     }
 }

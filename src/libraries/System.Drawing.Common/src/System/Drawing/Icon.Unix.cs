@@ -251,7 +251,7 @@ namespace System.Drawing
             }
         }
 
-        internal Icon(string resourceName, bool undisposable)
+        internal Icon(string resourceName, bool _)
         {
             using (Stream? s = typeof(Icon).Assembly.GetManifestResourceStream(resourceName))
             {
@@ -614,7 +614,7 @@ namespace System.Drawing
                     ms.Position = 0;
 
                     // libgdiplus can now decode icons
-                    bitmap = (Bitmap)Image.LoadFromStream(ms, false);
+                    bitmap = (Bitmap)Image.LoadFromStream(ms);
                 }
             }
             return bitmap;

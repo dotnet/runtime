@@ -38,7 +38,7 @@ namespace System.Xml.Serialization
 
         public ReflectionXmlSerializationReader(XmlMapping mapping, XmlReader xmlReader, XmlDeserializationEvents events, string? encodingStyle)
         {
-            Init(xmlReader, events, encodingStyle, tempAssembly: null);
+            Init(xmlReader, events, encodingStyle);
             _mapping = mapping;
         }
 
@@ -559,7 +559,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
-        private void WriteMembers(ref object? o, Member[] members, UnknownNodeAction elementElseAction, UnknownNodeAction elseAction, Member? anyElement, Member? anyText)
+        private void WriteMembers(Member[] members, UnknownNodeAction elementElseAction, UnknownNodeAction elseAction, Member? anyElement, Member? anyText)
         {
             Reader.MoveToContent();
 
@@ -744,7 +744,7 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        private static bool IsSequence(Member[] members)
+        private static bool IsSequence()
         {
             // https://github.com/dotnet/runtime/issues/1402:
             // Currently the reflection based method treat this kind of type as normal types.
@@ -756,7 +756,7 @@ namespace System.Xml.Serialization
         private void WriteMemberElementsIf(Member[] expectedMembers, Member? anyElementMember, UnknownNodeAction elementElseAction, Fixup? fixup = null, CheckTypeSource? checkTypeSource = null)
         {
             bool checkType = checkTypeSource != null;
-            bool isSequence = IsSequence(expectedMembers);
+            bool isSequence = IsSequence();
             if (isSequence)
             {
                 // https://github.com/dotnet/runtime/issues/1402:
@@ -832,7 +832,7 @@ namespace System.Xml.Serialization
                 {
                     string? ns = e!.Form == XmlSchemaForm.Qualified ? e.Namespace : string.Empty;
                     bool isList = member!.Mapping.TypeDesc!.IsArrayLike && !member.Mapping.TypeDesc.IsArray;
-                    WriteElement(e, member.Mapping.CheckSpecified == SpecifiedAccessor.ReadWrite, isList && member.Mapping.TypeDesc.IsNullable, member.Mapping.ReadOnly, ns, member.FixupIndex, elementIndex, fixup, member);
+                    WriteElement(e, isList && member.Mapping.TypeDesc.IsNullable, member.Mapping.ReadOnly, ns, member.FixupIndex, fixup, member);
                 }
             }
             else
@@ -848,7 +848,7 @@ namespace System.Xml.Serialization
                         if (element.Any && element.Name.Length == 0)
                         {
                             string? ns = element.Form == XmlSchemaForm.Qualified ? element.Namespace : string.Empty;
-                            WriteElement(element, anyElement.CheckSpecified == SpecifiedAccessor.ReadWrite, false, false, ns, fixup: fixup, member: member);
+                            WriteElement(element, false, false, ns, fixup: fixup, member: member);
                             break;
                         }
                     }
@@ -862,16 +862,16 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
-        private object? WriteElement(ElementAccessor element, bool checkSpecified, bool checkForNull, bool readOnly, string? defaultNamespace, int fixupIndex = -1, int elementIndex = -1, Fixup? fixup = null, Member? member = null)
+        private object? WriteElement(ElementAccessor element, bool checkForNull, bool readOnly, string? defaultNamespace, int fixupIndex = -1, Fixup? fixup = null, Member? member = null)
         {
             object? value = null;
             if (element.Mapping is ArrayMapping arrayMapping)
             {
-                value = WriteArray(arrayMapping, readOnly, element.IsNullable, defaultNamespace, fixupIndex, fixup, member);
+                value = WriteArray(arrayMapping, readOnly, fixupIndex, fixup, member);
             }
             else if (element.Mapping is NullableMapping nullableMapping)
             {
-                value = WriteNullableMethod(nullableMapping, true, defaultNamespace);
+                value = WriteNullableMethod(nullableMapping, defaultNamespace);
             }
             else if (!element.Mapping!.IsSoap && (element.Mapping is PrimitiveMapping))
             {
@@ -991,7 +991,7 @@ namespace System.Xml.Serialization
                         if (sm.DerivedMappings != null)
                         {
                             XmlQualifiedName? tser = GetXsiType();
-                            if (tser == null || QNameEqual(tser, sm.XsiType!.Name, sm.XsiType.Namespace, defaultNamespace))
+                            if (tser == null || QNameEqual(tser, sm.XsiType!.Name, defaultNamespace))
                             {
                             }
                             else
@@ -1055,7 +1055,7 @@ namespace System.Xml.Serialization
             else if (mapping is NullableMapping nullableMapping)
             {
                 [RequiresUnreferencedCode("calls WriteNullableMethod")]
-                object? Wrapper() => WriteNullableMethod(nullableMapping, false, null);
+                object? Wrapper() => WriteNullableMethod(nullableMapping, null);
                 return Wrapper;
             }
 
@@ -1101,7 +1101,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
-        private object? WriteArray(ArrayMapping arrayMapping, bool readOnly, bool isNullable, string? defaultNamespace, int fixupIndex = -1, Fixup? fixup = null, Member? member = null)
+        private object? WriteArray(ArrayMapping arrayMapping, bool readOnly, int fixupIndex = -1, Fixup? fixup = null, Member? member = null)
         {
             object? o = null;
             if (arrayMapping.IsSoap)
@@ -1265,7 +1265,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
-        private object? WriteNullableMethod(NullableMapping nullableMapping, bool checkType, string? defaultNamespace)
+        private object? WriteNullableMethod(NullableMapping nullableMapping, string? defaultNamespace)
         {
             object? o = Activator.CreateInstance(nullableMapping.TypeDesc!.Type!);
             if (!ReadNull())
@@ -1275,7 +1275,7 @@ namespace System.Xml.Serialization
                 element.Any = false;
                 element.IsNullable = nullableMapping.BaseMapping!.TypeDesc!.IsNullable;
 
-                o = WriteElement(element, false, false, false, defaultNamespace);
+                o = WriteElement(element, false, false, defaultNamespace);
             }
 
             return o;
@@ -1298,8 +1298,8 @@ namespace System.Xml.Serialization
         {
             if (mapping.IsFlags)
             {
-                Hashtable table = WriteHashtable(mapping, mapping.TypeDesc!.Name);
-                return Enum.ToObject(mapping.TypeDesc.Type!, ToEnum(source, table, mapping.TypeDesc.Name));
+                Hashtable table = WriteHashtable(mapping);
+                return Enum.ToObject(mapping.TypeDesc!.Type!, ToEnum(source, table, mapping.TypeDesc.Name));
             }
             else
             {
@@ -1315,7 +1315,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private static Hashtable WriteHashtable(EnumMapping mapping, string name)
+        private static Hashtable WriteHashtable(EnumMapping mapping)
         {
             var h = new Hashtable();
             ConstantMapping[] constants = mapping.Constants!;
@@ -1574,7 +1574,7 @@ namespace System.Xml.Serialization
                 }
 
                 object? o = null;
-                if (xsiType == null || (!structMapping.TypeDesc.IsRoot && QNameEqual(xsiType, structMapping.TypeName, structMapping.Namespace, defaultNamespace)))
+                if (xsiType == null || (!structMapping.TypeDesc.IsRoot && QNameEqual(xsiType, structMapping.TypeName, defaultNamespace)))
                 {
                     if (structMapping.TypeDesc.IsRoot)
                     {
@@ -1585,7 +1585,7 @@ namespace System.Xml.Serialization
                 {
                     return o;
                 }
-                else if (structMapping.TypeDesc.IsRoot && WriteEnumAndArrayTypes(out o, structMapping, xsiType, defaultNamespace))
+                else if (structMapping.TypeDesc.IsRoot && WriteEnumAndArrayTypes(out o, xsiType, defaultNamespace))
                 {
                     return o;
                 }
@@ -1801,7 +1801,7 @@ namespace System.Xml.Serialization
                 }
 
                 Reader.ReadStartElement();
-                bool IsSequenceAllMembers = IsSequence(allMembers);
+                bool IsSequenceAllMembers = IsSequence();
                 if (IsSequenceAllMembers)
                 {
                     // https://github.com/dotnet/runtime/issues/1402:
@@ -1809,7 +1809,7 @@ namespace System.Xml.Serialization
                     // But potentially we can do some optimization for types that have ordered properties.
                 }
 
-                WriteMembers(ref o, allMembers, unknownNodeAction, unknownNodeAction, anyElementMember, anyTextMember);
+                WriteMembers(allMembers, unknownNodeAction, unknownNodeAction, anyElementMember, anyTextMember);
 
                 foreach (Member member in allMembers)
                 {
@@ -1830,13 +1830,13 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
-        private bool WriteEnumAndArrayTypes(out object? o, StructMapping mapping, XmlQualifiedName xsiType, string? defaultNamespace)
+        private bool WriteEnumAndArrayTypes(out object? o, XmlQualifiedName xsiType, string? defaultNamespace)
         {
             foreach (var m in _mapping.Scope!.TypeMappings)
             {
                 if (m is EnumMapping enumMapping)
                 {
-                    if (QNameEqual(xsiType, enumMapping.TypeName, enumMapping.Namespace, defaultNamespace))
+                    if (QNameEqual(xsiType, enumMapping.TypeName, defaultNamespace))
                     {
                         Reader.ReadStartElement();
                         Func<object, string> functor = (state) =>
@@ -1854,9 +1854,9 @@ namespace System.Xml.Serialization
 
                 if (m is ArrayMapping arrayMapping)
                 {
-                    if (QNameEqual(xsiType, arrayMapping.TypeName, arrayMapping.Namespace, defaultNamespace))
+                    if (QNameEqual(xsiType, arrayMapping.TypeName, defaultNamespace))
                     {
-                        o = WriteArray(arrayMapping, false, false, defaultNamespace);
+                        o = WriteArray(arrayMapping, false);
                         return true;
                     }
 
@@ -1873,7 +1873,7 @@ namespace System.Xml.Serialization
         {
             for (StructMapping? derived = mapping.DerivedMappings; derived != null; derived = derived.NextDerivedMapping)
             {
-                if (QNameEqual(xsiType, derived.TypeName, derived.Namespace, defaultNamespace))
+                if (QNameEqual(xsiType, derived.TypeName, defaultNamespace))
                 {
                     o = WriteStructMethod(derived, isNullable, checkType, defaultNamespace);
                     return true;
@@ -2076,7 +2076,7 @@ namespace System.Xml.Serialization
             return source.LocalName == name && string.Equals(source.NamespaceURI, ns);
         }
 
-        private static bool QNameEqual(XmlQualifiedName xsiType, string? name, string? ns, string? defaultNamespace)
+        private static bool QNameEqual(XmlQualifiedName xsiType, string? name, string? defaultNamespace)
         {
             return xsiType.Name == name && string.Equals(xsiType.Namespace, defaultNamespace);
         }

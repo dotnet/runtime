@@ -8,6 +8,7 @@ namespace Internal.Runtime
 {
     static unsafe class IDynamicCastableSupport
     {
+#pragma warning disable IDE0060
         [RuntimeExport("IDynamicCastableIsInterfaceImplemented")]
         internal static bool IDynamicCastableIsInterfaceImplemented(object instance, MethodTable* interfaceType, bool throwIfNotImplemented)
         {
@@ -20,5 +21,6 @@ namespace Internal.Runtime
             RuntimeImports.RhpFallbackFailFast();
             return default;
         }
+#pragma warning restore IDE0060
     }
 }

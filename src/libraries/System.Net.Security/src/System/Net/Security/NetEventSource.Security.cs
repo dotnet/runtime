@@ -91,7 +91,7 @@ namespace System.Net
               WriteEvent(SslStreamCtorId, thisOrContextObject, localId, remoteId);
 
         [NonEvent]
-        public void SecureChannelCtor(SecureChannel secureChannel, SslStream sslStream, string hostname, X509CertificateCollection? clientCertificates, EncryptionPolicy encryptionPolicy)
+        public void SecureChannelCtor(SecureChannel secureChannel, string hostname, X509CertificateCollection? clientCertificates, EncryptionPolicy encryptionPolicy)
         {
             if (IsEnabled())
             {

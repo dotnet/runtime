@@ -1280,9 +1280,9 @@ namespace System.Xml
             }
 
             if (!_bufferReader.IsStreamed)
-                return ReadContentAsBase64(_quotas.MaxArrayLength, _bufferReader.Buffer.Length);
+                return ReadContentAsBase64(_bufferReader.Buffer.Length);
 
-            return ReadContentAsBase64(_quotas.MaxArrayLength, XmlDictionaryReader.MaxInitialArrayLength);  // Initial count will get ignored
+            return ReadContentAsBase64(XmlDictionaryReader.MaxInitialArrayLength);  // Initial count will get ignored
         }
 
         public override int ReadElementContentAsBase64(byte[] buffer, int offset, int count)

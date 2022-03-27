@@ -320,7 +320,7 @@ namespace System.Net
             if (entry.HasFlag(PipelineEntryFlags.CreateDataConnection) && (response.PositiveCompletion || response.PositiveIntermediate))
             {
                 bool isSocketReady;
-                PipelineInstruction result = QueueOrCreateDataConection(entry, response, timeout, ref stream, out isSocketReady);
+                PipelineInstruction result = QueueOrCreateDataConection(entry, response, out isSocketReady);
                 if (!isSocketReady)
                     return result;
                 // otherwise we have a stream to create
@@ -576,8 +576,8 @@ namespace System.Net
                 else
                 {
                     string portCommand = (ServerAddress.AddressFamily == AddressFamily.InterNetwork || ServerAddress.IsIPv4MappedToIPv6) ? "PORT" : "EPRT";
-                    CreateFtpListenerSocket(request);
-                    commandList.Add(new PipelineEntry(FormatFtpCommand(portCommand, GetPortCommandLine(request))));
+                    CreateFtpListenerSocket();
+                    commandList.Add(new PipelineEntry(FormatFtpCommand(portCommand, GetPortCommandLine())));
                 }
 
                 if (request.ContentOffset > 0)
@@ -631,7 +631,7 @@ namespace System.Net
             return commandList.ToArray();
         }
 
-        private PipelineInstruction QueueOrCreateDataConection(PipelineEntry entry, ResponseDescription response, bool timeout, ref Stream? stream, out bool isSocketReady)
+        private PipelineInstruction QueueOrCreateDataConection(PipelineEntry entry, ResponseDescription response, out bool isSocketReady)
         {
             isSocketReady = false;
             if (_dataHandshakeStarted)
@@ -671,7 +671,7 @@ namespace System.Net
 
                 try
                 {
-                    _dataSocket = CreateFtpDataSocket((FtpWebRequest)_request!, Socket);
+                    _dataSocket = CreateFtpDataSocket(Socket);
                 }
                 catch (ObjectDisposedException)
                 {
@@ -1069,13 +1069,13 @@ namespace System.Net
         /// <summary>
         ///    <para>Creates the Listener socket</para>
         /// </summary>
-        private void CreateFtpListenerSocket(FtpWebRequest request)
+        private void CreateFtpListenerSocket()
         {
             // Gets an IPEndPoint for the local host for the data socket to bind to.
             IPEndPoint epListener = new IPEndPoint(((IPEndPoint)Socket.LocalEndPoint!).Address, 0);
             try
             {
-                _dataSocket = CreateFtpDataSocket(request, Socket);
+                _dataSocket = CreateFtpDataSocket(Socket);
             }
             catch (ObjectDisposedException)
             {
@@ -1090,7 +1090,7 @@ namespace System.Net
         /// <summary>
         ///    <para>Builds a command line to send to the server with proper port and IP address of client</para>
         /// </summary>
-        private string GetPortCommandLine(FtpWebRequest request)
+        private string GetPortCommandLine()
         {
             try
             {
@@ -1130,7 +1130,7 @@ namespace System.Net
         ///     This will handle either connecting to a port or listening for one
         ///    </para>
         /// </summary>
-        private static Socket CreateFtpDataSocket(FtpWebRequest request, Socket templateSocket)
+        private static Socket CreateFtpDataSocket(Socket templateSocket)
         {
             // Safe to be called under an Assert.
             Socket socket = new Socket(templateSocket.AddressFamily, templateSocket.SocketType, templateSocket.ProtocolType);

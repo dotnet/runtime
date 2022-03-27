@@ -41,7 +41,7 @@ namespace System.Net.Security
 
         internal SecureChannel(SslAuthenticationOptions sslAuthenticationOptions, SslStream sslStream)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SecureChannelCtor(this, sslStream, sslAuthenticationOptions.TargetHost!, sslAuthenticationOptions.ClientCertificates, sslAuthenticationOptions.EncryptionPolicy);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SecureChannelCtor(this, sslAuthenticationOptions.TargetHost!, sslAuthenticationOptions.ClientCertificates, sslAuthenticationOptions.EncryptionPolicy);
 
             SslStreamPal.VerifyPackageInfo();
             Debug.Assert(sslAuthenticationOptions.TargetHost != null, "sslAuthenticationOptions.TargetHost == null");
@@ -1139,7 +1139,7 @@ namespace System.Net.Security
                 NetEventSource.Info(this, $"alertMessage:{alertMessage}");
 
             SecurityStatusPal status;
-            status = SslStreamPal.ApplyAlertToken(ref _credentialsHandle, _securityContext, TlsAlertType.Fatal, alertMessage);
+            status = SslStreamPal.ApplyAlertToken(_securityContext, TlsAlertType.Fatal, alertMessage);
 
             if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
@@ -1160,7 +1160,7 @@ namespace System.Net.Security
         public ProtocolToken? CreateShutdownToken()
         {
             SecurityStatusPal status;
-            status = SslStreamPal.ApplyShutdownToken(ref _credentialsHandle, _securityContext!);
+            status = SslStreamPal.ApplyShutdownToken(_securityContext!);
 
             if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {

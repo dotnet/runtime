@@ -129,7 +129,7 @@ namespace System.Net.Internals
             SocketAddressPal.SetPort(Buffer, unchecked((ushort)port));
         }
 
-        internal SocketAddress(AddressFamily addressFamily, ReadOnlySpan<byte> buffer)
+        internal SocketAddress(ReadOnlySpan<byte> buffer)
         {
             Buffer = buffer.ToArray();
             InternalSize = Buffer.Length;

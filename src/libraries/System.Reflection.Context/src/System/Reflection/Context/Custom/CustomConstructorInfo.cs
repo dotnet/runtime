@@ -24,7 +24,7 @@ namespace System.Reflection.Context.Custom
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            return AttributeUtils.GetCustomAttributes(ReflectionContext, this, attributeType, inherit);
+            return AttributeUtils.GetCustomAttributes(ReflectionContext, this, attributeType);
         }
 
         public override bool IsDefined(Type attributeType, bool inherit)

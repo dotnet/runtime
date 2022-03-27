@@ -640,7 +640,7 @@ namespace System.Xml
                 {
                     foreach (SchemaEntity scEnt in schInfo.GeneralEntities.Values)
                     {
-                        XmlEntity ent = new XmlEntity(scEnt.Name.Name, scEnt.Text, scEnt.Pubid, scEnt.Url, scEnt.NData.IsEmpty ? null : scEnt.NData.Name, _doc);
+                        XmlEntity ent = new XmlEntity(scEnt.Name.Name, scEnt.Pubid, scEnt.Url, scEnt.NData.IsEmpty ? null : scEnt.NData.Name, _doc);
                         ent.SetBaseURI(scEnt.DeclaredURI);
                         dtNode.Entities.SetNamedItem(ent);
                     }
@@ -650,7 +650,7 @@ namespace System.Xml
                 {
                     foreach (SchemaEntity scEnt in schInfo.ParameterEntities.Values)
                     {
-                        XmlEntity ent = new XmlEntity(scEnt.Name.Name, scEnt.Text, scEnt.Pubid, scEnt.Url, scEnt.NData.IsEmpty ? null : scEnt.NData.Name, _doc);
+                        XmlEntity ent = new XmlEntity(scEnt.Name.Name, scEnt.Pubid, scEnt.Url, scEnt.NData.IsEmpty ? null : scEnt.NData.Name, _doc);
                         ent.SetBaseURI(scEnt.DeclaredURI);
                         dtNode.Entities.SetNamedItem(ent);
                     }

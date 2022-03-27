@@ -1943,7 +1943,7 @@ namespace System.Configuration
                                     case SectionAllowDefinitionAttribute:
                                         try
                                         {
-                                            allowDefinition = AllowDefinitionToEnum(xmlUtil.Reader.Value, xmlUtil);
+                                            allowDefinition = AllowDefinitionToEnum(xmlUtil);
                                         }
                                         catch (ConfigurationException ce)
                                         {
@@ -2121,7 +2121,7 @@ namespace System.Configuration
                         xmlUtil),
             };
 
-        internal static ConfigurationAllowDefinition AllowDefinitionToEnum(string allowDefinition, XmlUtil xmlUtil) =>
+        internal static ConfigurationAllowDefinition AllowDefinitionToEnum(XmlUtil xmlUtil) =>
             xmlUtil.Reader.Value switch
             {
                 AllowDefinitionEverywhere => ConfigurationAllowDefinition.Everywhere,
@@ -2457,7 +2457,7 @@ namespace System.Configuration
                     string rawXml = null;
                     string configSource = null;
                     string configSourceStreamName = null;
-                    object configSourceStreamVersion = null;
+                    object configSourceStreamVersion;
                     string protectionProviderName = null;
                     OverrideMode sectionLockMode = OverrideMode.Inherit;
                     OverrideMode sectionChildLockMode = OverrideMode.Inherit;
@@ -2669,7 +2669,7 @@ namespace System.Configuration
                         SectionXmlInfo sectionXmlInfo = new SectionXmlInfo(
                             configKey, _configPath, targetConfigPath, locationSubPath,
                             fileName, lineNumber, ConfigStreamInfo.StreamVersion, rawXml,
-                            configSource, configSourceStreamName, configSourceStreamVersion,
+                            configSource, configSourceStreamName,
                             protectionProviderName, overrideMode, skipInChildApps);
 
                         if (locationSubPath == null)
@@ -3318,11 +3318,11 @@ namespace System.Configuration
                 }
             }
 
-            ValidateUniqueChildConfigSource(configKey, configSourceStreamName, configSourceArg, errorInfo);
+            ValidateUniqueChildConfigSource(configSourceStreamName, configSourceArg, errorInfo);
         }
 
         protected void ValidateUniqueChildConfigSource(
-            string configKey, string configSourceStreamName, string configSourceArg, IConfigErrorInfo errorInfo)
+            string configSourceStreamName, string configSourceArg, IConfigErrorInfo errorInfo)
         {
             // Detect if a parent config file is using the same config source stream.
             BaseConfigurationRecord current = IsLocationConfig ? _parent._parent : _parent;
@@ -3384,7 +3384,7 @@ namespace System.Configuration
                         SectionXmlInfo sectionXmlInfo = new SectionXmlInfo(
                             configKey, _configPath, _configPath, null,
                             ConfigStreamInfo.StreamName, 0, null, null,
-                            null, null, null,
+                            null, null,
                             null, OverrideModeSetting.s_locationDefault, false);
 
                         SectionInput fileInput = new SectionInput(sectionXmlInfo, null);

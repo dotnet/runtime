@@ -139,7 +139,7 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(false, "This constructor should not be called.");
         }
 
-        internal JsonTypeInfo(Type type, JsonSerializerOptions options!!, bool dummy)
+        internal JsonTypeInfo(Type type, JsonSerializerOptions options!!, bool _)
         {
             Type = type;
             Options = options;

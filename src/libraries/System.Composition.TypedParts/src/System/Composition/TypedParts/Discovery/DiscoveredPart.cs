@@ -163,7 +163,7 @@ namespace System.Composition.TypedParts.Discovery
             return constructor;
         }
 
-        public CompositeActivator GetActivator(DependencyAccessor definitionAccessor, IEnumerable<CompositionDependency> dependencies)
+        public CompositeActivator GetActivator(IEnumerable<CompositionDependency> dependencies)
         {
             if (_partActivator != null) return _partActivator;
 

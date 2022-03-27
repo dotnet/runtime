@@ -3,6 +3,8 @@
 
 using System.Runtime.Serialization;
 
+#pragma warning disable IDE0060
+
 namespace System.Transactions.Distributed
 {
     internal sealed class DistributedTransactionManager

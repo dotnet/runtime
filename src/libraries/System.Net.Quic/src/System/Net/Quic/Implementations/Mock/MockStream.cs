@@ -26,7 +26,7 @@ namespace System.Net.Quic.Implementations.Mock
             _isInitiator = isInitiator;
         }
 
-        private static ValueTask ConnectAsync(CancellationToken cancellationToken = default)
+        private static ValueTask ConnectAsync()
         {
             return ValueTask.CompletedTask;
         }

@@ -479,7 +479,7 @@ namespace System.Runtime.Serialization
                     }
                     _ilg.Stloc(enumerator);
 
-                    _ilg.ForEach(currentValue, elementType, enumeratorType, enumerator, getCurrentMethod);
+                    _ilg.ForEach(currentValue, elementType, enumerator, getCurrentMethod);
                     if (incrementCollectionCountMethod == null)
                     {
                         _ilg.Call(_contextArg, XmlFormatGeneratorStatics.IncrementItemCountMethod, 1);

@@ -288,7 +288,7 @@ namespace System.Xml.Serialization
 #endif
 
                 if (ret != null && _shareTypes && checkCache && !IsReference(ret))
-                    ret = Cache.AddItem(ret, name, this);
+                    ret = Cache.AddItem(ret, name);
                 if (ret != null)
                 {
                     return ret;

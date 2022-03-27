@@ -296,7 +296,7 @@ namespace System.Data
                 DataTable? table = dataSet.FindTable(null, listAccessors, 0);
                 if (table != null)
                 {
-                    return table.GetPropertyDescriptorCollection(null);
+                    return table.GetPropertyDescriptorCollection();
                 }
             }
             return new PropertyDescriptorCollection(null);

@@ -128,7 +128,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal XmlSchemaObject? AddItem(XmlSchemaObject? item, XmlQualifiedName? qname, XmlSchemas schemas)
+        internal XmlSchemaObject? AddItem(XmlSchemaObject? item, XmlQualifiedName? qname)
         {
             if (item == null)
                 return null;
@@ -178,7 +178,7 @@ namespace System.Xml.Serialization
                 return false;
 
             if (shareTypes)
-                return CompositeHash(o1, hash1) == CompositeHash(o2, hash2);
+                return CompositeHash(o1) == CompositeHash(o2);
             return true;
         }
 
@@ -200,7 +200,7 @@ namespace System.Xml.Serialization
             return deps;
         }
 
-        private int CompositeHash(XmlSchemaObject o, int hash)
+        private int CompositeHash(XmlSchemaObject o)
         {
             ArrayList list = GetDependencies(o, new ArrayList(), new Hashtable());
             double tmp = 0;

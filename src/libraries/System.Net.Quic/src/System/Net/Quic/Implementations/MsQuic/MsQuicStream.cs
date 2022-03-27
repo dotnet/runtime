@@ -93,7 +93,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 Marshal.FreeHGlobal(SendQuicBuffers);
                 SendQuicBuffers = IntPtr.Zero;
                 if (StateGCHandle.IsAllocated) StateGCHandle.Free();
-                ConnectionState?.RemoveStream(null);
+                ConnectionState?.RemoveStream();
             }
         }
 
@@ -102,7 +102,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // inbound.
         internal MsQuicStream(MsQuicConnection.State connectionState, SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
         {
-            if (!connectionState.TryAddStream(this))
+            if (!connectionState.TryAddStream())
             {
                 throw new ObjectDisposedException(nameof(QuicConnection));
             }
@@ -148,7 +148,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             Debug.Assert(connectionState.Handle != null);
 
-            if (!connectionState.TryAddStream(this))
+            if (!connectionState.TryAddStream())
             {
                 throw new ObjectDisposedException(nameof(QuicConnection));
             }

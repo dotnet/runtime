@@ -144,7 +144,7 @@ namespace System.IO.Pipes
                 }
 
                 // Try to connect.
-                if (TryConnect(waitTime, cancellationToken))
+                if (TryConnect(waitTime))
                 {
                     return;
                 }

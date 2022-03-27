@@ -179,11 +179,9 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        private static void PrelinkCore(MethodInfo m)
-        {
-            // Note: This method is effectively a no-op in ahead-of-time compilation scenarios. In CoreCLR and Desktop, this will pre-generate
-            // the P/Invoke, but everything is pre-generated in CoreRT.
-        }
+        // Note: This method is effectively a no-op in ahead-of-time compilation scenarios. In CoreCLR and Desktop, this will pre-generate
+        // the P/Invoke, but everything is pre-generated in CoreRT.
+        static partial void PrelinkCore(MethodInfo m);
 
         internal static Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, Type t)
         {

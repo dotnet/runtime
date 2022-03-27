@@ -25,6 +25,7 @@ namespace System.Net.Security
     [UnsupportedOSPlatform("tvos")]
     internal static partial class NegotiateStreamPal
     {
+#pragma warning disable IDE0060
         internal static string QueryContextClientSpecifiedSpn(SafeDeleteContext securityContext)
         {
             throw new PlatformNotSupportedException(SR.net_nego_server_not_supported);
@@ -120,5 +121,8 @@ namespace System.Net.Security
         {
             throw new PlatformNotSupportedException();
         }
+
+#pragma warning restore IDE0060
+
     }
 }

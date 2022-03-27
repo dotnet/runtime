@@ -639,7 +639,7 @@ namespace System.Xml
 
         // Foliate rowElement region if there are DataPointers that points into it
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        private void FoliateIfDataPointers(DataRow row, XmlElement rowElement)
+        private void FoliateIfDataPointers(XmlElement rowElement)
         {
             if (!IsFoliated(rowElement) && HasPointers(rowElement))
             {
@@ -762,7 +762,7 @@ namespace System.Xml
         }
 
         //Determine best radical insert position for inserting column elements
-        private XmlNode? GetColumnInsertAfterLocation(DataRow row, DataColumn col, XmlBoundElement rowElement)
+        private XmlNode? GetColumnInsertAfterLocation(DataColumn col, XmlBoundElement rowElement)
         {
             XmlNode? prev = null;
             XmlNode? node;
@@ -863,7 +863,7 @@ namespace System.Xml
             return DataSetMapper.GetRowFromElement(e);
         }
 
-        private XmlNode? GetRowInsertBeforeLocation(DataRow row, XmlElement rowElement, XmlNode parentElement)
+        private XmlNode? GetRowInsertBeforeLocation(DataRow row, XmlNode parentElement)
         {
             DataRow refRow = row;
             int i;
@@ -1569,7 +1569,7 @@ namespace System.Xml
                     XmlElement newElem = new XmlBoundElement(string.Empty, col.EncodedColumnName, col.Namespace, this);
                     newElem.AppendChild(CreateTextNode(col.ConvertObjectToXml(value)));
 
-                    XmlNode? elemBefore = GetColumnInsertAfterLocation(row, col, rowElement);
+                    XmlNode? elemBefore = GetColumnInsertAfterLocation(col, rowElement);
                     if (elemBefore != null)
                     {
                         rowElement.InsertAfter(newElem, elemBefore);
@@ -1662,7 +1662,7 @@ namespace System.Xml
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        private void OnDeleteRow(DataRow row, XmlBoundElement rowElement)
+        private void OnDeleteRow(XmlBoundElement rowElement)
         {
             // IgnoreXmlEvents s/b on since we are manipulating the XML tree and we not want this to reflect in ROM view.
             Debug.Assert(_ignoreXmlEvents == true);
@@ -1676,7 +1676,7 @@ namespace System.Xml
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        private void OnDeletingRow(DataRow row, XmlBoundElement rowElement)
+        private void OnDeletingRow(XmlBoundElement rowElement)
         {
             // Note that this function is beeing called even if ignoreDataSetEvents == true.
 
@@ -2029,7 +2029,7 @@ namespace System.Xml
                         break;
 
                     case DataRowAction.Delete:
-                        OnDeleteRow(row, rowElement);
+                        OnDeleteRow(rowElement);
                         break;
 
                     case DataRowAction.Rollback:
@@ -2079,7 +2079,7 @@ namespace System.Xml
             DataRow row = args.Row;
             if (args.Action == DataRowAction.Delete && row.Element != null)
             {
-                OnDeletingRow(row, row.Element);
+                OnDeletingRow(row.Element);
                 return;
             }
 
@@ -2163,7 +2163,7 @@ namespace System.Xml
                                 {
                                     // Foliate only for non-hidden columns (since hidden cols are not represented in XML)
                                     if (c.ColumnMapping != MappingType.Hidden)
-                                        FoliateIfDataPointers(row, rowElement);
+                                        FoliateIfDataPointers(rowElement);
                                 }
                                 if (!IsSame(c, nRec1, nRec2))
                                     _columnChangeList.Add(c);
@@ -2270,7 +2270,7 @@ namespace System.Xml
             else
                 parent = GetElementFromRow(parentRowInRelation);
 
-            if ((refRow = GetRowInsertBeforeLocation(row, rowElement, parent)) != null)
+            if ((refRow = GetRowInsertBeforeLocation(row, parent)) != null)
                 parent.InsertBefore(rowElement, refRow);
             else
                 parent.AppendChild(rowElement);
@@ -2760,7 +2760,7 @@ namespace System.Xml
                 else
                 {
                     ArrayList rowElemList = new ArrayList();
-                    OnNonRowElementInsertedInFragment(node, be, rowElemList);
+                    OnNonRowElementInsertedInFragment(be, rowElemList);
                     // Set nested parent for the 1st level subregions (they should already be associated w/ Deleted or Detached rows)
                     while (rowElemList.Count > 0)
                     {
@@ -2918,7 +2918,7 @@ namespace System.Xml
 
         // A non-row-elem was inserted into disconnected tree (fragment) from oldParent==null state (i.e. was disconnected)
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        private void OnNonRowElementInsertedInFragment(XmlNode node, XmlBoundElement rowElement, ArrayList rowElemList)
+        private void OnNonRowElementInsertedInFragment(XmlBoundElement rowElement, ArrayList rowElemList)
         {
             // non-row-elem is beeing inserted
             DataRow? row = rowElement.Row;

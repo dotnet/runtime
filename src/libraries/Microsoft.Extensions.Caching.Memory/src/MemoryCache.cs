@@ -73,10 +73,9 @@ namespace Microsoft.Extensions.Caching.Memory
         internal bool TrackLinkedCacheEntries { get; }
 
         /// <inheritdoc />
-        public ICacheEntry CreateEntry(object key)
+        public ICacheEntry CreateEntry(object key!!)
         {
             CheckDisposed();
-            ValidateCacheKey(key);
 
             return new CacheEntry(key, this);
         }
@@ -485,10 +484,6 @@ namespace Microsoft.Extensions.Caching.Memory
 
             [DoesNotReturn]
             static void Throw() => throw new ObjectDisposedException(typeof(MemoryCache).FullName);
-        }
-
-        private static void ValidateCacheKey(object key!!)
-        {
         }
 
         private sealed class CoherentState

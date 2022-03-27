@@ -667,7 +667,7 @@ namespace System.Runtime.Serialization
                 _ilg.Stloc(objectId);
 
                 bool canReadPrimitiveArray = false;
-                if (isArray && TryReadPrimitiveArray(type, itemType, size))
+                if (isArray && TryReadPrimitiveArray(itemType, size))
                 {
                     canReadPrimitiveArray = true;
                     _ilg.IfNot();
@@ -812,7 +812,7 @@ namespace System.Runtime.Serialization
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            private bool TryReadPrimitiveArray(Type type, Type itemType, LocalBuilder size)
+            private bool TryReadPrimitiveArray(Type itemType, LocalBuilder size)
             {
                 Debug.Assert(_objectLocal != null);
 
@@ -953,7 +953,7 @@ namespace System.Runtime.Serialization
                 _ilg.Throw();
             }
 
-            private void ThrowValidationException(string msg, params object[] values)
+            private void ThrowValidationException(string msg)
             {
                 {
                     _ilg.Load(msg);

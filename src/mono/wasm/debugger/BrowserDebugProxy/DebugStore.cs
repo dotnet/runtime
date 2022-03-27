@@ -440,7 +440,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return paramsInfo;
         }
 
-        public void UpdateEnC(MetadataReader asmMetadataReader, MetadataReader pdbMetadataReaderParm, int method_idx)
+        public void UpdateEnC(MetadataReader pdbMetadataReaderParm, int method_idx)
         {
             this.DebugInformation = pdbMetadataReaderParm.GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(method_idx));
             this.pdbMetadataReader = pdbMetadataReaderParm;
@@ -729,12 +729,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public TypeInfo(AssemblyInfo assembly, string name)
-        {
-            Name = name;
-            FullName = name;
-        }
-
         public string Name { get; }
         public string FullName { get; }
         public List<MethodInfo> Methods => methods;
@@ -763,7 +757,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal bool PdbInformationAvailable { get; }
         public bool TriedToLoadSymbolsOnDemand { get; set; }
 
-        public unsafe AssemblyInfo(MonoProxy monoProxy, SessionId sessionId, string url, byte[] assembly, byte[] pdb, CancellationToken token)
+        public unsafe AssemblyInfo(MonoProxy monoProxy, SessionId sessionId, byte[] assembly, byte[] pdb, CancellationToken token)
         {
             debugId = -1;
             this.id = Interlocked.Increment(ref next_id);
@@ -845,7 +839,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (encMapHandle.Kind == HandleKind.MethodDebugInformation)
                 {
                     var method = methods[asmMetadataReader.GetRowNumber(encMapHandle)];
-                    method.UpdateEnC(asmMetadataReaderParm, pdbMetadataReaderParm, i);
+                    method.UpdateEnC(pdbMetadataReaderParm, i);
                     i++;
                 }
             }
@@ -1220,12 +1214,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public IEnumerable<SourceFile> Add(SessionId id, string name, byte[] assembly_data, byte[] pdb_data, CancellationToken token)
+        public IEnumerable<SourceFile> Add(SessionId id, byte[] assembly_data, byte[] pdb_data, CancellationToken token)
         {
             AssemblyInfo assembly;
             try
             {
-                assembly = new AssemblyInfo(monoProxy, id, name, assembly_data, pdb_data, token);
+                assembly = new AssemblyInfo(monoProxy, id, assembly_data, pdb_data, token);
             }
             catch (Exception e)
             {
@@ -1288,7 +1282,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 try
                 {
                     byte[][] bytes = await step.Data.ConfigureAwait(false);
-                    assembly = new AssemblyInfo(monoProxy, id, step.Url, bytes[0], bytes[1], token);
+                    assembly = new AssemblyInfo(monoProxy, id, bytes[0], bytes[1], token);
                 }
                 catch (Exception e)
                 {

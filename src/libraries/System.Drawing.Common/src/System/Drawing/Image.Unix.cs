@@ -54,10 +54,10 @@ namespace System.Drawing
         // See http://support.microsoft.com/default.aspx?scid=kb;en-us;831419 for performance discussion
         public static Image FromStream(Stream stream, bool useEmbeddedColorManagement, bool validateImageData)
         {
-            return LoadFromStream(stream, false);
+            return LoadFromStream(stream);
         }
 
-        internal static Image LoadFromStream(Stream stream!!, bool keepAlive)
+        internal static Image LoadFromStream(Stream stream!!)
         {
             Image img = CreateImageObject(InitializeFromStream(stream));
             return img;
@@ -325,6 +325,7 @@ namespace System.Drawing
                 return new Metafile(newimage);
         }
 
+        [System.Diagnostics.Conditional("unnecessary")]
         internal static void ValidateImage(IntPtr bitmap)
         {
             // No validation is performed on Unix.

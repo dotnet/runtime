@@ -395,7 +395,7 @@ namespace Microsoft.Win32
         public RegistrySecurity GetAccessControl(AccessControlSections includeSections)
         {
             EnsureNotDisposed();
-            return new RegistrySecurity(Handle, Name, includeSections);
+            return new RegistrySecurity(Handle, includeSections);
         }
 
         public void SetAccessControl(RegistrySecurity registrySecurity)
@@ -403,7 +403,7 @@ namespace Microsoft.Win32
             EnsureWriteable();
             ArgumentNullException.ThrowIfNull(registrySecurity);
 
-            registrySecurity.Persist(Handle, Name);
+            registrySecurity.Persist(Handle);
         }
 
         /// <summary>Retrieves the count of subkeys.</summary>

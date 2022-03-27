@@ -48,12 +48,12 @@ namespace System.Drawing
         private static readonly Icon[] icons = new Icon[6]
         {
             // TODO: Decide which icons to use for this.
-            new Icon("placeholder.ico", undisposable:true), // Application_Winlogo
-            new Icon("placeholder.ico", undisposable:true), // Asterisk_Information
-            new Icon("placeholder.ico", undisposable:true), // Error_Hand
-            new Icon("placeholder.ico", undisposable:true), // Exclamation_Warning
-            new Icon("placeholder.ico", undisposable:true), // Question_
-            new Icon("placeholder.ico", undisposable:true), // Shield_
+            new Icon("placeholder.ico"), // Application_Winlogo
+            new Icon("placeholder.ico"), // Asterisk_Information
+            new Icon("placeholder.ico"), // Error_Hand
+            new Icon("placeholder.ico"), // Exclamation_Warning
+            new Icon("placeholder.ico"), // Question_
+            new Icon("placeholder.ico"), // Shield_
         };
 
         // note: same as WinLogo (for Mono)

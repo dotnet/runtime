@@ -114,7 +114,7 @@ internal static partial class Interop
                 }
             }
 
-            if (CipherSuitesPolicyPal.ShouldOptOutOfLowerThanTls13(sslAuthenticationOptions.CipherSuitesPolicy, sslAuthenticationOptions.EncryptionPolicy))
+            if (CipherSuitesPolicyPal.ShouldOptOutOfLowerThanTls13(sslAuthenticationOptions.CipherSuitesPolicy))
             {
                 if (!CipherSuitesPolicyPal.WantsTls13(protocols))
                 {
@@ -245,7 +245,7 @@ internal static partial class Interop
                 return;
             }
 
-            var credential = new SafeFreeSslCredentials(sslAuthenticationOptions.CertificateContext, sslAuthenticationOptions.EnabledSslProtocols, sslAuthenticationOptions.EncryptionPolicy, sslAuthenticationOptions.IsServer);
+            var credential = new SafeFreeSslCredentials(sslAuthenticationOptions.CertificateContext, sslAuthenticationOptions.EnabledSslProtocols, sslAuthenticationOptions.EncryptionPolicy);
             SafeX509Handle? certHandle = credential.CertHandle;
             SafeEvpPKeyHandle? certKeyHandle = credential.CertKeyHandle;
 
@@ -639,17 +639,6 @@ internal static partial class Interop
         }
 
         [UnmanagedCallersOnly]
-        private static int VerifyClientCertificate(int preverify_ok, IntPtr x509_ctx_ptr)
-        {
-            // Full validation is handled after the handshake in VerifyCertificateProperties and the
-            // user callback.  It's also up to those handlers to decide if a null certificate
-            // is appropriate.  So just return success to tell OpenSSL that the cert is acceptable,
-            // we'll process it after the handshake finishes.
-            const int OpenSslSuccess = 1;
-            return OpenSslSuccess;
-        }
-
-        [UnmanagedCallersOnly]
         private static unsafe int AlpnServerSelectCallback(IntPtr ssl, byte** outp, byte* outlen, byte* inp, uint inlen, IntPtr arg)
         {
             *outp = null;
@@ -750,7 +739,7 @@ internal static partial class Interop
 
             IntPtr name = Ssl.SessionGetHostname(session);
             Debug.Assert(name != IntPtr.Zero);
-            ctxHandle.RemoveSession(name, session);
+            ctxHandle.RemoveSession(name);
         }
 
         private static int BioRead(SafeBioHandle bio, byte[] buffer, int count)

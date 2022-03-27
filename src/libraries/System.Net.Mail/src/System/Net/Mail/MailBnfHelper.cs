@@ -243,15 +243,15 @@ namespace System.Net.Mime
             throw new FormatException(SR.MailHeaderFieldMalformedHeader);
         }
 
-        internal static string? ReadParameterAttribute(string data, ref int offset, StringBuilder? builder)
+        internal static string? ReadParameterAttribute(string data, ref int offset)
         {
             if (!SkipCFWS(data, ref offset))
                 return null; //
 
-            return ReadToken(data, ref offset, null);
+            return ReadToken(data, ref offset);
         }
 
-        internal static string ReadToken(string data, ref int offset, StringBuilder? builder)
+        internal static string ReadToken(string data, ref int offset)
         {
             int start = offset;
             for (; offset < data.Length; offset++)

@@ -25,7 +25,7 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal AcceptSecurityContext(
-            SecureChannel secureChannel,
+            SecureChannel _ /*secureChannel*/,
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
@@ -36,10 +36,10 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal InitializeSecurityContext(
-            SecureChannel secureChannel,
+            SecureChannel _ /*secureChannel*/,
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
-            string? targetName,
+            string? _1 /*targetName*/,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
@@ -47,21 +47,11 @@ namespace System.Net.Security
             return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
-        public static SecurityStatusPal Renegotiate(
-            SecureChannel secureChannel,
-            ref SafeFreeCredentials? credentialsHandle,
-            ref SafeDeleteSslContext? context,
-            SslAuthenticationOptions sslAuthenticationOptions,
-            out byte[]? outputBuffer)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         public static SafeFreeCredentials AcquireCredentialsHandle(
             SslStreamCertificateContext? certificateContext,
             SslProtocols protocols,
             EncryptionPolicy policy,
-            bool isServer)
+            bool _ /*isServer*/)
         {
             return new SafeFreeSslCredentials(certificateContext, protocols, policy);
         }
@@ -77,8 +67,8 @@ namespace System.Net.Security
         public static SecurityStatusPal EncryptMessage(
             SafeDeleteSslContext securityContext,
             ReadOnlyMemory<byte> input,
-            int headerSize,
-            int trailerSize,
+            int _ /*headerSize*/,
+            int _1 /*trailerSize*/,
             ref byte[] output,
             out int resultSize)
         {
@@ -168,7 +158,7 @@ namespace System.Net.Security
         }
 
         public static void QueryContextStreamSizes(
-            SafeDeleteContext? securityContext,
+            SafeDeleteContext? _ /*securityContext*/,
             out StreamSizes streamSizes)
         {
             streamSizes = StreamSizes.Default;
@@ -225,8 +215,18 @@ namespace System.Net.Security
             }
         }
 
-        public static SecurityStatusPal ApplyAlertToken(
+#pragma warning disable IDE0060
+        public static SecurityStatusPal Renegotiate(
+            SecureChannel secureChannel,
             ref SafeFreeCredentials? credentialsHandle,
+            ref SafeDeleteSslContext? context,
+            SslAuthenticationOptions sslAuthenticationOptions,
+            out byte[]? outputBuffer)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static SecurityStatusPal ApplyAlertToken(
             SafeDeleteContext? securityContext,
             TlsAlertType alertType,
             TlsAlertMessage alertMessage)
@@ -235,9 +235,9 @@ namespace System.Net.Security
             // The API seems to assume that all alerts are generated internally.
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
+#pragma warning restore IDE0060
 
         public static SecurityStatusPal ApplyShutdownToken(
-            ref SafeFreeCredentials? credentialsHandle,
             SafeDeleteSslContext securityContext)
         {
             SafeSslHandle sslHandle = securityContext.SslContext;

@@ -926,7 +926,7 @@ namespace System.Net.Mail
                 }
                 else
                 {
-                    _message!.BeginSend(_writer, DeliveryMethod != SmtpDeliveryMethod.Network,
+                    _message!.BeginSend(_writer,
                         IsUnicodeSupported(), new AsyncCallback(SendMessageCallback), result.AsyncState!);
                 }
             }

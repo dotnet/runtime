@@ -901,7 +901,7 @@ namespace System.Net
                             else
                             {
                                 binding = GetChannelBinding(session, connectionId, isSecureConnection, extendedProtectionPolicy);
-                                ContextFlagsPal contextFlags = GetContextFlags(extendedProtectionPolicy, isSecureConnection);
+                                ContextFlagsPal contextFlags = GetContextFlags(extendedProtectionPolicy);
                                 context = new NTAuthentication(true, package, CredentialCache.DefaultNetworkCredentials, null, contextFlags, binding);
                             }
 
@@ -1128,8 +1128,7 @@ namespace System.Net
                             return null;
                         }
 
-                        challenges = BuildChallenge(authenticationScheme, connectionId, out newContext,
-                            extendedProtectionPolicy, isSecureConnection);
+                        challenges = BuildChallenge(authenticationScheme, out newContext);
                     }
                 }
 
@@ -1278,12 +1277,10 @@ namespace System.Net
         {
             Debug.Assert(context != null, "Null Context");
 
-            HttpListenerRequest request = context.Request;
             HttpListenerResponse response = context.Response;
 
             // We use the cached results from the delegates so that we don't have to call them again here.
-            ArrayList? challenges = BuildChallenge(context.AuthenticationSchemes, request._connectionId,
-                out _, context.ExtendedProtectionPolicy, request.IsSecureConnection);
+            ArrayList? challenges = BuildChallenge(context.AuthenticationSchemes, out _);
 
             // Setting 401 without setting WWW-Authenticate is a protocol violation
             // but throwing from HttpListener would be a breaking change.
@@ -1457,7 +1454,7 @@ namespace System.Net
             return (isSecureConnection && scenario == ProtectionScenario.TransportSelected);
         }
 
-        private static ContextFlagsPal GetContextFlags(ExtendedProtectionPolicy policy, bool isSecureConnection)
+        private static ContextFlagsPal GetContextFlags(ExtendedProtectionPolicy policy)
         {
             ContextFlagsPal result = ContextFlagsPal.Connection;
             if (policy.PolicyEnforcement != PolicyEnforcement.Never)
@@ -1540,8 +1537,8 @@ namespace System.Net
             }
         }
 
-        private ArrayList? BuildChallenge(AuthenticationSchemes authenticationScheme, ulong connectionId,
-            out NTAuthentication? newContext, ExtendedProtectionPolicy policy, bool isSecureConnection)
+        private ArrayList? BuildChallenge(AuthenticationSchemes authenticationScheme,
+            out NTAuthentication? newContext)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "AuthenticationScheme:" + authenticationScheme.ToString());
             ArrayList? challenges = null;
@@ -1594,7 +1591,7 @@ namespace System.Net
                 if (statusCode == Interop.HttpApi.ERROR_SUCCESS && HttpListener.SkipIOCPCallbackOnSuccess)
                 {
                     // IO operation completed synchronously - callback won't be called to signal completion.
-                    result.IOCompleted(statusCode, 0, result.NativeOverlapped);
+                    result.IOCompleted(result.NativeOverlapped);
                 }
             }
             catch (Win32Exception exception)
@@ -1873,12 +1870,12 @@ namespace System.Net
                 }
             }
 
-            internal unsafe void IOCompleted(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
+            internal unsafe void IOCompleted(NativeOverlapped* nativeOverlapped)
             {
-                IOCompleted(this, errorCode, numBytes, nativeOverlapped);
+                IOCompleted(this, nativeOverlapped);
             }
 
-            private static unsafe void IOCompleted(DisconnectAsyncResult asyncResult, uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
+            private static unsafe void IOCompleted(DisconnectAsyncResult asyncResult, NativeOverlapped* nativeOverlapped)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "_connectionId:" + asyncResult._connectionId);
 
@@ -1894,7 +1891,7 @@ namespace System.Net
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode: {errorCode}, numBytes: {numBytes}, nativeOverlapped: {(IntPtr)nativeOverlapped:x}");
                 // take the DisconnectAsyncResult object from the state
                 DisconnectAsyncResult asyncResult = (DisconnectAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!;
-                IOCompleted(asyncResult, errorCode, numBytes, nativeOverlapped);
+                IOCompleted(asyncResult, nativeOverlapped);
             }
 
             private void HandleDisconnect()

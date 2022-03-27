@@ -15,6 +15,8 @@ namespace System.Runtime.Intrinsics.X86
 
         public static bool IsSupported { [Intrinsic] get => false; }
 
+#pragma warning disable IDE0060
+
         public abstract class X64
         {
             internal X64() { }
@@ -77,5 +79,8 @@ namespace System.Runtime.Intrinsics.X86
         ///   PAUSE
         /// </summary>
         public static void Pause() { throw new PlatformNotSupportedException(); }
+
+#pragma warning restore IDE0060
+
     }
 }

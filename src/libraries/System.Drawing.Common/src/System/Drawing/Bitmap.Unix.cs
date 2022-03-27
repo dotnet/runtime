@@ -49,14 +49,6 @@ namespace System.Drawing
 {
     public sealed partial class Bitmap
     {
-        // Usually called when cloning images that need to have
-        // not only the handle saved, but also the underlying stream
-        // (when using MS GDI+ and IStream we must ensure the stream stays alive for all the life of the Image)
-        internal Bitmap(IntPtr ptr, Stream stream)
-        {
-            nativeImage = ptr;
-        }
-
         public Bitmap(Stream stream, bool useIcm)
         {
             // false: stream is owned by user code

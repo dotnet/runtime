@@ -78,11 +78,11 @@ namespace System.Drawing.Drawing2D
 
         public void Dispose()
         {
-            Dispose(true);
+            DisposeInternal();
             GC.SuppressFinalize(this);
         }
 
-        private void Dispose(bool disposing)
+        private void DisposeInternal()
         {
             if (NativeMatrix != IntPtr.Zero)
             {
@@ -94,7 +94,7 @@ namespace System.Drawing.Drawing2D
             }
         }
 
-        ~Matrix() => Dispose(false);
+        ~Matrix() => DisposeInternal();
 
         public Matrix Clone()
         {

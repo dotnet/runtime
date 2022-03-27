@@ -303,17 +303,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static ClassDataContract CreateClassDataContractForKeyValue(Type type, XmlDictionaryString ns, string[] memberNames)
         {
-            ClassDataContract? cdc = (ClassDataContract?)DataContract.GetDataContractFromGeneratedAssembly(type);
-            if (cdc == null)
-            {
-                return new ClassDataContract(type, ns, memberNames);
-            }
-            else
-            {
-                ClassDataContract cloned = cdc.Clone();
-                cloned.UpdateNamespaceAndMembers(type, ns, memberNames);
-                return cloned;
-            }
+            return new ClassDataContract(type, ns, memberNames);
         }
 
         internal static void CheckAndAddMember(List<DataMember> members, DataMember memberContract, Dictionary<string, DataMember> memberNamesTable)

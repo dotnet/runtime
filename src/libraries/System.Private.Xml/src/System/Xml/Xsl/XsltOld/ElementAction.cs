@@ -47,7 +47,7 @@ namespace System.Xml.Xsl.XsltOld
         internal override void Compile(Compiler compiler)
         {
             CompileAttributes(compiler);
-            CheckRequiredAttribute(compiler, _nameAvt, "name");
+            CheckRequiredAttribute(_nameAvt, "name");
 
             _name = PrecalculateAvt(ref _nameAvt);
             _nsUri = PrecalculateAvt(ref _nsAvt);

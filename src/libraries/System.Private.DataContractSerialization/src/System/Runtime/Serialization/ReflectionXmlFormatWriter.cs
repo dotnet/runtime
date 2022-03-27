@@ -36,13 +36,13 @@ namespace System.Runtime.Serialization
             {
                 context.IncrementArrayCount(xmlWriter, (Array)obj);
                 Type itemType = collectionDataContract.ItemType;
-                if (!ReflectionTryWritePrimitiveArray(xmlWriter, obj, collectionDataContract.UnderlyingType, itemType, itemName, ns))
+                if (!ReflectionTryWritePrimitiveArray(xmlWriter, obj, itemType, itemName, ns))
                 {
                     Array array = (Array)obj;
                     PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(itemType);
                     for (int i = 0; i < array.Length; ++i)
                     {
-                        ReflectionXmlClassWriter.ReflectionWriteStartElement(xmlWriter, itemType, ns, ns.Value, itemName.Value, 0);
+                        ReflectionXmlClassWriter.ReflectionWriteStartElement(xmlWriter, itemType, ns, ns.Value, itemName.Value);
                         ReflectionXmlClassWriter.ReflectionWriteValue(xmlWriter, context, itemType, array.GetValue(i), false, primitiveContract);
                         ReflectionXmlClassWriter.ReflectionWriteEndElement(xmlWriter);
                     }
@@ -72,7 +72,7 @@ namespace System.Runtime.Serialization
                     {
                         object current = enumerator.Current;
                         context.IncrementItemCount(1);
-                        ReflectionXmlClassWriter.ReflectionWriteStartElement(xmlWriter, elementType, ns, ns.Value, itemName.Value, 0);
+                        ReflectionXmlClassWriter.ReflectionWriteStartElement(xmlWriter, elementType, ns, ns.Value, itemName.Value);
                         if (isDictionary)
                         {
                             collectionDataContract.ItemContract.WriteXmlValue(xmlWriter, current, context);
@@ -89,7 +89,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private static bool ReflectionTryWritePrimitiveArray(XmlWriterDelegator xmlWriter, object obj, Type type, Type itemType, XmlDictionaryString collectionItemName, XmlDictionaryString itemNamespace)
+        private static bool ReflectionTryWritePrimitiveArray(XmlWriterDelegator xmlWriter, object obj, Type itemType, XmlDictionaryString collectionItemName, XmlDictionaryString itemNamespace)
         {
             PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(itemType);
             if (primitiveContract == null)
@@ -179,9 +179,9 @@ namespace System.Runtime.Serialization
                     }
                     PrimitiveDataContract? primitiveContract = member.MemberPrimitiveContract;
 
-                    if (writeXsiType || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, memberNames[i + childElementIndex] /*name*/, ns, primitiveContract))
+                    if (writeXsiType || !ReflectionTryWritePrimitive(xmlWriter, context, memberValue, memberNames[i + childElementIndex] /*name*/, ns, primitiveContract))
                     {
-                        ReflectionWriteStartElement(xmlWriter, memberType, ns, ns.Value, member.Name, 0);
+                        ReflectionWriteStartElement(xmlWriter, memberType, ns, ns.Value, member.Name);
                         if (classContract.ChildElementNamespaces![i + childElementIndex] != null)
                         {
                             var nsChildElement = classContract.ChildElementNamespaces[i + childElementIndex]!;
@@ -201,7 +201,7 @@ namespace System.Runtime.Serialization
             return memberCount;
         }
 
-        public static void ReflectionWriteStartElement(XmlWriterDelegator xmlWriter, Type type, XmlDictionaryString ns, string namespaceLocal, string nameLocal, int nameIndex)
+        public static void ReflectionWriteStartElement(XmlWriterDelegator xmlWriter, Type type, XmlDictionaryString ns, string namespaceLocal, string nameLocal)
         {
             bool needsPrefix = NeedsPrefix(type, ns);
 

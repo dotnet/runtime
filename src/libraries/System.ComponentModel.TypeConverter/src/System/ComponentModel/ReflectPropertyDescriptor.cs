@@ -533,7 +533,7 @@ namespace System.ComponentModel
 
         internal Type? ExtenderGetReceiverType() => _receiverType;
 
-        internal Type ExtenderGetType(IExtenderProvider provider) => PropertyType;
+        internal Type ExtenderGetType() => PropertyType;
 
         internal object? ExtenderGetValue(IExtenderProvider? provider, object? component)
         {

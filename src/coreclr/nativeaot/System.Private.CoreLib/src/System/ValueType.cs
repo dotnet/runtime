@@ -113,7 +113,7 @@ namespace System
             if (numFields == UseFastHelper)
                 return FastGetValueTypeHashCodeHelper(this.EETypePtr, ref this.GetRawData());
 
-            return RegularGetValueTypeHashCode(this.EETypePtr, ref this.GetRawData(), numFields);
+            return RegularGetValueTypeHashCode(ref this.GetRawData(), numFields);
         }
 
         private static int FastGetValueTypeHashCodeHelper(EETypePtr type, ref byte data)
@@ -132,7 +132,7 @@ namespace System
             return hashCode;
         }
 
-        private int RegularGetValueTypeHashCode(EETypePtr type, ref byte data, int numFields)
+        private int RegularGetValueTypeHashCode(ref byte data, int numFields)
         {
             int hashCode = 0;
 

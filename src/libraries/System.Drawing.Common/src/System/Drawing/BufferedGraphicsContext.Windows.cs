@@ -52,7 +52,7 @@ namespace System.Drawing
                     IntPtr destDc = targetGraphics.GetHdc();
                     try
                     {
-                        surface = CreateBuffer(destDc, -_targetLoc.X, -_targetLoc.Y, targetRectangle.Width, targetRectangle.Height);
+                        surface = CreateBuffer(destDc, targetRectangle.Width, targetRectangle.Height);
                     }
                     finally
                     {
@@ -61,7 +61,7 @@ namespace System.Drawing
                 }
                 else
                 {
-                    surface = CreateBuffer(targetDC, -_targetLoc.X, -_targetLoc.Y, targetRectangle.Width, targetRectangle.Height);
+                    surface = CreateBuffer(targetDC, targetRectangle.Width, targetRectangle.Height);
                 }
 
                 _buffer = new BufferedGraphics(surface, this, targetGraphics, targetDC, _targetLoc, _virtualSize);
@@ -200,7 +200,7 @@ namespace System.Drawing
         /// <summary>
         /// Returns a Graphics object representing a buffer.
         /// </summary>
-        private Graphics CreateBuffer(IntPtr src, int offsetX, int offsetY, int width, int height)
+        private Graphics CreateBuffer(IntPtr src, int width, int height)
         {
             // Create the compat DC.
             _busy = BufferBusyDisposing;
@@ -407,7 +407,7 @@ namespace System.Drawing
         /// <summary>
         /// Returns a Graphics object representing a buffer.
         /// </summary>
-        internal void ReleaseBuffer(BufferedGraphics buffer)
+        internal void ReleaseBuffer()
         {
             _buffer = null;
             if (_invalidateWhenFree)

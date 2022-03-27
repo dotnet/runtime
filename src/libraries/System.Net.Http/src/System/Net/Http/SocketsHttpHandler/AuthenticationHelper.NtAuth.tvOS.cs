@@ -9,7 +9,7 @@ namespace System.Net.Http
 {
     internal static partial class AuthenticationHelper
     {
-        private static Task<HttpResponseMessage> InnerSendAsync(HttpRequestMessage request, Uri authUri, bool async, ICredentials credentials, bool isProxyAuth, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
+        private static Task<HttpResponseMessage> InnerSendAsync(HttpRequestMessage request, Uri authUri, bool async, ICredentials credentials, bool isProxyAuth, HttpConnection _ /*connection*/, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
         {
             return isProxyAuth ?
                 SendWithProxyAuthAsync(request, authUri, async, credentials, false, connectionPool, cancellationToken).AsTask() :

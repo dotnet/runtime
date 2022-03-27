@@ -14,7 +14,7 @@ namespace System.Net
             X509Chain chain,
             X509Certificate2? remoteCertificate,
             bool checkCertName,
-            bool isServer,
+            bool _ /*isServer*/,
             string? hostName)
         {
             if (remoteCertificate == null)

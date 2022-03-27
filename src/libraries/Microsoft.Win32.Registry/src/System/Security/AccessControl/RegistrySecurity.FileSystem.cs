@@ -7,10 +7,12 @@ namespace System.Security.AccessControl
 {
     public sealed partial class RegistrySecurity : NativeObjectSecurity
     {
-        private static Exception _HandleErrorCodeCore(int errorCode, string? name, SafeHandle? handle, object? context)
+#pragma warning disable IDE0060
+        private static Exception _HandleErrorCodeCore(int errorCode)
         {
             // TODO: Implement this
             throw new PlatformNotSupportedException();
         }
+#pragma warning restore IDE0060
     }
 }

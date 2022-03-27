@@ -458,10 +458,9 @@ namespace System.Data.SqlTypes
         }
 
 
-
         // constructor
         // construct a Null
-        private SqlDecimal(bool fNull)
+        private SqlDecimal(bool _)
         {
             _bLen =
             _bPrec =

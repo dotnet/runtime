@@ -32,9 +32,8 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="validationContext">The context that describes the type.  It cannot be null.</param>
         /// <returns>The collection of validation attributes.  It could be empty.</returns>
         [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
-        internal IEnumerable<ValidationAttribute> GetTypeValidationAttributes(ValidationContext validationContext)
+        internal IEnumerable<ValidationAttribute> GetTypeValidationAttributes(ValidationContext validationContext!!)
         {
-            EnsureValidationContext(validationContext);
             var item = GetTypeStoreItem(validationContext.ObjectType);
             return item.ValidationAttributes;
         }
@@ -45,9 +44,8 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="validationContext">The context that describes the type.  It cannot be null.</param>
         /// <returns>The display attribute instance, if present.</returns>
         [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
-        internal DisplayAttribute? GetTypeDisplayAttribute(ValidationContext validationContext)
+        internal DisplayAttribute? GetTypeDisplayAttribute(ValidationContext validationContext!!)
         {
-            EnsureValidationContext(validationContext);
             var item = GetTypeStoreItem(validationContext.ObjectType);
             return item.DisplayAttribute;
         }
@@ -58,9 +56,8 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="validationContext">The context that describes the property.  It cannot be null.</param>
         /// <returns>The collection of validation attributes.  It could be empty.</returns>
         [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
-        internal IEnumerable<ValidationAttribute> GetPropertyValidationAttributes(ValidationContext validationContext)
+        internal IEnumerable<ValidationAttribute> GetPropertyValidationAttributes(ValidationContext validationContext!!)
         {
-            EnsureValidationContext(validationContext);
             var typeItem = GetTypeStoreItem(validationContext.ObjectType);
             var item = typeItem.GetPropertyStoreItem(validationContext.MemberName!);
             return item.ValidationAttributes;
@@ -72,9 +69,8 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="validationContext">The context that describes the property.  It cannot be null.</param>
         /// <returns>The display attribute instance, if present.</returns>
         [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
-        internal DisplayAttribute? GetPropertyDisplayAttribute(ValidationContext validationContext)
+        internal DisplayAttribute? GetPropertyDisplayAttribute(ValidationContext validationContext!!)
         {
-            EnsureValidationContext(validationContext);
             var typeItem = GetTypeStoreItem(validationContext.ObjectType);
             var item = typeItem.GetPropertyStoreItem(validationContext.MemberName!);
             return item.DisplayAttribute;
@@ -86,9 +82,8 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="validationContext">The context that describes the property.  It cannot be null.</param>
         /// <returns>The type of the specified property</returns>
         [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
-        internal Type GetPropertyType(ValidationContext validationContext)
+        internal Type GetPropertyType(ValidationContext validationContext!!)
         {
-            EnsureValidationContext(validationContext);
             var typeItem = GetTypeStoreItem(validationContext.ObjectType);
             var item = typeItem.GetPropertyStoreItem(validationContext.MemberName!);
             return item.PropertyType;
@@ -102,9 +97,8 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="validationContext">The <see cref="ValidationContext" /> to check.</param>
         /// <returns><c>true</c> when the <paramref name="validationContext" /> represents a property, <c>false</c> otherwise.</returns>
         [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
-        internal bool IsPropertyContext(ValidationContext validationContext)
+        internal bool IsPropertyContext(ValidationContext validationContext!!)
         {
-            EnsureValidationContext(validationContext);
             var typeItem = GetTypeStoreItem(validationContext.ObjectType);
             return typeItem.TryGetPropertyStoreItem(validationContext.MemberName!, out _);
         }
@@ -129,14 +123,6 @@ namespace System.ComponentModel.DataAnnotations
 
                 return item;
             }
-        }
-
-        /// <summary>
-        ///     Throws an ArgumentException of the validation context is null
-        /// </summary>
-        /// <param name="validationContext">The context to check</param>
-        private static void EnsureValidationContext(ValidationContext validationContext!!)
-        {
         }
 
         internal static bool IsPublic(PropertyInfo p) =>

@@ -110,7 +110,7 @@ namespace System.Xml.Serialization
         protected abstract void InitIDs();
 
         // this method must be called before any generated deserialization methods are called
-        internal void Init(XmlReader r, XmlDeserializationEvents events, string? encodingStyle, TempAssembly? tempAssembly)
+        internal void Init(XmlReader r, XmlDeserializationEvents events, string? encodingStyle)
         {
             _events = events;
             _r = r;
@@ -2301,7 +2301,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GenerateReferencedMethods")]
-        internal void GenerateEnd(string?[] methods, XmlMapping[] xmlMappings, Type?[]? types)
+        internal void GenerateEnd()
         {
             GenerateReferencedMethods();
             GenerateInitCallbacksMethod();

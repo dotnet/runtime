@@ -13,7 +13,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         {
             // MsQuic always uses storage size as if IPv6 was used
             Span<byte> addressBytes = new Span<byte>((byte*)pInetAddress, Internals.SocketAddress.IPv6AddressSize);
-            return new Internals.SocketAddress(SocketAddressPal.GetAddressFamily(addressBytes), addressBytes).GetIPEndPoint();
+            return new Internals.SocketAddress(addressBytes).GetIPEndPoint();
         }
     }
 }

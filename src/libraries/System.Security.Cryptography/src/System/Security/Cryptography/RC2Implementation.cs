@@ -89,11 +89,9 @@ namespace System.Security.Cryptography
             Debug.Assert(EffectiveKeySize == KeySize);
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.ECB,
-                paddingMode,
                 Key,
                 iv: null,
                 blockSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
                 paddingSize: BlockSize / BitsPerByte,
                 encrypting: false);
 
@@ -115,11 +113,9 @@ namespace System.Security.Cryptography
             Debug.Assert(EffectiveKeySize == KeySize);
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.ECB,
-                paddingMode,
                 Key,
                 iv: default,
                 blockSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
                 paddingSize: BlockSize / BitsPerByte,
                 encrypting: true);
 
@@ -142,11 +138,9 @@ namespace System.Security.Cryptography
             Debug.Assert(EffectiveKeySize == KeySize);
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CBC,
-                paddingMode,
                 Key,
                 iv,
                 blockSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
                 paddingSize: BlockSize / BitsPerByte,
                 encrypting: true);
 
@@ -169,11 +163,9 @@ namespace System.Security.Cryptography
             Debug.Assert(EffectiveKeySize == KeySize);
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CBC,
-                paddingMode,
                 Key,
                 iv,
                 blockSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
                 paddingSize: BlockSize / BitsPerByte,
                 encrypting: false);
 

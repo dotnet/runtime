@@ -41,7 +41,7 @@ namespace Microsoft.Interop.Analyzers
                         {
                             SyntaxNode node = root.FindNode(diagnosticsBySpan.Key);
 
-                            AddMissingMembers(fixAllContext, editor, diagnosticsBySpan, node);
+                            AddMissingMembers(editor, diagnosticsBySpan, node);
                         }
                         break;
                     case AddMissingCustomTypeMarshallerFeaturesKey:
@@ -59,7 +59,7 @@ namespace Microsoft.Interop.Analyzers
                 return editor.GetChangedDocument();
             }
 
-            private static void AddMissingMembers(FixAllContext fixAllContext, DocumentEditor editor, IEnumerable<Diagnostic> diagnostics, SyntaxNode node)
+            private static void AddMissingMembers(DocumentEditor editor, IEnumerable<Diagnostic> diagnostics, SyntaxNode node)
             {
                 var (missingMemberNames, _) = GetRequiredShapeMissingMemberNames(diagnostics);
                 ITypeSymbol marshallerType = (ITypeSymbol)editor.SemanticModel.GetDeclaredSymbol(node);

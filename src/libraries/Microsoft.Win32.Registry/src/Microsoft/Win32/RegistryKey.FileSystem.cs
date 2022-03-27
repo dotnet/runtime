@@ -6,6 +6,7 @@ using System;
 
 namespace Microsoft.Win32
 {
+#pragma warning disable IDE0060
     public sealed partial class RegistryKey : MarshalByRefObject, IDisposable
     {
         private static void ClosePerfDataKey()
@@ -115,5 +116,6 @@ namespace Microsoft.Win32
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_Registry);
         }
+#pragma warning restore IDE0060
     }
 }

@@ -109,7 +109,7 @@ namespace System.Runtime.Serialization.Json
                 InitArgs(collectionContract.UnderlyingType);
                 if (collectionContract.IsReadOnlyContract)
                 {
-                    ThrowIfCannotSerializeReadOnlyTypes(collectionContract);
+                    ThrowIfCannotSerializeReadOnlyTypes();
                 }
                 WriteCollection(collectionContract);
                 return (JsonFormatCollectionWriterDelegate)_ilg.EndMethod();
@@ -124,7 +124,7 @@ namespace System.Runtime.Serialization.Json
                     paramTypes[i] = parameters[i].ParameterType;
 
                 DynamicMethod dynamicMethod = new DynamicMethod(methodName, signature.ReturnType, paramTypes, typeof(JsonFormatWriterGenerator).Module, allowPrivateMemberAccess);
-                ilg.BeginMethod(dynamicMethod, delegateType, methodName, paramTypes, allowPrivateMemberAccess);
+                ilg.BeginMethod(dynamicMethod, delegateType, methodName, paramTypes);
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -166,7 +166,7 @@ namespace System.Runtime.Serialization.Json
                 _ilg.Stloc(_objectLocal);
             }
 
-            private void ThrowIfCannotSerializeReadOnlyTypes(CollectionDataContract classContract)
+            private void ThrowIfCannotSerializeReadOnlyTypes()
             {
                 ThrowIfCannotSerializeReadOnlyTypes(XmlFormatGeneratorStatics.CollectionSerializationExceptionMessageProperty);
             }
@@ -457,7 +457,7 @@ namespace System.Runtime.Serialization.Json
                         WriteObjectAttribute();
                         LocalBuilder pairKey = _ilg.DeclareLocal(Globals.TypeOfString, "key");
                         LocalBuilder pairValue = _ilg.DeclareLocal(keyValueTypes[1], "value");
-                        _ilg.ForEach(currentValue, elementType, enumeratorType, enumerator, getCurrentMethod);
+                        _ilg.ForEach(currentValue, elementType, enumerator, getCurrentMethod);
 
                         _ilg.LoadAddress(currentValue);
                         _ilg.LoadMember(genericDictionaryKeyProperty);
@@ -478,7 +478,7 @@ namespace System.Runtime.Serialization.Json
 
                     WriteArrayAttribute();
 
-                    _ilg.ForEach(currentValue, elementType, enumeratorType, enumerator, getCurrentMethod);
+                    _ilg.ForEach(currentValue, elementType, enumerator, getCurrentMethod);
                     if (incrementCollectionCountMethod == null)
                     {
                         _ilg.Call(_contextArg, XmlFormatGeneratorStatics.IncrementItemCountMethod, 1);

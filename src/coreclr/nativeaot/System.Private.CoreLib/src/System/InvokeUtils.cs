@@ -273,7 +273,7 @@ namespace System
                 case CheckArgumentSemantics.SetFieldDirect:
                     return CreateChangeTypeArgumentException(srcEEType, dstEEType);
                 case CheckArgumentSemantics.ArraySet:
-                    return CreateChangeTypeInvalidCastException(srcEEType, dstEEType);
+                    return CreateChangeTypeInvalidCastException();
                 default:
                     Debug.Fail("Unexpected CheckArgumentSemantics value: " + semantics);
                     throw new InvalidOperationException();
@@ -285,7 +285,7 @@ namespace System
             return new ArgumentException(SR.Format(SR.Arg_ObjObjEx, Type.GetTypeFromHandle(new RuntimeTypeHandle(srcEEType)), Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType))));
         }
 
-        private static InvalidCastException CreateChangeTypeInvalidCastException(EETypePtr srcEEType, EETypePtr dstEEType)
+        private static InvalidCastException CreateChangeTypeInvalidCastException()
         {
             return new InvalidCastException(SR.InvalidCast_StoreArrayElement);
         }
@@ -548,7 +548,7 @@ namespace System
             return finalObjectToReturn;
         }
 
-        internal static object DynamicInvokeUnmanagedPointerReturn(out DynamicInvokeParamLookupType paramLookupType, object? boxedPointerType, int index, RuntimeTypeHandle type, DynamicInvokeParamType paramType)
+        internal static object DynamicInvokeUnmanagedPointerReturn(out DynamicInvokeParamLookupType paramLookupType, object? boxedPointerType)
         {
             object finalObjectToReturn = boxedPointerType;
 
@@ -630,7 +630,7 @@ namespace System
             else if (type.ToEETypePtr().IsPointer)
             {
                 incomingParam = InvokeUtils.CheckArgument(incomingParam, type.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, argSetupState.binderBundle, ref argSetupState);
-                return DynamicInvokeUnmanagedPointerReturn(out paramLookupType, incomingParam, index, type, paramType);
+                return DynamicInvokeUnmanagedPointerReturn(out paramLookupType, incomingParam);
             }
             else
             {

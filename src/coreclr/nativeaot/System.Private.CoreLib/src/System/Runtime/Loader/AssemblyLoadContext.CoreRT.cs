@@ -13,6 +13,7 @@ namespace System.Runtime.Loader
     {
         internal static Assembly[] GetLoadedAssemblies() => ReflectionAugments.ReflectionCoreCallbacks.GetLoadedAssemblies();
 
+#pragma warning disable IDE0060
         public Assembly LoadFromAssemblyName(AssemblyName assemblyName)
         {
             return Assembly.Load(assemblyName);
@@ -46,6 +47,8 @@ namespace System.Runtime.Loader
             // so it won't actually work properly when multiple assemblies with the same identity get loaded.
             return ReflectionAugments.ReflectionCoreCallbacks.Load(assemblyPath);
         }
+
+#pragma warning restore IDE0060
 
 #pragma warning disable CA1822
         internal Assembly InternalLoad(byte[] arrAssembly, byte[] arrSymbols)

@@ -573,7 +573,7 @@ namespace System.ComponentModel
                 return new AttributeCollection((Attribute[])null);
             }
 
-            AttributeCollection attributes = GetDescriptor(componentType, nameof(componentType))!.GetAttributes();
+            AttributeCollection attributes = GetDescriptor(componentType)!.GetAttributes();
             return attributes;
         }
 
@@ -638,7 +638,7 @@ namespace System.ComponentModel
                     if (extDesc != null)
                     {
                         ICollection extResults = extDesc.GetAttributes();
-                        results = PipelineMerge(PIPELINE_ATTRIBUTES, results, extResults, component, null);
+                        results = PipelineMerge(PIPELINE_ATTRIBUTES, results, extResults, null);
                     }
                 }
                 else
@@ -656,7 +656,7 @@ namespace System.ComponentModel
                 if (extDesc != null)
                 {
                     ICollection extResults = extDesc.GetAttributes();
-                    results = PipelineMerge(PIPELINE_ATTRIBUTES, results, extResults, component, cache);
+                    results = PipelineMerge(PIPELINE_ATTRIBUTES, results, extResults, cache);
                 }
 
                 results = PipelineFilter(PIPELINE_ATTRIBUTES, results, component, cache);
@@ -699,7 +699,7 @@ namespace System.ComponentModel
         public static string? GetClassName(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType)
         {
-            return GetDescriptor(componentType, nameof(componentType))!.GetClassName();
+            return GetDescriptor(componentType)!.GetClassName();
         }
 
         /// <summary>
@@ -741,7 +741,7 @@ namespace System.ComponentModel
         [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
         public static TypeConverter GetConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
-            return GetDescriptor(type, nameof(type))!.GetConverter();
+            return GetDescriptor(type)!.GetConverter();
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
@@ -769,7 +769,7 @@ namespace System.ComponentModel
                 return null;
             }
 
-            return GetDescriptor(componentType, nameof(componentType))!.GetDefaultEvent();
+            return GetDescriptor(componentType)!.GetDefaultEvent();
         }
 
         /// <summary>
@@ -807,7 +807,7 @@ namespace System.ComponentModel
                 return null;
             }
 
-            return GetDescriptor(componentType, nameof(componentType))!.GetDefaultProperty();
+            return GetDescriptor(componentType)!.GetDefaultProperty();
         }
 
         /// <summary>
@@ -837,8 +837,7 @@ namespace System.ComponentModel
         /// Performs arg checking so callers don't have to.
         /// </summary>
         internal static ICustomTypeDescriptor? GetDescriptor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type!!,
-            string typeName)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type!!)
         {
             return NodeFor(type).GetTypeDescriptor(type);
         }
@@ -910,7 +909,7 @@ namespace System.ComponentModel
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
             Type editorBaseType!!)
         {
-            return GetDescriptor(type, nameof(type))!.GetEditor(editorBaseType);
+            return GetDescriptor(type)!.GetEditor(editorBaseType);
         }
 
         /// <summary>
@@ -925,7 +924,7 @@ namespace System.ComponentModel
                 return new EventDescriptorCollection(null, true);
             }
 
-            return GetDescriptor(componentType, nameof(componentType))!.GetEvents();
+            return GetDescriptor(componentType)!.GetEvents();
         }
 
         /// <summary>
@@ -943,7 +942,7 @@ namespace System.ComponentModel
                 return new EventDescriptorCollection(null, true);
             }
 
-            EventDescriptorCollection events = GetDescriptor(componentType, nameof(componentType))!.GetEvents(attributes);
+            EventDescriptorCollection events = GetDescriptor(componentType)!.GetEvents(attributes);
 
             if (attributes != null && attributes.Length > 0)
             {
@@ -1042,13 +1041,13 @@ namespace System.ComponentModel
                     if (extDesc != null)
                     {
                         ICollection extResults = extDesc.GetEvents(attributes);
-                        results = PipelineMerge(PIPELINE_EVENTS, results, extResults, component, null);
+                        results = PipelineMerge(PIPELINE_EVENTS, results, extResults, null);
                     }
                 }
                 else
                 {
                     results = PipelineFilter(PIPELINE_EVENTS, results, component, null);
-                    results = PipelineAttributeFilter(PIPELINE_EVENTS, results, attributes, component, null);
+                    results = PipelineAttributeFilter(PIPELINE_EVENTS, results, attributes, null);
                 }
             }
             else
@@ -1060,11 +1059,11 @@ namespace System.ComponentModel
                 if (extDesc != null)
                 {
                     ICollection extResults = extDesc.GetEvents(attributes);
-                    results = PipelineMerge(PIPELINE_EVENTS, results, extResults, component, cache);
+                    results = PipelineMerge(PIPELINE_EVENTS, results, extResults, cache);
                 }
 
                 results = PipelineFilter(PIPELINE_EVENTS, results, component, cache);
-                results = PipelineAttributeFilter(PIPELINE_EVENTS, results, attributes, component, cache);
+                results = PipelineAttributeFilter(PIPELINE_EVENTS, results, attributes, cache);
             }
 
             if (!(results is EventDescriptorCollection evts))
@@ -1151,7 +1150,7 @@ namespace System.ComponentModel
                 return new PropertyDescriptorCollection(null, true);
             }
 
-            return GetDescriptor(componentType, nameof(componentType))!.GetProperties();
+            return GetDescriptor(componentType)!.GetProperties();
         }
 
         /// <summary>
@@ -1169,7 +1168,7 @@ namespace System.ComponentModel
                 return new PropertyDescriptorCollection(null, true);
             }
 
-            PropertyDescriptorCollection properties = GetDescriptor(componentType, nameof(componentType))!.GetProperties(attributes);
+            PropertyDescriptorCollection properties = GetDescriptor(componentType)!.GetProperties(attributes);
 
             if (attributes != null && attributes.Length > 0)
             {
@@ -1280,13 +1279,13 @@ namespace System.ComponentModel
                     if (extDesc != null)
                     {
                         ICollection extResults = noAttributes ? extDesc.GetProperties() : extDesc.GetProperties(attributes);
-                        results = PipelineMerge(PIPELINE_PROPERTIES, results, extResults, component, null);
+                        results = PipelineMerge(PIPELINE_PROPERTIES, results, extResults, null);
                     }
                 }
                 else
                 {
                     results = PipelineFilter(PIPELINE_PROPERTIES, results, component, null);
-                    results = PipelineAttributeFilter(PIPELINE_PROPERTIES, results, attributes, component, null);
+                    results = PipelineAttributeFilter(PIPELINE_PROPERTIES, results, attributes, null);
                 }
             }
             else
@@ -1298,11 +1297,11 @@ namespace System.ComponentModel
                 if (extDesc != null)
                 {
                     ICollection extResults = noAttributes ? extDesc.GetProperties() : extDesc.GetProperties(attributes);
-                    results = PipelineMerge(PIPELINE_PROPERTIES, results, extResults, component, cache);
+                    results = PipelineMerge(PIPELINE_PROPERTIES, results, extResults, cache);
                 }
 
                 results = PipelineFilter(PIPELINE_PROPERTIES, results, component, cache);
-                results = PipelineAttributeFilter(PIPELINE_PROPERTIES, results, attributes, component, cache);
+                results = PipelineAttributeFilter(PIPELINE_PROPERTIES, results, attributes, cache);
             }
 
             if (!(results is PropertyDescriptorCollection props))
@@ -1605,7 +1604,7 @@ namespace System.ComponentModel
         /// user-defined filter.
         /// </summary>
         [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
-        private static ICollection PipelineAttributeFilter(int pipelineType, ICollection members, Attribute[]? filter, object instance, IDictionary? cache)
+        private static ICollection PipelineAttributeFilter(int pipelineType, ICollection members, Attribute[]? filter, IDictionary? cache)
         {
             Debug.Assert(pipelineType != PIPELINE_ATTRIBUTES, "PipelineAttributeFilter is not supported for attributes");
 
@@ -1915,7 +1914,7 @@ namespace System.ComponentModel
         /// merges extended metdata with primary metadata, and stores it in
         /// the cache if it is available.
         /// </summary>
-        private static ICollection PipelineMerge(int pipelineType, ICollection primary, ICollection secondary, object instance, IDictionary? cache)
+        private static ICollection PipelineMerge(int pipelineType, ICollection primary, ICollection secondary, IDictionary? cache)
         {
             // If there is no secondary collection, there is nothing to merge.
             if (secondary == null || secondary.Count == 0)
@@ -3082,7 +3081,7 @@ namespace System.ComponentModel
                     TypeDescriptionProvider p = _node.Provider;
                     if (p is ReflectTypeDescriptionProvider)
                     {
-                        return ReflectTypeDescriptionProvider.GetExtendedAttributes(_instance);
+                        return ReflectTypeDescriptionProvider.GetExtendedAttributes();
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
@@ -3191,7 +3190,7 @@ namespace System.ComponentModel
                     TypeDescriptionProvider p = _node.Provider;
                     if (p is ReflectTypeDescriptionProvider)
                     {
-                        return ReflectTypeDescriptionProvider.GetExtendedDefaultProperty(_instance);
+                        return ReflectTypeDescriptionProvider.GetExtendedDefaultProperty();
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
@@ -3231,7 +3230,7 @@ namespace System.ComponentModel
                     TypeDescriptionProvider p = _node.Provider;
                     if (p is ReflectTypeDescriptionProvider)
                     {
-                        return ReflectTypeDescriptionProvider.GetExtendedEvents(_instance);
+                        return ReflectTypeDescriptionProvider.GetExtendedEvents();
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
@@ -3257,7 +3256,7 @@ namespace System.ComponentModel
                         // are accessed through our pipeline code, which always filters before
                         // returning. So any filter we do here is redundant. Note that we do
                         // pass a valid filter to a custom descriptor so it can optimize if it wants.
-                        EventDescriptorCollection events = ReflectTypeDescriptionProvider.GetExtendedEvents(_instance);
+                        EventDescriptorCollection events = ReflectTypeDescriptionProvider.GetExtendedEvents();
                         return events;
                     }
 
@@ -3331,7 +3330,7 @@ namespace System.ComponentModel
 
                     if (p is ReflectTypeDescriptionProvider)
                     {
-                        return ReflectTypeDescriptionProvider.GetExtendedPropertyOwner(_instance, pd);
+                        return ReflectTypeDescriptionProvider.GetExtendedPropertyOwner(_instance);
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
@@ -3670,7 +3669,7 @@ namespace System.ComponentModel
                     object? owner;
                     if (p is ReflectTypeDescriptionProvider)
                     {
-                        owner = ReflectTypeDescriptionProvider.GetPropertyOwner(_objectType, _instance!, pd);
+                        owner = ReflectTypeDescriptionProvider.GetPropertyOwner(_objectType, _instance!);
                     }
                     else
                     {

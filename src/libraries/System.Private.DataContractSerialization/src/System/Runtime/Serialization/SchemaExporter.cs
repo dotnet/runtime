@@ -153,7 +153,7 @@ namespace System.Runtime.Serialization
                 if (!dataMember.IsRequired)
                     element.MinOccurs = 0;
 
-                element.Annotation = GetSchemaAnnotation(actualTypeElement, ExportSurrogateData(dataMember), ExportEmitDefaultValue(dataMember));
+                element.Annotation = GetSchemaAnnotation(actualTypeElement, ExportSurrogateData(), ExportEmitDefaultValue(dataMember));
                 rootSequence.Items.Add(element);
             }
 
@@ -175,7 +175,7 @@ namespace System.Runtime.Serialization
                 if (classDataContract.IsReference)
                     AddReferenceAttributes(type.Attributes, schema);
             }
-            type.Annotation = GetSchemaAnnotation(genericInfoElement, ExportSurrogateData(classDataContract), isValueTypeElement);
+            type.Annotation = GetSchemaAnnotation(genericInfoElement, ExportSurrogateData(), isValueTypeElement);
         }
 
         private static void AddReferenceAttributes(XmlSchemaObjectCollection attributes, XmlSchema schema)
@@ -338,7 +338,7 @@ namespace System.Runtime.Serialization
             return typeElement;
         }
 
-        private static XmlElement? ExportSurrogateData(object key)
+        private static XmlElement? ExportSurrogateData()
         {
             // IDataContractSurrogate is not available on NetCore.
             return null;
@@ -355,7 +355,7 @@ namespace System.Runtime.Serialization
                 genericInfoElement = ExportGenericInfo(collectionDataContract.UnderlyingType, Globals.GenericTypeLocalName, Globals.SerializationNamespace);
             if (collectionDataContract.IsDictionary)
                 isDictionaryElement = ExportIsDictionary();
-            type.Annotation = GetSchemaAnnotation(isDictionaryElement, genericInfoElement, ExportSurrogateData(collectionDataContract));
+            type.Annotation = GetSchemaAnnotation(isDictionaryElement, genericInfoElement, ExportSurrogateData());
 
             XmlSchemaSequence rootSequence = new XmlSchemaSequence();
 
@@ -376,7 +376,7 @@ namespace System.Runtime.Serialization
                     SchemaHelper.AddElementForm(keyValueElement, schema);
                     if (dataMember.IsNullable)
                         keyValueElement.IsNillable = true;
-                    keyValueElement.Annotation = GetSchemaAnnotation(ExportSurrogateData(dataMember));
+                    keyValueElement.Annotation = GetSchemaAnnotation(ExportSurrogateData());
                     keyValueSequence.Items.Add(keyValueElement);
                 }
                 keyValueType.Particle = keyValueSequence;
@@ -412,7 +412,7 @@ namespace System.Runtime.Serialization
             // https://github.com/dotnet/runtime/issues/41448 - enumDataContract.BaseContractName is always null, but this method is not reachable
             Debug.Assert(enumDataContract.BaseContractName != null, "BaseContractName is always null, but this method is not reachable. Suppressing compiler error.");
             XmlElement? actualTypeElement = (enumDataContract.BaseContractName == DefaultEnumBaseTypeName) ? null : ExportActualType(enumDataContract.BaseContractName);
-            type.Annotation = GetSchemaAnnotation(actualTypeElement, ExportSurrogateData(enumDataContract));
+            type.Annotation = GetSchemaAnnotation(actualTypeElement, ExportSurrogateData());
             schema.Items.Add(type);
 
             XmlSchemaSimpleTypeRestriction restriction = new XmlSchemaSimpleTypeRestriction();
@@ -471,7 +471,7 @@ namespace System.Runtime.Serialization
                 if (dataContract.IsValueType)
                     isValueTypeElement = GetAnnotationMarkup(IsValueTypeName, XmlConvert.ToString(dataContract.IsValueType), schema);
             }
-            type.Annotation = GetSchemaAnnotation(genericInfoElement, ExportSurrogateData(dataContract), isValueTypeElement);
+            type.Annotation = GetSchemaAnnotation(genericInfoElement, ExportSurrogateData(), isValueTypeElement);
         }
 
         private static XmlSchemaComplexContentExtension CreateTypeContent(XmlSchemaComplexType type, XmlQualifiedName baseTypeName, XmlSchema schema)
@@ -524,7 +524,7 @@ namespace System.Runtime.Serialization
                 if (xsdType != null)
                 {
                     xsdType.Annotation = GetSchemaAnnotation(
-                                           ExportSurrogateData(dataContract),
+                                           ExportSurrogateData(),
                                            dataContract.IsValueType ?
                                              GetAnnotationMarkup(IsValueTypeName, XmlConvert.ToString(dataContract.IsValueType), schema!) :
                                              null

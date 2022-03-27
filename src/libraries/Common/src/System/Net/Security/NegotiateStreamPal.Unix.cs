@@ -27,7 +27,7 @@ namespace System.Net.Security
         // defined in winerror.h
         private const int NTE_FAIL = unchecked((int)0x80090020);
 
-        internal static string QueryContextClientSpecifiedSpn(SafeDeleteContext securityContext)
+        internal static string QueryContextClientSpecifiedSpn(SafeDeleteContext _ /*securityContext*/)
         {
             throw new PlatformNotSupportedException(SR.net_nego_server_not_supported);
         }
@@ -391,9 +391,9 @@ namespace System.Net.Security
         internal static SecurityStatusPal AcceptSecurityContext(
             SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteContext? securityContext,
-            ContextFlagsPal requestedContextFlags,
+            ContextFlagsPal _ /*requestedContextFlags*/,
             byte[]? incomingBlob,
-            ChannelBinding? channelBinding,
+            ChannelBinding? _1 /*channelBinding*/,
             ref byte[] resultBlob,
             ref ContextFlagsPal contextFlags)
         {
@@ -504,7 +504,7 @@ namespace System.Net.Security
             return new Win32Exception(NTE_FAIL, (statusCode.Exception != null) ? statusCode.Exception.Message : statusCode.ErrorCode.ToString());
         }
 
-        internal static int QueryMaxTokenSize(string package)
+        internal static int QueryMaxTokenSize(string _ /*package*/)
         {
             // This value is not used on Unix
             return 0;
@@ -515,7 +515,7 @@ namespace System.Net.Security
             return AcquireCredentialsHandle(package, isServer, new NetworkCredential(string.Empty, string.Empty, string.Empty));
         }
 
-        internal static SafeFreeCredentials AcquireCredentialsHandle(string package, bool isServer, NetworkCredential credential)
+        internal static SafeFreeCredentials AcquireCredentialsHandle(string package, bool _ /*isServer*/, NetworkCredential credential)
         {
             bool isEmptyCredential = string.IsNullOrWhiteSpace(credential.UserName) ||
                                      string.IsNullOrWhiteSpace(credential.Password);
@@ -539,8 +539,8 @@ namespace System.Net.Security
         }
 
         internal static SecurityStatusPal CompleteAuthToken(
-            ref SafeDeleteContext? securityContext,
-            byte[]? incomingBlob)
+            ref SafeDeleteContext? _ /*securityContext*/,
+            byte[]? _1 /*incomingBlob*/)
         {
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
@@ -549,9 +549,9 @@ namespace System.Net.Security
             SafeDeleteContext securityContext,
             ReadOnlySpan<byte> buffer,
             bool isConfidential,
-            bool isNtlm,
+            bool _ /*isNtlm*/,
             [NotNull] ref byte[]? output,
-            uint sequenceNumber)
+            uint _1 /*sequenceNumber*/)
         {
             SafeDeleteNegoContext gssContext = (SafeDeleteNegoContext) securityContext;
             byte[] tempOutput = GssWrap(gssContext.GssContext, isConfidential, buffer);
@@ -577,10 +577,10 @@ namespace System.Net.Security
             byte[]? buffer,
             int offset,
             int count,
-            bool isConfidential,
-            bool isNtlm,
+            bool _ /*isConfidential*/,
+            bool _1 /*isNtlm*/,
             out int newOffset,
-            uint sequenceNumber)
+            uint _2 /*sequenceNumber*/)
         {
             if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
             {

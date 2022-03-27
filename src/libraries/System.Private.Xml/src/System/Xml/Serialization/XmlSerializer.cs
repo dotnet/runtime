@@ -376,7 +376,7 @@ namespace System.Xml.Serialization
                 {
                     // The contion for the block is never true, thus the block is never hit.
                     XmlSerializationWriter writer = CreateWriter();
-                    writer.Init(xmlWriter, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id, _tempAssembly);
+                    writer.Init(xmlWriter, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id);
                     Serialize(o, writer);
                 }
                 else
@@ -468,7 +468,7 @@ namespace System.Xml.Serialization
                 else if (_tempAssembly == null || _typedSerializer)
                 {
                     XmlSerializationReader reader = CreateReader();
-                    reader.Init(xmlReader, events, encodingStyle, _tempAssembly);
+                    reader.Init(xmlReader, events, encodingStyle);
                     return Deserialize(reader);
                 }
                 else
@@ -816,7 +816,7 @@ namespace System.Xml.Serialization
         private void SerializePrimitive(XmlWriter xmlWriter, object? o, XmlSerializerNamespaces? namespaces)
         {
             XmlSerializationPrimitiveWriter writer = new XmlSerializationPrimitiveWriter();
-            writer.Init(xmlWriter, namespaces, null, null, null);
+            writer.Init(xmlWriter, namespaces, null, null);
             switch (Type.GetTypeCode(_primitiveType))
             {
                 case TypeCode.String:
@@ -897,7 +897,7 @@ namespace System.Xml.Serialization
         private object? DeserializePrimitive(XmlReader xmlReader, XmlDeserializationEvents events)
         {
             XmlSerializationPrimitiveReader reader = new XmlSerializationPrimitiveReader();
-            reader.Init(xmlReader, events, null, null);
+            reader.Init(xmlReader, events, null);
             object? o;
             switch (Type.GetTypeCode(_primitiveType))
             {

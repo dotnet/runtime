@@ -685,11 +685,7 @@ namespace System.Runtime.Serialization
                         }
                         else
                         {
-                            _itemContract = DataContract.GetDataContractFromGeneratedAssembly(ItemType);
-                            if (_itemContract == null)
-                            {
-                                _itemContract = DataContract.GetDataContract(ItemType);
-                            }
+                            _itemContract = DataContract.GetDataContract(ItemType);
                         }
                     }
                     return _itemContract;
@@ -1061,30 +1057,14 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static bool TryCreateGetOnlyCollectionDataContract(Type type, [NotNullWhen(true)] out DataContract? dataContract)
         {
-            dataContract = DataContract.GetDataContractFromGeneratedAssembly(type);
-            if (dataContract == null)
+            if (type.IsArray)
             {
-                if (type.IsArray)
-                {
-                    dataContract = new CollectionDataContract(type);
-                    return true;
-                }
-                else
-                {
-                    return IsCollectionOrTryCreate(type, tryCreate: true, out dataContract!, out _, constructorRequired: false);
-                }
+                dataContract = new CollectionDataContract(type);
+                return true;
             }
             else
             {
-                if (dataContract is CollectionDataContract)
-                {
-                    return true;
-                }
-                else
-                {
-                    dataContract = null;
-                    return false;
-                }
+                return IsCollectionOrTryCreate(type, tryCreate: true, out dataContract!, out _, constructorRequired: false);
             }
         }
 

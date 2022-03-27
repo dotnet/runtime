@@ -23,10 +23,10 @@ namespace System.Runtime.Caching
 
         internal Counters(string cacheName!!) : base(EVENT_SOURCE_NAME_ROOT + cacheName)
         {
-            InitDisposableMembers(cacheName);
+            InitDisposableMembers();
         }
 
-        private void InitDisposableMembers(string cacheName)
+        private void InitDisposableMembers()
         {
             bool dispose = true;
 
@@ -106,7 +106,7 @@ namespace System.Runtime.Caching
             Interlocked.Decrement(ref _counterValues[idx]);
         }
 #else
-#pragma warning disable CA1822
+#pragma warning disable CA1822, IDE0060
         internal Counters(string cacheName)
         {
         }
@@ -122,7 +122,7 @@ namespace System.Runtime.Caching
         internal void Decrement(CounterName name)
         {
         }
-#pragma warning restore CA1822
+#pragma warning restore CA1822, IDE0060
 #endif
     }
 }

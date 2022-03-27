@@ -29,7 +29,7 @@ namespace System.IO
         private int _startIndex; // First unprocessed index in the buffer;
         private int _endIndex; // Index after last unprocessed index in the buffer;
 
-        internal StdInReader(Encoding encoding, int bufferSize)
+        internal StdInReader(Encoding encoding)
         {
             _encoding = encoding;
             _unprocessedBufferToBeRead = new char[encoding.GetMaxCharCount(BytesToBeRead)];

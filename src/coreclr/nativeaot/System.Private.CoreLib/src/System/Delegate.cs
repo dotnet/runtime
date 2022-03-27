@@ -231,7 +231,7 @@ namespace System
         }
 
         // This function is known to the compiler backend.
-        private void InitializeOpenStaticThunk(object firstParameter, IntPtr functionPointer, IntPtr functionPointerThunk)
+        private void InitializeOpenStaticThunk(object _ /*firstParameter*/, IntPtr functionPointer, IntPtr functionPointerThunk)
         {
             // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
             m_firstParameter = this;
@@ -483,10 +483,12 @@ namespace System
             }
         }
 
+#pragma warning disable IDE0060
         private static string DebuggerFunctionPointerFormattingHook(IntPtr functionPointer, RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate)
         {
             // This method will be hooked by the debugger and the debugger will cause it to return a description for the function pointer
             throw new NotSupportedException();
         }
+#pragma warning restore IDE0060
     }
 }

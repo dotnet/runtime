@@ -54,7 +54,7 @@ namespace System.Drawing.Printing
         {
             IntPtr dc = PrintingServices.CreateGraphicsContext(document.PrinterSettings, document.DefaultPageSettings);
             e.GraphicsContext = new GraphicsPrinter(null, dc);
-            PrintingServices.StartDoc(e.GraphicsContext, document.DocumentName, string.Empty);
+            PrintingServices.StartDoc(e.GraphicsContext, document.DocumentName);
         }
 
         public override void OnEndPrint(PrintDocument document, PrintEventArgs e)
@@ -64,7 +64,7 @@ namespace System.Drawing.Printing
 
         public override Graphics? OnStartPage(PrintDocument document, PrintPageEventArgs e)
         {
-            PrintingServices.StartPage(e.GraphicsContext!);
+            PrintingServices.StartPage();
             return e.Graphics;
         }
     }

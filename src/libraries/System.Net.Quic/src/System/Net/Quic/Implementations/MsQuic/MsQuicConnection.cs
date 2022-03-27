@@ -78,7 +78,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 SingleWriter = true,
             });
 
-            public void RemoveStream(MsQuicStream? stream)
+            public void RemoveStream()
             {
                 bool releaseHandles;
                 lock (this)
@@ -109,7 +109,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             }
 
-            public bool TryAddStream(MsQuicStream stream)
+            public bool TryAddStream()
             {
                 lock (this)
                 {
@@ -136,7 +136,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal string TraceId() => _state.TraceId;
 
         // constructor for inbound connections
-        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, MsQuicListener.State listenerState, SafeMsQuicConnectionHandle handle, bool remoteCertificateRequired = false, X509RevocationMode revocationMode = X509RevocationMode.Offline, RemoteCertificateValidationCallback? remoteCertificateValidationCallback = null, ServerCertificateSelectionCallback? serverCertificateSelectionCallback = null)
+        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, MsQuicListener.State listenerState, SafeMsQuicConnectionHandle handle, bool remoteCertificateRequired = false, X509RevocationMode revocationMode = X509RevocationMode.Offline, RemoteCertificateValidationCallback? remoteCertificateValidationCallback = null)
         {
             _state.Handle = handle;
             _state.StateGCHandle = GCHandle.Alloc(_state);
@@ -296,7 +296,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return MsQuicStatusCodes.Success;
         }
 
-        private static uint HandleEventShutdownComplete(State state, ref ConnectionEvent connectionEvent)
+        private static uint HandleEventShutdownComplete(State state)
         {
             // This is the final event on the connection, so free the GCHandle used by the event callback.
             state.StateGCHandle.Free();
@@ -762,7 +762,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     case QUIC_CONNECTION_EVENT_TYPE.SHUTDOWN_INITIATED_BY_PEER:
                         return HandleEventShutdownInitiatedByPeer(state, ref *connectionEvent);
                     case QUIC_CONNECTION_EVENT_TYPE.SHUTDOWN_COMPLETE:
-                        return HandleEventShutdownComplete(state, ref *connectionEvent);
+                        return HandleEventShutdownComplete(state);
                     case QUIC_CONNECTION_EVENT_TYPE.PEER_STREAM_STARTED:
                         return HandleEventNewStream(state, ref *connectionEvent);
                     case QUIC_CONNECTION_EVENT_TYPE.STREAMS_AVAILABLE:

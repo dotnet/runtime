@@ -158,7 +158,7 @@ namespace Microsoft.Win32.SafeHandles
             return false;
         }
 
-        internal void RemoveSession(IntPtr namePtr, IntPtr session)
+        internal void RemoveSession(IntPtr namePtr)
         {
             Debug.Assert(_sslSessions != null);
 

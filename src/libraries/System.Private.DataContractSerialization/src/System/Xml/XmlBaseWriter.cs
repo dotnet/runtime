@@ -537,7 +537,7 @@ namespace System.Xml
             element.LocalName = localName;
         }
 
-        private void PreStartElementAsyncCheck(string? prefix, string localName, string? ns, XmlDictionaryString? xNs)
+        private void PreStartElementAsyncCheck(string localName)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -598,7 +598,7 @@ namespace System.Xml
 
         public override Task WriteStartElementAsync(string? prefix, string localName, string? namespaceUri)
         {
-            PreStartElementAsyncCheck(prefix, localName, namespaceUri, null);
+            PreStartElementAsyncCheck(localName);
             return StartElementAndWriteStartElementAsync(prefix, localName, namespaceUri);
         }
 
