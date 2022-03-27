@@ -1060,6 +1060,21 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
         return true;
     }
 
+    // Consider array allocators side-effect free for constant length (if it's not negative and fits into i32)
+    if (helperProperties.IsAllocator(helper))
+    {
+        GenTree* arrLen = compiler->getArrayLengthFromAllocation((GenTree*)this, nullptr);
+        // if arrLen is nullptr it means it wasn't an array allocator
+        if ((arrLen != nullptr))
+        {
+            arrLen = arrLen->OperIsPutArg() ? arrLen->gtGetOp1() : arrLen;
+            if (arrLen->IsIntCnsFitsInI32() && arrLen->AsIntConCommon()->IconValue() >= 0)
+            {
+                return false;
+            }
+        }
+    }
+
     // If we also care about exceptions then check if the helper can throw
     if (!ignoreExceptions && !helperProperties.NoThrow(helper))
     {
