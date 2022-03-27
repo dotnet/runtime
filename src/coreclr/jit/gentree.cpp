@@ -1076,7 +1076,6 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
                 ssize_t cns = arrLen->AsIntConCommon()->IconValue();
                 if ((cns >= 0) && (cns <= MaxArraySize))
                 {
-                    // Actually the max allowed length is smaller than
                     return false;
                 }
             }
