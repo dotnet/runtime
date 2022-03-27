@@ -6902,8 +6902,19 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 }
                 else if (tree->OperRequiresAsgFlag())
                 {
-                    // Assume "ASG(<not marked with GLOB_REF>, ...)" stores are not globally visible.
-                    if (!tree->OperIs(GT_ASG) || ((tree->gtGetOp1()->gtFlags & GTF_GLOB_REF) != 0))
+                    // Assume all stores except "ASG(non-addr-exposed LCL, ...)" are globally visible.
+                    GenTreeLclVarCommon* lclNode;
+                    bool                 isGloballyVisibleStore;
+                    if (tree->OperIs(GT_ASG) && tree->DefinesLocal(m_compiler, &lclNode))
+                    {
+                        isGloballyVisibleStore = m_compiler->lvaGetDesc(lclNode)->IsAddressExposed();
+                    }
+                    else
+                    {
+                        isGloballyVisibleStore = true;
+                    }
+
+                    if (isGloballyVisibleStore)
                     {
                         INDEBUG(failReason = "store to globally visible memory");
                         treeIsHoistable    = false;
