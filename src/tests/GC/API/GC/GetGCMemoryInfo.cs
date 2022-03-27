@@ -72,8 +72,7 @@ public class Test_GetGCMemoryInfo
         int byteArraySize = 1000;
         for (int i = 0; i < (totalTempAllocBytes / byteArraySize); i++)
         {
-            byte[] byteArray = new byte[byteArraySize];
-            Consume(byteArray);
+            GC.KeepAlive(new byte[byteArraySize]);
         }
     }
 
