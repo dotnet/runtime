@@ -7,11 +7,11 @@ namespace System.Security.Cryptography.Xml
 {
     public class DataObject
     {
-        private string _id;
-        private string _mimeType;
-        private string _encoding;
+        private string? _id;
+        private string? _mimeType;
+        private string? _encoding;
         private CanonicalXmlNodeList _elData;
-        private XmlElement _cachedXml;
+        private XmlElement? _cachedXml;
 
         //
         // public constructors
@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.Xml
         // public properties
         //
 
-        public string Id
+        public string? Id
         {
             get { return _id; }
             set
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        public string MimeType
+        public string? MimeType
         {
             get { return _mimeType; }
             set
@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        public string Encoding
+        public string? Encoding
         {
             get { return _encoding; }
             set
@@ -102,7 +102,7 @@ namespace System.Security.Cryptography.Xml
         // public methods
         //
 
-        public XmlElement GetXml()
+        public XmlElement? GetXml()
         {
             if (CacheValid) return (_cachedXml);
 
@@ -122,6 +122,7 @@ namespace System.Security.Cryptography.Xml
             if (!string.IsNullOrEmpty(_encoding))
                 objectElement.SetAttribute("Encoding", _encoding);
 
+            // red flag - not changed, but always false
             if (_elData != null)
             {
                 foreach (XmlNode node in _elData)

@@ -7,7 +7,7 @@ namespace System.Security.Cryptography.Xml
 {
     public class KeyInfoEncryptedKey : KeyInfoClause
     {
-        private EncryptedKey _encryptedKey;
+        private EncryptedKey? _encryptedKey;
 
         public KeyInfoEncryptedKey() { }
 
@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Xml
             _encryptedKey = encryptedKey;
         }
 
-        public EncryptedKey EncryptedKey
+        public EncryptedKey? EncryptedKey
         {
             get { return _encryptedKey; }
             set { _encryptedKey = value; }

@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Xml;
@@ -13,28 +14,28 @@ namespace System.Security.Cryptography.Xml
     public class SignedXml
     {
         protected Signature m_signature;
-        protected string m_strSigningKeyName;
+        protected string? m_strSigningKeyName;
 
-        private AsymmetricAlgorithm _signingKey;
-        private XmlDocument _containingDocument;
-        private IEnumerator _keyInfoEnum;
-        private X509Certificate2Collection _x509Collection;
-        private IEnumerator _x509Enum;
+        private AsymmetricAlgorithm? _signingKey;
+        private XmlDocument? _containingDocument;
+        private IEnumerator? _keyInfoEnum;
+        private X509Certificate2Collection? _x509Collection;
+        private IEnumerator? _x509Enum;
 
         private bool[] _refProcessed;
         private int[] _refLevelCache;
 
         internal XmlResolver _xmlResolver;
-        internal XmlElement _context;
+        internal XmlElement? _context;
         private bool _bResolverSet;
 
         private Func<SignedXml, bool> _signatureFormatValidator = DefaultSignatureFormatValidator;
-        private Collection<string> _safeCanonicalizationMethods;
+        private Collection<string>? _safeCanonicalizationMethods;
 
         // Built in canonicalization algorithm URIs
-        private static IList<string> s_knownCanonicalizationMethods;
+        private static IList<string>? s_knownCanonicalizationMethods;
         // Built in transform algorithm URIs (excluding canonicalization URIs)
-        private static IList<string> s_defaultSafeTransformMethods;
+        private static IList<string>? s_defaultSafeTransformMethods;
 
         // additional HMAC Url identifiers
         private const string XmlDsigMoreHMACMD5Url = "http://www.w3.org/2001/04/xmldsig-more#hmac-md5";
@@ -44,7 +45,7 @@ namespace System.Security.Cryptography.Xml
         private const string XmlDsigMoreHMACRIPEMD160Url = "http://www.w3.org/2001/04/xmldsig-more#hmac-ripemd160";
 
         // defines the XML encryption processing rules
-        private EncryptedXml _exml;
+        private EncryptedXml? _exml;
 
         //
         // public constant Url identifiers most frequently used within the XML Signature classes
@@ -110,7 +111,7 @@ namespace System.Security.Cryptography.Xml
             Initialize(elem);
         }
 
-        private void Initialize(XmlElement element)
+        private void Initialize(XmlElement? element)
         {
             _containingDocument = element?.OwnerDocument;
             _context = element;
@@ -127,7 +128,7 @@ namespace System.Security.Cryptography.Xml
         //
 
         /// <internalonly/>
-        public string SigningKeyName
+        public string? SigningKeyName
         {
             get { return m_strSigningKeyName; }
             set { m_strSigningKeyName = value; }
@@ -461,14 +462,14 @@ namespace System.Security.Cryptography.Xml
         // virtual methods
         //
 
-        protected virtual AsymmetricAlgorithm GetPublicKey()
+        protected virtual AsymmetricAlgorithm? GetPublicKey()
         {
             if (KeyInfo == null)
                 throw new CryptographicException(SR.Cryptography_Xml_KeyInfoRequired);
 
             if (_x509Enum != null)
             {
-                AsymmetricAlgorithm key = GetNextCertificatePublicKey();
+                AsymmetricAlgorithm? key = GetNextCertificatePublicKey();
                 if (key != null)
                     return key;
             }
@@ -491,7 +492,7 @@ namespace System.Security.Cryptography.Xml
                         if (_x509Collection.Count > 0)
                         {
                             _x509Enum = _x509Collection.GetEnumerator();
-                            AsymmetricAlgorithm key = GetNextCertificatePublicKey();
+                            AsymmetricAlgorithm? key = GetNextCertificatePublicKey();
                             if (key != null)
                                 return key;
                         }
@@ -519,11 +520,11 @@ namespace System.Security.Cryptography.Xml
             return collection;
         }
 
-        private AsymmetricAlgorithm GetNextCertificatePublicKey()
+        private AsymmetricAlgorithm? GetNextCertificatePublicKey()
         {
             while (_x509Enum.MoveNext())
             {
-                X509Certificate2 certificate = (X509Certificate2)_x509Enum.Current;
+                X509Certificate2? certificate = (X509Certificate2)_x509Enum.Current;
                 if (certificate != null)
                     return Utils.GetAnyPublicKey(certificate);
             }
@@ -531,12 +532,12 @@ namespace System.Security.Cryptography.Xml
             return null;
         }
 
-        public virtual XmlElement GetIdElement(XmlDocument document, string idValue)
+        public virtual XmlElement? GetIdElement(XmlDocument? document, string idValue)
         {
             return DefaultGetIdElement(document, idValue);
         }
 
-        internal static XmlElement DefaultGetIdElement(XmlDocument document, string idValue)
+        internal static XmlElement? DefaultGetIdElement(XmlDocument? document, string idValue)
         {
             if (document == null)
                 return null;
@@ -843,10 +844,10 @@ namespace System.Security.Cryptography.Xml
                 set { _references = value; }
             }
 
-            public int Compare(object a, object b)
+            public int Compare(object? a, object? b)
             {
-                Reference referenceA = a as Reference;
-                Reference referenceB = b as Reference;
+                Reference? referenceA = a as Reference;
+                Reference? referenceB = b as Reference;
 
                 // Get the indexes
                 int iIndexA = 0;
@@ -1056,7 +1057,7 @@ namespace System.Security.Cryptography.Xml
             return m_signature.SignatureValue.AsSpan().SequenceEqual(hashValue.AsSpan(0, m_signature.SignatureValue.Length));
         }
 
-        private static XmlElement GetSingleReferenceTarget(XmlDocument document, string idAttributeName, string idValue)
+        private static XmlElement? GetSingleReferenceTarget(XmlDocument document, string idAttributeName, string idValue)
         {
             // idValue has already been tested as an NCName (unless overridden for compatibility), so there's no
             // escaping that needs to be done here.
@@ -1071,7 +1072,7 @@ namespace System.Security.Cryptography.Xml
             // In this case, we'll treat it the same as having found nothing across all fallbacks (but shortcut so that we don't
             // fall into a trap of finding a secondary element which wasn't the originally signed one).
 
-            XmlNodeList nodeList = document.SelectNodes(xPath);
+            XmlNodeList? nodeList = document.SelectNodes(xPath);
 
             if (nodeList == null || nodeList.Count == 0)
             {

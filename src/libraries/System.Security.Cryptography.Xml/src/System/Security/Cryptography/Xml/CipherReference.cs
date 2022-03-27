@@ -7,7 +7,7 @@ namespace System.Security.Cryptography.Xml
 {
     public sealed class CipherReference : EncryptedReference
     {
-        private byte[] _cipherValue;
+        private byte[]? _cipherValue;
 
         public CipherReference() : base()
         {
@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         // This method is used to cache results from resolved cipher references.
-        internal byte[] CipherValue
+        internal byte[]? CipherValue
         {
             get
             {
