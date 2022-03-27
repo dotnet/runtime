@@ -3957,7 +3957,7 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
 //
 void Lowering::LowerBswapOp(GenTreeOp* node)
 {
-    assert(node->OperIs(GT_BSWAP));
+    assert(node->OperIs(GT_BSWAP, GT_BSWAP16));
 
     if (!comp->opts.OptimizationEnabled() || !comp->compOpportunisticallyDependsOn(InstructionSet_MOVBE))
     {

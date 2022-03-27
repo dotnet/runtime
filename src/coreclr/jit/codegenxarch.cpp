@@ -5140,8 +5140,9 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         }
         else
         {
-            GetEmitter()->emitInsStoreInd(data->OperIs(GT_BSWAP) && data->isContained() ? INS_movbe
-                                                                                        : ins_Store(data->TypeGet()),
+            GetEmitter()->emitInsStoreInd(data->OperIs(GT_BSWAP, GT_BSWAP16) && data->isContained()
+                                              ? INS_movbe
+                                              : ins_Store(data->TypeGet()),
                                           emitTypeSize(tree), tree);
         }
     }

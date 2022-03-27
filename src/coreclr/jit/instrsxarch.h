@@ -65,7 +65,6 @@ INST5(dec_l,            "dec",              IUM_RW, 0x0008FE,     BAD_CODE,     
 // Multi-byte opcodes without modrm are represented in mixed endian fashion.
 // See comment around quarter way through this file for more information.
 INST5(bswap,            "bswap",            IUM_RW, 0x0F00C8,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C80F,    INS_FLAGS_None )
-INST4(movbe,            "movbe",            IUM_WR, 0x380F00F1,   BAD_CODE,     0x380F00F0,   BAD_CODE,                  INS_FLAGS_Has_Wbit )
 
 //    id                nm                  um      mr            mi            rm            a4                         flags
 INST4(add,              "add",              IUM_RW, 0x000000,     0x000080,     0x000002,     0x000004,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF                  | INS_FLAGS_Has_Sbit | INS_FLAGS_Has_Wbit )
@@ -168,6 +167,7 @@ INSTMUL(imul_15,        "imul",             IUM_RD, BAD_CODE,     0x4400003868, 
 #define SSEDBL(c) PACK3(0xf2, 0x0f, c)
 #define PCKDBL(c) PACK3(0x66, 0x0f, c)
 #define PCKFLT(c) PACK2(0x0f,c)
+#define PCKMVB(c) PACK3(0x0F, 0x38, c)
 
 // These macros encode extra byte that is implicit in the macro.
 #define PACK4(byte1,byte2,byte3,byte4) (((byte1) << 16) | ((byte2) << 24) | (byte3) | ((byte4) << 8))
@@ -618,6 +618,9 @@ INST3(tzcnt,            "tzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     
 
 // LZCNT
 INST3(lzcnt,            "lzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xBD),                            Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF )
+
+// MOVBE
+INST3(movbe,            "movbe",            IUM_WR, PCKMVB(0xF1), BAD_CODE,     PCKMVB(0xF0),                            INS_FLAGS_None )
 
 // POPCNT
 INST3(popcnt,           "popcnt",           IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xB8),                            Resets_OF      | Resets_SF     | Writes_ZF     | Resets_AF     | Resets_PF     | Resets_CF )
