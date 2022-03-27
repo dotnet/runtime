@@ -78,9 +78,9 @@ namespace System.ServiceProcess.Tests
         [InlineData((long)int.MaxValue + 1)]
         public void RequestAdditionalTime_Throws_ArgumentOutOfRangeException(long milliseconds)
         {
-            TimeSpan timeout = TimeSpan.FromMilliseconds(milliseconds);
+            TimeSpan time = TimeSpan.FromMilliseconds(milliseconds);
             using var serviceBase = new ServiceBase();
-            Assert.Throws<ArgumentOutOfRangeException>("time", () => serviceBase.RequestAdditionalTime(timeout));
+            Assert.Throws<ArgumentOutOfRangeException>("time", () => serviceBase.RequestAdditionalTime(time));
         }
 #endif
 
