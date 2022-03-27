@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -14,12 +15,13 @@ namespace System.Linq
         /// <summary>Validates that source is not null and then tries to extract a span from the source.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // fast type checks that don't add a lot of overhead
         private static bool TryGetSpan<TSource>(this IEnumerable<TSource> source, out ReadOnlySpan<TSource> span)
+        {
             // This constraint isn't required, but the overheads involved here can be more substantial when TSource
-            // is a reference type and generic implementations are shared.  So for now we're protecting ourselves
+            // is a reference type and generic implementations are shared. So for now we're protecting ourselves
             // and forcing a conscious choice to remove this in the future, at which point it should be paired with
             // sufficient performance testing.
-            where TSource : struct
-        {
+            Debug.Assert(typeof(TSource).IsValueType);
+
             if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
