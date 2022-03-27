@@ -320,7 +320,11 @@ namespace System.IO.Packaging
             {
                 try
                 {
+#if NET6_0_OR_GREATER
+                    relationshipTargetMode = Enum.Parse<TargetMode>(targetModeAttributeValue, ignoreCase: false);
+#else
                     relationshipTargetMode = (TargetMode)(Enum.Parse(typeof(TargetMode), targetModeAttributeValue, ignoreCase: false));
+#endif
                 }
                 catch (ArgumentNullException argNullEx)
                 {
