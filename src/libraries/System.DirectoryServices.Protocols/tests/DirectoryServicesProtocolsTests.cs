@@ -480,32 +480,31 @@ namespace System.DirectoryServices.Protocols.Tests
         {
             using (LdapConnection connection = GetConnection())
             {
-                string ou = "ProtocolsGroup10";
-                string dn = "ou=" + ou;
+                string ouName = "ProtocolsGroup10";
+                string rdn = "ou=" + ouName;
 
-                DeleteEntry(connection, dn);
-                AddOrganizationalUnit(connection, dn);
+                DeleteEntry(connection, rdn);
+                AddOrganizationalUnit(connection, rdn);
 
-                dn += "," + LdapConfiguration.Configuration.SearchDn;
+                string dn = rdn + "," + LdapConfiguration.Configuration.SearchDn;
 
-                var response = connection.SendRequest(new CompareRequest(dn, "ou", ou));
+                // positive case 
+                var response = connection.SendRequest(new CompareRequest(dn, "ou", ouName));
                 Assert.Equal(ResultCode.CompareTrue, response.ResultCode);
 
-                response = connection.SendRequest(new CompareRequest(dn, "ou", Encoding.UTF8.GetBytes(ou)));
+                // positive case 
+                response = connection.SendRequest(new CompareRequest(dn, "ou", Encoding.UTF8.GetBytes(ouName)));
                 Assert.Equal(ResultCode.CompareTrue, response.ResultCode);
 
-                response = connection.SendRequest(new CompareRequest(dn, "ou", "NotFound"));
+                // negative case ProtocolsGroup10 != NoMatch
+                response = connection.SendRequest(new CompareRequest(dn, "ou", "NoMatch"));
                 Assert.Equal(ResultCode.CompareFalse, response.ResultCode);
 
-                response = connection.SendRequest(new CompareRequest(dn, "ou", Encoding.UTF8.GetBytes("NotFound")));
+                // negative case ProtocolsGroup10 != NoMatch
+                response = connection.SendRequest(new CompareRequest(dn, "ou", Encoding.UTF8.GetBytes("NoMatch")));
                 Assert.Equal(ResultCode.CompareFalse, response.ResultCode);
 
-                response = connection.SendRequest(new CompareRequest(dn, "ou", string.Empty));
-                Assert.Equal(ResultCode.CompareFalse, response.ResultCode);
-
-                response = connection.SendRequest(new CompareRequest(dn, "ou", new byte[0]));
-                Assert.Equal(ResultCode.CompareFalse, response.ResultCode);
-
+                // negative case ou=NotFound does not exist
                 Assert.Throws<DirectoryOperationException>(() => connection.SendRequest(new CompareRequest("ou=NotFound," + LdapConfiguration.Configuration.SearchDn, "ou", "NotFound")));
             }
         }
