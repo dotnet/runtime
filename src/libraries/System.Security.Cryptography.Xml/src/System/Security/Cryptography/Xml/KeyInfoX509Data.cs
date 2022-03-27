@@ -12,15 +12,15 @@ namespace System.Security.Cryptography.Xml
     public class KeyInfoX509Data : KeyInfoClause
     {
         // An array of certificates representing the certificate chain
-        private ArrayList _certificates;
+        private ArrayList? _certificates;
         // An array of issuer serial structs
-        private ArrayList _issuerSerials;
+        private ArrayList? _issuerSerials;
         // An array of SKIs
-        private ArrayList _subjectKeyIds;
+        private ArrayList? _subjectKeyIds;
         // An array of subject names
-        private ArrayList _subjectNames;
+        private ArrayList? _subjectNames;
         // A raw byte data representing a certificate revocation list
-        private byte[] _CRL;
+        private byte[]? _CRL;
 
         //
         // public constructors
@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.Xml
         // public properties
         //
 
-        public ArrayList Certificates
+        public ArrayList? Certificates
         {
             get { return _certificates; }
         }
@@ -132,7 +132,7 @@ namespace System.Security.Cryptography.Xml
             _subjectKeyIds.Add(Utils.DecodeHexString(subjectKeyId));
         }
 
-        public ArrayList SubjectNames
+        public ArrayList? SubjectNames
         {
             get { return _subjectNames; }
         }
@@ -143,7 +143,7 @@ namespace System.Security.Cryptography.Xml
             _subjectNames.Add(subjectName);
         }
 
-        public ArrayList IssuerSerials
+        public ArrayList? IssuerSerials
         {
             get { return _issuerSerials; }
         }
@@ -171,7 +171,7 @@ namespace System.Security.Cryptography.Xml
             _issuerSerials.Add(Utils.CreateX509IssuerSerial(issuerName, serialNumber));
         }
 
-        public byte[] CRL
+        public byte[]? CRL
         {
             get { return _CRL; }
             set { _CRL = value; }
@@ -270,11 +270,13 @@ namespace System.Security.Cryptography.Xml
             XmlNamespaceManager nsm = new XmlNamespaceManager(element.OwnerDocument.NameTable);
             nsm.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);
 
-            XmlNodeList x509IssuerSerialNodes = element.SelectNodes("ds:X509IssuerSerial", nsm);
-            XmlNodeList x509SKINodes = element.SelectNodes("ds:X509SKI", nsm);
-            XmlNodeList x509SubjectNameNodes = element.SelectNodes("ds:X509SubjectName", nsm);
-            XmlNodeList x509CertificateNodes = element.SelectNodes("ds:X509Certificate", nsm);
-            XmlNodeList x509CRLNodes = element.SelectNodes("ds:X509CRL", nsm);
+            //red flag - no existing null checks before usage, so should we assume that it's not null,
+            //or should we add checks ourselves? (or is the dammit operator fine here?)
+            XmlNodeList x509IssuerSerialNodes = element.SelectNodes("ds:X509IssuerSerial", nsm)!;
+            XmlNodeList x509SKINodes = element.SelectNodes("ds:X509SKI", nsm)!;
+            XmlNodeList x509SubjectNameNodes = element.SelectNodes("ds:X509SubjectName", nsm)!;
+            XmlNodeList x509CertificateNodes = element.SelectNodes("ds:X509Certificate", nsm)!;
+            XmlNodeList x509CRLNodes = element.SelectNodes("ds:X509CRL", nsm)!;
 
             if ((x509CRLNodes.Count == 0 && x509IssuerSerialNodes.Count == 0 && x509SKINodes.Count == 0
                     && x509SubjectNameNodes.Count == 0 && x509CertificateNodes.Count == 0)) // Bad X509Data tag, or Empty tag

@@ -10,12 +10,12 @@ namespace System.Security.Cryptography.Xml
     {
         internal ArrayList _ancestorStack = new ArrayList();
 
-        internal NamespaceFrame GetScopeAt(int i)
+        internal NamespaceFrame? GetScopeAt(int i)
         {
             return (NamespaceFrame)_ancestorStack[i];
         }
 
-        internal NamespaceFrame GetCurrentScope()
+        internal NamespaceFrame? GetCurrentScope()
         {
             return GetScopeAt(_ancestorStack.Count - 1);
         }
@@ -26,7 +26,8 @@ namespace System.Security.Cryptography.Xml
             depth = -1;
             for (int i = _ancestorStack.Count - 1; i >= 0; i--)
             {
-                if ((attr = GetScopeAt(i).GetRendered(nsPrefix)) != null)
+                // red flag
+                if ((attr = GetScopeAt(i)!.GetRendered(nsPrefix)) != null)
                 {
                     depth = i;
                     return attr;
@@ -41,7 +42,8 @@ namespace System.Security.Cryptography.Xml
             depth = -1;
             for (int i = _ancestorStack.Count - 1; i >= 0; i--)
             {
-                if ((attr = GetScopeAt(i).GetUnrendered(nsPrefix)) != null)
+                //red flag
+                if ((attr = GetScopeAt(i)!.GetUnrendered(nsPrefix)) != null)
                 {
                     depth = i;
                     return attr;
@@ -84,12 +86,14 @@ namespace System.Security.Cryptography.Xml
 
         internal void AddRendered(XmlAttribute attr)
         {
-            GetCurrentScope().AddRendered(attr);
+            //red flag
+            GetCurrentScope()!.AddRendered(attr);
         }
 
         internal void AddUnrendered(XmlAttribute attr)
         {
-            GetCurrentScope().AddUnrendered(attr);
+            //red flag
+            GetCurrentScope()!.AddUnrendered(attr);
         }
     }
 }
