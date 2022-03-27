@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.Xml
             _references.RemoveAt(index);
         }
 
-        public EncryptedReference Item(int index)
+        public EncryptedReference? Item(int index)
         {
             return (EncryptedReference)_references[index];
         }

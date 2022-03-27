@@ -141,7 +141,7 @@ namespace System.Security.Cryptography.Xml
 
         public abstract void LoadInnerXml(XmlNodeList nodeList);
 
-        protected abstract XmlNodeList GetInnerXml();
+        protected abstract XmlNodeList? GetInnerXml();
 
         public abstract void LoadInput(object obj);
 

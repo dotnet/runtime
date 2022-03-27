@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Xml
         private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlDocument), typeof(XmlNodeList) };
         private readonly Type[] _outputTypes = { typeof(Stream) };
         private readonly bool _includeComments;
-        private string _inclusiveNamespacesPrefixList;
+        private string? _inclusiveNamespacesPrefixList;
         private ExcCanonicalXml _excCanonicalXml;
 
         public XmlDsigExcC14NTransform() : this(false, null) { }
@@ -91,7 +91,7 @@ namespace System.Security.Cryptography.Xml
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(obj));
         }
 
-        protected override XmlNodeList GetInnerXml()
+        protected override XmlNodeList? GetInnerXml()
         {
             if (InclusiveNamespacesPrefixList == null)
                 return null;

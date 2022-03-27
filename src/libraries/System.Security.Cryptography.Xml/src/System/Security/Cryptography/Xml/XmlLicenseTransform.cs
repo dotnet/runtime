@@ -39,18 +39,19 @@ namespace System.Security.Cryptography.Xml
 
         private void DecryptEncryptedGrants(XmlNodeList encryptedGrantList, IRelDecryptor decryptor)
         {
-            XmlElement encryptionMethod;
-            XmlElement keyInfo;
-            XmlElement cipherData;
+            XmlElement? encryptionMethod;
+            XmlElement? keyInfo;
+            XmlElement? cipherData;
             EncryptionMethod encryptionMethodObj;
             KeyInfo keyInfoObj;
             CipherData cipherDataObj;
 
             for (int i = 0, count = encryptedGrantList.Count; i < count; i++)
             {
-                encryptionMethod = encryptedGrantList[i].SelectSingleNode("//r:encryptedGrant/enc:EncryptionMethod", _namespaceManager) as XmlElement;
-                keyInfo = encryptedGrantList[i].SelectSingleNode("//r:encryptedGrant/dsig:KeyInfo", _namespaceManager) as XmlElement;
-                cipherData = encryptedGrantList[i].SelectSingleNode("//r:encryptedGrant/enc:CipherData", _namespaceManager) as XmlElement;
+                //red flag
+                encryptionMethod = encryptedGrantList[i]!.SelectSingleNode("//r:encryptedGrant/enc:EncryptionMethod", _namespaceManager) as XmlElement;
+                keyInfo = encryptedGrantList[i]!.SelectSingleNode("//r:encryptedGrant/dsig:KeyInfo", _namespaceManager) as XmlElement;
+                cipherData = encryptedGrantList[i]!.SelectSingleNode("//r:encryptedGrant/enc:CipherData", _namespaceManager) as XmlElement;
                 if ((encryptionMethod != null) &&
                     (keyInfo != null) &&
                     (cipherData != null))
@@ -63,9 +64,9 @@ namespace System.Security.Cryptography.Xml
                     keyInfoObj.LoadXml(keyInfo);
                     cipherDataObj.LoadXml(cipherData);
 
-                    MemoryStream toDecrypt = null;
-                    Stream decryptedContent = null;
-                    StreamReader streamReader = null;
+                    MemoryStream? toDecrypt = null;
+                    Stream? decryptedContent = null;
+                    StreamReader? streamReader = null;
 
                     try
                     {
@@ -79,7 +80,8 @@ namespace System.Security.Cryptography.Xml
                         streamReader = new StreamReader(decryptedContent);
                         string clearContent = streamReader.ReadToEnd();
 
-                        encryptedGrantList[i].ParentNode.InnerXml = clearContent;
+                        // red flag
+                        encryptedGrantList[i]!.ParentNode.InnerXml = clearContent;
                     }
                     finally
                     {
@@ -92,7 +94,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         // License transform has no inner XML elements
-        protected override XmlNodeList GetInnerXml()
+        protected override XmlNodeList? GetInnerXml()
         {
             return null;
         }
@@ -147,12 +149,14 @@ namespace System.Security.Cryptography.Xml
             if (currentLicenseContext == null)
                 throw new CryptographicException(SR.Cryptography_Xml_XrmlMissingLicence);
 
-            XmlNodeList issuerList = currentLicenseContext.SelectNodes("descendant-or-self::r:license[1]/r:issuer", _namespaceManager);
+            //red flag
+            XmlNodeList issuerList = currentLicenseContext.SelectNodes("descendant-or-self::r:license[1]/r:issuer", _namespaceManager)!;
 
             // Remove all issuer nodes except current
             for (int i = 0, count = issuerList.Count; i < count; i++)
             {
-                if (issuerList[i] == currentIssuerContext)
+                //red flag
+                if (issuerList[i]! == currentIssuerContext)
                     continue;
 
                 if ((issuerList[i].LocalName == ElementIssuer) &&

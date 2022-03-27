@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.Xml
         {
         }
 
-        protected override XmlNodeList GetInnerXml()
+        protected override XmlNodeList? GetInnerXml()
         {
             return null;
         }

@@ -72,7 +72,7 @@ namespace System.Security.Cryptography.Xml
             _xslFragment = firstDataElement.OuterXml.Trim(null);
         }
 
-        protected override XmlNodeList GetInnerXml()
+        protected override XmlNodeList? GetInnerXml()
         {
             return _xslNodes;
         }

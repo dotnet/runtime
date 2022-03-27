@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Xml
         private readonly Type[] _outputTypes = { typeof(XmlNodeList) };
         private string _xpathexpr;
         private XmlDocument _document;
-        private XmlNamespaceManager _nsm;
+        private XmlNamespaceManager? _nsm;
 
         public XmlDsigXPathTransform()
         {
@@ -83,7 +83,7 @@ namespace System.Security.Cryptography.Xml
                 throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
         }
 
-        protected override XmlNodeList GetInnerXml()
+        protected override XmlNodeList? GetInnerXml()
         {
             XmlDocument document = new XmlDocument();
             XmlElement element = document.CreateElement(null, "XPath", SignedXml.XmlDsigNamespaceUrl);
