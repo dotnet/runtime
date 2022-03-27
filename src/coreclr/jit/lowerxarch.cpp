@@ -1298,6 +1298,7 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 
             if (simdSize == 32)
             {
+                // With AVX2 we use testz(xor(v1, v2))
                 cmpIntrinsic = NI_AVX2_Xor;
                 mskIntrinsic = NI_AVX_TestZ;
                 cmpJitType   = simdBaseJitType;
@@ -1310,6 +1311,7 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
                 mskConstant = 0xFFFF;
                 if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
                 {
+                    // With SSE41 we use testz(xor(v1, v2))
                     cmpIntrinsic = NI_SSE2_Xor;
                     mskIntrinsic = NI_SSE41_TestZ;
                 }
@@ -1329,6 +1331,7 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 
             if (simdSize == 32)
             {
+                // With AVX2 we use testz(xor(v1, v2))
                 cmpIntrinsic = NI_AVX2_Xor;
                 cmpJitType   = simdBaseJitType;
                 mskIntrinsic = NI_AVX_TestZ;
@@ -1341,6 +1344,7 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 
                 if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
                 {
+                    // With SSE41 we use testz(xor(v1, v2))
                     mskIntrinsic = NI_SSE41_TestZ;
                     cmpIntrinsic = NI_SSE2_Xor;
                     cmpJitType   = simdBaseJitType;
@@ -1420,13 +1424,17 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     BlockRange().InsertBefore(node, cmp);
     LowerNode(cmp);
 
+    // TestZ(Xor(v1, v2)) is smaller
     if ((mskIntrinsic == NI_SSE41_TestZ) || (mskIntrinsic == NI_AVX_TestZ))
     {
+        // Save cmp's result into a temp
         node->Op(1) = cmp;
         LIR::Use cmpUse(BlockRange(), &node->Op(1), node);
         ReplaceWithLclVar(cmpUse);
         GenTree* cmpClone = comp->gtClone(node->Op(1));
         BlockRange().InsertAfter(node->Op(1), cmpClone);
+
+        // Emit vptest(cmp, cmpClone)
         node->Op(2) = cmpClone;
         node->ChangeHWIntrinsicId(mskIntrinsic);
         LowerHWIntrinsicCC(node, mskIntrinsic == NI_SSE41_TestZ ? NI_SSE41_PTEST : NI_AVX_PTEST, cmpCnd);

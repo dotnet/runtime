@@ -1791,7 +1791,8 @@ namespace System
                     {
                         do
                         {
-                            if (LoadVector256(ref first, offset) != LoadVector256(ref second, offset))
+                            if (Vector256.LoadUnsafe(ref first, offset) !=
+                                Vector256.LoadUnsafe(ref second, offset))
                             {
                                 goto NotEqual;
                             }
@@ -1800,7 +1801,8 @@ namespace System
                     }
 
                     // Do final compare as Vector256<byte>.Count from end rather than start
-                    if (LoadVector256(ref first, lengthToExamine) == LoadVector256(ref second, lengthToExamine))
+                    if (Vector256.LoadUnsafe(ref first, lengthToExamine) ==
+                        Vector256.LoadUnsafe(ref second, lengthToExamine))
                     {
                         // C# compiler inverts this test, making the outer goto the conditional jmp.
                         goto Equal;
@@ -1819,7 +1821,8 @@ namespace System
                     {
                         do
                         {
-                            if (LoadVector128(ref first, offset) != LoadVector128(ref second, offset))
+                            if (Vector128.LoadUnsafe(ref first, offset) !=
+                                Vector128.LoadUnsafe(ref second, offset))
                             {
                                 goto NotEqual;
                             }
@@ -1828,7 +1831,8 @@ namespace System
                     }
 
                     // Do final compare as Vector128<byte>.Count from end rather than start
-                    if (LoadVector128(ref first, lengthToExamine) == LoadVector128(ref second, lengthToExamine))
+                    if (Vector128.LoadUnsafe(ref first, lengthToExamine) ==
+                        Vector128.LoadUnsafe(ref second, lengthToExamine))
                     {
                         // C# compiler inverts this test, making the outer goto the conditional jmp.
                         goto Equal;
