@@ -1139,14 +1139,18 @@ namespace System
         // public static decimal operator checked *(decimal left, decimal right) => checked(left * right);
 
         //
-        // INumber
+        // INumberBase
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.One" />
-        static decimal INumber<decimal>.One => One;
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static decimal INumberBase<decimal>.One => One;
 
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
-        static decimal INumber<decimal>.Zero => Zero;
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static decimal INumberBase<decimal>.Zero => Zero;
+
+        //
+        // INumber
+        //
 
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
         public static decimal Abs(decimal value)
@@ -1498,12 +1502,5 @@ namespace System
 
         // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
         // static decimal IUnaryNegationOperators<decimal, decimal>.operator checked -(decimal value) => checked(-value);
-
-        //
-        // IUnaryPlusOperators
-        //
-
-        // /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_CheckedUnaryPlus(TSelf)" />
-        // static decimal IUnaryPlusOperators<decimal, decimal>.operator checked +(decimal value) => checked(+value);
     }
 }

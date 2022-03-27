@@ -6,31 +6,37 @@ using System.Globalization;
 
 namespace System
 {
-    /// <summary>Defines a number type.</summary>
-    /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
-    public interface INumber<TSelf>
+    public interface INumberBase<TSelf>
         : IAdditionOperators<TSelf, TSelf, TSelf>,
           IAdditiveIdentity<TSelf, TSelf>,
-          IComparisonOperators<TSelf, TSelf>,   // implies IEquatableOperators<TSelf, TSelf>
           IDecrementOperators<TSelf>,
-          IDivisionOperators<TSelf, TSelf, TSelf>,
+          IEqualityOperators<TSelf, TSelf>,     // implies IEquatable<TSelf>
           IIncrementOperators<TSelf>,
-          IModulusOperators<TSelf, TSelf, TSelf>,
           IMultiplicativeIdentity<TSelf, TSelf>,
           IMultiplyOperators<TSelf, TSelf, TSelf>,
-          ISpanFormattable,                     // implies IFormattable
-          ISpanParseable<TSelf>,                // implies IParseable<TSelf>
           ISubtractionOperators<TSelf, TSelf, TSelf>,
-          IUnaryNegationOperators<TSelf, TSelf>,
-          IUnaryPlusOperators<TSelf, TSelf>
-        where TSelf : INumber<TSelf>
+          IUnaryPlusOperators<TSelf, TSelf>,
+          IUnaryNegationOperators<TSelf, TSelf>
+        where TSelf : INumberBase<TSelf>
     {
         /// <summary>Gets the value <c>1</c> for the type.</summary>
         static abstract TSelf One { get; }
 
         /// <summary>Gets the value <c>0</c> for the type.</summary>
         static abstract TSelf Zero { get; }
+    }
 
+    /// <summary>Defines a number type.</summary>
+    /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
+    public interface INumber<TSelf>
+        : IComparisonOperators<TSelf, TSelf>,   // implies IEqualityOperators<TSelf, TSelf>
+          IDivisionOperators<TSelf, TSelf, TSelf>,
+          IModulusOperators<TSelf, TSelf, TSelf>,
+          INumberBase<TSelf>,
+          ISpanFormattable,                     // implies IFormattable
+          ISpanParseable<TSelf>                 // implies IParseable<TSelf>
+        where TSelf : INumber<TSelf>
+    {
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>
         /// <returns>The absolute of <paramref name="value" />.</returns>
@@ -113,7 +119,7 @@ namespace System
 
         /// <summary>Computes the sign of a value.</summary>
         /// <param name="value">The value whose sign is to be computed.</param>
-        /// <returns>A positive value if <paramref name="value" /> is positive, <see cref="Zero" /> if <paramref name="value" /> is zero, and a negative value if <paramref name="value" /> is negative.</returns>
+        /// <returns>A positive value if <paramref name="value" /> is positive, <see cref="INumberBase{TSelf}.Zero" /> if <paramref name="value" /> is zero, and a negative value if <paramref name="value" /> is negative.</returns>
         /// <remarks>It is recommended that a function return <c>1</c>, <c>0</c>, and <c>-1</c>, respectively.</remarks>
         static abstract TSelf Sign(TSelf value);
 

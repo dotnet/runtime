@@ -1214,14 +1214,18 @@ namespace System
         // static char IMultiplyOperators<char, char, char>.operator checked *(char left, char right) => checked((char)(left * right));
 
         //
-        // INumber
+        // INumberBase
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.One" />
-        static char INumber<char>.One => (char)1;
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static char INumberBase<char>.One => (char)1;
 
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
-        static char INumber<char>.Zero => (char)0;
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static char INumberBase<char>.Zero => (char)0;
+
+        //
+        // INumber
+        //
 
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
         public static char Abs(char value) => value;
@@ -1736,8 +1740,5 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static char IUnaryPlusOperators<char, char>.operator +(char value) => (char)(+value);
-
-        // /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_CheckedUnaryPlus(TSelf)" />
-        // static byte IUnaryPlusOperators<char, char>.operator checked +(byte value) => checked((char)(+value));
     }
 }

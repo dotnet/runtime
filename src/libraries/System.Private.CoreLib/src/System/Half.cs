@@ -1049,10 +1049,10 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.One" />
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
         public static Half One => new Half(PositiveOneBits);
 
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
         public static Half Zero => new Half(PositiveZeroBits);
 
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
@@ -1409,8 +1409,5 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         public static Half operator +(Half value) => value;
-
-        // /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_CheckedUnaryPlus(TSelf)" />
-        // static Half IUnaryPlusOperators<Half, Half>.operator checked +(Half value) => checked(value);
     }
 }

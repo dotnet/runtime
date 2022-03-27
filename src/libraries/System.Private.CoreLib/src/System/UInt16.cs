@@ -440,14 +440,18 @@ namespace System
         // static ushort IMultiplyOperators<ushort, ushort, ushort>.operator checked *(ushort left, ushort right) => checked((ushort)(left * right));
 
         //
-        // INumber
+        // INumberBase
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.One" />
-        static ushort INumber<ushort>.One => One;
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static ushort INumberBase<ushort>.One => One;
 
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
-        static ushort INumber<ushort>.Zero => Zero;
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static ushort INumberBase<ushort>.Zero => Zero;
+
+        //
+        // INumber
+        //
 
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
         public static ushort Abs(ushort value) => value;
@@ -914,8 +918,5 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static ushort IUnaryPlusOperators<ushort, ushort>.operator +(ushort value) => (ushort)(+value);
-
-        // /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_CheckedUnaryPlus(TSelf)" />
-        // static ushort IUnaryPlusOperators<ushort, ushort>.operator checked +(ushort value) => checked((ushort)(+value));
     }
 }

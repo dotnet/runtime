@@ -467,14 +467,18 @@ namespace System
         // static sbyte IMultiplyOperators<sbyte, sbyte, sbyte>.operator checked *(sbyte left, sbyte right) => checked((sbyte)(left * right));
 
         //
-        // INumber
+        // INumberBase
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.One" />
-        static sbyte INumber<sbyte>.One => One;
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static sbyte INumberBase<sbyte>.One => One;
 
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
-        static sbyte INumber<sbyte>.Zero => Zero;
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static sbyte INumberBase<sbyte>.Zero => Zero;
+
+        //
+        // INumber
+        //
 
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
         public static sbyte Abs(sbyte value) => Math.Abs(value);
@@ -967,8 +971,5 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static sbyte IUnaryPlusOperators<sbyte, sbyte>.operator +(sbyte value) => (sbyte)(+value);
-
-        // /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_CheckedUnaryPlus(TSelf)" />
-        // static sbyte IUnaryPlusOperators<sbyte, sbyte>.operator checked +(sbyte value) => checked((sbyte)(+value));
     }
 }

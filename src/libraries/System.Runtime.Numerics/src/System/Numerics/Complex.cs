@@ -12,7 +12,14 @@ namespace System.Numerics
     /// </summary>
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct Complex : IEquatable<Complex>, IFormattable
+    public readonly struct Complex
+        : IAdditionOperators<Complex, double, Complex>,
+          IDivisionOperators<Complex, Complex, Complex>,
+          IDivisionOperators<Complex, double, Complex>,
+          IFormattable,
+          IMultiplyOperators<Complex, double, Complex>,
+          INumberBase<Complex>,
+          ISubtractionOperators<Complex, double, Complex>
     {
         public static readonly Complex Zero = new Complex(0.0, 0.0);
         public static readonly Complex One = new Complex(1.0, 0.0);
@@ -313,7 +320,6 @@ namespace System.Numerics
             }
 
         }
-
 
         private static double Log1P(double x)
         {
@@ -849,5 +855,56 @@ namespace System.Numerics
         {
             return new Complex((double)value, 0.0);
         }
+
+        //
+        // IAdditiveIdentity
+        //
+
+        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
+        static Complex IAdditiveIdentity<Complex, Complex>.AdditiveIdentity => new Complex(0.0, 0.0);
+
+        //
+        // IDecrementOperators
+        //
+
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        static Complex IDecrementOperators<Complex>.operator --(Complex value) => value - 1;
+
+        // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        // static Complex IDecrementOperators<Complex>.operator checked --(Complex value) => checked(--value);
+
+        //
+        // IIncrementOperators
+        //
+
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
+        static Complex IIncrementOperators<Complex>.operator ++(Complex value) => value + 1;
+
+        // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
+        // static Complex IIncrementOperators<Complex>.operator checked ++(Complex value) => checked(++value);
+
+        //
+        // IMultiplicativeIdentity
+        //
+
+        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
+        static Complex IMultiplicativeIdentity<Complex, Complex>.MultiplicativeIdentity => new Complex(1.0, 0.0);
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static Complex INumberBase<Complex>.One => new Complex(1.0, 0.0);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static Complex INumberBase<Complex>.Zero => new Complex(0.0, 0.0);
+
+        //
+        // IUnaryPlusOperators
+        //
+
+        /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
+        public static Complex operator +(Complex value) => value;
     }
 }

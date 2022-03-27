@@ -726,8 +726,8 @@ namespace System
         static byte System.IMinMaxValue<System.Byte>.MaxValue { get { throw null; } }
         static byte System.IMinMaxValue<System.Byte>.MinValue { get { throw null; } }
         static byte System.IMultiplicativeIdentity<System.Byte,System.Byte>.MultiplicativeIdentity { get { throw null; } }
-        static byte System.INumber<System.Byte>.One { get { throw null; } }
-        static byte System.INumber<System.Byte>.Zero { get { throw null; } }
+        static byte System.INumberBase<System.Byte>.One { get { throw null; } }
+        static byte System.INumberBase<System.Byte>.Zero { get { throw null; } }
         public static System.Byte Abs(System.Byte value) { throw null; }
         public static System.Byte Clamp(System.Byte value, System.Byte min, System.Byte max) { throw null; }
         public int CompareTo(System.Byte value) { throw null; }
@@ -821,8 +821,8 @@ namespace System
         static char System.IMinMaxValue<System.Char>.MaxValue { get { throw null; } }
         static char System.IMinMaxValue<System.Char>.MinValue { get { throw null; } }
         static char System.IMultiplicativeIdentity<System.Char,System.Char>.MultiplicativeIdentity { get { throw null; } }
-        static char System.INumber<System.Char>.One { get { throw null; } }
-        static char System.INumber<System.Char>.Zero { get { throw null; } }
+        static char System.INumberBase<System.Char>.One { get { throw null; } }
+        static char System.INumberBase<System.Char>.Zero { get { throw null; } }
         public static System.Char Abs(System.Char value) { throw null; }
         public static System.Char Clamp(System.Char value, System.Char min, System.Char max) { throw null; }
         public int CompareTo(System.Char value) { throw null; }
@@ -1797,8 +1797,8 @@ namespace System
         static decimal System.IMinMaxValue<System.Decimal>.MaxValue { get { throw null; } }
         static decimal System.IMinMaxValue<System.Decimal>.MinValue { get { throw null; } }
         static decimal System.IMultiplicativeIdentity<System.Decimal,System.Decimal>.MultiplicativeIdentity { get { throw null; } }
-        static decimal System.INumber<System.Decimal>.One { get { throw null; } }
-        static decimal System.INumber<System.Decimal>.Zero { get { throw null; } }
+        static decimal System.INumberBase<System.Decimal>.One { get { throw null; } }
+        static decimal System.INumberBase<System.Decimal>.Zero { get { throw null; } }
         static decimal System.ISignedNumber<System.Decimal>.NegativeOne { get { throw null; } }
         public static System.Decimal Abs(System.Decimal value) { throw null; }
         public static System.Decimal Add(System.Decimal d1, System.Decimal d2) { throw null; }
@@ -2006,8 +2006,8 @@ namespace System
         static double System.IMinMaxValue<System.Double>.MaxValue { get { throw null; } }
         static double System.IMinMaxValue<System.Double>.MinValue { get { throw null; } }
         static double System.IMultiplicativeIdentity<System.Double,System.Double>.MultiplicativeIdentity { get { throw null; } }
-        static double System.INumber<System.Double>.One { get { throw null; } }
-        static double System.INumber<System.Double>.Zero { get { throw null; } }
+        static double System.INumberBase<System.Double>.One { get { throw null; } }
+        static double System.INumberBase<System.Double>.Zero { get { throw null; } }
         static double System.ISignedNumber<System.Double>.NegativeOne { get { throw null; } }
         public static System.Double Abs(System.Double value) { throw null; }
         public static System.Double Acos(System.Double x) { throw null; }
@@ -2848,11 +2848,9 @@ namespace System
     {
         static abstract TResult operator *(TSelf left, TOther right);
     }
-    public partial interface INumber<TSelf> : System.IAdditionOperators<TSelf, TSelf, TSelf>, System.IAdditiveIdentity<TSelf, TSelf>, System.IComparable, System.IComparable<TSelf>, System.IComparisonOperators<TSelf, TSelf>, System.IDecrementOperators<TSelf>, System.IDivisionOperators<TSelf, TSelf, TSelf>, System.IEquatable<TSelf>, System.IEqualityOperators<TSelf, TSelf>, System.IFormattable, System.IIncrementOperators<TSelf>, System.IModulusOperators<TSelf, TSelf, TSelf>, System.IMultiplicativeIdentity<TSelf, TSelf>, System.IMultiplyOperators<TSelf, TSelf, TSelf>, System.IParseable<TSelf>, System.ISpanFormattable, System.ISpanParseable<TSelf>, System.ISubtractionOperators<TSelf, TSelf, TSelf>, System.IUnaryNegationOperators<TSelf, TSelf>, System.IUnaryPlusOperators<TSelf, TSelf>
+    public partial interface INumber<TSelf> : System.IAdditionOperators<TSelf, TSelf, TSelf>, System.IAdditiveIdentity<TSelf, TSelf>, System.IComparable, System.IComparable<TSelf>, System.IComparisonOperators<TSelf, TSelf>, System.IDecrementOperators<TSelf>, System.IDivisionOperators<TSelf, TSelf, TSelf>, System.IEquatable<TSelf>, System.IEqualityOperators<TSelf, TSelf>, System.IFormattable, System.IIncrementOperators<TSelf>, System.IModulusOperators<TSelf, TSelf, TSelf>, System.IMultiplicativeIdentity<TSelf, TSelf>, System.IMultiplyOperators<TSelf, TSelf, TSelf>, System.INumberBase<TSelf>, System.IParseable<TSelf>, System.ISpanFormattable, System.ISpanParseable<TSelf>, System.ISubtractionOperators<TSelf, TSelf, TSelf>, System.IUnaryNegationOperators<TSelf, TSelf>, System.IUnaryPlusOperators<TSelf, TSelf>
         where TSelf : System.INumber<TSelf>
     {
-        static abstract TSelf One { get; }
-        static abstract TSelf Zero { get; }
         static abstract TSelf Abs(TSelf value);
         static abstract TSelf Clamp(TSelf value, TSelf min, TSelf max);
         static abstract TSelf Create<TOther>(TOther value) where TOther : INumber<TOther>;
@@ -2867,6 +2865,13 @@ namespace System
         static abstract bool TryCreate<TOther>(TOther value, out TSelf result) where TOther : INumber<TOther>;
         static abstract bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out TSelf result);
         static abstract bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, IFormatProvider? provider, out TSelf result);
+    }
+
+    public partial interface INumberBase<TSelf> : System.IAdditionOperators<TSelf, TSelf, TSelf>, System.IAdditiveIdentity<TSelf, TSelf>, System.IDecrementOperators<TSelf>, System.IEquatable<TSelf>, System.IEqualityOperators<TSelf, TSelf>, System.IIncrementOperators<TSelf>, System.IMultiplicativeIdentity<TSelf, TSelf>, System.IMultiplyOperators<TSelf, TSelf, TSelf>, System.ISubtractionOperators<TSelf, TSelf, TSelf>, System.IUnaryNegationOperators<TSelf, TSelf>, System.IUnaryPlusOperators<TSelf, TSelf>
+        where TSelf : System.INumberBase<TSelf>
+    {
+        static abstract TSelf One { get; }
+        static abstract TSelf Zero { get; }
     }
     public partial interface IParseable<TSelf>
         where TSelf : System.IParseable<TSelf>
@@ -3023,8 +3028,8 @@ namespace System
         static short System.IMinMaxValue<System.Int16>.MaxValue { get { throw null; } }
         static short System.IMinMaxValue<System.Int16>.MinValue { get { throw null; } }
         static short System.IMultiplicativeIdentity<System.Int16,System.Int16>.MultiplicativeIdentity { get { throw null; } }
-        static short System.INumber<System.Int16>.One { get { throw null; } }
-        static short System.INumber<System.Int16>.Zero { get { throw null; } }
+        static short System.INumberBase<System.Int16>.One { get { throw null; } }
+        static short System.INumberBase<System.Int16>.Zero { get { throw null; } }
         static short System.ISignedNumber<System.Int16>.NegativeOne { get { throw null; } }
         public static System.Int16 Abs(System.Int16 value) { throw null; }
         public static System.Int16 Clamp(System.Int16 value, System.Int16 min, System.Int16 max) { throw null; }
@@ -3117,8 +3122,8 @@ namespace System
         static int System.IMinMaxValue<System.Int32>.MaxValue { get { throw null; } }
         static int System.IMinMaxValue<System.Int32>.MinValue { get { throw null; } }
         static int System.IMultiplicativeIdentity<System.Int32,System.Int32>.MultiplicativeIdentity { get { throw null; } }
-        static int System.INumber<System.Int32>.One { get { throw null; } }
-        static int System.INumber<System.Int32>.Zero { get { throw null; } }
+        static int System.INumberBase<System.Int32>.One { get { throw null; } }
+        static int System.INumberBase<System.Int32>.Zero { get { throw null; } }
         static int System.ISignedNumber<System.Int32>.NegativeOne { get { throw null; } }
         public static System.Int32 Abs(System.Int32 value) { throw null; }
         public static System.Int32 Clamp(System.Int32 value, System.Int32 min, System.Int32 max) { throw null; }
@@ -3211,8 +3216,8 @@ namespace System
         static long System.IMinMaxValue<System.Int64>.MaxValue { get { throw null; } }
         static long System.IMinMaxValue<System.Int64>.MinValue { get { throw null; } }
         static long System.IMultiplicativeIdentity<System.Int64,System.Int64>.MultiplicativeIdentity { get { throw null; } }
-        static long System.INumber<System.Int64>.One { get { throw null; } }
-        static long System.INumber<System.Int64>.Zero { get { throw null; } }
+        static long System.INumberBase<System.Int64>.One { get { throw null; } }
+        static long System.INumberBase<System.Int64>.Zero { get { throw null; } }
         static long System.ISignedNumber<System.Int64>.NegativeOne { get { throw null; } }
         public static System.Int64 Abs(System.Int64 value) { throw null; }
         public static System.Int64 Clamp(System.Int64 value, System.Int64 min, System.Int64 max) { throw null; }
@@ -3306,8 +3311,8 @@ namespace System
         static nint System.IMinMaxValue<nint>.MaxValue { get { throw null; } }
         static nint System.IMinMaxValue<nint>.MinValue { get { throw null; } }
         static nint System.IMultiplicativeIdentity<nint,nint>.MultiplicativeIdentity { get { throw null; } }
-        static nint System.INumber<nint>.One { get { throw null; } }
-        static nint System.INumber<nint>.Zero { get { throw null; } }
+        static nint System.INumberBase<nint>.One { get { throw null; } }
+        static nint System.INumberBase<nint>.Zero { get { throw null; } }
         static nint System.ISignedNumber<nint>.NegativeOne { get { throw null; } }
         public static System.IntPtr Add(System.IntPtr pointer, int offset) { throw null; }
         public int CompareTo(System.IntPtr value) { throw null; }
@@ -4190,8 +4195,8 @@ namespace System
         static sbyte System.IMinMaxValue<System.SByte>.MaxValue { get { throw null; } }
         static sbyte System.IMinMaxValue<System.SByte>.MinValue { get { throw null; } }
         static sbyte System.IMultiplicativeIdentity<System.SByte,System.SByte>.MultiplicativeIdentity { get { throw null; } }
-        static sbyte System.INumber<System.SByte>.One { get { throw null; } }
-        static sbyte System.INumber<System.SByte>.Zero { get { throw null; } }
+        static sbyte System.INumberBase<System.SByte>.One { get { throw null; } }
+        static sbyte System.INumberBase<System.SByte>.Zero { get { throw null; } }
         static sbyte System.ISignedNumber<System.SByte>.NegativeOne { get { throw null; } }
         public static System.SByte Abs(System.SByte value) { throw null; }
         public static System.SByte Clamp(System.SByte value, System.SByte min, System.SByte max) { throw null; }
@@ -4305,8 +4310,8 @@ namespace System
         static float System.IMinMaxValue<System.Single>.MaxValue { get { throw null; } }
         static float System.IMinMaxValue<System.Single>.MinValue { get { throw null; } }
         static float System.IMultiplicativeIdentity<System.Single,System.Single>.MultiplicativeIdentity { get { throw null; } }
-        static float System.INumber<System.Single>.One { get { throw null; } }
-        static float System.INumber<System.Single>.Zero { get { throw null; } }
+        static float System.INumberBase<System.Single>.One { get { throw null; } }
+        static float System.INumberBase<System.Single>.Zero { get { throw null; } }
         static float System.ISignedNumber<System.Single>.NegativeOne { get { throw null; } }
         public static System.Single Abs(System.Single value) { throw null; }
         public static System.Single Acos(System.Single x) { throw null; }
@@ -5598,8 +5603,8 @@ namespace System
         static ushort System.IMinMaxValue<System.UInt16>.MaxValue { get { throw null; } }
         static ushort System.IMinMaxValue<System.UInt16>.MinValue { get { throw null; } }
         static ushort System.IMultiplicativeIdentity<System.UInt16,System.UInt16>.MultiplicativeIdentity { get { throw null; } }
-        static ushort System.INumber<System.UInt16>.One { get { throw null; } }
-        static ushort System.INumber<System.UInt16>.Zero { get { throw null; } }
+        static ushort System.INumberBase<System.UInt16>.One { get { throw null; } }
+        static ushort System.INumberBase<System.UInt16>.Zero { get { throw null; } }
         public static System.UInt16 Abs(System.UInt16 value) { throw null; }
         public static System.UInt16 Clamp(System.UInt16 value, System.UInt16 min, System.UInt16 max) { throw null; }
         public int CompareTo(object? value) { throw null; }
@@ -5691,8 +5696,8 @@ namespace System
         static uint System.IMinMaxValue<System.UInt32>.MaxValue { get { throw null; } }
         static uint System.IMinMaxValue<System.UInt32>.MinValue { get { throw null; } }
         static uint System.IMultiplicativeIdentity<System.UInt32,System.UInt32>.MultiplicativeIdentity { get { throw null; } }
-        static uint System.INumber<System.UInt32>.One { get { throw null; } }
-        static uint System.INumber<System.UInt32>.Zero { get { throw null; } }
+        static uint System.INumberBase<System.UInt32>.One { get { throw null; } }
+        static uint System.INumberBase<System.UInt32>.Zero { get { throw null; } }
         public static System.UInt32 Abs(System.UInt32 value) { throw null; }
         public static System.UInt32 Clamp(System.UInt32 value, System.UInt32 min, System.UInt32 max) { throw null; }
         public int CompareTo(object? value) { throw null; }
@@ -5784,8 +5789,8 @@ namespace System
         static ulong System.IMinMaxValue<System.UInt64>.MaxValue { get { throw null; } }
         static ulong System.IMinMaxValue<System.UInt64>.MinValue { get { throw null; } }
         static ulong System.IMultiplicativeIdentity<System.UInt64,System.UInt64>.MultiplicativeIdentity { get { throw null; } }
-        static ulong System.INumber<System.UInt64>.One { get { throw null; } }
-        static ulong System.INumber<System.UInt64>.Zero { get { throw null; } }
+        static ulong System.INumberBase<System.UInt64>.One { get { throw null; } }
+        static ulong System.INumberBase<System.UInt64>.Zero { get { throw null; } }
         public static System.UInt64 Abs(System.UInt64 value) { throw null; }
         public static System.UInt64 Clamp(System.UInt64 value, System.UInt64 min, System.UInt64 max) { throw null; }
         public int CompareTo(object? value) { throw null; }
@@ -5878,8 +5883,8 @@ namespace System
         static nuint System.IMinMaxValue<nuint>.MaxValue { get { throw null; } }
         static nuint System.IMinMaxValue<nuint>.MinValue { get { throw null; } }
         static nuint System.IMultiplicativeIdentity<nuint,nuint>.MultiplicativeIdentity { get { throw null; } }
-        static nuint System.INumber<nuint>.One { get { throw null; } }
-        static nuint System.INumber<nuint>.Zero { get { throw null; } }
+        static nuint System.INumberBase<nuint>.One { get { throw null; } }
+        static nuint System.INumberBase<nuint>.Zero { get { throw null; } }
         public static System.UIntPtr Add(System.UIntPtr pointer, int offset) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(System.UIntPtr value) { throw null; }

@@ -425,14 +425,18 @@ namespace System
         // static ulong IMultiplyOperators<ulong, ulong, ulong>.operator checked *(ulong left, ulong right) => checked(left * right);
 
         //
-        // INumber
+        // INumberBase
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.One" />
-        static ulong INumber<ulong>.One => One;
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static ulong INumberBase<ulong>.One => One;
 
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
-        static ulong INumber<ulong>.Zero => Zero;
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static ulong INumberBase<ulong>.Zero => Zero;
+
+        //
+        // INumber
+        //
 
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
         public static ulong Abs(ulong value) => value;
@@ -869,8 +873,5 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static ulong IUnaryPlusOperators<ulong, ulong>.operator +(ulong value) => +value;
-
-        // /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_CheckedUnaryPlus(TSelf)" />
-        // static ulong IUnaryPlusOperators<ulong, ulong>.operator checked +(ulong value) => checked(+value);
     }
 }

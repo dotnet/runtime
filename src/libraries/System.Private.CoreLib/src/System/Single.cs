@@ -820,14 +820,18 @@ namespace System
         // static float IMultiplyOperators<float, float, float>.operator checked *(float left, float right) => checked((float)(left * right));
 
         //
-        // INumber
+        // INumberBase
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.One" />
-        static float INumber<float>.One => One;
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static float INumberBase<float>.One => One;
 
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
-        static float INumber<float>.Zero => Zero;
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static float INumberBase<float>.Zero => Zero;
+
+        //
+        // INumber
+        //
 
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
         public static float Abs(float value) => MathF.Abs(value);
@@ -1183,8 +1187,5 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static float IUnaryPlusOperators<float, float>.operator +(float value) => (float)(+value);
-
-        // /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_CheckedUnaryPlus(TSelf)" />
-        // static float IUnaryPlusOperators<float, float>.operator checked +(float value) => checked(value);
     }
 }
