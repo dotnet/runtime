@@ -312,6 +312,9 @@ namespace System
         // IBinaryInteger
         //
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
+        public static (int Quotient, int Remainder) DivRem(int left, int right) => Math.DivRem(left, right);
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         public static int LeadingZeroCount(int value) => BitOperations.LeadingZeroCount((uint)value);
 
@@ -686,9 +689,6 @@ namespace System
                 return default;
             }
         }
-
-        /// <inheritdoc cref="INumber{TSelf}.DivRem(TSelf, TSelf)" />
-        public static (int Quotient, int Remainder) DivRem(int left, int right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static int Max(int x, int y) => Math.Max(x, y);

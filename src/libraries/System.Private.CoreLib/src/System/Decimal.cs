@@ -1365,9 +1365,6 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static decimal Clamp(decimal value, decimal min, decimal max) => Math.Clamp(value, min, max);
 
-        /// <inheritdoc cref="INumber{TSelf}.DivRem(TSelf, TSelf)" />
-        public static (decimal Quotient, decimal Remainder) DivRem(decimal left, decimal right) => (left / right, left % right);
-
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static decimal Max(decimal x, decimal y)
         {

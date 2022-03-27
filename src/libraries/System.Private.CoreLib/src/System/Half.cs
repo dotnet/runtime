@@ -1265,9 +1265,6 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.DivRem(TSelf, TSelf)" />
-        public static (Half Quotient, Half Remainder) DivRem(Half left, Half right) => ((Half, Half))((float)left / (float)right, (float)left % (float)right);
-
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static Half Max(Half x, Half y) => (Half)MathF.Max((float)x, (float)y);
 

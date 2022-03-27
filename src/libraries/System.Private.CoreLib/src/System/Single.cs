@@ -1043,9 +1043,6 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.DivRem(TSelf, TSelf)" />
-        public static (float Quotient, float Remainder) DivRem(float left, float right) => (left / right, left % right);
-
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static float Max(float x, float y) => MathF.Max(x, y);
 

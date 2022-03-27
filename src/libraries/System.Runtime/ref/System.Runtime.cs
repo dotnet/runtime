@@ -1811,7 +1811,6 @@ namespace System
         public static System.Decimal CreateTruncating<TOther>(TOther value) where TOther : INumber<TOther> { throw null; }
         public static System.Decimal Create<TOther>(TOther value) where TOther : INumber<TOther> { throw null; }
         public static System.Decimal Divide(System.Decimal d1, System.Decimal d2) { throw null; }
-        public static (decimal Quotient, decimal Remainder) DivRem(System.Decimal left, System.Decimal right) { throw null; }
         public bool Equals(System.Decimal value) { throw null; }
         public static bool Equals(System.Decimal d1, System.Decimal d2) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
@@ -2030,7 +2029,6 @@ namespace System
         public static System.Double CreateSaturating<TOther>(TOther value) where TOther : INumber<TOther> { throw null; }
         public static System.Double CreateTruncating<TOther>(TOther value) where TOther : INumber<TOther> { throw null; }
         public static System.Double Create<TOther>(TOther value) where TOther : INumber<TOther> { throw null; }
-        public static (double Quotient, double Remainder) DivRem(System.Double left, System.Double right) { throw null; }
         public bool Equals(System.Double obj) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Double Exp(System.Double x) { throw null; }
@@ -2597,7 +2595,6 @@ namespace System
         public static System.Half CreateSaturating<TOther>(TOther value) where TOther : INumber<TOther> { throw null; }
         public static System.Half CreateTruncating<TOther>(TOther value) where TOther : INumber<TOther> { throw null; }
         public static System.Half Create<TOther>(TOther value) where TOther : INumber<TOther> { throw null; }
-        public static (System.Half Quotient, System.Half Remainder) DivRem(System.Half left, System.Half right) { throw null; }
         public bool Equals(System.Half other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Half Exp(System.Half x) { throw null; }
@@ -2721,6 +2718,7 @@ namespace System
     public partial interface IBinaryInteger<TSelf> : System.IBinaryNumber<TSelf>, System.IShiftOperators<TSelf, TSelf>
         where TSelf : IBinaryInteger<TSelf>
     {
+        static abstract (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right);
         static abstract TSelf LeadingZeroCount(TSelf value);
         static abstract TSelf PopCount(TSelf value);
         static abstract TSelf RotateLeft(TSelf value, int rotateAmount);
@@ -2856,7 +2854,6 @@ namespace System
         static abstract TSelf Create<TOther>(TOther value) where TOther : INumber<TOther>;
         static abstract TSelf CreateSaturating<TOther>(TOther value) where TOther : INumber<TOther>;
         static abstract TSelf CreateTruncating<TOther>(TOther value) where TOther : INumber<TOther>;
-        static abstract (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right);
         static abstract TSelf Max(TSelf x, TSelf y);
         static abstract TSelf Min(TSelf x, TSelf y);
         static abstract TSelf Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider);
@@ -3340,6 +3337,7 @@ namespace System
         public static System.IntPtr Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.IntPtr Subtract(System.IntPtr pointer, int offset) { throw null; }
         static nint System.IAdditionOperators<nint,nint,nint>.operator +(nint left, nint right) { throw null; }
+        static (nint Quotient, nint Remainder) System.IBinaryInteger<nint>.DivRem(nint left, nint right) { throw null; }
         static nint System.IBinaryInteger<nint>.LeadingZeroCount(nint value) { throw null; }
         static nint System.IBinaryInteger<nint>.PopCount(nint value) { throw null; }
         static nint System.IBinaryInteger<nint>.RotateLeft(nint value, int rotateAmount) { throw null; }
@@ -3365,7 +3363,6 @@ namespace System
         static nint System.INumber<nint>.CreateSaturating<TOther>(TOther value) { throw null; }
         static nint System.INumber<nint>.CreateTruncating<TOther>(TOther value) { throw null; }
         static nint System.INumber<nint>.Create<TOther>(TOther value) { throw null; }
-        static (nint Quotient, nint Remainder) System.INumber<nint>.DivRem(nint left, nint right) { throw null; }
         static nint System.INumber<nint>.Max(nint x, nint y) { throw null; }
         static nint System.INumber<nint>.Min(nint x, nint y) { throw null; }
         static nint System.INumber<nint>.Sign(nint value) { throw null; }
@@ -4334,7 +4331,6 @@ namespace System
         public static System.Single CreateSaturating<TOther>(TOther value) where TOther : INumber<TOther> { throw null; }
         public static System.Single CreateTruncating<TOther>(TOther value) where TOther : INumber<TOther> { throw null; }
         public static System.Single Create<TOther>(TOther value) where TOther : INumber<TOther> { throw null; }
-        public static (float Quotient, float Remainder) DivRem(System.Single left, System.Single right) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Single obj) { throw null; }
         public static System.Single Exp(System.Single x) { throw null; }
@@ -5909,6 +5905,7 @@ namespace System
         public static System.UIntPtr Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.UIntPtr Subtract(System.UIntPtr pointer, int offset) { throw null; }
         static nuint System.IAdditionOperators<nuint,nuint,nuint>.operator +(nuint left, nuint right) { throw null; }
+        static (nuint Quotient, nuint Remainder) System.IBinaryInteger<nuint>.DivRem(nuint left, nuint right) { throw null; }
         static nuint System.IBinaryInteger<nuint>.LeadingZeroCount(nuint value) { throw null; }
         static nuint System.IBinaryInteger<nuint>.PopCount(nuint value) { throw null; }
         static nuint System.IBinaryInteger<nuint>.RotateLeft(nuint value, int rotateAmount) { throw null; }
@@ -5934,7 +5931,6 @@ namespace System
         static nuint System.INumber<nuint>.CreateSaturating<TOther>(TOther value) { throw null; }
         static nuint System.INumber<nuint>.CreateTruncating<TOther>(TOther value) { throw null; }
         static nuint System.INumber<nuint>.Create<TOther>(TOther value) { throw null; }
-        static (nuint Quotient, nuint Remainder) System.INumber<nuint>.DivRem(nuint left, nuint right) { throw null; }
         static nuint System.INumber<nuint>.Max(nuint x, nuint y) { throw null; }
         static nuint System.INumber<nuint>.Min(nuint x, nuint y) { throw null; }
         static nuint System.INumber<nuint>.Sign(nuint value) { throw null; }

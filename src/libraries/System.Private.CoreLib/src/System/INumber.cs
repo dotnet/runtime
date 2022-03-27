@@ -76,12 +76,6 @@ namespace System
         static abstract TSelf CreateTruncating<TOther>(TOther value)
             where TOther : INumber<TOther>;
 
-        /// <summary>Computes the quotient and remainder of two values.</summary>
-        /// <param name="left">The value which <paramref name="right" /> divides.</param>
-        /// <param name="right">The value which divides <paramref name="left" />.</param>
-        /// <returns>The quotient and remainder of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
-        static abstract (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right);
-
         /// <summary>Compares two values to compute which is greater.</summary>
         /// <param name="x">The value to compare with <paramref name="y" />.</param>
         /// <param name="y">The value to compare with <paramref name="x" />.</param>
