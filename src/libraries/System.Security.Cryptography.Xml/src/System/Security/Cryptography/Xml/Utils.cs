@@ -132,7 +132,7 @@ namespace System.Security.Cryptography.Xml
             return GetNamespacePrefix(a).Equals(nsPrefix);
         }
 
-        internal static bool IsNonRedundantNamespaceDecl(XmlAttribute a, XmlAttribute nearestAncestorWithSamePrefix)
+        internal static bool IsNonRedundantNamespaceDecl(XmlAttribute a, XmlAttribute? nearestAncestorWithSamePrefix)
         {
             if (nearestAncestorWithSamePrefix == null)
                 return !IsEmptyDefaultNamespaceNode(a);
@@ -315,7 +315,7 @@ namespace System.Security.Cryptography.Xml
             return nodeList;
         }
 
-        internal static bool NodeInList(XmlNode node, XmlNodeList nodeList)
+        internal static bool NodeInList(XmlNode? node, XmlNodeList nodeList)
         {
             foreach (XmlNode nodeElem in nodeList)
             {

@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        public byte[] CipherValue
+        public byte[]? CipherValue
         {
             get { return _cipherValue; }
             set
@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.Xml
 
         public XmlElement GetXml()
         {
-            if (CacheValid) return _cachedXml;
+            if (CacheValid) return _cachedXml!;
 
             XmlDocument document = new XmlDocument();
             document.PreserveWhitespace = true;
@@ -100,8 +100,8 @@ namespace System.Security.Cryptography.Xml
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
 
-            XmlNode cipherValueNode = value.SelectSingleNode("enc:CipherValue", nsm);
-            XmlNode cipherReferenceNode = value.SelectSingleNode("enc:CipherReference", nsm);
+            XmlNode? cipherValueNode = value.SelectSingleNode("enc:CipherValue", nsm);
+            XmlNode? cipherReferenceNode = value.SelectSingleNode("enc:CipherReference", nsm);
             if (cipherValueNode != null)
             {
                 if (cipherReferenceNode != null)

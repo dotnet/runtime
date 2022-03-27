@@ -26,8 +26,8 @@ namespace System.Security.Cryptography.Xml
             }
 
             int rDepth;
-            XmlAttribute local = (XmlAttribute)nsLocallyDeclared[nsPrefix];
-            XmlAttribute rAncestral = GetNearestRenderedNamespaceWithMatchingPrefix(nsPrefix, out rDepth);
+            XmlAttribute? local = (XmlAttribute)nsLocallyDeclared[nsPrefix];
+            XmlAttribute? rAncestral = GetNearestRenderedNamespaceWithMatchingPrefix(nsPrefix, out rDepth);
             if (local != null)
             {
                 if (Utils.IsNonRedundantNamespaceDecl(local, rAncestral))
@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.Xml
             else
             {
                 int uDepth;
-                XmlAttribute uAncestral = GetNearestUnrenderedNamespaceWithMatchingPrefix(nsPrefix, out uDepth);
+                XmlAttribute? uAncestral = GetNearestUnrenderedNamespaceWithMatchingPrefix(nsPrefix, out uDepth);
                 if (uAncestral != null && uDepth > rDepth && Utils.IsNonRedundantNamespaceDecl(uAncestral, rAncestral))
                 {
                     if (Utils.IsXmlNamespaceNode(uAncestral))
@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.Xml
             {
                 attrib = (XmlAttribute)a;
                 int rDepth;
-                XmlAttribute rAncestral = GetNearestRenderedNamespaceWithMatchingPrefix(Utils.GetNamespacePrefix(attrib), out rDepth);
+                XmlAttribute? rAncestral = GetNearestRenderedNamespaceWithMatchingPrefix(Utils.GetNamespacePrefix(attrib), out rDepth);
                 if (Utils.IsNonRedundantNamespaceDecl(attrib, rAncestral))
                 {
                     nsLocallyDeclared.Remove(Utils.GetNamespacePrefix(attrib));
@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.Xml
 
             for (int i = _ancestorStack.Count - 1; i >= 0; i--)
             {
-                foreach (object a in GetScopeAt(i).GetUnrendered().Values)
+                foreach (object a in GetScopeAt(i)!.GetUnrendered().Values)
                 {
                     attrib = (XmlAttribute)a;
                     if (attrib != null)

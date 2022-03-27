@@ -68,11 +68,11 @@ namespace System.Security.Cryptography.Xml
                 strBuilder.Append('<').Append(Name);
                 foreach (object attr in nsListToRender.GetKeyList())
                 {
-                    (attr as CanonicalXmlAttribute).Write(strBuilder, docPos, anc);
+                    (attr as CanonicalXmlAttribute)!.Write(strBuilder, docPos, anc);
                 }
                 foreach (object attr in attrListToRender.GetKeyList())
                 {
-                    (attr as CanonicalXmlAttribute).Write(strBuilder, docPos, anc);
+                    (attr as CanonicalXmlAttribute)!.Write(strBuilder, docPos, anc);
                 }
                 strBuilder.Append('>');
             }
@@ -141,11 +141,11 @@ namespace System.Security.Cryptography.Xml
                 hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
                 foreach (object attr in nsListToRender.GetKeyList())
                 {
-                    (attr as CanonicalXmlAttribute).WriteHash(hash, docPos, anc);
+                    (attr as CanonicalXmlAttribute)!.WriteHash(hash, docPos, anc);
                 }
                 foreach (object attr in attrListToRender.GetKeyList())
                 {
-                    (attr as CanonicalXmlAttribute).WriteHash(hash, docPos, anc);
+                    (attr as CanonicalXmlAttribute)!.WriteHash(hash, docPos, anc);
                 }
                 rgbData = utf8.GetBytes(">");
                 hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);

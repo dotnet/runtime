@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Xml
 
         public override XmlElement GetXml()
         {
-            if (CacheValid) return _cachedXml;
+            if (CacheValid) return _cachedXml!;
 
             XmlDocument document = new XmlDocument();
             document.PreserveWhitespace = true;
@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.Xml
             // Transforms
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
-            XmlNode transformsNode = value.SelectSingleNode("enc:Transforms", nsm);
+            XmlNode? transformsNode = value.SelectSingleNode("enc:Transforms", nsm);
             if (transformsNode != null)
                 TransformChain.LoadXml(transformsNode as XmlElement);
 

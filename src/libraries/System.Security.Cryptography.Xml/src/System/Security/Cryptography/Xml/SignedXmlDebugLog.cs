@@ -318,7 +318,7 @@ namespace System.Security.Cryptography.Xml
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
                                                   SR.Log_CheckSignatureFormat,
                                                   validationMethod.Module.Assembly.FullName,
-                                                  validationMethod.DeclaringType.FullName,
+                                                  validationMethod.DeclaringType!.FullName,
                                                   validationMethod.Name);
                 WriteLine(signedXml, TraceEventType.Information, SignedXmlDebugEvent.BeginCheckSignatureFormat, logMessage);
             }

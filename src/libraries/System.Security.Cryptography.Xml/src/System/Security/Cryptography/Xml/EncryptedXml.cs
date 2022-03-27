@@ -68,7 +68,7 @@ namespace System.Security.Cryptography.Xml
         private PaddingMode _padding;
         private CipherMode _mode;
         private Encoding _encoding;
-        private string _recipient;
+        private string? _recipient;
         private int _xmlDsigSearchDepthCounter;
         private int _xmlDsigSearchDepth;
 
@@ -204,25 +204,25 @@ namespace System.Security.Cryptography.Xml
                     {
                         throw new CryptographicException(SR.Cryptography_Xml_UriNotSupported);
                     }
-                    decInputStream = tc.TransformToOctetStream(_document, _xmlResolver, baseUri);
+                    decInputStream = tc.TransformToOctetStream(_document!, _xmlResolver!, baseUri!);
                 }
                 else if (cipherData.CipherReference.Uri[0] == '#')
                 {
                     string idref = Utils.ExtractIdFromLocalUri(cipherData.CipherReference.Uri);
                     // Serialize
-                    XmlElement idElem = GetIdElement(_document, idref);
+                    XmlElement? idElem = GetIdElement(_document, idref);
                     if (idElem == null || idElem.OuterXml == null)
                     {
                         throw new CryptographicException(SR.Cryptography_Xml_UriNotSupported);
                     }
                     inputStream = new MemoryStream(_encoding.GetBytes(idElem.OuterXml));
-                    string baseUri = _document?.BaseURI;
+                    string? baseUri = _document?.BaseURI;
                     TransformChain tc = cipherData.CipherReference.TransformChain;
                     if (tc == null)
                     {
                         throw new CryptographicException(SR.Cryptography_Xml_UriNotSupported);
                     }
-                    decInputStream = tc.TransformToOctetStream(inputStream, _xmlResolver, baseUri);
+                    decInputStream = tc.TransformToOctetStream(inputStream, _xmlResolver!, baseUri!);
                 }
                 else
                 {
@@ -329,7 +329,7 @@ namespace System.Security.Cryptography.Xml
                     {
                         foreach (XmlNode encryptedKeyNode in encryptedKeyList)
                         {
-                            XmlElement? encryptedKeyElement = encryptedKeyNode as XmlElement;
+                            XmlElement encryptedKeyElement = (encryptedKeyNode as XmlElement)!;
                             EncryptedKey ek1 = new EncryptedKey();
                             ek1.LoadXml(encryptedKeyElement);
                             if (ek1.CarriedKeyName == keyName && ek1.Recipient == Recipient)
@@ -478,7 +478,7 @@ namespace System.Security.Cryptography.Xml
                 {
                     ek = kiEncKey.EncryptedKey;
                     // recursively process EncryptedKey elements
-                    byte[] encryptionKey = DecryptEncryptedKey(ek);
+                    byte[]? encryptionKey = DecryptEncryptedKey(ek);
                     if (encryptionKey != null)
                     {
                         // this is a symmetric algorithm for sure
@@ -592,8 +592,8 @@ namespace System.Security.Cryptography.Xml
                 throw new CryptographicException(SR.Cryptography_Xml_MissingEncryptionKey);
 
             // kek is either a SymmetricAlgorithm or an RSA key, otherwise, we wouldn't be able to insert it in the hash table
-            SymmetricAlgorithm symKey = encryptionKey as SymmetricAlgorithm;
-            RSA rsa = encryptionKey as RSA;
+            SymmetricAlgorithm symKey = (encryptionKey as SymmetricAlgorithm)!;
+            RSA rsa = (encryptionKey as RSA)!;
 
             // Create the EncryptedData object, using an AES-256 session key by default.
             EncryptedData ed = new EncryptedData();

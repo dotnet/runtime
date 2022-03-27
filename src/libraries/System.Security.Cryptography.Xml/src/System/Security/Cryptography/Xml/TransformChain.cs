@@ -58,9 +58,9 @@ namespace System.Security.Cryptography.Xml
 
         // The goal behind this method is to pump the input stream through the transforms and get back something that
         // can be hashed
-        internal Stream TransformToOctetStream(object inputObject, Type inputType, XmlResolver resolver, string baseUri)
+        internal Stream TransformToOctetStream(object? inputObject, Type inputType, XmlResolver resolver, string baseUri)
         {
-            object currentInput = inputObject;
+            object? currentInput = inputObject;
             foreach (Transform transform in _transforms)
             {
                 if (currentInput == null || transform.AcceptsType(currentInput.GetType()))

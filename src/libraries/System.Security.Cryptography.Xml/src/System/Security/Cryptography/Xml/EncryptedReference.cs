@@ -8,7 +8,7 @@ namespace System.Security.Cryptography.Xml
     public abstract class EncryptedReference
     {
         private string _uri;
-        private string _referenceType;
+        private string? _referenceType;
         private TransformChain? _transformChain;
         internal XmlElement? _cachedXml;
 
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Xml
             TransformChain.Add(transform);
         }
 
-        protected string ReferenceType
+        protected string? ReferenceType
         {
             get { return _referenceType; }
             set

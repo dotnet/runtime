@@ -21,14 +21,14 @@ namespace System.Security.Cryptography.Xml
 {
     public abstract class Transform
     {
-        private string _algorithm;
-        private string _baseUri;
-        internal XmlResolver _xmlResolver;
+        private string? _algorithm;
+        private string? _baseUri;
+        internal XmlResolver? _xmlResolver;
         private bool _bResolverSet;
-        private SignedXml _signedXml;
-        private Reference _reference;
-        private Hashtable _propagatedNamespaces;
-        private XmlElement _context;
+        private SignedXml? _signedXml;
+        private Reference? _reference;
+        private Hashtable? _propagatedNamespaces;
+        private XmlElement? _context;
 
         internal string BaseURI
         {
