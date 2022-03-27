@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 public class Test_GetGCMemoryInfo
@@ -75,9 +74,6 @@ public class Test_GetGCMemoryInfo
             GC.KeepAlive(new byte[byteArraySize]);
         }
     }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    static void Consume(byte[] _) {}
 
     static object MakeLongLivedSOHAllocations()
     {

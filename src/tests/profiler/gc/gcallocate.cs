@@ -16,8 +16,13 @@ namespace Profiler.Tests
         public static int RunTest(String[] args) 
         {
             // Allocate and save to fields to avoid jit optimizations
-            arrayRef1 = new int[100000];
-            arrayRef2 = GC.AllocateArray<int>(32, true);
+            int[] large = new int[100000];
+            int[] pinned = GC.AllocateArray<int>(32, true);
+
+            // don't let the jit to optimize these allocations
+            GC.KeepAlive(large);
+            GC.KeepAlive(pinned);
+
             Console.WriteLine("Test Passed");
             return 100;
         }
