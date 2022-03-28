@@ -218,6 +218,15 @@ namespace System.Xml
             throw new InvalidOperationException(SR.Xml_InvalidOperation);
         }
 
+        public override void WriteValue(decimal value)
+        {
+            Span<char> destinationSpan = stackalloc char[64];
+            if (XmlConvert.TryFormat(value, destinationSpan, out int charsWritten))
+                WriteSpan(destinationSpan.Slice(0, charsWritten));
+            else
+                base.WriteValue(value);
+        }
+
         //
         // XmlRawWriter methods and properties
         //
@@ -310,6 +319,12 @@ namespace System.Xml
             // The Flush will call WriteRaw to write out the rest of the encoded characters
             Debug.Assert(_base64Encoder != null);
             _base64Encoder.Flush();
+        }
+
+        internal virtual void WriteSpan(ReadOnlySpan<char> value)
+        {
+            //fallback if not overriden
+            WriteString(new string(value));
         }
 
         internal virtual void Close(WriteState currentState)

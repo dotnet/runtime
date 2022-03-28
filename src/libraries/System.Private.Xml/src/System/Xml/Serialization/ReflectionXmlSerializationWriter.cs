@@ -979,7 +979,13 @@ namespace System.Xml.Serialization
             }
             else
             {
-                hasValidStringValue = WritePrimitiveValue(typeDesc, o, isElement, out stringValue);
+                if (typeDesc.HasCustomFormatter || typeDesc.FormatterName != "Decimal")
+                    hasValidStringValue = WritePrimitiveValue(typeDesc, o, isElement, out stringValue);
+                else
+                {
+                    WriteElementDecimal(name, ns, (decimal)o, xmlQualifiedName);
+                    return;
+                }
             }
 
             if (hasValidStringValue)

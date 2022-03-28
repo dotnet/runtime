@@ -1052,6 +1052,15 @@ namespace System.Xml.Serialization
             }
         }
 
+        protected void WriteElementDecimal(string localName, string? ns, decimal value, XmlQualifiedName? xsiType)
+        {
+            _w.WriteStartElement(localName, ns);
+            if (xsiType != null)
+                WriteXsiType(xsiType.Name, xsiType.Namespace);
+            _w.WriteValue(value);
+            _w.WriteEndElement();
+        }
+
         protected void WriteElementStringRaw(string localName, string? value)
         {
             WriteElementStringRaw(localName, null, value, null);

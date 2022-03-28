@@ -710,6 +710,23 @@ namespace System.Xml
 
         }
 
+        internal override unsafe void WriteSpan(ReadOnlySpan<char> value)
+        {
+            Debug.Assert(value.Length != 0);
+            fixed (char* pSrc = value)
+            {
+                char* pSrcEnd = pSrc + value.Length;
+                if (_inAttributeValue)
+                {
+                    WriteAttributeTextBlock(pSrc, pSrcEnd);
+                }
+                else
+                {
+                    WriteElementTextBlock(pSrc, pSrcEnd);
+                }
+            }
+        }
+
         // Serialize text that is part of an attribute value.  The '&', '<', '>', and '"' characters
         // are entitized.
         protected unsafe void WriteAttributeTextBlock(char* pSrc, char* pSrcEnd)

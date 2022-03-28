@@ -693,6 +693,7 @@ namespace System.Xml.Serialization
         protected void WriteXmlAttribute(System.Xml.XmlNode node) { }
         protected void WriteXmlAttribute(System.Xml.XmlNode node, object? container) { }
         protected void WriteXsiType(string name, string? ns) { }
+        protected void WriteElementDecimal(string localName, string? ns, decimal value, XmlQualifiedName? xsiType) { }
     }
     public partial class XmlSerializer
     {

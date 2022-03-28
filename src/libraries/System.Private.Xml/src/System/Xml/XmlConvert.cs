@@ -628,6 +628,10 @@ namespace System.Xml
         {
             return value.ToString(null, NumberFormatInfo.InvariantInfo);
         }
+        internal static bool TryFormat(decimal value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, provider: NumberFormatInfo.InvariantInfo);
+        }
 
         [CLSCompliant(false)]
         public static string ToString(sbyte value)

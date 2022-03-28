@@ -793,6 +793,19 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
     [Fact]
+    public static void Xml_ArrayOfDecimal()
+    {
+        var obj = new []{ 12345.6789m, 2.345673567567m };
+        var deserializedObj = SerializeAndDeserialize(obj,
+            @"<?xml version=""1.0""?>
+<ArrayOfDecimal xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <decimal>12345.6789</decimal>
+  <decimal>2.345673567567</decimal>
+</ArrayOfDecimal>");
+        Assert.Equal(obj.Length, deserializedObj.Length);
+    }
+
+    [Fact]
     public static void Xml_DeserializeTypeWithEmptyDateTimeOffsetProperties()
     {
         //var def = DateTimeOffset.Parse("3/17/1977 5:00:01 PM -05:00");  //  "1977-03-17T17:00:01-05:00"
