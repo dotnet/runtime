@@ -34,7 +34,9 @@ namespace System.Security.Cryptography.Tests
             byte[] arg = new byte[1] { 1 };
             var pk = new TestDerived(arg);
 
+#pragma warning disable SYSLIB0042 // ToXmlString and FromXmlString are obsolete
             Assert.Throws<NotImplementedException>(() => pk.ToXmlString());
+#pragma warning restore SYSLIB0042
         }
     }
 }
