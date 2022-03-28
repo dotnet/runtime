@@ -39,7 +39,6 @@ namespace System.Net.Security
             return trust;
         }
 
-        [UnsupportedOSPlatform("windows")]
         public static SslCertificateTrust CreateForX509Collection(X509Certificate2Collection trustList, bool sendTrustInHandshake = false)
         {
 
