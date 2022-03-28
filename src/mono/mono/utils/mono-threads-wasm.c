@@ -34,13 +34,16 @@ wasm_get_stack_size (void)
 
 #else /* WASI */
 
+static int stack_base = 0;
+static int stack_size = 1048576;
+
 static int
 wasm_get_stack_base (void)
 {
 	// TODO: For WASI, we need to ensure the stack location makes sense and won't interfere with the heap.
 	// Currently these hardcoded values are sufficient for a working prototype. It's an arbitrary nonzero
 	// value that aligns to 32 bits.
-	return 4;
+	return stack_base;
 }
 
 static int
@@ -49,7 +52,7 @@ wasm_get_stack_size (void)
 	// TODO: For WASI, we need to ensure the stack location makes sense and won't interfere with the heap.
 	// Currently these hardcoded values are sufficient for a working prototype. It's an arbitrary nonzero
 	// value that aligns to 32 bits.
-	return 4;
+	return stack_size;
 }
 
 #endif
@@ -201,17 +204,14 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 		*stsize = wasm_get_stack_size ();
 	}
 #else
+	if (wasm_get_stack_base() == 0)
+		stack_base = ((int)&tmp) - 4; //fake a stack_base to be able to get callstack while debugging.
 	*staddr = (guint8*)wasm_get_stack_base ();
 	*stsize = wasm_get_stack_size ();
 #endif
 
-#ifdef HOST_WASI
-	// TODO: For WASI, we need to ensure the stack is positioned correctly and reintroduce these assertions.
-	// Currently it works anyway in prototypes (except these checks would fail)
-#else
 	g_assert ((guint8*)&tmp > *staddr);
 	g_assert ((guint8*)&tmp < (guint8*)*staddr + *stsize);
-#endif
 }
 
 gboolean

@@ -4,7 +4,7 @@ COMPILE_FLAGS=\
     $(WASI_BIN_DIR)/*.a \
 	$(BROWSER_WASM_RUNTIME_PATH)/native/libSystem.Native.a \
 	--sysroot=$(WASI_SDK_ROOT)/share/wasi-sysroot \
-	-I$(TOP)/src/mono
+	-I$(TOP)/src/mono -I$(TOP)/src/native/public
 
 LINK_FLAGS=\
 	-Wl,--export=malloc,--export=free,--export=__heap_base,--export=__data_end \

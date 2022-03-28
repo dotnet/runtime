@@ -1,7 +1,7 @@
 #include <string.h>
 #include "../../mono-wasi-driver/driver.h"
 
-int main() {
+int main(int argc, char *argv[]) {
     // Assume the runtime pack has been copied into the output directory as 'runtime'
     // Otherwise we have to mount an unrelated part of the filesystem within the WASM environment
     const char* app_base_dir = "./WasiConsoleApp/bin/Release/net7.0";
@@ -10,8 +10,7 @@ int main() {
 
     add_assembly(app_base_dir, "WasiConsoleApp.dll");
     mono_set_assemblies_path(assemblies_path);
-
-    mono_wasm_load_runtime("", 0);
+    mono_wasm_load_runtime(argc > 1 ? argv[1] : "", 0);
 
     MonoAssembly* assembly = mono_wasm_assembly_load ("WasiConsoleApp.dll");
     MonoMethod* entry_method = mono_wasm_assembly_get_entry_point (assembly);

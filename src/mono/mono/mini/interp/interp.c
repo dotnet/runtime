@@ -3505,6 +3505,10 @@ method_entry (ThreadContext *context, InterpFrame *frame,
 static long total_executed_opcodes;
 #endif
 
+#if HOST_WASI
+static long total_executed_opcodes_wasi;
+#endif
+
 #define LOCAL_VAR(offset,type) (*(type*)(locals + (offset)))
 
 /*
@@ -3525,6 +3529,9 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 	unsigned char *locals = NULL;
 	int call_args_offset;
 	int return_offset;
+#ifdef HOST_WASI	
+	gboolean debugger_enabled = mono_component_debugger()->debugger_enabled();
+#endif	
 	gboolean gc_transitions = FALSE;
 
 #if DEBUG_INTERP
@@ -3591,6 +3598,14 @@ main_loop:
 #if PROFILE_INTERP
 		frame->imethod->opcounts++;
 		total_executed_opcodes++;
+#endif
+#if HOST_WASI
+		if (debugger_enabled)
+		{
+			total_executed_opcodes_wasi++;
+			if (total_executed_opcodes_wasi % 10 == 0)
+				mono_component_debugger()->receive_and_process_command_from_debugger_agent ();
+		}
 #endif
 		MintOpcode opcode;
 		DUMP_INSTR();

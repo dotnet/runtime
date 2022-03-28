@@ -36,6 +36,14 @@ mono_wasm_save_thread_context (void);
 void
 mini_wasm_debugger_add_function_pointers (MonoComponentDebugger* fn_table);
 
+#if defined(HOST_WASI)
+void
+mono_wasi_suspend_current (void);
+
+void
+mini_wasi_debugger_add_function_pointers (MonoComponentDebugger* fn_table);
+#endif
+
 MdbgProtErrorCode
 mono_do_invoke_method (DebuggerTlsData *tls, MdbgProtBuffer *buf, InvokeData *invoke, guint8 *p, guint8 **endp);
 
@@ -56,4 +64,7 @@ mono_ss_args_destroy (SingleStepArgs *ss_args);
 
 int
 mono_de_frame_async_id (DbgEngineStackFrame *frame);
+
+bool
+mono_debugger_agent_receive_and_process_command (bool attach_failed);
 #endif

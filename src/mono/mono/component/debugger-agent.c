@@ -330,6 +330,10 @@ static AgentConfig agent_config;
  */
 static gint32 agent_inited;
 
+#ifdef HOST_WASI
+static gboolean resumed_from_wasi;
+#endif
+
 #ifndef DISABLE_SOCKET_TRANSPORT
 static int conn_fd;
 static int listen_fd;
@@ -595,7 +599,7 @@ debugger_agent_parse_options (char *options)
 	int port;
 	char *extra;
 
-#ifndef MONO_ARCH_SOFT_DEBUG_SUPPORTED
+#if !defined(MONO_ARCH_SOFT_DEBUG_SUPPORTED) && !defined(HOST_WASI)
 	PRINT_ERROR_MSG ("--debugger-agent is not supported on this platform.\n");
 	exit (1);
 #endif
@@ -725,8 +729,8 @@ mono_debugger_is_disconnected (void)
 	return disconnected;
 }
 
-static void
-debugger_agent_init (void)
+void
+mono_debugger_agent_init_internal (void)
 {
 	if (!agent_config.enabled)
 		return;
@@ -744,7 +748,7 @@ debugger_agent_init (void)
 	cbs.handle_multiple_ss_requests = handle_multiple_ss_requests;
 
 	mono_de_init (&cbs);
-
+	
 	transport_init ();
 
 	/* Need to know whenever a thread has acquired the loader mutex */
@@ -874,7 +878,7 @@ finish_agent_init (gboolean on_startup)
 		/* Do some which is usually done after sending the VMStart () event */
 		vm_start_event_sent = TRUE;
 		ERROR_DECL (error);
-		start_debugger_thread (error);
+		mono_component_debugger ()->start_debugger_thread (error);
 		mono_error_assert_ok (error);
 	}
 }
@@ -2226,6 +2230,17 @@ mono_wasm_get_tls (void)
 }
 #endif
 
+#ifdef HOST_WASI
+void
+mono_wasi_suspend_current (void)
+{
+	GET_DEBUGGER_TLS();
+	g_assert (tls);
+	tls->really_suspended = TRUE;
+	return;
+}
+#endif
+
 static MonoCoopMutex suspend_mutex;
 
 /* Cond variable used to wait for suspend_count becoming 0 */
@@ -2493,7 +2508,7 @@ process_suspend (DebuggerTlsData *tls, MonoContext *ctx)
 
 	save_thread_context (ctx);
 
-	suspend_current ();
+	mono_component_debugger ()->suspend_current ();
 }
 
 
@@ -2558,6 +2573,7 @@ suspend_vm (void)
 static void
 resume_vm (void)
 {
+#ifndef HOST_WASI
 	g_assert (is_debugger_thread ());
 
 	mono_loader_lock ();
@@ -2582,6 +2598,9 @@ resume_vm (void)
 	//g_assert (err == 0);
 
 	mono_loader_unlock ();
+#else
+	resumed_from_wasi = TRUE;
+#endif	
 }
 
 /*
@@ -2757,6 +2776,9 @@ count_threads_to_wait_for (void)
 static void
 wait_for_suspend (void)
 {
+#ifdef HOST_WASI
+	return;
+#endif
 	int nthreads, nwait, err;
 	gboolean waited = FALSE;
 
@@ -3669,7 +3691,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	if (event == EVENT_KIND_VM_START) {
 		if (!agent_config.defer) {
 			ERROR_DECL (error);
-			start_debugger_thread (error);
+			mono_component_debugger ()->start_debugger_thread (error);
 			mono_error_assert_ok (error);
 		}
 	}
@@ -3691,7 +3713,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 		save_thread_context (ctx);
 		DebuggerTlsData *tls = (DebuggerTlsData *)mono_g_hash_table_lookup (thread_to_tls,  mono_thread_internal_current ());
 		tls->suspend_count++;
-		suspend_vm ();
+		mono_component_debugger ()->suspend_vm ();
 
 		if (keepalive_obj)
 			/* This will keep this object alive */
@@ -3729,7 +3751,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	case SUSPEND_POLICY_NONE:
 		break;
 	case SUSPEND_POLICY_ALL:
-		suspend_current ();
+		 mono_component_debugger ()->suspend_current ();
 		break;
 	case SUSPEND_POLICY_EVENT_THREAD:
 		NOT_IMPLEMENTED;
@@ -3737,6 +3759,15 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	default:
 		g_assert_not_reached ();
 	}
+#ifdef HOST_WASI	
+	resumed_from_wasi = FALSE;
+	while (suspend_policy != SUSPEND_POLICY_NONE && !resumed_from_wasi)
+	{
+		GET_DEBUGGER_TLS();
+		tls->really_suspended = TRUE;
+		mono_debugger_agent_receive_and_process_command (FALSE);
+	}
+#endif	
 }
 
 static void
@@ -3840,7 +3871,7 @@ thread_startup (MonoProfiler *prof, uintptr_t tid)
 	 * suspend_vm () could have missed this thread, so wait for a resume.
 	 */
 
-	suspend_current ();
+	mono_component_debugger ()->suspend_current ();
 }
 
 static void
@@ -4547,6 +4578,9 @@ handle_multiple_ss_requests (void)
 static int
 ensure_runtime_is_suspended (void)
 {
+#ifdef HOST_WASI
+	return ERR_NONE;
+#endif	
 	if (suspend_count == 0)
 		return ERR_NOT_SUSPENDED;
 
@@ -4566,8 +4600,11 @@ mono_ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 	gboolean set_ip = FALSE;
 	StackFrame **frames = NULL;
 	int nframes = 0;
-
+#ifndef HOST_WASI
 	GET_TLS_DATA_FROM_THREAD (ss_req->thread);
+#else
+	GET_DEBUGGER_TLS();
+#endif
 
 	g_assert (tls);
 	if (!tls->context.valid) {
@@ -6279,7 +6316,7 @@ invoke_method (void)
 		if (mindex == invoke->nmethods - 1) {
 			if (!(invoke->flags & INVOKE_FLAG_SINGLE_THREADED)) {
 				for (i = 0; i < invoke->suspend_count; ++i)
-					suspend_vm ();
+					mono_component_debugger ()->suspend_vm ();
 			}
 		}
 
@@ -6674,10 +6711,11 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case CMD_VM_SUSPEND:
-		suspend_vm ();
+		mono_component_debugger ()->suspend_vm ();
 		wait_for_suspend ();
 		break;
 	case CMD_VM_RESUME:
+#ifndef HOST_WASI	
 		if (suspend_count == 0) {
 			if (agent_config.defer && !agent_config.suspend)
 				// Workaround for issue in debugger-libs when running in defer attach mode.
@@ -6685,6 +6723,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 			else
 				return ERR_NOT_SUSPENDED;
 		}
+#endif
 		resume_vm ();
 		clear_suspended_objs ();
 		break;
@@ -6724,7 +6763,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		 * better than doing the shutdown ourselves, since it avoids various races.
 		 */
 
-		suspend_vm ();
+		mono_component_debugger ()->suspend_vm ();
 		wait_for_suspend ();
 
 #ifdef TRY_MANAGED_SYSTEM_ENVIRONMENT_EXIT
@@ -8970,10 +9009,12 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		// Wait for suspending if it already started
 		// FIXME: Races with suspend_count
+#ifndef HOST_WASI	
 		while (!is_suspended ()) {
 			if (suspend_count)
 				wait_for_suspend ();
 		}
+#endif		
 		/*
 		if (suspend_count)
 			wait_for_suspend ();
@@ -10152,18 +10193,9 @@ mono_process_dbg_packet (int id, CommandSet command_set, int command, gboolean *
 static gsize WINAPI
 debugger_thread (void *arg)
 {
-	int res, len, id, flags, command = 0;
-	CommandSet command_set = (CommandSet)0;
-	guint8 header [HEADER_LENGTH];
-	guint8 *data, *p, *end;
-	Buffer buf;
-	ErrorCode err;
-	gboolean no_reply;
 	gboolean attach_failed = FALSE;
 
 	PRINT_DEBUG_MSG (1, "[dbg] Agent thread started, pid=%p\n", (gpointer) (gsize) mono_native_thread_id_get ());
-
-	gboolean log_each_step = g_hasenv ("MONO_DEBUGGER_LOG_AFTER_COMMAND");
 
 	debugger_thread_id = mono_native_thread_id_get ();
 
@@ -10197,16 +10229,49 @@ debugger_thread (void *arg)
                 }
         }
 #endif
+	gboolean is_vm_dispose_command = mono_debugger_agent_receive_and_process_command (attach_failed);
+
+	mono_set_is_debugger_attached (FALSE);
+
+	mono_coop_mutex_lock (&debugger_thread_exited_mutex);
+	debugger_thread_exited = TRUE;
+	mono_coop_cond_signal (&debugger_thread_exited_cond);
+	mono_coop_mutex_unlock (&debugger_thread_exited_mutex);
+
+	PRINT_DEBUG_MSG (1, "[dbg] Debugger thread exited.\n");
+
+	if (!attach_failed && is_vm_dispose_command && !(vm_death_event_sent || mono_runtime_is_shutting_down ())) {
+		PRINT_DEBUG_MSG (2, "[dbg] Detached - restarting clean debugger thread.\n");
+		ERROR_DECL (error);
+		start_debugger_thread (error);
+		mono_error_cleanup (error);
+	}
+	return 0;
+}
+
+bool mono_debugger_agent_receive_and_process_command (bool attach_failed)
+{
+	int res, len, id, flags, command = 0;
+	CommandSet command_set = (CommandSet)0;
+	guint8 header [HEADER_LENGTH];
+	guint8 *data, *p, *end;
+	Buffer buf;
+	ErrorCode err;
+	gboolean no_reply;
+	
+	gboolean log_each_step = g_hasenv ("MONO_DEBUGGER_LOG_AFTER_COMMAND");
 
 	while (!attach_failed) {
 		res = transport_recv (header, HEADER_LENGTH);
 
 		/* This will break if the socket is closed during shutdown too */
 		if (res != HEADER_LENGTH) {
+#ifndef HOST_WASI //on wasi we can try to get message from debugger and don't have any message
 			PRINT_DEBUG_MSG (1, "[dbg] transport_recv () returned %d, expected %d.\n", res, HEADER_LENGTH);
 			command_set = (CommandSet)0;
 			command = 0;
 			dispose_vm ();
+#endif			
 			break;
 		} else {
 			p = header;
@@ -10286,32 +10351,22 @@ debugger_thread (void *arg)
 		if (command_set == CMD_SET_VM && (command == CMD_VM_DISPOSE || command == CMD_VM_EXIT))
 			break;
 	}
-
-	mono_set_is_debugger_attached (FALSE);
-
-	mono_coop_mutex_lock (&debugger_thread_exited_mutex);
-	debugger_thread_exited = TRUE;
-	mono_coop_cond_signal (&debugger_thread_exited_cond);
-	mono_coop_mutex_unlock (&debugger_thread_exited_mutex);
-
-	PRINT_DEBUG_MSG (1, "[dbg] Debugger thread exited.\n");
-
-	if (!attach_failed && command_set == CMD_SET_VM && command == CMD_VM_DISPOSE && !(vm_death_event_sent || mono_runtime_is_shutting_down ())) {
-		PRINT_DEBUG_MSG (2, "[dbg] Detached - restarting clean debugger thread.\n");
-		ERROR_DECL (error);
-		start_debugger_thread (error);
-		mono_error_cleanup (error);
-	}
-
-	return 0;
+	if (command_set == CMD_SET_VM && command == CMD_VM_DISPOSE)
+		return FALSE;
+	return TRUE;
 }
 
+static gboolean
+debugger_agent_enabled()
+{
+	return agent_config.enabled;
+}
 
 void
 debugger_agent_add_function_pointers(MonoComponentDebugger* fn_table)
 {
 	fn_table->parse_options = debugger_agent_parse_options;
-	fn_table->init = debugger_agent_init;
+	fn_table->init = mono_debugger_agent_init_internal;
 	fn_table->breakpoint_hit = debugger_agent_breakpoint_hit;
 	fn_table->single_step_event = debugger_agent_single_step_event;
 	fn_table->single_step_from_context = debugger_agent_single_step_from_context;
@@ -10326,6 +10381,10 @@ debugger_agent_add_function_pointers(MonoComponentDebugger* fn_table)
 	fn_table->debug_log_is_enabled = debugger_agent_debug_log_is_enabled;
 	fn_table->transport_handshake = debugger_agent_transport_handshake;
 	fn_table->send_enc_delta = send_enc_delta;
+	fn_table->suspend_vm = suspend_vm;
+	fn_table->start_debugger_thread = start_debugger_thread;
+	fn_table->suspend_current = suspend_current;
+	fn_table->debugger_enabled = debugger_agent_enabled;
 }
 
 

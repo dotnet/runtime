@@ -47,6 +47,32 @@ You'll need to update these paths to match the location where you extracted the 
 Finally, you can build and run the sample:
 
 ```
-cd samples/console
+cd sample/console
 make run
+```
+
+### 4. Debug it
+
+Finally, you can build and debug the sample:
+
+```
+cd sample/console
+make debug
+```
+
+Using Visual Studio code, add a breakpoint on Program.cs line 17.
+Download the Mono Debug extension and configure a launch.json like this:
+```
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Attach",
+            "type": "mono",
+            "request": "attach",
+            "address": "localhost",
+            "port": 64000
+        }
+    ]
+}
 ```
