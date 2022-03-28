@@ -325,18 +325,10 @@ void Compiler::lvaInitTypeRef()
         }
     }
 
-    if (getNeedsGSSecurityCookie())
-    {
-        // Ensure that there will be at least one stack variable since
-        // we require that the GSCookie does not have a 0 stack offset.
-        unsigned   dummy         = lvaGrabTempWithImplicitUse(false DEBUGARG("GSCookie dummy"));
-        LclVarDsc* gsCookieDummy = lvaGetDesc(dummy);
-        gsCookieDummy->lvType    = TYP_INT;
-        gsCookieDummy->lvIsTemp  = true; // It is not alive at all, set the flag to prevent zero-init.
-        lvaSetVarDoNotEnregister(dummy DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
-    }
-
     // If this is an OSR method, mark all the OSR locals and model OSR exposure.
+    //
+    // Do this before we add the GS Cookie Dummy or Outgoing args to the locals
+    // so we don't have to do special checks to exclude them.
     //
     if (opts.IsOSR())
     {
@@ -358,6 +350,17 @@ void Compiler::lvaInitTypeRef()
                 }
             }
         }
+    }
+
+    if (getNeedsGSSecurityCookie())
+    {
+        // Ensure that there will be at least one stack variable since
+        // we require that the GSCookie does not have a 0 stack offset.
+        unsigned   dummy         = lvaGrabTempWithImplicitUse(false DEBUGARG("GSCookie dummy"));
+        LclVarDsc* gsCookieDummy = lvaGetDesc(dummy);
+        gsCookieDummy->lvType    = TYP_INT;
+        gsCookieDummy->lvIsTemp  = true; // It is not alive at all, set the flag to prevent zero-init.
+        lvaSetVarDoNotEnregister(dummy DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
     }
 
     // Allocate the lvaOutgoingArgSpaceVar now because we can run into problems in the
