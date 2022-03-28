@@ -10,7 +10,9 @@ namespace System.Security.Cryptography.Tests
     {
         private class TestDerived : ECDiffieHellmanPublicKey
         {
+#pragma warning disable SYSLIB0043 // byte ctor is obsolete
             public TestDerived(byte[] keyBlob) : base(keyBlob) { }
+#pragma warning restore SYSLIB0043
         }
 
         [Fact]
@@ -25,7 +27,9 @@ namespace System.Security.Cryptography.Tests
             byte[] arg = new byte[1] { 1 };
             var pk = new TestDerived(arg);
 
+#pragma warning disable SYSLIB0043 // ToByteArray is obsolete
             Assert.Equal(1, pk.ToByteArray()[0]);
+#pragma warning restore SYSLIB0043
         }
 
         [Fact]
