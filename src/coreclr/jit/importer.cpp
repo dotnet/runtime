@@ -19549,7 +19549,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 break;
             case WellKnownArg::RetBuffer:
             case WellKnownArg::InstParam:
-                // These do not appear in the signature; do not include them
+                // These do not appear in the table of inline arg info; do not include them
                 continue;
             default:
                 break;
