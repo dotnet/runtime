@@ -3300,12 +3300,9 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
             return nullptr;
         }
 
-        CallArg* tokenArg = &*newArrayCall->AsCall()->gtArgs.Args().begin();
-        assert(tokenArg != nullptr);
-        CallArg* numArgsArg = tokenArg->GetNext();
-        assert(numArgsArg != nullptr);
-        CallArg* argsArg = numArgsArg->GetNext();
-        assert(argsArg != nullptr);
+        assert(newArrayCall->AsCall()->gtArgs.CountArgs() == 3);
+        GenTree* numArgsArg = newArrayCall->AsCall()->gtArgs.GetArgByIndex(1)->GetArgNode();
+        GenTree* argsArg    = newArrayCall->AsCall()->gtArgs.GetArgByIndex(2)->GetArgNode();
 
         //
         // The number of arguments should be a constant between 1 and 64. The rank can't be 0
@@ -3313,13 +3310,13 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         // be at most 64 arguments - 32 lengths and 32 lower bounds.
         //
 
-        if ((!numArgsArg->GetNode()->IsCnsIntOrI()) || (numArgsArg->GetNode()->AsIntCon()->IconValue() < 1) ||
-            (numArgsArg->GetNode()->AsIntCon()->IconValue() > 64))
+        if ((!numArgsArg->IsCnsIntOrI()) || (numArgsArg->AsIntCon()->IconValue() < 1) ||
+            (numArgsArg->AsIntCon()->IconValue() > 64))
         {
             return nullptr;
         }
 
-        unsigned numArgs = static_cast<unsigned>(numArgsArg->GetNode()->AsIntCon()->IconValue());
+        unsigned numArgs = static_cast<unsigned>(numArgsArg->AsIntCon()->IconValue());
         bool     lowerBoundsSpecified;
 
         if (numArgs == rank * 2)
@@ -3383,7 +3380,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         unsigned argIndex = 0;
         GenTree* comma;
 
-        for (comma = argsArg->GetNode(); Match::IsComma(comma); comma = comma->gtGetOp2())
+        for (comma = argsArg; Match::IsComma(comma); comma = comma->gtGetOp2())
         {
             if (lowerBoundsSpecified)
             {
