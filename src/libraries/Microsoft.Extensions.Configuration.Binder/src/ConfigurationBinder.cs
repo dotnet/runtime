@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -381,7 +382,7 @@ namespace Microsoft.Extensions.Configuration
                         return; // We are already done if binding to a new collection instance worked
                     }
 
-                    bindingPoint.SetValue(CreateInstance(type));
+                    bindingPoint.SetValue(CreateInstance(type, config, options));
                 }
 
                 // See if it's a Dictionary
@@ -408,21 +409,54 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode("In case type is a Nullable<T>, cannot statically analyze what the underlying type is so its members may be trimmed.")]
-        private static object CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type)
+        private static object CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type,
+            IConfiguration config,
+            BinderOptions options)
         {
             Debug.Assert(!type.IsArray);
 
-            if (type.IsAbstract)
+            if (type.IsInterface || type.IsAbstract)
             {
                 throw new InvalidOperationException(SR.Format(SR.Error_CannotActivateAbstractOrInterface, type));
             }
 
             if (!type.IsValueType)
             {
-                bool hasDefaultConstructor = type.GetConstructors(DeclaredOnlyLookup).Any(ctor => ctor.IsPublic && ctor.GetParameters().Length == 0);
-                if (!hasDefaultConstructor)
+                ConstructorInfo[] constructors = type.GetConstructors(DeclaredOnlyLookup);
+
+                bool hasParameterlessPublicConstructor = constructors.Any(ctor => ctor.IsPublic && ctor.GetParameters().Length == 0);
+
+                if (!hasParameterlessPublicConstructor)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
+                    // if the only constructor is private, then throw
+                    if (constructors.Length == 1 && !constructors[0].IsPublic)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
+                    }
+
+                    // find the biggest constructor so that we can bind to the most parameters
+                    ParameterInfo[] parameters = constructors[0].GetParameters();
+
+                    int indexOfChosenConstructor = 0;
+
+                    for (int index = 1; index < constructors.Length; index++)
+                    {
+                        ParameterInfo[] constructorParameters = constructors[index].GetParameters();
+                        if (constructorParameters.Length > parameters.Length)
+                        {
+                            parameters = constructorParameters;
+                            indexOfChosenConstructor = index;
+                        }
+                    }
+
+                    object?[] parameterValues = new object?[parameters.Length];
+
+                    for (int index = 0; index < parameters.Length; index++)
+                    {
+                        parameterValues[index] = GetParameterValue(parameters[index], config, options);
+                    }
+
+                    return constructors[indexOfChosenConstructor].Invoke(parameterValues);
                 }
             }
 
@@ -687,10 +721,55 @@ namespace Microsoft.Extensions.Configuration
             return allProperties;
         }
 
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
+        private static object? GetParameterValue(ParameterInfo property, IConfiguration config, BinderOptions options)
+        {
+            string parameterName = GetParameterName(property);
+
+            BindingPoint bindingPoint = new BindingPoint();
+
+            BindInstance(
+                property.ParameterType,
+                bindingPoint,
+                config.GetSection(parameterName),
+                options);
+
+            return bindingPoint.Value;
+        }
+
+        // todo: steve - we might not need this; currently, these attributes are only applicable to properties and
+        // not parameters. We might be able to get rid of this method once confirm whether it's needed or not.
+
+        private static string GetParameterName(ParameterInfo parameter)
+        {
+            // Check for a custom property name used for configuration key binding
+            foreach (var attributeData in parameter.GetCustomAttributesData())
+            {
+                if (attributeData.AttributeType != typeof(ConfigurationKeyNameAttribute))
+                {
+                    continue;
+                }
+
+                // Ensure ConfigurationKeyName constructor signature matches expectations
+                if (attributeData.ConstructorArguments.Count != 1)
+                {
+                    break;
+                }
+
+                // Assumes ConfigurationKeyName constructor first arg is the string key name
+                string? name = attributeData
+                    .ConstructorArguments[0]
+                    .Value?
+                    .ToString();
+
+                return !string.IsNullOrWhiteSpace(name) ? name : parameter.Name!;
+            }
+
+            return parameter.Name!;
+        }
+
         private static string GetPropertyName(MemberInfo property)
         {
-            ThrowHelper.ThrowIfNull(property);
-
             // Check for a custom property name used for configuration key binding
             foreach (var attributeData in property.GetCustomAttributesData())
             {

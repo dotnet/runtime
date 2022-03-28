@@ -112,6 +112,75 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public IConfigurationSection DerivedSection { get; set; }
         }
 
+#if NETCOREAPP        
+        public record RecordTypeOptions(string Color, int Length);
+#endif
+
+        public class ContainerWithNestedImmutableObject
+        {
+            public string ContainerName { get; set; }
+            public ImmutableLengthAndColorClass LengthAndColor { get; set; }
+        }
+        
+        public class ImmutableLengthAndColorClass
+        {
+            public ImmutableLengthAndColorClass(string color, int length)
+            {
+                Color = color;
+                Length = length;
+            }
+
+            public string Color { get; }
+            public int Length { get; }
+        }
+
+        public class ImmutableClassWithConstructorOverloads
+        {
+            public ImmutableClassWithConstructorOverloads(string string1, int int1)
+            {
+                String1 = string1;
+                Int1 = int1;
+            }
+
+            public ImmutableClassWithConstructorOverloads(string string1, int int1, string string2)
+            {
+                String1 = string1;
+                Int1 = int1;
+                String2 = string2;
+            }
+
+            public ImmutableClassWithConstructorOverloads(string string1, int int1, string string2, int int2)
+            {
+                String1 = string1;
+                Int1 = int1;
+                String2 = string2;
+                Int2 = int2;
+            }
+
+            public ImmutableClassWithConstructorOverloads(string string1)
+            {
+                String1 = string1;
+            }
+
+            public string String1 { get; }
+            public string String2 { get; }
+            public int Int1 { get; }
+            public int Int2 { get; }
+        }
+
+        public class SemiImmutableType
+        {
+            public SemiImmutableType(string color, int length)
+            {
+                Color = color;
+                Length = length;
+            }
+
+            public string Color { get; }
+            public int Length { get; }
+            public decimal Thickness { get; set; }
+        }
+
         public struct ValueTypeOptions
         {
             public int MyInt32 { get; set; }
@@ -993,6 +1062,107 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(42, options.MyInt32);
             Assert.Equal("hello world", options.MyString);
         }
+
+        [Fact]
+        public void CanBindImmutableClass()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ImmutableLengthAndColorClass>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+        }
+
+        [Fact]
+        public void CanBindMutableClassWitNestedImmutableObject()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"ContainerName", "Container123"},
+                {"LengthAndColor:Length", "42"},
+                {"LengthAndColor:Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ContainerWithNestedImmutableObject>();
+            Assert.Equal("Container123", options.ContainerName);
+            Assert.Equal(42, options.LengthAndColor.Length);
+            Assert.Equal("Green", options.LengthAndColor.Color);
+        }
+
+        // If the immutable type has multiple constructors,
+        // then pick the one with the most parameters
+        // and try to bind as many as possible.
+        // The type used in example below has multiple constructors in
+        // an arbitrary order, but/ with the biggest (chosen) one
+        // deliberately not first or last.
+        [Fact]
+        public void CanBindImmutableClass_PicksBiggestNonParameterlessConstructor()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"String1", "s1"},
+                {"Int1", "1"},
+                {"String2", "s2"},
+                {"Int2", "2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ImmutableClassWithConstructorOverloads>();
+            Assert.Equal("s1", options.String1);
+            Assert.Equal("s2", options.String2);
+            Assert.Equal(1, options.Int1);
+            Assert.Equal(2, options.Int2);
+        }
+
+        [Fact]
+        public void CanBindSemiImmutableClass()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+                {"Thickness", "1.23"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<SemiImmutableType>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+            Assert.Equal(1.23m, options.Thickness);
+        }
+
+#if NETCOREAPP
+        [Fact]
+        public void CanBindRecordOptions()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<RecordTypeOptions>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+        }
+#endif
 
         [Fact]
         public void CanBindByteArray()
