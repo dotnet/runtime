@@ -132,5 +132,8 @@ namespace System
 
         internal const string EncryptionPolicyMessage = "EncryptionPolicy.NoEncryption and AllowEncryption significantly reduce security and should not be used in production code.";
         internal const string EncryptionPolicyDiagId = "SYSLIB0040";
+
+        internal const string Rfc2898OutdatedCtorMessage = "The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.";
+        internal const string Rfc2898OutdatedCtorDiagId = "SYSLIB0041";
     }
 }

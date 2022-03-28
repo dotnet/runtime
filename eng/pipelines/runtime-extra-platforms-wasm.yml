@@ -34,6 +34,18 @@ jobs:
       runAOT: true
       alwaysRun: true
 
+  # High resource AOT Library tests
+  - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+    parameters:
+      platforms:
+        - Browser_wasm
+        - Browser_wasm_win
+      nameSuffix: _HighResource_AOT
+      extraBuildArgs: /p:TestAssemblies=false /p:RunHighAOTResourceRequiringTestsOnly=true
+      buildAOTOnHelix: false
+      runAOT: true
+      alwaysRun: true
+
 #
 # ********** For !rolling builds, IOW - PR builds *************
 # - run everything, if relevant paths changed
@@ -69,6 +81,18 @@ jobs:
         - Browser_wasm
         - Browser_wasm_win
       nameSuffix: _AOT
+      runAOT: true
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+
+  # High resource AOT Library tests
+  - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+    parameters:
+      platforms:
+        - Browser_wasm
+        - Browser_wasm_win
+      nameSuffix: _HighResource_AOT
+      extraBuildArgs: /p:TestAssemblies=false /p:RunHighAOTResourceRequiringTestsOnly=true
+      buildAOTOnHelix: false
       runAOT: true
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 

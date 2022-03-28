@@ -139,7 +139,7 @@ namespace System.IO.Packaging
         /// This will return an enumerator over a dictionary of the parameter/value pairs.
         /// </summary>
         internal Dictionary<string, string>.Enumerator ParameterValuePairs =>
-            (_parameterDictionary ??= new()).GetEnumerator();
+            (_parameterDictionary ??= new Dictionary<string, string>()).GetEnumerator();
         #endregion Internal Properties
 
         #region Internal Methods
@@ -330,7 +330,7 @@ namespace System.IO.Packaging
                 //Get length of the parameter value
                 int parameterValueLength = GetLengthOfParameterValue(parameterAndValue, parameterStartIndex);
 
-                (_parameterDictionary ??= new()).Add(
+                (_parameterDictionary ??= new Dictionary<string, string>()).Add(
                     ValidateToken(parameterAndValue.Slice(0, equalSignIndex).ToString()),
                     ValidateQuotedStringOrToken(parameterAndValue.Slice(parameterStartIndex, parameterValueLength).ToString()));
 

@@ -36,8 +36,7 @@ namespace System.Net.Mime
 
             encoding ??= Encoding.GetEncoding(DefaultCharSet);
 
-            EncodedStreamFactory factory = new EncodedStreamFactory();
-            IEncodableStream stream = factory.GetEncoderForHeader(encoding, base64Encoding, headerLength);
+            IEncodableStream stream = EncodedStreamFactory.GetEncoderForHeader(encoding, base64Encoding, headerLength);
 
             stream.EncodeString(value, encoding);
             return stream.GetEncodedString();
@@ -77,8 +76,7 @@ namespace System.Net.Mime
                 byte[] buffer = Encoding.ASCII.GetBytes(subStrings[3]);
                 int newLength;
 
-                EncodedStreamFactory encoderFactory = new EncodedStreamFactory();
-                IEncodableStream s = encoderFactory.GetEncoderForHeader(Encoding.GetEncoding(charSet), base64Encoding, 0);
+                IEncodableStream s = EncodedStreamFactory.GetEncoderForHeader(Encoding.GetEncoding(charSet), base64Encoding, 0);
 
                 newLength = s.DecodeBytes(buffer, 0, buffer.Length);
 

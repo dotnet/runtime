@@ -235,7 +235,7 @@ namespace System.Security.Cryptography.Cose.Tests
 
         private static ECParameters CreateECParameters(string curveFriendlyName, string base64UrlQx, string base64UrlQy, string base64UrlPrivateKey)
         {
-            return new()
+            return new ECParameters()
             {
                 Curve = ECCurve.CreateFromFriendlyName(curveFriendlyName),
                 Q = new ECPoint

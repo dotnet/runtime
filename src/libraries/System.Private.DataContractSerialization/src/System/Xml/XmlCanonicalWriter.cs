@@ -137,7 +137,7 @@ namespace System.Xml
             _inclusivePrefixes = null;
         }
 
-        public void WriteDeclaration()
+        public static void WriteDeclaration()
         {
         }
 
@@ -833,7 +833,7 @@ namespace System.Xml
             return s;
         }
 
-        private int Compare(byte[] buffer, int offset1, int length1, int offset2, int length2)
+        private static int Compare(byte[] buffer, int offset1, int length1, int offset2, int length2)
         {
             if (offset1 == offset2)
             {
@@ -843,7 +843,7 @@ namespace System.Xml
             return Compare(buffer, offset1, length1, buffer, offset2, length2);
         }
 
-        private int Compare(byte[] buffer1, int offset1, int length1, byte[] buffer2, int offset2, int length2)
+        private static int Compare(byte[] buffer1, int offset1, int length1, byte[] buffer2, int offset2, int length2)
         {
             //            Console.WriteLine("Compare: \"{0}\", \"{1}\"", Encoding.UTF8.GetString(sourceBuffer, offset1, length1), Encoding.UTF8.GetString(sourceBuffer, offset2, length2));
 
@@ -863,7 +863,7 @@ namespace System.Xml
             return s;
         }
 
-        private bool Equals(byte[] buffer1, int offset1, int length1, byte[] buffer2, int offset2, int length2)
+        private static bool Equals(byte[] buffer1, int offset1, int length1, byte[] buffer2, int offset2, int length2)
         {
             //            Console.WriteLine("Equals: \"{0}\", \"{1}\"", Encoding.UTF8.GetString(buffer1, offset1, length1), Encoding.UTF8.GetString(buffer2, offset2, length2));
 

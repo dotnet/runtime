@@ -1904,13 +1904,14 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // so that "h" already falls through to "e" (e == t).
     // It might look like this code is unreachable, since "h" must be a BBJ_ALWAYS, but
     // later we will change "h" to a BBJ_COND along with a set of loop conditions.
-    // TODO: it still might be unreachable, since cloning currently is restricted to "do-while" loop forms.
+    // Cloning is currently restricted to "do-while" loop forms, where this case won't occur.
+    // However, it can occur in OSR methods.
     BasicBlock* h2 = nullptr;
     if (h->bbNext != loop.lpEntry)
     {
         assert(h->bbJumpKind == BBJ_ALWAYS);
         JITDUMP("Create branch to entry of optimized loop\n");
-        BasicBlock* h2 = fgNewBBafter(BBJ_ALWAYS, h, /*extendRegion*/ true);
+        h2 = fgNewBBafter(BBJ_ALWAYS, h, /*extendRegion*/ true);
         JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", h2->bbNum, h->bbNum);
         h2->bbWeight = h2->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
 

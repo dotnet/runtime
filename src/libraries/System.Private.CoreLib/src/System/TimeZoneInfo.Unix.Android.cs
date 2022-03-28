@@ -265,7 +265,7 @@ namespace System
             //
             // Once the timezone cache is populated with the IDs, we reference tzlookup id tags
             // to determine if an id is backwards and label it as such if they are.
-            private void FilterBackwardIDs(string tzFileDir, out HashSet<string> tzLookupIDs)
+            private static void FilterBackwardIDs(string tzFileDir, out HashSet<string> tzLookupIDs)
             {
                 tzLookupIDs = new HashSet<string>();
                 try
@@ -331,7 +331,7 @@ namespace System
                 ReadIndex(tzFileDir, fs, indexOffset, dataOffset);
             }
 
-            private void LoadHeader(Span<byte> buffer, out int indexOffset, out int dataOffset)
+            private static void LoadHeader(Span<byte> buffer, out int indexOffset, out int dataOffset)
             {
                 // tzdata files are expected to start with the form of "tzdata2012f\0" depending on the year of the tzdata used which is 2012 in this example
                 // since we're not differentiating on year, check for tzdata and the ending \0

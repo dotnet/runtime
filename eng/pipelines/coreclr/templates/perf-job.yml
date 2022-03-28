@@ -49,6 +49,12 @@ jobs:
     pgoRunType: ${{ parameters.pgoRunType }}
     javascriptEngine: ${{ parameters.javascriptEngine }}
     iosLlvmBuild: ${{ parameters.iosLlvmBuild }}
+
+    ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'aot')) }}:
+      helixTypeSuffix: '/wasm/aot'
+    ${{ if and(eq(parameters.runtimeType, 'wasm'), ne(parameters.codeGenType, 'aot')) }}:
+      helixTypeSuffix: '/wasm'
+
     # Test job depends on the corresponding build job
     dependsOn:
     - ${{ if not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono', 'wasm')) }}:

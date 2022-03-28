@@ -76,50 +76,73 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void ZeroTimeout_TimesOut(bool enabledBeforeWait)
+        [InlineData(-2)]
+        [InlineData((long)int.MaxValue + 1)]
+        public void TimeSpan_ArgumentValidation(long milliseconds)
+        {
+            TimeSpan timeout = TimeSpan.FromMilliseconds(milliseconds);
+            using var testDirectory = new TempDirectory(GetTestFilePath());
+            using var _ = new TempDirectory(Path.Combine(testDirectory.Path, GetTestFileName()));
+            using var fsw = new FileSystemWatcher(testDirectory.Path);
+
+            Assert.Throws<ArgumentOutOfRangeException>("timeout", () => fsw.WaitForChanged(WatcherChangeTypes.All, timeout));
+        }
+
+        [Theory]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        public void ZeroTimeout_TimesOut(bool enabledBeforeWait, bool useTimeSpan)
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
             using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, GetTestFileName())))
             using (var fsw = new FileSystemWatcher(testDirectory.Path))
             {
                 if (enabledBeforeWait) fsw.EnableRaisingEvents = true;
-                AssertTimedOut(fsw.WaitForChanged(WatcherChangeTypes.All, 0));
+
+                const int timeoutMilliseconds = 0;
+                AssertTimedOut(useTimeSpan
+                    ? fsw.WaitForChanged(WatcherChangeTypes.All, TimeSpan.FromMilliseconds(timeoutMilliseconds))
+                    : fsw.WaitForChanged(WatcherChangeTypes.All, timeoutMilliseconds));
                 Assert.Equal(enabledBeforeWait, fsw.EnableRaisingEvents);
             }
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void NonZeroTimeout_NoEvents_TimesOut(bool enabledBeforeWait)
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        public void NonZeroTimeout_NoEvents_TimesOut(bool enabledBeforeWait, bool useTimeSpan)
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
             using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, GetTestFileName())))
             using (var fsw = new FileSystemWatcher(testDirectory.Path))
             {
                 if (enabledBeforeWait) fsw.EnableRaisingEvents = true;
-                AssertTimedOut(fsw.WaitForChanged(0, 1));
+                const int timeoutMilliseconds = 1;
+                AssertTimedOut(useTimeSpan
+                    ? fsw.WaitForChanged(0, TimeSpan.FromMilliseconds(timeoutMilliseconds))
+                    : fsw.WaitForChanged(0, timeoutMilliseconds));
                 Assert.Equal(enabledBeforeWait, fsw.EnableRaisingEvents);
             }
         }
 
         [Theory]
-        [InlineData(WatcherChangeTypes.Deleted, false)]
-        [InlineData(WatcherChangeTypes.Created, true)]
-        [InlineData(WatcherChangeTypes.Changed, false)]
-        [InlineData(WatcherChangeTypes.Renamed, true)]
-        [InlineData(WatcherChangeTypes.All, true)]
+        [InlineData(WatcherChangeTypes.Deleted, false, true)]
+        [InlineData(WatcherChangeTypes.Created, true, false)]
+        [InlineData(WatcherChangeTypes.Changed, false, true)]
+        [InlineData(WatcherChangeTypes.Renamed, true, false)]
+        [InlineData(WatcherChangeTypes.All, true, true)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/58418", typeof(PlatformDetection), nameof(PlatformDetection.IsMacCatalyst), nameof(PlatformDetection.IsArm64Process))]
-        public void NonZeroTimeout_NoActivity_TimesOut(WatcherChangeTypes changeType, bool enabledBeforeWait)
+        public void NonZeroTimeout_NoActivity_TimesOut(WatcherChangeTypes changeType, bool enabledBeforeWait, bool useTimeSpan)
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
             using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, GetTestFileName())))
             using (var fsw = new FileSystemWatcher(testDirectory.Path))
             {
                 if (enabledBeforeWait) fsw.EnableRaisingEvents = true;
-                AssertTimedOut(fsw.WaitForChanged(changeType, 1));
+                const int timeoutMilliseconds = 1;
+                AssertTimedOut(useTimeSpan
+                    ? fsw.WaitForChanged(changeType, TimeSpan.FromMilliseconds(timeoutMilliseconds))
+                    : fsw.WaitForChanged(changeType, timeoutMilliseconds));
                 Assert.Equal(enabledBeforeWait, fsw.EnableRaisingEvents);
             }
         }

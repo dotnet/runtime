@@ -1851,6 +1851,14 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
+    // If the local was exposed at Tier0, we currently have to assume it's aliased for OSR.
+    //
+    if (compiler->lvaIsOSRLocal(lclNum) && compiler->info.compPatchpointInfo->IsExposed(lclNum))
+    {
+        JITDUMP("  struct promotion of V%02u is disabled because it is an exposed OSR local\n", lclNum);
+        return false;
+    }
+
     CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
     assert(typeHnd != NO_CLASS_HANDLE);
 
