@@ -5371,10 +5371,10 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         GenTree* arrRef2 = nullptr; // The second copy will be used in array address expression
         GenTree* index2  = nullptr;
 
-        // If the arrRef or index expressions involves an assignment, a call or reads from global memory,
+        // If the arrRef or index expressions involves an assignment, a call, or reads from global memory,
         // then we *must* allocate a temporary in which to "localize" those values, to ensure that the
         // same values are used in the bounds check and the actual dereference.
-        // Also we allocate the temporary when the expresion is sufficiently complex/expensive.
+        // Also we allocate the temporary when the expression is sufficiently complex/expensive.
         //
         // Note that if the expression is a GT_FIELD, it has not yet been morphed so its true complexity is
         // not exposed. Without that condition there are cases of local struct fields that were previously,
@@ -5420,7 +5420,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
 #ifdef TARGET_64BIT
         // The CLI Spec allows an array to be indexed by either an int32 or a native int.  In the case
         // of a 64 bit architecture this means the array index can potentially be a TYP_LONG, so for this case,
-        // the comparison will have to be widen to 64 bits.
+        // the comparison will have to be widened to 64 bits.
         if (index->TypeGet() == TYP_I_IMPL)
         {
             bndsChkType = TYP_I_IMPL;

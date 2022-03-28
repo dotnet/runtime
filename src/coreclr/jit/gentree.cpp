@@ -9808,6 +9808,35 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                         layout = varDsc->GetLayout();
                     }
                 }
+                else if (tree->OperIs(GT_INDEX))
+                {
+                    GenTreeIndex*        asInd  = tree->AsIndex();
+                    CORINFO_CLASS_HANDLE clsHnd = asInd->gtStructElemClass;
+                    if (clsHnd != nullptr)
+                    {
+                        // We could create a layout with `typGetObjLayout(asInd->gtStructElemClass)` but we
+                        // don't want to affect the layout table.
+                        const unsigned  classSize      = info.compCompHnd->getClassSize(clsHnd);
+                        const char16_t* shortClassName = eeGetShortClassName(clsHnd);
+                        printf("<%S, %u>", shortClassName, classSize);
+                    }
+                }
+                else if (tree->OperIsIndir())
+                {
+                    ArrayInfo arrInfo;
+                    if (TryGetArrayInfo(tree->AsIndir(), &arrInfo))
+                    {
+                        if (varTypeIsStruct(arrInfo.m_elemType))
+                        {
+                            CORINFO_CLASS_HANDLE clsHnd = arrInfo.m_elemStructType;
+                            // We could create a layout with `typGetObjLayout(asInd->gtStructElemClass)` but we
+                            // don't want to affect the layout table.
+                            const unsigned  classSize      = info.compCompHnd->getClassSize(clsHnd);
+                            const char16_t* shortClassName = eeGetShortClassName(clsHnd);
+                            printf("<%S, %u>", shortClassName, classSize);
+                        }
+                    }
+                }
 
                 if (layout != nullptr)
                 {
@@ -10248,11 +10277,11 @@ void Compiler::gtDispClassLayout(ClassLayout* layout, var_types type)
     }
     else if (varTypeIsSIMD(type))
     {
-        printf("<%s>", layout->GetClassName());
+        printf("<%S>", layout->GetShortClassName());
     }
     else
     {
-        printf("<%s, %u>", layout->GetClassName(), layout->GetSize());
+        printf("<%S, %u>", layout->GetShortClassName(), layout->GetSize());
     }
 }
 
@@ -12154,7 +12183,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         if ((cls1Hnd != NO_CLASS_HANDLE) && (cls2Hnd != NO_CLASS_HANDLE))
         {
             JITDUMP("Asking runtime to compare %p (%s) and %p (%s) for equality\n", dspPtr(cls1Hnd),
-                    info.compCompHnd->getClassName(cls1Hnd), dspPtr(cls2Hnd), info.compCompHnd->getClassName(cls2Hnd));
+                    eeGetClassName(cls1Hnd), dspPtr(cls2Hnd), eeGetClassName(cls2Hnd));
             TypeCompareState s = info.compCompHnd->compareTypesForEquality(cls1Hnd, cls2Hnd);
 
             if (s != TypeCompareState::May)

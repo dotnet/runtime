@@ -4094,7 +4094,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 const bool isReadOnly = (ni == NI_System_ReadOnlySpan_get_Item);
 
                 JITDUMP("\nimpIntrinsic: Expanding %sSpan<T>.get_Item, T=%s, sizeof(T)=%u\n",
-                        isReadOnly ? "ReadOnly" : "", info.compCompHnd->getClassName(spanElemHnd), elemSize);
+                        isReadOnly ? "ReadOnly" : "", eeGetClassName(spanElemHnd), elemSize);
 
                 GenTree* index          = impPopStack().val;
                 GenTree* ptrToSpan      = impPopStack().val;
@@ -11505,8 +11505,8 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
     {
         CORINFO_CLASS_HANDLE toClass = pResolvedToken->hClass;
         JITDUMP("\nConsidering optimization of %s from %s%p (%s) to %p (%s)\n", isCastClass ? "castclass" : "isinst",
-                isExact ? "exact " : "", dspPtr(fromClass), info.compCompHnd->getClassName(fromClass), dspPtr(toClass),
-                info.compCompHnd->getClassName(toClass));
+                isExact ? "exact " : "", dspPtr(fromClass), eeGetClassName(fromClass), dspPtr(toClass),
+                eeGetClassName(toClass));
 
         // Perhaps we know if the cast will succeed or fail.
         TypeCompareState castResult = info.compCompHnd->compareTypesForCast(fromClass, toClass);
@@ -21035,8 +21035,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     if (verbose || doPrint)
     {
         objClassNote   = isExact ? " [exact]" : objClassIsFinal ? " [final]" : "";
-        objClassName   = info.compCompHnd->getClassName(objClass);
-        baseClassName  = info.compCompHnd->getClassName(baseClass);
+        objClassName   = eeGetClassName(objClass);
+        baseClassName  = eeGetClassName(baseClass);
         baseMethodName = eeGetMethodName(baseMethod, nullptr);
 
         if (verbose)

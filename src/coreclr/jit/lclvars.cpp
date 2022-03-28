@@ -2933,8 +2933,8 @@ void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool is
     assert(varDsc->lvClassHnd == NO_CLASS_HANDLE);
     assert(!varDsc->lvClassIsExact);
 
-    JITDUMP("\nlvaSetClass: setting class for V%02i to (%p) %s %s\n", varNum, dspPtr(clsHnd),
-            info.compCompHnd->getClassName(clsHnd), isExact ? " [exact]" : "");
+    JITDUMP("\nlvaSetClass: setting class for V%02i to (%p) %s %s\n", varNum, dspPtr(clsHnd), eeGetClassName(clsHnd),
+            isExact ? " [exact]" : "");
 
     varDsc->lvClassHnd     = clsHnd;
     varDsc->lvClassIsExact = isExact;
@@ -3044,9 +3044,9 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
     if (isNewClass || (isExact != varDsc->lvClassIsExact))
     {
         JITDUMP("\nlvaUpdateClass:%s Updating class for V%02u", shouldUpdate ? "" : " NOT", varNum);
-        JITDUMP(" from (%p) %s%s", dspPtr(varDsc->lvClassHnd), info.compCompHnd->getClassName(varDsc->lvClassHnd),
+        JITDUMP(" from (%p) %s%s", dspPtr(varDsc->lvClassHnd), eeGetClassName(varDsc->lvClassHnd),
                 varDsc->lvClassIsExact ? " [exact]" : "");
-        JITDUMP(" to (%p) %s%s\n", dspPtr(clsHnd), info.compCompHnd->getClassName(clsHnd), isExact ? " [exact]" : "");
+        JITDUMP(" to (%p) %s%s\n", dspPtr(clsHnd), eeGetClassName(clsHnd), isExact ? " [exact]" : "");
     }
 #endif // DEBUG
 
