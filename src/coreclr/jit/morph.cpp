@@ -2774,7 +2774,7 @@ void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
             {
                 nextSlotNum = roundUp(nextSlotNum, argAlignBytes / TARGET_POINTER_SIZE);
             }
-            assert(m_nextStackByteOffset / TARGET_POINTER_SIZE == nextSlotNum);
+            DEBUG_ARG_SLOTS_ASSERT(m_nextStackByteOffset / TARGET_POINTER_SIZE == nextSlotNum);
 
             arg.AbiInfo.SlotNum = nextSlotNum;
             nextSlotNum += size;
