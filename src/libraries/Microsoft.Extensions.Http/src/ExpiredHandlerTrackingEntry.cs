@@ -20,12 +20,12 @@ namespace Microsoft.Extensions.Http
             Scope = other.Scope;
 
             _livenessTracker = new WeakReference(other.Handler);
-            InnerHandler = other.Handler.InnerHandler;
+            InnerHandler = other.Handler.InnerHandler!;
         }
 
         public bool CanDispose => !_livenessTracker.IsAlive;
 
-        public HttpMessageHandler? InnerHandler { get; }
+        public HttpMessageHandler InnerHandler { get; }
 
         public string Name { get; }
 

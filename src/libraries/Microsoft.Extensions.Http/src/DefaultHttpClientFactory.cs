@@ -264,7 +264,7 @@ namespace Microsoft.Extensions.Http
                     {
                         try
                         {
-                            entry.InnerHandler!.Dispose();
+                            entry.InnerHandler.Dispose();
                             entry.Scope?.Dispose();
                             disposedCount++;
                         }
