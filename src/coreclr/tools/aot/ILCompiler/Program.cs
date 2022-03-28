@@ -629,7 +629,7 @@ namespace ILCompiler
                 // This is the logic IL Linker uses to decide how to interpret the string. Really.
                 EcmaModule module = File.Exists(rootedAssembly)
                     ? typeSystemContext.GetModuleFromPath(rootedAssembly)
-                    : typeSystemContext.GetModuleForSimpleName(Path.GetFileNameWithoutExtension(rootedAssembly));
+                    : typeSystemContext.GetModuleForSimpleName(rootedAssembly);
 
                 // We only root the module type. The rest will fall out because we treat _rootedAssemblies
                 // same as conditionally rooted ones and here we're fulfilling the condition ("something is used").
