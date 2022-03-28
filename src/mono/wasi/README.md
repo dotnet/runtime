@@ -53,7 +53,7 @@ make run
 
 ### 4. Debug it
 
-Finally, you can build and debug the sample:
+Also, you can build and debug the sample:
 
 ```
 cd sample/console
