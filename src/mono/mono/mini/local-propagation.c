@@ -840,8 +840,8 @@ reg_is_softreg (int reg, const char spec)
 static gboolean
 mono_is_simd_accessor (MonoInst *ins)
 {
-	switch (ins->opcode) {
 #ifdef MONO_ARCH_SIMD_INTRINSICS
+	switch (ins->opcode) {
 	case OP_INSERT_I1:
 	case OP_INSERT_I2:
 	case OP_INSERT_I4:
@@ -855,10 +855,12 @@ mono_is_simd_accessor (MonoInst *ins)
 	case OP_INSERTX_R8_SLOW:
 	case OP_INSERTX_I8_SLOW:
 		return TRUE;
-#endif
 	default:
 		return FALSE;
 	}
+#else
+	return FALSE;
+#endif
 }
 
 /**

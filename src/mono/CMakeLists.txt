@@ -623,7 +623,7 @@ if(LLVM_PREFIX)
   set(LLVM_LIBDIR "${LLVM_PREFIX}/lib")
   set(LLVM_INCLUDEDIR "${llvm_includedir}")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${llvm_cflags}")
-  if(lower_CMAKE_SYSTEM_NAME STREQUAL "windows")
+  if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     # /EHsc already enabled, prevent LLVM flags to disable it. Corresponds to -fexceptions.
     string(REPLACE "/EHs-c-" "" llvm_cxxflags "${llvm_cxxflags}")
     # /GR- already enabled and inherited from LLVM flags. Corresponds to -fno-rtti.
