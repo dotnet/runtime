@@ -143,7 +143,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Enum.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Environment.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Exception.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\GC.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\GC.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Math.CoreCLR.cs" />
@@ -331,9 +331,9 @@
 
   <Target Name="GenerateEventingFiles"
           Inputs="@(EventingGenerationScript);@(EventManifestFile)"
-          Outputs="@(EventingSourceFile)"
-          DependsOnTargets="FindPython"
-          BeforeTargets="BeforeCompile">
+		  Outputs="@(EventingSourceFile)"
+		  DependsOnTargets="FindPython"
+		  BeforeTargets="BeforeCompile">
 
     <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.CoreCLR.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
     <PropertyGroup>

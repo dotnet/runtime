@@ -231,6 +231,12 @@ namespace System.Net.NetworkInformation
             }
         }
 
+        public PingReply Send(IPAddress address, TimeSpan timeout, byte[]? buffer = null, PingOptions? options = null) =>
+            Send(address, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options);
+
+        public PingReply Send(string hostNameOrAddress, TimeSpan timeout, byte[]? buffer = null,
+            PingOptions? options = null) => Send(hostNameOrAddress, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options);
+
         public void SendAsync(string hostNameOrAddress, object? userToken)
         {
             SendAsync(hostNameOrAddress, DefaultTimeout, DefaultSendBuffer, userToken);
@@ -318,6 +324,24 @@ namespace System.Net.NetworkInformation
             return SendPingAsyncInternal(address, timeout, buffer, options);
         }
 
+        public Task<PingReply> SendPingAsync(IPAddress address, TimeSpan timeout, byte[]? buffer = null,
+            PingOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Task<PingReply> task = SendPingAsync(address, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options);
+
+            return task.WaitAsync(cancellationToken);
+        }
+
+        public Task<PingReply> SendPingAsync(string hostNameOrAddress, TimeSpan timeout, byte[]? buffer = null,
+            PingOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Task<PingReply> task = SendPingAsync(hostNameOrAddress, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options);
+
+            return task.WaitAsync(cancellationToken);
+        }
+
         private async Task<PingReply> SendPingAsyncInternal(IPAddress address, int timeout, byte[] buffer, PingOptions? options)
         {
             // Need to snapshot the address here, so we're sure that it's not changed between now
@@ -355,6 +379,16 @@ namespace System.Net.NetworkInformation
             CheckArgs(timeout, buffer, options);
 
             return GetAddressAndSendAsync(hostNameOrAddress, timeout, buffer, options);
+        }
+
+        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            }
+            return (int)totalMilliseconds;
         }
 
         public void SendAsyncCancel()
