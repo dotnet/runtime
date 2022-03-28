@@ -298,10 +298,15 @@
       <_MergedWrapperName>%(_MergedWrapperRunScript.FileName)</_MergedWrapperName>
       <_MergedWrapperRunScriptRelative Condition="'%(_MergedWrapperRunScript.Identity)' != ''">$([System.IO.Path]::GetRelativePath($(TestBinDir), %(_MergedWrapperRunScript.FullPath)))</_MergedWrapperRunScriptRelative>
     </PropertyGroup>
+    <ItemGroup>
+      <_MergedWrapperOutOfProcessTestMarkers Include="$(_MergedWrapperDirectory)/**/*.OutOfProcessTest" />
+      <_MergedWrapperOutOfProcessTestFiles Include="%(_MergedWrapperOutOfProcessTestMarkers.RootDir)%(_MergedWrapperOutOfProcessTestMarkers.Directory)/**/*" />
+    </ItemGroup>
 
     <ItemGroup>
       <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
       <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)**" />
+      <_MergedPayloadFiles Include="@(_MergedWrapperOutOfProcessTestFiles)" />
       <_MergedPayloadFiles Update="@(_MergedPayloadFiles)">
         <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
              MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
