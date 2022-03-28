@@ -620,6 +620,7 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, methodInfo.ToString());
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67269", TestRuntimes.Mono)]
         [Fact]
         public void InvokeNullableRefs()
         {
@@ -655,6 +656,7 @@ namespace System.Reflection.Tests
                 name, BindingFlags.Public | BindingFlags.Static)!;
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67269", TestRuntimes.Mono)]
         [Fact]
         public void InvokeBoxedNullableRefs()
         {
