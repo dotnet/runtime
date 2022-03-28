@@ -51,22 +51,18 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal IntPtr DatagramSend;
         }
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint SetContextDelegate(
             SafeHandle handle,
             IntPtr context);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate IntPtr GetContextDelegate(
             SafeHandle handle);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate void SetCallbackHandlerDelegate(
             SafeHandle handle,
             Delegate del,
             IntPtr context);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint SetParamDelegate(
             SafeHandle handle,
             QUIC_PARAM_LEVEL level,
@@ -74,7 +70,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             uint bufferLength,
             byte* buffer);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint GetParamDelegate(
             SafeHandle handle,
             QUIC_PARAM_LEVEL level,
@@ -82,7 +77,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             ref uint bufferLength,
             byte* buffer);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint RegistrationOpenDelegate(
             ref RegistrationConfig config,
             out SafeMsQuicRegistrationHandle registrationContext);
@@ -126,7 +120,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
         }
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ConfigurationOpenDelegate(
             SafeMsQuicRegistrationHandle registrationContext,
             QuicBuffer* alpnBuffers,
@@ -140,7 +133,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate void ConfigurationCloseDelegate(
             IntPtr configuration);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ConfigurationLoadCredentialDelegate(
             SafeMsQuicConfigurationHandle configuration,
             ref CredentialConfig credConfig);
@@ -416,7 +408,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             IntPtr context,
             ListenerEvent* evt);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ListenerOpenDelegate(
            SafeMsQuicRegistrationHandle registration,
            ListenerCallbackDelegate handler,
@@ -427,14 +418,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate void ListenerCloseDelegate(
             IntPtr listener);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ListenerStartDelegate(
             SafeMsQuicListenerHandle listener,
             QuicBuffer* alpnBuffers,
             uint alpnBufferCount,
             ref SOCKADDR_INET localAddress);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate void ListenerStopDelegate(
             SafeMsQuicListenerHandle listener);
 
@@ -558,7 +547,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             ConnectionEvent* connectionEvent);
 
         // TODO: order is Open, Close, Shutdown, Start, SetConfiguration, SendResumptionTicket
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ConnectionOpenDelegate(
             SafeMsQuicRegistrationHandle registration,
             ConnectionCallbackDelegate handler,
@@ -569,12 +557,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate void ConnectionCloseDelegate(
             IntPtr connection);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ConnectionSetConfigurationDelegate(
             SafeMsQuicConnectionHandle connection,
             SafeMsQuicConfigurationHandle configuration);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ConnectionStartDelegate(
             SafeMsQuicConnectionHandle connection,
             SafeMsQuicConfigurationHandle configuration,
@@ -583,7 +569,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             string serverName,
             ushort serverPort);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate void ConnectionShutdownDelegate(
             SafeMsQuicConnectionHandle connection,
             QUIC_CONNECTION_SHUTDOWN_FLAGS flags,
@@ -712,7 +697,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             IntPtr context,
             StreamEvent* streamEvent);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamOpenDelegate(
             SafeMsQuicConnectionHandle connection,
             QUIC_STREAM_OPEN_FLAGS flags,
@@ -720,7 +704,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             IntPtr context,
             out SafeMsQuicStreamHandle stream);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamStartDelegate(
             SafeMsQuicStreamHandle stream,
             QUIC_STREAM_START_FLAGS flags);
@@ -729,13 +712,11 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate void StreamCloseDelegate(
             IntPtr stream);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamShutdownDelegate(
             SafeMsQuicStreamHandle stream,
             QUIC_STREAM_SHUTDOWN_FLAGS flags,
             long errorCode);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamSendDelegate(
             SafeMsQuicStreamHandle stream,
             QuicBuffer* buffers,
@@ -743,15 +724,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             QUIC_SEND_FLAGS flags,
             IntPtr clientSendContext);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamReceiveCompleteDelegate(
             SafeMsQuicStreamHandle stream,
             ulong bufferLength);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamReceiveSetEnabledDelegate(
             SafeMsQuicStreamHandle stream,
-            [MarshalAs(UnmanagedType.U1)]
             bool enabled);
 
         [StructLayout(LayoutKind.Sequential)]
