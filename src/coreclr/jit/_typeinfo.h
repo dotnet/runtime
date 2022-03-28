@@ -148,7 +148,7 @@ inline ti_types JITtype2tiType(CorInfoType type)
 * m_token is the CORINFO_RESOLVED_TOKEN from the IL, potentially with a more
 *         precise method handle from getCallInfo
 * m_tokenConstraint is the constraint if this was a constrained ldftn.
-* 
+*
 */
 class methodPointerInfo
 {
@@ -377,7 +377,7 @@ public:
         assert(methodPointerInfo != nullptr);
         assert(methodPointerInfo->m_token.hMethod != nullptr);
         assert(!isInvalidHandle(methodPointerInfo->m_token.hMethod));
-        m_flags = TI_METHOD;
+        m_flags             = TI_METHOD;
         m_methodPointerInfo = methodPointerInfo;
     }
 
