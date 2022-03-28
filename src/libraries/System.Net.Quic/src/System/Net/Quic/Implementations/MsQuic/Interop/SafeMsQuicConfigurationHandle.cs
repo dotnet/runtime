@@ -74,11 +74,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             if (serverAuthenticationOptions != null)
             {
-                if (serverAuthenticationOptions.CipherSuitesPolicy != null)
-                {
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(serverAuthenticationOptions.CipherSuitesPolicy)));
-                }
-
 #pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 if (serverAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.NoEncryption)
                 {
@@ -279,12 +274,16 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                         flags |= QUIC_ALLOWED_CIPHER_SUITE_FLAGS.CHACHA20_POLY1305_SHA256;
                         break;
                     case TlsCipherSuite.TLS_AES_128_CCM_SHA256:
-                        // Not supported by MsQuic, but QUIC RFC allows it.
-                        // TODO: should we throw as well?
+                        // not supported by MsQuic, but QUIC RFC allows it so we ignore it.
                         break;
                     default:
                         throw new ArgumentException(SR.Format(SR.net_quic_unsupported_cipher_suite, cipher));
                 }
+            }
+
+            if (flags == QUIC_ALLOWED_CIPHER_SUITE_FLAGS.NONE)
+            {
+                throw new ArgumentException(SR.net_quic_empty_cipher_suite);
             }
 
             return flags;
