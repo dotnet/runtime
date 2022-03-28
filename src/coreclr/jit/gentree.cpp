@@ -9717,7 +9717,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
 {
     bool printFlags = true; // always true..
 
-    int msgLength = 25;
+    int msgLength = 35;
 
     GenTree* prev;
 
@@ -12001,7 +12001,7 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
         }
 
         // 60 spaces for alignment
-        printf("%-50s", "");
+        printf("%-60s", "");
 #if FEATURE_SET_FLAGS
         // additional flag enlarges the flag field by one character
         printf(" ");
