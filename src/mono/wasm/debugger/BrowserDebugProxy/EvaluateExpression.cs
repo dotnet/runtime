@@ -224,19 +224,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                 switch (type)
                 {
                     case "string":
-                        {
-                            var str = value?.Value<string>();
-                            str = str.Replace("\"", "\\\"");
-                            valueRet = $"\"{str}\"";
-                            typeRet = "string";
-                            break;
-                        }
+                    {
+                        var str = value?.Value<string>();
+                        str = str.Replace("\"", "\\\"");
+                        valueRet = $"\"{str}\"";
+                        typeRet = "string";
+                        break;
+                    }
                     case "symbol":
-                        {
-                            valueRet = $"'{value?.Value<char>()}'";
-                            typeRet = "char";
-                            break;
-                        }
+                    {
+                        valueRet = $"'{value?.Value<char>()}'";
+                        typeRet = "char";
+                        break;
+                    }
                     case "number":
                         //casting to double and back to string would loose precision; so casting straight to string
                         valueRet = value?.Value<string>();
