@@ -258,12 +258,19 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)pal/tests/palsuite/producepaltestlist.proj" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <CrossDacHostArch>x64</CrossDacHostArch>
+    <CrossDacHostArch Condition="'$(TargetArchitecture)' != 'arm'">x86</CrossDacHostArch>
+  </PropertyGroup>
+
   <ItemGroup Condition="$(_subset.Contains('+linuxdac+')) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' != 'x86'">
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
       AdditionalProperties="%(AdditionalProperties);
                             ClrCrossComponentsSubset=true;
-                            BuildArchitecture=x64;
+                            HostArchitecture=$(CrossDacHostArch);
+                            PgoInstrument=false;
+                            NativeOptimizationDataSupported=false;
                             TargetOS=Linux;
                             CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1" Category="clr" />
   </ItemGroup>
@@ -273,7 +280,9 @@
       Include="$(CoreClrProjectRoot)runtime.proj"
       AdditionalProperties="%(AdditionalProperties);
                             ClrCrossComponentsSubset=true;
-                            BuildArchitecture=x64;
+                            HostArchitecture=$(CrossDacHostArch);
+                            PgoInstrument=false;
+                            NativeOptimizationDataSupported=false;
                             TargetOS=alpine;
                             CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1" Category="clr" />
   </ItemGroup>
