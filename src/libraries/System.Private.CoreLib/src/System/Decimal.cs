@@ -66,8 +66,8 @@ namespace System
           IEquatable<decimal>,
           ISerializable,
           IDeserializationCallback,
-          IMinMaxValue<decimal>,
-          ISignedNumber<decimal>
+          IFloatingPoint<decimal>,
+          IMinMaxValue<decimal>
     {
         // Sign mask for the flags field. A value of zero in this bit indicates a
         // positive Decimal value, and a value of one in this bit indicates a
@@ -1106,6 +1106,22 @@ namespace System
 
         // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
         // static decimal IDivisionOperators<decimal, decimal, decimal>.operator checked /(decimal left, decimal right) => checked(left / right);
+
+        //
+        // IFloatingPoint
+        //
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round{TInteger}(TSelf, TInteger)" />
+        static decimal IFloatingPoint<decimal>.Round<TInteger>(decimal x, TInteger digits)
+        {
+            return Round(x, int.CreateSaturating(digits));
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round{TInteger}(TSelf, TInteger, MidpointRounding)" />
+        static decimal IFloatingPoint<decimal>.Round<TInteger>(decimal x, TInteger digits, MidpointRounding mode)
+        {
+            return Round(x, int.CreateSaturating(digits), mode);
+        }
 
         //
         // IIncrementOperators

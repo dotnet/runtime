@@ -1762,7 +1762,7 @@ namespace System
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
     }
-    public readonly partial struct Decimal : System.IAdditionOperators<decimal, decimal, decimal>, System.IAdditiveIdentity<decimal, decimal>, System.IComparable, System.IComparable<decimal>, System.IComparisonOperators<decimal, decimal>, System.IConvertible, System.IDecrementOperators<decimal>, System.IDivisionOperators<decimal, decimal, decimal>, System.IEqualityOperators<decimal, decimal>, System.IEquatable<decimal>, System.IFormattable, System.IIncrementOperators<decimal>, System.IMinMaxValue<decimal>, System.IModulusOperators<decimal, decimal, decimal>, System.IMultiplicativeIdentity<decimal, decimal>, System.IMultiplyOperators<decimal, decimal, decimal>, System.INumber<decimal>, System.IParseable<decimal>, System.ISignedNumber<decimal>, System.ISpanFormattable, System.ISpanParseable<decimal>, System.ISubtractionOperators<decimal, decimal, decimal>, System.IUnaryNegationOperators<decimal, decimal>, System.IUnaryPlusOperators<decimal, decimal>, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
+    public readonly partial struct Decimal : System.IAdditionOperators<decimal, decimal, decimal>, System.IAdditiveIdentity<decimal, decimal>, System.IComparable, System.IComparable<decimal>, System.IComparisonOperators<decimal, decimal>, System.IConvertible, System.IDecrementOperators<decimal>, System.IDivisionOperators<decimal, decimal, decimal>, System.IEqualityOperators<decimal, decimal>, System.IEquatable<decimal>, System.IFloatingPoint<decimal>, System.IFormattable, System.IIncrementOperators<decimal>, System.IMinMaxValue<decimal>, System.IModulusOperators<decimal, decimal, decimal>, System.IMultiplicativeIdentity<decimal, decimal>, System.IMultiplyOperators<decimal, decimal, decimal>, System.INumber<decimal>, System.INumberBase<decimal>, System.IParseable<decimal>, System.ISignedNumber<decimal>, System.ISpanFormattable, System.ISpanParseable<decimal>, System.ISubtractionOperators<decimal, decimal, decimal>, System.IUnaryNegationOperators<decimal, decimal>, System.IUnaryPlusOperators<decimal, decimal>, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         private readonly int _dummyPrimitive;
         [System.Runtime.CompilerServices.DecimalConstantAttribute((byte)0, (byte)0, (uint)0, (uint)0, (uint)0)]
@@ -1896,6 +1896,8 @@ namespace System
         ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
         uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
         ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
+        static System.Decimal System.IFloatingPoint<System.Decimal>.Round<TInteger>(System.Decimal x, TInteger digits) { throw null; }
+        static System.Decimal System.IFloatingPoint<System.Decimal>.Round<TInteger>(System.Decimal x, TInteger digits, System.MidpointRounding mode) { throw null; }
         static System.Decimal System.INumber<System.Decimal>.Sign(System.Decimal value) { throw null; }
         void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -1975,7 +1977,7 @@ namespace System
         public DivideByZeroException(string? message) { }
         public DivideByZeroException(string? message, System.Exception? innerException) { }
     }
-    public readonly partial struct Double : System.IAdditionOperators<double, double, double>, System.IAdditiveIdentity<double, double>, System.IBinaryFloatingPoint<double>, System.IBinaryNumber<double>, System.IBitwiseOperators<double, double, double>, System.IComparable, System.IComparable<double>, System.IComparisonOperators<double, double>, System.IConvertible, System.IDecrementOperators<double>, System.IDivisionOperators<double, double, double>, System.IEqualityOperators<double, double>, System.IEquatable<double>, System.IFloatingPoint<double>, System.IFormattable, System.IIncrementOperators<double>, System.IMinMaxValue<double>, System.IModulusOperators<double, double, double>, System.IMultiplicativeIdentity<double, double>, System.IMultiplyOperators<double, double, double>, System.INumber<double>, System.IParseable<double>, System.ISignedNumber<double>, System.ISpanFormattable, System.ISpanParseable<double>, System.ISubtractionOperators<double, double, double>, System.IUnaryNegationOperators<double, double>, System.IUnaryPlusOperators<double, double>
+    public readonly partial struct Double : System.IAdditionOperators<double, double, double>, System.IAdditiveIdentity<double, double>, System.IBinaryFloatingPointIeee754<double>, System.IBinaryNumber<double>, System.IBitwiseOperators<double, double, double>, System.IComparable, System.IComparable<double>, System.IComparisonOperators<double, double>, System.IConvertible, System.IDecrementOperators<double>, System.IDivisionOperators<double, double, double>, System.IEqualityOperators<double, double>, System.IEquatable<double>, System.IExponentialFunctions<double>, System.IFloatingPoint<double>, System.IFloatingPointIeee754<double>, System.IFormattable, System.IHyperbolicFunctions<double>, System.IIncrementOperators<double>, System.ILogarithmicFunctions<double>, System.IMinMaxValue<double>, System.IModulusOperators<double, double, double>, System.IMultiplicativeIdentity<double, double>, System.IMultiplyOperators<double, double, double>, System.INumber<double>, System.INumberBase<double>, System.IParseable<double>, System.IPowerFunctions<double>, System.IRootFunctions<double>, System.ISignedNumber<double>, System.ISpanFormattable, System.ISpanParseable<double>, System.ISubtractionOperators<double, double, double>, System.ITrigonometricFunctions<double>, System.IUnaryNegationOperators<double, double>, System.IUnaryPlusOperators<double, double>
     {
         private readonly double _dummyPrimitive;
         public const double AdditiveIdentity = 0;
@@ -1989,19 +1991,19 @@ namespace System
         public const double NegativeOne = -1;
         public const double NegativeZero = -0;
         public const double One = 1;
-        public const double Pi = 3.141592653589793;
+        public const double PI = 3.141592653589793;
         public const double PositiveInfinity = 1.0 / 0.0;
         public const double Tau = 6.283185307179586;
         public const double Zero = 0;
         static double System.IAdditiveIdentity<System.Double,System.Double>.AdditiveIdentity { get { throw null; } }
-        static double System.IFloatingPoint<System.Double>.E { get { throw null; } }
-        static double System.IFloatingPoint<System.Double>.Epsilon { get { throw null; } }
-        static double System.IFloatingPoint<System.Double>.NaN { get { throw null; } }
-        static double System.IFloatingPoint<System.Double>.NegativeInfinity { get { throw null; } }
-        static double System.IFloatingPoint<System.Double>.NegativeZero { get { throw null; } }
-        static double System.IFloatingPoint<System.Double>.Pi { get { throw null; } }
-        static double System.IFloatingPoint<System.Double>.PositiveInfinity { get { throw null; } }
-        static double System.IFloatingPoint<System.Double>.Tau { get { throw null; } }
+        static double System.IFloatingPointIeee754<System.Double>.E { get { throw null; } }
+        static double System.IFloatingPointIeee754<System.Double>.Epsilon { get { throw null; } }
+        static double System.IFloatingPointIeee754<System.Double>.NaN { get { throw null; } }
+        static double System.IFloatingPointIeee754<System.Double>.NegativeInfinity { get { throw null; } }
+        static double System.IFloatingPointIeee754<System.Double>.NegativeZero { get { throw null; } }
+        static double System.IFloatingPointIeee754<System.Double>.PI { get { throw null; } }
+        static double System.IFloatingPointIeee754<System.Double>.PositiveInfinity { get { throw null; } }
+        static double System.IFloatingPointIeee754<System.Double>.Tau { get { throw null; } }
         static double System.IMinMaxValue<System.Double>.MaxValue { get { throw null; } }
         static double System.IMinMaxValue<System.Double>.MinValue { get { throw null; } }
         static double System.IMultiplicativeIdentity<System.Double,System.Double>.MultiplicativeIdentity { get { throw null; } }
@@ -2556,7 +2558,7 @@ namespace System
         public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? format, out System.Guid result) { throw null; }
         public bool TryWriteBytes(System.Span<byte> destination) { throw null; }
     }
-    public readonly partial struct Half : System.IAdditionOperators<System.Half, System.Half, System.Half>, System.IAdditiveIdentity<System.Half, System.Half>, System.IBinaryFloatingPoint<System.Half>, System.IBinaryNumber<System.Half>, System.IBitwiseOperators<System.Half, System.Half, System.Half>, System.IComparable, System.IComparable<System.Half>, System.IComparisonOperators<System.Half, System.Half>, System.IDecrementOperators<System.Half>, System.IDivisionOperators<System.Half, System.Half, System.Half>, System.IEqualityOperators<System.Half, System.Half>, System.IEquatable<System.Half>, System.IFloatingPoint<System.Half>, System.IFormattable, System.IIncrementOperators<System.Half>, System.IMinMaxValue<System.Half>, System.IModulusOperators<System.Half, System.Half, System.Half>, System.IMultiplicativeIdentity<System.Half, System.Half>, System.IMultiplyOperators<System.Half, System.Half, System.Half>, System.INumber<System.Half>, System.IParseable<System.Half>, System.ISignedNumber<System.Half>, System.ISpanFormattable, System.ISpanParseable<System.Half>, System.ISubtractionOperators<System.Half, System.Half, System.Half>, System.IUnaryNegationOperators<System.Half, System.Half>, System.IUnaryPlusOperators<System.Half, System.Half>
+    public readonly partial struct Half : System.IAdditionOperators<System.Half, System.Half, System.Half>, System.IAdditiveIdentity<System.Half, System.Half>, System.IBinaryFloatingPointIeee754<System.Half>, System.IBinaryNumber<System.Half>, System.IBitwiseOperators<System.Half, System.Half, System.Half>, System.IComparable, System.IComparable<System.Half>, System.IComparisonOperators<System.Half, System.Half>, System.IDecrementOperators<System.Half>, System.IDivisionOperators<System.Half, System.Half, System.Half>, System.IEqualityOperators<System.Half, System.Half>, System.IEquatable<System.Half>, System.IExponentialFunctions<System.Half>, System.IFloatingPoint<System.Half>, System.IFloatingPointIeee754<System.Half>, System.IFormattable, System.IHyperbolicFunctions<System.Half>, System.IIncrementOperators<System.Half>, System.ILogarithmicFunctions<System.Half>, System.IMinMaxValue<System.Half>, System.IModulusOperators<System.Half, System.Half, System.Half>, System.IMultiplicativeIdentity<System.Half, System.Half>, System.IMultiplyOperators<System.Half, System.Half, System.Half>, System.INumber<System.Half>, System.INumberBase<System.Half>, System.IParseable<System.Half>, System.IPowerFunctions<System.Half>, System.IRootFunctions<System.Half>, System.ISignedNumber<System.Half>, System.ISpanFormattable, System.ISpanParseable<System.Half>, System.ISubtractionOperators<System.Half, System.Half, System.Half>, System.ITrigonometricFunctions<System.Half>, System.IUnaryNegationOperators<System.Half, System.Half>, System.IUnaryPlusOperators<System.Half, System.Half>
     {
         private readonly int _dummyPrimitive;
         public static System.Half AdditiveIdentity { get { throw null; } }
@@ -2570,7 +2572,7 @@ namespace System
         public static System.Half NegativeOne { get { throw null; } }
         public static System.Half NegativeZero { get { throw null; } }
         public static System.Half One { get { throw null; } }
-        public static System.Half Pi { get { throw null; } }
+        public static System.Half PI { get { throw null; } }
         public static System.Half PositiveInfinity { get { throw null; } }
         public static System.Half Tau { get { throw null; } }
         public static System.Half Zero { get { throw null; } }
@@ -2711,8 +2713,8 @@ namespace System
     {
         static abstract TResult AdditiveIdentity { get; }
     }
-    public partial interface IBinaryFloatingPoint<TSelf> : System.IBinaryNumber<TSelf>, System.IFloatingPoint<TSelf>
-        where TSelf : IBinaryFloatingPoint<TSelf>
+    public partial interface IBinaryFloatingPointIeee754<TSelf> : System.IBinaryNumber<TSelf>, System.IFloatingPointIeee754<TSelf>
+        where TSelf : IBinaryFloatingPointIeee754<TSelf>
     {
     }
     public partial interface IBinaryInteger<TSelf> : System.IBinaryNumber<TSelf>, System.IShiftOperators<TSelf, TSelf>
@@ -2763,36 +2765,39 @@ namespace System
         static abstract bool operator ==(TSelf left, TOther right);
         static abstract bool operator !=(TSelf left, TOther right);
     }
+    public partial interface IExponentialFunctions<TSelf>
+        where TSelf : IExponentialFunctions<TSelf>
+    {
+        static abstract TSelf Exp(TSelf x);
+        static abstract TSelf ScaleB<TInteger>(TSelf x, TInteger n) where TInteger : IBinaryInteger<TInteger>;
+    }
     public partial interface IFloatingPoint<TSelf> : System.ISignedNumber<TSelf>
         where TSelf : System.IFloatingPoint<TSelf>
+    {
+        static abstract TSelf Ceiling(TSelf x);
+        static abstract TSelf Floor(TSelf x);
+        static abstract TSelf Round(TSelf x);
+        static abstract TSelf Round<TInteger>(TSelf x, TInteger digits) where TInteger : IBinaryInteger<TInteger>;
+        static abstract TSelf Round(TSelf x, MidpointRounding mode);
+        static abstract TSelf Round<TInteger>(TSelf x, TInteger digits, MidpointRounding mode) where TInteger : IBinaryInteger<TInteger>;
+        static abstract TSelf Truncate(TSelf x);
+    }
+    public partial interface IFloatingPointIeee754<TSelf> : System.IExponentialFunctions<TSelf>, System.IFloatingPoint<TSelf>, System.IHyperbolicFunctions<TSelf>, System.ILogarithmicFunctions<TSelf>, System.IPowerFunctions<TSelf>, System.IRootFunctions<TSelf>, System.ITrigonometricFunctions<TSelf>
+        where TSelf : IFloatingPointIeee754<TSelf>
     {
         static abstract TSelf E { get; }
         static abstract TSelf Epsilon { get; }
         static abstract TSelf NaN { get; }
         static abstract TSelf NegativeInfinity { get; }
         static abstract TSelf NegativeZero { get; }
-        static abstract TSelf Pi { get; }
+        static abstract TSelf PI { get; }
         static abstract TSelf PositiveInfinity { get; }
         static abstract TSelf Tau { get; }
-        static abstract TSelf Acos(TSelf x);
-        static abstract TSelf Acosh(TSelf x);
-        static abstract TSelf Asin(TSelf x);
-        static abstract TSelf Asinh(TSelf x);
-        static abstract TSelf Atan(TSelf x);
-        static abstract TSelf Atan2(TSelf y, TSelf x);
-        static abstract TSelf Atanh(TSelf x);
-        static abstract TSelf BitIncrement(TSelf x);
         static abstract TSelf BitDecrement(TSelf x);
-        static abstract TSelf Cbrt(TSelf x);
-        static abstract TSelf Ceiling(TSelf x);
+        static abstract TSelf BitIncrement(TSelf x);
         static abstract TSelf CopySign(TSelf x, TSelf y);
-        static abstract TSelf Cos(TSelf x);
-        static abstract TSelf Cosh(TSelf x);
-        static abstract TSelf Exp(TSelf x);
-        static abstract TSelf Floor(TSelf x);
         static abstract TSelf FusedMultiplyAdd(TSelf left, TSelf right, TSelf addend);
         static abstract TSelf IEEERemainder(TSelf left, TSelf right);
-        static abstract TInteger ILogB<TInteger>(TSelf x) where TInteger : IBinaryInteger<TInteger>;
         static abstract bool IsFinite(TSelf value);
         static abstract bool IsInfinity(TSelf value);
         static abstract bool IsNaN(TSelf value);
@@ -2801,24 +2806,49 @@ namespace System
         static abstract bool IsNormal(TSelf value);
         static abstract bool IsPositiveInfinity(TSelf value);
         static abstract bool IsSubnormal(TSelf value);
+        static abstract TSelf MaxMagnitude(TSelf x, TSelf y);
+        static abstract TSelf MinMagnitude(TSelf x, TSelf y);
+    }
+    public partial interface IHyperbolicFunctions<TSelf>
+        where TSelf : IHyperbolicFunctions<TSelf>
+    {
+        static abstract TSelf Acosh(TSelf x);
+        static abstract TSelf Asinh(TSelf x);
+        static abstract TSelf Atanh(TSelf x);
+        static abstract TSelf Cosh(TSelf x);
+        static abstract TSelf Sinh(TSelf x);
+        static abstract TSelf Tanh(TSelf x);
+    }
+    public partial interface ILogarithmicFunctions<TSelf>
+        where TSelf : ILogarithmicFunctions<TSelf>
+    {
+        static abstract TInteger ILogB<TInteger>(TSelf x) where TInteger : IBinaryInteger<TInteger>;
         static abstract TSelf Log(TSelf x);
         static abstract TSelf Log(TSelf x, TSelf newBase);
         static abstract TSelf Log2(TSelf x);
         static abstract TSelf Log10(TSelf x);
-        static abstract TSelf MaxMagnitude(TSelf x, TSelf y);
-        static abstract TSelf MinMagnitude(TSelf x, TSelf y);
+    }
+    public interface IPowerFunctions<TSelf>
+        where TSelf : IPowerFunctions<TSelf>
+    {
         static abstract TSelf Pow(TSelf x, TSelf y);
-        static abstract TSelf Round(TSelf x);
-        static abstract TSelf Round<TInteger>(TSelf x, TInteger digits) where TInteger : IBinaryInteger<TInteger>;
-        static abstract TSelf Round(TSelf x, MidpointRounding mode);
-        static abstract TSelf Round<TInteger>(TSelf x, TInteger digits, MidpointRounding mode) where TInteger : IBinaryInteger<TInteger>;
-        static abstract TSelf ScaleB<TInteger>(TSelf x, TInteger n) where TInteger : IBinaryInteger<TInteger>;
-        static abstract TSelf Sin(TSelf x);
-        static abstract TSelf Sinh(TSelf x);
+    }
+    public interface IRootFunctions<TSelf>
+        where TSelf : IRootFunctions<TSelf>
+    {
+        static abstract TSelf Cbrt(TSelf x);
         static abstract TSelf Sqrt(TSelf x);
+    }
+    public interface ITrigonometricFunctions<TSelf>
+        where TSelf : ITrigonometricFunctions<TSelf>
+    {
+        static abstract TSelf Acos(TSelf x);
+        static abstract TSelf Asin(TSelf x);
+        static abstract TSelf Atan(TSelf x);
+        static abstract TSelf Atan2(TSelf y, TSelf x);
+        static abstract TSelf Cos(TSelf x);
+        static abstract TSelf Sin(TSelf x);
         static abstract TSelf Tan(TSelf x);
-        static abstract TSelf Tanh(TSelf x);
-        static abstract TSelf Truncate(TSelf x);
     }
     public partial interface IIncrementOperators<TSelf>
         where TSelf : System.IIncrementOperators<TSelf>
@@ -4277,7 +4307,7 @@ namespace System
     {
         public SerializableAttribute() { }
     }
-    public readonly partial struct Single : System.IAdditionOperators<float, float, float>, System.IAdditiveIdentity<float, float>, System.IBinaryFloatingPoint<float>, System.IBinaryNumber<float>, System.IBitwiseOperators<float, float, float>, System.IComparable, System.IComparable<float>, System.IComparisonOperators<float, float>, System.IConvertible, System.IDecrementOperators<float>, System.IDivisionOperators<float, float, float>, System.IEqualityOperators<float, float>, System.IEquatable<float>, System.IFloatingPoint<float>, System.IFormattable, System.IIncrementOperators<float>, System.IMinMaxValue<float>, System.IModulusOperators<float, float, float>, System.IMultiplicativeIdentity<float, float>, System.IMultiplyOperators<float, float, float>, System.INumber<float>, System.IParseable<float>, System.ISignedNumber<float>, System.ISpanFormattable, System.ISpanParseable<float>, System.ISubtractionOperators<float, float, float>, System.IUnaryNegationOperators<float, float>, System.IUnaryPlusOperators<float, float>
+    public readonly partial struct Single : System.IAdditionOperators<float, float, float>, System.IAdditiveIdentity<float, float>, System.IBinaryFloatingPointIeee754<float>, System.IBinaryNumber<float>, System.IBitwiseOperators<float, float, float>, System.IComparable, System.IComparable<float>, System.IComparisonOperators<float, float>, System.IConvertible, System.IDecrementOperators<float>, System.IDivisionOperators<float, float, float>, System.IEqualityOperators<float, float>, System.IEquatable<float>, System.IExponentialFunctions<float>, System.IFloatingPoint<float>, System.IFloatingPointIeee754<float>, System.IFormattable, System.IHyperbolicFunctions<float>, System.IIncrementOperators<float>, System.ILogarithmicFunctions<float>, System.IMinMaxValue<float>, System.IModulusOperators<float, float, float>, System.IMultiplicativeIdentity<float, float>, System.IMultiplyOperators<float, float, float>, System.INumber<float>, System.INumberBase<float>, System.IParseable<float>, System.IPowerFunctions<float>, System.IRootFunctions<float>, System.ISignedNumber<float>, System.ISpanFormattable, System.ISpanParseable<float>, System.ISubtractionOperators<float, float, float>, System.ITrigonometricFunctions<float>, System.IUnaryNegationOperators<float, float>, System.IUnaryPlusOperators<float, float>
     {
         private readonly float _dummyPrimitive;
         public const float AdditiveIdentity = 0f;
@@ -4291,19 +4321,19 @@ namespace System
         public const float NegativeOne = -1f;
         public const float NegativeZero = -0f;
         public const float One = 1f;
-        public const float Pi = 3.1415927f;
+        public const float PI = 3.1415927f;
         public const float PositiveInfinity = 1.0f / 0.0f;
         public const float Tau = 6.2831855f;
         public const float Zero = 0f;
         static float System.IAdditiveIdentity<System.Single,System.Single>.AdditiveIdentity { get { throw null; } }
-        static float System.IFloatingPoint<System.Single>.E { get { throw null; } }
-        static float System.IFloatingPoint<System.Single>.Epsilon { get { throw null; } }
-        static float System.IFloatingPoint<System.Single>.NaN { get { throw null; } }
-        static float System.IFloatingPoint<System.Single>.NegativeInfinity { get { throw null; } }
-        static float System.IFloatingPoint<System.Single>.NegativeZero { get { throw null; } }
-        static float System.IFloatingPoint<System.Single>.Pi { get { throw null; } }
-        static float System.IFloatingPoint<System.Single>.PositiveInfinity { get { throw null; } }
-        static float System.IFloatingPoint<System.Single>.Tau { get { throw null; } }
+        static float System.IFloatingPointIeee754<System.Single>.E { get { throw null; } }
+        static float System.IFloatingPointIeee754<System.Single>.Epsilon { get { throw null; } }
+        static float System.IFloatingPointIeee754<System.Single>.NaN { get { throw null; } }
+        static float System.IFloatingPointIeee754<System.Single>.NegativeInfinity { get { throw null; } }
+        static float System.IFloatingPointIeee754<System.Single>.NegativeZero { get { throw null; } }
+        static float System.IFloatingPointIeee754<System.Single>.PI { get { throw null; } }
+        static float System.IFloatingPointIeee754<System.Single>.PositiveInfinity { get { throw null; } }
+        static float System.IFloatingPointIeee754<System.Single>.Tau { get { throw null; } }
         static float System.IMinMaxValue<System.Single>.MaxValue { get { throw null; } }
         static float System.IMinMaxValue<System.Single>.MinValue { get { throw null; } }
         static float System.IMultiplicativeIdentity<System.Single,System.Single>.MultiplicativeIdentity { get { throw null; } }

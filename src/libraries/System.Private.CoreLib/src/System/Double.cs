@@ -28,7 +28,7 @@ namespace System
           ISpanFormattable,
           IComparable<double>,
           IEquatable<double>,
-          IBinaryFloatingPoint<double>,
+          IBinaryFloatingPointIeee754<double>,
           IMinMaxValue<double>
     {
         private readonly double m_value; // Do not rename (binary serialization)
@@ -70,7 +70,7 @@ namespace System
 
         /// <summary>Represents the ratio of the circumference of a circle to its diameter, specified by the constant, π.</summary>
         /// <remarks>Pi is approximately 3.1415926535897932385.</remarks>
-        public const double Pi = Math.PI;
+        public const double PI = Math.PI;
 
         /// <summary>Represents the number of radians in one turn, specified by the constant, τ.</summary>
         /// <remarks>Tau is approximately 6.2831853071795864769.</remarks>
@@ -573,108 +573,40 @@ namespace System
         // static double IDivisionOperators<double, double, double>.operator checked /(double left, double right) => checked(left / right);
 
         //
-        // IFloatingPoint
+        // IExponentialFunctions
         //
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.E" />
-        static double IFloatingPoint<double>.E => Math.E;
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
+        public static double Exp(double x) => Math.Exp(x);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Epsilon" />
-        static double IFloatingPoint<double>.Epsilon => Epsilon;
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ScaleB{TInteger}(TSelf, TInteger)" />
+        public static double ScaleB<TInteger>(double x, TInteger n)
+            where TInteger : IBinaryInteger<TInteger> => Math.ScaleB(x, int.Create(n));
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.NaN" />
-        static double IFloatingPoint<double>.NaN => NaN;
+        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        // public static double ExpM1(double x) => Math.ExpM1(x);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.NegativeInfinity" />
-        static double IFloatingPoint<double>.NegativeInfinity => NegativeInfinity;
+        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        // public static double Exp2(double x) => Math.Exp2(x);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.NegativeZero" />
-        static double IFloatingPoint<double>.NegativeZero => NegativeZero;
+        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        // public static double Exp2M1(double x) => Math.Exp2M1(x);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Pi" />
-        static double IFloatingPoint<double>.Pi => Pi;
+        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        // public static double Exp10(double x) => Math.Exp10(x);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.PositiveInfinity" />
-        static double IFloatingPoint<double>.PositiveInfinity => PositiveInfinity;
+        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        // public static double Exp10M1(double x) => Math.Exp10M1(x);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Tau" />
-        static double IFloatingPoint<double>.Tau => Tau;
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Acos(TSelf)" />
-        public static double Acos(double x) => Math.Acos(x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Acosh(TSelf)" />
-        public static double Acosh(double x) => Math.Acosh(x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Asin(TSelf)" />
-        public static double Asin(double x) => Math.Asin(x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Asinh(TSelf)" />
-        public static double Asinh(double x) => Math.Asinh(x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Atan(TSelf)" />
-        public static double Atan(double x) => Math.Atan(x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Atan2(TSelf, TSelf)" />
-        public static double Atan2(double y, double x) => Math.Atan2(y, x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Atanh(TSelf)" />
-        public static double Atanh(double x) => Math.Atanh(x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.BitIncrement(TSelf)" />
-        public static double BitIncrement(double x) => Math.BitIncrement(x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.BitDecrement(TSelf)" />
-        public static double BitDecrement(double x) => Math.BitDecrement(x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Cbrt(TSelf)" />
-        public static double Cbrt(double x) => Math.Cbrt(x);
+        //
+        // IFloatingPoint
+        //
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
         public static double Ceiling(double x) => Math.Ceiling(x);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.CopySign(TSelf, TSelf)" />
-        public static double CopySign(double x, double y) => Math.CopySign(x, y);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Cos(TSelf)" />
-        public static double Cos(double x) => Math.Cos(x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Cosh(TSelf)" />
-        public static double Cosh(double x) => Math.Cosh(x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Exp" />
-        public static double Exp(double x) => Math.Exp(x);
-
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
         public static double Floor(double x) => Math.Floor(x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
-        public static double FusedMultiplyAdd(double left, double right, double addend) => Math.FusedMultiplyAdd(left, right, addend);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.IEEERemainder(TSelf, TSelf)" />
-        public static double IEEERemainder(double left, double right) => Math.IEEERemainder(left, right);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.ILogB{TInteger}(TSelf)" />
-        public static TInteger ILogB<TInteger>(double x)
-            where TInteger : IBinaryInteger<TInteger> => TInteger.Create(Math.ILogB(x));
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Log(TSelf)" />
-        public static double Log(double x) => Math.Log(x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Log(TSelf, TSelf)" />
-        public static double Log(double x, double newBase) => Math.Log(x, newBase);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Log10(TSelf)" />
-        public static double Log10(double x) => Math.Log10(x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        public static double MaxMagnitude(double x, double y) => Math.MaxMagnitude(x, y);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        public static double MinMagnitude(double x, double y) => Math.MinMagnitude(x, y);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Pow(TSelf, TSelf)" />
-        public static double Pow(double x, double y) => Math.Pow(x, y);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
         public static double Round(double x) => Math.Round(x);
@@ -690,93 +622,97 @@ namespace System
         public static double Round<TInteger>(double x, TInteger digits, MidpointRounding mode)
             where TInteger : IBinaryInteger<TInteger> => Math.Round(x, int.Create(digits), mode);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.ScaleB{TInteger}(TSelf, TInteger)" />
-        public static double ScaleB<TInteger>(double x, TInteger n)
-            where TInteger : IBinaryInteger<TInteger> => Math.ScaleB(x, int.Create(n));
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Sin(TSelf)" />
-        public static double Sin(double x) => Math.Sin(x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Sinh(TSelf)" />
-        public static double Sinh(double x) => Math.Sinh(x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Sqrt(TSelf)" />
-        public static double Sqrt(double x) => Math.Sqrt(x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Tan(TSelf)" />
-        public static double Tan(double x) => Math.Tan(x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Tanh(TSelf)" />
-        public static double Tanh(double x) => Math.Tanh(x);
-
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
         public static double Truncate(double x) => Math.Truncate(x);
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.AcosPi(TSelf)" />
-        // public static double AcosPi(double x) => Math.AcosPi(x);
+        //
+        // IFloatingPointIeee754
+        //
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.AsinPi(TSelf)" />
-        // public static double AsinPi(double x) => Math.AsinPi(x);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.E" />
+        static double IFloatingPointIeee754<double>.E => Math.E;
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.AtanPi(TSelf)" />
-        // public static double AtanPi(double x) => Math.AtanPi(x);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Epsilon" />
+        static double IFloatingPointIeee754<double>.Epsilon => Epsilon;
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Atan2Pi(TSelf)" />
-        // public static double Atan2Pi(double y, double x) => Math.Atan2Pi(y, x);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.NaN" />
+        static double IFloatingPointIeee754<double>.NaN => NaN;
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Compound(TSelf, TSelf)" />
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.NegativeInfinity" />
+        static double IFloatingPointIeee754<double>.NegativeInfinity => NegativeInfinity;
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.NegativeZero" />
+        static double IFloatingPointIeee754<double>.NegativeZero => NegativeZero;
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.PI" />
+        static double IFloatingPointIeee754<double>.PI => PI;
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.PositiveInfinity" />
+        static double IFloatingPointIeee754<double>.PositiveInfinity => PositiveInfinity;
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Tau" />
+        static double IFloatingPointIeee754<double>.Tau => Tau;
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
+        public static double BitDecrement(double x) => Math.BitDecrement(x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
+        public static double BitIncrement(double x) => Math.BitIncrement(x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.CopySign(TSelf, TSelf)" />
+        public static double CopySign(double x, double y) => Math.CopySign(x, y);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
+        public static double FusedMultiplyAdd(double left, double right, double addend) => Math.FusedMultiplyAdd(left, right, addend);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.IEEERemainder(TSelf, TSelf)" />
+        public static double IEEERemainder(double left, double right) => Math.IEEERemainder(left, right);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static double MaxMagnitude(double x, double y) => Math.MaxMagnitude(x, y);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static double MinMagnitude(double x, double y) => Math.MinMagnitude(x, y);
+
+        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Compound(TSelf, TSelf)" />
         // public static double Compound(double x, double n) => Math.Compound(x, n);
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.CosPi(TSelf)" />
-        // public static double CosPi(double x) => Math.CosPi(x);
-
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.ExpM1(TSelf)" />
-        // public static double ExpM1(double x) => Math.ExpM1(x);
-
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Exp2(TSelf)" />
-        // public static double Exp2(double x) => Math.Exp2(x);
-
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Exp2M1(TSelf)" />
-        // public static double Exp2M1(double x) => Math.Exp2M1(x);
-
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Exp10(TSelf)" />
-        // public static double Exp10(double x) => Math.Exp10(x);
-
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Exp10M1(TSelf)" />
-        // public static double Exp10M1(double x) => Math.Exp10M1(x);
-
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Hypot(TSelf, TSelf)" />
+        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Hypot(TSelf, TSelf)" />
         // public static double Hypot(double x, double y) => Math.Hypot(x, y);
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.LogP1(TSelf)" />
-        // public static double LogP1(double x) => Math.LogP1(x);
-
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Log2P1(TSelf)" />
-        // public static double Log2P1(double x) => Math.Log2P1(x);
-
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Log10P1(TSelf)" />
-        // public static double Log10P1(double x) => Math.Log10P1(x);
-
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
         // public static double MaxMagnitudeNumber(double x, double y) => Math.MaxMagnitudeNumber(x, y);
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.MaxNumber(TSelf, TSelf)" />
+        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxNumber(TSelf, TSelf)" />
         // public static double MaxNumber(double x, double y) => Math.MaxNumber(x, y);
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         // public static double MinMagnitudeNumber(double x, double y) => Math.MinMagnitudeNumber(x, y);
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.MinNumber(TSelf, TSelf)" />
+        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinNumber(TSelf, TSelf)" />
         // public static double MinNumber(double x, double y) => Math.MinNumber(x, y);
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Root(TSelf, TSelf)" />
-        // public static double Root(double x, double n) => Math.Root(x, n);
+        //
+        // IHyperbolicFunctions
+        //
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.SinPi(TSelf)" />
-        // public static double SinPi(double x) => Math.SinPi(x, y);
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Acosh(TSelf)" />
+        public static double Acosh(double x) => Math.Acosh(x);
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.TanPi(TSelf)" />
-        // public static double TanPi(double x) => Math.TanPi(x, y);
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Asinh(TSelf)" />
+        public static double Asinh(double x) => Math.Asinh(x);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Atanh(TSelf)" />
+        public static double Atanh(double x) => Math.Atanh(x);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
+        public static double Cosh(double x) => Math.Cosh(x);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Sinh(TSelf)" />
+        public static double Sinh(double x) => Math.Sinh(x);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Tanh(TSelf)" />
+        public static double Tanh(double x) => Math.Tanh(x);
 
         //
         // IIncrementOperators
@@ -787,6 +723,32 @@ namespace System
 
         // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
         // static double IIncrementOperators<double>.operator checked ++(double value) => checked(++value);
+
+        //
+        // ILogarithmicFunctions
+        //
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.ILogB{TInteger}(TSelf)" />
+        public static TInteger ILogB<TInteger>(double x)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.Create(Math.ILogB(x));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
+        public static double Log(double x) => Math.Log(x);
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
+        public static double Log(double x, double newBase) => Math.Log(x, newBase);
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
+        public static double Log10(double x) => Math.Log10(x);
+
+        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        // public static double LogP1(double x) => Math.LogP1(x);
+
+        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        // public static double Log2P1(double x) => Math.Log2P1(x);
+
+        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        // public static double Log10P1(double x) => Math.Log10P1(x);
 
         //
         // IMinMaxValue
@@ -1147,6 +1109,26 @@ namespace System
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out double result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
 
         //
+        // IPowerFunctions
+        //
+
+        /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
+        public static double Pow(double x, double y) => Math.Pow(x, y);
+
+        //
+        // IRootFunctions
+        //
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
+        public static double Cbrt(double x) => Math.Cbrt(x);
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
+        public static double Sqrt(double x) => Math.Sqrt(x);
+
+        // /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, TSelf)" />
+        // public static double Root(double x, double n) => Math.Root(x, n);
+
+        //
         // ISignedNumber
         //
 
@@ -1172,6 +1154,52 @@ namespace System
 
         // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
         // static double ISubtractionOperators<double, double, double>.operator checked -(double left, double right) => checked((double)(left - right));
+
+        //
+        // ITrigonometricFunctions
+        //
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
+        public static double Acos(double x) => Math.Acos(x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
+        public static double Asin(double x) => Math.Asin(x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
+        public static double Atan(double x) => Math.Atan(x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2(TSelf, TSelf)" />
+        public static double Atan2(double y, double x) => Math.Atan2(y, x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
+        public static double Cos(double x) => Math.Cos(x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
+        public static double Sin(double x) => Math.Sin(x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
+        public static double Tan(double x) => Math.Tan(x);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        // public static double AcosPi(double x) => Math.AcosPi(x);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        // public static double AsinPi(double x) => Math.AsinPi(x);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        // public static double AtanPi(double x) => Math.AtanPi(x);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf)" />
+        // public static double Atan2Pi(double y, double x) => Math.Atan2Pi(y, x);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        // public static double CosPi(double x) => Math.CosPi(x);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        // public static double SinPi(double x) => Math.SinPi(x, y);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        // public static double TanPi(double x) => Math.TanPi(x, y);
 
         //
         // IUnaryNegationOperators

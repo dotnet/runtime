@@ -22,7 +22,7 @@ namespace System
           ISpanFormattable,
           IComparable<Half>,
           IEquatable<Half>,
-          IBinaryFloatingPoint<Half>,
+          IBinaryFloatingPointIeee754<Half>,
           IMinMaxValue<Half>
     {
         private const NumberStyles DefaultParseStyle = NumberStyles.Float | NumberStyles.AllowThousands;
@@ -808,96 +808,40 @@ namespace System
         // static Half IDivisionOperators<Half, Half, Half>.operator checked /(Half left, Half right) => checked((Half)((float)left / (float)right));
 
         //
-        // IFloatingPoint
+        // IExponentialFunctions
         //
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.E" />
-        public static Half E => new Half(EBits);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
+        public static Half Exp(Half x) => (Half)MathF.Exp((float)x);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.NegativeZero" />
-        public static Half NegativeZero => new Half(NegativeZeroBits);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ScaleB{TInteger}(TSelf, TInteger)" />
+        public static Half ScaleB<TInteger>(Half x, TInteger n)
+            where TInteger : IBinaryInteger<TInteger> => (Half)MathF.ScaleB((float)x, int.Create(n));
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Pi" />
-        public static Half Pi => new Half(PiBits);
+        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        // public static Half ExpM1(Half x) => (Half)MathF.ExpM1((float)x);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Tau" />
-        public static Half Tau => new Half(TauBits);
+        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        // public static Half Exp2(Half x) => (Half)MathF.Exp2((float)x);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Acos(TSelf)" />
-        public static Half Acos(Half x) => (Half)MathF.Acos((float)x);
+        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        // public static Half Exp2M1(Half x) => (Half)MathF.Exp2M1((float)x);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Acosh(TSelf)" />
-        public static Half Acosh(Half x) => (Half)MathF.Acosh((float)x);
+        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        // public static Half Exp10(Half x) => (Half)MathF.Exp10((float)x);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Asin(TSelf)" />
-        public static Half Asin(Half x) => (Half)MathF.Asin((float)x);
+        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        // public static Half Exp10M1(Half x) => (Half)MathF.Exp10M1((float)x);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Asinh(TSelf)" />
-        public static Half Asinh(Half x) => (Half)MathF.Asinh((float)x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Atan(TSelf)" />
-        public static Half Atan(Half x) => (Half)MathF.Atan((float)x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Atan2(TSelf, TSelf)" />
-        public static Half Atan2(Half y, Half x) => (Half)MathF.Atan2((float)y, (float)x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Atanh(TSelf)" />
-        public static Half Atanh(Half x) => (Half)MathF.Atanh((float)x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.BitIncrement(TSelf)" />
-        public static Half BitIncrement(Half x) => (Half)MathF.BitIncrement((float)x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.BitDecrement(TSelf)" />
-        public static Half BitDecrement(Half x) => (Half)MathF.BitDecrement((float)x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Cbrt(TSelf)" />
-        public static Half Cbrt(Half x) => (Half)MathF.Cbrt((float)x);
+        //
+        // IFloatingPoint
+        //
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
         public static Half Ceiling(Half x) => (Half)MathF.Ceiling((float)x);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.CopySign(TSelf, TSelf)" />
-        public static Half CopySign(Half x, Half y) => (Half)MathF.CopySign((float)x, (float)y);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Cos(TSelf)" />
-        public static Half Cos(Half x) => (Half)MathF.Cos((float)x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Cosh(TSelf)" />
-        public static Half Cosh(Half x) => (Half)MathF.Cosh((float)x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Exp" />
-        public static Half Exp(Half x) => (Half)MathF.Exp((float)x);
-
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
         public static Half Floor(Half x) => (Half)MathF.Floor((float)x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
-        public static Half FusedMultiplyAdd(Half left, Half right, Half addend) => (Half)MathF.FusedMultiplyAdd((float)left, (float)right, (float)addend);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.IEEERemainder(TSelf, TSelf)" />
-        public static Half IEEERemainder(Half left, Half right) => (Half)MathF.IEEERemainder((float)left, (float)right);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.ILogB{TInteger}(TSelf)" />
-        public static TInteger ILogB<TInteger>(Half x)
-            where TInteger : IBinaryInteger<TInteger> => TInteger.Create(MathF.ILogB((float)x));
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Log(TSelf)" />
-        public static Half Log(Half x) => (Half)MathF.Log((float)x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Log(TSelf, TSelf)" />
-        public static Half Log(Half x, Half newBase) => (Half)MathF.Log((float)x, (float)newBase);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Log10(TSelf)" />
-        public static Half Log10(Half x) => (Half)MathF.Log10((float)x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        public static Half MaxMagnitude(Half x, Half y) => (Half)MathF.MaxMagnitude((float)x, (float)y);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        public static Half MinMagnitude(Half x, Half y) => (Half)MathF.MinMagnitude((float)x, (float)y);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Pow(TSelf, TSelf)" />
-        public static Half Pow(Half x, Half y) => (Half)MathF.Pow((float)x, (float)y);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
         public static Half Round(Half x) => (Half)MathF.Round((float)x);
@@ -913,93 +857,85 @@ namespace System
         public static Half Round<TInteger>(Half x, TInteger digits, MidpointRounding mode)
             where TInteger : IBinaryInteger<TInteger> => (Half)MathF.Round((float)x, int.Create(digits), mode);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.ScaleB{TInteger}(TSelf, TInteger)" />
-        public static Half ScaleB<TInteger>(Half x, TInteger n)
-            where TInteger : IBinaryInteger<TInteger> => (Half)MathF.ScaleB((float)x, int.Create(n));
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Sin(TSelf)" />
-        public static Half Sin(Half x) => (Half)MathF.Sin((float)x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Sinh(TSelf)" />
-        public static Half Sinh(Half x) => (Half)MathF.Sinh((float)x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Sqrt(TSelf)" />
-        public static Half Sqrt(Half x) => (Half)MathF.Sqrt((float)x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Tan(TSelf)" />
-        public static Half Tan(Half x) => (Half)MathF.Tan((float)x);
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Tanh(TSelf)" />
-        public static Half Tanh(Half x) => (Half)MathF.Tanh((float)x);
-
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
         public static Half Truncate(Half x) => (Half)MathF.Truncate((float)x);
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.AcosPi(TSelf)" />
-        // public static Half AcosPi(Half x) => (Half)MathF.AcosPi((float)x);
+        //
+        // IFloatingPointIeee754
+        //
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.AsinPi(TSelf)" />
-        // public static Half AsinPi(Half x) => (Half)MathF.AsinPi((float)x);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.E" />
+        public static Half E => new Half(EBits);
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.AtanPi(TSelf)" />
-        // public static Half AtanPi(Half x) => (Half)MathF.AtanPi((float)x);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.NegativeZero" />
+        public static Half NegativeZero => new Half(NegativeZeroBits);
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Atan2Pi(TSelf)" />
-        // public static Half Atan2Pi(Half y, Half x) => (Half)MathF.Atan2Pi((float)y, (float)x);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.PI" />
+        public static Half PI => new Half(PiBits);
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Compound(TSelf, TSelf)" />
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Tau" />
+        public static Half Tau => new Half(TauBits);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
+        public static Half BitDecrement(Half x) => (Half)MathF.BitDecrement((float)x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
+        public static Half BitIncrement(Half x) => (Half)MathF.BitIncrement((float)x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.CopySign(TSelf, TSelf)" />
+        public static Half CopySign(Half x, Half y) => (Half)MathF.CopySign((float)x, (float)y);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
+        public static Half FusedMultiplyAdd(Half left, Half right, Half addend) => (Half)MathF.FusedMultiplyAdd((float)left, (float)right, (float)addend);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.IEEERemainder(TSelf, TSelf)" />
+        public static Half IEEERemainder(Half left, Half right) => (Half)MathF.IEEERemainder((float)left, (float)right);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static Half MaxMagnitude(Half x, Half y) => (Half)MathF.MaxMagnitude((float)x, (float)y);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static Half MinMagnitude(Half x, Half y) => (Half)MathF.MinMagnitude((float)x, (float)y);
+
+        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Compound(TSelf, TSelf)" />
         // public static Half Compound(Half x, Half n) => (Half)MathF.Compound((float)x, (float)n);
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.CosPi(TSelf)" />
-        // public static Half CosPi(Half x) => (Half)MathF.CosPi((float)x);
-
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.ExpM1(TSelf)" />
-        // public static Half ExpM1(Half x) => (Half)MathF.ExpM1((float)x);
-
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Exp2(TSelf)" />
-        // public static Half Exp2(Half x) => (Half)MathF.Exp2((float)x);
-
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Exp2M1(TSelf)" />
-        // public static Half Exp2M1(Half x) => (Half)MathF.Exp2M1((float)x);
-
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Exp10(TSelf)" />
-        // public static Half Exp10(Half x) => (Half)MathF.Exp10((float)x);
-
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Exp10M1(TSelf)" />
-        // public static Half Exp10M1(Half x) => (Half)MathF.Exp10M1((float)x);
-
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Hypot(TSelf, TSelf)" />
+        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Hypot(TSelf, TSelf)" />
         // public static Half Hypot(Half x, Half y) => (Half)MathF.Hypot((float)x, (float)y);
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.LogP1(TSelf)" />
-        // public static Half LogP1(Half x) => (Half)MathF.LogP1((float)x);
-
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Log2P1(TSelf)" />
-        // public static Half Log2P1(Half x) => (Half)MathF.Log2P1((float)x);
-
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Log10P1(TSelf)" />
-        // public static Half Log10P1(Half x) => (Half)MathF.Log10P1((float)x);
-
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
         // public static Half MaxMagnitudeNumber(Half x, Half y) => (Half)MathF.MaxMagnitudeNumber((float)x, (float)y);
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.MaxNumber(TSelf, TSelf)" />
+        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxNumber(TSelf, TSelf)" />
         // public static Half MaxNumber(Half x, Half y) => (Half)MathF.MaxNumber((float)x, (float)y);
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         // public static Half MinMagnitudeNumber(Half x, Half y) => (Half)MathF.MinMagnitudeNumber((float)x, (float)y);
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.MinNumber(TSelf, TSelf)" />
+        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinNumber(TSelf, TSelf)" />
         // public static Half MinNumber(Half x, Half y) => (Half)MathF.MinNumber((float)x, (float)y);
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.Root(TSelf, TSelf)" />
-        // public static Half Root(Half x, Half n) => (Half)MathF.Root((float)x, (float)n);
+        //
+        // IHyperbolicFunctions
+        //
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.SinPi(TSelf)" />
-        // public static Half SinPi(Half x) => (Half)MathF.SinPi((float)x, (float)y);
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Acosh(TSelf)" />
+        public static Half Acosh(Half x) => (Half)MathF.Acosh((float)x);
 
-        // /// <inheritdoc cref="IFloatingPoint{TSelf}.TanPi(TSelf)" />
-        // public static Half TanPi(Half x) => (Half)MathF.TanPi((float)x, (float)y);
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Asinh(TSelf)" />
+        public static Half Asinh(Half x) => (Half)MathF.Asinh((float)x);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Atanh(TSelf)" />
+        public static Half Atanh(Half x) => (Half)MathF.Atanh((float)x);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
+        public static Half Cosh(Half x) => (Half)MathF.Cosh((float)x);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Sinh(TSelf)" />
+        public static Half Sinh(Half x) => (Half)MathF.Sinh((float)x);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Tanh(TSelf)" />
+        public static Half Tanh(Half x) => (Half)MathF.Tanh((float)x);
 
         //
         // IIncrementOperators
@@ -1020,6 +956,32 @@ namespace System
         //     ++tmp;
         //     return (Half)tmp;
         // }
+
+        //
+        // ILogarithmicFunctions
+        //
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.ILogB{TInteger}(TSelf)" />
+        public static TInteger ILogB<TInteger>(Half x)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.Create(MathF.ILogB((float)x));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
+        public static Half Log(Half x) => (Half)MathF.Log((float)x);
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
+        public static Half Log(Half x, Half newBase) => (Half)MathF.Log((float)x, (float)newBase);
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
+        public static Half Log10(Half x) => (Half)MathF.Log10((float)x);
+
+        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        // public static Half LogP1(Half x) => (Half)MathF.LogP1((float)x);
+
+        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        // public static Half Log2P1(Half x) => (Half)MathF.Log2P1((float)x);
+
+        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        // public static Half Log10P1(Half x) => (Half)MathF.Log10P1((float)x);
 
         //
         // IModulusOperators
@@ -1364,6 +1326,26 @@ namespace System
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Half result) => TryParse(s, DefaultParseStyle, provider, out result);
 
         //
+        // IPowerFunctions
+        //
+
+        /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
+        public static Half Pow(Half x, Half y) => (Half)MathF.Pow((float)x, (float)y);
+
+        //
+        // IRootFunctions
+        //
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
+        public static Half Cbrt(Half x) => (Half)MathF.Cbrt((float)x);
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
+        public static Half Sqrt(Half x) => (Half)MathF.Sqrt((float)x);
+
+        // /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, TSelf)" />
+        // public static Half Root(Half x, Half n) => (Half)MathF.Root((float)x, (float)n);
+
+        //
         // ISignedNumber
         //
 
@@ -1389,6 +1371,52 @@ namespace System
 
         // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
         // static Half ISubtractionOperators<Half, Half, Half>.operator checked -(Half left, Half right) => checked((Half)((float)left - (float)right));
+
+        //
+        // ITrigonometricFunctions
+        //
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
+        public static Half Acos(Half x) => (Half)MathF.Acos((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
+        public static Half Asin(Half x) => (Half)MathF.Asin((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
+        public static Half Atan(Half x) => (Half)MathF.Atan((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2(TSelf, TSelf)" />
+        public static Half Atan2(Half y, Half x) => (Half)MathF.Atan2((float)y, (float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
+        public static Half Cos(Half x) => (Half)MathF.Cos((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
+        public static Half Sin(Half x) => (Half)MathF.Sin((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
+        public static Half Tan(Half x) => (Half)MathF.Tan((float)x);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        // public static Half AcosPi(Half x) => (Half)MathF.AcosPi((float)x);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        // public static Half AsinPi(Half x) => (Half)MathF.AsinPi((float)x);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        // public static Half AtanPi(Half x) => (Half)MathF.AtanPi((float)x);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf)" />
+        // public static Half Atan2Pi(Half y, Half x) => (Half)MathF.Atan2Pi((float)y, (float)x);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        // public static Half CosPi(Half x) => (Half)MathF.CosPi((float)x);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        // public static Half SinPi(Half x) => (Half)MathF.SinPi((float)x, (float)y);
+
+        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        // public static Half TanPi(Half x) => (Half)MathF.TanPi((float)x, (float)y);
 
         //
         // IUnaryNegationOperators

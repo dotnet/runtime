@@ -17,8 +17,14 @@ namespace System.Numerics
           IDivisionOperators<Complex, Complex, Complex>,
           IDivisionOperators<Complex, double, Complex>,
           IFormattable,
+          // IExponentialFunctions<Complex>,
+          // IHyperbolicFunctions<Complex>,
+          // ILogarithmicFunctions<Complex>,
           IMultiplyOperators<Complex, double, Complex>,
           INumberBase<Complex>,
+          // IPowerFunctions<Complex>
+          // IRootFunctions<Complex>,
+          // ITrigonometricFunctions<Complex>,
           ISubtractionOperators<Complex, double, Complex>
     {
         public static readonly Complex Zero = new Complex(0.0, 0.0);
