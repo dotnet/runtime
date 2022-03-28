@@ -35,6 +35,7 @@
 #include "mono-proclib.h"
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/mono-counters.h>
 
 #define BEGIN_CRITICAL_SECTION do { \
 	MonoThreadInfo *__info = mono_thread_info_current_unchecked (); \
@@ -85,6 +86,43 @@ mono_valloc_can_alloc (size_t size)
 	if (alloc_limit)
 		return (total_allocation_count + size) < alloc_limit;
 	return TRUE;
+}
+
+const char*
+mono_mem_account_type_name (MonoMemAccountType type)
+{
+	static const char *names[] = {
+		"code",
+		"hazard pointers",
+		"mem manager",
+		"SGen internal",
+		"SGen nursery",
+		"SGen LOS",
+		"SGen mark&sweep",
+		"SGen card table",
+		"SGen shadow card table",
+		"SGen debugging",
+		"SGen binary protocol",
+		"exceptions",
+		"profiler",
+		"interp stack",
+		"other"
+	};
+
+	return names [type];
+}
+
+void
+mono_mem_account_register_counters (void)
+{
+	for (int i = 0; i < MONO_MEM_ACCOUNT_MAX; ++i) {
+		const char *prefix = "Valloc ";
+		const char *name = mono_mem_account_type_name ((MonoMemAccountType)i);
+		char descr [128];
+		g_assert (strlen (prefix) + strlen (name) < sizeof (descr));
+		sprintf (descr, "%s%s", prefix, name);
+		mono_counters_register (descr, MONO_COUNTER_WORD | MONO_COUNTER_RUNTIME | MONO_COUNTER_BYTES | MONO_COUNTER_VARIABLE, (void*)&allocation_count [i]);
+	}
 }
 
 #ifdef HOST_WIN32

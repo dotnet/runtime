@@ -848,6 +848,26 @@ sgen_nursery_alloc_range (size_t desired_size, size_t minimum_size, size_t *out_
 
 /*** Initialization ***/
 
+#ifdef HEAVY_STATISTICS
+
+void
+sgen_nursery_allocator_init_heavy_stats (void)
+{
+	mono_counters_register ("bytes wasted trailer fragments", MONO_COUNTER_GC | MONO_COUNTER_WORD | MONO_COUNTER_BYTES, &stat_wasted_bytes_trailer);
+	mono_counters_register ("bytes wasted small areas", MONO_COUNTER_GC | MONO_COUNTER_WORD | MONO_COUNTER_BYTES, &stat_wasted_bytes_small_areas);
+	mono_counters_register ("bytes wasted discarded fragments", MONO_COUNTER_GC | MONO_COUNTER_WORD | MONO_COUNTER_BYTES, &stat_wasted_bytes_discarded_fragments);
+
+	mono_counters_register ("# nursery alloc requests", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_nursery_alloc_requests);
+	mono_counters_register ("# nursery alloc iterations", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_alloc_iterations);
+	mono_counters_register ("# nursery alloc retries", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_alloc_retries);
+
+	mono_counters_register ("# nursery alloc range requests", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_nursery_alloc_range_requests);
+	mono_counters_register ("# nursery alloc range iterations", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_alloc_range_iterations);
+	mono_counters_register ("# nursery alloc range restries", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_alloc_range_retries);
+}
+
+#endif
+
 void
 sgen_init_nursery_allocator (void)
 {

@@ -42,6 +42,7 @@ get_provenance_func (void)
 
 #include <mono/metadata/sgen-conf.h>
 #include <mono/metadata/gc-internals.h>
+#include <mono/utils/mono-counters.h>
 #include <mono/utils/unlocked.h>
 
 //#define SIZEOF_SLOT ((int)sizeof (host_mgreg_t))
@@ -2548,6 +2549,48 @@ mini_gc_init (void)
 	logfile = mono_gc_get_logfile ();
 
 	parse_debug_options ();
+
+	mono_counters_register ("GC Maps size",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_maps_size);
+	mono_counters_register ("GC Call Sites size",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_callsites_size);
+	mono_counters_register ("GC Bitmaps size",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_bitmaps_size);
+	mono_counters_register ("GC Map struct size",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_map_struct_size);
+	mono_counters_register ("GC Call Sites encoded using 8 bits",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_callsites8_size);
+	mono_counters_register ("GC Call Sites encoded using 16 bits",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_callsites16_size);
+	mono_counters_register ("GC Call Sites encoded using 32 bits",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_callsites32_size);
+
+	mono_counters_register ("GC Map slots (all)",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.all_slots);
+	mono_counters_register ("GC Map slots (ref)",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.ref_slots);
+	mono_counters_register ("GC Map slots (noref)",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.noref_slots);
+	mono_counters_register ("GC Map slots (pin)",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.pin_slots);
+
+	mono_counters_register ("GC TLS Data size",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.tlsdata_size);
+
+	mono_counters_register ("Stack space scanned (all)",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.scanned_stacks);
+	mono_counters_register ("Stack space scanned (native)",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.scanned_native);
+	mono_counters_register ("Stack space scanned (other)",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.scanned_other);
+	mono_counters_register ("Stack space scanned (using GC Maps)",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.scanned);
+	mono_counters_register ("Stack space scanned (precise)",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.scanned_precisely);
+	mono_counters_register ("Stack space scanned (pin)",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.scanned_conservatively);
+	mono_counters_register ("Stack space scanned (pin registers)",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.scanned_registers);
 }
 
 #else

@@ -28,6 +28,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/utils/mono-math.h>
+#include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-hwcap.h>
@@ -1025,6 +1026,7 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 static void
 set_needs_stack_frame (MonoCompile *cfg, gboolean flag)
 {
+	static int inited = FALSE;
 	static int count = 0;
 
 	if (cfg->arch.need_stack_frame_inited) {
@@ -1038,6 +1040,10 @@ set_needs_stack_frame (MonoCompile *cfg, gboolean flag)
 	if (flag)
 		return;
 
+	if (!inited) {
+		mono_counters_register ("Could eliminate stack frame", MONO_COUNTER_INT|MONO_COUNTER_JIT, &count);
+		inited = TRUE;
+	}
 	++count;
 
 	//g_print ("will eliminate %s.%s.%s\n", cfg->method->klass->name_space, cfg->method->klass->name, cfg->method->name);

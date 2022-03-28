@@ -604,6 +604,10 @@ sgen_gchandle_stats_report (void)
 void
 sgen_init_gchandles (void)
 {
+#ifdef HEAVY_STATISTICS
+	mono_counters_register ("GC handles allocated", MONO_COUNTER_GC | MONO_COUNTER_UINT, (void *)&stat_gc_handles_allocated);
+	mono_counters_register ("max GC handles allocated", MONO_COUNTER_GC | MONO_COUNTER_UINT, (void *)&stat_gc_handles_max_allocated);
+#endif
 }
 
 #endif

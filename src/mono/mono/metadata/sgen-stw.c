@@ -234,6 +234,8 @@ sgen_client_restart_world (int generation, gboolean serial_collection, gint64 *s
 void
 mono_sgen_init_stw (void)
 {
+	mono_counters_register ("World stop", MONO_COUNTER_GC | MONO_COUNTER_ULONG | MONO_COUNTER_TIME, &time_stop_world);
+	mono_counters_register ("World restart", MONO_COUNTER_GC | MONO_COUNTER_ULONG | MONO_COUNTER_TIME, &time_restart_world);
 }
 
 /* Unified suspend code */

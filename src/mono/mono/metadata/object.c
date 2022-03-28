@@ -44,6 +44,7 @@
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/metadata-update.h>
 #include <mono/utils/strenc.h>
+#include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/checked-build.h>
@@ -1757,6 +1758,8 @@ mono_method_add_generic_virtual_invocation (MonoVTable *vtable,
 		mem_manager->generic_virtual_cases = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	if (!inited) {
+		mono_counters_register ("Generic virtual cases", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_added);
+		mono_counters_register ("Freed IMT trampolines", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_freed);
 		inited = TRUE;
 	}
 

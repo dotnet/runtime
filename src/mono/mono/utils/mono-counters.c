@@ -11,6 +11,9 @@
 
 #include <mono/utils/mono-counters.h>
 
+// NOTE: this was turned into a no-op in dotnet/runtime, check git history for the
+//       original implementation in case we want to bring this back in the future
+
 struct _MonoCounter {
 	MonoCounter *next;
 	const char *name;

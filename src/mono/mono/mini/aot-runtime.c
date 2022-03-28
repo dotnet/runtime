@@ -57,6 +57,7 @@
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-digest.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/bsearch.h>
@@ -2369,6 +2370,7 @@ mono_aot_init (void)
 	aot_modules = g_hash_table_new (NULL, NULL);
 
 	mono_install_assembly_load_hook_v2 (load_aot_module, NULL, FALSE);
+	mono_counters_register ("Async JIT info size", MONO_COUNTER_INT|MONO_COUNTER_JIT, &async_jit_info_size);
 
 	char *lastaot = g_getenv ("MONO_LASTAOT");
 	if (lastaot) {
@@ -5752,6 +5754,7 @@ mono_aot_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_typ
 		mono_aot_lock ();
 
 		if (!inited) {
+			mono_counters_register ("Specific trampolines", MONO_COUNTER_JIT | MONO_COUNTER_INT, &num_trampolines);
 			inited = TRUE;
 		}
 
@@ -6134,7 +6137,13 @@ mono_aot_get_ftnptr_arg_trampoline (gpointer arg, gpointer addr)
 void
 mono_aot_set_make_unreadable (gboolean unreadable)
 {
+	static int inited;
+
 	make_unreadable = unreadable;
+
+	if (make_unreadable && !inited) {
+		mono_counters_register ("AOT: pagefaults", MONO_COUNTER_JIT | MONO_COUNTER_INT, &n_pagefaults);
+	}
 }
 
 typedef struct {

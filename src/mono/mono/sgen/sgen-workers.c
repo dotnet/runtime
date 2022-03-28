@@ -385,6 +385,7 @@ init_distribute_gray_queue (WorkerContext *context)
 void
 sgen_workers_create_context (int generation, int num_workers)
 {
+	static gboolean stat_inited = FALSE;
 	int i;
 	WorkerData **workers_data_ptrs;
 	WorkerContext *context = &worker_contexts [generation];
@@ -409,6 +410,11 @@ sgen_workers_create_context (int generation, int num_workers)
 	}
 
 	context->thread_pool_context = sgen_thread_pool_create_context (context->workers_num, thread_pool_init_func, marker_idle_func, continue_idle_func, should_work_func, (void**)workers_data_ptrs);
+
+	if (!stat_inited) {
+		mono_counters_register ("# workers finished", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_workers_num_finished);
+		stat_inited = TRUE;
+	}
 }
 
 /* This is called with thread pool lock so no context switch can happen */

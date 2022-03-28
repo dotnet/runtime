@@ -47,6 +47,7 @@
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-dl.h>
 #include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-path.h>
@@ -91,6 +92,16 @@ mono_loader_init ()
 		mono_global_loader_cache_init ();
 
 		mono_native_tls_alloc (&loader_lock_nest_id, NULL);
+
+		mono_counters_init ();
+		mono_counters_register ("Inflated signatures size",
+								MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_signatures_size);
+		mono_counters_register ("Memberref signature cache size",
+								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &memberref_sig_cache_size);
+		mono_counters_register ("MonoMethod size",
+								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &methods_size);
+		mono_counters_register ("MonoMethodSignature size",
+								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &signatures_size);
 
 		inited = TRUE;
 	}

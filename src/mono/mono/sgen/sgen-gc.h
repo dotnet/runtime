@@ -993,6 +993,7 @@ void sgen_nursery_allocator_set_nursery_bounds (char *nursery_start, size_t min_
 void sgen_resize_nursery (gboolean need_shrink);
 mword sgen_build_nursery_fragments (GCMemSection *nursery_section);
 void sgen_init_nursery_allocator (void);
+void sgen_nursery_allocator_init_heavy_stats (void);
 void sgen_init_allocator (void);
 void* sgen_nursery_alloc (size_t size);
 void* sgen_nursery_alloc_range (size_t size, size_t min_size, size_t *out_alloc_size);

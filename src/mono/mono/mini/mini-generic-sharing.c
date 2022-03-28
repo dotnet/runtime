@@ -18,6 +18,7 @@
 #include <mono/metadata/method-builder-ilgen-internals.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/abi-details.h>
+#include <mono/utils/mono-counters.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/unlocked.h>
 
@@ -3912,6 +3913,20 @@ mini_type_stack_size_full (MonoType *t, guint32 *align, gboolean pinvoke)
 void
 mono_generic_sharing_init (void)
 {
+	mono_counters_register ("RGCTX template num allocated", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_template_num_allocated);
+	mono_counters_register ("RGCTX template bytes allocated", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_template_bytes_allocated);
+	mono_counters_register ("RGCTX oti num allocated", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_oti_num_allocated);
+	mono_counters_register ("RGCTX oti bytes allocated", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_oti_bytes_allocated);
+	mono_counters_register ("RGCTX oti num markers", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_oti_num_markers);
+	mono_counters_register ("RGCTX oti num data", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_oti_num_data);
+	mono_counters_register ("RGCTX max slot number", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_max_slot_number);
+	mono_counters_register ("RGCTX num allocated", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_num_allocated);
+	mono_counters_register ("RGCTX num arrays allocated", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_num_arrays_allocated);
+	mono_counters_register ("RGCTX bytes allocated", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_bytes_allocated);
+	mono_counters_register ("MRGCTX num arrays allocated", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &mrgctx_num_arrays_allocated);
+	mono_counters_register ("MRGCTX bytes allocated", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &mrgctx_bytes_allocated);
+	mono_counters_register ("GSHAREDVT num trampolines", MONO_COUNTER_JIT | MONO_COUNTER_INT, &gsharedvt_num_trampolines);
+
 	mono_install_image_unload_hook (mono_class_unregister_image_generic_subclasses, NULL);
 
 	mono_os_mutex_init_recursive (&gshared_mutex);

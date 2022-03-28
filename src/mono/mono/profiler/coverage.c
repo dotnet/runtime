@@ -77,6 +77,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-publib.h>
 
 #define VERSION_MAJOR 0
@@ -979,6 +980,11 @@ static void
 runtime_initialized (MonoProfiler *profiler)
 {
 	mono_atomic_store_i32 (&coverage_profiler.runtime_inited, TRUE);
+
+	mono_counters_register ("Event: Coverage methods", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &coverage_methods_ctr);
+	mono_counters_register ("Event: Coverage statements", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &coverage_statements_ctr);
+	mono_counters_register ("Event: Coverage classes", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &coverage_classes_ctr);
+	mono_counters_register ("Event: Coverage assemblies", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &coverage_assemblies_ctr);
 
 	// See the comment in assembly_loaded ().
 	g_hash_table_foreach (coverage_profiler.deferred_assemblies, process_deferred_assembly, profiler);

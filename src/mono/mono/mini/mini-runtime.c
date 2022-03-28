@@ -54,6 +54,7 @@
 #define MONO_MATH_DECLARE_ALL 1
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-mmap.h>
@@ -1838,6 +1839,7 @@ mini_lookup_method (MonoMethod *method, MonoMethod *shared)
 {
 	MonoJitInfo *ji;
 	MonoJitMemoryManager *jit_mm = jit_mm_for_method (method);
+	static gboolean inited = FALSE;
 	static int lookups = 0;
 	static int failed_lookups = 0;
 
@@ -1852,6 +1854,11 @@ mini_lookup_method (MonoMethod *method, MonoMethod *shared)
 		ji = (MonoJitInfo *)mono_internal_hash_table_lookup (&jit_mm->jit_code_hash, shared);
 		if (ji && !ji->has_generic_jit_info)
 			ji = NULL;
+		if (!inited) {
+			mono_counters_register ("Shared generic lookups", MONO_COUNTER_INT|MONO_COUNTER_GENERICS, &lookups);
+			mono_counters_register ("Failed shared generic lookups", MONO_COUNTER_INT|MONO_COUNTER_GENERICS, &failed_lookups);
+			inited = TRUE;
+		}
 
 		++lookups;
 		if (!ji)
@@ -2163,7 +2170,7 @@ This value can't be too small or we won't see enough methods being reused and it
 
 
 static JitCompilationData compilation_data;
-static int jit_methods_waited, jit_methods_multiple, jit_spurious_wakeups_or_timeouts;
+static int jit_methods_waited, jit_methods_multiple, jit_methods_overload, jit_spurious_wakeups_or_timeouts;
 
 static void
 mini_jit_init_job_control (void)
@@ -2222,6 +2229,15 @@ wait_or_register_method_to_compile (MonoMethod *method)
 {
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
 	JitCompilationEntry *entry;
+
+	static gboolean inited;
+	if (!inited) {
+		mono_counters_register ("JIT compile waited others", MONO_COUNTER_INT|MONO_COUNTER_JIT, &jit_methods_waited);
+		mono_counters_register ("JIT compile 1+ jobs", MONO_COUNTER_INT|MONO_COUNTER_JIT, &jit_methods_multiple);
+		mono_counters_register ("JIT compile overload wait", MONO_COUNTER_INT|MONO_COUNTER_JIT, &jit_methods_overload);
+		mono_counters_register ("JIT compile spurious wakeups or timeouts", MONO_COUNTER_INT|MONO_COUNTER_JIT, &jit_spurious_wakeups_or_timeouts);
+		inited = TRUE;
+	}
 
 	lock_compilation_data ();
 
@@ -4138,6 +4154,17 @@ mini_get_addr_from_ftnptr (gpointer descr)
 #endif
 }
 
+static void
+register_counters (void)
+{
+	mono_counters_register ("Compiled methods", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_compiled);
+	mono_counters_register ("Methods from AOT", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_aot);
+	mono_counters_register ("Methods from AOT+LLVM", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_aot_llvm);
+	mono_counters_register ("Methods JITted using mono JIT", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_without_llvm);
+	mono_counters_register ("Methods JITted using LLVM", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_with_llvm);
+	mono_counters_register ("Methods using the interpreter", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_with_interp);
+}
+
 static void runtime_invoke_info_free (gpointer value);
 
 static gint
@@ -4376,6 +4403,8 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_cross_helpers_run ();
 
+	mono_counters_init ();
+
 	mini_jit_init ();
 
 	mini_jit_init_job_control ();
@@ -4577,6 +4606,8 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_create_icall_signatures ();
 
+	register_counters ();
+
 #define JIT_CALLS_WORK
 #ifdef JIT_CALLS_WORK
 	/* Needs to be called here since register_jit_icall depends on it */
@@ -4594,6 +4625,8 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 
 	register_trampolines (domain);
+
+	mono_mem_account_register_counters ();
 
 #define JIT_RUNTIME_WORKS
 #ifdef JIT_RUNTIME_WORKS
@@ -4947,6 +4980,7 @@ mono_runtime_print_stats (void)
 		g_print ("JIT info table removes: %" G_GINT32_FORMAT "\n", mono_stats.jit_info_table_remove_count);
 		g_print ("JIT info table lookups: %" G_GINT32_FORMAT "\n", mono_stats.jit_info_table_lookup_count);
 
+		mono_counters_dump (MONO_COUNTER_SECTION_MASK | MONO_COUNTER_MONOTONIC, NULL);
 		g_print ("\n");
 	}
 }
@@ -5213,6 +5247,16 @@ mini_get_default_mem_manager (void)
 gpointer
 mini_alloc_generic_virtual_trampoline (MonoVTable *vtable, int size)
 {
+	static gboolean inited = FALSE;
+	static int generic_virtual_trampolines_size = 0;
+
+	if (!inited) {
+		mono_counters_register ("Generic virtual trampoline bytes",
+				MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &generic_virtual_trampolines_size);
+		inited = TRUE;
+	}
+	generic_virtual_trampolines_size += size;
+
 	return mono_mem_manager_code_reserve (m_class_get_mem_manager (vtable->klass), size);
 }
 

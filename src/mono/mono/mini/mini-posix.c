@@ -60,6 +60,7 @@
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-errno.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/dtrace.h>
@@ -682,6 +683,11 @@ mono_runtime_setup_stat_profiler (void)
 #endif
 
 	add_signal_handler (profiler_signal, profiler_signal_handler, SA_RESTART);
+
+	mono_counters_register ("Sampling signals sent", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &profiler_signals_sent);
+	mono_counters_register ("Sampling signals received", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &profiler_signals_received);
+	mono_counters_register ("Sampling signals accepted", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &profiler_signals_accepted);
+	mono_counters_register ("Shutdown signals received", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &profiler_interrupt_signals_received);
 
 	mono_os_event_init (&sampling_thread_exited, FALSE);
 

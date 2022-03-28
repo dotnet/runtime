@@ -43,6 +43,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/coree.h>
+#include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-hwcap.h"
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/utils/options.h"
@@ -1741,6 +1742,7 @@ static gboolean enable_debugging;
 static void
 enable_runtime_stats (void)
 {
+	mono_counters_enable (-1);
 	mono_atomic_store_bool (&mono_stats.enabled, TRUE);
 	mono_atomic_store_bool (&mono_jit_stats.enabled, TRUE);
 }
@@ -2513,6 +2515,8 @@ mono_main (int argc, char* argv[])
 	if (mono_compile_aot || action == DO_EXEC || action == DO_DEBUGGER) {
 		g_set_prgname (argv[i]);
 	}
+
+	mono_counters_init ();
 
 #ifndef HOST_WIN32
 	mono_w32handle_init ();

@@ -578,6 +578,11 @@ sgen_get_total_allocated_bytes (MonoBoolean precise)
 void
 sgen_init_allocator (void)
 {
+#ifdef HEAVY_STATISTICS
+	mono_counters_register ("# objects allocated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_objects_alloced);
+	mono_counters_register ("bytes allocated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_bytes_alloced);
+	mono_counters_register ("bytes allocated in LOS", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_bytes_alloced_los);
+#endif
 }
 
 #endif /*HAVE_SGEN_GC*/

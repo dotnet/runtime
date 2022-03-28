@@ -23,6 +23,7 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-counters.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-mmap.h>
@@ -163,6 +164,10 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 #endif
 
 	mono_w32event_init ();
+
+	mono_counters_init ();
+
+	mono_counters_register ("Max HashTable Chain Length", MONO_COUNTER_INT|MONO_COUNTER_METADATA, &mono_g_hash_table_max_chain_length);
 
 	mono_gc_base_init ();
 	mono_thread_info_attach ();

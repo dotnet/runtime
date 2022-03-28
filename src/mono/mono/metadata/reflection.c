@@ -49,6 +49,7 @@
 #include <mono/utils/mono-string.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/checked-build.h>
+#include <mono/utils/mono-counters.h>
 #include "icall-decl.h"
 
 static void get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types);
@@ -77,6 +78,9 @@ void
 mono_reflection_init (void)
 {
 	mono_reflection_emit_init ();
+
+	mono_counters_register ("MonoClass::ref_info_handle count",
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_ref_info_handle_count);
 
 }
 

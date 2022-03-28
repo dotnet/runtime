@@ -11,6 +11,7 @@
 #include "mini.h"
 #include "mini-unwind.h"
 
+#include <mono/utils/mono-counters.h>
 #include <mono/utils/freebsd-dwarf.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -725,6 +726,8 @@ void
 mono_unwind_init (void)
 {
 	mono_os_mutex_init_recursive (&unwind_mutex);
+
+	mono_counters_register ("Unwind info size", MONO_COUNTER_JIT | MONO_COUNTER_INT, &unwind_info_size);
 }
 
 static guint

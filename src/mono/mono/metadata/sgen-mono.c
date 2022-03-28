@@ -2486,6 +2486,8 @@ static size_t worker_heap_size;
 void
 sgen_client_total_allocated_heap_changed (size_t allocated_heap)
 {
+	mono_runtime_resource_check_limit (MONO_RESOURCE_GC_HEAP, allocated_heap);
+
 	/*
 	 * This function can be called from SGen's worker threads. We want to try
 	 * and avoid exposing those threads to the profiler API, so save the heap
@@ -3087,8 +3089,20 @@ mono_gc_base_init (void)
 	if (gc_inited)
 		return;
 
+	mono_counters_init ();
+
 #ifndef HOST_WIN32
 	mono_w32handle_init ();
+#endif
+
+#ifdef HEAVY_STATISTICS
+	mono_counters_register ("los marked cards", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &los_marked_cards);
+	mono_counters_register ("los array cards scanned ", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &los_array_cards);
+	mono_counters_register ("los array remsets", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &los_array_remsets);
+
+	mono_counters_register ("WBarrier set arrayref", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_set_arrayref);
+	mono_counters_register ("WBarrier value copy", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_value_copy);
+	mono_counters_register ("WBarrier object copy", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_object_copy);
 #endif
 
 	sgen_gc_init ();

@@ -60,6 +60,7 @@ MONO_PRAGMA_WARNING_POP()
 #include "mono/metadata/custom-attrs-internals.h"
 #include "mono/metadata/loader-internals.h"
 #include "mono/metadata/jit-info.h"
+#include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-tls.h"
 #include "mono/utils/mono-memory-model.h"
 #include "mono/utils/atomic.h"
@@ -273,6 +274,9 @@ mono_marshal_init (void)
 		register_icall (mono_marshal_lookup_pinvoke, mono_icall_sig_ptr_ptr, FALSE);
 
 		mono_cominterop_init ();
+
+		mono_counters_register ("MonoClass::class_marshal_info_count count",
+								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_marshal_info_count);
 	}
 }
 

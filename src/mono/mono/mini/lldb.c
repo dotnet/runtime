@@ -14,6 +14,7 @@
 #include "seq-points.h"
 
 #include <mono/metadata/debug-internals.h>
+#include <mono/utils/mono-counters.h>
 
 #if !defined(DISABLE_JIT) && !defined(DISABLE_LLDB)
 
@@ -387,6 +388,8 @@ mono_lldb_init (const char *options)
 {
 	enabled = TRUE;
 	mono_os_mutex_init_recursive (&mutex);
+
+	mono_counters_register ("Time spent in LLDB", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &register_time);
 }
 
 typedef struct

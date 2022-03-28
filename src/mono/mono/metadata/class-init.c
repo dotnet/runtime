@@ -23,6 +23,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/metadata-update.h>
 #include <mono/utils/checked-build.h>
+#include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-memory-model.h>
@@ -4161,4 +4162,23 @@ mono_classes_init (void)
 
 	mono_native_tls_alloc (&setup_fields_tls_id, NULL);
 	mono_native_tls_alloc (&init_pending_tls_id, NULL);
+
+	mono_counters_register ("MonoClassDef count",
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_def_count);
+	mono_counters_register ("MonoClassGtd count",
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_gtd_count);
+	mono_counters_register ("MonoClassGenericInst count",
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_ginst_count);
+	mono_counters_register ("MonoClassGenericParam count",
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_gparam_count);
+	mono_counters_register ("MonoClassArray count",
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_array_count);
+	mono_counters_register ("MonoClassPointer count",
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_pointer_count);
+	mono_counters_register ("Inflated methods size",
+							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &mono_inflated_methods_size);
+	mono_counters_register ("Inflated classes size",
+							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_classes_size);
+	mono_counters_register ("MonoClass size",
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &classes_size);
 }

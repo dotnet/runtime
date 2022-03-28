@@ -36,6 +36,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/dtrace.h>
 #include <mono/utils/mono-os-mutex.h>
+#include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/unlocked.h>
 #include <mono/metadata/icall-decl.h>
@@ -114,6 +115,8 @@ mono_gc_base_init (void)
 
 	if (gc_initialized)
 		return;
+
+	mono_counters_init ();
 
 #ifndef HOST_WIN32
 	mono_w32handle_init ();

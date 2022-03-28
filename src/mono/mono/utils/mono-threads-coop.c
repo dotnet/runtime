@@ -24,6 +24,7 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-time.h>
+#include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-threads-api.h>
 #include <mono/utils/checked-build.h>
@@ -102,6 +103,7 @@ check_info (MonoThreadInfo *info, const gchar *action, const gchar *state, const
 }
 
 static int coop_reset_blocking_count;
+static int coop_try_blocking_count;
 static int coop_do_blocking_count;
 static int coop_do_polling_count;
 static int coop_save_count;
@@ -724,6 +726,11 @@ mono_threads_coop_init (void)
 	if (!mono_threads_are_safepoints_enabled () && !mono_threads_is_blocking_transition_enabled ())
 		return;
 
+	mono_counters_register ("Coop Reset Blocking", MONO_COUNTER_GC | MONO_COUNTER_INT, &coop_reset_blocking_count);
+	mono_counters_register ("Coop Try Blocking", MONO_COUNTER_GC | MONO_COUNTER_INT, &coop_try_blocking_count);
+	mono_counters_register ("Coop Do Blocking", MONO_COUNTER_GC | MONO_COUNTER_INT, &coop_do_blocking_count);
+	mono_counters_register ("Coop Do Polling", MONO_COUNTER_GC | MONO_COUNTER_INT, &coop_do_polling_count);
+	mono_counters_register ("Coop Save Count", MONO_COUNTER_GC | MONO_COUNTER_INT, &coop_save_count);
 	//See the above for what's wrong here.
 
 #ifdef ENABLE_CHECKED_BUILD_GC

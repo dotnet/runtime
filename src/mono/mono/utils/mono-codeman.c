@@ -14,6 +14,7 @@
 
 #include "mono-codeman.h"
 #include "mono-mmap.h"
+#include <mono/utils/mono-counters.h>
 #if _WIN32
 static void* mono_code_manager_heap;
 #else
@@ -31,6 +32,7 @@ static void* mono_code_manager_heap;
 static uintptr_t code_memory_used = 0;
 static size_t dynamic_code_alloc_count;
 static size_t dynamic_code_bytes_count;
+static size_t dynamic_code_frees_count;
 static const MonoCodeManagerCallbacks *code_manager_callbacks;
 
 /*
@@ -199,6 +201,10 @@ mono_codeman_set_code_no_exec (int no_exec)
 void
 mono_code_manager_init (gboolean no_exec)
 {
+	mono_counters_register ("Dynamic code allocs", MONO_COUNTER_JIT | MONO_COUNTER_ULONG, &dynamic_code_alloc_count);
+	mono_counters_register ("Dynamic code bytes", MONO_COUNTER_JIT | MONO_COUNTER_ULONG, &dynamic_code_bytes_count);
+	mono_counters_register ("Dynamic code frees", MONO_COUNTER_JIT | MONO_COUNTER_ULONG, &dynamic_code_frees_count);
+
 	mono_native_tls_alloc (&write_level_tls_id, NULL);
 
 	mono_codeman_set_code_no_exec (no_exec);
@@ -576,6 +582,7 @@ new_codechunk (MonoCodeManager *cman, int size)
 	MONO_PROFILER_RAISE (jit_chunk_created, ((mono_byte *) chunk->data, chunk->size));
 
 	code_memory_used += chunk_size;
+	mono_runtime_resource_check_limit (MONO_RESOURCE_JIT_CODE, code_memory_used);
 	/*printf ("code chunk at: %p\n", ptr);*/
 	return chunk;
 }

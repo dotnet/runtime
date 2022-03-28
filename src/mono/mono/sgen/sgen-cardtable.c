@@ -611,6 +611,16 @@ sgen_card_table_init (SgenRememberedSet *remset)
 	sgen_shadow_cardtable = (guint8 *)sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, (SgenAllocFlags)(SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE), "shadow card table", MONO_MEM_ACCOUNT_SGEN_SHADOW_CARD_TABLE);
 #endif
 
+#ifdef HEAVY_STATISTICS
+	mono_counters_register ("marked cards", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &marked_cards);
+	mono_counters_register ("scanned cards", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &scanned_cards);
+	mono_counters_register ("remarked cards", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &remarked_cards);
+
+	mono_counters_register ("cardtable scanned objects", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &scanned_objects);
+	mono_counters_register ("cardtable large objects", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &large_objects);
+	mono_counters_register ("cardtable bloby objects", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &bloby_objects);
+#endif
+
 	remset->wbarrier_set_field = sgen_card_table_wbarrier_set_field;
 	remset->wbarrier_arrayref_copy = sgen_card_table_wbarrier_arrayref_copy;
 	remset->wbarrier_value_copy = sgen_card_table_wbarrier_value_copy;

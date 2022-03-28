@@ -241,6 +241,11 @@ sgen_hash_table_clean (SgenHashTable *hash_table)
 void
 sgen_init_hash_table (void)
 {
+#ifdef HEAVY_STATISTICS
+	mono_counters_register ("Hash table lookups", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_lookups);
+	mono_counters_register ("Hash table lookup iterations", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_lookup_iterations);
+	mono_counters_register ("Hash table lookup max iterations", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_lookup_max_iterations);
+#endif
 }
 
 #endif

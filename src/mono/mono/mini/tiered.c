@@ -3,6 +3,7 @@
 
 #include "mini.h"
 #include "mini-runtime.h"
+#include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-logger-internals.h>
 
 #ifdef ENABLE_EXPERIMENT_TIERED
@@ -82,6 +83,9 @@ void
 mini_tiered_init (void)
 {
 	ERROR_DECL (error);
+
+	mono_counters_init ();
+	mono_counters_register ("Methods promoted", MONO_COUNTER_TIERED | MONO_COUNTER_LONG, &mini_tiered_stats.methods_promoted);
 
 	mono_coop_cond_init (&compilation_wait);
 	mono_coop_mutex_init (&compilation_mutex);

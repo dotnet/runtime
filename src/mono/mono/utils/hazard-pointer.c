@@ -23,6 +23,7 @@
 #else
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-counters.h>
 #endif
 
 #if _MSC_VER
@@ -405,6 +406,7 @@ mono_thread_smr_init (void)
 	int i;
 
 	mono_os_mutex_init (&small_id_mutex);
+	mono_counters_register ("Hazardous pointers", MONO_COUNTER_JIT | MONO_COUNTER_INT, &hazardous_pointer_count);
 
 	for (i = 0; i < HAZARD_TABLE_OVERFLOW; ++i) {
 		int small_id = mono_thread_small_id_alloc ();
