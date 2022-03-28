@@ -63,30 +63,30 @@ namespace System.Text.RegularExpressions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RegexCaseBehavior GetRegexBehavior(CultureInfo culture)
         {
-            if (IsCultureInvariant(culture.Name.AsSpan()))
+            if (culture.Name.Length == 0)
                 return RegexCaseBehavior.Invariant;
-            else if (IsTurkishOrAzerbaycan(culture.Name.AsSpan()))
+            else if (IsTurkishOrAzeri(culture.Name.AsSpan()))
                 return RegexCaseBehavior.Turkish;
             else
                 return RegexCaseBehavior.NonTurkish;
 
-            bool IsCultureInvariant(ReadOnlySpan<char> cultureName)
-            {
-                if (culture.Name.Length == 0)
-                    return true;
-                return false;
-            }
-
-            bool IsTurkishOrAzerbaycan(ReadOnlySpan<char> cultureName)
+            static bool IsTurkishOrAzeri(ReadOnlySpan<char> cultureName)
             {
                 if (cultureName.Length < 2)
                     return false;
-                else if (cultureName[0] == 't' && cultureName[1] == 'r' && (cultureName.Length == 2 || cultureName[2] == '-'))
-                    return true;
-                else if (cultureName[0] == 'a' && cultureName[1] == 'z' && (cultureName.Length == 2 || cultureName[2] == '-'))
-                    return true;
                 else
-                    return false;
+                {
+                    // Assert that the first two characters in culture name are between a-z lowercase
+                    Debug.Assert('a' <= cultureName[0] && cultureName[0] <= 'z');
+                    Debug.Assert('a' <= cultureName[1] && cultureName[1] <= 'z');
+
+                    if (cultureName[0] == 't' && cultureName[1] == 'r' && (cultureName.Length == 2 || cultureName[2] == '-'))
+                        return true;
+                    else if (cultureName[0] == 'a' && cultureName[1] == 'z' && (cultureName.Length == 2 || cultureName[2] == '-'))
+                        return true;
+                    else
+                        return false;
+                }
             }
         }
 
@@ -139,18 +139,16 @@ namespace System.Text.RegularExpressions
             {
                 return false;
             }
-            else
-            {
-                equivalences = PerformSecondLevelLookup();
-                return equivalences != null;
-            }
+
+            equivalences = PerformSecondLevelLookup();
+            return equivalences != null;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             ReadOnlySpan<char> PerformSecondLevelLookup()
             {
-                // Bitwise And to 1023 to perform an optimal modulo 1024 operation.
-                Debug.Assert(((c & 1023) + FirstLevelLookupValue) < 0xFFFF);
-                ushort index2 = (ushort)((c & 1023) + FirstLevelLookupValue);
+                // Bitwise And to 0x03ff to perform an optimal modulo 1024 (0x400) operation. 0x03ff = 0x400 - 1
+                Debug.Assert(((c & 0x03ff) + FirstLevelLookupValue) < 0xFFFF);
+                ushort index2 = (ushort)((c & 0x03ff) + FirstLevelLookupValue);
                 ushort mappingValue = EquivalenceCasingMap[index2];
                 if (mappingValue == 0xFFFF)
                 {

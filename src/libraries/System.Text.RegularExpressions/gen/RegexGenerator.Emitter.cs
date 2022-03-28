@@ -443,15 +443,12 @@ namespace System.Text.RegularExpressions.Generator
                             break;
 
                         case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseSensitive:
-                        case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseInsensitive:
                         case FindNextStartingPositionMode.FixedSets_LeftToRight_CaseSensitive:
-                        case FindNextStartingPositionMode.FixedSets_LeftToRight_CaseInsensitive:
                             Debug.Assert(regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
                             EmitFixedSet_LeftToRight();
                             break;
 
                         case FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseSensitive:
-                        case FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseInsensitive:
                             Debug.Assert(regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
                             EmitFixedSet_RightToLeft();
                             break;
@@ -687,8 +684,8 @@ namespace System.Text.RegularExpressions.Generator
             // and potentially other sets at other fixed positions in the pattern.
             void EmitFixedSet_LeftToRight()
             {
-                List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)>? sets = regexTree.FindOptimizations.FixedDistanceSets;
-                (char[]? Chars, string Set, int Distance, bool CaseInsensitive) primarySet = sets![0];
+                List<(char[]? Chars, string Set, int Distance)>? sets = regexTree.FindOptimizations.FixedDistanceSets;
+                (char[]? Chars, string Set, int Distance) primarySet = sets![0];
                 const int MaxSets = 4;
                 int setsToUse = Math.Min(sets.Count, MaxSets);
 
@@ -700,7 +697,7 @@ namespace System.Text.RegularExpressions.Generator
                 // If we can use IndexOf{Any}, try to accelerate the skip loop via vectorization to match the first prefix.
                 // We can use it if this is a case-sensitive class with a small number of characters in the class.
                 int setIndex = 0;
-                bool canUseIndexOf = !primarySet.CaseInsensitive && primarySet.Chars is not null;
+                bool canUseIndexOf = primarySet.Chars is not null;
                 bool needLoop = !canUseIndexOf || setsToUse > 1;
 
                 FinishEmitBlock loopBlock = default;
@@ -810,13 +807,13 @@ namespace System.Text.RegularExpressions.Generator
             // (Currently that position will always be a distance of 0, meaning the start of the pattern itself.)
             void EmitFixedSet_RightToLeft()
             {
-                (char[]? Chars, string Set, int Distance, bool CaseInsensitive) set = regexTree.FindOptimizations.FixedDistanceSets![0];
+                (char[]? Chars, string Set, int Distance) set = regexTree.FindOptimizations.FixedDistanceSets![0];
                 Debug.Assert(set.Distance == 0);
 
                 writer.WriteLine($"// The pattern begins with {DescribeSet(set.Set)}.");
                 writer.WriteLine($"// Find the next occurrence. If it can't be found, there's no match.");
 
-                if (set.Chars is { Length: 1 } && !set.CaseInsensitive)
+                if (set.Chars is { Length: 1 })
                 {
                     writer.WriteLine($"pos = inputSpan.Slice(0, pos).LastIndexOf({Literal(set.Chars[0])});");
                     using (EmitBlock(writer, "if (pos >= 0)"))

@@ -16,53 +16,38 @@ namespace System.Text.RegularExpressions.Tests
     {
         [Theory]
         [MemberData(nameof(Unicode_IgnoreCase_TestData))]
-        public async Task Unicode_IgnoreCase_Tests(RegexEngine engine, string culture, string pattern, string input, RegexOptions options)
+        public async Task Unicode_IgnoreCase_Tests(RegexEngine engine, string culture, RegexOptions options)
         {
-            if ((options & RegexOptions.CultureInvariant) == 0)
+            var testCases = GetPatternAndInputsForCulture(culture);
+
+            foreach ((string pattern, string input) in testCases)
             {
-                using var _ = new ThreadCultureChange(culture);
-                await ValidateMatch(pattern, input);
-                await ValidateMatch(input, pattern);
+
+                if ((options & RegexOptions.CultureInvariant) == 0)
+                {
+                    using var _ = new ThreadCultureChange(culture);
+                    await ValidateMatch(pattern, input);
+                    await ValidateMatch(input, pattern);
+                }
+                else
+                {
+                    await ValidateMatch(pattern, input);
+                    await ValidateMatch(input, pattern);
+                }
             }
-            else
-            {
-                await ValidateMatch(pattern, input);
-                await ValidateMatch(input, pattern);
-            }
+
+            return;
 
             async Task ValidateMatch(string pattern, string input)
             {
                 Regex regex = await RegexHelpers.GetRegexAsync(engine, pattern, options | RegexOptions.IgnoreCase);
                 Assert.True(regex.IsMatch(input));
             }
-        }
 
-        public static IEnumerable<object[]> Unicode_IgnoreCase_TestData()
-        {
-            foreach ((string culture, char pattern, char input) in GetCaseEquivalencesPerCulture())
+            IEnumerable<(string, string)> GetPatternAndInputsForCulture(string culture)
             {
-                foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
-                {
-                    // Source generated engine does not support setting different culutres yet.
-                    if (engine == RegexEngine.SourceGenerated && !string.IsNullOrEmpty(culture))
-                        continue;
-
-                    yield return new object[] { engine, culture, $"{pattern}", $"{input}", RegexOptions.None};
-                    if (string.IsNullOrEmpty(culture))
-                    {
-                        // For the Invariant culture equivalences also test to get the same behavior with RegexOptions.CultureInvariant.
-                        yield return new object[] { engine, culture, $"{pattern}", $"{input}", RegexOptions.CultureInvariant };
-                    }
-                }
-            }
-        }
-
-        public static IEnumerable<(string, char, char)> GetCaseEquivalencesPerCulture()
-        {
-            foreach (string cultureName in new[] { "", "en-US", "tr-TR" })
-            {
-                TextInfo textInfo = string.IsNullOrEmpty(cultureName) ? CultureInfo.InvariantCulture.TextInfo
-                    : CultureInfo.GetCultureInfo(cultureName).TextInfo;
+                TextInfo textInfo = string.IsNullOrEmpty(culture) ? CultureInfo.InvariantCulture.TextInfo
+                    : CultureInfo.GetCultureInfo(culture).TextInfo;
 
                 for (int i = 0; i < 0x1_0000; i++)
                 {
@@ -70,7 +55,27 @@ namespace System.Text.RegularExpressions.Tests
                     char lowerC = textInfo.ToLower(c);
                     if (c != lowerC)
                     {
-                        yield return (cultureName, c, lowerC);
+                        yield return ($"{c}", $"{lowerC}");
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Unicode_IgnoreCase_TestData()
+        {
+            foreach (string culture in new[] { "", "en-US", "tr-TR" })
+            {
+                foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+                {
+                    // Source generated engine does not support setting different culutres yet.
+                    if (engine == RegexEngine.SourceGenerated && !string.IsNullOrEmpty(culture))
+                        continue;
+
+                    yield return new object[] { engine, culture, RegexOptions.None};
+                    if (string.IsNullOrEmpty(culture))
+                    {
+                        // For the Invariant culture equivalences also test to get the same behavior with RegexOptions.CultureInvariant.
+                        yield return new object[] { engine, culture, RegexOptions.CultureInvariant };
                     }
                 }
             }

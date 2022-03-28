@@ -1308,19 +1308,13 @@ namespace System.Text.RegularExpressions
             return ranges;
         }
 
-        /// <summary>Creates a set string for a single character, optionally factoring in case-insensitivity.</summary>
+        /// <summary>Creates a set string for a single character.</summary>
         /// <param name="c">The character for which to create the set.</param>
-        /// <param name="caseInsensitive">null if case-sensitive; non-null if case-insensitive, in which case it's the culture to use.</param>
         /// <returns>The create set string.</returns>
-        public static string OneToStringClass(char c, CultureInfo? caseInsensitive)
+        public static string OneToStringClass(char c)
         {
-            var vsb = new ValueStringBuilder(stackalloc char[4]);
-
-            if (caseInsensitive is null)
-            {
-                vsb.Append(c);
-            }
-
+            var vsb = new ValueStringBuilder(stackalloc char[1]);
+            vsb.Append(c);
             string result = CharsToStringClass(vsb.AsSpan());
             vsb.Dispose();
             return result;

@@ -219,39 +219,6 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        /// <summary>
-        /// Traverses the RegexTree and ensures that the only nodes with IgnoreCase option set are backreferences.
-        /// </summary>
-        [Conditional("DEBUG")]
-        private void ValidateNoIgnoreCaseNodes()
-        {
-            var toExamine = new Stack<RegexNode>();
-            toExamine.Push(this);
-            while (toExamine.Count > 0)
-            {
-                RegexNode node = toExamine.Pop();
-
-                // Add all children to be examined
-                int childCount = node.ChildCount();
-                for (int i = 0; i < childCount; i++)
-                {
-                    RegexNode child = node.Child(i);
-
-                    toExamine.Push(child);
-                }
-
-                switch (node.Kind)
-                {
-                    case RegexNodeKind.Backreference:
-                        break;
-
-                    default:
-                        Debug.Assert((node.Options & RegexOptions.IgnoreCase) == 0, $"{node.Kind} node should not have RegexOptions.IgnoreCase");
-                        break;
-                }
-            }
-        }
-
         /// <summary>Validate invariants the rest of the implementation relies on for processing fully-built trees.</summary>
         [Conditional("DEBUG")]
         private void ValidateFinalTreeInvariants()
@@ -360,6 +327,17 @@ namespace System.Text.RegularExpressions
                         Debug.Assert(node.Str is null, $"Expected null string for {node.Kind}, got \"{node.Str}\".");
                         break;
                 }
+
+                // Validate only Backreference nodes have IgnoreCase Option
+                switch (node.Kind)
+                {
+                    case RegexNodeKind.Backreference:
+                        break;
+
+                    default:
+                        Debug.Assert((node.Options & RegexOptions.IgnoreCase) == 0, $"{node.Kind} node should not have RegexOptions.IgnoreCase");
+                        break;
+                }
             }
         }
 #endif
@@ -443,7 +421,6 @@ namespace System.Text.RegularExpressions
             // Done optimizing.  Return the final tree.
 #if DEBUG
             rootNode.ValidateFinalTreeInvariants();
-            rootNode.ValidateNoIgnoreCaseNodes();
 #endif
             return rootNode;
         }
@@ -2038,6 +2015,13 @@ namespace System.Text.RegularExpressions
                     }
 
                     break;
+                }
+
+                // If the current node's options don't match the subsequent node, then we cannot make it atomic.
+                // This applies to RightToLeft for lookbehinds, as well as patterns that enable/disable global flags in the middle of the pattern.
+                if (node.Options != subsequent.Options)
+                {
+                    return false;
                 }
 
                 // If the successor is an alternation, all of its children need to be evaluated, since any of them

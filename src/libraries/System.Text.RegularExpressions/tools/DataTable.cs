@@ -192,11 +192,11 @@ namespace GenerateRegexCasingTable
                 var flattenedValues = FlattenValuesDictionary();
                 writer.Write("        private static char[] EquivalenceCasingValues { get; } = new char[" + flattenedValues.Count + "]\n        {\n");
 
-                writer.Write("            (char)0x{0:x4}", flattenedValues[0]);
+                writer.Write("            \'\\u{0:X4}\'", flattenedValues[0]);
                 for (var i = 1; i < flattenedValues.Count; i++)
                 {
                     writer.Write(i % 16 == 0 ? ",\n            " : ", ");
-                    writer.Write("(char)0x{0:x4}", flattenedValues[i]);
+                    writer.Write("\'\\u{0:X4}\'", flattenedValues[i]);
                 }
                 writer.Write("\n        };\n");
             }

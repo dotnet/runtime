@@ -762,7 +762,7 @@ namespace System.Text.RegularExpressions
 
             if (!scanOnly && caseInsensitive)
             {
-                charClass!.AddCaseEquivalences((_options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : _culture);
+                charClass!.AddCaseEquivalences(_culture);
             }
 
             return charClass;
@@ -1208,7 +1208,7 @@ namespace System.Text.RegularExpressions
                     cc.AddCategoryFromName(ParseProperty(), ch != 'p', UseOptionI(), _pattern, _currentPos);
                     if (UseOptionI())
                     {
-                        cc.AddCaseEquivalences((_options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : _culture);
+                        cc.AddCaseEquivalences(_culture);
                     }
 
                     return new RegexNode(RegexNodeKind.Set, (_options & ~RegexOptions.IgnoreCase), cc.ToStringClass(_options));
