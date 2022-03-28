@@ -22,8 +22,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Set an empty PackagePath to place this file in the root of the package -->
     <None Include="build\prefercliruntime"
-          PackagePath="/"
+          PackagePath=""
           Pack="true" />
     <None Include="build\Microsoft.XmlSerializer.Generator.targets"
           PackagePath="build"

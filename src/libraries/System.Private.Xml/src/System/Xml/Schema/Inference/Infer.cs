@@ -980,7 +980,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private XmlSchemaSimpleContentExtension CheckSimpleContentExtension(XmlSchemaComplexType ct)
+        private static XmlSchemaSimpleContentExtension CheckSimpleContentExtension(XmlSchemaComplexType ct)
         {
             XmlSchemaSimpleContent? sc = ct.ContentModel as XmlSchemaSimpleContent;
             if (sc == null)
@@ -1287,7 +1287,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private void MoveAttributes(XmlSchemaSimpleContentExtension scExtension, XmlSchemaComplexType ct)
+        private static void MoveAttributes(XmlSchemaSimpleContentExtension scExtension, XmlSchemaComplexType ct)
         {
             //copy all attributes from the simple content to the complex type
             //This is ok since when we move from complex type to simple content extension we copy from AttributeUses property
@@ -1297,7 +1297,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private void MoveAttributes(XmlSchemaComplexType ct, XmlSchemaSimpleContentExtension simpleContentExtension, bool bCreatingNewType)
+        private static void MoveAttributes(XmlSchemaComplexType ct, XmlSchemaSimpleContentExtension simpleContentExtension, bool bCreatingNewType)
         {
             //copy all attributes from the complex type to the simple content
 
@@ -1319,7 +1319,7 @@ namespace System.Xml.Schema
             ct.Attributes.Clear(); //Clear from pre-compiled property, post compiled will be cleared on Re-process and Compile()
         }
 
-        internal XmlSchemaAttribute? FindAttribute(ICollection attributes, string attrName)
+        internal static XmlSchemaAttribute? FindAttribute(ICollection attributes, string attrName)
         {
             foreach (XmlSchemaObject? xsa in attributes)
             {
@@ -1353,7 +1353,7 @@ namespace System.Xml.Schema
         }
 
 
-        internal XmlSchemaElement? FindElement(XmlSchemaObjectCollection elements, string elementName)
+        internal static XmlSchemaElement? FindElement(XmlSchemaObjectCollection elements, string elementName)
         {
             for (int i = 0; i < elements.Count; ++i)
             {
@@ -1370,7 +1370,7 @@ namespace System.Xml.Schema
             return null;
         }
 
-        internal XmlSchemaAttribute? FindAttributeRef(ICollection attributes, string attributeName, string nsURI)
+        internal static XmlSchemaAttribute? FindAttributeRef(ICollection attributes, string attributeName, string nsURI)
         {
             foreach (XmlSchemaObject? xsa in attributes)
             {
@@ -1387,7 +1387,7 @@ namespace System.Xml.Schema
             return null;
         }
 
-        internal XmlSchemaElement? FindElementRef(XmlSchemaObjectCollection elements, string elementName, string nsURI)
+        internal static XmlSchemaElement? FindElementRef(XmlSchemaObjectCollection elements, string elementName, string nsURI)
         {
             for (int i = 0; i < elements.Count; ++i)
             {
@@ -1404,7 +1404,7 @@ namespace System.Xml.Schema
             return null;
         }
 
-        internal void MakeExistingAttributesOptional(XmlSchemaComplexType ct, XmlSchemaObjectCollection? attributesInInstance)
+        internal static void MakeExistingAttributesOptional(XmlSchemaComplexType ct, XmlSchemaObjectCollection? attributesInInstance)
         {
             if (ct == null)
             {
@@ -1421,7 +1421,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private void SwitchUseToOptional(XmlSchemaObjectCollection attributes, XmlSchemaObjectCollection? attributesInInstance)
+        private static void SwitchUseToOptional(XmlSchemaObjectCollection attributes, XmlSchemaObjectCollection? attributesInInstance)
         {
             for (int i = 0; i < attributes.Count; ++i)
             {

@@ -110,7 +110,7 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        private void WriteMessage(TextWriter textWriter, string message, bool singleLine)
+        private static void WriteMessage(TextWriter textWriter, string message, bool singleLine)
         {
             if (!string.IsNullOrEmpty(message))
             {

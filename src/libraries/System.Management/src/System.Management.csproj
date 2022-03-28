@@ -4,7 +4,7 @@
     <NoWarn>$(NoWarn);0618</NoWarn>
     <!-- Suppressins to avoid ifdefs:
             CA1845: Use span-based 'string.Concat' and 'AsSpan' instead of 'Substring'. -->
-    <NoWarn>$(NoWarn);CA1845;IDE0059</NoWarn>
+    <NoWarn>$(NoWarn);CA1845;IDE0059;CA1822</NoWarn>
     <Nullable>annotations</Nullable>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>

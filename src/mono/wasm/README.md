@@ -188,6 +188,7 @@ Bumping Emscripten version involves these steps:
 * update https://github.com/dotnet/runtime/blob/main/src/mono/wasm/emscripten-version.txt
 * bump emscripten versions in docker images in https://github.com/dotnet/dotnet-buildtools-prereqs-docker
 * bump emscripten in https://github.com/dotnet/emsdk
+* bump docker images in https://github.com/dotnet/icu, update emscripten files in eng/patches/
 * update version number in docs
 * update `Microsoft.NET.Runtime.Emscripten.<emscripten version>.Node.win-x64` package name, version and sha hash in https://github.com/dotnet/runtime/blob/main/eng/Version.Details.xml and in https://github.com/dotnet/runtime/blob/main/eng/Versions.props. the sha is the commit hash in https://github.com/dotnet/emsdk and the package version can be found at https://dev.azure.com/dnceng/public/_packaging?_a=feed&feed=dotnet6
 * update packages in the workload manifest https://github.com/dotnet/runtime/blob/main/src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/WorkloadManifest.json.in
@@ -214,10 +215,12 @@ Bumping Emscripten version involves these steps:
 | libtests          | linux: all,   only-pc | windows: all,   only-pc | linux+windows: all, only-pc          | linux+windows: all, always |
 | libtests eat      | linux: smoke, only-pc | -                       | linux:         all, only-pc          | linux:         all, always |
 | libtests aot      | linux: smoke, only-pc | windows: smoke, only-pc | linux+windows: all, only-pc          | linux+windows: all, always |
-|                   |                       |                         |                                      |                            |
+| high resource aot | none                  | none                    | linux+windows: all, only-pc          | linux+windows: all, always |
 | Wasm.Build.Tests  | linux:        only-pc | windows:        only-pc | linux+windows: only-pc               | linux+windows              |
 | Debugger tests    | -                     | linux+windows:  only-pc | linux+windows: only-pc               | linux+windows              |
 | Runtime tests     | linux:        only-pc | -                       | linux: only-pc                       | linux                      |
+
+* `high resource aot` runs a few specific library tests with AOT, that require more memory to AOT.
 
 ## Rolling build (twice a day):
 
@@ -231,7 +234,10 @@ Bumping Emscripten version involves these steps:
 | libtests          | linux: all(v8/chr)        | windows: all          | none                                 | N/A                        |
 | libtests eat      | linux: smoke              | -                     | linux: all                           |                            |
 | libtests aot      | linux: smoke              | windows: smoke        | linux+windows: all                   |                            |
+| high resource aot | none                      | none                  | linux+windows: all                   |                            |
 |                   |                           |                       |                                      |                            |
 | Wasm.Build.Tests  | linux: always             | windows: always       | none                                 |                            |
 | Debugger tests    | -                         | linux+windows: always | none                                 |                            |
 | Runtime tests     | linux: always             | -                     | none                                 |                            |
+
+* `high resource aot` runs a few specific library tests with AOT, that require more memory to AOT.

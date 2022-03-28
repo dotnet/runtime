@@ -10,11 +10,26 @@ using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
 {
-    public sealed partial class ReferenceHandlerTests_Metadata : ReferenceHandlerTests
+    public sealed class ReferenceHandlerTests_Metadata_String : ReferenceHandlerTests_Metadata
     {
-        public ReferenceHandlerTests_Metadata()
-            : base(new StringSerializerWrapper(ReferenceHandlerTestsContext_Metadata.Default, (options) => new ReferenceHandlerTestsContext_Metadata(options)),
-                  new StreamSerializerWrapper(ReferenceHandlerTestsContext_Metadata.Default, (options) => new ReferenceHandlerTestsContext_Metadata(options)))
+        public ReferenceHandlerTests_Metadata_String()
+            : base(new StringSerializerWrapper(ReferenceHandlerTestsContext_Metadata.Default, (options) => new ReferenceHandlerTestsContext_Metadata(options)))
+        {
+        }
+    }
+
+    public sealed class ReferenceHandlerTests_Metadata_AsyncStream : ReferenceHandlerTests_Metadata
+    {
+        public ReferenceHandlerTests_Metadata_AsyncStream()
+            : base(new AsyncStreamSerializerWrapper(ReferenceHandlerTestsContext_Metadata.Default, (options) => new ReferenceHandlerTestsContext_Metadata(options)))
+        {
+        }
+    }
+
+    public abstract partial class ReferenceHandlerTests_Metadata : ReferenceHandlerTests
+    {
+        public ReferenceHandlerTests_Metadata(JsonSerializerWrapper serializer)
+            : base(serializer)
         {
         }
 
@@ -119,11 +134,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
     }
 
-    public sealed partial class ReferenceHandlerTests_Default : ReferenceHandlerTests
+    public sealed class ReferenceHandlerTests_Default_String : ReferenceHandlerTests_Default
     {
-        public ReferenceHandlerTests_Default()
-            : base(new StringSerializerWrapper(ReferenceHandlerTestsContext_Default.Default, (options) => new ReferenceHandlerTestsContext_Default(options)),
-                  new StreamSerializerWrapper(ReferenceHandlerTestsContext_Default.Default, (options) => new ReferenceHandlerTestsContext_Default(options)))
+        public ReferenceHandlerTests_Default_String()
+            : base(new StringSerializerWrapper(ReferenceHandlerTestsContext_Default.Default, (options) => new ReferenceHandlerTestsContext_Default(options)))
         {
         }
 
@@ -133,7 +147,23 @@ namespace System.Text.Json.SourceGeneration.Tests
             Employee a = new Employee();
             a.Manager = a;
 
-            await Assert.ThrowsAsync<InvalidOperationException>(() => JsonSerializerWrapperForString.SerializeWrapper(a));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(a));
+        }
+    }
+
+    public sealed class ReferenceHandlerTests_Default_AsyncStream : ReferenceHandlerTests_Default
+    {
+        public ReferenceHandlerTests_Default_AsyncStream()
+            : base(new AsyncStreamSerializerWrapper(ReferenceHandlerTestsContext_Default.Default, (options) => new ReferenceHandlerTestsContext_Default(options)))
+        {
+        }
+    }
+
+    public abstract partial class ReferenceHandlerTests_Default : ReferenceHandlerTests
+    {
+        public ReferenceHandlerTests_Default(JsonSerializerWrapper serializer)
+            : base(serializer)
+        {
         }
 
         [JsonSerializable(typeof(Employee))]

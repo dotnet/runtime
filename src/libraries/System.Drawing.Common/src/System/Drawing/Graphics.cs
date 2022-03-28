@@ -2225,7 +2225,7 @@ namespace System.Drawing
         /// for height || width == 1 here because transforms can be applied to
         /// the Graphics object making it difficult to identify this scenario.
         /// </summary>
-        private void IgnoreMetafileErrors(Image image, ref int errorStatus)
+        private static void IgnoreMetafileErrors(Image image, ref int errorStatus)
         {
             if (errorStatus != Gdip.Ok && image.RawFormat.Equals(ImageFormat.Emf))
                 errorStatus = Gdip.Ok;

@@ -940,6 +940,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - OSX_x64
+    - windows_x64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

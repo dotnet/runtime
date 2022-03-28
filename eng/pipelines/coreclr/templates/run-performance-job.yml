@@ -23,6 +23,7 @@ parameters:
   runKind: ''                     # required -- test category
   logicalMachine: ''              # required -- Used to specify a which pool of machines the test should run against
   javascriptEngine: 'NoJS'
+  helixTypeSuffix: ''             # optional -- appends to HelixType
 
 jobs:
 - template: xplat-pipeline-job.yml
@@ -41,6 +42,7 @@ jobs:
       displayName: '${{ parameters.displayName }}'
     ${{ if eq(parameters.displayName, '') }}:
       displayName: '${{ parameters.jobName }}'
+    name: ${{ replace(replace(parameters.jobName, ' ', '_'), '-', '_') }}
 
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
@@ -131,7 +133,7 @@ jobs:
     - template: /eng/pipelines/coreclr/templates/perf-send-to-helix.yml
       parameters:
         HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
-        HelixType: 'test/performance/$(Kind)/$(_Framework)/$(Architecture)'
+        HelixType: 'test/performance/$(Kind)/$(_Framework)/$(Architecture)${{ parameters.helixTypeSuffix }}'
         HelixAccessToken: $(HelixApiAccessToken)
         HelixTargetQueues: $(Queue)
         HelixPreCommands: $(HelixPreCommand)
