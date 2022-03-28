@@ -79,6 +79,11 @@ namespace System.Text.Json
         public bool SupportContinuation;
 
         /// <summary>
+        /// Internal flag indicating that async serialization is supported. Implies `SupportContinuation`.
+        /// </summary>
+        public bool SupportAsync;
+
+        /// <summary>
         /// Stores a reference id that has been calculated for a newly serialized object.
         /// </summary>
         public string? NewReferenceId;
@@ -98,14 +103,16 @@ namespace System.Text.Json
         /// <summary>
         /// Initialize the state without delayed initialization of the JsonTypeInfo.
         /// </summary>
-        public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
+        public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation, bool supportAsync)
         {
             JsonTypeInfo jsonTypeInfo = options.GetOrAddJsonTypeInfoForRootType(type);
-            return Initialize(jsonTypeInfo, supportContinuation);
+            return Initialize(jsonTypeInfo, supportContinuation, supportAsync);
         }
 
-        internal JsonConverter Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation)
+        internal JsonConverter Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation, bool supportAsync)
         {
+            Debug.Assert(!supportAsync || supportContinuation, "supportAsync implies supportContinuation.");
+
             Current.JsonTypeInfo = jsonTypeInfo;
             Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
             Current.NumberHandling = Current.JsonPropertyInfo.NumberHandling;
@@ -118,6 +125,7 @@ namespace System.Text.Json
             }
 
             SupportContinuation = supportContinuation;
+            SupportAsync = supportAsync;
 
             return jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
         }
@@ -332,15 +340,19 @@ namespace System.Text.Json
         {
             StringBuilder sb = new StringBuilder("$");
 
-            // If a continuation, always report back full stack which does not use Current for the last frame.
-            int count = Math.Max(_count, _continuationCount + 1);
+            (int frameCount, bool includeCurrentFrame) = _continuationCount switch
+            {
+                0 => (_count - 1, true), // Not a countinuation, report previous frames and Current.
+                1 => (0, true), // Continuation of depth 1, just report Current frame.
+                int c => (c, false) // Continuation of depth > 1, report the entire stack.
+            };
 
-            for (int i = 0; i < count - 1; i++)
+            for (int i = 0; i < frameCount; i++)
             {
                 AppendStackFrame(sb, ref _stack[i]);
             }
 
-            if (_continuationCount == 0)
+            if (includeCurrentFrame)
             {
                 AppendStackFrame(sb, ref Current);
             }

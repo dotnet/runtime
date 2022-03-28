@@ -1,10 +1,10 @@
-# Multi-level SharedFX Lookup
+# SharedFX Lookup
 
 ## Introduction
 
-There are two possible ways of running .NET Core Applications: through dotnet.exe or through a custom executable appname.exe. The first one is used when the user wants to run a framework-dependent app or a .NET Core command while the second one is used for self-contained applications. Both executables share exactly the same source code.
+There are two main ways of running .NET Applications: through `dotnet` or through the `apphost` executables. The executable is in charge of finding and loading `hostfxr`. `hostfxr`, in turn, must find and load `hostpolicy`. It is also responsible for searching for the SDK when running .NET SDK commands. Finally, `hostpolicy` must find and load the runtime (`coreclr`). See [host components](host-components.md) for details.
 
-The executable is in charge of finding and loading the hostfxr.dll file. The hostfxr, in turn, must find and load the hostpolicy.dll file (it’s also responsible for searching for the SDK when running .NET commands). At last the coreclr.dll file must be found and loaded by the hostpolicy. Self-contained apps are supposed to keep all its dependencies in the same location as the executable. Framework-dependent apps must have the runtime files inside predefined folders.
+An application can either be [framework-dependent](https://docs.microsoft.com/dotnet/core/deploying/#publish-framework-dependent) or [self-contained](https://docs.microsoft.com/dotnet/core/deploying/#publish-self-contained). Framework-dependent apps must have the runtime files inside predefined folders. Self-contained apps are expected to have their dependencies in the same location as the executable.
 
 ## Semantic Versioning
 
@@ -219,6 +219,16 @@ In order to compare versions of an assembly, the assemblyVersion and fileVersion
 
 ## Global locations
 
+Global install locations are described in the [install locations design](https://github.com/dotnet/designs/blob/main/accepted/2020/install-locations.md) document.
+
+**.NET 7.0 and above**
+
+When running `dotnet`, only the executable directory will be searched and global locations are not searched. For all other [entry-point hosts](host-components.md#entry-point-hosts), if the `DOTNET_ROOT` environment variable is set, that path is searched. If the environment variable is not set, the global location as described in [install locations](https://github.com/dotnet/designs/blob/main/accepted/2020/install-locations.md) is searched.
+
+See [disable multi-level lookup](https://github.com/dotnet/designs/blob/main/accepted/2022/disable-multi-level-lookup-by-default.md) for more details.
+
+**Before .NET 7.0**
+
 In addition to searching the executable directory, the global .NET location is also searched. The global folders may vary depending on the running operational system. They are defined as follows:
 
 Global .NET location:
@@ -271,11 +281,19 @@ To make sure that the changes are working correctly, the following behavior cond
 
 ### SDK search
 
-Like the Framework search, the SDK is searched for a compatible version. Instead of looking for it only in relation to the executable directory, it is also searched in the folders specified above by following the same priority rank.
+Like the Framework search, the SDK is searched for a compatible version.
+
+Unlike the Framework search, the SDK search does a roll-forward for pre-release versions when the patch version changes. For example, if you install v2.0.1-pre, it will be used over v2.0.0.
+
+**.NET 7.0 and above**
+
+Only the executable directory will be searched. See [disable multi-level lookup](https://github.com/dotnet/designs/blob/main/accepted/2022/disable-multi-level-lookup-by-default.md) for more details.
+
+**Before .NET 7.0**
+
+Aside from looking for it in relation to the executable directory, it is also searched in the folders specified above by following the same priority rank.
 
 The search is conducted as follows:
 
 1.	In relation to the executable directory: search for the specified version. If it cannot be found, choose the most appropriate available version. If there’s no available version, proceed to the next step.
 2.	In relation to the global location: search for the specified version. If it cannot be found, choose the most appropriate available version. If there’s no available version, then we were not able to find any version folder and an error message is returned.
-
-Unlike the Framework search, the SDK search does a roll-forward for pre-release versions when the patch version changes. For example, if you install v2.0.1-pre, it will be used over v2.0.0.

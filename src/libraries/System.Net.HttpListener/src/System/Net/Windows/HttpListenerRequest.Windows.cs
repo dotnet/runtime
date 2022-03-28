@@ -547,6 +547,6 @@ namespace System.Net
             ObjectDisposedException.ThrowIf(_isDisposed, this);
         }
 
-        private bool SupportsWebSockets => WebSocketProtocolComponent.IsSupported;
+        private static bool SupportsWebSockets => WebSocketProtocolComponent.IsSupported;
     }
 }

@@ -3560,7 +3560,7 @@ namespace System.Xml
             return _parseText_dummyTask.Result;
         }
 
-        private (int, int, int, bool) ParseText_NoValue(int outOrChars, int pos)
+        private static (int, int, int, bool) ParseText_NoValue(int outOrChars, int pos)
         {
             return (pos, pos, outOrChars, true);
         }

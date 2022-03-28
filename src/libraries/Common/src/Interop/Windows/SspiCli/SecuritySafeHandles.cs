@@ -187,14 +187,6 @@ namespace System.Net.Security
 
         public DateTime Expiry => _expiry;
 
-#if DEBUG
-        public new IntPtr DangerousGetHandle()
-        {
-            Debug.Fail("This method should never be called for this type");
-            throw NotImplemented.ByDesign;
-        }
-#endif
-
         public static unsafe int AcquireDefaultCredential(
             string package,
             Interop.SspiCli.CredentialUse intent,

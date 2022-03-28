@@ -130,6 +130,7 @@ typedef struct {
 	int first_filter_idx, filter_idx;
 	/* MonoMethodILState */
 	gpointer il_state;
+	MonoGCHandle ex_gchandle;
 } ResumeState;
 
 typedef void (*MonoAbortFunction)(MonoObject*);

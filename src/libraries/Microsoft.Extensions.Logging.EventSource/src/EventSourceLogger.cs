@@ -185,7 +185,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// <param name="exception">The exception to get information for.</param>
         /// <returns>ExceptionInfo object represending a .NET Exception</returns>
         /// <remarks>ETW does not support a concept of a null value. So we use an un-initialized object if there is no exception in the event data.</remarks>
-        private ExceptionInfo GetExceptionInfo(Exception? exception)
+        private static ExceptionInfo GetExceptionInfo(Exception? exception)
         {
             return exception != null ? new ExceptionInfo(exception) : ExceptionInfo.Empty;
         }
@@ -193,7 +193,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// <summary>
         /// Converts an ILogger state object into a set of key-value pairs (That can be send to a EventSource)
         /// </summary>
-        private IReadOnlyList<KeyValuePair<string, string?>> GetProperties(object? state)
+        private static IReadOnlyList<KeyValuePair<string, string?>> GetProperties(object? state)
         {
             if (state is IReadOnlyList<KeyValuePair<string, object?>> keyValuePairs)
             {
@@ -209,7 +209,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             return Array.Empty<KeyValuePair<string, string?>>();
         }
 
-        private string ToJson(IReadOnlyList<KeyValuePair<string, string?>> keyValues)
+        private static string ToJson(IReadOnlyList<KeyValuePair<string, string?>> keyValues)
         {
             using var stream = new MemoryStream();
             using var writer = new Utf8JsonWriter(stream);

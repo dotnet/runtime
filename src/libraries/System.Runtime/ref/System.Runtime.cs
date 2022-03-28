@@ -2070,6 +2070,8 @@ namespace System
         public static System.Double Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.Double Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.Double Pow(System.Double x, System.Double y) { throw null; }
+        public static System.Double ReciprocalEstimate(System.Double x) { throw null; }
+        public static System.Double ReciprocalSqrtEstimate(System.Double x) { throw null; }
         public static System.Double Round(System.Double x) { throw null; }
         public static System.Double Round(System.Double x, System.MidpointRounding mode) { throw null; }
         public static System.Double Round<TInteger>(System.Double x, TInteger digits) where TInteger : IBinaryInteger<TInteger> { throw null; }
@@ -2077,6 +2079,7 @@ namespace System
         public static System.Double ScaleB<TInteger>(System.Double x, TInteger n) where TInteger : IBinaryInteger<TInteger> { throw null; }
         public static System.Double Sign(System.Double value) { throw null; }
         public static System.Double Sin(System.Double x) { throw null; }
+        public static (System.Double Sin, System.Double Cos) SinCos(System.Double x) { throw null; }
         public static System.Double Sinh(System.Double x) { throw null; }
         public static System.Double Sqrt(System.Double x) { throw null; }
         static System.Double System.IAdditionOperators<System.Double,System.Double,System.Double>.operator +(System.Double left, System.Double right) { throw null; }
@@ -2649,6 +2652,8 @@ namespace System
         public static System.Half Parse(string s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
         public static System.Half Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.Half Pow(System.Half x, System.Half y) { throw null; }
+        public static System.Half ReciprocalEstimate(System.Half x) { throw null; }
+        public static System.Half ReciprocalSqrtEstimate(System.Half x) { throw null; }
         public static System.Half Round(System.Half x) { throw null; }
         public static System.Half Round(System.Half x, System.MidpointRounding mode) { throw null; }
         public static System.Half Round<TInteger>(System.Half x, TInteger digits) where TInteger : IBinaryInteger<TInteger> { throw null; }
@@ -2656,6 +2661,7 @@ namespace System
         public static System.Half ScaleB<TInteger>(System.Half x, TInteger n) where TInteger : IBinaryInteger<TInteger> { throw null; }
         public static System.Half Sign(System.Half value) { throw null; }
         public static System.Half Sin(System.Half x) { throw null; }
+        public static (System.Half Sin, System.Half Cos) SinCos(System.Half x) { throw null; }
         public static System.Half Sinh(System.Half x) { throw null; }
         public static System.Half Sqrt(System.Half x) { throw null; }
         static System.Half System.IBitwiseOperators<System.Half,System.Half,System.Half>.operator &(System.Half left, System.Half right) { throw null; }
@@ -2810,12 +2816,15 @@ namespace System
         static abstract TSelf MaxMagnitude(TSelf x, TSelf y);
         static abstract TSelf MinMagnitude(TSelf x, TSelf y);
         static abstract TSelf Pow(TSelf x, TSelf y);
+        static abstract TSelf ReciprocalEstimate(TSelf x);
+        static abstract TSelf ReciprocalSqrtEstimate(TSelf x);
         static abstract TSelf Round(TSelf x);
         static abstract TSelf Round<TInteger>(TSelf x, TInteger digits) where TInteger : IBinaryInteger<TInteger>;
         static abstract TSelf Round(TSelf x, MidpointRounding mode);
         static abstract TSelf Round<TInteger>(TSelf x, TInteger digits, MidpointRounding mode) where TInteger : IBinaryInteger<TInteger>;
         static abstract TSelf ScaleB<TInteger>(TSelf x, TInteger n) where TInteger : IBinaryInteger<TInteger>;
         static abstract TSelf Sin(TSelf x);
+        static abstract (TSelf Sin, TSelf Cos) SinCos(TSelf x);
         static abstract TSelf Sinh(TSelf x);
         static abstract TSelf Sqrt(TSelf x);
         static abstract TSelf Tan(TSelf x);
@@ -4369,6 +4378,8 @@ namespace System
         public static System.Single Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.Single Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.Single Pow(System.Single x, System.Single y) { throw null; }
+        public static System.Single ReciprocalEstimate(System.Single x) { throw null; }
+        public static System.Single ReciprocalSqrtEstimate(System.Single x) { throw null; }
         public static System.Single Round(System.Single x) { throw null; }
         public static System.Single Round(System.Single x, System.MidpointRounding mode) { throw null; }
         public static System.Single Round<TInteger>(System.Single x, TInteger digits) where TInteger : IBinaryInteger<TInteger>  { throw null; }
@@ -4376,6 +4387,7 @@ namespace System
         public static System.Single ScaleB<TInteger>(System.Single x, TInteger n) where TInteger : IBinaryInteger<TInteger>  { throw null; }
         public static System.Single Sign(System.Single value) { throw null; }
         public static System.Single Sin(System.Single x) { throw null; }
+        public static (System.Single Sin, System.Single Cos) SinCos(System.Single x) { throw null; }
         public static System.Single Sinh(System.Single x) { throw null; }
         public static System.Single Sqrt(System.Single x) { throw null; }
         static System.Single System.IAdditionOperators<System.Single,System.Single,System.Single>.operator +(System.Single left, System.Single right) { throw null; }

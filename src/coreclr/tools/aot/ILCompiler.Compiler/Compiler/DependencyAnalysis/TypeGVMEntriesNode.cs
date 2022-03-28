@@ -51,6 +51,8 @@ namespace ILCompiler.DependencyAnalysis
             _associatedType = associatedType;
         }
 
+        public TypeDesc AssociatedType => _associatedType;
+
         public override bool HasConditionalStaticDependencies => false;
         public override bool HasDynamicDependencies => false;
         public override bool InterestingForDynamicDependencyAnalysis => false;

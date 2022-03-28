@@ -7,12 +7,7 @@ namespace System.Runtime.InteropServices
     /// Optional features supported by custom type marshallers.
     /// </summary>
     [Flags]
-#if LIBRARYIMPORT_GENERATOR_TEST
-    public
-#else
-    internal
-#endif
-    enum CustomTypeMarshallerFeatures
+    public enum CustomTypeMarshallerFeatures
     {
         /// <summary>
         /// No optional features supported
