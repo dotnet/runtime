@@ -97,6 +97,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0040`__ | EncryptionPolicy.NoEncryption and AllowEncryption significantly reduce security and should not be used in production code. |
 |  __`SYSLIB0041`__ | The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations. |
 |  __`SYSLIB0042`__ | ToXmlString and FromXmlString have no implementation for ECC types, and are obsolete. Use a standard import and export format such as ExportSubjectPublicKeyInfo or ImportSubjectPublicKeyInfo for public keys and ExportPkcs8PrivateKey or ImportPkcs8PrivateKey for private keys. |
+|  __`SYSLIB0043`__ | ECDiffieHellmanPublicKey.ToByteArray() and the associated constructor do not have a consistent and interoperable implementation on all platforms. Use ECDiffieHellmanPublicKey.ExportSubjectPublicKeyInfo() instead. |
 
 ## Analyzer Warnings
 
