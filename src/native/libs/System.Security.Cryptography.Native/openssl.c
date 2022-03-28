@@ -1488,7 +1488,11 @@ static int32_t EnsureOpenSslInitializedCore()
     ret = EnsureOpenSsl11Initialized();
 #endif
 
-    assert(g_x509_ocsp_index != 0);
+    if (ret == 0)
+    {
+        assert(g_x509_ocsp_index != 0);
+    }
+
     return ret;
 }
 
