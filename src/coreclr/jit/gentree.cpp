@@ -12041,11 +12041,6 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
         if (nodeIsCall)
         {
             GenTreeCall* call = node->AsCall();
-            // if ((call->gtCallThisArg != nullptr) && (operand == call->gtCallThisArg->GetNode()))
-            //{
-            //    sprintf_s(buf, sizeof(buf), "this in %s", compRegVarName(REG_ARG_0));
-            //    displayOperand(operand, buf, operandArc, indentStack, prefixIndent);
-            //}
             if (operand == call->gtCallAddr)
             {
                 displayOperand(operand, "calli tgt", operandArc, indentStack, prefixIndent);
