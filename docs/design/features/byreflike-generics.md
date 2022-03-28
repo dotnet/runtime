@@ -53,6 +53,7 @@ The expansion of metadata will impact at least the following:
 - ILDasm/ILAsm &ndash; https://github.com/dotnet/runtime
 - Cecil &ndash; https://github.com/jbevain/cecil
 - IL Trimmer &ndash; https://github.com/dotnet/linker
+- F# &ndash; https://github.com/fsharp/fsharp
 - C++/CLI &ndash; The MSVC team
 
 An API that is a JIT-time intrinsic will be needed to determine if a parameter is ByRefLike. This API would represent a check to occur at JIT time code-gen to avoid taking paths that would be invalid for some values of `T`. The existing `Type.IsByRefLike` property will be made an intrinsic (e.g., `typeof(T).IsByRefLike`).
