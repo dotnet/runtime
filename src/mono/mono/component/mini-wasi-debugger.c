@@ -120,8 +120,7 @@ mono_wasi_suspend_vm (void)
 static void 
 mono_wasi_receive_and_process_command_from_debugger_agent (void)
 {
-    //printf("to tentando ver se tem breakpoint ou pause ou sei la\n");
-    retry_receive_message = 500;
+	retry_receive_message = 500;
     mono_debugger_agent_receive_and_process_command (FALSE);
     retry_receive_message = 5000;
 }
