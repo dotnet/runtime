@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
@@ -11,7 +12,7 @@ namespace System.Numerics
     /// are real numbers, and i is the imaginary unit, with the property i2= -1.
     /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct Complex
         : IAdditionOperators<Complex, double, Complex>,
           IDivisionOperators<Complex, Complex, Complex>,
