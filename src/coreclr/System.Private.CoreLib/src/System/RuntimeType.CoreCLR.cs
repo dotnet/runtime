@@ -1448,6 +1448,7 @@ namespace System
             private string? m_namespace;
             private readonly bool m_isGlobal;
             private bool m_bIsDomainInitialized;
+            private bool m_isNullableOfT;
             private MemberInfoCache<RuntimeMethodInfo>? m_methodInfoCache;
             private MemberInfoCache<RuntimeConstructorInfo>? m_constructorInfoCache;
             private MemberInfoCache<RuntimeFieldInfo>? m_fieldInfoCache;
@@ -1468,6 +1469,7 @@ namespace System
                 m_typeCode = TypeCode.Empty;
                 m_runtimeType = runtimeType;
                 m_isGlobal = RuntimeTypeHandle.GetModule(runtimeType).RuntimeType == runtimeType;
+                m_isNullableOfT = Nullable.GetUnderlyingType(runtimeType) != null;
             }
             #endregion
 
@@ -1580,6 +1582,8 @@ namespace System
             internal RuntimeType GetRuntimeType() => m_runtimeType;
 
             internal bool IsGlobal => m_isGlobal;
+
+            internal bool IsNullableOfT => m_isNullableOfT;
 
             internal void InvalidateCachedNestedType() => m_nestedClassesCache = null;
 
@@ -3443,7 +3447,7 @@ namespace System
         #endregion
 
         #region Misc
-        internal bool IsNullableOfT => Nullable.GetUnderlyingType(this) != null;
+        internal bool IsNullableOfT => Cache.IsNullableOfT;
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeType>(other);
 
@@ -3524,7 +3528,7 @@ namespace System
             }
 
             bool isValueType;
-            CheckValueStatus result = TryChangeType(ref value, out copyBack, out isValueType, paramInfo, allowNull: true);
+            CheckValueStatus result = TryChangeType(ref value, out copyBack, out isValueType, paramInfo);
             if (result == CheckValueStatus.Success)
             {
                 return isValueType;
@@ -3544,7 +3548,7 @@ namespace System
                         return IsValueType;
                     }
 
-                    result = TryChangeType(ref value, out copyBack, out isValueType, paramInfo, allowNull: false);
+                    result = TryChangeType(ref value, out copyBack, out isValueType, paramInfo);
                     if (result == CheckValueStatus.Success)
                     {
                         return isValueType;
@@ -3569,12 +3573,10 @@ namespace System
             ref object? value,
             out bool copyBack,
             out bool isValueType,
-            ParameterInfo? paramInfo,
-            bool allowNull)
+            ParameterInfo? paramInfo)
         {
             // If this is a ByRef get the element type and check if it's compatible
-            bool isByRef = IsByRef;
-            if (isByRef)
+            if (IsByRef)
             {
                 RuntimeType sigElementType = RuntimeTypeHandle.GetElementType(this);
 
@@ -3624,12 +3626,6 @@ namespace System
 
             if (value == null)
             {
-                if (!allowNull)
-                {
-                    isValueType = copyBack = default;
-                    return IsByRefLike ? CheckValueStatus.NotSupported_ByRefLike : CheckValueStatus.ArgumentException;
-                }
-
                 if (RuntimeTypeHandle.IsValueType(this))
                 {
                     // If a nullable, pass the null as an object even though it's a value type.

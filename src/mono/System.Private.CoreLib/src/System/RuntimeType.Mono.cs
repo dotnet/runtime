@@ -1679,7 +1679,7 @@ namespace System
             BindingFlags invokeAttr)
         {
             if (TryConvertToType(ref value, ref copyBack))
-                return false;
+                return true;
 
             if ((invokeAttr & BindingFlags.ExactBinding) == BindingFlags.ExactBinding)
                 throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value!.GetType(), this));
@@ -1688,7 +1688,7 @@ namespace System
             {
                 value = binder.ChangeType(value!, this, culture);
                 copyBack = true;
-                return false;
+                return true;
             }
 
             throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value!.GetType(), this));
@@ -1710,7 +1710,10 @@ namespace System
             }
 
             if (value == null)
+            {
+                copyBack = true;
                 return true;
+            }
 
             if (IsEnum)
             {
