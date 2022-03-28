@@ -1537,6 +1537,17 @@ CallArg* CallArgs::InsertAfterThisOrFirst(Compiler* comp, GenTree* node, WellKno
     }
 }
 
+void CallArgs::PushLateBack(CallArg* arg)
+{
+    CallArg** slot = &m_lateHead;
+    while (*slot != nullptr)
+    {
+        slot = &(*slot)->LateNextRef();
+    }
+
+    *slot = arg;
+}
+
 bool CallArgs::Remove(CallArg* arg)
 {
     CallArg** slot = &m_head;

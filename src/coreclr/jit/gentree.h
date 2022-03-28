@@ -4401,6 +4401,7 @@ public:
     CallArg* InsertAfter(Compiler* comp, CallArg* after, GenTree* arg, WellKnownArg wellKnownArg = WellKnownArg::None);
     CallArg* InsertInstParam(Compiler* comp, GenTree* value);
     CallArg* InsertAfterThisOrFirst(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
+    void PushLateBack(CallArg* node);
     bool Remove(CallArg* arg);
     void Clear();
 

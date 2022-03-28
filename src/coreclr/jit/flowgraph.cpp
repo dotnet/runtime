@@ -1137,8 +1137,6 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             {
                 JITDUMP("optimized\n");
 
-                call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID);
-
                 GenTree*             thisPointer       = call->gtArgs.GetArgByIndex(0)->GetNode();
                 GenTree*             targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
                 CORINFO_LOOKUP       pLookup;
@@ -1147,7 +1145,8 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                 if (!pLookup.lookupKind.needsRuntimeLookup)
                 {
                     entryPoint = pLookup.constLookup;
-                    call->gtArgs.PushFront(this, thisPointer, targetObjPointers);
+                    call       = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
+                                               targetObjPointers);
                 }
                 else
                 {
@@ -1157,8 +1156,11 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                                                           CORINFO_HELP_READYTORUN_GENERIC_HANDLE, &genericLookup);
                     GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
                     call->gtArgs.PushFront(this, thisPointer, targetObjPointers, ctxTree);
+                    call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
+                                               targetObjPointers, ctxTree);
                     entryPoint = genericLookup;
                 }
+
                 call->setEntryPoint(entryPoint);
             }
             else
@@ -1173,8 +1175,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
 
             GenTree* thisPointer       = call->gtArgs.GetArgByIndex(0)->GetNode();
             GenTree* targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
-            call                       = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID);
-            call->gtArgs.PushFront(this, thisPointer, targetObjPointers);
+            call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer, targetObjPointers);
 
             CORINFO_LOOKUP entryPoint;
             info.compCompHnd->getReadyToRunDelegateCtorHelper(ldftnToken, clsHnd, &entryPoint);

@@ -2356,12 +2356,11 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             assert(gotUse);
             useOfTar.ReplaceWith(regNode);
 
-            GenTreeCall* validate = comp->gtNewHelperCallNode(CORINFO_HELP_VALIDATE_INDIRECT_CALL, TYP_VOID);
             // Add the call to the validator. Use a placeholder for the target while we
             // morph, sequence and lower, to avoid redoing that for the actual target.
-            GenTree* targetPlaceholder = comp->gtNewZeroConNode(callTarget->TypeGet());
-            CallArg* targetArg =
-                validate->gtArgs.PushFront(comp, targetPlaceholder, WellKnownArg::ValidateIndirectCallTarget);
+            GenTree*     targetPlaceholder = comp->gtNewZeroConNode(callTarget->TypeGet());
+            GenTreeCall* validate =
+                comp->gtNewHelperCallNode(CORINFO_HELP_VALIDATE_INDIRECT_CALL, TYP_VOID, targetPlaceholder);
 
             comp->fgMorphTree(validate);
 
@@ -2393,13 +2392,13 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
                     assert(node->OperIsPutArg() || node->OperIsFieldList());
                     MoveCFGCallArg(call, node);
                 }
+            }
 
-                node = arg.GetLateNode();
-                if (node != nullptr)
-                {
-                    assert(node->OperIsPutArg() || node->OperIsFieldList());
-                    MoveCFGCallArg(call, node);
-                }
+            for (LateArg arg : call->gtArgs.LateArgs())
+            {
+                GenTree* node = arg.GetNode();
+                assert(node->OperIsPutArg() || node->OperIsFieldList());
+                MoveCFGCallArg(call, node);
             }
             break;
         }
@@ -2412,8 +2411,11 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             CallArg* targetArg   = call->gtArgs.PushBack(comp, placeHolder, WellKnownArg::DispatchIndirectCallTarget);
             placeHolder->gtFlags |= GTF_LATE_ARG;
             targetArg->SetLateNode(callTarget);
+            call->gtArgs.PushLateBack(targetArg);
 
-            // Set up ABI information for this call.
+            // Set up ABI information for this arg.
+            targetArg->AbiInfo.ArgNum  = call->gtArgs.CountArgs() - 1;
+            targetArg->AbiInfo.ArgType = callTarget->TypeGet();
             targetArg->AbiInfo.SetRegNum(0, REG_DISPATCH_INDIRECT_CALL_ADDR);
             targetArg->AbiInfo.NumRegs = 1;
             targetArg->AbiInfo.SetByteSize(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE, false, false);
