@@ -9,29 +9,30 @@ namespace System.IO.Tests
     public class File_GetSetTimes_String : File_GetSetTimes
     {
         protected override bool CanBeReadOnly => true;
+
         protected override string CreateSymlink(string path, string pathToTarget) => File.CreateSymbolicLink(path, pathToTarget).FullName;
 
         protected override void SetCreationTime(string path, DateTime creationTime) => File.SetCreationTime(path, creationTime);
 
         protected override DateTime GetCreationTime(string path) => File.GetCreationTime(path);
 
-        protected override void SetCreationTimeUtc(string path, DateTime creationTime) => File.SetCreationTimeUtc(path, creationTime);
+        protected override void SetCreationTimeUtc(string path, DateTime creationTimeUtc) => File.SetCreationTimeUtc(path, creationTimeUtc);
 
         protected override DateTime GetCreationTimeUtc(string path) => File.GetCreationTimeUtc(path);
 
-        protected override void SetLastAccessTime(string path, DateTime creationTime) => File.SetLastAccessTime(path, creationTime);
+        protected override void SetLastAccessTime(string path, DateTime lastAccessTime) => File.SetLastAccessTime(path, lastAccessTime);
 
         protected override DateTime GetLastAccessTime(string path) => File.GetLastAccessTime(path);
 
-        protected override void SetLastAccessTimeUtc(string path, DateTime creationTime) => File.SetLastAccessTimeUtc(path, creationTime);
+        protected override void SetLastAccessTimeUtc(string path, DateTime lastAccessTimeUtc) => File.SetLastAccessTimeUtc(path, lastAccessTimeUtc);
 
         protected override DateTime GetLastAccessTimeUtc(string path) => File.GetLastAccessTimeUtc(path);
 
-        protected override void SetLastWriteTime(string path, DateTime creationTime) => File.SetLastWriteTime(path, creationTime);
+        protected override void SetLastWriteTime(string path, DateTime lastWriteTime) => File.SetLastWriteTime(path, lastWriteTime);
 
         protected override DateTime GetLastWriteTime(string path) => File.GetLastWriteTime(path);
 
-        protected override void SetLastWriteTimeUtc(string path, DateTime creationTime) => File.SetLastWriteTimeUtc(path, creationTime);
+        protected override void SetLastWriteTimeUtc(string path, DateTime lastWriteTimeUtc) => File.SetLastWriteTimeUtc(path, lastWriteTimeUtc);
 
         protected override DateTime GetLastWriteTimeUtc(string path) => File.GetLastWriteTimeUtc(path);
 

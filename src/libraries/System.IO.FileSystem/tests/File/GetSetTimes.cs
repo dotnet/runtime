@@ -11,9 +11,7 @@ namespace System.IO.Tests
     {
         // OSX has the limitation of setting upto 2262-04-11T23:47:16 (long.Max) date.
         // 32bit Unix has time_t up to ~ 2038.
-        protected static bool SupportsLongMaxDateTime => PlatformDetection.IsWindows ||
-                                                       !PlatformDetection.Is32BitProcess &&
-                                                       !PlatformDetection.IsOSXLike;
+        protected static bool SupportsLongMaxDateTime => PlatformDetection.IsWindows || (!PlatformDetection.Is32BitProcess && !PlatformDetection.IsOSXLike);
 
         protected override bool CanBeReadOnly => true;
 
@@ -36,25 +34,65 @@ namespace System.IO.Tests
 
         protected abstract DateTime GetCreationTime(string path);
 
-        protected abstract void SetCreationTimeUtc(string path, DateTime creationTime);
+        protected abstract void SetCreationTimeUtc(string path, DateTime creationTimeUtc);
 
         protected abstract DateTime GetCreationTimeUtc(string path);
 
-        protected abstract void SetLastAccessTime(string path, DateTime creationTime);
+        protected abstract void SetLastAccessTime(string path, DateTime lastAccessTime);
 
         protected abstract DateTime GetLastAccessTime(string path);
 
-        protected abstract void SetLastAccessTimeUtc(string path, DateTime creationTime);
+        protected abstract void SetLastAccessTimeUtc(string path, DateTime lastAccessTimeUtc);
 
         protected abstract DateTime GetLastAccessTimeUtc(string path);
 
-        protected abstract void SetLastWriteTime(string path, DateTime creationTime);
+        protected abstract void SetLastWriteTime(string path, DateTime lastWriteTime);
 
         protected abstract DateTime GetLastWriteTime(string path);
 
-        protected abstract void SetLastWriteTimeUtc(string path, DateTime creationTime);
+        protected abstract void SetLastWriteTimeUtc(string path, DateTime lastWriteTimeUtc);
 
         protected abstract DateTime GetLastWriteTimeUtc(string path);
+
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void BirthTimeIsNotNewerThanLowestOfAccessModifiedTimes()
+        {
+            // On Linux, we synthesize CreationTime from the oldest of status changed time and write time
+            //  if birth time is not available. So WriteTime should never be earlier.
+
+            // Set different values for all three
+            // Status changed time will be when the file was first created, in this case)
+            string path = GetExistingItem();
+
+            SetLastWriteTime(path, DateTime.Now.AddMinutes(1));
+            SetLastAccessTime(path, DateTime.Now.AddMinutes(2));
+
+            // Assert.InRange is inclusive.
+            Assert.InRange(GetCreationTimeUtc(path), DateTime.MinValue, GetLastWriteTimeUtc(path));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public async Task CreationTimeSet_GetReturnsExpected_WhenNotInFuture()
+        {
+            // On Linux, we synthesize CreationTime from the oldest of status changed time (ctime) and write time (mtime).
+            // Changing the CreationTime, updates mtime and causes ctime to change to the current time.
+            // When setting CreationTime to a value that isn't in the future, getting the CreationTime should return the same value.
+
+            string path = GetTestFilePath();
+            await File.WriteAllTextAsync(path, "");
+
+            // Set the creation time to a value in the past that is between ctime and now.
+            await Task.Delay(600);
+            DateTime newCreationTimeUtc = DateTime.UtcNow.Subtract(TimeSpan.FromMilliseconds(300));
+
+            SetCreationTimeUtc(path, newCreationTimeUtc);
+
+            Assert.Equal(newCreationTimeUtc, GetLastWriteTimeUtc(path));
+            Assert.Equal(newCreationTimeUtc, GetCreationTimeUtc(path));
+        }
 
         public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false)
         {
@@ -97,45 +135,6 @@ namespace System.IO.Tests
                 SetLastWriteTimeUtc,
                 GetLastWriteTimeUtc,
                 DateTimeKind.Utc);
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Linux)]
-        public void BirthTimeIsNotNewerThanLowestOfAccessModifiedTimes()
-        {
-            // On Linux, we synthesize CreationTime from the oldest of status changed time and write time
-            //  if birth time is not available. So WriteTime should never be earlier.
-
-            // Set different values for all three
-            // Status changed time will be when the file was first created, in this case)
-            string path = GetExistingItem();
-
-            SetLastWriteTime(path, DateTime.Now.AddMinutes(1));
-            SetLastAccessTime(path, DateTime.Now.AddMinutes(2));
-
-            // Assert.InRange is inclusive.
-            Assert.InRange(GetCreationTimeUtc(path), DateTime.MinValue, GetLastWriteTimeUtc(path));
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Linux)]
-        public async Task CreationTimeSet_GetReturnsExpected_WhenNotInFuture()
-        {
-            // On Linux, we synthesize CreationTime from the oldest of status changed time (ctime) and write time (mtime).
-            // Changing the CreationTime, updates mtime and causes ctime to change to the current time.
-            // When setting CreationTime to a value that isn't in the future, getting the CreationTime should return the same value.
-
-            string path = GetTestFilePath();
-            await File.WriteAllTextAsync(path, "");
-
-            // Set the creation time to a value in the past that is between ctime and now.
-            await Task.Delay(600);
-            DateTime newCreationTimeUtc = DateTime.UtcNow.Subtract(TimeSpan.FromMilliseconds(300));
-
-            SetCreationTimeUtc(path, newCreationTimeUtc);
-
-            Assert.Equal(newCreationTimeUtc, GetLastWriteTimeUtc(path));
-            Assert.Equal(newCreationTimeUtc, GetCreationTimeUtc(path));
         }
 
         [Fact]

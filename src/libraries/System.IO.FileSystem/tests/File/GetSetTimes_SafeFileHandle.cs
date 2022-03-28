@@ -1,4 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+﻿
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
@@ -25,10 +26,10 @@ namespace System.IO.Tests
             return File.GetCreationTime(fileHandle);
         }
 
-        protected override void SetCreationTimeUtc(string path, DateTime creationTime)
+        protected override void SetCreationTimeUtc(string path, DateTime creationTimeUtc)
         {
             using var fileHandle = OpenFileHandle(path);
-            File.SetCreationTimeUtc(fileHandle, creationTime);
+            File.SetCreationTimeUtc(fileHandle, creationTimeUtc);
         }
 
         protected override DateTime GetCreationTimeUtc(string path)
@@ -37,10 +38,10 @@ namespace System.IO.Tests
             return File.GetCreationTimeUtc(fileHandle);
         }
 
-        protected override void SetLastAccessTime(string path, DateTime creationTime)
+        protected override void SetLastAccessTime(string path, DateTime lastAccessTime)
         {
             using var fileHandle = OpenFileHandle(path);
-            File.SetLastAccessTime(fileHandle, creationTime);
+            File.SetLastAccessTime(fileHandle, lastAccessTime);
         }
 
         protected override DateTime GetLastAccessTime(string path)
@@ -49,10 +50,10 @@ namespace System.IO.Tests
             return File.GetLastAccessTime(fileHandle);
         }
 
-        protected override void SetLastAccessTimeUtc(string path, DateTime creationTime)
+        protected override void SetLastAccessTimeUtc(string path, DateTime lastAccessTimeUtc)
         {
             using var fileHandle = OpenFileHandle(path);
-            File.SetLastAccessTimeUtc(fileHandle, creationTime);
+            File.SetLastAccessTimeUtc(fileHandle, lastAccessTimeUtc);
         }
 
         protected override DateTime GetLastAccessTimeUtc(string path)
@@ -61,10 +62,10 @@ namespace System.IO.Tests
             return File.GetLastAccessTimeUtc(fileHandle);
         }
 
-        protected override void SetLastWriteTime(string path, DateTime creationTime)
+        protected override void SetLastWriteTime(string path, DateTime lastWriteTime)
         {
             using var fileHandle = OpenFileHandle(path);
-            File.SetLastWriteTime(fileHandle, creationTime);
+            File.SetLastWriteTime(fileHandle, lastWriteTime);
         }
 
         protected override DateTime GetLastWriteTime(string path)
@@ -73,10 +74,10 @@ namespace System.IO.Tests
             return File.GetLastWriteTime(fileHandle);
         }
 
-        protected override void SetLastWriteTimeUtc(string path, DateTime creationTime)
+        protected override void SetLastWriteTimeUtc(string path, DateTime lastWriteTimeUtc)
         {
             using var fileHandle = OpenFileHandle(path);
-            File.SetLastWriteTimeUtc(fileHandle, creationTime);
+            File.SetLastWriteTimeUtc(fileHandle, lastWriteTimeUtc);
         }
 
         protected override DateTime GetLastWriteTimeUtc(string path)
