@@ -190,7 +190,11 @@ SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method)
             }
         }
 
-        SSL_CTX_set_tlsext_status_type(ctx, TLSEXT_STATUSTYPE_ocsp);
+        // Opportunistically request the server present a stapled OCSP response.
+        if (SSL_CTX_ctrl(ctx, SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE, TLSEXT_STATUSTYPE_ocsp, NULL) != 1)
+        {
+            ERR_clear_error();
+        }
     }
 
     return ctx;
