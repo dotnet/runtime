@@ -64,8 +64,8 @@ def prune():
         print(error)
 
 
-for path in node_paths:
-    if upgrade:
+if upgrade:
+    for path in node_paths:
         update_npm(path)
 
 
@@ -94,6 +94,6 @@ remove(
 
 prune()
 
-for path in node_paths:
-    if not upgrade:
+if not upgrade:
+    for path in node_paths:
         remove_npm(path)
