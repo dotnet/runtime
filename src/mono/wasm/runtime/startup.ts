@@ -252,7 +252,7 @@ function _apply_configuration_from_args(config: MonoConfig) {
         if (typeof (v) === "string")
             mono_wasm_setenv(k, v);
         else
-            throw new Error(`Expected environment variable '${k}' to be a string but it was '${v}'`);
+            throw new Error(`Expected environment variable '${k}' to be a string but it was ${typeof v}: '${v}'`);
     }
 
     if (config.runtime_options)
