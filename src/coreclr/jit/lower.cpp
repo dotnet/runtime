@@ -2129,7 +2129,20 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
 #ifdef DEBUG
             comp->lvaTable[tmpLclNum].SetDoNotEnregReason(callerArgDsc->GetDoNotEnregReason());
 #endif // DEBUG
-            GenTree* value = comp->gtNewLclvNode(lclNum, tmpTyp);
+
+            GenTree* value;
+#ifdef TARGET_ARM
+            if (tmpTyp == TYP_LONG)
+            {
+                GenTree* loResult = comp->gtNewLclFldNode(lclNum, TYP_INT, 0);
+                GenTree* hiResult = comp->gtNewLclFldNode(lclNum, TYP_INT, 4);
+                value             = new (comp, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, loResult, hiResult);
+            }
+            else
+#endif // TARGET_ARM
+            {
+                value = comp->gtNewLclvNode(lclNum, tmpTyp);
+            }
 
             if (tmpTyp == TYP_STRUCT)
             {
@@ -2757,7 +2770,7 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
             // to have a constant as the first operand.
             //
 
-            if (hiSrc1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+            if (hiSrc1->OperIs(GT_LCL_VAR, GT_LCL_FLD) && IsInvariantInRange(hiSrc1, hiCmp))
             {
                 BlockRange().Remove(hiSrc1);
                 BlockRange().InsertBefore(hiCmp, hiSrc1);
@@ -2912,6 +2925,25 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
         if (op2Value != 0)
         {
+            // Optimizes (X & 1) == 1 to (X & 1)
+            // The compiler requires jumps to have relop operands, so we do not fold that case.
+            LIR::Use cmpUse;
+            if ((op2Value == 1) && cmp->OperIs(GT_EQ))
+            {
+                if (andOp2->IsIntegralConst(1) && (genActualType(op1) == cmp->TypeGet()) &&
+                    BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE))
+                {
+                    GenTree* next = cmp->gtNext;
+
+                    cmpUse.ReplaceWith(op1);
+
+                    BlockRange().Remove(cmp->gtGetOp2());
+                    BlockRange().Remove(cmp);
+
+                    return next;
+                }
+            }
+
             //
             // If we don't have a 0 compare we can get one by transforming ((x AND mask) EQ|NE mask)
             // into ((x AND mask) NE|EQ 0) when mask is a single bit.
@@ -5225,7 +5257,14 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 {
     if (!addr->OperIs(GT_ADD) || addr->gtOverflow())
     {
+#ifdef TARGET_ARM64
+        if (!addr->OperIs(GT_ADDEX))
+        {
+            return false;
+        }
+#else
         return false;
+#endif
     }
 
 #ifdef TARGET_ARM64
@@ -5365,6 +5404,11 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     }
 
 #ifdef TARGET_ARM64
+    if ((index != nullptr) && index->OperIs(GT_CAST) && (scale == 1) && (offset == 0) && varTypeIsByte(targetType))
+    {
+        MakeSrcContained(addrMode, index);
+    }
+
     // Check if we can "contain" LEA(BFIZ) in order to extend 32bit index to 64bit as part of load/store.
     if ((index != nullptr) && index->OperIs(GT_BFIZ) && index->gtGetOp1()->OperIs(GT_CAST) &&
         index->gtGetOp2()->IsCnsIntOrI() && (varTypeIsIntegral(targetType) || varTypeIsFloating(targetType)))
@@ -7342,3 +7386,66 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     LowerStoreIndirCommon(blkNode->AsStoreInd());
     return true;
 }
+
+#ifdef FEATURE_SIMD
+//----------------------------------------------------------------------------------------------
+// Lowering::LowerSIMD: Perform containment analysis for a SIMD intrinsic node.
+//
+//  Arguments:
+//     simdNode - The SIMD intrinsic node.
+//
+void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
+{
+    if (simdNode->TypeGet() == TYP_SIMD12)
+    {
+        // GT_SIMD node requiring to produce TYP_SIMD12 in fact
+        // produces a TYP_SIMD16 result
+        simdNode->gtType = TYP_SIMD16;
+    }
+
+    if (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicInitN)
+    {
+        assert(simdNode->GetSimdBaseType() == TYP_FLOAT);
+
+        size_t argCount      = simdNode->GetOperandCount();
+        size_t constArgCount = 0;
+        float  constArgValues[4]{0, 0, 0, 0};
+
+        for (GenTree* arg : simdNode->Operands())
+        {
+            assert(arg->TypeIs(simdNode->GetSimdBaseType()));
+
+            if (arg->IsCnsFltOrDbl())
+            {
+                constArgValues[constArgCount] = static_cast<float>(arg->AsDblCon()->gtDconVal);
+                constArgCount++;
+            }
+        }
+
+        if (constArgCount == argCount)
+        {
+            for (GenTree* arg : simdNode->Operands())
+            {
+                BlockRange().Remove(arg);
+            }
+
+            assert(sizeof(constArgValues) == 16);
+
+            unsigned cnsSize  = sizeof(constArgValues);
+            unsigned cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
+
+            CORINFO_FIELD_HANDLE hnd =
+                comp->GetEmitter()->emitBlkConst(constArgValues, cnsSize, cnsAlign, simdNode->GetSimdBaseType());
+            GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
+            BlockRange().InsertBefore(simdNode, clsVarAddr);
+            simdNode->ChangeOper(GT_IND);
+            simdNode->AsOp()->gtOp1 = clsVarAddr;
+            ContainCheckIndir(simdNode->AsIndir());
+
+            return;
+        }
+    }
+
+    ContainCheckSIMD(simdNode);
+}
+#endif // FEATURE_SIMD

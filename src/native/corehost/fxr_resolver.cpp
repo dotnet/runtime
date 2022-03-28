@@ -112,8 +112,8 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
             dotnet_root_env_var_name.c_str(),
             self_registered_message.c_str());
         trace::error(_X(""));
-        trace::error(_X("The .NET runtime can be found at:"));
-        trace::error(_X("  - %s&apphost_version=%s"), get_download_url().c_str(), _STRINGIFY(COMMON_HOST_PKG_VER));
+        trace::error(_X("Download the .NET runtime:"));
+        trace::error(_X("%s&apphost_version=%s"), get_download_url().c_str(), _STRINGIFY(COMMON_HOST_PKG_VER));
         return false;
     }
 

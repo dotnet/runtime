@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Pull type forwards from the experimental ref assembly so we only need to maintain a single src project -->
-    <ContractProject>$(LibrariesProjectRoot)System.Runtime.Experimental\ref\System.Runtime.Experimental.csproj</ContractProject>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
@@ -19,9 +17,5 @@
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Uri\src\System.Private.Uri.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- Set the ReferenceAssembly metadata to the inbox version of System.Runtime and not to System.Runtime.Experimental. -->
-    <ProjectReference Include="..\ref\System.Runtime.csproj" ReferenceOutputAssembly="false" OutputItemType="ResolvedMatchingContractOverride" />
   </ItemGroup>
 </Project>

@@ -91,7 +91,7 @@ typedef struct MonoCompileArch {
 
 #define MONO_ARCH_USE_SIGACTION 1
 
-#ifdef HAVE_WORKING_SIGALTSTACK
+#ifdef ENABLE_SIGALTSTACK
 /*#define MONO_ARCH_SIGSEGV_ON_ALTSTACK*/
 #endif
 

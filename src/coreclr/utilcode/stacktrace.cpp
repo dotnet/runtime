@@ -362,7 +362,7 @@ LPSTR FillSymbolSearchPath(CQuickBytes &qb)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     SCAN_IGNORE_FAULT; // Faults from Wsz funcs are handled.
-    LPSTR retval;
+    LPSTR retval = NULL;
     HRESULT hr = S_OK;
 
     EX_TRY

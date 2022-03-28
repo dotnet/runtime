@@ -45,7 +45,6 @@ namespace System.Xml.Serialization
             _namespaces = namespaces;
             _soap12 = (encodingStyle == Soap12.Encoding);
             _idBase = idBase;
-            Init(tempAssembly);
         }
 
         protected bool EscapeName
@@ -534,7 +533,7 @@ namespace System.Xml.Serialization
             WriteNamespaceDeclarations(xmlns);
         }
 
-        private HashSet<int>? ListUsedPrefixes(XmlSerializerNamespaces nsList, string prefix)
+        private static HashSet<int>? ListUsedPrefixes(XmlSerializerNamespaces nsList, string prefix)
         {
             var qnIndexes = new HashSet<int>();
             int prefixLength = prefix.Length;
@@ -1466,7 +1465,7 @@ namespace System.Xml.Serialization
         // It's OK to suppress the SxS warning.
         internal static bool IsTypeDynamic(Type type)
         {
-            object oIsTypeDynamic = s_tableIsTypeDynamic.GetOrCreateValue(type, () =>
+            object oIsTypeDynamic = s_tableIsTypeDynamic.GetOrCreateValue(type, static type =>
             {
                 Assembly assembly = type.Assembly;
                 bool isTypeDynamic = assembly.IsDynamic /*|| string.IsNullOrEmpty(assembly.Location)*/;
@@ -1881,7 +1880,7 @@ namespace System.Xml.Serialization
             string memberAccess = GetStringForEnumMember(mapping.TypeDesc!.CSharpName, memberName, useReflection);
             return GetStringForEnumLongValue(memberAccess, useReflection);
         }
-        internal string GetStringForEnumLongValue(string variable, bool useReflection)
+        internal static string GetStringForEnumLongValue(string variable, bool useReflection)
         {
             if (useReflection)
                 return $"{typeof(Convert).FullName}.ToInt64({variable})";
@@ -1975,7 +1974,7 @@ namespace System.Xml.Serialization
             return GetStringForCreateInstance(GetStringForTypeof(escapedTypeName, useReflection), cast && !useReflection ? escapedTypeName : null, ctorInaccessible, arg);
         }
 
-        internal string GetStringForCreateInstance(string type, string? cast, bool nonPublic, string? arg)
+        internal static string GetStringForCreateInstance(string type, string? cast, bool nonPublic, string? arg)
         {
             StringBuilder createInstance = new StringBuilder();
             if (cast != null && cast.Length > 0)
@@ -2431,7 +2430,7 @@ namespace System.Xml.Serialization
 
                     Writer.Write("if (");
                     if (mapping.TypeDesc!.UseReflection)
-                        Writer.Write(RaCodeGen.GetStringForEnumLongValue(source, mapping.TypeDesc.UseReflection));
+                        Writer.Write(ReflectionAwareCodeGen.GetStringForEnumLongValue(source, mapping.TypeDesc.UseReflection));
                     else
                         Writer.Write(source);
                     Writer.Write(" != ");
@@ -2859,7 +2858,7 @@ namespace System.Xml.Serialization
             {
                 Hashtable values = new Hashtable();
                 if (mapping.TypeDesc.UseReflection)
-                    Writer.WriteLine($"switch ({RaCodeGen.GetStringForEnumLongValue("v", mapping.TypeDesc.UseReflection)} ){{");
+                    Writer.WriteLine($"switch ({ReflectionAwareCodeGen.GetStringForEnumLongValue("v", mapping.TypeDesc.UseReflection)} ){{");
                 else
                     Writer.WriteLine("switch (v) {");
                 Writer.Indent++;
@@ -2880,7 +2879,7 @@ namespace System.Xml.Serialization
                 if (mapping.IsFlags)
                 {
                     Writer.Write("default: s = FromEnum(");
-                    Writer.Write(RaCodeGen.GetStringForEnumLongValue("v", mapping.TypeDesc.UseReflection));
+                    Writer.Write(ReflectionAwareCodeGen.GetStringForEnumLongValue("v", mapping.TypeDesc.UseReflection));
                     Writer.Write(", new string[] {");
                     Writer.Indent++;
                     for (int i = 0; i < constants.Length; i++)
@@ -2918,7 +2917,7 @@ namespace System.Xml.Serialization
                 else
                 {
                     Writer.Write("default: throw CreateInvalidEnumValueException(");
-                    Writer.Write(RaCodeGen.GetStringForEnumLongValue("v", mapping.TypeDesc.UseReflection));
+                    Writer.Write(ReflectionAwareCodeGen.GetStringForEnumLongValue("v", mapping.TypeDesc.UseReflection));
                     Writer.Write(".ToString(System.Globalization.CultureInfo.InvariantCulture), ");
                     WriteQuotedCSharpString(mapping.TypeDesc.FullName);
                     Writer.WriteLine(");");
@@ -3661,7 +3660,7 @@ namespace System.Xml.Serialization
                         if (wroteFirstIf) Writer.Write("else ");
                         else wroteFirstIf = true;
                         Writer.Write("if (");
-                        Writer.Write(enumUseReflection ? RaCodeGen.GetStringForEnumLongValue(enumSource!, enumUseReflection) : enumSource);
+                        Writer.Write(enumUseReflection ? ReflectionAwareCodeGen.GetStringForEnumLongValue(enumSource!, enumUseReflection) : enumSource);
                         Writer.Write(" == ");
                         Writer.Write(enumFullName);
                         if (isNullable && !element.IsNullable)
@@ -3734,7 +3733,7 @@ namespace System.Xml.Serialization
                             bool enumUseReflection = choice.Mapping!.TypeDesc!.UseReflection;
                             enumFullName = (enumUseReflection ? "" : $"{enumTypeName}.@") + FindChoiceEnumValue(element, (EnumMapping)choice.Mapping, enumUseReflection);
                             Writer.Write("if (");
-                            Writer.Write(enumUseReflection ? RaCodeGen.GetStringForEnumLongValue(enumSource!, enumUseReflection) : enumSource);
+                            Writer.Write(enumUseReflection ? ReflectionAwareCodeGen.GetStringForEnumLongValue(enumSource!, enumUseReflection) : enumSource);
                             Writer.Write(" == ");
                             Writer.Write(enumFullName);
                             if (isNullable && !element.IsNullable)
@@ -4363,7 +4362,7 @@ namespace System.Xml.Serialization
             Writer.WriteLine(");");
         }
 
-        private int FindXmlnsIndex(MemberMapping[] members)
+        private static int FindXmlnsIndex(MemberMapping[] members)
         {
             for (int i = 0; i < members.Length; i++)
             {
@@ -4418,7 +4417,7 @@ namespace System.Xml.Serialization
             RaCodeGen.WriteEnumCase(fullTypeName, c, useReflection);
         }
 
-        private string FindChoiceEnumValue(ElementAccessor element, EnumMapping choiceMapping, bool useReflection)
+        private static string FindChoiceEnumValue(ElementAccessor element, EnumMapping choiceMapping, bool useReflection)
         {
             string? enumValue = null;
 

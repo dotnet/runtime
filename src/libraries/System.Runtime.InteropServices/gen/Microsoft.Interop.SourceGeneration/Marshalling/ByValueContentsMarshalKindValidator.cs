@@ -36,14 +36,14 @@ namespace Microsoft.Interop
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = Resources.InOutAttributeByRefNotSupported
+                    NotSupportedDetails = SR.InOutAttributeByRefNotSupported
                 };
             }
             else if (info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.In)
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = Resources.InAttributeNotSupportedWithoutOut
+                    NotSupportedDetails = SR.InAttributeNotSupportedWithoutOut
                 };
             }
             else if (info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default
@@ -51,7 +51,7 @@ namespace Microsoft.Interop
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = Resources.InOutAttributeMarshalerNotSupported
+                    NotSupportedDetails = SR.InOutAttributeMarshalerNotSupported
                 };
             }
             return generator;

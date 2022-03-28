@@ -241,7 +241,7 @@ namespace System.Reflection.PortableExecutable
             return true;
         }
 
-        private void SkipDosHeader(ref PEBinaryReader reader, out bool isCOFFOnly)
+        private static void SkipDosHeader(ref PEBinaryReader reader, out bool isCOFFOnly)
         {
             // Look for DOS Signature "MZ"
             ushort dosSig = reader.ReadUInt16();

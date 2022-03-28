@@ -2313,7 +2313,7 @@ HRESULT CordbType::GetTypeID(COR_TYPEID *pId)
         hr = Init(FALSE);
         IfFailThrow(hr);
 
-        VMPTR_TypeHandle vmTypeHandle;
+        VMPTR_TypeHandle vmTypeHandle = VMPTR_TypeHandle::NullPtr();
 
         CorElementType et = GetElementType();
         switch (et)

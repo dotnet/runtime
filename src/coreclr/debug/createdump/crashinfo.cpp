@@ -412,8 +412,8 @@ CrashInfo::UnwindAllThreads()
 void
 CrashInfo::ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& name)
 {
-    uint64_t start = (uint64_t)baseAddress;
-    uint64_t end = ((baseAddress + size) + (PAGE_SIZE - 1)) & PAGE_MASK;
+    ULONG_PTR start = (ULONG_PTR)baseAddress;
+    ULONG_PTR end = ((baseAddress + size) + (PAGE_SIZE - 1)) & PAGE_MASK;
     uint32_t flags = GetMemoryRegionFlags(start);
 
     // Make sure that the page containing the PE header for the managed asseblies is in the dump

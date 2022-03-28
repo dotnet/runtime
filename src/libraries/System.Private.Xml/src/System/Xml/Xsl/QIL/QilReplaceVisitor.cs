@@ -72,7 +72,7 @@ namespace System.Xml.Xsl.Qil
         {
             XmlQueryType newType;
 
-            newType = f.TypeChecker.Check(node);
+            newType = QilTypeChecker.Check(node);
 
             // Note the use of AtMost to account for cases when folding of Error nodes in the graph cause
             // cardinality to be recalculated.

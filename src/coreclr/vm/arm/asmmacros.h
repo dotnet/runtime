@@ -29,6 +29,9 @@ $__EndLabelName
 
     LEAF_END $FuncName
 
+    ; Make sure this symbol gets its own address
+    nop
+
     MEND
 
 ;-----------------------------------------------------------------------------

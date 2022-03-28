@@ -966,13 +966,13 @@ check_reference_for_xdomain (GCObject **ptr, GCObject *obj, MonoDomain *domain)
 
 	field = NULL;
 	for (klass = obj->vtable->klass; klass; klass = m_class_get_parent (klass)) {
-		int i;
-
-		int fcount = mono_class_get_field_count (klass);
-		MonoClassField *klass_fields = m_class_get_fields (klass);
-		for (i = 0; i < fcount; ++i) {
-			if (klass_fields[i].offset == offset) {
-				field = &klass_fields[i];
+		gpointer iter = NULL;
+		MonoClassField *cur;
+		while ((cur = mono_class_get_fields_internal (klass, &iter))) {
+			/* metadata-update: there are no domains in .NET */
+			g_assert (!m_field_is_from_update (cur));
+			if (m_field_get_offset (cur) == offset) {
+				field = cur;
 				break;
 			}
 		}

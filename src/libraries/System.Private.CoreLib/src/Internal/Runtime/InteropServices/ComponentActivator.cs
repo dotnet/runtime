@@ -11,7 +11,7 @@ using System.Runtime.Versioning;
 
 namespace Internal.Runtime.InteropServices
 {
-    public static class ComponentActivator
+    public static partial class ComponentActivator
     {
         private const string TrimIncompatibleWarningMessage = "Native hosting is not trim compatible and this warning will be seen if trimming is enabled.";
         private const string NativeAOTIncompatibleWarningMessage = "The native code for the method requested might not be available at runtime.";
@@ -115,7 +115,24 @@ namespace Internal.Runtime.InteropServices
                                                     IntPtr functionHandle)
         {
             if (!IsSupported)
+            {
+#if CORECLR
+                try
+                {
+                    OnDisabledGetFunctionPointerCall(typeNameNative, methodNameNative);
+                }
+                catch (Exception e)
+                {
+                    // The callback can intentionally throw NotSupportedException to provide errors to consumers,
+                    // so we let that one through. Any other exceptions must not be leaked out.
+                    if (e is NotSupportedException)
+                        throw;
+
+                    return e.HResult;
+                }
+#endif
                 return HostFeatureDisabled;
+            }
 
             try
             {

@@ -8,7 +8,6 @@
 #pragma warning(disable:4090) // const problem
 #pragma warning(disable:4146) // unary minus operator applied to unsigned type, result still unsigned
 #pragma warning(disable:4244) // integer conversion, possible loss of data
-#pragma warning(disable:4267) // integer conversion, possible loss of data
 
 // promote warnings to errors
 #pragma warning(  error:4013) // function undefined; assuming extern returning int
@@ -83,6 +82,9 @@
 /* Host Platform is Darwin */
 #cmakedefine HOST_DARWIN 1
 
+/* Host Platform is OSX or Mac Catalyst */
+#cmakedefine HOST_OSX 1
+
 /* Host Platform is iOS */
 #cmakedefine HOST_IOS 1
 
@@ -122,14 +124,6 @@
 /* Define to 1 if you have the <syslog.h> header file. */
 #cmakedefine HAVE_SYSLOG_H 1
 
-/* Define to 1 if `major', `minor', and `makedev' are declared in <mkdev.h>.
-   */
-#cmakedefine MAJOR_IN_MKDEV 1
-
-/* Define to 1 if `major', `minor', and `makedev' are declared in
-   <sysmacros.h>. */
-#cmakedefine MAJOR_IN_SYSMACROS 1
-
 /* Define to 1 if you have the <sys/filio.h> header file. */
 #cmakedefine HAVE_SYS_FILIO_H 1
 
@@ -162,9 +156,6 @@
 
 /* Define to 1 if you have the <sys/sysctl.h> header file. */
 #cmakedefine HAVE_SYS_SYSCTL_H 1
-
-/* Define to 1 if you have the <libproc.h> header file. */
-#cmakedefine HAVE_LIBPROC_H 1
 
 /* Define to 1 if you have the <sys/prctl.h> header file. */
 #cmakedefine HAVE_SYS_PRCTL_H 1
@@ -233,12 +224,6 @@
    */
 #cmakedefine HAVE_ANDROID_LEGACY_SIGNAL_INLINES_H 1
 
-/* Define to 1 if you have the <android/ndk-version.h> header file. */
-#cmakedefine HAVE_ANDROID_NDK_VERSION_H 1
-
-/* Whether Android NDK unified headers are used */
-#cmakedefine ANDROID_UNIFIED_HEADERS 1
-
 /* The size of `void *', as computed by sizeof. */
 #define SIZEOF_VOID_P @SIZEOF_VOID_P@
 
@@ -251,26 +236,8 @@
 /* The size of `long long', as computed by sizeof. */
 #define SIZEOF_LONG_LONG @SIZEOF_LONG_LONG@
 
-/* Xen-specific behaviour */
-#cmakedefine MONO_XEN_OPT 1
-
 /* Reduce runtime requirements (and capabilities) */
 #cmakedefine MONO_SMALL_CONFIG 1
-
-/* Make jemalloc assert for mono */
-#cmakedefine MONO_JEMALLOC_ASSERT 1
-
-/* Make jemalloc default for mono */
-#cmakedefine MONO_JEMALLOC_DEFAULT 1
-
-/* Enable jemalloc usage for mono */
-#cmakedefine MONO_JEMALLOC_ENABLED 1
-
-/* Do not include names of unmanaged functions in the crash dump */
-#cmakedefine MONO_PRIVATE_CRASHES 1
-
-/* Do not create structured crash files during unmanaged crashes */
-#cmakedefine DISABLE_STRUCTURED_CRASH 1
 
 /* String of disabled features */
 #define DISABLED_FEATURES @DISABLED_FEATURES@
@@ -351,12 +318,6 @@
 /* Disable MONO_LOG_DEST */
 #cmakedefine DISABLE_LOG_DEST
 
-/* GC description */
-#cmakedefine DEFAULT_GC_NAME 1
-
-/* No GC support. */
-#cmakedefine HAVE_NULL_GC 1
-
 /* Length of zero length arrays */
 #define MONO_ZERO_LEN_ARRAY @MONO_ZERO_LEN_ARRAY@
 
@@ -387,20 +348,11 @@
 /* Define to 1 if you have the `clock_nanosleep' function. */
 #cmakedefine HAVE_CLOCK_NANOSLEEP 1
 
-/* Does dlsym require leading underscore. */
-#cmakedefine MONO_DL_NEED_USCORE 1
-
 /* Define to 1 if you have the <execinfo.h> header file. */
 #cmakedefine HAVE_EXECINFO_H 1
 
-/* Define to 1 if you have the <sys/auxv.h> header file. */
-#cmakedefine HAVE_SYS_AUXV_H 1
-
 /* Define to 1 if you have the <sys/resource.h> header file. */
 #cmakedefine HAVE_SYS_RESOURCE_H 1
-
-/* kqueue */
-#cmakedefine HAVE_KQUEUE 1
 
 /* Define to 1 if you have the `backtrace_symbols' function. */
 #cmakedefine HAVE_BACKTRACE_SYMBOLS 1
@@ -444,9 +396,6 @@
 /* Define to 1 if you have the `getpwuid_r' function. */
 #cmakedefine HAVE_GETPWUID_R 1
 
-/* Define to 1 if you have the `readlink' function. */
-#cmakedefine HAVE_READLINK 1
-
 /* Define to 1 if you have the `chmod' function. */
 #cmakedefine HAVE_CHMOD 1
 
@@ -485,9 +434,6 @@
 
 /* Define to 1 if you have the `strerror_r' function. */
 #cmakedefine HAVE_STRERROR_R 1
-
-/* Have GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY */
-#cmakedefine GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY 1
 
 /* GLIBC has CPU_COUNT macro in sched.h */
 #cmakedefine HAVE_GNU_CPU_COUNT
@@ -559,14 +505,15 @@
 /* Define to 1 if you have the `pthread_jit_write_protect_np' function. */
 #cmakedefine HAVE_PTHREAD_JIT_WRITE_PROTECT_NP 1
 
+/* Have getauxval */
 #cmakedefine01 HAVE_GETAUXVAL
 
 /* Define to 1 if you have the declaration of `pthread_mutexattr_setprotocol',
    and to 0 if you don't. */
 #cmakedefine HAVE_DECL_PTHREAD_MUTEXATTR_SETPROTOCOL 1
 
-/* Have a working sigaltstack */
-#cmakedefine HAVE_WORKING_SIGALTSTACK 1
+/* Enable support for using sigaltstack for SIGSEGV and stack overflow handling, this doesn't work on some platforms */
+#cmakedefine ENABLE_SIGALTSTACK 1
 
 /* Define to 1 if you have the `shm_open' function. */
 #cmakedefine HAVE_SHM_OPEN 1
@@ -574,17 +521,11 @@
 /* Define to 1 if you have the `poll' function. */
 #cmakedefine HAVE_POLL 1
 
-/* epoll_create1 */
-#cmakedefine HAVE_EPOLL 1
-
 /* Define to 1 if you have the <sys/ioctl.h> header file. */
 #cmakedefine HAVE_SYS_IOCTL_H 1
 
 /* Define to 1 if you have the <net/if.h> header file. */
 #cmakedefine HAVE_NET_IF_H 1
-
-/* Can get interface list */
-#cmakedefine HAVE_SIOCGIFCONF 1
 
 /* sockaddr_in has sin_len */
 #cmakedefine HAVE_SOCKADDR_IN_SIN_LEN 1
@@ -723,9 +664,6 @@
 /* Define to 1 if you have the `getentropy' function. */
 #cmakedefine HAVE_GETENTROPY 1
 
-/* Qp2getifaddrs */
-#cmakedefine HAVE_QP2GETIFADDRS 1
-
 /* Define to 1 if you have the `strlcpy' function. */
 #cmakedefine HAVE_STRLCPY 1
 
@@ -740,9 +678,6 @@
 
 /* Name of /dev/random */
 #define NAME_DEV_RANDOM @NAME_DEV_RANDOM@
-
-/* Enable the allocation and indexing of arrays greater than Int32.MaxValue */
-#cmakedefine MONO_BIG_ARRAYS 1
 
 /* Enable DTrace probes */
 #cmakedefine ENABLE_DTRACE 1
@@ -779,9 +714,6 @@
 
 /* ... */
 #cmakedefine TARGET_PS4 1
-
-/* ... */
-#cmakedefine DISABLE_HW_TRAPS 1
 
 /* Target is RISC-V */
 #cmakedefine TARGET_RISCV 1
@@ -882,11 +814,14 @@
 /* The JIT/AOT targets Mac Catalyst */
 #cmakedefine TARGET_MACCAT 1
 
-/* The JIT/AOT targets OSX */
+/* The JIT/AOT targets OSX or Mac Catalyst */
 #cmakedefine TARGET_OSX 1
 
 /* The JIT/AOT targets Apple platforms */
 #cmakedefine TARGET_MACH 1
+
+/* The JIT/AOT targets Apple mobile platforms */
+#cmakedefine TARGET_APPLE_MOBILE 1
 
 /* byte order of target */
 #define TARGET_BYTE_ORDER @TARGET_BYTE_ORDER@
@@ -899,9 +834,6 @@
 
 /* host or target doesn't allow unaligned memory access */
 #cmakedefine NO_UNALIGNED_ACCESS 1
-
-/* Support for the visibility ("hidden") attribute */
-#cmakedefine HAVE_VISIBILITY_HIDDEN 1
 
 /* Support for the deprecated attribute */
 #cmakedefine HAVE_DEPRECATED 1
@@ -986,12 +918,6 @@
 
 /* Enable hybrid suspend for GC stop-the-world */
 #cmakedefine ENABLE_HYBRID_SUSPEND 1
-
-/* Enable feature experiments */
-#cmakedefine ENABLE_EXPERIMENTS 1
-
-/* Enable experiment 'null' */
-#cmakedefine ENABLE_EXPERIMENT_null 1
 
 /* Enable experiment 'Tiered Compilation' */
 #cmakedefine ENABLE_EXPERIMENT_TIERED 1

@@ -113,7 +113,10 @@ mono_valloc_aligned (size_t length, size_t alignment, int flags, MonoMemAccountT
 	aligned = mono_aligned_address (mem, length, alignment);
 
 	aligned = (char*)VirtualAlloc (aligned, length, MEM_COMMIT, prot);
-	g_assert (aligned);
+	if (!aligned) {
+		VirtualFree (mem, 0, MEM_RELEASE);
+		return NULL;
+	}
 
 	mono_account_mem (type, (ssize_t)length);
 

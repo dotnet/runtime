@@ -163,7 +163,7 @@ namespace System
             return result;
         }
 
-        private bool TrySetSlot(Delegate[] a, int index, Delegate o)
+        private static bool TrySetSlot(Delegate[] a, int index, Delegate o)
         {
             if (a[index] == null && System.Threading.Interlocked.CompareExchange<Delegate>(ref a[index], o, null) == null)
                 return true;
@@ -297,7 +297,7 @@ namespace System
             return newInvocationList;
         }
 
-        private bool EqualInvocationLists(Delegate[] a, Delegate[] b, int start, int count)
+        private static bool EqualInvocationLists(Delegate[] a, Delegate[] b, int start, int count)
         {
             for (int i = 0; i < count; i++)
             {
