@@ -1050,7 +1050,7 @@ void Lowering::ReplaceArgWithPutArgOrBitcast(GenTree** argSlot, GenTree* putArgO
 // Arguments:
 //    call - the call whose arg is being rewritten.
 //    arg  - the arg being rewritten.
-//    info - the fgArgTabEntry information for the argument.
+//    callArg - the CallArg for the argument.
 //    type - the type of the argument.
 //
 // Return Value:

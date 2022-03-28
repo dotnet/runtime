@@ -132,7 +132,7 @@ const int BAD_STK_OFFS = 0xBAADF00D; // for LclVarDsc::lvStkOffs
 #endif
 
 //------------------------------------------------------------------------
-// HFA info shared by LclVarDsc and fgArgTabEntry
+// HFA info shared by LclVarDsc and CallArgABIInformation
 //------------------------------------------------------------------------
 inline bool IsHfa(CorInfoHFAElemType kind)
 {

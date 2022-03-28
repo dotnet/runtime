@@ -2674,7 +2674,7 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
 
 // Returns true if this local var is a multireg struct.
 // TODO-Throughput: This does a lookup on the class handle, and in the outgoing arg context
-// this information is already available on the fgArgTabEntry, and shouldn't need to be
+// this information is already available on the CallArgABIInformation, and shouldn't need to be
 // recomputed.
 //
 bool Compiler::lvaIsMultiregStruct(LclVarDsc* varDsc, bool isVarArg)

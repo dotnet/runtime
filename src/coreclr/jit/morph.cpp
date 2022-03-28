@@ -2989,7 +2989,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         unsigned  structSize         = 0;
 
         // Struct arguments may be morphed into a node that is not a struct type.
-        // In such case the fgArgTabEntry keeps track of whether the original node (before morphing)
+        // In such case the CallArgABIInformation keeps track of whether the original node (before morphing)
         // was a struct and the struct classification.
         bool isStructArg = arg.AbiInfo.IsStruct;
 
@@ -3460,11 +3460,6 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 
     for (CallArg& arg : call->gtArgs.Args())
     {
-        // For late arguments the arg tree that is overridden is in the gtCallLateArgs list.
-        // For such late args the gtCallArgList contains the setup arg node (evaluating the arg.)
-        // The tree from the gtCallLateArgs list is passed to the callee. The fgArgEntry node contains the mapping
-        // between the nodes in both lists. If the arg is not a late arg, the fgArgEntry->node points to itself,
-        // otherwise points to the list in the late args list.
         bool     isLateArg = (arg.GetNode()->gtFlags & GTF_LATE_ARG) != 0;
         GenTree* argx      = arg.GetArgNode();
 
@@ -8078,9 +8073,9 @@ GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
 // corresponds to the argument to a recursive call.
 //
 // Notes:
-//    Due to non-standard args this is not just fgArgTabEntry::argNum.
-//    For example, in R2R compilations we will have added a non-standard
-//    arg for the R2R indirection cell.
+//    Due to non-standard args this is not just the index of the argument in
+//    the arg list. For example, in R2R compilations we will have added a
+//    non-standard arg for the R2R indirection cell.
 //
 // Arguments:
 //    arg  - the arg
