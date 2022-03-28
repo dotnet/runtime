@@ -367,17 +367,14 @@ void Compiler::fgComputeEnterBlocksSet()
     BlockSetOps::AddElemD(this, fgEnterBlks, fgFirstBB->bbNum);
     assert(fgFirstBB->bbNum == 1);
 
-    if (compHndBBtabCount > 0)
+    /* Also 'or' in the handler basic blocks */
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
-        /* Also 'or' in the handler basic blocks */
-        for (EHblkDsc* const HBtab : EHClauses(this))
+        if (HBtab->HasFilter())
         {
-            if (HBtab->HasFilter())
-            {
-                BlockSetOps::AddElemD(this, fgEnterBlks, HBtab->ebdFilter->bbNum);
-            }
-            BlockSetOps::AddElemD(this, fgEnterBlks, HBtab->ebdHndBeg->bbNum);
+            BlockSetOps::AddElemD(this, fgEnterBlks, HBtab->ebdFilter->bbNum);
         }
+        BlockSetOps::AddElemD(this, fgEnterBlks, HBtab->ebdHndBeg->bbNum);
     }
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
@@ -419,6 +416,11 @@ void Compiler::fgComputeEnterBlocksSet()
 // Some blocks (marked with BBF_DONT_REMOVE) can't be removed even if unreachable, in which case they
 // are converted to `throw` blocks. Internal throw helper blocks and the single return block (if any)
 // are never considered unreachable.
+//
+// Arguments:
+//   canRemoveBlock - Method that determines if a block can be removed or not. In earlier phases, it
+//       relies on the reachability set. During final phase, it depends on the DFS walk of the flowgraph
+//       and considering blocks that are not visited as unreachable.
 //
 // Return Value:
 //    Return true if changes were made that may cause additional blocks to be removable.
@@ -644,24 +646,22 @@ void Compiler::fgComputeReachability()
 //------------------------------------------------------------------------
 // fgRemoveDeadBlocks: Identify all the unreachable blocks and remove them.
 //         Handler and filter blocks are considered as reachable and hence won't
-//         be removed. For Arm, do not remove BBJ_ALWAYS block.
+//         be removed. For Arm32, do not remove BBJ_ALWAYS block of
+//         BBJ_CALLFINALLY/BBJ_ALWAYS pair.
 //
 void Compiler::fgRemoveDeadBlocks()
 {
     jitstd::list<BasicBlock*> worklist(jitstd::allocator<void>(getAllocator(CMK_Reachability)));
-    worklist.insert(worklist.begin(), fgFirstBB);
+    worklist.push_back(fgFirstBB);
 
-    if (compHndBBtabCount > 0)
+    // Do not remove handler blocks
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
-        // Do not remove handler blocks
-        for (EHblkDsc* const HBtab : EHClauses(this))
+        if (HBtab->HasFilter())
         {
-            if (HBtab->HasFilter())
-            {
-                worklist.insert(worklist.end(), HBtab->ebdFilter);
-            }
-            worklist.insert(worklist.end(), HBtab->ebdHndBeg);
+            worklist.push_back(HBtab->ebdFilter);
         }
+        worklist.push_back(HBtab->ebdHndBeg);
     }
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
@@ -678,14 +678,25 @@ void Compiler::fgRemoveDeadBlocks()
     }
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
+    unsigned prevFgCurBBEpoch = fgCurBBEpoch;
     EnsureBasicBlockEpoch();
+
+    if (prevFgCurBBEpoch != fgCurBBEpoch)
+    {
+        // If Epoch has changed, reset the doms computed as well because
+        // in future, during insert gc polls or lowering, when we compact
+        // blocks during flowgraph update, it might propagate the invalid
+        // bbReach as well (although Epoch adjustment resets fgReachabilitySetsValid).
+        fgDomsComputed = false;
+    }
+
     BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
 
     // Visit all the reachable blocks, everything else can be removed
     while (!worklist.empty())
     {
         BasicBlock* block = *(worklist.begin());
-        worklist.erase(worklist.begin());
+        worklist.pop_front();
 
         if (BlockSetOps::IsMember(this, visitedBlocks, block->bbNum))
         {
@@ -694,9 +705,9 @@ void Compiler::fgRemoveDeadBlocks()
 
         BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
 
-        for (BasicBlock* succ : block->GetAllSuccs(this))
+        for (BasicBlock* succ : block->Succs(this))
         {
-            worklist.insert(worklist.end(), succ);
+            worklist.push_back(succ);
         }
     }
 
@@ -706,21 +717,10 @@ void Compiler::fgRemoveDeadBlocks()
         return !BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
     };
 
-    unsigned passNum = 1;
-    bool     changed;
-    do
-    {
-        // Just to be paranoid, avoid infinite loops.
-        if (passNum > 10)
-        {
-            noway_assert(!"Too many unreachable block removal loops");
-        }
-        passNum++;
-        changed = fgRemoveUnreachableBlocks(isBlockRemovable);
-    } while (changed);
+    bool changed = fgRemoveUnreachableBlocks(isBlockRemovable);
 
 #ifdef DEBUG
-    if (verbose)
+    if (verbose && changed)
     {
         printf("\nAfter dead block removal:\n");
         fgDispBasicBlocks(verboseTrees);
@@ -2271,6 +2271,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     //
     if (fgDomsComputed && (block->bbNum > fgDomBBcount))
     {
+        assert(fgReachabilitySetsValid);
         BlockSetOps::Assign(this, block->bbReach, bNext->bbReach);
         BlockSetOps::ClearD(this, bNext->bbReach);
 
@@ -2620,8 +2621,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
     //
     if (fgIsUsingProfileWeights() && !fgEdgeWeightsComputed)
     {
-        fgNeedsUpdateFlowGraph = true;
-        optimizeJump           = false;
+        optimizeJump = false;
     }
 
     if (optimizeJump)
@@ -2983,8 +2983,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             //
             if (fgIsUsingProfileWeights() && !fgEdgeWeightsComputed)
             {
-                fgNeedsUpdateFlowGraph = true;
-                optimizeJump           = false;
+                optimizeJump = false;
             }
 
             if (optimizeJump)
@@ -5791,7 +5790,6 @@ bool Compiler::fgReorderBlocks()
 
     if (changed)
     {
-        fgNeedsUpdateFlowGraph = true;
 #if DEBUG
         // Make sure that the predecessor lists are accurate
         if (expensiveDebugCheckLevel >= 2)
@@ -6016,8 +6014,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
                         // because we can't allow fall-through into the cold region.
                         if (!fgEdgeWeightsComputed || fgInDifferentRegions(block, bDest))
                         {
-                            fgNeedsUpdateFlowGraph = true;
-                            optimizeJump           = false;
+                            optimizeJump = false;
                         }
                     }
 
@@ -6301,8 +6298,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
             bPrev = block;
         }
     } while (change);
-
-    fgNeedsUpdateFlowGraph = false;
 
 #ifdef DEBUG
     if (verbose && modified)

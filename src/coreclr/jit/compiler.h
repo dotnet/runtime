@@ -5196,7 +5196,6 @@ public:
     bool     fgHaveValidEdgeWeights;   // true if we were successful in computing all of the edge weights
     bool     fgSlopUsedInEdgeWeights;  // true if their was some slop used when computing the edge weights
     bool     fgRangeUsedInEdgeWeights; // true if some of the edgeWeight are expressed in Min..Max form
-    bool     fgNeedsUpdateFlowGraph;   // true if we need to run fgUpdateFlowGraph
     weight_t fgCalledCount;            // count of the number of times this method was called
                                        // This is derived from the profile data
                                        // or is BB_UNITY_WEIGHT when we don't have profile data
