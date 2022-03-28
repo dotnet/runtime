@@ -1190,14 +1190,14 @@ bool CallArg::IsArgAddedLate() const
 {
     switch (m_wellKnownArg)
     {
-    case WellKnownArg::WrapperDelegateCell:
-    case WellKnownArg::VirtualStubCell:
-    case WellKnownArg::PInvokeCookie:
-    case WellKnownArg::PInvokeTarget:
-    case WellKnownArg::R2RIndirectionCell:
-        return true;
-    default:
-        return false;
+        case WellKnownArg::WrapperDelegateCell:
+        case WellKnownArg::VirtualStubCell:
+        case WellKnownArg::PInvokeCookie:
+        case WellKnownArg::PInvokeTarget:
+        case WellKnownArg::R2RIndirectionCell:
+            return true;
+        default:
+            return false;
     }
 }
 
@@ -1332,14 +1332,14 @@ void CallArgs::Reverse(unsigned index, unsigned count)
     if (count > 1)
     {
         CallArg* newEnd = *headSlot;
-        CallArg* cur = (*headSlot)->GetNext();
+        CallArg* cur    = (*headSlot)->GetNext();
 
         for (unsigned i = 1; i < count; i++)
         {
             CallArg* next = cur->GetNext();
             cur->SetNext(*headSlot);
             *headSlot = cur;
-            cur = next;
+            cur       = next;
         }
         newEnd->SetNext(cur);
     }
@@ -1349,12 +1349,12 @@ void CallArgs::AddedWellKnownArg(WellKnownArg arg)
 {
     switch (arg)
     {
-    case WellKnownArg::ThisPointer:
-        m_hasThisPointer = true;
-        break;
-    case WellKnownArg::RetBuffer:
-        m_hasRetBuffer = true;
-        break;
+        case WellKnownArg::ThisPointer:
+            m_hasThisPointer = true;
+            break;
+        case WellKnownArg::RetBuffer:
+            m_hasRetBuffer = true;
+            break;
     }
 }
 
@@ -1362,14 +1362,14 @@ void CallArgs::RemovedWellKnownArg(WellKnownArg arg)
 {
     switch (arg)
     {
-    case WellKnownArg::ThisPointer:
-        assert(FindWellKnownArg(arg) == nullptr);
-        m_hasThisPointer = false;
-        break;
-    case WellKnownArg::RetBuffer:
-        assert(FindWellKnownArg(arg) == nullptr);
-        m_hasRetBuffer = false;
-        break;
+        case WellKnownArg::ThisPointer:
+            assert(FindWellKnownArg(arg) == nullptr);
+            m_hasThisPointer = false;
+            break;
+        case WellKnownArg::RetBuffer:
+            assert(FindWellKnownArg(arg) == nullptr);
+            m_hasRetBuffer = false;
+            break;
     }
 }
 
@@ -1378,73 +1378,73 @@ regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension c
     switch (arg)
     {
 #if defined(TARGET_X86) || defined(TARGET_ARM)
-    // The x86 and arm32 CORINFO_HELP_INIT_PINVOKE_FRAME helpers have a custom calling convention.
-    case WellKnownArg::PInvokeFrame:
-        return REG_PINVOKE_FRAME;
+        // The x86 and arm32 CORINFO_HELP_INIT_PINVOKE_FRAME helpers have a custom calling convention.
+        case WellKnownArg::PInvokeFrame:
+            return REG_PINVOKE_FRAME;
 #endif
 #if defined(TARGET_ARM)
-    // A non-standard calling convention using wrapper delegate invoke is used
-    // on ARM, only, for wrapper delegates. It is used for VSD delegate calls
-    // where the VSD custom calling convention ABI requires passing R4, a
-    // callee-saved register, with a special value. Since R4 is a callee-saved
-    // register, its value needs to be preserved. Thus, the VM uses a wrapper
-    // delegate IL stub, which preserves R4 and also sets up R4 correctly for
-    // the VSD call. The VM is simply reusing an existing mechanism (wrapper
-    // delegate IL stub) to achieve its goal for delegate VSD call. See
-    // COMDelegate::NeedsWrapperDelegate() in the VM for details.
-    case WellKnownArg::WrapperDelegateCell:
-        return comp->virtualStubParamInfo->GetReg();
+        // A non-standard calling convention using wrapper delegate invoke is used
+        // on ARM, only, for wrapper delegates. It is used for VSD delegate calls
+        // where the VSD custom calling convention ABI requires passing R4, a
+        // callee-saved register, with a special value. Since R4 is a callee-saved
+        // register, its value needs to be preserved. Thus, the VM uses a wrapper
+        // delegate IL stub, which preserves R4 and also sets up R4 correctly for
+        // the VSD call. The VM is simply reusing an existing mechanism (wrapper
+        // delegate IL stub) to achieve its goal for delegate VSD call. See
+        // COMDelegate::NeedsWrapperDelegate() in the VM for details.
+        case WellKnownArg::WrapperDelegateCell:
+            return comp->virtualStubParamInfo->GetReg();
 #endif
 #if defined(TARGET_X86)
-    // The x86 shift helpers have custom calling conventions and expect the lo
-    // part of the long to be in EAX and the hi part to be in EDX. This sets
-    // the argument registers up correctly.
-    case WellKnownArg::ShiftLow:
-        return REG_LNGARG_LO;
-    case WellKnownArg::ShiftHigh:
-        return REG_LNGARG_HI;
+        // The x86 shift helpers have custom calling conventions and expect the lo
+        // part of the long to be in EAX and the hi part to be in EDX. This sets
+        // the argument registers up correctly.
+        case WellKnownArg::ShiftLow:
+            return REG_LNGARG_LO;
+        case WellKnownArg::ShiftHigh:
+            return REG_LNGARG_HI;
 #endif
-    case WellKnownArg::RetBuffer:
-        if (hasFixedRetBuffReg())
-        {
-            // Windows does not use fixed ret buff arg for instance calls, but does otherwise.
-            if (!TargetOS::IsWindows || !callConvIsInstanceMethodCallConv(cc))
+        case WellKnownArg::RetBuffer:
+            if (hasFixedRetBuffReg())
             {
-                return theFixedRetBuffReg();
+                // Windows does not use fixed ret buff arg for instance calls, but does otherwise.
+                if (!TargetOS::IsWindows || !callConvIsInstanceMethodCallConv(cc))
+                {
+                    return theFixedRetBuffReg();
+                }
             }
-        }
 
-        break;
+            break;
 
-    case WellKnownArg::VirtualStubCell:
-        return comp->virtualStubParamInfo->GetReg();
+        case WellKnownArg::VirtualStubCell:
+            return comp->virtualStubParamInfo->GetReg();
 
-    case WellKnownArg::PInvokeCookie:
-        return REG_PINVOKE_COOKIE_PARAM;
+        case WellKnownArg::PInvokeCookie:
+            return REG_PINVOKE_COOKIE_PARAM;
 
-    case WellKnownArg::PInvokeTarget:
-        return REG_PINVOKE_TARGET_PARAM;
+        case WellKnownArg::PInvokeTarget:
+            return REG_PINVOKE_TARGET_PARAM;
 
-    case WellKnownArg::R2RIndirectionCell:
-        return REG_R2R_INDIRECT_PARAM;
+        case WellKnownArg::R2RIndirectionCell:
+            return REG_R2R_INDIRECT_PARAM;
 
-    case WellKnownArg::ValidateIndirectCallTarget:
-        if (REG_VALIDATE_INDIRECT_CALL_ADDR != REG_ARG_0)
-        {
-            return REG_VALIDATE_INDIRECT_CALL_ADDR;
-        }
+        case WellKnownArg::ValidateIndirectCallTarget:
+            if (REG_VALIDATE_INDIRECT_CALL_ADDR != REG_ARG_0)
+            {
+                return REG_VALIDATE_INDIRECT_CALL_ADDR;
+            }
 
-        break;
+            break;
 
 #ifdef REG_DISPATCH_INDIRECT_CELL_ADDR
-    case WellKnownArg::DispatchIndirectCallTarget:
-        return REG_DISPATCH_INDIRECT_CALL_ADDR;
+        case WellKnownArg::DispatchIndirectCallTarget:
+            return REG_DISPATCH_INDIRECT_CALL_ADDR;
 #endif
     }
 
     return REG_NA;
 }
-    
+
 bool CallArgs::IsNonStandard(Compiler* comp, GenTreeCall* call, CallArg* arg)
 {
     return GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg->GetWellKnownArg()) != REG_NA;
@@ -1551,21 +1551,21 @@ bool CallArgs::Remove(CallArg* arg)
 
 void CallArgs::Clear()
 {
-    m_head = nullptr;
-    m_lateHead = nullptr;
-    m_nextStackByteOffset = 0;
-    m_hasThisPointer = false;
-    m_hasRetBuffer = false;
-    m_isVarArgs = false;
+    m_head                     = nullptr;
+    m_lateHead                 = nullptr;
+    m_nextStackByteOffset      = 0;
+    m_hasThisPointer           = false;
+    m_hasRetBuffer             = false;
+    m_isVarArgs                = false;
     m_abiInformationDetermined = false;
-    m_hasRegArgs = false;
-    m_hasStackArgs = false;
-    m_argsComplete = false;
-    m_argsSorted = false;
-    m_needsTemps = false;
+    m_hasRegArgs               = false;
+    m_hasStackArgs             = false;
+    m_argsComplete             = false;
+    m_argsSorted               = false;
+    m_needsTemps               = false;
 #ifdef UNIX_X86_ABI
-    m_stkSizeBytes = 0;
-    m_padStkAlign = 0;
+    m_stkSizeBytes  = 0;
+    m_padStkAlign   = 0;
     m_alignmentDone = false;
 #endif
 }
@@ -1890,9 +1890,9 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
     }
 
     {
-        auto i1 = c1->gtArgs.Args().begin();
+        auto i1   = c1->gtArgs.Args().begin();
         auto end1 = c1->gtArgs.Args().end();
-        auto i2 = c2->gtArgs.Args().begin();
+        auto i2   = c2->gtArgs.Args().begin();
         auto end2 = c2->gtArgs.Args().end();
 
         for (; (i1 != end1) && (i2 != end2); ++i1, ++i2)
@@ -1910,9 +1910,9 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
     }
 
     {
-        auto i1 = c1->gtArgs.LateArgs().begin();
+        auto i1   = c1->gtArgs.LateArgs().begin();
         auto end1 = c1->gtArgs.LateArgs().end();
-        auto i2 = c2->gtArgs.LateArgs().begin();
+        auto i2   = c2->gtArgs.LateArgs().begin();
         auto end2 = c2->gtArgs.LateArgs().end();
 
         for (; (i1 != end1) && (i2 != end2); ++i1, ++i2)
@@ -2523,7 +2523,7 @@ AGAIN:
 #ifdef HOST_64BIT
                 add = bits;
 #else // 32-bit host
-                add = genTreeHashAdd(uhi32(bits), ulo32(bits));
+                add      = genTreeHashAdd(uhi32(bits), ulo32(bits));
 #endif
                 break;
             case GT_CNS_DBL:
@@ -2531,7 +2531,7 @@ AGAIN:
 #ifdef HOST_64BIT
                 add = bits;
 #else // 32-bit host
-                add = genTreeHashAdd(uhi32(bits), ulo32(bits));
+                add      = genTreeHashAdd(uhi32(bits), ulo32(bits));
 #endif
                 break;
             case GT_CNS_STR:
@@ -3069,8 +3069,7 @@ unsigned Compiler::gtSetCallArgsOrder(CallArgs* args, bool lateArgs, int* callCo
     unsigned costEx = 0;
     unsigned costSz = 0;
 
-    auto update = [&level, &costEx, &costSz, lateArgs](GenTree* argNode, unsigned argLevel)
-    {
+    auto update = [&level, &costEx, &costSz, lateArgs](GenTree* argNode, unsigned argLevel) {
         if (argLevel > level)
         {
             level = argLevel;
@@ -3097,7 +3096,7 @@ unsigned Compiler::gtSetCallArgsOrder(CallArgs* args, bool lateArgs, int* callCo
     {
         for (LateArg arg : args->LateArgs())
         {
-            GenTree* argNode = arg.GetNode();
+            GenTree* argNode  = arg.GetNode();
             unsigned argLevel = gtSetEvalOrder(argNode);
             update(argNode, argLevel);
         }
@@ -3106,7 +3105,7 @@ unsigned Compiler::gtSetCallArgsOrder(CallArgs* args, bool lateArgs, int* callCo
     {
         for (CallArg& arg : args->Args())
         {
-            GenTree* argNode = arg.GetNode();
+            GenTree* argNode  = arg.GetNode();
             unsigned argLevel = gtSetEvalOrder(argNode);
 
             if (arg.GetWellKnownArg() == WellKnownArg::ThisPointer)
@@ -5180,7 +5179,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             // Evaluate the arguments
 
-            lvl2                = gtSetCallArgsOrder(&call->gtArgs, /* lateArgs */ false, &costEx, &costSz);
+            lvl2 = gtSetCallArgsOrder(&call->gtArgs, /* lateArgs */ false, &costEx, &costSz);
             if (level < lvl2)
             {
                 level = lvl2;
@@ -5188,7 +5187,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             // Evaluate the temp register arguments list
 
-            lvl2                = gtSetCallArgsOrder(&call->gtArgs, /* lateArgs */ true, &costEx, &costSz);
+            lvl2 = gtSetCallArgsOrder(&call->gtArgs, /* lateArgs */ true, &costEx, &costSz);
             if (level < lvl2)
             {
                 level = lvl2;
@@ -6713,8 +6712,10 @@ GenTreeCall* Compiler::gtNewIndCallNode(GenTree* addr, var_types type, const Deb
     return gtNewCallNode(CT_INDIRECT, (CORINFO_METHOD_HANDLE)addr, type, di);
 }
 
-GenTreeCall* Compiler::gtNewCallNode(
-    gtCallTypes callType, CORINFO_METHOD_HANDLE callHnd, var_types type, const DebugInfo& di)
+GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
+                                     CORINFO_METHOD_HANDLE callHnd,
+                                     var_types             type,
+                                     const DebugInfo&      di)
 {
     GenTreeCall* node = new (this, GT_CALL) GenTreeCall(genActualType(type));
 
@@ -6739,7 +6740,7 @@ GenTreeCall* Compiler::gtNewCallNode(
     {
         node->gtInlineCandidateInfo = nullptr;
     }
-    node->gtReturnType   = type;
+    node->gtReturnType = type;
 
 #ifdef FEATURE_READYTORUN
     node->gtEntryPoint.addr       = nullptr;
@@ -8322,21 +8323,21 @@ DONE:
 
 // Copy all information from the specified CallArgs, making these argument lists equivalent.
 // Nodes are cloned using the specified function.
-template<typename CopyNodeFunc>
+template <typename CopyNodeFunc>
 void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc copyNode)
 {
     assert((m_head == nullptr) && (m_lateHead == nullptr));
 
-    m_nextStackByteOffset = other->m_nextStackByteOffset;
-    m_hasThisPointer = other->m_hasThisPointer;
-    m_hasRetBuffer = other->m_hasRetBuffer;
-    m_isVarArgs = other->m_isVarArgs;
+    m_nextStackByteOffset      = other->m_nextStackByteOffset;
+    m_hasThisPointer           = other->m_hasThisPointer;
+    m_hasRetBuffer             = other->m_hasRetBuffer;
+    m_isVarArgs                = other->m_isVarArgs;
     m_abiInformationDetermined = other->m_abiInformationDetermined;
-    m_hasRegArgs = other->m_hasRegArgs;
-    m_hasStackArgs = other->m_hasStackArgs;
-    m_argsComplete = other->m_argsComplete;
-    m_argsSorted = other->m_argsSorted;
-    m_needsTemps = other->m_needsTemps;
+    m_hasRegArgs               = other->m_hasRegArgs;
+    m_hasStackArgs             = other->m_hasStackArgs;
+    m_argsComplete             = other->m_argsComplete;
+    m_argsSorted               = other->m_argsSorted;
+    m_needsTemps               = other->m_needsTemps;
 
     // Unix x86 flags related to stack alignment intentionally not copied as it
     // depends on where the call will be inserted.
@@ -8344,34 +8345,34 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
     CallArg** tail = &m_head;
     for (CallArg& arg : other->Args())
     {
-        CallArg* carg = new (comp, CMK_fgArgInfo) CallArg(arg.GetWellKnownArg());
-        carg->m_node = arg.m_node != nullptr ? copyNode(arg.m_node) : nullptr;
-        carg->m_lateNode = arg.m_lateNode != nullptr ? copyNode(arg.m_lateNode) : nullptr;
-        carg->m_needTmp = arg.m_needTmp;
+        CallArg* carg     = new (comp, CMK_fgArgInfo) CallArg(arg.GetWellKnownArg());
+        carg->m_node      = arg.m_node != nullptr ? copyNode(arg.m_node) : nullptr;
+        carg->m_lateNode  = arg.m_lateNode != nullptr ? copyNode(arg.m_lateNode) : nullptr;
+        carg->m_needTmp   = arg.m_needTmp;
         carg->m_needPlace = arg.m_needPlace;
-        carg->m_isTmp = arg.m_isTmp;
+        carg->m_isTmp     = arg.m_isTmp;
         carg->m_processed = arg.m_processed;
-        carg->m_tmpNum = arg.m_tmpNum;
-        carg->AbiInfo = arg.AbiInfo;
-        *tail = carg;
-        tail = &carg->m_next;
+        carg->m_tmpNum    = arg.m_tmpNum;
+        carg->AbiInfo     = arg.AbiInfo;
+        *tail             = carg;
+        tail              = &carg->m_next;
     }
 
     // Now copy late pointers. Note that these may not come in order.
     tail = &m_lateHead;
     for (LateArg arg : other->LateArgs())
     {
-        CallArg* it = m_head;
+        CallArg* it      = m_head;
         CallArg* otherIt = other->m_head;
         while (otherIt != arg.GetArg())
         {
             assert(it != nullptr && otherIt != nullptr);
-            it = it->m_next;
+            it      = it->m_next;
             otherIt = otherIt->m_next;
         }
 
         *tail = it;
-        tail = &it->m_lateNext;
+        tail  = &it->m_lateNext;
     }
 }
 
@@ -8400,13 +8401,8 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
 
     copy->gtCallMoreFlags = tree->gtCallMoreFlags;
 
-    copy->gtArgs.InternalCopyFrom(
-        this,
-        &tree->gtArgs,
-        [=](GenTree* node)
-        {
-            return gtCloneExpr(node, addFlags, deepVarNum, deepVarVal);
-        });
+    copy->gtArgs.InternalCopyFrom(this, &tree->gtArgs,
+                                  [=](GenTree* node) { return gtCloneExpr(node, addFlags, deepVarNum, deepVarVal); });
 
     // The call sig comes from the EE and doesn't change throughout the compilation process, meaning
     // we only really need one physical copy of it. Therefore a shallow pointer copy will suffice.
@@ -8947,7 +8943,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
 
         case GT_CALL:
             m_statePtr = &*m_node->AsCall()->gtArgs.Args().begin();
-            m_advance = &GenTreeUseEdgeIterator::AdvanceCall<CALL_ARGS>;
+            m_advance  = &GenTreeUseEdgeIterator::AdvanceCall<CALL_ARGS>;
             AdvanceCall<CALL_ARGS>();
             return;
 
@@ -9223,8 +9219,8 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
             if (m_statePtr != nullptr)
             {
                 CallArg* arg = static_cast<CallArg*>(m_statePtr);
-                m_edge                = &arg->NodeRef();
-                m_statePtr            = arg->GetNext();
+                m_edge       = &arg->NodeRef();
+                m_statePtr   = arg->GetNext();
                 return;
             }
             m_statePtr = call->gtArgs.LateArgs().begin().GetArg();
@@ -9235,8 +9231,8 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
             if (m_statePtr != nullptr)
             {
                 CallArg* arg = static_cast<CallArg*>(m_statePtr);
-                m_edge                = &arg->LateNodeRef();
-                m_statePtr            = arg->GetLateNext();
+                m_edge       = &arg->LateNodeRef();
+                m_statePtr   = arg->GetLateNext();
                 return;
             }
             m_advance = &GenTreeUseEdgeIterator::AdvanceCall<CALL_CONTROL_EXPR>;
@@ -11535,7 +11531,7 @@ void Compiler::gtDispTree(GenTree*     tree,
 
             if (!topOnly)
             {
-                char  buf[64];
+                char buf[64];
 
                 gtDispArgList(call, lastChild, indentStack);
 
@@ -11671,28 +11667,43 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
 {
     switch (arg)
     {
-    case WellKnownArg::ThisPointer: return "this";
-    case WellKnownArg::VarArgsCookie: return "va cookie";
-    case WellKnownArg::InstParam: return "gctx";
-    case WellKnownArg::RetBuffer: return "retbuf";
-    case WellKnownArg::PInvokeFrame: return "pinv frame";
-    case WellKnownArg::SecretStubParam: return "stub param";
-    case WellKnownArg::WrapperDelegateCell: return "wrap cell";
-    case WellKnownArg::ShiftLow: return "shift low";
-    case WellKnownArg::ShiftHigh: return "shift high";
-    case WellKnownArg::VirtualStubCell: return "vsd cell";
-    case WellKnownArg::PInvokeCookie: return "pinv cookie";
-    case WellKnownArg::PInvokeTarget: return "pinv tgt";
-    case WellKnownArg::R2RIndirectionCell: return "r2r cell";
-    case WellKnownArg::ValidateIndirectCallTarget:
-    case WellKnownArg::DispatchIndirectCallTarget: return "cfg tgt";
-    default: return nullptr;
+        case WellKnownArg::ThisPointer:
+            return "this";
+        case WellKnownArg::VarArgsCookie:
+            return "va cookie";
+        case WellKnownArg::InstParam:
+            return "gctx";
+        case WellKnownArg::RetBuffer:
+            return "retbuf";
+        case WellKnownArg::PInvokeFrame:
+            return "pinv frame";
+        case WellKnownArg::SecretStubParam:
+            return "stub param";
+        case WellKnownArg::WrapperDelegateCell:
+            return "wrap cell";
+        case WellKnownArg::ShiftLow:
+            return "shift low";
+        case WellKnownArg::ShiftHigh:
+            return "shift high";
+        case WellKnownArg::VirtualStubCell:
+            return "vsd cell";
+        case WellKnownArg::PInvokeCookie:
+            return "pinv cookie";
+        case WellKnownArg::PInvokeTarget:
+            return "pinv tgt";
+        case WellKnownArg::R2RIndirectionCell:
+            return "r2r cell";
+        case WellKnownArg::ValidateIndirectCallTarget:
+        case WellKnownArg::DispatchIndirectCallTarget:
+            return "cfg tgt";
+        default:
+            return nullptr;
     }
 }
 
 void Compiler::gtPrintArgPrefix(GenTreeCall* call, CallArg* arg, char** bufp, unsigned* bufLength)
 {
-    int prefLen;
+    int         prefLen;
     const char* wellKnownName = gtGetWellKnownArgNameForArgMsg(arg->GetWellKnownArg());
     if (wellKnownName != nullptr)
     {
@@ -11701,7 +11712,7 @@ void Compiler::gtPrintArgPrefix(GenTreeCall* call, CallArg* arg, char** bufp, un
     else
     {
         unsigned argNum = call->gtArgs.GetIndex(arg);
-        prefLen = sprintf_s(*bufp, *bufLength, "arg%u", argNum);
+        prefLen         = sprintf_s(*bufp, *bufLength, "arg%u", argNum);
     }
     assert(prefLen != -1);
     *bufp += prefLen;
@@ -11861,7 +11872,8 @@ void Compiler::gtDispArgList(GenTreeCall* call, GenTree* lastCallOperand, Indent
         {
             char buf[256];
             gtGetArgMsg(call, &arg, buf, sizeof(buf));
-            gtDispChild(arg.GetNode(), indentStack, (arg.GetNode() == lastCallOperand) ? IIArcBottom : IIArc, buf, false);
+            gtDispChild(arg.GetNode(), indentStack, (arg.GetNode() == lastCallOperand) ? IIArcBottom : IIArc, buf,
+                        false);
         }
     }
 }
@@ -12023,7 +12035,7 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
         if (nodeIsCall)
         {
             GenTreeCall* call = node->AsCall();
-            //if ((call->gtCallThisArg != nullptr) && (operand == call->gtCallThisArg->GetNode()))
+            // if ((call->gtCallThisArg != nullptr) && (operand == call->gtCallThisArg->GetNode()))
             //{
             //    sprintf_s(buf, sizeof(buf), "this in %s", compRegVarName(REG_ARG_0));
             //    displayOperand(operand, buf, operandArc, indentStack, prefixIndent);
@@ -12419,7 +12431,7 @@ GenTree* Compiler::gtCreateHandleCompare(genTreeOps             oper,
     assert(typeCheckInliningResult == CORINFO_INLINE_TYPECHECK_USE_HELPER);
 
     // Emit a call to a runtime helper
-    GenTree*          ret        = gtNewHelperCallNode(CORINFO_HELP_ARE_TYPES_EQUIVALENT, TYP_INT, op1, op2);
+    GenTree* ret = gtNewHelperCallNode(CORINFO_HELP_ARE_TYPES_EQUIVALENT, TYP_INT, op1, op2);
     if (oper == GT_EQ)
     {
         ret = gtNewOperNode(GT_NE, TYP_INT, ret, gtNewIconNode(0, TYP_INT));
@@ -12482,11 +12494,12 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     if ((op1Kind == TPK_Handle) && (op2Kind == TPK_Handle))
     {
         JITDUMP("Optimizing compare of types-from-handles to instead compare handles\n");
-        assert((tree->AsOp()->gtGetOp1()->AsCall()->gtArgs.CountArgs() == 1) &&(tree->AsOp()->gtGetOp2()->AsCall()->gtArgs.CountArgs() == 1));
-        GenTree*             op1ClassFromHandle = tree->AsOp()->gtGetOp1()->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
-        GenTree*             op2ClassFromHandle = tree->AsOp()->gtGetOp2()->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
-        CORINFO_CLASS_HANDLE cls1Hnd            = NO_CLASS_HANDLE;
-        CORINFO_CLASS_HANDLE cls2Hnd            = NO_CLASS_HANDLE;
+        assert((tree->AsOp()->gtGetOp1()->AsCall()->gtArgs.CountArgs() == 1) &&
+               (tree->AsOp()->gtGetOp2()->AsCall()->gtArgs.CountArgs() == 1));
+        GenTree* op1ClassFromHandle  = tree->AsOp()->gtGetOp1()->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+        GenTree* op2ClassFromHandle  = tree->AsOp()->gtGetOp2()->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+        CORINFO_CLASS_HANDLE cls1Hnd = NO_CLASS_HANDLE;
+        CORINFO_CLASS_HANDLE cls2Hnd = NO_CLASS_HANDLE;
 
         // Try and find class handles from op1 and op2
         cls1Hnd = gtGetHelperArgClassHandle(op1ClassFromHandle);
@@ -13251,7 +13264,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         }
         else if (asgSrcOper == GT_CALL)
         {
-            GenTreeCall*      newobjCall = asgSrc->AsCall();
+            GenTreeCall* newobjCall = asgSrc->AsCall();
 
             // In R2R expansions the handle may not be an explicit operand to the helper,
             // so we can't remove the box.
@@ -14985,9 +14998,9 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
 
     // Arguments in reverse order
     GenTree* args[4];
-    size_t nArgs = 0;
+    size_t   nArgs = 0;
     /* If we can't access it directly, we need to call a helper function */
-    var_types         helperType = TYP_BYREF;
+    var_types helperType = TYP_BYREF;
 
     if (pFieldInfo->fieldAccessor == CORINFO_FIELD_INSTANCE_HELPER)
     {
@@ -15010,7 +15023,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
             }
 
             args[nArgs++] = assg;
-            helperType = TYP_VOID;
+            helperType    = TYP_VOID;
         }
         else if (access & CORINFO_ACCESS_GET)
         {

@@ -1002,7 +1002,8 @@ inline GenTree* Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
 // Return Value:
 //    New CT_HELPER node
 
-inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types type, GenTree* arg1, GenTree* arg2, GenTree* arg3)
+inline GenTreeCall* Compiler::gtNewHelperCallNode(
+    unsigned helper, var_types type, GenTree* arg1, GenTree* arg2, GenTree* arg3)
 {
     GenTreeFlags flags  = s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper) ? GTF_EMPTY : GTF_EXCEPT;
     GenTreeCall* result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
@@ -1049,7 +1050,7 @@ inline GenTreeCall* Compiler::gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_L
                                                                GenTree*                ctxTree,
                                                                void*                   compileTimeHandle)
 {
-    GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
+    GenTree* argNode  = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
     GenTreeCall* call = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL);
     call->gtArgs.PushFront(this, ctxTree, argNode);
 

@@ -692,7 +692,8 @@ private:
         {
             if (varTypeIsStruct(varDsc) && varDsc->lvIsTemp)
             {
-                if ((callTree != nullptr) && callTree->gtArgs.HasRetBuffer() && (val.Node() == callTree->gtArgs.GetRetBufferArg()->GetNode()))
+                if ((callTree != nullptr) && callTree->gtArgs.HasRetBuffer() &&
+                    (val.Node() == callTree->gtArgs.GetRetBufferArg()->GetNode()))
                 {
                     assert(!exposeParentLcl);
 

@@ -237,12 +237,12 @@ void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* blo
 //   the number of stack slots in stack arguments for the call.
 unsigned StackLevelSetter::PopArgumentsFromCall(GenTreeCall* call)
 {
-    unsigned   usedStackSlotsCount = 0;
+    unsigned usedStackSlotsCount = 0;
     if (call->gtArgs.HasStackArgs())
     {
         for (CallArg& arg : call->gtArgs.Args())
         {
-            const unsigned       slotCount = arg.AbiInfo.GetStackSlotsNumber();
+            const unsigned slotCount = arg.AbiInfo.GetStackSlotsNumber();
             if (slotCount != 0)
             {
                 GenTree* node = arg.GetArgNode();

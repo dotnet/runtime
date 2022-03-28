@@ -1122,7 +1122,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         //
         // Note that this property is statically checked by LinearScan::CheckBlock.
         CallArgABIInformation& abiInfo = arg.GetArg()->AbiInfo;
-        GenTree* argNode = arg.GetNode();
+        GenTree*               argNode = arg.GetNode();
 
         // Each register argument corresponds to one source.
         if (argNode->OperIsPutArgReg())

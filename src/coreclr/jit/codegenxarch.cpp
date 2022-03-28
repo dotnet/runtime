@@ -5325,7 +5325,7 @@ void CodeGen::genCall(GenTreeCall* call)
     for (LateArg arg : call->gtArgs.LateArgs())
     {
         CallArgABIInformation& abiInfo = arg.GetArg()->AbiInfo;
-        GenTree* argNode = arg.GetNode();
+        GenTree*               argNode = arg.GetNode();
 
         if (abiInfo.GetRegNum() == REG_STK)
         {
@@ -7988,10 +7988,10 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
         // Get argument offset on stack.
         // Here we cross check that argument offset hasn't changed from lowering to codegen since
         // we are storing arg slot number in GT_PUTARG_STK node in lowering phase.
-        unsigned       argOffset      = putArgStk->getArgOffset();
+        unsigned argOffset = putArgStk->getArgOffset();
 
 #ifdef DEBUG
-        CallArg* callArg = putArgStk->gtCall->gtArgs.FindByNode(putArgStk);
+        CallArg* callArg   = putArgStk->gtCall->gtArgs.FindByNode(putArgStk);
         assert(callArg != nullptr);
         assert(argOffset == callArg->AbiInfo.SlotNum * TARGET_POINTER_SIZE);
 #endif

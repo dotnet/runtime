@@ -4062,11 +4062,13 @@ struct CallArgABIInformation
 
     // The original argument number, also specifies the required argument
     // evaluation order from the IL
-    unsigned ArgNum; 
+    unsigned ArgNum;
+
 private:
     // The registers to use when passing this argument, set to REG_STK for
     // arguments passed on the stack
     regNumberSmall RegNums[MAX_ARG_REG_COUNT];
+
 public:
     // Count of number of registers that this argument uses. Note that on ARM,
     // if we have a double hfa, this reflects the number of DOUBLE registers.
@@ -4078,8 +4080,8 @@ public:
     // Unix amd64 will split floating point types and integer types in structs
     // between floating point and general purpose registers. Keep track of that
     // information so we do not need to recompute it later.
-    unsigned StructIntRegs;
-    unsigned StructFloatRegs;
+    unsigned                                            StructIntRegs;
+    unsigned                                            StructFloatRegs;
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR StructDesc;
 #endif // UNIX_AMD64_ABI
 #if defined(DEBUG_ARG_SLOTS)
@@ -4135,8 +4137,8 @@ public:
 #endif
     }
 
-    bool IsHfaArg() const;
-    bool IsHfaRegArg() const;
+    bool      IsHfaArg() const;
+    bool      IsHfaRegArg() const;
     var_types GetHfaType() const;
     void SetHfaType(var_types type, unsigned hfaSlots);
 
@@ -4230,10 +4232,10 @@ class CallArg
 {
     friend class CallArgs;
 
-    GenTree* m_node;
-    GenTree* m_lateNode;
-    CallArg* m_next;
-    CallArg* m_lateNext;
+    GenTree*     m_node;
+    GenTree*     m_lateNode;
+    CallArg*     m_next;
+    CallArg*     m_lateNext;
     WellKnownArg m_wellKnownArg : 5;
 
     // True when we force this argument's evaluation into a temp LclVar.
@@ -4247,6 +4249,7 @@ class CallArg
     bool m_processed : 1;
     // The LclVar number if we had to force evaluation of this arg
     unsigned m_tmpNum;
+
 public:
     CallArgABIInformation AbiInfo;
 
@@ -4268,21 +4271,63 @@ public:
     CallArg& operator=(CallArg&) = delete;
 
     // clang format off
-    GenTree*& NodeRef() { return m_node; }
-    GenTree* GetNode() { return m_node; }
-    void SetNode(GenTree* node) { m_node = node; }
-    GenTree*& LateNodeRef() { return m_lateNode; }
-    GenTree* GetLateNode() { return m_lateNode; }
-    void SetLateNode(GenTree* lateNode) { m_lateNode = lateNode; }
-    CallArg*& NextRef() { return m_next; }
-    CallArg* GetNext() { return m_next; }
-    void SetNext(CallArg* next) { m_next = next; }
-    CallArg*& LateNextRef() { return m_lateNext; }
-    CallArg* GetLateNext() { return m_lateNext; }
-    void SetLateNext(CallArg* lateNext) { m_lateNext = lateNext; }
-    WellKnownArg GetWellKnownArg() { return m_wellKnownArg; }
+    GenTree*& NodeRef()
+    {
+        return m_node;
+    }
+    GenTree* GetNode()
+    {
+        return m_node;
+    }
+    void SetNode(GenTree* node)
+    {
+        m_node = node;
+    }
+    GenTree*& LateNodeRef()
+    {
+        return m_lateNode;
+    }
+    GenTree* GetLateNode()
+    {
+        return m_lateNode;
+    }
+    void SetLateNode(GenTree* lateNode)
+    {
+        m_lateNode = lateNode;
+    }
+    CallArg*& NextRef()
+    {
+        return m_next;
+    }
+    CallArg* GetNext()
+    {
+        return m_next;
+    }
+    void SetNext(CallArg* next)
+    {
+        m_next = next;
+    }
+    CallArg*& LateNextRef()
+    {
+        return m_lateNext;
+    }
+    CallArg* GetLateNext()
+    {
+        return m_lateNext;
+    }
+    void SetLateNext(CallArg* lateNext)
+    {
+        m_lateNext = lateNext;
+    }
+    WellKnownArg GetWellKnownArg()
+    {
+        return m_wellKnownArg;
+    }
     // TODO-ARGS: Remove
-    bool IsTemp() { return m_isTmp; }
+    bool IsTemp()
+    {
+        return m_isTmp;
+    }
     // clang format on
 
     // Get the real argument node, i.e. not a setup or placeholder node.
@@ -4314,14 +4359,25 @@ class LateArg
     CallArg* m_arg;
 
 public:
-    explicit LateArg(CallArg* arg)
-        : m_arg(arg)
+    explicit LateArg(CallArg* arg) : m_arg(arg)
     {
     }
-    CallArg* GetArg() { return m_arg; }
-    GenTree* GetNode() { return m_arg->GetLateNode(); }
-    void SetNode(GenTree* node) { m_arg->SetLateNode(node); }
-    GenTree*& NodeRef() { return m_arg->LateNodeRef(); }
+    CallArg* GetArg()
+    {
+        return m_arg;
+    }
+    GenTree* GetNode()
+    {
+        return m_arg->GetLateNode();
+    }
+    void SetNode(GenTree* node)
+    {
+        m_arg->SetLateNode(node);
+    }
+    GenTree*& NodeRef()
+    {
+        return m_arg->LateNodeRef();
+    }
 };
 
 class CallArgs
@@ -4360,6 +4416,7 @@ class CallArgs
     void RemovedWellKnownArg(WellKnownArg arg);
     regNumber GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, WellKnownArg arg);
     void SplitArg(CallArg* arg, unsigned numRegs, unsigned numSlots, unsigned* nextSlotNum);
+
 public:
     CallArgs();
     CallArgs(const CallArgs&) = delete;
@@ -4372,7 +4429,10 @@ public:
     CallArg* GetArgByIndex(unsigned index);
     unsigned GetIndex(CallArg* arg);
 
-    bool IsEmpty() const { return m_head == nullptr; }
+    bool IsEmpty() const
+    {
+        return m_head == nullptr;
+    }
 
     // Reverse the args from [index..index + count) in place.
     void Reverse(unsigned index, unsigned count);
@@ -4386,10 +4446,10 @@ public:
     bool Remove(CallArg* arg);
     void Clear();
 
-    template<typename CopyNodeFunc>
+    template <typename CopyNodeFunc>
     void InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc copyFunc);
 
-    template<typename... T>
+    template <typename... T>
     void PushFront(Compiler* comp, GenTree* node, T... rest)
     {
         PushFront(comp, rest...);
@@ -4433,8 +4493,7 @@ public:
         CallArg* m_arg;
 
     public:
-        explicit CallArgIterator(CallArg* arg)
-            : m_arg(arg)
+        explicit CallArgIterator(CallArg* arg) : m_arg(arg)
         {
         }
 
@@ -4472,10 +4531,7 @@ public:
 
     IteratorPair<CallArgIterator> Args()
     {
-        return
-            IteratorPair<CallArgIterator>(
-                CallArgIterator(m_head),
-                CallArgIterator(nullptr));
+        return IteratorPair<CallArgIterator>(CallArgIterator(m_head), CallArgIterator(nullptr));
     }
 
     class LateArgsIterator
@@ -4483,8 +4539,7 @@ public:
         CallArg* m_arg;
 
     public:
-        explicit LateArgsIterator(CallArg* arg)
-            : m_arg(arg)
+        explicit LateArgsIterator(CallArg* arg) : m_arg(arg)
         {
         }
 
@@ -4527,10 +4582,7 @@ public:
 
     IteratorPair<LateArgsIterator> LateArgs()
     {
-        return
-            IteratorPair<LateArgsIterator>(
-                LateArgsIterator(m_lateHead),
-                LateArgsIterator(nullptr));
+        return IteratorPair<LateArgsIterator>(LateArgsIterator(m_lateHead), LateArgsIterator(nullptr));
     }
 };
 
@@ -5225,7 +5277,7 @@ struct GenTreeCall final : public GenTree
             return nullptr;
         }
 
-        CallArg* retBufArg = gtArgs.GetRetBufferArg();
+        CallArg* retBufArg        = gtArgs.GetRetBufferArg();
         GenTree* lclRetBufArgNode = retBufArg->GetNode();
         if (lclRetBufArgNode->IsArgPlaceHolderNode())
         {

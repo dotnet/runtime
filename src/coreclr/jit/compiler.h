@@ -2331,11 +2331,10 @@ public:
                                var_types             type,
                                const DebugInfo&      di = DebugInfo());
 
-    GenTreeCall* gtNewIndCallNode(GenTree*          addr,
-                                  var_types         type,
-                                  const DebugInfo&  di = DebugInfo());
+    GenTreeCall* gtNewIndCallNode(GenTree* addr, var_types type, const DebugInfo& di = DebugInfo());
 
-    GenTreeCall* gtNewHelperCallNode(unsigned helper, var_types type, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, GenTree* arg3 = nullptr);
+    GenTreeCall* gtNewHelperCallNode(
+        unsigned helper, var_types type, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, GenTree* arg3 = nullptr);
 
     GenTreeCall* gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_LOOKUP* pRuntimeLookup,
                                                   GenTree*                ctxTree,
@@ -3850,7 +3849,7 @@ public:
     GenTreeCall* impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                            CorInfoHelpFunc         helper,
                                            var_types               type,
-                                           GenTree*                arg1 = nullptr,
+                                           GenTree*                arg1               = nullptr,
                                            CORINFO_LOOKUP_KIND*    pGenericLookupKind = nullptr);
 
     bool impIsCastHelperEligibleForClassProbe(GenTree* tree);
@@ -4150,10 +4149,10 @@ private:
 
     bool impInlineIsThis(GenTree* tree, InlArgInfo* inlArgInfo);
 
-    bool impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*          additionalTree,
-                                                            CallArgs* additionalCallArgs,
-                                                            GenTree*          dereferencedAddress,
-                                                            InlArgInfo*       inlArgInfo);
+    bool impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*    additionalTree,
+                                                            CallArgs*   additionalCallArgs,
+                                                            GenTree*    dereferencedAddress,
+                                                            InlArgInfo* inlArgInfo);
 
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
@@ -5573,7 +5572,8 @@ private:
 
     GenTree* fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* oper);
 
-    GenTree* fgMorphIntoHelperCall(GenTree* tree, int helper, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, bool morphArgs = true);
+    GenTree* fgMorphIntoHelperCall(
+        GenTree* tree, int helper, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, bool morphArgs = true);
 
     GenTree* fgMorphStackArgForVarArgs(unsigned lclNum, var_types varType, unsigned lclOffs);
 
@@ -5663,8 +5663,8 @@ private:
     GenTree* fgGetStubAddrArg(GenTreeCall* call);
     unsigned fgGetArgParameterLclNum(GenTreeCall* call, CallArg* arg);
     void fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCall* recursiveTailCall);
-    Statement* fgAssignRecursiveCallArgToCallerParam(GenTree* arg,
-                                                     CallArg* callArg,
+    Statement* fgAssignRecursiveCallArgToCallerParam(GenTree*         arg,
+                                                     CallArg*         callArg,
                                                      unsigned         lclParamNum,
                                                      BasicBlock*      block,
                                                      const DebugInfo& callDI,

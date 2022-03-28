@@ -690,7 +690,7 @@ private:
             compiler->fgNewStmtAtEnd(thenBlock, assign);
 
             // Clone call. Note we must use the special candidate helper.
-            GenTreeCall* call   = compiler->gtCloneCandidateCall(origCall);
+            GenTreeCall* call = compiler->gtCloneCandidateCall(origCall);
             call->gtArgs.GetThisArg()->SetNode(compiler->gtNewLclvNode(thisTemp, TYP_REF));
             call->SetIsGuarded();
 

@@ -667,7 +667,7 @@ struct InlineInfo
         return numberOfGcRefLocals > 0;
     }
 
-    bool     thisDereferencedFirst;
+    bool thisDereferencedFirst;
 
 #ifdef FEATURE_SIMD
     bool hasSIMDTypeArgLocalOrReturn;

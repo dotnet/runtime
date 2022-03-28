@@ -3123,7 +3123,7 @@ void CodeGen::genCall(GenTreeCall* call)
     for (LateArg arg : call->gtArgs.LateArgs())
     {
         CallArgABIInformation& abiInfo = arg.GetArg()->AbiInfo;
-        GenTree* argNode = arg.GetNode();
+        GenTree*               argNode = arg.GetNode();
 
         // GT_RELOAD/GT_COPY use the child node
         argNode = argNode->gtSkipReloadOrCopy();

@@ -9776,9 +9776,9 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 {
     unsigned nArgs = ValueNumStore::VNFuncArity(vnf);
     assert(vnf != VNF_Boundary);
-    CallArgs* args = &call->gtArgs;
-    bool              generateUniqueVN        = false;
-    bool              useEntryPointAddrAsArg0 = false;
+    CallArgs* args                    = &call->gtArgs;
+    bool      generateUniqueVN        = false;
+    bool      useEntryPointAddrAsArg0 = false;
 
     switch (vnf)
     {
@@ -9791,7 +9791,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 
         case VNF_JitNewArr:
         {
-            generateUniqueVN  = true;
+            generateUniqueVN = true;
             // TODO-ARGS: Should this really be early arg?
             ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetArgByIndex(1)->GetNode()->gtVNPair);
 

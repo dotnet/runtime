@@ -715,7 +715,7 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, uint8_t* prof
     // the first time this method is called. So make the call conditional
     // on the entry block's profile count.
     //
-    GenTreeCall*          call = m_comp->gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, arg);
+    GenTreeCall* call = m_comp->gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, arg);
 
     var_types typ =
         entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ? TYP_INT : TYP_LONG;
@@ -1580,10 +1580,11 @@ public:
 
         // Generate the IR...
         //
-        GenTree* const          classProfileNode = compiler->gtNewIconNode((ssize_t)classProfile, TYP_I_IMPL);
-        GenTree* const          tmpNode          = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTreeCall* const          helperCallNode =
-            compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_CLASSPROFILE32 : CORINFO_HELP_CLASSPROFILE64, TYP_VOID, tmpNode, classProfileNode);
+        GenTree* const     classProfileNode = compiler->gtNewIconNode((ssize_t)classProfile, TYP_I_IMPL);
+        GenTree* const     tmpNode          = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+        GenTreeCall* const helperCallNode =
+            compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_CLASSPROFILE32 : CORINFO_HELP_CLASSPROFILE64, TYP_VOID,
+                                          tmpNode, classProfileNode);
         GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
         GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);

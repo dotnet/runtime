@@ -6452,7 +6452,7 @@ regNumber CodeGen::getCallIndirectionCellReg(GenTreeCall* call)
     }
 
 #ifdef DEBUG
-    regNumber       foundReg = REG_NA;
+    regNumber foundReg = REG_NA;
     for (CallArg& arg : call->gtArgs.Args())
     {
         WellKnownArg kind = arg.GetWellKnownArg();

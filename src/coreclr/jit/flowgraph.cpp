@@ -870,8 +870,8 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         opModuleIDArg = gtNewIconNode((size_t)moduleID, TYP_I_IMPL);
     }
 
-    GenTreeCall* result = gtNewHelperCallNode(helper, type);
-    CallArg* opModuleIDCallArg = result->gtArgs.PushFront(this, opModuleIDArg);
+    GenTreeCall* result            = gtNewHelperCallNode(helper, type);
+    CallArg*     opModuleIDCallArg = result->gtArgs.PushFront(this, opModuleIDArg);
     if (bNeedClassID)
     {
         if (pclsID)
@@ -1136,8 +1136,8 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
 
                 call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID);
 
-                GenTree*          thisPointer       = call->gtArgs.GetArgByIndex(0)->GetNode();
-                GenTree*          targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
+                GenTree*             thisPointer       = call->gtArgs.GetArgByIndex(0)->GetNode();
+                GenTree*             targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
                 CORINFO_LOOKUP       pLookup;
                 CORINFO_CONST_LOOKUP entryPoint;
                 info.compCompHnd->getReadyToRunDelegateCtorHelper(ldftnToken, clsHnd, &pLookup);
@@ -1154,7 +1154,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                                                           CORINFO_HELP_READYTORUN_GENERIC_HANDLE, &genericLookup);
                     GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
                     call->gtArgs.PushFront(this, thisPointer, targetObjPointers, ctxTree);
-                    entryPoint       = genericLookup;
+                    entryPoint = genericLookup;
                 }
                 call->setEntryPoint(entryPoint);
             }
@@ -1168,9 +1168,9 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         {
             JITDUMP("optimized\n");
 
-            GenTree*          thisPointer       = call->gtArgs.GetArgByIndex(0)->GetNode();
-            GenTree*          targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
-            call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID);
+            GenTree* thisPointer       = call->gtArgs.GetArgByIndex(0)->GetNode();
+            GenTree* targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
+            call                       = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID);
             call->gtArgs.PushFront(this, thisPointer, targetObjPointers);
 
             CORINFO_LOOKUP entryPoint;
@@ -1208,13 +1208,13 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             if (ctorData.pArg3 != nullptr)
             {
                 GenTree* arg3 = gtNewIconHandleNode(size_t(ctorData.pArg3), GTF_ICON_FTN_ADDR);
-                lastArg = call->gtArgs.PushBack(this, arg3);
+                lastArg       = call->gtArgs.PushBack(this, arg3);
             }
 
             if (ctorData.pArg4 != nullptr)
             {
                 GenTree* arg4 = gtNewIconHandleNode(size_t(ctorData.pArg4), GTF_ICON_FTN_ADDR);
-                lastArg = call->gtArgs.InsertAfter(this, lastArg, arg4);
+                lastArg       = call->gtArgs.InsertAfter(this, lastArg, arg4);
             }
 
             if (ctorData.pArg5 != nullptr)
@@ -1856,14 +1856,13 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
     if (info.compIsStatic)
     {
         tree = fgGetCritSectOfStaticMethod();
-        tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER_STATIC : CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID,
-                                   tree, varAddrNode);
+        tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER_STATIC : CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID, tree,
+                                   varAddrNode);
     }
     else
     {
         tree = gtNewLclvNode(lvaThisVar, TYP_REF);
-        tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER : CORINFO_HELP_MON_EXIT, TYP_VOID,
-                                   tree, varAddrNode);
+        tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER : CORINFO_HELP_MON_EXIT, TYP_VOID, tree, varAddrNode);
     }
 
 #ifdef DEBUG
@@ -2005,19 +2004,12 @@ void Compiler::fgAddReversePInvokeEnterExit()
             stubArgument = gtNewIconNode(0, TYP_I_IMPL);
         }
 
-        tree = gtNewHelperCallNode(
-            CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS,
-            TYP_VOID,
-            pInvokeFrameVar,
-            gtNewIconEmbMethHndNode(info.compMethodHnd),
-            stubArgument);
+        tree = gtNewHelperCallNode(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS, TYP_VOID, pInvokeFrameVar,
+                                   gtNewIconEmbMethHndNode(info.compMethodHnd), stubArgument);
     }
     else
     {
-        tree = gtNewHelperCallNode(
-            CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER,
-            TYP_VOID,
-            pInvokeFrameVar);
+        tree = gtNewHelperCallNode(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, TYP_VOID, pInvokeFrameVar);
     }
 
     fgEnsureFirstBBisScratch();

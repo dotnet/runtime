@@ -1238,16 +1238,17 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
             const unsigned slotNumber           = callArg->AbiInfo.ByteOffset / TARGET_POINTER_SIZE;
             const bool     putInIncomingArgArea = call->IsFastTailCall();
 
-            putArg = new (comp, GT_PUTARG_STK)
-                GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg, callArg->AbiInfo.ByteOffset,
+            putArg =
+                new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg, callArg->AbiInfo.ByteOffset,
 #if defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-                                 callArg->AbiInfo.GetStackByteSize(), slotNumber, callArg->AbiInfo.GetStackSlotsNumber(),
+                                                           callArg->AbiInfo.GetStackByteSize(), slotNumber,
+                                                           callArg->AbiInfo.GetStackSlotsNumber(),
 #elif defined(DEBUG_ARG_SLOTS) && !defined(FEATURE_PUT_STRUCT_ARG_STK)
-                                 slotNumber,
+                                                           slotNumber,
 #elif !defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-                                 callArg->AbiInfo.GetStackByteSize(),
+                                                           callArg->AbiInfo.GetStackByteSize(),
 #endif
-                                 call, putInIncomingArgArea);
+                                                           call, putInIncomingArgArea);
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
             // If the ArgTabEntry indicates that this arg is a struct
@@ -1348,7 +1349,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
 void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
 {
     GenTree** ppArg = late ? &callArg->LateNodeRef() : &callArg->NodeRef();
-    GenTree* arg = *ppArg;
+    GenTree*  arg   = *ppArg;
     assert(arg != nullptr);
 
     JITDUMP("lowering arg : ");
@@ -1415,7 +1416,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
         BlockRange().InsertAfter(arg, bitcast);
 
         *ppArg = arg = bitcast;
-        type = TYP_LONG;
+        type         = TYP_LONG;
     }
 #endif // defined(TARGET_X86)
 #endif // defined(FEATURE_SIMD)
@@ -2355,11 +2356,12 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             assert(gotUse);
             useOfTar.ReplaceWith(regNode);
 
-            GenTreeCall*      validate = comp->gtNewHelperCallNode(CORINFO_HELP_VALIDATE_INDIRECT_CALL, TYP_VOID);
+            GenTreeCall* validate = comp->gtNewHelperCallNode(CORINFO_HELP_VALIDATE_INDIRECT_CALL, TYP_VOID);
             // Add the call to the validator. Use a placeholder for the target while we
             // morph, sequence and lower, to avoid redoing that for the actual target.
             GenTree* targetPlaceholder = comp->gtNewZeroConNode(callTarget->TypeGet());
-            CallArg* targetArg = validate->gtArgs.PushFront(comp, targetPlaceholder, WellKnownArg::ValidateIndirectCallTarget);
+            CallArg* targetArg =
+                validate->gtArgs.PushFront(comp, targetPlaceholder, WellKnownArg::ValidateIndirectCallTarget);
 
             comp->fgMorphTree(validate);
 
@@ -2407,7 +2409,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             // Now insert the call target as an extra argument.
             //
             GenTree* placeHolder = comp->gtNewArgPlaceHolderNode(callTarget->TypeGet(), NO_CLASS_HANDLE);
-            CallArg* targetArg = call->gtArgs.PushBack(comp, placeHolder, WellKnownArg::DispatchIndirectCallTarget);
+            CallArg* targetArg   = call->gtArgs.PushBack(comp, placeHolder, WellKnownArg::DispatchIndirectCallTarget);
             placeHolder->gtFlags |= GTF_LATE_ARG;
             targetArg->SetLateNode(callTarget);
 
@@ -2421,11 +2423,11 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             LowerArg(call, targetArg, true /* late */);
 
             // Finally update the call to be a helper call
-            call->gtCallType = CT_HELPER;
+            call->gtCallType    = CT_HELPER;
             call->gtCallMethHnd = Compiler::eeFindHelper(CORINFO_HELP_DISPATCH_INDIRECT_CALL);
             call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
 #ifdef FEATURE_READYTORUN
-            call->gtEntryPoint.addr = nullptr;
+            call->gtEntryPoint.addr       = nullptr;
             call->gtEntryPoint.accessType = IAT_VALUE;
 #endif
 
@@ -4528,10 +4530,11 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         // On x86 targets, PInvoke calls need the size of the stack args in InlinedCallFrame.m_Datum.
         // This is because the callee pops stack arguments, and we need to keep track of this during stack
         // walking
-        const unsigned    numStkArgBytes = call->gtArgs.OutgoingArgsStackSize();
-        GenTree*          stackBytes     = comp->gtNewIconNode(numStkArgBytes, TYP_INT);
+        const unsigned numStkArgBytes = call->gtArgs.OutgoingArgsStackSize();
+        GenTree*       stackBytes     = comp->gtNewIconNode(numStkArgBytes, TYP_INT);
         // Insert call to CORINFO_HELP_JIT_PINVOKE_BEGIN
-        GenTree* helperCall = comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, frameAddr, stackBytes);
+        GenTree* helperCall =
+            comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, frameAddr, stackBytes);
 #else
         GenTree* helperCall = comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, frameAddr);
 #endif
@@ -4692,8 +4695,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 #endif // DEBUG
 
         // Insert call to CORINFO_HELP_JIT_PINVOKE_END
-        GenTreeCall* helperCall =
-            comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_END, TYP_VOID, frameAddr);
+        GenTreeCall* helperCall = comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_END, TYP_VOID, frameAddr);
 
         comp->fgMorphTree(helperCall);
         BlockRange().InsertAfter(call, LIR::SeqTree(comp, helperCall));

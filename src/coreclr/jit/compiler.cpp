@@ -4463,8 +4463,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 if (lvaGetDesc(i)->TypeGet() == TYP_REF)
                 {
                     // confirm that the argument is a GC pointer (for debugging (GC stress))
-                    GenTree*          op   = gtNewLclvNode(i, TYP_REF);
-                    op                     = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_VOID, op);
+                    GenTree* op = gtNewLclvNode(i, TYP_REF);
+                    op          = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_VOID, op);
 
                     fgEnsureFirstBBisScratch();
                     fgNewStmtAtEnd(fgFirstBB, op);

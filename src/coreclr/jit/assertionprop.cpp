@@ -2548,8 +2548,8 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFCLASS)) ||
         (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFANY)))
     {
-        GenTree*         objectNode      = call->gtArgs.GetArgByIndex(1)->GetArgNode();
-        GenTree*         methodTableNode = call->gtArgs.GetArgByIndex(0)->GetArgNode();
+        GenTree* objectNode      = call->gtArgs.GetArgByIndex(1)->GetArgNode();
+        GenTree* methodTableNode = call->gtArgs.GetArgByIndex(0)->GetArgNode();
 
         assert(objectNode->TypeGet() == TYP_REF);
         assert(methodTableNode->TypeGet() == TYP_I_IMPL);
