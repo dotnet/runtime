@@ -755,7 +755,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     case "methodId":
                     {
-                        var resMethod = await context.SdbAgent.InvokeMethodInObject(objectId.Value, objectId.SubValue, objectId.IsValueType, null, token);
+                        var resMethod = await context.SdbAgent.InvokeMethodInObject(objectId, objectId.SubValue, null, token);
                         return sortByAccessLevel ? JObject.FromObject(new { result = new JArray(resMethod) }) : new JArray(resMethod);
                     }
                     case "object":

@@ -90,7 +90,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 switch (objectId.Scheme)
                 {
                     case "methodId":
-                        if (parts.Length > 3)
+                        if (parts.Length > 4)
                         {
                             objectId.SubValue = int.Parse(parts[3]);
                             objectId.IsValueType = parts[4] == "ValueType";
