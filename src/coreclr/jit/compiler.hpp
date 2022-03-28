@@ -1015,20 +1015,22 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
     result->gtInlineObservation = InlineObservation::CALLSITE_IS_CALL_TO_HELPER;
 #endif
 
+    if (arg3 != nullptr)
+    {
+        result->gtArgs.PushFront(this, arg3);
+        result->gtFlags |= arg3->gtFlags & GTF_ALL_EFFECT;
+    }
+
+    if (arg2 != nullptr)
+    {
+        result->gtArgs.PushFront(this, arg2);
+        result->gtFlags |= arg2->gtFlags & GTF_ALL_EFFECT;
+    }
+
     if (arg1 != nullptr)
     {
-        CallArg* lastArg = result->gtArgs.PushFront(this, arg1);
+        result->gtArgs.PushFront(this, arg1);
         result->gtFlags |= arg1->gtFlags & GTF_ALL_EFFECT;
-        if (arg2 != nullptr)
-        {
-            lastArg = result->gtArgs.InsertAfter(this, lastArg, arg2);
-            result->gtFlags |= arg2->gtFlags & GTF_ALL_EFFECT;
-            if (arg3 != nullptr)
-            {
-                result->gtArgs.InsertAfter(this, lastArg, arg3);
-                result->gtFlags |= arg3->gtFlags & GTF_ALL_EFFECT;
-            }
-        }
     }
 
     return result;
