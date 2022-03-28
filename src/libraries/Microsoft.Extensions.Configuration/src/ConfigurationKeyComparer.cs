@@ -61,11 +61,8 @@ namespace Microsoft.Extensions.Configuration
 
             static int Compare(string? a, string? b)
             {
-                int value1 = 0;
-                int value2 = 0;
-
-                bool aIsInt = int.TryParse(a, out value1);
-                bool bIsInt = int.TryParse(b, out value2);
+                bool aIsInt = int.TryParse(a, out int value1);
+                bool bIsInt = int.TryParse(b, out int value2);
 
                 int result;
 
