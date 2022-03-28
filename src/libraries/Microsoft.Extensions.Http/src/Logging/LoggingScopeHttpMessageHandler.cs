@@ -72,7 +72,7 @@ namespace Microsoft.Extensions.Http.Logging
                 public static readonly EventId ResponseHeader = new EventId(103, "RequestPipelineResponseHeader");
             }
 
-            private static readonly Func<ILogger, HttpMethod, string?, IDisposable> _beginRequestPipelineScope = LoggerMessage.DefineScope<HttpMethod, string?>("HTTP {HttpMethod} {Uri}");
+            private static readonly Func<ILogger, HttpMethod, string?, IDisposable?> _beginRequestPipelineScope = LoggerMessage.DefineScope<HttpMethod, string?>("HTTP {HttpMethod} {Uri}");
 
             private static readonly Action<ILogger, HttpMethod, string?, Exception?> _requestPipelineStart = LoggerMessage.Define<HttpMethod, string?>(
                 LogLevel.Information,
@@ -84,7 +84,7 @@ namespace Microsoft.Extensions.Http.Logging
                 EventIds.PipelineEnd,
                 "End processing HTTP request after {ElapsedMilliseconds}ms - {StatusCode}");
 
-            public static IDisposable BeginRequestPipelineScope(ILogger logger, HttpRequestMessage request)
+            public static IDisposable? BeginRequestPipelineScope(ILogger logger, HttpRequestMessage request)
             {
                 return _beginRequestPipelineScope(logger, request.Method, GetUriString(request.RequestUri));
             }
