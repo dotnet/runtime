@@ -9954,7 +9954,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
             }
             else
             {
-                ValueNumPair vnp2wx = curArg->GetNode()->gtVNPair;
+                ValueNumPair vnp2wx = curArg->GetArgNode()->gtVNPair;
                 ValueNumPair vnp2;
                 ValueNumPair vnp2x;
                 vnStore->VNPUnpackExc(vnp2wx, &vnp2, &vnp2x);
