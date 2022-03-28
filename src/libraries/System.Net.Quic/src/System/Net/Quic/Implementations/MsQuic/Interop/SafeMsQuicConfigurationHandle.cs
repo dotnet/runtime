@@ -8,7 +8,6 @@ using System.Net.Security;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Threading;
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
 
