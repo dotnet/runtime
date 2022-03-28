@@ -132,11 +132,11 @@ namespace SharedTypes
         private bool isNullString;
 
         public Utf16StringMarshaller(string str)
-            : this(str, default(Span<byte>))
+            : this(str, default(Span<ushort>))
         {
         }
 
-        public Utf16StringMarshaller(string str, Span<byte> buffer)
+        public Utf16StringMarshaller(string str, Span<ushort> buffer)
         {
             isNullString = false;
             if (str is null)
@@ -147,8 +147,8 @@ namespace SharedTypes
             }
             else if ((str.Length + 1) < buffer.Length)
             {
-                span = MemoryMarshal.Cast<byte, ushort>(buffer);
-                str.AsSpan().CopyTo(MemoryMarshal.Cast<byte, char>(buffer));
+                span = buffer;
+                str.AsSpan().CopyTo(MemoryMarshal.Cast<ushort, char>(buffer));
                 // Supplied memory is in an undefined state so ensure
                 // there is a trailing null in the buffer.
                 span[str.Length] = '\0';
@@ -192,7 +192,7 @@ namespace SharedTypes
             Marshal.FreeCoTaskMem((IntPtr)allocated);
         }
     }
-    
+
     [CustomTypeMarshaller(typeof(string), Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 0x100)]
     public unsafe ref struct Utf8StringMarshaller
     {

@@ -9,12 +9,7 @@ namespace System.Runtime.InteropServices
     /// <remarks>
     /// <seealso cref="LibraryImportAttribute"/>
     /// </remarks>
-#if LIBRARYIMPORT_GENERATOR_TEST
-    public
-#else
-    internal
-#endif
-    enum CustomTypeMarshallerKind
+    public enum CustomTypeMarshallerKind
     {
         /// <summary>
         /// This custom type marshaller represents a single value.

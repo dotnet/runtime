@@ -1779,11 +1779,10 @@ namespace System
             return true;
 
         Vector:
-            if (Sse2.IsSupported)
+            if (Vector128.IsHardwareAccelerated)
             {
-                if (Avx2.IsSupported && length >= (nuint)Vector256<byte>.Count)
+                if (Vector256.IsHardwareAccelerated && length >= (nuint)Vector256<byte>.Count)
                 {
-                    Vector256<byte> vecResult;
                     nuint offset = 0;
                     nuint lengthToExamine = length - (nuint)Vector256<byte>.Count;
                     // Unsigned, so it shouldn't have overflowed larger than length (rather than negative)
@@ -1792,8 +1791,8 @@ namespace System
                     {
                         do
                         {
-                            vecResult = Avx2.CompareEqual(LoadVector256(ref first, offset), LoadVector256(ref second, offset));
-                            if (Avx2.MoveMask(vecResult) != -1)
+                            if (Vector256.LoadUnsafe(ref first, offset) !=
+                                Vector256.LoadUnsafe(ref second, offset))
                             {
                                 goto NotEqual;
                             }
@@ -1802,8 +1801,8 @@ namespace System
                     }
 
                     // Do final compare as Vector256<byte>.Count from end rather than start
-                    vecResult = Avx2.CompareEqual(LoadVector256(ref first, lengthToExamine), LoadVector256(ref second, lengthToExamine));
-                    if (Avx2.MoveMask(vecResult) == -1)
+                    if (Vector256.LoadUnsafe(ref first, lengthToExamine) ==
+                        Vector256.LoadUnsafe(ref second, lengthToExamine))
                     {
                         // C# compiler inverts this test, making the outer goto the conditional jmp.
                         goto Equal;
@@ -1814,7 +1813,6 @@ namespace System
                 }
                 else if (length >= (nuint)Vector128<byte>.Count)
                 {
-                    Vector128<byte> vecResult;
                     nuint offset = 0;
                     nuint lengthToExamine = length - (nuint)Vector128<byte>.Count;
                     // Unsigned, so it shouldn't have overflowed larger than length (rather than negative)
@@ -1823,10 +1821,8 @@ namespace System
                     {
                         do
                         {
-                            // We use instrincs directly as .Equals calls .AsByte() which doesn't inline at R2R time
-                            // https://github.com/dotnet/runtime/issues/32714
-                            vecResult = Sse2.CompareEqual(LoadVector128(ref first, offset), LoadVector128(ref second, offset));
-                            if (Sse2.MoveMask(vecResult) != 0xFFFF)
+                            if (Vector128.LoadUnsafe(ref first, offset) !=
+                                Vector128.LoadUnsafe(ref second, offset))
                             {
                                 goto NotEqual;
                             }
@@ -1835,8 +1831,8 @@ namespace System
                     }
 
                     // Do final compare as Vector128<byte>.Count from end rather than start
-                    vecResult = Sse2.CompareEqual(LoadVector128(ref first, lengthToExamine), LoadVector128(ref second, lengthToExamine));
-                    if (Sse2.MoveMask(vecResult) == 0xFFFF)
+                    if (Vector128.LoadUnsafe(ref first, lengthToExamine) ==
+                        Vector128.LoadUnsafe(ref second, lengthToExamine))
                     {
                         // C# compiler inverts this test, making the outer goto the conditional jmp.
                         goto Equal;
@@ -1846,13 +1842,6 @@ namespace System
                     goto NotEqual;
                 }
             }
-            //else if (AdvSimd.Arm64.IsSupported)
-            //{
-            //    // This API is not optimized with ARM64 intrinsics because there is not much performance win seen
-            //    // when compared to the vectorized implementation below. In addition to comparing the bytes in chunks of
-            //    // 16-bytes, the only check that is done is if there is a mismatch and if yes, return false. This check
-            //    // done with Vector<T> will generate same code by JIT as that if used ARM64 intrinsic instead.
-            //}
             else if (Vector.IsHardwareAccelerated && length >= (nuint)Vector<byte>.Count)
             {
                 nuint offset = 0;
@@ -1883,7 +1872,7 @@ namespace System
             }
 
 #if TARGET_64BIT
-            if (Sse2.IsSupported)
+            if (Vector128.IsHardwareAccelerated)
             {
                 Debug.Assert(length <= (nuint)sizeof(nuint) * 2);
 

@@ -9,12 +9,7 @@ namespace System.Runtime.InteropServices
     /// A direction of marshalling data into or out of the managed environment
     /// </summary>
     [Flags]
-#if LIBRARYIMPORT_GENERATOR_TEST
-    public
-#else
-    internal
-#endif
-    enum CustomTypeMarshallerDirection
+    public enum CustomTypeMarshallerDirection
     {
         /// <summary>
         /// No marshalling direction

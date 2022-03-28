@@ -13752,6 +13752,10 @@ GenTree* Compiler::fgOptimizeCommutativeArithmetic(GenTreeOp* tree)
         {
             optimizedTree = fgOptimizeBitwiseAnd(tree);
         }
+        else if (tree->OperIs(GT_XOR))
+        {
+            optimizedTree = fgOptimizeBitwiseXor(tree);
+        }
 
         if (optimizedTree != nullptr)
         {
@@ -14189,6 +14193,51 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
     return cmp;
 }
 
+// fgOptimizeBitwiseXor: optimizes the "xor" operation.
+//
+// Arguments:
+//   xorOp - the GT_XOR tree to optimize.
+//
+// Return Value:
+//   The optimized tree, currently always a local variable, in case any transformations
+//   were performed. Otherwise, "nullptr", guaranteeing no state change.
+//
+GenTree* Compiler::fgOptimizeBitwiseXor(GenTreeOp* xorOp)
+{
+    assert(xorOp->OperIs(GT_XOR));
+    assert(!optValnumCSE_phase);
+
+    GenTree* op1 = xorOp->gtGetOp1();
+    GenTree* op2 = xorOp->gtGetOp2();
+
+    if (op2->IsIntegralConst(0))
+    {
+        /* "x ^ 0" is "x" */
+        DEBUG_DESTROY_NODE(xorOp, op2);
+        return op1;
+    }
+    else if (op2->IsIntegralConst(-1))
+    {
+        /* "x ^ -1" is "~x" */
+        xorOp->ChangeOper(GT_NOT);
+        xorOp->gtOp2 = nullptr;
+        DEBUG_DESTROY_NODE(op2);
+
+        return xorOp;
+    }
+    else if (op2->IsIntegralConst(1) && op1->OperIsCompare())
+    {
+        /* "binaryVal ^ 1" is "!binaryVal" */
+        gtReverseCond(op1);
+        DEBUG_DESTROY_NODE(op2);
+        DEBUG_DESTROY_NODE(xorOp);
+
+        return op1;
+    }
+
+    return nullptr;
+}
+
 //------------------------------------------------------------------------
 // fgPropagateCommaThrow: propagate a "comma throw" up the tree.
 //
@@ -14576,30 +14625,6 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
                     op1->ChangeOper(GT_LSH);
 
                     cns->AsIntConCommon()->SetIconValue(ishf);
-                }
-            }
-
-            break;
-
-        case GT_XOR:
-
-            if (!optValnumCSE_phase)
-            {
-                /* "x ^ -1" is "~x" */
-
-                if (op2->IsIntegralConst(-1))
-                {
-                    tree->ChangeOper(GT_NOT);
-                    tree->gtOp2 = nullptr;
-                    DEBUG_DESTROY_NODE(op2);
-                }
-                else if (op2->IsIntegralConst(1) && op1->OperIsCompare())
-                {
-                    /* "binaryVal ^ 1" is "!binaryVal" */
-                    gtReverseCond(op1);
-                    DEBUG_DESTROY_NODE(op2);
-                    DEBUG_DESTROY_NODE(tree);
-                    return op1;
                 }
             }
 

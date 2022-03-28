@@ -2637,15 +2637,41 @@ namespace System.Threading.Tasks
         /// infinite time-out -or- timeout is greater than
         /// <see cref="int.MaxValue"/>.
         /// </exception>
-        public bool Wait(TimeSpan timeout)
+        public bool Wait(TimeSpan timeout) => Wait(timeout, default);
+
+        /// <summary>
+        /// Waits for the <see cref="Task"/> to complete execution.
+        /// </summary>
+        /// <param name="timeout">The time to wait, or <see cref="Timeout.InfiniteTimeSpan"/> to wait indefinitely</param>
+        /// <param name="cancellationToken">
+        /// A <see cref="CancellationToken"/> to observe while waiting for the task to complete.
+        /// </param>
+        /// <returns>
+        /// true if the <see cref="Task"/> completed execution within the allotted time; otherwise, false.
+        /// </returns>
+        /// <exception cref="AggregateException">
+        /// The <see cref="Task"/> was canceled -or- an exception was thrown during the execution of the <see
+        /// cref="Task"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="timeout"/> is a negative number other than -1 milliseconds, which represents an
+        /// infinite time-out -or- timeout is greater than
+        /// <see cref="int.MaxValue"/>.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The <paramref name="cancellationToken"/> was canceled.
+        /// </exception>
+        public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.timeout);
             }
 
-            return Wait((int)totalMilliseconds, default);
+            return Wait((int)totalMilliseconds, cancellationToken);
         }
 
         /// <summary>
