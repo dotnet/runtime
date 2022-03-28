@@ -1017,8 +1017,8 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
 
     if (arg1 != nullptr)
     {
-        result->gtFlags |= arg1->gtFlags & GTF_ALL_EFFECT;
         CallArg* lastArg = result->gtArgs.PushFront(this, arg1);
+        result->gtFlags |= arg1->gtFlags & GTF_ALL_EFFECT;
         if (arg2 != nullptr)
         {
             lastArg = result->gtArgs.InsertAfter(this, lastArg, arg2);
