@@ -187,7 +187,7 @@ namespace System.Diagnostics
                 return true;
             }
 
-            public void Reset() => throw new NotSupportedException();
+            void IEnumerator.Reset() => throw new NotSupportedException();
 
             public void Dispose()
             {

@@ -113,7 +113,7 @@ namespace System.Diagnostics
             T System.Collections.Generic.IEnumerator<T>.Current { get { throw null; } }
             object? System.Collections.IEnumerator.Current { get { throw null; } }
             public bool MoveNext() { throw null; }
-            public void Reset() { }
+            void System.Collections.IEnumerator.Reset() { }
             public void Dispose() { }
         }
     }
