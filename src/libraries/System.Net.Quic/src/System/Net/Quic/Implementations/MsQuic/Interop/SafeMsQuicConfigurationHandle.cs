@@ -39,11 +39,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             if (options.ClientAuthenticationOptions != null)
             {
-                if (options.ClientAuthenticationOptions.CipherSuitesPolicy != null)
-                {
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(options.ClientAuthenticationOptions.CipherSuitesPolicy)));
-                }
-
 #pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 if (options.ClientAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.NoEncryption)
                 {
@@ -69,7 +64,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 }
             }
 
-            return Create(options, QUIC_CREDENTIAL_FLAGS.CLIENT, certificate: certificate, certificateContext: null, options.ClientAuthenticationOptions?.ApplicationProtocols);
+            return Create(options, QUIC_CREDENTIAL_FLAGS.CLIENT, certificate: certificate, certificateContext: null, options.ClientAuthenticationOptions?.ApplicationProtocols, options.ClientAuthenticationOptions?.CipherSuitesPolicy);
         }
 
         public static SafeMsQuicConfigurationHandle Create(QuicOptions options, SslServerAuthenticationOptions? serverAuthenticationOptions, string? targetHost = null)
@@ -102,12 +97,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 }
             }
 
-            return Create(options, flags, certificate, serverAuthenticationOptions?.ServerCertificateContext, serverAuthenticationOptions?.ApplicationProtocols);
+            return Create(options, flags, certificate, serverAuthenticationOptions?.ServerCertificateContext, serverAuthenticationOptions?.ApplicationProtocols, serverAuthenticationOptions?.CipherSuitesPolicy);
         }
 
         // TODO: this is called from MsQuicListener and when it fails it wreaks havoc in MsQuicListener finalizer.
         //       Consider moving bigger logic like this outside of constructor call chains.
-        private static unsafe SafeMsQuicConfigurationHandle Create(QuicOptions options, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, SslStreamCertificateContext? certificateContext, List<SslApplicationProtocol>? alpnProtocols)
+        private static unsafe SafeMsQuicConfigurationHandle Create(QuicOptions options, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, SslStreamCertificateContext? certificateContext, List<SslApplicationProtocol>? alpnProtocols, CipherSuitesPolicy? cipherSuitesPolicy)
         {
             // TODO: some of these checks should be done by the QuicOptions type.
             if (alpnProtocols == null || alpnProtocols.Count == 0)
@@ -191,10 +186,16 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 CredentialConfig config = default;
                 config.Flags = flags; // TODO: consider using LOAD_ASYNCHRONOUS with a callback.
 
+                if (cipherSuitesPolicy != null)
+                {
+                    config.Flags |= QUIC_CREDENTIAL_FLAGS.SET_ALLOWED_CIPHER_SUITES;
+                    config.AllowedCipherSuites = CipherSuitePolicyToFlags(cipherSuitesPolicy);
+                }
+
                 if (certificateContext != null)
                 {
-                    certificate = (X509Certificate2?) _contextCertificate.GetValue(certificateContext);
-                    intermediates = (X509Certificate2[]?) _contextChain.GetValue(certificateContext);
+                    certificate = (X509Certificate2?)_contextCertificate.GetValue(certificateContext);
+                    intermediates = (X509Certificate2[]?)_contextChain.GetValue(certificateContext);
 
                     if (certificate == null || intermediates == null)
                     {
@@ -219,7 +220,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                         {
                             X509Certificate2Collection collection = new X509Certificate2Collection();
                             collection.Add(certificate);
-                            for (int i= 0; i < intermediates?.Length; i++)
+                            for (int i = 0; i < intermediates?.Length; i++)
                             {
                                 collection.Add(intermediates[i]);
                             }
@@ -258,6 +259,35 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
 
             return configurationHandle;
+        }
+
+        private static QUIC_ALLOWED_CIPHER_SUITE_FLAGS CipherSuitePolicyToFlags(CipherSuitesPolicy cipherSuitesPolicy)
+        {
+            QUIC_ALLOWED_CIPHER_SUITE_FLAGS flags = QUIC_ALLOWED_CIPHER_SUITE_FLAGS.NONE;
+
+            foreach (TlsCipherSuite cipher in cipherSuitesPolicy.AllowedCipherSuites)
+            {
+                switch (cipher)
+                {
+                    case TlsCipherSuite.TLS_AES_128_GCM_SHA256:
+                        flags |= QUIC_ALLOWED_CIPHER_SUITE_FLAGS.AES_128_GCM_SHA256;
+                        break;
+                    case TlsCipherSuite.TLS_AES_256_GCM_SHA384:
+                        flags |= QUIC_ALLOWED_CIPHER_SUITE_FLAGS.AES_256_GCM_SHA384;
+                        break;
+                    case TlsCipherSuite.TLS_CHACHA20_POLY1305_SHA256:
+                        flags |= QUIC_ALLOWED_CIPHER_SUITE_FLAGS.CHACHA20_POLY1305_SHA256;
+                        break;
+                    case TlsCipherSuite.TLS_AES_128_CCM_SHA256:
+                        // Not supported by MsQuic, but QUIC RFC allows it.
+                        // TODO: should we throw as well?
+                        break;
+                    default:
+                        throw new ArgumentException(SR.Format(SR.net_quic_unsupported_cipher_suite, cipher));
+                }
+            }
+
+            return flags;
         }
     }
 }

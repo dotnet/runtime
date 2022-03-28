@@ -389,7 +389,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEventPeerCertificateReceived(State state, ref ConnectionEvent connectionEvent)
         {
-            SslPolicyErrors sslPolicyErrors  = SslPolicyErrors.None;
+            SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
             X509Chain? chain = null;
             X509Certificate2? certificate = null;
             X509Certificate2Collection? additionalCertificates = null;
