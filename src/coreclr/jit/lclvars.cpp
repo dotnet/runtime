@@ -354,7 +354,7 @@ void Compiler::lvaInitTypeRef()
                 //
                 if (!varTypeIsStruct(varDsc) && !varTypeIsSIMD(varDsc))
                 {
-                    lvaSetVarAddrExposed(varNum DEBUGARG(AddressExposedReason::OSR_EXPOSED));
+                    lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::OSR_EXPOSED));
                 }
             }
         }
