@@ -1793,7 +1793,7 @@ bool GenTreeCall::TreatAsShouldGetRetBufArg(Compiler* compiler) const
         }
         else
         {
-            assert(!"Unexpected JIT helper in TreatAsHasRetBufArg");
+            assert(!"Unexpected JIT helper in TreatAsShouldGetRetBufArg");
         }
     }
     return false;
@@ -1847,17 +1847,6 @@ void GenTreeCall::ReplaceCallOperand(GenTree** useEdge, GenTree* replacement)
             assert(gtArgs.FindByNode(replacement)->GetArgNode() == replacement);
         }
     }
-}
-
-//-------------------------------------------------------------------------
-// AreArgsComplete: Determine if this GT_CALL node's arguments have been processed.
-//
-// Return Value:
-//     Returns true if fgMorphArgs has processed the arguments.
-//
-bool GenTreeCall::AreArgsComplete() const
-{
-    return gtArgs.AreArgsComplete();
 }
 
 //--------------------------------------------------------------------------

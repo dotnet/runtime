@@ -2908,7 +2908,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
     DEBUG_ARG_SLOTS_ONLY(unsigned argSlots = 0;)
 
-    bool reMorphing = call->AreArgsComplete();
+    bool reMorphing = call->gtArgs.AreArgsComplete();
 
     call->gtArgs.DetermineArgABIInformation(this, call);
     JITDUMP("%sMorphing args for %d.%s:\n", (reMorphing) ? "Re" : "", call->gtTreeID, GenTree::OpName(call->gtOper));
@@ -6080,7 +6080,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     }
 #endif
 
-    assert(!callee->AreArgsComplete());
+    assert(!callee->gtArgs.AreArgsComplete());
 
     callee->gtArgs.DetermineArgABIInformation(this, callee);
 
