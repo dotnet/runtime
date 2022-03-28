@@ -252,7 +252,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 #if TARGET_WINDOWS
                 if ((Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.AlgorithmMismatch && MsQuicApi.Tls13MayBeDisabled)
                 {
-                    throw new QuicTlsVersionException(status);
+                    throw new QuicException(SR.net_ssl_app_protocols_invalid, null, (int)status);
                 }
 #endif
 

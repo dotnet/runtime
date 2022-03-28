@@ -128,13 +128,6 @@ namespace System.Net.Quic
         public QuicStreamAbortedException(string message, long errorCode) : base (default(string)) { }
         public long ErrorCode { get { throw null; } }
     }
-
-    public partial class QuicTlsVersionException : System.Net.Quic.QuicException
-    {
-        public QuicTlsVersionException(string message, long errorCode) : base(default(string)) { }
-        public long ErrorCode { get { throw null; } }
-        public Version MinimumRequiredVersion { get { throw null; } }
-    }
 }
 namespace System.Net.Quic.Implementations
 {
