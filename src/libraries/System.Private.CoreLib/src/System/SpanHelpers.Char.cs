@@ -2050,13 +2050,13 @@ namespace System
                     //     | P | O | N | M | L | K | J | I | H | G | F | E | D | C | B | A |
                     //     +---------------------------------------------------------------+
                     tempFirst = Avx2.Shuffle(tempFirst, reverseMask);
-                    tempFirst = Avx2.Permute2x128(tempFirst, tempFirst, 1);
+                    tempFirst = Avx2.Permute2x128(tempFirst, tempFirst, 0b00_01);
                     tempLast = Avx2.Shuffle(tempLast, reverseMask);
-                    tempLast = Avx2.Permute2x128(tempLast, tempLast, 1);
+                    tempLast = Avx2.Permute2x128(tempLast, tempLast, 0b00_01);
 
                     // Store the reversed vectors
-                    Vector256.StoreUnsafe(tempLast, ref bufByte, firstOffset);
-                    Vector256.StoreUnsafe(tempFirst, ref bufByte, lastOffset);
+                    tempLast.StoreUnsafe(ref bufByte, firstOffset);
+                    tempFirst.StoreUnsafe(ref bufByte, lastOffset);
                 }
                 bufByte = ref Unsafe.Add(ref bufByte, numIters * numElements);
                 length -= numIters * (nuint)Vector256<short>.Count * 2;
@@ -2087,8 +2087,8 @@ namespace System
                     tempLast = Ssse3.Shuffle(tempLast, reverseMask);
 
                     // Store the reversed vectors
-                    Vector128.StoreUnsafe(tempLast, ref bufByte, firstOffset);
-                    Vector128.StoreUnsafe(tempFirst, ref bufByte, lastOffset);
+                    tempLast.StoreUnsafe(ref bufByte, firstOffset);
+                    tempFirst.StoreUnsafe(ref bufByte, lastOffset);
                 }
                 bufByte = ref Unsafe.Add(ref bufByte, numIters * numElements);
                 length -= numIters * (nuint)Vector128<short>.Count * 2;

@@ -436,8 +436,8 @@ namespace System
                     tempLast = Avx2.PermuteVar8x32(tempLast, reverseMask);
 
                     // Store the values into final location
-                    Vector256.StoreUnsafe(tempLast, ref buf, firstOffset);
-                    Vector256.StoreUnsafe(tempFirst, ref buf, lastOffset);
+                    tempLast.StoreUnsafe(ref buf, firstOffset);
+                    tempFirst.StoreUnsafe(ref buf, lastOffset);
                 }
                 buf = ref Unsafe.Add(ref buf, numIters * numElements);
                 length -= numIters * numElements * 2;
@@ -467,8 +467,8 @@ namespace System
                     tempLast = Sse2.Shuffle(tempLast, 0b00_01_10_11);
 
                     // Store the values into final location
-                    Vector128.StoreUnsafe(tempLast, ref buf, firstOffset);
-                    Vector128.StoreUnsafe(tempFirst, ref buf, lastOffset);
+                    tempLast.StoreUnsafe(ref buf, firstOffset);
+                    tempFirst.StoreUnsafe(ref buf, lastOffset);
                 }
                 buf = ref Unsafe.Add(ref buf, numIters * numElements);
                 length -= numIters * numElements * 2;
@@ -510,8 +510,8 @@ namespace System
                     tempLast = Avx2.Permute4x64(tempLast, 0b00_01_10_11);
 
                     // Store the values into final location
-                    Vector256.StoreUnsafe(tempLast, ref buf, firstOffset);
-                    Vector256.StoreUnsafe(tempFirst, ref buf, lastOffset);
+                    tempLast.StoreUnsafe(ref buf, firstOffset);
+                    tempFirst.StoreUnsafe(ref buf, lastOffset);
                 }
                 buf = ref Unsafe.Add(ref buf, numIters * numElements);
                 length -= numIters * numElements * 2;
@@ -542,8 +542,8 @@ namespace System
                     tempLast = Sse2.Shuffle(tempLast, 0b0100_1110);
 
                     // Store the values into final location
-                    Vector128.StoreUnsafe(tempLast, ref bufInt, firstOffset);
-                    Vector128.StoreUnsafe(tempFirst, ref bufInt, lastOffset);
+                    tempLast.StoreUnsafe(ref bufInt, firstOffset);
+                    tempFirst.StoreUnsafe(ref bufInt, lastOffset);
                 }
                 bufInt = ref Unsafe.Add(ref bufInt, numIters * numElements);
                 buf = ref Unsafe.As<int, long>(ref bufInt);
