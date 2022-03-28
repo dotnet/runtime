@@ -64,6 +64,11 @@ def prune():
         print(error)
 
 
+for path in node_paths:
+    if upgrade:
+        update_npm(path)
+
+
 os.chdir(emscripten_path)
 try:
     os.system("npm audit fix")
@@ -90,7 +95,5 @@ remove(
 prune()
 
 for path in node_paths:
-    if upgrade:
-        update_npm(path)
-    else:
+    if not upgrade:
         remove_npm(path)
