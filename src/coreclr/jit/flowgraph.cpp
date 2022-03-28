@@ -1155,7 +1155,6 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                     info.compCompHnd->getReadyToRunHelper(ldftnToken, &pLookup.lookupKind,
                                                           CORINFO_HELP_READYTORUN_GENERIC_HANDLE, &genericLookup);
                     GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
-                    call->gtArgs.PushFront(this, thisPointer, targetObjPointers, ctxTree);
                     call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
                                                targetObjPointers, ctxTree);
                     entryPoint = genericLookup;
