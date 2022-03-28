@@ -152,7 +152,7 @@ namespace System
         }
 
         /// <summary>
-        /// Gets a value indicating whether this <see cref="Span"/> is empty.
+        /// Gets a value indicating whether this <see cref="Span{T}"/> is empty.
         /// </summary>
         /// <value><see langword="true"/> if this span is empty; otherwise, <see langword="false"/>.</value>
         public bool IsEmpty
