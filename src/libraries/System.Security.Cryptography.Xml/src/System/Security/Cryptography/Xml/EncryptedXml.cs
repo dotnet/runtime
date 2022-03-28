@@ -297,7 +297,7 @@ namespace System.Security.Cryptography.Xml
 
         // default behaviour is to look for keys defined by an EncryptedKey clause
         // either directly or through a KeyInfoRetrievalMethod, and key names in the key mapping
-        public virtual SymmetricAlgorithm? GetDecryptionKey(EncryptedData encryptedData, string symmetricAlgorithmUri)
+        public virtual SymmetricAlgorithm? GetDecryptionKey(EncryptedData encryptedData, string? symmetricAlgorithmUri)
         {
             if (encryptedData is null)
             {
@@ -346,7 +346,7 @@ namespace System.Security.Cryptography.Xml
                 {
                     string idref = Utils.ExtractIdFromLocalUri(kiRetrievalMethod.Uri);
                     ek = new EncryptedKey();
-                    ek.LoadXml(GetIdElement(_document, idref));
+                    ek.LoadXml(GetIdElement(_document, idref)!);
                     break;
                 }
                 kiEncKey = keyInfoEnum.Current as KeyInfoEncryptedKey;
@@ -368,11 +368,11 @@ namespace System.Security.Cryptography.Xml
                         throw new CryptographicException(SR.Cryptography_Xml_MissingAlgorithm);
                     symmetricAlgorithmUri = encryptedData.EncryptionMethod.KeyAlgorithm;
                 }
-                byte[] key = DecryptEncryptedKey(ek);
+                byte[]? key = DecryptEncryptedKey(ek);
                 if (key == null)
                     throw new CryptographicException(SR.Cryptography_Xml_MissingDecryptionKey);
 
-                SymmetricAlgorithm symAlg = CryptoHelpers.CreateFromName<SymmetricAlgorithm>(symmetricAlgorithmUri);
+                SymmetricAlgorithm? symAlg = CryptoHelpers.CreateFromName<SymmetricAlgorithm>(symmetricAlgorithmUri);
                 if (symAlg == null)
                 {
                     throw new CryptographicException(SR.Cryptography_Xml_MissingAlgorithm);
@@ -432,7 +432,7 @@ namespace System.Security.Cryptography.Xml
                     X509Certificate2Collection collection = Utils.BuildBagOfCerts(kiX509Data, CertUsageType.Decryption);
                     foreach (X509Certificate2 certificate in collection)
                     {
-                        using (RSA privateKey = certificate.GetRSAPrivateKey())
+                        using (RSA? privateKey = certificate.GetRSAPrivateKey())
                         {
                             if (privateKey != null)
                             {
@@ -452,7 +452,7 @@ namespace System.Security.Cryptography.Xml
                 {
                     string idref = Utils.ExtractIdFromLocalUri(kiRetrievalMethod.Uri);
                     ek = new EncryptedKey();
-                    ek.LoadXml(GetIdElement(_document, idref));
+                    ek.LoadXml(GetIdElement(_document, idref)!);
                     try
                     {
                         //Following checks if XML dsig processing is in loop and within the limit defined by machine
@@ -478,11 +478,11 @@ namespace System.Security.Cryptography.Xml
                 {
                     ek = kiEncKey.EncryptedKey;
                     // recursively process EncryptedKey elements
-                    byte[]? encryptionKey = DecryptEncryptedKey(ek);
+                    byte[]? encryptionKey = DecryptEncryptedKey(ek!);
                     if (encryptionKey != null)
                     {
                         // this is a symmetric algorithm for sure
-                        SymmetricAlgorithm symAlg = CryptoHelpers.CreateFromName<SymmetricAlgorithm>(encryptedKey.EncryptionMethod.KeyAlgorithm);
+                        SymmetricAlgorithm? symAlg = CryptoHelpers.CreateFromName<SymmetricAlgorithm>(encryptedKey.EncryptionMethod!.KeyAlgorithm);
                         if (symAlg == null)
                         {
                             throw new CryptographicException(SR.Cryptography_Xml_MissingAlgorithm);
@@ -540,7 +540,7 @@ namespace System.Security.Cryptography.Xml
                 throw new ArgumentNullException(nameof(certificate));
             }
 
-            using (RSA rsaPublicKey = certificate.GetRSAPublicKey())
+            using (RSA? rsaPublicKey = certificate.GetRSAPublicKey())
             {
                 if (rsaPublicKey == null)
                     throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
@@ -584,7 +584,7 @@ namespace System.Security.Cryptography.Xml
                 throw new ArgumentNullException(nameof(keyName));
             }
 
-            object encryptionKey = null;
+            object? encryptionKey = null;
             if (_keyNameMapping != null)
                 encryptionKey = _keyNameMapping[keyName];
 
@@ -601,7 +601,7 @@ namespace System.Security.Cryptography.Xml
             ed.EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncAES256Url);
 
             // Include the key name in the EncryptedKey KeyInfo.
-            string encryptionMethod = null;
+            string? encryptionMethod = null;
             if (symKey == null)
             {
                 encryptionMethod = EncryptedXml.XmlEncRSA15Url;
@@ -821,14 +821,14 @@ namespace System.Security.Cryptography.Xml
                     }
                 }
 
-                XmlNode importedNode = inputElement.OwnerDocument.ImportNode(importDocument.DocumentElement, true);
+                XmlNode importedNode = inputElement.OwnerDocument.ImportNode(importDocument.DocumentElement!, true);
 
                 parent.RemoveChild(inputElement);
                 parent.AppendChild(importedNode);
             }
             else
             {
-                XmlNode dummy = parent.OwnerDocument.CreateElement(parent.Prefix, parent.LocalName, parent.NamespaceURI);
+                XmlNode dummy = parent.OwnerDocument!.CreateElement(parent.Prefix, parent.LocalName, parent.NamespaceURI);
 
                 try
                 {
@@ -839,10 +839,10 @@ namespace System.Security.Cryptography.Xml
                     dummy.InnerXml = _encoding.GetString(decryptedData);
 
                     // Move the children of the dummy node up to the parent.
-                    XmlNode child = dummy.FirstChild;
-                    XmlNode sibling = inputElement.NextSibling;
+                    XmlNode? child = dummy.FirstChild;
+                    XmlNode? sibling = inputElement.NextSibling;
 
-                    XmlNode nextChild = null;
+                    XmlNode? nextChild = null;
                     while (child != null)
                     {
                         nextChild = child.NextSibling;
@@ -888,7 +888,7 @@ namespace System.Security.Cryptography.Xml
                     inputElement.AppendChild(elemED);
                     break;
                 case false:
-                    XmlNode parentNode = inputElement.ParentNode;
+                    XmlNode parentNode = inputElement.ParentNode!;
                     // remove the input element from the containing document
                     parentNode.ReplaceChild(elemED, inputElement);
                     break;

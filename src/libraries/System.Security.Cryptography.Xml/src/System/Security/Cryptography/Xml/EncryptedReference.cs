@@ -118,7 +118,7 @@ namespace System.Security.Cryptography.Xml
             nsm.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);
             XmlNode? transformsNode = value.SelectSingleNode("ds:Transforms", nsm);
             if (transformsNode != null)
-                TransformChain.LoadXml(transformsNode as XmlElement);
+                TransformChain.LoadXml((transformsNode as XmlElement)!);
 
             // cache the Xml
             _cachedXml = value;

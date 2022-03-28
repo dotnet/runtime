@@ -190,7 +190,7 @@ namespace System.Security.Cryptography.Xml
             return reader;
         }
 
-        internal static XmlReaderSettings GetSecureXmlReaderSettings(XmlResolver xmlResolver)
+        internal static XmlReaderSettings GetSecureXmlReaderSettings(XmlResolver? xmlResolver)
         {
             XmlReaderSettings settings = new XmlReaderSettings();
             settings.XmlResolver = xmlResolver;
@@ -426,7 +426,7 @@ namespace System.Security.Cryptography.Xml
             return set;
         }
 
-        internal static string EscapeWhitespaceData(string data)
+        internal static string EscapeWhitespaceData(string? data)
         {
             StringBuilder sb = new StringBuilder();
             sb.Append(data);
@@ -434,7 +434,7 @@ namespace System.Security.Cryptography.Xml
             return sb.ToString();
         }
 
-        internal static string EscapeTextData(string data)
+        internal static string EscapeTextData(string? data)
         {
             StringBuilder sb = new StringBuilder();
             sb.Append(data);

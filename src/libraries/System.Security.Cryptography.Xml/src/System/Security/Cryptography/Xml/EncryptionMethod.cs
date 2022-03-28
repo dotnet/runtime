@@ -7,16 +7,16 @@ namespace System.Security.Cryptography.Xml
 {
     public class EncryptionMethod
     {
-        private XmlElement _cachedXml;
+        private XmlElement? _cachedXml;
         private int _keySize;
-        private string _algorithm;
+        private string? _algorithm;
 
         public EncryptionMethod()
         {
             _cachedXml = null;
         }
 
-        public EncryptionMethod(string algorithm)
+        public EncryptionMethod(string? algorithm)
         {
             _algorithm = algorithm;
             _cachedXml = null;
@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        public string KeyAlgorithm
+        public string? KeyAlgorithm
         {
             get { return _algorithm; }
             set
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Xml
 
         public XmlElement GetXml()
         {
-            if (CacheValid) return (_cachedXml);
+            if (CacheValid) return (_cachedXml!);
 
             XmlDocument document = new XmlDocument();
             document.PreserveWhitespace = true;
@@ -90,7 +90,7 @@ namespace System.Security.Cryptography.Xml
             XmlElement encryptionMethodElement = value;
             _algorithm = Utils.GetAttribute(encryptionMethodElement, "Algorithm", EncryptedXml.XmlEncNamespaceUrl);
 
-            XmlNode keySizeNode = value.SelectSingleNode("enc:KeySize", nsm);
+            XmlNode? keySizeNode = value.SelectSingleNode("enc:KeySize", nsm);
             if (keySizeNode != null)
             {
                 KeySize = Convert.ToInt32(Utils.DiscardWhiteSpaces(keySizeNode.InnerText), null);
