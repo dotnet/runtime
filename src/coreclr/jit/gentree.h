@@ -4440,6 +4440,18 @@ public:
     bool HasRegArgs() const { return m_hasRegArgs; }
     bool HasStackArgs() const { return m_hasStackArgs; }
     bool NeedsTemps() const { return m_needsTemps; }
+
+#ifdef UNIX_X86_ABI
+    void ComputeStackAlignment(unsigned curStackLevelInBytes)
+    {
+        m_padStkAlign = AlignmentPad(curStackLevelInBytes, STACK_ALIGN);
+    }
+    unsigned GetStkAlign() const { return m_padStkAlign; }
+    unsigned GetStkSizeBytes() { return m_stkSizeBytes; }
+    void SetStkSizeBytes(unsigned bytes) { m_stkSizeBytes = bytes; }
+    bool IsStkAlignmentDone() const { return m_alignmentDone; }
+    void SetStkAlignmentDone() { m_alignmentDone = true; }
+#endif
     // clang-format on
 
     unsigned OutgoingArgsStackSize() const;

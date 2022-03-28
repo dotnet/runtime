@@ -1107,7 +1107,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
     CallArg** argTable = table;
     if (argCount > 32)
     {
-        argTable = new (comp, CMK_fgArgInfo) CallArg*[argCount];
+        argTable = new (comp, CMK_CallArgs) CallArg*[argCount];
     }
 
     argCount = 0;
@@ -2872,8 +2872,9 @@ unsigned CallArgs::CountArgs()
 //    node itself is re-created.
 //
 // Notes:
-//    This calls fgInitArgInfo to create the 'fgArgInfo' for the call.
-//    If it has already been created, that method will simply return.
+//    This calls CallArgs::DetermineArgABIInformation to determine ABI
+//    information for the call. If it has already been determined, that method
+//    will simply return.
 //
 //    This method changes the state of the call node. It uses the existence
 //    of gtCallLateArgs (the late arguments list) to determine if it has
@@ -2924,7 +2925,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
     // First we morph the argument subtrees ('this' pointer, arguments, etc.).
     // During the first call to fgMorphArgs we also record the
-    // information about late arguments we have in 'fgArgInfo'.
+    // information about late arguments in CallArgs.
     // This information is used later to contruct the late args
 
     // Note that this name is a bit of a misnomer - it indicates that there are struct args

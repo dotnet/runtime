@@ -920,7 +920,7 @@ void Compiler::impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig, CallArgs* a
                 assert(!varTypeIsStruct(nodeArgType));
                 // Some ABI require precise size information for call arguments less than target pointer size,
                 // for example arm64 OSX. Create a special node to keep this information until morph
-                // consumes it into `fgArgInfo`.
+                // consumes it into `CallArgs`.
                 GenTree* putArgType = gtNewOperNode(GT_PUTARG_TYPE, jitSigType, arg.GetNode());
                 arg.SetNode(putArgType);
             }

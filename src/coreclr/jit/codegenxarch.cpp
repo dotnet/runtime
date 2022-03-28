@@ -7547,17 +7547,17 @@ void CodeGen::genAlignStackBeforeCall(GenTreeCall* call)
 #if defined(UNIX_X86_ABI)
 
     // Have we aligned the stack yet?
-    if (!call->fgArgInfo->IsStkAlignmentDone())
+    if (!call->gtArgs.IsStkAlignmentDone())
     {
         // We haven't done any stack alignment yet for this call.  We might need to create
         // an alignment adjustment, even if this function itself doesn't have any stack args.
         // This can happen if this function call is part of a nested call sequence, and the outer
         // call has already pushed some arguments.
 
-        unsigned stkLevel = genStackLevel + call->fgArgInfo->GetStkSizeBytes();
-        call->fgArgInfo->ComputeStackAlignment(stkLevel);
+        unsigned stkLevel = genStackLevel + call->gtArgs.GetStkSizeBytes();
+        call->gtArgs.ComputeStackAlignment(stkLevel);
 
-        unsigned padStkAlign = call->fgArgInfo->GetStkAlign();
+        unsigned padStkAlign = call->gtArgs.GetStkAlign();
         if (padStkAlign != 0)
         {
             // Now generate the alignment
@@ -7566,7 +7566,7 @@ void CodeGen::genAlignStackBeforeCall(GenTreeCall* call)
             AddNestedAlignment(padStkAlign);
         }
 
-        call->fgArgInfo->SetStkAlignmentDone();
+        call->gtArgs.SetStkAlignmentDone();
     }
 
 #endif // UNIX_X86_ABI
@@ -7589,7 +7589,7 @@ void CodeGen::genRemoveAlignmentAfterCall(GenTreeCall* call, unsigned bias)
 #if defined(TARGET_X86)
 #if defined(UNIX_X86_ABI)
     // Put back the stack pointer if there was any padding for stack alignment
-    unsigned padStkAlign  = call->fgArgInfo->GetStkAlign();
+    unsigned padStkAlign  = call->gtArgs.GetStkAlign();
     unsigned padStkAdjust = padStkAlign + bias;
 
     if (padStkAdjust != 0)

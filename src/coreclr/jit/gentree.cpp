@@ -1458,7 +1458,7 @@ bool CallArgs::IsNonStandard(Compiler* comp, GenTreeCall* call, CallArg* arg)
 
 CallArg* CallArgs::PushFront(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg)
 {
-    CallArg* arg = new (comp, CMK_fgArgInfo) CallArg(wellKnownArg);
+    CallArg* arg = new (comp, CMK_CallArgs) CallArg(wellKnownArg);
     arg->SetNode(node);
     arg->SetNext(m_head);
     m_head = arg;
@@ -1474,7 +1474,7 @@ CallArg* CallArgs::PushBack(Compiler* comp, GenTree* node, WellKnownArg wellKnow
         slot = &(*slot)->NextRef();
     }
 
-    *slot = new (comp, CMK_fgArgInfo) CallArg(wellKnownArg);
+    *slot = new (comp, CMK_CallArgs) CallArg(wellKnownArg);
     (*slot)->SetNode(node);
     AddedWellKnownArg(wellKnownArg);
     return *slot;
@@ -1496,7 +1496,7 @@ CallArg* CallArgs::InsertAfter(Compiler* comp, CallArg* after, GenTree* arg, Wel
     assert(found && "Could not find arg to insert after in argument list");
 #endif
 
-    CallArg* newArg = new (comp, CMK_fgArgInfo) CallArg(wellKnownArg);
+    CallArg* newArg = new (comp, CMK_CallArgs) CallArg(wellKnownArg);
     newArg->SetNode(arg);
     newArg->SetNext(after->GetNext());
     after->SetNext(newArg);
@@ -8351,7 +8351,7 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
     CallArg** tail = &m_head;
     for (CallArg& arg : other->Args())
     {
-        CallArg* carg     = new (comp, CMK_fgArgInfo) CallArg(arg.GetWellKnownArg());
+        CallArg* carg     = new (comp, CMK_CallArgs) CallArg(arg.GetWellKnownArg());
         carg->m_node      = arg.m_node != nullptr ? copyNode(arg.m_node) : nullptr;
         carg->m_lateNode  = arg.m_lateNode != nullptr ? copyNode(arg.m_lateNode) : nullptr;
         carg->m_needTmp   = arg.m_needTmp;
