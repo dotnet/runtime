@@ -728,15 +728,6 @@
 #cmakedefine TARGET_S390X 1
 
 /* ... */
-#cmakedefine TARGET_MIPS 1
-
-/* ... */
-#cmakedefine TARGET_SPARC 1
-
-/* ... */
-#cmakedefine TARGET_SPARC64 1
-
-/* ... */
 #cmakedefine HOST_WASM 1
 
 /* ... */
@@ -765,15 +756,6 @@
 
 /* ... */
 #cmakedefine HOST_S390X 1
-
-/* ... */
-#cmakedefine HOST_MIPS 1
-
-/* ... */
-#cmakedefine HOST_SPARC 1
-
-/* ... */
-#cmakedefine HOST_SPARC64 1
 
 /* Host is RISC-V */
 #cmakedefine HOST_RISCV 1
