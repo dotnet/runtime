@@ -369,27 +369,6 @@ namespace System.Reflection
 
         internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* arguments, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
         {
-            if ((invokeAttr & BindingFlags.SuppressChangeType) == 0)
-            {
-                if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-                {
-                    bool rethrow = false;
-
-                    try
-                    {
-                        return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false, out rethrow);
-                    }
-                    catch (Exception e) when (!rethrow)
-                    {
-                        throw new TargetInvocationException(e);
-                    }
-                }
-                else
-                {
-                    return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false, out _);
-                }
-            }
-
             if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
                 bool rethrow = false;

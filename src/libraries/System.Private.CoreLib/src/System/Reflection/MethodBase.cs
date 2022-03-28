@@ -199,7 +199,7 @@ namespace System.Reflection
                     if (arg == null)
                     {
                         // Special case when passing a null to signal the native runtime to create a default ref struct
-                        copyOfParameters[i] = null;
+                        Debug.Assert(copyOfParameters[i] == null);
                         byrefParameters[i] = IntPtr.Zero;
                     }
                     else

@@ -1678,7 +1678,9 @@ namespace System
             CultureInfo? culture,
             BindingFlags invokeAttr)
         {
-            if (TryConvertToType(ref value, ref copyBack))
+            copyBack = true;
+
+            if (TryConvertToType(ref value))
                 return true;
 
             if ((invokeAttr & BindingFlags.ExactBinding) == BindingFlags.ExactBinding)
@@ -1687,14 +1689,13 @@ namespace System
             if (binder != null && binder != DefaultBinder)
             {
                 value = binder.ChangeType(value!, this, culture);
-                copyBack = true;
                 return true;
             }
 
             throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value!.GetType(), this));
         }
 
-        private bool TryConvertToType(ref object? value, ref bool copyBack)
+        private bool TryConvertToType(ref object? value)
         {
             if (IsInstanceOfType(value))
                 return true;
@@ -1704,14 +1705,12 @@ namespace System
                 Type? elementType = GetElementType();
                 if (value == null || elementType.IsInstanceOfType(value))
                 {
-                    copyBack = true;
                     return true;
                 }
             }
 
             if (value == null)
             {
-                copyBack = true;
                 return true;
             }
 
@@ -1725,7 +1724,6 @@ namespace System
                 if (res != null)
                 {
                     value = res;
-                    copyBack = true;
                     return true;
                 }
             }
@@ -1735,7 +1733,6 @@ namespace System
                 if (res != null)
                 {
                     value = res;
-                    copyBack = true;
                     return true;
                 }
             }
@@ -1750,7 +1747,6 @@ namespace System
                     if (pointerType == this)
                     {
                         value = pointer.GetPointerValue();
-                        copyBack = true;
                         return true;
                     }
                 }

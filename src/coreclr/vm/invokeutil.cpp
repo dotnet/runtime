@@ -174,15 +174,22 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest
             {
                 // ASSUMPTION: we only receive T or NULL values, not Nullable<T> values
                 // and the values are boxed, unlike other value types.
+                MethodTable* pMT = th.AsMethodTable();
                 OBJECTREF src = (OBJECTREF)(Object*)*rArg;
-                if (!th.AsMethodTable()->UnBoxIntoArg(argDest, src))
+                if (!pMT->UnBoxIntoArg(argDest, src))
+                    COMPlusThrow(kArgumentException, W("Arg_ObjObj"));
+            }
+            else if (rArg == NULL) {
+                // A byref-like type can't be boxed but the Invoke() arg value can be passed as a null object where that is
+                // marshalled as a null reference to indicate we need to initialize the byref-like type here.
+                MethodTable* pMT = th.GetMethodTable();
+                if (pMT->IsByRefLike())
+                    InitValueClassArg(argDest, pMT);
+                else
                     COMPlusThrow(kArgumentException, W("Arg_ObjObj"));
             }
             else
             {
-                if (rArg == NULL)
-                    COMPlusThrow(kArgumentException, W("Arg_ObjObj"));
-
                 MethodTable* pMT = th.GetMethodTable();
                 CopyValueClassArg(argDest, rArg, pMT, 0);
             }

@@ -764,7 +764,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         bool needsStackCopy = false;
         ArgDestination argDest(pTransitionBlock, ofs, argit.GetArgLocDescForStructInRegs());
 
-        MethodTable* pMT = NULL;
         TypeHandle nullableType = NullableTypeOfByref(th);
         if (!nullableType.IsNull()) {
             // A boxed Nullable<T> is represented as boxed T. So to pass a Nullable<T> by reference,
@@ -773,12 +772,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
             th = nullableType;
             structSize = th.GetSize();
             needsStackCopy = true;
-        }
-        else if (args[i] == NULL && ((pMT = th.GetMethodTable())->IsByRefLike())) {
-            // A byref-like type can't be boxed but the Invoke() arg value can be passed as a null object where that is
-            // marshalled as a null reference to indicate we need to initialize the byref-like type here.
-            InitValueClassArg(&argDest, pMT);
-            continue;
         }
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
         else if (argit.IsArgPassedByRef())
@@ -789,7 +782,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
 
         if (needsStackCopy)
         {
-            pMT = th.GetMethodTable();
+            MethodTable* pMT = th.GetMethodTable();
             _ASSERTE(pMT && pMT->IsValueType());
 
             PVOID pArgDst = argDest.GetDestinationAddress();
