@@ -4270,65 +4270,23 @@ public:
     CallArg(const CallArg&) = delete;
     CallArg& operator=(CallArg&) = delete;
 
-    // clang format off
-    GenTree*& NodeRef()
-    {
-        return m_node;
-    }
-    GenTree* GetNode()
-    {
-        return m_node;
-    }
-    void SetNode(GenTree* node)
-    {
-        m_node = node;
-    }
-    GenTree*& LateNodeRef()
-    {
-        return m_lateNode;
-    }
-    GenTree* GetLateNode()
-    {
-        return m_lateNode;
-    }
-    void SetLateNode(GenTree* lateNode)
-    {
-        m_lateNode = lateNode;
-    }
-    CallArg*& NextRef()
-    {
-        return m_next;
-    }
-    CallArg* GetNext()
-    {
-        return m_next;
-    }
-    void SetNext(CallArg* next)
-    {
-        m_next = next;
-    }
-    CallArg*& LateNextRef()
-    {
-        return m_lateNext;
-    }
-    CallArg* GetLateNext()
-    {
-        return m_lateNext;
-    }
-    void SetLateNext(CallArg* lateNext)
-    {
-        m_lateNext = lateNext;
-    }
-    WellKnownArg GetWellKnownArg()
-    {
-        return m_wellKnownArg;
-    }
+    // clang-format off
+    GenTree*& NodeRef() { return m_node; }
+    GenTree* GetNode() { return m_node; }
+    void SetNode(GenTree* node) { m_node = node; }
+    GenTree*& LateNodeRef() { return m_lateNode; }
+    GenTree* GetLateNode() { return m_lateNode; }
+    void SetLateNode(GenTree* lateNode) { m_lateNode = lateNode; }
+    CallArg*& NextRef() { return m_next; }
+    CallArg* GetNext() { return m_next; }
+    void SetNext(CallArg* next) { m_next = next; }
+    CallArg*& LateNextRef() { return m_lateNext; }
+    CallArg* GetLateNext() { return m_lateNext; }
+    void SetLateNext(CallArg* lateNext) { m_lateNext = lateNext; }
+    WellKnownArg GetWellKnownArg() { return m_wellKnownArg; }
     // TODO-ARGS: Remove
-    bool IsTemp()
-    {
-        return m_isTmp;
-    }
-    // clang format on
+    bool IsTemp() { return m_isTmp; }
+    // clang-format on
 
     // Get the real argument node, i.e. not a setup or placeholder node.
     // This is the same as GetNode() until morph.
