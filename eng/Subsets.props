@@ -260,7 +260,7 @@
 
   <PropertyGroup>
     <CrossDacHostArch>x64</CrossDacHostArch>
-    <CrossDacHostArch Condition="'$(TargetArchitecture)' != 'arm'">x86</CrossDacHostArch>
+    <CrossDacHostArch Condition="'$(TargetArchitecture)' == 'arm'">x86</CrossDacHostArch>
   </PropertyGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+linuxdac+')) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' != 'x86'">
