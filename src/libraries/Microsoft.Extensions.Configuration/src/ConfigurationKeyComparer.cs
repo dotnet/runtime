@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Configuration
         {
             if (x is not null && y is not null)
             {
-                if (x!.Contains(ConfigurationPath.KeyDelimiter) && y!.Contains(ConfigurationPath.KeyDelimiter))
+                if (x.Contains(ConfigurationPath.KeyDelimiter) && y!.Contains(ConfigurationPath.KeyDelimiter))
                 {
                     string[] xParts = x!.Split(_keyDelimiterArray, StringSplitOptions.RemoveEmptyEntries);
                     string[] yParts = y!.Split(_keyDelimiterArray, StringSplitOptions.RemoveEmptyEntries);
@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Configuration
                     // Compare each part until we get two parts that are not equal
                     for (int i = 0; i < Math.Min(xParts.Length, yParts.Length); i++)
                     {
-                        int result = compare(xParts[i], yParts[i]);
+                        int result = Compare(xParts[i], yParts[i]);
                         if (result != 0)
                         {
                             // One of them is different
@@ -53,19 +53,19 @@ namespace Microsoft.Extensions.Configuration
                 }
                 else
                 {
-                    return compare(x, y);
+                    return Compare(x, y);
                 }
             }
 
             return x?.Length ?? 0 - y?.Length ?? 0;
 
-            static int compare(string? a, string? b)
+            static int Compare(string? a, string? b)
             {
                 int value1 = 0;
                 int value2 = 0;
 
-                bool aIsInt = a != null && int.TryParse(a, out value1);
-                bool bIsInt = b != null && int.TryParse(b, out value2);
+                bool aIsInt = int.TryParse(a, out value1);
+                bool bIsInt = int.TryParse(b, out value2);
 
                 int result;
 
