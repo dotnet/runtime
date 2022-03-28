@@ -447,7 +447,7 @@ namespace System.Net.Http
             return newException;
         }
 
-        private async Task AddHttp11ConnectionAsync(RequestQueue<HttpConnection>.Entry queueItem)
+        private async Task AddHttp11ConnectionAsync(RequestQueue<HttpConnection>.QueueItem queueItem)
         {
             if (NetEventSource.Log.IsEnabled()) Trace("Creating new HTTP/1.1 connection for pool.");
 
@@ -497,7 +497,7 @@ namespace System.Net.Http
                 _associatedHttp11ConnectionCount++;
                 _pendingHttp11ConnectionCount++;
 
-                RequestQueue<HttpConnection>.Entry queueItem = _http11RequestQueue.PeekNextRequestForConnectionAttempt();
+                RequestQueue<HttpConnection>.QueueItem queueItem = _http11RequestQueue.PeekNextRequestForConnectionAttempt();
 
                 Task.Run(() => AddHttp11ConnectionAsync(queueItem));
             }
@@ -639,7 +639,7 @@ namespace System.Net.Http
             ReturnHttp11Connection(http11Connection, isNewConnection: true);
         }
 
-        private async Task AddHttp2ConnectionAsync(RequestQueue<Http2Connection?>.Entry queueItem)
+        private async Task AddHttp2ConnectionAsync(RequestQueue<Http2Connection?>.QueueItem queueItem)
         {
             if (NetEventSource.Log.IsEnabled()) Trace("Creating new HTTP/2 connection for pool.");
 
@@ -719,7 +719,7 @@ namespace System.Net.Http
                 _associatedHttp2ConnectionCount++;
                 _pendingHttp2Connection = true;
 
-                RequestQueue<Http2Connection?>.Entry queueItem = _http2RequestQueue.PeekNextRequestForConnectionAttempt();
+                RequestQueue<Http2Connection?>.QueueItem queueItem = _http2RequestQueue.PeekNextRequestForConnectionAttempt();
 
                 Task.Run(() => AddHttp2ConnectionAsync(queueItem));
             }
@@ -2246,7 +2246,7 @@ namespace System.Net.Http
 
         private struct RequestQueue<T>
         {
-            public struct Entry
+            public struct QueueItem
             {
                 public HttpRequestMessage Request;
                 public TaskCompletionSourceWithCancellation<T> Waiter;
@@ -2254,7 +2254,7 @@ namespace System.Net.Http
 
             // This implementation mimics that of Queue<T>, but without version checks and with an extra head pointer
             // https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Collections/Generic/Queue.cs
-            private Entry[] _array;
+            private QueueItem[] _array;
             private int _head; // The index from which to dequeue if the queue isn't empty.
             private int _tail; // The index at which to enqueue if the queue isn't full.
             private int _size; // Number of elements.
@@ -2262,14 +2262,14 @@ namespace System.Net.Http
 
             public RequestQueue()
             {
-                _array = Array.Empty<Entry>();
+                _array = Array.Empty<QueueItem>();
                 _head = 0;
                 _tail = 0;
                 _size = 0;
                 _attemptedConnectionsOffset = 0;
             }
 
-            private void Enqueue(Entry queueItem)
+            private void Enqueue(QueueItem queueItem)
             {
                 if (_size == _array.Length)
                 {
@@ -2282,14 +2282,14 @@ namespace System.Net.Http
                 _size++;
             }
 
-            private Entry Dequeue()
+            private QueueItem Dequeue()
             {
                 Debug.Assert(_size > 0);
 
                 int head = _head;
-                Entry[] array = _array;
+                QueueItem[] array = _array;
 
-                Entry queueItem = array[head];
+                QueueItem queueItem = array[head];
                 array[head] = default;
 
                 MoveNext(ref _head);
@@ -2303,7 +2303,7 @@ namespace System.Net.Http
                 return queueItem;
             }
 
-            private bool TryPeek(out Entry queueItem)
+            private bool TryPeek(out QueueItem queueItem)
             {
                 if (_size == 0)
                 {
@@ -2327,7 +2327,7 @@ namespace System.Net.Http
 
             private void Grow()
             {
-                var newArray = new Entry[Math.Max(4, _array.Length * 2)];
+                var newArray = new QueueItem[Math.Max(4, _array.Length * 2)];
 
                 if (_size != 0)
                 {
@@ -2351,13 +2351,13 @@ namespace System.Net.Http
             public TaskCompletionSourceWithCancellation<T> EnqueueRequest(HttpRequestMessage request)
             {
                 var waiter = new TaskCompletionSourceWithCancellation<T>();
-                Enqueue(new Entry { Request = request, Waiter = waiter });
+                Enqueue(new QueueItem { Request = request, Waiter = waiter });
                 return waiter;
             }
 
             public void PruneCompletedRequestsFromHeadOfQueue(HttpConnectionPool pool)
             {
-                while (TryPeek(out Entry queueItem) && queueItem.Waiter.Task.IsCompleted)
+                while (TryPeek(out QueueItem queueItem) && queueItem.Waiter.Task.IsCompleted)
                 {
                     if (NetEventSource.Log.IsEnabled())
                     {
@@ -2386,13 +2386,13 @@ namespace System.Net.Http
 
             public void TryDequeueSpecificWaiter(TaskCompletionSourceWithCancellation<T> waiter)
             {
-                if (TryPeek(out Entry queueItem) && queueItem.Waiter == waiter)
+                if (TryPeek(out QueueItem queueItem) && queueItem.Waiter == waiter)
                 {
                     Dequeue();
                 }
             }
 
-            public Entry PeekNextRequestForConnectionAttempt()
+            public QueueItem PeekNextRequestForConnectionAttempt()
             {
                 Debug.Assert(_attemptedConnectionsOffset >= 0);
                 Debug.Assert(_attemptedConnectionsOffset < _size, $"{_attemptedConnectionsOffset} < {_size}");
