@@ -5232,11 +5232,11 @@ struct GenTreeCall final : public GenTree
 
     static bool Equals(GenTreeCall* c1, GenTreeCall* c2);
 
-    GenTreeCall(var_types type) : GenTree(GT_CALL, type), gtArgs()
+    GenTreeCall(var_types type) : GenTree(GT_CALL, type)
     {
     }
 #if DEBUGGABLE_GENTREE
-    GenTreeCall() : GenTree(), gtArgs()
+    GenTreeCall() : GenTree()
     {
     }
 #endif
