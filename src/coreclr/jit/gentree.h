@@ -5273,8 +5273,6 @@ struct GenTreeCall final : public GenTree
                 return lclRetBufArgNode;
         }
     }
-
-    void SetLclRetBufArg(CallArg* retBufArg);
 };
 
 struct GenTreeCmpXchg : public GenTree
