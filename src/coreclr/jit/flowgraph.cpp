@@ -870,8 +870,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         opModuleIDArg = gtNewIconNode((size_t)moduleID, TYP_I_IMPL);
     }
 
-    GenTreeCall* result            = gtNewHelperCallNode(helper, type);
-    CallArg*     opModuleIDCallArg = result->gtArgs.PushFront(this, opModuleIDArg);
+    GenTreeCall* result;
     if (bNeedClassID)
     {
         if (pclsID)
@@ -883,7 +882,11 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             opClassIDArg = gtNewIconNode(clsID, TYP_INT);
         }
 
-        result->gtArgs.InsertAfter(this, opModuleIDCallArg, opClassIDArg);
+        result = gtNewHelperCallNode(helper, type, opModuleIDArg, opClassIDArg);
+    }
+    else
+    {
+        result = gtNewHelperCallNode(helper, type, opModuleIDArg);
     }
 
     result->gtFlags |= callFlags;

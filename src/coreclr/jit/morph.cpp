@@ -2145,10 +2145,9 @@ void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
             CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
             for (CallArg& arg : call->gtArgs.Args())
             {
-                switch (arg.GetWellKnownArg())
+                if (arg.GetWellKnownArg() == WellKnownArg::ThisPointer)
                 {
-                    case WellKnownArg::ThisPointer:
-                        continue;
+                    continue;
                 }
 
                 CORINFO_CLASS_HANDLE argClass;

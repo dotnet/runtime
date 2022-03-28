@@ -1355,6 +1355,8 @@ void CallArgs::AddedWellKnownArg(WellKnownArg arg)
         case WellKnownArg::RetBuffer:
             m_hasRetBuffer = true;
             break;
+        default:
+            break;
     }
 }
 
@@ -1369,6 +1371,8 @@ void CallArgs::RemovedWellKnownArg(WellKnownArg arg)
         case WellKnownArg::RetBuffer:
             assert(FindWellKnownArg(arg) == nullptr);
             m_hasRetBuffer = false;
+            break;
+        default:
             break;
     }
 }
@@ -1440,6 +1444,8 @@ regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension c
         case WellKnownArg::DispatchIndirectCallTarget:
             return REG_DISPATCH_INDIRECT_CALL_ADDR;
 #endif
+        default:
+            break;
     }
 
     return REG_NA;

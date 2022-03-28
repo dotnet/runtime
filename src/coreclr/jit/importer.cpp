@@ -19554,6 +19554,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             case WellKnownArg::InstParam:
                 // These do not appear in the signature; do not include them
                 continue;
+            default:
+                break;
         }
 
         GenTree* actualArg = gtFoldExpr(arg.GetNode());
