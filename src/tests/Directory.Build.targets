@@ -430,9 +430,9 @@
 
   </Target>
 
-  <Target Name="GetDisableProjectBuild" Returns="@(ProjectWithDisableProjectBuildProperty)">
-    <ItemGroup Condition="'$(DisableProjectBuild)' == 'true'">
-      <ProjectWithDisableProjectBuildProperty Include="$(MSBuildProjectFullPath)" />
+  <Target Name="GetProjectsWithDisabledBuild" Returns="@(ProjectWithDisabledBuild)">
+    <ItemGroup Condition="'$(_WillCLRTestProjectBuild)' != 'true'">
+      <ProjectWithDisabledBuild Include="$(MSBuildProjectFullPath)" />
     </ItemGroup>
   </Target>
 

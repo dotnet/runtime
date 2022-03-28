@@ -1,7 +1,7 @@
 <Project>
   <Target Name="_ValidateNoTestProjectsDroppedByConflictResolution" AfterTargets="ResolveReferences">
 
-    <MSBuild Projects="@(ProjectReference)" Targets="GetDisableProjectBuild" SkipNonexistentTargets="true">
+    <MSBuild Projects="@(ProjectReference)" Targets="GetProjectsWithDisabledBuild" SkipNonexistentTargets="true">
       <Output TaskParameter="TargetOutputs" ItemName="_ReferenceWithDisabledBuild" />
     </MSBuild>
 
