@@ -2041,8 +2041,9 @@ MAPmmapAndRecord(
         // Mojave hardened runtime doesn't allow executable mappings of a file. So we have to create an
         // anonymous mapping and read the file contents into it instead.
 
+#if defined(HOST_ARM64)
         // Set the requested mapping with forced PROT_WRITE, mmap the file, and copy its contents there.
-        // PROT_WRITE can then be removed on Intel, but not on Apple Silicon which requires the use of
+        // Once PROT_WRITE and PROT_EXEC are set together, Apple Silicon will require the use of
         // PAL_JitWriteProtect to switch between executable and writable.
         LPVOID pvMappedFile = mmap(NULL, len + adjust, PROT_READ, MAP_PRIVATE, fd, offset - adjust);
         if (pvMappedFile == MAP_FAILED ||
@@ -2052,22 +2053,26 @@ MAPmmapAndRecord(
         }
         else
         {
-#if defined(HOST_ARM64)
             PAL_JitWriteProtect(true);
-#endif
             memcpy(pvBaseAddress, pvMappedFile, len + adjust);
-#if defined(HOST_ARM64)
             PAL_JitWriteProtect(false);
-#endif
-            if (munmap(pvMappedFile, len + adjust) == -1
-#if !defined(HOST_ARM64)
-                || (mprotect(pvBaseAddress, len + adjust, prot) == -1)
-#endif
-            )
+            if (munmap(pvMappedFile, len + adjust) == -1)
             {
                 palError = FILEGetLastErrorFromErrno();
             }
         }
+#else
+        // Set the requested mapping with forced PROT_WRITE to ensure data from the file can be read there,
+        // read the data in and finally remove the forced PROT_WRITE. On Intel we can still switch the
+        // protection later with mprotect.
+        if ((mprotect(pvBaseAddress, len + adjust, PROT_WRITE) == -1) ||
+            (pread(fd, pvBaseAddress, len + adjust, offset - adjust) == -1) ||
+            (mprotect(pvBaseAddress, len + adjust, prot) == -1))
+        {
+            palError = FILEGetLastErrorFromErrno();
+        }
+#endif
+
     }
     else
 #endif
