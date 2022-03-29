@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using Internal.Runtime.CompilerServices;
+
 using DebuggerStepThroughAttribute = System.Diagnostics.DebuggerStepThroughAttribute;
 using MdToken = System.Reflection.MetadataToken;
 
@@ -1252,20 +1252,30 @@ namespace System
                         Dictionary<string, List<RuntimePropertyInfo>>? csPropertyInfos = filter.CaseSensitive() ? null :
                             new Dictionary<string, List<RuntimePropertyInfo>>();
 
-                        // All elements automatically initialized to false.
-                        bool[] usedSlots = new bool[RuntimeTypeHandle.GetNumVirtuals(declaringType)];
+                        // All elements initialized to false.
+                        int numVirtuals = RuntimeTypeHandle.GetNumVirtuals(declaringType);
+                        Span<bool> usedSlots = stackalloc bool[0];
+                        if (numVirtuals <= 128) // arbitrary stack limit
+                        {
+                            usedSlots = stackalloc bool[numVirtuals];
+                            usedSlots.Clear();
+                        }
+                        else
+                        {
+                            usedSlots = new bool[numVirtuals];
+                        }
 
                         // Populate associates off of the class hierarchy
                         do
                         {
-                            PopulateProperties(filter, declaringType, csPropertyInfos, usedSlots, ref list);
+                            PopulateProperties(filter, declaringType, csPropertyInfos, usedSlots, isInterface: false, ref list);
                             declaringType = RuntimeTypeHandle.GetBaseType(declaringType);
                         } while (declaringType != null);
                     }
                     else
                     {
                         // Populate associates for this interface
-                        PopulateProperties(filter, declaringType, null, null, ref list);
+                        PopulateProperties(filter, declaringType, null, default, isInterface: true, ref list);
                     }
 
                     return list.ToArray();
@@ -1275,7 +1285,8 @@ namespace System
                     Filter filter,
                     RuntimeType declaringType,
                     Dictionary<string, List<RuntimePropertyInfo>>? csPropertyInfos,
-                    bool[]? usedSlots,
+                    Span<bool> usedSlots,
+                    bool isInterface,
                     ref ListBuilder<RuntimePropertyInfo> list)
                 {
                     int tkDeclaringType = RuntimeTypeHandle.GetToken(declaringType);
@@ -1290,8 +1301,8 @@ namespace System
 
                     int numVirtuals = RuntimeTypeHandle.GetNumVirtuals(declaringType);
 
-                    Debug.Assert((declaringType.IsInterface && usedSlots == null && csPropertyInfos == null) ||
-                                    (!declaringType.IsInterface && usedSlots != null && usedSlots.Length >= numVirtuals));
+                    Debug.Assert((declaringType.IsInterface && isInterface && csPropertyInfos == null) ||
+                                 (!declaringType.IsInterface && !isInterface && usedSlots.Length >= numVirtuals));
 
                     for (int i = 0; i < tkProperties.Length; i++)
                     {
@@ -1313,7 +1324,7 @@ namespace System
                             tkProperty, declaringType, m_runtimeTypeCache, out bool isPrivate);
 
                         // If this is a class, not an interface
-                        if (usedSlots != null)
+                        if (!isInterface)
                         {
                             #region Remove Privates
                             if (declaringType != ReflectedType && isPrivate)
@@ -2903,6 +2914,10 @@ namespace System
             return match;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern",
+            Justification = "Trimming makes sure that interfaces are fully preserved, so the Interfaces annotation is transitive." +
+                            "The cache doesn't carry the necessary annotation since it returns an array type," +
+                            "so the analysis complains that the returned value doesn't have the necessary annotation.")]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string fullname!!, bool ignoreCase)
@@ -3628,11 +3643,12 @@ namespace System
             }
             else
             {
-                ConstructorInfo[] candidates = GetConstructors(bindingAttr);
-                List<MethodBase> matches = new List<MethodBase>(candidates.Length);
+                ListBuilder<ConstructorInfo> candidates = GetConstructorCandidates(null, bindingAttr, CallingConventions.Any, null, false);
+                MethodBase[] cons = new MethodBase[candidates.Count];
+                int consCount = 0;
 
                 // We cannot use Type.GetTypeArray here because some of the args might be null
-                Type[] argsType = new Type[args.Length];
+                Type[] argsType = args.Length != 0 ? new Type[args.Length] : EmptyTypes;
                 for (int i = 0; i < args.Length; i++)
                 {
                     if (args[i] is object arg)
@@ -3641,18 +3657,23 @@ namespace System
                     }
                 }
 
-                for (int i = 0; i < candidates.Length; i++)
+                for (int i = 0; i < candidates.Count; i++)
                 {
                     if (FilterApplyConstructorInfo((RuntimeConstructorInfo)candidates[i], bindingAttr, CallingConventions.Any, argsType))
-                        matches.Add(candidates[i]);
+                    {
+                        cons[consCount++] = candidates[i];
+                    }
                 }
 
-                if (matches.Count == 0)
+                if (consCount == 0)
                 {
                     throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, FullName));
                 }
 
-                MethodBase[] cons = matches.ToArray();
+                if (consCount != cons.Length)
+                {
+                    Array.Resize(ref cons, consCount);
+                }
 
                 MethodBase? invokeMethod;
                 object? state = null;
@@ -3883,9 +3904,11 @@ namespace System
                         case DispatchWrapperType.Error:
                             wrapperType = typeof(ErrorWrapper);
                             break;
+#pragma warning disable 0618 // CurrencyWrapper is obsolete
                         case DispatchWrapperType.Currency:
                             wrapperType = typeof(CurrencyWrapper);
                             break;
+#pragma warning restore 0618
                         case DispatchWrapperType.BStr:
                             wrapperType = typeof(BStrWrapper);
                             isString = true;
@@ -3942,9 +3965,11 @@ namespace System
                         case DispatchWrapperType.Error:
                             aArgs[i] = new ErrorWrapper(aArgs[i]);
                             break;
+#pragma warning disable 0618 // CurrencyWrapper is obsolete
                         case DispatchWrapperType.Currency:
                             aArgs[i] = new CurrencyWrapper(aArgs[i]);
                             break;
+#pragma warning restore 0618
                         case DispatchWrapperType.BStr:
                             aArgs[i] = new BStrWrapper((string)aArgs[i]);
                             break;
@@ -3978,10 +4003,11 @@ namespace System
     #region Library
     internal readonly unsafe partial struct MdUtf8String
     {
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_EqualsCaseInsensitive")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_EqualsCaseInsensitive")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_HashCaseInsensitive")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_HashCaseInsensitive")]
         private static partial uint HashCaseInsensitive(void* sz, int cSz);
 
         private readonly byte* m_pStringHeap;        // This is the raw UTF8 string.

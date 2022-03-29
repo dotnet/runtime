@@ -11,7 +11,6 @@ using Xunit;
 namespace Microsoft.Extensions.Logging.Generators.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsMonoRuntime))]
     public class LoggerMessageGeneratorEmitterTests
     {
         [Fact]

@@ -33,7 +33,7 @@ void NativeWalker::Decode()
 
     BYTE rex = NULL;
 
-    LOG((LF_CORDB, LL_INFO100000, "NW:Decode: m_ip 0x%x\n", m_ip));
+    LOG((LF_CORDB, LL_INFO100000, "NW:Decode: m_ip 0x%p\n", m_ip));
 
     BYTE prefix = *ip;
     if (prefix == 0xcc)
@@ -103,7 +103,7 @@ void NativeWalker::Decode()
     // Read the opcode
     m_opcode = *ip++;
 
-    LOG((LF_CORDB, LL_INFO100000, "NW:Decode: ip 0x%x, m_opcode:%0.2x\n", ip, m_opcode));
+    LOG((LF_CORDB, LL_INFO100000, "NW:Decode: ip 0x%p, m_opcode:%0.2x\n", ip, m_opcode));
 
     // Don't remove this, when we did the check above for the prefix we didn't modify the codestream
     // and since m_opcode was just taken directly from the code stream it will be patched if we

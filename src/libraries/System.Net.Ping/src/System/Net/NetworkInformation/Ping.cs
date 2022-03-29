@@ -231,6 +231,12 @@ namespace System.Net.NetworkInformation
             }
         }
 
+        public PingReply Send(IPAddress address, TimeSpan timeout, byte[]? buffer = null, PingOptions? options = null) =>
+            Send(address, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options);
+
+        public PingReply Send(string hostNameOrAddress, TimeSpan timeout, byte[]? buffer = null,
+            PingOptions? options = null) => Send(hostNameOrAddress, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options);
+
         public void SendAsync(string hostNameOrAddress, object? userToken)
         {
             SendAsync(hostNameOrAddress, DefaultTimeout, DefaultSendBuffer, userToken);
@@ -357,6 +363,16 @@ namespace System.Net.NetworkInformation
             return GetAddressAndSendAsync(hostNameOrAddress, timeout, buffer, options);
         }
 
+        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            }
+            return (int)totalMilliseconds;
+        }
+
         public void SendAsyncCancel()
         {
             lock (_lockObject)
@@ -412,7 +428,7 @@ namespace System.Net.NetworkInformation
         }
 
         // Tests if the current machine supports the given ip protocol family.
-        private void TestIsIpSupported(IPAddress ip)
+        private static void TestIsIpSupported(IPAddress ip)
         {
             if (ip.AddressFamily == AddressFamily.InterNetwork && !SocketProtocolSupportPal.OSSupportsIPv4)
             {

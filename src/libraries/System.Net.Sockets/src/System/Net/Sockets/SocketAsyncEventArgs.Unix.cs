@@ -15,27 +15,13 @@ namespace System.Net.Sockets
         private SocketFlags _receivedFlags;
         private Action<int, byte[]?, int, SocketFlags, SocketError>? _transferCompletionCallback;
 
-        private void InitializeInternals()
-        {
-            // No-op for *nix.
-        }
+        partial void InitializeInternals();
 
-        private void FreeInternals()
-        {
-            // No-op for *nix.
-        }
+        partial void FreeInternals();
 
-        private void SetupSingleBuffer()
-        {
-            // No-op for *nix.
-        }
+        partial void SetupMultipleBuffers();
 
-        private void SetupMultipleBuffers()
-        {
-            // No-op for *nix.
-        }
-
-        private void CompleteCore() { }
+        partial void CompleteCore();
 
         private void AcceptCompletionCallback(IntPtr acceptedFileDescriptor, byte[] socketAddress, int socketAddressSize, SocketError socketError)
         {
@@ -355,7 +341,7 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        private SocketError FinishOperationConnect()
+        private static SocketError FinishOperationConnect()
         {
             // No-op for *nix.
             return SocketError.Success;
@@ -366,15 +352,9 @@ namespace System.Net.Sockets
             return _socketAddressSize;
         }
 
-        private unsafe void FinishOperationReceiveMessageFrom()
-        {
-            // No-op for *nix.
-        }
+        partial void FinishOperationReceiveMessageFrom();
 
-        private void FinishOperationSendPackets()
-        {
-            // No-op for *nix.
-        }
+        partial void FinishOperationSendPackets();
 
         private void CompletionCallback(int bytesTransferred, SocketFlags flags, SocketError socketError)
         {

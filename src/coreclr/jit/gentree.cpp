@@ -602,23 +602,25 @@ void GenTree::CopyReg(GenTree* from)
 }
 
 //------------------------------------------------------------------
-// gtHasReg: Whether node beeen assigned a register by LSRA
+// gtHasReg: Whether node been assigned a register by LSRA
 //
 // Arguments:
-//    None
+//    comp - Compiler instance. Required for multi-reg lcl var; ignored otherwise.
 //
 // Return Value:
 //    Returns true if the node was assigned a register.
 //
-//    In case of multi-reg call nodes, it is considered
-//    having a reg if regs are allocated for all its
+//    In case of multi-reg call nodes, it is considered having a reg if regs are allocated for ALL its
 //    return values.
+//    REVIEW: why is this ALL and the other cases are ANY? Explain.
 //
-//    In case of GT_COPY or GT_RELOAD of a multi-reg call,
-//    GT_COPY/GT_RELOAD is considered having a reg if it
-//    has a reg assigned to any of its positions.
+//    In case of GT_COPY or GT_RELOAD of a multi-reg call, GT_COPY/GT_RELOAD is considered having a reg if it
+//    has a reg assigned to ANY of its positions.
 //
-bool GenTree::gtHasReg() const
+//    In case of multi-reg local vars, it is considered having a reg if it has a reg assigned for ANY
+//    of its positions.
+//
+bool GenTree::gtHasReg(Compiler* comp) const
 {
     bool hasReg = false;
 
@@ -649,6 +651,22 @@ bool GenTree::gtHasReg() const
         for (unsigned i = 0; i < regCount; ++i)
         {
             hasReg = (copyOrReload->GetRegNumByIdx(i) != REG_NA);
+            if (hasReg)
+            {
+                break;
+            }
+        }
+    }
+    else if (IsMultiRegLclVar())
+    {
+        assert(comp != nullptr);
+        const GenTreeLclVar* lclNode  = AsLclVar();
+        const unsigned       regCount = GetMultiRegCount(comp);
+        // A Multi-reg local vars is said to have regs,
+        // if it has valid regs in any of the positions.
+        for (unsigned i = 0; i < regCount; i++)
+        {
+            hasReg = (lclNode->GetRegNumByIdx(i) != REG_NA);
             if (hasReg)
             {
                 break;
@@ -794,12 +812,12 @@ bool GenTree::IsMultiRegNode() const
 // GetMultiRegCount: Return the register count for a multi-reg node.
 //
 // Arguments:
-//     None
+//     comp - Compiler instance. Required for MultiRegLclVar, unused otherwise.
 //
 // Return Value:
 //     Returns the number of registers defined by this node.
 //
-unsigned GenTree::GetMultiRegCount() const
+unsigned GenTree::GetMultiRegCount(Compiler* comp) const
 {
 #if FEATURE_MULTIREG_RET
     if (IsMultiRegCall())
@@ -834,19 +852,39 @@ unsigned GenTree::GetMultiRegCount() const
     }
 #endif // FEATURE_HW_INTRINSICS
 
-    if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
+    if (IsMultiRegLclVar())
     {
-        assert((gtFlags & GTF_VAR_MULTIREG) != 0);
-        // The register count for a multireg lclVar requires looking at the LclVarDsc,
-        // which requires a Compiler instance. The caller must handle this separately.
-        // The register count for a multireg lclVar requires looking at the LclVarDsc,
-        // which requires a Compiler instance. The caller must use the GetFieldCount
-        // method on GenTreeLclVar.
-
-        assert(!"MultiRegCount for LclVar");
+        assert(comp != nullptr);
+        return AsLclVar()->GetFieldCount(comp);
     }
+
     assert(!"GetMultiRegCount called with non-multireg node");
     return 1;
+}
+
+//---------------------------------------------------------------
+// gtGetContainedRegMask: Get the reg mask of the node including
+//    contained nodes (recursive).
+//
+// Arguments:
+//    None
+//
+// Return Value:
+//    Reg Mask of GenTree node.
+//
+regMaskTP GenTree::gtGetContainedRegMask()
+{
+    if (!isContained())
+    {
+        return gtGetRegMask();
+    }
+
+    regMaskTP mask = 0;
+    for (GenTree* operand : Operands())
+    {
+        mask |= operand->gtGetContainedRegMask();
+    }
+    return mask;
 }
 
 //---------------------------------------------------------------
@@ -1226,6 +1264,16 @@ bool GenTreeCall::AreArgsComplete() const
 #endif
 
     return false;
+}
+
+//-------------------------------------------------------------------------
+// SetRetBufArg: Sets the "return buffer" argument use.
+//
+void GenTreeCall::SetLclRetBufArg(Use* retBufArg)
+{
+    assert(retBufArg->GetNode()->TypeIs(TYP_I_IMPL, TYP_BYREF) && retBufArg->GetNode()->OperIs(GT_ADDR, GT_ASG));
+    assert(HasRetBufArg());
+    gtRetBufArg = retBufArg;
 }
 
 //--------------------------------------------------------------------------
@@ -3855,6 +3903,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_System_Math_Log:
                         case NI_System_Math_Log2:
                         case NI_System_Math_Log10:
+                        case NI_System_Math_Max:
+                        case NI_System_Math_Min:
                         case NI_System_Math_Pow:
                         case NI_System_Math_Round:
                         case NI_System_Math_Sin:
@@ -4261,28 +4311,24 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 case GT_IND:
                 case GT_BLK:
                 case GT_OBJ:
-
-                    // In an indirection, the destination address is evaluated prior to the source.
-                    // If we have any side effects on the target indirection,
-                    // we have to evaluate op1 first.
-                    // However, if the LHS is a lclVar address, SSA relies on using evaluation order for its
-                    // renaming, and therefore the RHS must be evaluated first.
-                    // If we have an assignment involving a lclVar address, the LHS may be marked as having
-                    // side-effects.
-                    // However the side-effects won't require that we evaluate the LHS address first:
-                    // - The GTF_GLOB_REF might have been conservatively set on a FIELD of a local.
-                    // - The local might be address-exposed, but that side-effect happens at the actual assignment (not
-                    //   when its address is "evaluated") so it doesn't change the side effect to "evaluate" the address
-                    //   after the RHS (note that in this case it won't be renamed by SSA anyway, but the reordering is
-                    //   safe).
+                {
+                    // In an ASG(IND(addr), ...), the "IND" is a pure syntactical element,
+                    // the actual indirection will only be realized at the point of the ASG
+                    // itself. As such, we can disard any side effects "induced" by it in
+                    // this logic.
                     //
-                    if (op1Val->AsIndir()->Addr()->IsLocalAddrExpr())
+                    // Note that for local "addr"s, liveness depends on seeing the defs and
+                    // uses in correct order, and so we MUST reverse the ASG in that case.
+                    //
+                    GenTree* op1Addr = op1->AsIndir()->Addr();
+
+                    if (op1Addr->IsLocalAddrExpr() || op1Addr->IsInvariant())
                     {
                         bReverseInAssignment = true;
                         tree->gtFlags |= GTF_REVERSE_OPS;
                         break;
                     }
-                    if (op1Val->AsIndir()->Addr()->gtFlags & GTF_ALL_EFFECT)
+                    if (op1Addr->gtFlags & GTF_ALL_EFFECT)
                     {
                         break;
                     }
@@ -4299,7 +4345,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     {
                         break;
                     }
-
+                }
                     // fall through and set GTF_REVERSE_OPS
                     FALLTHROUGH;
 
@@ -4372,6 +4418,12 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         // register requirement.
                         level += 2;
                         break;
+
+                    case NI_System_Math_Max:
+                    case NI_System_Math_Min:
+                        level++;
+                        break;
+
                     default:
                         assert(!"Unknown binary GT_INTRINSIC operator");
                         break;
@@ -4804,6 +4856,35 @@ DONE:
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
+
+#ifdef DEBUG
+bool GenTree::OperSupportsReverseOpEvalOrder(Compiler* comp) const
+{
+    if (OperIsBinary())
+    {
+        if ((AsOp()->gtGetOp1() == nullptr) || (AsOp()->gtGetOp2() == nullptr))
+        {
+            return false;
+        }
+        if (OperIs(GT_COMMA, GT_BOUNDS_CHECK))
+        {
+            return false;
+        }
+        if (OperIs(GT_INTRINSIC))
+        {
+            return !comp->IsIntrinsicImplementedByUserCall(AsIntrinsic()->gtIntrinsicName);
+        }
+        return true;
+    }
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+    if (OperIsMultiOp())
+    {
+        return AsMultiOp()->GetOperandCount() == 2;
+    }
+#endif // FEATURE_SIMD || FEATURE_HW_INTRINSICS
+    return false;
+}
+#endif // DEBUG
 
 /*****************************************************************************
  *
@@ -5305,6 +5386,12 @@ bool GenTree::OperRequiresAsgFlag()
         }
     }
 #endif // FEATURE_HW_INTRINSICS
+    if (gtOper == GT_CALL)
+    {
+        // If the call has return buffer argument, it produced a definition and hence
+        // should be marked with assignment.
+        return AsCall()->GetLclRetBufArgNode() != nullptr;
+    }
     return false;
 }
 
@@ -5685,6 +5772,11 @@ GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, 
     return node;
 }
 
+GenTreeColon* Compiler::gtNewColonNode(var_types type, GenTree* elseNode, GenTree* thenNode)
+{
+    return new (this, GT_COLON) GenTreeColon(TYP_INT, elseNode, thenNode);
+}
+
 GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon)
 {
     compQmarkUsed        = true;
@@ -5701,6 +5793,21 @@ GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeCol
 GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
 {
     return new (this, GT_CNS_INT) GenTreeIntCon(type, value);
+}
+
+GenTreeIntCon* Compiler::gtNewNull()
+{
+    return gtNewIconNode(0, TYP_REF);
+}
+
+GenTreeIntCon* Compiler::gtNewTrue()
+{
+    return gtNewIconNode(1, TYP_INT);
+}
+
+GenTreeIntCon* Compiler::gtNewFalse()
+{
+    return gtNewIconNode(0, TYP_INT);
 }
 
 GenTreeIntCon* Compiler::gtNewIconNode(unsigned fieldOffset, FieldSeqNode* fieldSeq)
@@ -5784,19 +5891,6 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenT
     //
     indNode->gtFlags |= GTF_IND_NONFAULTING;
 
-    // String Literal handles are indirections that return a TYP_REF, and
-    // these are pointers into the GC heap.  We don't currently have any
-    // TYP_BYREF pointers, but if we did they also must be pointers into the GC heap.
-    //
-    // Also every GTF_ICON_STATIC_HDL also must be a pointer into the GC heap
-    // we will set GTF_GLOB_REF for these kinds of references.
-    //
-    if ((varTypeIsGC(indType)) || (iconFlags == GTF_ICON_STATIC_HDL))
-    {
-        // This indirection also points into the gloabal heap
-        indNode->gtFlags |= GTF_GLOB_REF;
-    }
-
     if (isInvariant)
     {
         assert(iconFlags != GTF_ICON_STATIC_HDL); // Pointer to a mutable class Static variable
@@ -5812,6 +5906,13 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenT
             indNode->gtFlags |= GTF_IND_NONNULL;
         }
     }
+    else
+    {
+        // GLOB_REF needs to be set for indirections returning values from mutable
+        // locations, so that e. g. args sorting does not reorder them with calls.
+        indNode->gtFlags |= GTF_GLOB_REF;
+    }
+
     return indNode;
 }
 
@@ -7857,20 +7958,45 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     copy->gtCallMoreFlags = tree->gtCallMoreFlags;
     copy->gtCallArgs      = nullptr;
     copy->gtCallLateArgs  = nullptr;
+    copy->gtRetBufArg     = nullptr;
 
     GenTreeCall::Use** argsTail = &copy->gtCallArgs;
     for (GenTreeCall::Use& use : tree->Args())
     {
-        *argsTail = gtNewCallArgs(gtCloneExpr(use.GetNode(), addFlags, deepVarNum, deepVarVal));
-        argsTail  = &((*argsTail)->NextRef());
+        GenTree* argNode     = use.GetNode();
+        GenTree* copyArgNode = gtCloneExpr(argNode, addFlags, deepVarNum, deepVarVal);
+        *argsTail            = gtNewCallArgs(copyArgNode);
+
+        if (tree->gtRetBufArg == &use)
+        {
+            // Set the return buffer arg, if any.
+            assert(copy->gtRetBufArg == nullptr);
+            copy->gtRetBufArg = *argsTail;
+        }
+
+        argsTail = &((*argsTail)->NextRef());
     }
 
     argsTail = &copy->gtCallLateArgs;
     for (GenTreeCall::Use& use : tree->LateArgs())
     {
-        *argsTail = gtNewCallArgs(gtCloneExpr(use.GetNode(), addFlags, deepVarNum, deepVarVal));
-        argsTail  = &((*argsTail)->NextRef());
+        GenTree* argNode     = use.GetNode();
+        GenTree* copyArgNode = gtCloneExpr(argNode, addFlags, deepVarNum, deepVarVal);
+        *argsTail            = gtNewCallArgs(copyArgNode);
+
+        if (tree->gtRetBufArg == &use)
+        {
+            // Set the return buffer arg, if any.
+            assert(copy->gtRetBufArg == nullptr);
+            copy->gtRetBufArg = *argsTail;
+        }
+
+        argsTail = &((*argsTail)->NextRef());
     }
+
+    // Either there was not return buffer for the "tree" or else we successfully set the
+    // return buffer in the copy.
+    assert((tree->gtRetBufArg == nullptr) || (copy->gtRetBufArg != nullptr));
 
     // The call sig comes from the EE and doesn't change throughout the compilation process, meaning
     // we only really need one physical copy of it. Therefore a shallow pointer copy will suffice.
@@ -9178,7 +9304,7 @@ void Compiler::gtDispZeroFieldSeq(GenTree* tree)
         if (map->Lookup(tree, &fldSeq))
         {
             printf(" Zero");
-            gtDispFieldSeq(fldSeq);
+            gtDispAnyFieldSeq(fldSeq);
         }
     }
 }
@@ -9682,6 +9808,35 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                         layout = varDsc->GetLayout();
                     }
                 }
+                else if (tree->OperIs(GT_INDEX))
+                {
+                    GenTreeIndex*        asInd  = tree->AsIndex();
+                    CORINFO_CLASS_HANDLE clsHnd = asInd->gtStructElemClass;
+                    if (clsHnd != nullptr)
+                    {
+                        // We could create a layout with `typGetObjLayout(asInd->gtStructElemClass)` but we
+                        // don't want to affect the layout table.
+                        const unsigned  classSize      = info.compCompHnd->getClassSize(clsHnd);
+                        const char16_t* shortClassName = eeGetShortClassName(clsHnd);
+                        printf("<%S, %u>", shortClassName, classSize);
+                    }
+                }
+                else if (tree->OperIsIndir())
+                {
+                    ArrayInfo arrInfo;
+                    if (TryGetArrayInfo(tree->AsIndir(), &arrInfo))
+                    {
+                        if (varTypeIsStruct(arrInfo.m_elemType))
+                        {
+                            CORINFO_CLASS_HANDLE clsHnd = arrInfo.m_elemStructType;
+                            // We could create a layout with `typGetObjLayout(asInd->gtStructElemClass)` but we
+                            // don't want to affect the layout table.
+                            const unsigned  classSize      = info.compCompHnd->getClassSize(clsHnd);
+                            const char16_t* shortClassName = eeGetShortClassName(clsHnd);
+                            printf("<%S, %u>", shortClassName, classSize);
+                        }
+                    }
+                }
 
                 if (layout != nullptr)
                 {
@@ -9696,7 +9851,10 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 {
                     printf("(AX)"); // Variable has address exposed.
                 }
-
+                if (varDsc->IsHiddenBufferStructArg())
+                {
+                    printf("(RB)"); // Variable is hidden return buffer
+                }
                 if (varDsc->lvUnusedStruct)
                 {
                     assert(varDsc->lvPromoted);
@@ -9761,10 +9919,10 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
 
 #if FEATURE_MULTIREG_RET
 //----------------------------------------------------------------------------------
-// gtDispRegCount: determine how many registers to print for a multi-reg node
+// gtDispMultiRegCount: determine how many registers to print for a multi-reg node
 //
 // Arguments:
-//    tree  -  Gentree node whose registers we want to print
+//    tree  -  GenTree node whose registers we want to print
 //
 // Return Value:
 //    The number of registers to print
@@ -9775,13 +9933,13 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
 //    and for CALL, it will return 0 if the ReturnTypeDesc hasn't yet been initialized.
 //    But we want to print all register positions.
 //
-unsigned Compiler::gtDispRegCount(GenTree* tree)
+unsigned Compiler::gtDispMultiRegCount(GenTree* tree)
 {
     if (tree->IsCopyOrReload())
     {
         // GetRegCount() will return only the number of valid regs for COPY or RELOAD,
         // but we want to print all positions, so we get the reg count for op1.
-        return gtDispRegCount(tree->gtGetOp1());
+        return gtDispMultiRegCount(tree->gtGetOp1());
     }
     else if (!tree->IsMultiRegNode())
     {
@@ -9789,10 +9947,6 @@ unsigned Compiler::gtDispRegCount(GenTree* tree)
         // even if its op1 is not multireg.
         // Note that this method won't be called for non-register-producing nodes.
         return 1;
-    }
-    else if (tree->IsMultiRegLclVar())
-    {
-        return tree->AsLclVar()->GetFieldCount(this);
     }
     else if (tree->OperIs(GT_CALL))
     {
@@ -9806,7 +9960,7 @@ unsigned Compiler::gtDispRegCount(GenTree* tree)
     }
     else
     {
-        return tree->GetMultiRegCount();
+        return tree->GetMultiRegCount(this);
     }
 }
 #endif // FEATURE_MULTIREG_RET
@@ -9837,7 +9991,7 @@ void Compiler::gtDispRegVal(GenTree* tree)
     {
         // 0th reg is GetRegNum(), which is already printed above.
         // Print the remaining regs of a multi-reg node.
-        unsigned regCount = gtDispRegCount(tree);
+        unsigned regCount = gtDispMultiRegCount(tree);
 
         // For some nodes, e.g. COPY, RELOAD or CALL, we may not have valid regs for all positions.
         for (unsigned i = 1; i < regCount; ++i)
@@ -10123,11 +10277,11 @@ void Compiler::gtDispClassLayout(ClassLayout* layout, var_types type)
     }
     else if (varTypeIsSIMD(type))
     {
-        printf("<%s>", layout->GetClassName());
+        printf("<%S>", layout->GetShortClassName());
     }
     else
     {
-        printf("<%s, %u>", layout->GetClassName(), layout->GetSize());
+        printf("<%S, %u>", layout->GetShortClassName(), layout->GetSize());
     }
 }
 
@@ -10295,9 +10449,28 @@ void Compiler::gtDispConst(GenTree* tree)
     }
 }
 
+//------------------------------------------------------------------------
+// gtDispFieldSeq: "gtDispFieldSeq" that also prints "<NotAField>".
+//
+// Useful for printing zero-offset field sequences.
+//
+void Compiler::gtDispAnyFieldSeq(FieldSeqNode* fieldSeq)
+{
+    if (fieldSeq == FieldSeqStore::NotAField())
+    {
+        printf(" Fseq<NotAField>");
+        return;
+    }
+
+    gtDispFieldSeq(fieldSeq);
+}
+
+//------------------------------------------------------------------------
+// gtDispFieldSeq: Print out the fields in this field sequence.
+//
 void Compiler::gtDispFieldSeq(FieldSeqNode* pfsn)
 {
-    if (pfsn == FieldSeqStore::NotAField() || (pfsn == nullptr))
+    if ((pfsn == nullptr) || (pfsn == FieldSeqStore::NotAField()))
     {
         return;
     }
@@ -10307,7 +10480,7 @@ void Compiler::gtDispFieldSeq(FieldSeqNode* pfsn)
     while (pfsn != nullptr)
     {
         assert(pfsn != FieldSeqStore::NotAField()); // Can't exist in a field sequence list except alone
-        CORINFO_FIELD_HANDLE fldHnd = pfsn->m_fieldHnd;
+        CORINFO_FIELD_HANDLE fldHnd = pfsn->GetFieldHandleValue();
         // First check the "pseudo" field handles...
         if (fldHnd == FieldSeqStore::FirstElemPseudoField)
         {
@@ -10321,7 +10494,7 @@ void Compiler::gtDispFieldSeq(FieldSeqNode* pfsn)
         {
             printf("%s", eeGetFieldName(fldHnd));
         }
-        pfsn = pfsn->m_next;
+        pfsn = pfsn->GetNext();
         if (pfsn != nullptr)
         {
             printf(", ");
@@ -10758,6 +10931,9 @@ void Compiler::gtDispTree(GenTree*     tree,
                     case GenTreePutArgStk::Kind::RepInstr:
                         printf(" (RepInstr)");
                         break;
+                    case GenTreePutArgStk::Kind::PartialRepInstr:
+                        printf(" (PartialRepInstr)");
+                        break;
                     case GenTreePutArgStk::Kind::Unroll:
                         printf(" (Unroll)");
                         break;
@@ -10870,6 +11046,12 @@ void Compiler::gtDispTree(GenTree*     tree,
                     break;
                 case NI_System_Math_Log10:
                     printf(" log10");
+                    break;
+                case NI_System_Math_Max:
+                    printf(" max");
+                    break;
+                case NI_System_Math_Min:
+                    printf(" min");
                     break;
                 case NI_System_Math_Pow:
                     printf(" pow");
@@ -12001,7 +12183,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         if ((cls1Hnd != NO_CLASS_HANDLE) && (cls2Hnd != NO_CLASS_HANDLE))
         {
             JITDUMP("Asking runtime to compare %p (%s) and %p (%s) for equality\n", dspPtr(cls1Hnd),
-                    info.compCompHnd->getClassName(cls1Hnd), dspPtr(cls2Hnd), info.compCompHnd->getClassName(cls2Hnd));
+                    eeGetClassName(cls1Hnd), dspPtr(cls2Hnd), eeGetClassName(cls2Hnd));
             TypeCompareState s = info.compCompHnd->compareTypesForEquality(cls1Hnd, cls2Hnd);
 
             if (s != TypeCompareState::May)
@@ -15352,6 +15534,17 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
             blkNode = AsOp()->gtOp1->AsBlk();
         }
     }
+    else if (OperIs(GT_CALL))
+    {
+        GenTree* retBufArg = AsCall()->GetLclRetBufArgNode();
+        if (retBufArg == nullptr)
+        {
+            return false;
+        }
+
+        unsigned size = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
+        return retBufArg->DefinesLocalAddr(comp, size, pLclVarTree, pIsEntire);
+    }
     else if (OperIsBlk())
     {
         blkNode = this->AsBlk();
@@ -15735,7 +15928,12 @@ bool GenTree::canBeContained() const
 {
     assert(OperIsLIR());
 
-    if (gtHasReg())
+    if (IsMultiRegLclVar())
+    {
+        return false;
+    }
+
+    if (gtHasReg(nullptr))
     {
         return false;
     }
@@ -16002,10 +16200,11 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
 //------------------------------------------------------------------------
 // IsFieldAddr: Is "this" a static or class field address?
 //
-// Recognizes the following three patterns:
-//    this: [Zero FldSeq]
-//    this: ADD(baseAddr, CONST FldSeq)
-//    this: ADD(CONST FldSeq, baseAddr)
+// Recognizes the following patterns:
+//    this: ADD(baseAddr, CONST [FldSeq])
+//    this: ADD(CONST [FldSeq], baseAddr)
+//    this: CONST [FldSeq]
+//    this: Zero [FldSeq]
 //
 // Arguments:
 //    comp      - the Compiler object
@@ -16030,7 +16229,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
     *pFldSeq   = FieldSeqStore::NotAField();
 
     GenTree*      baseAddr = nullptr;
-    FieldSeqNode* fldSeq   = nullptr;
+    FieldSeqNode* fldSeq   = FieldSeqStore::NotAField();
 
     if (OperIs(GT_ADD))
     {
@@ -16048,11 +16247,18 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
             fldSeq   = AsOp()->gtOp2->AsIntCon()->gtFieldSeq;
             baseAddr = AsOp()->gtOp1;
         }
-
-        if (baseAddr != nullptr)
+        else
         {
-            assert(!baseAddr->TypeIs(TYP_REF) || !comp->GetZeroOffsetFieldMap()->Lookup(baseAddr));
+            return false;
         }
+
+        assert(!baseAddr->TypeIs(TYP_REF) || !comp->GetZeroOffsetFieldMap()->Lookup(baseAddr));
+    }
+    else if (IsCnsIntOrI() && IsIconHandle(GTF_ICON_STATIC_HDL))
+    {
+        assert(!comp->GetZeroOffsetFieldMap()->Lookup(this) && (AsIntCon()->gtFieldSeq != nullptr));
+        fldSeq   = AsIntCon()->gtFieldSeq;
+        baseAddr = this;
     }
     else if (comp->GetZeroOffsetFieldMap()->Lookup(this, &fldSeq))
     {
@@ -16060,35 +16266,30 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
     }
     else
     {
-        // TODO-VNTypes-CQ: recognize the simple GTF_ICON_STATIC_HDL case here. It
-        // is not recognized right now to preserve previous behavior of this method.
         return false;
     }
 
-    // If we don't have a valid sequence, bail. Note that above we have overloaded an empty
-    // ("nullptr") sequence as "NotAField", as that's the way it is treated on tree nodes.
-    if ((fldSeq == nullptr) || (fldSeq == FieldSeqStore::NotAField()) || fldSeq->IsPseudoField())
+    assert((fldSeq != nullptr) && (baseAddr != nullptr));
+
+    if ((fldSeq == FieldSeqStore::NotAField()) || fldSeq->IsPseudoField())
     {
         return false;
     }
-
-    assert(baseAddr != nullptr);
 
     // The above screens out obviously invalid cases, but we have more checks to perform. The
     // sequence returned from this method *must* start with either a class (NOT struct) field
     // or a static field. To avoid the expense of calling "getFieldClass" here, we will instead
     // rely on the invariant that TYP_REF base addresses can never appear for struct fields - we
     // will effectively treat such cases ("possible" in unsafe code) as undefined behavior.
-    if (comp->eeIsFieldStatic(fldSeq->GetFieldHandle()))
+    if (fldSeq->IsStaticField())
     {
-        // TODO-VNTypes: this code is out of sync w.r.t. boxed statics that are numbered with
-        // VNF_PtrToStatic and treated as "simple" while here we treat them as "complex".
+        // For shared statics, we must encode the logical instantiation argument.
+        if (fldSeq->IsSharedStaticField())
+        {
+            *pBaseAddr = baseAddr;
+        }
 
-        // TODO-VNTypes: we will always return the "baseAddr" here for now, but strictly speaking,
-        // we only need to do that if we have a shared field, to encode the logical "instantiation"
-        // argument. In all other cases, this serves no purpose and just leads to redundant maps.
-        *pBaseAddr = baseAddr;
-        *pFldSeq   = fldSeq;
+        *pFldSeq = fldSeq;
         return true;
     }
 
@@ -16456,17 +16657,12 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                         }
                         if (fieldSeq != nullptr)
                         {
-                            while (fieldSeq->m_next != nullptr)
-                            {
-                                fieldSeq = fieldSeq->m_next;
-                            }
+                            fieldSeq = fieldSeq->GetTail();
+
                             if (fieldSeq != FieldSeqStore::NotAField() && !fieldSeq->IsPseudoField())
                             {
-                                CORINFO_FIELD_HANDLE fieldHnd = fieldSeq->m_fieldHnd;
-                                CorInfoType fieldCorType      = info.compCompHnd->getFieldType(fieldHnd, &structHnd);
-                                // With unsafe code and type casts
-                                // this can return a primitive type and have nullptr for structHnd
-                                // see runtime/issues/38541
+                                // Note we may have a primitive here (and correctly fail to obtain the handle)
+                                eeGetFieldType(fieldSeq->GetFieldHandle(), &structHnd);
                             }
                         }
                     }
@@ -16738,6 +16934,8 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 }
                 else if (base->OperGet() == GT_ADD)
                 {
+                    // TODO-VNTypes: use "IsFieldAddr" here instead.
+
                     // This could be a static field access.
                     //
                     // See if op1 is a static field base helper call
@@ -16753,20 +16951,15 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
 
                         if (fieldSeq != nullptr)
                         {
-                            while (fieldSeq->m_next != nullptr)
-                            {
-                                fieldSeq = fieldSeq->m_next;
-                            }
-
-                            assert(!fieldSeq->IsPseudoField());
+                            fieldSeq = fieldSeq->GetTail();
 
                             // No benefit to calling gtGetFieldClassHandle here, as
                             // the exact field being accessed can vary.
-                            CORINFO_FIELD_HANDLE fieldHnd     = fieldSeq->m_fieldHnd;
-                            CORINFO_CLASS_HANDLE fieldClass   = nullptr;
-                            CorInfoType          fieldCorType = info.compCompHnd->getFieldType(fieldHnd, &fieldClass);
+                            CORINFO_FIELD_HANDLE fieldHnd   = fieldSeq->GetFieldHandle();
+                            CORINFO_CLASS_HANDLE fieldClass = NO_CLASS_HANDLE;
+                            var_types            fieldType  = eeGetFieldType(fieldHnd, &fieldClass);
 
-                            assert(fieldCorType == CORINFO_TYPE_CLASS);
+                            assert(fieldType == TYP_REF);
                             objClass = fieldClass;
                         }
                     }
@@ -17120,18 +17313,18 @@ void GenTree::ParseArrayAddress(
             noway_assert(!"fldSeqIter is NotAField() in ParseArrayAddress");
         }
 
-        if (!FieldSeqStore::IsPseudoField(fldSeqIter->m_fieldHnd))
+        if (!FieldSeqStore::IsPseudoField(fldSeqIter->GetFieldHandleValue()))
         {
             if (*pFldSeq == nullptr)
             {
                 *pFldSeq = fldSeqIter;
             }
             CORINFO_CLASS_HANDLE fldCls = nullptr;
-            noway_assert(fldSeqIter->m_fieldHnd != nullptr);
-            CorInfoType cit = comp->info.compCompHnd->getFieldType(fldSeqIter->m_fieldHnd, &fldCls);
+            noway_assert(fldSeqIter->GetFieldHandle() != NO_FIELD_HANDLE);
+            CorInfoType cit = comp->info.compCompHnd->getFieldType(fldSeqIter->GetFieldHandle(), &fldCls);
             fieldOffsets += comp->compGetTypeSize(cit, fldCls);
         }
-        fldSeqIter = fldSeqIter->m_next;
+        fldSeqIter = fldSeqIter->GetNext();
     }
 
     // Is there some portion of the "offset" beyond the first-elem offset and the struct field suffix we just computed?
@@ -17493,16 +17686,16 @@ void GenTree::LabelIndex(Compiler* comp, bool isConst)
 // Note that the value of the below field doesn't matter; it exists only to provide a distinguished address.
 //
 // static
-FieldSeqNode FieldSeqStore::s_notAField(nullptr, nullptr);
+FieldSeqNode FieldSeqStore::s_notAField(nullptr, nullptr, FieldSeqNode::FieldKind::Instance);
 
 // FieldSeqStore methods.
 FieldSeqStore::FieldSeqStore(CompAllocator alloc) : m_alloc(alloc), m_canonMap(new (alloc) FieldSeqNodeCanonMap(alloc))
 {
 }
 
-FieldSeqNode* FieldSeqStore::CreateSingleton(CORINFO_FIELD_HANDLE fieldHnd)
+FieldSeqNode* FieldSeqStore::CreateSingleton(CORINFO_FIELD_HANDLE fieldHnd, FieldSeqNode::FieldKind fieldKind)
 {
-    FieldSeqNode  fsn(fieldHnd, nullptr);
+    FieldSeqNode  fsn(fieldHnd, nullptr, fieldKind);
     FieldSeqNode* res = nullptr;
     if (m_canonMap->Lookup(fsn, &res))
     {
@@ -17537,8 +17730,8 @@ FieldSeqNode* FieldSeqStore::Append(FieldSeqNode* a, FieldSeqNode* b)
         // Extremely special case for ConstantIndex pseudo-fields -- appending consecutive such
         // together collapse to one.
     }
-    else if (a->m_next == nullptr && a->m_fieldHnd == ConstantIndexPseudoField &&
-             b->m_fieldHnd == ConstantIndexPseudoField)
+    else if (a->GetNext() == nullptr && a->GetFieldHandleValue() == ConstantIndexPseudoField &&
+             b->GetFieldHandleValue() == ConstantIndexPseudoField)
     {
         return b;
     }
@@ -17547,8 +17740,8 @@ FieldSeqNode* FieldSeqStore::Append(FieldSeqNode* a, FieldSeqNode* b)
         // We should never add a duplicate FieldSeqNode
         assert(a != b);
 
-        FieldSeqNode* tmp = Append(a->m_next, b);
-        FieldSeqNode  fsn(a->m_fieldHnd, tmp);
+        FieldSeqNode* tmp = Append(a->GetNext(), b);
+        FieldSeqNode  fsn(a->GetFieldHandleValue(), tmp, a->GetKind());
         FieldSeqNode* res = nullptr;
         if (m_canonMap->Lookup(fsn, &res))
         {
@@ -17573,19 +17766,38 @@ CORINFO_FIELD_HANDLE FieldSeqStore::FirstElemPseudoField =
 CORINFO_FIELD_HANDLE FieldSeqStore::ConstantIndexPseudoField =
     (CORINFO_FIELD_HANDLE)&FieldSeqStore::ConstantIndexPseudoFieldStruct;
 
-bool FieldSeqNode::IsFirstElemFieldSeq()
+FieldSeqNode::FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, FieldSeqNode* next, FieldKind fieldKind) : m_next(next)
 {
-    return m_fieldHnd == FieldSeqStore::FirstElemPseudoField;
+    uintptr_t handleValue = reinterpret_cast<uintptr_t>(fieldHnd);
+
+    assert((handleValue & FIELD_KIND_MASK) == 0);
+    m_fieldHandleAndKind = handleValue | static_cast<uintptr_t>(fieldKind);
+
+    if (!FieldSeqStore::IsPseudoField(fieldHnd) && (fieldHnd != NO_FIELD_HANDLE))
+    {
+        assert(JitTls::GetCompiler()->eeIsFieldStatic(fieldHnd) == IsStaticField());
+    }
+    else
+    {
+        // Use the default for pseudo-fields.
+        assert(fieldKind == FieldKind::Instance);
+    }
 }
 
-bool FieldSeqNode::IsConstantIndexFieldSeq()
+bool FieldSeqNode::IsFirstElemFieldSeq() const
 {
-    return m_fieldHnd == FieldSeqStore::ConstantIndexPseudoField;
+    return GetFieldHandleValue() == FieldSeqStore::FirstElemPseudoField;
+}
+
+bool FieldSeqNode::IsConstantIndexFieldSeq() const
+{
+    return GetFieldHandleValue() == FieldSeqStore::ConstantIndexPseudoField;
 }
 
 bool FieldSeqNode::IsPseudoField() const
 {
-    return m_fieldHnd == FieldSeqStore::FirstElemPseudoField || m_fieldHnd == FieldSeqStore::ConstantIndexPseudoField;
+    return (GetFieldHandleValue() == FieldSeqStore::FirstElemPseudoField) ||
+           (GetFieldHandleValue() == FieldSeqStore::ConstantIndexPseudoField);
 }
 
 #ifdef FEATURE_SIMD
@@ -20718,7 +20930,8 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
     else if (varTypeIsFloating(simdBaseType))
     {
         // var tmp1 = op1.ToVector128Unsafe();
-        // return AdvSimd.Arm64.ConvertToSingleLower(tmp1);
+        // var tmp2 = AdvSimd.InsertScalar(tmp1, op2);
+        // return AdvSimd.Arm64.ConvertToSingleLower(tmp2);
 
         CorInfoType tmp2BaseJitType = CORINFO_TYPE_DOUBLE;
 
@@ -20733,8 +20946,9 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
     else
     {
         // var tmp1 = op1.ToVector128Unsafe();
-        // var tmp2 = AdvSimd.InsertScalar(tmp1.AsUInt64(), 1, op2.AsUInt64());
-        // return AdvSimd.ExtractNarrowingUpper(tmp2).As<T>();
+        // var tmp2 = AdvSimd.InsertScalar(tmp1.AsUInt64(), 1, op2.AsUInt64()).As<T>(); - signed integer use int64,
+        // unsigned integer use uint64
+        // return AdvSimd.ExtractNarrowingLower(tmp2);
 
         CorInfoType tmp2BaseJitType = varTypeIsSigned(simdBaseType) ? CORINFO_TYPE_LONG : CORINFO_TYPE_ULONG;
 
@@ -21496,7 +21710,7 @@ GenTree* Compiler::gtNewSimdZeroNode(var_types   type,
 #if defined(TARGET_XARCH)
     intrinsic = (simdSize == 32) ? NI_Vector256_get_Zero : NI_Vector128_get_Zero;
 #elif defined(TARGET_ARM64)
-    intrinsic     = (simdSize == 16) ? NI_Vector128_get_Zero : NI_Vector64_get_Zero;
+    intrinsic     = (simdSize > 8) ? NI_Vector128_get_Zero : NI_Vector64_get_Zero;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -21891,14 +22105,14 @@ void ReturnTypeDesc::InitializeLongReturnType()
 }
 
 //-------------------------------------------------------------------
-// GetABIReturnReg:  Return ith return register as per target ABI
+// GetABIReturnReg:  Return i'th return register as per target ABI
 //
 // Arguments:
 //     idx   -   Index of the return register.
 //               The first return register has an index of 0 and so on.
 //
 // Return Value:
-//     Returns ith return register as per target ABI.
+//     Returns i'th return register as per target ABI.
 //
 // Notes:
 //     x86 and ARM return long in multiple registers.

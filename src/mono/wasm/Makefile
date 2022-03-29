@@ -38,6 +38,7 @@ EMCC=source $(EMSDK_PATH)/emsdk_env.sh 2>/dev/null && emcc
 	cd $(EMSDK_LOCAL_PATH) && git checkout $(EMSCRIPTEN_VERSION)
 	cd $(EMSDK_LOCAL_PATH) && ./emsdk install $(EMSCRIPTEN_VERSION)
 	cd $(EMSDK_LOCAL_PATH) && ./emsdk activate $(EMSCRIPTEN_VERSION)
+	python3 ./sanitize.py $(EMSDK_PATH)
 	touch $@
 
 provision-wasm: .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION)
@@ -129,9 +130,9 @@ submit-tests-helix:
 
 run-debugger-tests:
 	if [ ! -z "$(TEST_FILTER)" ]; then \
-		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) --filter FullyQualifiedName~$(TEST_FILTER) $(TEST_ARGS); \
+		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) --filter "Category!=failing&FullyQualifiedName~$(TEST_FILTER)" $(TEST_ARGS); \
 	else \
-		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) $(TEST_ARGS); \
+		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) --filter "Category!=failing" $(TEST_ARGS); \
 	fi
 
 build-dbg-proxy:

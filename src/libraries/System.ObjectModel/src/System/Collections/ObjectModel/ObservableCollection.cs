@@ -80,9 +80,6 @@ namespace System.Collections.ObjectModel
         /// <summary>
         /// Occurs when the collection changes, either by adding or removing an item.
         /// </summary>
-        /// <remarks>
-        /// see <seealso cref="INotifyCollectionChanged"/>
-        /// </remarks>
         [field: NonSerialized]
         public virtual event NotifyCollectionChangedEventHandler? CollectionChanged;
 

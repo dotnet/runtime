@@ -117,13 +117,19 @@ jobs:
       - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
       - src/mono/mono/*
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
+      - eng/testing/workloads-testing.targets
       - eng/Version.Details.xml
+      - eng/Versions.props
       - src/mono/wasm/emscripten-version.txt
     - subset: wasmdebuggertests
       include:
       - src/mono/wasm/debugger/*
       - src/mono/wasm/runtime/*
       - src/mono/mono/*
+    - subset: allwasm
+      include:
+      - eng/Version.Details.xml
+      - src/mono/wasm/emscripten-version.txt
 
     - ${{ if ne(parameters.extraSubsets, '') }}:
       - ${{ parameters.extraSubsets }}

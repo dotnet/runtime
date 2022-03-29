@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -10,6 +9,7 @@ using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 
 namespace System.Text.Json
 {
@@ -24,14 +24,30 @@ namespace System.Text.Json
         // The global list of built-in converters that override CanConvert().
         private static JsonConverter[]? s_defaultFactoryConverters;
 
-        // The cached converters (custom or built-in).
-        private readonly ConcurrentDictionary<Type, JsonConverter?> _converters = new ConcurrentDictionary<Type, JsonConverter?>();
+        // Stores the JsonTypeInfo factory, which requires unreferenced code and must be rooted by the reflection-based serializer.
+        private static Func<Type, JsonSerializerOptions, JsonTypeInfo>? s_typeInfoCreationFunc;
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        private void RootBuiltInConverters()
+        private static void RootReflectionSerializerDependencies()
         {
-            s_defaultSimpleConverters = GetDefaultSimpleConverters();
-            s_defaultFactoryConverters = new JsonConverter[]
+            // s_typeInfoCreationFunc is the last field assigned.
+            // Use it as the sentinel to ensure that all dependencies are initialized.
+            if (Volatile.Read(ref s_typeInfoCreationFunc) is null)
+            {
+                s_defaultSimpleConverters = GetDefaultSimpleConverters();
+                s_defaultFactoryConverters = GetDefaultFactoryConverters();
+                // Explicitly ensure that the previous fields are initialized along with this one.
+                Volatile.Write(ref s_typeInfoCreationFunc, CreateJsonTypeInfo);
+            }
+
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options) => new JsonTypeInfo(type, options);
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        private static JsonConverter[] GetDefaultFactoryConverters()
+        {
+            return new JsonConverter[]
             {
                 // Check for disallowed types.
                 new UnsupportedTypeConverterFactory(),
@@ -95,9 +111,9 @@ namespace System.Text.Json
         /// <remarks>
         /// Once serialization or deserialization occurs, the list cannot be modified.
         /// </remarks>
-        public IList<JsonConverter> Converters { get; }
+        public IList<JsonConverter> Converters => _converters;
 
-        internal JsonConverter DetermineConverter(Type? parentClassType, Type runtimePropertyType, MemberInfo? memberInfo)
+        internal JsonConverter GetConverterFromMember(Type? parentClassType, Type propertyType, MemberInfo? memberInfo)
         {
             JsonConverter converter = null!;
 
@@ -111,19 +127,19 @@ namespace System.Text.Json
 
                 if (converterAttribute != null)
                 {
-                    converter = GetConverterFromAttribute(converterAttribute, typeToConvert: runtimePropertyType, classTypeAttributeIsOn: parentClassType!, memberInfo);
+                    converter = GetConverterFromAttribute(converterAttribute, typeToConvert: propertyType, classTypeAttributeIsOn: parentClassType!, memberInfo);
                 }
             }
 
             if (converter == null)
             {
-                converter = GetConverterInternal(runtimePropertyType);
+                converter = GetConverterInternal(propertyType);
                 Debug.Assert(converter != null);
             }
 
             if (converter is JsonConverterFactory factory)
             {
-                converter = factory.GetConverterInternal(runtimePropertyType, this);
+                converter = factory.GetConverterInternal(propertyType, this);
 
                 // A factory cannot return null; GetConverterInternal checked for that.
                 Debug.Assert(converter != null);
@@ -137,10 +153,10 @@ namespace System.Text.Json
             //
             // We also throw to avoid passing an invalid argument to setters for nullable struct properties,
             // which would cause an InvalidProgramException when the generated IL is invoked.
-            if (runtimePropertyType.IsValueType && converter.IsValueType &&
-                (runtimePropertyType.IsNullableOfT() ^ converter.TypeToConvert.IsNullableOfT()))
+            if (propertyType.IsValueType && converter.IsValueType &&
+                (propertyType.IsNullableOfT() ^ converter.TypeToConvert.IsNullableOfT()))
             {
-                ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertMultipleTypes(runtimePropertyType, converter);
+                ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertMultipleTypes(propertyType, converter);
             }
 
             return converter;
@@ -163,26 +179,31 @@ namespace System.Text.Json
         [RequiresUnreferencedCode("Getting a converter for a type may require reflection which depends on unreferenced code.")]
         public JsonConverter GetConverter(Type typeToConvert!!)
         {
-            RootBuiltInConverters();
+            RootReflectionSerializerDependencies();
             return GetConverterInternal(typeToConvert);
         }
 
         internal JsonConverter GetConverterInternal(Type typeToConvert)
         {
-            Debug.Assert(typeToConvert != null);
-
-            if (_converters.TryGetValue(typeToConvert, out JsonConverter? converter))
+            // Only cache the value once (de)serialization has occurred since new converters can be added that may change the result.
+            if (_cachingContext != null)
             {
-                Debug.Assert(converter != null);
-                return converter;
+                return _cachingContext.GetOrAddConverter(typeToConvert);
             }
 
+            return GetConverterFromType(typeToConvert);
+        }
+
+        private JsonConverter GetConverterFromType(Type typeToConvert)
+        {
+            Debug.Assert(typeToConvert != null);
+
             // Priority 1: If there is a JsonSerializerContext, fetch the converter from there.
-            converter = _context?.GetTypeInfo(typeToConvert)?.PropertyInfoForTypeInfo?.ConverterBase;
+            JsonConverter? converter = _serializerContext?.GetTypeInfo(typeToConvert)?.PropertyInfoForTypeInfo?.ConverterBase;
 
             // Priority 2: Attempt to get custom converter added at runtime.
             // Currently there is not a way at runtime to override the [JsonConverter] when applied to a property.
-            foreach (JsonConverter item in Converters)
+            foreach (JsonConverter item in _converters)
             {
                 if (item.CanConvert(typeToConvert))
                 {
@@ -254,15 +275,6 @@ namespace System.Text.Json
                 ThrowHelper.ThrowInvalidOperationException_SerializationConverterNotCompatible(converter.GetType(), typeToConvert);
             }
 
-            // Only cache the value once (de)serialization has occurred since new converters can be added that may change the result.
-            if (_haveTypesBeenCreated)
-            {
-                // A null converter is allowed here and cached.
-
-                // Ignore failure case here in multi-threaded cases since the cached item will be equivalent.
-                _converters.TryAdd(typeToConvert, converter);
-            }
-
             return converter;
         }
 
@@ -314,7 +326,7 @@ namespace System.Text.Json
 
         internal bool TryGetDefaultSimpleConverter(Type typeToConvert, [NotNullWhen(true)] out JsonConverter? converter)
         {
-            if (_context == null && // For consistency do not return any default converters for
+            if (_serializerContext == null && // For consistency do not return any default converters for
                                     // options instances linked to a JsonSerializerContext,
                                     // even if the default converters might have been rooted.
                 s_defaultSimpleConverters != null &&

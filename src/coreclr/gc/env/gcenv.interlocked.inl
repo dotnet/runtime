@@ -17,6 +17,9 @@ __forceinline void Interlocked::ArmInterlockedOperationBarrier()
     // See PAL_ArmInterlockedOperationBarrier() in the PAL
     __sync_synchronize();
 #endif // HOST_ARM64
+#ifdef HOST_LOONGARCH64
+    __sync_synchronize();
+#endif //HOST_LOONGARCH64
 }
 #endif // !_MSC_VER
 

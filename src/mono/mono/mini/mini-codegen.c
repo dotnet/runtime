@@ -1436,6 +1436,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				continue;
 			}
 
+			gboolean need_assign = FALSE;
 			if (rs->ifree_mask & (regmask (dest_sreg))) {
 				if (is_global_ireg (sreg)) {
 					int k;
@@ -1454,8 +1455,8 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 						DEBUG (printf ("\tshortcut assignment of R%d to %s\n", sreg, mono_arch_regname (dest_sreg)));
 						assign_reg (cfg, rs, sreg, dest_sreg, 0);
 					} else if (val < -1) {
-						/* FIXME: */
-						g_assert_not_reached ();
+						/* sreg is spilled, it can be assigned to dest_sreg */
+						need_assign = TRUE;
 					} else {
 						/* Argument already in hard reg, need to copy */
 						MonoInst *copy = create_copy_ins (cfg, bb, tmp, dest_sreg, val, NULL, ip, 0);
@@ -1476,9 +1477,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 			} else {
 				gboolean need_spill = TRUE;
-				gboolean need_assign = TRUE;
 				int k;
 
+				need_assign = TRUE;
 				dreg_mask &= ~ (regmask (dest_sreg));
 				for (k = 0; k < num_sregs; ++k) {
 					if (k != j)
@@ -1538,18 +1539,17 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (need_spill) {
 					free_up_hreg (cfg, bb, tmp, ins, dest_sreg, 0);
 				}
+			}
+			if (need_assign) {
+				if (rs->vassign [sreg] < -1) {
+					int spill;
 
-				if (need_assign) {
-					if (rs->vassign [sreg] < -1) {
-						int spill;
-
-						/* Need to emit a spill store */
-						spill = - rs->vassign [sreg] - 1;
-						create_spilled_store (cfg, bb, spill, dest_sreg, sreg, tmp, NULL, ins, bank);
-					}
-					/* force-set sreg2 */
-					assign_reg (cfg, rs, sregs [j], dest_sreg, 0);
+					/* Need to emit a spill store */
+					spill = - rs->vassign [sreg] - 1;
+					create_spilled_store (cfg, bb, spill, dest_sreg, sreg, tmp, NULL, ins, bank);
 				}
+				/* force-set sreg */
+				assign_reg (cfg, rs, sregs [j], dest_sreg, 0);
 			}
 			sregs [j] = dest_sreg;
 		}
@@ -2737,7 +2737,6 @@ mini_type_is_hfa (MonoType *t, int *out_nfields, int *out_esize)
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 		ftype = mono_field_get_type_internal (field);
-		ftype = mini_native_type_replace_type (ftype);
 
 		if (MONO_TYPE_ISSTRUCT (ftype)) {
 			int nested_nfields, nested_esize;

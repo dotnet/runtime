@@ -19,6 +19,7 @@ using Microsoft.CodeAnalysis.Scripting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
+using System.Globalization;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -212,7 +213,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
 
-            private string ConvertJSToCSharpLocalVariableAssignment(string idName, JToken variable)
+            private static string ConvertJSToCSharpLocalVariableAssignment(string idName, JToken variable)
             {
                 string typeRet;
                 object valueRet;
@@ -230,8 +231,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                         typeRet = "string";
                         break;
                     }
+                    case "symbol":
+                     {
+                         valueRet = $"'{value?.Value<char>()}'";
+                         typeRet = "char";
+                         break;
+                     }
                     case "number":
-                        valueRet = value?.Value<double>();
+                        //casting to double and back to string would loose precision; so casting straight to string
+                        valueRet = value?.Value<string>();
                         typeRet = "double";
                         break;
                     case "boolean":
@@ -390,17 +398,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
 
-            try {
+            try
+            {
                 var newScript = script.ContinueWith(
                     string.Join("\n", findVarNMethodCall.variableDefinitions) + "\nreturn " + syntaxTree.ToString());
 
                 var state = await newScript.RunAsync(cancellationToken: token);
-
-                return JObject.FromObject(ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue.GetType()));
+                return JObject.FromObject(ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue?.GetType()));
             }
-            catch (Exception)
+            catch (CompilationErrorException cee)
             {
-                throw new ReturnAsErrorException($"Cannot evaluate '{expression}'.", "CompilationError");
+                throw new ReturnAsErrorException($"Cannot evaluate '{expression}': {cee.Message}", "CompilationError");
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Internal Error: Unable to run {expression}, error: {ex.Message}.", ex);
             }
         }
 
@@ -415,11 +427,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static object ConvertCSharpToJSType(object v, Type type)
         {
             if (v == null)
-                return new { type = "object", subtype = "null", className = type.ToString(), description = type.ToString() };
+                return new { type = "object", subtype = "null", className = type?.ToString(), description = type?.ToString() };
             if (v is string s)
                 return new { type = "string", value = s, description = s };
+            if (v is char c)
+                return new { type = "symbol", value = c, description = $"{(int)c} '{c}'" };
             if (NumericTypes.Contains(v.GetType()))
-                return new { type = "number", value = v, description = v.ToString() };
+                return new { type = "number", value = v, description = Convert.ToDouble(v).ToString(CultureInfo.InvariantCulture) };
             if (v is JObject)
                 return v;
             return new { type = "object", value = v, description = v.ToString(), className = type.ToString() };
@@ -429,22 +443,41 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class ReturnAsErrorException : Exception
     {
-        public Result Error { get; }
-        public ReturnAsErrorException(JObject error)
+        private Result _error;
+        public Result Error
+        {
+            get
+            {
+                _error.Value["exceptionDetails"]["stackTrace"] = StackTrace;
+                return _error;
+            }
+            set { }
+        }
+        public ReturnAsErrorException(JObject error) : base(error.ToString())
             => Error = Result.Err(error);
 
         public ReturnAsErrorException(string message, string className)
+            : base($"[{className}] {message}")
         {
-            Error = Result.Err(JObject.FromObject(new
+            var result = new
             {
-                result = new
+                type = "object",
+                subtype = "error",
+                description = message,
+                className
+            };
+            _error = Result.UserVisibleErr(JObject.FromObject(
+                new
                 {
-                    type = "object",
-                    subtype = "error",
-                    description = message,
-                    className
-                }
-            }));
+                    result = result,
+                    exceptionDetails = new
+                    {
+                        exception = result,
+                        stackTrace = StackTrace
+                    }
+                }));
         }
+
+        public override string ToString() => $"Error object: {Error}. {base.ToString()}";
     }
 }

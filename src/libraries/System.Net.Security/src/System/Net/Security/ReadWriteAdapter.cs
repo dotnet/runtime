@@ -7,69 +7,50 @@ using System.Threading.Tasks;
 
 namespace System.Net.Security
 {
+#pragma warning disable CA2252 // This API requires opting into preview features
     internal interface IReadWriteAdapter
     {
-        ValueTask<int> ReadAsync(Memory<byte> buffer);
-
-        ValueTask WriteAsync(byte[] buffer, int offset, int count);
-
-        Task WaitAsync(TaskCompletionSource<bool> waiter);
-
-        Task FlushAsync();
-
-        CancellationToken CancellationToken { get; }
+        static abstract ValueTask<int> ReadAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken);
+        static abstract ValueTask WriteAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken);
+        static abstract Task FlushAsync(Stream stream, CancellationToken cancellationToken);
+        static abstract Task WaitAsync(TaskCompletionSource<bool> waiter);
     }
+#pragma warning restore CA2252
 
     internal readonly struct AsyncReadWriteAdapter : IReadWriteAdapter
     {
-        private readonly Stream _stream;
+        public static ValueTask<int> ReadAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken) =>
+            stream.ReadAsync(buffer, cancellationToken);
 
-        public AsyncReadWriteAdapter(Stream stream, CancellationToken cancellationToken)
-        {
-            _stream = stream;
-            CancellationToken = cancellationToken;
-        }
+        public static ValueTask WriteAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            stream.WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
 
-        public ValueTask<int> ReadAsync(Memory<byte> buffer) =>
-            _stream.ReadAsync(buffer, CancellationToken);
+        public static Task FlushAsync(Stream stream, CancellationToken cancellationToken) => stream.FlushAsync(cancellationToken);
 
-        public ValueTask WriteAsync(byte[] buffer, int offset, int count) =>
-            _stream.WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), CancellationToken);
-
-        public Task WaitAsync(TaskCompletionSource<bool> waiter) => waiter.Task;
-
-        public Task FlushAsync() => _stream.FlushAsync(CancellationToken);
-
-        public CancellationToken CancellationToken { get; }
+        public static Task WaitAsync(TaskCompletionSource<bool> waiter) => waiter.Task;
     }
 
     internal readonly struct SyncReadWriteAdapter : IReadWriteAdapter
     {
-        private readonly Stream _stream;
+        public static ValueTask<int> ReadAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken) =>
+            new ValueTask<int>(stream.Read(buffer.Span));
 
-        public SyncReadWriteAdapter(Stream stream) => _stream = stream;
-
-        public ValueTask<int> ReadAsync(Memory<byte> buffer) =>
-            new ValueTask<int>(_stream.Read(buffer.Span));
-
-        public ValueTask WriteAsync(byte[] buffer, int offset, int count)
+        public static ValueTask WriteAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            _stream.Write(buffer, offset, count);
+            stream.Write(buffer, offset, count);
             return default;
         }
 
-        public Task WaitAsync(TaskCompletionSource<bool> waiter)
+        public static Task FlushAsync(Stream stream, CancellationToken cancellationToken)
+        {
+            stream.Flush();
+            return Task.CompletedTask;
+        }
+
+        public static Task WaitAsync(TaskCompletionSource<bool> waiter)
         {
             waiter.Task.GetAwaiter().GetResult();
             return Task.CompletedTask;
         }
-
-        public Task FlushAsync()
-        {
-            _stream.Flush();
-            return Task.CompletedTask;
-        }
-
-        public CancellationToken CancellationToken => default;
     }
 }

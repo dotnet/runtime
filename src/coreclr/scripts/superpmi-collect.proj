@@ -83,14 +83,18 @@
     <WorkItemCommand>$(Python) $(WorkItemCommand) -assemblies $(PmiAssembliesDirectory) -arch $(Architecture) -build_type $(BuildConfig) -core_root $(SuperPMIDirectory)</WorkItemCommand>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(CollectionName)' != 'benchmarks'">
+    <WorkItemTimeout>2:00</WorkItemTimeout>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(CollectionName)' == 'benchmarks'">
     <WorkItemCommand>$(Python) $(SuperPMIDirectory)/superpmi_benchmarks.py -performance_directory $(PerformanceDirectory) -superpmi_directory $(SuperPMIDirectory) -core_root $(SuperPMIDirectory) -arch $(Architecture)</WorkItemCommand>
+    <WorkItemTimeout>3:00</WorkItemTimeout>
   </PropertyGroup>
 
   <PropertyGroup>
     <EnableAzurePipelinesReporter>false</EnableAzurePipelinesReporter>
     <EnableXUnitReporter>false</EnableXUnitReporter>
-    <WorkItemTimeout>5:00</WorkItemTimeout>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">

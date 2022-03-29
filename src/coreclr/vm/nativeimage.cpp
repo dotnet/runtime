@@ -59,6 +59,7 @@ NativeImage::NativeImage(AssemblyBinder *pAssemblyBinder, PEImageLayout *pImageL
     m_pImageLayout = pImageLayout;
     m_fileName = imageFileName;
     m_eagerFixupsHaveRun = false;
+    m_readyToRunCodeDisabled = false;
 }
 
 void NativeImage::Initialize(READYTORUN_HEADER *pHeader, LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker)
@@ -125,7 +126,6 @@ NativeImage *NativeImage::Open(
         *isNewNativeImage = false;
         if (pExistingImage->GetAssemblyBinder() == pAssemblyBinder)
         {
-            pExistingImage->AddComponentAssemblyToCache(componentModule->GetAssembly());
             return pExistingImage;
         }
         else
@@ -245,32 +245,17 @@ NativeImage *NativeImage::Open(
         // No pre-existing image, new image has been stored in the map
         *isNewNativeImage = true;
         amTracker.SuppressRelease();
-        image->AddComponentAssemblyToCache(componentModule->GetAssembly());
         return image.Extract();
     }
     // Return pre-existing image if it was loaded into the same ALC, null otherwise
     *isNewNativeImage = false;
     if (pExistingImage->GetAssemblyBinder() == pAssemblyBinder)
     {
-        pExistingImage->AddComponentAssemblyToCache(componentModule->GetAssembly());
         return pExistingImage;
     }
     else
     {
         return nullptr;
-    }
-}
-#endif
-
-#ifndef DACCESS_COMPILE
-void NativeImage::AddComponentAssemblyToCache(Assembly *assembly)
-{
-    STANDARD_VM_CONTRACT;
-    
-    const AssemblyNameIndex *assemblyNameIndex = m_assemblySimpleNameToIndexMap.LookupPtr(assembly->GetSimpleName());
-    if (assemblyNameIndex != nullptr)
-    {
-        VolatileStore(&m_pNativeMetadataAssemblyRefMap[assemblyNameIndex->Index], assembly);
     }
 }
 #endif

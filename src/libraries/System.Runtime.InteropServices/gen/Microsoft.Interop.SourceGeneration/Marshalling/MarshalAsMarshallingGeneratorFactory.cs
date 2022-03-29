@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 
@@ -13,10 +14,9 @@ namespace Microsoft.Interop
         private static readonly VariantBoolMarshaller s_variantBool = new();
 
         private static readonly Utf16CharMarshaller s_utf16Char = new();
-        private static readonly Utf16StringMarshaller s_utf16String = new();
+        private static readonly IMarshallingGenerator s_utf16String = new PinnableManagedValueMarshaller(new Utf16StringMarshaller());
         private static readonly Utf8StringMarshaller s_utf8String = new();
         private static readonly AnsiStringMarshaller s_ansiString = new AnsiStringMarshaller(s_utf8String);
-        private static readonly PlatformDefinedStringMarshaller s_platformDefinedString = new PlatformDefinedStringMarshaller(s_utf16String, s_utf8String);
 
         private static readonly Forwarder s_forwarder = new();
         private static readonly BlittableMarshaller s_blittable = new();
@@ -77,7 +77,10 @@ namespace Microsoft.Interop
                     return s_blittable;
 
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: NoMarshallingInfo }:
-                    return s_winBool; // [Compat] Matching the default for the built-in runtime marshallers.
+                    throw new MarshallingNotSupportedException(info, context)
+                    {
+                        NotSupportedDetails = SR.MarshallingBoolAsUndefinedNotSupported
+                    };
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I1 or UnmanagedType.U1, _) }:
                     return s_byteBool;
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.U4 or UnmanagedType.Bool, _) }:
@@ -97,7 +100,7 @@ namespace Microsoft.Interop
                     {
                         throw new MarshallingNotSupportedException(info, context)
                         {
-                            NotSupportedDetails = Resources.SafeHandleByRefMustBeConcrete
+                            NotSupportedDetails = SR.SafeHandleByRefMustBeConcrete
                         };
                     }
                     return s_safeHandle;
@@ -116,7 +119,7 @@ namespace Microsoft.Interop
             }
         }
 
-        private IMarshallingGenerator CreateCharMarshaller(TypePositionInfo info, StubCodeContext context)
+        private static IMarshallingGenerator CreateCharMarshaller(TypePositionInfo info, StubCodeContext context)
         {
             MarshallingInfo marshalInfo = info.MarshallingAttributeInfo;
             if (marshalInfo is NoMarshallingInfo)
@@ -124,7 +127,7 @@ namespace Microsoft.Interop
                 // [Compat] Require explicit marshalling information.
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = Resources.MarshallingStringOrCharAsUndefinedNotSupported
+                    NotSupportedDetails = SR.MarshallingStringOrCharAsUndefinedNotSupported
                 };
             }
 
@@ -147,12 +150,7 @@ namespace Microsoft.Interop
                     case CharEncoding.Ansi:
                         throw new MarshallingNotSupportedException(info, context) // [Compat] ANSI is not supported for char
                         {
-                            NotSupportedDetails = string.Format(Resources.MarshallingCharAsSpecifiedCharSetNotSupported, CharSet.Ansi)
-                        };
-                    case CharEncoding.PlatformDefined:
-                        throw new MarshallingNotSupportedException(info, context) // [Compat] See conversion of CharSet.Auto.
-                        {
-                            NotSupportedDetails = string.Format(Resources.MarshallingCharAsSpecifiedCharSetNotSupported, CharSet.Auto)
+                            NotSupportedDetails = string.Format(SR.MarshallingCharAsSpecifiedCharSetNotSupported, CharSet.Ansi)
                         };
                 }
             }
@@ -160,7 +158,7 @@ namespace Microsoft.Interop
             throw new MarshallingNotSupportedException(info, context);
         }
 
-        private IMarshallingGenerator CreateStringMarshaller(TypePositionInfo info, StubCodeContext context)
+        private static IMarshallingGenerator CreateStringMarshaller(TypePositionInfo info, StubCodeContext context)
         {
             MarshallingInfo marshalInfo = info.MarshallingAttributeInfo;
             if (marshalInfo is NoMarshallingInfo)
@@ -168,7 +166,7 @@ namespace Microsoft.Interop
                 // [Compat] Require explicit marshalling information.
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = Resources.MarshallingStringOrCharAsUndefinedNotSupported
+                    NotSupportedDetails = SR.MarshallingStringOrCharAsUndefinedNotSupported
                 };
             }
 
@@ -196,8 +194,6 @@ namespace Microsoft.Interop
                         return s_utf16String;
                     case CharEncoding.Utf8:
                         return s_utf8String;
-                    case CharEncoding.PlatformDefined:
-                        return s_platformDefinedString;
                 }
             }
 

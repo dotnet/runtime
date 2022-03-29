@@ -6,12 +6,15 @@
 
 EVP_PKEY* CryptoNative_EvpPkeyCreate()
 {
+    ERR_clear_error();
     return EVP_PKEY_new();
 }
 
 EVP_PKEY* CryptoNative_EvpPKeyDuplicate(EVP_PKEY* currentKey, int32_t algId)
 {
     assert(currentKey != NULL);
+
+    ERR_clear_error();
 
     int currentAlgId = EVP_PKEY_get_base_id(currentKey);
 
@@ -67,6 +70,10 @@ void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey)
 
 int32_t CryptoNative_EvpPKeySize(EVP_PKEY* pkey)
 {
+    // This function is not expected to populate the error queue with
+    // any errors, but it's technically possible that an external
+    // ENGINE or OSSL_PROVIDER populate the queue in their implmenetation,
+    // but the calling code does not check for one.
     assert(pkey != NULL);
     return EVP_PKEY_get_size(pkey);
 }
@@ -78,6 +85,7 @@ int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey)
         return 0;
     }
 
+    // No error queue impact.
     return EVP_PKEY_up_ref(pkey);
 }
 
@@ -117,6 +125,8 @@ EVP_PKEY* CryptoNative_DecodeSubjectPublicKeyInfo(const uint8_t* buf, int32_t le
     assert(buf != NULL);
     assert(len > 0);
 
+    ERR_clear_error();
+
     EVP_PKEY* key = d2i_PUBKEY(NULL, &buf, len);
 
     if (key != NULL && !CheckKey(key, algId, EVP_PKEY_public_check))
@@ -132,6 +142,8 @@ EVP_PKEY* CryptoNative_DecodePkcs8PrivateKey(const uint8_t* buf, int32_t len, in
 {
     assert(buf != NULL);
     assert(len > 0);
+
+    ERR_clear_error();
 
     PKCS8_PRIV_KEY_INFO* p8info = d2i_PKCS8_PRIV_KEY_INFO(NULL, &buf, len);
 
@@ -198,6 +210,7 @@ int32_t CryptoNative_GetPkcs8PrivateKeySize(EVP_PKEY* pkey, int32_t* p8size)
         ERR_clear_error();
         ERR_put_error(ERR_GET_LIB(error), 0, ERR_R_MALLOC_FAILURE, file, line);
 
+        // Since ERR_peek_error() matches what exception is thrown, leave the OOM on top.
         return -1;
     }
 
@@ -211,6 +224,8 @@ int32_t CryptoNative_EncodePkcs8PrivateKey(EVP_PKEY* pkey, uint8_t* buf)
 {
     assert(pkey != NULL);
     assert(buf != NULL);
+
+    ERR_clear_error();
 
     PKCS8_PRIV_KEY_INFO* p8 = EVP_PKEY2PKCS8(pkey);
 
@@ -228,6 +243,7 @@ int32_t CryptoNative_GetSubjectPublicKeyInfoSize(EVP_PKEY* pkey)
 {
     assert(pkey != NULL);
 
+    ERR_clear_error();
     return i2d_PUBKEY(pkey, NULL);
 }
 
@@ -236,5 +252,6 @@ int32_t CryptoNative_EncodeSubjectPublicKeyInfo(EVP_PKEY* pkey, uint8_t* buf)
     assert(pkey != NULL);
     assert(buf != NULL);
 
+    ERR_clear_error();
     return i2d_PUBKEY(pkey, &buf);
 }

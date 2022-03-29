@@ -293,7 +293,7 @@ jobs:
 
 
     # Generate test wrappers. This is the step that examines issues.targets to exclude tests.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) buildtestwrappersonly $(logRootNameArg)Wrappers $(runtimeFlavorArgs) $(runtimeVariantArg) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) buildtestwrappersonly $(logRootNameArg)Wrappers $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg)
       displayName: Generate test wrappers
 
 
@@ -382,7 +382,8 @@ jobs:
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
           scenarios:
           - normal
-          - no_tiered_compilation
+          - ${{ if ne(parameters.runtimeFlavor, 'mono') }}: # tiered compilation isn't done on mono yet
+            - no_tiered_compilation
 
         ${{ if in(parameters.testGroup, 'jitstress') }}:
           scenarios:

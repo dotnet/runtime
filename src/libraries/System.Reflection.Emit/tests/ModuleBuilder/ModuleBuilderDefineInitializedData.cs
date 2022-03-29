@@ -62,6 +62,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65558", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.Is32BitProcess))]
         public void DefineInitializedData_EnsureAlignmentIsMinimumNeededForUseOfCreateSpan()
         {
             ModuleBuilder module = Helpers.DynamicModule();

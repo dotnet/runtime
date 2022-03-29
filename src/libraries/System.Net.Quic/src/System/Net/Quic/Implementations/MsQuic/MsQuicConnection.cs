@@ -149,7 +149,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             try
             {
-                Debug.Assert(!Monitor.IsEntered(_state));
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 MsQuicApi.Api.SetCallbackHandlerDelegate(
                     _state.Handle,
                     s_connectionDelegate,
@@ -187,7 +187,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             _state.StateGCHandle = GCHandle.Alloc(_state);
             try
             {
-                Debug.Assert(!Monitor.IsEntered(_state));
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 uint status = MsQuicApi.Api.ConnectionOpenDelegate(
                     MsQuicApi.Api.Registration,
                     s_connectionDelegate,
@@ -389,7 +389,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEventPeerCertificateReceived(State state, ref ConnectionEvent connectionEvent)
         {
-            SslPolicyErrors sslPolicyErrors  = SslPolicyErrors.None;
+            SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
             X509Chain? chain = null;
             X509Certificate2? certificate = null;
             X509Certificate2Collection? additionalCertificates = null;
@@ -606,13 +606,13 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override int GetRemoteAvailableUnidirectionalStreamCount()
         {
-            Debug.Assert(!Monitor.IsEntered(_state));
+            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_UNIDI_STREAM_COUNT);
         }
 
         internal override int GetRemoteAvailableBidirectionalStreamCount()
         {
-            Debug.Assert(!Monitor.IsEntered(_state));
+            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_BIDI_STREAM_COUNT);
         }
 
@@ -645,7 +645,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 SOCKADDR_INET address = MsQuicAddressHelpers.IPEndPointToINet((IPEndPoint)_remoteEndPoint);
                 unsafe
                 {
-                    Debug.Assert(!Monitor.IsEntered(_state));
+                    Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                     status = MsQuicApi.Api.SetParamDelegate(_state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, (uint)sizeof(SOCKADDR_INET), (byte*)&address);
                     QuicExceptionHelpers.ThrowIfFailed(status, "Failed to connect to peer.");
                 }
@@ -668,7 +668,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     SOCKADDR_INET quicAddress = MsQuicAddressHelpers.IPEndPointToINet(new IPEndPoint(address, port));
                     unsafe
                     {
-                        Debug.Assert(!Monitor.IsEntered(_state));
+                        Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                         status = MsQuicApi.Api.SetParamDelegate(_state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, (uint)sizeof(SOCKADDR_INET), (byte*)&quicAddress);
                         QuicExceptionHelpers.ThrowIfFailed(status, "Failed to connect to peer.");
                     }
@@ -689,7 +689,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             try
             {
-                Debug.Assert(!Monitor.IsEntered(_state));
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 status = MsQuicApi.Api.ConnectionStartDelegate(
                     _state.Handle,
                     _configuration,
@@ -723,7 +723,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             try
             {
-                Debug.Assert(!Monitor.IsEntered(_state));
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 MsQuicApi.Api.ConnectionShutdownDelegate(
                     _state.Handle,
                     Flags,
@@ -851,7 +851,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (_state.Handle != null && !_state.Handle.IsInvalid && !_state.Handle.IsClosed)
             {
                 // Handle can be null if outbound constructor failed and we are called from finalizer.
-                Debug.Assert(!Monitor.IsEntered(_state));
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 MsQuicApi.Api.ConnectionShutdownDelegate(
                     _state.Handle,
                     QUIC_CONNECTION_SHUTDOWN_FLAGS.SILENT,

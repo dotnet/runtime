@@ -47,8 +47,13 @@ namespace System.Text.Json.Serialization.Converters
             _namingPolicy = namingPolicy;
             _nameCache = new ConcurrentDictionary<ulong, JsonEncodedText>();
 
+#if NET6_0_OR_GREATER
+            string[] names = Enum.GetNames<T>();
+            T[] values = Enum.GetValues<T>();
+#else
             string[] names = Enum.GetNames(TypeToConvert);
             Array values = Enum.GetValues(TypeToConvert);
+#endif
             Debug.Assert(names.Length == values.Length);
 
             JavaScriptEncoder? encoder = serializerOptions.Encoder;
@@ -60,7 +65,11 @@ namespace System.Text.Json.Serialization.Converters
                     break;
                 }
 
+#if NET6_0_OR_GREATER
+                T value = values[i];
+#else
                 T value = (T)values.GetValue(i)!;
+#endif
                 ulong key = ConvertToUInt64(value);
                 string name = names[i];
 

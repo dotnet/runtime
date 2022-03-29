@@ -28,9 +28,7 @@ namespace System.Threading
 
         private static volatile bool s_comInitializedOnFinalizerThread;
 
-        private void PlatformSpecificInitialize()
-        {
-        }
+        partial void PlatformSpecificInitialize();
 
         // Platform-specific initialization of foreign threads, i.e. threads not created by Thread.Start
         private void PlatformSpecificInitializeExistingThread()

@@ -760,12 +760,13 @@ bool interceptor_ICJI::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToke
 }
 
 void interceptor_ICJI::getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
+                                                       mdToken                 targetConstraint,
                                                        CORINFO_CLASS_HANDLE    delegateType,
                                                        CORINFO_LOOKUP*         pLookup)
 {
     mc->cr->AddCall("getReadyToRunDelegateCtorHelper");
-    original_ICorJitInfo->getReadyToRunDelegateCtorHelper(pTargetMethod, delegateType, pLookup);
-    mc->recGetReadyToRunDelegateCtorHelper(pTargetMethod, delegateType, pLookup);
+    original_ICorJitInfo->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
+    mc->recGetReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
 }
 
 const char* interceptor_ICJI::getHelperName(CorInfoHelpFunc funcNum)
@@ -1383,6 +1384,14 @@ bool interceptor_ICJI::getSystemVAmd64PassStructInRegisterDescriptor(
         original_ICorJitInfo->getSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr);
     mc->recGetSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr, result);
     return result;
+}
+
+uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+{
+    mc->cr->AddCall("getLoongArch64PassStructInRegisterFlags");
+    uint32_t temp = original_ICorJitInfo->getLoongArch64PassStructInRegisterFlags(structHnd);
+    mc->recGetLoongArch64PassStructInRegisterFlags(structHnd, temp);
+    return temp;
 }
 
 // Stuff on ICorDynamicInfo

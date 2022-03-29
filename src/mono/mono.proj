@@ -323,7 +323,7 @@
       <_MonoMinimal Condition="'$(Configuration)' == 'Release' and '$(MonoEnableAssertMessages)' != 'true'">$(_MonoMinimal),assert_messages</_MonoMinimal>
     </PropertyGroup>
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
-      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=jit,sgen_major_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,sgen_debug_helpers,sgen_binary_protocol,logging,shared_perfcounters,interpreter,threads,qcalls$(_MonoMinimal)"/>
+      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=jit,sgen_major_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,sgen_debug_helpers,sgen_binary_protocol,logging,interpreter,threads,qcalls$(_MonoMinimal)"/>
       <_MonoCMakeArgs Include="-DENABLE_INTERP_LIB=1"/>
       <_MonoCMakeArgs Include="-DDISABLE_ICALL_TABLES=1"/>
       <_MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
@@ -371,14 +371,12 @@
     </ItemGroup>
     <!-- iOS/tvOS simulator specific options -->
     <ItemGroup Condition="('$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true') or ('$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' == 'true')">
-      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=shared_perfcounters"/>
     </ItemGroup>
     <!-- iOS/tvOS device specific options -->
     <ItemGroup Condition="('$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true') or ('$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true')">
-      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=jit,logging,shared_perfcounters" />
+      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=jit,logging" />
       <_MonoCMakeArgs Include="-DENABLE_VISIBILITY_HIDDEN=1"/>
       <_MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
-      <_MonoCMakeArgs Include="-DENABLE_SIGALTSTACK=0"/>
       <_MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
       <_MonoCFLAGS Include="-Werror=partial-availability" />
       <_MonoCFLAGS Condition="'$(TargetstvOS)' == 'true'" Include="-fno-gnu-inline-asm" />
@@ -406,7 +404,6 @@
       <_MonoCMakeArgs Condition="'$(Platform)' == 'x86'" Include="-DANDROID_ABI=x86" />
       <_MonoCMakeArgs Condition="'$(Platform)' == 'x64'" Include="-DANDROID_ABI=x86_64" />
       <_MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,logging" />
-      <_MonoCMakeArgs Include="-DENABLE_SIGALTSTACK=1"/>
 
       <_MonoCFLAGS Condition="'$(Platform)' == 'arm'" Include="-march=armv7-a" />
       <_MonoCFLAGS Condition="'$(Platform)' == 'arm'" Include="-mtune=cortex-a8" />
@@ -491,6 +488,7 @@
       <_MonoCMakeBuildCommand Condition="'$(_MonoUseNinja)' != 'true'">$(_MonoCMakeBuildCommand) --parallel $([System.Environment]::ProcessorCount)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(HostOS)' != 'windows'">@(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
+      <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
     </PropertyGroup>
 
     <MakeDir Directories="$(MonoObjDir)" />
@@ -601,9 +599,9 @@
       <MonoUseCrossTool>true</MonoUseCrossTool>
       <MonoAotAbi>wasm32-unknown-none</MonoAotAbi>
       <MonoAotOffsetsFile>$(MonoObjCrossDir)offsets-wasm32-unknown-none.h</MonoAotOffsetsFile>
-      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(EMSDK_PATH)/upstream/lib/libclang.dylib</MonoLibClang>
-      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(EMSDK_PATH)/upstream/lib/libclang.so</MonoLibClang>
-      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'upstream', 'bin', 'libclang.dll'))</MonoLibClang>
+      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(MonoAOTLLVMDir)/lib/libclang.dylib</MonoLibClang>
+      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(MonoAOTLLVMDir)/lib/libclang.so</MonoLibClang>
+      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$([MSBuild]::NormalizePath('$(MonoAOTLLVMDir)', 'bin', 'libclang.dll'))</MonoLibClang>
       <PythonCmd Condition="'$(HostOS)' == 'windows'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
       <_ForceRelease Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(TargetArchitecture)' == 'wasm' and '$(Configuration)' == 'Debug'">true</_ForceRelease>
     </PropertyGroup>
@@ -667,6 +665,7 @@
       <MonoAotCrossOffsetsToolParams Include="--netcore" />
       <MonoAotCrossOffsetsToolParams Include="--targetdir=&quot;$(MonoObjDir.TrimEnd('\/'))&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--monodir=&quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;" />
+      <MonoAotCrossOffsetsToolParams Include="--nativedir=&quot;$(SharedNativeRoot.TrimEnd('\/'))&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--outfile=&quot;$(MonoAotOffsetsFile)&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(MonoLibClang)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotOffsetsPrefix)' != ''" Include="--prefix=&quot;$(MonoAotOffsetsPrefix)&quot;" />
@@ -860,6 +859,12 @@
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-profiler-aot.a">
         <Destination>$(RuntimeBinDir)libmono-profiler-aot.a</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-wasm-eh-js.a">
+        <Destination>$(RuntimeBinDir)libmono-wasm-eh-js.a</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-wasm-eh-wasm.a">
+        <Destination>$(RuntimeBinDir)libmono-wasm-eh-wasm.a</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)dbgshim$(LibSuffix)">
         <Destination>$(RuntimeBinDir)$(LibPrefix)dbgshim$(LibSuffix)</Destination>

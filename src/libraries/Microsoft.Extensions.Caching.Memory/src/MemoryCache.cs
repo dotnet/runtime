@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Caching.Memory
             _options = optionsAccessor.Value;
             _logger = loggerFactory.CreateLogger<MemoryCache>();
 
-            _coherentState = new();
+            _coherentState = new CoherentState();
 
             _lastExpirationScan = UtcNow;
             TrackLinkedCacheEntries = _options.TrackLinkedCacheEntries; // we store the setting now so it's consistent for entire MemoryCache lifetime

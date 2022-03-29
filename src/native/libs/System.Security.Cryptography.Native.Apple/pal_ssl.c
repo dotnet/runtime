@@ -641,8 +641,28 @@ int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, co
     }
 }
 
+// This API is present on macOS 10.5 and newer only
+static OSStatus (*SSLSetCertificateAuthoritiesPtr)(SSLContextRef context, CFArrayRef certificates, int32_t replaceExisting) = NULL;
+
+PALEXPORT int32_t AppleCryptoNative_SslSetCertificateAuthorities(SSLContextRef sslContext, CFArrayRef certificates, int32_t replaceExisting)
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    // The underlying call handles NULL inputs, so just pass it through
+
+    if (!SSLSetCertificateAuthoritiesPtr)
+    {
+        // not available.
+        return 0;
+    }
+
+    return SSLSetCertificateAuthoritiesPtr(sslContext, certificates, replaceExisting);
+#pragma clang diagnostic pop
+}
+
 __attribute__((constructor)) static void InitializeAppleCryptoSslShim()
 {
+    SSLSetCertificateAuthoritiesPtr = (OSStatus(*)(SSLContextRef, CFArrayRef, int32_t))dlsym(RTLD_DEFAULT, "SSLSetCertificateAuthorities");
     SSLSetALPNProtocolsPtr = (OSStatus(*)(SSLContextRef, CFArrayRef))dlsym(RTLD_DEFAULT, "SSLSetALPNProtocols");
     SSLCopyALPNProtocolsPtr = (OSStatus(*)(SSLContextRef, CFArrayRef*))dlsym(RTLD_DEFAULT, "SSLCopyALPNProtocols");
 }

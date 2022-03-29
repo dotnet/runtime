@@ -309,7 +309,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 ULONG Flags,
                 PDOMAIN_CONTROLLER_INFO* DomainControllerInfo
                 );*/
-        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcNameW", CharSet = CharSet.Unicode)]
+        [LibraryImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcNameW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DsGetDcName(
             string? computerName,
             string? domainName,
@@ -327,7 +327,7 @@ namespace System.DirectoryServices.ActiveDirectory
                          ULONG DcFlags,
                          PHANDLE RetGetDcContext
                          );*/
-        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcOpenW", CharSet = CharSet.Unicode)]
+        [LibraryImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcOpenW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DsGetDcOpen(
             string? dnsName,
             int optionFlags,
@@ -343,7 +343,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         LPSOCKET_ADDRESS* SockAddresses,
                         LPTSTR* DnsHostName
                         );*/
-        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcNextW", CharSet = CharSet.Unicode)]
+        [LibraryImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcNextW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DsGetDcNext(
             IntPtr getDcContextHandle,
             ref IntPtr sockAddressCount,
@@ -353,98 +353,21 @@ namespace System.DirectoryServices.ActiveDirectory
         /*void WINAPI DsGetDcClose(
                         HANDLE GetDcContextHandle
                         );*/
-        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcCloseW", CharSet = CharSet.Unicode)]
+        [LibraryImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcCloseW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial void DsGetDcClose(
             IntPtr getDcContextHandle);
 
         /*NET_API_STATUS NetApiBufferFree(
                 LPVOID Buffer
                 );*/
-        [GeneratedDllImport(global::Interop.Libraries.Netapi32)]
+        [LibraryImport(global::Interop.Libraries.Netapi32)]
         internal static partial int NetApiBufferFree(
             IntPtr buffer);
-
-        /*DWORD DsMakePasswordCredentials(
-            LPTSTR User,
-            LPTSTR Domain,
-            LPTSTR Password,
-            RPC_AUTH_IDENTITY_HANDLE* pAuthIdentity
-            );*/
-
-        internal delegate int DsMakePasswordCredentials(
-      [MarshalAs(UnmanagedType.LPWStr)] string? user,
-      [MarshalAs(UnmanagedType.LPWStr)] string? domain,
-      [MarshalAs(UnmanagedType.LPWStr)] string? password,
-      [Out] out IntPtr authIdentity);
-
-        /*VOID DsFreePasswordCredentials(
-            RPC_AUTH_IDENTITY_HANDLE AuthIdentity
-            );*/
-        internal delegate void DsFreePasswordCredentials(
-            [In] IntPtr authIdentity);
-
-        /*DWORD DsBindWithCred(
-            TCHAR* DomainController,
-            TCHAR* DnsDomainName,
-            RPC_AUTH_IDENTITY_HANDLE AuthIdentity,
-            HANDLE* phDS
-            );*/
-        internal delegate int DsBindWithCred(
-            [MarshalAs(UnmanagedType.LPWStr)] string? domainController,
-            [MarshalAs(UnmanagedType.LPWStr)] string? dnsDomainName,
-            [In] IntPtr authIdentity,
-            [Out] out IntPtr handle);
-
-        /*DWORD DsUnBind(
-            HANDLE* phDS
-            );*/
-        internal delegate int DsUnBind(
-            [In] ref IntPtr handle);
-
-        /*DWORD DsGetDomainControllerInfo(
-            HANDLE hDs,
-            LPTSTR DomainName,
-            DWORD InfoLevel,
-            DWORD* pcOut,
-            VOID** ppInfo
-            );*/
-        internal delegate int DsGetDomainControllerInfo(
-            [In] IntPtr handle,
-            [MarshalAs(UnmanagedType.LPWStr)] string domainName,
-            [In] int infoLevel,
-            [Out] out int dcCount,
-            [Out] out IntPtr dcInfo);
 
         internal const int DsDomainControllerInfoLevel2 = 2;
         internal const int DsDomainControllerInfoLevel3 = 3;
 
-        /*VOID DsFreeDomainControllerInfo(
-            DWORD InfoLevel,
-            DWORD cInfo,
-            VOID* pInfo
-            );*/
-        internal delegate void DsFreeDomainControllerInfo(
-            [In] int infoLevel,
-            [In] int dcInfoListCount,
-            [In] IntPtr dcInfoList);
-
         internal const int DsNameNoError = 0;
-
-        /*DWORD DsListSites(
-            HANDLE hDs,
-            PDS_NAME_RESULT* ppSites
-            );*/
-        internal delegate int DsListSites(
-            [In] IntPtr dsHandle,
-            [Out] out IntPtr sites);
-
-        /*DWORD DsListRoles(
-            HANDLE hDs,
-            PDS_NAME_RESULTW* ppRoles
-            );*/
-        internal delegate int DsListRoles(
-            [In] IntPtr dsHandle,
-            [Out] out IntPtr roles);
 
         internal const int DnsSrvData = 33;
         internal const int DnsQueryBypassCache = 8;
@@ -457,7 +380,7 @@ namespace System.DirectoryServices.ActiveDirectory
             PDNS_RECORD *ppQueryResultsSet,
             PVOID *pReserved
             );*/
-        [GeneratedDllImport(global::Interop.Libraries.Dnsapi, EntryPoint = "DnsQuery_W", CharSet = CharSet.Unicode)]
+        [LibraryImport(global::Interop.Libraries.Dnsapi, EntryPoint = "DnsQuery_W", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DnsQuery(
             string recordName,
             short recordType,
@@ -470,33 +393,15 @@ namespace System.DirectoryServices.ActiveDirectory
             PDNS_RECORD pRecordList,
             DNS_FREE_TYPE FreeType
             );*/
-        [GeneratedDllImport(global::Interop.Libraries.Dnsapi, CharSet = CharSet.Unicode)]
+        [LibraryImport(global::Interop.Libraries.Dnsapi)]
         internal static partial void DnsRecordListFree(
             IntPtr dnsResultList,
-            bool dnsFreeType);
-
-        /*DWORD DsCrackNames(
-            HANDLE hDS,
-            DS_NAME_FLAGS flags,
-            DS_NAME_FORMAT formatOffered,
-            DS_NAME_FORMAT formatDesired,
-            DWORD cNames,
-            LPTSTR* rpNames,
-            PDS_NAME_RESULT* ppResult
-            );*/
-        internal delegate int DsCrackNames(
-            [In] IntPtr hDS,
-            [In] int flags,
-            [In] int formatOffered,
-            [In] int formatDesired,
-            [In] int nameCount,
-            [In] IntPtr names,
-            [Out] out IntPtr results);
+            [MarshalAs(UnmanagedType.Bool)] bool dnsFreeType);
 
         /*NTSTATUS LsaConnectUntrusted(
               PHANDLE LsaHandle
             );*/
-        [GeneratedDllImport(global::Interop.Libraries.Secur32)]
+        [LibraryImport(global::Interop.Libraries.Secur32)]
         internal static partial uint LsaConnectUntrusted(
              out LsaLogonProcessSafeHandle lsaHandle);
 
@@ -511,7 +416,7 @@ namespace System.DirectoryServices.ActiveDirectory
               PULONG ReturnBufferLength,
               PNTSTATUS ProtocolStatus
             );*/
-        [GeneratedDllImport(global::Interop.Libraries.Secur32)]
+        [LibraryImport(global::Interop.Libraries.Secur32)]
         internal static partial uint LsaCallAuthenticationPackage(
             LsaLogonProcessSafeHandle lsaHandle,
             int authenticationPackage,
@@ -524,14 +429,14 @@ namespace System.DirectoryServices.ActiveDirectory
         /*NTSTATUS LsaFreeReturnBuffer(
               PVOID Buffer
             );*/
-        [GeneratedDllImport(global::Interop.Libraries.Secur32)]
+        [LibraryImport(global::Interop.Libraries.Secur32)]
         internal static partial uint LsaFreeReturnBuffer(
             IntPtr buffer);
 
         /*NTSTATUS LsaDeregisterLogonProcess(
               HANDLE LsaHandle
             );*/
-        [GeneratedDllImport(global::Interop.Libraries.Secur32)]
+        [LibraryImport(global::Interop.Libraries.Secur32)]
         internal static partial int LsaDeregisterLogonProcess(
             IntPtr lsaHandle);
 
@@ -542,7 +447,7 @@ namespace System.DirectoryServices.ActiveDirectory
             DWORD lpString2,
             DWORD cchCount2
             );*/
-        [GeneratedDllImport(global::Interop.Libraries.Kernel32, EntryPoint = "CompareStringW", CharSet = CharSet.Unicode, SetLastError = true)]
+        [LibraryImport(global::Interop.Libraries.Kernel32, EntryPoint = "CompareStringW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int CompareString(
             uint locale,
             uint dwCmpFlags,

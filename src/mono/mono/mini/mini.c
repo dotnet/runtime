@@ -941,17 +941,6 @@ mono_create_jump_table (MonoCompile *cfg, MonoInst *label, MonoBasicBlock **bbs,
 	cfg->patch_info = ji;
 }
 
-gboolean
-mini_assembly_can_skip_verification (MonoMethod *method)
-{
-	MonoAssembly *assembly = m_class_get_image (method->klass)->assembly;
-	if (method->wrapper_type != MONO_WRAPPER_NONE && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
-		return FALSE;
-	if (assembly->image == mono_defaults.corlib)
-		return FALSE;
-	return mono_assembly_has_skip_verification (assembly);
-}
-
 typedef struct {
 	MonoClass *vtype;
 	GList *active, *inactive;
@@ -1878,7 +1867,7 @@ mono_add_var_location (MonoCompile *cfg, MonoInst *var, gboolean is_reg, int reg
 static void
 mono_apply_volatile (MonoInst *inst, MonoBitSet *set, gsize index)
 {
-	inst->flags |= mono_bitset_test_safe (set, index) ? MONO_INST_VOLATILE : 0;
+	inst->flags |= mono_bitset_test_safe (set, (guint32)index) ? MONO_INST_VOLATILE : 0;
 }
 
 static void
@@ -2644,7 +2633,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		jinfo->unwind_info = unwind_desc;
 		g_free (unwind_info);
 	} else {
-		jinfo->unwind_info = cfg->used_int_regs;
+		jinfo->unwind_info = (guint32)cfg->used_int_regs;
 	}
 
 	return jinfo;
@@ -3066,35 +3055,9 @@ mini_get_rgctx_access_for_method (MonoMethod *method)
 		return MONO_RGCTX_ACCESS_MRGCTX;
 
 	if (method->flags & METHOD_ATTRIBUTE_STATIC || m_class_is_valuetype (method->klass))
-		return MONO_RGCTX_ACCESS_VTABLE;
+		return MONO_RGCTX_ACCESS_MRGCTX;
 
 	return MONO_RGCTX_ACCESS_THIS;
-}
-
-static gboolean
-can_deopt (MonoCompile *cfg)
-{
-	MonoMethodHeader *header = cfg->header;
-
-	if (!header->num_clauses)
-		return FALSE;
-
-	/*
-	 * Currently, only finally/fault clauses are supported.
-	 * Catch clauses are hard to support, since even if the
-	 * rest of the method is executed by the interpreter, execution needs to
-	 * return to the caller which is an AOTed method.
-	 * Filter clauses could be supported, but every filter clause has an
-	 * associated catch clause.
-	 */
-	for (int i = 0; i < header->num_clauses; ++i) {
-		MonoExceptionClause *clause = &header->clauses [i];
-
-		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT)
-			return FALSE;
-	}
-
-	return TRUE;
 }
 
 /*
@@ -3331,7 +3294,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		return cfg;
 	}
 
-	if (cfg->llvm_only && cfg->interp && !cfg->interp_entry_only && header->num_clauses && can_deopt (cfg)) {
+	if (cfg->llvm_only && cfg->interp && !cfg->interp_entry_only && !cfg->gsharedvt && header->num_clauses) {
 		cfg->deopt = TRUE;
 		/* Can't reconstruct inlined state */
 		cfg->disable_inline = TRUE;
@@ -3789,6 +3752,13 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		mono_cfg_dump_ir (cfg, "decompose_array_access_opts");
 	}
 
+	/* Eliminate the mrgctx init call if the method has no mrgctx entries */
+	if (cfg->gshared_info && !cfg->gshared_info->num_entries) {
+		NULLIFY_INS (cfg->init_method_rgctx_ins);
+		/* Needed by the assert in get_gshared_info_slot () */
+		cfg->init_method_rgctx_ins = NULL;
+	}
+
 	if (cfg->got_var) {
 #ifndef MONO_ARCH_GOT_REG
 		GList *regs;
@@ -3876,6 +3846,13 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	}
 
 	mono_insert_branches_between_bblocks (cfg);
+
+	if (cfg->gshared_info) {
+		MonoGSharedMethodInfo *info = mini_gshared_method_info_dup (cfg->mem_manager, cfg->gshared_info);
+
+		/* cfg->gshared_info is already allocated from permanent memory, so change only the entries */
+		cfg->gshared_info->entries = info->entries;
+	}
 
 	if (COMPILE_LLVM (cfg)) {
 #ifdef ENABLE_LLVM
@@ -3980,10 +3957,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 #endif
 
 	/* collect statistics */
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_inc_i32 (&mono_perfcounters->jit_methods);
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->jit_bytes, header->code_size);
-#endif
 	gint32 code_size_ratio = cfg->code_len;
 	mono_atomic_fetch_add_i32 (&mono_jit_stats.allocated_code_size, code_size_ratio);
 	mono_atomic_fetch_add_i32 (&mono_jit_stats.native_code_size, code_size_ratio);

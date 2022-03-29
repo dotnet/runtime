@@ -54,7 +54,7 @@ namespace Internal.IL
                     break;
                 case "Unsafe":
                     {
-                        if (owningType.Namespace == "Internal.Runtime.CompilerServices")
+                        if (owningType.Namespace == "System.Runtime.CompilerServices")
                             return UnsafeIntrinsics.EmitIL(method);
                     }
                     break;

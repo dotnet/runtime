@@ -25,7 +25,7 @@ using System.Text;
 using System.Runtime.CompilerServices;
 namespace Microsoft.Diagnostics.Tracing
 #else
-using Internal.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 namespace System.Diagnostics.Tracing
 #endif
 {

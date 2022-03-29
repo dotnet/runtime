@@ -2233,6 +2233,7 @@ bool MethodContext::repGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToke
 }
 
 void MethodContext::recGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
+                                                       mdToken                 targetConstraint,
                                                        CORINFO_CLASS_HANDLE    delegateType,
                                                        CORINFO_LOOKUP*         pLookup)
 {
@@ -2244,6 +2245,7 @@ void MethodContext::recGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* p
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.TargetMethod =
         SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(pTargetMethod, GetReadyToRunDelegateCtorHelper);
+    key.targetConstraint          = targetConstraint;
     key.delegateType              = CastHandle(delegateType);
     Agnostic_CORINFO_LOOKUP value = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(pLookup);
     GetReadyToRunDelegateCtorHelper->Add(key, value);
@@ -2253,12 +2255,13 @@ void MethodContext::recGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* p
 void MethodContext::dmpGetReadyToRunDelegateCtorHelper(GetReadyToRunDelegateCtorHelper_TOKENIn key,
                                                        Agnostic_CORINFO_LOOKUP                 value)
 {
-    printf("GetReadyToRunDelegateCtorHelper key: method tk{%s} type-%016llX",
-           SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.TargetMethod).c_str(), key.delegateType);
+    printf("GetReadyToRunDelegateCtorHelper key: method tk{%s} type-%016llX constraint-%08X",
+           SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.TargetMethod).c_str(), key.delegateType, key.targetConstraint);
     printf(", value: %s", SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value).c_str());
 }
 
 void MethodContext::repGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
+                                                       mdToken                 targetConstraint,
                                                        CORINFO_CLASS_HANDLE    delegateType,
                                                        CORINFO_LOOKUP*         pLookup)
 {
@@ -2268,7 +2271,8 @@ void MethodContext::repGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* p
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.TargetMethod =
         SpmiRecordsHelper::RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pTargetMethod, GetReadyToRunDelegateCtorHelper);
-    key.delegateType = CastHandle(delegateType);
+    key.targetConstraint = targetConstraint;
+    key.delegateType     = CastHandle(delegateType);
 
     AssertKeyExistsNoMessage(GetReadyToRunDelegateCtorHelper, key);
 
@@ -2661,6 +2665,7 @@ void MethodContext::recGetArgType(CORINFO_SIG_INFO*       sig,
     GetArgType->Add(key, value);
     DEBUG_REC(dmpGetArgType(key, value));
 }
+
 void MethodContext::dmpGetArgType(const Agnostic_GetArgType_Key& key, const Agnostic_GetArgType_Value& value)
 {
     printf("GetArgType key flg-%08X na-%u %s %s msig-%016llX scp-%016llX arg-%016llX",
@@ -2670,6 +2675,7 @@ void MethodContext::dmpGetArgType(const Agnostic_GetArgType_Key& key, const Agno
         key.methodSignature, key.scope, key.args);
     printf(", value result(cit)-%u(%s) vcType-%016llX excp-%08X", value.result, toString((CorInfoTypeWithMod)value.result), value.vcTypeRet, value.exceptionCode);
 }
+
 CorInfoTypeWithMod MethodContext::repGetArgType(CORINFO_SIG_INFO*       sig,
                                                 CORINFO_ARG_LIST_HANDLE args,
                                                 CORINFO_CLASS_HANDLE*   vcTypeRet,
@@ -6118,6 +6124,31 @@ bool MethodContext::repGetSystemVAmd64PassStructInRegisterDescriptor(
     }
 
     return value.result ? true : false;
+}
+
+void MethodContext::recGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value)
+{
+    if (GetLoongArch64PassStructInRegisterFlags == nullptr)
+        GetLoongArch64PassStructInRegisterFlags = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(structHnd);
+
+    GetLoongArch64PassStructInRegisterFlags->Add(key, value);
+    DEBUG_REC(dmpGetLoongArch64PassStructInRegisterFlags(key, value));
+}
+
+void MethodContext::dmpGetLoongArch64PassStructInRegisterFlags(DWORDLONG key, DWORD value)
+{
+    printf("GetLoongArch64PassStructInRegisterFlags key %016llX value-%08X", key, value);
+}
+
+DWORD MethodContext::repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+{
+    DWORDLONG key = CastHandle(structHnd);
+
+    DWORD value = GetLoongArch64PassStructInRegisterFlags->Get(key);
+    DEBUG_REP(dmpGetLoongArch64PassStructInRegisterFlags(key, value));
+    return value;
 }
 
 void MethodContext::recGetRelocTypeHint(void* target, WORD result)

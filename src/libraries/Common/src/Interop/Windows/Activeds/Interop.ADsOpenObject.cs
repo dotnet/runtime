@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Activeds
     {
-        [GeneratedDllImport(Interop.Libraries.Activeds, CharSet = CharSet.Unicode, ExactSpelling = true)]
+        [LibraryImport(Interop.Libraries.Activeds, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int ADsOpenObject(string path, string? userName, string? password, int flags, ref Guid iid, out IntPtr ppObject);
     }
 }

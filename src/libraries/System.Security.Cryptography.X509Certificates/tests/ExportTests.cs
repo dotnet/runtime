@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
-using Internal.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests

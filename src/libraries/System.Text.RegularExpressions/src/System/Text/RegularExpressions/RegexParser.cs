@@ -76,28 +76,41 @@ namespace System.Text.RegularExpressions
             _ignoreNextParen = false;
         }
 
-        private RegexParser(string pattern, RegexOptions options, CultureInfo culture, Span<int> optionSpan)
-            : this(pattern, options, culture, new Hashtable(), default, null, optionSpan)
-        {
-        }
-
         /// <summary>Gets the culture to use based on the specified options.</summary>
         internal static CultureInfo GetTargetCulture(RegexOptions options) =>
             (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
 
         public static RegexTree Parse(string pattern, RegexOptions options, CultureInfo culture)
         {
-            var parser = new RegexParser(pattern, options, culture, stackalloc int[OptionStackDefaultSize]);
+            using var parser = new RegexParser(pattern, options, culture, new Hashtable(), 0, null, stackalloc int[OptionStackDefaultSize]);
 
             parser.CountCaptures();
             parser.Reset(options);
             RegexNode root = parser.ScanRegex();
-            int minRequiredLength = root.ComputeMinLength();
-            string[]? capnamelist = parser._capnamelist?.ToArray();
-            var tree = new RegexTree(root, parser._caps, parser._capnumlist!, parser._captop, parser._capnames!, capnamelist!, options, minRequiredLength);
-            parser.Dispose();
 
-            return tree;
+            int[]? captureNumberList = parser._capnumlist;
+            Hashtable? sparseMapping = parser._caps;
+            int captop = parser._captop;
+
+            int captureCount;
+            if (captureNumberList == null || captop == captureNumberList.Length)
+            {
+                // The capture list isn't sparse.  Null out the capture mapping as it's not necessary,
+                // and store the number of captures.
+                captureCount = captop;
+                sparseMapping = null;
+            }
+            else
+            {
+                // The capture list is sparse.  Store the number of captures, and populate the number-to-names-list.
+                captureCount = captureNumberList.Length;
+                for (int i = 0; i < captureNumberList.Length; i++)
+                {
+                    sparseMapping[captureNumberList[i]] = i;
+                }
+            }
+
+            return new RegexTree(root, captureCount, parser._capnamelist?.ToArray(), parser._capnames!, sparseMapping, options, culture);
         }
 
         /// <summary>
@@ -106,11 +119,10 @@ namespace System.Text.RegularExpressions
         public static RegexReplacement ParseReplacement(string pattern, RegexOptions options, Hashtable caps, int capsize, Hashtable capnames)
         {
             CultureInfo culture = (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
-            var parser = new RegexParser(pattern, options, culture, caps, capsize, capnames, stackalloc int[OptionStackDefaultSize]);
+            using var parser = new RegexParser(pattern, options, culture, caps, capsize, capnames, stackalloc int[OptionStackDefaultSize]);
 
             RegexNode root = parser.ScanReplacement();
             var regexReplacement = new RegexReplacement(pattern, root, caps);
-            parser.Dispose();
 
             return regexReplacement;
         }
@@ -198,7 +210,7 @@ namespace System.Text.RegularExpressions
 
         private static string UnescapeImpl(string input, int i)
         {
-            var parser = new RegexParser(input, RegexOptions.None, CultureInfo.InvariantCulture, stackalloc int[OptionStackDefaultSize]);
+            using var parser = new RegexParser(input, RegexOptions.None, CultureInfo.InvariantCulture, new Hashtable(), 0, null, stackalloc int[OptionStackDefaultSize]);
 
             // In the worst case the escaped string has the same length.
             // For small inputs we use stack allocation.
@@ -225,8 +237,6 @@ namespace System.Text.RegularExpressions
 
                 vsb.Append(input.AsSpan(lastpos, i - lastpos));
             } while (i < input.Length);
-
-            parser.Dispose();
 
             return vsb.ToString();
         }

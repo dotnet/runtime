@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 .assembly extern mscorlib { }
-.assembly 'localloc' {
+.assembly 'localloc_operand' {
 }
 .assembly extern xunit.core {}
 .namespace JitTest

@@ -434,10 +434,8 @@ namespace System
                 SR.Format(SR.Format_AttributeUsage, type));
         }
 
-        private static Attribute[] CreateAttributeArrayHelper(Type elementType, int elementCount)
-        {
-            return (Attribute[])Array.CreateInstance(elementType, elementCount);
-        }
+        private static Attribute[] CreateAttributeArrayHelper(Type elementType, int elementCount) =>
+            elementType.ContainsGenericParameters ? new Attribute[elementCount] : (Attribute[])Array.CreateInstance(elementType, elementCount);
         #endregion
 
         #endregion
@@ -459,7 +457,7 @@ namespace System
             {
                 MemberTypes.Property => InternalGetCustomAttributes((PropertyInfo)element, attributeType, inherit),
                 MemberTypes.Event => InternalGetCustomAttributes((EventInfo)element, attributeType, inherit),
-                _ => (element.GetCustomAttributes(attributeType, inherit) as Attribute[])!,
+                _ => (Attribute[])element.GetCustomAttributes(attributeType, inherit)
             };
         }
 
@@ -474,7 +472,7 @@ namespace System
             {
                 MemberTypes.Property => InternalGetCustomAttributes((PropertyInfo)element, typeof(Attribute), inherit),
                 MemberTypes.Event => InternalGetCustomAttributes((EventInfo)element, typeof(Attribute), inherit),
-                _ => (element.GetCustomAttributes(typeof(Attribute), inherit) as Attribute[])!,
+                _ => (Attribute[])element.GetCustomAttributes(typeof(Attribute), inherit)
             };
         }
 
@@ -536,12 +534,11 @@ namespace System
             if (element.Member == null)
                 throw new ArgumentException(SR.Argument_InvalidParameterInfo, nameof(element));
 
-
             MemberInfo member = element.Member;
             if (member.MemberType == MemberTypes.Method && inherit)
                 return InternalParamGetCustomAttributes(element, attributeType, inherit);
 
-            return (element.GetCustomAttributes(attributeType, inherit) as Attribute[])!;
+            return (Attribute[])element.GetCustomAttributes(attributeType, inherit);
         }
 
         public static Attribute[] GetCustomAttributes(ParameterInfo element!!, bool inherit)
@@ -549,12 +546,11 @@ namespace System
             if (element.Member == null)
                 throw new ArgumentException(SR.Argument_InvalidParameterInfo, nameof(element));
 
-
             MemberInfo member = element.Member;
             if (member.MemberType == MemberTypes.Method && inherit)
                 return InternalParamGetCustomAttributes(element, null, inherit);
 
-            return (element.GetCustomAttributes(typeof(Attribute), inherit) as Attribute[])!;
+            return (Attribute[])element.GetCustomAttributes(typeof(Attribute), inherit);
         }
 
         public static bool IsDefined(ParameterInfo element, Type attributeType)

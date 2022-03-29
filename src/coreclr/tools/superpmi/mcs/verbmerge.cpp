@@ -578,10 +578,15 @@ CLEAN_UP:
     }
     else
     {
-        // if no files found to merge, then there was some problem.
-        LogError("No files found to merge.");
-        result = (totalSize == 0) ? 1 : 0;
+        if (totalSize == 0)
+        {
+            // If the total size of merged files is zero, or there were no files found to merge,
+            // then there was some problem.
+            LogError("No files found to merge.");
+            result = 1;
+        }
     }
+
     delete[] nameOfOutputFileAsWchar;
 
     return result;

@@ -251,7 +251,9 @@ namespace System.Security.Cryptography
                     _ecc.ImportParameters(ecParameters);
                 }
 
+#pragma warning disable 0672 // Member overrides an obsolete member.
                 public override string ToXmlString()
+#pragma warning restore 0672
                 {
                     throw new PlatformNotSupportedException();
                 }

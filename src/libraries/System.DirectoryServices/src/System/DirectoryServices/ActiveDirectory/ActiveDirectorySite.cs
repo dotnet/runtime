@@ -1289,7 +1289,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        private void GetDomains()
+        private unsafe void GetDomains()
         {
             // for ADAM, there is no concept of domain, we just return empty collection which is good enough
             if (!IsADAM)
@@ -1302,16 +1302,18 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 IntPtr info = (IntPtr)0;
                 // call DsReplicaSyncAllW
-                IntPtr functionPtr = global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsListDomainsInSiteW");
-                if (functionPtr == (IntPtr)0)
+                var dsListDomainsInSiteW = (delegate* unmanaged<IntPtr, char*, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsListDomainsInSiteW");
+                if (dsListDomainsInSiteW == null)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
                 }
-                UnsafeNativeMethods.DsListDomainsInSiteW dsListDomainsInSiteW = (UnsafeNativeMethods.DsListDomainsInSiteW)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(UnsafeNativeMethods.DsListDomainsInSiteW));
 
-                int result = dsListDomainsInSiteW(handle, (string)PropertyManager.GetPropertyValue(context, cachedEntry, PropertyManager.DistinguishedName)!, ref info);
-                if (result != 0)
-                    throw ExceptionHelper.GetExceptionFromErrorCode(result, serverName);
+                fixed (char* distinguishedName = (string)PropertyManager.GetPropertyValue(context, cachedEntry, PropertyManager.DistinguishedName)!)
+                {
+                    int result = dsListDomainsInSiteW(handle, distinguishedName, &info);
+                    if (result != 0)
+                        throw ExceptionHelper.GetExceptionFromErrorCode(result, serverName);
+                }
 
                 try
                 {
@@ -1344,12 +1346,11 @@ namespace System.DirectoryServices.ActiveDirectory
                 finally
                 {
                     // call DsFreeNameResultW
-                    functionPtr = global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
-                    if (functionPtr == (IntPtr)0)
+                    var dsFreeNameResultW = (delegate* unmanaged<IntPtr, void>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
+                    if (dsFreeNameResultW == null)
                     {
                         throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
                     }
-                    UnsafeNativeMethods.DsFreeNameResultW dsFreeNameResultW = (UnsafeNativeMethods.DsFreeNameResultW)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(UnsafeNativeMethods.DsFreeNameResultW));
 
                     dsFreeNameResultW(info);
                 }

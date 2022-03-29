@@ -25,6 +25,8 @@ import {
     mono_wasm_trace_logger,
     mono_wasm_add_dbg_command_received,
     mono_wasm_change_debugger_log_level,
+    mono_wasm_symbolicate_string,
+    mono_wasm_stringify_as_error_with_stack,
 } from "./debug";
 import { ENVIRONMENT_IS_WEB, ExitStatusError, runtimeHelpers, setImportsAndExports } from "./imports";
 import { DotnetModuleConfigImports, DotnetModule } from "./types";
@@ -52,7 +54,6 @@ import {
 } from "./method-calls";
 import { mono_wasm_typed_array_copy_to, mono_wasm_typed_array_from, mono_wasm_typed_array_copy_from, mono_wasm_load_bytes_into_heap } from "./buffers";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
-import { mono_wasm_add_event_listener, mono_wasm_remove_event_listener } from "./event-listener";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_web_socket_open, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close, mono_wasm_web_socket_abort } from "./web-socket";
 import cwraps from "./cwraps";
@@ -291,8 +292,6 @@ export const __linker_exports: any = {
     mono_wasm_typed_array_copy_to,
     mono_wasm_typed_array_from,
     mono_wasm_typed_array_copy_from,
-    mono_wasm_add_event_listener,
-    mono_wasm_remove_event_listener,
     mono_wasm_cancel_promise,
     mono_wasm_web_socket_open,
     mono_wasm_web_socket_send,
@@ -323,6 +322,10 @@ const INTERNAL: any = {
 
     // with mono_wasm_debugger_log and mono_wasm_trace_logger
     logging: undefined,
+
+    //
+    mono_wasm_symbolicate_string,
+    mono_wasm_stringify_as_error_with_stack,
 
     // used in debugger DevToolsHelper.cs
     mono_wasm_get_loaded_files,

@@ -4,9 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // We use our own aliases since they differ per platform
 #if TARGET_32BIT

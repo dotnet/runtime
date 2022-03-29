@@ -2,7 +2,7 @@
 
   <PropertyGroup Condition="'$(IsEligibleForNgenOptimization)' == ''">
      <IsEligibleForNgenOptimization>true</IsEligibleForNgenOptimization>
-     <IsEligibleForNgenOptimization Condition="'$(IsReferenceAssembly)' == 'true'">false</IsEligibleForNgenOptimization>
+     <IsEligibleForNgenOptimization Condition="'$(IsReferenceAssemblyProject)' == 'true'">false</IsEligibleForNgenOptimization>
      <IsEligibleForNgenOptimization Condition="'$(GeneratePlatformNotSupportedAssembly)' == 'true' or '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">false</IsEligibleForNgenOptimization>
       <!-- There's an issue causing IBCMerge failures because of mismatched MVIDs
            across many of our assemblies on Mac, so disable

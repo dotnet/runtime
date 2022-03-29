@@ -102,7 +102,7 @@ namespace System.Threading.RateLimiting
         /// <summary>
         /// Disposes the RateLimiter asynchronously.
         /// </summary>
-        /// <returns>ValueTask representin the completion of the disposal.</returns>
+        /// <returns>ValueTask representing the completion of the disposal.</returns>
         public async ValueTask DisposeAsync()
         {
             // Perform async cleanup.

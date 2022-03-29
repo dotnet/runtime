@@ -102,6 +102,8 @@ extern "C"
 #   define __NR_membarrier  389
 #  elif defined(__aarch64__)
 #   define __NR_membarrier  283
+#  elif defined(__loongarch64)
+#   define __NR_membarrier  283
 #  else
 #   error Unknown architecture
 #  endif
@@ -163,7 +165,7 @@ FOR_ALL_NUMA_FUNCTIONS
 
 #endif // HAVE_NUMA_H
 
-#if defined(HOST_ARM) || defined(HOST_ARM64)
+#if defined(HOST_ARM) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_CONF
 #else
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_ONLN

@@ -41,6 +41,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Serialization;
 
@@ -530,6 +531,24 @@ namespace System
             throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_Enum);
         }
 
+        [DoesNotReturn]
+        internal static void ThrowApplicationException(int hr)
+        {
+            // Get a message for this HR
+            Exception? ex = Marshal.GetExceptionForHR(hr);
+            if (ex != null && !string.IsNullOrEmpty(ex.Message))
+            {
+                ex = new ApplicationException(ex.Message);
+            }
+            else
+            {
+                ex = new ApplicationException();
+            }
+
+            ex.HResult = hr;
+            throw ex;
+        }
+
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
         {
             if (array == null)
@@ -860,6 +879,8 @@ namespace System
                     return "stream";
                 case ExceptionArgument.anyOf:
                     return "anyOf";
+                case ExceptionArgument.overlapped:
+                    return "overlapped";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -1129,6 +1150,7 @@ namespace System
         offset,
         stream,
         anyOf,
+        overlapped,
     }
 
     //

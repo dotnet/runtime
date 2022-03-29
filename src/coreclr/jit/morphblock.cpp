@@ -467,7 +467,7 @@ GenTree* MorphInitBlockHelper::MorphCommaBlock(Compiler* comp, GenTreeOp* firstC
 {
     assert(firstComma->OperIs(GT_COMMA));
 
-    Compiler::GenTreePtrStack commas(comp->getAllocator(CMK_ArrayStack));
+    ArrayStack<GenTree*> commas(comp->getAllocator(CMK_ArrayStack));
     for (GenTree* currComma = firstComma; currComma != nullptr && currComma->OperIs(GT_COMMA);
          currComma          = currComma->gtGetOp2())
     {
@@ -1282,12 +1282,10 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         GenTree* srcFld = nullptr;
         if (m_srcDoFldAsg)
         {
-            noway_assert(m_srcLclNum != BAD_VAR_NUM);
+            noway_assert((m_srcLclNum != BAD_VAR_NUM) && (m_srcLclNode != nullptr));
             unsigned srcFieldLclNum = m_comp->lvaGetDesc(m_srcLclNum)->lvFieldLclStart + i;
-            srcFld = m_comp->gtNewLclvNode(srcFieldLclNum, m_comp->lvaGetDesc(srcFieldLclNum)->TypeGet());
 
-            noway_assert(m_srcLclNode != nullptr);
-            srcFld->gtFlags |= m_srcLclNode->gtFlags & ~GTF_NODE_MASK;
+            srcFld = m_comp->gtNewLclvNode(srcFieldLclNum, m_comp->lvaGetDesc(srcFieldLclNum)->TypeGet());
         }
         else
         {

@@ -65,14 +65,11 @@ set(utils_common_sources
     mono-coop-mutex.h
     mono-once.h
     mono-lazy-init.h
-    mono-networkinterfaces.c
-    mono-networkinterfaces.h
     mono-proclib.c
     mono-proclib-windows.c
     mono-proclib.h
     mono-proclib-windows-internals.h
     mono-publib.c
-    mono-jemalloc.c
     mono-string.h
     mono-time.c
     mono-time.h
@@ -95,14 +92,11 @@ set(utils_common_sources
     freebsd-elf64.h
     freebsd-dwarf.h
     dtrace.h
-    gc_wrapper.h
     mono-error.c
     mono-error-internals.h
     monobitset.h
     mono-codeman.h
-    mono-counters.h
     mono-digest.h
-    mono-error.h
     mono-forward-internal.h
     mono-machine.h
     mono-math.h
@@ -235,13 +229,24 @@ endif()
 
 addprefix(utils_sources ../utils/ "${utils_platform_sources};${utils_arch_sources};${utils_common_sources}")
 
-set(utils_public_headers_base
-    mono-logger.h
-    mono-error.h
-    mono-forward.h
-    mono-publib.h
-    mono-jemalloc.h
-    mono-dl-fallback.h
-    mono-private-unstable.h
-    mono-counters.h)
-addprefix(utils_public_headers ../utils "${utils_public_headers_base}")
+if(ENABLE_DTRACE)
+    find_program(DTRACE dtrace)
+    if(TARGET_OSX)
+        set(dtrace_flags "-arch ${TARGET_ARCH}")
+    else()
+        if(TARGET_SIZEOF_VOID_P EQUAL 8)
+            set(dtrace_flags "-64")
+        elseif(TARGET_SIZEOF_VOID_P EQUAL 4)
+            set(dtrace_flags "-32")
+        endif()
+    endif()
+
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_LIST_DIR}/mono-dtrace.h
+        COMMAND ${DTRACE} -h -s "${CMAKE_CURRENT_LIST_DIR}/mono.d" -o "${CMAKE_CURRENT_LIST_DIR}/mono-dtrace.h"
+        DEPENDS ${CMAKE_CURRENT_LIST_DIR}/mono.d
+        VERBATIM
+    )
+
+    set(utils_sources "${utils_sources};${CMAKE_CURRENT_LIST_DIR}/mono-dtrace.h;../utils/dtrace.h")
+endif()

@@ -657,11 +657,12 @@ bool MyICJI::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 }
 
 void MyICJI::getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
+                                             mdToken                 targetConstraint,
                                              CORINFO_CLASS_HANDLE    delegateType,
                                              CORINFO_LOOKUP*         pLookup)
 {
     jitInstance->mc->cr->AddCall("getReadyToRunDelegateCtorHelper");
-    jitInstance->mc->repGetReadyToRunDelegateCtorHelper(pTargetMethod, delegateType, pLookup);
+    jitInstance->mc->repGetReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
 }
 
 const char* MyICJI::getHelperName(CorInfoHelpFunc funcNum)
@@ -1225,6 +1226,12 @@ bool MyICJI::getSystemVAmd64PassStructInRegisterDescriptor(
 {
     jitInstance->mc->cr->AddCall("getSystemVAmd64PassStructInRegisterDescriptor");
     return jitInstance->mc->repGetSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr);
+}
+
+uint32_t MyICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+{
+    jitInstance->mc->cr->AddCall("getLoongArch64PassStructInRegisterFlags");
+    return jitInstance->mc->repGetLoongArch64PassStructInRegisterFlags(structHnd);
 }
 
 // Stuff on ICorDynamicInfo

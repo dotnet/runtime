@@ -64,11 +64,6 @@
 #include "typekey.h"
 #include "peimagelayout.inl"
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4244)
-#endif // _MSC_VER
-
 #ifdef TARGET_64BIT
 #define COR_VTABLE_PTRSIZED     COR_VTABLE_64BIT
 #define COR_VTABLE_NOT_PTRSIZED COR_VTABLE_32BIT
@@ -1854,9 +1849,10 @@ void Module::FreeModuleIndex(ModuleIndex index)
     WRAPPER_NO_CONTRACT;
     // We subtracted 1 after we allocated this ID, so we need to
     // add 1 before we free it.
-    DWORD val = index.m_dwIndex + 1;
+    SIZE_T val = index.m_dwIndex + 1;
 
-    g_pModuleIndexDispenser->DisposeId(val);
+    _ASSERTE(val <= MAXDWORD);
+    g_pModuleIndexDispenser->DisposeId((DWORD)val);
 }
 
 
@@ -4473,7 +4469,7 @@ LoaderHeap *Module::GetThunkHeap()
         LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
             0,                                 // DWORD dwCommitBlockSize
             ThunkHeapStubManager::g_pManager->GetRangeList(),
-            TRUE);                             // BOOL fMakeExecutable
+            UnlockedLoaderHeap::HeapKind::Executable);
 
         if (FastInterlockCompareExchangePointer(&m_pThunkHeap, pNewHeap, 0) != 0)
         {
@@ -4615,16 +4611,16 @@ void Module::RunEagerFixups()
     {
         // For composite images, multiple modules may request initializing eager fixups
         // from multiple threads so we need to lock their resolution.
-        if (compositeNativeImage->EagerFixupsHaveRun())
-        {
-            return;
-        }
         CrstHolder compositeEagerFixups(compositeNativeImage->EagerFixupsLock());
         if (compositeNativeImage->EagerFixupsHaveRun())
         {
+            if (compositeNativeImage->ReadyToRunCodeDisabled())
+                GetReadyToRunInfo()->DisableAllR2RCode();
             return;
         }
         RunEagerFixupsUnlocked();
+        if (GetReadyToRunInfo()->ReadyToRunCodeDisabled())
+            compositeNativeImage->DisableAllR2RCode();
         compositeNativeImage->SetEagerFixupsHaveRun();
     }
     else
@@ -4703,6 +4699,14 @@ void Module::RunEagerFixupsUnlocked()
             }
         }
     }
+
+    TADDR base = dac_cast<TADDR>(pNativeImage->GetBase());
+
+    ExecutionManager::AddCodeRange(
+        base, base + (TADDR)pNativeImage->GetVirtualSize(),
+        ExecutionManager::GetReadyToRunJitManager(),
+        RangeSection::RANGE_SECTION_READYTORUN,
+        this /* pHeapListOrZapModule */);
 }
 #endif // !DACCESS_COMPILE
 
@@ -4782,7 +4786,7 @@ ICorJitInfo::BlockCounts * Module::AllocateMethodBlockCounts(mdToken _token, DWO
     }
     CONTRACT_END;
 
-    assert(_ILSize != 0);
+    _ASSERTE(_ILSize != 0);
 
     DWORD   listSize   = sizeof(CORCOMPILE_METHOD_PROFILE_LIST);
     DWORD   headerSize = sizeof(CORBBTPROF_METHOD_HEADER);
@@ -4801,7 +4805,7 @@ ICorJitInfo::BlockCounts * Module::AllocateMethodBlockCounts(mdToken _token, DWO
     methodProfileData->method.ILSize = _ILSize;
     methodProfileData->method.cBlock = _count;
 
-    assert(methodProfileData->size == methodProfileData->Size());
+    _ASSERTE(methodProfileData->size == methodProfileData->Size());
 
     // Link it to the per module list of profile data buffers
 
@@ -5018,10 +5022,12 @@ public:
             for (SectionList *pSec = pSectionList; pSec; pSec = pSec->next, secCount++)
             {
                 SIZE_T offset = profileMap->getCurrentOffset();
-                assert((offset & 0x3) == 0);
+                _ASSERTE((offset & 0x3) == 0);
+                _ASSERTE(offset <= MAXDWORD);
 
                 SIZE_T actualSize  = pSec->profileMap.getCurrentOffset();
                 SIZE_T alignUpSize = AlignUp(actualSize, sizeof(DWORD));
+                _ASSERTE(alignUpSize <= MAXDWORD);
 
                 profileMap->Allocate(alignUpSize);
 
@@ -5035,8 +5041,8 @@ public:
                 tableEntry = (CORBBTPROF_SECTION_TABLE_ENTRY *) profileMap->getOffsetPtr(tableEntryOffset);
                 tableEntry += secCount;
                 tableEntry->FormatID    = pSec->format;
-                tableEntry->Data.Offset = offset;
-                tableEntry->Data.Size   = alignUpSize;
+                tableEntry->Data.Offset = (DWORD)offset;
+                tableEntry->Data.Size   = (DWORD)alignUpSize;
             }
         }
 
@@ -5944,12 +5950,14 @@ static void ProfileDataAllocateScenarioInfo(ProfileEmitter * pEmitter, LPCSTR sc
             sHeaderOffset = profileMap->getCurrentOffset();
             sHeader = (CORBBTPROF_SCENARIO_HEADER *) profileMap->Allocate(sizeHeader.Value());
 
-            sHeader->size              = sHeaderSize.Value();
+            _ASSERTE(sHeaderSize.Value() <= MAXDWORD);
+            _ASSERTE(cName.Value() <= MAXDWORD);
+            sHeader->size              = (DWORD)sHeaderSize.Value();
             sHeader->scenario.ordinal  = 1;
             sHeader->scenario.mask     = 1;
             sHeader->scenario.priority = 0;
             sHeader->scenario.numRuns  = 1;
-            sHeader->scenario.cName    = cName.Value();
+            sHeader->scenario.cName    = (DWORD)cName.Value();
             wcscpy_s(sHeader->scenario.name, cName.Value(), pName);
         }
 
@@ -5960,10 +5968,12 @@ static void ProfileDataAllocateScenarioInfo(ProfileEmitter * pEmitter, LPCSTR sc
             CORBBTPROF_SCENARIO_RUN *sRun;
             sRun = (CORBBTPROF_SCENARIO_RUN *)  profileMap->Allocate(sizeRun.Value());
 
+            _ASSERTE(cCmdLine.Value() <= MAXDWORD);
+            _ASSERTE(cSystemInfo.Value() <= MAXDWORD);
             sRun->runTime     = runTime;
             sRun->mvid        = *pMvid;
-            sRun->cCmdLine    = cCmdLine.Value();
-            sRun->cSystemInfo = cSystemInfo.Value();
+            sRun->cCmdLine    = (DWORD)cCmdLine.Value();
+            sRun->cSystemInfo = (DWORD)cSystemInfo.Value();
             wcscpy_s(sRun->cmdLine, cCmdLine.Value(), pCmdLine);
             wcscpy_s(sRun->cmdLine+cCmdLine.Value(), cSystemInfo.Value(), pSystemInfo);
         }
@@ -5971,7 +5981,7 @@ static void ProfileDataAllocateScenarioInfo(ProfileEmitter * pEmitter, LPCSTR sc
         {
             CORBBTPROF_SCENARIO_HEADER * sHeader;
             sHeader = (CORBBTPROF_SCENARIO_HEADER *) profileMap->getOffsetPtr(sHeaderOffset);
-            assert(sHeader->size == sHeader->Size());
+            _ASSERTE(sHeader->size == sHeader->Size());
         }
 #endif
     }
@@ -6010,7 +6020,7 @@ static void ProfileDataAllocateMethodBlockCounts(ProfileEmitter * pEmitter, CORC
     {
         CORBBTPROF_METHOD_HEADER * pInfo = methodProfileList->GetInfo();
 
-        assert(pInfo->size == pInfo->Size());
+        _ASSERTE(pInfo->size == pInfo->Size());
 
         //
         // We set methodWasExecuted based upon the ExecutionCount of the very first block
@@ -6079,7 +6089,8 @@ static void ProfileDataAllocateMethodBlockCounts(ProfileEmitter * pEmitter, CORC
                     profileMap->Allocate(sizeof(CORBBTPROF_TOKEN_LIST_SECTION_HEADER) +
                                          pTokenArray->Size() * sizeof(CORBBTPROF_TOKEN_INFO));
 
-                header->NumTokens = pTokenArray->Size();
+                _ASSERTE(pTokenArray->Size() <= MAXDWORD);
+                header->NumTokens = (DWORD)pTokenArray->Size();
                 memcpy( (header + 1), &((*pTokenArray)[0]), pTokenArray->Size() * sizeof(CORBBTPROF_TOKEN_INFO));
 
                 // Reset the collected tokens
@@ -6340,7 +6351,8 @@ HRESULT Module::WriteMethodProfileDataLogFile(bool cleanup)
             HandleHolder profileDataFile(OpenMethodProfileDataLogFile(mvid));
 
             ULONG count;
-            BOOL result = WriteFile(profileDataFile, profileImage.getOffsetPtr(0), profileImage.getCurrentOffset(), &count, NULL);
+            _ASSERTE(profileImage.getCurrentOffset() <= MAXDWORD);
+            BOOL result = WriteFile(profileDataFile, profileImage.getOffsetPtr(0), (DWORD)profileImage.getCurrentOffset(), &count, NULL);
             if (!result || (count != profileImage.getCurrentOffset()))
             {
                 DWORD lasterror = GetLastError();
@@ -7840,10 +7852,6 @@ bool Module::HasReferenceByName(LPCUTF8 pModuleName)
     return false;
 }
 #endif
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif // _MSC_VER: warning C4244
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
 NOINLINE void NgenForceFailure_AV()

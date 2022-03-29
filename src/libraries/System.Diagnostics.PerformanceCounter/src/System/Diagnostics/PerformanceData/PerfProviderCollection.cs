@@ -33,8 +33,8 @@ namespace System.Diagnostics.PerformanceData
         private static object s_hiddenInternalSyncObject;
         private static readonly List<PerfProvider> s_providerList = new List<PerfProvider>();
         private static readonly Dictionary<object, int> s_counterSetList = new Dictionary<object, int>();
-        private static readonly CounterType[] s_counterTypes = (CounterType[])Enum.GetValues(typeof(CounterType));
-        private static readonly CounterSetInstanceType[] s_counterSetInstanceTypes = (CounterSetInstanceType[])Enum.GetValues(typeof(CounterSetInstanceType));
+        private static readonly CounterType[] s_counterTypes = Enum.GetValues<CounterType>();
+        private static readonly CounterSetInstanceType[] s_counterSetInstanceTypes = Enum.GetValues<CounterSetInstanceType>();
 
         private static object s_lockObject
         {

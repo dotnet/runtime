@@ -4,7 +4,7 @@
     SGen on the test assembly itself, everytime we move the shared framework assemblies to VNext.0.0
     or to target a new TFM, since we use the SDK to invoke SGen and there is no recent SDK with
     VNext.0.0 then SGen fails when it tries to load the types to serialize. -->
-    <TargetFrameworks>netstandard2.1</TargetFrameworks>
+    <TargetFramework>netstandard2.1</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>

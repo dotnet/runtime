@@ -31,7 +31,6 @@ void Compiler::fgInit()
     fgHaveValidEdgeWeights   = false;
     fgSlopUsedInEdgeWeights  = false;
     fgRangeUsedInEdgeWeights = true;
-    fgNeedsUpdateFlowGraph   = false;
     fgCalledCount            = BB_ZERO_WEIGHT;
 
     /* We haven't yet computed the dominator sets */
@@ -2385,6 +2384,7 @@ void Compiler::fgMarkBackwardJump(BasicBlock* targetBlock, BasicBlock* sourceBlo
         }
     }
 
+    sourceBlock->bbFlags |= BBF_BACKWARD_JUMP_SOURCE;
     targetBlock->bbFlags |= BBF_BACKWARD_JUMP_TARGET;
 }
 

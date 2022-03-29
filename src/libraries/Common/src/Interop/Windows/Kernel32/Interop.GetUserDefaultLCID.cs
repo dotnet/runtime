@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Unicode)]
+        [LibraryImport(Interop.Libraries.Kernel32)]
         internal static partial int GetUserDefaultLCID();
     }
 }

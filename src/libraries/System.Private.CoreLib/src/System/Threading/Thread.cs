@@ -420,7 +420,7 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
         }
 
-        [Obsolete(Obsoletions.ThreadAbortMessage, DiagnosticId = Obsoletions.ThreadAbortDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [Obsolete(Obsoletions.ThreadResetAbortMessage, DiagnosticId = Obsoletions.ThreadAbortDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void ResetAbort()
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
@@ -470,6 +470,7 @@ namespace System.Threading
             return SetApartmentState(state, throwOnError:false);
         }
 
+#pragma warning disable CA1822 // SetApartmentStateUnchecked should pass `this`
         private bool SetApartmentState(ApartmentState state, bool throwOnError)
         {
             switch (state)
@@ -485,6 +486,7 @@ namespace System.Threading
 
             return SetApartmentStateUnchecked(state, throwOnError);
         }
+#pragma warning disable CA1822
 
         [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public CompressedStack GetCompressedStack()
