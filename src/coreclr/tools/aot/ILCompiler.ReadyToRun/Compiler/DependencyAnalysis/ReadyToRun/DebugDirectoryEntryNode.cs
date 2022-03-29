@@ -188,14 +188,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 writer.Write(RsdsMagic);
 
-                // The PDB signature will be the same as our NGEN signature.
-                // However we want the printed version of the GUID to be the same as the
-                // byte dump of the signature so we swap bytes to make this work.
                 Debug.Assert(hash.Length >= 16);
-                writer.Write((uint)((hash[0] * 256 + hash[1]) * 256 + hash[2]) * 256 + hash[3]);
-                writer.Write((ushort)(hash[4] * 256 + hash[5]));
-                writer.Write((ushort)(hash[6] * 256 + hash[7]));
-                writer.Write(hash, 8, 8);
+                writer.Write(hash, 0, 16);
 
                 // Age
                 writer.Write(1);
