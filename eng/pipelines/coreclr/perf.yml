@@ -33,7 +33,7 @@ schedules:
 jobs:
 
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
-  
+
   # build mono
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -53,60 +53,7 @@ jobs:
       jobParameters:
         testGroup: perf
 
-  # build mono on wasm
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: Release
-      runtimeFlavor: mono
-      platforms:
-      - Browser_wasm
-      jobParameters:
-        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-        nameSuffix: wasm
-        isOfficialBuild: false
-        extraStepsTemplate: /eng/pipelines/coreclr/perf-wasm-prepare-artifacts-steps.yml
-        extraStepsParameters:
-          configForBuild: Release
-
-  #run mono wasm microbenchmarks perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
-      buildConfig: Release
-      runtimeFlavor: wasm
-      platforms:
-      - Linux_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        runtimeType: wasm
-        codeGenType: 'wasm'
-        projectFile: microbenchmarks.proj
-        runKind: micro
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
-        javascriptEngine: 'javascriptcore'
-
-  #run mono wasm aot microbenchmarks perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobtemplate: /eng/pipelines/coreclr/templates/perf-job.yml # note: should we move this file out of coreclr tempelates because it contains mono jobs?
-      buildconfig: Release
-      runtimeflavor: wasm
-      platforms:
-      - linux_x64
-      jobparameters:
-        testgroup: perf
-        livelibrariesbuildconfig: Release
-        skipLiveLibrariesDownload: true
-        runtimetype: wasm
-        codegentype: 'aot'
-        projectfile: microbenchmarks.proj
-        runkind: micro
-        runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
-        javascriptengine: 'javascriptcore'
+  - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
 
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
 
@@ -123,21 +70,7 @@ jobs:
       jobParameters:
         testGroup: perf
 
-  # build mono on wasm
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: Release
-      runtimeFlavor: mono
-      platforms:
-      - Browser_wasm
-      jobParameters:
-        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-        nameSuffix: wasm
-        isOfficialBuild: false
-        extraStepsTemplate: /eng/pipelines/coreclr/perf-wasm-prepare-artifacts-steps.yml
-        extraStepsParameters:
-          configForBuild: Release
+  - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
 
   # build mono for AOT
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -306,46 +239,6 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
 
-  # run mono wasm interpreter (default) microbenchmarks perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
-      buildConfig: release
-      runtimeFlavor: wasm
-      platforms:
-      - Linux_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        skipLiveLibrariesDownload: true
-        runtimeType: wasm
-        codeGenType: 'wasm'
-        projectFile: microbenchmarks.proj
-        runKind: micro
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
-        javascriptEngine: 'v8'
-
-  #run mono wasm aot microbenchmarks perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobtemplate: /eng/pipelines/coreclr/templates/perf-job.yml # note: should we move this file out of coreclr tempelates because it contains mono jobs?
-      buildconfig: release
-      runtimeflavor: wasm
-      platforms:
-      - linux_x64
-      jobparameters:
-        testgroup: perf
-        livelibrariesbuildconfig: Release
-        skipLiveLibrariesDownload: true
-        runtimetype: wasm
-        codegentype: 'aot'
-        projectfile: microbenchmarks.proj
-        runkind: micro
-        runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
-        javascriptEngine: 'v8'
-
   # run mono aot microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -465,25 +358,6 @@ jobs:
         projectFile: crossgen_perf.proj
         runKind: crossgen_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        logicalmachine: 'perftiger'
-
-  # run mono wasm blazor perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: wasm
-      platforms:
-      - Linux_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        skipLiveLibrariesDownload: true
-        runtimeType: wasm
-        projectFile: blazor_perf.proj
-        runKind: blazor_scenarios
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        additionalSetupParameters: '--latestdotnet'
         logicalmachine: 'perftiger'
 
   # Uncomment to reenable package replacement
