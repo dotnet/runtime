@@ -13,8 +13,8 @@ namespace Microsoft.Extensions.Hosting.Systemd
     /// </summary>
     public static partial class SystemdHelpers
     {
-        internal const string NOTIFY_SOCKET_ENVVAR_KEY = "NOTIFY_SOCKET";
-        internal const string LISTEN_PID_ENVVAR_KEY = "LISTEN_PID";
+        private const string NOTIFY_SOCKET = "NOTIFY_SOCKET";
+        private const string LISTEN_PID = "LISTEN_PID";
 
         private static bool? _isSystemdService;
 
@@ -33,6 +33,15 @@ namespace Microsoft.Extensions.Hosting.Systemd
                 return false;
             }
 
+            // To support containerized systemd services, check if we're the main process (PID 1)
+            // and if there are systemd environment variables defined for notifying the service
+            // manager, or passing listen handles.
+            if (Environment.ProcessId == 1)
+            {
+                return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(NOTIFY_SOCKET_ENVVAR_KEY)) ||
+                    !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(LISTEN_PID_ENVVAR_KEY));
+            }
+
             try
             {
                 // Check whether our direct parent is 'systemd'.
@@ -40,26 +49,10 @@ namespace Microsoft.Extensions.Hosting.Systemd
                 int parentPid = Interop.libc.GetParentPid();
                 string ppidString = parentPid.ToString(NumberFormatInfo.InvariantInfo);
                 byte[] comm = File.ReadAllBytes("/proc/" + ppidString + "/comm");
-                if (comm.AsSpan().SequenceEqual(Encoding.ASCII.GetBytes("systemd\n")))
-                {
-                    return true;
-                }
+                return comm.AsSpan().SequenceEqual(Encoding.ASCII.GetBytes("systemd\n")); 
             }
             catch
             {
-            }
-
-            // Convention for containers is to have the PID of the containerised process set to 1
-            if (Environment.ProcessId == 1)
-            {
-                if(!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(NOTIFY_SOCKET_ENVVAR_KEY)))
-                {
-                    return true;
-                }
-                if(!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(LISTEN_PID_ENVVAR_KEY)))
-                {
-                    return true;
-                }
             }
 
             return false;
