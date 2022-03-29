@@ -3471,8 +3471,6 @@ namespace System
 
         #region Invoke Member
 
-        private static readonly RuntimeType s_typedRef = (RuntimeType)typeof(TypedReference);
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool CanValueSpecialCast(RuntimeType valueType, RuntimeType targetType);
 
@@ -3628,10 +3626,9 @@ namespace System
             {
                 if (RuntimeTypeHandle.IsValueType(this))
                 {
-                    // If a nullable, pass the null as an object even though it's a value type.
                     if (IsNullableOfT)
                     {
-                        // Treat as a reference type.
+                        // Treat as a boxed value.
                         isValueType = false;
                         copyBack = false;
                     }
@@ -3657,14 +3654,6 @@ namespace System
                     copyBack = false;
                 }
 
-                return CheckValueStatus.Success;
-            }
-
-            if (this == s_typedRef)
-            {
-                // Everything works for a typedref
-                isValueType = false;
-                copyBack = false;
                 return CheckValueStatus.Success;
             }
 

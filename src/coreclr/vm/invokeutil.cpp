@@ -142,25 +142,37 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest
     case ELEMENT_TYPE_BOOLEAN:
     case ELEMENT_TYPE_U1:
     case ELEMENT_TYPE_I1:
+    {
         _ASSERTE(rArg != NULL);
-        *(PVOID *)pArgDst = (INT8*)*rArg;
+        ARG_SLOT data = 0;
+        data = *(INT8*)rArg;
+        *(PVOID *)pArgDst = (PVOID)data;
         break;
+    }
 
     case ELEMENT_TYPE_I2:
     case ELEMENT_TYPE_U2:
     case ELEMENT_TYPE_CHAR:
+    {
         _ASSERTE(rArg != NULL);
-        *(PVOID *)pArgDst = (INT16*)*rArg;
+        ARG_SLOT data = 0;
+        data = *(INT16*)rArg;
+        *(PVOID *)pArgDst = (PVOID)data;
         break;
+    }
 
     case ELEMENT_TYPE_I4:
     case ELEMENT_TYPE_U4:
     case ELEMENT_TYPE_R4:
     IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
     IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
+    {
         _ASSERTE(rArg != NULL);
-        *(PVOID *)pArgDst = (INT32*)*rArg;
+        ARG_SLOT data = 0;
+        data = *(INT32*)rArg;
+        *(PVOID *)pArgDst = (PVOID)data;
         break;
+    }
 
     case ELEMENT_TYPE_I8:
     case ELEMENT_TYPE_U8:
@@ -169,7 +181,7 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest
     IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
     {
         _ASSERTE(rArg != NULL);
-        *(INT64 *)pArgDst = (INT64)*rArg;
+        *(INT64 *)pArgDst = *(INT64 *)rArg;
         break;
     }
 
