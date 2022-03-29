@@ -771,7 +771,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     case "methodId":
                     {
-                        var resMethod = await context.SdbAgent.InvokeMethodInObject(objectId.Value, objectId.SubValue, null, token);
+                        var resMethod = await context.SdbAgent.InvokeMethodInObject(objectId, objectId.SubValue, null, token);
                         return ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = new JArray(resMethod) }) : new JArray(resMethod));
                     }
                     case "object":
@@ -799,7 +799,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return ValueOrError<JToken>.WithError($"RuntimeGetProperties: unknown object id scheme: {objectId.Scheme}");
                 }
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 return ValueOrError<JToken>.WithError($"RuntimeGetProperties: Failed to get properties for {objectId}: {ex}");
             }
