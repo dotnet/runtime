@@ -68,6 +68,7 @@
     <TargetSpec>$(TargetOSComponent)_$(TargetArchitectureForLocalJitBuild)_$(TargetArchitectureForSharedLibraries)</TargetSpec>
 
     <JitInterfaceLibraryName>$(LibPrefix)jitinterface_$(TargetArchitectureForSharedLibraries)$(LibSuffix)</JitInterfaceLibraryName>
+    <!-- This will be provided when using the liveBuild, and unset otherwise. -->
     <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == ''">$(RuntimeBinDir)$(CrossHostArch)</CoreCLRArtifactsPath>
   </PropertyGroup>
 
