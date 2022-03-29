@@ -555,6 +555,8 @@ namespace System.Reflection.Emit
             return retValue;
         }
 
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* arguments, BindingFlags invokeAttr)
         {
             if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)

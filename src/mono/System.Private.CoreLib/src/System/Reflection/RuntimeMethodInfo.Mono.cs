@@ -859,6 +859,8 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern object InternalInvoke(object? obj, in Span<object?> parameters, out Exception exc);
 
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* byrefParameters, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
         {
             Exception exc;

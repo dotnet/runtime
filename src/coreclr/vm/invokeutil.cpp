@@ -139,22 +139,28 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest
     CorElementType type = th.GetVerifierCorElementType();
 
     switch (type) {
-    case ELEMENT_TYPE_I4:
     case ELEMENT_TYPE_BOOLEAN:
+    case ELEMENT_TYPE_CHAR:
     case ELEMENT_TYPE_U1:
     case ELEMENT_TYPE_I1:
+        _ASSERTE(rArg != NULL);
+        *(PVOID *)pArgDst = (INT8*)*rArg;
+        break;
+
     case ELEMENT_TYPE_I2:
     case ELEMENT_TYPE_U2:
-    case ELEMENT_TYPE_CHAR:
+        _ASSERTE(rArg != NULL);
+        *(PVOID *)pArgDst = (INT16*)*rArg;
+        break;
+
+    case ELEMENT_TYPE_I4:
     case ELEMENT_TYPE_U4:
     case ELEMENT_TYPE_R4:
-    IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
     IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
-    {
+    IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
         _ASSERTE(rArg != NULL);
-        *(PVOID *)pArgDst = (PVOID)*rArg;
+        *(PVOID *)pArgDst = (INT32*)*rArg;
         break;
-    }
 
     case ELEMENT_TYPE_I8:
     case ELEMENT_TYPE_U8:
