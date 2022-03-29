@@ -8,15 +8,19 @@
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' == 'true'">WasmRunnerAOTTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' != 'true'">WasmRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT'">WasmRunnerTemplate.cmd</RunScriptInputName>
+    <InnerRunScriptInputName>BionicRunOnDevice.sh</InnerRunScriptInputName>
   </PropertyGroup>
 
   <PropertyGroup>
     <RunScriptInputPath Condition="'$(RunScriptInputPath)' == ''">$(MSBuildThisFileDirectory)$(RunScriptInputName)</RunScriptInputPath>
+    <InnerRunScriptInputPath>$(MSBuildThisFileDirectory)$(InnerRunScriptInputName)</InnerRunScriptInputPath>
 
     <RunScriptOutputName Condition="'$(TargetOS)' != 'windows'">RunTests.sh</RunScriptOutputName>
     <RunScriptOutputName Condition="'$(BuildTestsOnHelix)' == 'true' and '$(TargetsAppleMobile)' == 'true'">build-apple-app.sh</RunScriptOutputName>
     <RunScriptOutputName Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT')">RunTests.cmd</RunScriptOutputName>
+    <InnerRunScriptOutputName>$(AssemblyName).sh</InnerRunScriptOutputName>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
+    <InnerRunScriptOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', '$(InnerRunScriptOutputName)'))</InnerRunScriptOutputPath>
 
     <RunScriptHostDir Condition="'$(TargetOS)' == 'windows'">%RUNTIME_PATH%\</RunScriptHostDir>
     <RunScriptHostDir Condition="'$(TargetOS)' != 'windows'">$RUNTIME_PATH/</RunScriptHostDir>
@@ -107,6 +111,8 @@
                        OutputPath="$(RunScriptOutputPath)" />
 
     <Exec Condition="'$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'" Command="chmod +x $(RunScriptOutputPath)" />
+    <Copy Condition="$(OutputRid.StartsWith('linux-bionic'))" SourceFiles="$(InnerRunScriptInputPath)" DestinationFiles="$(InnerRunScriptOutputPath)" />
+    <Exec Condition="$(OutputRid.StartsWith('linux-bionic'))" Command="chmod +x $(InnerRunScriptOutputPath)" />
   </Target>
 
   <Target Name="RunTests">
