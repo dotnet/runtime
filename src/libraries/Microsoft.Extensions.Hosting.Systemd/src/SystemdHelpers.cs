@@ -38,8 +38,8 @@ namespace Microsoft.Extensions.Hosting.Systemd
             // manager, or passing listen handles.
             if (Environment.ProcessId == 1)
             {
-                return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(NOTIFY_SOCKET_ENVVAR_KEY)) ||
-                    !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(LISTEN_PID_ENVVAR_KEY));
+                return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(NOTIFY_SOCKET)) ||
+                    !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(LISTEN_PID));
             }
 
             try
