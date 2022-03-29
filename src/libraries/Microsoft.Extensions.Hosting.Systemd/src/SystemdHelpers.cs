@@ -45,7 +45,6 @@ namespace Microsoft.Extensions.Hosting.Systemd
             try
             {
                 // Check whether our direct parent is 'systemd'.
-                // This will not work for containerised applications, since our direct parent will be some container runtime
                 int parentPid = Interop.libc.GetParentPid();
                 string ppidString = parentPid.ToString(NumberFormatInfo.InvariantInfo);
                 byte[] comm = File.ReadAllBytes("/proc/" + ppidString + "/comm");
