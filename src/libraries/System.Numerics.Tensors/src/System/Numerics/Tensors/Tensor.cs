@@ -137,57 +137,9 @@ namespace System.Numerics.Tensors
         {
             get
             {
-                if (typeof(T) == typeof(bool))
+                if (typeof(T).IsPrimitive || typeof(T) == typeof(decimal))
                 {
-                    return (T)(object)(false);
-                }
-                else if (typeof(T) == typeof(byte))
-                {
-                    return (T)(object)(byte)(0);
-                }
-                else if (typeof(T) == typeof(char))
-                {
-                    return (T)(object)(char)(0);
-                }
-                else if (typeof(T) == typeof(decimal))
-                {
-                    return (T)(object)(decimal)(0);
-                }
-                else if (typeof(T) == typeof(double))
-                {
-                    return (T)(object)(double)(0);
-                }
-                else if (typeof(T) == typeof(float))
-                {
-                    return (T)(object)(float)(0);
-                }
-                else if (typeof(T) == typeof(int))
-                {
-                    return (T)(object)(int)(0);
-                }
-                else if (typeof(T) == typeof(long))
-                {
-                    return (T)(object)(long)(0);
-                }
-                else if (typeof(T) == typeof(sbyte))
-                {
-                    return (T)(object)(sbyte)(0);
-                }
-                else if (typeof(T) == typeof(short))
-                {
-                    return (T)(object)(short)(0);
-                }
-                else if (typeof(T) == typeof(uint))
-                {
-                    return (T)(object)(uint)(0);
-                }
-                else if (typeof(T) == typeof(ulong))
-                {
-                    return (T)(object)(ulong)(0);
-                }
-                else if (typeof(T) == typeof(ushort))
-                {
-                    return (T)(object)(ushort)(0);
+                    return (T)(object)(T)(0);
                 }
 
                 throw new NotSupportedException();
@@ -198,57 +150,9 @@ namespace System.Numerics.Tensors
         {
             get
             {
-                if (typeof(T) == typeof(bool))
+                if (typeof(T).IsPrimitive || typeof(T) == typeof(decimal))
                 {
-                    return (T)(object)(true);
-                }
-                else if (typeof(T) == typeof(byte))
-                {
-                    return (T)(object)(byte)(1);
-                }
-                else if (typeof(T) == typeof(char))
-                {
-                    return (T)(object)(char)(1);
-                }
-                else if (typeof(T) == typeof(decimal))
-                {
-                    return (T)(object)(decimal)(1);
-                }
-                else if (typeof(T) == typeof(double))
-                {
-                    return (T)(object)(double)(1);
-                }
-                else if (typeof(T) == typeof(float))
-                {
-                    return (T)(object)(float)(1);
-                }
-                else if (typeof(T) == typeof(int))
-                {
-                    return (T)(object)(int)(1);
-                }
-                else if (typeof(T) == typeof(long))
-                {
-                    return (T)(object)(long)(1);
-                }
-                else if (typeof(T) == typeof(sbyte))
-                {
-                    return (T)(object)(sbyte)(1);
-                }
-                else if (typeof(T) == typeof(short))
-                {
-                    return (T)(object)(short)(1);
-                }
-                else if (typeof(T) == typeof(uint))
-                {
-                    return (T)(object)(uint)(1);
-                }
-                else if (typeof(T) == typeof(ulong))
-                {
-                    return (T)(object)(ulong)(1);
-                }
-                else if (typeof(T) == typeof(ushort))
-                {
-                    return (T)(object)(ushort)(1);
+                    return (T)(object)(T)(1);
                 }
 
                 throw new NotSupportedException();
