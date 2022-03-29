@@ -37,22 +37,19 @@ namespace System.Net.Quic.Tests
             return TestConnection(policy, policy);
         }
 
-        [Fact]
-        public void EmptyCipherSuitesPolicy_ThrowsArgumentException()
+        [Theory]
+        [InlineData(new TlsCipherSuite[] { })]
+        [InlineData(new[] { TlsCipherSuite.TLS_AES_128_CCM_8_SHA256 })]
+        public void NoSupportedCiphers_ThrowsArgumentException(TlsCipherSuite[] ciphers)
         {
+            CipherSuitesPolicy policy = new CipherSuitesPolicy(ciphers);
             var listenerOptions = CreateQuicListenerOptions();
-            listenerOptions.ServerAuthenticationOptions.CipherSuitesPolicy = new CipherSuitesPolicy(Array.Empty<TlsCipherSuite>());
+            listenerOptions.ServerAuthenticationOptions.CipherSuitesPolicy = policy;
             Assert.Throws<ArgumentException>(() => CreateQuicListener(listenerOptions));
-        }
 
-        [Fact]
-        public async Task UnsupportedCipher_ThrowsArgumentException()
-        {
-            TlsCipherSuite cipher = TlsCipherSuite.TLS_AES_128_CCM_8_SHA256;
-            CipherSuitesPolicy policy = new CipherSuitesPolicy(new[] { cipher });
-            ArgumentException ex = await Assert.ThrowsAsync<ArgumentException>(() => TestConnection(policy, policy));
-
-            Assert.Contains(cipher.ToString(), ex.Message);
+            var clientOptions = CreateQuicClientOptions();
+            clientOptions.ClientAuthenticationOptions.CipherSuitesPolicy = policy;
+            Assert.Throws<ArgumentException>(() => CreateQuicConnection(clientOptions));
         }
 
         [Fact]

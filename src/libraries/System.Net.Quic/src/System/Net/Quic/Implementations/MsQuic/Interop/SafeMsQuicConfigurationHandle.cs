@@ -273,11 +273,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     case TlsCipherSuite.TLS_CHACHA20_POLY1305_SHA256:
                         flags |= QUIC_ALLOWED_CIPHER_SUITE_FLAGS.CHACHA20_POLY1305_SHA256;
                         break;
-                    case TlsCipherSuite.TLS_AES_128_CCM_SHA256:
-                        // not supported by MsQuic, but QUIC RFC allows it so we ignore it.
-                        break;
+                    case TlsCipherSuite.TLS_AES_128_CCM_SHA256: // not supported by MsQuic (yet?), but QUIC RFC allows it so we ignore it.
                     default:
-                        throw new ArgumentException(SR.Format(SR.net_quic_unsupported_cipher_suite, cipher));
+                        // ignore
+                        break;
                 }
             }
 

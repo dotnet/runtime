@@ -165,9 +165,6 @@
   <data name="net_ssl_app_protocols_invalid" xml:space="preserve">
     <value>The application protocol list is invalid.</value>
   </data>
-  <data name="net_quic_unsupported_cipher_suite" xml:space="preserve">
-    <value>QUIC does not support '{0}' cipher suite.</value>
-  </data>
   <data name="net_quic_empty_cipher_suite" xml:space="preserve">
     <value>CipherSuitePolicy must specify at least one cipher supported by QUIC.</value>
   </data>
