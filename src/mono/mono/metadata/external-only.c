@@ -274,14 +274,6 @@ mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, Mono
 }
 
 /**
- * mono_config_for_assembly:
- */
-void
-mono_config_for_assembly (MonoImage *assembly)
-{
-}
-
-/**
  * mono_class_get_property_from_name:
  * \param klass a class
  * \param name name of the property to lookup in the specified class
@@ -373,11 +365,6 @@ void
 mono_thread_manage (void)
 {
 	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_thread_manage_internal ());
-}
-
-void
-mono_register_config_for_assembly (const char* assembly_name, const char* config_xml)
-{
 }
 
 /**
