@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Caching.Memory
             _cache = memoryCache;
             if (memoryCache.TrackLinkedCacheEntries)
             {
-                AsyncLocal<CacheEntry> holder = _current;
+                AsyncLocal<CacheEntry?> holder = _current;
                 _previous = holder.Value;
                 holder.Value = this;
             }
