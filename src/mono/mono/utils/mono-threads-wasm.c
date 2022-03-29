@@ -204,8 +204,10 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 		*stsize = wasm_get_stack_size ();
 	}
 #else
+#if HOST_WASI
 	if (wasm_get_stack_base() == 0)
 		stack_base = ((int)&tmp) - 4; //fake a stack_base to be able to get callstack while debugging.
+#endif
 	*staddr = (guint8*)wasm_get_stack_base ();
 	*stsize = wasm_get_stack_size ();
 #endif
