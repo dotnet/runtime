@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Xml
 
         public EncryptedKey() { }
 
-        public string Recipient
+        public string? Recipient
         {
             get => _recipient ??= string.Empty; // an unspecified value for an XmlAttribute is string.Empty
             set

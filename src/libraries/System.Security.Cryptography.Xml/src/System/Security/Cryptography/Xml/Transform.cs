@@ -30,19 +30,19 @@ namespace System.Security.Cryptography.Xml
         private Hashtable? _propagatedNamespaces;
         private XmlElement? _context;
 
-        internal string BaseURI
+        internal string? BaseURI
         {
             get { return _baseUri; }
             set { _baseUri = value; }
         }
 
-        internal SignedXml SignedXml
+        internal SignedXml? SignedXml
         {
             get { return _signedXml; }
             set { _signedXml = value; }
         }
 
-        internal Reference Reference
+        internal Reference? Reference
         {
             get { return _reference; }
             set { _reference = value; }
@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.Xml
             set { _algorithm = value; }
         }
 
-        public XmlResolver Resolver
+        public XmlResolver? Resolver
         {
             internal get
             {
@@ -181,7 +181,7 @@ namespace System.Security.Cryptography.Xml
                 if (_propagatedNamespaces != null)
                     return _propagatedNamespaces;
 
-                Reference reference = Reference;
+                Reference? reference = Reference;
                 SignedXml signedXml = (reference == null ? SignedXml : reference.SignedXml);
 
                 // If the reference is not a Uri reference with a DataObject target, return an empty hashtable.

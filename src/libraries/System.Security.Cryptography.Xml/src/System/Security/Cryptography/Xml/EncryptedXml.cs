@@ -318,9 +318,9 @@ namespace System.Security.Cryptography.Xml
                 if (kiName != null)
                 {
                     // Get the decryption key from the key mapping
-                    string keyName = kiName.Value;
+                    string? keyName = kiName.Value;
                     if ((SymmetricAlgorithm)_keyNameMapping[keyName] != null)
-                        return (SymmetricAlgorithm)_keyNameMapping[keyName];
+                        return (SymmetricAlgorithm)_keyNameMapping[keyName]!;
                     // try to get it from a CarriedKeyName
                     XmlNamespaceManager nsm = new XmlNamespaceManager(_document.NameTable);
                     nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
@@ -408,7 +408,7 @@ namespace System.Security.Cryptography.Xml
                 if (kiName != null)
                 {
                     // Get the decryption key from the key mapping
-                    string keyName = kiName.Value;
+                    string? keyName = kiName.Value;
                     object? kek = _keyNameMapping[keyName];
                     if (kek != null)
                     {
@@ -660,15 +660,15 @@ namespace System.Security.Cryptography.Xml
             // Look for all EncryptedData elements and decrypt them
             XmlNamespaceManager nsm = new XmlNamespaceManager(_document.NameTable);
             nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
-            XmlNodeList encryptedDataList = _document.SelectNodes("//enc:EncryptedData", nsm);
+            XmlNodeList? encryptedDataList = _document.SelectNodes("//enc:EncryptedData", nsm);
             if (encryptedDataList != null)
             {
                 foreach (XmlNode encryptedDataNode in encryptedDataList)
                 {
-                    XmlElement encryptedDataElement = encryptedDataNode as XmlElement;
+                    XmlElement encryptedDataElement = (encryptedDataNode as XmlElement)!;
                     EncryptedData ed = new EncryptedData();
                     ed.LoadXml(encryptedDataElement);
-                    SymmetricAlgorithm symAlg = GetDecryptionKey(ed, null);
+                    SymmetricAlgorithm? symAlg = GetDecryptionKey(ed, null);
                     if (symAlg == null)
                         throw new CryptographicException(SR.Cryptography_Xml_MissingDecryptionKey);
                     byte[] decrypted = DecryptData(ed, symAlg);
@@ -693,7 +693,7 @@ namespace System.Security.Cryptography.Xml
             CipherMode origMode = symmetricAlgorithm.Mode;
             PaddingMode origPadding = symmetricAlgorithm.Padding;
 
-            byte[] cipher = null;
+            byte[]? cipher = null;
             try
             {
                 symmetricAlgorithm.Mode = _mode;
@@ -761,11 +761,11 @@ namespace System.Security.Cryptography.Xml
             byte[] origIV = symmetricAlgorithm.IV;
 
             // read the IV from cipherValue
-            byte[] decryptionIV = null;
+            byte[]? decryptionIV = null;
             if (_mode != CipherMode.ECB)
                 decryptionIV = GetDecryptionIV(encryptedData, null);
 
-            byte[] output = null;
+            byte[]? output = null;
             try
             {
                 int lengthIV = 0;

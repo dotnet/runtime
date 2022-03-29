@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.Xml
 
             for (int i = _ancestorStack.Count - 1; i >= 0; i--)
             {
-                foreach (object a in GetScopeAt(i)!.GetUnrendered().Values)
+                foreach (object a in GetScopeAt(i).GetUnrendered().Values)
                 {
                     attrib = (XmlAttribute)a;
                     if (attrib != null)

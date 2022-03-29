@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Xml
     {
         private string? _target;
         private string? _id;
-        private XmlElement _elemProp;
+        private XmlElement? _elemProp;
         private XmlElement? _cachedXml;
 
         // We are being lax here as per the spec
@@ -40,7 +40,7 @@ namespace System.Security.Cryptography.Xml
             get { return _target; }
         }
 
-        public XmlElement PropertyElement
+        public XmlElement? PropertyElement
         {
             get { return _elemProp; }
             set
@@ -75,8 +75,7 @@ namespace System.Security.Cryptography.Xml
 
         internal XmlElement GetXml(XmlDocument document)
         {
-            //red flag
-            return (document.ImportNode(_elemProp, true) as XmlElement)!;
+            return (document.ImportNode(_elemProp!, true) as XmlElement)!;
         }
 
         public void LoadXml(XmlElement value)

@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.Xml
             }
 
             ReferenceType = value.LocalName;
-            string uri = Utils.GetAttribute(value, "URI", EncryptedXml.XmlEncNamespaceUrl);
+            string? uri = Utils.GetAttribute(value, "URI", EncryptedXml.XmlEncNamespaceUrl);
             Uri = uri ?? throw new CryptographicException(SR.Cryptography_Xml_UriRequired);
 
             // Transforms

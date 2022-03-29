@@ -10,12 +10,12 @@ namespace System.Security.Cryptography.Xml
     {
         internal ArrayList _ancestorStack = new ArrayList();
 
-        internal NamespaceFrame? GetScopeAt(int i)
+        internal NamespaceFrame GetScopeAt(int i)
         {
-            return (NamespaceFrame)_ancestorStack[i];
+            return (NamespaceFrame)_ancestorStack[i]!;
         }
 
-        internal NamespaceFrame? GetCurrentScope()
+        internal NamespaceFrame GetCurrentScope()
         {
             return GetScopeAt(_ancestorStack.Count - 1);
         }
@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.Xml
             for (int i = _ancestorStack.Count - 1; i >= 0; i--)
             {
                 // red flag
-                if ((attr = GetScopeAt(i)!.GetRendered(nsPrefix)) != null)
+                if ((attr = GetScopeAt(i).GetRendered(nsPrefix)) != null)
                 {
                     depth = i;
                     return attr;
@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Xml
             for (int i = _ancestorStack.Count - 1; i >= 0; i--)
             {
                 //red flag
-                if ((attr = GetScopeAt(i)!.GetUnrendered(nsPrefix)) != null)
+                if ((attr = GetScopeAt(i).GetUnrendered(nsPrefix)) != null)
                 {
                     depth = i;
                     return attr;

@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Xml
 
         public override XmlNode? Item(int index)
         {
-            return (XmlNode)_nodeArray[index];
+            return (XmlNode)_nodeArray[index]!;
         }
 
         public override IEnumerator GetEnumerator()

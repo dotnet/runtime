@@ -7,8 +7,8 @@ namespace System.Security.Cryptography.Xml
 {
     public class KeyInfoRetrievalMethod : KeyInfoClause
     {
-        private string _uri;
-        private string _type;
+        private string? _uri;
+        private string? _type;
 
         //
         // public constructors

@@ -20,14 +20,14 @@ namespace System.Security.Cryptography.Xml
 
         public XmlDsigExcC14NTransform(string inclusiveNamespacesPrefixList) : this(false, inclusiveNamespacesPrefixList) { }
 
-        public XmlDsigExcC14NTransform(bool includeComments, string inclusiveNamespacesPrefixList)
+        public XmlDsigExcC14NTransform(bool includeComments, string? inclusiveNamespacesPrefixList)
         {
             _includeComments = includeComments;
             _inclusiveNamespacesPrefixList = inclusiveNamespacesPrefixList;
             Algorithm = (includeComments ? SignedXml.XmlDsigExcC14NWithCommentsTransformUrl : SignedXml.XmlDsigExcC14NTransformUrl);
         }
 
-        public string InclusiveNamespacesPrefixList
+        public string? InclusiveNamespacesPrefixList
         {
             get { return _inclusiveNamespacesPrefixList; }
             set { _inclusiveNamespacesPrefixList = value; }

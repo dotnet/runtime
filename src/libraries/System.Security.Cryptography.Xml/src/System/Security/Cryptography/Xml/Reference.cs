@@ -18,9 +18,9 @@ namespace System.Security.Cryptography.Xml
         private string _digestMethod;
         private byte[] _digestValue;
         private HashAlgorithm _hashAlgorithm;
-        private readonly object _refTarget;
+        private readonly object? _refTarget;
         private readonly ReferenceTargetType _refTargetType;
-        private XmlElement _cachedXml;
+        private XmlElement? _cachedXml;
         private SignedXml _signedXml;
         internal CanonicalXmlNodeList _namespaces;
 

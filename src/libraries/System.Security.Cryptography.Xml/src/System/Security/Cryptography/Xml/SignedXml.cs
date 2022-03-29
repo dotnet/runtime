@@ -246,7 +246,7 @@ namespace System.Security.Cryptography.Xml
             return CheckSignatureReturningKey(out _);
         }
 
-        public bool CheckSignatureReturningKey(out AsymmetricAlgorithm signingKey)
+        public bool CheckSignatureReturningKey(out AsymmetricAlgorithm? signingKey)
         {
             SignedXmlDebugLog.LogBeginSignatureVerification(this, _context);
 

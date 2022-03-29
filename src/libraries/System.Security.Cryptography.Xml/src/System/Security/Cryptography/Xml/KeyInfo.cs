@@ -8,7 +8,7 @@ namespace System.Security.Cryptography.Xml
 {
     public class KeyInfo : IEnumerable
     {
-        private string _id;
+        private string? _id;
         private readonly ArrayList _keyInfoClauses;
 
         //
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Xml
         // public properties
         //
 
-        public string Id
+        public string? Id
         {
             get { return _id; }
             set { _id = value; }
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.Xml
             // Add all the clauses that go underneath it
             for (int i = 0; i < _keyInfoClauses.Count; ++i)
             {
-                XmlElement xmlElement = ((KeyInfoClause)_keyInfoClauses[i]).GetXml(xmlDocument);
+                XmlElement xmlElement = ((KeyInfoClause)_keyInfoClauses[i]!).GetXml(xmlDocument);
                 if (xmlElement != null)
                 {
                     keyInfoElement.AppendChild(xmlElement);
@@ -70,10 +70,10 @@ namespace System.Security.Cryptography.Xml
             if (!Utils.VerifyAttributes(keyInfoElement, "Id"))
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "KeyInfo");
 
-            XmlNode child = keyInfoElement.FirstChild;
+            XmlNode? child = keyInfoElement.FirstChild;
             while (child != null)
             {
-                XmlElement elem = child as XmlElement;
+                XmlElement? elem = child as XmlElement;
                 if (elem != null)
                 {
                     // Create the right type of KeyInfoClause; we use a combination of the namespace and tag name (local name)

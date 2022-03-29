@@ -150,7 +150,7 @@ namespace System.Security.Cryptography.Xml
             throw new CryptographicException(SR.Cryptography_Xml_TransformIncorrectInputType);
         }
 
-        internal Stream TransformToOctetStream(Stream input, XmlResolver resolver, string baseUri)
+        internal Stream TransformToOctetStream(Stream? input, XmlResolver resolver, string baseUri)
         {
             return TransformToOctetStream(input, typeof(Stream), resolver, baseUri);
         }

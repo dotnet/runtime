@@ -13,11 +13,11 @@ namespace System.Security.Cryptography.Xml
         private string _signatureMethod;
         private string _signatureLength;
         private readonly ArrayList _references;
-        private XmlElement _cachedXml;
-        private SignedXml _signedXml;
-        private Transform _canonicalizationMethodTransform;
+        private XmlElement? _cachedXml;
+        private SignedXml? _signedXml;
+        private Transform? _canonicalizationMethodTransform;
 
-        internal SignedXml SignedXml
+        internal SignedXml? SignedXml
         {
             get { return _signedXml; }
             set { _signedXml = value; }
@@ -149,7 +149,7 @@ namespace System.Security.Cryptography.Xml
 
         public XmlElement GetXml()
         {
-            if (CacheValid) return _cachedXml;
+            if (CacheValid) return _cachedXml!;
 
             XmlDocument document = new XmlDocument();
             document.PreserveWhitespace = true;
