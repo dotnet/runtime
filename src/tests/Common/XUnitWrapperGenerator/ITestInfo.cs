@@ -345,11 +345,15 @@ sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
         builder.AppendLine("}");
 
         builder.AppendLine("}");
+        builder.AppendLine("else");
+        builder.AppendLine("{");
+        builder.AppendLine(GenerateSkippedTestReporting(test));
+        builder.AppendLine("}");
         return builder.ToString();
     }
 
     public string GenerateSkippedTestReporting(ITestInfo skippedTest)
     {
-        return $"{_summaryLocalIdentifier}.ReportSkippedTest({skippedTest.TestNameExpression}, \"{skippedTest.ContainingType}\", \"{skippedTest.Method}\", System.TimeSpan.Zero, string.Empty);";
+        return $"{_summaryLocalIdentifier}.ReportSkippedTest({skippedTest.TestNameExpression}, \"{skippedTest.ContainingType}\", @\"{skippedTest.Method}\", System.TimeSpan.Zero, string.Empty);";
     }
 }

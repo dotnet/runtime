@@ -3055,7 +3055,7 @@ mini_get_rgctx_access_for_method (MonoMethod *method)
 		return MONO_RGCTX_ACCESS_MRGCTX;
 
 	if (method->flags & METHOD_ATTRIBUTE_STATIC || m_class_is_valuetype (method->klass))
-		return MONO_RGCTX_ACCESS_VTABLE;
+		return MONO_RGCTX_ACCESS_MRGCTX;
 
 	return MONO_RGCTX_ACCESS_THIS;
 }
@@ -3752,6 +3752,13 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		mono_cfg_dump_ir (cfg, "decompose_array_access_opts");
 	}
 
+	/* Eliminate the mrgctx init call if the method has no mrgctx entries */
+	if (cfg->gshared_info && !cfg->gshared_info->num_entries) {
+		NULLIFY_INS (cfg->init_method_rgctx_ins);
+		/* Needed by the assert in get_gshared_info_slot () */
+		cfg->init_method_rgctx_ins = NULL;
+	}
+
 	if (cfg->got_var) {
 #ifndef MONO_ARCH_GOT_REG
 		GList *regs;
@@ -3839,6 +3846,13 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	}
 
 	mono_insert_branches_between_bblocks (cfg);
+
+	if (cfg->gshared_info) {
+		MonoGSharedMethodInfo *info = mini_gshared_method_info_dup (cfg->mem_manager, cfg->gshared_info);
+
+		/* cfg->gshared_info is already allocated from permanent memory, so change only the entries */
+		cfg->gshared_info->entries = info->entries;
+	}
 
 	if (COMPILE_LLVM (cfg)) {
 #ifdef ENABLE_LLVM
@@ -3943,10 +3957,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 #endif
 
 	/* collect statistics */
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_inc_i32 (&mono_perfcounters->jit_methods);
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->jit_bytes, header->code_size);
-#endif
 	gint32 code_size_ratio = cfg->code_len;
 	mono_atomic_fetch_add_i32 (&mono_jit_stats.allocated_code_size, code_size_ratio);
 	mono_atomic_fetch_add_i32 (&mono_jit_stats.native_code_size, code_size_ratio);

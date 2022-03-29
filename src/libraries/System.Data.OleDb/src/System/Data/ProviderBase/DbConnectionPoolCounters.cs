@@ -217,7 +217,7 @@ namespace System.Data.ProviderBase
             NumberOfActiveConnections = new Counter(verboseCategoryName, instanceName, CreationData.NumberOfActiveConnections.CounterName, CreationData.NumberOfActiveConnections.CounterType);
             NumberOfFreeConnections = new Counter(verboseCategoryName, instanceName, CreationData.NumberOfFreeConnections.CounterName, CreationData.NumberOfFreeConnections.CounterType);
         }
-        private string? GetAssemblyName()
+        private static string? GetAssemblyName()
         {
             string? result = null;
 
@@ -236,7 +236,7 @@ namespace System.Data.ProviderBase
         }
 
         // SxS: this method uses GetCurrentProcessId to construct the instance name.
-        private string GetInstanceName()
+        private static string GetInstanceName()
         {
             string? instanceName = GetAssemblyName(); // instance perfcounter name
 
@@ -296,7 +296,7 @@ namespace System.Data.ProviderBase
             SafeDispose(NumberOfReclaimedConnections);
         }
 
-        private void SafeDispose(Counter counter)
+        private static void SafeDispose(Counter counter)
         {
             if (null != counter)
             {

@@ -43,7 +43,6 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/w32event.h>
-#include <mono/metadata/w32file.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/coree.h>
@@ -68,8 +67,6 @@
 
 static MonoImage *exe_image;
 static MonoDomain *mono_root_domain;
-
-gboolean mono_dont_free_domains;
 
 /* AppConfigInfo: Information about runtime versions supported by an
  * aplication.
@@ -127,10 +124,6 @@ create_root_domain (void)
 
 	MONO_PROFILER_RAISE (domain_loading, (domain));
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_inc_i32 (&mono_perfcounters->loader_appdomains);
-	mono_atomic_inc_i32 (&mono_perfcounters->loader_total_appdomains);
-#endif
 
 	MONO_PROFILER_RAISE (domain_loaded, (domain));
 
@@ -171,11 +164,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 #endif
 
 	mono_w32event_init ();
-	mono_w32file_init ();
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_perfcounters_init ();
-#endif
 	mono_counters_init ();
 
 	mono_counters_register ("Max HashTable Chain Length", MONO_COUNTER_INT|MONO_COUNTER_METADATA, &mono_g_hash_table_max_chain_length);

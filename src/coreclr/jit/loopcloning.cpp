@@ -1038,17 +1038,18 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
         if (loop->lpFlags & LPFLG_CONST_INIT)
         {
             // Only allowing non-negative const init at this time.
-            // REVIEW: why?
+            // This is because the variable initialized with this constant will be used as an array index,
+            // and array indices must be non-negative.
             if (loop->lpConstInit < 0)
             {
                 JITDUMP("> Init %d is invalid\n", loop->lpConstInit);
                 return false;
             }
         }
-        else if (loop->lpFlags & LPFLG_VAR_INIT)
+        else
         {
-            // initVar >= 0
-            const unsigned initLcl = loop->lpVarInit;
+            // iterVar >= 0
+            const unsigned initLcl = loop->lpIterVar();
             if (!genActualTypeIsInt(lvaGetDesc(initLcl)))
             {
                 JITDUMP("> Init var V%02u not compatible with TYP_INT\n", initLcl);
@@ -1058,11 +1059,6 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
             LC_Condition geZero(GT_GE, LC_Expr(LC_Ident(initLcl, LC_Ident::Var)),
                                 LC_Expr(LC_Ident(0, LC_Ident::Const)));
             context->EnsureConditions(loopNum)->Push(geZero);
-        }
-        else
-        {
-            JITDUMP("> Not variable init\n");
-            return false;
         }
 
         // Limit Conditions
@@ -1096,7 +1092,7 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
             ArrIndex* index = new (getAllocator(CMK_LoopClone)) ArrIndex(getAllocator(CMK_LoopClone));
             if (!loop->lpArrLenLimit(this, index))
             {
-                JITDUMP("> ArrLen not matching");
+                JITDUMP("> ArrLen not matching\n");
                 return false;
             }
             ident = LC_Ident(LC_Array(LC_Array::Jagged, index, LC_Array::ArrLen));
@@ -1823,8 +1819,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
 
     // We're going to transform this loop:
     //
-    // H --> E    (or, H conditionally branches around the loop and has fall-through to F == T == E)
-    // F
+    // H --> E    (or, H conditionally branches around the loop and has fall-through to T == E)
     // T
     // E
     // B ?-> T
@@ -1833,14 +1828,12 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // to this pair of loops:
     //
     // H ?-> H3   (all loop failure conditions branch to new slow path loop head)
-    // H2--> E    (Optional; if E == T == F, let H fall through to F/T/E)
-    // F
+    // H2--> E    (Optional; if T == E, let H fall through to T/E)
     // T
     // E
     // B  ?-> T
     // X2--> X
-    // H3 --> E2  (aka slowHead. Or, H3 falls through to F2 == T2 == E2)
-    // F2
+    // H3 --> E2  (aka slowHead. Or, H3 falls through to T2 == E2)
     // T2
     // E2
     // B2 ?-> T2
@@ -1908,16 +1901,17 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     BasicBlock* slowHeadPrev = newPred;
 
     // Now we'll make "h2", after "h" to go to "e" -- unless the loop is a do-while,
-    // so that "h" already falls through to "e" (e == t == f).
+    // so that "h" already falls through to "e" (e == t).
     // It might look like this code is unreachable, since "h" must be a BBJ_ALWAYS, but
     // later we will change "h" to a BBJ_COND along with a set of loop conditions.
-    // TODO: it still might be unreachable, since cloning currently is restricted to "do-while" loop forms.
+    // Cloning is currently restricted to "do-while" loop forms, where this case won't occur.
+    // However, it can occur in OSR methods.
     BasicBlock* h2 = nullptr;
     if (h->bbNext != loop.lpEntry)
     {
         assert(h->bbJumpKind == BBJ_ALWAYS);
         JITDUMP("Create branch to entry of optimized loop\n");
-        BasicBlock* h2 = fgNewBBafter(BBJ_ALWAYS, h, /*extendRegion*/ true);
+        h2 = fgNewBBafter(BBJ_ALWAYS, h, /*extendRegion*/ true);
         JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", h2->bbNum, h->bbNum);
         h2->bbWeight = h2->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
 
@@ -2100,7 +2094,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
 
     BasicBlock* condLast = optInsertLoopChoiceConditions(context, loopInd, slowHead, h);
 
-    // Add the fall-through path pred (either to F/T/E for fall-through from conditions to fast path,
+    // Add the fall-through path pred (either to T/E for fall-through from conditions to fast path,
     // or H2 if branch to E of fast path).
     assert(condLast->bbJumpKind == BBJ_COND);
     JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", condLast->bbNum, condLast->bbNext->bbNum);

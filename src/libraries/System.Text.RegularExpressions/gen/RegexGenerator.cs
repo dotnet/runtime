@@ -135,6 +135,11 @@ namespace System.Text.RegularExpressions.Generator
                 int id = 0;
                 string generatedClassName = $"__{ComputeStringHash(compilationDataAndResults.Right.AssemblyName ?? ""):x}";
 
+                // To minimize generated code in the event of duplicated regexes, we only emit one derived Regex type per unique
+                // expression/options/timeout.  A Dictionary<(expression, options, timeout), RegexMethod> is used to deduplicate, where the value of the
+                // pair is the implementation used for the key.
+                var emittedExpressions = new Dictionary<(string Pattern, RegexOptions Options, int Timeout), RegexMethod>();
+
                 // If we have any (RegexMethod regexMethod, string generatedName, string reason, Diagnostic diagnostic), these are regexes for which we have
                 // limited support and need to simply output boilerplate.  We need to emit their diagnostics.
                 // If we have any (RegexMethod regexMethod, string generatedName, string runnerFactoryImplementation, Dictionary<string, string[]> requiredHelpers),
@@ -163,7 +168,19 @@ namespace System.Text.RegularExpressions.Generator
 
                     if (regexMethod is not null)
                     {
-                        regexMethod.GeneratedId = id++;
+                        var key = (regexMethod.Pattern, regexMethod.Options, regexMethod.MatchTimeout);
+                        if (emittedExpressions.TryGetValue(key, out RegexMethod? implementation))
+                        {
+                            regexMethod.IsDuplicate = true;
+                            regexMethod.GeneratedName = implementation.GeneratedName;
+                        }
+                        else
+                        {
+                            regexMethod.IsDuplicate = false;
+                            regexMethod.GeneratedName = $"{regexMethod.MethodName}_{id++}";
+                            emittedExpressions.Add(key, regexMethod);
+                        }
+
                         EmitRegexPartialMethod(regexMethod, writer, generatedClassName);
                         writer.WriteLine();
                     }
@@ -206,13 +223,19 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     if (result is ValueTuple<RegexMethod, string, Diagnostic> limitedSupportResult)
                     {
-                        EmitRegexLimitedBoilerplate(writer, limitedSupportResult.Item1, limitedSupportResult.Item1.GeneratedId, limitedSupportResult.Item2);
-                        writer.WriteLine();
+                        if (!limitedSupportResult.Item1.IsDuplicate)
+                        {
+                            EmitRegexLimitedBoilerplate(writer, limitedSupportResult.Item1, limitedSupportResult.Item2);
+                            writer.WriteLine();
+                        }
                     }
                     else if (result is ValueTuple<RegexMethod, string, Dictionary<string, string[]>> regexImpl)
                     {
-                        EmitRegexDerivedImplementation(writer, regexImpl.Item1, regexImpl.Item1.GeneratedId, regexImpl.Item2);
-                        writer.WriteLine();
+                        if (!regexImpl.Item1.IsDuplicate)
+                        {
+                            EmitRegexDerivedImplementation(writer, regexImpl.Item1, regexImpl.Item2);
+                            writer.WriteLine();
+                        }
                     }
                 }
                 writer.Indent -= 2;

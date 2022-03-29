@@ -39,8 +39,6 @@
 #include <mono/metadata/environment.h>
 #include "mono/metadata/profiler-private.h"
 #include <mono/metadata/reflection-internals.h>
-#include <mono/metadata/w32event.h>
-#include <mono/metadata/w32process.h>
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/runtime.h>
@@ -53,6 +51,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <minipal/getexepath.h>
 #include "cominterop.h"
 #include <mono/utils/w32api.h>
 #include <mono/utils/unlocked.h>
@@ -108,7 +107,7 @@ static GString *
 quote_escape_and_append_string (char *src_str, GString *target_str);
 
 static GString *
-format_cmd_line (int argc, char **argv, gboolean add_host);
+format_cmd_line (int argc, char **argv);
 
 /**
  * mono_runtime_object_init:
@@ -3925,7 +3924,6 @@ mono_runtime_set_main_args (int argc, char* argv[])
 
 	free_main_args ();
 	main_args = g_new0 (char*, argc);
-	num_main_args = argc;
 
 	for (i = 0; i < argc; ++i) {
 		gchar *utf8_arg;
@@ -3938,6 +3936,8 @@ mono_runtime_set_main_args (int argc, char* argv[])
 
 		main_args [i] = utf8_arg;
 	}
+
+	num_main_args = argc;
 
 	MONO_EXTERNAL_ONLY (int, 0);
 }
@@ -3964,7 +3964,6 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 	mono_thread_set_main (mono_thread_current ());
 
 	main_args = g_new0 (char*, argc);
-	num_main_args = argc;
 
 	if (!g_path_is_absolute (argv [0])) {
 		gchar *basename = g_path_get_basename (argv [0]);
@@ -4007,6 +4006,9 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 
 		main_args [i] = utf8_arg;
 	}
+
+	num_main_args = argc;
+
 	argc--;
 	argv++;
 
@@ -7837,24 +7839,14 @@ quote_escape_and_append_string (char *src_str, GString *target_str)
 }
 
 static GString *
-format_cmd_line (int argc, char **argv, gboolean add_host)
+format_cmd_line (int argc, char **argv)
 {
+	// managed cmdline -> native host + managed argv (which includes the entrypoint assembly)
 	size_t total_size = 0;
 	char *host_path = NULL;
 	GString *cmd_line = NULL;
 
-	if (add_host) {
-#if !defined(HOST_WIN32) && defined(HAVE_GETPID)
-		host_path = mono_w32process_get_path (getpid ());
-#elif defined(HOST_WIN32)
-		gunichar2 *host_path_ucs2 = NULL;
-		guint32 host_path_ucs2_len = 0;
-		if (mono_get_module_filename (NULL, &host_path_ucs2, &host_path_ucs2_len)) {
-			host_path = g_utf16_to_utf8 (host_path_ucs2, -1, NULL, NULL, NULL);
-			g_free (host_path_ucs2);
-		}
-#endif
-	}
+	host_path = minipal_getexepath ();
 
 	if (host_path)
 		// quote + string + quote
@@ -7891,24 +7883,21 @@ format_cmd_line (int argc, char **argv, gboolean add_host)
 		}
 	}
 
-	g_free (host_path);
+	// minipal_getexepath doesn't use Mono APIs to allocate strings so we can't use g_free
+	free (host_path);
 
 	return cmd_line;
-}
-
-char *
-mono_runtime_get_cmd_line (int argc, char **argv)
-{
-	MONO_REQ_GC_NEUTRAL_MODE;
-	GString *cmd_line = format_cmd_line (num_main_args, main_args, FALSE);
-	return cmd_line ? g_string_free (cmd_line, FALSE) : NULL;
 }
 
 char *
 mono_runtime_get_managed_cmd_line (void)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
-	GString *cmd_line = format_cmd_line (num_main_args, main_args, TRUE);
+
+	if (num_main_args == 0)
+		return NULL;
+
+	GString *cmd_line = format_cmd_line (num_main_args, main_args);
 	return cmd_line ? g_string_free (cmd_line, FALSE) : NULL;
 }
 

@@ -187,7 +187,7 @@ namespace System.Data.SqlTypes
             _firstCreateReader = true;
         }
 
-        private Stream CreateMemoryStreamFromXmlReader(XmlReader reader)
+        private static Stream CreateMemoryStreamFromXmlReader(XmlReader reader)
         {
             XmlWriterSettings writerSettings = new XmlWriterSettings();
             writerSettings.CloseOutput = false;     // don't close the memory stream

@@ -142,9 +142,9 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     constexpr int maxPossibleLength = 32;
     assert(len >= 8 && len <= maxPossibleLength);
 
-    if (!compOpportunisticallyDependsOn(InstructionSet_Vector128))
+    if (!IsBaselineSimdIsaSupported())
     {
-        // We need SSE2 or ADVSIMD at least
+        // We need baseline SIMD support at least
         return nullptr;
     }
 

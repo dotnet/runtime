@@ -64,26 +64,26 @@ namespace System.Text.RegularExpressions.Generator
 
         /// <summary>Emits the Regex-derived type for a method where we're unable to generate custom code.</summary>
         private static void EmitRegexLimitedBoilerplate(
-            IndentedTextWriter writer, RegexMethod rm, int id, string reason)
+            IndentedTextWriter writer, RegexMethod rm, string reason)
         {
             writer.WriteLine($"/// <summary>Caches a <see cref=\"Regex\"/> instance for the {rm.MethodName} method.</summary>");
             writer.WriteLine($"/// <remarks>A custom Regex-derived type could not be generated because {reason}.</remarks>");
             writer.WriteLine($"internal sealed class {rm.GeneratedName} : Regex");
             writer.WriteLine($"{{");
             writer.WriteLine($"    /// <summary>Cached, thread-safe singleton instance.</summary>");
-            writer.WriteLine($"    internal static Regex Instance {{ get; }} = new({Literal(rm.Pattern)}, {Literal(rm.Options)}, {GetTimeoutExpression(rm.MatchTimeout)});");
+            writer.WriteLine($"    internal static readonly Regex Instance = new({Literal(rm.Pattern)}, {Literal(rm.Options)}, {GetTimeoutExpression(rm.MatchTimeout)});");
             writer.WriteLine($"}}");
         }
 
         /// <summary>Emits the Regex-derived type for a method whose RunnerFactory implementation was generated into <paramref name="runnerFactoryImplementation"/>.</summary>
         private static void EmitRegexDerivedImplementation(
-            IndentedTextWriter writer, RegexMethod rm, int id, string runnerFactoryImplementation)
+            IndentedTextWriter writer, RegexMethod rm, string runnerFactoryImplementation)
         {
             writer.WriteLine($"/// <summary>Custom <see cref=\"Regex\"/>-derived type for the {rm.MethodName} method.</summary>");
             writer.WriteLine($"internal sealed class {rm.GeneratedName} : Regex");
             writer.WriteLine($"{{");
             writer.WriteLine($"    /// <summary>Cached, thread-safe singleton instance.</summary>");
-            writer.WriteLine($"    internal static {rm.GeneratedName} Instance {{ get; }} = new();");
+            writer.WriteLine($"    internal static readonly {rm.GeneratedName} Instance = new();");
             writer.WriteLine($"");
             writer.WriteLine($"    /// <summary>Initializes the instance.</summary>");
             writer.WriteLine($"    private {rm.GeneratedName}()");
@@ -4006,8 +4006,8 @@ namespace System.Text.RegularExpressions.Generator
                 // character class were [A-Za-z0-9], so since the ch is now known to be >= 128, we
                 // can just fail the comparison.
                 return negate ?
-                    $"((ch = {chExpr}) >= 128 || ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) == 0)" :
-                    $"((ch = {chExpr}) < 128 && ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0)";
+                    $"((ch = {chExpr}) >= {Literal((char)analysis.UpperBoundExclusiveIfContainsOnlyAscii)} || ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) == 0)" :
+                    $"((ch = {chExpr}) < {Literal((char)analysis.UpperBoundExclusiveIfContainsOnlyAscii)} && ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0)";
             }
 
             if (analysis.AllNonAsciiContained)

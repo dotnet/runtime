@@ -1457,7 +1457,7 @@ namespace System.Net
             return (isSecureConnection && scenario == ProtectionScenario.TransportSelected);
         }
 
-        private ContextFlagsPal GetContextFlags(ExtendedProtectionPolicy policy, bool isSecureConnection)
+        private static ContextFlagsPal GetContextFlags(ExtendedProtectionPolicy policy, bool isSecureConnection)
         {
             ContextFlagsPal result = ContextFlagsPal.Connection;
             if (policy.PolicyEnforcement != PolicyEnforcement.Never)
@@ -1477,7 +1477,7 @@ namespace System.Net
         }
 
         // This only works for context-destroying errors.
-        private HttpStatusCode HttpStatusFromSecurityStatus(SecurityStatusPalErrorCode statusErrorCode)
+        private static HttpStatusCode HttpStatusFromSecurityStatus(SecurityStatusPalErrorCode statusErrorCode)
         {
             if (IsCredentialFailure(statusErrorCode))
             {

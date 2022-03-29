@@ -557,8 +557,6 @@
              Link="Common\System\Net\HttpStatusDescription.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs"
              Link="Common\System\Net\Http\HttpHandlerDefaults.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\TlsCertificateExtensions.cs"
-             Link="Common\System\Net\Http\TlsCertificateExtensions" />
     <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.cs"
              Link="Common\System\Net\Security\CertificateHelper.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.Unix.cs"

@@ -379,7 +379,7 @@ namespace System.Xml.Schema
             return Value;
         }
 
-        private string? GetPrefixFromQName(string value)
+        private static string? GetPrefixFromQName(string value)
         {
             int colonOffset;
             int len = ValidateNames.ParseQName(value, 0, out colonOffset);

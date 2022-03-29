@@ -318,35 +318,6 @@ namespace Internal.IL
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewObject), reason);
                     }
                 }
-
-                if (owningType.IsDelegate)
-                {
-                    // If this is a verifiable delegate construction sequence, the previous instruction is a ldftn/ldvirtftn
-                    if (_previousInstructionOffset >= 0 && _ilBytes[_previousInstructionOffset] == (byte)ILOpcode.prefix1)
-                    {
-                        // TODO: for ldvirtftn we need to also check for the `dup` instruction, otherwise this is a normal newobj.
-
-                        ILOpcode previousOpcode = (ILOpcode)(0x100 + _ilBytes[_previousInstructionOffset + 1]);
-                        if (previousOpcode == ILOpcode.ldvirtftn || previousOpcode == ILOpcode.ldftn)
-                        {
-                            int delTargetToken = ReadILTokenAt(_previousInstructionOffset + 2);
-                            var delTargetMethod = (MethodDesc)_methodIL.GetObject(delTargetToken);
-                            TypeDesc canonDelegateType = method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                            DelegateCreationInfo info = _compilation.GetDelegateCtor(canonDelegateType, delTargetMethod, previousOpcode == ILOpcode.ldvirtftn);
-                            
-                            if (info.NeedsRuntimeLookup)
-                            {
-                                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.DelegateCtor, info), reason);
-                            }
-                            else
-                            {
-                                _dependencies.Add(_factory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, info), reason);
-                            }
-
-                            return;
-                        }
-                    }
-                }
             }
 
             if (method.OwningType.IsDelegate && method.Name == "Invoke" &&
@@ -518,23 +489,13 @@ namespace Internal.IL
                 ThrowHelper.ThrowBadImageFormatException();
             }
 
+            MethodDesc targetForDelegate = !resolvedConstraint || forceUseRuntimeLookup ? runtimeDeterminedMethod : targetMethod;
+            TypeDesc constraintForDelegate = !resolvedConstraint || forceUseRuntimeLookup ? _constrained : null;
+            int numDependenciesBeforeTargetDetermination = _dependencies.Count;
+
             bool allowInstParam = opcode != ILOpcode.ldvirtftn && opcode != ILOpcode.ldftn;
 
-            if (directCall && !allowInstParam && targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
-            {
-                // Needs a single address to call this method but the method needs a hidden argument.
-                // We need a fat function pointer for this that captures both things.
-
-                if (exactContextNeedsRuntimeLookup)
-                {
-                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodEntry, runtimeDeterminedMethod), reason);
-                }
-                else
-                {
-                    _dependencies.Add(_factory.FatFunctionPointer(runtimeDeterminedMethod), reason);
-                }
-            }
-            else if (directCall && resolvedConstraint && exactContextNeedsRuntimeLookup)
+            if (directCall && resolvedConstraint && exactContextNeedsRuntimeLookup)
             {
                 // We want to do a direct call to a shared method on a valuetype. We need to provide
                 // a generic context, but the JitInterface doesn't provide a way for us to do it from here.
@@ -556,6 +517,22 @@ namespace Internal.IL
                 }
                 Debug.Assert(targetOfLookup.GetCanonMethodTarget(CanonicalFormKind.Specific) == targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
                 _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodEntry, targetOfLookup), reason);
+
+                targetForDelegate = targetOfLookup;
+            }
+            else if (directCall && !allowInstParam && targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
+            {
+                // Needs a single address to call this method but the method needs a hidden argument.
+                // We need a fat function pointer for this that captures both things.
+
+                if (exactContextNeedsRuntimeLookup)
+                {
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodEntry, runtimeDeterminedMethod), reason);
+                }
+                else
+                {
+                    _dependencies.Add(_factory.FatFunctionPointer(runtimeDeterminedMethod), reason);
+                }
             }
             else if (directCall)
             {
@@ -756,19 +733,37 @@ namespace Internal.IL
                         targetMethod : MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod);
                 _dependencies.Add(_factory.VirtualMethodUse(slotDefiningMethod), reason);
             }
+
+            // Is this a verifiable delegate creation sequence (load function pointer followed by newobj)?
+            if ((opcode == ILOpcode.ldftn || opcode == ILOpcode.ldvirtftn)
+                && _currentOffset + 5 < _ilBytes.Length
+                && _basicBlocks[_currentOffset] == null
+                && _ilBytes[_currentOffset] == (byte)ILOpcode.newobj)
+            {
+                // TODO: for ldvirtftn we need to also check for the `dup` instruction
+                int ctorToken = ReadILTokenAt(_currentOffset + 1);
+                var ctorMethod = (MethodDesc)_methodIL.GetObject(ctorToken);
+                if (ctorMethod.OwningType.IsDelegate)
+                {
+                    // Yep, verifiable delegate creation
+
+                    // Drop any dependencies we inserted so far - the delegate construction helper is the only dependency
+                    while (_dependencies.Count > numDependenciesBeforeTargetDetermination)
+                        _dependencies.RemoveAt(_dependencies.Count - 1);
+
+                    TypeDesc canonDelegateType = ctorMethod.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    DelegateCreationInfo info = _compilation.GetDelegateCtor(canonDelegateType, targetForDelegate, constraintForDelegate, opcode == ILOpcode.ldvirtftn);
+
+                    if (info.NeedsRuntimeLookup)
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.DelegateCtor, info), reason);
+                    else
+                        _dependencies.Add(_factory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, info), reason);
+                }
+            }
         }
 
         private void ImportLdFtn(int token, ILOpcode opCode)
         {
-            // Is this a verifiable delegate creation? If so, we will handle it when we reach the newobj
-            if (_ilBytes[_currentOffset] == (byte)ILOpcode.newobj)
-            {
-                int delegateToken = ReadILTokenAt(_currentOffset + 1);
-                var delegateType = ((MethodDesc)_methodIL.GetObject(delegateToken)).OwningType;
-                if (delegateType.IsDelegate)
-                    return;
-            }
-
             ImportCall(opCode, token);
         }
         

@@ -19,7 +19,9 @@ namespace System.Net.Sockets
         private static CachedSerializedEndPoint? s_cachedMappedAnyV6EndPoint;
         private DynamicWinsockMethods? _dynamicWinsockMethods;
 
+#pragma warning disable CA1822
         internal void ReplaceHandleIfNecessaryAfterFailedConnect() { /* nop on Windows */ }
+#pragma warning restore CA1822
 
         private sealed class CachedSerializedEndPoint
         {
