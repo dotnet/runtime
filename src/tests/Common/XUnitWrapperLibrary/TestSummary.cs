@@ -70,9 +70,10 @@ public class TestSummary
         foreach (var test in _testResults)
         {
             resultsFile.Append($@"<test name=""{test.Name}"" type=""{test.ContainingTypeName}"" method=""{test.MethodName}"" time=""{test.Duration.TotalSeconds:F6}"" ");
+            string outputElement = !string.IsNullOrWhiteSpace(test.Output) ? $"<output><![CDATA[{test.Output}]]></output>" : string.Empty;
             if (test.Exception is not null)
             {
-                resultsFile.AppendLine($@"result=""Fail""><failure exception-type=""{test.Exception.GetType()}""><message><![CDATA[{test.Exception.Message}]]></message><stack-trace><![CDATA[{test.Exception.StackTrace}]]></stack-trace></failure><output><![CDATA[{test.Output}]]></output></test>");
+                resultsFile.AppendLine($@"result=""Fail""><failure exception-type=""{test.Exception.GetType()}""><message><![CDATA[{test.Exception.Message}]]></message><stack-trace><![CDATA[{test.Exception.StackTrace}]]></stack-trace></failure>{outputElement}</test>");
             }
             else if (test.SkipReason is not null)
             {
@@ -80,7 +81,7 @@ public class TestSummary
             }
             else
             {
-                resultsFile.AppendLine($@" result=""Pass""><output><![CDATA[{test.Output}]]></output></test>");
+                resultsFile.AppendLine($@" result=""Pass"">{outputElement}</test>");
             }
         }
 
