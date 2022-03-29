@@ -1462,7 +1462,7 @@ int32_t CryptoNative_OpenSslAvailable()
 }
 
 static int32_t g_initStatus = 1;
-int g_x509_ocsp_index;
+int g_x509_ocsp_index = -1;
 
 static int32_t EnsureOpenSslInitializedCore()
 {
@@ -1490,7 +1490,9 @@ static int32_t EnsureOpenSslInitializedCore()
 
     if (ret == 0)
     {
-        assert(g_x509_ocsp_index != 0);
+        // On OpenSSL 1.0.2 our expected index is 0.
+        // On OpenSSL 1.1.0+ 0 is a reserved value and we expect 1.
+        assert(g_x509_ocsp_index != -1);
     }
 
     return ret;
