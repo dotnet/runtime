@@ -17211,7 +17211,7 @@ void GenTree::ParseArrayAddress(
                 *pFldSeq = fldSeqIter;
             }
             CORINFO_CLASS_HANDLE fldCls = nullptr;
-            noway_assert(fldSeqIter->GetFieldHandle() != NO_CLASS_HANDLE);
+            noway_assert(fldSeqIter->GetFieldHandle() != NO_FIELD_HANDLE);
             CorInfoType cit = comp->info.compCompHnd->getFieldType(fldSeqIter->GetFieldHandle(), &fldCls);
             fieldOffsets += comp->compGetTypeSize(cit, fldCls);
         }
