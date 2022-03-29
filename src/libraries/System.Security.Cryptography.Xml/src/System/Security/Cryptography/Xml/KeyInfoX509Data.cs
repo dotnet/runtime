@@ -270,8 +270,6 @@ namespace System.Security.Cryptography.Xml
             XmlNamespaceManager nsm = new XmlNamespaceManager(element.OwnerDocument.NameTable);
             nsm.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);
 
-            //red flag - no existing null checks before usage, so should we assume that it's not null,
-            //or should we add checks ourselves? (or is the dammit operator fine here?)
             XmlNodeList x509IssuerSerialNodes = element.SelectNodes("ds:X509IssuerSerial", nsm)!;
             XmlNodeList x509SKINodes = element.SelectNodes("ds:X509SKI", nsm)!;
             XmlNodeList x509SubjectNameNodes = element.SelectNodes("ds:X509SubjectName", nsm)!;
