@@ -304,19 +304,12 @@ mono_llvm_set_is_constant (LLVMValueRef global_var)
 	unwrap<GlobalVariable>(global_var)->setConstant (true);
 }
 
-// Note that in future versions of LLVM, CallInst and InvokeInst
-// share a CallBase parent class that would make the below methods
-// look much better
-
 void
 mono_llvm_set_call_nonnull_arg (LLVMValueRef wrapped_calli, int argNo)
 {
 	Instruction *calli = unwrap<Instruction> (wrapped_calli);
 
-	if (isa<CallInst> (calli))
-		dyn_cast<CallInst>(calli)->addParamAttr (argNo, Attribute::NonNull);
-	else
-		dyn_cast<InvokeInst>(calli)->addParamAttr (argNo, Attribute::NonNull);
+	dyn_cast<CallBase>(calli)->addParamAttr (argNo, Attribute::NonNull);
 }
 
 void
@@ -324,10 +317,7 @@ mono_llvm_set_call_nonnull_ret (LLVMValueRef wrapped_calli)
 {
 	Instruction *calli = unwrap<Instruction> (wrapped_calli);
 
-	if (isa<CallInst> (calli))
-		dyn_cast<CallInst>(calli)->addAttribute (AttributeList::ReturnIndex, Attribute::NonNull);
-	else
-		dyn_cast<InvokeInst>(calli)->addAttribute (AttributeList::ReturnIndex, Attribute::NonNull);
+	dyn_cast<CallBase>(calli)->addAttribute (AttributeList::ReturnIndex, Attribute::NonNull);
 }
 
 void
@@ -365,9 +355,7 @@ mono_llvm_is_nonnull (LLVMValueRef wrapped)
 	while (val) {
 		if (Argument *arg = dyn_cast<Argument> (val)) {
 			return arg->hasNonNullAttr ();
-		} else if (CallInst *calli = dyn_cast<CallInst> (val)) {
-			return calli->hasRetAttr (Attribute::NonNull);
-		} else if (InvokeInst *calli = dyn_cast<InvokeInst> (val)) {
+		} else if (CallBase *calli = dyn_cast<CallBase> (val)) {
 			return calli->hasRetAttr (Attribute::NonNull);
 		} else if (LoadInst *loadi = dyn_cast<LoadInst> (val)) {
 			return loadi->getMetadata("nonnull") != nullptr; // nonnull <index>
@@ -394,9 +382,8 @@ mono_llvm_calls_using (LLVMValueRef wrapped_local)
 	Value *local = unwrap (wrapped_local);
 
 	for (User *user : local->users ()) {
-		if (isa<CallInst> (user) || isa<InvokeInst> (user)) {
+		if (isa<CallBase> (user))
 			usages = g_slist_prepend (usages, wrap (user));
-		}
 	}
 
 	return usages;
@@ -406,25 +393,15 @@ LLVMValueRef *
 mono_llvm_call_args (LLVMValueRef wrapped_calli)
 {
 	Value *calli = unwrap(wrapped_calli);
-	CallInst *call = dyn_cast <CallInst> (calli);
-	InvokeInst *invoke = dyn_cast <InvokeInst> (calli);
-	g_assert (call || invoke);
+	CallBase *call = dyn_cast <CallBase> (calli);
+	g_assert (call);
 
-	unsigned int numOperands;
-
-	if (call)
-		numOperands = call->getNumArgOperands ();
-	else
-		numOperands = invoke->getNumArgOperands ();
+	unsigned numOperands = call->arg_size ();
 
 	LLVMValueRef *ret = g_malloc (sizeof (LLVMValueRef) * numOperands);
 
-	for (unsigned int i = 0; i < numOperands; i++) {
-		if (call)
-			ret [i] = wrap (call->getArgOperand (i));
-		else
-			ret [i] = wrap (invoke->getArgOperand (i));
-	}
+	for (unsigned i = 0; i < numOperands; i++)
+		ret [i] = wrap (call->getArgOperand (i));
 
 	return ret;
 }
@@ -440,10 +417,7 @@ mono_llvm_set_call_noalias_ret (LLVMValueRef wrapped_calli)
 {
 	Instruction *calli = unwrap<Instruction> (wrapped_calli);
 
-	if (isa<CallInst> (calli))
-		dyn_cast<CallInst>(calli)->addAttribute (AttributeList::ReturnIndex, Attribute::NoAlias);
-	else
-		dyn_cast<InvokeInst>(calli)->addAttribute (AttributeList::ReturnIndex, Attribute::NoAlias);
+	dyn_cast<CallBase>(calli)->addAttribute (AttributeList::ReturnIndex, Attribute::NoAlias);
 }
 
 void
@@ -451,10 +425,7 @@ mono_llvm_set_alignment_ret (LLVMValueRef call, int alignment)
 {
 	Instruction *ins = unwrap<Instruction> (call);
 	auto &ctx = ins->getContext ();
-	if (isa<CallInst> (ins))
-		dyn_cast<CallInst>(ins)->addAttribute (AttributeList::ReturnIndex, Attribute::getWithAlignment(ctx, to_align (alignment)));
-	else
-		dyn_cast<InvokeInst>(ins)->addAttribute (AttributeList::ReturnIndex, Attribute::getWithAlignment(ctx, to_align (alignment)));
+	dyn_cast<CallBase>(ins)->addAttribute (AttributeList::ReturnIndex, Attribute::getWithAlignment(ctx, to_align (alignment)));
 }
 
 static Attribute::AttrKind
@@ -488,15 +459,13 @@ convert_attr (AttrKind kind)
 void
 mono_llvm_add_func_attr (LLVMValueRef func, AttrKind kind)
 {
-	unwrap<Function> (func)->addAttribute (AttributeList::FunctionIndex, convert_attr (kind));
+	unwrap<Function> (func)->addFnAttr (convert_attr (kind));
 }
 
 void
 mono_llvm_add_func_attr_nv (LLVMValueRef func, const char *attr_name, const char *attr_value)
 {
-	AttrBuilder NewAttrs;
-	NewAttrs.addAttribute (attr_name, attr_value);
-	unwrap<Function> (func)->addAttributes (AttributeList::FunctionIndex, NewAttrs);
+	unwrap<Function> (func)->addFnAttr (attr_name, attr_value);
 }
 
 void
@@ -724,7 +693,8 @@ mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, L
 }
 
 unsigned int
-mono_llvm_get_prim_size_bits (LLVMTypeRef type) {
+mono_llvm_get_prim_size_bits (LLVMTypeRef type)
+{
 	return unwrap (type)->getPrimitiveSizeInBits ();
 }
 
