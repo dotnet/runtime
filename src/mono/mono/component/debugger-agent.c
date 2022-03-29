@@ -427,11 +427,16 @@ static gboolean buffer_replies;
 	tls = &debugger_wasm_thread;
 #endif
 
+static void (*start_debugger_thread_func) (MonoError *error);
+static void (*suspend_vm_func) (void);
+static void (*suspend_current_func) (void);
+
 //mono_native_tls_get_value (debugger_tls_id);
 
 #define dbg_lock mono_de_lock
 #define dbg_unlock mono_de_unlock
 
+static void suspend_vm (void);
 static void transport_init (void);
 static void transport_connect (const char *address);
 static gboolean transport_handshake (void);
@@ -750,6 +755,11 @@ mono_debugger_agent_init_internal (void)
 	mono_de_init (&cbs);
 	
 	transport_init ();
+	
+	start_debugger_thread_func = start_debugger_thread;
+	suspend_vm_func = suspend_vm;
+	suspend_current_func = suspend_current;
+	
 
 	/* Need to know whenever a thread has acquired the loader mutex */
 	mono_loader_lock_track_ownership (TRUE);
@@ -878,7 +888,7 @@ finish_agent_init (gboolean on_startup)
 		/* Do some which is usually done after sending the VMStart () event */
 		vm_start_event_sent = TRUE;
 		ERROR_DECL (error);
-		mono_component_debugger ()->start_debugger_thread (error);
+		start_debugger_thread_func (error);
 		mono_error_assert_ok (error);
 	}
 }
@@ -2239,6 +2249,14 @@ mono_wasi_suspend_current (void)
 	tls->really_suspended = TRUE;
 	return;
 }
+
+void
+mono_debugger_agent_initialize_function_pointers (void *start_debugger_thread, void *suspend_vm, void *suspend_current)
+{
+	start_debugger_thread_func = start_debugger_thread;
+	suspend_vm_func = suspend_vm;
+	suspend_current_func = suspend_current;
+}
 #endif
 
 static MonoCoopMutex suspend_mutex;
@@ -2508,7 +2526,7 @@ process_suspend (DebuggerTlsData *tls, MonoContext *ctx)
 
 	save_thread_context (ctx);
 
-	mono_component_debugger ()->suspend_current ();
+	suspend_current_func ();
 }
 
 
@@ -3691,7 +3709,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	if (event == EVENT_KIND_VM_START) {
 		if (!agent_config.defer) {
 			ERROR_DECL (error);
-			mono_component_debugger ()->start_debugger_thread (error);
+			start_debugger_thread_func (error);
 			mono_error_assert_ok (error);
 		}
 	}
@@ -3713,7 +3731,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 		save_thread_context (ctx);
 		DebuggerTlsData *tls = (DebuggerTlsData *)mono_g_hash_table_lookup (thread_to_tls,  mono_thread_internal_current ());
 		tls->suspend_count++;
-		mono_component_debugger ()->suspend_vm ();
+		suspend_vm_func ();
 
 		if (keepalive_obj)
 			/* This will keep this object alive */
@@ -3751,7 +3769,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	case SUSPEND_POLICY_NONE:
 		break;
 	case SUSPEND_POLICY_ALL:
-		 mono_component_debugger ()->suspend_current ();
+		 suspend_current_func ();
 		break;
 	case SUSPEND_POLICY_EVENT_THREAD:
 		NOT_IMPLEMENTED;
@@ -3797,7 +3815,7 @@ runtime_initialized (MonoProfiler *prof)
 		process_profiler_event (EVENT_KIND_ASSEMBLY_LOAD, (mono_get_corlib ()->assembly));
 	if (agent_config.defer) {
 		ERROR_DECL (error);
-		start_debugger_thread (error);
+		start_debugger_thread_func (error);
 		mono_error_assert_ok (error);
 	}
 }
@@ -3871,7 +3889,7 @@ thread_startup (MonoProfiler *prof, uintptr_t tid)
 	 * suspend_vm () could have missed this thread, so wait for a resume.
 	 */
 
-	mono_component_debugger ()->suspend_current ();
+	suspend_current_func ();
 }
 
 static void
@@ -6316,7 +6334,7 @@ invoke_method (void)
 		if (mindex == invoke->nmethods - 1) {
 			if (!(invoke->flags & INVOKE_FLAG_SINGLE_THREADED)) {
 				for (i = 0; i < invoke->suspend_count; ++i)
-					mono_component_debugger ()->suspend_vm ();
+					suspend_vm_func ();
 			}
 		}
 
@@ -6711,7 +6729,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case CMD_VM_SUSPEND:
-		mono_component_debugger ()->suspend_vm ();
+		suspend_vm_func ();
 		wait_for_suspend ();
 		break;
 	case CMD_VM_RESUME:
@@ -6763,7 +6781,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		 * better than doing the shutdown ourselves, since it avoids various races.
 		 */
 
-		mono_component_debugger ()->suspend_vm ();
+		suspend_vm_func ();
 		wait_for_suspend ();
 
 #ifdef TRY_MANAGED_SYSTEM_ENVIRONMENT_EXIT
@@ -10241,7 +10259,7 @@ debugger_thread (void *arg)
 	if (!attach_failed && is_vm_dispose_command && !(vm_death_event_sent || mono_runtime_is_shutting_down ())) {
 		PRINT_DEBUG_MSG (2, "[dbg] Detached - restarting clean debugger thread.\n");
 		ERROR_DECL (error);
-		start_debugger_thread (error);
+		start_debugger_thread_func (error);
 		mono_error_cleanup (error);
 	}
 	return 0;
@@ -10379,12 +10397,7 @@ debugger_agent_add_function_pointers(MonoComponentDebugger* fn_table)
 	fn_table->debug_log_is_enabled = debugger_agent_debug_log_is_enabled;
 	fn_table->transport_handshake = debugger_agent_transport_handshake;
 	fn_table->send_enc_delta = send_enc_delta;
-	fn_table->suspend_vm = suspend_vm;
-	fn_table->start_debugger_thread = start_debugger_thread;
-	fn_table->suspend_current = suspend_current;
 	fn_table->debugger_enabled = debugger_agent_enabled;
 }
-
-
 
 #endif /* DISABLE_SDB */

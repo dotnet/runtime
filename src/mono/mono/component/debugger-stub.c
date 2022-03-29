@@ -67,15 +67,6 @@ static void
 stub_send_enc_delta (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dpdb_bytes, int32_t dpdb_len);
 
 static void 
-stub_start_debugger_thread (MonoError *error);
-
-static void 
-stub_suspend_vm (void);
-
-static void 
-stub_suspend_current (void);
-
-static void 
 stub_receive_and_process_command_from_debugger_agent (void);
 
 static gboolean
@@ -107,9 +98,6 @@ static MonoComponentDebugger fn_table = {
 	&stub_send_enc_delta,
 
 	//wasi
-	&stub_start_debugger_thread,
-	&stub_suspend_vm,
-	&stub_suspend_current,
 	&stub_receive_and_process_command_from_debugger_agent,
 	&stub_debugger_enabled,
 };
@@ -223,21 +211,6 @@ stub_mono_wasm_single_step_hit (void)
 
 static void
 stub_send_enc_delta (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dpdb_bytes, int32_t dpdb_len)
-{
-}
-
-static void 
-stub_start_debugger_thread (MonoError *error)
-{
-}
-
-static void 
-stub_suspend_vm (void)
-{
-}
-
-static void 
-stub_suspend_current (void)
 {
 }
 

@@ -88,6 +88,20 @@ wasi_transport_close2 (void)
 //	shutdown (conn_fd, SHUT_RDWR);
 }
 
+
+static void 
+mono_wasi_start_debugger_thread (MonoError *error)
+{
+    mono_debugger_agent_receive_and_process_command (FALSE);
+    return;
+}
+
+static void
+mono_wasi_suspend_vm (void)
+{
+
+}
+
 static void
 mono_wasi_debugger_init (void)
 {
@@ -102,19 +116,8 @@ mono_wasi_debugger_init (void)
 	mono_debugger_agent_register_transport (&trans);
 
 	mono_debugger_agent_init_internal();
-}
-
-static void 
-mono_wasi_start_debugger_thread (MonoError *error)
-{
-    mono_debugger_agent_receive_and_process_command (FALSE);
-    return;
-}
-
-static void
-mono_wasi_suspend_vm (void)
-{
-
+	
+	mono_debugger_agent_initialize_function_pointers(mono_wasi_start_debugger_thread, mono_wasi_suspend_vm, mono_wasi_suspend_current);
 }
 
 static void 
@@ -143,9 +146,6 @@ void
 mini_wasi_debugger_add_function_pointers (MonoComponentDebugger* fn_table)
 {
 	fn_table->init = mono_wasi_debugger_init;
-    fn_table->start_debugger_thread = mono_wasi_start_debugger_thread;
-    fn_table->suspend_vm = mono_wasi_suspend_vm;
-    fn_table->suspend_current = mono_wasi_suspend_current;
     fn_table->receive_and_process_command_from_debugger_agent = mono_wasi_receive_and_process_command_from_debugger_agent;
     fn_table->mono_wasm_breakpoint_hit = mono_wasi_breakpoint_hit;
 	fn_table->mono_wasm_single_step_hit = mono_wasi_single_step_hit;
