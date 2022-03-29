@@ -673,7 +673,7 @@ void Compiler::fgRemoveDeadBlocks()
             assert(block->isBBCallAlwaysPair());
 
             // Don't remove the BBJ_ALWAYS block that is only here for the unwinder.
-            worklist.insert(worklist.end(), block->bbNext);
+            worklist.push_back(block->bbNext);
         }
     }
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
