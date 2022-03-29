@@ -4,7 +4,6 @@
 using System;
 using System.Globalization;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Microsoft.Extensions.Hosting.Systemd
@@ -12,7 +11,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
     /// <summary>
     /// Helper methods for systemd Services.
     /// </summary>
-    public static class SystemdHelpers
+    public static partial class SystemdHelpers
     {
         private static bool? _isSystemdService;
 
@@ -34,7 +33,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
             try
             {
                 // Check whether our direct parent is 'systemd'.
-                int parentPid = GetParentPid();
+                int parentPid = Interop.libc.GetParentPid();
                 string ppidString = parentPid.ToString(NumberFormatInfo.InvariantInfo);
                 byte[] comm = File.ReadAllBytes("/proc/" + ppidString + "/comm");
                 return comm.AsSpan().SequenceEqual(Encoding.ASCII.GetBytes("systemd\n"));
@@ -45,8 +44,5 @@ namespace Microsoft.Extensions.Hosting.Systemd
 
             return false;
         }
-
-        [DllImport("libc", EntryPoint = "getppid")]
-        private static extern int GetParentPid();
     }
 }

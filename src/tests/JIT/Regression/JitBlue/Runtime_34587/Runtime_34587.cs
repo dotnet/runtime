@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
@@ -69,6 +71,12 @@ class Runtime_34587
         TestLibrary.TestFramework.LogInformation($"  Sha1.Arm64:    {Sha1.Arm64.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  Sha256.Arm64:  {Sha256.Arm64.IsSupported}");
 
+        TestLibrary.TestFramework.LogInformation("Supported Cross Platform ISAs:");
+        TestLibrary.TestFramework.LogInformation($"  Vector<T>:     {Vector.IsHardwareAccelerated}; {Vector<byte>.Count}");
+        TestLibrary.TestFramework.LogInformation($"  Vector64<T>:   {Vector64.IsHardwareAccelerated}");
+        TestLibrary.TestFramework.LogInformation($"  Vector128<T>:  {Vector128.IsHardwareAccelerated}");
+        TestLibrary.TestFramework.LogInformation($"  Vector256<T>:  {Vector256.IsHardwareAccelerated}");
+
         bool succeeded = true;
 
         succeeded &= ValidateArm();
@@ -89,6 +97,10 @@ class Runtime_34587
         succeeded &= ValidateRdm();
         succeeded &= ValidateSha1();
         succeeded &= ValidateSha256();
+        succeeded &= ValidateVectorT();
+        succeeded &= ValidateVector64();
+        succeeded &= ValidateVector128();
+        succeeded &= ValidateVector256();
 
         return succeeded;
 
@@ -235,6 +247,58 @@ class Runtime_34587
 
             return succeeded;
         }
+
+        static bool ValidateVectorT()
+        {
+            bool succeeded = true;
+
+            if (AdvSimd.IsSupported)
+            {
+                succeeded &= Vector.IsHardwareAccelerated;
+                succeeded &= Vector<byte>.Count == 16;
+            }
+
+            return succeeded;
+        }
+
+        static bool ValidateVector64()
+        {
+            bool succeeded = true;
+
+            if (AdvSimd.IsSupported)
+            {
+                succeeded &= Vector64.IsHardwareAccelerated;
+                succeeded &= Vector64<byte>.Count == 8;
+            }
+
+            return succeeded;
+        }
+
+        static bool ValidateVector128()
+        {
+            bool succeeded = true;
+
+            if (AdvSimd.IsSupported)
+            {
+                succeeded &= Vector128.IsHardwareAccelerated;
+                succeeded &= Vector128<byte>.Count == 16;
+            }
+
+            return succeeded;
+        }
+
+        static bool ValidateVector256()
+        {
+            bool succeeded = true;
+
+            if (AdvSimd.IsSupported)
+            {
+                succeeded &= !Vector256.IsHardwareAccelerated;
+                succeeded &= Vector256<byte>.Count == 32;
+            }
+
+            return succeeded;
+        }
     }
 
     public static bool ValidateX86()
@@ -257,6 +321,10 @@ class Runtime_34587
         succeeded &= ValidateLzcnt();
         succeeded &= ValidatePclmulqdq();
         succeeded &= ValidatePopcnt();
+        succeeded &= ValidateVectorT();
+        succeeded &= ValidateVector64();
+        succeeded &= ValidateVector128();
+        succeeded &= ValidateVector256();
 
         return succeeded;
 
@@ -543,6 +611,68 @@ class Runtime_34587
             {
                 succeeded &= Popcnt.IsSupported;
                 succeeded &= Sse42.X64.IsSupported;
+            }
+
+            return succeeded;
+        }
+
+        static bool ValidateVectorT()
+        {
+            bool succeeded = true;
+
+            if (Avx2.IsSupported)
+            {
+                succeeded &= Vector.IsHardwareAccelerated;
+                succeeded &= Vector<byte>.Count == 32;
+            }
+            else if (Sse2.IsSupported)
+            {
+                succeeded &= Vector.IsHardwareAccelerated;
+                succeeded &= Vector<byte>.Count == 16;
+            }
+
+            return succeeded;
+        }
+
+        static bool ValidateVector64()
+        {
+            bool succeeded = true;
+
+            if (Sse.IsSupported)
+            {
+                succeeded &= !Vector64.IsHardwareAccelerated;
+                succeeded &= Vector64<byte>.Count == 8;
+            }
+
+            return succeeded;
+        }
+
+        static bool ValidateVector128()
+        {
+            bool succeeded = true;
+
+            if (Sse.IsSupported)
+            {
+                succeeded &= Vector128.IsHardwareAccelerated;
+                succeeded &= Vector128<byte>.Count == 16;
+            }
+
+            return succeeded;
+        }
+
+        static bool ValidateVector256()
+        {
+            bool succeeded = true;
+
+            if (Avx.IsSupported)
+            {
+                succeeded &= Vector256.IsHardwareAccelerated;
+                succeeded &= Vector256<byte>.Count == 32;
+            }
+            else if (Sse.IsSupported)
+            {
+                succeeded &= !Vector256.IsHardwareAccelerated;
+                succeeded &= Vector256<byte>.Count == 32;
             }
 
             return succeeded;

@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -25,7 +25,7 @@ AFTER_PREFIX_3:
 	pop
 
 FILTER_BLOCK_3_A:
-	stloc.0	
+	stloc.0
 	nop
 	nop
 	ldc.i4.0
@@ -48,7 +48,7 @@ AFTER_PREFIX_6:
 	pop
 
 FINALLY_BLOCK_1_A:
-	stloc.0	
+	stloc.0
 	nop
 	nop
 	ldc.i4.0
@@ -76,7 +76,7 @@ $SED -e "s/EXCEPTION_BLOCK_1/${TEST_BLOCK_1}/g" -e "s/EXCEPTION_BLOCK_2/${TEST_B
         .entrypoint
         .maxstack 8
 	.locals init (object _X0, int32 V0)
- 
+
 	ldloca 1
 	volatile.
 AFTER_PREFIX_1:
@@ -84,7 +84,7 @@ AFTER_PREFIX_1:
 	ldind.i4
 	pop
 
-	
+
 TRY_BLOCK_1:
 	nop
 TRY_BLOCK_1_A:
@@ -111,7 +111,7 @@ ${FINALLY_BLOCK}
 CATCH_BLOCK_1:
 	nop
 CATCH_BLOCK_1_A:
-	stloc.0	
+	stloc.0
 	nop
 
 	ldloca 1
@@ -147,7 +147,7 @@ TRY_BLOCK_2_END:
 CATCH_BLOCK_2:
 	nop
 CATCH_BLOCK_2_A:
-	stloc.0	
+	stloc.0
 	nop
 	nop
 	leave END

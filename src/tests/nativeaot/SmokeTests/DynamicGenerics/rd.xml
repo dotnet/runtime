@@ -1,0 +1,301 @@
+<Directives>
+  <Application>
+    <Assembly Name="netstandard">
+      <Type Name="System.Collections.Generic.IList`1[System.Object]" Dynamic="Required All"/>
+      <Type Name="System.Collections.Generic.List`1[System.Object]" Dynamic="Required All"/>
+      <Type Name="System.Collections.Generic.Dictionary`2[System.Object,System.Object]" Dynamic="Required All"/>
+      <Type Name="System.Func`2[System.Object,System.Object]" Dynamic="Required All" />
+      <Type Name="System.Func`4[System.Object,System.Object,System.Object,System.Object]" Dynamic="Required All" />
+    </Assembly>
+
+    <Assembly Name="DynamicGenerics">
+      <Type Name="My" Dynamic="Required All"/>
+
+      <Type Name="Dictionaries.Gen`1[[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="Dictionaries.IFace`1[[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="Dictionaries.IFace2`1[[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="Dictionaries.IFace3`1[[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="Dictionaries.IDerivedIFace`1[[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="Dictionaries.SingleUseArrayOnlyGen`1[[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="Dictionaries.GenericStruct`1[[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="Dictionaries.NullableTest`1[Dictionaries.GenericStruct`1[[System.Object, netstandard]]]" Dynamic="Required All"/>
+      <Type Name="Dictionaries.NullableTest`1[[System.Int32, netstandard]]" Dynamic="Required All"/>
+      <Type Name="Dictionaries.DelWithNullable`1[Dictionaries.GenericStruct`1[[System.Object, netstandard]]]" Dynamic="Required All"/>
+      <Type Name="Dictionaries.DelegateTarget`1[Dictionaries.GenericStruct`1[[System.Object, netstandard]]]" Dynamic="Required All"/>
+
+      <Type Name="TemplateDependencyFromGenArgs.CallerType`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All" />
+
+      <Type Name="MakeGenMethod.Foo`1[[System.Object, netstandard]]" Dynamic="Required All">
+        <Method Name="GenericFooFunc1">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="GenericFooFunc2">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="StaticGenericFooFunc1">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="StaticGenericFooFunc2">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MakeGenMethod.Bar`1[[System.Object, netstandard]]" Dynamic="Required All">
+        <Method Name="GenericFooFunc3">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="StaticGenericFooFunc3">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MakeGenMethod.Gen`1[[System.Object, netstandard]]" Dynamic="Required All">
+        <Method Name="InstanceMethodTest">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="StaticMethodTest">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MakeGenMethod.NonGenericType" Dynamic="Required All">
+        <Method Name="VerySimpleGenericMethod">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MakeGenMethod.GenericType`1[[System.Object, netstandard]]" Dynamic="Required All">
+        <Method Name="GenericFunc">
+          <GenericArgument Name="System.String, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MakeGenMethod.GenericType`1[[System.Object, netstandard]]" Dynamic="Required All">
+        <Method Name="GenericFunc">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MakeGenMethod.Test">
+        <Method Name="MethodForDelegate">
+          <GenericArgument Name="CommonType10[]" />
+          <GenericArgument Name="CommonType10[]" />
+        </Method>
+      </Type>
+
+      <Type Name="TypeDictTestTypes.MyClass1`1[[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="TypeDictTestTypes.MyClass1`1[[System.Int32, netstandard]]" Dynamic="Required All"/>
+      <Type Name="TypeDictTestTypes.MyClass1`1[[System.Boolean, netstandard]]" Dynamic="Required All"/>
+      <Type Name="TypeDictTestTypes.MyClass1`1[TypeDictTestTypes.MyStruct]" Dynamic="Required All"/>
+      <Type Name="TypeDictTestTypes.MyClass5" Dynamic="Required All"/>
+
+      <Type Name="BaseTypeDict.MyClass3`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="BaseTypeDict.MyClass4`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="BaseTypeDict.MyClass4_2`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="BaseTypeDict.MyClass4_3`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="BaseTypeDict.Gen1`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="BaseTypeDict.Gen2`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="BaseTypeDict.GenDerived2`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All" />
+
+      <Type Name="MethodDictionaryTest.Bar`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="MethodDictionaryTest.Foo" Dynamic="Required All" />
+      <Type Name="MethodDictionaryTest.Yahoo`1[[System.Object, netstandard]]" Dynamic="Required All" />
+
+      <Type Name="DictDependency.Yahoo`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="DictDependency.MyType1`2" Browse="All" />
+      <Type Name="DictDependency.MyType2`2" Browse="All" />
+
+      <Type Name="CtorDict.CtorTest`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All">
+        <Method Name="TestMethod">
+          <GenericArgument Name="System.Object, netstandard" />
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="CtorDict.SelfCtorTest`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="CtorDict.NoDefaultCtorTest`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All">
+        <Method Name="TestMethod">
+          <GenericArgument Name="System.Object, netstandard" />
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+
+      <Type Name="MethodAndUnboxingStubTesting.GenericClass`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="MethodAndUnboxingStubTesting.GenericClass2`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="MethodAndUnboxingStubTesting.GenericStruct`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="MethodAndUnboxingStubTesting.GenericStruct2`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All"/>
+      
+      <Type Name="ExistingInstantiations.Gen`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All">
+        <Method Name="GMethod">
+          <GenericArgument Name="System.Object, netstandard" />
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="ExistingInstantiations.Gen2`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All">
+        <Method Name="GetGenDelegates">
+          <GenericArgument Name="System.Object, netstandard" />
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="ExistingInstantiations.IFrobber">
+        <Method Name="Frob1">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="Frob2">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="Frob3">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="Frob4">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="ExistingInstantiations.Frobber1">
+        <Method Name="Frob1">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="Frob2">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="Frob3">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="Frob4">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="Method">
+          <GenericArgument Name="System.Object, netstandard" />
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+
+      <Type Name="ThreadLocalStatics.MyType1`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="ThreadLocalStatics.MyDerived1`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="ThreadLocalStatics.MySuperDerived1_1`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="ThreadLocalStatics.MySuperDerived1_2`1[[System.Object, netstandard]]" Dynamic="Required All" />
+
+      <Type Name="ThreadLocalStatics.MyType2`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="ThreadLocalStatics.MyDerived2_1`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="ThreadLocalStatics.MyDerived2_2`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All" />
+
+      <Type Name="Expressions.TestRunner`1[[System.Object, netstandard]]" Dynamic="Required All">
+        <Method Name="RunTest">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="Expressions.SomeGenericClass2`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All">
+        <Method Name="ConcatList1">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="ConcatList2">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+
+      <Type Name="InterfacesTests+Gen`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="InterfacesTests+Recursive`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="InterfacesTests+DoublyRecursive`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="InterfacesTests+WithInterfaceOverArrayType`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="InterfacesTests+IInterface`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="InterfacesTests+IFrobber`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="InterfacesTests+Frobber`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="InterfacesTests+UseFrobber`2[InterfacesTests+FrobtasticFrobberStruct,[System.String, netstandard]]" Dynamic="Required All" />
+
+      <Type Name="ConstraintsTests+TypeWithClassConstraint`1[[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="ConstraintsTests+TypeRequiringIFoo`1[[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="ConstraintsTests+TypeWithPrivateCtor" Dynamic="Required All"/>
+      <Type Name="ConstraintsTests+TypeWithNewConstraint`1[[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="ConstraintsTests+TypeWithSelfReferenceConstraint`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="ConstraintsTests+TypeWithRecursiveConstraints`2[[ConstraintsTests+TypeWithNoConstraint`1[[System.Object, netstandard]]],[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="ConstraintsTests+TypeWithVariance`2[[ConstraintsTests+IBar`1[[System.Object, netstandard]]],[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="ConstraintsTests+TypeWithSelfReferenceIEnumerableConstraint`2[[System.Int32[], netstandard],[System.Int32, netstandard]]" Dynamic="Required All"/>
+      <Type Name="ConstraintsTests+TypeWithSelfReferenceIEnumerableConstraint`2[[System.Collections.Generic.IEnumerable`1[[System.Object, netstandard]], netstandard],[System.Object, netstandard]]" Dynamic="Required All"/>
+
+      <!--Type Name="MethodConstraintsTests"-->
+      <Type Name="MethodConstraintsTests+TypeWithNoConstraint" Dynamic="Required All">
+        <Method Name="Method">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MethodConstraintsTests+TypeWithClassConstraint" Dynamic="Required All" />
+      <Type Name="MethodConstraintsTests+TypeWithStructConstraint" Dynamic="Required All">
+        <Method Name="Method">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MethodConstraintsTests+TypeRequiringIFoo" Dynamic="Required All" />
+      <Type Name="MethodConstraintsTests+TypeWithPrivateCtor" Dynamic="Required All" />
+      <Type Name="MethodConstraintsTests+TypeWithNewConstraint" Dynamic="Required All"/>
+      <Type Name="MethodConstraintsTests+TypeWithSelfReferenceConstraint" Dynamic="Required All">
+        <Method Name="Method">
+          <GenericArgument Name="System.Object, netstandard" />
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MethodConstraintsTests+TypeWithRecursiveConstraints" Dynamic="Required All">
+        <Method Name="Method">
+          <GenericArgument Name="MethodConstraintsTests+TypeWithNoConstraint`1[[System.Object, netstandard]]" />
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MethodConstraintsTests+TypeWithVariance" Dynamic="Required All">
+        <Method Name="Method">
+          <GenericArgument Name="MethodConstraintsTests+IBar`1[[System.Object, netstandard]]" />
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MethodConstraintsTests+TypeWithSelfReferenceIEnumerableConstraint" Dynamic="Required All">
+        <Method Name="Method">
+          <GenericArgument Name="System.Int32[], netstandard" />
+          <GenericArgument Name="System.Int32, netstandard" />
+        </Method>
+        <Method Name="Method">
+          <GenericArgument Name="System.Collections.Generic.IEnumerable`1[[System.Object, netstandard]], netstandard" />
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MethodConstraintsTests+TypeWithMDArrayConstraints" Dynamic="Required All">
+        <Method Name="Method">
+          <GenericArgument Name="System.Collections.Generic.IEnumerable`1[[MethodConstraintsTests+Derived[,,][]]], netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MethodConstraintsTests+DerivedFromDerived" Dynamic="Required All"/>
+      <Type Name="MethodConstraintsTests+GenericType`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All">
+        <Method Name="Method">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+
+      <Type Name="BlockedTypesTests+GenericType`1[[System.Object, netstandard]]" Dynamic="Required All" />
+
+      <Type Name="DynamicListTests" Dynamic="Required All" />
+      <Type Name="System.Collections.Generic.List`1[DynamicListTests+StructWrapper`1[DynamicListTests+DummyForRdXml]], netstandard" Dynamic="Required All" />
+      <Type Name="System.Collections.Generic.List`1[DynamicListTests+StructWrapperWithEquals`1[DynamicListTests+DummyForRdXml]], netstandard" Dynamic="Required All" />
+      <Type Name="System.Collections.Generic.List`1[DynamicListTests+EquatableStructWrapper`1[DynamicListTests+DummyForRdXml]], netstandard" Dynamic="Required All" />
+      <Type Name="System.Collections.Generic.List`1[DynamicListTests+ComparableStructWrapper`1[DynamicListTests+DummyForRdXml]], netstandard" Dynamic="Required All" />
+
+      <Type Name="StaticsTests+GenericTypeWithStaticTimeSpanField`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="StaticsTests+GenericTypeWithNonGcStaticField`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="StaticsTests+GenericTypeWithMultipleNonGcStaticFields`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="StaticsTests+DerivedGenericTypeWithNonGcStaticField`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="StaticsTests+SuperDerivedGeneric`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="StaticsTests+GenericTypeWithGcStaticField`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="StaticsTests+GenericTypeWithStaticFieldOfTypeT`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="StaticsTests+ClassWithStaticConstructor`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="StaticsTests+AnotherClassWithStaticConstructor`1[[System.Object, netstandard]]" Dynamic="Required All" />
+
+      <Type Name="FieldReflectionTests+BaseType2`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="FieldReflectionTests+DerivedTypeWithVariousFields`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="FieldReflectionTests+ReferenceTypeWithVariousFields`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="FieldReflectionTests+ReferenceTypeWithCCtor`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="FieldReflectionTests+ValueTypeWithVariousFields`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="FieldReflectionTests+ValueTypeWithCCtor`1[[System.Object, netstandard]]" Dynamic="Required All" />
+
+      <!--Type Name="RdExperienceTests.Foo{System.Object}" Browse="Required Public">
+        <Method Name=".ctor" Dynamic="Required" />
+        <Method Name="Frob" Dynamic="Required" />
+      </Type>
+      <Type Name="RdExperienceTests.Foo{System.String}" Browse="Required Public">
+        <Method Name="Gizmo" Dynamic="Required" />
+      </Type-->
+
+      <Type Name="ArrayTests.ArrayTests" Dynamic="Required All"/>
+      <Type Name="ArrayTests.GenericStruct`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      
+    </Assembly>
+  </Application>
+</Directives>

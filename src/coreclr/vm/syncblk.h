@@ -920,7 +920,7 @@ public:
     size_t GetTaggedMemorySizeInBytes()
     {
         LIMITED_METHOD_CONTRACT;
-        return _countof(m_taggedAlloc);
+        return ARRAY_SIZE(m_taggedAlloc);
     }
 
 private:

@@ -1,0 +1,3 @@
+v1.2.11
+
+https://github.com/madler/zlib/releases/tag/v1.2.11

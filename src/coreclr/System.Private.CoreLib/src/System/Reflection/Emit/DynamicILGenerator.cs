@@ -61,7 +61,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(meth));
 
             int stackchange = 0;
-            int token = 0;
+            int token;
             DynamicMethod? dynMeth = meth as DynamicMethod;
             if (dynMeth == null)
             {

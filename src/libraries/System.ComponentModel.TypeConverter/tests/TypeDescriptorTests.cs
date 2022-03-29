@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    [Collection("NoParallelTests")] // manipulates cache
+    [Collection(nameof(DisableParallelization))] // manipulates cache
     public class TypeDescriptorTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 

@@ -308,11 +308,11 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case Testref:
-                        Debug.Assert(childCount is 1 or 2, $"Expected one or two children for {node.TypeName}, got {childCount}");
+                        Debug.Assert(childCount == 2, $"Expected two children for {node.TypeName}, got {childCount}");
                         break;
 
                     case Testgroup:
-                        Debug.Assert(childCount is 2 or 3, $"Expected two or three children for {node.TypeName}, got {childCount}");
+                        Debug.Assert(childCount == 3, $"Expected three children for {node.TypeName}, got {childCount}");
                         break;
 
                     case Concatenate:
@@ -393,12 +393,7 @@ namespace System.Text.RegularExpressions
                                 node = node.Child(0);
                                 continue;
 
-                            case Oneloop when node.N == int.MaxValue:
-                            case Oneloopatomic when node.N == int.MaxValue:
-                            case Notoneloop when node.N == int.MaxValue:
-                            case Notoneloopatomic when node.N == int.MaxValue:
-                            case Setloop when node.N == int.MaxValue:
-                            case Setloopatomic when node.N == int.MaxValue:
+                            case Oneloop or Oneloopatomic or Notoneloop or Notoneloopatomic or Setloop or Setloopatomic when node.N == int.MaxValue:
                                 RegexNode? parent = node.Next;
                                 if (parent != null && parent.Type == Concatenate)
                                 {
@@ -515,62 +510,72 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>Whether this node is considered to be atomic based on its parent.</summary>
+        /// <summary>Whether this node may be considered to be atomic based on its parent.</summary>
         /// <remarks>
-        /// This is used to determine whether additional atomic nodes may be valuable to
-        /// be introduced into the tree.  It should not be used to determine for sure whether
-        /// a node will be backtracked into.
+        /// This may have false negatives, meaning the node may actually be atomic even if this returns false.
+        /// But any true result may be relied on to mean the node will actually be considered to be atomic.
         /// </remarks>
         public bool IsAtomicByParent()
         {
-            RegexNode? next = Next;
-            if (next is null) return false;
-            if (next.Type == Atomic) return true;
-
-            // We only walk up one group as a balance between optimization and cost.
-            if ((next.Type != Concatenate && next.Type != Capture) ||
-                next.Child(next.ChildCount() - 1) != this)
+            // Walk up the parent hierarchy.
+            RegexNode child = this;
+            for (RegexNode? parent = child.Next; parent is not null; child = parent, parent = child.Next)
             {
-                return false;
+                switch (parent.Type)
+                {
+                    case Atomic:
+                    case Prevent:
+                    case Require:
+                        // If the parent is atomic, so is the child.  That's the whole purpose
+                        // of the Atomic node, and lookarounds are also implicitly atomic.
+                        return true;
+
+                    case Alternate:
+                    case Testref:
+                        // Skip alternations.  Each branch is considered independently,
+                        // so any atomicity applied to the alternation also applies to
+                        // each individual branch.  This is true as well for conditional
+                        // backreferences, where each of the yes/no branches are independent.
+                    case Testgroup when parent.Child(0) != child:
+                        // As with alternations, each yes/no branch of an expression conditional
+                        // are independent from each other, but the conditional expression itself
+                        // can be backtracked into from each of the branches, so we can't make
+                        // it atomic just because the whole conditional is.
+                    case Capture:
+                        // Skip captures. They don't affect atomicity.
+                    case Concatenate when parent.Child(parent.ChildCount() - 1) == child:
+                        // If the parent is a concatenation and this is the last node,
+                        // any atomicity applying to the concatenation applies to this
+                        // node, too.
+                        continue;
+
+                    default:
+                        // For any other parent type, give up on trying to prove atomicity.
+                        return false;
+                }
             }
 
-            next = next.Next;
-            return next != null && next.Type == Atomic;
+            // The parent was null, so nothing can backtrack in.
+            return true;
         }
 
         /// <summary>
         /// Removes redundant nodes from the subtree, and returns an optimized subtree.
         /// </summary>
-        internal RegexNode Reduce()
-        {
-            switch (Type)
+        internal RegexNode Reduce() =>
+            Type switch
             {
-                case Alternate:
-                    return ReduceAlternation();
-
-                case Concatenate:
-                    return ReduceConcatenation();
-
-                case Loop:
-                case Lazyloop:
-                    return ReduceLoops();
-
-                case Atomic:
-                    return ReduceAtomic();
-
-                case Group:
-                    return ReduceGroup();
-
-                case Set:
-                case Setloop:
-                case Setloopatomic:
-                case Setlazy:
-                    return ReduceSet();
-
-                default:
-                    return this;
-            }
-        }
+                Alternate => ReduceAlternation(),
+                Atomic => ReduceAtomic(),
+                Concatenate => ReduceConcatenation(),
+                Group => ReduceGroup(),
+                Loop or Lazyloop => ReduceLoops(),
+                Prevent => ReducePrevent(),
+                Set or Setloop or Setloopatomic or Setlazy => ReduceSet(),
+                Testgroup => ReduceTestgroup(),
+                Testref => ReduceTestref(),
+                _ => this,
+            };
 
         /// <summary>Remove an unnecessary Concatenation or Alternation node</summary>
         /// <remarks>
@@ -1586,15 +1591,8 @@ namespace System.Text.RegularExpressions
                     switch (currentNode.Type)
                     {
                         // Coalescing a loop with its same type
-                        case Oneloop when nextNode.Type == Oneloop && currentNode.Ch == nextNode.Ch:
-                        case Oneloopatomic when nextNode.Type == Oneloopatomic && currentNode.Ch == nextNode.Ch:
-                        case Onelazy when nextNode.Type == Onelazy && currentNode.Ch == nextNode.Ch:
-                        case Notoneloop when nextNode.Type == Notoneloop && currentNode.Ch == nextNode.Ch:
-                        case Notoneloopatomic when nextNode.Type == Notoneloopatomic && currentNode.Ch == nextNode.Ch:
-                        case Notonelazy when nextNode.Type == Notonelazy && currentNode.Ch == nextNode.Ch:
-                        case Setloop when nextNode.Type == Setloop && currentNode.Str == nextNode.Str:
-                        case Setloopatomic when nextNode.Type == Setloopatomic && currentNode.Str == nextNode.Str:
-                        case Setlazy when nextNode.Type == Setlazy && currentNode.Str == nextNode.Str:
+                        case Oneloop or Oneloopatomic or Onelazy or Notoneloop or Notoneloopatomic or Notonelazy when nextNode.Type == currentNode.Type && currentNode.Ch == nextNode.Ch:
+                        case Setloop or Setloopatomic or Setlazy when nextNode.Type == currentNode.Type && currentNode.Str == nextNode.Str:
                             if (CanCombineCounts(currentNode.M, currentNode.N, nextNode.M, nextNode.N))
                             {
                                 currentNode.M += nextNode.M;
@@ -1608,15 +1606,9 @@ namespace System.Text.RegularExpressions
                             break;
 
                         // Coalescing a loop with an additional item of the same type
-                        case Oneloop when nextNode.Type == One && currentNode.Ch == nextNode.Ch:
-                        case Oneloopatomic when nextNode.Type == One && currentNode.Ch == nextNode.Ch:
-                        case Onelazy when nextNode.Type == One && currentNode.Ch == nextNode.Ch:
-                        case Notoneloop when nextNode.Type == Notone && currentNode.Ch == nextNode.Ch:
-                        case Notoneloopatomic when nextNode.Type == Notone && currentNode.Ch == nextNode.Ch:
-                        case Notonelazy when nextNode.Type == Notone && currentNode.Ch == nextNode.Ch:
-                        case Setloop when nextNode.Type == Set && currentNode.Str == nextNode.Str:
-                        case Setloopatomic when nextNode.Type == Set && currentNode.Str == nextNode.Str:
-                        case Setlazy when nextNode.Type == Set && currentNode.Str == nextNode.Str:
+                        case Oneloop or Oneloopatomic or Onelazy when nextNode.Type == One && currentNode.Ch == nextNode.Ch:
+                        case Notoneloop or Notoneloopatomic or Notonelazy when nextNode.Type == Notone && currentNode.Ch == nextNode.Ch:
+                        case Setloop or Setloopatomic or Setlazy when nextNode.Type == Set && currentNode.Str == nextNode.Str:
                             if (CanCombineCounts(currentNode.M, currentNode.N, 1, 1))
                             {
                                 currentNode.M++;
@@ -1644,8 +1636,7 @@ namespace System.Text.RegularExpressions
                             break;
 
                         // Coalescing an individual item with another individual item.
-                        case One when nextNode.Type == One && currentNode.Ch == nextNode.Ch:
-                        case Notone when nextNode.Type == Notone && currentNode.Ch == nextNode.Ch:
+                        case One or Notone when nextNode.Type == currentNode.Type && currentNode.Ch == nextNode.Ch:
                         case Set when nextNode.Type == Set && currentNode.Str == nextNode.Str:
                             currentNode.MakeRep(Oneloop, 2, 2);
                             next++;
@@ -1791,6 +1782,71 @@ namespace System.Text.RegularExpressions
             return null;
         }
 
+        /// <summary>Optimizations for negative lookaheads/behinds.</summary>
+        private RegexNode ReducePrevent()
+        {
+            Debug.Assert(Type == Prevent);
+            Debug.Assert(ChildCount() == 1);
+
+            // A negative lookahead/lookbehind wrapped around an empty child, i.e. (?!), is
+            // sometimes used as a way to insert a guaranteed no-match into the expression.
+            // We can reduce it to simply Nothing.
+            if (Child(0).Type == Empty)
+            {
+                Type = Nothing;
+                Children = null;
+            }
+
+            return this;
+        }
+
+        /// <summary>Optimizations for backreference conditionals.</summary>
+        private RegexNode ReduceTestref()
+        {
+            Debug.Assert(Type == Testref);
+            Debug.Assert(ChildCount() is 1 or 2);
+
+            // This isn't so much an optimization as it is changing the tree for consistency.
+            // We want all engines to be able to trust that every Testref will have two children,
+            // even though it's optional in the syntax.  If it's missing a "not matched" branch,
+            // we add one that will match empty.
+            if (ChildCount() == 1)
+            {
+                AddChild(new RegexNode(Empty, Options));
+            }
+
+            return this;
+        }
+
+        /// <summary>Optimizations for expression conditionals.</summary>
+        private RegexNode ReduceTestgroup()
+        {
+            Debug.Assert(Type == Testgroup);
+            Debug.Assert(ChildCount() is 2 or 3);
+
+            // This isn't so much an optimization as it is changing the tree for consistency.
+            // We want all engines to be able to trust that every Testgroup will have three children,
+            // even though it's optional in the syntax.  If it's missing a "not matched" branch,
+            // we add one that will match empty.
+            if (ChildCount() == 2)
+            {
+                AddChild(new RegexNode(Empty, Options));
+            }
+
+            // It's common for the condition to be an explicit positive lookahead, as specifying
+            // that eliminates any ambiguity in syntax as to whether the expression is to be matched
+            // as an expression or to be a reference to a capture group.  After parsing, however,
+            // there's no ambiguity, and we can remove an extra level of positive lookahead, as the
+            // engines need to treat the condition as a zero-width positive, atomic assertion regardless.
+            RegexNode condition = Child(0);
+            if (condition.Type == Require && (condition.Options & RegexOptions.RightToLeft) == 0)
+            {
+                ReplaceChild(0, condition.Child(0));
+            }
+
+            return this;
+        }
+
         /// <summary>
         /// Determines whether node can be switched to an atomic loop.  Subsequent is the node
         /// immediately after 'node'.
@@ -1813,8 +1869,7 @@ namespace System.Text.RegularExpressions
                     case Capture:
                     case Atomic:
                     case Require when (subsequent.Options & RegexOptions.RightToLeft) == 0: // only lookaheads, not lookbehinds (represented as RTL Require nodes)
-                    case Loop when subsequent.M > 0:
-                    case Lazyloop when subsequent.M > 0:
+                    case Loop or Lazyloop when subsequent.M > 0:
                         subsequent = subsequent.Child(0);
                         continue;
                 }
@@ -1853,23 +1908,16 @@ namespace System.Text.RegularExpressions
                     switch (subsequent.Type)
                     {
                         case One when node.Ch != subsequent.Ch:
-                        case Onelazy when subsequent.M > 0 && node.Ch != subsequent.Ch:
-                        case Oneloop when subsequent.M > 0 && node.Ch != subsequent.Ch:
-                        case Oneloopatomic when subsequent.M > 0 && node.Ch != subsequent.Ch:
+                        case Onelazy or Oneloop or Oneloopatomic when subsequent.M > 0 && node.Ch != subsequent.Ch:
                         case Notone when node.Ch == subsequent.Ch:
-                        case Notonelazy when subsequent.M > 0 && node.Ch == subsequent.Ch:
-                        case Notoneloop when subsequent.M > 0 && node.Ch == subsequent.Ch:
-                        case Notoneloopatomic when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                        case Notonelazy or Notoneloop or Notoneloopatomic when subsequent.M > 0 && node.Ch == subsequent.Ch:
                         case Multi when node.Ch != subsequent.Str![0]:
                         case Set when !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
-                        case Setlazy when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
-                        case Setloop when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
-                        case Setloopatomic when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
+                        case Setlazy or Setloop or Setloopatomic when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
                         case End:
-                        case EndZ when node.Ch != '\n':
-                        case Eol when node.Ch != '\n':
-                        case Boundary when RegexCharClass.IsWordChar(node.Ch):
-                        case NonBoundary when !RegexCharClass.IsWordChar(node.Ch):
+                        case EndZ or Eol when node.Ch != '\n':
+                        case Boundary when RegexCharClass.IsBoundaryWordChar(node.Ch):
+                        case NonBoundary when !RegexCharClass.IsBoundaryWordChar(node.Ch):
                         case ECMABoundary when RegexCharClass.IsECMAWordChar(node.Ch):
                         case NonECMABoundary when !RegexCharClass.IsECMAWordChar(node.Ch):
                             return true;
@@ -1880,9 +1928,7 @@ namespace System.Text.RegularExpressions
                     switch (subsequent.Type)
                     {
                         case One when node.Ch == subsequent.Ch:
-                        case Onelazy when subsequent.M > 0 && node.Ch == subsequent.Ch:
-                        case Oneloop when subsequent.M > 0 && node.Ch == subsequent.Ch:
-                        case Oneloopatomic when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                        case Onelazy or Oneloop or Oneloopatomic when subsequent.M > 0 && node.Ch == subsequent.Ch:
                         case Multi when node.Ch == subsequent.Str![0]:
                         case End:
                             return true;
@@ -1893,17 +1939,12 @@ namespace System.Text.RegularExpressions
                     switch (subsequent.Type)
                     {
                         case One when !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                        case Onelazy when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                        case Oneloop when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                        case Oneloopatomic when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                        case Onelazy or Oneloop or Oneloopatomic when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
                         case Multi when !RegexCharClass.CharInClass(subsequent.Str![0], node.Str!):
                         case Set when !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
-                        case Setlazy when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
-                        case Setloop when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
-                        case Setloopatomic when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
+                        case Setlazy or Setloop or Setloopatomic when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
                         case End:
-                        case EndZ when !RegexCharClass.CharInClass('\n', node.Str!):
-                        case Eol when !RegexCharClass.CharInClass('\n', node.Str!):
+                        case EndZ or Eol when !RegexCharClass.CharInClass('\n', node.Str!):
                         case Boundary when node.Str == RegexCharClass.WordClass || node.Str == RegexCharClass.DigitClass:
                         case NonBoundary when node.Str == RegexCharClass.NotWordClass || node.Str == RegexCharClass.NotDigitClass:
                         case ECMABoundary when node.Str == RegexCharClass.ECMAWordClass || node.Str == RegexCharClass.ECMADigitClass:
@@ -2182,206 +2223,46 @@ namespace System.Text.RegularExpressions
             return 1;
         }
 
-        // Determines whether the node supports an optimized code gen strategy based on walking the node tree.
-        internal bool SupportsSimplifiedCodeGenerationImplementation()
+        // Determines whether the node supports a compilation / code generation strategy based on walking the node tree.
+        internal bool SupportsCompilation()
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                // If we can't recur further, simplified code generation isn't supported as the tree is too deep.
+                // If we can't recur further, code generation isn't supported as the tree is too deep.
                 return false;
             }
 
-            bool supported = false;
-
-            // We only support the default left-to-right, not right-to-left, which requires more complication in the generated code.
-            // (Right-to-left is only employed when explicitly asked for by the developer or by lookbehind assertions.)
-            // We also limit the recursion involved to prevent stack dives; this limitation can be removed by switching
-            // away from a recursive implementation (done for convenience) to an iterative one that's more complicated
-            // but within the same problems.
-            if ((Options & RegexOptions.RightToLeft) == 0)
+            if ((Options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) != 0)
             {
-                int childCount = ChildCount();
-                Debug.Assert((Options & HasCapturesFlag) == 0);
+                // NonBacktracking isn't supported, nor RightToLeft.  The latter applies to both the top-level
+                // options as well as when used to specify positive and negative lookbehinds.
+                return false;
+            }
 
-                switch (Type)
+            int childCount = ChildCount();
+            for (int i = 0; i < childCount; i++)
+            {
+                // The node isn't supported if any of its children aren't supported.
+                if (!Child(i).SupportsCompilation())
                 {
-                    // One/Notone/Set/Multi don't involve any repetition and are easily supported.
-                    case One:
-                    case Notone:
-                    case Set:
-                    case Multi:
-                    // Boundaries are like set checks and don't involve repetition, either.
-                    case Boundary:
-                    case NonBoundary:
-                    case ECMABoundary:
-                    case NonECMABoundary:
-                    // Anchors are also trivial.
-                    case Beginning:
-                    case Start:
-                    case Bol:
-                    case Eol:
-                    case End:
-                    case EndZ:
-                    // {Set/One/Notone}loopatomic are optimized nodes that represent non-backtracking variable-length loops.
-                    // These consume their {Set/One} inputs as long as they match, and don't give up anything they
-                    // matched, which means we can support them without backtracking.
-                    case Oneloopatomic:
-                    case Notoneloopatomic:
-                    case Setloopatomic:
-                    // "Empty" is easy: nothing is emitted for it.
-                    // "Nothing" is also easy: it doesn't match anything.
-                    // "UpdateBumpalong" doesn't match anything, it's just an optional directive to the engine.
-                    case Empty:
-                    case Nothing:
-                    case UpdateBumpalong:
-                    // Backreferences are supported
-                    case Ref:
-                        supported = true;
-                        break;
-
-                    // Conditional backreference tests are also supported, so long as both their yes/no branches are supported.
-                    case Testref:
-                        supported =
-                            Child(0).SupportsSimplifiedCodeGenerationImplementation() &&
-                            (childCount == 1 || Child(1).SupportsSimplifiedCodeGenerationImplementation());
-                        break;
-
-                    // Single character greedy/lazy loops are supported if either they're actually a repeater
-                    // or they're not contained in any construct other than simple nesting (e.g. concat, capture).
-                    case Oneloop:
-                    case Notoneloop:
-                    case Setloop:
-                    case Onelazy:
-                    case Notonelazy:
-                    case Setlazy:
-                        Debug.Assert(Next == null || Next.Type != Atomic, "Loop should have been transformed into an atomic type.");
-                        supported = M == N || AncestorsAllowBacktracking(Next);
-                        break;
-
-                    // For greedy and lazy loops, they're supported if the node they wrap is supported
-                    // and either the node is actually a repeater, is atomic, or is in the tree in a
-                    // location where backtracking is allowed.
-                    case Loop:
-                    case Lazyloop:
-                        supported =
-                            (M == N || (Next != null && Next.Type == Atomic) || AncestorsAllowBacktracking(Next)) &&
-                            Child(0).SupportsSimplifiedCodeGenerationImplementation();
-                        break;
-
-                    // We can handle atomic as long as its child is supported.
-                    // Lookahead assertions also only require that the child node be supported.
-                    // The RightToLeft check earlier is important to differentiate lookbehind,
-                    // which is not supported.
-                    case Atomic:
-                    case Require:
-                    case Prevent:
-                        supported = Child(0).SupportsSimplifiedCodeGenerationImplementation();
-                        break;
-
-                    // We can handle alternates as long as they're atomic (a root / global alternate is
-                    // effectively atomic, as nothing will try to backtrack into it as it's the last thing).
-                    // Its children must all also be supported.
-                    case Alternate:
-                        if (Next != null &&
-                            (IsAtomicByParent() || // atomic alternate
-                            (Next.Type == Capture && Next.Next is null))) // root alternate
-                        {
-                            goto case Concatenate;
-                        }
-                        break;
-
-                    // Concatenation doesn't require backtracking as long as its children don't.
-                    case Concatenate:
-                        supported = true;
-                        for (int i = 0; i < childCount; i++)
-                        {
-                            if (!Child(i).SupportsSimplifiedCodeGenerationImplementation())
-                            {
-                                supported = false;
-                                break;
-                            }
-                        }
-                        break;
-
-                    case Capture:
-                        supported = Child(0).SupportsSimplifiedCodeGenerationImplementation();
-                        if (supported)
-                        {
-                            // Captures are currently only supported in certain places in the tree.
-                            RegexNode? parent = Next;
-                            while (parent != null)
-                            {
-                                switch (parent.Type)
-                                {
-                                    case Alternate:
-                                    case Atomic:
-                                    case Capture:
-                                    case Concatenate:
-                                    case Require:
-                                        parent = parent.Next;
-                                        break;
-
-                                    default:
-                                        parent = null;
-                                        supported = false;
-                                        break;
-                                }
-                            }
-
-                            // If we've found a supported capture, mark all of the nodes in its parent
-                            // hierarchy as containing a capture.
-                            if (supported)
-                            {
-                                parent = this;
-                                while (parent != null && ((parent.Options & HasCapturesFlag) == 0))
-                                {
-                                    parent.Options |= HasCapturesFlag;
-                                    parent = parent.Next;
-                                }
-                            }
-                        }
-                        break;
-
-                    case Testgroup:
-                        supported =
-                            Child(0).SupportsSimplifiedCodeGenerationImplementation() &&
-                            Child(1).SupportsSimplifiedCodeGenerationImplementation() &&
-                            (childCount == 2 || Child(2).SupportsSimplifiedCodeGenerationImplementation());
-                        break;
-
-                    default:
-                        Debug.Fail($"Unknown type: {Type}");
-                        supported = false;
-                        break;
+                    return false;
                 }
             }
-#if DEBUG
-            if (!supported && (Options & RegexOptions.Debug) != 0)
-            {
-                Debug.WriteLine($"Unable to use non-backtracking code gen: node {Description()} isn't supported.");
-            }
-#endif
-            return supported;
 
-            static bool AncestorsAllowBacktracking(RegexNode? node)
+            // TODO: This should be moved somewhere else, to a pass somewhere where we explicitly
+            // annotate the tree, potentially as part of the final optimization pass.  It doesn't
+            // belong in this check.
+            if (Type == Capture)
             {
-                while (node is not null)
+                // If we've found a supported capture, mark all of the nodes in its parent hierarchy as containing a capture.
+                for (RegexNode? parent = this; parent != null && (parent.Options & HasCapturesFlag) == 0; parent = parent.Next)
                 {
-                    switch (node.Type)
-                    {
-                        case Concatenate:
-                        case Capture:
-                        case Atomic:
-                            node = node.Next;
-                            break;
-
-                        default:
-                            return false;
-                    }
+                    parent.Options |= HasCapturesFlag;
                 }
-
-                return true;
             }
+
+            // Supported.
+            return true;
         }
 
         /// <summary>Gets whether the node is a Set/Setloop/Setloopatomic/Setlazy node.</summary>
@@ -2393,16 +2274,21 @@ namespace System.Text.RegularExpressions
         /// <summary>Gets whether the node is a Notone/Notoneloop/Notoneloopatomic/Notonelazy node.</summary>
         public bool IsNotoneFamily => Type is Notone or Notoneloop or Notoneloopatomic or Notonelazy;
 
-        /// <summary>Gets whether this node may be a source of backtracking.</summary>
-        public bool InstigatesBacktracking =>
-            Type switch
+        /// <summary>Gets whether this node is contained inside of a loop.</summary>
+        public bool IsInLoop()
+        {
+            for (RegexNode? parent = Next; parent is not null; parent = parent.Next)
             {
-                Oneloop or Notoneloop or Setloop or Onelazy or Notonelazy or Setlazy or Loop or Lazyloop when !IsAtomicByParent() && M != N => true,
-                Alternate => !IsAtomicByParent(),
-                Ref or Testref or Testgroup => true,
-                _ => false,
-            };
+                if (parent.Type is Loop or Lazyloop)
+                {
+                    return true;
+                }
+            }
 
+            return false;
+        }
+
+#if DEBUG
         private string TypeName =>
             Type switch
             {
@@ -2520,7 +2406,6 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
-#if DEBUG
         [ExcludeFromCodeCoverage]
         public void Dump() => Debug.WriteLine(ToString());
 

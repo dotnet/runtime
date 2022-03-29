@@ -12,7 +12,7 @@ include_directories(
 if(NOT DISABLE_LIBS)
   if(HOST_ANDROID OR HOST_IOS OR HOST_TVOS)
     # Build the logging profiler only for mobile platforms
-    add_library(mono-profiler-log SHARED helper.c log.c log-args.c)
+    add_library(mono-profiler-log SHARED helper.c log.c log-args.c ${ZLIB_SOURCES})
     target_link_libraries(mono-profiler-log monosgen-shared eglib_objects)
     if(HOST_ANDROID)
       target_link_libraries(mono-profiler-log log)
@@ -22,6 +22,10 @@ if(NOT DISABLE_LIBS)
     add_library(mono-profiler-log-static STATIC helper.c log.c log-args.c)
     set_target_properties(mono-profiler-log-static PROPERTIES OUTPUT_NAME mono-profiler-log)
     install(TARGETS mono-profiler-log-static LIBRARY)
+
+    if(NOT DISABLE_LOG_PROFILER_GZ)
+      target_link_libraries(mono-profiler-log ${Z_LIBS})
+    endif()
   endif()
 
   add_library(mono-profiler-aot-static STATIC aot.c helper.c)

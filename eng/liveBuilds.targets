@@ -176,6 +176,8 @@
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.js;
+        $(LibrariesNativeArtifactsPath)dotnet.d.ts;
+        $(LibrariesNativeArtifactsPath)package.json;
         $(LibrariesNativeArtifactsPath)dotnet.wasm;
         $(LibrariesNativeArtifactsPath)dotnet.timezones.blat;
         $(LibrariesNativeArtifactsPath)*.dat;"
@@ -188,6 +190,15 @@
         $(LibrariesNativeArtifactsPath)src\emcc-props.json;"
         NativeSubDirectory="src"
         IsNative="true" />
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
+                             Include="$(LibrariesNativeArtifactsPath)src\cjs\*.js"
+                             NativeSubDirectory="src\cjs"
+                             IsNative="true" />
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
+                             Include="$(LibrariesNativeArtifactsPath)src\es6\*.js"
+                             NativeSubDirectory="src\es6"
+                             IsNative="true" />
+
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
                              Include="
         $(LibrariesNativeArtifactsPath)include\wasm\*.h;"

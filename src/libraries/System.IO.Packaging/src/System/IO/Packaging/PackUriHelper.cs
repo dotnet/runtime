@@ -684,13 +684,15 @@ namespace System.IO.Packaging
                 {
                     if (_partUriExtension == null)
                     {
-                        _partUriExtension = Path.GetExtension(_partUriString);
+                        string partUriExtension = Path.GetExtension(_partUriString);
 
                         //If extension is absent just return the empty string
                         //else remove the leading "." from the returned extension
                         //string
-                        if (_partUriExtension.Length > 0)
-                            _partUriExtension = _partUriExtension.Substring(1);
+                        if (partUriExtension.Length > 0)
+                            partUriExtension = partUriExtension.Substring(1);
+
+                        _partUriExtension = partUriExtension;
                     }
                     return _partUriExtension;
                 }

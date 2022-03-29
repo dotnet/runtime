@@ -13,7 +13,6 @@ namespace System.Dynamic
 {
     internal static partial class UpdateDelegates
     {
-#if FEATURE_COMPILE
 <#
 for (int i = 1; i <= 10; i++)
 {
@@ -330,6 +329,5 @@ for (int i = 1; i <= 10; i++)
     }
 }
 #>
-#endif
     }
 }

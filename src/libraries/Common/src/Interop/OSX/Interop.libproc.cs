@@ -25,6 +25,9 @@ internal static partial class Interop
         // Constants from sys\resource.h
         private const int RUSAGE_INFO_V3 = 3;
 
+        // Constants from sys/errno.h
+        private const int EPERM = 1;
+
         // Defines from proc_info.h
         internal enum ThreadRunState
         {
@@ -120,7 +123,14 @@ internal static partial class Interop
         {
             // Get the number of processes currently running to know how much data to allocate
             int numProcesses = proc_listallpids(null, 0);
-            if (numProcesses <= 0)
+            if (numProcesses == 0 && Marshal.GetLastPInvokeError() == EPERM)
+            {
+                // An app running in App Sandbox does not have permissions to list other running processes
+                // and so the `proc_listallpids` function returns 0 and sets errno to 1. As a fallback
+                // we return at least an array with the PID of the current process which we always know.
+                return new[] { Environment.ProcessId };
+            }
+            else if (numProcesses <= 0)
             {
                 throw new Win32Exception(SR.CantGetAllPids);
             }

@@ -45,7 +45,7 @@ void InitEventForDebuggerNotification(DEBUG_EVENT *      pDebugEvent,
 #endif // (FEATURE_DBGIPC_TRANSPORT_DI || FEATURE_DBGIPC_TRANSPORT_VM)
 
 
-void GetPidDecoratedName(__out_z __out_ecount(cBufSizeInChars) WCHAR * pBuf,
+void GetPidDecoratedName(_Out_writes_z_(cBufSizeInChars) WCHAR * pBuf,
                          int cBufSizeInChars,
                          const WCHAR * pPrefix,
                          DWORD pid);

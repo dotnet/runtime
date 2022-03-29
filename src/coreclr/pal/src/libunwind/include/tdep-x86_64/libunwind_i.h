@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 /* Target-dependent definitions that are internal to libunwind but need
    to be shared with target-independent code.  */
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdatomic.h>
 #include <libunwind.h>
@@ -90,15 +91,44 @@ struct cursor
       }
     sigcontext_format;
     unw_word_t sigcontext_addr;
-    int validate;
-    ucontext_t *uc;
   };
+
+#define AS_ARG_UCONTEXT_MASK ~0x1UL
+#define AS_ARG_VALIDATE_MASK 0x1UL
+
+#define AS_ARG_GET_UC_PTR(arg) \
+  ((ucontext_t *) ((uintptr_t) arg & AS_ARG_UCONTEXT_MASK))
+#define AS_ARG_GET_VALIDATE(arg) \
+  ((int) ((uintptr_t) arg & AS_ARG_VALIDATE_MASK))
 
 static inline ucontext_t *
 dwarf_get_uc(const struct dwarf_cursor *cursor)
 {
-  const struct cursor *c = (struct cursor *) cursor->as_arg;
-  return c->uc;
+  assert(cursor->as == unw_local_addr_space);
+  return AS_ARG_GET_UC_PTR(cursor->as_arg);
+}
+
+static inline int
+dwarf_get_validate(const struct dwarf_cursor *cursor)
+{
+  assert(cursor->as == unw_local_addr_space);
+  return AS_ARG_GET_VALIDATE(cursor->as_arg);
+}
+
+static inline void
+dwarf_set_validate(const struct dwarf_cursor *cursor, const int validate)
+{
+  assert(cursor->as == unw_local_addr_space);
+  uintptr_t *packed_args = (uintptr_t *) &cursor->as_arg;
+  *packed_args |= (AS_ARG_VALIDATE_MASK & validate);
+}
+
+static inline void *
+dwarf_build_as_arg(const ucontext_t *uc, const int validate) {
+  uintptr_t packed_args = (uintptr_t) uc;
+  assert((packed_args & AS_ARG_VALIDATE_MASK) == 0);
+  packed_args |= (AS_ARG_VALIDATE_MASK & validate);
+  return (void *) packed_args;
 }
 
 #define DWARF_GET_LOC(l)        ((l).val)

@@ -123,6 +123,18 @@
   <data name="BlittableTypeMustBeBlittableMessage" xml:space="preserve">
     <value>Type '{0}' is marked with 'BlittableTypeAttribute' but is not blittable</value>
   </data>
+  <data name="CallerAllocConstructorMustHaveBufferSizeConstantDescription" xml:space="preserve">
+    <value>When a constructor taking a Span&lt;byte&gt; is specified on the native type, the type must also have a public integer constant named BufferSize to provide the size of the caller-allocated buffer.</value>
+  </data>
+  <data name="CallerAllocConstructorMustHaveBufferSizeConstantMessage" xml:space="preserve">
+    <value>The native type '{0}' must have a 'public const int BufferSize' field that specifies the size of the stack buffer because it has a constructor that takes a caller-allocated Span&lt;byte&gt;</value>
+  </data>
+  <data name="CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackDescription" xml:space="preserve">
+    <value>A type that supports marshalling from managed to native using a caller-allocated buffer should also support marshalling from managed to native where using a caller-allocated buffer is impossible.</value>
+  </data>
+  <data name="CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackMessage" xml:space="preserve">
+    <value>Native type '{0}' has a constructor taking a caller-allocated buffer, but does not support marshalling in scenarios where using a caller-allocated buffer is impossible</value>
+  </data>
   <data name="CannotHaveMultipleMarshallingAttributesDescription" xml:space="preserve">
     <value>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</value>
   </data>
@@ -159,14 +171,14 @@
   <data name="ConstantAndElementCountInfoDisallowed" xml:space="preserve">
     <value>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionLevel'</value>
   </data>
+  <data name="ConvertToGeneratedDllImport" xml:space="preserve">
+    <value>Convert to 'GeneratedDllImport'</value>
+  </data>
   <data name="ConvertToGeneratedDllImportDescription" xml:space="preserve">
     <value>Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</value>
   </data>
   <data name="ConvertToGeneratedDllImportMessage" xml:space="preserve">
     <value>Mark the method '{0}' with 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</value>
-  </data>
-  <data name="ConvertToGeneratedDllImportNoPreprocessor" xml:space="preserve">
-    <value>Convert to 'GeneratedDllImport'</value>
   </data>
   <data name="ConvertToGeneratedDllImportTitle" xml:space="preserve">
     <value>Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</value>
@@ -174,9 +186,6 @@
   <data name="ConvertToGeneratedDllImportWarning" xml:space="preserve">
     <value>Conversion to 'GeneratedDllImport' may change behavior and compatibility. See {0} for more information.</value>
     <comment>{0} is a documentation link</comment>
-  </data>
-  <data name="ConvertToGeneratedDllImportWithPreprocessor" xml:space="preserve">
-    <value>Convert to 'GeneratedDllImport' under a preprocessor define</value>
   </data>
   <data name="CustomTypeMarshallingManagedToNativeUnsupported" xml:space="preserve">
     <value>The specified parameter needs to be marshalled from managed to native, but the native type '{0}' does not support it.</value>
@@ -261,18 +270,6 @@
   </data>
   <data name="SafeHandleByRefMustBeConcrete" xml:space="preserve">
     <value>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</value>
-  </data>
-  <data name="StackallocConstructorMustHaveStackBufferSizeConstantDescription" xml:space="preserve">
-    <value>When constructor taking a Span&lt;byte&gt; is specified on the native type, the type must also have a public integer constant named StackBufferSize to provide the size of the stack-allocated buffer.</value>
-  </data>
-  <data name="StackallocConstructorMustHaveStackBufferSizeConstantMessage" xml:space="preserve">
-    <value>The native type '{0}' must have a 'public const int StackBufferSize' field that specifies the size of the stack buffer because it has a constructor that takes a stack-allocated Span&lt;byte&gt;</value>
-  </data>
-  <data name="StackallocMarshallingShouldSupportAllocatingMarshallingFallbackDescription" xml:space="preserve">
-    <value>A type that supports marshalling from managed to native by stack allocation should also support marshalling from managed to native where stack allocation is impossible.</value>
-  </data>
-  <data name="StackallocMarshallingShouldSupportAllocatingMarshallingFallbackMessage" xml:space="preserve">
-    <value>Native type '{0}' has a stack-allocating constructor does not support marshalling in scenarios where stack allocation is impossible</value>
   </data>
   <data name="TargetFrameworkNotSupportedDescription" xml:space="preserve">
     <value>P/Invoke source generation is not supported on unknown target framework v{0}. The generated source will not be compatible with other frameworks.</value>

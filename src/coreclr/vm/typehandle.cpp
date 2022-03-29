@@ -1590,7 +1590,7 @@ CHECK TypeHandle::CheckLoadLevel(ClassLoadLevel requiredLevel)
 {
     CHECK(!IsNull());
     //    CHECK_MSGF(!IsNull(), ("Type is null, required load level is %s", classLoadLevelName[requiredLevel]));
-    static_assert_no_msg(NumItems(classLoadLevelName) == (1 + CLASS_LOAD_LEVEL_FINAL));
+    static_assert_no_msg(ARRAY_SIZE(classLoadLevelName) == (1 + CLASS_LOAD_LEVEL_FINAL));
 
     // Quick check to avoid creating debug string
     ClassLoadLevel actualLevel = GetLoadLevel();

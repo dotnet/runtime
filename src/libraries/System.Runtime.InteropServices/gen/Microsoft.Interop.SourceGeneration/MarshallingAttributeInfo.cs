@@ -641,7 +641,7 @@ namespace Microsoft.Interop
                 {
                     features |= CustomMarshallingFeatures.ManagedToNative;
                 }
-                else if (ManualTypeMarshallingHelper.IsStackallocConstructor(ctor, type, spanOfByte, marshallingVariant)
+                else if (ManualTypeMarshallingHelper.IsCallerAllocatedSpanConstructor(ctor, type, spanOfByte, marshallingVariant)
                     && (valueProperty is null or { GetMethod: not null }))
                 {
                     features |= CustomMarshallingFeatures.ManagedToNativeStackalloc;

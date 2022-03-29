@@ -200,24 +200,24 @@ namespace System.Net.Test.Common
             return await stream.ReadRequestDataAsync(readBody).ConfigureAwait(false);
         }
 
-        public override Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0)
+        public override Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true)
         {
-            return GetOpenRequest(requestId).SendResponseAsync(statusCode, headers, content, isFinal);
+            return GetOpenRequest().SendResponseAsync(statusCode, headers, content, isFinal);
         }
 
-        public override Task SendResponseBodyAsync(byte[] content, bool isFinal = true, int requestId = 0)
+        public override Task SendResponseBodyAsync(byte[] content, bool isFinal = true)
         {
-            return GetOpenRequest(requestId).SendResponseBodyAsync(content, isFinal);
+            return GetOpenRequest().SendResponseBodyAsync(content, isFinal);
         }
 
-        public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+        public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
         {
-            return GetOpenRequest(requestId).SendResponseHeadersAsync(statusCode, headers);
+            return GetOpenRequest().SendResponseHeadersAsync(statusCode, headers);
         }
 
-        public override Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+        public override Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
         {
-            return GetOpenRequest(requestId).SendPartialResponseHeadersAsync(statusCode, headers);
+            return GetOpenRequest().SendPartialResponseHeadersAsync(statusCode, headers);
         }
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
@@ -301,9 +301,9 @@ namespace System.Net.Test.Common
             await CloseAsync(H3_NO_ERROR);
         }
 
-        public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0)
+        public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true)
         {
-            await GetOpenRequest(requestId).WaitForCancellationAsync(ignoreIncomingData).ConfigureAwait(false);
+            await GetOpenRequest().WaitForCancellationAsync(ignoreIncomingData).ConfigureAwait(false);
         }
     }
 

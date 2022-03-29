@@ -236,7 +236,7 @@ public:
     // Method body (header+code+EH)
     BinStr* m_pbsBody;
     mdToken m_Tok;
-    Method(Assembler *pAssembler, Class *pClass, __in __nullterminated char *pszName, BinStr* pbsSig, DWORD Attr);
+    Method(Assembler *pAssembler, Class *pClass, _In_ __nullterminated char *pszName, BinStr* pbsSig, DWORD Attr);
     ~Method()
     {
         m_lstFixup.RESET(true);
@@ -354,7 +354,7 @@ public:
     Label *FindLabel(LPCUTF8 pszName);
     Label *FindLabel(DWORD PC);
 
-    int FindTyPar(__in __nullterminated WCHAR* wz)
+    int FindTyPar(_In_ __nullterminated WCHAR* wz)
     {
         int i,retval=-1;
         for(i=0; i < (int)m_NumTyPars; i++)
@@ -366,7 +366,7 @@ public:
         }
         return retval;
     };
-    int FindTyPar(__in __nullterminated char* sz)
+    int FindTyPar(_In_ __nullterminated char* sz)
     {
         if(sz)
         {

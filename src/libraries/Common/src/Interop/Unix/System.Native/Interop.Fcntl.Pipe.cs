@@ -19,9 +19,9 @@ internal static partial class Interop
             [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlSetPipeSz", SetLastError=true)]
             internal static partial int SetPipeSz(SafePipeHandle fd, int size);
 
-            [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlCanGetSetPipeSz")]
+            [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlCanGetSetPipeSz")]
             [SuppressGCTransition]
-            private static extern int FcntlCanGetSetPipeSz();
+            private static partial int FcntlCanGetSetPipeSz();
         }
     }
 }

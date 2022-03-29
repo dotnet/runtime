@@ -9,7 +9,7 @@ using System.Text;
 namespace System
 {
     [Serializable]
-    public struct RuntimeMethodHandle : ISerializable
+    public struct RuntimeMethodHandle : IEquatable<RuntimeMethodHandle>, ISerializable
     {
         private readonly IntPtr value;
 

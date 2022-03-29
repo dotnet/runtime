@@ -4,9 +4,11 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace Microsoft.Extensions.Hosting.WindowsServices.Internal
 {
+    [SupportedOSPlatform("windows")]
     internal static class Win32
     {
         internal static Process GetParentProcess()
@@ -21,7 +23,12 @@ namespace Microsoft.Extensions.Hosting.WindowsServices.Internal
                 procEntry.dwSize = Marshal.SizeOf(typeof(Interop.Kernel32.PROCESSENTRY32));
                 if (Interop.Kernel32.Process32First(snapshotHandle, ref procEntry))
                 {
-                    var currentProcessId = Process.GetCurrentProcess().Id;
+                    int currentProcessId =
+#if NET
+                        Environment.ProcessId;
+#else
+                        Process.GetCurrentProcess().Id;
+#endif
                     do
                     {
                         if (currentProcessId == procEntry.th32ProcessID)

@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -12,7 +12,7 @@ TEST_INIT=$4
 TEST_EXTRA_LOC=$5
 
 
-if [ "$TEST_EXTRA_LOC" != "" ]; then
+if [ -n "$TEST_EXTRA_LOC" ]; then
 	EXTRA_LOC=", $TEST_EXTRA_LOC V_1"
 fi
 
@@ -22,7 +22,7 @@ echo $TEST_FILE
 TEST_TYPE=`echo $TEST_TYPE | $SED -s 's/&/\\\&/'`
 $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE/${TEST_TYPE}/g" -e "s/OPCODE/${TEST_OP}/g"  -e "s/INIT/${TEST_INIT}/g" > $TEST_FILE <<//EOF
 
-// VALIDITY CIL which breaks the ECMA-335 rules. 
+// VALIDITY CIL which breaks the ECMA-335 rules.
 // this CIL should fail verification by a conforming CLI verifier.
 
 .assembly '${TEST_NAME}_generated'

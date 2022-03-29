@@ -3,7 +3,6 @@
 
 import cwraps from "./cwraps";
 
-const timeout_queue: Function[] = [];
 let spread_timers_maximum = 0;
 export let isChromium = false;
 let pump_count = 0;
@@ -19,23 +18,14 @@ if (globalThis.navigator) {
 }
 
 function pump_message() {
-    while (timeout_queue.length > 0) {
-        --pump_count;
-        const cb: Function = timeout_queue.shift()!;
-        cb();
-    }
     while (pump_count > 0) {
         --pump_count;
         cwraps.mono_background_exec();
     }
 }
 
-function mono_wasm_set_timeout_exec(id: number) {
-    cwraps.mono_set_timeout_exec(id);
-}
-
 export function prevent_timer_throttling(): void {
-    if (isChromium) {
+    if (!isChromium) {
         return;
     }
 
@@ -48,7 +38,7 @@ export function prevent_timer_throttling(): void {
     for (let schedule = next_reach_time; schedule < desired_reach_time; schedule += light_throttling_frequency) {
         const delay = schedule - now;
         setTimeout(() => {
-            mono_wasm_set_timeout_exec(0);
+            cwraps.mono_set_timeout_exec();
             pump_count++;
             pump_message();
         }, delay);
@@ -58,21 +48,17 @@ export function prevent_timer_throttling(): void {
 
 export function schedule_background_exec(): void {
     ++pump_count;
-    if (typeof globalThis.setTimeout === "function") {
-        globalThis.setTimeout(pump_message, 0);
-    }
+    setTimeout(pump_message, 0);
 }
 
-export function mono_set_timeout(timeout: number, id: number): void {
-
-    if (typeof globalThis.setTimeout === "function") {
-        globalThis.setTimeout(function () {
-            mono_wasm_set_timeout_exec(id);
-        }, timeout);
-    } else {
-        ++pump_count;
-        timeout_queue.push(function () {
-            mono_wasm_set_timeout_exec(id);
-        });
+let lastScheduledTimeoutId: any = undefined;
+export function mono_set_timeout(timeout: number): void {
+    function mono_wasm_set_timeout_exec() {
+        cwraps.mono_set_timeout_exec();
     }
+    if (lastScheduledTimeoutId) {
+        clearTimeout(lastScheduledTimeoutId);
+        lastScheduledTimeoutId = undefined;
+    }
+    lastScheduledTimeoutId = setTimeout(mono_wasm_set_timeout_exec, timeout);
 }

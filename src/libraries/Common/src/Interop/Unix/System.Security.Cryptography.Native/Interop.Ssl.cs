@@ -149,6 +149,15 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetData")]
         internal static partial int SslSetData(IntPtr ssl, IntPtr data);
 
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Tls13Supported")]
+        private static partial int Tls13SupportedImpl();
+
+        internal static class Capabilities
+        {
+            // needs separate type (separate static cctor) to be sure OpenSSL is initialized.
+            internal static readonly bool Tls13Supported = Tls13SupportedImpl() != 0;
+        }
+
         internal static unsafe int SslSetAlpnProtos(SafeSslHandle ssl, List<SslApplicationProtocol> protocols)
         {
             byte[] buffer = ConvertAlpnProtocolListToByteArray(protocols);
@@ -189,10 +198,6 @@ internal static partial class Interop
             isTls12OrLower = isTls12OrLowerInt != 0;
             return ret;
         }
-
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Tls13Supported")]
-        private static partial int Tls13SupportedImpl();
-        internal static readonly bool Tls13Supported = Tls13SupportedImpl() != 0;
 
         internal static SafeSharedX509NameStackHandle SslGetClientCAList(SafeSslHandle ssl)
         {

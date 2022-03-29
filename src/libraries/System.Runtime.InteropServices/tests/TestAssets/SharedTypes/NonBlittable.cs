@@ -192,7 +192,8 @@ namespace SharedTypes
             Marshal.FreeCoTaskMem((IntPtr)allocated);
         }
 
-        public const int StackBufferSize = 0x100;
+        public const int BufferSize = 0x100;
+        public const bool RequiresStackBuffer = true;
     }
 
 
@@ -260,7 +261,8 @@ namespace SharedTypes
         /// Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
         /// blow the stack since this is a new optimization in the code-generated interop.
         /// </summary>
-        public const int StackBufferSize = 0x200;
+        public const int BufferSize = 0x200;
+        public const bool RequiresStackBuffer = true;
 
         public Span<T> ManagedValues => CollectionsMarshal.AsSpan(managedList);
 

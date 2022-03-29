@@ -100,11 +100,11 @@ namespace System.IO.Tests
             Assert.True(fi.Exists);
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void SymLinksMayExistIndependentlyOfTarget()
         {
             var path = GetTestFilePath();
-            var linkPath = GetTestFilePath();
+            var linkPath = GetRandomLinkPath();
 
             var pathFI = new FileInfo(path);
             var linkPathFI = new FileInfo(linkPath);

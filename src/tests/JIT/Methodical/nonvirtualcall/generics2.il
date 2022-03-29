@@ -24,7 +24,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module nonvirtualcalls_generics2.exe
 // MVID: {5D0110E9-A5F8-484A-97F5-D5C79C5A9A77}
 .imagebase 0x00400000
 .file alignment 0x00000200

@@ -1700,14 +1700,10 @@ namespace System.Data
             if (fk.ExtendedProperties.Count > 0)
                 return false;
 
-
             if (fk.AcceptRejectRule != AcceptRejectRule.None)
                 return false;
             if (fk.DeleteRule != Rule.Cascade)
                 return false;
-            if (fk.DeleteRule != Rule.Cascade)
-                return false;
-
 
             if (fk.RelatedColumnsReference.Length != 1)
                 return false;

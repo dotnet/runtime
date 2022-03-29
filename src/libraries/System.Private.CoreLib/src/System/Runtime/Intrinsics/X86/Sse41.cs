@@ -675,12 +675,40 @@ namespace System.Runtime.Intrinsics.X86
         ///   PTEST xmm, xmm/m128
         /// </summary>
         public static bool TestC(Vector128<sbyte> left, Vector128<sbyte> right) => TestC(left, right);
+        /// <summary>
+        /// int _mm_testc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestC(Vector128<byte> left, Vector128<byte> right) => TestC(left, right);
+        /// <summary>
+        /// int _mm_testc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestC(Vector128<short> left, Vector128<short> right) => TestC(left, right);
+        /// <summary>
+        /// int _mm_testc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestC(Vector128<ushort> left, Vector128<ushort> right) => TestC(left, right);
+        /// <summary>
+        /// int _mm_testc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestC(Vector128<int> left, Vector128<int> right) => TestC(left, right);
+        /// <summary>
+        /// int _mm_testc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestC(Vector128<uint> left, Vector128<uint> right) => TestC(left, right);
+        /// <summary>
+        /// int _mm_testc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestC(Vector128<long> left, Vector128<long> right) => TestC(left, right);
+        /// <summary>
+        /// int _mm_testc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestC(Vector128<ulong> left, Vector128<ulong> right) => TestC(left, right);
 
         /// <summary>
@@ -688,12 +716,40 @@ namespace System.Runtime.Intrinsics.X86
         ///   PTEST xmm, xmm/m128
         /// </summary>
         public static bool TestNotZAndNotC(Vector128<sbyte> left, Vector128<sbyte> right) => TestNotZAndNotC(left, right);
+        /// <summary>
+        /// int _mm_testnzc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestNotZAndNotC(Vector128<byte> left, Vector128<byte> right) => TestNotZAndNotC(left, right);
+        /// <summary>
+        /// int _mm_testnzc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestNotZAndNotC(Vector128<short> left, Vector128<short> right) => TestNotZAndNotC(left, right);
+        /// <summary>
+        /// int _mm_testnzc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestNotZAndNotC(Vector128<ushort> left, Vector128<ushort> right) => TestNotZAndNotC(left, right);
+        /// <summary>
+        /// int _mm_testnzc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestNotZAndNotC(Vector128<int> left, Vector128<int> right) => TestNotZAndNotC(left, right);
+        /// <summary>
+        /// int _mm_testnzc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestNotZAndNotC(Vector128<uint> left, Vector128<uint> right) => TestNotZAndNotC(left, right);
+        /// <summary>
+        /// int _mm_testnzc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestNotZAndNotC(Vector128<long> left, Vector128<long> right) => TestNotZAndNotC(left, right);
+        /// <summary>
+        /// int _mm_testnzc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestNotZAndNotC(Vector128<ulong> left, Vector128<ulong> right) => TestNotZAndNotC(left, right);
 
         /// <summary>
@@ -701,12 +757,40 @@ namespace System.Runtime.Intrinsics.X86
         ///   PTEST xmm, xmm/m128
         /// </summary>
         public static bool TestZ(Vector128<sbyte> left, Vector128<sbyte> right) => TestZ(left, right);
+        /// <summary>
+        /// int _mm_testz_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestZ(Vector128<byte> left, Vector128<byte> right) => TestZ(left, right);
+        /// <summary>
+        /// int _mm_testz_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestZ(Vector128<short> left, Vector128<short> right) => TestZ(left, right);
+        /// <summary>
+        /// int _mm_testz_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestZ(Vector128<ushort> left, Vector128<ushort> right) => TestZ(left, right);
+        /// <summary>
+        /// int _mm_testz_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestZ(Vector128<int> left, Vector128<int> right) => TestZ(left, right);
+        /// <summary>
+        /// int _mm_testz_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestZ(Vector128<uint> left, Vector128<uint> right) => TestZ(left, right);
+        /// <summary>
+        /// int _mm_testz_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestZ(Vector128<long> left, Vector128<long> right) => TestZ(left, right);
+        /// <summary>
+        /// int _mm_testz_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestZ(Vector128<ulong> left, Vector128<ulong> right) => TestZ(left, right);
     }
 }

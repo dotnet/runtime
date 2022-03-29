@@ -11,10 +11,10 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadStdin", SetLastError = true)]
         internal static unsafe partial int ReadStdin(byte* buffer, int bufferSize);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_InitializeConsoleBeforeRead")]
-        internal static extern void InitializeConsoleBeforeRead(byte minChars = 1, byte decisecondsTimeout = 0);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_InitializeConsoleBeforeRead")]
+        internal static partial void InitializeConsoleBeforeRead(byte minChars = 1, byte decisecondsTimeout = 0);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_UninitializeConsoleAfterRead")]
-        internal static extern void UninitializeConsoleAfterRead();
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_UninitializeConsoleAfterRead")]
+        internal static partial void UninitializeConsoleAfterRead();
     }
 }

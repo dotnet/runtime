@@ -1642,9 +1642,9 @@ extern "C" void * QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * 
 
     BEGIN_QCALL;
 
-    // Ensure the method is active so
-    // the function pointer can be used.
+    // Ensure the method is active and all types have been loaded so the function pointer can be used.
     pMethod->EnsureActive();
+    pMethod->PrepareForUseAsAFunctionPointer();
     funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode();
 
     END_QCALL;

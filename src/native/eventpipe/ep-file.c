@@ -398,7 +398,7 @@ ep_file_initialize_file (EventPipeFile *file)
 	bool success = true;
 	if (file->format >= EP_SERIALIZATION_FORMAT_NETTRACE_V4) {
 		const ep_char8_t header[] = "Nettrace";
-		const uint32_t bytes_to_write = (uint32_t)(EP_ARRAY_SIZE (header) - 1);
+		const uint32_t bytes_to_write = (uint32_t)(STRING_LENGTH (header));
 		uint32_t bytes_written = 0;
 		success = ep_stream_writer_write (file->stream_writer, (const uint8_t *)header, bytes_to_write, &bytes_written) && bytes_written == bytes_to_write;
 	}

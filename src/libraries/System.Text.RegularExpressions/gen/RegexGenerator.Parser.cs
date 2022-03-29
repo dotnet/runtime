@@ -190,6 +190,7 @@ namespace System.Text.RegularExpressions.Generator
                 SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted));
 
             var regexMethod = new RegexMethod(
+                methodSyntax,
                 regexMethodSymbol.Name,
                 methodSyntax.Modifiers.ToString(),
                 pattern,
@@ -231,7 +232,7 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>A regex method.</summary>
-        internal sealed record RegexMethod(string MethodName, string Modifiers, string Pattern, RegexOptions Options, int MatchTimeout, RegexCode Code);
+        internal sealed record RegexMethod(MethodDeclarationSyntax MethodSyntax, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int MatchTimeout, RegexCode Code);
 
         /// <summary>A type holding a regex method.</summary>
         internal sealed record RegexType(RegexMethod? Method, string Keyword, string Namespace, string Name, string Constraints)

@@ -104,13 +104,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_LE:
             case GT_GE:
             case GT_GT:
-            case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-            case GT_SIMD_CHK:
-#endif
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HW_INTRINSIC_CHK:
-#endif
+            case GT_BOUNDS_CHECK:
                 return emitter::emitIns_valid_imm_for_cmp(immVal, size);
             case GT_AND:
             case GT_OR:
@@ -442,24 +436,14 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     GenTreeIntCon* offsetNode = addr->AsOp()->gtGetOp2()->AsIntCon();
     ssize_t        offset     = offsetNode->IconValue();
 
-    // All integer load/store instructions on both ARM32 and ARM64 support
-    // offsets in range -255..255. Of course, this is a rather conservative
-    // check. For example, if the offset and size are a multiple of 8 we
-    // could allow a combined offset of up to 32760 on ARM64.
+#ifdef TARGET_ARM
+    // All integer load/store instructions on Arm support offsets in range -255..255.
+    // Of course, this is a rather conservative check.
     if ((offset < -255) || (offset > 255) || (offset + static_cast<int>(size) > 256))
     {
         return;
     }
-
-#ifdef TARGET_ARM64
-    // If we're going to use LDP/STP we need to ensure that the offset is
-    // a multiple of 8 since these instructions do not have an unscaled
-    // offset variant.
-    if ((size >= 2 * REGSIZE_BYTES) && (offset % REGSIZE_BYTES != 0))
-    {
-        return;
-    }
-#endif
+#endif // TARGET_ARM
 
     if (!IsSafeToContainMem(blkNode, addr))
     {
@@ -1483,25 +1467,28 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 //
 void Lowering::ContainCheckBinary(GenTreeOp* node)
 {
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
+
     // Check and make op2 contained (if it is a containable immediate)
-    CheckImmedAndMakeContained(node, node->gtOp2);
+    CheckImmedAndMakeContained(node, op2);
 
 #ifdef TARGET_ARM64
     // Find "a * b + c" or "c + a * b" in order to emit MADD/MSUB
     if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(node) && !node->isContained() && node->OperIs(GT_ADD) &&
-        !node->gtOverflow() && (node->gtGetOp1()->OperIs(GT_MUL) || node->gtGetOp2()->OperIs(GT_MUL)))
+        !node->gtOverflow() && (op1->OperIs(GT_MUL) || op2->OperIs(GT_MUL)))
     {
         GenTree* mul;
         GenTree* c;
-        if (node->gtGetOp1()->OperIs(GT_MUL))
+        if (op1->OperIs(GT_MUL))
         {
-            mul = node->gtGetOp1();
-            c   = node->gtGetOp2();
+            mul = op1;
+            c   = op2;
         }
         else
         {
-            mul = node->gtGetOp2();
-            c   = node->gtGetOp1();
+            mul = op2;
+            c   = op1;
         }
 
         GenTree* a = mul->gtGetOp1();
@@ -1524,6 +1511,43 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 
             node->ChangeOper(GT_MADD);
             MakeSrcContained(node, mul);
+        }
+    }
+
+    // Change ADD TO ADDEX for ADD(X, CAST(Y)) or ADD(CAST(X), Y) where CAST is int->long
+    // or for ADD(LSH(X, CNS), X) or ADD(X, LSH(X, CNS)) where CNS is in the (0..typeWidth) range
+    if (node->OperIs(GT_ADD) && !op1->isContained() && !op2->isContained() && varTypeIsIntegral(node) &&
+        !node->gtOverflow())
+    {
+        assert(!node->isContained());
+
+        if (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST))
+        {
+            GenTree* cast = op1->OperIs(GT_CAST) ? op1 : op2;
+            if (cast->gtGetOp1()->TypeIs(TYP_INT) && cast->TypeIs(TYP_LONG) && !cast->gtOverflow())
+            {
+                node->ChangeOper(GT_ADDEX);
+                MakeSrcContained(node, cast);
+            }
+        }
+        else if (op1->OperIs(GT_LSH) || op2->OperIs(GT_LSH))
+        {
+            GenTree* lsh     = op1->OperIs(GT_LSH) ? op1 : op2;
+            GenTree* shiftBy = lsh->gtGetOp2();
+
+            if (shiftBy->IsCnsIntOrI())
+            {
+                const ssize_t shiftByCns = shiftBy->AsIntCon()->IconValue();
+                const ssize_t maxShift   = (ssize_t)genTypeSize(node) * BITS_IN_BYTE;
+
+                if ((shiftByCns > 0) && (shiftByCns < maxShift))
+                {
+                    // shiftBy is small so it has to be contained at this point.
+                    assert(shiftBy->isContained());
+                    node->ChangeOper(GT_ADDEX);
+                    MakeSrcContained(node, lsh);
+                }
+            }
         }
     }
 #endif
@@ -1682,7 +1706,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 //
 void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 {
-    assert(node->OperIsBoundsCheck());
+    assert(node->OperIs(GT_BOUNDS_CHECK));
     if (!CheckImmedAndMakeContained(node, node->GetIndex()))
     {
         CheckImmedAndMakeContained(node, node->GetArrayLength());

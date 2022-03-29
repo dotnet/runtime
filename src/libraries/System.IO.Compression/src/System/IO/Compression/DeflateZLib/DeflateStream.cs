@@ -457,6 +457,21 @@ namespace System.IO.Compression
             WriteCore(new ReadOnlySpan<byte>(buffer, offset, count));
         }
 
+        public override void WriteByte(byte value)
+        {
+            if (GetType() != typeof(DeflateStream))
+            {
+                // DeflateStream is not sealed, and a derived type may have overridden Write(byte[], int, int) prior
+                // to this WriteByte override being introduced.  In that case, this WriteByte override
+                // should use the behavior of the Write(byte[],int,int) overload.
+                base.WriteByte(value);
+            }
+            else
+            {
+                WriteCore(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+            }
+        }
+
         public override void Write(ReadOnlySpan<byte> buffer)
         {
             if (GetType() != typeof(DeflateStream))

@@ -80,7 +80,7 @@ void Frame::Log() {
 #endif
     else if (GetVTablePtr() == PInvokeCalliFrame::GetMethodFrameVPtr())
     {
-        sprintf_s(buff, COUNTOF(buff), "PInvoke CALLI target" FMT_ADDR,
+        sprintf_s(buff, ARRAY_SIZE(buff), "PInvoke CALLI target" FMT_ADDR,
                   DBG_ADDR(((PInvokeCalliFrame*)this)->GetPInvokeCalliTarget()));
         frameType = buff;
     }
@@ -257,7 +257,7 @@ void Frame::LogFrame(
     {
         _ASSERTE(!"New Frame type needs to be added to FrameTypeName()");
         // Pointer is up to 17chars + vtbl@ = 22 chars
-        sprintf_s(buf, COUNTOF(buf), "vtbl@%p", (VOID *)GetVTablePtr());
+        sprintf_s(buf, ARRAY_SIZE(buf), "vtbl@%p", (VOID *)GetVTablePtr());
         pFrameType = buf;
     }
 
@@ -1269,6 +1269,10 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
 
         MetaSig msig(pSig, cbSigSize, pFunction->GetModule(), &typeContext);
 
+        bool fCtorOfVariableSizedObject = msig.HasThis() && (pFunction->GetMethodTable() == g_pStringClass) && pFunction->IsCtor();
+        if (fCtorOfVariableSizedObject)
+            msig.ClearHasThis();
+
         if (pFunction->RequiresInstArg() && !SuppressParamTypeArg())
             msig.SetHasParamTypeArg();
 
@@ -2100,6 +2104,12 @@ void ComputeCallRefMap(MethodDesc* pMD,
     DWORD cbSigSize;
     pMD->GetSig(&pSig, &cbSigSize);
     MetaSig msig(pSig, cbSigSize, pMD->GetModule(), &typeContext);
+
+    bool fCtorOfVariableSizedObject = msig.HasThis() && (pMD->GetMethodTable() == g_pStringClass) && pMD->IsCtor();
+    if (fCtorOfVariableSizedObject)
+    {
+        msig.ClearHasThis();
+    }
 
     //
     // Shared default interface methods (i.e. virtual interface methods with an implementation) require

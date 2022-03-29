@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -45,22 +44,20 @@ namespace DllImportGenerator.UnitTests.Verifiers
         }
 
         /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, string)"/>
-        public static async Task VerifyCodeFixAsync(string source, string fixedSource, string? codeActionEquivalenceKey = null)
-            => await VerifyCodeFixAsync(source, DiagnosticResult.EmptyDiagnosticResults, fixedSource, codeActionEquivalenceKey);
+        public static async Task VerifyCodeFixAsync(string source, string fixedSource)
+            => await VerifyCodeFixAsync(source, DiagnosticResult.EmptyDiagnosticResults, fixedSource);
 
         /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, DiagnosticResult, string)"/>
-        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult expected, string fixedSource, string? codeActionEquivalenceKey = null)
-            => await VerifyCodeFixAsync(source, new[] { expected }, fixedSource, codeActionEquivalenceKey);
+        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult expected, string fixedSource)
+            => await VerifyCodeFixAsync(source, new[] { expected }, fixedSource);
 
         /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, DiagnosticResult[], string)"/>
-        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult[] expected, string fixedSource, string? codeActionEquivalenceKey = null)
+        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult[] expected, string fixedSource)
         {
             var test = new Test
             {
                 TestCode = source,
                 FixedCode = fixedSource,
-                CodeActionEquivalenceKey = codeActionEquivalenceKey,
-                CodeActionValidationMode = CodeActionValidationMode.None,
             };
 
             test.ExpectedDiagnostics.AddRange(expected);
@@ -71,8 +68,12 @@ namespace DllImportGenerator.UnitTests.Verifiers
         {
             public Test()
             {
-                var (refAssem, ancillary) = TestUtils.GetReferenceAssemblies();
-                ReferenceAssemblies = refAssem;
+                // Clear out the default reference assemblies. We explicitly add references from the live ref pack,
+                // so we don't want the Roslyn test infrastructure to resolve/add any default reference assemblies
+                ReferenceAssemblies = new ReferenceAssemblies(string.Empty);
+                TestState.AdditionalReferences.AddRange(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences());
+                TestState.AdditionalReferences.Add(TestUtils.GetAncillaryReference());
+
                 SolutionTransforms.Add((solution, projectId) =>
                 {
                     var project = solution.GetProject(projectId)!;
@@ -106,16 +107,13 @@ namespace DllImportGenerator.UnitTests.Verifiers
                     compilationOptions = compilationOptions.WithSpecificDiagnosticOptions(
                         compilationOptions.SpecificDiagnosticOptions
                             .SetItems(CSharpVerifierHelper.NullableWarnings)
-                            .AddRange(enableAnalyzersOptions));
+                            .AddRange(enableAnalyzersOptions)
+                            .AddRange(TestUtils.BindingRedirectWarnings));
                     solution = solution.WithProjectCompilationOptions(projectId, compilationOptions);
-                    solution = solution.WithProjectMetadataReferences(projectId, project.MetadataReferences.Concat(ImmutableArray.Create(ancillary)));
                     solution = solution.WithProjectParseOptions(projectId, ((CSharpParseOptions)project.ParseOptions!).WithLanguageVersion(LanguageVersion.Preview));
                     return solution;
                 });
             }
-
-            protected override ParseOptions CreateParseOptions()
-                => ((CSharpParseOptions)base.CreateParseOptions()).WithPreprocessorSymbols("DLLIMPORTGENERATOR_ENABLED");
 
             protected override async Task RunImplAsync(CancellationToken cancellationToken)
             {

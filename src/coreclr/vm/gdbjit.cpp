@@ -1245,7 +1245,7 @@ void FunctionMember::MangleName(char *buf, int &buf_offset, const char *name)
     int name_length = strlen(name);
 
     char tmp[20];
-    int tmp_len = sprintf_s(tmp, _countof(tmp), "%i", name_length);
+    int tmp_len = sprintf_s(tmp, ARRAY_SIZE(tmp), "%i", name_length);
     if (tmp_len <= 0)
         return;
 
@@ -2901,7 +2901,7 @@ bool NotifyGdb::EmitDebugInfo(Elf_Builder &elfBuilder, MethodDesc* methodDescPtr
     {
         char name[256];
 
-        sprintf_s(name, _countof(name), ".thunk_%i", i);
+        sprintf_s(name, ARRAY_SIZE(name), ".thunk_%i", i);
 
         Elf_SectionTracker *thunk = elfBuilder.OpenSection(name, SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR);
         thunk->DisableHeaderUpdate();

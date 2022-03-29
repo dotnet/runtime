@@ -128,15 +128,15 @@ public:
     COM_METHOD LogMessage( ICorDebugAppDomain *pAppDomain,
         ICorDebugThread *pThread,
         LONG lLevel,
-        __in LPWSTR pLogSwitchName,
-        __in LPWSTR pMessage);
+        _In_ LPWSTR pLogSwitchName,
+        _In_ LPWSTR pMessage);
 
     COM_METHOD LogSwitch( ICorDebugAppDomain *pAppDomain,
         ICorDebugThread *pThread,
         LONG lLevel,
         ULONG ulReason,
-        __in LPWSTR pLogSwitchName,
-        __in LPWSTR pParentName);
+        _In_ LPWSTR pLogSwitchName,
+        _In_ LPWSTR pParentName);
 
     COM_METHOD CreateAppDomain(ICorDebugProcess *pProcess,
         ICorDebugAppDomain *pAppDomain);
@@ -178,7 +178,7 @@ public:
         ICorDebugFunction *pNewFunction,
         ULONG32 oldILOffset);
 
-    COM_METHOD CreateConnection(ICorDebugProcess *pProcess, CONNID dwConnectionId, __in LPWSTR pConnName);
+    COM_METHOD CreateConnection(ICorDebugProcess *pProcess, CONNID dwConnectionId, _In_ LPWSTR pConnName);
 
     COM_METHOD ChangeConnection(ICorDebugProcess *pProcess, CONNID dwConnectionId );
 
@@ -368,7 +368,7 @@ public:
           Cordb * pCordb,
           ICorDebugRemoteTarget * pRemoteTarget,
           LPCWSTR programName,
-          __in_z LPWSTR  programArgs,
+          _In_z_ LPWSTR  programArgs,
           LPSECURITY_ATTRIBUTES lpProcessAttributes,
           LPSECURITY_ATTRIBUTES lpThreadAttributes,
           BOOL bInheritHandles,

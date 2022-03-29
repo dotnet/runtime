@@ -175,7 +175,7 @@ get_fixed_buffer_attr (MonoClassField *field, MonoType **out_etype, int *out_len
 	MonoCustomAttrEntry *attr;
 	int aindex;
 
-	cinfo = mono_custom_attrs_from_field_checked (field->parent, field, error);
+	cinfo = mono_custom_attrs_from_field_checked (m_field_get_parent (field), field, error);
 	if (!is_ok (error))
 		return FALSE;
 	attr = NULL;

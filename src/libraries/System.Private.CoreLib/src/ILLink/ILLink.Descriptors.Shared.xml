@@ -6,10 +6,14 @@
              https://github.com/mono/linker/pull/649 -->
       <method name=".ctor" />
     </type>
+  </assembly>
 
-    <!-- Native hosting accesses managed methods in the ComponentActivator class.
-         These are always rooted to ensure native calls get trimmer related errors
-         but will be trimmed away by the related feature switch -->
+  <assembly fullname="System.Private.CoreLib" feature="System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting" featurevalue="true">
+    <!-- Native hosting accesses managed methods from
+    https://github.com/dotnet/runtime/blob/bbc898f3e5678135b242faeb6eefd8b24bf04f3c/src/native/corehost/hostpolicy/hostpolicy.cpp#L527-L538
+    but ComponentActivator is not trimming safe. We persist the methods only when `_EnableConsumingManagedCodeFromNativeHosting` setting
+    is enabled and only then we show the trimming warnings about possibly missing dependencies.
+    -->
     <type fullname="Internal.Runtime.InteropServices.ComponentActivator">
       <method name="LoadAssemblyAndGetFunctionPointer" />
       <method name="GetFunctionPointer" />

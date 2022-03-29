@@ -60,6 +60,24 @@ enum NamedIntrinsic : unsigned short
     NI_System_Array_GetLowerBound,
     NI_System_Array_GetUpperBound,
     NI_System_Object_MemberwiseClone,
+    NI_System_Object_GetType,
+    NI_System_RuntimeTypeHandle_GetValueInternal,
+    NI_System_StubHelpers_GetStubContext,
+    NI_System_StubHelpers_NextCallReturnAddress,
+
+    NI_Array_Address,
+    NI_Array_Get,
+    NI_Array_Set,
+
+    NI_System_ByReference_ctor,
+    NI_System_ByReference_get_Value,
+    NI_System_Activator_AllocatorOf,
+    NI_System_Activator_DefaultConstructorOf,
+    NI_System_Object_MethodTableOf,
+    NI_System_EETypePtr_EETypePtrOf,
+
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,
 
     NI_System_String_get_Chars,
     NI_System_String_get_Length,

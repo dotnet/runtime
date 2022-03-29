@@ -46,11 +46,11 @@ void SetFunctionPtrs()
 }
 
 
-static char* newStringWDel(__in __nullterminated char* str1, char delimiter, __in __nullterminated char* str3 = 0);
-static char* newString(__in __nullterminated const char* str1);
+static char* newStringWDel(_In_ __nullterminated char* str1, char delimiter, _In_ __nullterminated char* str3 = 0);
+static char* newString(_In_ __nullterminated const char* str1);
 static void corEmitInt(BinStr* buff, unsigned data);
-static void AppendStringWithLength(BinStr* pbs, __in __nullterminated char* sz);
-static void AppendFieldToCustomBlob(BinStr* pBlob, __in BinStr* pField);
+static void AppendStringWithLength(BinStr* pbs, _In_ __nullterminated char* sz);
+static void AppendFieldToCustomBlob(BinStr* pBlob, _In_ BinStr* pField);
 bool bParsingByteArray = FALSE;
 int iOpcodeLen = 0;
 int iCallConv = 0;
@@ -69,13 +69,13 @@ struct VarName
 {
     char* name;
     BinStr* pbody;
-    VarName(__in_opt __nullterminated char* sz, BinStr* pbs) { name = sz; pbody = pbs; };
+    VarName(_In_opt_z_ char* sz, BinStr* pbs) { name = sz; pbody = pbs; };
     ~VarName() { delete [] name; delete pbody; };
     int ComparedTo(VarName* pN) { return strcmp(name,pN->name); };
 };
 SORTEDARRAY<VarName> VarNameList;
-void DefineVar(__in __nullterminated char* sz, BinStr* pbs) { VarNameList.PUSH(new VarName(sz,pbs)); };
-void UndefVar(__in __nullterminated char* sz)
+void DefineVar(_In_ __nullterminated char* sz, BinStr* pbs) { VarNameList.PUSH(new VarName(sz,pbs)); };
+void UndefVar(_In_ __nullterminated char* sz)
 {
     CHECK_LOCAL_STATIC_VAR(static VarName VN(NULL,NULL));
 
@@ -84,7 +84,7 @@ void UndefVar(__in __nullterminated char* sz)
     VN.name = NULL;
     delete [] sz;
 }
-VarName* FindVarDef(__in __nullterminated char* sz)
+VarName* FindVarDef(_In_ __nullterminated char* sz)
 {
     CHECK_LOCAL_STATIC_VAR(static VarName VN(NULL,NULL));
 
@@ -95,7 +95,7 @@ VarName* FindVarDef(__in __nullterminated char* sz)
     delete [] sz;
     return Ret;
 }
-BOOL IsVarDefined(__in __nullterminated char* sz)
+BOOL IsVarDefined(_In_ __nullterminated char* sz)
 {
     return (FindVarDef(sz) != NULL);
 }

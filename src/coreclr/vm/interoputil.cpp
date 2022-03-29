@@ -256,7 +256,7 @@ BOOL GetDefaultDllImportSearchPathsAttributeValue(Module *pModule, mdToken token
     CaArg args[1];
     args[0].InitEnum(SERIALIZATION_TYPE_U4, (ULONG)0);
 
-    ParseKnownCaArgs(ca, args, lengthof(args));
+    ParseKnownCaArgs(ca, args, ARRAY_SIZE(args));
     *pDllImportSearchPathFlags = args[0].val.u4;
     return TRUE;
 }
@@ -287,7 +287,7 @@ int GetLCIDParameterIndex(MethodDesc *pMD)
         CustomAttributeParser caLCID(pVal, cbVal);
         CaArg args[1];
         args[0].Init(SERIALIZATION_TYPE_I4, 0);
-        IfFailGo(ParseKnownCaArgs(caLCID, args, lengthof(args)));
+        IfFailGo(ParseKnownCaArgs(caLCID, args, ARRAY_SIZE(args)));
         iLCIDParam = args[0].val.i4;
     }
 
@@ -920,7 +920,7 @@ ReadBestFitCustomAttribute(Module* pModule, mdTypeDef cl, BOOL* BestFit, BOOL* T
 }
 
 
-int InternalWideToAnsi(__in_ecount(iNumWideChars) LPCWSTR szWideString, int iNumWideChars, __out_ecount_opt(cbAnsiBufferSize) LPSTR szAnsiString, int cbAnsiBufferSize, BOOL fBestFit, BOOL fThrowOnUnmappableChar)
+int InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNumWideChars, _Out_writes_bytes_opt_(cbAnsiBufferSize) LPSTR szAnsiString, int cbAnsiBufferSize, BOOL fBestFit, BOOL fThrowOnUnmappableChar)
 {
     CONTRACTL
     {
@@ -1711,7 +1711,7 @@ void SafeReleaseStream(IStream *pStream)
 
 #ifdef _DEBUG
         WCHAR      logStr[200];
-        swprintf_s(logStr, NumItems(logStr), W("Object gone: CoReleaseMarshalData returned %x, file %S, line %d\n"), hr, __FILE__, __LINE__);
+        swprintf_s(logStr, ARRAY_SIZE(logStr), W("Object gone: CoReleaseMarshalData returned %x, file %S, line %d\n"), hr, __FILE__, __LINE__);
         LogInterop(logStr);
         if (hr != S_OK)
         {
@@ -1721,7 +1721,7 @@ void SafeReleaseStream(IStream *pStream)
             ULARGE_INTEGER li2;
             pStream->Seek(li, STREAM_SEEK_SET, &li2);
             hr = CoReleaseMarshalData(pStream);
-            swprintf_s(logStr, NumItems(logStr), W("Object gone: CoReleaseMarshalData returned %x, file %S, line %d\n"), hr, __FILE__, __LINE__);
+            swprintf_s(logStr, ARRAY_SIZE(logStr), W("Object gone: CoReleaseMarshalData returned %x, file %S, line %d\n"), hr, __FILE__, __LINE__);
             LogInterop(logStr);
         }
 #endif
@@ -2784,7 +2784,7 @@ BOOL IsComTargetValidForType(REFLECTCLASSBASEREF* pRefClassObj, OBJECTREF* pTarg
     return FALSE;
 }
 
-DISPID ExtractStandardDispId(__in_z LPWSTR strStdDispIdMemberName)
+DISPID ExtractStandardDispId(_In_z_ LPWSTR strStdDispIdMemberName)
 {
     CONTRACTL
     {
@@ -3316,7 +3316,7 @@ void IUInvokeDispMethod(
                     vDispIDElement.pMT = pInvokedMT;
                     vDispIDElement.strNameLength = strNameLength;
                     vDispIDElement.lcid = lcid;
-                    wcscpy_s(vDispIDElement.strName, COUNTOF(vDispIDElement.strName), aNamesToConvert[0]);
+                    wcscpy_s(vDispIDElement.strName, ARRAY_SIZE(vDispIDElement.strName), aNamesToConvert[0]);
 
                     // Only look up if the cache has already been created.
                     DispIDCache* pDispIDCache = GetAppDomain()->GetRefDispIDCache();
@@ -3782,13 +3782,13 @@ VOID IntializeInteropLogging()
     g_TraceCount = g_pConfig->GetTraceWrapper();
 }
 
-VOID LogInterop(__in_z LPCSTR szMsg)
+VOID LogInterop(_In_z_ LPCSTR szMsg)
 {
     LIMITED_METHOD_CONTRACT;
     LOG( (LF_INTEROP, LL_INFO10, "%s\n",szMsg) );
 }
 
-VOID LogInterop(__in_z LPCWSTR wszMsg)
+VOID LogInterop(_In_z_ LPCWSTR wszMsg)
 {
     LIMITED_METHOD_CONTRACT;
     LOG( (LF_INTEROP, LL_INFO10, "%S\n", wszMsg) );
@@ -3964,7 +3964,7 @@ VOID LogInteropLeak(IUnknown* pItf)
 //-------------------------------------------------------------------
 // VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hr, LPCSTR szMsg)
 //-------------------------------------------------------------------
-VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, __in_z LPCSTR szMsg)
+VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, _In_z_ LPCSTR szMsg)
 {
     if (!LoggingOn(LF_INTEROP, LL_ALWAYS))
         return;
@@ -4013,7 +4013,7 @@ VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, __in_z LPCSTR szMsg
 //-------------------------------------------------------------------
 //  VOID LogInteropAddRef(IUnknown* pItf, ULONG cbRef, LPCSTR szMsg)
 //-------------------------------------------------------------------
-VOID LogInteropAddRef(IUnknown* pItf, ULONG cbRef, __in_z LPCSTR szMsg)
+VOID LogInteropAddRef(IUnknown* pItf, ULONG cbRef, _In_z_ LPCSTR szMsg)
 {
     if (!LoggingOn(LF_INTEROP, LL_ALWAYS))
         return;
@@ -4046,7 +4046,7 @@ VOID LogInteropAddRef(IUnknown* pItf, ULONG cbRef, __in_z LPCSTR szMsg)
 //-------------------------------------------------------------------
 //  VOID LogInteropRelease(IUnknown* pItf, ULONG cbRef, LPCSTR szMsg)
 //-------------------------------------------------------------------
-VOID LogInteropRelease(IUnknown* pItf, ULONG cbRef, __in_z LPCSTR szMsg)
+VOID LogInteropRelease(IUnknown* pItf, ULONG cbRef, _In_z_ LPCSTR szMsg)
 {
     if (!LoggingOn(LF_INTEROP, LL_ALWAYS))
         return;

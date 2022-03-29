@@ -73,7 +73,7 @@ namespace System.ComponentModel
             }
         }
 
-        private bool ItemTypeHasDefaultConstructor
+        private static bool ItemTypeHasDefaultConstructor
         {
             get
             {

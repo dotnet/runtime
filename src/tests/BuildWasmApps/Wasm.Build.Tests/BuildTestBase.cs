@@ -147,8 +147,9 @@ namespace Wasm.Build.Tests
             string bundleDir = Path.Combine(GetBinDir(baseDir: buildDir, config: buildArgs.Config), "AppBundle");
             (string testCommand, string extraXHarnessArgs) = host switch
             {
-                RunHost.V8 => ("wasm test", "--js-file=main.js --engine=V8 -v trace"),
-                _          => ("wasm test-browser", $"-v trace -b {host}")
+                RunHost.V8     => ("wasm test", "--js-file=test-main.js --engine=V8 -v trace"),
+                RunHost.NodeJS => ("wasm test", "--js-file=test-main.js --engine=NodeJS -v trace"),
+                _              => ("wasm test-browser", $"-v trace -b {host}")
             };
 
             string testLogPath = Path.Combine(_logPath, host.ToString());
@@ -280,18 +281,10 @@ namespace Wasm.Build.Tests
 
         public (string projectDir, string buildOutput) BuildProject(BuildArgs buildArgs,
                                   string id,
-                                  Action? initProject = null,
-                                  bool? dotnetWasmFromRuntimePack = null,
-                                  bool hasIcudt = true,
-                                  bool useCache = true,
-                                  bool expectSuccess = true,
-                                  bool createProject = true,
-                                  bool publish = true,
-                                  string? verbosity=null,
-                                  string? label=null)
+                                  BuildProjectOptions options)
         {
-            string msgPrefix = label != null ? $"[{label}] " : string.Empty;
-            if (useCache && _buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
+            string msgPrefix = options.Label != null ? $"[{options.Label}] " : string.Empty;
+            if (options.UseCache && _buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
             {
                 Console.WriteLine ($"Using existing build found at {product.ProjectDir}, with build log at {product.LogFile}");
 
@@ -303,33 +296,35 @@ namespace Wasm.Build.Tests
                 return (_projectDir, "FIXME");
             }
 
-            if (createProject)
+            if (options.CreateProject)
             {
                 InitPaths(id);
                 InitProjectDir(_projectDir);
-                initProject?.Invoke();
+                options.InitProject?.Invoke();
 
                 File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
                 File.Copy(Path.Combine(AppContext.BaseDirectory, "test-main.js"), Path.Combine(_projectDir, "test-main.js"));
             }
             else if (_projectDir is null)
             {
-                throw new Exception("_projectDir should be set, to use createProject=false");
+                throw new Exception("_projectDir should be set, to use options.createProject=false");
             }
 
             StringBuilder sb = new();
-            sb.Append(publish ? "publish" : "build");
+            sb.Append(options.Publish ? "publish" : "build");
+            if (options.Publish && options.BuildOnlyAfterPublish)
+                sb.Append(" -p:WasmBuildOnlyAfterPublish=true");
             sb.Append($" {s_buildEnv.DefaultBuildArgs}");
 
             sb.Append($" /p:Configuration={buildArgs.Config}");
 
-            string logFileSuffix = label == null ? string.Empty : label.Replace(' ', '_');
+            string logFileSuffix = options.Label == null ? string.Empty : options.Label.Replace(' ', '_');
             string logFilePath = Path.Combine(_logPath, $"{buildArgs.ProjectName}{logFileSuffix}.binlog");
             _testOutput.WriteLine($"-------- Building ---------");
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
             Console.WriteLine($"Binlog path: {logFilePath}");
             sb.Append($" /bl:\"{logFilePath}\" /nologo");
-            sb.Append($" /fl /flp:\"v:diag,LogFile={logFilePath}.log\" /v:{verbosity ?? "minimal"}");
+            sb.Append($" /fl /flp:\"v:diag,LogFile={logFilePath}.log\" /v:{options.Verbosity ?? "minimal"}");
             if (buildArgs.ExtraBuildArgs != null)
                 sb.Append($" {buildArgs.ExtraBuildArgs} ");
 
@@ -338,26 +333,26 @@ namespace Wasm.Build.Tests
             (int exitCode, string buildOutput) result;
             try
             {
-                result = AssertBuild(sb.ToString(), id, expectSuccess: expectSuccess, envVars: s_buildEnv.EnvVars);
+                result = AssertBuild(sb.ToString(), id, expectSuccess: options.ExpectSuccess, envVars: s_buildEnv.EnvVars);
 
                 //AssertRuntimePackPath(result.buildOutput);
 
                 // check that we are using the correct runtime pack!
 
-                if (expectSuccess)
+                if (options.ExpectSuccess)
                 {
                     string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config), "AppBundle");
-                    AssertBasicAppBundle(bundleDir, buildArgs.ProjectName, buildArgs.Config, hasIcudt, dotnetWasmFromRuntimePack ?? !buildArgs.AOT);
+                    AssertBasicAppBundle(bundleDir, buildArgs.ProjectName, buildArgs.Config, options.HasIcudt, options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT);
                 }
 
-                if (useCache)
+                if (options.UseCache)
                     _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir, logFilePath, true));
 
                 return (_projectDir, result.buildOutput);
             }
             catch
             {
-                if (useCache)
+                if (options.UseCache)
                     _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir, logFilePath, false));
                 throw;
             }
@@ -486,7 +481,7 @@ namespace Wasm.Build.Tests
             AssertFilesExist(bundleDir, new []
             {
                 "index.html",
-                "main.js",
+                "test-main.js",
                 "dotnet.timezones.blat",
                 "dotnet.wasm",
                 "mono-config.json",
@@ -860,4 +855,18 @@ namespace Wasm.Build.Tests
     public record BuildProduct(string ProjectDir, string LogFile, bool Result);
     internal record FileStat (bool Exists, DateTime LastWriteTimeUtc, long Length, string FullPath);
     internal record BuildPaths(string ObjWasmDir, string ObjDir, string BinDir, string BundleDir);
- }
+
+    public record BuildProjectOptions
+    (
+        Action? InitProject               = null,
+        bool?   DotnetWasmFromRuntimePack = null,
+        bool    HasIcudt                  = true,
+        bool    UseCache                  = true,
+        bool    ExpectSuccess             = true,
+        bool    CreateProject             = true,
+        bool    Publish                   = true,
+        bool    BuildOnlyAfterPublish     = true,
+        string? Verbosity                 = null,
+        string? Label                     = null
+    );
+}

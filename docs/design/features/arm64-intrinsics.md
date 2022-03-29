@@ -173,7 +173,7 @@ It is also worth noting `System.Runtime.Intrinsics.X86` naming conventions will 
 operations which take vector argument(s), but contain an implicit cast(s) to the base type and therefore operate only
 on the first item of the argument vector(s).
 
-### Intinsic Method Argument and Return Types
+### Intrinsic Method Argument and Return Types
 
 Intrinsic methods will typically use a standard set of argument and return types:
 

@@ -164,6 +164,37 @@ namespace System.Runtime.InteropServices.Tests
                 "Called CleanUpNativeData"
             });
             Assert.Equal(expectedOrderingSecondCall, OrderTrackingCustomMarshaler.Events);
+
+            // GetInstance is only called once.
+            string val3 = "7488";
+            Assert.Equal(val3, OrderTrackingMethodRef(ref val3));
+            IEnumerable<string> expectedOrderingThirdCall = expectedOrderingSecondCall.Concat(new string[]
+            {
+                "Called MarshalManagedToNative",
+                "Called MarshalNativeToManaged",
+                "Called CleanUpManagedData",
+                "Called MarshalNativeToManaged",
+                "Called CleanUpNativeData",
+            });
+            Assert.Equal(expectedOrderingThirdCall.Skip(7), OrderTrackingCustomMarshaler.Events.Skip(7));
+
+            OrderTrackingMethodOut(out var val4);
+            Assert.Equal("2334", val4);
+            IEnumerable<string> expectedOrderingForthCall = expectedOrderingThirdCall.Concat(new string[]
+            {
+                "Called MarshalNativeToManaged",
+            });
+            Assert.Equal(expectedOrderingForthCall.Skip(12), OrderTrackingCustomMarshaler.Events.Skip(12));
+
+            var val5 = OrderTrackingMethodDelegate(439, (x) => x.ToString());
+            Assert.Equal("439", val5);
+            IEnumerable<string> expectedOrderingFifthCall = expectedOrderingForthCall.Concat(new string[]
+            {
+                "Called MarshalManagedToNative",
+                "Called CleanUpManagedData",
+                "Called MarshalNativeToManaged",
+            });
+            Assert.Equal(expectedOrderingFifthCall.Skip(13), OrderTrackingCustomMarshaler.Events.Skip(13));
         }
 
         // This should only be used *once*, as it uses static state.
@@ -201,7 +232,7 @@ namespace System.Runtime.InteropServices.Tests
             public object MarshalNativeToManaged(IntPtr pNativeData)
             {
                 Events.Add("Called MarshalNativeToManaged");
-                return pNativeData.ToInt32().ToString();
+                return pNativeData.ToInt64().ToString();
             }
 
             public static ICustomMarshaler GetInstance(string cookie)
@@ -215,6 +246,20 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))]
         public static extern string OrderTrackingMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))] string str);
+
+        [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntRef")]
+        [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))]
+        public static extern string OrderTrackingMethodRef([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))] ref string str);
+
+        [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntOut")]
+        public static extern void OrderTrackingMethodOut([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))] out string str);
+
+        [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))]
+        public delegate string TestDelegate(int val);
+
+        [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntDelegate")]
+        [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))]
+        public static extern string OrderTrackingMethodDelegate(int val, TestDelegate dlg);
 
         public static void CustomMarshaler_BothMarshalTypeRefAndMarshalTypeProvided_PicksMarshalType()
         {
@@ -613,6 +658,17 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int DifferentCustomMarshalerType([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OuterCustomMarshaler))] string str);
 
+        [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(BoxedValueTypeCustomMarshaler))]
+        public delegate string TestDelegateRef([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(BoxedValueTypeCustomMarshaler))] ref int val);
+
+        [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntDelegateRef")]
+        [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(BoxedValueTypeCustomMarshaler))]
+        public static extern string CustomMarshallerWithDelegateRef(int val, TestDelegateRef dlg);
+
+        public static void DelegateParameter_MarshalerOnRefInt_ThrowsMarshalDirectiveException()
+        {
+            Assert.Throws<MarshalDirectiveException>(() => CustomMarshallerWithDelegateRef(84664, (ref int x) => x.ToString()));
+        }
         public static int Main(String[] args)
         {
             try
@@ -643,6 +699,7 @@ namespace System.Runtime.InteropServices.Tests
                 Parameter_CleanUpNativeDataMethodThrows_ThrowsActualException();
                 Field_ParentIsStruct_ThrowsTypeLoadException();
                 Parameter_DifferentCustomMarshalerType_MarshalsCorrectly();
+                DelegateParameter_MarshalerOnRefInt_ThrowsMarshalDirectiveException();
             }
             catch (Exception e)
             {

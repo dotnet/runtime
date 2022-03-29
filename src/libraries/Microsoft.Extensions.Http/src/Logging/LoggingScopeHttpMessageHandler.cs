@@ -92,9 +92,9 @@ namespace Microsoft.Extensions.Http.Logging
                 public static readonly EventId ResponseHeader = new EventId(103, "RequestPipelineResponseHeader");
             }
 
-            private static readonly Func<ILogger, HttpMethod, Uri, IDisposable> _beginRequestPipelineScope = LoggerMessage.DefineScope<HttpMethod, Uri>("HTTP {HttpMethod} {Uri}");
+            private static readonly Func<ILogger, HttpMethod, string, IDisposable> _beginRequestPipelineScope = LoggerMessage.DefineScope<HttpMethod, string>("HTTP {HttpMethod} {Uri}");
 
-            private static readonly Action<ILogger, HttpMethod, Uri, Exception> _requestPipelineStart = LoggerMessage.Define<HttpMethod, Uri>(
+            private static readonly Action<ILogger, HttpMethod, string, Exception> _requestPipelineStart = LoggerMessage.Define<HttpMethod, string>(
                 LogLevel.Information,
                 EventIds.PipelineStart,
                 "Start processing HTTP request {HttpMethod} {Uri}");
@@ -106,12 +106,12 @@ namespace Microsoft.Extensions.Http.Logging
 
             public static IDisposable BeginRequestPipelineScope(ILogger logger, HttpRequestMessage request)
             {
-                return _beginRequestPipelineScope(logger, request.Method, request.RequestUri);
+                return _beginRequestPipelineScope(logger, request.Method, GetUriString(request.RequestUri));
             }
 
             public static void RequestPipelineStart(ILogger logger, HttpRequestMessage request, Func<string, bool> shouldRedactHeaderValue)
             {
-                _requestPipelineStart(logger, request.Method, request.RequestUri, null);
+                _requestPipelineStart(logger, request.Method, GetUriString(request.RequestUri), null);
 
                 if (logger.IsEnabled(LogLevel.Trace))
                 {
@@ -137,6 +137,13 @@ namespace Microsoft.Extensions.Http.Logging
                         null,
                         (state, ex) => state.ToString());
                 }
+            }
+
+            private static string? GetUriString(Uri? requestUri)
+            {
+                return requestUri?.IsAbsoluteUri == true
+                    ? requestUri.AbsoluteUri
+                    : requestUri?.ToString();
             }
         }
     }

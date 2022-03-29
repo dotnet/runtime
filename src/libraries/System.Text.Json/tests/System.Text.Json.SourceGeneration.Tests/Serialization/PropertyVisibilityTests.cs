@@ -268,6 +268,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TypeWith_IgnoredRefStringProp))]
         [JsonSerializable(typeof(TypeWith_PropWith_BadConverter))]
         [JsonSerializable(typeof(TypeWith_IgnoredPropWith_BadConverter))]
+        [JsonSerializable(typeof(ClassWithIgnoredCallbacks))]
+        [JsonSerializable(typeof(ClassWithCallbacks))]
         internal sealed partial class PropertyVisibilityTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -439,6 +441,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TypeWith_IgnoredRefStringProp))]
         [JsonSerializable(typeof(TypeWith_PropWith_BadConverter))]
         [JsonSerializable(typeof(TypeWith_IgnoredPropWith_BadConverter))]
+        [JsonSerializable(typeof(ClassWithIgnoredCallbacks))]
+        [JsonSerializable(typeof(ClassWithCallbacks))]
         internal sealed partial class PropertyVisibilityTestsContext_Default : JsonSerializerContext
         {
         }

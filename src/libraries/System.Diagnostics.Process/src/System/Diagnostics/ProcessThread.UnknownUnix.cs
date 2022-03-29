@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Versioning;
-
 namespace System.Diagnostics
 {
     public partial class ProcessThread
@@ -22,8 +20,6 @@ namespace System.Diagnostics
         /// Returns the amount of time the thread has spent running code inside the operating
         /// system core.
         /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public TimeSpan PrivilegedProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }  // Not available on POSIX
@@ -36,8 +32,6 @@ namespace System.Diagnostics
         /// It is the sum of the System.Diagnostics.ProcessThread.UserProcessorTime and
         /// System.Diagnostics.ProcessThread.PrivilegedProcessorTime.
         /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public TimeSpan TotalProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }  // Not available on POSIX
@@ -47,8 +41,6 @@ namespace System.Diagnostics
         /// Returns the amount of time the associated thread has spent running code
         /// inside the application (not the operating system core).
         /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public TimeSpan UserProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }  // Not available on POSIX

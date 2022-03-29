@@ -27,9 +27,6 @@
 
 #include <metamodelrw.h>
 
-
-
-
 #define DEFINE_CUSTOM_NODUPCHECK    1
 #define DEFINE_CUSTOM_DUPCHECK      2
 #define SET_CUSTOM                  3
@@ -210,12 +207,12 @@ RegMeta::ResolveTypeRef(
     _ASSERTE(TypeFromToken(tr) == mdtTypeRef);
 
     IfFailGo(pMiniMd->GetTypeRefRecord(RidFromToken(tr), &pTypeRefRec));
-    IfFailGo(pMiniMd->getNamespaceOfTypeRef(pTypeRefRec, wzNameSpace, lengthof(wzNameSpace), NULL));
+    IfFailGo(pMiniMd->getNamespaceOfTypeRef(pTypeRefRec, wzNameSpace, ARRAY_SIZE(wzNameSpace), NULL));
     if (hr != NOERROR)
     {
         _ASSERTE(hr == CLDB_S_TRUNCATION);
         // Truncate the namespace string
-        wzNameSpace[lengthof(wzNameSpace) - 1] = 0;
+        wzNameSpace[STRING_LENGTH(wzNameSpace)] = 0;
     }
 
     //***********************

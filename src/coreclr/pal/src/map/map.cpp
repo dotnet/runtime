@@ -61,7 +61,7 @@ LIST_ENTRY MappedViewList;
 #ifndef CORECLR
 static PAL_ERROR MAPCreateTempFile(CPalThread *, PINT, PSZ);
 #endif // !CORECLR
-static PAL_ERROR MAPGrowLocalFile(INT, UINT);
+static PAL_ERROR MAPGrowLocalFile(INT, off_t);
 static PMAPPED_VIEW_LIST MAPGetViewForAddress( LPCVOID );
 static PAL_ERROR MAPDesiredAccessAllowed( DWORD, DWORD, DWORD );
 
@@ -389,6 +389,7 @@ CorUnix::InternalCreateFileMapping(
     INT UnixFd = -1;
     BOOL bPALCreatedTempFile = FALSE;
     UINT nFileSize = 0;
+    off_t maximumSize;
 
     //
     // Validate parameters
@@ -398,13 +399,6 @@ CorUnix::InternalCreateFileMapping(
     {
         ASSERT("lpName: Cross-process named objects are not supported in PAL");
         palError = ERROR_NOT_SUPPORTED;
-        goto ExitInternalCreateFileMapping;
-    }
-
-    if (0 != dwMaximumSizeHigh)
-    {
-        ASSERT("dwMaximumSizeHigh is always 0.\n");
-        palError = ERROR_INVALID_PARAMETER;
         goto ExitInternalCreateFileMapping;
     }
 
@@ -419,7 +413,8 @@ CorUnix::InternalCreateFileMapping(
         goto ExitInternalCreateFileMapping;
     }
 
-    if (hFile == INVALID_HANDLE_VALUE && 0 == dwMaximumSizeLow)
+    if (hFile == INVALID_HANDLE_VALUE &&
+        0 == dwMaximumSizeLow && 0 == dwMaximumSizeHigh)
     {
         ERROR( "If hFile is INVALID_HANDLE_VALUE, then you must specify a size.\n" );
         palError = ERROR_INVALID_PARAMETER;
@@ -432,6 +427,8 @@ CorUnix::InternalCreateFileMapping(
         palError = ERROR_INVALID_PARAMETER;
         goto ExitInternalCreateFileMapping;
     }
+    
+    maximumSize = ((off_t)dwMaximumSizeHigh << 32) | (off_t)dwMaximumSizeLow;
 
     palError = g_pObjectManager->AllocateObject(
         pThread,
@@ -597,8 +594,7 @@ CorUnix::InternalCreateFileMapping(
             goto ExitInternalCreateFileMapping;
         }
 
-        if ( 0 == UnixFileInformation.st_size &&
-             0 == dwMaximumSizeHigh && 0 == dwMaximumSizeLow )
+        if ( 0 == UnixFileInformation.st_size && 0 == maximumSize )
         {
             ERROR( "The file cannot be a zero length file.\n" );
             palError = ERROR_FILE_INVALID;
@@ -606,7 +602,7 @@ CorUnix::InternalCreateFileMapping(
         }
 
         if ( INVALID_HANDLE_VALUE != hFile &&
-             dwMaximumSizeLow > (DWORD) UnixFileInformation.st_size &&
+             maximumSize > UnixFileInformation.st_size &&
              ( PAGE_READONLY == flProtect || PAGE_WRITECOPY == flProtect ) )
         {
             /* In this situation, Windows returns an error, because the
@@ -616,12 +612,12 @@ CorUnix::InternalCreateFileMapping(
             goto ExitInternalCreateFileMapping;
         }
 
-        if ( (DWORD) UnixFileInformation.st_size < dwMaximumSizeLow )
+        if ( UnixFileInformation.st_size < maximumSize )
         {
             TRACE( "Growing the size of file on disk to match requested size.\n" );
 
             /* Need to grow the file on disk to match size. */
-            palError = MAPGrowLocalFile(UnixFd, dwMaximumSizeLow);
+            palError = MAPGrowLocalFile(UnixFd, maximumSize);
             if (NO_ERROR != palError)
             {
                 ERROR( "Unable to grow the file on disk.\n" );
@@ -630,8 +626,8 @@ CorUnix::InternalCreateFileMapping(
         }
     }
 
-    nFileSize = ( 0 == dwMaximumSizeLow && 0 == dwMaximumSizeHigh ) ?
-        UnixFileInformation.st_size : dwMaximumSizeLow;
+    nFileSize = ( 0 == maximumSize ) ?
+        UnixFileInformation.st_size : maximumSize;
 
     pImmutableData->MaxSize = nFileSize;
     pImmutableData->flProtect = flProtect;
@@ -1589,7 +1585,7 @@ Function :
     Grows the file on disk to match the specified size.
 
 --*/
-static PAL_ERROR MAPGrowLocalFile( INT UnixFD, UINT NewSize )
+static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
 {
     PAL_ERROR palError = NO_ERROR;
     INT  TruncateRetVal = -1;
@@ -2047,9 +2043,9 @@ MAPmmapAndRecord(
 
         // Set the requested mapping with forced PROT_WRITE to ensure data from the file can be read there,
         // read the data in and finally remove the forced PROT_WRITE
-        if ((mprotect(pvBaseAddress, len + adjust, prot | PROT_WRITE) == -1) ||
+        if ((mprotect(pvBaseAddress, len + adjust, PROT_WRITE) == -1) ||
             (pread(fd, pvBaseAddress, len + adjust, offset - adjust) == -1) ||
-            (((prot & PROT_WRITE) == 0) && mprotect(pvBaseAddress, len + adjust, prot) == -1))
+            (mprotect(pvBaseAddress, len + adjust, prot) == -1))
         {
             palError = FILEGetLastErrorFromErrno();
         }

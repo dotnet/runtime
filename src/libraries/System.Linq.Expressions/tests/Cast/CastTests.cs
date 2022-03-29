@@ -2372,10 +2372,12 @@ namespace System.Linq.Expressions.Tests
             yield return typeof(UInt32Enum);
             yield return typeof(Int64Enum);
             yield return typeof(UInt64Enum);
-#if FEATURE_COMPILE
-            yield return NonCSharpTypes.CharEnumType;
-            yield return NonCSharpTypes.BoolEnumType;
-#endif
+
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                yield return NonCSharpTypes.CharEnumType;
+                yield return NonCSharpTypes.BoolEnumType;
+            }
         }
 
         public static IEnumerable<object[]> EnumerableTypeArgs() => EnumerableTypes().Select(t => new object[] { t });

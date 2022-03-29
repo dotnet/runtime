@@ -6,6 +6,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDllImportGenerator>true</EnableDllImportGenerator>
   </PropertyGroup>
+  <PropertyGroup>
+    <UseAndroidCrypto Condition="'$(TargetsAndroid)' == 'true'">true</UseAndroidCrypto>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs"
              Link="Common\System\IO\ConnectedStreams.cs" />
@@ -213,6 +216,7 @@
     <Compile Include="ECDiffieHellmanTests.cs" />
     <Compile Include="ECDiffieHellmanPublicKeyTests.cs" />
     <Compile Include="ECDsaTests.cs" />
+    <Compile Include="ECPemExportTests.cs" />
     <Compile Include="FixedTimeEqualsTests.cs" />
     <Compile Include="HashAlgorithmNameTests.cs" />
     <Compile Include="HashAlgorithmTest.cs" />

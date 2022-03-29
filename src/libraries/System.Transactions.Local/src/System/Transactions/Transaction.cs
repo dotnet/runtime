@@ -1150,7 +1150,7 @@ namespace System.Transactions
     //  The TxLookup enum is used internally to detect where the ambient context needs to be stored or looked up.
     //  Default                  - Used internally when looking up Transaction.Current.
     //  DefaultCallContext - Used when TransactionScope with async flow option is enabled. Internally we will use CallContext to store the ambient transaction.
-    //  Default TLS            - Used for legacy/syncronous TransactionScope. Internally we will use TLS to store the ambient transaction.
+    //  Default TLS            - Used for legacy/synchronous TransactionScope. Internally we will use TLS to store the ambient transaction.
     //
     internal enum TxLookup
     {

@@ -65,7 +65,7 @@ typedef VPTR(PEAssembly) PTR_PEAssembly;
 // 1. HMODULE - these PE Files are loaded in response to "spontaneous" OS callbacks.
 //    These should only occur for .exe main modules and IJW dlls loaded via LoadLibrary
 //    or static imports in umnanaged code.
-//    These get their PEImage loaded directly in PEImage::LoadImage(HMODULE hMod)
+//    These get their PEImage loaded directly in PEImage::CreateFromHMODULE(HMODULE hMod)
 //
 // 2. Assemblies loaded directly or indirectly by the managed code - these are the most
 //    common case.  A path is obtained from assembly binding and the result is loaded

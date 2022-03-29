@@ -22,40 +22,37 @@ const originalConsole = {
     error: console.error
 };
 
-let isXUnitDoneCheck = false;
-let isXmlDoneCheck = false;
-
-function proxyMethod(prefix, func, asJson) {
+function proxyConsoleMethod(prefix, func, asJson) {
     return function () {
-        const args = [...arguments];
-        let payload = args[0];
-        if (payload === undefined) payload = 'undefined';
-        else if (payload === null) payload = 'null';
-        else if (typeof payload === 'function') payload = payload.toString();
-        else if (typeof payload !== 'string') {
-            try {
-                payload = JSON.stringify(payload);
-            } catch (e) {
-                payload = payload.toString();
+        try {
+            const args = [...arguments];
+            let payload = args[0];
+            if (payload === undefined) payload = 'undefined';
+            else if (payload === null) payload = 'null';
+            else if (typeof payload === 'function') payload = payload.toString();
+            else if (typeof payload !== 'string') {
+                try {
+                    payload = JSON.stringify(payload);
+                } catch (e) {
+                    payload = payload.toString();
+                }
             }
-        }
-        if (payload.indexOf("=== TEST EXECUTION SUMMARY ===") != -1) {
-            isXUnitDoneCheck = true;
-        }
 
-        if (payload.startsWith("STARTRESULTXML")) {
-            originalConsole.log('Sending RESULTXML')
-            isXmlDoneCheck = true;
-            func(payload);
-        }
-        else if (asJson) {
-            func(JSON.stringify({
-                method: prefix,
-                payload: payload,
-                arguments: args
-            }));
-        } else {
-            func([prefix + payload, ...args.slice(1)]);
+            if (payload.startsWith("STARTRESULTXML")) {
+                originalConsole.log('Sending RESULTXML')
+                func(payload);
+            }
+            else if (asJson) {
+                func(JSON.stringify({
+                    method: prefix,
+                    payload: payload,
+                    arguments: args
+                }));
+            } else {
+                func([prefix + payload, ...args.slice(1)]);
+            }
+        } catch (err) {
+            originalConsole.error(`proxyConsole failed: ${err}`)
         }
     };
 };
@@ -63,13 +60,8 @@ function proxyMethod(prefix, func, asJson) {
 const methods = ["debug", "trace", "warn", "info", "error"];
 for (let m of methods) {
     if (typeof (console[m]) !== "function") {
-        console[m] = proxyMethod(`console.${m}: `, console.log, false);
+        console[m] = proxyConsoleMethod(`console.${m}: `, console.log, false);
     }
-}
-
-function proxyJson(func) {
-    for (let m of ["log", ...methods])
-        console[m] = proxyMethod(`console.${m}`, func, true);
 }
 
 let consoleWebSocket;
@@ -78,22 +70,28 @@ if (is_browser) {
     const consoleUrl = `${window.location.origin}/console`.replace('http://', 'ws://');
 
     consoleWebSocket = new WebSocket(consoleUrl);
-    // redirect output so that when emscripten starts it's already redirected
-    proxyJson(function (msg) {
-        if (consoleWebSocket.readyState === WebSocket.OPEN) {
-            consoleWebSocket.send(msg);
-        }
-        else {
-            originalConsole.log(msg);
-        }
-    });
-
     consoleWebSocket.onopen = function (event) {
         originalConsole.log("browser: Console websocket connected.");
     };
     consoleWebSocket.onerror = function (event) {
         originalConsole.error(`websocket error: ${event}`);
     };
+    consoleWebSocket.onclose = function (event) {
+        originalConsole.error(`websocket closed: ${event}`);
+    };
+
+    const send = (msg) => {
+        if (consoleWebSocket.readyState === WebSocket.OPEN) {
+            consoleWebSocket.send(msg);
+        }
+        else {
+            originalConsole.log(msg);
+        }
+    }
+
+    // redirect output early, so that when emscripten starts it's already redirected
+    for (let m of ["log", ...methods])
+        console[m] = proxyConsoleMethod(`console.${m}`, send, true);
 }
 
 if (typeof globalThis.crypto === 'undefined') {
@@ -121,48 +119,55 @@ if (typeof globalThis.performance === 'undefined') {
         }
     }
 }
-var Module = {
-    config: null,
-    configSrc: "./mono-config.json",
-    onConfigLoaded: () => {
-        if (!Module.config) {
-            const err = new Error("Could not find ./mono-config.json. Cancelling run");
-            set_exit_code(1,);
-            throw err;
-        }
-        // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
-        for (let variable in processedArguments.setenv) {
-            Module.config.environment_variables[variable] = processedArguments.setenv[variable];
-        }
+loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
+    return createDotnetRuntime(({ MONO, INTERNAL, BINDING, Module }) => ({
+        disableDotnet6Compatibility: true,
+        config: null,
+        configSrc: "./mono-config.json",
+        onConfigLoaded: () => {
+            if (!Module.config) {
+                const err = new Error("Could not find ./mono-config.json. Cancelling run");
+                set_exit_code(1,);
+                throw err;
+            }
+            // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
+            for (let variable in processedArguments.setenv) {
+                Module.config.environment_variables[variable] = processedArguments.setenv[variable];
+            }
 
-        if (!processedArguments.enable_gc) {
-            INTERNAL.mono_wasm_enable_on_demand_gc(0);
-        }
-    },
-    onDotNetReady: () => {
-        let wds = Module.FS.stat(processedArguments.working_dir);
-        if (wds === undefined || !Module.FS.isDir(wds.mode)) {
-            set_exit_code(1, `Could not find working directory ${processedArguments.working_dir}`);
-            return;
-        }
+            if (!processedArguments.enable_gc) {
+                INTERNAL.mono_wasm_enable_on_demand_gc(0);
+            }
+        },
+        onDotnetReady: () => {
+            let wds = Module.FS.stat(processedArguments.working_dir);
+            if (wds === undefined || !Module.FS.isDir(wds.mode)) {
+                set_exit_code(1, `Could not find working directory ${processedArguments.working_dir}`);
+                return;
+            }
 
-        Module.FS.chdir(processedArguments.working_dir);
+            Module.FS.chdir(processedArguments.working_dir);
 
-        App.init();
-    },
-    onAbort: (error) => {
-        console.log("ABORT: " + error);
-        const err = new Error();
-        console.log("Stacktrace: \n");
-        console.error(err.stack);
-        set_exit_code(1, error);
-    },
-};
-
+            App.init({ MONO, INTERNAL, BINDING, Module });
+        },
+        onAbort: (error) => {
+            console.log("ABORT: " + error);
+            const err = new Error();
+            console.log("Stacktrace: \n");
+            console.error(err.stack);
+            set_exit_code(1, error);
+        },
+    }))
+}).catch(function (err) {
+    console.error(err);
+    set_exit_code(1, "failed to load the dotnet.js file.\n" + err);
+});
 
 const App = {
-    init: async function () {
+    init: async function ({ MONO, INTERNAL, BINDING, Module }) {
         console.info("Initializing.....");
+        Object.assign(App, { MONO, INTERNAL, BINDING, Module });
+
         for (let i = 0; i < processedArguments.profilers.length; ++i) {
             const init = Module.cwrap('mono_wasm_load_profiler_' + processedArguments.profilers[i], 'void', ['string']);
             init("");
@@ -202,13 +207,9 @@ const App = {
                 return;
             }
             try {
-
                 const main_assembly_name = processedArguments.applicationArgs[1];
                 const app_args = processedArguments.applicationArgs.slice(2);
-                INTERNAL.mono_wasm_set_main_args(processedArguments.applicationArgs[1], app_args);
-
-                // Automatic signature isn't working correctly
-                const result = await BINDING.call_assembly_entry_point(main_assembly_name, [app_args], "m");
+                const result = await MONO.mono_run_main(main_assembly_name, app_args);
                 set_exit_code(result);
             } catch (error) {
                 set_exit_code(1, error);
@@ -228,7 +229,7 @@ const App = {
 
         const fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
         try {
-            return INTERNAL.call_static_method(fqn, args || [], signature);
+            return App.INTERNAL.call_static_method(fqn, args || [], signature);
         } catch (exc) {
             console.error("exception thrown in", fqn);
             throw exc;
@@ -244,12 +245,12 @@ function set_exit_code(exit_code, reason) {
             console.error(reason.stack);
         }
     }
-    if (is_browser) {
-        const stack = (new Error()).stack.replace(/\n/g, "").replace(/[ ]*at/g, " at").replace(/https?:\/\/[0-9.:]*/g, "").replace("Error", "");
-        const messsage = `Exit called with ${exit_code} when isXUnitDoneCheck=${isXUnitDoneCheck} isXmlDoneCheck=${isXmlDoneCheck} WS.bufferedAmount=${consoleWebSocket.bufferedAmount} ${stack}.`;
 
-        // Notify the selenium script
-        Module.exit_code = exit_code;
+    if (is_browser) {
+        if (App.Module) {
+            // Notify the selenium script
+            App.Module.exit_code = exit_code;
+        }
 
         //Tell xharness WasmBrowserTestRunner what was the exit code
         const tests_done_elem = document.createElement("label");
@@ -257,8 +258,6 @@ function set_exit_code(exit_code, reason) {
         tests_done_elem.innerHTML = exit_code.toString();
         document.body.appendChild(tests_done_elem);
 
-        console.log('WS: ' + messsage);
-        originalConsole.log('CDP: ' + messsage);
         const stop_when_ws_buffer_empty = () => {
             if (consoleWebSocket.bufferedAmount == 0) {
                 // tell xharness WasmTestMessagesProcessor we are done. 
@@ -271,8 +270,8 @@ function set_exit_code(exit_code, reason) {
         };
         stop_when_ws_buffer_empty();
 
-    } else if (INTERNAL) {
-        INTERNAL.mono_wasm_exit(exit_code);
+    } else if (App && App.INTERNAL) {
+        App.INTERNAL.mono_wasm_exit(exit_code);
     }
 }
 
@@ -354,34 +353,33 @@ async function loadDotnet(file) {
     if (typeof WScript !== "undefined") { // Chakra
         loadScript = function (file) {
             WScript.LoadScriptFile(file);
-            return globalThis.Module;
+            return globalThis.createDotnetRuntime;
         };
     } else if (is_node) { // NodeJS
         loadScript = async function (file) {
             return require(file);
         };
     } else if (is_browser) { // vanila JS in browser
-        loadScript = async function (file) {
-            const script = document.createElement("script");
-            script.src = file;
-            document.head.appendChild(script);
-            let timeout = 100;
-            // bysy spin waiting for script to load into global namespace
-            while (timeout > 0) {
-                if (globalThis.Module) {
-                    return globalThis.Module;
-                }
-                // delay 10ms
-                await new Promise(resolve => setTimeout(resolve, 10));
-                timeout--;
-            }
-            throw new Error("Can't load " + file);
+        loadScript = function (file) {
+            var loaded = new Promise((resolve, reject) => {
+                globalThis.__onDotnetRuntimeLoaded = (createDotnetRuntime) => {
+                    // this is callback we have in CJS version of the runtime
+                    resolve(createDotnetRuntime);
+                };
+                import(file).then(({ default: createDotnetRuntime }) => {
+                    // this would work with ES6 default export
+                    if (createDotnetRuntime) {
+                        resolve(createDotnetRuntime);
+                    }
+                }, reject);
+            });
+            return loaded;
         }
     }
     else if (typeof globalThis.load !== 'undefined') {
         loadScript = async function (file) {
             globalThis.load(file)
-            return globalThis.Module;
+            return globalThis.createDotnetRuntime;
         }
     }
     else {
@@ -390,9 +388,3 @@ async function loadDotnet(file) {
 
     return loadScript(file);
 }
-
-loadDotnet("./dotnet.js").catch(function (err) {
-    console.error(err);
-    set_exit_code(1, "failed to load the dotnet.js file");
-    throw err;
-});

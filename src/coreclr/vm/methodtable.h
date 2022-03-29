@@ -1183,7 +1183,6 @@ public:
     }
 
     BOOL HasSameTypeDefAs(MethodTable *pMT);
-    BOOL HasSameTypeDefAs_NoLogging(MethodTable *pMT);
 
     //-------------------------------------------------------------------
     // GENERICS & CODE SHARING
@@ -1601,11 +1600,9 @@ public:
     //
     inline DWORD GetNumInstanceFieldBytes();
 
+    int GetFieldAlignmentRequirement();
+
     inline WORD GetNumIntroducedInstanceFields();
-
-    // <TODO> Does this always return the same (or related) size as GetBaseSize()? </TODO>
-    inline DWORD GetAlignedNumInstanceFieldBytes();
-
 
     // Note: This flag MUST be available even from an unrestored MethodTable - see GcScanRoots in siginfo.cpp.
     DWORD           ContainsPointers()
@@ -2137,7 +2134,7 @@ public:
     // Resolve virtual static interface method pInterfaceMD on this type.
     //
     // Specify allowNullResult to return NULL instead of throwing if the there is no implementation
-    // Specify verifyImplemented to verify that there is a match, but do not actually return a final useable MethodDesc
+    // Specify verifyImplemented to verify that there is a match, but do not actually return a final usable MethodDesc
     // Specify allowVariantMatches to permit generic interface variance
     MethodDesc *ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL allowNullResult, BOOL verifyImplemented = FALSE, BOOL allowVariantMatches = TRUE);
 

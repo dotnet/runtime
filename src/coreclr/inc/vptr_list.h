@@ -40,14 +40,12 @@ VPTR_CLASS(TailCallStubManager)
 #endif
 VPTR_CLASS(CallCountingStubManager)
 VPTR_CLASS(PEAssembly)
+
 VPTR_CLASS(PEImageLayout)
-VPTR_CLASS(RawImageLayout)
 VPTR_CLASS(ConvertedImageLayout)
-VPTR_CLASS(MappedImageLayout)
-#if !defined(TARGET_UNIX)
 VPTR_CLASS(LoadedImageLayout)
-#endif // !TARGET_UNIX
 VPTR_CLASS(FlatImageLayout)
+
 #ifdef FEATURE_COMINTEROP
 VPTR_CLASS(ComMethodFrame)
 VPTR_CLASS(ComPlusMethodFrame)

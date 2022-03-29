@@ -11,7 +11,7 @@
 {
   .ver 0:0:0:0
 }
-.assembly extern common {}
+.assembly extern eh_common {}
 .assembly test
 {
   .ver 0:0:0:0
@@ -27,7 +27,7 @@
     .maxstack  2
 	  .locals init (
 	  class [mscorlib]System.IO.StringWriter expectedOut,
-	  class [common]TestUtil.TestLog testLog
+	  class [eh_common]TestUtil.TestLog testLog
 	)
 
     newobj     instance void [mscorlib]System.IO.StringWriter::.ctor()
@@ -39,11 +39,11 @@
     ldstr      "Done"
     callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
     ldloc.s    expectedOut
-    newobj     instance void [common]TestUtil.TestLog::.ctor(object)
+    newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
     stloc.s    testLog
 
     ldloc.s    testLog
-    callvirt   instance void [common]TestUtil.TestLog::StartRecording()
+    callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
 
   br.s try_start
 filter_begin:  
@@ -71,10 +71,10 @@ done:
   ldstr      "Done"
   call       void [System.Console]System.Console::WriteLine(string)
   ldloc.s    testLog
-  callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+  callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
   
    ldloc.s    testLog
-   callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+   callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
 	ret
 	
 .try try_start to try_end filter filter_begin handler handler_begin to handler_end

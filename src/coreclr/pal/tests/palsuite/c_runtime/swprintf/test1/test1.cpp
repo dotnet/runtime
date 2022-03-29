@@ -30,7 +30,7 @@ PALTEST(c_runtime_swprintf_test1_paltest_swprintf_test1, "c_runtime/swprintf/tes
     }
 
     checkstr = convert("hello world");
-    swprintf_s(buf, _countof(buf), convert("hello world"));
+    swprintf_s(buf, ARRAY_SIZE(buf), convert("hello world"));
 
     if (memcmp(checkstr, buf, wcslen(checkstr)*2+2) != 0)
     {

@@ -1501,6 +1501,15 @@ wasm_invoke_viiiffiii (void *target_func, InterpMethodArguments *margs)
 }
 
 static void
+wasm_invoke_viiifi (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(int arg_0, int arg_1, int arg_2, float arg_3, int arg_4);
+	T func = (T)target_func;
+	func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], (int)(gssize)margs->iargs [2], *(float*)&margs->fargs [FIDX (0)], (int)(gssize)margs->iargs [3]);
+
+}
+
+static void
 wasm_invoke_viiifii (void *target_func, InterpMethodArguments *margs)
 {
 	typedef void (*T)(int arg_0, int arg_1, int arg_2, float arg_3, int arg_4, int arg_5);
@@ -1655,6 +1664,46 @@ wasm_invoke_iill (void *target_func, InterpMethodArguments *margs)
 
 }
 
+static void
+wasm_invoke_iiffff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef int (*T)(int arg_0, float arg_1, float arg_2, float arg_3, float arg_4);
+	T func = (T)target_func;
+	int res = func ((int)(gssize)margs->iargs [0], *(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)], *(float*)&margs->fargs [FIDX (3)]);
+	*(int*)margs->retval = res;
+
+}
+
+static void
+wasm_invoke_iiiiidii (void *target_func, InterpMethodArguments *margs)
+{
+	typedef int (*T)(int arg_0, int arg_1, int arg_2, int arg_3, double arg_4, int arg_5, int arg_6);
+	T func = (T)target_func;
+	int res = func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], (int)(gssize)margs->iargs [2], (int)(gssize)margs->iargs [3], margs->fargs [FIDX (0)], (int)(gssize)margs->iargs [4], (int)(gssize)margs->iargs [5]);
+	*(int*)margs->retval = res;
+
+}
+
+static void
+wasm_invoke_iiiiifiii (void *target_func, InterpMethodArguments *margs)
+{
+	typedef int (*T)(int arg_0, int arg_1, int arg_2, int arg_3, float arg_4, int arg_5, int arg_6, int arg_7);
+	T func = (T)target_func;
+	int res = func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], (int)(gssize)margs->iargs [2], (int)(gssize)margs->iargs [3], *(float*)&margs->fargs [FIDX (0)], (int)(gssize)margs->iargs [4], (int)(gssize)margs->iargs [5], (int)(gssize)margs->iargs [6]);
+	*(int*)margs->retval = res;
+
+}
+
+static void
+wasm_invoke_liiii (void *target_func, InterpMethodArguments *margs)
+{
+	typedef gint64 (*T)(int arg_0, int arg_1, int arg_2, int arg_3);
+	T func = (T)target_func;
+	gint64 res = func ((int)(gssize)margs->iargs [0], (int)(gssize)margs->iargs [1], (int)(gssize)margs->iargs [2], (int)(gssize)margs->iargs [3]);
+	*(gint64*)margs->retval = res;
+
+}
+
 static const char* interp_to_native_signatures [] = {
 "DD",
 "DDD",
@@ -1695,6 +1744,7 @@ static const char* interp_to_native_signatures [] = {
 "IIF",
 "IIFF",
 "IIFFF",
+"IIFFFF",
 "IIFFFFFF",
 "IIFFFFFFFF",
 "IIFFFFI",
@@ -1731,9 +1781,11 @@ static const char* interp_to_native_signatures [] = {
 "IIIIFII",
 "IIIIFIII",
 "IIIII",
+"IIIIIDII",
 "IIIIIF",
 "IIIIIFFFFIIII",
 "IIIIIFII",
+"IIIIIFIII",
 "IIIIII",
 "IIIIIIFFI",
 "IIIIIIFII",
@@ -1764,6 +1816,7 @@ static const char* interp_to_native_signatures [] = {
 "L",
 "LI",
 "LII",
+"LIIII",
 "LIIIL",
 "LIL",
 "LILI",
@@ -1806,6 +1859,7 @@ static const char* interp_to_native_signatures [] = {
 "VIIIF",
 "VIIIFFII",
 "VIIIFFIII",
+"VIIIFI",
 "VIIIFII",
 "VIIIFIII",
 "VIIII",
@@ -1868,6 +1922,7 @@ wasm_invoke_ii,
 wasm_invoke_iif,
 wasm_invoke_iiff,
 wasm_invoke_iifff,
+wasm_invoke_iiffff,
 wasm_invoke_iiffffff,
 wasm_invoke_iiffffffff,
 wasm_invoke_iiffffi,
@@ -1904,9 +1959,11 @@ wasm_invoke_iiiifi,
 wasm_invoke_iiiifii,
 wasm_invoke_iiiifiii,
 wasm_invoke_iiiii,
+wasm_invoke_iiiiidii,
 wasm_invoke_iiiiif,
 wasm_invoke_iiiiiffffiiii,
 wasm_invoke_iiiiifii,
+wasm_invoke_iiiiifiii,
 wasm_invoke_iiiiii,
 wasm_invoke_iiiiiiffi,
 wasm_invoke_iiiiiifii,
@@ -1937,6 +1994,7 @@ wasm_invoke_ili,
 wasm_invoke_l,
 wasm_invoke_li,
 wasm_invoke_lii,
+wasm_invoke_liiii,
 wasm_invoke_liiil,
 wasm_invoke_lil,
 wasm_invoke_lili,
@@ -1979,6 +2037,7 @@ wasm_invoke_viii,
 wasm_invoke_viiif,
 wasm_invoke_viiiffii,
 wasm_invoke_viiiffiii,
+wasm_invoke_viiifi,
 wasm_invoke_viiifii,
 wasm_invoke_viiifiii,
 wasm_invoke_viiii,

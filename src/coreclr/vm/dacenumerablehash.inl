@@ -243,7 +243,7 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
 template <DAC_ENUM_HASH_PARAMS>
 DWORD DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::NextLargestPrime(DWORD dwNumber)
 {
-    for (DWORD i = 0; i < COUNTOF(g_rgPrimes); i++)
+    for (DWORD i = 0; i < ARRAY_SIZE(g_rgPrimes); i++)
         if (g_rgPrimes[i] >= dwNumber)
         {
             dwNumber = g_rgPrimes[i];

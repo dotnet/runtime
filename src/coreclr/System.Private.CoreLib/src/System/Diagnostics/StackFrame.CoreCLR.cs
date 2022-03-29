@@ -54,8 +54,8 @@ namespace System.Diagnostics
 
         private static bool AppendStackFrameWithoutMethodBase(StringBuilder sb) => false;
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "StackFrame_GetMethodDescFromNativeIP")]
-        private static extern RuntimeMethodHandleInternal GetMethodDescFromNativeIP(IntPtr ip);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "StackFrame_GetMethodDescFromNativeIP")]
+        private static partial RuntimeMethodHandleInternal GetMethodDescFromNativeIP(IntPtr ip);
 
         /// <summary>
         /// Returns the MethodBase instance for the managed code IP address.

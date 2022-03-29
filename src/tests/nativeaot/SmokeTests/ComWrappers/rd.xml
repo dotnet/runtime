@@ -1,0 +1,7 @@
+<Directives>
+  <Application>
+    <Assembly Name="ComWrappers">
+      <Type Name="ComWrappersTests.IComInterface" Dynamic="Required All" />
+    </Assembly>
+  </Application>
+</Directives>

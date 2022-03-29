@@ -77,7 +77,7 @@ bool IsDigit(WCHAR c, int radix, int *result)
     return false;
 }
 
-INT32 wtoi(__in_ecount(length) WCHAR* wstr, DWORD length)
+INT32 wtoi(_In_reads_(length) WCHAR* wstr, DWORD length)
 {
     CONTRACTL
     {

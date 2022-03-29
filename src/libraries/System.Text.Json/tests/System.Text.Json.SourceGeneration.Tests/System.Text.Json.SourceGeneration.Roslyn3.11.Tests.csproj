@@ -4,5 +4,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\System.Text.Json.SourceGeneration.TestLibrary\System.Text.Json.TestLibrary.Roslyn3.11.csproj" />
   </ItemGroup>
 </Project>

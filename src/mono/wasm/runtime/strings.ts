@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mono_wasm_new_root_buffer, WasmRootBuffer } from "./roots";
-import { CharPtr, MonoString, MonoStringNull, NativePointer } from "./types";
+import { MonoString, MonoStringNull, } from "./types";
 import { Module } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_new_root } from "./roots";
 import { getI32 } from "./memory";
+import { NativePointer, CharPtr } from "./types/emscripten";
 
 export class StringDecoder {
 
@@ -162,9 +163,9 @@ export function js_string_to_mono_string_interned(string: string | symbol): Mono
     return ptr;
 }
 
-export function js_string_to_mono_string(string: string): MonoString | null {
+export function js_string_to_mono_string(string: string): MonoString {
     if (string === null)
-        return null;
+        return MonoStringNull;
     else if (typeof (string) === "symbol")
         return js_string_to_mono_string_interned(string);
     else if (typeof (string) !== "string")

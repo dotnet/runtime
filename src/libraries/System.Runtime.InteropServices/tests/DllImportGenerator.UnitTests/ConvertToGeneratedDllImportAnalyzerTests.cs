@@ -193,22 +193,7 @@ partial class Test
     public static extern partial void Method();
 }}
 ";
-            // Only this test case needs the ancillary reference, so it creates/runs the test directly
-            // instead of going through VerifyAnalyzerAsync
-            (_, MetadataReference ancillary) = TestUtils.GetReferenceAssemblies();
-            var test = new VerifyCS.Test()
-            {
-                TestCode = source
-            };
-            test.SolutionTransforms.Add((solution, projectId) =>
-            {
-                Project project = solution.GetProject(projectId)!;
-                var refs = new List<MetadataReference>(project.MetadataReferences.Count + 1);
-                refs.AddRange(project.MetadataReferences);
-                refs.Add(ancillary);
-                return solution.WithProjectMetadataReferences(projectId, refs);
-            });
-            await test.RunAsync(default);
+            await VerifyCS.VerifyAnalyzerAsync(source);
         }
 
         [ConditionalFact]

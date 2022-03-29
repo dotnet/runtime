@@ -1,14 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <FeatureInterpret>true</FeatureInterpret>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-MacCatalyst</TargetFrameworks>
     <Nullable>enable</Nullable>
     <IsInterpreting>false</IsInterpreting>
     <IsInterpreting Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">true</IsInterpreting>
-    <DefineConstants> $(DefineConstants);FEATURE_DLG_INVOKE;FEATURE_FAST_CREATE</DefineConstants>
-    <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
-    <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
+    <ILLinkSubstitutionsLibraryBuildXml Condition="'$(IsInterpreting)' == 'true'">ILLink\ILLink.Substitutions.IsInterpreting.LibraryBuild.xml</ILLinkSubstitutionsLibraryBuildXml>
+    <DefineConstants> $(DefineConstants);FEATURE_FAST_CREATE</DefineConstants>
+
+    <!--
+      Disable constant propagation so that methods referenced from ILLink.Substitutions.xml don't get inlined
+      with a wrong value at library build time and the substitution can still be selected at publish time.
+      For iOS/tvOS/Catalyst we prefer smaller size by default, so keep constprop enabled to get rid of the expression compiler.
+    -->
+    <ILLinkDisableIPConstProp Condition="'$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetsMacCatalyst)' != 'true'">true</ILLinkDisableIPConstProp>
   </PropertyGroup>
+  <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
@@ -125,7 +133,7 @@
     <Compile Include="System\Dynamic\UnaryOperationBinder.cs" />
     <Compile Include="System\Dynamic\IInvokeOnGetBinder.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(IsInterpreting)' != 'true'">
+  <ItemGroup>
     <Compile Include="System\Linq\Expressions\Compiler\AssemblyGen.cs" />
     <Compile Include="System\Dynamic\Utils\Helpers.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\AnalyzedTree.cs" />
@@ -157,7 +165,7 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeOps.ExpressionQuoter.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeOps.RuntimeVariableList.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsInterpreting)' == 'true' Or '$(FeatureInterpret)' == 'true'">
+  <ItemGroup>
     <Compile Include="System\Dynamic\Utils\DelegateHelpers.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\AddInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\AndInstruction.cs" />

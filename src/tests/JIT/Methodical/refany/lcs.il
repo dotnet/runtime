@@ -18,7 +18,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module lcs.exe
 .namespace JitTest
 {
   .class private auto ansi LCS

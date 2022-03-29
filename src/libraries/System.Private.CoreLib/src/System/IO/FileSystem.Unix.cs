@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO.Enumeration;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
@@ -158,8 +159,7 @@ namespace System.IO
             else
             {
                 // There is no backup file.  Just make sure the destination file exists, throwing if it doesn't.
-                Interop.Sys.FileStatus ignored;
-                if (Interop.Sys.Stat(destFullPath, out ignored) != 0)
+                if (Interop.Sys.Stat(destFullPath, out _) != 0)
                 {
                     Interop.ErrorInfo errno = Interop.Sys.GetLastErrorInfo();
                     if (errno.Error == Interop.Error.ENOENT)
@@ -429,88 +429,110 @@ namespace System.IO
 
         public static void RemoveDirectory(string fullPath, bool recursive)
         {
-            var di = new DirectoryInfo(fullPath);
-            if (!di.Exists)
+            // Delete the directory.
+            // If we're recursing, don't throw when it is not empty, and perform a recursive remove.
+            if (!RemoveEmptyDirectory(fullPath, topLevel: true, throwWhenNotEmpty: !recursive))
             {
-                throw Interop.GetExceptionForIoErrno(Interop.Error.ENOENT.Info(), fullPath, isDirectory: true);
+                Debug.Assert(recursive);
+
+                RemoveDirectoryRecursive(fullPath);
             }
-            RemoveDirectoryInternal(di, recursive, throwOnTopLevelDirectoryNotFound: true);
         }
 
-        private static void RemoveDirectoryInternal(DirectoryInfo directory, bool recursive, bool throwOnTopLevelDirectoryNotFound)
+        private static void RemoveDirectoryRecursive(string fullPath)
         {
             Exception? firstException = null;
 
-            if ((directory.Attributes & FileAttributes.ReparsePoint) != 0)
+            try
             {
-                DeleteFile(directory.FullName);
-                return;
-            }
+                var fse = new FileSystemEnumerable<(string, bool)>(fullPath,
+                            static (ref FileSystemEntry entry) =>
+                            {
+                                // Don't report symlinks to directories as directories.
+                                bool isRealDirectory = !entry.IsSymbolicLink && entry.IsDirectory;
+                                return (entry.ToFullPath(), isRealDirectory);
+                            },
+                            EnumerationOptions.Compatible);
 
-            if (recursive)
-            {
-                try
+                foreach ((string childPath, bool isDirectory) in fse)
                 {
-                    foreach (string item in Directory.EnumerateFileSystemEntries(directory.FullName))
+                    try
                     {
-                        if (!ShouldIgnoreDirectory(Path.GetFileName(item)))
+                        if (isDirectory)
                         {
-                            try
-                            {
-                                var childDirectory = new DirectoryInfo(item);
-                                if (childDirectory.Exists)
-                                {
-                                    RemoveDirectoryInternal(childDirectory, recursive, throwOnTopLevelDirectoryNotFound: false);
-                                }
-                                else
-                                {
-                                    DeleteFile(item);
-                                }
-                            }
-                            catch (Exception exc)
-                            {
-                                if (firstException != null)
-                                {
-                                    firstException = exc;
-                                }
-                            }
+                            RemoveDirectoryRecursive(childPath);
+                        }
+                        else
+                        {
+                            DeleteFile(childPath);
                         }
                     }
-                }
-                catch (Exception exc)
-                {
-                    if (firstException != null)
+                    catch (Exception ex)
                     {
-                        firstException = exc;
+                        firstException ??= ex;
                     }
                 }
-
-                if (firstException != null)
-                {
-                    throw firstException;
-                }
+            }
+            catch (Exception exc)
+            {
+                firstException ??= exc;
             }
 
-            if (Interop.Sys.RmDir(directory.FullName) < 0)
+            if (firstException != null)
+            {
+                throw firstException;
+            }
+
+            RemoveEmptyDirectory(fullPath);
+        }
+
+        private static bool RemoveEmptyDirectory(string fullPath, bool topLevel = false, bool throwWhenNotEmpty = true)
+        {
+            if (Interop.Sys.RmDir(fullPath) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                switch (errorInfo.Error)
+
+                if (errorInfo.Error == Interop.Error.ENOTEMPTY)
                 {
-                    case Interop.Error.EACCES:
-                    case Interop.Error.EPERM:
-                    case Interop.Error.EROFS:
-                    case Interop.Error.EISDIR:
-                        throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, directory.FullName)); // match Win32 exception
-                    case Interop.Error.ENOENT:
-                        if (!throwOnTopLevelDirectoryNotFound)
-                        {
-                            return;
-                        }
-                        goto default;
-                    default:
-                        throw Interop.GetExceptionForIoErrno(errorInfo, directory.FullName, isDirectory: true);
+                    if (!throwWhenNotEmpty)
+                    {
+                        return false;
+                    }
                 }
+                else if (errorInfo.Error == Interop.Error.ENOENT)
+                {
+                    // When we're recursing, don't throw for items that go missing.
+                    if (!topLevel)
+                    {
+                        return true;
+                    }
+                }
+                else if (DirectoryExists(fullPath, out Interop.ErrorInfo existErr))
+                {
+                    // Top-level path is a symlink to a directory, delete the link.
+                    if (topLevel && errorInfo.Error == Interop.Error.ENOTDIR)
+                    {
+                        DeleteFile(fullPath);
+                        return true;
+                    }
+                }
+                else if (existErr.Error == Interop.Error.ENOENT)
+                {
+                    // Prefer throwing DirectoryNotFoundException over other exceptions.
+                    errorInfo = existErr;
+                }
+
+                if (errorInfo.Error == Interop.Error.EACCES ||
+                    errorInfo.Error == Interop.Error.EPERM ||
+                    errorInfo.Error == Interop.Error.EROFS)
+                {
+                    throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, fullPath));
+                }
+
+                throw Interop.GetExceptionForIoErrno(errorInfo, fullPath, isDirectory: true);
             }
+
+            return true;
         }
 
         /// <summary>Determines whether the specified directory name should be ignored.</summary>

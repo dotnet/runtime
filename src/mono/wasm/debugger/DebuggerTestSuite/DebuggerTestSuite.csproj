@@ -16,7 +16,18 @@
   <ItemGroup>
     <ProjectReference Include="..\BrowserDebugHost\BrowserDebugHost.csproj" />
     <ProjectReference Include="..\BrowserDebugProxy\BrowserDebugProxy.csproj" />
-    <ProjectReference Include="..\tests\debugger-test\debugger-test.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\tests\debugger-test\debugger-test.csproj" ReferenceOutputAssembly="false" Private="false" />
   </ItemGroup>
 
+  <Target Name="CopyTestZipForHelix"
+          Condition="'$(ArchiveDirForHelix)' != ''"
+          AfterTargets="Build">
+
+    <ItemGroup>
+      <_FilesToCopy Include="$(OutputPath)\**\*" TargetPath="DebuggerTestSuite" />
+      <_FilesToCopy Include="$(ArtifactsBinDir)debugger-test\Debug\**\*" TargetPath="debugger-test" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_FilesToCopy)" DestinationFiles="$(ArchiveDirForHelix)\%(TargetPath)\%(RecursiveDir)%(FileName)%(Extension)" />
+  </Target>
 </Project>

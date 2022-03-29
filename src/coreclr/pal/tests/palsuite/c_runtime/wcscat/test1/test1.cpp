@@ -5,8 +5,8 @@
 **
 ** Source:  test1.c
 **
-** Purpose: 
-** Test to that wcscat correctly concatanates wide strings, including placing 
+** Purpose:
+** Test to that wcscat correctly concatanates wide strings, including placing
 ** null pointers.
 **
 **
@@ -30,7 +30,7 @@ PALTEST(c_runtime_wcscat_test1_paltest_wcscat_test1, "c_runtime/wcscat/test1/pal
     WCHAR *ptr;
     char buffer[256];
 
-    
+
     if (PAL_Initialize(argc, argv))
     {
         return FAIL;
@@ -59,8 +59,8 @@ PALTEST(c_runtime_wcscat_test1_paltest_wcscat_test1, "c_runtime/wcscat/test1/pal
 
     if (memcmp(dest, test, sizeof(test)) != 0)
     {
-        sprintf_s(buffer, _countof(buffer), "%S", dest);
-        Fail("ERROR: Expected wcscat to give \"%s\", got \"%s\"\n", 
+        sprintf_s(buffer, ARRAY_SIZE(buffer), "%S", dest);
+        Fail("ERROR: Expected wcscat to give \"%s\", got \"%s\"\n",
             "foo bar baz", buffer);
     }
 

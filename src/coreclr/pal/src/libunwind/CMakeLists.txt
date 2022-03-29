@@ -67,6 +67,8 @@ if(CLR_CMAKE_HOST_UNIX)
         endif()
         # We compile code with -std=c99 and the asm keyword is not recognized as it is a gnu extension
         add_definitions(-Dasm=__asm__)
+        # Disable warning for a bug in the libunwind source src/aarch64/Ginit.c, but not in code that we exercise
+        add_compile_options(-Wno-incompatible-pointer-types)
     elseif(CLR_CMAKE_HOST_ARCH_I386)
         # Disable warning for a bug in the libunwind source src/x86/Gos-linux.c, but not in code that we exercise
         add_compile_options(-Wno-incompatible-pointer-types)

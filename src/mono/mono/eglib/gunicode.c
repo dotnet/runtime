@@ -1,5 +1,5 @@
 /*
- * gunicode.c: Some Unicode routines 
+ * gunicode.c: Some Unicode routines
  *
  * Author:
  *   Miguel de Icaza (miguel@novell.com)
@@ -49,7 +49,7 @@ const char *eg_my_charset;
  * Character set conversion
  */
 
-GUnicodeType 
+GUnicodeType
 g_unichar_type (gunichar c)
 {
 	int i;
@@ -99,7 +99,7 @@ g_unichar_break_type (gunichar c)
 static gunichar
 g_unichar_case (gunichar c, gboolean upper)
 {
-	gint8 i, i2;
+	guint8 i, i2;
 	guint32 cp = (guint32) c, v;
 
 	for (i = 0; i < simple_case_map_ranges_count; i++) {
@@ -189,7 +189,7 @@ gchar *
 g_filename_from_utf8 (const gchar *utf8string, gssize len, gsize *bytes_read, gsize *bytes_written, GError **gerror)
 {
 	char *res;
-	
+
 	if (len == -1)
 		len = strlen (utf8string);
 
@@ -234,7 +234,7 @@ g_get_charset (G_CONST_RETURN char **charset)
 #endif
 		is_utf8 = strcmp (eg_my_charset, "UTF-8") == 0;
 	}
-	
+
 	if (charset != NULL)
 		*charset = eg_my_charset;
 

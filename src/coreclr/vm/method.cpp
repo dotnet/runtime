@@ -9,7 +9,6 @@
 // file:../../doc/BookOfTheRuntime/ClassLoader/MethodDescDesign.doc
 //
 
-
 #include "common.h"
 #include "excep.h"
 #include "dbginterface.h"
@@ -1657,6 +1656,13 @@ UINT MethodDesc::CbStackPop()
     SUPPORTS_DAC;
     MetaSig msig(this);
     ArgIterator argit(&msig);
+
+    bool fCtorOfVariableSizedObject = msig.HasThis() && (GetMethodTable() == g_pStringClass) && IsCtor();
+    if (fCtorOfVariableSizedObject)
+    {
+        msig.ClearHasThis();
+    }
+    
     return argit.CbStackPop();
 }
 #endif // TARGET_X86
@@ -2161,22 +2167,6 @@ MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT)
     // We should never get here
     _ASSERTE(!"Entry2MethodDesc failed");
     RETURN (NULL);
-}
-
-//*******************************************************************************
-BOOL MethodDesc::IsFCallOrIntrinsic()
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (IsFCall() || IsArray())
-        return TRUE;
-
-    // Intrinsic methods on ByReference<T>, Span<T>, or ReadOnlySpan<T>
-    MethodTable * pMT = GetMethodTable();
-    if (pMT->IsByRefLike() && pMT->GetModule()->IsSystem())
-        return TRUE;
-
-    return FALSE;
 }
 
 //*******************************************************************************
@@ -4002,58 +3992,6 @@ moveToNextToken:
     }
 }
 
-
-#ifdef FEATURE_TYPEEQUIVALENCE
-static void CheckForEquivalenceAndLoadType(Module *pModule, mdToken token, Module *pDefModule, mdToken defToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    BOOL *pHasEquivalentParam = (BOOL *)pData;
-
-    if (IsTypeDefEquivalent(defToken, pDefModule))
-    {
-        *pHasEquivalentParam = TRUE;
-        SigPointer sigPtr(*ptr);
-        TypeHandle th = sigPtr.GetTypeHandleThrowing(pModule, pTypeContext);
-    }
-}
-#endif // FEATURE_TYPEEQUIVALENCE
-
-BOOL MethodDesc::HasTypeEquivalentStructParameters()
-{
-#ifdef FEATURE_TYPEEQUIVALENCE
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    BOOL fHasTypeEquivalentStructParameters = FALSE;
-    if (DoesNotHaveEquivalentValuetypeParameters())
-        return FALSE;
-
-    WalkValueTypeParameters(this->GetMethodTable(), CheckForEquivalenceAndLoadType, &fHasTypeEquivalentStructParameters);
-
-    if (!fHasTypeEquivalentStructParameters)
-        SetDoesNotHaveEquivalentValuetypeParameters();
-
-    return fHasTypeEquivalentStructParameters;
-
-#else
-    LIMITED_METHOD_CONTRACT;
-    return FALSE;
-
-#endif // FEATURE_TYPEEQUIVALENCE
-}
-
-
 PrecodeType MethodDesc::GetPrecodeType()
 {
     LIMITED_METHOD_CONTRACT;
@@ -4123,6 +4061,54 @@ void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()
     }
     EX_END_CATCH(RethrowTerminalExceptions);
     _ASSERTE(HaveValueTypeParametersBeenWalked());
+}
+
+static void CheckForEquivalenceAndLoadType(Module *pModule, mdToken token, Module *pDefModule, mdToken defToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+    }
+    CONTRACTL_END;
+
+    BOOL *pHasEquivalentParam = (BOOL *)pData;
+
+#ifdef FEATURE_TYPEEQUIVALENCE
+    *pHasEquivalentParam = IsTypeDefEquivalent(defToken, pDefModule);
+#else
+    _ASSERTE(*pHasEquivalentParam == FALSE); // Assert this is always false.
+#endif // FEATURE_TYPEEQUIVALENCE
+
+    SigPointer sigPtr(*ptr);
+    TypeHandle th = sigPtr.GetTypeHandleThrowing(pModule, pTypeContext);
+    _ASSERTE(!th.IsNull());
+}
+
+void MethodDesc::PrepareForUseAsAFunctionPointer()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // Since function pointers are unsafe and can enable type punning, all
+    // value type parameters must be loaded prior to providing a function pointer.
+    if (HaveValueTypeParametersBeenLoaded())
+        return;
+
+    BOOL fHasTypeEquivalentStructParameters = FALSE;
+    WalkValueTypeParameters(this->GetMethodTable(), CheckForEquivalenceAndLoadType, &fHasTypeEquivalentStructParameters);
+
+#ifdef FEATURE_TYPEEQUIVALENCE
+    if (!fHasTypeEquivalentStructParameters)
+        SetDoesNotHaveEquivalentValuetypeParameters();
+#endif // FEATURE_TYPEEQUIVALENCE
+
+    SetValueTypeParametersLoaded();
 }
 #endif //!DACCESS_COMPILE
 

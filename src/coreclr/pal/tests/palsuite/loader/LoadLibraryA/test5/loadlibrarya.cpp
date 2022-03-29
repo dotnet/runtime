@@ -6,7 +6,7 @@
 ** Source: loadlibrarya.c
 **
 ** Purpose: Negative test the LoadLibraryA API.
-**          Call LoadLibraryA by passing a module name 
+**          Call LoadLibraryA by passing a module name
 **          without extension but with a trailing dot.
 **
 **
@@ -30,13 +30,13 @@ PALTEST(loader_LoadLibraryA_test5_paltest_loadlibrarya_test5, "loader/LoadLibrar
 
     /*Module name without extension but with a trailing dot*/
 #if WIN32
-    sprintf_s(ModuleName, _countof(ModuleName), "%s", "rotor_pal.");
+    sprintf_s(ModuleName, ARRAY_SIZE(ModuleName), "%s", "rotor_pal.");
 #else
     /* Under FreeBSD */
-    sprintf_s(ModuleName, _countof(ModuleName), "%s", "librotor_pal.");
+    sprintf_s(ModuleName, ARRAY_SIZE(ModuleName), "%s", "librotor_pal.");
 #endif
 
-    /* load a module which does not have the file extension, 
+    /* load a module which does not have the file extension,
      * but has a trailing dot
     */
     ModuleHandle = LoadLibraryA(ModuleName);

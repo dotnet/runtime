@@ -10,17 +10,17 @@ namespace System.Media
     public partial class SoundPlayer : System.ComponentModel.Component, System.Runtime.Serialization.ISerializable
     {
         public SoundPlayer() { }
-        public SoundPlayer(System.IO.Stream stream) { }
+        public SoundPlayer(System.IO.Stream? stream) { }
         protected SoundPlayer(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext context) { }
         public SoundPlayer(string soundLocation) { }
         public bool IsLoadCompleted { get { throw null; } }
         public int LoadTimeout { get { throw null; } set { } }
         public string SoundLocation { get { throw null; } set { } }
-        public System.IO.Stream Stream { get { throw null; } set { } }
-        public object Tag { get { throw null; } set { } }
-        public event System.ComponentModel.AsyncCompletedEventHandler LoadCompleted { add { } remove { } }
-        public event System.EventHandler SoundLocationChanged { add { } remove { } }
-        public event System.EventHandler StreamChanged { add { } remove { } }
+        public System.IO.Stream? Stream { get { throw null; } set { } }
+        public object? Tag { get { throw null; } set { } }
+        public event System.ComponentModel.AsyncCompletedEventHandler? LoadCompleted { add { } remove { } }
+        public event System.EventHandler? SoundLocationChanged { add { } remove { } }
+        public event System.EventHandler? StreamChanged { add { } remove { } }
         public void Load() { }
         public void LoadAsync() { }
         protected virtual void OnLoadCompleted(System.ComponentModel.AsyncCompletedEventArgs e) { }
@@ -53,8 +53,8 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate2UI() { }
         public static void DisplayCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
         public static void DisplayCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.IntPtr hwndParent) { }
-        public static System.Security.Cryptography.X509Certificates.X509Certificate2Collection SelectFromCollection(System.Security.Cryptography.X509Certificates.X509Certificate2Collection certificates, string title, string message, System.Security.Cryptography.X509Certificates.X509SelectionFlag selectionFlag) { throw null; }
-        public static System.Security.Cryptography.X509Certificates.X509Certificate2Collection SelectFromCollection(System.Security.Cryptography.X509Certificates.X509Certificate2Collection certificates, string title, string message, System.Security.Cryptography.X509Certificates.X509SelectionFlag selectionFlag, System.IntPtr hwndParent) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2Collection SelectFromCollection(System.Security.Cryptography.X509Certificates.X509Certificate2Collection certificates, string? title, string? message, System.Security.Cryptography.X509Certificates.X509SelectionFlag selectionFlag) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2Collection SelectFromCollection(System.Security.Cryptography.X509Certificates.X509Certificate2Collection certificates, string? title, string? message, System.Security.Cryptography.X509Certificates.X509SelectionFlag selectionFlag, System.IntPtr hwndParent) { throw null; }
     }
     public enum X509SelectionFlag
     {
@@ -68,7 +68,7 @@ namespace System.Xaml.Permissions
     {
         internal XamlAccessLevel() { }
         public System.Reflection.AssemblyName AssemblyAccessToAssemblyName { get { throw null; } }
-        public string PrivateAccessToTypeName { get { throw null; } }
+        public string? PrivateAccessToTypeName { get { throw null; } }
         public static System.Xaml.Permissions.XamlAccessLevel AssemblyAccessTo(System.Reflection.Assembly assembly) { throw null; }
         public static System.Xaml.Permissions.XamlAccessLevel AssemblyAccessTo(System.Reflection.AssemblyName assemblyName) { throw null; }
         public static System.Xaml.Permissions.XamlAccessLevel PrivateAccessTo(string assemblyQualifiedTypeName) { throw null; }

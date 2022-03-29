@@ -608,6 +608,13 @@ mono_handle_unsafe_field_addr (MonoObjectHandle h, MonoClassField *field)
 	return MONO_HANDLE_SUPPRESS (((gchar *)MONO_HANDLE_RAW (h)) + field->offset);
 }
 
+/* Matches ObjectHandleOnStack in managed code */
+typedef MonoObject **MonoObjectHandleOnStack;
+
+#define HANDLE_ON_STACK_SET(handle, obj) do { \
+	*(handle) = (MonoObject*)obj; \
+	} while (0)
+
 //FIXME this should go somewhere else
 MonoStringHandle mono_string_new_handle (const char *data, MonoError *error);
 MonoArrayHandle mono_array_new_handle (MonoClass *eclass, uintptr_t n, MonoError *error);

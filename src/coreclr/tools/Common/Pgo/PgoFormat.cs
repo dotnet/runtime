@@ -13,7 +13,7 @@ namespace Internal.Pgo
     public enum PgoInstrumentationKind
     {
         // This must be kept in sync with PgoInstrumentationKind in corjit.h
-        // New InstrumentationKinds should recieve corresponding merging logic in
+        // New InstrumentationKinds should receive corresponding merging logic in
         // PgoSchemeMergeComparer and the MergeInSchemaElem functions below
 
         // Schema data types

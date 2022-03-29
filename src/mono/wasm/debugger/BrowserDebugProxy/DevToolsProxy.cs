@@ -268,7 +268,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         while (!x.IsCancellationRequested)
                         {
-                            Task task = await Task.WhenAny(pending_ops.ToArray());
+                            Task completedTask = await Task.WhenAny(pending_ops.ToArray());
 
                             if (client_initiated_close.Task.IsCompleted)
                             {
@@ -280,34 +280,34 @@ namespace Microsoft.WebAssembly.Diagnostics
                             }
 
                             //logger.LogTrace ("pump {0} {1}", task, pending_ops.IndexOf (task));
-                            if (task == pending_ops[0])
+                            if (completedTask == pending_ops[0])
                             {
-                                string msg = ((Task<string>)task).Result;
+                                string msg = ((Task<string>)completedTask).Result;
                                 if (msg != null)
                                 {
                                     pending_ops[0] = ReadOne(browser, x.Token); //queue next read
                                     ProcessBrowserMessage(msg, x.Token);
                                 }
                             }
-                            else if (task == pending_ops[1])
+                            else if (completedTask == pending_ops[1])
                             {
-                                string msg = ((Task<string>)task).Result;
+                                string msg = ((Task<string>)completedTask).Result;
                                 if (msg != null)
                                 {
                                     pending_ops[1] = ReadOne(ide, x.Token); //queue next read
                                     ProcessIdeMessage(msg, x.Token);
                                 }
                             }
-                            else if (task == pending_ops[2])
+                            else if (completedTask == pending_ops[2])
                             {
-                                bool res = ((Task<bool>)task).Result;
+                                bool res = ((Task<bool>)completedTask).Result;
                                 throw new Exception("side task must always complete with an exception, what's going on???");
                             }
                             else
                             {
                                 //must be a background task
-                                pending_ops.Remove(task);
-                                DevToolsQueue queue = GetQueueForTask(task);
+                                pending_ops.Remove(completedTask);
+                                DevToolsQueue queue = GetQueueForTask(completedTask);
                                 if (queue != null)
                                 {
                                     if (queue.TryPumpIfCurrentCompleted(x.Token, out Task tsk))

@@ -526,7 +526,7 @@ namespace
             SString::CIterator it = libName.Begin();
             if (libName.Find(it, PLATFORM_SHARED_LIB_SUFFIX_W))
             {
-                it += COUNTOF(PLATFORM_SHARED_LIB_SUFFIX_W);
+                it += ARRAY_SIZE(PLATFORM_SHARED_LIB_SUFFIX_W);
                 containsSuffix = it == libName.End() || *it == (WCHAR)'.';
             }
 
@@ -648,7 +648,7 @@ namespace
         // (both of these are typically done to smooth over cross-platform differences).
         // We try to dlopen with such variations on the original.
         const WCHAR* prefixSuffixCombinations[MaxVariationCount] = {};
-        int numberOfVariations = COUNTOF(prefixSuffixCombinations);
+        int numberOfVariations = ARRAY_SIZE(prefixSuffixCombinations);
         DetermineLibNameVariations(prefixSuffixCombinations, &numberOfVariations, wszLibName, libNameIsRelativePath);
         for (int i = 0; i < numberOfVariations; i++)
         {

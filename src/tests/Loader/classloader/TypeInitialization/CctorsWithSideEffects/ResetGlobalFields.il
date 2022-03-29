@@ -21,7 +21,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module ResetGlobalFields.exe
 // MVID: {7BF531CB-7206-4C53-A779-930294C1158F}
 .imagebase 0x00400000
 .file alignment 0x00000200

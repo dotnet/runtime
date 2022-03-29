@@ -658,7 +658,7 @@ HRESULT AllocateAndReadRemoteString(
     HANDLE hProcess,
     void * pRemotePtr,
     SIZE_T cbSize, // size of buffer to allocate + copy.
-    __deref_out_bcount(cbSize) WCHAR * * ppNewLocalBuffer
+    _Outptr_result_bytebuffer_(cbSize) WCHAR * * ppNewLocalBuffer
     )
 {
     // Make sure buffer has right geometry.
@@ -902,7 +902,7 @@ HRESULT CorpubProcess::GetProcessID(unsigned *pid)
  */
 HRESULT CorpubProcess::GetDisplayName(ULONG32 cchName,
                                       ULONG32 *pcchName,
-                                      __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[])
+                                      _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
 {
     VALIDATE_POINTER_TO_OBJECT_ARRAY_OR_NULL(szName, WCHAR, cchName, true, true);
     VALIDATE_POINTER_TO_OBJECT_OR_NULL(pcchName, ULONG32 *);
@@ -928,7 +928,7 @@ HRESULT CorpubProcess::GetDisplayName(ULONG32 cchName,
 // CorpubAppDomain
 // ******************************************
 
-CorpubAppDomain::CorpubAppDomain (__in LPWSTR szAppDomainName, ULONG Id)
+CorpubAppDomain::CorpubAppDomain (_In_ LPWSTR szAppDomainName, ULONG Id)
     : CordbCommonBase (0, enumCorpubAppDomain),
     m_pNext (NULL),
     m_szAppDomainName (szAppDomainName),
@@ -976,7 +976,7 @@ HRESULT CorpubAppDomain::GetID (ULONG32 *pId)
  */
 HRESULT CorpubAppDomain::GetName(ULONG32 cchName,
                                 ULONG32 *pcchName,
-                                __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[])
+                                _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
 {
     VALIDATE_POINTER_TO_OBJECT_ARRAY_OR_NULL(szName, WCHAR, cchName, true, true);
     VALIDATE_POINTER_TO_OBJECT_OR_NULL(pcchName, ULONG32 *);

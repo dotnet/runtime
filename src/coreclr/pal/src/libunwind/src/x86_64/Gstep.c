@@ -25,6 +25,7 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
+#include "libunwind_i.h"
 #include "unwind_i.h"
 #include <signal.h>
 
@@ -59,8 +60,11 @@ unw_step (unw_cursor_t *cursor)
   int ret, i;
 
 #if CONSERVATIVE_CHECKS
-  int val = c->validate;
-  c->validate = 1;
+  int val = 0;
+  if (c->dwarf.as == unw_local_addr_space) {
+    val = dwarf_get_validate(&c->dwarf);
+    dwarf_set_validate(&c->dwarf, 1);
+  }
 #endif
 
   Debug (1, "(cursor=%p, ip=0x%016lx, cfa=0x%016lx)\n",
@@ -71,7 +75,9 @@ unw_step (unw_cursor_t *cursor)
   ret = dwarf_step (&c->dwarf);
 
 #if CONSERVATIVE_CHECKS
-  c->validate = val;
+  if (c->dwarf.as == unw_local_addr_space) {
+    dwarf_set_validate(&c->dwarf, val);
+  }
 #endif
 
   if (ret < 0 && ret != -UNW_ENOINFO)
@@ -110,7 +116,9 @@ unw_step (unw_cursor_t *cursor)
 
       /* We could get here because of missing/bad unwind information.
          Validate all addresses before dereferencing. */
-      c->validate = 1;
+      if (c->dwarf.as == unw_local_addr_space) {
+          dwarf_set_validate(&c->dwarf, 1);
+      }
 
       Debug (13, "dwarf_step() failed (ret=%d), trying frame-chain\n", ret);
 

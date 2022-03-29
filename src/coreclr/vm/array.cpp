@@ -58,24 +58,6 @@ DWORD ArrayMethodDesc::GetAttrs()
     return (GetArrayFuncIndex() >= ARRAY_FUNC_CTOR) ? (mdPublic | mdRTSpecialName) : mdPublic;
 }
 
-/*****************************************************************************************/
-CorInfoIntrinsics ArrayMethodDesc::GetIntrinsicID()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    switch (GetArrayFuncIndex())
-    {
-    case ARRAY_FUNC_GET:
-        return CORINFO_INTRINSIC_Array_Get;
-    case ARRAY_FUNC_SET:
-        return CORINFO_INTRINSIC_Array_Set;
-    case ARRAY_FUNC_ADDRESS:
-        return CORINFO_INTRINSIC_Array_Address;
-    default:
-        return CORINFO_INTRINSIC_Illegal;
-    }
-}
-
 #ifndef DACCESS_COMPILE
 
 /*****************************************************************************************/
@@ -660,7 +642,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
                 }
                 else if (index == 0)
                 {
-                    skip = pElemMT->GetAlignedNumInstanceFieldBytes() - numPtrsInBytes;
+                    skip = pElemMT->GetNumInstanceFieldBytes() - numPtrsInBytes;
                 }
                 else
                 {
@@ -999,7 +981,7 @@ Stub *GenerateArrayOpStub(ArrayMethodDesc* pMD)
 
     static const ILStubTypes stubTypes[3] = { ILSTUB_ARRAYOP_GET, ILSTUB_ARRAYOP_SET, ILSTUB_ARRAYOP_ADDRESS };
 
-    _ASSERTE(pMD->GetArrayFuncIndex() <= COUNTOF(stubTypes));
+    _ASSERTE(pMD->GetArrayFuncIndex() <= ARRAY_SIZE(stubTypes));
     NDirectStubFlags arrayOpStubFlag = (NDirectStubFlags)stubTypes[pMD->GetArrayFuncIndex()];
 
     MethodDesc * pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(pMD->GetLoaderAllocator(),
@@ -1297,7 +1279,7 @@ MethodDesc* GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(Met
 
     // Subtract one for the non-generic IEnumerable that the generic enumerable inherits from
     unsigned int inheritanceDepth = pItfcMeth->GetMethodTable()->GetNumInterfaces() - 1;
-    PREFIX_ASSUME(0 <= inheritanceDepth && inheritanceDepth < NumItems(startingMethod));
+    PREFIX_ASSUME(0 <= inheritanceDepth && inheritanceDepth < ARRAY_SIZE(startingMethod));
 
     MethodDesc *pGenericImplementor = CoreLibBinder::GetMethod((BinderMethodID)(startingMethod[inheritanceDepth] + slot));
 

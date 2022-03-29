@@ -695,7 +695,7 @@ bool LinearScan::isContainableMemoryOp(GenTree* node)
         {
             return true;
         }
-        LclVarDsc* varDsc = &compiler->lvaTable[node->AsLclVar()->GetLclNum()];
+        const LclVarDsc* varDsc = compiler->lvaGetDesc(node->AsLclVar());
         return varDsc->lvDoNotEnregister;
     }
     return false;
@@ -1251,7 +1251,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
 bool LinearScan::isCandidateMultiRegLclVar(GenTreeLclVar* lclNode)
 {
     assert(compiler->lvaEnregMultiRegVars && lclNode->IsMultiReg());
-    LclVarDsc* varDsc = compiler->lvaGetDesc(lclNode->GetLclNum());
+    LclVarDsc* varDsc = compiler->lvaGetDesc(lclNode);
     assert(varDsc->lvPromoted);
     bool isMultiReg = (compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT);
     if (!isMultiReg)
@@ -1481,6 +1481,15 @@ Interval* LinearScan::getUpperVectorInterval(unsigned varIndex)
 //
 void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet)
 {
+    if ((tree != nullptr) && tree->IsCall())
+    {
+        if (tree->AsCall()->IsNoReturn())
+        {
+            // No point in having vector save/restore if the call will not return.
+            return;
+        }
+    }
+
     if (enregisterLocalVars && !VarSetOps::IsEmpty(compiler, largeVectorVars))
     {
         // We assume that the kill set includes at least some callee-trash registers, but
@@ -1707,7 +1716,7 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
         // address computation. In this case we need to check whether it is a last use.
         if (tree->IsLocal() && ((tree->gtFlags & GTF_VAR_DEATH) != 0))
         {
-            LclVarDsc* const varDsc = &compiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()];
+            LclVarDsc* const varDsc = compiler->lvaGetDesc(tree->AsLclVarCommon());
             if (isCandidateVar(varDsc))
             {
                 assert(varDsc->lvTracked);
@@ -2049,12 +2058,12 @@ void LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
 
         if (isFloat)
         {
-            JITDUMP("Float arg V%02u in reg %s\n", (argDsc - compiler->lvaTable), getRegName(argDsc->GetArgReg()));
+            JITDUMP("Float arg V%02u in reg %s\n", compiler->lvaGetLclNum(argDsc), getRegName(argDsc->GetArgReg()));
             compiler->raUpdateRegStateForArg(floatRegState, argDsc);
         }
         else
         {
-            JITDUMP("Int arg V%02u in reg %s\n", (argDsc - compiler->lvaTable), getRegName(argDsc->GetArgReg()));
+            JITDUMP("Int arg V%02u in reg %s\n", compiler->lvaGetLclNum(argDsc), getRegName(argDsc->GetArgReg()));
 #if FEATURE_MULTIREG_ARGS
             if (argDsc->GetOtherArgReg() != REG_NA)
             {
@@ -2186,7 +2195,7 @@ void LinearScan::buildIntervals()
             for (unsigned fieldVarNum = argDsc->lvFieldLclStart;
                  fieldVarNum < argDsc->lvFieldLclStart + argDsc->lvFieldCnt; ++fieldVarNum)
             {
-                LclVarDsc* fieldVarDsc = &(compiler->lvaTable[fieldVarNum]);
+                const LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(fieldVarNum);
                 if (fieldVarDsc->lvLRACandidate)
                 {
                     assert(fieldVarDsc->lvTracked);
@@ -2472,8 +2481,8 @@ void LinearScan::buildIntervals()
                 unsigned        varIndex = 0;
                 while (iter.NextElem(&varIndex))
                 {
-                    unsigned   varNum = compiler->lvaTrackedToVarNum[varIndex];
-                    LclVarDsc* varDsc = compiler->lvaTable + varNum;
+                    unsigned         varNum = compiler->lvaTrackedToVarNum[varIndex];
+                    const LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
                     assert(isCandidateVar(varDsc));
                     Interval*    interval = getIntervalForLocalVar(varIndex);
                     RefPosition* pos =
@@ -2491,7 +2500,7 @@ void LinearScan::buildIntervals()
             while (iter.NextElem(&varIndex))
             {
                 unsigned         varNum = compiler->lvaTrackedToVarNum[varIndex];
-                LclVarDsc* const varDsc = &compiler->lvaTable[varNum];
+                LclVarDsc* const varDsc = compiler->lvaGetDesc(varNum);
                 assert(isCandidateVar(varDsc));
                 RefPosition* const lastRP = getIntervalForLocalVar(varIndex)->lastRefPosition;
                 // We should be able to assert that lastRP is non-null if it is live-out, but sometimes liveness
@@ -2526,7 +2535,7 @@ void LinearScan::buildIntervals()
             // If we need to KeepAliveAndReportThis, add a dummy exposed use of it at the end
             unsigned keepAliveVarNum = compiler->info.compThisArg;
             assert(compiler->info.compIsStatic == false);
-            LclVarDsc* varDsc = compiler->lvaTable + keepAliveVarNum;
+            const LclVarDsc* varDsc = compiler->lvaGetDesc(keepAliveVarNum);
             if (isCandidateVar(varDsc))
             {
                 JITDUMP("Adding exposed use of this, for lvaKeepAliveAndReportThis\n");
@@ -2544,7 +2553,7 @@ void LinearScan::buildIntervals()
             while (iter.NextElem(&varIndex))
             {
                 unsigned   varNum   = compiler->lvaTrackedToVarNum[varIndex];
-                LclVarDsc* varDsc   = compiler->lvaTable + varNum;
+                LclVarDsc* varDsc   = compiler->lvaGetDesc(varNum);
                 Interval*  interval = getIntervalForLocalVar(varIndex);
                 assert(interval->isWriteThru);
                 weight_t weight = varDsc->lvRefCntWtd();
@@ -2969,7 +2978,7 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
     else if (operand->IsMultiRegLclVar())
     {
         assert(compiler->lvaEnregMultiRegVars);
-        LclVarDsc* varDsc      = compiler->lvaGetDesc(operand->AsLclVar()->GetLclNum());
+        LclVarDsc* varDsc      = compiler->lvaGetDesc(operand->AsLclVar());
         LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + multiRegIdx);
         interval               = getIntervalForLocalVar(fieldVarDsc->lvVarIndex);
         if (operand->AsLclVar()->IsLastUse(multiRegIdx))
@@ -3102,9 +3111,10 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
         // Can be contained for MultiplyAdd on arm64
         return BuildBinaryUses(node->AsOp(), candidates);
     }
-    if (node->OperIs(GT_NEG))
+    if (node->OperIs(GT_NEG, GT_CAST, GT_LSH))
     {
-        // Can be contained for MultiplyAdd on arm64
+        // GT_NEG can be contained for MultiplyAdd on arm64
+        // GT_CAST and GT_LSH for ADD with sign/zero extension
         return BuildOperandUses(node->gtGetOp1(), candidates);
     }
 #endif
@@ -3341,7 +3351,7 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
     GenTree*     op1      = storeLoc->gtGetOp1();
     unsigned int dstCount = storeLoc->GetFieldCount(compiler);
     unsigned int srcCount = dstCount;
-    LclVarDsc*   varDsc   = compiler->lvaGetDesc(storeLoc->GetLclNum());
+    LclVarDsc*   varDsc   = compiler->lvaGetDesc(storeLoc);
 
     assert(compiler->lvaEnregMultiRegVars);
     assert(storeLoc->OperGet() == GT_STORE_LCL_VAR);
@@ -3418,7 +3428,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     GenTree*     op1 = storeLoc->gtGetOp1();
     int          srcCount;
     RefPosition* singleUseRef = nullptr;
-    LclVarDsc*   varDsc       = compiler->lvaGetDesc(storeLoc->GetLclNum());
+    LclVarDsc*   varDsc       = compiler->lvaGetDesc(storeLoc);
 
     if (storeLoc->IsMultiRegLclVar())
     {
@@ -3455,8 +3465,12 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
             {
                 // Need an additional register to create a SIMD8 from EAX/EDX without SSE4.1.
                 buildInternalFloatRegisterDefForNode(storeLoc, allSIMDRegs());
-                // This internal register must be different from the target register.
-                setInternalRegsDelayFree = true;
+
+                if (isCandidateVar(varDsc))
+                {
+                    // This internal register must be different from the target register.
+                    setInternalRegsDelayFree = true;
+                }
             }
         }
 #endif // FEATURE_SIMD && TARGET_X86
@@ -3630,12 +3644,11 @@ int LinearScan::BuildReturn(GenTree* tree)
                 else
                 {
                     assert(compiler->lvaEnregMultiRegVars);
-                    LclVarDsc* varDsc = compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum());
+                    LclVarDsc* varDsc = compiler->lvaGetDesc(op1->AsLclVar());
                     nonCallRetTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(),
                                                                   compiler->info.compCallConv);
                     pRetTypeDesc = &nonCallRetTypeDesc;
-                    assert(compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum())->lvFieldCnt ==
-                           nonCallRetTypeDesc.GetReturnRegCount());
+                    assert(compiler->lvaGetDesc(op1->AsLclVar())->lvFieldCnt == nonCallRetTypeDesc.GetReturnRegCount());
                 }
                 srcCount = pRetTypeDesc->GetReturnRegCount();
                 // For any source that's coming from a different register file, we need to ensure that

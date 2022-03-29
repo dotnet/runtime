@@ -884,7 +884,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 // Get the sites within the forest
                 // call DsListSites
-                IntPtr functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsListSitesW");
+                IntPtr functionPtr = global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsListSitesW");
                 if (functionPtr == (IntPtr)0)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -921,7 +921,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         if (sitesPtr != IntPtr.Zero)
                         {
                             // call DsFreeNameResultW
-                            functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
+                            functionPtr = global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
                             if (functionPtr == (IntPtr)0)
                             {
                                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());

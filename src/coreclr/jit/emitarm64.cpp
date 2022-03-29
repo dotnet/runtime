@@ -2359,6 +2359,14 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     return false; // not encodable
 }
 
+// true if 'imm' can be encoded as an offset in a ldp/stp instruction
+/*static*/ bool emitter::canEncodeLoadOrStorePairOffset(INT64 imm, emitAttr attr)
+{
+    assert((attr == EA_4BYTE) || (attr == EA_8BYTE) || (attr == EA_16BYTE));
+    const int size = EA_SIZE_IN_BYTES(attr);
+    return (imm % size == 0) && (imm >= -64 * size) && (imm < 64 * size);
+}
+
 /************************************************************************
  *
  *   A helper method to return the natural scale for an EA 'size'
@@ -3649,21 +3657,20 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
     insFormat fmt = IF_NONE;
 
     /* Figure out the encoding format of the instruction */
-    switch (ins)
+    if (ins == INS_BREAKPOINT)
     {
-        case INS_brk:
-            if ((imm & 0x0000ffff) == imm)
-            {
-                fmt = IF_SI_0A;
-            }
-            else
-            {
-                assert(!"Instruction cannot be encoded: IF_SI_0A");
-            }
-            break;
-        default:
-            unreached();
-            break;
+        if ((imm & 0x0000ffff) == imm)
+        {
+            fmt = IF_SI_0A;
+        }
+        else
+        {
+            assert(!"Instruction cannot be encoded: IF_SI_0A");
+        }
+    }
+    else
+    {
+        unreached();
     }
     assert(fmt != IF_NONE);
 
@@ -5858,7 +5865,7 @@ void emitter::emitIns_R_R_R(
 
         case INS_adds:
         case INS_subs:
-            emitIns_R_R_R_I(ins, attr, reg1, reg2, reg3, 0, INS_OPTS_NONE);
+            emitIns_R_R_R_I(ins, attr, reg1, reg2, reg3, 0, opt);
             return;
 
         case INS_cmeq:
@@ -8588,7 +8595,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     {
         /* Indirect call, virtual calls */
 
-        id = emitNewInstrCallInd(argCnt, disp, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize);
+        id = emitNewInstrCallInd(argCnt, 0 /* disp */, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize);
     }
     else
     {
@@ -11459,15 +11466,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // then add "bkpt" instruction.
                 instrDescAlign* alignInstr = (instrDescAlign*)id;
 
-                if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) &&
-                    (alignInstr->idaIG != alignInstr->idaLoopHeadPredIG) && !skipIns)
+                if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) && alignInstr->isPlacedAfterJmp &&
+                    !skipIns)
                 {
                     // There is no good way to squeeze in "bkpt" as well as display it
                     // in the disassembly because there is no corresponding instrDesc for
                     // it. As such, leave it as is, the "0xD43E0000" bytecode will be seen
                     // next to the nop instruction in disasm.
                     // e.g. D43E0000          align   [4 bytes for IG07]
-                    // ins = INS_bkpt;
+                    ins = INS_BREAKPOINT;
+                    fmt = IF_SI_0A;
                 }
 #endif
             }
@@ -12063,22 +12071,25 @@ void emitter::emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm)
     assert(insOptsNone(opt) || insOptsAnyExtend(opt) || (opt == INS_OPTS_LSL));
 
     // size is based on the extend option, not the instr size.
-    emitAttr size = insOpts32BitExtend(opt) ? EA_4BYTE : EA_8BYTE;
+    // Assume INS_OPTS_NONE and INS_OPTS_LSL are 64bit as they usually are.
+    emitAttr size = (insOptsNone(opt) || insOptsLSL(opt) || insOpts64BitExtend(opt)) ? EA_8BYTE : EA_4BYTE;
 
     if (strictArmAsm)
     {
-        if (insOptsNone(opt))
+        if (insOptsNone(opt) || (insOptsLSL(opt) && imm == 0))
         {
             emitDispReg(reg, size, false);
         }
         else
         {
             emitDispReg(reg, size, true);
-            if (opt == INS_OPTS_LSL)
+
+            if (insOptsLSL(opt))
                 printf("LSL");
             else
                 emitDispExtendOpts(opt);
-            if ((imm > 0) || (opt == INS_OPTS_LSL))
+
+            if (imm > 0)
             {
                 printf(" ");
                 emitDispImm(imm, false);
@@ -13421,12 +13432,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
     if (varx >= 0 && emitComp->opts.varNames)
     {
-        LclVarDsc*  varDsc;
-        const char* varName;
-
-        assert((unsigned)varx < emitComp->lvaCount);
-        varDsc  = emitComp->lvaTable + varx;
-        varName = emitComp->compLocalVarName(varx, offs);
+        const char* varName = emitComp->compLocalVarName(varx, offs);
 
         if (varName)
         {
@@ -13594,9 +13600,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             // no logic here to track local variable lifetime changes, like we do in the contained case
             // above. E.g., for a `str r0,[r1]` for byref `r1` to local `V01`, we won't store the local
             // `V01` and so the emitter can't update the GC lifetime for `V01` if this is a variable birth.
-            GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
-            unsigned             lclNum  = varNode->GetLclNum();
-            LclVarDsc*           varDsc  = emitComp->lvaGetDesc(lclNum);
+            LclVarDsc* varDsc = emitComp->lvaGetDesc(addr->AsLclVarCommon());
             assert(!varDsc->lvTracked);
         }
 #endif // DEBUG
@@ -14617,7 +14621,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_SN_0A: // bkpt, brk, nop
+        case IF_SN_0A: // nop, yield, align
 
             if (id->idIns() == INS_align)
             {

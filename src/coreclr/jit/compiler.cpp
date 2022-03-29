@@ -2240,169 +2240,27 @@ void Compiler::compSetProcessor()
 
 #endif // TARGET_X86
 
-    // The VM will set the ISA flags depending on actual hardware support.
-    // We then select which ISAs to leave enabled based on the JIT config.
-    // The exception to this is the dummy Vector64/128/256 ISAs, which must be added explicitly.
+    // The VM will set the ISA flags depending on actual hardware support
+    // and any specified config switches specified by the user. The exception
+    // here is for certain "artificial ISAs" such as Vector64/128/256 where they
+    // don't actually exist. The JIT is in charge of adding those and ensuring
+    // the total sum of flags is still valid.
+
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
-    opts.compSupportsISA                            = 0;
-    opts.compSupportsISAReported                    = 0;
-    opts.compSupportsISAExactly                     = 0;
 
-#ifdef TARGET_XARCH
-    if (JitConfig.EnableHWIntrinsic())
-    {
-        // Dummy ISAs for simplifying the JIT code
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
-    }
+    opts.compSupportsISA         = 0;
+    opts.compSupportsISAReported = 0;
+    opts.compSupportsISAExactly  = 0;
 
-    if (!JitConfig.EnableSSE())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE_X64);
-#endif
-    }
-
-    if (!JitConfig.EnableSSE2())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE2);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE2_X64);
-#endif
-    }
-
-    if (!JitConfig.EnableAES())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AES);
-    }
-
-    if (!JitConfig.EnablePCLMULQDQ())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_PCLMULQDQ);
-    }
-
-    // We need to additionally check that COMPlus_EnableSSE3_4 is set, as that
-    // is a prexisting config flag that controls the SSE3+ ISAs
-    if (!JitConfig.EnableSSE3() || !JitConfig.EnableSSE3_4())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE3);
-    }
-
-    if (!JitConfig.EnableSSSE3())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSSE3);
-    }
-
-    if (!JitConfig.EnableSSE41())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE41);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE41_X64);
-#endif
-    }
-
-    if (!JitConfig.EnableSSE42())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE42);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE42_X64);
-#endif
-    }
-
-    if (!JitConfig.EnablePOPCNT())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_POPCNT);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_POPCNT_X64);
-#endif
-    }
-
-    if (!JitConfig.EnableAVX())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX);
-    }
-
-    if (!JitConfig.EnableFMA())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_FMA);
-    }
-
-    if (!JitConfig.EnableAVX2())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX2);
-    }
-
-    if (!JitConfig.EnableAVXVNNI())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVXVNNI);
-    }
-
-    if (!JitConfig.EnableLZCNT())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_LZCNT);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_LZCNT_X64);
-#endif // TARGET_AMD64
-    }
-
-    if (!JitConfig.EnableBMI1())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI1);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI1_X64);
-#endif // TARGET_AMD64
-    }
-
-    if (!JitConfig.EnableBMI2())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI2);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI2_X64);
-#endif // TARGET_AMD64
-    }
-
+#if defined(TARGET_XARCH)
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
 #endif // TARGET_XARCH
+
 #if defined(TARGET_ARM64)
-    if (JitConfig.EnableHWIntrinsic())
-    {
-        // Dummy ISAs for simplifying the JIT code
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-    }
-
-    if (!JitConfig.EnableArm64Aes())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Aes);
-    }
-
-    if (!JitConfig.EnableArm64Atomics())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Atomics);
-    }
-
-    if (!JitConfig.EnableArm64Crc32())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Crc32);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Crc32_Arm64);
-    }
-
-    if (!JitConfig.EnableArm64Sha1())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Sha1);
-    }
-
-    if (!JitConfig.EnableArm64Sha256())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Sha256);
-    }
-
-    if (!JitConfig.EnableArm64AdvSimd())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AdvSimd);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AdvSimd_Arm64);
-    }
-#endif
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+#endif // TARGET_ARM64
 
     instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
     opts.setSupportedISAs(instructionSetFlags);
@@ -4436,8 +4294,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         if (info.compPublishStubParam)
         {
             assert(lvaStubArgumentVar == BAD_VAR_NUM);
-            lvaStubArgumentVar                  = lvaGrabTempWithImplicitUse(false DEBUGARG("stub argument"));
-            lvaTable[lvaStubArgumentVar].lvType = TYP_I_IMPL;
+            lvaStubArgumentVar                     = lvaGrabTempWithImplicitUse(false DEBUGARG("stub argument"));
+            lvaGetDesc(lvaStubArgumentVar)->lvType = TYP_I_IMPL;
             // TODO-CQ: there is no need to mark it as doNotEnreg. There are no stores for this local
             // before codegen so liveness and LSRA mark it as "liveIn" and always allocate a stack slot for it.
             // However, it would be better to process it like other argument locals and keep it in
@@ -4592,7 +4450,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         {
             for (unsigned i = 0; i < info.compArgsCount; i++)
             {
-                if (lvaTable[i].TypeGet() == TYP_REF)
+                if (lvaGetDesc(i)->TypeGet() == TYP_REF)
                 {
                     // confirm that the argument is a GC pointer (for debugging (GC stress))
                     GenTree*          op   = gtNewLclvNode(i, TYP_REF);
@@ -4617,15 +4475,15 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         {
             lvaReturnSpCheck = lvaGrabTempWithImplicitUse(false DEBUGARG("ReturnSpCheck"));
             lvaSetVarDoNotEnregister(lvaReturnSpCheck, DoNotEnregisterReason::ReturnSpCheck);
-            lvaTable[lvaReturnSpCheck].lvType = TYP_I_IMPL;
+            lvaGetDesc(lvaReturnSpCheck)->lvType = TYP_I_IMPL;
         }
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
 #if defined(DEBUG) && defined(TARGET_X86)
         if (opts.compStackCheckOnCall)
         {
-            lvaCallSpCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
-            lvaTable[lvaCallSpCheck].lvType = TYP_I_IMPL;
+            lvaCallSpCheck                     = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
+            lvaGetDesc(lvaCallSpCheck)->lvType = TYP_I_IMPL;
         }
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
@@ -4898,10 +4756,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_COMPUTE_REACHABILITY, &Compiler::fgComputeReachability);
 
+        // Scale block weights and mark run rarely blocks.
+        //
+        DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, &Compiler::optSetBlockWeights);
+
         // Discover and classify natural loops (e.g. mark iterative loops as such). Also marks loop blocks
         // and sets bbWeight to the loop nesting levels.
         //
-        DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoops);
+        DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoopsPhase);
 
         // Clone loops with optimization opportunities, and choose one based on dynamic condition evaluation.
         //
@@ -5019,7 +4881,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             //
             DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
 
-#if ASSERTION_PROP
             if (doAssertionProp)
             {
                 // Assertion propagation
@@ -5038,7 +4899,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 //
                 DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, rangePhase);
             }
-#endif // ASSERTION_PROP
 
             if (fgModified)
             {
@@ -5242,28 +5102,45 @@ void Compiler::placeLoopAlignInstructions()
     }
 
     int loopsToProcess = loopAlignCandidates;
+    JITDUMP("Inside placeLoopAlignInstructions for %d loops.\n", loopAlignCandidates);
 
     // Add align only if there were any loops that needed alignment
-    weight_t    minBlockSoFar = BB_MAX_WEIGHT;
-    BasicBlock* bbHavingAlign = nullptr;
+    weight_t               minBlockSoFar         = BB_MAX_WEIGHT;
+    BasicBlock*            bbHavingAlign         = nullptr;
+    BasicBlock::loopNumber currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
+
+    if ((fgFirstBB != nullptr) && fgFirstBB->isLoopAlign())
+    {
+        // Adding align instruction in prolog is not supported
+        // hence just remove that loop from our list.
+        loopsToProcess--;
+    }
+
     for (BasicBlock* const block : Blocks())
     {
-        if ((block == fgFirstBB) && block->isLoopAlign())
+        if (currentAlignedLoopNum != BasicBlock::NOT_IN_LOOP)
         {
-            // Adding align instruction in prolog is not supported
-            // hence skip the align block if it is the first block.
-            loopsToProcess--;
-            continue;
+            // We've been processing blocks within an aligned loop. Are we out of that loop now?
+            if (currentAlignedLoopNum != block->bbNatLoopNum)
+            {
+                currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
+            }
         }
 
-        // If there is a unconditional jump
-        if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS))
+        // If there is a unconditional jump (which is not part of callf/always pair)
+        if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
         {
+            // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
             {
-                minBlockSoFar = block->bbWeight;
-                bbHavingAlign = block;
-                JITDUMP(FMT_BB ", bbWeight=" FMT_WT " ends with unconditional 'jmp' \n", block->bbNum, block->bbWeight);
+                if (currentAlignedLoopNum == BasicBlock::NOT_IN_LOOP)
+                {
+                    // Ok to insert align instruction in this block because it is not part of any aligned loop.
+                    minBlockSoFar = block->bbWeight;
+                    bbHavingAlign = block;
+                    JITDUMP(FMT_BB ", bbWeight=" FMT_WT " ends with unconditional 'jmp' \n", block->bbNum,
+                            block->bbWeight);
+                }
             }
         }
 
@@ -5284,8 +5161,9 @@ void Compiler::placeLoopAlignInstructions()
             }
 
             bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
-            minBlockSoFar = BB_MAX_WEIGHT;
-            bbHavingAlign = nullptr;
+            minBlockSoFar         = BB_MAX_WEIGHT;
+            bbHavingAlign         = nullptr;
+            currentAlignedLoopNum = block->bbNext->bbNatLoopNum;
 
             if (--loopsToProcess == 0)
             {
@@ -5318,11 +5196,38 @@ void Compiler::generatePatchpointInfo()
     const unsigned        patchpointInfoSize = PatchpointInfo::ComputeSize(info.compLocalsCount);
     PatchpointInfo* const patchpointInfo     = (PatchpointInfo*)info.compCompHnd->allocateArray(patchpointInfoSize);
 
-    // The +TARGET_POINTER_SIZE here is to account for the extra slot the runtime
-    // creates when it simulates calling the OSR method (the "pseudo return address" slot).
-    patchpointInfo->Initialize(info.compLocalsCount, codeGen->genSPtoFPdelta() + TARGET_POINTER_SIZE);
+    // Patchpoint offsets always refer to "virtual frame offsets".
+    //
+    // For x64 this falls out because Tier0 frames are always FP frames, and so the FP-relative
+    // offset is what we want.
+    //
+    // For arm64, if the frame pointer is not at the top of the frame, we need to adjust the
+    // offset.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
-    JITDUMP("--OSR--- FP-SP delta is %d\n", patchpointInfo->FpToSpDelta());
+#if defined(TARGET_AMD64)
+    // We add +TARGET_POINTER_SIZE here is to account for the slot that Jit_Patchpoint
+    // creates when it simulates calling the OSR method (the "pseudo return address" slot).
+    // This is effectively a new slot at the bottom of the Tier0 frame.
+    //
+    const int totalFrameSize = codeGen->genTotalFrameSize() + TARGET_POINTER_SIZE;
+    const int offsetAdjust   = 0;
+#elif defined(TARGET_ARM64)
+    // SP is not manipulated by calls so no frame size adjustment needed.
+    // Local Offsets may need adjusting, if FP is at bottom of frame.
+    //
+    const int totalFrameSize = codeGen->genTotalFrameSize();
+    const int offsetAdjust   = codeGen->genSPtoFPdelta() - totalFrameSize;
+#else
+    NYI("patchpoint info generation");
+    const int offsetAdjust   = 0;
+    const int totalFrameSize = 0;
+#endif
+
+    patchpointInfo->Initialize(info.compLocalsCount, totalFrameSize);
+
+    JITDUMP("--OSR--- Total Frame Size %d, local offset adjust is %d\n", patchpointInfo->TotalFrameSize(),
+            offsetAdjust);
 
     // We record offsets for all the "locals" here. Could restrict
     // this to just the IL locals with some extra logic, and save a bit of space,
@@ -5336,7 +5241,7 @@ void Compiler::generatePatchpointInfo()
         assert(varDsc->lvFramePointerBased);
 
         // Record FramePtr relative offset (no localloc yet)
-        patchpointInfo->SetOffset(lclNum, varDsc->GetStackOffset());
+        patchpointInfo->SetOffset(lclNum, varDsc->GetStackOffset() + offsetAdjust);
 
         // Note if IL stream contained an address-of that potentially leads to exposure.
         // This bit of IL may be skipped by OSR partial importation.
@@ -5345,7 +5250,7 @@ void Compiler::generatePatchpointInfo()
             patchpointInfo->SetIsExposed(lclNum);
         }
 
-        JITDUMP("--OSR-- V%02u is at offset %d%s\n", lclNum, patchpointInfo->Offset(lclNum),
+        JITDUMP("--OSR-- V%02u is at virtual offset %d%s\n", lclNum, patchpointInfo->Offset(lclNum),
                 patchpointInfo->IsExposed(lclNum) ? " (exposed)" : "");
     }
 
@@ -5354,31 +5259,31 @@ void Compiler::generatePatchpointInfo()
     if (lvaReportParamTypeArg())
     {
         const int offset = lvaCachedGenericContextArgOffset();
-        patchpointInfo->SetGenericContextArgOffset(offset);
-        JITDUMP("--OSR-- cached generic context offset is FP %d\n", patchpointInfo->GenericContextArgOffset());
+        patchpointInfo->SetGenericContextArgOffset(offset + offsetAdjust);
+        JITDUMP("--OSR-- cached generic context virtual offset is %d\n", patchpointInfo->GenericContextArgOffset());
     }
 
     if (lvaKeepAliveAndReportThis())
     {
         const int offset = lvaCachedGenericContextArgOffset();
-        patchpointInfo->SetKeptAliveThisOffset(offset);
-        JITDUMP("--OSR-- kept-alive this offset is FP %d\n", patchpointInfo->KeptAliveThisOffset());
+        patchpointInfo->SetKeptAliveThisOffset(offset + offsetAdjust);
+        JITDUMP("--OSR-- kept-alive this virtual offset is %d\n", patchpointInfo->KeptAliveThisOffset());
     }
 
     if (compGSReorderStackLayout)
     {
         assert(lvaGSSecurityCookie != BAD_VAR_NUM);
         LclVarDsc* const varDsc = lvaGetDesc(lvaGSSecurityCookie);
-        patchpointInfo->SetSecurityCookieOffset(varDsc->GetStackOffset());
-        JITDUMP("--OSR-- security cookie V%02u offset is FP %d\n", lvaGSSecurityCookie,
+        patchpointInfo->SetSecurityCookieOffset(varDsc->GetStackOffset() + offsetAdjust);
+        JITDUMP("--OSR-- security cookie V%02u virtual offset is %d\n", lvaGSSecurityCookie,
                 patchpointInfo->SecurityCookieOffset());
     }
 
     if (lvaMonAcquired != BAD_VAR_NUM)
     {
         LclVarDsc* const varDsc = lvaGetDesc(lvaMonAcquired);
-        patchpointInfo->SetMonitorAcquiredOffset(varDsc->GetStackOffset());
-        JITDUMP("--OSR-- monitor acquired V%02u offset is FP %d\n", lvaMonAcquired,
+        patchpointInfo->SetMonitorAcquiredOffset(varDsc->GetStackOffset() + offsetAdjust);
+        JITDUMP("--OSR-- monitor acquired V%02u virtual offset is %d\n", lvaMonAcquired,
                 patchpointInfo->MonitorAcquiredOffset());
     }
 
@@ -5426,20 +5331,16 @@ void Compiler::ResetOptAnnotations()
 //    The intent of this method is to update loop structure annotations, and those
 //    they depend on; these annotations may have become stale during optimization,
 //    and need to be up-to-date before running another iteration of optimizations.
-
+//
 void Compiler::RecomputeLoopInfo()
 {
     assert(opts.optRepeat);
     assert(JitConfig.JitOptRepeatCount() > 0);
     // Recompute reachability sets, dominators, and loops.
-    optLoopCount   = 0;
+    optResetLoopInfo();
     fgDomsComputed = false;
-    for (BasicBlock* const block : Blocks())
-    {
-        block->bbFlags &= ~BBF_LOOP_FLAGS;
-        block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
-    }
     fgComputeReachability();
+    optSetBlockWeights();
     // Rebuild the loop tree annotations themselves
     optFindLoops();
 }
@@ -5565,6 +5466,10 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         info.compPatchpointInfo = info.compCompHnd->getOSRInfo(&info.compILEntry);
         assert(info.compPatchpointInfo != nullptr);
     }
+
+#if defined(TARGET_ARM64)
+    compFrameInfo = {0};
+#endif
 
     virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_CORERT_ABI));
 
@@ -6155,7 +6060,7 @@ unsigned adler32(unsigned adler, char* buf, unsigned int len)
 }
 #endif
 
-unsigned getMethodBodyChecksum(__in_z char* code, int size)
+unsigned getMethodBodyChecksum(_In_z_ char* code, int size)
 {
 #ifdef PSEUDORANDOM_NOP_INSERTION
     return adler32(0, code, size);
@@ -6341,6 +6246,47 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     compInitDebuggingInfo();
 
+    // If are an altjit and have patchpoint info, we might need to tweak the frame size
+    // so it's plausible for the altjit architecture.
+    //
+    if (!info.compMatchedVM && compileFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+    {
+        assert(info.compLocalsCount == info.compPatchpointInfo->NumberOfLocals());
+        const int totalFrameSize = info.compPatchpointInfo->TotalFrameSize();
+
+        int frameSizeUpdate = 0;
+
+#if defined(TARGET_AMD64)
+        if ((totalFrameSize % 16) != 8)
+        {
+            frameSizeUpdate = 8;
+        }
+#elif defined(TARGET_ARM64)
+        if ((totalFrameSize % 16) != 0)
+        {
+            frameSizeUpdate = 8;
+        }
+#endif
+        if (frameSizeUpdate != 0)
+        {
+            JITDUMP("Mismatched altjit + OSR -- updating tier0 frame size from %d to %d\n", totalFrameSize,
+                    totalFrameSize + frameSizeUpdate);
+
+            // Allocate a local copy with altered frame size.
+            //
+            const unsigned        patchpointInfoSize = PatchpointInfo::ComputeSize(info.compLocalsCount);
+            PatchpointInfo* const newInfo =
+                (PatchpointInfo*)getAllocator(CMK_Unknown).allocate<char>(patchpointInfoSize);
+
+            newInfo->Initialize(info.compLocalsCount, totalFrameSize + frameSizeUpdate);
+            newInfo->Copy(info.compPatchpointInfo);
+
+            // Swap it in place.
+            //
+            info.compPatchpointInfo = newInfo;
+        }
+    }
+
 #ifdef DEBUG
     if (compIsForInlining())
     {
@@ -6472,6 +6418,24 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         {
             const bool patchpointsOK = compCanHavePatchpoints(&reason);
             assert(patchpointsOK || (reason != nullptr));
+
+#ifdef DEBUG
+            // Optionally disable OSR by method hash.
+            //
+            if (patchpointsOK && compHasBackwardJump)
+            {
+                static ConfigMethodRange JitEnableOsrRange;
+                JitEnableOsrRange.EnsureInit(JitConfig.JitEnableOsrRange());
+                const unsigned hash = impInlineRoot()->info.compMethodHash();
+                if (!JitEnableOsrRange.Contains(hash))
+                {
+                    JITDUMP("Disabling OSR -- Method hash 0x%08x not within range ", hash);
+                    JITDUMPEXEC(JitEnableOsrRange.Dump());
+                    JITDUMP("\n");
+                    reason = "OSR disabled by JitEnableOsrRange";
+                }
+            }
+#endif
         }
 
         if (reason != nullptr)
@@ -7790,9 +7754,9 @@ CompTimeInfo::CompTimeInfo(unsigned byteCodeBytes)
     }
 
 #if MEASURE_CLRAPI_CALLS
-    assert(ARRAYSIZE(m_perClrAPIcalls) == API_ICorJitInfo_Names::API_COUNT);
-    assert(ARRAYSIZE(m_perClrAPIcycles) == API_ICorJitInfo_Names::API_COUNT);
-    assert(ARRAYSIZE(m_maxClrAPIcycles) == API_ICorJitInfo_Names::API_COUNT);
+    assert(ArrLen(m_perClrAPIcalls) == API_ICorJitInfo_Names::API_COUNT);
+    assert(ArrLen(m_perClrAPIcycles) == API_ICorJitInfo_Names::API_COUNT);
+    assert(ArrLen(m_maxClrAPIcycles) == API_ICorJitInfo_Names::API_COUNT);
     for (int i = 0; i < API_ICorJitInfo_Names::API_COUNT; i++)
     {
         m_perClrAPIcalls[i]  = 0;
@@ -7968,7 +7932,7 @@ void CompTimeSummaryInfo::Print(FILE* f)
                 extraHdr2);
 
         // Ensure that at least the names array and the Phases enum have the same number of entries:
-        assert(_countof(PhaseNames) == PHASE_NUMBER_OF);
+        assert(ArrLen(PhaseNames) == PHASE_NUMBER_OF);
         for (int i = 0; i < PHASE_NUMBER_OF; i++)
         {
             double phase_tot_ms = (((double)m_total.m_cyclesByPhase[i]) / countsPerSec) * 1000.0;
@@ -8031,7 +7995,7 @@ void CompTimeSummaryInfo::Print(FILE* f)
         fprintf(f, "     PHASE                            inv/meth Mcycles    time (ms)  %% of total\n");
         fprintf(f, "     --------------------------------------------------------------------------------------\n");
         // Ensure that at least the names array and the Phases enum have the same number of entries:
-        assert(_countof(PhaseNames) == PHASE_NUMBER_OF);
+        assert(ArrLen(PhaseNames) == PHASE_NUMBER_OF);
         for (int i = 0; i < PHASE_NUMBER_OF; i++)
         {
             double phase_tot_ms = (((double)m_filtered.m_cyclesByPhase[i]) / countsPerSec) * 1000.0;
@@ -8763,7 +8727,7 @@ void cVarDsc(Compiler* comp, LclVarDsc* varDsc)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *VarDsc %u\n", sequenceNumber++);
-    unsigned lclNum = (unsigned)(varDsc - comp->lvaTable);
+    unsigned lclNum = comp->lvaGetLclNum(varDsc);
     comp->lvaDumpEntry(lclNum, Compiler::FINAL_FRAME_LAYOUT);
 }
 
@@ -8827,29 +8791,32 @@ void cLiveness(Compiler* comp)
 void cCVarSet(Compiler* comp, VARSET_VALARG_TP vars)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== dCVarSet %u\n", sequenceNumber++);
+    printf("===================================================================== *CVarSet %u\n", sequenceNumber++);
     dumpConvertedVarSet(comp, vars);
     printf("\n"); // dumpConvertedVarSet() doesn't emit a trailing newline
 }
 
-void cLoop(Compiler* comp, Compiler::LoopDsc* loop)
+void cLoop(Compiler* comp, unsigned loopNum)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== Loop %u\n", sequenceNumber++);
-    printf("HEAD   " FMT_BB "\n", loop->lpHead->bbNum);
-    printf("TOP    " FMT_BB "\n", loop->lpTop->bbNum);
-    printf("ENTRY  " FMT_BB "\n", loop->lpEntry->bbNum);
-    if (loop->lpExitCnt == 1)
-    {
-        printf("EXIT   " FMT_BB "\n", loop->lpExit->bbNum);
-    }
-    else
-    {
-        printf("EXITS  %u\n", loop->lpExitCnt);
-    }
-    printf("BOTTOM " FMT_BB "\n", loop->lpBottom->bbNum);
+    printf("===================================================================== *Loop %u\n", sequenceNumber++);
+    comp->optPrintLoopInfo(loopNum, /* verbose */ true);
+    printf("\n");
+}
 
-    comp->fgDispBasicBlocks(loop->lpHead, loop->lpBottom, true);
+void cLoopPtr(Compiler* comp, const Compiler::LoopDsc* loop)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *LoopPtr %u\n", sequenceNumber++);
+    comp->optPrintLoopInfo(loop, /* verbose */ true);
+    printf("\n");
+}
+
+void cLoops(Compiler* comp)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Loops %u\n", sequenceNumber++);
+    comp->optPrintLoopTable();
 }
 
 void dBlock(BasicBlock* block)
@@ -8947,9 +8914,19 @@ void dCVarSet(VARSET_VALARG_TP vars)
     cCVarSet(JitTls::GetCompiler(), vars);
 }
 
-void dLoop(Compiler::LoopDsc* loop)
+void dLoop(unsigned loopNum)
 {
-    cLoop(JitTls::GetCompiler(), loop);
+    cLoop(JitTls::GetCompiler(), loopNum);
+}
+
+void dLoopPtr(const Compiler::LoopDsc* loop)
+{
+    cLoopPtr(JitTls::GetCompiler(), loop);
+}
+
+void dLoops()
+{
+    cLoops(JitTls::GetCompiler());
 }
 
 void dRegMask(regMaskTP mask)
@@ -8985,8 +8962,6 @@ BasicBlock* dbBlock;
 
 GenTree* dFindTree(GenTree* tree, unsigned id)
 {
-    GenTree* child;
-
     if (tree == nullptr)
     {
         return nullptr;
@@ -8998,18 +8973,13 @@ GenTree* dFindTree(GenTree* tree, unsigned id)
         return tree;
     }
 
-    unsigned childCount = tree->NumChildren();
-    for (unsigned childIndex = 0; childIndex < childCount; childIndex++)
-    {
-        child = tree->GetChild(childIndex);
+    GenTree* child = nullptr;
+    tree->VisitOperands([&child, id](GenTree* operand) -> GenTree::VisitResult {
         child = dFindTree(child, id);
-        if (child != nullptr)
-        {
-            return child;
-        }
-    }
+        return (child != nullptr) ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
+    });
 
-    return nullptr;
+    return child;
 }
 
 GenTree* dFindTree(unsigned id)
@@ -9387,6 +9357,11 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     case GTF_ICON_BBC_PTR:
 
                         chars += printf("[ICON_BBC_PTR]");
+                        break;
+
+                    case GTF_ICON_STATIC_BOX_PTR:
+
+                        chars += printf("[GTF_ICON_STATIC_BOX_PTR]");
                         break;
 
                     case GTF_ICON_FIELD_OFF:

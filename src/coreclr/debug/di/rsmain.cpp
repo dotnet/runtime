@@ -595,7 +595,7 @@ namespace
 
         COM_METHOD CreateConnection(ICorDebugProcess *pProcess,
                                     CONNID dwConnectionId,
-                                    __in_z WCHAR* pConnectionName);
+                                    _In_z_ WCHAR* pConnectionName);
         COM_METHOD ChangeConnection(ICorDebugProcess *pProcess, CONNID dwConnectionId);
         COM_METHOD DestroyConnection(ICorDebugProcess *pProcess, CONNID dwConnectionId);
 
@@ -725,7 +725,7 @@ namespace
     HRESULT
     DefaultManagedCallback2::CreateConnection(ICorDebugProcess *pProcess,
                                               CONNID dwConnectionId,
-                                              __in_z WCHAR* pConnectionName)
+                                              _In_z_ WCHAR* pConnectionName)
     {
         _ASSERTE(!"DefaultManagedCallback2::CreateConnection not implemented");
         return E_NOTIMPL;
@@ -1572,7 +1572,7 @@ bool Cordb::IsInteropDebuggingSupported()
 //
 //---------------------------------------------------------------------------------------
 HRESULT Cordb::CreateProcess(LPCWSTR lpApplicationName,
-                             __in_z LPWSTR lpCommandLine,
+                             _In_z_ LPWSTR lpCommandLine,
                              LPSECURITY_ATTRIBUTES lpProcessAttributes,
                              LPSECURITY_ATTRIBUTES lpThreadAttributes,
                              BOOL bInheritHandles,
@@ -1601,7 +1601,7 @@ HRESULT Cordb::CreateProcess(LPCWSTR lpApplicationName,
 
 HRESULT Cordb::CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
                                    LPCWSTR lpApplicationName,
-                                   __in_z LPWSTR lpCommandLine,
+                                   _In_z_ LPWSTR lpCommandLine,
                                    LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                    LPSECURITY_ATTRIBUTES lpThreadAttributes,
                                    BOOL bInheritHandles,
@@ -1735,7 +1735,7 @@ HRESULT Cordb::CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
 
 HRESULT Cordb::CreateProcessEx(ICorDebugRemoteTarget * pRemoteTarget,
                                LPCWSTR lpApplicationName,
-                               __in_z LPWSTR lpCommandLine,
+                               _In_z_ LPWSTR lpCommandLine,
                                LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                LPSECURITY_ATTRIBUTES lpThreadAttributes,
                                BOOL bInheritHandles,

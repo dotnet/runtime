@@ -619,7 +619,7 @@ public class DiaSymbol
         else if (tag == SymTagEnum.SymTagBaseType)
         {
             BasicType bt = (BasicType) s.baseType;
-            str.AppendFormat("(base type={0}, len={1:d})", bt.ToString(), s.length);
+            str.Append($"(base type={bt}, len={s.length:d})");
         }
         else if (tag == SymTagEnum.SymTagArrayType)
         {
@@ -677,7 +677,7 @@ public class DiaSymbol
                 try
                 {
                     succ = true;
-                    str.AppendFormat("[{0:d}]", s.length/s.type.length );
+                    str.Append($"[{s.length/s.type.length:d}]");
                 }
                 catch (Exception)
                 {

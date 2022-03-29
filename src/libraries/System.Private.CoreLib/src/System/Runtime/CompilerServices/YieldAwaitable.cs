@@ -38,7 +38,7 @@ namespace System.Runtime.CompilerServices
     {
         /// <summary>Gets an awaiter for this <see cref="YieldAwaitable"/>.</summary>
         /// <returns>An awaiter for this awaitable.</returns>
-        /// <remarks>This method is intended for compiler user rather than use directly in code.</remarks>
+        /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
         public YieldAwaiter GetAwaiter() { return default; }
 
         /// <summary>Provides an awaiter that switches into a target environment.</summary>

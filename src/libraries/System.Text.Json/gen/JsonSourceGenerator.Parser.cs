@@ -80,6 +80,7 @@ namespace System.Text.Json.SourceGeneration
             private readonly Type _objectType;
             private readonly Type _stringType;
 
+            private readonly Type? _timeSpanType;
             private readonly Type? _dateTimeOffsetType;
             private readonly Type? _byteArrayType;
             private readonly Type? _guidType;
@@ -92,6 +93,7 @@ namespace System.Text.Json.SourceGeneration
             private readonly Type? _jsonValueType;
 
             // Unsupported types
+            private readonly Type _delegateType;
             private readonly Type _typeType;
             private readonly Type _serializationInfoType;
             private readonly Type _intPtrType;
@@ -202,6 +204,7 @@ namespace System.Text.Json.SourceGeneration
 
                 _booleanType = _metadataLoadContext.Resolve(SpecialType.System_Boolean);
                 _charType = _metadataLoadContext.Resolve(SpecialType.System_Char);
+                _timeSpanType = _metadataLoadContext.Resolve(typeof(TimeSpan));
                 _dateTimeType = _metadataLoadContext.Resolve(SpecialType.System_DateTime);
                 _nullableOfTType = _metadataLoadContext.Resolve(SpecialType.System_Nullable_T);
                 _objectType = _metadataLoadContext.Resolve(SpecialType.System_Object);
@@ -219,6 +222,7 @@ namespace System.Text.Json.SourceGeneration
                 _jsonValueType = _metadataLoadContext.Resolve(JsonValueFullName);
 
                 // Unsupported types.
+                _delegateType = _metadataLoadContext.Resolve(SpecialType.System_Delegate);
                 _typeType = _metadataLoadContext.Resolve(typeof(Type));
                 _serializationInfoType = _metadataLoadContext.Resolve(typeof(Runtime.Serialization.SerializationInfo));
                 _intPtrType = _metadataLoadContext.Resolve(typeof(IntPtr));
@@ -375,6 +379,9 @@ namespace System.Text.Json.SourceGeneration
                     GuidType = _guidType,
                     StringType = _stringType,
                     NumberTypes = _numberTypes,
+#if DEBUG
+                    MetadataLoadContext = _metadataLoadContext,
+#endif
                 };
             }
 
@@ -901,7 +908,8 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
                 else if (_knownUnsupportedTypes.Contains(type) ||
-                    ImplementsIAsyncEnumerableInterface(type))
+                    ImplementsIAsyncEnumerableInterface(type) ||
+                    _delegateType.IsAssignableFrom(type))
                 {
                     classType = ClassType.KnownUnsupportedType;
                 }
@@ -1506,6 +1514,7 @@ namespace System.Text.Json.SourceGeneration
                 _knownTypes.Add(_stringType);
 
                 AddTypeIfNotNull(_knownTypes, _byteArrayType);
+                AddTypeIfNotNull(_knownTypes, _timeSpanType);
                 AddTypeIfNotNull(_knownTypes, _dateTimeOffsetType);
                 AddTypeIfNotNull(_knownTypes, _guidType);
                 AddTypeIfNotNull(_knownTypes, _uriType);

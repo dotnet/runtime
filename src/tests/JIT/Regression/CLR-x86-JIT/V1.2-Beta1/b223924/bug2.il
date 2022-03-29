@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 
-.assembly ILGEN_0xef3a9aea {}
+.assembly 'bug2' {}
 .assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
 .class ILGEN_0xef3a9aea {

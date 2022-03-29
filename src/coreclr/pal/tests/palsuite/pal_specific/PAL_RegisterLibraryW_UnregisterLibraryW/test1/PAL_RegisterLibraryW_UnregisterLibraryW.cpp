@@ -5,10 +5,10 @@
 **
 ** Source: pal_registerlibrary_unregisterlibrary
 **
-** Purpose: Positive test the PAL_RegisterLibrary API and 
+** Purpose: Positive test the PAL_RegisterLibrary API and
 **          PAL_UnRegisterLibrary.
 **          Call PAL_RegisterLibrary to map a module into the calling
-**          process address space and call PAL_UnRegisterLibrary 
+**          process address space and call PAL_UnRegisterLibrary
 **          to unmap this module.
 **
 **
@@ -32,7 +32,7 @@ PALTEST(pal_specific_PAL_RegisterLibraryW_UnregisterLibraryW_test1_paltest_pal_r
 
     /*zero the buffer*/
     memset(ModuleName,0,64);
-    sprintf_s(ModuleName, _countof(ModuleName), "%s", "rotor_pal");
+    sprintf_s(ModuleName, ARRAY_SIZE(ModuleName), "%s", "rotor_pal");
 
     /*convert a normal string to a wide one*/
     wpModuleName = convert(ModuleName);

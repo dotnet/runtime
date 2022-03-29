@@ -447,7 +447,7 @@ if (CLR_CMAKE_HOST_UNIX)
       set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
       add_compile_options(-arch arm64)
     elseif(CLR_CMAKE_HOST_ARCH_AMD64)
-      set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13")
+      set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14")
       add_compile_options(-arch x86_64)
     else()
       clr_unknown_arch()
@@ -525,7 +525,7 @@ if (MSVC)
 
   # disable C++ RTTI
   # /GR is added by default by CMake, so remove it manually.
-  string(REPLACE "/GR" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  string(REPLACE "/GR " " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
 
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/FC>) # use full pathnames in diagnostics

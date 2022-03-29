@@ -195,6 +195,8 @@ const pal::char_t* get_arch()
     return _X("arm");
 #elif defined(TARGET_ARM64)
     return _X("arm64");
+#elif defined(TARGET_LOONGARCH64)
+    return _X("loongarch64");
 #elif defined(TARGET_S390X)
     return _X("s390x");
 #else

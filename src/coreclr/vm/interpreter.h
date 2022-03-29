@@ -722,7 +722,7 @@ class InterpreterCEEInfo: public CEEInfo
 {
     CEEJitInfo m_jitInfo;
 public:
-    InterpreterCEEInfo(CORINFO_METHOD_HANDLE meth): CEEInfo((MethodDesc*)meth), m_jitInfo((MethodDesc*)meth, NULL, NULL, CORJIT_FLAGS::CORJIT_FLAG_SPEED_OPT) { m_pOverride = this; }
+    InterpreterCEEInfo(CORINFO_METHOD_HANDLE meth): CEEInfo((MethodDesc*)meth), m_jitInfo((MethodDesc*)meth, NULL, NULL, CORJIT_FLAGS::CORJIT_FLAG_SPEED_OPT) { }
 
     // Certain methods are unimplemented by CEEInfo (they hit an assert).  They are implemented by CEEJitInfo, yet
     // don't seem to require any of the CEEJitInfo state we can't provide.  For those case, delegate to the "partial"
@@ -907,7 +907,6 @@ public:
 
 #if INTERP_ILSTUBS
     void*      GetStubContext() { return m_stubContext; }
-    void*      GetStubContextAddr() { return &m_stubContext; }
 #endif
 
     OBJECTREF* GetAddressOfSecurityObject() { return &m_securityObject; }

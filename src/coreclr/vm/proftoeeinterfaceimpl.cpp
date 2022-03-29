@@ -763,7 +763,7 @@ void GenerationTable::AddRecord(int generation, BYTE* rangeStart, BYTE* rangeEnd
 
     // Because the segment/region are added to the heap before they are reported to the profiler,
     // it is possible that the region is added to the heap, a racing GenerationTable refresh happened,
-    // that refresh would contain the new region, and then it get reported again here. 
+    // that refresh would contain the new region, and then it get reported again here.
     // This check will make sure we never add duplicated record to the table.
     for (ULONG i = 0; i < count; i++)
     {
@@ -889,14 +889,14 @@ void GenerationTable::Refresh()
 {
     // fill in the values by calling back into the gc, which will report
     // the ranges by calling GenWalkFunc for each one
-    CrstHolder holder(&mutex);    
+    CrstHolder holder(&mutex);
     IGCHeap *hp = GCHeapUtilities::GetGCHeap();
     this->count = 0;
     hp->DiagDescrGenerations(GenWalkFunc, this);
 }
 
 // This is the table of generation bounds updated by the gc
-// and read by the profiler. 
+// and read by the profiler.
 static GenerationTable *s_currentGenerationTable;
 
 // This is just so we can assert there's a single writer
@@ -944,7 +944,7 @@ void __stdcall UpdateGenerationBounds()
         {
             RETURN;
         }
-        s_currentGenerationTable->Refresh();        
+        s_currentGenerationTable->Refresh();
     }
 #endif // PROFILING_SUPPORTED
     RETURN;
@@ -2420,7 +2420,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo(FunctionID functionId, LPCBYTE * pSta
 
     HRESULT hr = GetCodeInfoFromCodeStart(
         pMethodDesc->GetNativeCode(),
-        _countof(codeInfos),
+        ARRAY_SIZE(codeInfos),
         &cCodeInfos,
         codeInfos);
 
@@ -2820,8 +2820,8 @@ HRESULT ProfToEEInterfaceImpl::GetArrayObjectInfo(ObjectID objectId,
 
 HRESULT ProfToEEInterfaceImpl::GetArrayObjectInfoHelper(Object * pObj,
                     ULONG32 cDimensionSizes,
-                    __out_ecount(cDimensionSizes) ULONG32 pDimensionSizes[],
-                    __out_ecount(cDimensionSizes) int pDimensionLowerBounds[],
+                    _Out_writes_(cDimensionSizes) ULONG32 pDimensionSizes[],
+                    _Out_writes_(cDimensionSizes) int pDimensionLowerBounds[],
                     BYTE    **ppData)
 {
     CONTRACTL
@@ -3907,7 +3907,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo(ModuleID     moduleId,
     LPCBYTE *    ppBaseLoadAddress,
     ULONG        cchName,
     ULONG *      pcchName,
-    __out_ecount_part_opt(cchName, *pcchName) WCHAR wszName[],
+    _Out_writes_to_opt_(cchName, *pcchName) WCHAR wszName[],
     AssemblyID * pAssemblyId)
 {
     CONTRACTL
@@ -4027,7 +4027,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
     LPCBYTE *    ppBaseLoadAddress,
     ULONG        cchName,
     ULONG *      pcchName,
-    __out_ecount_part_opt(cchName, *pcchName) WCHAR wszName[],
+    _Out_writes_to_opt_(cchName, *pcchName) WCHAR wszName[],
     AssemblyID * pAssemblyId,
     DWORD *      pdwModuleFlags)
 {
@@ -5532,7 +5532,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromTokenAndTypeArgs(ModuleID moduleID
 HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
     ULONG       cchName,
     ULONG       *pcchName,
-    __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[],
+    _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[],
     ProcessID   *pProcessId)
 {
     CONTRACTL
@@ -5640,7 +5640,7 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
 HRESULT ProfToEEInterfaceImpl::GetAssemblyInfo(AssemblyID    assemblyId,
     ULONG       cchName,
     ULONG       *pcchName,
-    __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[],
+    _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[],
     AppDomainID *pAppDomainId,
     ModuleID    *pModuleId)
 {
@@ -6391,7 +6391,7 @@ HRESULT ProfToEEInterfaceImpl::GetDynamicFunctionInfo(FunctionID functionId,
                                                       ULONG* pbSig,
                                                       ULONG cchName,
                                                       ULONG *pcchName,
-            __out_ecount_part_opt(cchName, *pcchName) WCHAR wszName[])
+            _Out_writes_to_opt_(cchName, *pcchName) WCHAR wszName[])
 {
     CONTRACTL
     {
@@ -6992,7 +6992,7 @@ HRESULT ProfToEEInterfaceImpl::GetEnvironmentVariable(
     const WCHAR *szName,
     ULONG       cchValue,
     ULONG       *pcchValue,
-    __out_ecount_part_opt(cchValue, *pcchValue) WCHAR szValue[])
+    _Out_writes_to_opt_(cchValue, *pcchValue) WCHAR szValue[])
 {
     CONTRACTL
     {
@@ -9408,7 +9408,7 @@ HRESULT ProfToEEInterfaceImpl::GetRuntimeInformation(USHORT * pClrInstanceId,
                                                      USHORT * pQFEVersion,
                                                      ULONG  cchVersionString,
                                                      ULONG  * pcchVersionString,
-                                                     __out_ecount_part_opt(cchVersionString, *pcchVersionString) WCHAR  szVersionString[])
+                                                     _Out_writes_to_opt_(cchVersionString, *pcchVersionString) WCHAR  szVersionString[])
 {
     CONTRACTL
     {

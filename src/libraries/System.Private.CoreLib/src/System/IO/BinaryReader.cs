@@ -557,7 +557,7 @@ namespace System.IO
             }
 
             int bytesRead = 0;
-            int n = 0;
+            int n;
 
             ThrowIfDisposed();
 

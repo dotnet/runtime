@@ -2095,7 +2095,7 @@ namespace System.Data
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleSimpleContentColumn(string strType, DataTable table, bool isBase, XmlAttribute[]? attrs, bool isNillable)
         {
-            // for Named Simple type support : We should not recieved anything here other than string.
+            // for Named Simple type support : We should not received anything here other than string.
             // there can not be typed simple content
             // disallow multiple simple content columns for the table
             if (FromInference && table.XmlText != null) // backward compatability for inference

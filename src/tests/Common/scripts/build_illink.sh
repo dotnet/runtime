@@ -25,19 +25,19 @@ do
             print_usage
             exit $EXIT_CODE_SUCCESS
             ;;
-	
+
         --clone)
             clone=1
             ;;
-	
+
         --arch=*)
             arch=${i#*=}
             ;;
-	
+
         --os=*)
             os=${i#*=}
             ;;
-	
+
         *)
             echo "Unknown switch: $i"
             print_usage
@@ -48,7 +48,7 @@ done
 
 rid="$os-$arch"
 
-if [ ! -z "$clone" ]; then
+if [[ -n "$clone" ]]; then
     git clone --recursive https://github.com/mono/linker
 fi
 

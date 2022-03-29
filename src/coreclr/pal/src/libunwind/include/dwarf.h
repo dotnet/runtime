@@ -46,6 +46,9 @@ struct elf_dyn_info;
   #else
     #error Could not find <link.h>
   #endif
+  #if defined(__ANDROID__) && defined(__arm__) && __ANDROID_API__ < 21
+    int dl_iterate_phdr(int (*)(struct dl_phdr_info *, size_t, void *), void *);
+  #endif
 #endif
 
 #include <pthread.h>
@@ -367,6 +370,8 @@ struct unw_debug_frame_list
     /* The start (inclusive) and end (exclusive) of the described region.  */
     unw_word_t start;
     unw_word_t end;
+    /* ELF load offset */
+    unw_word_t load_offset;
     /* The debug frame itself.  */
     char *debug_frame;
     size_t debug_frame_size;

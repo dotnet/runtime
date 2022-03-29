@@ -117,7 +117,7 @@ There are 2 usage mechanisms of these attributes.
 
 #### Usage 1, Source-generated interop
 
-The user can apply the `GeneratedMarshallingAttribute` to their structure `S`. The source generator will determine if the type is blittable. If it is blittable, the source generator will generate a partial definition and apply the `BlittableTypeAttribute` to the struct type `S`. Otherwise, it will generate a blittable representation of the struct with the aformentioned requried shape and apply the `NativeMarshallingAttribute` and point it to the blittable representation. The blittable representation can either be generated as a separate top-level type or as a nested type on `S`.
+The user can apply the `GeneratedMarshallingAttribute` to their structure `S`. The source generator will determine if the type is blittable. If it is blittable, the source generator will generate a partial definition and apply the `BlittableTypeAttribute` to the struct type `S`. Otherwise, it will generate a blittable representation of the struct with the aformentioned required shape and apply the `NativeMarshallingAttribute` and point it to the blittable representation. The blittable representation can either be generated as a separate top-level type or as a nested type on `S`.
 
 #### Usage 2, Manual interop
 

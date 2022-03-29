@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module, MONO, runtimeHelpers } from "./imports";
+import { INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
 import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
-import { VoidPtr } from "./types";
+import { VoidPtr, CharPtr } from "./types/emscripten";
 
 let commands_received: CommandResponse;
 let _call_function_res_cache: any = {};
@@ -45,6 +45,7 @@ export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, 
     };
     commands_received = buffer_obj;
 }
+
 function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
     if (command_parameters.length > _debugger_buffer_len) {
         if (_debugger_buffer)
@@ -118,9 +119,8 @@ export function mono_wasm_get_loaded_files(): string[] {
 
 function _create_proxy_from_object_id(objectId: string, details: any) {
     if (objectId.startsWith("dotnet:array:")) {
-        let ret : Array<any>;
-        if (details.dimensionsDetails == undefined || details.dimensionsDetails.length == 1)
-        {
+        let ret: Array<any>;
+        if (details.dimensionsDetails === undefined || details.dimensionsDetails.length === 1) {
             ret = details.items.map((p: any) => p.value);
             return ret;
         }
@@ -292,6 +292,55 @@ function _cache_call_function_res(obj: any) {
 export function mono_wasm_release_object(objectId: string): void {
     if (objectId in _call_function_res_cache)
         delete _call_function_res_cache[objectId];
+}
+
+export function mono_wasm_debugger_log(level: number, message_ptr: CharPtr): void {
+    const message = Module.UTF8ToString(message_ptr);
+
+    if (INTERNAL["logging"] && typeof INTERNAL.logging["debugger"] === "function") {
+        INTERNAL.logging.debugger(level, message);
+        return;
+    }
+
+    console.debug(`Debugger.Debug: ${message}`);
+}
+
+export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: CharPtr, message_ptr: CharPtr, fatal: number, user_data: VoidPtr): void {
+    const message = Module.UTF8ToString(message_ptr);
+    const isFatal = !!fatal;
+    const domain = Module.UTF8ToString(log_domain_ptr); // is this always Mono?
+    const dataPtr = user_data;
+    const log_level = Module.UTF8ToString(log_level_ptr);
+
+    if (INTERNAL["logging"] && typeof INTERNAL.logging["trace"] === "function") {
+        INTERNAL.logging.trace(domain, log_level, message, isFatal, dataPtr);
+        return;
+    }
+
+    if (isFatal)
+        console.trace(message);
+
+    switch (log_level) {
+        case "critical":
+        case "error":
+            console.error(message);
+            break;
+        case "warning":
+            console.warn(message);
+            break;
+        case "message":
+            console.log(message);
+            break;
+        case "info":
+            console.info(message);
+            break;
+        case "debug":
+            console.debug(message);
+            break;
+        default:
+            console.log(message);
+            break;
+    }
 }
 
 type CallDetails = {

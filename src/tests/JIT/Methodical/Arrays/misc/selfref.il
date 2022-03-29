@@ -22,7 +22,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'selfref.exe'
 // MVID: {57800D71-6F51-4ACF-BC86-8F3D2FBAC8E1}
 .namespace GCTest
 {

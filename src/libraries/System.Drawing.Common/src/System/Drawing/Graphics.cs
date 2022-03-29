@@ -711,6 +711,16 @@ namespace System.Drawing
         /// <summary>
         /// Draws the outline of a rectangle specified by <paramref name="rect"/>.
         /// </summary>
+        /// <param name="pen">A Pen that determines the color, width, and style of the rectangle.</param>
+        /// <param name="rect">A Rectangle structure that represents the rectangle to draw.</param>
+        public void DrawRectangle(Pen pen, RectangleF rect)
+        {
+            DrawRectangle(pen, rect.X, rect.Y, rect.Width, rect.Height);
+        }
+
+        /// <summary>
+        /// Draws the outline of a rectangle specified by <paramref name="rect"/>.
+        /// </summary>
         public void DrawRectangle(Pen pen, Rectangle rect)
         {
             DrawRectangle(pen, rect.X, rect.Y, rect.Width, rect.Height);
@@ -1321,6 +1331,18 @@ namespace System.Drawing
         /// Fills the interior of a pie section defined by an ellipse and two radial lines.
         /// </summary>
         public void FillPie(Brush brush, Rectangle rect, float startAngle, float sweepAngle)
+        {
+            FillPie(brush, rect.X, rect.Y, rect.Width, rect.Height, startAngle, sweepAngle);
+        }
+
+        /// <summary>
+        /// Fills the interior of a pie section defined by an ellipse and two radial lines.
+        /// </summary>
+        /// <param name="brush">A Brush that determines the characteristics of the fill.</param>
+        /// <param name="rect">A Rectangle structure that represents the bounding rectangle that defines the ellipse from which the pie section comes.</param>
+        /// <param name="startAngle">Angle in degrees measured clockwise from the x-axis to the first side of the pie section.</param>
+        /// <param name="sweepAngle">Angle in degrees measured clockwise from the <paramref name="startAngle"/> parameter to the second side of the pie section.</param>
+        public void FillPie(Brush brush, RectangleF rect, float startAngle, float sweepAngle)
         {
             FillPie(brush, rect.X, rect.Y, rect.Width, rect.Height, startAngle, sweepAngle);
         }

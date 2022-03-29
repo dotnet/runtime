@@ -90,10 +90,13 @@ namespace Microsoft.Extensions.Http.Logging
                 public static readonly EventId ResponseHeader = new EventId(103, "ResponseHeader");
             }
 
-            private static readonly Action<ILogger, HttpMethod, Uri, Exception> _requestStart = LoggerMessage.Define<HttpMethod, Uri>(
+            private static readonly LogDefineOptions _skipEnabledCheckLogDefineOptions = new LogDefineOptions() { SkipEnabledCheck = true };
+
+            private static readonly Action<ILogger, HttpMethod, string, Exception> _requestStart = LoggerMessage.Define<HttpMethod, string>(
                 LogLevel.Information,
                 EventIds.RequestStart,
-                "Sending HTTP request {HttpMethod} {Uri}");
+                "Sending HTTP request {HttpMethod} {Uri}",
+                _skipEnabledCheckLogDefineOptions);
 
             private static readonly Action<ILogger, double, int, Exception> _requestEnd = LoggerMessage.Define<double, int>(
                 LogLevel.Information,
@@ -102,7 +105,11 @@ namespace Microsoft.Extensions.Http.Logging
 
             public static void RequestStart(ILogger logger, HttpRequestMessage request, Func<string, bool> shouldRedactHeaderValue)
             {
-                _requestStart(logger, request.Method, request.RequestUri, null);
+                // We check here to avoid allocating in the GetUriString call unnecessarily
+                if (logger.IsEnabled(LogLevel.Information))
+                {
+                    _requestStart(logger, request.Method, GetUriString(request.RequestUri), null);
+                }
 
                 if (logger.IsEnabled(LogLevel.Trace))
                 {
@@ -128,6 +135,13 @@ namespace Microsoft.Extensions.Http.Logging
                         null,
                         (state, ex) => state.ToString());
                 }
+            }
+
+            private static string? GetUriString(Uri? requestUri)
+            {
+                return requestUri?.IsAbsoluteUri == true
+                    ? requestUri.AbsoluteUri
+                    : requestUri?.ToString();
             }
         }
     }

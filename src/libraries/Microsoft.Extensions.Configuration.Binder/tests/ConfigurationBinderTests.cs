@@ -117,11 +117,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public byte[] MyByteArray { get; set; }
         }
 
-        public class GetterOnlyOptions
-        {
-            public string MyString => throw new NotImplementedException();
-        }
-
         [Fact]
         public void CanBindIConfigurationSection()
         {
@@ -346,20 +341,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 () => config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true));
 
             Assert.Equal(expectedMessage, ex.Message);
-        }
-
-        [Fact]
-        public void DoesNotExecuteGetterIfNoSetter()
-        {
-            var dic = new Dictionary<string, string>
-            {
-                {"MyString", "hello world"}
-            };
-            var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection(dic);
-            var config = configurationBuilder.Build();
-
-            var _ = config.Get<GetterOnlyOptions>();
         }
 
         [Fact]

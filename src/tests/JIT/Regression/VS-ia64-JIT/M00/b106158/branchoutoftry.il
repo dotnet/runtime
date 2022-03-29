@@ -15,13 +15,12 @@
 .assembly extern mscorlib
 {
 }
-.assembly testit
+.assembly 'branchoutoftry'
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module testit.exe
 // MVID: {55BD0E59-8783-4990-A94D-348582FD2ED5}
 .imagebase 0x00400000
 .file alignment 0x00000200

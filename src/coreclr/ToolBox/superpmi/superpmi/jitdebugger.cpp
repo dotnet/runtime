@@ -134,7 +134,7 @@ BOOL GetRegistryLongValue(HKEY hKeyParent, LPCWSTR szKey, LPCWSTR szName, long* 
 // Note:
 //
 //----------------------------------------------------------------------------
-HRESULT GetCurrentModuleFileName(__out_ecount(*pcchBuffer) LPWSTR pBuffer, __inout DWORD* pcchBuffer)
+HRESULT GetCurrentModuleFileName(_Out_writes_(*pcchBuffer) LPWSTR pBuffer, __inout DWORD* pcchBuffer)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -146,9 +146,9 @@ HRESULT GetCurrentModuleFileName(__out_ecount(*pcchBuffer) LPWSTR pBuffer, __ino
     // Get the appname to look up in the exclusion or inclusion list.
     WCHAR appPath[MAX_PATH + 2];
 
-    DWORD ret = WszGetModuleFileName(NULL, appPath, NumItems(appPath));
+    DWORD ret = WszGetModuleFileName(NULL, appPath, ARRAY_SIZE(appPath));
 
-    if ((ret == NumItems(appPath)) || (ret == 0))
+    if ((ret == ARRAY_SIZE(appPath)) || (ret == 0))
     {
         // The module file name exceeded maxpath, or GetModuleFileName failed.
         return E_UNEXPECTED;
@@ -201,7 +201,7 @@ BOOL IsCurrentModuleFileNameInAutoExclusionList()
     }
 
     WCHAR wszAppName[MAX_PATH];
-    DWORD cchAppName = NumItems(wszAppName);
+    DWORD cchAppName = ARRAY_SIZE(wszAppName);
 
     // Get the appname to look up in the exclusion or inclusion list.
     if (GetCurrentModuleFileName(wszAppName, &cchAppName) != S_OK)
@@ -252,7 +252,7 @@ void GetDebuggerSettingInfo(LPWSTR wszDebuggerString, DWORD cchDebuggerString, B
 //     * wszDebuggerString can be NULL.   When wszDebuggerString is NULL, pcchDebuggerString should
 //     * point to a DWORD of zero.   pcchDebuggerString cannot be NULL, and the DWORD pointed by
 //     * pcchDebuggerString will store the used or required string buffer size in characters.
-HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, *pcchDebuggerString)
+HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *pcchDebuggerString)
                                          LPWSTR wszDebuggerString,
                                      DWORD*     pcchDebuggerString,
                                      BOOL*      pfAuto)
@@ -320,7 +320,7 @@ HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, 
 
         // Get the appname to look up in DebugApplications key.
         WCHAR wzAppName[MAX_PATH];
-        DWORD cchAppName = NumItems(wzAppName);
+        DWORD cchAppName = ARRAY_SIZE(wzAppName);
         long  iValue;
 
         // Check DebugApplications setting
@@ -340,7 +340,7 @@ HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, 
             if ((ret == ERROR_SUCCESS) && (valueType == REG_SZ) && (valueSize / sizeof(WCHAR) < MAX_PATH))
             {
                 WCHAR wzAutoKey[MAX_PATH];
-                valueSize = NumItems(wzAutoKey) * sizeof(WCHAR);
+                valueSize = ARRAY_SIZE(wzAutoKey) * sizeof(WCHAR);
                 RegQueryValueExW(hKey, kUnmanagedDebuggerAutoValue, NULL, NULL, reinterpret_cast<LPBYTE>(wzAutoKey),
                                  &valueSize);
 
@@ -366,7 +366,7 @@ BOOL LaunchJITDebugger()
     BOOL fSuccess = FALSE;
 
     WCHAR debugger[1000];
-    GetDebuggerSettingInfo(debugger, NumItems(debugger), NULL);
+    GetDebuggerSettingInfo(debugger, ARRAY_SIZE(debugger), NULL);
 
     SECURITY_ATTRIBUTES sa;
     sa.nLength              = sizeof(sa);

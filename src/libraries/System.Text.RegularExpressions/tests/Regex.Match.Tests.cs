@@ -279,6 +279,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (".[abc]", "xYZAbC", RegexOptions.IgnoreCase, 0, 6, true, "ZA");
                 yield return (".[abc]", "xYzXyZx", RegexOptions.IgnoreCase, 0, 6, false, "");
 
+                // Sets containing characters that differ by a bit
+                yield return ("123[Aa]", "123a", RegexOptions.None, 0, 4, true, "123a");
+                yield return ("123[0p]", "123p", RegexOptions.None, 0, 4, true, "123p");
+                yield return ("123[Aa@]", "123@", RegexOptions.None, 0, 4, true, "123@");
+
                 // "\D+"
                 yield return (@"\D+", "12321", RegexOptions.None, 0, 5, false, string.Empty);
 
@@ -352,12 +357,17 @@ namespace System.Text.RegularExpressions.Tests
                     yield return ("(?(dog2))", "dog2", RegexOptions.None, 0, 4, true, string.Empty);
                     yield return ("(?(a:b))", "a", RegexOptions.None, 0, 1, true, string.Empty);
                     yield return ("(?(a:))", "a", RegexOptions.None, 0, 1, true, string.Empty);
+                    yield return ("(?(cat)cat|dog)", "cat", RegexOptions.None, 0, 3, true, "cat");
+                    yield return ("(?((?=cat))cat|dog)", "cat", RegexOptions.None, 0, 3, true, "cat");
                     yield return ("(?(cat)|dog)", "cat", RegexOptions.None, 0, 3, true, string.Empty);
                     yield return ("(?(cat)|dog)", "catdog", RegexOptions.None, 0, 6, true, string.Empty);
                     yield return ("(?(cat)|dog)", "oof", RegexOptions.None, 0, 3, false, string.Empty);
                     yield return ("(?(cat)dog1|dog2)", "catdog1", RegexOptions.None, 0, 7, false, string.Empty);
                     yield return ("(?(cat)dog1|dog2)", "catdog2", RegexOptions.None, 0, 7, true, "dog2");
                     yield return ("(?(cat)dog1|dog2)", "catdog1dog2", RegexOptions.None, 0, 11, true, "dog2");
+                    yield return (@"(?(\w+)\w+)dog", "catdog", RegexOptions.None, 0, 6, true, "catdog");
+                    yield return (@"(?(abc)\w+|\w{0,2})dog", "catdog", RegexOptions.None, 0, 6, true, "atdog");
+                    yield return (@"(?(abc)cat|\w{0,2})dog", "catdog", RegexOptions.None, 0, 6, true, "atdog");
                     yield return (@"(\w+|\d+)a+[ab]+", "123123aa", RegexOptions.None, 0, 8, true, "123123aa");
                     yield return ("(a|ab|abc|abcd)d", "abcd", RegexOptions.RightToLeft, 0, 4, true, "abcd");
                     yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.None, 0, 4, false, string.Empty);
@@ -758,9 +768,7 @@ namespace System.Text.RegularExpressions.Tests
         // TODO: Figure out what to do with default timeouts for source generated regexes
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(RegexOptions.None)]
-        [InlineData(RegexOptions.None | RegexHelpers.RegexOptionDebug)]
         [InlineData(RegexOptions.Compiled)]
-        [InlineData(RegexOptions.Compiled | RegexHelpers.RegexOptionDebug)]
         public void Match_DefaultTimeout_Throws(RegexOptions options)
         {
             RemoteExecutor.Invoke(optionsString =>
@@ -1518,7 +1526,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [OuterLoop("Can take over 10 seconds")]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // consumes a lot of memory
         [MemberData(nameof(StressTestDeepNestingOfLoops_TestData))]
         public async Task StressTestDeepNestingOfLoops(RegexEngine engine, string begin, string inner, string end, RegexOptions options, string input, int pattern_repetition, int input_repetition)
         {
@@ -1661,6 +1669,13 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, "a[0-9]+?0", RegexOptions.None, "ababca123000xyz", new (int, int, string)[] { (5, 5, "a1230") } };
                 // Mixed lazy/eager loop
                 yield return new object[] { engine, "a[0-9]+?0|b[0-9]+0", RegexOptions.None, "ababca123000xyzababcb123000xyz", new (int, int, string)[] { (5, 5, "a1230"), (20, 7, "b123000") } };
+                // Loops around alternations
+                yield return new object[] { engine, "^(?:aaa|aa)*$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
+                yield return new object[] { engine, "^(?:aaa|aa)*?$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
+                yield return new object[] { engine, "^(?:aaa|aa){1,5}$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
+                yield return new object[] { engine, "^(?:aaa|aa){1,5}?$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
+                yield return new object[] { engine, "^(?:aaa|aa){4}$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
+                yield return new object[] { engine, "^(?:aaa|aa){4}?$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
 
                 // Mostly empty matches using unusual regexes consisting mostly of anchors only
                 yield return new object[] { engine, "^", RegexOptions.None, "", new (int, int, string)[] { (0, 0, "") } };
@@ -1719,22 +1734,26 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        /// <summary>
-        /// Test that \w has the same meaning in backtracking as well as non-backtracking mode and compiled mode
-        /// </summary>
-        [Fact]
-        public async Task Match_Wordchar()
+        [Theory]
+        [InlineData(@"\w")]
+        [InlineData(@"\s")]
+        [InlineData(@"\d")]
+        public async Task StandardCharSets_SameMeaningAcrossAllEngines(string singleCharPattern)
         {
             var regexes = new List<Regex>();
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                regexes.Add(await RegexHelpers.GetRegexAsync(engine, @"\w"));
+                regexes.Add(await RegexHelpers.GetRegexAsync(engine, singleCharPattern));
             }
-            Assert.InRange(regexes.Count(), 1, int.MaxValue);
 
-            for (char c = '\0'; c < '\uFFFF'; c++)
+            if (regexes.Count < 2)
             {
-                string s = c.ToString();
+                return;
+            }
+
+            for (int c = '\0'; c <= '\uFFFF'; c++)
+            {
+                string s = ((char)c).ToString();
                 bool baseline = regexes[0].IsMatch(s);
                 for (int i = 1; i < regexes.Count; i++)
                 {

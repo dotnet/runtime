@@ -243,11 +243,11 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Compute the target state for the source state and input[i] character.</summary>
-        /// <param name="input">input string</param>
+        /// <param name="input">input span</param>
         /// <param name="i">The index into <paramref name="input"/> at which the target character lives.</param>
         /// <param name="sourceState">The source state</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private DfaMatchingState<TSetType> Delta<TTransition>(string input, int i, DfaMatchingState<TSetType> sourceState) where TTransition : struct, ITransition
+        private DfaMatchingState<TSetType> Delta<TTransition>(ReadOnlySpan<char> input, int i, DfaMatchingState<TSetType> sourceState) where TTransition : struct, ITransition
         {
             TSetType[]? minterms = _builder._minterms;
             Debug.Assert(minterms is not null);
@@ -356,10 +356,10 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>Find a match.</summary>
         /// <param name="isMatch">Whether to return once we know there's a match without determining where exactly it matched.</param>
-        /// <param name="input">The input string</param>
-        /// <param name="startat">The position to start search in the input string.</param>
-        /// <param name="end">The non-inclusive position to end the search in the input string.</param>
-        public SymbolicMatch FindMatch(bool isMatch, string input, int startat, int end)
+        /// <param name="input">The input span</param>
+        /// <param name="startat">The position to start search in the input span.</param>
+        /// <param name="end">The non-inclusive position to end the search in the input span.</param>
+        public SymbolicMatch FindMatch(bool isMatch, ReadOnlySpan<char> input, int startat, int end)
         {
             int timeoutOccursAt = 0;
             if (_checkTimeout)
@@ -419,11 +419,11 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Find match end position using the original pattern, end position is known to exist.</summary>
-        /// <param name="input">input array</param>
+        /// <param name="input">input span</param>
         /// <param name="i">inclusive start position</param>
         /// <param name="exclusiveEnd">exclusive end position</param>
         /// <returns></returns>
-        private int FindEndPosition(string input, int exclusiveEnd, int i)
+        private int FindEndPosition(ReadOnlySpan<char> input, int exclusiveEnd, int i)
         {
             int i_end = exclusiveEnd;
 
@@ -462,7 +462,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>Inner loop for FindEndPosition parameterized by an ITransition type.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool FindEndPositionDeltas<TTransition>(string input, ref int i, int j, ref DfaMatchingState<TSetType> q, ref int i_end) where TTransition : struct, ITransition
+        private bool FindEndPositionDeltas<TTransition>(ReadOnlySpan<char> input, ref int i, int j, ref DfaMatchingState<TSetType> q, ref int i_end) where TTransition : struct, ITransition
         {
             do
             {
@@ -494,11 +494,11 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Walk back in reverse using the reverse pattern to find the start position of match, start position is known to exist.</summary>
-        /// <param name="input">the input string</param>
+        /// <param name="input">the input span</param>
         /// <param name="i">position to start walking back from, i points at the last character of the match</param>
         /// <param name="match_start_boundary">do not pass this boundary when walking back</param>
         /// <returns></returns>
-        private int FindStartPosition(string input, int i, int match_start_boundary)
+        private int FindStartPosition(ReadOnlySpan<char> input, int i, int match_start_boundary)
         {
             // Fetch the correct start state for the reverse pattern.
             // This depends on previous character --- which, because going backwards, is character number i+1.
@@ -539,7 +539,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         // Inner loop for FindStartPosition parameterized by an ITransition type.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool FindStartPositionDeltas<TTransition>(string input, ref int i, int j, ref DfaMatchingState<TSetType> q, ref int last_start) where TTransition : struct, ITransition
+        private bool FindStartPositionDeltas<TTransition>(ReadOnlySpan<char> input, ref int i, int j, ref DfaMatchingState<TSetType> q, ref int last_start) where TTransition : struct, ITransition
         {
             do
             {
@@ -566,13 +566,13 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Returns NoMatchExists if no match exists. Returns -1 when i=0 and the initial state is nullable.</summary>
-        /// <param name="input">given input string</param>
+        /// <param name="input">given input span</param>
         /// <param name="k">input length or bounded input length</param>
         /// <param name="i">start position</param>
         /// <param name="timeoutOccursAt">The time at which timeout occurs, if timeouts are being checked.</param>
         /// <param name="initialStateIndex">last position the initial state of <see cref="_dotStarredPattern"/> was visited</param>
         /// <param name="watchdog">length of match when positive</param>
-        private int FindFinalStatePosition(string input, int k, int i, int timeoutOccursAt, out int initialStateIndex, out int watchdog)
+        private int FindFinalStatePosition(ReadOnlySpan<char> input, int k, int i, int timeoutOccursAt, out int initialStateIndex, out int watchdog)
         {
             // Get the correct start state of the dot-star pattern, which in general depends on the previous character kind in the input.
             uint prevCharKindId = GetCharKind(input, i - 1);
@@ -651,7 +651,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>Inner loop for FindFinalStatePosition parameterized by an ITransition type.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool FindFinalStatePositionDeltas<TTransition>(string input, int j, ref int i, ref DfaMatchingState<TSetType> q, ref int watchdog, out int result) where TTransition : struct, ITransition
+        private bool FindFinalStatePositionDeltas<TTransition>(ReadOnlySpan<char> input, int j, ref int i, ref DfaMatchingState<TSetType> q, ref int watchdog, out int result) where TTransition : struct, ITransition
         {
             do
             {
@@ -682,13 +682,13 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private uint GetCharKind(string input, int i)
+        private uint GetCharKind(ReadOnlySpan<char> input, int i)
         {
             return !_pattern._info.ContainsSomeAnchor ?
                 CharKind.General : // The previous character kind is irrelevant when anchors are not used.
                 GetCharKindWithAnchor(input, i);
 
-            uint GetCharKindWithAnchor(string input, int i)
+            uint GetCharKindWithAnchor(ReadOnlySpan<char> input, int i)
             {
                 Debug.Assert(_asciiCharKinds is not null);
 

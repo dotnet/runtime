@@ -844,18 +844,6 @@ private:
                 newStmt->SetRootNode(assign);
             }
 
-            // For stub calls, restore the stub address. For everything else,
-            // null out the candidate info field.
-            if (call->IsVirtualStub())
-            {
-                JITDUMP("Restoring stub addr %p from candidate info\n", call->gtInlineCandidateInfo->stubAddr);
-                call->gtStubCallStubAddr = call->gtInlineCandidateInfo->stubAddr;
-            }
-            else
-            {
-                call->gtInlineCandidateInfo = nullptr;
-            }
-
             compiler->fgInsertStmtAtEnd(elseBlock, newStmt);
 
             // Set the original statement to a nop.

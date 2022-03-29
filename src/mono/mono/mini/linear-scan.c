@@ -26,12 +26,12 @@ mono_varlist_insert_sorted (MonoCompile *cfg, GList *list, MonoMethodVar *mv, in
 
 	for (l = list; l; l = l->next) {
 		MonoMethodVar *v1 = (MonoMethodVar *)l->data;
-		
+
 		if (sort_type == 2) {
 			if (mv->spill_costs >= v1->spill_costs) {
 				list = g_list_insert_before (list, l, mv);
 				break;
-			}			
+			}
 		} else if (sort_type == 1) {
 			if (mv->range.last_use.abs_pos <= v1->range.last_use.abs_pos) {
 				list = g_list_insert_before (list, l, mv);
@@ -50,7 +50,7 @@ mono_varlist_insert_sorted (MonoCompile *cfg, GList *list, MonoMethodVar *mv, in
 	return list;
 }
 
-static gint 
+static gint
 compare_by_first_use_func (gconstpointer a, gconstpointer b)
 {
 	MonoMethodVar *v1 = (MonoMethodVar*)a;
@@ -98,7 +98,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 #ifdef DEBUG_LSCAN
 	for (l = vars; l; l = l->next) {
 		vmv = l->data;
-		printf ("VAR %d %08x %08x C%d\n", vmv->idx, vmv->range.first_use.abs_pos, 
+		printf ("VAR %d %08x %08x C%d\n", vmv->idx, vmv->range.first_use.abs_pos,
 			vmv->range.last_use.abs_pos, vmv->spill_costs);
 	}
 #endif
@@ -115,7 +115,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 		vmv = (MonoMethodVar *)l->data;
 
 #ifdef DEBUG_LSCAN
-		printf ("START  %2d %08x %08x\n",  vmv->idx, vmv->range.first_use.abs_pos, 
+		printf ("START  %2d %08x %08x\n",  vmv->idx, vmv->range.first_use.abs_pos,
 			vmv->range.last_use.abs_pos);
 #endif
 		/* expire old intervals in active */
@@ -127,7 +127,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 					break;
 
 #ifdef DEBUG_LSCAN
-				printf ("EXPIR  %2d %08x %08x C%d R%d\n", amv->idx, amv->range.first_use.abs_pos, 
+				printf ("EXPIR  %2d %08x %08x C%d R%d\n", amv->idx, amv->range.first_use.abs_pos,
 						amv->range.last_use.abs_pos, amv->spill_costs, amv->reg);
 #endif
 				active = g_list_delete_link (active, active);
@@ -142,25 +142,25 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 			a = g_list_nth (active, max_regs - 1);
 			amv = (MonoMethodVar *)a->data;
 
-			if ((cost_driven && amv->spill_costs < vmv->spill_costs) || 			     
+			if ((cost_driven && amv->spill_costs < vmv->spill_costs) ||
 			    (!cost_driven && amv->range.last_use.abs_pos > vmv->range.last_use.abs_pos)) {
 				vmv->reg = amv->reg;
 				amv->reg = -1;
 				active = g_list_delete_link (active, a);
 
 				if (cost_driven)
-					active = mono_varlist_insert_sorted (cfg, active, vmv, 2);	
+					active = mono_varlist_insert_sorted (cfg, active, vmv, 2);
 				else
-					active = mono_varlist_insert_sorted (cfg, active, vmv, 1);	
+					active = mono_varlist_insert_sorted (cfg, active, vmv, 1);
 
 #ifdef DEBUG_LSCAN
-				printf ("SPILL0 %2d %08x %08x C%d\n",  amv->idx, 
+				printf ("SPILL0 %2d %08x %08x C%d\n",  amv->idx,
 					amv->range.first_use.abs_pos, amv->range.last_use.abs_pos,
 					amv->spill_costs);
 #endif
 			} else {
 #ifdef DEBUG_LSCAN
-				printf ("SPILL1 %2d %08x %08x C%d\n",  vmv->idx, 
+				printf ("SPILL1 %2d %08x %08x C%d\n",  vmv->idx,
 					vmv->range.first_use.abs_pos, vmv->range.last_use.abs_pos,
 					vmv->spill_costs);
 #endif
@@ -178,33 +178,33 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 			regs = g_list_delete_link (regs, regs);
 
 #ifdef DEBUG_LSCAN
-			printf ("ADD    %2d %08x %08x C%d R%d\n",  vmv->idx, 
-				vmv->range.first_use.abs_pos, vmv->range.last_use.abs_pos, 
+			printf ("ADD    %2d %08x %08x C%d R%d\n",  vmv->idx,
+				vmv->range.first_use.abs_pos, vmv->range.last_use.abs_pos,
 				vmv->spill_costs, vmv->reg);
 #endif
-			active = mono_varlist_insert_sorted (cfg, active, vmv, TRUE);		
+			active = mono_varlist_insert_sorted (cfg, active, vmv, TRUE);
 		}
 
 
 #ifdef DEBUG_LSCAN
 		for (a = active; a; a = a->next) {
-			amv = (MonoMethodVar *)a->data;		
-			printf ("ACT    %2d %08x %08x C%d R%d\n", amv->idx, amv->range.first_use.abs_pos,  
+			amv = (MonoMethodVar *)a->data;
+			printf ("ACT    %2d %08x %08x C%d R%d\n", amv->idx, amv->range.first_use.abs_pos,
 				amv->range.last_use.abs_pos, amv->spill_costs, amv->reg);
 		}
 		printf ("NEXT\n");
 #endif
-	}	
+	}
 
 	for (a = active; a; a = a->next) {
-		amv = (MonoMethodVar *)a->data;		
+		amv = (MonoMethodVar *)a->data;
 		gains [amv->reg] += amv->spill_costs;
 	}
 
 	n_regvars = 0;
 	for (l = vars; l; l = l->next) {
 		vmv = (MonoMethodVar *)l->data;
-		
+
 		if (vmv->reg >= 0)  {
 			if ((gains [vmv->reg] > mono_arch_regalloc_cost (cfg, vmv)) && (cfg->varinfo [vmv->idx]->opcode != OP_REGVAR)) {
 				if (cfg->verbose_level > 2) {
@@ -232,7 +232,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 	used_regs = 0;
 	for (l = vars; l; l = l->next) {
 		vmv = (MonoMethodVar *)l->data;
-		
+
 		if (vmv->reg >= 0)
 			used_regs |= 1LL << vmv->reg;
 	}
@@ -293,7 +293,7 @@ mono_linear_scan2 (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_m
 
 	for (l = vars; l; l = l->next) {
 		vmv = (MonoMethodVar *)l->data;
-		LSCAN_DEBUG (printf ("VAR R%d %08x %08x C%d\n", cfg->varinfo [vmv->idx]->dreg, vmv->range.first_use.abs_pos, 
+		LSCAN_DEBUG (printf ("VAR R%d %08x %08x C%d\n", cfg->varinfo [vmv->idx]->dreg, vmv->range.first_use.abs_pos,
 							 vmv->range.last_use.abs_pos, vmv->spill_costs));
 	}
 
@@ -318,7 +318,7 @@ mono_linear_scan2 (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_m
 
 		if (!current->interval->range)
 			continue;
-			
+
 		pos = current->interval->range->from;
 
 		/* Check for intervals in active which expired or inactive */
@@ -414,7 +414,7 @@ mono_linear_scan2 (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_m
 			gains [current->reg] += current->spill_costs;
 		}
 		else {
-			/* 
+			/*
 			 * free_pos [reg] > 0 means there is a register available for parts
 			 * of the interval, so splitting it is possible. This is not yet
 			 * supported, so we spill in this case too.
@@ -427,7 +427,7 @@ mono_linear_scan2 (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_m
 			if (active) {
 				GList *min_spill_pos;
 #if 0
-				/* 
+				/*
 				 * This favors registers with big spill costs, thus larger liveness ranges,
 				 * thus actually leading to worse code size.
 				 */
@@ -503,7 +503,7 @@ mono_linear_scan2 (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_m
 	used_regs = 0;
 	for (l = vars; l; l = l->next) {
 		vmv = (MonoMethodVar *)l->data;
-		
+
 		if (vmv->reg >= 0)
 			used_regs |= 1LL << vmv->reg;
 	}

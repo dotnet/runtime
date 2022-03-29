@@ -349,7 +349,7 @@ public:
     // 3. Native LoaderAllocator is alive, managed scout is collected.
     //    - The native LoaderAllocator can be kept alive via native reference with code:AddRef call, e.g.:
     //        * Reference from LCG method,
-    //        * Reference recieved from assembly iterator code:AppDomain::AssemblyIterator::Next and/or
+    //        * Reference received from assembly iterator code:AppDomain::AssemblyIterator::Next and/or
     //          held by code:CollectibleAssemblyHolder.
     //    - Other LoaderAllocator can have this LoaderAllocator in its reference list
     //      (code:m_LoaderAllocatorReferences), but without call to code:AddRef.

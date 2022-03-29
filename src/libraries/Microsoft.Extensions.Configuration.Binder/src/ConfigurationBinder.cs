@@ -248,17 +248,19 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
+            object? propertyValue = property.GetValue(instance);
             bool hasSetter = property.SetMethod != null && (property.SetMethod.IsPublic || options.BindNonPublicProperties);
 
-            if (!hasSetter)
+            if (propertyValue == null && !hasSetter)
             {
-                // The property cannot be set so there is no point going further
+                // Property doesn't have a value and we cannot set it so there is no
+                // point in going further down the graph
                 return;
             }
 
-            object? propertyValue = GetPropertyValue(property, instance, config, options);
+            propertyValue = GetPropertyValue(property, instance, config, options);
 
-            if (propertyValue != null)
+            if (propertyValue != null && hasSetter)
             {
                 property.SetValue(instance, propertyValue);
             }

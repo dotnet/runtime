@@ -2201,7 +2201,7 @@ public:
     void SendInterceptExceptionComplete(Thread *thread);
 
     HRESULT AttachDebuggerForBreakpoint(Thread *thread,
-                                        __in_opt WCHAR *wszLaunchReason);
+                                        _In_opt_ WCHAR *wszLaunchReason);
 
 
     void ThreadIsSafe(Thread *thread);
@@ -2424,8 +2424,8 @@ public:
 
     void SendLogSwitchSetting (int iLevel,
                                int iReason,
-                               __in_z LPCWSTR pLogSwitchName,
-                               __in_z LPCWSTR pParentSwitchName);
+                               _In_z_ LPCWSTR pLogSwitchName,
+                               _In_z_ LPCWSTR pParentSwitchName);
 
     bool IsLoggingEnabled (void)
     {
@@ -2507,7 +2507,7 @@ public:
     BOOL IsThreadContextInvalid(Thread *pThread, T_CONTEXT *pCtx);
 
     // notification for SQL fiber debugging support
-    void CreateConnection(CONNID dwConnectionId, __in_z WCHAR *wzName);
+    void CreateConnection(CONNID dwConnectionId, _In_z_ WCHAR *wzName);
     void DestroyConnection(CONNID dwConnectionId);
     void ChangeConnection(CONNID dwConnectionId);
 
@@ -3704,7 +3704,7 @@ void DbgLogHelper(DebuggerIPCEventType event);
 // Helpers for cleanup
 // These are various utility functions, mainly where we factor out code.
 //-----------------------------------------------------------------------------
-void GetPidDecoratedName(__out_ecount(cBufSizeInChars) WCHAR * pBuf,
+void GetPidDecoratedName(_Out_writes_(cBufSizeInChars) WCHAR * pBuf,
                          int cBufSizeInChars,
                          const WCHAR * pPrefix);
 

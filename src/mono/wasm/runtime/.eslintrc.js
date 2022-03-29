@@ -16,7 +16,12 @@ module.exports = {
     "plugins": [
         "@typescript-eslint"
     ],
-    "ignorePatterns": ["node_modules/**/*.*", "bin/**/*.*"],
+    "ignorePatterns": [
+        "node_modules/**/*.*",
+        "bin/**/*.*",
+        "cjs/*.js",
+        "es6/*.js",
+    ],
     "rules": {
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-non-null-assertion": "off",

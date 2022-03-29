@@ -1021,10 +1021,10 @@
     <value>Must complete Convert() operation or call Encoder.Reset() before calling GetBytes() or GetByteCount(). Encoder '{0}' fallback '{1}'.</value>
   </data>
   <data name="Argument_EncodingConversionOverflowBytes" xml:space="preserve">
-    <value>The output byte buffer is too small to contain the encoded data, encoding '{0}' fallback '{1}'.</value>
+    <value>The output byte buffer is too small to contain the encoded data, encoding codepage '{0}' and fallback '{1}'.</value>
   </data>
   <data name="Argument_EncodingConversionOverflowChars" xml:space="preserve">
-    <value>The output char buffer is too small to contain the decoded characters, encoding '{0}' fallback '{1}'.</value>
+    <value>The output char buffer is too small to contain the decoded characters, encoding codepage '{0}' and fallback '{1}'.</value>
   </data>
   <data name="Argument_EncodingNotSupported" xml:space="preserve">
     <value>'{0}' is not a supported encoding name. For information on defining a custom encoding, see the documentation for the Encoding.RegisterProvider method.</value>
@@ -1550,7 +1550,7 @@
     <value>The buffer is not associated with this pool and may not be returned to it.</value>
   </data>
   <data name="ArgumentException_OtherNotArrayOfCorrectLength" xml:space="preserve">
-    <value>Object is not a array with the same number of elements as the array to compare it to.</value>
+    <value>The object is not an array with the same number of elements as the array to compare it to.</value>
   </data>
   <data name="ArgumentException_NotIsomorphic" xml:space="preserve">
     <value>Object contains non-primitive or non-blittable data.</value>
@@ -1824,7 +1824,7 @@
     <value>Pointer startIndex and length do not refer to a valid string.</value>
   </data>
   <data name="ArgumentOutOfRange_PeriodTooLarge" xml:space="preserve">
-    <value>Period must be less than 2^32-2.</value>
+    <value>Period must be less than 2^32-1.</value>
   </data>
   <data name="ArgumentOutOfRange_PositionLessThanCapacityRequired" xml:space="preserve">
     <value>The position may not be greater or equal to the capacity of the accessor.</value>
@@ -1854,7 +1854,7 @@
     <value>Stream length must be non-negative and less than 2^31 - 1 - origin.</value>
   </data>
   <data name="ArgumentOutOfRange_TimeoutTooLarge" xml:space="preserve">
-    <value>Time-out interval must be less than 2^32-2.</value>
+    <value>Time-out interval must be less than 2^32-1.</value>
   </data>
   <data name="ArgumentOutOfRange_UIntPtrMax" xml:space="preserve">
     <value>The length of the buffer must be less than the maximum UIntPtr value for your platform.</value>
@@ -2644,6 +2644,9 @@
   <data name="IO_FileLoad" xml:space="preserve">
     <value>Could not load the specified file.</value>
   </data>
+  <data name="IO_FileLoad_FileName" xml:space="preserve">
+    <value>Could not load the file '{0}'.</value>
+  </data>
   <data name="IO_FileName_Name" xml:space="preserve">
     <value>File name: '{0}'</value>
   </data>
@@ -3163,9 +3166,6 @@
   <data name="RFLCT_AmbigCust" xml:space="preserve">
     <value>Multiple custom attributes of the same type found.</value>
   </data>
-  <data name="RFLCT_Ambiguous" xml:space="preserve">
-    <value>Ambiguous match found.</value>
-  </data>
   <data name="InvalidFilterCriteriaException_CritInt" xml:space="preserve">
     <value>An Int32 must be provided for the filter criteria.</value>
   </data>
@@ -3679,11 +3679,8 @@
   <data name="Argument_BadResourceScopeVisibilityBits" xml:space="preserve">
     <value>Unknown value for the ResourceScope: {0}  Too many resource visibility bits may be set.</value>
   </data>
-  <data name="net_emptystringcall" xml:space="preserve">
-    <value>The parameter '{0}' cannot be an empty string.</value>
-  </data>
-  <data name="Argument_EmptyApplicationName" xml:space="preserve">
-    <value>ApplicationId cannot have an empty string for the name.</value>
+  <data name="Argument_EmptyString" xml:space="preserve">
+    <value>The value cannot be an empty string.</value>
   </data>
   <data name="Argument_FrameworkNameInvalid" xml:space="preserve">
     <value> FrameworkName is invalid.</value>
@@ -3819,5 +3816,122 @@
   </data>
   <data name="NullabilityInfoContext_NotSupported" xml:space="preserve">
     <value>NullabilityInfoContext is not supported in the current application because 'System.Reflection.NullabilityInfoContext.IsSupported' is set to false. Set the MSBuild Property 'NullabilityInfoContextSupport' to true in order to enable it.</value>
+  </data>
+  <data name="ThreadState_AlreadyStarted" xml:space="preserve">
+    <value>Thread is running or terminated; it cannot restart.</value>
+  </data>
+  <data name="ThreadState_NotStarted" xml:space="preserve">
+    <value>Thread has not been started.</value>
+  </data>
+  <data name="ThreadState_Dead_Priority" xml:space="preserve">
+    <value>Thread is dead; priority cannot be accessed.</value>
+  </data>
+  <data name="ThreadState_Dead_State" xml:space="preserve">
+    <value>Thread is dead; state cannot be accessed.</value>
+  </data>
+  <data name="ThreadState_SetPriorityFailed" xml:space="preserve">
+    <value>Unable to set thread priority.</value>
+  </data>
+  <data name="NullReference_InvokeNullRefReturned" xml:space="preserve">
+    <value>The target method returned a null reference.</value>
+  </data>
+  <data name="Arg_OpenType" xml:space="preserve">
+    <value>Cannot create an instance of {0} as it is an open type.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NoGCLohSizeGreaterTotalSize" xml:space="preserve">
+    <value>lohSize can't be greater than totalSize</value>
+  </data>
+  <data name="ArgumentOutOfRangeException_NoGCRegionSizeTooLarge" xml:space="preserve">
+    <value>totalSize is too large. For more information about setting the maximum size, see "Latency Modes" in http://go.microsoft.com/fwlink/?LinkId=522706.</value>
+  </data>
+  <data name="InvalidOperationException_AlreadyInNoGCRegion" xml:space="preserve">
+    <value>The NoGCRegion mode was already in progress.</value>
+  </data>
+  <data name="InvalidOperationException_NoGCRegionAllocationExceeded" xml:space="preserve">
+    <value>Allocated memory exceeds specified memory for NoGCRegion mode.</value>
+  </data>
+  <data name="InvalidOperationException_NoGCRegionInduced" xml:space="preserve">
+    <value>Garbage collection was induced in NoGCRegion mode.</value>
+  </data>
+  <data name="InvalidOperationException_NoGCRegionNotInProgress" xml:space="preserve">
+    <value>NoGCRegion mode must be set.</value>
+  </data>
+  <data name="PlatformNotSupported_ReflectionEmit" xml:space="preserve">
+    <value>Dynamic code generation is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_AssemblyName_GetAssemblyName" xml:space="preserve">
+    <value>AssemblyName.GetAssemblyName() is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_NonZeroLowerBound" xml:space="preserve">
+    <value>Arrays with non-zero lower bounds are not supported.</value>
+  </data>
+  <data name="NotSupported_BodyRemoved" xml:space="preserve">
+    <value>The body of this method was removed by the AOT compiler because it's not callable.</value>
+  </data>
+  <data name="NotSupported_FeatureBodyRemoved" xml:space="preserve">
+    <value>The feature associated with this method was removed.</value>
+  </data>
+  <data name="NotSupported_InstanceBodyRemoved" xml:space="preserve">
+    <value>The body of this instance method was removed by the AOT compiler. This can happen if the owning type was not seen as allocated by the AOT compiler.</value>
+  </data>
+  <data name="Arg_UnavailableTypeLoadException" xml:space="preserve">
+    <value>Attempted to load a type that was not created during ahead of time compilation.</value>
+  </data>
+  <data name="TypeInitialization_Type_NoTypeAvailable" xml:space="preserve">
+    <value>A type initializer threw an exception. To determine which type, inspect the InnerException's StackTrace property.</value>
+  </data>
+  <data name="InvalidAssemblyName" xml:space="preserve">
+    <value>The given assembly name or codebase was invalid</value>
+  </data>
+  <data name="Security_InvalidAssemblyPublicKey" xml:space="preserve">
+    <value>Invalid assembly public key.</value>
+  </data>
+  <data name="ClassLoad_General" xml:space="preserve">
+    <value>Could not load type '{0}' from assembly '{1}'.</value>
+  </data>
+  <data name="ClassLoad_RankTooLarge" xml:space="preserve">
+    <value>'{0}' from assembly '{1}' has too many dimensions.</value>
+  </data>
+  <data name="ClassLoad_ExplicitGeneric" xml:space="preserve">
+    <value>Could not load type '{0}' from assembly '{1}' because generic types cannot have explicit layout.</value>
+  </data>
+  <data name="ClassLoad_BadFormat" xml:space="preserve">
+    <value>Could not load type '{0}' from assembly '{1}' because the format is invalid.</value>
+  </data>
+  <data name="ClassLoad_ValueClassTooLarge" xml:space="preserve">
+    <value>Array of type '{0}' from assembly '{1}' cannot be created because base value type is too large.</value>
+  </data>
+  <data name="ClassLoad_ExplicitLayout" xml:space="preserve">
+    <value>Could not load type '{0}' from assembly '{1}' because it contains an object field at offset '{2}' that is incorrectly aligned or overlapped by a non-object field.</value>
+  </data>
+  <data name="EE_MissingMethod" xml:space="preserve">
+    <value>Method not found: '{0}'.</value>
+  </data>
+  <data name="EE_MissingField" xml:space="preserve">
+    <value>Field not found: '{0}'.</value>
+  </data>
+  <data name="InvalidProgram_Specific" xml:space="preserve">
+    <value>Common Language Runtime detected an invalid program. The body of method '{0}' is invalid.</value>
+  </data>
+  <data name="InvalidProgram_Vararg" xml:space="preserve">
+    <value>Method '{0}' has a variable argument list. Variable argument lists are not supported in .NET Core.</value>
+  </data>
+  <data name="InvalidProgram_CallVirtFinalize" xml:space="preserve">
+    <value>Object.Finalize() can not be called directly. It is only callable by the runtime.</value>
+  </data>
+  <data name="Delegate_GarbageCollected" xml:space="preserve">
+    <value>The corresponding delegate has been garbage collected. Please make sure the delegate is still referenced by managed code when you are using the marshalled native function pointer.</value>
+  </data>
+  <data name="Arg_EntryPointNotFoundExceptionParameterized" xml:space="preserve">
+    <value>Unable to find an entry point named '{0}' in native library '{1}'.</value>
+  </data>
+  <data name="Arg_EntryPointNotFoundExceptionParameterizedNoLibrary" xml:space="preserve">
+    <value>Unable to find an entry point named '{0}' in native library.</value>
+  </data>
+  <data name="Arg_DllNotFoundExceptionParameterized" xml:space="preserve">
+    <value>Unable to native library '{0}' or one of its dependencies.</value>
+  </data>
+  <data name="InvalidOperation_ComInteropRequireComWrapperInstance" xml:space="preserve">
+    <value>COM Interop requires ComWrapper instance registered for marshalling.</value>
   </data>
 </root>

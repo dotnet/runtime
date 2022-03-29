@@ -152,6 +152,16 @@
         <target state="translated">길이는 0보다 작거나 입력 길이를 초과할 수 없습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="LimitedSourceGenerationMessage">
+        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</source>
+        <target state="translated">지원되지 않는 옵션 또는 너무 복잡한 정규식으로 인해 RegexGenerator가 지정한 정규식에 대한 전체 소스 구현을 생성할 수 없습니다. 구현에서는 런타임에 정규식을 해석합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LimitedSourceGenerationTitle">
+        <source>RegexGenerator limitation reached.</source>
+        <target state="translated">RegexGenerator 제한에 도달했습니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MakeException">
         <source>Invalid pattern '{0}' at offset {1}. {2}</source>
         <target state="translated">오프셋 {1}에서 잘못된 패턴 '{0}'. {2}</target>

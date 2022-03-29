@@ -714,7 +714,7 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
     {
         unsigned lclNum = tgtAddr->AsLclVar()->GetLclNum();
 
-        LclVarDsc* varDsc = &compiler->lvaTable[lclNum];
+        LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
 
         // Instead of marking LclVar with 'lvStackByref',
         // Consider decomposing the Value Number given to this LclVar to see if it was
@@ -727,29 +727,6 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
         {
             assert(varDsc->TypeGet() == TYP_BYREF);
             return GCInfo::WBF_NoBarrier;
-        }
-
-        // We don't eliminate for inlined methods, where we (can) know where the "retBuff" points.
-        if (!compiler->compIsForInlining() && lclNum == compiler->info.compRetBuffArg)
-        {
-            assert(compiler->info.compRetType == TYP_STRUCT); // Else shouldn't have a ret buff.
-
-            // Are we assured that the ret buff pointer points into the stack of a caller?
-            if (compiler->info.compRetBuffDefStack)
-            {
-#if 0
-                // This is an optional debugging mode.  If the #if 0 above is changed to #if 1,
-                // every barrier we remove for stores to GC ref fields of a retbuff use a special
-                // helper that asserts that the target is not in the heap.
-#ifdef DEBUG
-                return WBF_NoBarrier_CheckNotHeapInDebug;
-#else
-                return WBF_NoBarrier;
-#endif
-#else  // 0
-                return GCInfo::WBF_NoBarrier;
-#endif // 0
-            }
         }
     }
     if (tgtAddr->TypeGet() == TYP_REF)

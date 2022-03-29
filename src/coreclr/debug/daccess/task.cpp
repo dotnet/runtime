@@ -149,7 +149,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataTask::GetName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -713,7 +713,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataAppDomain::GetName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status = S_OK;
 
@@ -1132,7 +1132,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataAssembly::GetName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -1160,7 +1160,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataAssembly::GetFileName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -1201,7 +1201,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataAssembly::GetDisplayName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -2376,7 +2376,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataModule::GetName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -2404,7 +2404,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataModule::GetFileName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -2416,7 +2416,7 @@ ClrDataModule::GetFileName(
 
         // Try to get the assembly name through GetPath.
         // If the returned name is empty, then try to get the guessed module assembly name.
-        // The guessed assembly name is propogated from metadata's module name.
+        // The guessed assembly name is propagated from metadata's module name.
         //
         if ((m_module->GetPEAssembly()->GetPath().DacGetUnicode(bufLen, name, &_nameLen) && name[0])||
             (m_module->GetPEAssembly()->GetModuleFileNameHint().DacGetUnicode(bufLen, name, &_nameLen) && name[0]))
@@ -3115,7 +3115,7 @@ ClrDataMethodDefinition::GetName(
     /* [in] */ ULONG32 flags,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -3139,7 +3139,7 @@ ClrDataMethodDefinition::GetName(
 
             status = GetFullMethodNameFromMetadata(m_module->GetMDImport(),
                                                    m_token,
-                                                   NumItems(methName),
+                                                   ARRAY_SIZE(methName),
                                                    methName);
             if (status == S_OK)
             {
@@ -3858,7 +3858,7 @@ ClrDataMethodInstance::GetName(
     /* [in] */ ULONG32 flags,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -3885,7 +3885,7 @@ ClrDataMethodInstance::GetName(
             wcscpy_s(name, bufLen, nameUnk);
             if (nameLen != NULL)
             {
-                *nameLen = _countof(nameUnk);
+                *nameLen = ARRAY_SIZE(nameUnk);
             }
             status = S_OK;
         }
@@ -4735,7 +4735,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataExceptionState::GetString(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *strLen,
-    /* [size_is][out] */ __out_ecount_part(bufLen, *strLen) WCHAR str[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *strLen) WCHAR str[  ])
 {
     HRESULT status = E_FAIL;
 

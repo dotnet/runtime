@@ -63,6 +63,37 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(s.IsEmpty);
         }
 
+        [Fact]
+        public void PushRange_NoItems_NothingAdded_EmptyArrayWithRangeSpecified()
+        {
+            var s = new ConcurrentStack<int>();
+            Assert.True(s.IsEmpty);
+
+            s.PushRange(new int[0], 0, 0);
+            Assert.True(s.IsEmpty);
+        }
+
+        [Fact]
+        public void PushRange_NoItems_NothingAdded_NonEmptyArrayWithZeroCountSpecified()
+        {
+            var s = new ConcurrentStack<int>();
+            Assert.True(s.IsEmpty);
+
+            int[] arr = new int[2];
+            s.PushRange(arr, arr.Length, 0);
+            Assert.True(s.IsEmpty);
+        }
+
+        [Fact]
+        public void PushRange_NoItems_NothingAdded_EmptyArrayNoRangeSpecified()
+        {
+            var s = new ConcurrentStack<int>();
+            Assert.True(s.IsEmpty);
+
+            s.PushRange(new int[0]);
+            Assert.True(s.IsEmpty);
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(8, 10)]
         [InlineData(16, 100)]
@@ -134,6 +165,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => stack.PushRange(new int[1], 0, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => stack.PushRange(new int[1], -1, 1));
             Assert.Throws<ArgumentOutOfRangeException>(() => stack.PushRange(new int[1], 2, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => stack.PushRange(new int[0], 0, 1));
             AssertExtensions.Throws<ArgumentException>(null, () => stack.PushRange(new int[1], 0, 10));
         }
 

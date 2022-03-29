@@ -61,10 +61,8 @@ internal static partial class Interop
                 // Not a continuation, commit any current modules and create a new one.
                 CommitCurrentModule();
 
-                module = new ProcessModule
+                module = new ProcessModule(parsedLine.Path, Path.GetFileName(parsedLine.Path))
                 {
-                    FileName = parsedLine.Path,
-                    ModuleName = Path.GetFileName(parsedLine.Path),
                     ModuleMemorySize = parsedLine.Size,
                     EntryPointAddress = IntPtr.Zero // unknown
                 };

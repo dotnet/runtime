@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
@@ -54,6 +54,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x86'">
     <PlatformTarget>x86</PlatformTarget>
+    <DefineConstants>$(DefineConstants);TARGET_X86</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm'">
     <PlatformTarget>arm</PlatformTarget>
@@ -69,6 +70,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'wasm'">
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>$(DefineConstants);TARGET_WASM</DefineConstants>
   </PropertyGroup>
 
   <!-- Configuration specific properties -->
@@ -271,9 +273,6 @@
       <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnviron.cs">
         <Link>Common\Interop\Unix\System.Native\Interop.GetEnviron.cs</Link>
       </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsAndroid)' == 'true'">
-      <Compile Include="$(BclSourcesRoot)\System\Environment.Android.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Environment.iOS.cs" />

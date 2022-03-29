@@ -588,7 +588,7 @@ HRESULT CordbClass::SetJMCStatus(BOOL fIsUserCode)
         pImport = pModule->GetMetaDataImporter();
         do
         {
-            hr = pImport->EnumMethods(&phEnum, m_token, rTokens, NumItems(rTokens), &count);
+            hr = pImport->EnumMethods(&phEnum, m_token, rTokens, ARRAY_SIZE(rTokens), &count);
             IfFailThrow(hr);
 
             for (i = 0; i < count; i++)

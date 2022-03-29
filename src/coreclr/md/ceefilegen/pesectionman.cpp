@@ -281,14 +281,14 @@ char * PESection::computePointer(unsigned offset) const // virtual
 }
 
 /******************************************************************/
-BOOL PESection::containsPointer(__in char *ptr) const // virtual
+BOOL PESection::containsPointer(_In_ char *ptr) const // virtual
 {
     return m_blobFetcher.ContainsPointer(ptr);
 }
 
 /******************************************************************/
 // Compute an offset (wrap blobfetcher)
-unsigned PESection::computeOffset(__in char *ptr) const // virtual
+unsigned PESection::computeOffset(_In_ char *ptr) const // virtual
 {
     return m_blobFetcher.ComputeOffset(ptr);
 }

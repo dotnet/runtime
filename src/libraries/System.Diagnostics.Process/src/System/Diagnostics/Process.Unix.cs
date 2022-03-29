@@ -55,9 +55,10 @@ namespace System.Diagnostics
         /// <summary>Terminates the associated process immediately.</summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public void Kill()
         {
-            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
+            if (PlatformDoesNotSupportProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
             }
@@ -369,7 +370,7 @@ namespace System.Diagnostics
         /// <param name="startInfo">The start info with which to start the process.</param>
         private bool StartCore(ProcessStartInfo startInfo)
         {
-            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
+            if (PlatformDoesNotSupportProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
             }
@@ -1113,5 +1114,18 @@ namespace System.Diagnostics
                 s_processStartLock.ExitWriteLock();
             }
         }
+
+        /// <summary>Gets the friendly name of the process.</summary>
+        public string ProcessName
+        {
+            get
+            {
+                EnsureState(State.HaveProcessInfo);
+                return _processInfo!.ProcessName;
+            }
+        }
+
+        private static bool PlatformDoesNotSupportProcessStartAndKill
+            => (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS();
     }
 }

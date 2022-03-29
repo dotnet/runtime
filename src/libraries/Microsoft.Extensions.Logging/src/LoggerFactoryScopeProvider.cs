@@ -54,13 +54,13 @@ namespace Microsoft.Extensions.Logging
                     {
                         // As TagObjects is a IEnumerable<KeyValuePair<string, object?>> this can be used directly as a scope.
                         // We do this to safe the allocation of a wrapper object.
-                         callback(activity.TagObjects, state);
+                        callback(activity.TagObjects, state);
                     }
 
                     if ((_activityTrackingOption & ActivityTrackingOptions.Baggage) != 0)
                     {
                         // Only access activity.Baggage as every call leads to an allocation
-                        IEnumerable<KeyValuePair<string, string?>> baggage = activity.Baggage;
+                        IEnumerable<KeyValuePair<string, string>> baggage = activity.Baggage;
                         if (baggage.GetEnumerator().MoveNext())
                         {
                             // For the baggage a wrapper object is necessary because we need to be able to overwrite ToString().
@@ -75,7 +75,7 @@ namespace Microsoft.Extensions.Logging
             Report(_currentScope.Value);
         }
 
-        private static ActivityBaggageLogScopeWrapper GetOrCreateActivityBaggageLogScopeWrapper(Activity activity, IEnumerable<KeyValuePair<string, string?>> items)
+        private static ActivityBaggageLogScopeWrapper GetOrCreateActivityBaggageLogScopeWrapper(Activity activity, IEnumerable<KeyValuePair<string, string>> items)
         {
             const string additionalItemsBaggagePropertyKey = "__ActivityBaggageItemsLogScope__";
             var activityBaggageLogScopeWrapper = activity.GetCustomProperty(additionalItemsBaggagePropertyKey) as ActivityBaggageLogScopeWrapper;
@@ -132,7 +132,7 @@ namespace Microsoft.Extensions.Logging
         {
             private string _cachedToString;
             private const int MaxItems = 5;
-            private KeyValuePair<string, object> [] _items = new KeyValuePair<string, object>[MaxItems];
+            private KeyValuePair<string, object>[] _items = new KeyValuePair<string, object>[MaxItems];
 
             public ActivityLogScope(Activity activity, ActivityTrackingOptions activityTrackingOption)
             {
@@ -220,18 +220,18 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private sealed class ActivityBaggageLogScopeWrapper : IEnumerable<KeyValuePair<string, string?>>
+        private sealed class ActivityBaggageLogScopeWrapper : IEnumerable<KeyValuePair<string, string>>
         {
-            private readonly IEnumerable<KeyValuePair<string, string?>> _items;
+            private readonly IEnumerable<KeyValuePair<string, string>> _items;
 
-            private StringBuilder? _stringBuilder;
+            private StringBuilder _stringBuilder;
 
-            public ActivityBaggageLogScopeWrapper (IEnumerable<KeyValuePair<string, string?>> items)
+            public ActivityBaggageLogScopeWrapper(IEnumerable<KeyValuePair<string, string>> items)
             {
                 _items = items;
             }
 
-            public IEnumerator<KeyValuePair<string, string?>> GetEnumerator()
+            public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
             {
                 return _items.GetEnumerator();
             }
@@ -245,7 +245,7 @@ namespace Microsoft.Extensions.Logging
             {
                 lock (this)
                 {
-                    IEnumerator<KeyValuePair<string, string?>> enumerator = _items.GetEnumerator();
+                    IEnumerator<KeyValuePair<string, string>> enumerator = _items.GetEnumerator();
                     if (!enumerator.MoveNext())
                     {
                         return string.Empty;

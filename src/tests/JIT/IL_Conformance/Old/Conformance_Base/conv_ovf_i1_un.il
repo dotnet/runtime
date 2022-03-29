@@ -12,7 +12,7 @@
 //Correct behavior expects the code within the try block to throw an exception.
 //Included return code for failure if no exception is thrown.
 
-.assembly Class_test {}
+.assembly 'conv_ovf_i1_un' {}
 .assembly extern mscorlib{auto}
 .class Class_test {
     .method static int32 Main() {

@@ -92,20 +92,38 @@ namespace System.IO.Compression.Tests
             baseline = baseline.Clone();
             using (ZipArchive archive = new ZipArchive(baseline, mode))
             {
-                AddEntry(archive, "data1.txt", data1, lastWrite);
+                if (mode == ZipArchiveMode.Create)
+                {
+                    AddEntry(archive, "data1.txt", data1, lastWrite);
 
-                ZipArchiveEntry e = archive.CreateEntry("empty.txt");
-                e.LastWriteTime = lastWrite;
-                using (Stream s = e.Open()) { }
+                    ZipArchiveEntry e = archive.CreateEntry("empty.txt");
+                    e.LastWriteTime = lastWrite;
+                    using (Stream s = e.Open()) { }
+                }
+                else
+                {
+                    Assert.Throws<InvalidOperationException>(() => AddEntry(archive, "data1.txt", data1, lastWrite));
+
+                    Assert.Throws<InvalidOperationException>(() => archive.CreateEntry("empty.txt"));
+                }
             }
 
             test = test.Clone();
             using (ZipArchive archive = new ZipArchive(test, mode))
             {
-                AddEntry(archive, "data1.txt", data1, lastWrite);
+                if (mode == ZipArchiveMode.Create)
+                {
+                    AddEntry(archive, "data1.txt", data1, lastWrite);
 
-                ZipArchiveEntry e = archive.CreateEntry("empty.txt");
-                e.LastWriteTime = lastWrite;
+                    ZipArchiveEntry e = archive.CreateEntry("empty.txt");
+                    e.LastWriteTime = lastWrite;
+                }
+                else
+                {
+                    Assert.Throws<InvalidOperationException>(() => AddEntry(archive, "data1.txt", data1, lastWrite));
+
+                    Assert.Throws<InvalidOperationException>(() => archive.CreateEntry("empty.txt"));
+                }
             }
             //compare
             Assert.True(ArraysEqual(baseline.ToArray(), test.ToArray()), "Arrays didn't match after update");

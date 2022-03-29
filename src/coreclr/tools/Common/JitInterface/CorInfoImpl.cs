@@ -576,6 +576,8 @@ namespace Internal.JitInterface
             _actualInstructionSetUnsupported = default(InstructionSetFlags);
 #endif
 
+            _instantiationToJitVisibleInstantiation = null;
+
             _pgoResults.Clear();
         }
 
@@ -662,6 +664,25 @@ namespace Internal.JitInterface
             return true;
         }
 
+        private Dictionary<Instantiation, IntPtr[]> _instantiationToJitVisibleInstantiation = null;
+        private CORINFO_CLASS_STRUCT_** GetJitInstantiation(Instantiation inst)
+        {
+            IntPtr [] jitVisibleInstantiation;
+            if (_instantiationToJitVisibleInstantiation == null)
+            {
+                _instantiationToJitVisibleInstantiation = new Dictionary<Instantiation, IntPtr[]>();
+            }
+
+            if (!_instantiationToJitVisibleInstantiation.TryGetValue(inst, out jitVisibleInstantiation))
+            {
+                jitVisibleInstantiation =  new IntPtr[inst.Length];
+                for (int i = 0; i < inst.Length; i++)
+                    jitVisibleInstantiation[i] = (IntPtr)ObjectToHandle(inst[i]);
+                _instantiationToJitVisibleInstantiation.Add(inst, jitVisibleInstantiation);
+            }
+            return (CORINFO_CLASS_STRUCT_**)GetPin(jitVisibleInstantiation);
+        }
+
         private void Get_CORINFO_SIG_INFO(MethodDesc method, CORINFO_SIG_INFO* sig, bool suppressHiddenArgument = false)
         {
             Get_CORINFO_SIG_INFO(method.Signature, sig);
@@ -684,12 +705,15 @@ namespace Internal.JitInterface
                 // JIT doesn't care what the instantiation is and this is expensive.
                 Instantiation owningTypeInst = method.OwningType.Instantiation;
                 sig->sigInst.classInstCount = (uint)owningTypeInst.Length;
-                if (owningTypeInst.Length > 0)
+                if (owningTypeInst.Length != 0)
                 {
-                    var classInst = new IntPtr[owningTypeInst.Length];
-                    for (int i = 0; i < owningTypeInst.Length; i++)
-                        classInst[i] = (IntPtr)ObjectToHandle(owningTypeInst[i]);
-                    sig->sigInst.classInst = (CORINFO_CLASS_STRUCT_**)GetPin(classInst);
+                    sig->sigInst.classInst = GetJitInstantiation(owningTypeInst);
+                }
+
+                sig->sigInst.methInstCount = (uint)method.Instantiation.Length;
+                if (method.Instantiation.Length != 0)
+                {
+                    sig->sigInst.methInst = GetJitInstantiation(method.Instantiation);
                 }
             }
 
@@ -999,10 +1023,10 @@ namespace Internal.JitInterface
             return (TypeSystemEntity)HandleToObject((IntPtr)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
         }
 
-        private bool isJitIntrinsic(CORINFO_METHOD_STRUCT_* ftn)
+        private bool isIntrinsic(CORINFO_METHOD_STRUCT_* ftn)
         {
             MethodDesc method = HandleToObject(ftn);
-            return method.IsIntrinsic;
+            return method.IsIntrinsic || HardwareIntrinsicHelpers.IsHardwareIntrinsic(method);
         }
 
         private uint getMethodAttribsInternal(MethodDesc method)
@@ -1017,7 +1041,7 @@ namespace Internal.JitInterface
             if (method.IsSynchronized)
                 result |= CorInfoFlag.CORINFO_FLG_SYNCH;
             if (method.IsIntrinsic)
-                result |= CorInfoFlag.CORINFO_FLG_INTRINSIC | CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
+                result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
             if (method.IsVirtual)
                 result |= CorInfoFlag.CORINFO_FLG_VIRTUAL;
             if (method.IsAbstract)
@@ -1091,7 +1115,7 @@ namespace Internal.JitInterface
             // Check for hardware intrinsics
             if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
             {
-                result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
+                result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
             }
 
             return (uint)result;
@@ -1984,13 +2008,6 @@ namespace Internal.JitInterface
             return (uint)result;
         }
 
-        private bool isStructRequiringStackAllocRetBuf(CORINFO_CLASS_STRUCT_* cls)
-        {
-            // Disable this optimization. It has limited value (only kicks in on x86, and only for less common structs),
-            // causes bugs and introduces odd ABI differences not compatible with ReadyToRun.
-            return false;
-        }
-
         private CORINFO_MODULE_STRUCT_* getClassModule(CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException("getClassModule"); }
         private CORINFO_ASSEMBLY_STRUCT_* getModuleAssembly(CORINFO_MODULE_STRUCT_* mod)
@@ -2729,6 +2746,22 @@ namespace Internal.JitInterface
             return rank;
         }
 
+        private CorInfoArrayIntrinsic getArrayIntrinsicID(CORINFO_METHOD_STRUCT_* ftn)
+        {
+            CorInfoArrayIntrinsic kind = CorInfoArrayIntrinsic.ILLEGAL;
+            if (HandleToObject(ftn) is ArrayMethod am)
+            {
+                kind = am.Kind switch
+                {
+                    ArrayMethodKind.Get => CorInfoArrayIntrinsic.GET,
+                    ArrayMethodKind.Set => CorInfoArrayIntrinsic.SET,
+                    ArrayMethodKind.Address => CorInfoArrayIntrinsic.ADDRESS,
+                    _ => CorInfoArrayIntrinsic.ILLEGAL
+                };
+            }
+            return kind;
+        }
+
         private void* getArrayInitializationData(CORINFO_FIELD_STRUCT_* field, uint size)
         {
             var fd = HandleToObject(field);
@@ -2964,7 +2997,7 @@ namespace Internal.JitInterface
 
         public static CORINFO_OS TargetToOs(TargetDetails target)
         {
-            return target.IsWindows ? CORINFO_OS.CORINFO_WINNT : 
+            return target.IsWindows ? CORINFO_OS.CORINFO_WINNT :
                    target.IsOSX ? CORINFO_OS.CORINFO_MACOS : CORINFO_OS.CORINFO_UNIX;
         }
 
@@ -3139,7 +3172,7 @@ namespace Internal.JitInterface
             }
         }
 
-        private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult)
+        private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
         { throw new NotImplementedException("getFunctionFixedEntryPoint"); }
 
         private CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_STRUCT_* handle)
@@ -3250,8 +3283,6 @@ namespace Internal.JitInterface
 
         private uint getFieldThreadLocalStoreID(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
         { throw new NotImplementedException("getFieldThreadLocalStoreID"); }
-        private void setOverride(IntPtr pOverride, CORINFO_METHOD_STRUCT_* currentMethod)
-        { throw new NotImplementedException("setOverride"); }
         private void addActiveDependency(CORINFO_MODULE_STRUCT_* moduleFrom, CORINFO_MODULE_STRUCT_* moduleTo)
         { throw new NotImplementedException("addActiveDependency"); }
         private CORINFO_METHOD_STRUCT_* GetDelegateCtor(CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd, ref DelegateCtorArgs pCtorData)
@@ -3362,6 +3393,15 @@ namespace Internal.JitInterface
             {
                 blobData[i] = pUnwindBlock[i];
             }
+
+#if !READYTORUN
+            var target = _compilation.TypeSystemContext.Target;
+
+            if (target.Architecture == TargetArchitecture.ARM64 && target.OperatingSystem == TargetOS.Linux)
+            {
+                blobData = CompressARM64CFI(blobData);
+            }
+#endif
 
             _frameInfos[_usedFrameInfos++] = new FrameInfo(flags, (int)startOffset, (int)endOffset, blobData);
         }
@@ -3803,7 +3843,7 @@ namespace Internal.JitInterface
             instrumentationData = msInstrumentationData.ToArray();
         }
 
-        private HRESULT getPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, ref PgoInstrumentationSchema* pSchema, ref uint countSchemaItems, byte** pInstrumentationData, 
+        private HRESULT getPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, ref PgoInstrumentationSchema* pSchema, ref uint countSchemaItems, byte** pInstrumentationData,
             ref PgoSource pPgoSource)
         {
             MethodDesc methodDesc = HandleToObject(ftnHnd);

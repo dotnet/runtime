@@ -126,25 +126,25 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackDescription)));
 
-        public static readonly DiagnosticDescriptor StackallocMarshallingShouldSupportAllocatingMarshallingFallbackRule =
+        public static readonly DiagnosticDescriptor CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackRule =
             new DiagnosticDescriptor(
-                Ids.StackallocMarshallingShouldSupportAllocatingMarshallingFallback,
-                "StackallocMarshallingShouldSupportAllocatingMarshallingFallback",
-                GetResourceString(nameof(Resources.StackallocMarshallingShouldSupportAllocatingMarshallingFallbackMessage)),
+                Ids.CallerAllocMarshallingShouldSupportAllocatingMarshallingFallback,
+                "CallerAllocMarshallingShouldSupportAllocatingMarshallingFallback",
+                GetResourceString(nameof(Resources.CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackMessage)),
                 Category,
                 DiagnosticSeverity.Warning,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.StackallocMarshallingShouldSupportAllocatingMarshallingFallbackDescription)));
+                description: GetResourceString(nameof(Resources.CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackDescription)));
 
-        public static readonly DiagnosticDescriptor StackallocConstructorMustHaveStackBufferSizeConstantRule =
+        public static readonly DiagnosticDescriptor CallerAllocConstructorMustHaveBufferSizeConstantRule =
             new DiagnosticDescriptor(
-                Ids.StackallocConstructorMustHaveStackBufferSizeConstant,
-                "StackallocConstructorMustHaveStackBufferSizeConstant",
-                GetResourceString(nameof(Resources.StackallocConstructorMustHaveStackBufferSizeConstantMessage)),
+                Ids.CallerAllocConstructorMustHaveStackBufferSizeConstant,
+                "CallerAllocConstructorMustHaveBufferSizeConstant",
+                GetResourceString(nameof(Resources.CallerAllocConstructorMustHaveBufferSizeConstantMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(Resources.StackallocConstructorMustHaveStackBufferSizeConstantDescription)));
+                description: GetResourceString(nameof(Resources.CallerAllocConstructorMustHaveBufferSizeConstantDescription)));
 
         public static readonly DiagnosticDescriptor RefValuePropertyUnsupportedRule =
             new DiagnosticDescriptor(
@@ -189,8 +189,8 @@ namespace Microsoft.Interop.Analyzers
                 ValuePropertyMustHaveSetterRule,
                 ValuePropertyMustHaveGetterRule,
                 GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackRule,
-                StackallocMarshallingShouldSupportAllocatingMarshallingFallbackRule,
-                StackallocConstructorMustHaveStackBufferSizeConstantRule,
+                CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackRule,
+                CallerAllocConstructorMustHaveBufferSizeConstantRule,
                 RefValuePropertyUnsupportedRule,
                 NativeGenericTypeMustBeClosedOrMatchArityRule,
                 MarshallerGetPinnableReferenceRequiresValuePropertyRule);
@@ -425,7 +425,7 @@ namespace Microsoft.Interop.Analyzers
                 }
 
                 bool hasConstructor = false;
-                bool hasStackallocConstructor = false;
+                bool hasCallerAllocSpanConstructor = false;
                 foreach (IMethodSymbol ctor in marshalerType.Constructors)
                 {
                     if (ctor.IsStatic)
@@ -435,15 +435,15 @@ namespace Microsoft.Interop.Analyzers
 
                     hasConstructor = hasConstructor || ManualTypeMarshallingHelper.IsManagedToNativeConstructor(ctor, type, variant);
 
-                    if (!hasStackallocConstructor && ManualTypeMarshallingHelper.IsStackallocConstructor(ctor, type, _spanOfByte, variant))
+                    if (!hasCallerAllocSpanConstructor && ManualTypeMarshallingHelper.IsCallerAllocatedSpanConstructor(ctor, type, _spanOfByte, variant))
                     {
-                        hasStackallocConstructor = true;
-                        IFieldSymbol stackAllocSizeField = nativeType.GetMembers("StackBufferSize").OfType<IFieldSymbol>().FirstOrDefault();
-                        if (stackAllocSizeField is null or { DeclaredAccessibility: not Accessibility.Public } or { IsConst: false } or { Type: not { SpecialType: SpecialType.System_Int32 } })
+                        hasCallerAllocSpanConstructor = true;
+                        IFieldSymbol bufferSizeField = nativeType.GetMembers(ManualTypeMarshallingHelper.BufferSizeFieldName).OfType<IFieldSymbol>().FirstOrDefault();
+                        if (bufferSizeField is null or { DeclaredAccessibility: not Accessibility.Public } or { IsConst: false } or { Type: not { SpecialType: SpecialType.System_Int32 } })
                         {
                             context.ReportDiagnostic(
                                 GetDiagnosticLocations(context, ctor, nativeMarshalerAttributeData).CreateDiagnostic(
-                                    StackallocConstructorMustHaveStackBufferSizeConstantRule,
+                                    CallerAllocConstructorMustHaveBufferSizeConstantRule,
                                     nativeType.ToDisplayString()));
                         }
                     }
@@ -452,7 +452,7 @@ namespace Microsoft.Interop.Analyzers
                 bool hasToManaged = ManualTypeMarshallingHelper.HasToManagedMethod(marshalerType, type);
 
                 // Validate that the native type has at least one marshalling method (either managed to native or native to managed)
-                if (!hasConstructor && !hasStackallocConstructor && !hasToManaged)
+                if (!hasConstructor && !hasCallerAllocSpanConstructor && !hasToManaged)
                 {
                     context.ReportDiagnostic(
                         GetDiagnosticLocations(context, marshalerType, nativeMarshalerAttributeData).CreateDiagnostic(
@@ -462,11 +462,11 @@ namespace Microsoft.Interop.Analyzers
                 }
 
                 // Validate that this type can support marshalling when stackalloc is not usable.
-                if (isNativeMarshallingAttribute && hasStackallocConstructor && !hasConstructor)
+                if (isNativeMarshallingAttribute && hasCallerAllocSpanConstructor && !hasConstructor)
                 {
                     context.ReportDiagnostic(
                         GetDiagnosticLocations(context, marshalerType, nativeMarshalerAttributeData).CreateDiagnostic(
-                            StackallocMarshallingShouldSupportAllocatingMarshallingFallbackRule,
+                            CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackRule,
                             marshalerType.ToDisplayString()));
                 }
 
@@ -490,7 +490,7 @@ namespace Microsoft.Interop.Analyzers
                     // We error if either of the conditions below are partially met but not fully met:
                     //  - a constructor and a Value property getter
                     //  - a ToManaged method and a Value property setter
-                    if ((hasConstructor || hasStackallocConstructor) && valueProperty.GetMethod is null)
+                    if ((hasConstructor || hasCallerAllocSpanConstructor) && valueProperty.GetMethod is null)
                     {
                         context.ReportDiagnostic(
                             GetDiagnosticLocations(context, valueProperty, nativeMarshalerAttributeData).CreateDiagnostic(

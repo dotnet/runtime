@@ -192,8 +192,8 @@ namespace System.Runtime.InteropServices
             GC.KeepAlive(rmi);
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_Prelink")]
-        private static extern void InternalPrelink(RuntimeMethodHandleInternal m);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_Prelink")]
+        private static partial void InternalPrelink(RuntimeMethodHandleInternal m);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern /* struct _EXCEPTION_POINTERS* */ IntPtr GetExceptionPointers();
@@ -228,8 +228,8 @@ namespace System.Runtime.InteropServices
 #if TARGET_WINDOWS
         internal static bool IsBuiltInComSupported { get; } = IsBuiltInComSupportedInternal();
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_IsBuiltInComSupported")]
-        private static extern bool IsBuiltInComSupportedInternal();
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_IsBuiltInComSupported")]
+        private static partial bool IsBuiltInComSupportedInternal();
 
         /// <summary>
         /// Returns the HInstance for this module.  Returns -1 if the module doesn't have
@@ -250,8 +250,8 @@ namespace System.Runtime.InteropServices
             return (IntPtr)(-1);
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetHINSTANCE")]
-        private static extern IntPtr GetHINSTANCE(QCallModule m);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetHINSTANCE")]
+        private static partial IntPtr GetHINSTANCE(QCallModule m);
 
 #endif // TARGET_WINDOWS
 
@@ -298,9 +298,11 @@ namespace System.Runtime.InteropServices
             GetTypeFromCLSID(clsid, server, ObjectHandleOnStack.Create(ref type));
             return type;
         }
-
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we annotate blittable types used in interop in CoreLib (like Guid)
         [DllImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetTypeFromCLSID", CharSet = CharSet.Unicode)]
         private static extern void GetTypeFromCLSID(in Guid clsid, string? server, ObjectHandleOnStack retType);
+#pragma warning restore DLLIMPORTGENANALYZER015
 
         /// <summary>
         /// Return the IUnknown* for an Object if the current context is the one
@@ -777,6 +779,8 @@ namespace System.Runtime.InteropServices
 
             return obj;
         }
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        // These methods use built-in COM interop, which is not supported by the source generator.
 
         // Revist after https://github.com/mono/linker/issues/1989 is fixed
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:UnrecognizedReflectionPattern",
@@ -793,6 +797,7 @@ namespace System.Runtime.InteropServices
             Justification = "The calling method is annotated with RequiresUnreferencedCode")]
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
         private static extern void BindMoniker(IMoniker pmk, uint grfOpt, ref Guid iidResult, [MarshalAs(UnmanagedType.Interface)] out object ppvResult);
+#pragma warning restore DLLIMPORTGENANALYZER015
 
         [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -806,8 +811,8 @@ namespace System.Runtime.InteropServices
         internal static extern IntPtr GetFunctionPointerForDelegateInternal(Delegate d);
 
 #if DEBUG // Used for testing in Checked or Debug
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIsInCooperativeGCModeFunctionPointer")]
-        internal static unsafe extern delegate* unmanaged<int> GetIsInCooperativeGCModeFunctionPointer();
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIsInCooperativeGCModeFunctionPointer")]
+        internal static unsafe partial delegate* unmanaged<int> GetIsInCooperativeGCModeFunctionPointer();
 #endif
     }
 }

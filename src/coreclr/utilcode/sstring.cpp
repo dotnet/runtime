@@ -2708,7 +2708,7 @@ const WCHAR * SString::DacGetRawUnicode() const
 //    false if unsuccessful.
 //
 bool SString::DacGetUnicode(COUNT_T                                   cBufChars,
-                            __out_z __inout_ecount(cBufChars) WCHAR * pBuffer,
+                            _Inout_updates_z_(cBufChars) WCHAR * pBuffer,
                             COUNT_T *                                 pcNeedChars) const
 {
     SUPPORTS_DAC;

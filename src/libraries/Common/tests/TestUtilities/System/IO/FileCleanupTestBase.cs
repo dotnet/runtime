@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using Microsoft.Win32.SafeHandles;
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -9,7 +11,7 @@ using System.Threading;
 namespace System.IO
 {
     /// <summary>Base class for test classes the use temporary files that need to be cleaned up.</summary>
-    public abstract class FileCleanupTestBase : IDisposable
+    public abstract partial class FileCleanupTestBase : IDisposable
     {
         private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
 
@@ -77,6 +79,16 @@ namespace System.IO
         /// </summary>
         protected string TestDirectory { get; }
 
+        protected string GetRandomFileName() => GetTestFileName() + ".txt";
+        protected string GetRandomLinkName() => GetTestFileName() + ".link";
+        protected string GetRandomDirName()  => GetTestFileName() + "_dir";
+
+        protected string GetRandomFilePath() => Path.Combine(ActualTestDirectory.Value, GetRandomFileName());
+        protected string GetRandomLinkPath() => Path.Combine(ActualTestDirectory.Value, GetRandomLinkName());
+        protected string GetRandomDirPath()  => Path.Combine(ActualTestDirectory.Value, GetRandomDirName());
+
+        private Lazy<string> ActualTestDirectory => new Lazy<string>(() => GetTestDirectoryActualCasing());
+
         /// <summary>Gets a test file full path that is associated with the call site.</summary>
         /// <param name="index">An optional index value to use as a suffix on the file name.  Typically a loop index.</param>
         /// <param name="memberName">The member name of the function calling this method.</param>
@@ -130,62 +142,52 @@ namespace System.IO
                 index.GetValueOrDefault(),
                 Guid.NewGuid().ToString("N").Substring(0, 8)); // randomness to avoid collisions between derived test classes using same base method concurrently
 
-        /// <summary>
-        /// In some cases (such as when running without elevated privileges),
-        /// the symbolic link may fail to create. Only run this test if it creates
-        /// links successfully.
-        /// </summary>
-        protected static bool CanCreateSymbolicLinks => s_canCreateSymbolicLinks.Value;
-
-        private static readonly Lazy<bool> s_canCreateSymbolicLinks = new Lazy<bool>(() =>
+        // Some Windows versions like Windows Nano Server have the %TEMP% environment variable set to "C:\TEMP" but the
+        // actual folder name is "C:\Temp", which prevents asserting path values using Assert.Equal due to case sensitiveness.
+        // So instead of using TestDirectory directly, we retrieve the real path with proper casing of the initial folder path.
+        private unsafe string GetTestDirectoryActualCasing()
         {
-            bool success = true;
+            if (!PlatformDetection.IsWindows)
+                return TestDirectory;
 
-            // Verify file symlink creation
-            string path = Path.GetTempFileName();
-            string linkPath = path + ".link";
-            success = CreateSymLink(path, linkPath, isDirectory: false);
-            try { File.Delete(path); } catch { }
-            try { File.Delete(linkPath); } catch { }
-
-            // Verify directory symlink creation
-            path = Path.GetTempFileName();
-            linkPath = path + ".link";
-            success = success && CreateSymLink(path, linkPath, isDirectory: true);
-            try { Directory.Delete(path); } catch { }
-            try { Directory.Delete(linkPath); } catch { }
-
-            return success;
-        });
-
-        protected static bool CreateSymLink(string targetPath, string linkPath, bool isDirectory)
-        {
-#if NETFRAMEWORK
-            bool isWindows = true;
-#else
-            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsBrowser()) // OSes that don't support Process.Start()
+            try
             {
-                return false;
-            }
-            bool isWindows = OperatingSystem.IsWindows();
-#endif
-            Process symLinkProcess = new Process();
-            if (isWindows)
-            {
-                symLinkProcess.StartInfo.FileName = "cmd";
-                symLinkProcess.StartInfo.Arguments = string.Format("/c mklink{0} \"{1}\" \"{2}\"", isDirectory ? " /D" : "", Path.GetFullPath(linkPath), Path.GetFullPath(targetPath));
-            }
-            else
-            {
-                symLinkProcess.StartInfo.FileName = "/bin/ln";
-                symLinkProcess.StartInfo.Arguments = string.Format("-s \"{0}\" \"{1}\"", Path.GetFullPath(targetPath), Path.GetFullPath(linkPath));
-            }
-            symLinkProcess.StartInfo.RedirectStandardOutput = true;
-            symLinkProcess.Start();
+                using SafeFileHandle handle = Interop.Kernel32.CreateFile(
+                            TestDirectory,
+                            dwDesiredAccess: 0,
+                            dwShareMode: FileShare.ReadWrite | FileShare.Delete,
+                            dwCreationDisposition: FileMode.Open,
+                            dwFlagsAndAttributes:
+                                Interop.Kernel32.FileOperations.OPEN_EXISTING |
+                                Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS // Necessary to obtain a handle to a directory
+                            );
 
-            symLinkProcess.WaitForExit();
-            return (0 == symLinkProcess.ExitCode);
+                if (!handle.IsInvalid)
+                {
+                    const int InitialBufferSize = 4096;
+                    char[]? buffer = ArrayPool<char>.Shared.Rent(InitialBufferSize);
+                    uint result = GetFinalPathNameByHandle(handle, buffer);
+
+                    // Remove extended prefix
+                    int skip = PathInternal.IsExtended(buffer) ? 4 : 0;
+
+                    return new string(
+                        buffer,
+                        skip,
+                        (int)result - skip);
+                }
+            }
+            catch { }
+
+            return TestDirectory;
         }
 
+        private unsafe uint GetFinalPathNameByHandle(SafeFileHandle handle, char[] buffer)
+        {
+            fixed (char* bufPtr = buffer)
+            {
+                return Interop.Kernel32.GetFinalPathNameByHandle(handle, bufPtr, (uint)buffer.Length, Interop.Kernel32.FILE_NAME_NORMALIZED);
+            }
+        }
     }
 }

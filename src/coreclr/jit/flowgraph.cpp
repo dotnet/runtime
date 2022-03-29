@@ -920,7 +920,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default
     // intrinsics, flag the helper call. Later during inlining, we can
     // remove the helper call if the associated field lookup is unused.
-    if ((info.compFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
+    if ((info.compFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
         NamedIntrinsic ni = lookupNamedIntrinsic(info.compMethodHnd);
         if ((ni == NI_System_Collections_Generic_EqualityComparer_get_Default) ||
@@ -980,7 +980,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
             return false;
         }
 
-        LclVarDsc* varDsc = &lvaTable[varNum];
+        LclVarDsc* varDsc = lvaGetDesc(varNum);
 
         if (varDsc->lvStackByref)
         {
@@ -1084,7 +1084,9 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     GenTree*              qmarkNode       = nullptr;
     if (oper == GT_FTN_ADDR)
     {
-        targetMethodHnd = targetMethod->AsFptrVal()->gtFptrMethod;
+        GenTreeFptrVal* fptrValTree       = targetMethod->AsFptrVal();
+        fptrValTree->gtFptrDelegateTarget = true;
+        targetMethodHnd                   = fptrValTree->gtFptrMethod;
     }
     else if (oper == GT_CALL && targetMethod->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR))
     {
@@ -1337,8 +1339,7 @@ GenTree* Compiler::fgDoNormalizeOnStore(GenTree* tree)
             // Small-typed arguments and aliased locals are normalized on load.
             // Other small-typed locals are normalized on store.
             // If it is an assignment to one of the latter, insert the cast on RHS
-            unsigned   varNum = op1->AsLclVarCommon()->GetLclNum();
-            LclVarDsc* varDsc = &lvaTable[varNum];
+            LclVarDsc* varDsc = lvaGetDesc(op1->AsLclVarCommon()->GetLclNum());
 
             if (varDsc->lvNormalizeOnStore())
             {
@@ -1393,14 +1394,13 @@ void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
     }
 }
 
-/*****************************************************************************
- *
- *  Mark which loops are guaranteed to execute a call.
- */
-
+//------------------------------------------------------------------------
+// fgLoopCallMark: Mark which loops are guaranteed to execute a call by setting the
+// block BBF_LOOP_CALL0 and BBF_LOOP_CALL1 flags, as appropriate.
+//
 void Compiler::fgLoopCallMark()
 {
-    /* If we've already marked all the block, bail */
+    // If we've already marked all the blocks, bail.
 
     if (fgLoopCallMarked)
     {
@@ -1409,7 +1409,12 @@ void Compiler::fgLoopCallMark()
 
     fgLoopCallMarked = true;
 
-    /* Walk the blocks, looking for backward edges */
+#ifdef DEBUG
+    // This code depends on properly ordered bbNum, so check that.
+    fgDebugCheckBBNumIncreasing();
+#endif // DEBUG
+
+    // Walk the blocks, looking for backward edges.
 
     for (BasicBlock* const block : Blocks())
     {
@@ -2000,7 +2005,7 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     lvaReversePInvokeFrameVar = lvaGrabTempWithImplicitUse(false DEBUGARG("Reverse Pinvoke FrameVar"));
 
-    LclVarDsc* varDsc   = &lvaTable[lvaReversePInvokeFrameVar];
+    LclVarDsc* varDsc   = lvaGetDesc(lvaReversePInvokeFrameVar);
     varDsc->lvType      = TYP_BLK;
     varDsc->lvExactSize = eeGetEEInfo()->sizeOfReversePInvokeFrame;
 
@@ -2756,7 +2761,7 @@ void Compiler::fgAddInternal()
         if (!opts.ShouldUsePInvokeHelpers())
         {
             info.compLvFrameListRoot           = lvaGrabTemp(false DEBUGARG("Pinvoke FrameListRoot"));
-            LclVarDsc* rootVarDsc              = &lvaTable[info.compLvFrameListRoot];
+            LclVarDsc* rootVarDsc              = lvaGetDesc(info.compLvFrameListRoot);
             rootVarDsc->lvType                 = TYP_I_IMPL;
             rootVarDsc->lvImplicitlyReferenced = 1;
         }
@@ -2766,7 +2771,7 @@ void Compiler::fgAddInternal()
         // Lowering::InsertPInvokeMethodProlog will create a call with this local addr as an argument.
         lvaSetVarAddrExposed(lvaInlinedPInvokeFrameVar DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
 
-        LclVarDsc* varDsc = &lvaTable[lvaInlinedPInvokeFrameVar];
+        LclVarDsc* varDsc = lvaGetDesc(lvaInlinedPInvokeFrameVar);
         varDsc->lvType    = TYP_BLK;
         // Make room for the inlined frame.
         varDsc->lvExactSize = eeGetEEInfo()->inlinedCallFrameInfo.size;
@@ -2777,7 +2782,7 @@ void Compiler::fgAddInternal()
         if (!opts.ShouldUsePInvokeHelpers() && compJmpOpUsed)
         {
             lvaPInvokeFrameRegSaveVar = lvaGrabTempWithImplicitUse(false DEBUGARG("PInvokeFrameRegSave Var"));
-            varDsc                    = &lvaTable[lvaPInvokeFrameRegSaveVar];
+            varDsc                    = lvaGetDesc(lvaPInvokeFrameRegSaveVar);
             varDsc->lvType            = TYP_BLK;
             varDsc->lvExactSize       = 2 * REGSIZE_BYTES;
         }
@@ -2939,7 +2944,7 @@ void Compiler::fgFindOperOrder()
 // and computing lvaOutgoingArgSpaceSize.
 //
 // Notes:
-//    Lowers GT_ARR_LENGTH, GT_ARR_BOUNDS_CHECK, and GT_SIMD_CHK.
+//    Lowers GT_ARR_LENGTH, GT_BOUNDS_CHECK.
 //
 //    For target ABIs with fixed out args area, computes upper bound on
 //    the size of this area from the calls in the IR.
@@ -3002,13 +3007,7 @@ void Compiler::fgSimpleLowering()
                     break;
                 }
 
-                case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-                case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-                case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
+                case GT_BOUNDS_CHECK:
                 {
                     // Add in a call to an error routine.
                     fgSetRngChkTarget(tree, false);
@@ -3934,11 +3933,7 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
         GenTree*       sizeNode  = dynBlk->gtDynamicSize;
         GenTree*       dstAddr   = dynBlk->Addr();
         GenTree*       src       = dynBlk->Data();
-        bool           isReverse = ((dynBlk->gtFlags & GTF_REVERSE_OPS) != 0);
-        if (dynBlk->gtEvalSizeFirst)
-        {
-            fgSetTreeSeqHelper(sizeNode, isLIR);
-        }
+        bool           isReverse = dynBlk->IsReverseOp();
 
         // We either have a DYN_BLK or a STORE_DYN_BLK. If the latter, we have a
         // src (the Data to be stored), and isReverse tells us whether to evaluate
@@ -3952,10 +3947,8 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
         {
             fgSetTreeSeqHelper(src, isLIR);
         }
-        if (!dynBlk->gtEvalSizeFirst)
-        {
-            fgSetTreeSeqHelper(sizeNode, isLIR);
-        }
+        fgSetTreeSeqHelper(sizeNode, isLIR);
+
         fgSetTreeSeqFinish(dynBlk, isLIR);
         return;
     }
@@ -4430,32 +4423,29 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
 // Return Value:
 //    The first node in execution order, that belongs to tree.
 //
-// Assumptions:
-//     'tree' must either be a leaf, or all of its constituent nodes must be contiguous
-//     in execution order.
-//     TODO-Cleanup: Add a debug-only method that verifies this.
-
-/* static */
-GenTree* Compiler::fgGetFirstNode(GenTree* tree)
+// Notes:
+//    This function is only correct for HIR trees.
+//
+/* static */ GenTree* Compiler::fgGetFirstNode(GenTree* tree)
 {
-    GenTree* child = tree;
-    while (child->NumChildren() > 0)
+    GenTree* firstNode = tree;
+    while (true)
     {
-        if ((child->OperIsBinary() || child->OperIsMultiOp()) && child->IsReverseOp())
+        auto operandsBegin = firstNode->OperandsBegin();
+        auto operandsEnd   = firstNode->OperandsEnd();
+
+        if (operandsBegin == operandsEnd)
         {
-            child = child->GetChild(1);
+            break;
         }
-        else
-        {
-            child = child->GetChild(0);
-        }
+
+        firstNode = *operandsBegin;
     }
-    return child;
+
+    return firstNode;
 }
 
-/*****************************************************************************/
-/*static*/
-Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
+/*static*/ Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
 {
     GenTree* tree = *pTree;
 
@@ -4487,7 +4477,7 @@ Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
             }
             break;
 
-        case GT_ARR_BOUNDS_CHECK:
+        case GT_BOUNDS_CHECK:
             return Compiler::WALK_ABORT;
 
         default:
@@ -4497,9 +4487,7 @@ Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
     return Compiler::WALK_CONTINUE;
 }
 
-/*****************************************************************************/
-/*static*/
-Compiler::fgWalkResult Compiler::fgChkLocAllocCB(GenTree** pTree, fgWalkData* data)
+/*static*/ Compiler::fgWalkResult Compiler::fgChkLocAllocCB(GenTree** pTree, fgWalkData* data)
 {
     GenTree* tree = *pTree;
 
@@ -4511,9 +4499,7 @@ Compiler::fgWalkResult Compiler::fgChkLocAllocCB(GenTree** pTree, fgWalkData* da
     return Compiler::WALK_CONTINUE;
 }
 
-/*****************************************************************************/
-/*static*/
-Compiler::fgWalkResult Compiler::fgChkQmarkCB(GenTree** pTree, fgWalkData* data)
+/*static*/ Compiler::fgWalkResult Compiler::fgChkQmarkCB(GenTree** pTree, fgWalkData* data)
 {
     GenTree* tree = *pTree;
 

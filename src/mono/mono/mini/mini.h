@@ -667,7 +667,13 @@ typedef enum {
 	/* Vtype returned as an int */
 	LLVMArgVtypeAsScalar,
 	/* Address to local vtype passed as argument (using register or stack). */
-	LLVMArgVtypeAddr
+	LLVMArgVtypeAddr,
+	/*
+	 * On WASM, a one element vtype is passed/returned as a scalar with the same
+	 * type as the element.
+	 * esize is the size of the value.
+	 */
+	LLVMArgWasmVtypeAsScalar
 } LLVMArgStorage;
 
 typedef struct {
@@ -751,6 +757,7 @@ struct MonoInst {
 			int *phi_args;
 			MonoCallInst *call_inst;
 			GList *exception_clauses;
+			const char *exc_name;
 		} op [2];
 		gint64 i8const;
 		double r8const;
@@ -901,6 +908,9 @@ enum {
 
 #define inst_newa_len   data.op[0].src
 #define inst_newa_class data.op[1].klass
+
+/* In _OVF opcodes */
+#define inst_exc_name  data.op[0].exc_name
 
 #define inst_var    data.op[0].var
 #define inst_vtype  data.op[1].vtype
@@ -1064,8 +1074,10 @@ typedef enum {
 	MONO_RGCTX_INFO_METHOD_FTNDESC                = 33,
 	/* mono_type_size () for a class */
 	MONO_RGCTX_INFO_CLASS_SIZEOF                  = 34,
-	/* A gsharedvt_out wrapper for a method */
-	MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER_VIRT    = 35
+	/* The InterpMethod for a method */
+	MONO_RGCTX_INFO_INTERP_METHOD                 = 35,
+	/* The llvmonly interp entry for a method */
+	MONO_RGCTX_INFO_LLVMONLY_INTERP_ENTRY         = 36
 } MonoRgctxInfoType;
 
 /* How an rgctx is passed to a method */
@@ -1097,7 +1109,8 @@ typedef struct {
 	gpointer infos [MONO_ZERO_LEN_ARRAY];
 } MonoMethodRuntimeGenericContext;
 
-#define MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT (MONO_ABI_SIZEOF (MonoMethodRuntimeGenericContext) - MONO_ZERO_LEN_ARRAY * TARGET_SIZEOF_VOID_P)
+/* MONO_ABI_SIZEOF () would include the 'infos' field as well */
+#define MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT (TARGET_SIZEOF_VOID_P * 2)
 
 #define MONO_RGCTX_SLOT_MAKE_RGCTX(i)	(i)
 #define MONO_RGCTX_SLOT_MAKE_MRGCTX(i)	((i) | 0x80000000)
@@ -1386,6 +1399,7 @@ typedef struct {
 
 	MonoInst *lmf_var;
 	MonoInst *lmf_addr_var;
+	MonoInst *il_state_var;
 
 	MonoInst *stack_inbalance_var;
 
@@ -1439,10 +1453,6 @@ typedef struct {
 	 * instead of being generated in emit_prolog ()/emit_epilog ().
 	 */
 	guint            lmf_ir : 1;
-	/*
-	 * Whenever to use the mono_lmf TLS variable instead of indirection through the
-	 * mono_lmf_addr TLS variable.
-	 */
 	guint            gen_write_barriers : 1;
 	guint            init_ref_vars : 1;
 	guint            extend_live_ranges : 1;
@@ -1479,6 +1489,8 @@ typedef struct {
 	guint            code_exec_only : 1;
 	guint            interp_entry_only : 1;
 	guint            after_method_to_ir : 1;
+	guint            disable_inline_rgctx_fetch : 1;
+	guint            deopt : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;
 	gpointer         debug_info;
@@ -1788,6 +1800,7 @@ enum {
 #define OP_PSUB OP_LSUB
 #define OP_PMUL OP_LMUL
 #define OP_PMUL_IMM OP_LMUL_IMM
+#define OP_POR_IMM OP_LOR_IMM
 #define OP_PNEG OP_LNEG
 #define OP_PCONV_TO_I1 OP_LCONV_TO_I1
 #define OP_PCONV_TO_U1 OP_LCONV_TO_U1
@@ -1818,6 +1831,7 @@ enum {
 #define OP_PSUB OP_ISUB
 #define OP_PMUL OP_IMUL
 #define OP_PMUL_IMM OP_IMUL_IMM
+#define OP_POR_IMM OP_IOR_IMM
 #define OP_PNEG OP_INEG
 #define OP_PCONV_TO_I1 OP_ICONV_TO_I1
 #define OP_PCONV_TO_U1 OP_ICONV_TO_U1
@@ -1981,6 +1995,7 @@ enum {
 	MONO_EXC_ARRAY_TYPE_MISMATCH,
 	MONO_EXC_ARGUMENT,
 	MONO_EXC_ARGUMENT_OUT_OF_RANGE,
+	MONO_EXC_ARGUMENT_OUT_OF_MEMORY,
 	MONO_EXC_INTRINS_NUM
 };
 
@@ -2840,7 +2855,6 @@ typedef enum {
 	MONO_CPU_X86_LZCNT	= 1 << 13,
 	MONO_CPU_X86_BMI1	= 1 << 14,
 	MONO_CPU_X86_BMI2	= 1 << 15,
-
 
 	//
 	// Dependencies (based on System.Runtime.Intrinsics.X86 class hierarchy):

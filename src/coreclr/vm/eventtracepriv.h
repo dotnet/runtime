@@ -18,10 +18,6 @@
 #ifndef __EVENTTRACEPRIV_H__
 #define __EVENTTRACEPRIV_H__
 
-#ifndef _countof
-#define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
-#endif
-
 // ETW has a limitation of 64K for TOTAL event Size, however there is overhead associated with
 // the event headers.   It is unclear exactly how much that is, but 1K should be sufficiently
 // far away to avoid problems without sacrificing the perf of bulk processing.

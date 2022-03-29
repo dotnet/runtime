@@ -791,23 +791,20 @@ gboolean
 mono_metadata_has_updates_api (void);
 
 void
-mono_image_effective_table_slow (const MonoTableInfo **t, int *idx);
+mono_image_effective_table_slow (const MonoTableInfo **t, int idx);
 
 gboolean
 mono_metadata_update_has_modified_rows (const MonoTableInfo *t);
 
 static inline void
-mono_image_effective_table (const MonoTableInfo **t, int *idx)
+mono_image_effective_table (const MonoTableInfo **t, int idx)
 {
 	if (G_UNLIKELY (mono_metadata_has_updates ())) {
-		if (G_UNLIKELY (*idx >= table_info_get_rows ((*t)) || mono_metadata_update_has_modified_rows (*t))) {
+		if (G_UNLIKELY (idx >= table_info_get_rows ((*t)) || mono_metadata_update_has_modified_rows (*t))) {
 			mono_image_effective_table_slow (t, idx);
 		}
 	}
 }
-
-int
-mono_image_relative_delta_index (MonoImage *image_dmeta, int token);
 
 enum MonoEnCDeltaOrigin {
         MONO_ENC_DELTA_API = 0,
@@ -847,6 +844,18 @@ mono_metadata_clean_generic_classes_for_image (MonoImage *image);
 
 gboolean
 mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int token_index);
+
+int
+mono_metadata_table_num_rows_slow (MonoImage *image, int table_index);
+
+static inline int
+mono_metadata_table_num_rows (MonoImage *image, int table_index)
+{
+	if (G_LIKELY (!image->has_updates))
+		return table_info_get_rows (&image->tables [table_index]);
+	else
+		return mono_metadata_table_num_rows_slow (image, table_index);
+}
 
 /* token_index is 1-based */
 static inline gboolean
@@ -1221,6 +1230,20 @@ static inline MonoArrayType*
 mono_type_get_array_type_internal (MonoType *type)
 {
 	return type->data.array;
+}
+
+static inline int
+mono_metadata_table_to_ptr_table (int table_num)
+{
+	switch (table_num) {
+	case MONO_TABLE_FIELD: return MONO_TABLE_FIELD_POINTER;
+	case MONO_TABLE_METHOD: return MONO_TABLE_METHOD_POINTER;
+	case MONO_TABLE_PARAM: return MONO_TABLE_PARAM_POINTER;
+	case MONO_TABLE_PROPERTY: return MONO_TABLE_PROPERTY_POINTER;
+	case MONO_TABLE_EVENT: return MONO_TABLE_EVENT_POINTER;
+	default:
+		g_assert_not_reached ();
+	}
 }
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */

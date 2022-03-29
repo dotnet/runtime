@@ -12,6 +12,9 @@
     <EnableAggressiveTrimming>false</EnableAggressiveTrimming>
     <PublishTrimmed>false</PublishTrimmed>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+
+    <!-- FIXME: issue -->
+    <DisableSourceLink>true</DisableSourceLink>
   </PropertyGroup>
 
   <ItemGroup>

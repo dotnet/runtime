@@ -619,7 +619,25 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         switch (blkNode->gtBlkOpKind)
         {
             case GenTreeBlk::BlkOpKindUnroll:
-                break;
+#ifdef TARGET_ARM64
+            {
+                if (dstAddr->isContained())
+                {
+                    // Since the dstAddr is contained the address will be computed in CodeGen.
+                    // This might require an integer register to store the value.
+                    buildInternalIntRegisterDefForNode(blkNode);
+                }
+
+                const bool isDstRegAddrAlignmentKnown = dstAddr->OperIsLocalAddr();
+
+                if (isDstRegAddrAlignmentKnown && (size > FP_REGSIZE_BYTES))
+                {
+                    // For larger block sizes CodeGen can choose to use 16-byte SIMD instructions.
+                    buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                }
+            }
+#endif // TARGET_ARM64
+            break;
 
             case GenTreeBlk::BlkOpKindHelper:
                 assert(!src->isContained());
@@ -673,16 +691,45 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             switch (blkNode->gtBlkOpKind)
             {
                 case GenTreeBlk::BlkOpKindUnroll:
+                {
                     buildInternalIntRegisterDefForNode(blkNode);
 #ifdef TARGET_ARM64
-                    if (size >= 2 * REGSIZE_BYTES)
+                    const bool dstAddrMayNeedReg = dstAddr->isContained();
+                    const bool srcAddrMayNeedReg = src->OperIs(GT_LCL_VAR, GT_LCL_FLD) ||
+                                                   ((srcAddrOrFill != nullptr) && srcAddrOrFill->isContained());
+
+                    if (srcAddrMayNeedReg && dstAddrMayNeedReg)
                     {
-                        // We will use ldp/stp to reduce code size and improve performance
-                        // so we need to reserve an extra internal register
+                        // The following allocates an additional integer register in a case
+                        // when a load instruction and a store instruction cannot be encoded.
+                        buildInternalIntRegisterDefForNode(blkNode);
+                        // In this case, CodeGen will use a SIMD register for copying.
+                        buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                        // And in case of a larger block size, two SIMD registers.
+                        if (size >= 2 * REGSIZE_BYTES)
+                        {
+                            buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                        }
+                    }
+                    else if (srcAddrMayNeedReg || dstAddrMayNeedReg)
+                    {
+                        if (size >= 2 * REGSIZE_BYTES)
+                        {
+                            buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                            buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                        }
+                        else
+                        {
+                            buildInternalIntRegisterDefForNode(blkNode);
+                        }
+                    }
+                    else if (size >= 2 * REGSIZE_BYTES)
+                    {
                         buildInternalIntRegisterDefForNode(blkNode);
                     }
 #endif
-                    break;
+                }
+                break;
 
                 case GenTreeBlk::BlkOpKindHelper:
                     dstAddrRegMask = RBM_ARG_0;

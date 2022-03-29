@@ -838,7 +838,7 @@ ref struct {|#0:Native|}
 {
     public Native(S s, Span<byte> stackSpace) : this() {}
 
-    public const int StackBufferSize = 1;
+    public const int BufferSize = 1;
 
     public Span<int> ManagedValues { get; set; }
     public Span<byte> NativeValueStorage { get; set; }
@@ -868,7 +868,7 @@ ref struct {|#0:Native|}
 {
     public Native(S s, Span<byte> stackSpace, int nativeElementSize) : this() {}
 
-    public const int StackBufferSize = 1;
+    public const int BufferSize = 1;
 
     public Span<int> ManagedValues { get; set; }
     public Span<byte> NativeValueStorage { get; set; }
@@ -877,7 +877,7 @@ ref struct {|#0:Native|}
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(StackallocMarshallingShouldSupportAllocatingMarshallingFallbackRule).WithLocation(0).WithArguments("Native", "S"));
+                VerifyCS.Diagnostic(CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackRule).WithLocation(0).WithArguments("Native", "S"));
         }
 
         [ConditionalFact]
@@ -996,11 +996,11 @@ struct {|#0:Native|}
 {
     public Native(S s, Span<byte> buffer) {}
 
-    public const int StackBufferSize = 0x100;
+    public const int BufferSize = 0x100;
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(StackallocMarshallingShouldSupportAllocatingMarshallingFallbackRule).WithLocation(0).WithArguments("Native"));
+                VerifyCS.Diagnostic(CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackRule).WithLocation(0).WithArguments("Native"));
         }
 
         [ConditionalFact]
@@ -1023,11 +1023,11 @@ struct {|#1:Native|}
 
     public IntPtr Value => IntPtr.Zero;
 
-    public const int StackBufferSize = 0x100;
+    public const int BufferSize = 0x100;
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(StackallocMarshallingShouldSupportAllocatingMarshallingFallbackRule).WithLocation(1).WithArguments("Native"),
+                VerifyCS.Diagnostic(CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackRule).WithLocation(1).WithArguments("Native"),
                 VerifyCS.Diagnostic(GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackRule).WithLocation(0).WithArguments("S", "Native"));
         }
 
@@ -1620,7 +1620,7 @@ struct Native
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(StackallocConstructorMustHaveStackBufferSizeConstantRule).WithLocation(0).WithArguments("Native"));
+                VerifyCS.Diagnostic(CallerAllocConstructorMustHaveBufferSizeConstantRule).WithLocation(0).WithArguments("Native"));
         }
     }
 }

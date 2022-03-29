@@ -256,26 +256,15 @@ namespace System.DirectoryServices.ActiveDirectory
         public byte reserved;
     }
 
-    /*typedef struct _LUID {
-            DWORD LowPart;
-            LONG HighPart;
-    } LUID, *PLUID;*/
-    [StructLayout(LayoutKind.Sequential)]
-    internal sealed class LUID
-    {
-        public int LowPart;
-        public int HighPart;
-    }
-
     /*typedef struct _NEGOTIATE_CALLER_NAME_REQUEST {
             ULONG       MessageType ;
             LUID        LogonId ;
     } NEGOTIATE_CALLER_NAME_REQUEST, *PNEGOTIATE_CALLER_NAME_REQUEST ;*/
     [StructLayout(LayoutKind.Sequential)]
-    internal sealed class NegotiateCallerNameRequest
+    internal struct NegotiateCallerNameRequest
     {
         public int messageType;
-        public LUID? logonId;
+        public global::Interop.LUID logonId;
     }
 
     /*typedef struct _NEGOTIATE_CALLER_NAME_RESPONSE {
@@ -289,7 +278,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public string? callerName;
     }
 
-    internal sealed class NativeMethods
+    internal sealed partial class NativeMethods
     {
         // disable public constructor
         private NativeMethods() { }
@@ -320,14 +309,14 @@ namespace System.DirectoryServices.ActiveDirectory
                 ULONG Flags,
                 PDOMAIN_CONTROLLER_INFO* DomainControllerInfo
                 );*/
-        [DllImport(global::Interop.Libraries.Netapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcNameW", CharSet = CharSet.Unicode)]
-        internal static extern int DsGetDcName(
-            [In] string? computerName,
-            [In] string? domainName,
-            [In] IntPtr domainGuid,
-            [In] string? siteName,
-            [In] int flags,
-            [Out] out IntPtr domainControllerInfo);
+        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcNameW", CharSet = CharSet.Unicode)]
+        internal static partial int DsGetDcName(
+            string? computerName,
+            string? domainName,
+            IntPtr domainGuid,
+            string? siteName,
+            int flags,
+            out IntPtr domainControllerInfo);
 
         /* DWORD WINAPI DsGetDcOpen(
                          LPCTSTR DnsName,
@@ -338,15 +327,15 @@ namespace System.DirectoryServices.ActiveDirectory
                          ULONG DcFlags,
                          PHANDLE RetGetDcContext
                          );*/
-        [DllImport(global::Interop.Libraries.Netapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcOpenW", CharSet = CharSet.Unicode)]
-        internal static extern int DsGetDcOpen(
-            [In] string? dnsName,
-            [In] int optionFlags,
-            [In] string? siteName,
-            [In] IntPtr domainGuid,
-            [In] string? dnsForestName,
-            [In] int dcFlags,
-            [Out] out IntPtr retGetDcContext);
+        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcOpenW", CharSet = CharSet.Unicode)]
+        internal static partial int DsGetDcOpen(
+            string? dnsName,
+            int optionFlags,
+            string? siteName,
+            IntPtr domainGuid,
+            string? dnsForestName,
+            int dcFlags,
+            out IntPtr retGetDcContext);
 
         /*DWORD WINAPI DsGetDcNext(
                         HANDLE GetDcContextHandle,
@@ -354,26 +343,26 @@ namespace System.DirectoryServices.ActiveDirectory
                         LPSOCKET_ADDRESS* SockAddresses,
                         LPTSTR* DnsHostName
                         );*/
-        [DllImport(global::Interop.Libraries.Netapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcNextW", CharSet = CharSet.Unicode)]
-        internal static extern int DsGetDcNext(
-            [In] IntPtr getDcContextHandle,
-            [In, Out] ref IntPtr sockAddressCount,
-            [Out] out IntPtr sockAdresses,
-            [Out] out IntPtr dnsHostName);
+        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcNextW", CharSet = CharSet.Unicode)]
+        internal static partial int DsGetDcNext(
+            IntPtr getDcContextHandle,
+            ref IntPtr sockAddressCount,
+            out IntPtr sockAdresses,
+            out IntPtr dnsHostName);
 
         /*void WINAPI DsGetDcClose(
                         HANDLE GetDcContextHandle
                         );*/
-        [DllImport(global::Interop.Libraries.Netapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcCloseW", CharSet = CharSet.Unicode)]
-        internal static extern void DsGetDcClose(
-            [In] IntPtr getDcContextHandle);
+        [GeneratedDllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcCloseW", CharSet = CharSet.Unicode)]
+        internal static partial void DsGetDcClose(
+            IntPtr getDcContextHandle);
 
         /*NET_API_STATUS NetApiBufferFree(
                 LPVOID Buffer
                 );*/
-        [DllImport(global::Interop.Libraries.Netapi32)]
-        internal static extern int NetApiBufferFree(
-            [In] IntPtr buffer);
+        [GeneratedDllImport(global::Interop.Libraries.Netapi32)]
+        internal static partial int NetApiBufferFree(
+            IntPtr buffer);
 
         /*DWORD DsMakePasswordCredentials(
             LPTSTR User,
@@ -457,10 +446,6 @@ namespace System.DirectoryServices.ActiveDirectory
             [In] IntPtr dsHandle,
             [Out] out IntPtr roles);
 
-        /*DWORD GetLastError(VOID)*/
-        [DllImport(global::Interop.Libraries.Kernel32)]
-        internal static extern int GetLastError();
-
         internal const int DnsSrvData = 33;
         internal const int DnsQueryBypassCache = 8;
 
@@ -472,30 +457,23 @@ namespace System.DirectoryServices.ActiveDirectory
             PDNS_RECORD *ppQueryResultsSet,
             PVOID *pReserved
             );*/
-        [DllImport(global::Interop.Libraries.Dnsapi, EntryPoint = "DnsQuery_W", CharSet = CharSet.Unicode)]
-        internal static extern int DnsQuery(
-            [In] string recordName,
-            [In] short recordType,
-            [In] int options,
-            [In] IntPtr servers,
-            [Out] out IntPtr dnsResultList,
-            [Out] IntPtr reserved);
+        [GeneratedDllImport(global::Interop.Libraries.Dnsapi, EntryPoint = "DnsQuery_W", CharSet = CharSet.Unicode)]
+        internal static partial int DnsQuery(
+            string recordName,
+            short recordType,
+            int options,
+            IntPtr servers,
+            out IntPtr dnsResultList,
+            IntPtr reserved);
 
         /*VOID WINAPI DnsRecordListFree(
             PDNS_RECORD pRecordList,
             DNS_FREE_TYPE FreeType
             );*/
-        [DllImport(global::Interop.Libraries.Dnsapi, CharSet = CharSet.Unicode)]
-        internal static extern void DnsRecordListFree(
-            [In] IntPtr dnsResultList,
-            [In] bool dnsFreeType);
-
-        /*BOOL GetVersionEx(
-              LPOSVERSIONINFO lpVersionInfo
-            );*/
-        [DllImport(global::Interop.Libraries.Kernel32, EntryPoint = "GetVersionExW", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool GetVersionEx(
-                [In, Out] OSVersionInfoEx ver);
+        [GeneratedDllImport(global::Interop.Libraries.Dnsapi, CharSet = CharSet.Unicode)]
+        internal static partial void DnsRecordListFree(
+            IntPtr dnsResultList,
+            bool dnsFreeType);
 
         /*DWORD DsCrackNames(
             HANDLE hDS,
@@ -518,9 +496,9 @@ namespace System.DirectoryServices.ActiveDirectory
         /*NTSTATUS LsaConnectUntrusted(
               PHANDLE LsaHandle
             );*/
-        [DllImport(global::Interop.Libraries.Secur32)]
-        internal static extern int LsaConnectUntrusted(
-             [Out] out LsaLogonProcessSafeHandle lsaHandle);
+        [GeneratedDllImport(global::Interop.Libraries.Secur32)]
+        internal static partial uint LsaConnectUntrusted(
+             out LsaLogonProcessSafeHandle lsaHandle);
 
         internal const int NegGetCallerName = 1;
 
@@ -533,29 +511,29 @@ namespace System.DirectoryServices.ActiveDirectory
               PULONG ReturnBufferLength,
               PNTSTATUS ProtocolStatus
             );*/
-        [DllImport(global::Interop.Libraries.Secur32)]
-        internal static extern int LsaCallAuthenticationPackage(
-            [In] LsaLogonProcessSafeHandle lsaHandle,
-            [In] int authenticationPackage,
-            [In] NegotiateCallerNameRequest protocolSubmitBuffer,
-            [In] int submitBufferLength,
-            [Out] out IntPtr protocolReturnBuffer,
-            [Out] out int returnBufferLength,
-            [Out] out int protocolStatus);
+        [GeneratedDllImport(global::Interop.Libraries.Secur32)]
+        internal static partial uint LsaCallAuthenticationPackage(
+            LsaLogonProcessSafeHandle lsaHandle,
+            int authenticationPackage,
+            in NegotiateCallerNameRequest protocolSubmitBuffer,
+            int submitBufferLength,
+            out IntPtr protocolReturnBuffer,
+            out int returnBufferLength,
+            out uint protocolStatus);
 
         /*NTSTATUS LsaFreeReturnBuffer(
               PVOID Buffer
             );*/
-        [DllImport(global::Interop.Libraries.Secur32)]
-        internal static extern uint LsaFreeReturnBuffer(
-            [In] IntPtr buffer);
+        [GeneratedDllImport(global::Interop.Libraries.Secur32)]
+        internal static partial uint LsaFreeReturnBuffer(
+            IntPtr buffer);
 
         /*NTSTATUS LsaDeregisterLogonProcess(
               HANDLE LsaHandle
             );*/
-        [DllImport(global::Interop.Libraries.Secur32)]
-        internal static extern int LsaDeregisterLogonProcess(
-            [In] IntPtr lsaHandle);
+        [GeneratedDllImport(global::Interop.Libraries.Secur32)]
+        internal static partial int LsaDeregisterLogonProcess(
+            IntPtr lsaHandle);
 
         /*int CompareString(LCID Locale,
             DWORD dwCmpFlags,
@@ -564,17 +542,14 @@ namespace System.DirectoryServices.ActiveDirectory
             DWORD lpString2,
             DWORD cchCount2
             );*/
-        [DllImport(global::Interop.Libraries.Kernel32, EntryPoint = "CompareStringW", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern int CompareString(
-            [In] uint locale,
-            [In] uint dwCmpFlags,
-            [In] IntPtr lpString1,
-            [In] int cchCount1,
-            [In] IntPtr lpString2,
-            [In] int cchCount2);
-
-        [DllImport(global::Interop.Libraries.Advapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaNtStatusToWinError", CharSet = CharSet.Unicode)]
-        internal static extern int LsaNtStatusToWinError(int ntStatus);
+        [GeneratedDllImport(global::Interop.Libraries.Kernel32, EntryPoint = "CompareStringW", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static partial int CompareString(
+            uint locale,
+            uint dwCmpFlags,
+            IntPtr lpString1,
+            int cchCount1,
+            IntPtr lpString2,
+            int cchCount2);
     }
 
     internal sealed class NativeComInterfaces

@@ -443,10 +443,10 @@ STDAPI GetRequestedRuntimeInfo(LPCWSTR pExe,
                                LPCWSTR pConfigurationFile,
                                DWORD startupFlags,
                                DWORD runtimeInfoFlags,
-                               __out_ecount_opt(dwDirectory) LPWSTR pDirectory,
+                               _Out_writes_bytes_opt_(dwDirectory) LPWSTR pDirectory,
                                DWORD dwDirectory,
                                DWORD *dwDirectoryLength,
-                               __out_ecount_opt(cchBuffer)   LPWSTR pVersion,
+                               _Out_writes_bytes_opt_(cchBuffer)   LPWSTR pVersion,
                                DWORD cchBuffer,
                                DWORD* dwlength)
 {

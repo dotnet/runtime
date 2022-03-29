@@ -201,7 +201,8 @@ scan_string (char *cp, char *valp, size_t buf_size)
 
 static inline int
 maps_next (struct map_iterator *mi,
-           unsigned long *low, unsigned long *high, unsigned long *offset)
+           unsigned long *low, unsigned long *high, unsigned long *offset,
+           unsigned long *flags)
 {
   char perm[16], dash = 0, colon = 0, *cp;
   unsigned long major, minor, inum;
@@ -275,6 +276,22 @@ maps_next (struct map_iterator *mi,
       cp = scan_string (cp, NULL, 0);
       if (dash != '-' || colon != ':')
         continue;       /* skip line with unknown or bad format */
+      if (flags)
+        {
+          *flags = 0;
+          if (perm[0] == 'r')
+            {
+              *flags |= PROT_READ;
+            }
+          if (perm[1] == 'w')
+            {
+              *flags |= PROT_WRITE;
+            }
+          if (perm[2] == 'x')
+            {
+              *flags |= PROT_EXEC;
+            }
+        }
       return 1;
     }
   return 0;

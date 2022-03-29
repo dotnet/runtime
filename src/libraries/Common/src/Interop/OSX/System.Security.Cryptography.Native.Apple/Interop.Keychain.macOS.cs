@@ -34,8 +34,8 @@ internal static partial class Interop
             byte[] utf8Passphrase,
             out SafeKeychainHandle keychain);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SecKeychainDelete(IntPtr keychain);
+        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SecKeychainDelete(IntPtr keychain);
 
         [GeneratedDllImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_SecKeychainCopyDefault(out SafeKeychainHandle keychain);

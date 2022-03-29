@@ -11,7 +11,6 @@
 .assembly filter3
 {
 }
-.module filter3.exe
 .class private sealed VT
        extends [mscorlib]System.ValueType
 {

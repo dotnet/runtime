@@ -11,7 +11,8 @@ namespace Microsoft.Interop
     {
         public const string ValuePropertyName = "Value";
         public const string GetPinnableReferenceName = "GetPinnableReference";
-        public const string StackBufferSizeFieldName = "StackBufferSize";
+        public const string BufferSizeFieldName = "BufferSize";
+        public const string RequiresStackBufferFieldName = "RequiresStackBuffer";
         public const string ToManagedMethodName = "ToManaged";
         public const string FreeNativeMethodName = "FreeNative";
         public const string ManagedValuesPropertyName = "ManagedValues";
@@ -57,7 +58,7 @@ namespace Microsoft.Interop
                 && SymbolEqualityComparer.Default.Equals(managedType, ctor.Parameters[0].Type);
         }
 
-        public static bool IsStackallocConstructor(
+        public static bool IsCallerAllocatedSpanConstructor(
             IMethodSymbol ctor,
             ITypeSymbol managedType,
             ITypeSymbol spanOfByte,

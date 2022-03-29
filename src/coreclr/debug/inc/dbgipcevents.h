@@ -990,7 +990,7 @@ extern const size_t nameCount;
 
 struct MSLAYOUT IPCENames // We use a class/struct so that the function can remain in a shared header file
 {
-    static DebuggerIPCEventType GetEventType(__in_z char * strEventType)
+    static DebuggerIPCEventType GetEventType(_In_z_ char * strEventType)
     {
         // pass in the string of event name and find the matching enum value
         // This is a linear search which is pretty slow. However, this is only used

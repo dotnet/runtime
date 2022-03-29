@@ -8,7 +8,7 @@
 }
 
 .assembly extern mscorlib { }
-.assembly 'sizeof'
+.assembly '64sizeof'
 {
 }
 .assembly extern xunit.core {}

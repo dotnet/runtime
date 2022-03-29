@@ -427,11 +427,11 @@ HRESULT CLRDebuggingImpl::GetCLRInfo(ICorDebugDataTarget* pDataTarget,
                                      CLR_DEBUGGING_VERSION* pVersion,
                                      DWORD* pdwDbiTimeStamp,
                                      DWORD* pdwDbiSizeOfImage,
-                                     __out_z __inout_ecount(dwDbiNameCharCount) WCHAR* pDbiName,
+                                     _Inout_updates_z_(dwDbiNameCharCount) WCHAR* pDbiName,
                                      DWORD  dwDbiNameCharCount,
                                      DWORD* pdwDacTimeStamp,
                                      DWORD* pdwDacSizeOfImage,
-                                     __out_z __inout_ecount(dwDacNameCharCount) WCHAR* pDacName,
+                                     _Inout_updates_z_(dwDacNameCharCount) WCHAR* pDacName,
                                      DWORD  dwDacNameCharCount)
 {
 #ifdef HOST_WINDOWS
@@ -629,7 +629,7 @@ HRESULT CLRDebuggingImpl::GetCLRInfo(ICorDebugDataTarget* pDataTarget,
 }
 
 // Formats the long name for DAC
-HRESULT CLRDebuggingImpl::FormatLongDacModuleName(__out_z __inout_ecount(cchBuffer) WCHAR * pBuffer,
+HRESULT CLRDebuggingImpl::FormatLongDacModuleName(_Inout_updates_z_(cchBuffer) WCHAR * pBuffer,
                                                   DWORD cchBuffer,
                                                   DWORD targetImageFileMachine,
                                                   VS_FIXEDFILEINFO * pVersion)

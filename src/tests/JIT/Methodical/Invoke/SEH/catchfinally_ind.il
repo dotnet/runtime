@@ -11,11 +11,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'catchfinally'// as "catchfinally"
+.assembly 'catchfinally_ind'// as "catchfinally"
 {
 }
 .assembly extern xunit.core {}
-.module 'catchfinally.exe'
 // MVID: {15FE650F-7944-4B46-86D7-2ECCFDC924C2}
 .namespace JitTest
 {

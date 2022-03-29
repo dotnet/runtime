@@ -285,6 +285,49 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ServerAsyncAuthenticate_InvalidHello_Throws(bool close)
+        {
+            (NetworkStream client, NetworkStream server) = TestHelper.GetConnectedTcpStreams();
+            using (client)
+            using (SslStream ssl = new SslStream(server))
+            {
+                byte[] buffer = new byte[182];
+                buffer[0] = 178;
+                buffer[1] = 0;
+                buffer[2] = 0;
+                buffer[3] = 1;
+                buffer[4] = 133;
+                buffer[5] = 166;
+
+                Task t1 = ssl.AuthenticateAsServerAsync(_serverCertificate, false, false);
+                Task t2 = client.WriteAsync(buffer).AsTask();
+                if (close)
+                {
+                    await t2.WaitAsync(TestConfiguration.PassingTestTimeout);
+                    client.Socket.Shutdown(SocketShutdown.Send);
+                }
+                else
+                {
+                    // Write enough data to full frame size
+                    buffer = new byte[13000];
+                    t2 = client.WriteAsync(buffer).AsTask();
+                    await t2.WaitAsync(TestConfiguration.PassingTestTimeout);
+                }
+
+                if (close)
+                {
+                    await Assert.ThrowsAsync<IOException>(() => t1);
+                }
+                else
+                {
+                    await Assert.ThrowsAsync<AuthenticationException>(() => t1);
+                }
+            }
+        }
+
         public static IEnumerable<object[]> ProtocolMismatchData()
         {
             if (PlatformDetection.SupportsSsl3)

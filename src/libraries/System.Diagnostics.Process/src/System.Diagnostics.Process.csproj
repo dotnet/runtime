@@ -2,7 +2,7 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent);$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent);$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <Nullable>enable</Nullable>
     <!-- Suppress unused field warnings when using PlatformNotSupportedException stubs -->
   </PropertyGroup>
@@ -159,6 +159,8 @@
              Link="Common\Interop\Windows\Advapi32\Interop.AdjustTokenPrivileges.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetComputerName.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetComputerName.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcessName.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetProcessName.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleCP.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetConsoleCP.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleOutputCP.cs"
@@ -304,7 +306,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SchedGetSetAffinity.cs"
              Link="Common\Interop\Linux\Interop.SchedGetSetAffinity.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
     <Compile Include="System\Diagnostics\Process.BSD.cs" />
     <Compile Include="System\Diagnostics\Process.OSX.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.BSD.cs" />
@@ -340,13 +342,15 @@
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Process.GetProcInfo.cs"
              Link="Common\Interop\FreeBSD\Interop.Process.GetProcInfo.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnknownUnix)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+    <Compile Include="System\Diagnostics\Process.iOS.cs" />
+    <Compile Include="System\Diagnostics\ProcessManager.iOS.cs" />
+    <Compile Include="System\Diagnostics\ProcessThread.iOS.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnknownUnix)' == 'true'">
     <Compile Include="System\Diagnostics\Process.UnknownUnix.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.UnknownUnix.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.UnknownUnix.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
-    <Compile Include="System\Diagnostics\Process.iOS.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />

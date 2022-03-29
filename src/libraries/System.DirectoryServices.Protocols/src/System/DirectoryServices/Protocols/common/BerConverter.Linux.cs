@@ -13,7 +13,7 @@ namespace System.DirectoryServices.Protocols
             // In order to match behavior, in Linux we will interpret 'B' as 'O' when passing the call to libldap.
 
             int error = 0;
-            // return berval
+            // return BerVal
             byte[] byteArray = DecodingByteArrayHelper(berElement, 'O', ref error);
             if (!BerPal.IsBerDecodeError(error))
             {

@@ -257,7 +257,7 @@ namespace System.Drawing.Imaging
 
             MetafileHeader header = new MetafileHeader();
 
-            IntPtr memory = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeaderEmf)));
+            IntPtr memory = Marshal.AllocHGlobal(Marshal.SizeOf<MetafileHeaderEmf>());
 
             try
             {
@@ -273,14 +273,14 @@ namespace System.Drawing.Imaging
                     metafileType == MetafileType.WmfPlaceable)
                 {
                     // WMF header
-                    header.wmf = (MetafileHeaderWmf)Marshal.PtrToStructure(memory, typeof(MetafileHeaderWmf))!;
+                    header.wmf = Marshal.PtrToStructure<MetafileHeaderWmf>(memory)!;
                     header.emf = null;
                 }
                 else
                 {
                     // EMF header
                     header.wmf = null;
-                    header.emf = (MetafileHeaderEmf)Marshal.PtrToStructure(memory, typeof(MetafileHeaderEmf))!;
+                    header.emf = Marshal.PtrToStructure<MetafileHeaderEmf>(memory)!;
                 }
             }
             finally
@@ -298,7 +298,7 @@ namespace System.Drawing.Imaging
         {
             MetafileHeader header;
 
-            IntPtr memory = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeaderEmf)));
+            IntPtr memory = Marshal.AllocHGlobal(Marshal.SizeOf<MetafileHeaderEmf>());
 
             try
             {
@@ -317,14 +317,14 @@ namespace System.Drawing.Imaging
                     metafileType == MetafileType.WmfPlaceable)
                 {
                     // WMF header
-                    header.wmf = (MetafileHeaderWmf)Marshal.PtrToStructure(memory, typeof(MetafileHeaderWmf))!;
+                    header.wmf = Marshal.PtrToStructure<MetafileHeaderWmf>(memory)!;
                     header.emf = null;
                 }
                 else
                 {
                     // EMF header
                     header.wmf = null;
-                    header.emf = (MetafileHeaderEmf)Marshal.PtrToStructure(memory, typeof(MetafileHeaderEmf))!;
+                    header.emf = Marshal.PtrToStructure<MetafileHeaderEmf>(memory)!;
                 }
             }
             finally
@@ -342,7 +342,7 @@ namespace System.Drawing.Imaging
         {
             MetafileHeader header;
 
-            IntPtr memory = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeaderEmf)));
+            IntPtr memory = Marshal.AllocHGlobal(Marshal.SizeOf<MetafileHeaderEmf>());
 
             try
             {
@@ -360,14 +360,14 @@ namespace System.Drawing.Imaging
                     metafileType == MetafileType.WmfPlaceable)
                 {
                     // WMF header
-                    header.wmf = (MetafileHeaderWmf)Marshal.PtrToStructure(memory, typeof(MetafileHeaderWmf))!;
+                    header.wmf = Marshal.PtrToStructure<MetafileHeaderWmf>(memory)!;
                     header.emf = null;
                 }
                 else
                 {
                     // EMF header
                     header.wmf = null;
-                    header.emf = (MetafileHeaderEmf)Marshal.PtrToStructure(memory, typeof(MetafileHeaderEmf))!;
+                    header.emf = Marshal.PtrToStructure<MetafileHeaderEmf>(memory)!;
                 }
             }
             finally

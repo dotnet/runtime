@@ -911,8 +911,6 @@ namespace System.Dynamic.Utils
             return delegateType.GetMethod("Invoke", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!;
         }
 
-#if FEATURE_COMPILE
-
         internal static bool IsUnsigned(this Type type) => IsUnsigned(GetNonNullableType(type).GetTypeCode());
 
         internal static bool IsUnsigned(this TypeCode typeCode)
@@ -945,8 +943,6 @@ namespace System.Dynamic.Utils
                     return false;
             }
         }
-
-#endif
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "The Array 'Get' method is dynamically constructed and is not included in IL. It is not subject to trimming.")]

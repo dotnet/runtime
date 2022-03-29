@@ -46,7 +46,7 @@ const void* PInvokeOverride::GetMethodImpl(const char* libraryName, const char* 
 {
     if (s_hasOverrides)
     {
-        for (size_t i = 0; i < _countof(s_overrideImpls); ++i)
+        for (size_t i = 0; i < ARRAY_SIZE(s_overrideImpls); ++i)
         {
             PInvokeOverrideFn* overrideImpl = s_overrideImpls[i];
             if (overrideImpl == nullptr)

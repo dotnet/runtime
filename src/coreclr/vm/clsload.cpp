@@ -1753,7 +1753,7 @@ HRESULT ClassLoader::FindTypeDefByExportedType(IMDInternalImport *pCTImport, mdE
 
 #ifndef DACCESS_COMPILE
 
-VOID ClassLoader::CreateCanonicallyCasedKey(LPCUTF8 pszNameSpace, LPCUTF8 pszName, __out LPUTF8 *ppszOutNameSpace, __out LPUTF8 *ppszOutName)
+VOID ClassLoader::CreateCanonicallyCasedKey(LPCUTF8 pszNameSpace, LPCUTF8 pszName, _Out_ LPUTF8 *ppszOutNameSpace, _Out_ LPUTF8 *ppszOutName)
 {
     CONTRACTL
     {

@@ -12,7 +12,7 @@ var Module = {
             }
         }
     },
-    onDotNetReady: () => {
+    onDotnetReady: () => {
         try {
             Module.init();
         } catch (error) {

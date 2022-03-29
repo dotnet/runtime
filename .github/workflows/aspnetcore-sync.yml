@@ -1,0 +1,70 @@
+name: AspNetCore->Runtime Code Sync
+on:
+  # Manual run
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  compare_repos:
+    # Comment out this line to test the scripts in a fork
+    if: github.repository == 'dotnet/runtime'
+    name: Sync Code
+    runs-on: windows-latest
+    steps:
+    - name: Checkout aspnetcore
+      uses: actions/checkout@v2.0.0
+      with:
+        # Test this script using changes in a fork
+        repository: 'dotnet/aspnetcore'
+        path: aspnetcore
+        ref: main
+    - name: Checkout runtime
+      uses: actions/checkout@v2.0.0
+      with:
+        # Test this script using changes in a fork
+        repository: 'dotnet/runtime'
+        path: runtime
+        ref: main
+    - name: Copy
+      shell: cmd
+      working-directory: .\aspnetcore\src\Shared\runtime\
+      env:
+        RUNTIME_REPO: d:\a\runtime\runtime\runtime\
+      run: CopyToRuntime.cmd
+    - name: Diff
+      shell: cmd
+      working-directory: .\runtime\
+      run: |
+        mkdir ..\artifacts
+        git status > ..\artifacts\status.txt
+        git diff > ..\artifacts\diff.txt
+    - uses: actions/upload-artifact@v1
+      with:
+        name: results
+        path: artifacts
+    - name: Check
+      id: check
+      shell: pwsh
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        $changed = .\runtime\.github\workflows\aspnetcore-sync-checkdiff.ps1
+        echo "::set-output name=changed::$changed"
+    - name: Send PR
+      if: steps.check.outputs.changed == 'true'
+      # https://github.com/marketplace/actions/create-pull-request
+      uses: dotnet/actions-create-pull-request@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        path: .\runtime
+        commit-message: 'Sync shared code from aspnetcore'
+        title: 'Sync shared code from aspnetcore'
+        body: 'This PR was automatically generated to sync shared code changes from aspnetcore. Fixes https://github.com/dotnet/aspnetcore/issues/18943'
+        labels: area-System.Net.Http
+        base: main
+        branch: github-action/sync-aspnetcore
+        branch-suffix: timestamp

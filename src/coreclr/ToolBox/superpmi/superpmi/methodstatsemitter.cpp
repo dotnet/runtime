@@ -49,11 +49,11 @@ void MethodStatsEmitter::Emit(int methodNumber, MethodContext* mc, ULONGLONG fir
             if (mc->dumpMethodMD5HashToBuffer(md5Hash, MD5_HASH_BUFFER_SIZE) != MD5_HASH_BUFFER_SIZE)
                 md5Hash[0] = 0;
 
-            charCount += sprintf_s(rowData + charCount, _countof(rowData) - charCount, "%s,", md5Hash);
+            charCount += sprintf_s(rowData + charCount, ARRAY_SIZE(rowData) - charCount, "%s,", md5Hash);
         }
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'n') != NULL || strchr(statsTypes, 'N') != NULL)
         {
-            charCount += sprintf_s(rowData + charCount, _countof(rowData) - charCount, "%d,", methodNumber);
+            charCount += sprintf_s(rowData + charCount, ARRAY_SIZE(rowData) - charCount, "%d,", methodNumber);
         }
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'i') != NULL || strchr(statsTypes, 'I') != NULL)
         {
@@ -63,7 +63,7 @@ void MethodStatsEmitter::Emit(int methodNumber, MethodContext* mc, ULONGLONG fir
             CORINFO_OS          os    = CORINFO_WINNT;
             mc->repCompileMethod(&info, &flags, &os);
 
-            charCount += sprintf_s(rowData + charCount, _countof(rowData) - charCount, "%d,", info.ILCodeSize);
+            charCount += sprintf_s(rowData + charCount, ARRAY_SIZE(rowData) - charCount, "%d,", info.ILCodeSize);
         }
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'a') != NULL || strchr(statsTypes, 'A') != NULL)
         {
@@ -76,12 +76,12 @@ void MethodStatsEmitter::Emit(int methodNumber, MethodContext* mc, ULONGLONG fir
             else
                 codeSize = 0; // this is likely a thin mc
 
-            charCount += sprintf_s(rowData + charCount, _countof(rowData) - charCount, "%d,", codeSize);
+            charCount += sprintf_s(rowData + charCount, ARRAY_SIZE(rowData) - charCount, "%d,", codeSize);
         }
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 't') != NULL || strchr(statsTypes, 'T') != NULL)
         {
             charCount +=
-                sprintf_s(rowData + charCount, _countof(rowData) - charCount, "%llu,%llu,", firstTime, secondTime);
+                sprintf_s(rowData + charCount, ARRAY_SIZE(rowData) - charCount, "%llu,%llu,", firstTime, secondTime);
         }
 
         // get rid of the final ',' and replace it with a '\n'
@@ -106,15 +106,15 @@ void MethodStatsEmitter::SetStatsTypes(char* types)
         DWORD bytesWritten = 0;
 
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'h') != NULL || strchr(statsTypes, 'H') != NULL)
-            charCount += sprintf_s(rowHeader + charCount, _countof(rowHeader) - charCount, "HASH,");
+            charCount += sprintf_s(rowHeader + charCount, ARRAY_SIZE(rowHeader) - charCount, "HASH,");
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'n') != NULL || strchr(statsTypes, 'N') != NULL)
-            charCount += sprintf_s(rowHeader + charCount, _countof(rowHeader) - charCount, "METHOD_NUMBER,");
+            charCount += sprintf_s(rowHeader + charCount, ARRAY_SIZE(rowHeader) - charCount, "METHOD_NUMBER,");
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'i') != NULL || strchr(statsTypes, 'I') != NULL)
-            charCount += sprintf_s(rowHeader + charCount, _countof(rowHeader) - charCount, "IL_CODE_SIZE,");
+            charCount += sprintf_s(rowHeader + charCount, ARRAY_SIZE(rowHeader) - charCount, "IL_CODE_SIZE,");
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'a') != NULL || strchr(statsTypes, 'A') != NULL)
-            charCount += sprintf_s(rowHeader + charCount, _countof(rowHeader) - charCount, "ASM_CODE_SIZE,");
+            charCount += sprintf_s(rowHeader + charCount, ARRAY_SIZE(rowHeader) - charCount, "ASM_CODE_SIZE,");
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 't') != NULL || strchr(statsTypes, 'T') != NULL)
-            charCount += sprintf_s(rowHeader + charCount, _countof(rowHeader) - charCount, "Time1,Time2,");
+            charCount += sprintf_s(rowHeader + charCount, ARRAY_SIZE(rowHeader) - charCount, "Time1,Time2,");
 
         // get rid of the final ',' and replace it with a '\n'
         rowHeader[charCount - 1] = '\n';

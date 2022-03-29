@@ -348,7 +348,7 @@ EEClassHashEntry_t *EEClassHashTable::InsertValue(LPCUTF8 pszNamespace, LPCUTF8 
 class ConstructKeyCallbackValidate : public EEClassHashTable::ConstructKeyCallback
 {
 public:
-    virtual void UseKeys(__in_ecount(2) LPUTF8 *Key)
+    virtual void UseKeys(_In_reads_(2) LPUTF8 *Key)
     {
         LIMITED_METHOD_CONTRACT;
         STATIC_CONTRACT_DEBUG_ONLY;
@@ -693,7 +693,7 @@ EEClassHashEntry_t * EEClassHashTable::GetValue(const NameHandle* pName, PTR_VOI
 class ConstructKeyCallbackCompare : public EEClassHashTable::ConstructKeyCallback
 {
 public:
-    virtual void UseKeys(__in_ecount(2) LPUTF8 *pKey1)
+    virtual void UseKeys(_In_reads_(2) LPUTF8 *pKey1)
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
@@ -757,7 +757,7 @@ BOOL EEClassHashTable::CompareKeys(PTR_EEClassHashEntry pEntry, LPCUTF8 * pKey2)
 class ConstructKeyCallbackCaseInsensitive : public EEClassHashTable::ConstructKeyCallback
 {
 public:
-    virtual void UseKeys(__in_ecount(2) LPUTF8 *key)
+    virtual void UseKeys(_In_reads_(2) LPUTF8 *key)
     {
         WRAPPER_NO_CONTRACT;
 

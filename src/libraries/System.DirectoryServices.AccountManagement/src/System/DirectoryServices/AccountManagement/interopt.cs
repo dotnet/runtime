@@ -435,11 +435,11 @@ namespace System.DirectoryServices.AccountManagement
             public int wki100_ver_minor;
         };
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public sealed class POLICY_ACCOUNT_DOMAIN_INFO
+        [StructLayout(LayoutKind.Sequential)]
+        public struct POLICY_ACCOUNT_DOMAIN_INFO
         {
-            public Interop.UNICODE_INTPTR_STRING domainName;
-            public IntPtr domainSid = IntPtr.Zero;
+            public Interop.UNICODE_INTPTR_STRING DomainName;
+            public IntPtr DomainSid;
         }
     }
 }

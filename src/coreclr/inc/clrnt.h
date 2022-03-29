@@ -859,8 +859,8 @@ typedef struct _DISPATCHER_CONTEXT {
 FORCEINLINE
 DWORD
 RtlpGetFunctionEndAddress (
-    __in PT_RUNTIME_FUNCTION FunctionEntry,
-    __in TADDR ImageBase
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ TADDR ImageBase
     )
 {
     PTR_UNWIND_INFO pUnwindInfo = (PTR_UNWIND_INFO)(ImageBase + FunctionEntry->UnwindData);
@@ -879,13 +879,13 @@ NTSYSAPI
 PEXCEPTION_ROUTINE
 NTAPI
 RtlVirtualUnwind (
-    __in DWORD HandlerType,
-    __in DWORD ImageBase,
-    __in DWORD ControlPc,
-    __in PRUNTIME_FUNCTION FunctionEntry,
+    _In_ DWORD HandlerType,
+    _In_ DWORD ImageBase,
+    _In_ DWORD ControlPc,
+    _In_ PRUNTIME_FUNCTION FunctionEntry,
     __inout PT_CONTEXT ContextRecord,
-    __out PVOID *HandlerData,
-    __out PDWORD EstablisherFrame,
+    _Out_ PVOID *HandlerData,
+    _Out_ PDWORD EstablisherFrame,
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
     );
 #endif // HOST_X86
@@ -909,8 +909,8 @@ RtlVirtualUnwind (
 FORCEINLINE
 ULONG
 RtlpGetFunctionEndAddress (
-    __in PT_RUNTIME_FUNCTION FunctionEntry,
-    __in TADDR ImageBase
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ TADDR ImageBase
     )
 {
     ULONG FunctionLength;
@@ -943,13 +943,13 @@ NTSYSAPI
 PEXCEPTION_ROUTINE
 NTAPI
 RtlVirtualUnwind (
-    __in DWORD HandlerType,
-    __in DWORD ImageBase,
-    __in DWORD ControlPc,
-    __in PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ DWORD HandlerType,
+    _In_ DWORD ImageBase,
+    _In_ DWORD ControlPc,
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
     __inout PT_CONTEXT ContextRecord,
-    __out PVOID *HandlerData,
-    __out PDWORD EstablisherFrame,
+    _Out_ PVOID *HandlerData,
+    _Out_ PDWORD EstablisherFrame,
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
     );
 #endif // HOST_UNIX || HOST_X86
@@ -970,8 +970,8 @@ RtlVirtualUnwind (
 FORCEINLINE
 ULONG64
 RtlpGetFunctionEndAddress (
-    __in PT_RUNTIME_FUNCTION FunctionEntry,
-    __in ULONG64 ImageBase
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ ULONG64 ImageBase
     )
 {
     ULONG64 FunctionLength;

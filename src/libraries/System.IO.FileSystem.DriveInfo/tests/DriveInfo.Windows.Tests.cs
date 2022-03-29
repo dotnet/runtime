@@ -1,18 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security;
-using Xunit;
 using System.Text;
+using Xunit;
 
-namespace System.IO.FileSystem.DriveInfoTests
+namespace System.IO.FileSystem.Tests
 {
+    [PlatformSpecific(TestPlatforms.Windows)]
     public class DriveInfoWindowsTests
     {
         [Theory]
@@ -35,7 +34,6 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestConstructor()
         {
             string[] variableInput = { "{0}", "{0}", "{0}:", "{0}:", @"{0}:\", @"{0}:\\", "{0}://" };
@@ -54,7 +52,6 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestGetDrives()
         {
             var validExpectedDrives = GetValidDriveLettersOnMachine();
@@ -97,7 +94,6 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestDriveFormat()
         {
             DriveInfo validDrive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
@@ -124,7 +120,6 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestDriveType()
         {
             var validDrive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
@@ -137,7 +132,6 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestValidDiskSpaceProperties()
         {
             bool win32Result;
@@ -169,7 +163,6 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestInvalidDiskProperties()
         {
             string invalidDriveName = GetInvalidDriveLettersOnMachine().First().ToString();
@@ -189,7 +182,6 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetVolumeLabel_Returns_CorrectLabel()
         {
             void DoDriveCheck()
@@ -225,7 +217,6 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void SetVolumeLabel_Roundtrips()
         {
             DriveInfo drive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
@@ -246,7 +237,6 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void VolumeLabelOnNetworkOrCdRom_Throws()
         {
             // Test setting the volume label on a Network or CD-ROM

@@ -10,7 +10,7 @@
 .assembly extern xunit.core {}
 .assembly extern mscorlib{}
 .assembly extern common{}
-.assembly unwind03{}
+.assembly 'unwind04_dynamic'{}
 
 .class private auto ansi beforefieldinit LocallocTest
        extends [mscorlib]System.Object

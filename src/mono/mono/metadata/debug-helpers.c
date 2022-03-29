@@ -868,10 +868,10 @@ char *
 mono_field_full_name (MonoClassField *field)
 {
 	char *res;
-	const char *nspace = field->parent->name_space;
+	const char *nspace = m_field_get_parent (field)->name_space;
 
 	res = g_strdup_printf ("%s%s%s:%s", nspace, *nspace ? "." : "",
-						   field->parent->name, mono_field_get_name (field));
+						   m_field_get_parent (field)->name, mono_field_get_name (field));
 
 	return res;
 }

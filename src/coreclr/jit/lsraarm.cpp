@@ -249,7 +249,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_STORE_LCL_VAR:
             if (tree->IsMultiRegLclVar() && isCandidateMultiRegLclVar(tree->AsLclVar()))
             {
-                dstCount = compiler->lvaGetDesc(tree->AsLclVar()->GetLclNum())->lvFieldCnt;
+                dstCount = compiler->lvaGetDesc(tree->AsLclVar())->lvFieldCnt;
             }
             FALLTHROUGH;
 
@@ -509,18 +509,13 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             break;
 
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-        {
+        case GT_BOUNDS_CHECK:
             // Consumes arrLen & index - has no result
             srcCount = 2;
             assert(dstCount == 0);
             BuildUse(tree->AsBoundsChk()->GetIndex());
             BuildUse(tree->AsBoundsChk()->GetArrayLength());
-        }
-        break;
+            break;
 
         case GT_ARR_ELEM:
             // These must have been lowered to GT_ARR_INDEX
@@ -818,7 +813,7 @@ int LinearScan::BuildNode(GenTree* tree)
         default:
 #ifdef DEBUG
             char message[256];
-            _snprintf_s(message, _countof(message), _TRUNCATE, "NYI: Unimplemented node type %s",
+            _snprintf_s(message, ArrLen(message), _TRUNCATE, "NYI: Unimplemented node type %s",
                         GenTree::OpName(tree->OperGet()));
             NYIRAW(message);
 #endif

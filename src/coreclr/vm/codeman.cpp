@@ -1257,7 +1257,7 @@ void EEJitManager::SetCpuInfo()
 #endif // TARGET_X86
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-     CPUCompileFlags.Set(InstructionSet_X86Base);
+    CPUCompileFlags.Set(InstructionSet_X86Base);
 
     // NOTE: The below checks are based on the information reported by
     //   Intel® 64 and IA-32 Architectures Software Developer’s Manual. Volume 2
@@ -1469,6 +1469,7 @@ void EEJitManager::SetCpuInfo()
     // FP and SIMD support are enabled by default
     CPUCompileFlags.Set(InstructionSet_ArmBase);
     CPUCompileFlags.Set(InstructionSet_AdvSimd);
+
     // PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE (30)
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))
     {
@@ -1491,6 +1492,152 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_Dczva);
     }
 #endif // TARGET_ARM64
+
+    // Now that we've queried the actual hardware support, we need to adjust what is actually supported based
+    // on some externally available config switches that exist so users can test code for downlevel hardware.
+
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
+    {
+        CPUCompileFlags.Clear(InstructionSet_X86Base);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAES))
+    {
+        CPUCompileFlags.Clear(InstructionSet_AES);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX))
+    {
+        CPUCompileFlags.Clear(InstructionSet_AVX);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX2))
+    {
+        CPUCompileFlags.Clear(InstructionSet_AVX2);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNI))
+    {
+        CPUCompileFlags.Clear(InstructionSet_AVXVNNI);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableBMI1))
+    {
+        CPUCompileFlags.Clear(InstructionSet_BMI1);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableBMI2))
+    {
+        CPUCompileFlags.Clear(InstructionSet_BMI2);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableFMA))
+    {
+        CPUCompileFlags.Clear(InstructionSet_FMA);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableLZCNT))
+    {
+        CPUCompileFlags.Clear(InstructionSet_LZCNT);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnablePCLMULQDQ))
+    {
+        CPUCompileFlags.Clear(InstructionSet_PCLMULQDQ);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnablePOPCNT))
+    {
+        CPUCompileFlags.Clear(InstructionSet_POPCNT);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE))
+    {
+        CPUCompileFlags.Clear(InstructionSet_SSE);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE2))
+    {
+        CPUCompileFlags.Clear(InstructionSet_SSE2);
+    }
+
+    // We need to additionally check that EXTERNAL_EnableSSE3_4 is set, as that
+    // is a prexisting config flag that controls the SSE3+ ISAs
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE3) || !CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE3_4))
+    {
+        CPUCompileFlags.Clear(InstructionSet_SSE3);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE41))
+    {
+        CPUCompileFlags.Clear(InstructionSet_SSE41);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE42))
+    {
+        CPUCompileFlags.Clear(InstructionSet_SSE42);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSSE3))
+    {
+        CPUCompileFlags.Clear(InstructionSet_SSSE3);
+    }
+#elif defined(TARGET_ARM64)
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
+    {
+        CPUCompileFlags.Clear(InstructionSet_ArmBase);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64AdvSimd))
+    {
+        CPUCompileFlags.Clear(InstructionSet_AdvSimd);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Aes))
+    {
+        CPUCompileFlags.Clear(InstructionSet_Aes);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Atomics))
+    {
+        CPUCompileFlags.Clear(InstructionSet_Atomics);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Crc32))
+    {
+        CPUCompileFlags.Clear(InstructionSet_Crc32);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Dczva))
+    {
+        CPUCompileFlags.Clear(InstructionSet_Dczva);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Dp))
+    {
+        CPUCompileFlags.Clear(InstructionSet_Dp);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Rdm))
+    {
+        CPUCompileFlags.Clear(InstructionSet_Rdm);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sha1))
+    {
+        CPUCompileFlags.Clear(InstructionSet_Sha1);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sha256))
+    {
+        CPUCompileFlags.Clear(InstructionSet_Sha256);
+    }
+#endif
+
+    // These calls are very important as it ensures the flags are consistent with any
+    // removals specified above. This includes removing corresponding 64-bit ISAs
+    // and any other implications such as SSE2 depending on SSE or AdvSimd on ArmBase
 
     CPUCompileFlags.Set64BitInstructionSetVariants();
     CPUCompileFlags.EnsureValidInstructionSetSupport();
@@ -1889,7 +2036,7 @@ CodeFragmentHeap::~CodeFragmentHeap()
 TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
                     ,unsigned  dwAlignment
 #ifdef _DEBUG
-                    ,__in __in_z const char *szFile
+                    ,_In_ _In_z_ const char *szFile
                     ,int  lineNum
 #endif
                     )
@@ -1963,9 +2110,9 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
 void CodeFragmentHeap::RealBackoutMem(void *pMem
                     , size_t dwSize
 #ifdef _DEBUG
-                    , __in __in_z const char *szFile
+                    , _In_ _In_z_ const char *szFile
                     , int lineNum
-                    , __in __in_z const char *szAllocFile
+                    , _In_ _In_z_ const char *szAllocFile
                     , int allocLineNum
 #endif
                     )

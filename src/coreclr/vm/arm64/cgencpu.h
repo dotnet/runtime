@@ -598,7 +598,7 @@ struct StubPrecode {
         }
         CONTRACTL_END;
 
-        ExecutableWriterHolder<StubPrecode> precodeWriterHolder(this, sizeof(StubPrecode)); 
+        ExecutableWriterHolder<StubPrecode> precodeWriterHolder(this, sizeof(StubPrecode));
         InterlockedExchange64((LONGLONG*)&precodeWriterHolder.GetRW()->m_pTarget, (TADDR)GetPreStubEntryPoint());
     }
 
@@ -611,7 +611,7 @@ struct StubPrecode {
         }
         CONTRACTL_END;
 
-        ExecutableWriterHolder<StubPrecode> precodeWriterHolder(this, sizeof(StubPrecode)); 
+        ExecutableWriterHolder<StubPrecode> precodeWriterHolder(this, sizeof(StubPrecode));
         return (TADDR)InterlockedCompareExchange64(
             (LONGLONG*)&precodeWriterHolder.GetRW()->m_pTarget, (TADDR)target, (TADDR)expected) == expected;
     }
@@ -691,7 +691,7 @@ struct FixupPrecode {
 
         m_rgCode[n++] = 0xD61F0160;   // br  x11
 
-        _ASSERTE(n == _countof(m_rgCode));
+        _ASSERTE(n == ARRAY_SIZE(m_rgCode));
     }
 
     TADDR GetBase()
@@ -796,7 +796,7 @@ struct ThisPtrRetBufPrecode {
         }
         CONTRACTL_END;
 
-        ExecutableWriterHolder<ThisPtrRetBufPrecode> precodeWriterHolder(this, sizeof(ThisPtrRetBufPrecode)); 
+        ExecutableWriterHolder<ThisPtrRetBufPrecode> precodeWriterHolder(this, sizeof(ThisPtrRetBufPrecode));
         return (TADDR)InterlockedCompareExchange64(
             (LONGLONG*)&precodeWriterHolder.GetRW()->m_pTarget, (TADDR)target, (TADDR)expected) == expected;
     }

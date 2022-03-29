@@ -502,9 +502,9 @@ class LoaderHeapSniffer
 
         static VOID RecordEvent(UnlockedLoaderHeap *pHeap,
                                 AllocationType allocationType,
-                                __in const char *szFile,
+                                _In_ const char *szFile,
                                 int            lineNum,
-                                __in const char *szAllocFile,
+                                _In_ const char *szAllocFile,
                                 int            allocLineNum,
                                 void          *pMem,
                                 size_t         dwRequestedSize,
@@ -1248,7 +1248,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 }
 
 void *UnlockedLoaderHeap::UnlockedAllocMem(size_t dwSize
-                                           COMMA_INDEBUG(__in const char *szFile)
+                                           COMMA_INDEBUG(_In_ const char *szFile)
                                            COMMA_INDEBUG(int  lineNum))
 {
     CONTRACT(void*)
@@ -1300,7 +1300,7 @@ static DWORD ShouldInjectFault()
 #endif
 
 void *UnlockedLoaderHeap::UnlockedAllocMem_NoThrow(size_t dwSize
-                                                   COMMA_INDEBUG(__in const char *szFile)
+                                                   COMMA_INDEBUG(_In_ const char *szFile)
                                                    COMMA_INDEBUG(int lineNum))
 {
     CONTRACT(void*)
@@ -1404,9 +1404,9 @@ again:
 
 void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
                                             size_t dwRequestedSize
-                                            COMMA_INDEBUG(__in const char *szFile)
+                                            COMMA_INDEBUG(_In_ const char *szFile)
                                             COMMA_INDEBUG(int  lineNum)
-                                            COMMA_INDEBUG(__in const char *szAllocFile)
+                                            COMMA_INDEBUG(_In_ const char *szAllocFile)
                                             COMMA_INDEBUG(int  allocLineNum))
 {
     CONTRACTL
@@ -1576,7 +1576,7 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
 void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSize,
                                                           size_t  alignment,
                                                           size_t *pdwExtra
-                                                          COMMA_INDEBUG(__in const char *szFile)
+                                                          COMMA_INDEBUG(_In_ const char *szFile)
                                                           COMMA_INDEBUG(int  lineNum))
 {
     CONTRACT(void*)
@@ -1713,7 +1713,7 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
 void *UnlockedLoaderHeap::UnlockedAllocAlignedMem(size_t  dwRequestedSize,
                                                   size_t  dwAlignment,
                                                   size_t *pdwExtra
-                                                  COMMA_INDEBUG(__in const char *szFile)
+                                                  COMMA_INDEBUG(_In_ const char *szFile)
                                                   COMMA_INDEBUG(int  lineNum))
 {
     CONTRACTL
@@ -1908,9 +1908,9 @@ void UnlockedLoaderHeap::UnlockedPrintEvents()
 
 /*static*/ VOID LoaderHeapSniffer::RecordEvent(UnlockedLoaderHeap *pHeap,
                                                AllocationType allocationType,
-                                               __in const char *szFile,
+                                               _In_ const char *szFile,
                                                int            lineNum,
-                                               __in const char *szAllocFile,
+                                               _In_ const char *szAllocFile,
                                                int            allocLineNum,
                                                void          *pMem,
                                                size_t         dwRequestedSize,

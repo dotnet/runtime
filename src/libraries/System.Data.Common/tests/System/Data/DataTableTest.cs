@@ -3572,27 +3572,32 @@ Assert.False(true);
             dt.Columns.Add("StartDate", typeof(DateTime));
 
             DataRow dr;
-            DateTime date = DateTime.Now;
+            DateTime now = DateTime.Now;
+
+            // In RowFilter we have a string containing only seconds,
+            // but in rows we have a DateTime which also contains milliseconds.
+            // The test would fail without this extra minute, when now.Millisecond is 0.
+            DateTime rowDate = now.AddMinutes(1);
 
             for (int i = 0; i < 10; i++)
             {
                 dr = dt.NewRow();
-                dr["StartDate"] = date.AddDays(i);
+                dr["StartDate"] = rowDate.AddDays(i);
                 dt.Rows.Add(dr);
             }
 
             DataView dv = dt.DefaultView;
             dv.RowFilter = string.Format(CultureInfo.InvariantCulture,
                                 "StartDate >= #{0}# and StartDate <= #{1}#",
-                                DateTime.Now.AddDays(2),
-                                DateTime.Now.AddDays(4));
+                                now.AddDays(2),
+                                now.AddDays(4));
             Assert.Equal(10, dt.Rows.Count);
 
             int expectedRowCount = 2;
             if (dv.Count != expectedRowCount)
             {
                 StringBuilder sb = new();
-                sb.AppendLine($"DataView.Rows.Count: Expected: {expectedRowCount}, Actual: {dv.Count}. Debug data: RowFilter: {dv.RowFilter}, date: {date}");
+                sb.AppendLine($"DataView.Rows.Count: Expected: {expectedRowCount}, Actual: {dv.Count}. Debug data: RowFilter: {dv.RowFilter}, date: {now}");
                 for (int i = 0; i < dv.Count; i++)
                 {
                     sb.Append($"row#{i}: ");

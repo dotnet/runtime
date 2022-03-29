@@ -177,7 +177,7 @@ namespace ILCompiler
                     {
                         if (_aotWarnedAssemblies.Add(assemblyName))
                         {
-                            LogWarning($"Assembly '{assemblyName}' produced AOT analysis warnings.", 9702, GetModuleFileName(owningModule));
+                            LogWarning($"Assembly '{assemblyName}' produced AOT analysis warnings.", 3053, GetModuleFileName(owningModule));
                         }
                     }
                 }

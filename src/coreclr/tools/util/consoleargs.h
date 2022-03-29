@@ -19,7 +19,7 @@ class ConsoleArgs
 {
 public:
     // Place the fully-qualified filename in the given output buffer
-    bool GetFullFileName(LPCWSTR szSource, __out_ecount(cbFilenameBuffer) LPWSTR filenameBuffer, DWORD cbFilenameBuffer, bool fOutputFilename);
+    bool GetFullFileName(LPCWSTR szSource, _Out_writes_(cbFilenameBuffer) LPWSTR filenameBuffer, DWORD cbFilenameBuffer, bool fOutputFilename);
 
     ConsoleArgs() :
             m_rgArgs(NULL),
@@ -35,7 +35,7 @@ public:
     };
 
     // returns false if there are errors
-    bool ExpandResponseFiles(__in int argc, __deref_in_ecount(argc) const LPCWSTR * argv, int * pargc2, __deref_out_ecount(*pargc2) LPWSTR ** pppargv2);
+    bool ExpandResponseFiles(_In_ int argc, _In_reads_(argc) const LPCWSTR * argv, int * pargc2, _Outptr_result_buffer_(*pargc2) LPWSTR ** pppargv2);
 
     // Frees all memory used by the arg list and the argv/argc array
     void CleanUpArgs();
@@ -53,12 +53,12 @@ public:
     }
 
 private:
-    void SetErrorMessage(__in LPCWSTR pwzMessage);
+    void SetErrorMessage(_In_ LPCWSTR pwzMessage);
     b_tree * MakeLeaf( LPCWSTR szText);
     void CleanupTree( b_tree * root);
     HRESULT TreeAdd( b_tree ** root, LPCWSTR szAdd);
     void TextToArgs( LPCWSTR szText, WStrList ** listReplace);
-    bool ReadTextFile(LPCWSTR pwzFilename, __deref_out LPWSTR *ppwzTextBuffer);
+    bool ReadTextFile(LPCWSTR pwzFilename, _Outptr_ LPWSTR *ppwzTextBuffer);
     void ProcessResponseArgs();
 
     LPWSTR * m_rgArgs;

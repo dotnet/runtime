@@ -21,8 +21,7 @@ typedef struct _MonoComponentHotReload {
 	uint32_t (*thread_expose_published) (void);
 	uint32_t (*get_thread_generation) (void);
 	void (*cleanup_on_close) (MonoImage *image);
-	void (*effective_table_slow) (const MonoTableInfo **t, int *idx);
-	int (*relative_delta_index) (MonoImage *image_dmeta, int token);
+	void (*effective_table_slow) (const MonoTableInfo **t, int idx);
 	void (*apply_changes) (int origin, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error);
 	void (*image_close_except_pools_all) (MonoImage *base_image);
 	void (*image_close_all) (MonoImage *base_image);
@@ -31,6 +30,9 @@ typedef struct _MonoComponentHotReload {
 	gboolean (*delta_heap_lookup) (MonoImage *base_image, MetadataHeapGetterFunc get_heap, uint32_t orig_index, MonoImage **image_out, uint32_t *index_out);
 	gpointer (*get_updated_method_ppdb) (MonoImage *base_image, uint32_t idx);
 	gboolean (*has_modified_rows) (const MonoTableInfo *table);
+	gboolean (*table_num_rows_slow) (MonoImage *base_image, int table_index);
+	GArray* (*get_added_methods) (MonoClass *klass);
+	uint32_t (*method_parent) (MonoImage *base_image, uint32_t method_index);
 } MonoComponentHotReload;
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT

@@ -158,8 +158,11 @@ namespace System.Net
                 SafeSslHandle sslContext = _sslContext;
                 if (null != sslContext)
                 {
-                    _inputBuffer.Dispose();
-                    _outputBuffer.Dispose();
+                    lock (_sslContext)
+                    {
+                        _inputBuffer.Dispose();
+                        _outputBuffer.Dispose();
+                    }
                     sslContext.Dispose();
                 }
             }
@@ -178,18 +181,21 @@ namespace System.Net
             // but if we were to pool the buffers we would have a potential use-after-free issue.
             try
             {
-                ulong length = (ulong)*dataLength;
-                Debug.Assert(length <= int.MaxValue);
+                lock (context)
+                {
+                    ulong length = (ulong)*dataLength;
+                    Debug.Assert(length <= int.MaxValue);
 
-                int toWrite = (int)length;
-                var inputBuffer = new ReadOnlySpan<byte>(data, toWrite);
+                    int toWrite = (int)length;
+                    var inputBuffer = new ReadOnlySpan<byte>(data, toWrite);
 
-                context._outputBuffer.EnsureAvailableSpace(toWrite);
-                inputBuffer.CopyTo(context._outputBuffer.AvailableSpan);
-                context._outputBuffer.Commit(toWrite);
-                // Since we can enqueue everything, no need to re-assign *dataLength.
+                    context._outputBuffer.EnsureAvailableSpace(toWrite);
+                    inputBuffer.CopyTo(context._outputBuffer.AvailableSpan);
+                    context._outputBuffer.Commit(toWrite);
+                    // Since we can enqueue everything, no need to re-assign *dataLength.
 
-                return OSStatus_noErr;
+                    return OSStatus_noErr;
+                }
             }
             catch (Exception e)
             {
@@ -207,29 +213,32 @@ namespace System.Net
 
             try
             {
-                ulong toRead = (ulong)*dataLength;
-
-                if (toRead == 0)
+                lock (context)
                 {
+                    ulong toRead = (ulong)*dataLength;
+
+                    if (toRead == 0)
+                    {
+                        return OSStatus_noErr;
+                    }
+
+                    uint transferred = 0;
+
+                    if (context._inputBuffer.ActiveLength == 0)
+                    {
+                        *dataLength = (void*)0;
+                        return OSStatus_errSSLWouldBlock;
+                    }
+
+                    int limit = Math.Min((int)toRead, context._inputBuffer.ActiveLength);
+
+                    context._inputBuffer.ActiveSpan.Slice(0, limit).CopyTo(new Span<byte>(data, limit));
+                    context._inputBuffer.Discard(limit);
+                    transferred = (uint)limit;
+
+                    *dataLength = (void*)transferred;
                     return OSStatus_noErr;
                 }
-
-                uint transferred = 0;
-
-                if (context._inputBuffer.ActiveLength == 0)
-                {
-                    *dataLength = (void*)0;
-                    return OSStatus_errSSLWouldBlock;
-                }
-
-                int limit = Math.Min((int)toRead, context._inputBuffer.ActiveLength);
-
-                context._inputBuffer.ActiveSpan.Slice(0, limit).CopyTo(new Span<byte>(data, limit));
-                context._inputBuffer.Discard(limit);
-                transferred = (uint)limit;
-
-                *dataLength = (void*)transferred;
-                return OSStatus_noErr;
             }
             catch (Exception e)
             {
@@ -241,24 +250,30 @@ namespace System.Net
 
         internal void Write(ReadOnlySpan<byte> buf)
         {
-            _inputBuffer.EnsureAvailableSpace(buf.Length);
-            buf.CopyTo(_inputBuffer.AvailableSpan);
-            _inputBuffer.Commit(buf.Length);
+            lock (_sslContext)
+            {
+                _inputBuffer.EnsureAvailableSpace(buf.Length);
+                buf.CopyTo(_inputBuffer.AvailableSpan);
+                _inputBuffer.Commit(buf.Length);
+            }
         }
 
         internal int BytesReadyForConnection => _outputBuffer.ActiveLength;
 
         internal byte[]? ReadPendingWrites()
         {
-            if (_outputBuffer.ActiveLength == 0)
+            lock (_sslContext)
             {
-                return null;
+                if (_outputBuffer.ActiveLength == 0)
+                {
+                    return null;
+                }
+
+                byte[] buffer = _outputBuffer.ActiveSpan.ToArray();
+                _outputBuffer.Discard(_outputBuffer.ActiveLength);
+
+                return buffer;
             }
-
-            byte[] buffer = _outputBuffer.ActiveSpan.ToArray();
-            _outputBuffer.Discard(_outputBuffer.ActiveLength);
-
-            return buffer;
         }
 
         internal int ReadPendingWrites(byte[] buf, int offset, int count)
@@ -268,12 +283,15 @@ namespace System.Net
             Debug.Assert(count >= 0);
             Debug.Assert(count <= buf.Length - offset);
 
-            int limit = Math.Min(count, _outputBuffer.ActiveLength);
+            lock (_sslContext)
+            {
+                int limit = Math.Min(count, _outputBuffer.ActiveLength);
 
-            _outputBuffer.ActiveSpan.Slice(0, limit).CopyTo(new Span<byte>(buf, offset, limit));
-            _outputBuffer.Discard(limit);
+                _outputBuffer.ActiveSpan.Slice(0, limit).CopyTo(new Span<byte>(buf, offset, limit));
+                _outputBuffer.Discard(limit);
 
-            return limit;
+                return limit;
+            }
         }
 
         private static readonly SslProtocols[] s_orderedSslProtocols = new SslProtocols[5]

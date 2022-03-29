@@ -594,9 +594,9 @@ sgen_cardtable_scan_object (GCObject *obj, mword block_obj_size, guint8 *cards, 
 	HEAVY_STAT (++bloby_objects);
 	if (cards) {
 		if (sgen_card_table_is_range_marked (cards, (mword)obj, block_obj_size))
-			ctx.ops->scan_object (obj, sgen_obj_get_descriptor (obj), ctx.queue);
+			ctx.ops->scan_object (obj, sgen_obj_get_descriptor_safe (obj), ctx.queue);
 	} else if (sgen_card_table_region_begin_scanning ((mword)obj, block_obj_size)) {
-		ctx.ops->scan_object (obj, sgen_obj_get_descriptor (obj), ctx.queue);
+		ctx.ops->scan_object (obj, sgen_obj_get_descriptor_safe (obj), ctx.queue);
 	}
 
 	sgen_binary_protocol_card_scan (obj, sgen_safe_object_get_size (obj));

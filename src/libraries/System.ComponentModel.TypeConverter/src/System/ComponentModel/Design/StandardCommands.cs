@@ -662,9 +662,6 @@ namespace System.ComponentModel.Design
             internal const int cmdidPanePrevTab = 287;
             internal const int cmdidPaneCloseToolWindow = 288;
             internal const int cmdidPaneActivateDocWindow = 289;
-#if DCR27419
-            internal const int cmdidDockingViewMDI    = 290;
-#endif
             internal const int cmdidDockingViewFloater = 291;
             internal const int cmdidAutoHideWindow = 292;
             internal const int cmdidMoveToDropdownBar = 293;

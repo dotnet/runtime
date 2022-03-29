@@ -309,6 +309,9 @@
   <data name="net_http_invalid_response" xml:space="preserve">
     <value>The server returned an invalid or unrecognized response.</value>
   </data>
+  <data name="net_http_request_content_length_mismatch" xml:space="preserve">
+    <value>Sent {0} request content bytes, but Content-Length promised {1}.</value>
+  </data>
   <data name="net_http_invalid_response_premature_eof" xml:space="preserve">
     <value>The response ended prematurely.</value>
   </data>

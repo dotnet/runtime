@@ -6,7 +6,7 @@
 ** Source: loadlibraryw.c
 **
 ** Purpose: Negative test the LoadLibraryW API.
-**          Call LoadLibraryW by passing a module name 
+**          Call LoadLibraryW by passing a module name
 **          without extension but with a trailing dot.
 **
 **
@@ -32,9 +32,9 @@ PALTEST(loader_LoadLibraryW_test5_paltest_loadlibraryw_test5, "loader/LoadLibrar
 
     /*Module name without extension but with a trailing dot*/
 #if WIN32
-    sprintf_s(ModuleName, _countof(ModuleName),"%s","rotor_pal.");
+    sprintf_s(ModuleName, ARRAY_SIZE(ModuleName),"%s","rotor_pal.");
 #else
-    sprintf_s(ModuleName, _countof(ModuleName),"%s","librotor_pal.");
+    sprintf_s(ModuleName, ARRAY_SIZE(ModuleName),"%s","librotor_pal.");
 #endif
 
     /* convert a normal string to a wide one */
@@ -52,7 +52,7 @@ PALTEST(loader_LoadLibraryW_test5_paltest_loadlibraryw_test5, "loader/LoadLibrar
             "call LoadLibraryW with module name which does not have "
             "extension except a trailing dot, a NULL module handle is"
             "expected, but no NULL module handle is returned, "
-            "error code = %u\n", GetLastError());    
+            "error code = %u\n", GetLastError());
 
         /* decrement the reference count of the loaded dll */
         err = FreeLibrary(ModuleHandle);

@@ -61,6 +61,8 @@ if /i "%1" == "ilasmroundtrip"                          (set __IlasmRoundTrip=1&
 
 if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=true&shift&goto Arg_Loop)
+if /i "%1" == "runnativeaottests"                       (set RunNativeAot=true&shift&goto Arg_Loop)
+if /i "%1" == "nativeaotmultimodule"                    (set NativeAotMultimodule=true&shift&goto Arg_Loop)
 REM This test feature is currently intentionally undocumented
 if /i "%1" == "runlargeversionbubblecrossgen2tests"     (set RunCrossGen2=true&set CrossgenLargeVersionBubble=true&shift&goto Arg_Loop)
 if /i "%1" == "link"                                    (set DoLink=true&set ILLINK=%2&shift&shift&goto Arg_Loop)
@@ -137,6 +139,14 @@ if defined RunCrossGen2 (
 
 if defined CrossgenLargeVersionBubble (
     set __RuntestPyArgs=%__RuntestPyArgs% --large_version_bubble
+)
+
+if defined RunNativeAot (
+    set __RuntestPyArgs=%__RuntestPyArgs% --run_nativeaot_tests
+)
+
+if defined NativeAotMultimodule (
+    set __RuntestPyArgs=%__RuntestPyArgs% --nativeaot_multimodule
 )
 
 if defined __PrintLastResultsOnly (

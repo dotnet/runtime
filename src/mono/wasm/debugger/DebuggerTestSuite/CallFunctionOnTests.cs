@@ -260,7 +260,7 @@ namespace DebuggerTests
 
                for (int i = 0; i < ret_len; i++)
                {
-                   var act_i = CheckValueType(obj_own_val, i.ToString(), "Math.SimpleStruct");
+                   var act_i = await CheckValueType(obj_own_val, i.ToString(), "Math.SimpleStruct");
 
                    // Valuetypes can get sent as part of the container's getProperties, so ensure that we can access it
                    var act_i_props = await GetProperties(act_i["value"]["objectId"]?.Value<string>());

@@ -418,7 +418,7 @@ namespace System.Reflection.Tests
     {
         public event Action MyEvent;
 
-        public class myinner { }
+        public class @myinner { }
         public class MyInner { }
         public int MyProp { get; }
 

@@ -438,7 +438,7 @@ namespace System.Reflection
 
         public override object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
-            object? ret = null;
+            object? ret;
 
             MethodInfo? method = GetGetMethod(true);
             if (method == null)

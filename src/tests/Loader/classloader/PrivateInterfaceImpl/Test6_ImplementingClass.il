@@ -29,7 +29,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module Test6_ImplementingClass.exe
 // MVID: {899F22E9-D0C0-4B61-9698-A96DF1D4E4BE}
 .imagebase 0x00400000
 .file alignment 0x00000200

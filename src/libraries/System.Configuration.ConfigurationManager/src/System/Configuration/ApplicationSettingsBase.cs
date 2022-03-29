@@ -519,7 +519,7 @@ namespace System.Configuration
                     //       level and also property level, the latter overrides the former
                     //       for a given setting. This is exactly the behavior we want.
 
-                    settingsProperty.Attributes.Add(attribute.GetType(), attribute);
+                    settingsProperty.Attributes[attribute.GetType()] = attribute;
                 }
             }
 

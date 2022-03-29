@@ -152,6 +152,16 @@
         <target state="translated">Délka nemůže být menší než 0 nebo přesáhnout délku vstupu.</target>
         <note />
       </trans-unit>
+      <trans-unit id="LimitedSourceGenerationMessage">
+        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</source>
+        <target state="translated">RegexGenerator nemohl vygenerovat úplnou zdrojovou implementaci zadaného regulárního výrazu, protože možnost není podporovaná nebo je regulární výraz příliš složitý.  Implementace bude regulární výraz interpretovat za běhu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LimitedSourceGenerationTitle">
+        <source>RegexGenerator limitation reached.</source>
+        <target state="translated">Dosáhlo se omezení nástroje RegexGenerator.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MakeException">
         <source>Invalid pattern '{0}' at offset {1}. {2}</source>
         <target state="translated">Neplatný vzor {0} u posunu {1}. {2}</target>

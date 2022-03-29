@@ -314,7 +314,7 @@ namespace System.Threading.Tasks.Tests
                         if (_postRunSyncAction == PostRunSyncAction.Wait)
                             _task.Wait(0);
                         if (_workloadType == WorkloadType.ThrowException)
-                            Assert.True(false, string.Format("expected failure is not propogated out of Wait"));
+                            Assert.True(false, string.Format("expected failure is not propagated out of Wait"));
                     }
                     catch (AggregateException ae)
                     {

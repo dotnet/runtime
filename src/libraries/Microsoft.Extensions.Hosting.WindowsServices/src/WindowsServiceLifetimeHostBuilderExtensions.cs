@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting.WindowsServices;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.EventLog;
 
 namespace Microsoft.Extensions.Hosting
@@ -49,13 +50,19 @@ namespace Microsoft.Extensions.Hosting
                 hostBuilder.UseContentRoot(AppContext.BaseDirectory);
                 hostBuilder.ConfigureLogging((hostingContext, logging) =>
                 {
+                    Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+
                     logging.AddEventLog();
                 })
                 .ConfigureServices((hostContext, services) =>
                 {
+                    Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+
                     services.AddSingleton<IHostLifetime, WindowsServiceLifetime>();
                     services.Configure<EventLogSettings>(settings =>
                     {
+                        Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+
                         if (string.IsNullOrEmpty(settings.SourceName))
                         {
                             settings.SourceName = hostContext.HostingEnvironment.ApplicationName;

@@ -541,7 +541,7 @@ namespace System.DirectoryServices.Protocols
             IntPtr modArray = IntPtr.Zero;
             int addModCount = 0;
 
-            berval berValuePtr = null;
+            BerVal berValuePtr = null;
 
             IntPtr searchAttributes = IntPtr.Zero;
             int attributeCount = 0;
@@ -639,7 +639,7 @@ namespace System.DirectoryServices.Protocols
                     {
                         if (byteArray != null && byteArray.Length != 0)
                         {
-                            berValuePtr = new berval
+                            berValuePtr = new BerVal
                             {
                                 bv_len = byteArray.Length,
                                 bv_val = Marshal.AllocHGlobal(byteArray.Length)
@@ -712,7 +712,7 @@ namespace System.DirectoryServices.Protocols
                     // process the requestvalue
                     if (val != null && val.Length != 0)
                     {
-                        berValuePtr = new berval()
+                        berValuePtr = new BerVal()
                         {
                             bv_len = val.Length,
                             bv_val = Marshal.AllocHGlobal(val.Length)
@@ -1252,7 +1252,7 @@ namespace System.DirectoryServices.Protocols
                         if (byteControlValue == null || byteControlValue.Length == 0)
                         {
                             // Treat the control value as null.
-                            managedControls[i].ldctl_value = new berval
+                            managedControls[i].ldctl_value = new BerVal
                             {
                                 bv_len = 0,
                                 bv_val = IntPtr.Zero
@@ -1260,7 +1260,7 @@ namespace System.DirectoryServices.Protocols
                         }
                         else
                         {
-                            managedControls[i].ldctl_value = new berval
+                            managedControls[i].ldctl_value = new BerVal
                             {
                                 bv_len = byteControlValue.Length,
                                 bv_val = Marshal.AllocHGlobal(sizeof(byte) * byteControlValue.Length)
@@ -1327,11 +1327,11 @@ namespace System.DirectoryServices.Protocols
 
                     // Write the values.
                     int valuesCount = 0;
-                    berval[] berValues = null;
+                    BerVal[] berValues = null;
                     if (modAttribute.Count > 0)
                     {
                         valuesCount = modAttribute.Count;
-                        berValues = new berval[valuesCount];
+                        berValues = new BerVal[valuesCount];
                         for (int j = 0; j < valuesCount; j++)
                         {
                             byte[] byteArray = null;
@@ -1348,7 +1348,7 @@ namespace System.DirectoryServices.Protocols
                                 byteArray = (byte[])modAttribute[j];
                             }
 
-                            berValues[j] = new berval()
+                            berValues[j] = new BerVal()
                             {
                                 bv_len = byteArray.Length,
                                 bv_val = Marshal.AllocHGlobal(byteArray.Length)
@@ -1361,7 +1361,7 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     attributes[i].values = Utility.AllocHGlobalIntPtrArray(valuesCount + 1);
-                    int structSize = Marshal.SizeOf(typeof(berval));
+                    int structSize = Marshal.SizeOf(typeof(BerVal));
                     IntPtr controlPtr = IntPtr.Zero;
                     IntPtr tempPtr = IntPtr.Zero;
 
@@ -1501,11 +1501,11 @@ namespace System.DirectoryServices.Protocols
                                         name = LdapPal.PtrToString(requestName);
                                     }
 
-                                    berval val = null;
+                                    BerVal val = null;
                                     byte[] requestValueArray = null;
                                     if (requestValue != IntPtr.Zero)
                                     {
-                                        val = new berval();
+                                        val = new BerVal();
                                         Marshal.PtrToStructure(requestValue, val);
                                         if (val.bv_len != 0 && val.bv_val != IntPtr.Zero)
                                         {
@@ -1825,7 +1825,7 @@ namespace System.DirectoryServices.Protocols
                     IntPtr tempPtr = Marshal.ReadIntPtr(valuesArray, IntPtr.Size * count);
                     while (tempPtr != IntPtr.Zero)
                     {
-                        berval bervalue = new berval();
+                        BerVal bervalue = new BerVal();
                         Marshal.PtrToStructure(tempPtr, bervalue);
                         byte[] byteArray = null;
                         if (bervalue.bv_len > 0 && bervalue.bv_val != IntPtr.Zero)

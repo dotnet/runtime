@@ -12,9 +12,6 @@ namespace System.Reflection.Metadata
         internal const string DotNetModifiableAssembliesSwitch = "DOTNET_MODIFIABLE_ASSEMBLIES";
         internal const string DotNetModifiableAssembliesValue = "debug";
 
-        [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
-        public class NoParallelTests { }
-
         /// Whether ApplyUpdate is supported by the environment, test configuration, and runtime.
         ///
         /// We need:

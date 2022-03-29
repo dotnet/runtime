@@ -17,7 +17,8 @@ function print_usage {
     echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/windows.x64.Debug).'
     echo '  --disableEventLogging            : Disable the events logged by both VM and Managed Code'
     echo '  --sequential                     : Run tests sequentially (default is to run in parallel).'
-    echo '  --runcrossgen2tests              : Runs the ReadyToRun tests compiled with Crossgen2' 
+    echo '  --runcrossgen2tests              : Runs the ReadyToRun tests compiled with Crossgen2'
+    echo '  --runnativeaottests              : Runs the ready to run tests compiled with Native AOT'
     echo '  --jitstress=<n>                  : Runs the tests with COMPlus_JitStress=n'
     echo '  --jitstressregs=<n>              : Runs the tests with COMPlus_JitStressRegs=n'
     echo '  --jitminopts                     : Runs the tests with COMPlus_JITMinOpts=1'
@@ -167,6 +168,9 @@ do
         --runcrossgen2tests)
             export RunCrossGen2=1
             ;;
+        --runnativeaottests)
+            export RunNativeAot=1
+            ;;
         --sequential)
             runSequential=1
             ;;
@@ -181,10 +185,10 @@ do
             ;;
         --test-env=*)
             testEnv=${i#*=}
-            ;;            
+            ;;
         --gcstresslevel=*)
             export COMPlus_GCStress=${i#*=}
-            ;;            
+            ;;
         --gcname=*)
             export COMPlus_GCName=${i#*=}
             ;;
@@ -236,30 +240,30 @@ fi
 if [ "$buildOS" = "Android" ]; then
     runtestPyArguments+=("-os" "Android")
 fi
-    
-if [ ! -z "$testRootDir" ]; then
+
+if [[ -n "$testRootDir" ]]; then
     runtestPyArguments+=("-test_location" "$testRootDir")
     echo "Test Location                 : ${testRootDir}"
 fi
 
-if [ ! -z "${testEnv}" ]; then
+if [[ -n "${testEnv}" ]]; then
     runtestPyArguments+=("-test_env" "${testEnv}")
     echo "Test Env                      : ${testEnv}"
 fi
 
 echo ""
 
-if [ ! -z "$longgc" ]; then
+if [[ -n "$longgc" ]]; then
     echo "Running Long GC tests"
     runtestPyArguments+=("--long_gc")
 fi
 
-if [ ! -z "$gcsimulator" ]; then
+if [[ -n "$gcsimulator" ]]; then
     echo "Running GC simulator tests"
     runtestPyArguments+=("--gcsimulator")
 fi
 
-if [ ! -z "$ilasmroundtrip" ]; then
+if [[ -n "$ilasmroundtrip" ]]; then
     echo "Running Ilasm round trip"
     runtestPyArguments+=("--ilasmroundtrip")
 fi
@@ -268,29 +272,33 @@ if (($verbose!=0)); then
     runtestPyArguments+=("--verbose")
 fi
 
-if [ ! "$runSequential" -eq 0 ]; then
+if [ "$runSequential" -ne 0 ]; then
     echo "Run tests sequentially."
     runtestPyArguments+=("--sequential")
 fi
 
-if [ ! -z "$printLastResultsOnly" ]; then
+if [[ -n "$printLastResultsOnly" ]]; then
     runtestPyArguments+=("--analyze_results_only")
 fi
 
-if [ ! -z "$RunCrossGen2" ]; then
+if [[ -n "$RunCrossGen2" ]]; then
     runtestPyArguments+=("--run_crossgen2_tests")
 fi
 
-if [ "$limitedCoreDumps" == "ON" ]; then
+if [[ -n "$RunNativeAot" ]]; then
+    runtestPyArguments+=("--run_nativeaot_tests")
+fi
+
+if [[ "$limitedCoreDumps" == "ON" ]]; then
     runtestPyArguments+=("--limited_core_dumps")
 fi
 
-if [[ ! "$runincontext" -eq 0 ]]; then
+if [[ "$runincontext" -ne 0 ]]; then
     echo "Running in an unloadable AssemblyLoadContext"
     runtestPyArguments+=("--run_in_context")
 fi
 
-if [[ ! "$tieringtest" -eq 0 ]]; then
+if [[ "$tieringtest" -ne 0 ]]; then
     echo "Running to encourage tier1 rejitting"
    runtestPyArguments+=("--tieringtest")
 fi

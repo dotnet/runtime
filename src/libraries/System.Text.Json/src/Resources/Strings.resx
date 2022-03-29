@@ -289,7 +289,7 @@
     <value>Expected a digit ('0'-'9'), but instead reached end of data.</value>
   </data>
   <data name="SpecialNumberValuesNotSupported" xml:space="preserve">
-    <value>.NET number values such as positive and negative infinity cannot be written as valid JSON.</value>
+    <value>.NET number values such as positive and negative infinity cannot be written as valid JSON. To make it work when using 'JsonSerializer', consider specifying 'JsonNumberHandling.AllowNamedFloatingPointLiterals' (see https://docs.microsoft.com/dotnet/api/system.text.json.serialization.jsonnumberhandling).</value>
   </data>
   <data name="ValueTooLarge" xml:space="preserve">
     <value>The JSON value of length {0} is too large and not supported.</value>

@@ -3,7 +3,9 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -1383,12 +1385,11 @@ namespace System.Text.RegularExpressions.Tests
         /// </summary>
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [Theory]
-        [InlineData(RegexOptions.None, 1)]
-        [InlineData(RegexOptions.Compiled, 1)]
-        public void TerminationInNonBacktrackingVsBackTracking(RegexOptions options, int sec)
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.Compiled)]
+        public void TerminationInNonBacktrackingVsBackTracking(RegexOptions options)
         {
             string input = " 123456789 123456789 123456789 123456789 123456789";
-            TimeSpan ts = new TimeSpan(0, 0, sec);
             for (int i = 0; i < 12; i++)
             {
                 input += input;
@@ -1396,14 +1397,75 @@ namespace System.Text.RegularExpressions.Tests
 
             // The input has 2^12 * 50 = 204800 characters
             string rawregex = @"[\\/]?[^\\/]*?(heythere|hej)[^\\/]*?$";
-            Regex reC = new Regex(rawregex, options, ts);
-            Regex re = new Regex(rawregex, RegexHelpers.RegexOptionNonBacktracking, ts);
 
-            // It takes over 4min with backtracking, so test that 1sec timeout happens
+            // It takes over 4min with backtracking, so it should certainly timeout given a 1 second timeout
+            Regex reC = new Regex(rawregex, options, TimeSpan.FromSeconds(1));
             Assert.Throws<RegexMatchTimeoutException>(() => { reC.Match(input); });
 
-            // NonBacktracking needs way less than 1s
+            // NonBacktracking needs way less than 1s, but use 10s to account for the slowest possible CI machine
+            Regex re = new Regex(rawregex, RegexHelpers.RegexOptionNonBacktracking, TimeSpan.FromSeconds(10));
             Assert.False(re.Match(input).Success);
         }
+
+        //
+        // dotnet/runtime-assets contains a set a regular expressions sourced from
+        // permissively-licensed packages.  Validate Regex behavior with those expressions.
+        //
+
+        [Theory]
+        [InlineData(RegexEngine.Interpreter)]
+        [InlineData(RegexEngine.Compiled)]
+        public async Task PatternsDataSet_ConstructRegexForAll(RegexEngine engine)
+        {
+            foreach (DataSetExpression exp in s_patternsDataSet.Value)
+            {
+                await RegexHelpers.GetRegexAsync(engine, exp.Pattern, exp.Options);
+            }
+        }
+
+        private static Lazy<DataSetExpression[]> s_patternsDataSet = new Lazy<DataSetExpression[]>(() =>
+        {
+            using Stream json = File.OpenRead("Regex_RealWorldPatterns.json");
+            return JsonSerializer.Deserialize<DataSetExpression[]>(json, new JsonSerializerOptions() { ReadCommentHandling = JsonCommentHandling.Skip }).Distinct().ToArray();
+        });
+
+        private sealed class DataSetExpression : IEquatable<DataSetExpression>
+        {
+            public int Count { get; set; }
+            public RegexOptions Options { get; set; }
+            public string Pattern { get; set; }
+
+            public bool Equals(DataSetExpression? other) =>
+                other is not null &&
+                other.Pattern == Pattern &&
+                (Options & ~RegexOptions.Compiled) == (other.Options & ~RegexOptions.Compiled); // Compiled doesn't affect semantics, so remove it from equality for our purposes
+        }
+
+#if NETCOREAPP
+        [OuterLoop("Takes many seconds")]
+        [Fact]
+        public async Task PatternsDataSet_ConstructRegexForAll_NonBacktracking()
+        {
+            foreach (DataSetExpression exp in s_patternsDataSet.Value)
+            {
+                try
+                {
+                    await RegexHelpers.GetRegexAsync(RegexEngine.NonBacktracking, exp.Pattern, exp.Options);
+                }
+                catch (Exception e) when (e.Message.Contains(nameof(RegexOptions.NonBacktracking))) { }
+            }
+        }
+
+        [OuterLoop("Takes minutes to generate and compile thousands of expressions")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // consumes a lot of memory
+        public void PatternsDataSet_ConstructRegexForAll_SourceGenerated()
+        {
+            Parallel.ForEach(s_patternsDataSet.Value.Chunk(50), chunk =>
+            {
+                RegexHelpers.GetRegexesAsync(RegexEngine.SourceGenerated,
+                    chunk.Select(r => (r.Pattern, (RegexOptions?)r.Options, (TimeSpan?)null)).ToArray()).GetAwaiter().GetResult();
+            });
+        }
+#endif
     }
 }

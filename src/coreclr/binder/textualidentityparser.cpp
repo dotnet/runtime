@@ -77,7 +77,7 @@ namespace BINDER_SPACE
             }
         }
 
-        inline void BinToUnicodeHex(const BYTE *pSrc, UINT cSrc, __out_ecount(2*cSrc) LPWSTR pDst)
+        inline void BinToUnicodeHex(const BYTE *pSrc, UINT cSrc, _Out_writes_(2*cSrc) LPWSTR pDst)
         {
             UINT x;
             UINT y;

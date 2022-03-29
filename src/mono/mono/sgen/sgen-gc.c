@@ -3580,7 +3580,7 @@ sgen_gc_init (void)
 				if (*opt && mono_gc_parse_environment_string_extract_number (opt, &max_heap_candidate)) {
 					max_heap = (max_heap_candidate + page_size - 1) & ~(size_t)(page_size - 1);
 					if (max_heap != max_heap_candidate)
-						sgen_env_var_error (MONO_GC_PARAMS_NAME, "Rounding up.", "`max-heap-size` size must be a multiple of %d.", page_size);
+						sgen_env_var_error (MONO_GC_PARAMS_NAME, "Rounding up.", "`max-heap-size` size must be a multiple of %zu.", page_size);
 				} else {
 					sgen_env_var_error (MONO_GC_PARAMS_NAME, NULL, "`max-heap-size` must be an integer.");
 				}

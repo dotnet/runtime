@@ -279,7 +279,7 @@ namespace System.Reflection.Tests
             public class MyClass3
             {
                 public class Inner { }
-                public class inner { }
+                public class @inner { }
                 public class iNner { }
                 public class inNer { }
             }

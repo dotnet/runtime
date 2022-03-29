@@ -142,7 +142,7 @@ https://raw.githubusercontent.com/Cyan4973/xxHash/5c174cfa4e45a42f94082dc0d4539b
 
 inline static UINT32 HashMDToken(mdToken token)
 {
-    // Hash function to generate a value useable for reasonable hashes from a single 32bit value
+    // Hash function to generate a value usable for reasonable hashes from a single 32bit value
     // This function was taken from http://burtleburtle.net/bob/hash/integer.html
     UINT32 a = token;
     a -= (a<<6);

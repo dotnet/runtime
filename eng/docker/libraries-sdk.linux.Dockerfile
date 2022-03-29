@@ -4,25 +4,47 @@ ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:6.0-bullseye-slim
 
 FROM $BUILD_BASE_IMAGE as corefxbuild
 
+ARG CONFIGURATION=Release
+
 WORKDIR /repo
 COPY . .
-
-ARG CONFIGURATION=Release
-RUN ./build.sh -ci -subset clr+libs -runtimeconfiguration release -c $CONFIGURATION
+RUN ./build.sh clr+libs -runtimeconfiguration Release -configuration $CONFIGURATION -ci
 
 FROM $SDK_BASE_IMAGE as target
 
-ARG TESTHOST_LOCATION=/repo/artifacts/bin/testhost
-ARG TFM=net7.0
-ARG OS=Linux
-ARG ARCH=x64
+ARG VERSION=7.0
 ARG CONFIGURATION=Release
+ENV _DOTNET_INSTALL_CHANNEL="$VERSION.1xx"
 
-ARG COREFX_SHARED_FRAMEWORK_NAME=Microsoft.NETCore.App
-ARG SOURCE_COREFX_VERSION=7.0.0
-ARG TARGET_SHARED_FRAMEWORK=/usr/share/dotnet/shared
-ARG TARGET_COREFX_VERSION=$DOTNET_VERSION
+# Install latest daily SDK:
+RUN wget https://dot.net/v1/dotnet-install.sh
+RUN bash ./dotnet-install.sh --channel $_DOTNET_INSTALL_CHANNEL --quality daily --install-dir /usr/share/dotnet
+
+# Collect the following artifacts under /live-runtime-artifacts,
+# so projects can build and test against the live-built runtime:
+# 1. Reference assembly pack (microsoft.netcore.app.ref)
+# 2. Runtime pack (microsoft.netcore.app.runtime.linux-x64)
+# 3. targetingpacks.targets, so stress test builds can target the live-built runtime instead of the one in the pre-installed SDK
+# 4. testhost
 
 COPY --from=corefxbuild \
-    $TESTHOST_LOCATION/$TFM-$OS-$CONFIGURATION-$ARCH/shared/$COREFX_SHARED_FRAMEWORK_NAME/$SOURCE_COREFX_VERSION/* \
-    $TARGET_SHARED_FRAMEWORK/$COREFX_SHARED_FRAMEWORK_NAME/$TARGET_COREFX_VERSION/
+    /repo/artifacts/bin/microsoft.netcore.app.ref \
+    /live-runtime-artifacts/microsoft.netcore.app.ref
+
+COPY --from=corefxbuild \
+    /repo/artifacts/bin/microsoft.netcore.app.runtime.linux-x64 \
+    /live-runtime-artifacts/microsoft.netcore.app.runtime.linux-x64
+
+COPY --from=corefxbuild \
+    /repo/eng/targetingpacks.targets \
+    /live-runtime-artifacts/targetingpacks.targets
+
+COPY --from=corefxbuild \
+    /repo/artifacts/bin/testhost \
+    /live-runtime-artifacts/testhost
+
+# Add AspNetCore bits to testhost:
+ENV _ASPNETCORE_SOURCE="/usr/share/dotnet/shared/Microsoft.AspNetCore.App/$VERSION*"
+ENV _ASPNETCORE_DEST="/live-runtime-artifacts/testhost/net$VERSION-Linux-$CONFIGURATION-x64/shared/Microsoft.AspNetCore.App"
+RUN mkdir -p $_ASPNETCORE_DEST
+RUN cp -r $_ASPNETCORE_SOURCE $_ASPNETCORE_DEST

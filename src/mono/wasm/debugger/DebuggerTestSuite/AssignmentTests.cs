@@ -46,19 +46,21 @@ namespace DebuggerTests
 
             // 1) check un-assigned variables
             await StepAndCheck(StepKind.Into, "dotnet://debugger-test.dll/debugger-assignment-test.cs", -1, -1, "TestedMethod",
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     Assert.Equal(2, locals.Count());
-                    Check(locals, "r", checkDefault);
+                    await Check(locals, "r", checkDefault);
+                    await Task.CompletedTask;
                 }
             );
 
             // 2) check assigned variables
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-assignment-test.cs", -1, -1, "TestedMethod", times: 3,
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     Assert.Equal(2, locals.Count());
-                    Check(locals, "r", checkValue);
+                    await Check(locals, "r", checkValue);
+                    await Task.CompletedTask;
                 }
             );
         }

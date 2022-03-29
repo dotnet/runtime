@@ -441,7 +441,7 @@ ep_event_block_base_init (
 
 	event_block_base->use_header_compression = use_header_compression;
 
-	memset (event_block_base->compressed_header, 0, EP_ARRAY_SIZE (event_block_base->compressed_header));
+	memset (event_block_base->compressed_header, 0, ARRAY_SIZE (event_block_base->compressed_header));
 	ep_event_block_base_clear (event_block_base);
 
 ep_on_exit:

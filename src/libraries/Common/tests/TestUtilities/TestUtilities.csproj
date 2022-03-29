@@ -35,6 +35,9 @@
     <Compile Include="System\PlatformDetection.Unix.cs" />
     <Compile Include="System\PlatformDetection.Windows.cs" />
     <Compile Include="System\WindowsIdentityFixture.cs" />
+
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
     <!--
       Interop.Library is not designed to support runtime checks therefore we are picking the Windows
       variant from the Common folder and adding the missing members manually.
@@ -43,8 +46,16 @@
   </ItemGroup>
   <!-- Windows imports -->
   <ItemGroup>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.CreateFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.FileOperations.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.RtlGetVersion.cs"
              Link="Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs"
@@ -61,6 +72,9 @@
              Link="Common\Interop\Windows\Advapi32\Interop.TOKEN_ELEVATION.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
              Link="Common\Interop\Windows\Interop.BOOL.cs" />
+
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs"
+             Link="Common\System\IO\PathInternal.Windows.cs" />
   </ItemGroup>
   <!-- Unix imports -->
   <ItemGroup>

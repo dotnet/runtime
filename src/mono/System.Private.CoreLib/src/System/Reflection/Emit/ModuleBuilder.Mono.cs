@@ -307,7 +307,7 @@ namespace System.Reflection.Emit
 
         internal TypeBuilder? GetRegisteredType(ITypeName name)
         {
-            TypeBuilder? result = null;
+            TypeBuilder? result;
             name_cache.TryGetValue(name, out result);
             return result;
         }

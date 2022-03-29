@@ -15,8 +15,6 @@ using System.Threading.Tasks;
 /// </summary>
 namespace XmlCoreTest.Common
 {
-    public class aaaa { };
-
     public class AsyncUtil
     {
         public static bool IsAsyncEnabled

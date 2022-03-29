@@ -22,9 +22,9 @@ namespace System.Net.Http
 
             public override int Read(Span<byte> buffer)
             {
-                if (_connection == null || buffer.Length == 0)
+                if (_connection == null)
                 {
-                    // Response body fully consumed or the caller didn't ask for any data.
+                    // Response body fully consumed
                     return 0;
                 }
 
@@ -35,7 +35,7 @@ namespace System.Net.Http
                 }
 
                 int bytesRead = _connection.Read(buffer);
-                if (bytesRead <= 0)
+                if (bytesRead <= 0 && buffer.Length != 0)
                 {
                     // Unexpected end of response stream.
                     throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _contentBytesRemaining));
@@ -58,9 +58,9 @@ namespace System.Net.Http
             {
                 CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
-                if (_connection == null || buffer.Length == 0)
+                if (_connection == null)
                 {
-                    // Response body fully consumed or the caller didn't ask for any data
+                    // Response body fully consumed
                     return 0;
                 }
 
@@ -94,7 +94,7 @@ namespace System.Net.Http
                     }
                 }
 
-                if (bytesRead <= 0)
+                if (bytesRead == 0 && buffer.Length != 0)
                 {
                     // A cancellation request may have caused the EOF.
                     CancellationHelper.ThrowIfCancellationRequested(cancellationToken);

@@ -13,14 +13,13 @@
 .assembly extern mscorlib
 {
 }
-.assembly extern common{}
-.assembly trycatch
+.assembly extern eh_common{}
+.assembly 'tryfinallyintrycatchwithleaveintotry'
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module trycatch.exe
 .imagebase 0x00400000
 .subsystem 0x00000003
 .file alignment 512
@@ -67,7 +66,7 @@
       .locals init (int32 V_0,
 					class [mscorlib]System.Exception V_1,
 					class [mscorlib]System.IO.StringWriter expectedOut,
-					class [common]TestUtil.TestLog testLog
+					class [eh_common]TestUtil.TestLog testLog
 					)
     newobj     instance void [mscorlib]System.IO.StringWriter::.ctor()
     stloc.s    expectedOut
@@ -110,11 +109,11 @@
     callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
     
     ldloc.s    expectedOut
-    newobj     instance void [common]TestUtil.TestLog::.ctor(object)
+    newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
     stloc.s    testLog
 
     ldloc.s    testLog
-    callvirt   instance void [common]TestUtil.TestLog::StartRecording()
+    callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
       IL_0000:  ldc.i4.0
       IL_0001:  stloc.0
       .try
@@ -176,10 +175,10 @@
       }  
       IL_001b:  
         ldloc.s    testLog
-		callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+		callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
 	
 		ldloc.s    testLog
-		callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+		callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
 		ret
     } 
 

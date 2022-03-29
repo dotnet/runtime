@@ -41,7 +41,7 @@ namespace DebuggerTests
             }), "exception0.data");
 
             var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            CheckString(exception_members, "message", "not implemented caught");
+            await CheckString(exception_members, "message", "not implemented caught");
 
             pause_location = await WaitForManagedException(null);
             AssertEqual("run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause1");
@@ -58,7 +58,7 @@ namespace DebuggerTests
             }), "exception1.data");
 
             exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            CheckString(exception_members, "message", "not implemented uncaught");
+            await CheckString(exception_members, "message", "not implemented uncaught");
         }
 
         [Fact]
@@ -79,7 +79,7 @@ namespace DebuggerTests
             }), "exception0.data");
 
             var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            CheckString(exception_members, "message", "exception caught");
+            await CheckString(exception_members, "message", "exception caught");
 
             pause_location = await SendCommandAndCheck(null, "Debugger.resume", null, 0, 0, "exception_uncaught_test");
 
@@ -93,7 +93,7 @@ namespace DebuggerTests
             }), "exception1.data");
 
             exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            CheckString(exception_members, "message", "exception uncaught");
+            await CheckString(exception_members, "message", "exception uncaught");
         }
 
         // FIXME? BUG? We seem to get the stack trace for Runtime.exceptionThrown at `call_method`,
@@ -189,7 +189,7 @@ namespace DebuggerTests
             }), "exception.data");
 
             var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            CheckString(exception_members, "message", exception_message);
+            await CheckString(exception_members, "message", exception_message);
         }
 
         [Fact]
@@ -229,12 +229,13 @@ namespace DebuggerTests
             }), "exception1.data");
 
             var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            CheckString(exception_members, "message", "not implemented uncaught");
+            await CheckString(exception_members, "message", "not implemented uncaught");
         }
 
         [Theory]
         [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClassDefault:TestExceptions", "System.Exception", 76)]
         [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions", "DebuggerTests.CustomException", 28)]
+        [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/62666
         public async Task ExceptionTestAllWithReload(string entry_method_name, string class_name, int line_number)
         {
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-exception-test.cs";
@@ -277,7 +278,7 @@ namespace DebuggerTests
             }), "exception0.data");
 
             var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            CheckString(exception_members, "_message", "not implemented caught");
+            await CheckString(exception_members, "_message", "not implemented caught");
 
             pause_location = await WaitForManagedException(null);
             AssertEqual("run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause1");
@@ -295,7 +296,7 @@ namespace DebuggerTests
             }), "exception1.data");
 
             exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-            CheckString(exception_members, "_message", "not implemented uncaught");
+            await CheckString(exception_members, "_message", "not implemented uncaught");
         }
 
 

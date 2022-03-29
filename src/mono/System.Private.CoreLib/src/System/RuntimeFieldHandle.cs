@@ -8,7 +8,7 @@ using System.Runtime.Serialization;
 namespace System
 {
     [Serializable]
-    public struct RuntimeFieldHandle : ISerializable
+    public struct RuntimeFieldHandle : IEquatable<RuntimeFieldHandle>, ISerializable
     {
         private readonly IntPtr value;
 

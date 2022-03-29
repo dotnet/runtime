@@ -14,7 +14,7 @@ pr:
       - eng/pipelines/libraries/enterprise/*
       - src/libraries/Common/src/System/Net/*
       - src/libraries/Common/tests/System/Net/*
-      - src/libraries/Native/Unix/System.Net.Security.Native/*
+      - src/native/libs/System.Net.Security.Native/*
       - src/libraries/System.Net.Http/*
       - src/libraries/System.Net.Security/*
 

@@ -26,7 +26,7 @@ parameters:
   
   
 steps:
-  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -excludemonofailures os ${{ parameters.osGroup }} ${{ parameters.archType }} /p:RuntimeVariant=${{ parameters.runtimeVariant }} $(buildConfigUpper)
+  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -mono os ${{ parameters.osGroup }} ${{ parameters.archType }} /p:RuntimeVariant=${{ parameters.runtimeVariant }} $(buildConfigUpper)
     displayName: Build Tests
 
   #  Send tests to Helix

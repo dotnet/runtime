@@ -52,15 +52,15 @@ namespace System.Xml
                 /*  8 (.) */
                          CharType.None,
                 /*  9 (.) */
-                         CharType.None|CharType.Comment|CharType.Comment|CharType.Whitespace|CharType.Text|CharType.SpecialWhitespace,
+                         CharType.None|CharType.Comment|CharType.Whitespace|CharType.Text|CharType.SpecialWhitespace,
                 /*  A (.) */
-                         CharType.None|CharType.Comment|CharType.Comment|CharType.Whitespace|CharType.Text|CharType.SpecialWhitespace,
+                         CharType.None|CharType.Comment|CharType.Whitespace|CharType.Text|CharType.SpecialWhitespace,
                 /*  B (.) */
                          CharType.None,
                 /*  C (.) */
                          CharType.None,
                 /*  D (.) */
-                         CharType.None|CharType.Comment|CharType.Comment|CharType.Whitespace,
+                         CharType.None|CharType.Comment|CharType.Whitespace,
                 /*  E (.) */
                          CharType.None,
                 /*  F (.) */

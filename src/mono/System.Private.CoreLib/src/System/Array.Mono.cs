@@ -130,7 +130,7 @@ namespace System
                 throw new ArgumentNullException(nameof(destinationArray));
 
             if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), "Value has to be >= 0.");
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (sourceArray.Rank != destinationArray.Rank)
                 throw new RankException(SR.Rank_MultiDimNotSupported);
@@ -144,23 +144,26 @@ namespace System
             if (FastCopy(sourceArray, sourceIndex, destinationArray, destinationIndex, length))
                 return;
 
+            CopySlow(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
+        }
+
+        private static void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
+        {
             int source_pos = sourceIndex - sourceArray.GetLowerBound(0);
             int dest_pos = destinationIndex - destinationArray.GetLowerBound(0);
 
             if (source_pos < 0)
-                throw new ArgumentOutOfRangeException(nameof(sourceIndex), "Index was less than the array's lower bound in the first dimension.");
+                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_ArrayLB);
 
             if (dest_pos < 0)
-                throw new ArgumentOutOfRangeException(nameof(destinationIndex), "Index was less than the array's lower bound in the first dimension.");
+                throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.ArgumentOutOfRange_ArrayLB);
 
             // re-ordered to avoid possible integer overflow
             if (source_pos > sourceArray.Length - length)
                 throw new ArgumentException(SR.Arg_LongerThanSrcArray, nameof(sourceArray));
 
             if (dest_pos > destinationArray.Length - length)
-            {
-                throw new ArgumentException("Destination array was not long enough. Check destIndex and length, and the array's lower bounds", nameof(destinationArray));
-            }
+                throw new ArgumentException(SR.Arg_LongerThanDestArray, nameof(destinationArray));
 
             Type src_type = sourceArray.GetType().GetElementType()!;
             Type dst_type = destinationArray.GetType().GetElementType()!;

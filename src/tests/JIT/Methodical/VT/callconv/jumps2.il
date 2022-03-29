@@ -16,11 +16,10 @@
 {
 }
 
-.assembly jumps // as "jumps"
+.assembly 'jumps2' // as "jumps"
 {
                         }
 .assembly extern xunit.core {}
-.module jumps.exe
 .namespace MS
 {
   .class value private auto ansi sealed VT

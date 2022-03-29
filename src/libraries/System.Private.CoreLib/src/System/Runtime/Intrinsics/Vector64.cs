@@ -151,6 +151,25 @@ namespace System.Runtime.Intrinsics
         public static Vector64<long> AsInt64<T>(this Vector64<T> vector)
             where T : struct => vector.As<T, long>();
 
+        /// <summary>Reinterprets a <see cref="Vector64{T}" /> as a new <see cref="Vector64{IntPtr}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector64{IntPtr}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector64<nint> AsNInt<T>(this Vector64<T> vector)
+            where T : struct => vector.As<T, nint>();
+
+        /// <summary>Reinterprets a <see cref="Vector64{T}" /> as a new <see cref="Vector64{UIntPtr}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector64{UIntPtr}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector64<nuint> AsNUInt<T>(this Vector64<T> vector)
+            where T : struct => vector.As<T, nuint>();
+
         /// <summary>Reinterprets a <see cref="Vector64{T}" /> as a new <see cref="Vector64{SByte}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
@@ -641,6 +660,59 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Creates a new <see cref="Vector64{IntPtr}" /> instance with all elements initialized to the specified value.</summary>
+        /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <returns>A new <see cref="Vector64{IntPtr}" /> with all elements initialized to <paramref name="value" />.</returns>
+        [Intrinsic]
+        public static unsafe Vector64<nint> Create(nint value)
+        {
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                return Create(value);
+            }
+
+            return SoftwareFallback(value);
+
+            static Vector64<nint> SoftwareFallback(nint value)
+            {
+                if (Environment.Is64BitProcess)
+                {
+                    return Create((long)value).AsNInt();
+                }
+                else
+                {
+                    return Create((int)value).AsNInt();
+                }
+            }
+        }
+
+        /// <summary>Creates a new <see cref="Vector64{UIntPtr}" /> instance with all elements initialized to the specified value.</summary>
+        /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <returns>A new <see cref="Vector64{UIntPtr}" /> with all elements initialized to <paramref name="value" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static unsafe Vector64<nuint> Create(nuint value)
+        {
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                return Create(value);
+            }
+
+            return SoftwareFallback(value);
+
+            static Vector64<nuint> SoftwareFallback(nuint value)
+            {
+                if (Environment.Is64BitProcess)
+                {
+                    return Create((ulong)value).AsNUInt();
+                }
+                else
+                {
+                    return Create((uint)value).AsNUInt();
+                }
+            }
+        }
+
         /// <summary>Creates a new <see cref="Vector64{SByte}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m64 _mm_set1_pi8</remarks>
@@ -1053,6 +1125,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{Byte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Byte}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<byte> CreateScalar(byte value)
         {
             if (AdvSimd.IsSupported)
@@ -1073,6 +1146,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{Double}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Double}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<double> CreateScalar(double value)
         {
             if (AdvSimd.IsSupported)
@@ -1091,6 +1165,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{Int16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int16}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<short> CreateScalar(short value)
         {
             if (AdvSimd.IsSupported)
@@ -1111,6 +1186,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{Int32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int32}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<int> CreateScalar(int value)
         {
             if (AdvSimd.IsSupported)
@@ -1131,6 +1207,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{Int64}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int64}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<long> CreateScalar(long value)
         {
             if (AdvSimd.Arm64.IsSupported)
@@ -1146,9 +1223,43 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Creates a new <see cref="Vector64{IntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector64{IntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<nint> CreateScalar(nint value)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                return CreateScalar((long)value).AsNInt();
+            }
+            else
+            {
+                return CreateScalar((int)value).AsNInt();
+            }
+        }
+
+        /// <summary>Creates a new <see cref="Vector64{UIntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector64{UIntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static unsafe Vector64<nuint> CreateScalar(nuint value)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                return CreateScalar((ulong)value).AsNUInt();
+            }
+            else
+            {
+                return CreateScalar((uint)value).AsNUInt();
+            }
+        }
+
         /// <summary>Creates a new <see cref="Vector64{SByte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{SByte}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static unsafe Vector64<sbyte> CreateScalar(sbyte value)
         {
@@ -1170,6 +1281,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{Single}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Single}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<float> CreateScalar(float value)
         {
             if (AdvSimd.IsSupported)
@@ -1190,6 +1302,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{UInt16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt16}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static unsafe Vector64<ushort> CreateScalar(ushort value)
         {
@@ -1211,6 +1324,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{UInt32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt32}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static unsafe Vector64<uint> CreateScalar(uint value)
         {
@@ -1233,6 +1347,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{UInt64}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt64}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static unsafe Vector64<ulong> CreateScalar(ulong value)
         {
@@ -1289,6 +1404,39 @@ namespace System.Runtime.Intrinsics
             int* pResult = stackalloc int[2];
             pResult[0] = value;
             return Unsafe.AsRef<Vector64<int>>(pResult);
+        }
+
+        /// <summary>Creates a new <see cref="Vector64{IntPtr}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector64{IntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<nint> CreateScalarUnsafe(nint value)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                return Create((long)value).AsNInt();
+            }
+            else
+            {
+                return CreateScalarUnsafe((int)value).AsNInt();
+            }
+        }
+
+        /// <summary>Creates a new <see cref="Vector64{UIntPtr}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector64{UIntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static unsafe Vector64<nuint> CreateScalarUnsafe(nuint value)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                return Create((ulong)value).AsNUInt();
+            }
+            else
+            {
+                return CreateScalarUnsafe((uint)value).AsNUInt();
+            }
         }
 
         /// <summary>Creates a new <see cref="Vector64{SByte}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>

@@ -1921,11 +1921,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 		}
 		return NULL;
-	} else if (((!strcmp (cmethod_klass_image->assembly->aname.name, "MonoMac") ||
-	            !strcmp (cmethod_klass_image->assembly->aname.name, "monotouch")) &&
-				!strcmp (cmethod_klass_name_space, "XamCore.ObjCRuntime") &&
-				!strcmp (cmethod_klass_name, "Selector")) ||
-			   ((!strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.iOS") ||
+	} else if (((!strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.iOS") ||
+				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.TVOS") ||
+				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.MacCatalyst") ||
 				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.Mac")) &&
 				!strcmp (cmethod_klass_name_space, "ObjCRuntime") &&
 				!strcmp (cmethod_klass_name, "Selector"))
@@ -2264,7 +2262,7 @@ emit_array_unsafe_mov (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **a
 MonoInst*
 mini_emit_inst_for_field_load (MonoCompile *cfg, MonoClassField *field)
 {
-	MonoClass *klass = field->parent;
+	MonoClass *klass = m_field_get_parent (field);
 	const char *klass_name_space = m_class_get_name_space (klass);
 	const char *klass_name = m_class_get_name (klass);
 	MonoImage *klass_image = m_class_get_image (klass);

@@ -18,7 +18,6 @@
   .hash algorithm 0x00008004
   .ver 1:0:0:0
 }
-.module dev10_531793.exe
 
 
 // =============== CLASS MEMBERS DECLARATION ===================

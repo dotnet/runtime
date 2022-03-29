@@ -30,13 +30,13 @@ inline void DoWStrTest_vswprintf_s(const WCHAR *formatstr, WCHAR *param, const W
 {
     WCHAR buf[256] = { 0 };
 
-    testvswp(buf, _countof(buf), formatstr, param);
+    testvswp(buf, ARRAY_SIZE(buf), formatstr, param);
 
     if (memcmp(buf, checkstr, wcslen(buf) * 2 + 2) != 0)
     {
         Fail("ERROR: failed to insert wide string \"%s\" into \"%s\".\n"
-            "Expected \"%s\", got \"%s\".\n", 
-            convertC(param), convertC(formatstr), 
+            "Expected \"%s\", got \"%s\".\n",
+            convertC(param), convertC(formatstr),
             convertC(checkstr), convertC(buf));
     }
 }
@@ -46,13 +46,13 @@ inline void DoStrTest_vswprintf_s(const WCHAR *formatstr, char *param, const WCH
 {
     WCHAR buf[256] = { 0 };
 
-    testvswp(buf, _countof(buf), formatstr, param);
+    testvswp(buf, ARRAY_SIZE(buf), formatstr, param);
 
     if (memcmp(buf, checkstr, wcslen(buf) * 2 + 2) != 0)
     {
         Fail("ERROR: failed to insert wide string \"%s\" into \"%s\".\n"
-            "Expected \"%s\", got \"%s\".\n", 
-            param, convertC(formatstr), convertC(checkstr), 
+            "Expected \"%s\", got \"%s\".\n",
+            param, convertC(formatstr), convertC(checkstr),
             convertC(buf));
     }
 }
@@ -62,14 +62,14 @@ inline void DoCharTest_vswprintf_s(const WCHAR *formatstr, char param, const WCH
 {
     WCHAR buf[256] = { 0 };
 
-    testvswp(buf, _countof(buf), formatstr, param);
+    testvswp(buf, ARRAY_SIZE(buf), formatstr, param);
     if (memcmp(buf, checkstr, wcslen(buf)*2 + 2) != 0)
     {
         Fail("ERROR: failed to insert char \'%c\' (%d) into \"%s\"\n"
-            "Expected \"%s\" got \"%s\".\n", 
-            param, param, convertC(formatstr), convertC(checkstr), 
+            "Expected \"%s\" got \"%s\".\n",
+            param, param, convertC(formatstr), convertC(checkstr),
             convertC(buf));
-    }    
+    }
 }
 #define DoCharTest DoCharTest_vswprintf_s
 
@@ -77,14 +77,14 @@ inline void DoWCharTest_vswprintf_s(const WCHAR *formatstr, WCHAR param, const W
 {
     WCHAR buf[256] = { 0 };
 
-    testvswp(buf, _countof(buf), formatstr, param);
+    testvswp(buf, ARRAY_SIZE(buf), formatstr, param);
     if (memcmp(buf, checkstr, wcslen(buf)*2 + 2) != 0)
     {
         Fail("ERROR: failed to insert wide char \'%c\' (%d) into \"%s\"\n"
-            "Expected \"%s\" got \"%s\".\n", 
-            (char) param, param, convertC(formatstr), convertC(checkstr), 
+            "Expected \"%s\" got \"%s\".\n",
+            (char) param, param, convertC(formatstr), convertC(checkstr),
             convertC(buf));
-    }    
+    }
 }
 #define DoWCharTest DoWCharTest_vswprintf_s
 
@@ -92,13 +92,13 @@ inline void DoNumTest_vswprintf_s(const WCHAR *formatstr, int value, const WCHAR
 {
     WCHAR buf[256] = { 0 };
 
-    testvswp(buf, _countof(buf), formatstr, value);
+    testvswp(buf, ARRAY_SIZE(buf), formatstr, value);
     if (memcmp(buf, checkstr, wcslen(buf)* 2 + 2) != 0)
     {
         Fail("ERROR: failed to insert %#x into \"%s\"\n"
-            "Expected \"%s\" got \"%s\".\n", value, convertC(formatstr), 
+            "Expected \"%s\" got \"%s\".\n", value, convertC(formatstr),
             convertC(checkstr), convertC(buf));
-    }    
+    }
 }
 #define DoNumTest DoNumTest_vswprintf_s
 
@@ -106,13 +106,13 @@ inline void DoI64NumTest_vswprintf_s(const WCHAR *formatstr, INT64 value, char *
 {
     WCHAR buf[256] = { 0 };
 
-    testvswp(buf, _countof(buf), formatstr, value);
+    testvswp(buf, ARRAY_SIZE(buf), formatstr, value);
     if (memcmp(buf, checkstr, wcslen(buf)* 2 + 2) != 0)
     {
         Fail("ERROR: failed to insert %s into \"%s\"\n"
-            "Expected \"%s\" got \"%s\".\n", valuestr, convertC(formatstr), 
+            "Expected \"%s\" got \"%s\".\n", valuestr, convertC(formatstr),
             convertC(checkstr), convertC(buf));
-    }    
+    }
 }
 #define DoI64NumTest DoI64NumTest_vswprintf_s
 
@@ -121,7 +121,7 @@ inline void DoDoubleTest_vswprintf_s(const WCHAR *formatstr, double value, const
 {
     WCHAR buf[256] = { 0 };
 
-    testvswp(buf, _countof(buf), formatstr, value);
+    testvswp(buf, ARRAY_SIZE(buf), formatstr, value);
     if (memcmp(buf, checkstr1, wcslen(checkstr1) + 2) != 0 &&
         memcmp(buf, checkstr2, wcslen(checkstr2) + 2) != 0)
     {

@@ -1,0 +1,213 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="RequiresUnreferencedCodeTitle" xml:space="preserve">
+    <value>Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code</value>
+  </data>
+  <data name="RequiresUnreferencedCodeMessage" xml:space="preserve">
+    <value>Using member '{0}' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code.{1}{2}</value>
+  </data>
+  <data name="AvoidAssemblyLocationInSingleFileTitle" xml:space="preserve">
+    <value>Avoid accessing Assembly file path when publishing as a single file</value>
+  </data>
+  <data name="AvoidAssemblyLocationInSingleFileMessage" xml:space="preserve">
+    <value>'{0}' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.</value>
+  </data>
+  <data name="AvoidAssemblyGetFilesInSingleFileTitle" xml:space="preserve">
+    <value>Avoid accessing Assembly file path when publishing as a single file</value>
+  </data>
+  <data name="AvoidAssemblyGetFilesInSingleFileMessage" xml:space="preserve">
+    <value>'{0}' will throw for assemblies embedded in a single-file app</value>
+  </data>
+  <data name="RequiresAssemblyFilesTitle" xml:space="preserve">
+    <value>Avoid calling members marked with 'RequiresAssemblyFilesAttribute' when publishing as a single-file</value>
+  </data>
+  <data name="RequiresAssemblyFilesMessage" xml:space="preserve">
+    <value>Using member '{0}' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.{1}{2}</value>
+  </data>
+  <data name="RequiresDynamicCodeTitle" xml:space="preserve">
+    <value>Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.</value>
+  </data>
+  <data name="RequiresDynamicCodeMessage" xml:space="preserve">
+    <value>Using member '{0}' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling.{1}{2}</value>
+  </data>
+  <data name="RequiresUnreferencedCodeAttributeMismatchMessage" xml:space="preserve">
+    <value>{0}. 'RequiresUnreferencedCodeAttribute' annotations must match across all interface implementations or overrides.</value>
+  </data>
+  <data name="RequiresUnreferencedCodeAttributeMismatchTitle" xml:space="preserve">
+    <value>'RequiresUnreferencedCodeAttribute' annotations must match across all interface implementations or overrides.</value>
+  </data>
+  <data name="RequiresDynamicCodeAttributeMismatchMessage" xml:space="preserve">
+    <value>{0}. 'RequiresDynamicCodeAttribute' annotations must match across all interface implementations or overrides.</value>
+  </data>
+  <data name="RequiresDynamicCodeAttributeMismatchTitle" xml:space="preserve">
+    <value>'RequiresDynamicCodeAttribute' annotations must match across all interface implementations or overrides.</value>
+  </data>
+  <data name="RequiresAssemblyFilesAttributeMismatchMessage" xml:space="preserve">
+    <value>{0}. 'RequiresAssemblyFilesAttribute' annotations must match across all interface implementations or overrides.</value>
+  </data>
+  <data name="RequiresAssemblyFilesAttributeMismatchTitle" xml:space="preserve">
+    <value>'RequiresAssemblyFilesAttribute' annotations must match across all interface implementations or overrides.</value>
+  </data>
+  <data name="BaseRequiresMismatchMessage" xml:space="preserve">
+    <value>Base member '{2}' with '{0}' has a derived member '{1}' without '{0}'</value>
+  </data>
+  <data name="DerivedRequiresMismatchMessage" xml:space="preserve">
+    <value>Member '{1}' with '{0}' overrides base member '{2}' without '{0}'</value>
+  </data>
+  <data name="ImplementationRequiresMismatchMessage" xml:space="preserve">
+    <value>Member '{1}' with '{0}' implements interface member '{2}' without '{0}'</value>
+  </data>
+  <data name="InterfaceRequiresMismatchMessage" xml:space="preserve">
+    <value>Interface member '{2}' with '{0}' has an implementation member '{1}' without '{0}'</value>
+  </data>
+  <data name="RequiresOnBaseClassMessage" xml:space="preserve">
+    <value>Type '{0}' derives from '{1}' which has 'RequiresUnreferencedCodeAttribute'. {2}{3}</value>
+  </data>
+  <data name="RequiresOnBaseClassTitle" xml:space="preserve">
+    <value>Types that derive from a base class with 'RequiresUnreferencedCodeAttribute' need to explicitly use the 'RequiresUnreferencedCodeAttribute' or suppress this warning</value>
+  </data>
+  <data name="DynamicTypeInvocationMessage" xml:space="preserve">
+    <value>Invoking members on dynamic types is not trimming-compatible. Types or members might have been removed by the trimmer.</value>
+  </data>
+  <data name="DynamicTypeInvocationTitle" xml:space="preserve">
+    <value>Using dynamic types might cause types or members to be removed by trimmer.</value>
+  </data>
+  <data name="MakeGenericMethodMessage" xml:space="preserve">
+    <value>Call to '{0}' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.</value>
+  </data>
+  <data name="MakeGenericTypeMessage" xml:space="preserve">
+    <value>Call to '{0}' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic type.</value>
+  </data>
+  <data name="RequiresUnreferencedCodeOnStaticConstructorMessage" xml:space="preserve">
+    <value>'RequiresUnreferencedCodeAttribute' cannot be placed directly on static constructor '{0}', consider placing 'RequiresUnreferencedCodeAttribute' on the type declaration instead.</value>
+  </data>
+  <data name="RequiresUnreferencedCodeOnStaticConstructorTitle" xml:space="preserve">
+    <value>The use of 'RequiresUnreferencedCodeAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.</value>
+  </data>
+  <data name="MakeGenericMethodCannotBeStaticallyAnalyzedMessage" xml:space="preserve">
+    <value>Call to '{0}' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.</value>
+  </data>
+  <data name="PropertyAccessorParameterInLinqExpressionsCannotBeStaticallyDeterminedMessage" xml:space="preserve">
+    <value>Value passed to the '{0}' parameter of method '{1}' cannot be statically determined as a property accessor.</value>
+  </data>
+  <data name="CorrectnessOfCOMCannotBeGuaranteedMessage" xml:space="preserve">
+    <value>P/invoke method '{0}' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.</value>
+  </data>
+</root>

@@ -249,7 +249,7 @@ typedef struct IMAGE_COR20_HEADER
 #else // !__IMAGE_COR20_HEADER_DEFINED__
 
 // <TODO>@TODO: This is required because we pull in the COM+ 2.0 PE header
-// definition from WinNT.h, and these constants have not yet propogated to there.</TODO>
+// definition from WinNT.h, and these constants have not yet propagated to there.</TODO>
 //
 #define COR_VTABLE_FROM_UNMANAGED_RETAIN_APPDOMAIN 0x08
 #define COMIMAGE_FLAGS_32BITPREFERRED              0x00020000

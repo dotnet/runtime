@@ -4,7 +4,7 @@
 .assembly extern System.Console { auto }
 .assembly extern System.Runtime { auto }
 
-.assembly CopyPropByrefToNativeInt { }
+.assembly 'copy_prop_byref_to_native_int' { }
 .assembly extern xunit.core {}
 
 .typedef [System.Runtime]System.WeakReference as WeakRef

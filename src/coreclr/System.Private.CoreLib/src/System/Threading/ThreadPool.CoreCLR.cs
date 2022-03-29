@@ -342,8 +342,8 @@ namespace System.Threading
             }
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadPool_GetCompletedWorkItemCount")]
-        private static extern long GetCompletedWorkItemCount();
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadPool_GetCompletedWorkItemCount")]
+        private static partial long GetCompletedWorkItemCount();
 
         private static long PendingUnmanagedWorkItemCount => UsePortableThreadPool ? 0 : GetPendingUnmanagedWorkItemCount();
 
@@ -419,8 +419,8 @@ namespace System.Threading
             RequestWorkerThreadNative();
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadPool_RequestWorkerThread")]
-        private static extern Interop.BOOL RequestWorkerThreadNative();
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadPool_RequestWorkerThread")]
+        private static partial Interop.BOOL RequestWorkerThreadNative();
 
         // Entry point from unmanaged code
         private static void EnsureGateThreadRunning()
@@ -440,8 +440,8 @@ namespace System.Threading
             return PerformRuntimeSpecificGateActivitiesNative(cpuUtilization) != Interop.BOOL.FALSE;
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadPool_PerformGateActivities")]
-        private static extern Interop.BOOL PerformRuntimeSpecificGateActivitiesNative(int cpuUtilization);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadPool_PerformGateActivities")]
+        private static partial Interop.BOOL PerformRuntimeSpecificGateActivitiesNative(int cpuUtilization);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe bool PostQueuedCompletionStatus(NativeOverlapped* overlapped);

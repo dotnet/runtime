@@ -141,7 +141,7 @@ load_buffer (
 			event_data_len = strlen (event_data) + 1;
 		}else {
 			event_data = (gchar *)TEST_EVENT_DATA;
-			event_data_len = EP_ARRAY_SIZE (TEST_EVENT_DATA);
+			event_data_len = ARRAY_SIZE (TEST_EVENT_DATA);
 		}
 		if (event_data) {
 			ep_event_payload_init (&payload, (uint8_t *)event_data, event_data_len);

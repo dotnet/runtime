@@ -111,8 +111,6 @@ namespace System.Net.Mime
             if (_streamSet)
             {
                 _stream!.Close();
-                _stream = null;
-                _streamSet = false;
             }
 
             _stream = stream;

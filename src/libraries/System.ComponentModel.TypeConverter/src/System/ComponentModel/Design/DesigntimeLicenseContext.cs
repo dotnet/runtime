@@ -50,7 +50,7 @@ namespace System.ComponentModel.Design
         /// if there is a '#' in the path, everything after this is treated as a fragment. So
         /// we need to append the fragment to the end of the path.
         /// </summary>
-        private string GetLocalPath(string fileName)
+        private static string GetLocalPath(string fileName)
         {
             Debug.Assert(fileName != null && fileName.Length > 0, "Cannot get local path, fileName is not valid");
 
@@ -150,7 +150,7 @@ namespace System.ComponentModel.Design
         * we are attempting to locate could have different casing
         * depending on how the assembly was loaded.
         **/
-        private Stream? CaseInsensitiveManifestResourceStreamLookup(Assembly satellite, string name)
+        private static Stream? CaseInsensitiveManifestResourceStreamLookup(Assembly satellite, string name)
         {
             CompareInfo comparer = CultureInfo.InvariantCulture.CompareInfo;
 

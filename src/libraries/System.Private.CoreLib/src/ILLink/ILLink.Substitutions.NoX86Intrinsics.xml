@@ -1,5 +1,8 @@
 <linker>
   <assembly fullname="System.Private.CoreLib">
+    <type fullname="System.Runtime.Intrinsics.Vector256">
+      <method signature="System.Boolean get_IsHardwareAccelerated()" body="stub" value="false" />
+    </type>
     <type fullname="System.Runtime.Intrinsics.X86.Aes">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>

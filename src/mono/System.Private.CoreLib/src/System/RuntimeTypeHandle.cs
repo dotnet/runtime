@@ -40,7 +40,7 @@ using System.Threading;
 namespace System
 {
     [Serializable]
-    public struct RuntimeTypeHandle : ISerializable
+    public struct RuntimeTypeHandle : IEquatable<RuntimeTypeHandle>, ISerializable
     {
         private readonly IntPtr value;
 
@@ -111,7 +111,12 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern TypeAttributes GetAttributes(RuntimeType type);
+        internal static extern TypeAttributes GetAttributes(QCallTypeHandle type);
+
+        internal static TypeAttributes GetAttributes(RuntimeType type)
+        {
+            return GetAttributes(new QCallTypeHandle(ref type));
+        }
 
         public ModuleHandle GetModuleHandle()
         {
@@ -125,19 +130,24 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern int GetMetadataToken(RuntimeType type);
+        private static extern int GetMetadataToken(QCallTypeHandle type);
 
         internal static int GetToken(RuntimeType type)
         {
-            return GetMetadataToken(type);
+            return GetMetadataToken(new QCallTypeHandle(ref type));
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Type GetGenericTypeDefinition_impl(RuntimeType type);
+        private static extern void GetGenericTypeDefinition_impl(QCallTypeHandle type, ObjectHandleOnStack res);
 
         internal static Type GetGenericTypeDefinition(RuntimeType type)
         {
-            return GetGenericTypeDefinition_impl(type);
+            Type? res = null;
+            GetGenericTypeDefinition_impl(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create (ref res));
+            if (res == null)
+                // The icall returns null if TYPE is a gtd
+                return type;
+            return res!;
         }
 
         internal static bool IsPrimitive(RuntimeType type)
@@ -182,23 +192,43 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern CorElementType GetCorElementType(RuntimeType type);
+        internal static extern CorElementType GetCorElementType(QCallTypeHandle type);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool HasInstantiation(RuntimeType type);
+        internal static extern bool HasInstantiation(QCallTypeHandle type);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool IsComObject(RuntimeType type);
+        internal static extern bool IsComObject(QCallTypeHandle type);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool IsInstanceOfType(RuntimeType type, [NotNullWhen(true)] object? o);
+        internal static extern bool IsInstanceOfType(QCallTypeHandle type, [NotNullWhen(true)] object? o);
+
+        internal static bool IsInstanceOfType(RuntimeType type, [NotNullWhen(true)] object? o)
+        {
+            return IsInstanceOfType(new QCallTypeHandle(ref type), o);
+        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool HasReferences(RuntimeType? type);
+        internal static extern bool HasReferences(QCallTypeHandle type);
+
+        internal static bool HasReferences(RuntimeType type)
+        {
+            return HasReferences(new QCallTypeHandle(ref type));
+        }
+
+        internal static CorElementType GetCorElementType(RuntimeType type)
+        {
+            return GetCorElementType (new QCallTypeHandle(ref type));
+        }
+
+        internal static bool HasInstantiation(RuntimeType type)
+        {
+            return HasInstantiation (new QCallTypeHandle(ref type));
+        }
 
         internal static bool IsComObject(RuntimeType type, bool isGenericCOM)
         {
-            return isGenericCOM ? false : IsComObject(type);
+            return isGenericCOM ? false : IsComObject(new QCallTypeHandle(ref type));
         }
 
         internal static bool IsContextful(RuntimeType type)
@@ -218,73 +248,120 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern int GetArrayRank(RuntimeType type);
+        internal static extern int GetArrayRank(QCallTypeHandle type);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeAssembly GetAssembly(RuntimeType type);
+        internal static extern void GetAssembly(QCallTypeHandle type, ObjectHandleOnStack res);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeType GetElementType(RuntimeType type);
+        internal static extern void GetElementType(QCallTypeHandle type, ObjectHandleOnStack res);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeModule GetModule(RuntimeType type);
+        internal static extern void GetModule(QCallTypeHandle type, ObjectHandleOnStack res);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool IsGenericVariable(RuntimeType type);
+        internal static extern void GetBaseType(QCallTypeHandle type, ObjectHandleOnStack res);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeType GetBaseType(RuntimeType type);
+        internal static int GetArrayRank(RuntimeType type)
+        {
+            return GetArrayRank(new QCallTypeHandle (ref type));
+        }
+
+        internal static RuntimeAssembly GetAssembly(RuntimeType type)
+        {
+            RuntimeAssembly? res = null;
+            GetAssembly(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref res));
+            return res!;
+        }
+
+        internal static RuntimeModule GetModule(RuntimeType type)
+        {
+            RuntimeModule? res = null;
+            GetModule(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref res));
+            return res!;
+        }
+
+        internal static RuntimeType GetElementType(RuntimeType type)
+        {
+            RuntimeType? res = null;
+            GetElementType(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref res));
+            return res!;
+        }
+
+        internal static RuntimeType GetBaseType(RuntimeType type)
+        {
+            RuntimeType? res = null;
+            GetBaseType(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref res));
+            return res!;
+        }
 
         internal static bool CanCastTo(RuntimeType type, RuntimeType target)
         {
-            return type_is_assignable_from(target, type);
+            return type_is_assignable_from(new QCallTypeHandle(ref target), new QCallTypeHandle(ref type));
+        }
+
+        internal static bool IsGenericVariable(RuntimeType type)
+        {
+            CorElementType corElemType = GetCorElementType(type);
+            return corElemType == CorElementType.ELEMENT_TYPE_VAR || corElemType == CorElementType.ELEMENT_TYPE_MVAR;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool type_is_assignable_from(Type a, Type b);
+        private static extern bool type_is_assignable_from(QCallTypeHandle a, QCallTypeHandle b);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool IsGenericTypeDefinition(RuntimeType type);
+        internal static extern bool IsGenericTypeDefinition(QCallTypeHandle type);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetGenericParameterInfo(RuntimeType type);
+        internal static extern IntPtr GetGenericParameterInfo(QCallTypeHandle type);
+
+        internal static bool IsGenericTypeDefinition(RuntimeType type)
+        {
+            return IsGenericTypeDefinition(new QCallTypeHandle(ref type));
+        }
+
+        internal static IntPtr GetGenericParameterInfo(RuntimeType type)
+        {
+            return GetGenericParameterInfo(new QCallTypeHandle(ref type));
+        }
 
         internal static bool IsSubclassOf(RuntimeType childType, RuntimeType baseType)
         {
-            return is_subclass_of(childType._impl.Value, baseType._impl.Value);
+            return is_subclass_of(new QCallTypeHandle(ref childType), new QCallTypeHandle(ref baseType));
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool is_subclass_of(IntPtr childType, IntPtr baseType);
+        internal static extern bool is_subclass_of(QCallTypeHandle childType, QCallTypeHandle baseType);
 
         [DynamicDependency("#ctor()", typeof(IsByRefLikeAttribute))]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool IsByRefLike(RuntimeType type);
+        internal static extern bool IsByRefLike(QCallTypeHandle type);
+
+        internal static bool IsByRefLike(RuntimeType type)
+        {
+            return IsByRefLike(new QCallTypeHandle(ref type));
+        }
 
         internal static bool IsTypeDefinition(RuntimeType type)
         {
-            // That's how it has been done on CoreFX but we have no GetCorElementType method implementation
-            // see https://github.com/dotnet/coreclr/pull/11355
+            CorElementType corElemType = GetCorElementType(type);
+            if (!((corElemType >= CorElementType.ELEMENT_TYPE_VOID && corElemType < CorElementType.ELEMENT_TYPE_PTR) ||
+                    corElemType == CorElementType.ELEMENT_TYPE_VALUETYPE ||
+                    corElemType == CorElementType.ELEMENT_TYPE_CLASS ||
+                    corElemType == CorElementType.ELEMENT_TYPE_TYPEDBYREF ||
+                    corElemType == CorElementType.ELEMENT_TYPE_I ||
+                    corElemType == CorElementType.ELEMENT_TYPE_U ||
+                    corElemType == CorElementType.ELEMENT_TYPE_OBJECT))
+                return false;
 
-            // CorElementType corElemType = GetCorElementType (type);
-            // if (!((corElemType >= CorElementType.Void && corElemType < CorElementType.Ptr) ||
-            //      corElemType == CorElementType.ValueType ||
-            //      corElemType == CorElementType.Class ||
-            //      corElemType == CorElementType.TypedByRef ||
-            //      corElemType == CorElementType.I ||
-            //      corElemType == CorElementType.U ||
-            //      corElemType == CorElementType.Object))
-            //  return false;
-            // if (HasInstantiation (type) && !IsGenericTypeDefinition (type))
-            //  return false;
-            // return true;
+            if (HasInstantiation(type) && !IsGenericTypeDefinition(type))
+                return false;
 
-            // It's like a workaround mentioned in https://github.com/dotnet/runtime/issues/20711
-            return !type.HasElementType && !type.IsConstructedGenericType && !type.IsGenericParameter;
+            return true;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern RuntimeType internal_from_name(string name, ref StackCrawlMark stackMark, Assembly? callerAssembly, bool throwOnError, bool ignoreCase);
+        private static extern void internal_from_name(IntPtr name, ref StackCrawlMark stackMark, ObjectHandleOnStack res, bool throwOnError, bool ignoreCase);
 
         [RequiresUnreferencedCode("Types might be removed")]
         internal static RuntimeType? GetTypeByName(string typeName, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark,
@@ -299,9 +376,15 @@ namespace System
                 else
                     return null;
 
-            RuntimeType? t = internal_from_name(typeName, ref stackMark, null, throwOnError, ignoreCase);
-            if (throwOnError && t == null)
-                throw new TypeLoadException("Error loading '" + typeName + "'");
+            RuntimeType? t = null;
+            using (var namePtr = new Mono.SafeStringMarshal(typeName)) {
+                internal_from_name(
+                                   namePtr.Value,
+                                   ref stackMark,
+                                   ObjectHandleOnStack.Create (ref t), throwOnError, ignoreCase);
+                if (throwOnError && t == null)
+                    throw new TypeLoadException("Error loading '" + typeName + "'");
+            }
             return t;
         }
 

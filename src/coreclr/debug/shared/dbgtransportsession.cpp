@@ -1143,7 +1143,7 @@ DbgTransportSession::Message * DbgTransportSession::RemoveMessageFromSendQueue(D
 
 // Check read and optionally write memory access to the specified range of bytes. Used to check
 // ReadProcessMemory and WriteProcessMemory requests.
-HRESULT DbgTransportSession::CheckBufferAccess(__in_ecount(cbBuffer) PBYTE pbBuffer, DWORD cbBuffer, bool fWriteAccess)
+HRESULT DbgTransportSession::CheckBufferAccess(_In_reads_(cbBuffer) PBYTE pbBuffer, DWORD cbBuffer, bool fWriteAccess)
 {
     // check for integer overflow
     if ((pbBuffer + cbBuffer) < pbBuffer)

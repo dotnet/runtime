@@ -32,4 +32,4 @@ else(CLR_CMAKE_HOST_WIN32)
     endif()
 endif(CLR_CMAKE_HOST_WIN32)
 
-install_clr(TARGETS corerun DESTINATIONS . COMPONENT runtime)
+install_clr(TARGETS corerun DESTINATIONS . COMPONENT hosts)

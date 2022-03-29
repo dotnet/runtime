@@ -51,7 +51,7 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	g_assert_not_reached ();
 #elif defined(MONO_SIGNAL_USE_UCONTEXT_T)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
-	
+
 	mctx->eax = UCONTEXT_REG_EAX (ctx);
 	mctx->ebx = UCONTEXT_REG_EBX (ctx);
 	mctx->ecx = UCONTEXT_REG_ECX (ctx);
@@ -85,7 +85,7 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	mctx->eax = context->Eax;
 	mctx->ebp = context->Ebp;
 	mctx->esp = context->Esp;
-#else	
+#else
 	struct sigcontext *ctx = (struct sigcontext *)sigctx;
 
 	mctx->eax = ctx->SC_EAX;
@@ -468,7 +468,7 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	mctx->pc = context->Pc;
 	mctx->cpsr = context->Cpsr;
 	memcpy (&mctx->regs, &context->R0, sizeof (DWORD) * 16);
-	
+
 	/* Why are we only copying 16 registers?! There are 32! */
 	memcpy (&mctx->fregs, &context->D, sizeof (double) * 16);
 #else
@@ -495,7 +495,7 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 	context->Pc = mctx->pc;
 	context->Cpsr = mctx->cpsr;
 	memcpy (&context->R0, &mctx->regs, sizeof (DWORD) * 16);
-	
+
 	/* Why are we only copying 16 registers?! There are 32! */
 	memcpy (&context->D, &mctx->fregs, sizeof (double) * 16);
 #else

@@ -57,9 +57,9 @@ INST5(pop,              "pop",              IUM_WR, 0x00008E,     BAD_CODE,     
 INST5(push_hide,        "push",             IUM_RD, 0x0030FE,     0x000068,     BAD_CODE,     BAD_CODE,     0x000050,    INS_FLAGS_None )
 INST5(pop_hide,         "pop",              IUM_WR, 0x00008E,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000058,    INS_FLAGS_None )
 
-INST5(inc,              "inc",              IUM_RW, 0x0000FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000040,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF )
+INST5(inc,              "inc",              IUM_RW, 0x0000FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000040,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF | INS_FLAGS_Has_Wbit )
 INST5(inc_l,            "inc",              IUM_RW, 0x0000FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C0FE,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF )
-INST5(dec,              "dec",              IUM_RW, 0x0008FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000048,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF )
+INST5(dec,              "dec",              IUM_RW, 0x0008FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000048,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF | INS_FLAGS_Has_Wbit )
 INST5(dec_l,            "dec",              IUM_RW, 0x0008FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C8FE,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF )
 
 // Multi-byte opcodes without modrm are represented in mixed endian fashion.
@@ -67,18 +67,16 @@ INST5(dec_l,            "dec",              IUM_RW, 0x0008FE,     BAD_CODE,     
 INST5(bswap,            "bswap",            IUM_RW, 0x0F00C8,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C80F,    INS_FLAGS_None )
 
 //    id                nm                  um      mr            mi            rm            a4                         flags
-INST4(add,              "add",              IUM_RW, 0x000000,     0x000080,     0x000002,     0x000004,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     )
-INST4(or,               "or",               IUM_RW, 0x000008,     0x000880,     0x00000A,     0x00000C,                  Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Resets_CF     )
-INST4(adc,              "adc",              IUM_RW, 0x000010,     0x001080,     0x000012,     0x000014,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF
-                                                                                                                                                                                                        | Reads_CF      )
-INST4(sbb,              "sbb",              IUM_RW, 0x000018,     0x001880,     0x00001A,     0x00001C,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF
-                                                                                                                                                                                                        | Reads_CF      )
-INST4(and,              "and",              IUM_RW, 0x000020,     0x002080,     0x000022,     0x000024,                  Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Resets_CF     )
-INST4(sub,              "sub",              IUM_RW, 0x000028,     0x002880,     0x00002A,     0x00002C,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     )
-INST4(xor,              "xor",              IUM_RW, 0x000030,     0x003080,     0x000032,     0x000034,                  Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Resets_CF     )
-INST4(cmp,              "cmp",              IUM_RD, 0x000038,     0x003880,     0x00003A,     0x00003C,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     )
-INST4(test,             "test",             IUM_RD, 0x000084,     0x0000F6,     0x000084,     0x0000A8,                  Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Resets_CF     )
-INST4(mov,              "mov",              IUM_WR, 0x000088,     0x0000C6,     0x00008A,     0x0000B0,                  INS_FLAGS_None )
+INST4(add,              "add",              IUM_RW, 0x000000,     0x000080,     0x000002,     0x000004,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF                  | INS_FLAGS_Has_Sbit | INS_FLAGS_Has_Wbit )
+INST4(or,               "or",               IUM_RW, 0x000008,     0x000880,     0x00000A,     0x00000C,                  Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Resets_CF                  | INS_FLAGS_Has_Sbit | INS_FLAGS_Has_Wbit )
+INST4(adc,              "adc",              IUM_RW, 0x000010,     0x001080,     0x000012,     0x000014,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     | Reads_CF   | INS_FLAGS_Has_Sbit | INS_FLAGS_Has_Wbit )
+INST4(sbb,              "sbb",              IUM_RW, 0x000018,     0x001880,     0x00001A,     0x00001C,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     | Reads_CF   | INS_FLAGS_Has_Sbit | INS_FLAGS_Has_Wbit )
+INST4(and,              "and",              IUM_RW, 0x000020,     0x002080,     0x000022,     0x000024,                  Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Resets_CF                  | INS_FLAGS_Has_Sbit | INS_FLAGS_Has_Wbit )
+INST4(sub,              "sub",              IUM_RW, 0x000028,     0x002880,     0x00002A,     0x00002C,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF                  | INS_FLAGS_Has_Sbit | INS_FLAGS_Has_Wbit )
+INST4(xor,              "xor",              IUM_RW, 0x000030,     0x003080,     0x000032,     0x000034,                  Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Resets_CF                  | INS_FLAGS_Has_Sbit | INS_FLAGS_Has_Wbit )
+INST4(cmp,              "cmp",              IUM_RD, 0x000038,     0x003880,     0x00003A,     0x00003C,                  Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF                  | INS_FLAGS_Has_Sbit | INS_FLAGS_Has_Wbit )
+INST4(test,             "test",             IUM_RD, 0x000084,     0x0000F6,     0x000084,     0x0000A8,                  Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Resets_CF                                       | INS_FLAGS_Has_Wbit )
+INST4(mov,              "mov",              IUM_WR, 0x000088,     0x0000C6,     0x00008A,     0x0000B0,                  INS_FLAGS_Has_Wbit )
 
 INST4(lea,              "lea",              IUM_WR, BAD_CODE,     BAD_CODE,     0x00008D,     BAD_CODE,                  INS_FLAGS_None )
 
@@ -91,11 +89,11 @@ INST3(bt,               "bt",               IUM_RD, 0x0F00A3,     BAD_CODE,     
 INST3(bsf,              "bsf",              IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BC,                                Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Undefined_CF  )
 INST3(bsr,              "bsr",              IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BD,                                Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Undefined_CF  )
 
-INST3(movsx,            "movsx",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BE,                                INS_FLAGS_None )
+INST3(movsx,            "movsx",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BE,                                INS_FLAGS_Has_Wbit )
 #ifdef TARGET_AMD64
-INST3(movsxd,           "movsxd",           IUM_WR, BAD_CODE,     BAD_CODE,     0x4800000063,                            INS_FLAGS_None )
+INST3(movsxd,           "movsxd",           IUM_WR, BAD_CODE,     BAD_CODE,     0x4800000063,                            INS_FLAGS_Has_Wbit )
 #endif
-INST3(movzx,            "movzx",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00B6,                                INS_FLAGS_None )
+INST3(movzx,            "movzx",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00B6,                                INS_FLAGS_Has_Wbit )
 
 INST3(cmovo,            "cmovo",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0040,                                Reads_OF )
 INST3(cmovno,           "cmovno",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0041,                                Reads_OF )
@@ -114,8 +112,8 @@ INST3(cmovge,           "cmovge",           IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(cmovle,           "cmovle",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004E,                                Reads_OF       | Reads_SF      | Reads_ZF                                                      )
 INST3(cmovg,            "cmovg",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004F,                                Reads_OF       | Reads_SF      | Reads_ZF                                                      )
 
-INST3(xchg,             "xchg",             IUM_RW, 0x000086,     BAD_CODE,     0x000086,                                INS_FLAGS_None )
-INST3(imul,             "imul",             IUM_RW, 0x0F00AC,     BAD_CODE,     0x0F00AF,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INST3(xchg,             "xchg",             IUM_RW, 0x000086,     BAD_CODE,     0x000086,                                INS_FLAGS_Has_Wbit )
+INST3(imul,             "imul",             IUM_RW, 0x0F00AC,     BAD_CODE,     0x0F00AF,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit )
 
 //    id                nm                  um      mr            mi            rm                                       flags
 
@@ -123,25 +121,25 @@ INST3(imul,             "imul",             IUM_RW, 0x0F00AC,     BAD_CODE,     
 // as 2-operand instructions with the target register being implicit
 // implicit_reg = op1*op2_icon
 #define INSTMUL INST3
-INSTMUL(imul_AX,        "imul",             IUM_RD, BAD_CODE,     0x000068,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
-INSTMUL(imul_CX,        "imul",             IUM_RD, BAD_CODE,     0x000868,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
-INSTMUL(imul_DX,        "imul",             IUM_RD, BAD_CODE,     0x001068,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
-INSTMUL(imul_BX,        "imul",             IUM_RD, BAD_CODE,     0x001868,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
-INSTMUL(imul_SP,        "imul",             IUM_RD, BAD_CODE,     BAD_CODE,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
-INSTMUL(imul_BP,        "imul",             IUM_RD, BAD_CODE,     0x002868,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
-INSTMUL(imul_SI,        "imul",             IUM_RD, BAD_CODE,     0x003068,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
-INSTMUL(imul_DI,        "imul",             IUM_RD, BAD_CODE,     0x003868,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INSTMUL(imul_AX,        "imul",             IUM_RD, BAD_CODE,     0x000068,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit )
+INSTMUL(imul_CX,        "imul",             IUM_RD, BAD_CODE,     0x000868,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit )
+INSTMUL(imul_DX,        "imul",             IUM_RD, BAD_CODE,     0x001068,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit )
+INSTMUL(imul_BX,        "imul",             IUM_RD, BAD_CODE,     0x001868,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit )
+INSTMUL(imul_SP,        "imul",             IUM_RD, BAD_CODE,     BAD_CODE,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit )
+INSTMUL(imul_BP,        "imul",             IUM_RD, BAD_CODE,     0x002868,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit )
+INSTMUL(imul_SI,        "imul",             IUM_RD, BAD_CODE,     0x003068,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit )
+INSTMUL(imul_DI,        "imul",             IUM_RD, BAD_CODE,     0x003868,     BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit )
 
 #ifdef TARGET_AMD64
 
-INSTMUL(imul_08,        "imul",             IUM_RD, BAD_CODE,     0x4400000068, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
-INSTMUL(imul_09,        "imul",             IUM_RD, BAD_CODE,     0x4400000868, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
-INSTMUL(imul_10,        "imul",             IUM_RD, BAD_CODE,     0x4400001068, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
-INSTMUL(imul_11,        "imul",             IUM_RD, BAD_CODE,     0x4400001868, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
-INSTMUL(imul_12,        "imul",             IUM_RD, BAD_CODE,     0x4400002068, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
-INSTMUL(imul_13,        "imul",             IUM_RD, BAD_CODE,     0x4400002868, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
-INSTMUL(imul_14,        "imul",             IUM_RD, BAD_CODE,     0x4400003068, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
-INSTMUL(imul_15,        "imul",             IUM_RD, BAD_CODE,     0x4400003868, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INSTMUL(imul_08,        "imul",             IUM_RD, BAD_CODE,     0x4400000068, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit )
+INSTMUL(imul_09,        "imul",             IUM_RD, BAD_CODE,     0x4400000868, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit )
+INSTMUL(imul_10,        "imul",             IUM_RD, BAD_CODE,     0x4400001068, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit )
+INSTMUL(imul_11,        "imul",             IUM_RD, BAD_CODE,     0x4400001868, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit )
+INSTMUL(imul_12,        "imul",             IUM_RD, BAD_CODE,     0x4400002068, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit )
+INSTMUL(imul_13,        "imul",             IUM_RD, BAD_CODE,     0x4400002868, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit )
+INSTMUL(imul_14,        "imul",             IUM_RD, BAD_CODE,     0x4400003068, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit )
+INSTMUL(imul_15,        "imul",             IUM_RD, BAD_CODE,     0x4400003868, BAD_CODE,                                Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit )
 
 #endif // TARGET_AMD64
 
@@ -628,55 +626,49 @@ INST2(ret,              "ret",              IUM_RD, 0x0000C3,     0x0000C2,     
 INST2(loop,             "loop",             IUM_RD, BAD_CODE,     0x0000E2,                                              INS_FLAGS_None )
 INST2(call,             "call",             IUM_RD, 0x0010FF,     0x0000E8,                                              INS_FLAGS_None )
 
-INST2(rol,              "rol",              IUM_RW, 0x0000D2,     BAD_CODE,                                              Undefined_OF                                                                   | Writes_CF     )
-INST2(rol_1,            "rol",              IUM_RW, 0x0000D0,     0x0000D0,                                              Writes_OF                                                                      | Writes_CF     )
-INST2(rol_N,            "rol",              IUM_RW, 0x0000C0,     0x0000C0,                                              Undefined_OF                                                                   | Writes_CF     )
-INST2(ror,              "ror",              IUM_RW, 0x0008D2,     BAD_CODE,                                              Undefined_OF                                                                   | Writes_CF     )
-INST2(ror_1,            "ror",              IUM_RW, 0x0008D0,     0x0008D0,                                              Writes_OF                                                                      | Writes_CF     )
-INST2(ror_N,            "ror",              IUM_RW, 0x0008C0,     0x0008C0,                                              Undefined_OF                                                                   | Writes_CF     )
+INST2(rol,              "rol",              IUM_RW, 0x0000D2,     BAD_CODE,                                              Undefined_OF                                                                   | Writes_CF             | INS_FLAGS_Has_Wbit )
+INST2(rol_1,            "rol",              IUM_RW, 0x0000D0,     0x0000D0,                                              Writes_OF                                                                      | Writes_CF             | INS_FLAGS_Has_Wbit )
+INST2(rol_N,            "rol",              IUM_RW, 0x0000C0,     0x0000C0,                                              Undefined_OF                                                                   | Writes_CF             | INS_FLAGS_Has_Wbit )
+INST2(ror,              "ror",              IUM_RW, 0x0008D2,     BAD_CODE,                                              Undefined_OF                                                                   | Writes_CF             | INS_FLAGS_Has_Wbit )
+INST2(ror_1,            "ror",              IUM_RW, 0x0008D0,     0x0008D0,                                              Writes_OF                                                                      | Writes_CF             | INS_FLAGS_Has_Wbit )
+INST2(ror_N,            "ror",              IUM_RW, 0x0008C0,     0x0008C0,                                              Undefined_OF                                                                   | Writes_CF             | INS_FLAGS_Has_Wbit )
 
-INST2(rcl,              "rcl",              IUM_RW, 0x0010D2,     BAD_CODE,                                              Undefined_OF                                                                   | Writes_CF
-                                                                                                                                                                                                        | Reads_CF      )
-INST2(rcl_1,            "rcl",              IUM_RW, 0x0010D0,     0x0010D0,                                              Writes_OF                                                                      | Writes_CF
-                                                                                                                                                                                                        | Reads_CF      )
-INST2(rcl_N,            "rcl",              IUM_RW, 0x0010C0,     0x0010C0,                                              Undefined_OF                                                                   | Writes_CF
-                                                                                                                                                                                                        | Reads_CF      )
-INST2(rcr,              "rcr",              IUM_RW, 0x0018D2,     BAD_CODE,                                              Undefined_OF                                                                   | Writes_CF
-                                                                                                                                                                                                        | Reads_CF      )
-INST2(rcr_1,            "rcr",              IUM_RW, 0x0018D0,     0x0018D0,                                              Writes_OF                                                                      | Writes_CF
-                                                                                                                                                                                                        | Reads_CF      )
-INST2(rcr_N,            "rcr",              IUM_RW, 0x0018C0,     0x0018C0,                                              Undefined_OF                                                                   | Writes_CF
-                                                                                                                                                                                                        | Reads_CF      )
-INST2(shl,              "shl",              IUM_RW, 0x0020D2,     BAD_CODE,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
-INST2(shl_1,            "shl",              IUM_RW, 0x0020D0,     0x0020D0,                                              Writes_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
-INST2(shl_N,            "shl",              IUM_RW, 0x0020C0,     0x0020C0,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
-INST2(shr,              "shr",              IUM_RW, 0x0028D2,     BAD_CODE,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
-INST2(shr_1,            "shr",              IUM_RW, 0x0028D0,     0x0028D0,                                              Writes_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
-INST2(shr_N,            "shr",              IUM_RW, 0x0028C0,     0x0028C0,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
-INST2(sar,              "sar",              IUM_RW, 0x0038D2,     BAD_CODE,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
-INST2(sar_1,            "sar",              IUM_RW, 0x0038D0,     0x0038D0,                                              Writes_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
-INST2(sar_N,            "sar",              IUM_RW, 0x0038C0,     0x0038C0,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
+INST2(rcl,              "rcl",              IUM_RW, 0x0010D2,     BAD_CODE,                                              Undefined_OF                                                                   | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit )
+INST2(rcl_1,            "rcl",              IUM_RW, 0x0010D0,     0x0010D0,                                              Writes_OF                                                                      | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit )
+INST2(rcl_N,            "rcl",              IUM_RW, 0x0010C0,     0x0010C0,                                              Undefined_OF                                                                   | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit ) 
+INST2(rcr,              "rcr",              IUM_RW, 0x0018D2,     BAD_CODE,                                              Undefined_OF                                                                   | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit )
+INST2(rcr_1,            "rcr",              IUM_RW, 0x0018D0,     0x0018D0,                                              Writes_OF                                                                      | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit )   
+INST2(rcr_N,            "rcr",              IUM_RW, 0x0018C0,     0x0018C0,                                              Undefined_OF                                                                   | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit )
+INST2(shl,              "shl",              IUM_RW, 0x0020D2,     BAD_CODE,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit )
+INST2(shl_1,            "shl",              IUM_RW, 0x0020D0,     0x0020D0,                                              Writes_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit )
+INST2(shl_N,            "shl",              IUM_RW, 0x0020C0,     0x0020C0,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit )
+INST2(shr,              "shr",              IUM_RW, 0x0028D2,     BAD_CODE,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit )
+INST2(shr_1,            "shr",              IUM_RW, 0x0028D0,     0x0028D0,                                              Writes_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit )
+INST2(shr_N,            "shr",              IUM_RW, 0x0028C0,     0x0028C0,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit )
+INST2(sar,              "sar",              IUM_RW, 0x0038D2,     BAD_CODE,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit )
+INST2(sar_1,            "sar",              IUM_RW, 0x0038D0,     0x0038D0,                                              Writes_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit )
+INST2(sar_N,            "sar",              IUM_RW, 0x0038C0,     0x0038C0,                                              Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit )
 
 
 //    id                nm                  um      mr                                                                   flags
-INST1(r_movsb,          "rep movsb",        IUM_RD, 0x00A4F3,                                                            Reads_DF )
-INST1(r_movsd,          "rep movsd",        IUM_RD, 0x00A5F3,                                                            Reads_DF )
+INST1(r_movsb,          "rep movsb",        IUM_RD, 0x00A4F3,                                                            Reads_DF | INS_FLAGS_Has_Wbit )
+INST1(r_movsd,          "rep movsd",        IUM_RD, 0x00A5F3,                                                            Reads_DF | INS_FLAGS_Has_Wbit )
 #if defined(TARGET_AMD64)
 INST1(r_movsq,          "rep movsq",        IUM_RD, 0xF3A548,                                                            Reads_DF )
 #endif // defined(TARGET_AMD64)
-INST1(movsb,            "movsb",            IUM_RD, 0x0000A4,                                                            Reads_DF   )
-INST1(movsd,            "movsd",            IUM_RD, 0x0000A5,                                                            Reads_DF   )
+INST1(movsb,            "movsb",            IUM_RD, 0x0000A4,                                                            Reads_DF   | INS_FLAGS_Has_Wbit )
+INST1(movsd,            "movsd",            IUM_RD, 0x0000A5,                                                            Reads_DF   | INS_FLAGS_Has_Wbit )
 #if defined(TARGET_AMD64)
 INST1(movsq,            "movsq",            IUM_RD, 0x00A548,                                                            Reads_DF   )
 #endif // defined(TARGET_AMD64)
 
-INST1(r_stosb,          "rep stosb",        IUM_RD, 0x00AAF3,                                                            Reads_DF   )
-INST1(r_stosd,          "rep stosd",        IUM_RD, 0x00ABF3,                                                            Reads_DF   )
+INST1(r_stosb,          "rep stosb",        IUM_RD, 0x00AAF3,                                                            Reads_DF   | INS_FLAGS_Has_Wbit )
+INST1(r_stosd,          "rep stosd",        IUM_RD, 0x00ABF3,                                                            Reads_DF   | INS_FLAGS_Has_Wbit )
 #if defined(TARGET_AMD64)
 INST1(r_stosq,          "rep stosq",        IUM_RD, 0xF3AB48,                                                            Reads_DF   )
 #endif // defined(TARGET_AMD64)
-INST1(stosb,            "stosb",            IUM_RD, 0x0000AA,                                                            Reads_DF   )
-INST1(stosd,            "stosd",            IUM_RD, 0x0000AB,                                                            Reads_DF   )
+INST1(stosb,            "stosb",            IUM_RD, 0x0000AA,                                                            Reads_DF   | INS_FLAGS_Has_Wbit )
+INST1(stosd,            "stosd",            IUM_RD, 0x0000AB,                                                            Reads_DF   | INS_FLAGS_Has_Wbit )
 #if defined(TARGET_AMD64)
 INST1(stosq,            "stosq",            IUM_RD, 0x00AB48,                                                            Reads_DF   )
 #endif // defined(TARGET_AMD64)
@@ -687,20 +679,20 @@ INST1(pause,            "pause",            IUM_RD, 0x0090F3,                   
 INST1(lock,             "lock",             IUM_RD, 0x0000F0,                                                            INS_FLAGS_None )
 INST1(leave,            "leave",            IUM_RD, 0x0000C9,                                                            INS_FLAGS_None )
 
-INST1(neg,              "neg",              IUM_RW, 0x0018F6,                                                            Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     )
-INST1(not,              "not",              IUM_RW, 0x0010F6,                                                            INS_FLAGS_None )
+INST1(neg,              "neg",              IUM_RW, 0x0018F6,                                                            Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     | INS_FLAGS_Has_Wbit )
+INST1(not,              "not",              IUM_RW, 0x0010F6,                                                            INS_FLAGS_None | INS_FLAGS_Has_Wbit )
 
 INST1(cwde,             "cwde",             IUM_RD, 0x000098,                                                            INS_FLAGS_None )
 INST1(cdq,              "cdq",              IUM_RD, 0x000099,                                                            INS_FLAGS_None )
-INST1(idiv,             "idiv",             IUM_RD, 0x0038F6,                                                            Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Undefined_CF  )
-INST1(imulEAX,          "imul",             IUM_RD, 0x0028F6,                                                            Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
-INST1(div,              "div",              IUM_RD, 0x0030F6,                                                            Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Undefined_CF  )
-INST1(mulEAX,           "mul",              IUM_RD, 0x0020F6,                                                            Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
+INST1(idiv,             "idiv",             IUM_RD, 0x0038F6,                                                            Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Undefined_CF  | INS_FLAGS_Has_Wbit )
+INST1(imulEAX,          "imul",             IUM_RD, 0x0028F6,                                                            Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Wbit )
+INST1(div,              "div",              IUM_RD, 0x0030F6,                                                            Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Undefined_CF  | INS_FLAGS_Has_Wbit )
+INST1(mulEAX,           "mul",              IUM_RD, 0x0020F6,                                                            Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Wbit )
 
 INST1(sahf,             "sahf",             IUM_RD, 0x00009E,                                                            Restore_SF_ZF_AF_PF_CF )
 
-INST1(xadd,             "xadd",             IUM_RW, 0x0F00C0,                                                            Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     )
-INST1(cmpxchg,          "cmpxchg",          IUM_RW, 0x0F00B0,                                                            Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     )
+INST1(xadd,             "xadd",             IUM_RW, 0x0F00C0,                                                            Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     | INS_FLAGS_Has_Wbit )
+INST1(cmpxchg,          "cmpxchg",          IUM_RW, 0x0F00B0,                                                            Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     | INS_FLAGS_Has_Wbit )
 
 INST1(shld,             "shld",             IUM_RW, 0x0F00A4,                                                            Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )
 INST1(shrd,             "shrd",             IUM_RW, 0x0F00AC,                                                            Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF     )

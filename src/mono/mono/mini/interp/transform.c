@@ -1446,25 +1446,27 @@ dump_interp_compacted_ins (const guint16 *ip, const guint16 *start)
 {
 	int opcode = *ip;
 	int ins_offset = ip - start;
+	GString *str = g_string_new ("");
 
-	g_print ("IR_%04x: %-14s", ins_offset, mono_interp_opname (opcode));
+	g_string_append_printf (str, "IR_%04x: %-14s", ins_offset, mono_interp_opname (opcode));
 	ip++;
 
         if (mono_interp_op_dregs [opcode] > 0)
-                g_print (" [%d <-", *ip++);
+                g_string_append_printf (str, " [%d <-", *ip++);
         else
-                g_print (" [nil <-");
+                g_string_append_printf (str, " [nil <-");
 
         if (mono_interp_op_sregs [opcode] > 0) {
                 for (int i = 0; i < mono_interp_op_sregs [opcode]; i++)
-                        g_print (" %d", *ip++);
-                g_print ("],");
+                        g_string_append_printf (str, " %d", *ip++);
+                g_string_append_printf (str, "],");
         } else {
-                g_print (" nil],");
+                g_string_append_printf (str, " nil],");
         }
-	char *ins = dump_interp_ins_data (NULL, ins_offset, ip, opcode);
-	g_print ("%s\n", ins);
-	g_free (ins);
+	char *ins_data = dump_interp_ins_data (NULL, ins_offset, ip, opcode);
+	g_print ("%s%s\n", str->str, ins_data);
+	g_string_free (str, TRUE);
+	g_free (ins_data);
 }
 
 static void
@@ -1478,51 +1480,47 @@ dump_interp_code (const guint16 *start, const guint16* end)
 }
 
 static void
-dump_interp_inst_no_newline (InterpInst *ins)
+dump_interp_inst (InterpInst *ins)
 {
 	int opcode = ins->opcode;
-	g_print ("IL_%04x: %-14s", ins->il_offset, mono_interp_opname (opcode));
+	GString *str = g_string_new ("");
+	g_string_append_printf (str, "IL_%04x: %-14s", ins->il_offset, mono_interp_opname (opcode));
 
 	if (mono_interp_op_dregs [opcode] > 0)
-		g_print (" [%d <-", ins->dreg);
+		g_string_append_printf (str, " [%d <-", ins->dreg);
 	else
-		g_print (" [nil <-");
+		g_string_append_printf (str, " [nil <-");
 
 	if (mono_interp_op_sregs [opcode] > 0) {
 		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++) {
 			if (ins->sregs [i] == MINT_CALL_ARGS_SREG) {
-				g_print (" c:");
+				g_string_append_printf (str, " c:");
 				int *call_args = ins->info.call_args;
 				if (call_args) {
 					while (*call_args != -1) {
-						g_print (" %d", *call_args);
+						g_string_append_printf (str, " %d", *call_args);
 						call_args++;
 					}
 				}
 			} else {
-				g_print (" %d", ins->sregs [i]);
+				g_string_append_printf (str, " %d", ins->sregs [i]);
 			}
 		}
-		g_print ("],");
+		g_string_append_printf (str, "],");
 	} else {
-		g_print (" nil],");
+		g_string_append_printf (str, " nil],");
 	}
 
 	if (opcode == MINT_LDLOCA_S) {
 		// LDLOCA has special semantics, it has data in sregs [0], but it doesn't have any sregs
-		g_print (" %d", ins->sregs [0]);
+		g_string_append_printf (str, " %d", ins->sregs [0]);
 	} else {
 		char *descr = dump_interp_ins_data (ins, ins->il_offset, &ins->data [0], ins->opcode);
-		g_print ("%s", descr);
+		g_string_append_printf (str, "%s", descr);
 		g_free (descr);
 	}
-}
-
-static void
-dump_interp_inst (InterpInst *ins)
-{
-	dump_interp_inst_no_newline (ins);
-	g_print ("\n");
+	g_print ("%s\n", str->str);
+	g_string_free (str, TRUE);
 }
 
 static G_GNUC_UNUSED void
@@ -1579,21 +1577,6 @@ interp_method_get_header (MonoMethod* method, MonoError *error)
 		return NULL;
 	else
 		return mono_method_get_header_internal (method, error);
-}
-
-/* stores top of stack as local and pushes address of it on stack */
-static void
-emit_store_value_as_local (TransformData *td, MonoType *src)
-{
-	int local = create_interp_local (td, mini_native_type_replace_type (src));
-
-	store_local (td, local);
-
-	interp_add_ins (td, MINT_LDLOCA_S);
-	push_simple_type (td, STACK_TYPE_MP);
-	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-	interp_ins_set_sreg (td->last_ins, local);
-	td->locals [local].indirects++;
 }
 
 static gboolean
@@ -1906,15 +1889,15 @@ interp_handle_magic_type_intrinsics (TransformData *td, MonoMethod *target_metho
 		int src_size = mini_magic_type_size (NULL, src);
 		int dst_size = mini_magic_type_size (NULL, dst);
 
-		gboolean store_value_as_local = FALSE;
+		gboolean managed_fallback = FALSE;
 
 		switch (type_index) {
 		case 0: case 1:
 			if (!mini_magic_is_int_type (src) || !mini_magic_is_int_type (dst)) {
 				if (mini_magic_is_int_type (src))
-					store_value_as_local = TRUE;
+					managed_fallback = TRUE;
 				else if (mono_class_is_magic_float (src_klass))
-					store_value_as_local = TRUE;
+					managed_fallback = TRUE;
 				else
 					return FALSE;
 			}
@@ -1922,21 +1905,17 @@ interp_handle_magic_type_intrinsics (TransformData *td, MonoMethod *target_metho
 		case 2:
 			if (!mini_magic_is_float_type (src) || !mini_magic_is_float_type (dst)) {
 				if (mini_magic_is_float_type (src))
-					store_value_as_local = TRUE;
+					managed_fallback = TRUE;
 				else if (mono_class_is_magic_int (src_klass))
-					store_value_as_local = TRUE;
+					managed_fallback = TRUE;
 				else
 					return FALSE;
 			}
 			break;
 		}
 
-		if (store_value_as_local) {
-			emit_store_value_as_local (td, src);
-
-			/* emit call to managed conversion method */
+		if (managed_fallback)
 			return FALSE;
-		}
 
 		if (src_size > dst_size) { // 8 -> 4
 			switch (type_index) {
@@ -1993,15 +1972,6 @@ interp_handle_magic_type_intrinsics (TransformData *td, MonoMethod *target_metho
 		td->ip += 5;
 		return TRUE;
 	} else if (!strcmp ("CompareTo", tm) || !strcmp ("Equals", tm)) {
-		MonoType *arg = csignature->params [0];
-		int mt = mint_type (arg);
-
-		/* on 'System.n*::{CompareTo,Equals} (System.n*)' variant we need to push managed
-		 * pointer instead of value */
-		if (mt != MINT_TYPE_O)
-			emit_store_value_as_local (td, arg);
-
-		/* emit call to managed conversion method */
 		return FALSE;
 	} else if (!strcmp (".cctor", tm)) {
 		return FALSE;
@@ -2836,8 +2806,7 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 	if (method->wrapper_type != MONO_WRAPPER_NONE)
 		return FALSE;
 
-	/* Our usage of `emit_store_value_as_local ()` for nint, nuint and nfloat
-	 * is kinda hacky, and doesn't work with the inliner */
+	// FIXME Re-enable this
 	if (mono_class_get_magic_index (method->klass) >= 0)
 		return FALSE;
 
@@ -3587,9 +3556,9 @@ interp_field_from_token (MonoMethod *method, guint32 token, MonoClass **klass, M
 	MonoClassField *field = NULL;
 	if (method->wrapper_type != MONO_WRAPPER_NONE) {
 		field = (MonoClassField *) mono_method_get_wrapper_data (method, token);
-		*klass = field->parent;
+		*klass = m_field_get_parent (field);
 
-		mono_class_setup_fields (field->parent);
+		mono_class_setup_fields (m_field_get_parent (field));
 	} else {
 		field = mono_field_from_token_checked (m_class_get_image (method->klass), token, klass, generic_context, error);
 		return_val_if_nok (error, NULL);
@@ -4122,7 +4091,7 @@ static void
 interp_emit_ldsflda (TransformData *td, MonoClassField *field, MonoError *error)
 {
 	// Initialize the offset for the field
-	MonoVTable *vtable = mono_class_vtable_checked (field->parent, error);
+	MonoVTable *vtable = mono_class_vtable_checked (m_field_get_parent (field), error);
 	return_if_nok (error);
 
 	push_simple_type (td, STACK_TYPE_MP);
@@ -4195,7 +4164,7 @@ static void
 interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *field_class, int mt, gboolean is_load, MonoError *error)
 {
 	// Initialize the offset for the field
-	MonoVTable *vtable = mono_class_vtable_checked (field->parent, error);
+	MonoVTable *vtable = mono_class_vtable_checked (m_field_get_parent (field), error);
 	return_if_nok (error);
 
 	if (mono_class_field_is_special_static (field)) {
@@ -4457,6 +4426,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	end = td->ip + header->code_size;
 
 	td->cbb = td->entry_bb = (InterpBasicBlock*)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock));
+	if (td->gen_sdb_seq_points)
+		td->basic_blocks = g_list_prepend_mempool (td->mempool, td->basic_blocks, td->cbb);
+
 	td->cbb->index = td->bb_count++;
 	td->cbb->native_offset = -1;
 	td->cbb->stack_height = td->sp - td->stack;
@@ -6059,6 +6031,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					td->sp--;
 					interp_emit_sfld_access (td, field, field_klass, mt, TRUE, error);
 					goto_if_nok (error, exit);
+				} else if (td->sp [-1].type != STACK_TYPE_O && td->sp [-1].type != STACK_TYPE_MP && (mono_class_is_magic_int (klass) || mono_class_is_magic_float (klass))) {
+					// No need to load anything, the value is already on the execution stack
 				} else if (td->sp [-1].type == STACK_TYPE_VT) {
 					int size = 0;
 					/* First we pop the vt object from the stack. Then we push the field */
@@ -6175,11 +6149,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			MonoType *ftype = mono_field_get_type_internal (field);
 			mt = mint_type (ftype);
 			klass = mono_class_from_mono_type_internal (ftype);
-			gboolean in_corlib = m_class_get_image (field->parent) == mono_defaults.corlib;
+			gboolean in_corlib = m_class_get_image (m_field_get_parent (field)) == mono_defaults.corlib;
 
 			if (in_corlib && !strcmp (field->name, "IsLittleEndian") &&
-				!strcmp (m_class_get_name (field->parent), "BitConverter") &&
-				!strcmp (m_class_get_name_space (field->parent), "System"))
+				!strcmp (m_class_get_name (m_field_get_parent (field)), "BitConverter") &&
+				!strcmp (m_class_get_name_space (m_field_get_parent (field)), "System"))
 			{
 				interp_add_ins (td, (TARGET_BYTE_ORDER == G_LITTLE_ENDIAN) ? MINT_LDC_I4_1 : MINT_LDC_I4_0);
 				push_simple_type (td, STACK_TYPE_I4);
@@ -8742,7 +8716,7 @@ retry:
 					sregs [0] = sregs [1];
 
 					if (td->verbose_level) {
-						g_print ("Replace ldloca/stfld pair (off %p) :\n\t", ldloca->il_offset);
+						g_print ("Replace ldloca/stfld pair (off %p) :\n\t", (void *)(uintptr_t) ldloca->il_offset);
 						dump_interp_inst (ins);
 					}
 					needs_retry = TRUE;

@@ -26,6 +26,7 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
+#include "libunwind_i.h"
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -34,7 +35,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
-#include <sys/syscall.h>
+#if defined(HAVE_SYS_SYSCALL_H)
+# include <sys/syscall.h>
+#endif
 #include <stdatomic.h>
 
 #include "unwind_i.h"
@@ -138,8 +141,12 @@ write_validate (void *addr)
 
   do
     {
-      /* use syscall insteadof write() so that ASAN does not complain */
-      ret = syscall (SYS_write, mem_validate_pipe[1], addr, 1);
+#ifdef HAVE_SYS_SYSCALL_H
+       /* use syscall insteadof write() so that ASAN does not complain */
+       ret = syscall (SYS_write, mem_validate_pipe[1], addr, 1);
+#else
+	  ret = write (mem_validate_pipe[1], addr, 1);
+#endif
     }
   while ( errno == EINTR );
 
@@ -315,8 +322,7 @@ access_mem (unw_addr_space_t as, unw_word_t addr, unw_word_t *val, int write,
   else
     {
       /* validate address */
-      const struct cursor *c = (const struct cursor *)arg;
-      if (likely (c != NULL) && unlikely (c->validate)
+      if (unlikely (AS_ARG_GET_VALIDATE(arg))
           && unlikely (validate_mem (addr))) {
         Debug (16, "mem[%016lx] -> invalid\n", addr);
         return -1;
@@ -332,7 +338,7 @@ access_reg (unw_addr_space_t as, unw_regnum_t reg, unw_word_t *val, int write,
             void *arg)
 {
   unw_word_t *addr;
-  ucontext_t *uc = ((struct cursor *)arg)->uc;
+  ucontext_t *uc = AS_ARG_GET_UC_PTR(arg);
 
   if (unw_is_fpreg (reg))
     goto badreg;
@@ -361,7 +367,7 @@ static int
 access_fpreg (unw_addr_space_t as, unw_regnum_t reg, unw_fpreg_t *val,
               int write, void *arg)
 {
-  ucontext_t *uc = ((struct cursor *)arg)->uc;
+  ucontext_t *uc = AS_ARG_GET_UC_PTR(arg);
   unw_fpreg_t *addr;
 
   if (!unw_is_fpreg (reg))

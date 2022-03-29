@@ -574,6 +574,9 @@ class EEClassOptionalFields
     unsigned int m_eightByteSizes[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
 #endif // UNIX_AMD64_ABI
 
+    // Required alignment for this fields of this type (only set in auto-layout structures when different from pointer alignment)
+    BYTE m_requiredFieldAlignment;
+
     // Set default values for optional fields.
     inline void Init();
 
@@ -1195,6 +1198,16 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= VMFLAG_PREFER_ALIGN8;
     }
+    inline BOOL HasCustomFieldAlignment()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (m_VMFlags & VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT);
+    }
+    inline void SetHasCustomFieldAlignment()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_VMFlags |= VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT;
+    }
 #ifdef _DEBUG
     inline void SetDestroyed()
     {
@@ -1479,6 +1492,13 @@ public:
     bool CheckForHFA();
 #endif // FEATURE_HFA
 
+    inline int GetOverriddenFieldAlignmentRequirement()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(HasOptionalFields());
+        return GetOptionalFields()->m_requiredFieldAlignment;
+    }
+
 #ifdef FEATURE_COMINTEROP
     inline TypeHandle GetCoClassForInterface()
     {
@@ -1672,7 +1692,7 @@ public:
         // unused                              = 0x00010000,
         VMFLAG_NO_GUID                         = 0x00020000,
         VMFLAG_HASNONPUBLICFIELDS              = 0x00040000,
-        // unused                              = 0x00080000,
+        VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT      = 0x00080000,
         VMFLAG_CONTAINS_STACK_PTR              = 0x00100000,
         VMFLAG_PREFER_ALIGN8                   = 0x00200000, // Would like to have 8-byte alignment
         VMFLAG_ONLY_ABSTRACT_METHODS           = 0x00400000, // Type only contains abstract methods

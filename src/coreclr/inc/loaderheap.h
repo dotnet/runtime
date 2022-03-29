@@ -33,9 +33,9 @@ public:
     virtual void RealBackoutMem(void *pMem
                         , size_t dwSize
 #ifdef _DEBUG
-                        , __in __in_z const char *szFile
+                        , _In_ _In_z_ const char *szFile
                         , int lineNum
-                        , __in __in_z const char *szAllocFile
+                        , _In_ _In_z_ const char *szAllocFile
                         , int allocLineNum
 #endif
                         ) = 0;
@@ -323,13 +323,13 @@ protected:
     // allocations, it is more likely that these errors will be encountered.
     void *UnlockedAllocMem(size_t dwSize
 #ifdef _DEBUG
-                          ,__in __in_z const char *szFile
+                          ,_In_ _In_z_ const char *szFile
                           ,int  lineNum
 #endif
                           );
     void *UnlockedAllocMem_NoThrow(size_t dwSize
 #ifdef _DEBUG
-                                   ,__in __in_z const char *szFile
+                                   ,_In_ _In_z_ const char *szFile
                                    ,int  lineNum
 #endif
                                    );
@@ -363,7 +363,7 @@ protected:
                                  ,size_t  dwAlignment
                                  ,size_t *pdwExtra
 #ifdef _DEBUG
-                                 ,__in __in_z const char *szFile
+                                 ,_In_ _In_z_ const char *szFile
                                  ,int  lineNum
 #endif
                                  );
@@ -372,7 +372,7 @@ protected:
                                          ,size_t  dwAlignment
                                          ,size_t *pdwExtra
 #ifdef _DEBUG
-                                         ,__in __in_z const char *szFile
+                                         ,_In_ _In_z_ const char *szFile
                                          ,int  lineNum
 #endif
                                  );
@@ -384,9 +384,9 @@ protected:
     void UnlockedBackoutMem(void *pMem
                           , size_t dwSize
 #ifdef _DEBUG
-                          , __in __in_z const char *szFile
+                          , _In_ _In_z_ const char *szFile
                           , int lineNum
-                          , __in __in_z const char *szAllocFile
+                          , _In_ _In_z_ const char *szAllocFile
                           , int AllocLineNum
 #endif
                           );
@@ -505,7 +505,7 @@ public:
 public:
     FORCEINLINE TaggedMemAllocPtr RealAllocMem(S_SIZE_T dwSize
 #ifdef _DEBUG
-                                  ,__in __in_z const char *szFile
+                                  ,_In_ _In_z_ const char *szFile
                                   ,int  lineNum
 #endif
                   )
@@ -520,7 +520,7 @@ public:
 
     FORCEINLINE TaggedMemAllocPtr RealAllocMem_NoThrow(S_SIZE_T  dwSize
 #ifdef _DEBUG
-                                           ,__in __in_z const char *szFile
+                                           ,_In_ _In_z_ const char *szFile
                                            ,int  lineNum
 #endif
                   )
@@ -547,7 +547,7 @@ private:
 
     TaggedMemAllocPtr RealAllocMemUnsafe(size_t dwSize
 #ifdef _DEBUG
-                                  ,__in __in_z const char *szFile
+                                  ,_In_ _In_z_ const char *szFile
                                   ,int  lineNum
 #endif
                   )
@@ -578,7 +578,7 @@ private:
 
     TaggedMemAllocPtr RealAllocMemUnsafe_NoThrow(size_t  dwSize
 #ifdef _DEBUG
-                                           ,__in __in_z const char *szFile
+                                           ,_In_ _In_z_ const char *szFile
                                            ,int  lineNum
 #endif
                   )
@@ -623,7 +623,7 @@ public:
     TaggedMemAllocPtr RealAllocAlignedMem(size_t  dwRequestedSize
                                          ,size_t  dwAlignment
 #ifdef _DEBUG
-                                         ,__in __in_z const char *szFile
+                                         ,_In_ _In_z_ const char *szFile
                                          ,int  lineNum
 #endif
                                          )
@@ -662,7 +662,7 @@ public:
     TaggedMemAllocPtr RealAllocAlignedMem_NoThrow(size_t  dwRequestedSize
                                                  ,size_t  dwAlignment
 #ifdef _DEBUG
-                                                 ,__in __in_z const char *szFile
+                                                 ,_In_ _In_z_ const char *szFile
                                                  ,int  lineNum
 #endif
                                                  )
@@ -707,9 +707,9 @@ public:
     void RealBackoutMem(void *pMem
                         , size_t dwSize
 #ifdef _DEBUG
-                        , __in __in_z const char *szFile
+                        , _In_ _In_z_ const char *szFile
                         , int lineNum
-                        , __in __in_z const char *szAllocFile
+                        , _In_ _In_z_ const char *szAllocFile
                         , int allocLineNum
 #endif
                         )
@@ -786,7 +786,7 @@ public:
 public:
     void *RealAllocMem(size_t dwSize
 #ifdef _DEBUG
-                       ,__in __in_z const char *szFile
+                       ,_In_ _In_z_ const char *szFile
                        ,int  lineNum
 #endif
                        )
@@ -806,7 +806,7 @@ public:
 
     void *RealAllocMem_NoThrow(size_t dwSize
 #ifdef _DEBUG
-                               ,__in __in_z const char *szFile
+                               ,_In_ _In_z_ const char *szFile
                                ,int  lineNum
 #endif
                                )

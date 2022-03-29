@@ -24,6 +24,8 @@
 #include "../heaps/export.h"
 #include "../tables/export.h"
 
+#include<minipal/utils.h>
+
 struct HENUMInternal;
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
 struct IMDCustomDataSource;
@@ -950,7 +952,7 @@ public:
     HRESULT GetGenericParamsForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
         return LookUpTableByCol(
-            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtTypeOrMethodDef, lengthof(mdtTypeOrMethodDef)),
+            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtTypeOrMethodDef, ARRAY_SIZE(mdtTypeOrMethodDef)),
             m_pVS[TBL_GenericParam], pRidStart, pRidEnd);
     }
 
@@ -965,7 +967,7 @@ public:
     HRESULT GetMethodSpecsForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
         return LookUpTableByCol(
-            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtMethodDefOrRef, lengthof(mdtMethodDefOrRef)),
+            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtMethodDefOrRef, ARRAY_SIZE(mdtMethodDefOrRef)),
             m_pVS[TBL_MethodSpec], pRidStart, pRidEnd);
     }
 
@@ -973,7 +975,7 @@ public:
     HRESULT GetDeclSecurityForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
         return LookUpTableByCol(
-            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasDeclSecurity, lengthof(mdtHasDeclSecurity)),
+            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasDeclSecurity, ARRAY_SIZE(mdtHasDeclSecurity)),
             m_pVS[TBL_DeclSecurity],
             pRidStart,
             pRidEnd);
@@ -983,7 +985,7 @@ public:
     HRESULT GetCustomAttributeForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
         return LookUpTableByCol(
-            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasCustomAttribute, lengthof(mdtHasCustomAttribute)),
+            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasCustomAttribute, ARRAY_SIZE(mdtHasCustomAttribute)),
             m_pVS[TBL_CustomAttribute],
             pRidStart,
             pRidEnd);
@@ -1137,7 +1139,7 @@ protected:
     //*************************************************************************
     // Overridables -- must be provided in derived classes.
     __checkReturn
-    FORCEINLINE HRESULT Impl_GetString(UINT32 nIndex, __out LPCSTR *pszString)
+    FORCEINLINE HRESULT Impl_GetString(UINT32 nIndex, _Out_ LPCSTR *pszString)
     { return m_StringHeap.GetString(nIndex, pszString); }
     __checkReturn
     HRESULT Impl_GetStringW(ULONG ix, __inout_ecount (cchBuffer) LPWSTR szOut, ULONG cchBuffer, ULONG *pcchBuffer);
@@ -1156,14 +1158,14 @@ protected:
     }
 
     __checkReturn
-    FORCEINLINE HRESULT Impl_GetBlob(ULONG nIndex, __out MetaData::DataBlob *pData)
+    FORCEINLINE HRESULT Impl_GetBlob(ULONG nIndex, _Out_ MetaData::DataBlob *pData)
     { return m_BlobHeap.GetBlob(nIndex, pData); }
 
     __checkReturn
     FORCEINLINE HRESULT Impl_GetRow(
                         UINT32 nTableIndex,
                         UINT32 nRowIndex,
-        __deref_out_opt BYTE **ppRecord)
+        _Outptr_opt_ BYTE **ppRecord)
     {
         _ASSERTE(nTableIndex < TBL_COUNT);
         return m_Tables[nTableIndex].GetRecord(nRowIndex, ppRecord);

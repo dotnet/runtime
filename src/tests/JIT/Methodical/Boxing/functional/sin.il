@@ -13,7 +13,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module sin_il.exe
 .namespace SinCalc
 {
   .class private auto ansi SinCalc

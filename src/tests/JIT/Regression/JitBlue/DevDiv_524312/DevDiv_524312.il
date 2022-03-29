@@ -5,7 +5,7 @@
 
 
 .assembly extern mscorlib{}
-.assembly ILGEN_MODULE{}
+.assembly 'DevDiv_524312'{}
 .assembly extern xunit.core {}
 
 .class ILGEN_CLASS

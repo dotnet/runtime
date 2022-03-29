@@ -1877,7 +1877,7 @@ TypeHandle MethodTable::GetDefItfForComClassItf()
     if (it.Next())
     {
         // Can use GetInterfaceApprox, as there are no generic default interfaces
-        return TypeHandle(it.GetInterfaceApprox()); 
+        return TypeHandle(it.GetInterfaceApprox());
     }
     else
     {
@@ -2877,7 +2877,7 @@ DeepFieldDescIterator::Init(MethodTable* pMT, int iteratorType,
 
     while (pMT)
     {
-        if (m_numClasses < (int)NumItems(m_classes))
+        if (m_numClasses < (int)ARRAY_SIZE(m_classes))
         {
             m_classes[m_numClasses++] = pMT;
         }

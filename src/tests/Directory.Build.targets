@@ -11,8 +11,13 @@
 
   <!-- Default priority building values. -->
   <PropertyGroup>
-    <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildAndRun</CLRTestKind>
+    <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and $(BuildAsStandalone)">true</DisableProjectBuild>
+    <OutputType Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and !$(BuildAsStandalone)">Exe</OutputType>
+    <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Exe'">BuildAndRun</CLRTestKind>
+    <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildOnly</CLRTestKind>
     <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
+    <!-- Merged test runner assemblies might not have any non-generated sources, and that's okay -->
+    <NoWarn Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">$(NoWarn);CS2008</NoWarn>
   </PropertyGroup>
 
   <!-- All CLRTests need to be of a certain "kind". These kinds are enumerated below.
@@ -87,12 +92,6 @@
     <_CopyNativeProjectBinaries Condition="'$(_WillCLRTestProjectBuild)' != 'true'">false</_CopyNativeProjectBinaries>
     <_CopyNativeProjectBinaries Condition="'$(_CopyNativeProjectBinaries)' == ''">true</_CopyNativeProjectBinaries>
   </PropertyGroup>
-
-  <!-- if we have determined that there is nothing to build, overwrite the build targets so that nothing happens -->
-  <Import Project="$(MSBuildThisFileDirectory)Common\nobuild.targets" Condition="'$(_WillCLRTestProjectBuild)' == 'false'" />
-
-  <!-- RunOnly projects have a special build for dependent projects -->
-  <Import Project="$(MSBuildThisFileDirectory)Common\runonly.targets" Condition="'$(CLRTestKind)' == 'RunOnly'" />
 
   <!-- We enable auto-unification of assembly references after importing the common targets.  Binding redirects are not needed
        for coreclr since it auto-unifies, so the warnings we get without this setting are just noise -->
@@ -245,6 +244,11 @@
      <Copy SourceFiles="$(AssemblyName).reflect.xml"
            DestinationFolder="$(OutputPath)"
        Condition="Exists('$(AssemblyName).reflect.xml')"/>
+
+    <WriteLinesToFile
+        Condition="'$(IsMergedTestRunnerAssembly)' == 'true'"
+        File="$(OutputPath)\$(MSBuildProjectName).MergedTestAssembly"
+        Lines="MergedTestAssembly" />
   </Target>
 
   <PropertyGroup>
@@ -417,7 +421,7 @@
     </ItemGroup>
   </Target>
 
-  <PropertyGroup Condition="'$(Language)' == 'C#' and ('$(BuildAsStandalone)' == 'true' or '$(RequiresProcessIsolation)' == 'true' or '$(IsMergedTestAssembly)' == 'true')">
+  <PropertyGroup Condition="'$(Language)' == 'C#' and ('$(BuildAsStandalone)' == 'true' or '$(RequiresProcessIsolation)' == 'true' or '$(IsMergedTestRunnerAssembly)' == 'true')">
     <ReferenceXUnitWrapperGenerator Condition="'$(ReferenceXUnitWrapperGenerator)' == ''">true</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
 
@@ -425,10 +429,23 @@
     <ProjectReference Include="$(RepoRoot)/src/tests/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
+    <ProjectReference Include="$(RepoRoot)/src/tests/Common/XUnitWrapperLibrary/XUnitWrapperLibrary.csproj" />
+  </ItemGroup>
+
   <Import Project="$(RepoRoot)/src/tests/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.props" />
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
   <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
+  <Import Project="$(RepoRoot)/src/tests/Common/mergedrunnermobile.targets" Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '$(TargetsMobile)' == 'true'" />
+
+  <Target Name="GetBinPlaceTargetFramework" />
 
   <Import Project="$(RepoRoot)src\coreclr\clr.featuredefines.props" />
+
+  <!-- if we have determined that there is nothing to build, overwrite the build targets so that nothing happens -->
+  <Import Project="$(MSBuildThisFileDirectory)Common\nobuild.targets" Condition="'$(_WillCLRTestProjectBuild)' == 'false'" />
+
+  <!-- RunOnly projects have a special build for dependent projects -->
+  <Import Project="$(MSBuildThisFileDirectory)Common\runonly.targets" Condition="'$(CLRTestKind)' == 'RunOnly'" />
 
 </Project>

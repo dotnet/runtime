@@ -617,8 +617,6 @@ function_name() to call the system's implementation
 #undef assert
 #define assert (Use__ASSERTE_instead_of_assert) assert
 
-#define string_countof(a) (sizeof(a) / sizeof(a[0]) - 1)
-
 #ifndef __ANDROID__
 #define TEMP_DIRECTORY_PATH "/tmp/"
 #else

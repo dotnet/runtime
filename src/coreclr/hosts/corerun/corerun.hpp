@@ -16,6 +16,7 @@
 #include <set>
 #include <functional>
 #include <memory>
+#include <minipal/utils.h>
 
 // Class used to perform specific actions.
 class platform_specific_actions;
@@ -95,7 +96,7 @@ namespace pal
     inline string_t get_exe_path()
     {
         char_t file_name[1024];
-        DWORD count = ::GetModuleFileNameW(nullptr, file_name, ARRAYSIZE(file_name));
+        DWORD count = ::GetModuleFileNameW(nullptr, file_name, ARRAY_SIZE(file_name));
         assert(::GetLastError() != ERROR_INSUFFICIENT_BUFFER);
 
         return { file_name };
@@ -310,7 +311,7 @@ public:
 
 // CMake generated
 #include <config.h>
-#include <common/getexepath.h>
+#include <minipal/getexepath.h>
 
 #define MAIN main
 #define W(str) str
@@ -469,6 +470,12 @@ namespace pal
         if (stat(file_path, &sb) == -1)
         {
             perror(W("Path not found"));
+            return false;
+        }
+
+        // Ignore directories
+        if (S_ISDIR(sb.st_mode))
+        {
             return false;
         }
 

@@ -254,8 +254,8 @@ inline void SetProfilerCallbacksAllowedForThread(Thread * pThread, BOOL fValue)
 
 static HRESULT CoCreateProfiler(
     const CLSID * pClsid,
-    __in_z LPCWSTR wszClsid,
-    __in_z LPCWSTR wszProfileDLL,
+    _In_z_ LPCWSTR wszClsid,
+    _In_z_ LPCWSTR wszProfileDLL,
     ICorProfilerCallback2 ** ppCallback,
     HMODULE * phmodProfilerDLL)
 {
@@ -500,8 +500,8 @@ EEToProfInterfaceImpl::EEToProfInterfaceImpl() :
 HRESULT EEToProfInterfaceImpl::Init(
     ProfToEEInterfaceImpl * pProfToEE,
     const CLSID * pClsid,
-    __in_z LPCWSTR wszClsid,
-    __in_z LPCWSTR wszProfileDLL,
+    _In_z_ LPCWSTR wszClsid,
+    _In_z_ LPCWSTR wszProfileDLL,
     BOOL fLoadedViaAttach,
     DWORD dwConcurrentGCWaitTimeoutInMs)
 {
@@ -644,8 +644,8 @@ void EEToProfInterfaceImpl::SetProfilerInfo(ProfilerInfo *pProfilerInfo)
 
 HRESULT EEToProfInterfaceImpl::CreateProfiler(
     const CLSID * pClsid,
-    __in_z LPCWSTR wszClsid,
-    __in_z LPCWSTR wszProfileDLL)
+    _In_z_ LPCWSTR wszClsid,
+    _In_z_ LPCWSTR wszProfileDLL)
 {
     CONTRACTL
     {
@@ -3034,7 +3034,7 @@ HRESULT EEToProfInterfaceImpl::ThreadAssignedToOSThread(ThreadID managedThreadId
 
 HRESULT EEToProfInterfaceImpl::ThreadNameChanged(ThreadID managedThreadId,
                                                  ULONG cchName,
-                                                 __in_ecount_opt(cchName) WCHAR name[])
+                                                 _In_reads_bytes_opt_(cchName) WCHAR name[])
 {
     CONTRACTL
     {

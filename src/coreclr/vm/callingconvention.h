@@ -694,9 +694,8 @@ public:
 
         unsigned byteArgSize = GetArgSize();
 
-        // Question: why do not arm and x86 have similar checks?
-        // Composites greater than 16 bytes are passed by reference
-        if ((GetArgType() == ELEMENT_TYPE_VALUETYPE) && (byteArgSize > ENREGISTERED_PARAMTYPE_MAXSIZE))
+        // On ARM64 some composites are implicitly passed by reference.
+        if (IsArgPassedByRef())
         {
             byteArgSize = TARGET_POINTER_SIZE;
         }

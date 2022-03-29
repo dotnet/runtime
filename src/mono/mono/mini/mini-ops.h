@@ -290,6 +290,7 @@ MINI_OP(OP_LCONV_TO_I,    "long_conv_to_i", LREG, LREG, NONE)
 MINI_OP(OP_LCONV_TO_OVF_I,"long_conv_to_ovf_i", LREG, LREG, NONE)
 MINI_OP(OP_LCONV_TO_OVF_U,"long_conv_to_ovf_u", LREG, LREG, NONE)
 
+/* inst_exc_name contains the exception name to throw */
 MINI_OP(OP_LADD_OVF,      "long_add_ovf", LREG, LREG, LREG)
 MINI_OP(OP_LADD_OVF_UN,   "long_add_ovf_un", LREG, LREG, LREG)
 MINI_OP(OP_LMUL_OVF,      "long_mul_ovf", LREG, LREG, LREG)
@@ -395,6 +396,8 @@ MINI_OP(OP_ICONV_TO_U1,   "int_conv_to_u1", IREG, IREG, NONE)
 MINI_OP(OP_ICONV_TO_I,    "int_conv_to_i", IREG, IREG, NONE)
 MINI_OP(OP_ICONV_TO_OVF_I,"int_conv_to_ovf_i", IREG, IREG, NONE)
 MINI_OP(OP_ICONV_TO_OVF_U,"int_conv_to_ovf_u", IREG, IREG, NONE)
+
+/* inst_exc_name contains the exception name to throw */
 MINI_OP(OP_IADD_OVF,      "int_add_ovf", IREG, IREG, IREG)
 MINI_OP(OP_IADD_OVF_UN,   "int_add_ovf_un", IREG, IREG, IREG)
 MINI_OP(OP_IMUL_OVF,      "int_mul_ovf", IREG, IREG, IREG)
@@ -638,6 +641,11 @@ MINI_OP(OP_FGETLOW32, "float_getlow32", IREG, FREG, NONE)
 MINI_OP(OP_FGETHIGH32, "float_gethigh32", IREG, FREG, NONE)
 
 MINI_OP(OP_JUMP_TABLE, "jump_table", IREG, NONE, NONE)
+
+/* Same as OP_IMUL_OVF_UN, but throws an OutOfMemoryException */
+/* Emulated */
+MINI_OP(OP_IMUL_OVF_UN_OOM,   "int_mul_ovf_un_oom", IREG, IREG, IREG)
+MINI_OP(OP_LMUL_OVF_UN_OOM,   "long_mul_ovf_un_oom", LREG, LREG, LREG)
 
 /* aot compiler */
 MINI_OP(OP_AOTCONST, "aotconst", IREG, NONE, NONE)

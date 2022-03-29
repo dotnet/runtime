@@ -319,9 +319,12 @@ namespace System
             return enumType.GetEnumUnderlyingType();
         }
 
+#if !CORERT
         public static TEnum[] GetValues<TEnum>() where TEnum : struct, Enum
             => (TEnum[])GetValues(typeof(TEnum));
+#endif
 
+        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload instead.")]
         public static Array GetValues(Type enumType)
         {
             if (enumType is null)

@@ -40,7 +40,7 @@ namespace DllImportGenerator.UnitTests
         /// </summary>
         Standard,
         /// <summary>
-        /// The latest supported .NET version.
+        /// The latest supported (live-built) .NET version.
         /// </summary>
         Net,
         /// <summary>
@@ -55,6 +55,16 @@ namespace DllImportGenerator.UnitTests
 
     public static class TestUtils
     {
+        /// <summary>
+        /// Disable binding redirect warnings. They are disabled by default by the .NET SDK, but not by Roslyn.
+        /// See https://github.com/dotnet/roslyn/issues/19640.
+        /// </summary>
+        internal static ImmutableDictionary<string, ReportDiagnostic> BindingRedirectWarnings { get; } = new Dictionary<string, ReportDiagnostic>()
+            {
+                { "CS1701", ReportDiagnostic.Suppress },
+                { "CS1702", ReportDiagnostic.Suppress },
+            }.ToImmutableDictionary();
+
         /// <summary>
         /// Assert the pre-srouce generator compilation has only
         /// the expected failure diagnostics.
@@ -80,55 +90,51 @@ namespace DllImportGenerator.UnitTests
         /// Create a compilation given source
         /// </summary>
         /// <param name="source">Source to compile</param>
+        /// <param name="targetFramework">Target framework of the compilation</param>
         /// <param name="outputKind">Output type</param>
-        /// <param name="allowUnsafe">Whether or not use of the unsafe keyword should be allowed</param>
         /// <returns>The resulting compilation</returns>
-        public static Task<Compilation> CreateCompilation(string source, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, bool allowUnsafe = true, IEnumerable<string>? preprocessorSymbols = null)
+        public static Task<Compilation> CreateCompilation(string source, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<string>? preprocessorSymbols = null)
         {
-            return CreateCompilation(new[] { source }, targetFramework, outputKind, allowUnsafe, preprocessorSymbols);
+            return CreateCompilation(new[] { source }, targetFramework, outputKind, preprocessorSymbols);
         }
 
         /// <summary>
         /// Create a compilation given sources
         /// </summary>
         /// <param name="sources">Sources to compile</param>
+        /// <param name="targetFramework">Target framework of the compilation</param>
         /// <param name="outputKind">Output type</param>
-        /// <param name="allowUnsafe">Whether or not use of the unsafe keyword should be allowed</param>
         /// <returns>The resulting compilation</returns>
-        public static Task<Compilation> CreateCompilation(string[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, bool allowUnsafe = true, IEnumerable<string>? preprocessorSymbols = null)
+        public static Task<Compilation> CreateCompilation(string[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<string>? preprocessorSymbols = null)
         {
             return CreateCompilation(
                 sources.Select(source =>
                     CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview, preprocessorSymbols: preprocessorSymbols))).ToArray(),
                 targetFramework,
-                outputKind,
-                allowUnsafe,
-                preprocessorSymbols);
+                outputKind);
         }
 
         /// <summary>
         /// Create a compilation given sources
         /// </summary>
         /// <param name="sources">Sources to compile</param>
+        /// <param name="targetFramework">Target framework of the compilation</param>
         /// <param name="outputKind">Output type</param>
-        /// <param name="allowUnsafe">Whether or not use of the unsafe keyword should be allowed</param>
         /// <returns>The resulting compilation</returns>
-        public static async Task<Compilation> CreateCompilation(SyntaxTree[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, bool allowUnsafe = true, IEnumerable<string>? preprocessorSymbols = null)
+        public static async Task<Compilation> CreateCompilation(SyntaxTree[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
         {
-            var (mdRefs, ancillary) = GetReferenceAssemblies(targetFramework);
-
-            var referenceAssemblies = await ResolveReferenceAssemblies(mdRefs);
+            var referenceAssemblies = await GetReferenceAssemblies(targetFramework);
 
             // [TODO] Can remove once ancillary logic is removed.
             if (targetFramework is TestTargetFramework.Net6 or TestTargetFramework.Net)
             {
-                referenceAssemblies = referenceAssemblies.Add(ancillary);
+                referenceAssemblies = referenceAssemblies.Add(GetAncillaryReference());
             }
 
             return CSharpCompilation.Create("compilation",
                 sources,
                 referenceAssemblies,
-                new CSharpCompilationOptions(outputKind, allowUnsafe: allowUnsafe));
+                new CSharpCompilationOptions(outputKind, allowUnsafe: true, specificDiagnosticOptions: BindingRedirectWarnings));
         }
 
         /// <summary>
@@ -136,29 +142,43 @@ namespace DllImportGenerator.UnitTests
         /// </summary>
         /// <param name="targetFramework">The target framework.</param>
         /// <returns>The reference assembly collection and metadata references</returns>
-        public static (ReferenceAssemblies, MetadataReference) GetReferenceAssemblies(TestTargetFramework targetFramework = TestTargetFramework.Net)
+        private static async Task<ImmutableArray<MetadataReference>> GetReferenceAssemblies(TestTargetFramework targetFramework = TestTargetFramework.Net)
         {
             // Compute the reference assemblies for the target framework.
-            var referenceAssembliesSdk = targetFramework switch
+            if (targetFramework == TestTargetFramework.Net)
             {
-                TestTargetFramework.Framework => ReferenceAssemblies.NetFramework.Net48.Default,
-                TestTargetFramework.Standard => ReferenceAssemblies.NetStandard.NetStandard21,
-                TestTargetFramework.Core => ReferenceAssemblies.NetCore.NetCoreApp31,
-                TestTargetFramework.Net => ReferenceAssemblies.Net.Net60,
-                TestTargetFramework.Net5 => ReferenceAssemblies.Net.Net50,
-                TestTargetFramework.Net6 => ReferenceAssemblies.Net.Net60,
-                _ => ReferenceAssemblies.Default
-            };
+                return SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences();
+            }
+            else
+            {
+                var referenceAssembliesSdk = targetFramework switch
+                {
+                    TestTargetFramework.Framework => ReferenceAssemblies.NetFramework.Net48.Default,
+                    TestTargetFramework.Standard => ReferenceAssemblies.NetStandard.NetStandard21,
+                    TestTargetFramework.Core => ReferenceAssemblies.NetCore.NetCoreApp31,
+                    TestTargetFramework.Net5 => ReferenceAssemblies.Net.Net50,
+                    TestTargetFramework.Net6 => ReferenceAssemblies.Net.Net60,
+                    _ => ReferenceAssemblies.Default
+                };
 
-            // Update the reference assemblies to include details from the NuGet.config.
-            var referenceAssemblies = referenceAssembliesSdk
-                .WithNuGetConfigFilePath(Path.Combine(Path.GetDirectoryName(typeof(TestUtils).Assembly.Location)!, "NuGet.config"));
+                // Update the reference assemblies to include details from the NuGet.config.
+                var referenceAssemblies = referenceAssembliesSdk
+                    .WithNuGetConfigFilePath(Path.Combine(Path.GetDirectoryName(typeof(TestUtils).Assembly.Location)!, "NuGet.config"));
 
+                return await ResolveReferenceAssemblies(referenceAssemblies);
+            }
+        }
+
+        /// <summary>
+        /// Get the metadata reference for the ancillary interop helper assembly.
+        /// </summary>
+        /// <returns></returns>
+        internal static MetadataReference GetAncillaryReference()
+        {
             // Include the assembly containing the new attribute and all of its references.
             // [TODO] Remove once the attribute has been added to the BCL
             var attrAssem = typeof(GeneratedDllImportAttribute).GetTypeInfo().Assembly;
-
-            return (referenceAssemblies, MetadataReference.CreateFromFile(attrAssem.Location));
+            return MetadataReference.CreateFromFile(attrAssem.Location);
         }
 
         /// <summary>
