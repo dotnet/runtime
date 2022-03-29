@@ -25,13 +25,8 @@ namespace Microsoft.Extensions.Http.Logging
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> to log to.</param>
         /// <exception cref="ArgumentNullException"><paramref name="logger"/> is <see langword="null"/>.</exception>
-        public LoggingHttpMessageHandler(ILogger logger)
+        public LoggingHttpMessageHandler(ILogger logger!!)
         {
-            if (logger == null)
-            {
-                throw new ArgumentNullException(nameof(logger));
-            }
-
             _logger = logger;
         }
 
@@ -41,31 +36,16 @@ namespace Microsoft.Extensions.Http.Logging
         /// <param name="logger">The <see cref="ILogger"/> to log to.</param>
         /// <param name="options">The <see cref="HttpClientFactoryOptions"/> used to configure the <see cref="LoggingHttpMessageHandler"/> instance.</param>
         /// <exception cref="ArgumentNullException"><paramref name="logger"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
-        public LoggingHttpMessageHandler(ILogger logger, HttpClientFactoryOptions options)
+        public LoggingHttpMessageHandler(ILogger logger!!, HttpClientFactoryOptions options!!)
         {
-            if (logger == null)
-            {
-                throw new ArgumentNullException(nameof(logger));
-            }
-
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
             _logger = logger;
             _options = options;
         }
 
         /// <inheritdoc />
         /// <remarks>Loggs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
-        protected async override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected async override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request!!, CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-
             Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
 
             // Not using a scope here because we always expect this to be at the end of the pipeline, thus there's

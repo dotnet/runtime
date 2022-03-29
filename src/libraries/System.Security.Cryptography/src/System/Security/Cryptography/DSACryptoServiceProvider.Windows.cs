@@ -478,10 +478,8 @@ namespace System.Security.Cryptography
         /// <param name="rgbHash">The hash value of the data to be signed.</param>
         /// <param name="str">The name of the hash algorithm used to create the hash value of the data.</param>
         /// <returns>The DSA signature for the specified hash value.</returns>
-        public byte[] SignHash(byte[] rgbHash, string? str)
+        public byte[] SignHash(byte[] rgbHash!!, string? str)
         {
-            if (rgbHash == null)
-                throw new ArgumentNullException(nameof(rgbHash));
             if (PublicOnly)
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
 
@@ -506,13 +504,8 @@ namespace System.Security.Cryptography
         /// <param name="str">The name of the hash algorithm used to create the hash value of the data.</param>
         /// <param name="rgbSignature">The signature data to be verified.</param>
         /// <returns>true if the signature verifies as valid; otherwise, false.</returns>
-        public bool VerifyHash(byte[] rgbHash, string? str, byte[] rgbSignature)
+        public bool VerifyHash(byte[] rgbHash!!, string? str, byte[] rgbSignature!!)
         {
-            if (rgbHash == null)
-                throw new ArgumentNullException(nameof(rgbHash));
-            if (rgbSignature == null)
-                throw new ArgumentNullException(nameof(rgbSignature));
-
             int calgHash = CapiHelper.NameOrOidToHashAlgId(str, OidGroup.HashAlgorithm);
 
             return CapiHelper.VerifySign(
@@ -527,13 +520,8 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Find whether a DSS key blob is public.
         /// </summary>
-        private static bool IsPublic(byte[] keyBlob)
+        private static bool IsPublic(byte[] keyBlob!!)
         {
-            if (keyBlob == null)
-            {
-                throw new ArgumentNullException(nameof(keyBlob));
-            }
-
             // The CAPI DSS public key representation consists of the following sequence:
             //  - BLOBHEADER (the first byte is bType)
             //  - DSSPUBKEY or DSSPUBKEY_VER3 (the first field is the magic field)

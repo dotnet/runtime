@@ -554,11 +554,8 @@ namespace System
             return true;
         }
 
-        public static string UnescapeDataString(string stringToUnescape)
+        public static string UnescapeDataString(string stringToUnescape!!)
         {
-            if (stringToUnescape is null)
-                throw new ArgumentNullException(nameof(stringToUnescape));
-
             if (stringToUnescape.Length == 0)
                 return string.Empty;
 
@@ -855,11 +852,8 @@ namespace System
             }
         }
 
-        public bool IsBaseOf(Uri uri)
+        public bool IsBaseOf(Uri uri!!)
         {
-            if (uri is null)
-                throw new ArgumentNullException(nameof(uri));
-
             if (!IsAbsoluteUri)
                 return false;
 

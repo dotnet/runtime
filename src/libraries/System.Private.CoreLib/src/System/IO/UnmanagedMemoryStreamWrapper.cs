@@ -138,12 +138,8 @@ namespace System.IO
         }
 
 
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        public override Task CopyToAsync(Stream destination!!, int bufferSize, CancellationToken cancellationToken)
         {
-            // The parameter checks must be in sync with the base version:
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
-
             if (bufferSize <= 0)
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
 

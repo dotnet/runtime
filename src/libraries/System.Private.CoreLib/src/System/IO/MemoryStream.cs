@@ -59,11 +59,8 @@ namespace System.IO
         {
         }
 
-        public MemoryStream(byte[] buffer, bool writable)
+        public MemoryStream(byte[] buffer!!, bool writable)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-
             _buffer = buffer;
             _length = _capacity = buffer.Length;
             _writable = writable;
@@ -80,10 +77,8 @@ namespace System.IO
         {
         }
 
-        public MemoryStream(byte[] buffer, int index, int count, bool writable, bool publiclyVisible)
+        public MemoryStream(byte[] buffer!!, int index, int count, bool writable, bool publiclyVisible)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)

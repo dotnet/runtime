@@ -189,11 +189,8 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(TrimSerializationWarning)]
-        public XmlSerializer(XmlTypeMapping xmlTypeMapping)
+        public XmlSerializer(XmlTypeMapping xmlTypeMapping!!)
         {
-            if (xmlTypeMapping == null)
-                throw new ArgumentNullException(nameof(xmlTypeMapping));
-
             if (Mode != SerializationMode.ReflectionOnly)
             {
                 _tempAssembly = GenerateTempAssembly(xmlTypeMapping);
@@ -309,13 +306,8 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("creates TempAssembly")]
-        internal static TempAssembly? GenerateTempAssembly(XmlMapping xmlMapping, Type? type, string? defaultNamespace, string? location)
+        internal static TempAssembly? GenerateTempAssembly(XmlMapping xmlMapping!!, Type? type, string? defaultNamespace, string? location)
         {
-            if (xmlMapping == null)
-            {
-                throw new ArgumentNullException(nameof(xmlMapping));
-            }
-
             xmlMapping.CheckShallow();
             if (xmlMapping.IsSoap)
             {
@@ -659,11 +651,8 @@ namespace System.Xml.Serialization
             if (types == null || types.Length == 0)
                 return false;
 
-            if (mappings == null)
-                throw new ArgumentNullException(nameof(mappings));
-
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
+            ArgumentNullException.ThrowIfNull(mappings);
+            ArgumentNullException.ThrowIfNull(stream);
 
             if (XmlMapping.IsShallow(mappings))
             {

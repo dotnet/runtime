@@ -30,13 +30,8 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         /// <param name="name">The Meter name.</param>
         /// <param name="version">The optional Meter version.</param>
-        public Meter(string name, string? version)
+        public Meter(string name!!, string? version)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             Name = name;
             Version = version;
 

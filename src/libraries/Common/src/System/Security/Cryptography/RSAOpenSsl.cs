@@ -80,13 +80,8 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding)
+        public override byte[] Decrypt(byte[] data!!, RSAEncryptionPadding padding!!)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
-
             ValidatePadding(padding);
             SafeEvpPKeyHandle key = GetKey();
             int rsaSize = Interop.Crypto.EvpPKeySize(key);
@@ -110,12 +105,9 @@ namespace System.Security.Cryptography
         public override bool TryDecrypt(
             ReadOnlySpan<byte> data,
             Span<byte> destination,
-            RSAEncryptionPadding padding,
+            RSAEncryptionPadding padding!!,
             out int bytesWritten)
         {
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
-
             ValidatePadding(padding);
             SafeEvpPKeyHandle key = GetKey();
             int keySizeBytes = Interop.Crypto.EvpPKeySize(key);
@@ -205,13 +197,8 @@ namespace System.Security.Cryptography
                 destination);
         }
 
-        public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
+        public override byte[] Encrypt(byte[] data!!, RSAEncryptionPadding padding!!)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
-
             ValidatePadding(padding);
             SafeEvpPKeyHandle key = GetKey();
 
@@ -233,13 +220,8 @@ namespace System.Security.Cryptography
             return buf;
         }
 
-        public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
+        public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding!!, out int bytesWritten)
         {
-            if (padding == null)
-            {
-                throw new ArgumentNullException(nameof(padding));
-            }
-
             ValidatePadding(padding);
             SafeEvpPKeyHandle? key = GetKey();
 
@@ -828,20 +810,11 @@ namespace System.Security.Cryptography
         }
 
         public override bool VerifyHash(
-            byte[] hash,
-            byte[] signature,
+            byte[] hash!!,
+            byte[] signature!!,
             HashAlgorithmName hashAlgorithm,
             RSASignaturePadding padding)
         {
-            if (hash == null)
-            {
-                throw new ArgumentNullException(nameof(hash));
-            }
-            if (signature == null)
-            {
-                throw new ArgumentNullException(nameof(signature));
-            }
-
             return VerifyHash(new ReadOnlySpan<byte>(hash), new ReadOnlySpan<byte>(signature), hashAlgorithm, padding);
         }
 
@@ -881,13 +854,8 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static void ValidatePadding(RSAEncryptionPadding padding)
+        private static void ValidatePadding(RSAEncryptionPadding padding!!)
         {
-            if (padding == null)
-            {
-                throw new ArgumentNullException(nameof(padding));
-            }
-
             // There are currently two defined padding modes:
             // * Oaep has an option (the hash algorithm)
             // * Pkcs1 has no options
@@ -902,13 +870,8 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static void ValidatePadding(RSASignaturePadding padding)
+        private static void ValidatePadding(RSASignaturePadding padding!!)
         {
-            if (padding == null)
-            {
-                throw new ArgumentNullException(nameof(padding));
-            }
-
             // RSASignaturePadding currently only has the mode property, so
             // there's no need for a runtime check that PKCS#1 doesn't use
             // nonsensical options like with RSAEncryptionPadding.

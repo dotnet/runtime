@@ -32,10 +32,10 @@ namespace Microsoft.Extensions.Caching.Memory
         private byte _evictionReason;
         private byte _priority = (byte)CacheItemPriority.Normal;
 
-        internal CacheEntry(object key, MemoryCache memoryCache)
+        internal CacheEntry(object key!!, MemoryCache memoryCache!!)
         {
-            Key = key ?? throw new ArgumentNullException(nameof(key));
-            _cache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
+            Key = key;
+            _cache = memoryCache;
             if (memoryCache.TrackLinkedCacheEntries)
             {
                 var holder = _current;

@@ -34,13 +34,8 @@ namespace System.Diagnostics
         /// Create a new instance of the collection and store the input list items in the collection.
         /// </summary>
         /// <param name="list">Initial list to store in the collection.</param>
-        public ActivityTagsCollection(IEnumerable<KeyValuePair<string, object?>> list)
+        public ActivityTagsCollection(IEnumerable<KeyValuePair<string, object?>> list!!)
         {
-            if (list == null)
-            {
-                throw new ArgumentNullException(nameof(list));
-            }
-
             foreach (KeyValuePair<string, object?> kvp in list)
             {
                 if (kvp.Key != null)
@@ -142,13 +137,8 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="key">The tag key.</param>
         /// <param name="value">The tag value.</param>
-        public void Add(string key, object? value)
+        public void Add(string key!!, object? value)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
             int index = FindIndex(key);
             if (index >= 0)
             {
@@ -219,13 +209,8 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="key">The tag key</param>
         /// <returns>True if the item existed and removed. False otherwise.</returns>
-        public bool Remove(string key)
+        public bool Remove(string key!!)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
             int index = FindIndex(key);
             if (index >= 0)
             {

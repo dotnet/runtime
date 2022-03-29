@@ -32,9 +32,9 @@ namespace System.Threading.RateLimiting
         /// Initializes the <see cref="TokenBucketRateLimiter"/>.
         /// </summary>
         /// <param name="options">Options to specify the behavior of the <see cref="TokenBucketRateLimiter"/>.</param>
-        public TokenBucketRateLimiter(TokenBucketRateLimiterOptions options)
+        public TokenBucketRateLimiter(TokenBucketRateLimiterOptions options!!)
         {
-            _options = options ?? throw new ArgumentNullException(nameof(options));
+            _options = options;
             _tokenCount = options.TokenLimit;
 
             if (_options.AutoReplenishment)

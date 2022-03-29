@@ -340,10 +340,8 @@ namespace System.Xml
             return reader;
         }
 
-        internal XmlReader CreateReader(Stream input, Uri? baseUri, string? baseUriString, XmlParserContext? inputContext)
+        internal XmlReader CreateReader(Stream input!!, Uri? baseUri, string? baseUriString, XmlParserContext? inputContext)
         {
-            ArgumentNullException.ThrowIfNull(input);
-
             baseUriString ??= baseUri?.ToString() ?? string.Empty;
 
             // create text XML reader
@@ -363,10 +361,8 @@ namespace System.Xml
             return reader;
         }
 
-        internal XmlReader CreateReader(TextReader input, string? baseUriString, XmlParserContext? inputContext)
+        internal XmlReader CreateReader(TextReader input!!, string? baseUriString, XmlParserContext? inputContext)
         {
-            ArgumentNullException.ThrowIfNull(input);
-
             baseUriString ??= string.Empty;
 
             // create xml text reader
@@ -386,10 +382,8 @@ namespace System.Xml
             return reader;
         }
 
-        internal XmlReader CreateReader(XmlReader reader)
+        internal XmlReader CreateReader(XmlReader reader!!)
         {
-            ArgumentNullException.ThrowIfNull(reader);
-
             return AddValidationAndConformanceWrapper(reader);
         }
 

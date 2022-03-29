@@ -37,13 +37,8 @@ namespace System.Net
             return name;
         }
 
-        public static IPHostEntry GetHostEntry(IPAddress address)
+        public static IPHostEntry GetHostEntry(IPAddress address!!)
         {
-            if (address is null)
-            {
-                throw new ArgumentNullException(nameof(address));
-            }
-
             if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(address, $"Invalid address '{address}'");
@@ -67,13 +62,8 @@ namespace System.Net
         /// <returns>
         /// An <see cref="IPHostEntry"/> instance that contains the address information about the host specified in <paramref name="hostNameOrAddress"/>.
         /// </returns>
-        public static IPHostEntry GetHostEntry(string hostNameOrAddress, AddressFamily family)
+        public static IPHostEntry GetHostEntry(string hostNameOrAddress!!, AddressFamily family)
         {
-            if (hostNameOrAddress is null)
-            {
-                throw new ArgumentNullException(nameof(hostNameOrAddress));
-            }
-
             // See if it's an IP Address.
             IPHostEntry ipHostEntry;
             if (IPAddress.TryParse(hostNameOrAddress, out IPAddress? address))
@@ -153,13 +143,8 @@ namespace System.Net
             }
         }
 
-        public static Task<IPHostEntry> GetHostEntryAsync(IPAddress address)
+        public static Task<IPHostEntry> GetHostEntryAsync(IPAddress address!!)
         {
-            if (address is null)
-            {
-                throw new ArgumentNullException(nameof(address));
-            }
-
             if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(address, $"Invalid address '{address}'");
@@ -193,13 +178,8 @@ namespace System.Net
         /// <returns>
         /// An array of type <see cref="IPAddress"/> that holds the IP addresses for the host that is specified by the <paramref name="hostNameOrAddress"/> parameter.
         /// </returns>
-        public static IPAddress[] GetHostAddresses(string hostNameOrAddress, AddressFamily family)
+        public static IPAddress[] GetHostAddresses(string hostNameOrAddress!!, AddressFamily family)
         {
-            if (hostNameOrAddress is null)
-            {
-                throw new ArgumentNullException(nameof(hostNameOrAddress));
-            }
-
             // See if it's an IP Address.
             IPAddress[] addresses;
             if (IPAddress.TryParse(hostNameOrAddress, out IPAddress? address))
@@ -256,13 +236,8 @@ namespace System.Net
             TaskToApm.End<IPAddress[]>(asyncResult ?? throw new ArgumentNullException(nameof(asyncResult)));
 
         [Obsolete("GetHostByName has been deprecated. Use GetHostEntry instead.")]
-        public static IPHostEntry GetHostByName(string hostName)
+        public static IPHostEntry GetHostByName(string hostName!!)
         {
-            if (hostName is null)
-            {
-                throw new ArgumentNullException(nameof(hostName));
-            }
-
             if (IPAddress.TryParse(hostName, out IPAddress? address))
             {
                 return CreateHostEntryForAddress(address);
@@ -280,13 +255,8 @@ namespace System.Net
             TaskToApm.End<IPHostEntry>(asyncResult ?? throw new ArgumentNullException(nameof(asyncResult)));
 
         [Obsolete("GetHostByAddress has been deprecated. Use GetHostEntry instead.")]
-        public static IPHostEntry GetHostByAddress(string address)
+        public static IPHostEntry GetHostByAddress(string address!!)
         {
-            if (address is null)
-            {
-                throw new ArgumentNullException(nameof(address));
-            }
-
             IPHostEntry ipHostEntry = GetHostEntryCore(IPAddress.Parse(address), AddressFamily.Unspecified);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(address, ipHostEntry);
@@ -294,13 +264,8 @@ namespace System.Net
         }
 
         [Obsolete("GetHostByAddress has been deprecated. Use GetHostEntry instead.")]
-        public static IPHostEntry GetHostByAddress(IPAddress address)
+        public static IPHostEntry GetHostByAddress(IPAddress address!!)
         {
-            if (address is null)
-            {
-                throw new ArgumentNullException(nameof(address));
-            }
-
             IPHostEntry ipHostEntry = GetHostEntryCore(address, AddressFamily.Unspecified);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(address, ipHostEntry);
@@ -308,13 +273,8 @@ namespace System.Net
         }
 
         [Obsolete("Resolve has been deprecated. Use GetHostEntry instead.")]
-        public static IPHostEntry Resolve(string hostName)
+        public static IPHostEntry Resolve(string hostName!!)
         {
-            if (hostName is null)
-            {
-                throw new ArgumentNullException(nameof(hostName));
-            }
-
             // See if it's an IP Address.
             IPHostEntry ipHostEntry;
             if (IPAddress.TryParse(hostName, out IPAddress? address) &&
@@ -509,13 +469,8 @@ namespace System.Net
             (Task<IPHostEntry>)GetHostEntryOrAddressesCoreAsync(hostName, justReturnParsedIp, throwOnIIPAny, justAddresses: false, family, cancellationToken);
 
         // If hostName is an IPString and justReturnParsedIP==true then no reverse lookup will be attempted, but the original address is returned.
-        private static Task GetHostEntryOrAddressesCoreAsync(string hostName, bool justReturnParsedIp, bool throwOnIIPAny, bool justAddresses, AddressFamily family, CancellationToken cancellationToken)
+        private static Task GetHostEntryOrAddressesCoreAsync(string hostName!!, bool justReturnParsedIp, bool throwOnIIPAny, bool justAddresses, AddressFamily family, CancellationToken cancellationToken)
         {
-            if (hostName is null)
-            {
-                throw new ArgumentNullException(nameof(hostName));
-            }
-
             if (cancellationToken.IsCancellationRequested)
             {
                 return justAddresses ? (Task)

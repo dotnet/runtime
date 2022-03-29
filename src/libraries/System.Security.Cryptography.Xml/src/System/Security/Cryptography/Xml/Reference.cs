@@ -205,11 +205,8 @@ namespace System.Security.Cryptography.Xml
             return referenceElement;
         }
 
-        public void LoadXml(XmlElement value)
+        public void LoadXml(XmlElement value!!)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             _id = Utils.GetAttribute(value, "Id", SignedXml.XmlDsigNamespaceUrl);
             _uri = Utils.GetAttribute(value, "URI", SignedXml.XmlDsigNamespaceUrl);
             _type = Utils.GetAttribute(value, "Type", SignedXml.XmlDsigNamespaceUrl);
@@ -314,11 +311,8 @@ namespace System.Security.Cryptography.Xml
             _cachedXml = value;
         }
 
-        public void AddTransform(Transform transform)
+        public void AddTransform(Transform transform!!)
         {
-            if (transform == null)
-                throw new ArgumentNullException(nameof(transform));
-
             transform.Reference = this;
             TransformChain.Add(transform);
         }

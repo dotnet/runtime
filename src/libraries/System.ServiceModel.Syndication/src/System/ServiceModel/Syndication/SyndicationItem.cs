@@ -48,13 +48,8 @@ namespace System.ServiceModel.Syndication
             _lastUpdatedTime = lastUpdatedTime;
         }
 
-        protected SyndicationItem(SyndicationItem source)
+        protected SyndicationItem(SyndicationItem source!!)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
             _extensions = source._extensions.Clone();
             _authors = FeedUtils.ClonePersons(source._authors);
             _categories = FeedUtils.CloneCategories(source._categories);
@@ -155,13 +150,8 @@ namespace System.ServiceModel.Syndication
 
         public static SyndicationItem Load(XmlReader reader) => Load<SyndicationItem>(reader);
 
-        public static TSyndicationItem Load<TSyndicationItem>(XmlReader reader) where TSyndicationItem : SyndicationItem, new()
+        public static TSyndicationItem Load<TSyndicationItem>(XmlReader reader!!) where TSyndicationItem : SyndicationItem, new()
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             Atom10ItemFormatter<TSyndicationItem> atomSerializer = new Atom10ItemFormatter<TSyndicationItem>();
             if (atomSerializer.CanRead(reader))
             {

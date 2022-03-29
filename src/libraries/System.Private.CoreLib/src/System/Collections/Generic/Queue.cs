@@ -49,11 +49,8 @@ namespace System.Collections.Generic
 
         // Fills a Queue with the elements of an ICollection.  Uses the enumerator
         // to get each of the elements.
-        public Queue(IEnumerable<T> collection)
+        public Queue(IEnumerable<T> collection!!)
         {
-            if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
-
             _array = EnumerableHelpers.ToArray(collection, out _size);
             if (_size != _array.Length) _tail = _size;
         }
@@ -98,13 +95,8 @@ namespace System.Collections.Generic
 
         // CopyTo copies a collection into an Array, starting at a particular
         // index into the array.
-        public void CopyTo(T[] array, int arrayIndex)
+        public void CopyTo(T[] array!!, int arrayIndex)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
-
             if (arrayIndex < 0 || arrayIndex > array.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
@@ -127,13 +119,8 @@ namespace System.Collections.Generic
             }
         }
 
-        void ICollection.CopyTo(Array array, int index)
+        void ICollection.CopyTo(Array array!!, int index)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
-
             if (array.Rank != 1)
             {
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));

@@ -11,9 +11,9 @@ namespace Microsoft.Extensions.Hosting
     /// </summary>
     public class HostBuilderContext
     {
-        public HostBuilderContext(IDictionary<object, object> properties)
+        public HostBuilderContext(IDictionary<object, object> properties!!)
         {
-            Properties = properties ?? throw new System.ArgumentNullException(nameof(properties));
+            Properties = properties;
         }
 
         /// <summary>

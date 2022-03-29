@@ -763,13 +763,8 @@ namespace System.IO
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="bufferSize"/> was not a positive value.</exception>
         /// <exception cref="NotSupportedException"><paramref name="destination"/> does not support writing.</exception>
         /// <exception cref="ObjectDisposedException"><paramref name="destination"/> does not support writing or reading.</exception>
-        protected static void ValidateCopyToArguments(Stream destination, int bufferSize)
+        protected static void ValidateCopyToArguments(Stream destination!!, int bufferSize)
         {
-            if (destination is null)
-            {
-                throw new ArgumentNullException(nameof(destination));
-            }
-
             if (bufferSize <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), bufferSize, SR.ArgumentOutOfRange_NeedPosNum);

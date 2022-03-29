@@ -163,11 +163,8 @@ namespace System.IO
         public FileInfo Replace(string destinationFileName, string? destinationBackupFileName)
             => Replace(destinationFileName, destinationBackupFileName, ignoreMetadataErrors: false);
 
-        public FileInfo Replace(string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors)
+        public FileInfo Replace(string destinationFileName!!, string? destinationBackupFileName, bool ignoreMetadataErrors)
         {
-            if (destinationFileName == null)
-                throw new ArgumentNullException(nameof(destinationFileName));
-
             FileSystem.ReplaceFile(
                 FullPath,
                 Path.GetFullPath(destinationFileName),

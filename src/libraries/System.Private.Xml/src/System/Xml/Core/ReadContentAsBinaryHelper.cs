@@ -60,13 +60,9 @@ namespace System.Xml
 
         // Internal methods
 
-        internal int ReadContentAsBase64(byte[] buffer, int index, int count)
+        internal int ReadContentAsBase64(byte[] buffer!!, int index, int count)
         {
             // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));

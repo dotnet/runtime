@@ -10,9 +10,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
     public abstract class PatternContextLinear
         : PatternContext<PatternContextLinear.FrameData>
     {
-        public PatternContextLinear(ILinearPattern pattern)
+        public PatternContextLinear(ILinearPattern pattern!!)
         {
-            Pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
+            Pattern = pattern;
         }
 
         public override PatternTestResult Test(FileInfoBase file)

@@ -94,13 +94,8 @@ namespace System.Net.Http.Headers
 
         public void Add(string name, IEnumerable<string?> values) => Add(GetHeaderDescriptor(name), values);
 
-        internal void Add(HeaderDescriptor descriptor, IEnumerable<string?> values)
+        internal void Add(HeaderDescriptor descriptor, IEnumerable<string?> values!!)
         {
-            if (values == null)
-            {
-                throw new ArgumentNullException(nameof(values));
-            }
-
             PrepareHeaderInfoForAdd(descriptor, out HeaderStoreItemInfo info, out bool addToStore);
 
             try
@@ -165,13 +160,8 @@ namespace System.Net.Http.Headers
             TryGetHeaderDescriptor(name, out HeaderDescriptor descriptor) &&
             TryAddWithoutValidation(descriptor, values);
 
-        internal bool TryAddWithoutValidation(HeaderDescriptor descriptor, IEnumerable<string?> values)
+        internal bool TryAddWithoutValidation(HeaderDescriptor descriptor, IEnumerable<string?> values!!)
         {
-            if (values == null)
-            {
-                throw new ArgumentNullException(nameof(values));
-            }
-
             using IEnumerator<string?> enumerator = values.GetEnumerator();
             if (enumerator.MoveNext())
             {

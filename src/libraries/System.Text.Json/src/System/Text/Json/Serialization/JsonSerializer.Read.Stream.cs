@@ -42,15 +42,10 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static ValueTask<TValue?> DeserializeAsync<TValue>(
-            Stream utf8Json,
+            Stream utf8Json!!,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
             return ReadAllAsync<TValue>(utf8Json, jsonTypeInfo, cancellationToken);
         }
@@ -77,14 +72,9 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static TValue? Deserialize<TValue>(
-            Stream utf8Json,
+            Stream utf8Json!!,
             JsonSerializerOptions? options = null)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
             return ReadAllUsingOptions<TValue>(utf8Json, typeof(TValue), options);
         }
 
@@ -113,21 +103,11 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static ValueTask<object?> DeserializeAsync(
-            Stream utf8Json,
-            Type returnType,
+            Stream utf8Json!!,
+            Type returnType!!,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
-            if (returnType == null)
-            {
-                throw new ArgumentNullException(nameof(returnType));
-            }
-
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
             return ReadAllAsync<object?>(utf8Json, jsonTypeInfo, cancellationToken);
         }
@@ -154,20 +134,10 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static object? Deserialize(
-            Stream utf8Json,
-            Type returnType,
+            Stream utf8Json!!,
+            Type returnType!!,
             JsonSerializerOptions? options = null)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
-            if (returnType == null)
-            {
-                throw new ArgumentNullException(nameof(returnType));
-            }
-
             return ReadAllUsingOptions<object>(utf8Json, returnType, options);
         }
 
@@ -195,20 +165,10 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         public static ValueTask<TValue?> DeserializeAsync<TValue>(
-            Stream utf8Json,
-            JsonTypeInfo<TValue> jsonTypeInfo,
+            Stream utf8Json!!,
+            JsonTypeInfo<TValue> jsonTypeInfo!!,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
             return ReadAllAsync<TValue>(utf8Json, jsonTypeInfo, cancellationToken);
         }
 
@@ -233,19 +193,9 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         public static TValue? Deserialize<TValue>(
-            Stream utf8Json,
-            JsonTypeInfo<TValue> jsonTypeInfo)
+            Stream utf8Json!!,
+            JsonTypeInfo<TValue> jsonTypeInfo!!)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
             return ReadAll<TValue>(utf8Json, jsonTypeInfo);
         }
 
@@ -277,26 +227,11 @@ namespace System.Text.Json
         /// did not return a compatible <see cref="JsonTypeInfo"/> for <paramref name="returnType"/>.
         /// </exception>
         public static ValueTask<object?> DeserializeAsync(
-            Stream utf8Json,
-            Type returnType,
-            JsonSerializerContext context,
+            Stream utf8Json!!,
+            Type returnType!!,
+            JsonSerializerContext context!!,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
-            if (returnType == null)
-            {
-                throw new ArgumentNullException(nameof(returnType));
-            }
-
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
             return ReadAllAsync<object>(utf8Json, GetTypeInfo(context, returnType), cancellationToken);
         }
 
@@ -325,25 +260,10 @@ namespace System.Text.Json
         /// did not return a compatible <see cref="JsonTypeInfo"/> for <paramref name="returnType"/>.
         /// </exception>
         public static object? Deserialize(
-            Stream utf8Json,
-            Type returnType,
-            JsonSerializerContext context)
+            Stream utf8Json!!,
+            Type returnType!!,
+            JsonSerializerContext context!!)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
-            if (returnType == null)
-            {
-                throw new ArgumentNullException(nameof(returnType));
-            }
-
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
             return ReadAll<object>(utf8Json, GetTypeInfo(context, returnType));
         }
 
@@ -362,15 +282,10 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static IAsyncEnumerable<TValue?> DeserializeAsyncEnumerable<TValue>(
-            Stream utf8Json,
+            Stream utf8Json!!,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
             options ??= JsonSerializerOptions.Default;
             if (!options.IsInitializedForReflectionSerializer)
             {

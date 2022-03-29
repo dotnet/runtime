@@ -36,10 +36,7 @@ namespace Internal.Runtime.InteropServices
         private static string MarshalToString(IntPtr arg, string argName)
         {
             string? result = Marshal.PtrToStringAuto(arg);
-            if (result == null)
-            {
-                throw new ArgumentNullException(argName);
-            }
+            ArgumentNullException.ThrowIfNull(result, argName);
             return result;
         }
 

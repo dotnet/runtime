@@ -114,10 +114,7 @@ namespace System.Collections.Specialized
 
                 case NotifyCollectionChangedAction.Add:
                 case NotifyCollectionChangedAction.Remove:
-                    if (changedItems == null)
-                    {
-                        throw new ArgumentNullException(nameof(changedItems));
-                    }
+                    ArgumentNullException.ThrowIfNull(changedItems);
                     if (startingIndex < -1)
                     {
                         throw new ArgumentException(SR.IndexCannotBeNegative, nameof(startingIndex));
@@ -197,14 +194,8 @@ namespace System.Collections.Specialized
             {
                 throw new ArgumentException(SR.Format(SR.WrongActionForCtor, NotifyCollectionChangedAction.Replace), nameof(action));
             }
-            if (newItems == null)
-            {
-                throw new ArgumentNullException(nameof(newItems));
-            }
-            if (oldItems == null)
-            {
-                throw new ArgumentNullException(nameof(oldItems));
-            }
+            ArgumentNullException.ThrowIfNull(newItems);
+            ArgumentNullException.ThrowIfNull(oldItems);
 
             _action = action;
             _newItems = new ReadOnlyList(newItems);

@@ -567,10 +567,8 @@ namespace System.Threading.Tasks.Dataflow
         public void Complete() { _target.Complete(exception: null, dropPendingMessages: false); }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
-        void IDataflowBlock.Fault(Exception exception)
+        void IDataflowBlock.Fault(Exception exception!!)
         {
-            if (exception == null) throw new ArgumentNullException(nameof(exception));
-
             _target.Complete(exception, dropPendingMessages: true);
         }
 

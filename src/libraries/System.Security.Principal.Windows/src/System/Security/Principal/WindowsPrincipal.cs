@@ -29,10 +29,10 @@ namespace System.Security.Principal
         // Constructors.
         //
 
-        public WindowsPrincipal(WindowsIdentity ntIdentity)
+        public WindowsPrincipal(WindowsIdentity ntIdentity!!)
             : base(ntIdentity)
         {
-            _identity = ntIdentity ?? throw new ArgumentNullException(nameof(ntIdentity));
+            _identity = ntIdentity;
         }
 
         //

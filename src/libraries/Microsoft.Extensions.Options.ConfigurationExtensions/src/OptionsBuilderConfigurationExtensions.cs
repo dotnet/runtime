@@ -35,13 +35,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="configureBinder">Used to configure the <see cref="BinderOptions"/>.</param>
         /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that additional calls can be chained.</returns>
         [RequiresUnreferencedCode(TrimmingRequiredUnreferencedCodeMessage)]
-        public static OptionsBuilder<TOptions> Bind<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions>(this OptionsBuilder<TOptions> optionsBuilder, IConfiguration config, Action<BinderOptions> configureBinder) where TOptions : class
+        public static OptionsBuilder<TOptions> Bind<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions>(this OptionsBuilder<TOptions> optionsBuilder!!, IConfiguration config, Action<BinderOptions> configureBinder) where TOptions : class
         {
-            if (optionsBuilder == null)
-            {
-                throw new ArgumentNullException(nameof(optionsBuilder));
-            }
-
             optionsBuilder.Services.Configure<TOptions>(optionsBuilder.Name, config, configureBinder);
             return optionsBuilder;
         }
@@ -61,13 +56,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <seealso cref="Bind{TOptions}(OptionsBuilder{TOptions}, IConfiguration, Action{BinderOptions})"/>
         [RequiresUnreferencedCode(TrimmingRequiredUnreferencedCodeMessage)]
         public static OptionsBuilder<TOptions> BindConfiguration<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions>(
-            this OptionsBuilder<TOptions> optionsBuilder,
-            string configSectionPath,
+            this OptionsBuilder<TOptions> optionsBuilder!!,
+            string configSectionPath!!,
             Action<BinderOptions> configureBinder = null)
             where TOptions : class
         {
-            _ = optionsBuilder ?? throw new ArgumentNullException(nameof(optionsBuilder));
-            _ = configSectionPath ?? throw new ArgumentNullException(nameof(configSectionPath));
+            _ = optionsBuilder;
+            _ = configSectionPath;
 
             optionsBuilder.Configure<IConfiguration>((opts, config) => BindFromOptions<TOptions>(opts, config, configSectionPath, configureBinder));
             optionsBuilder.Services.AddSingleton<IOptionsChangeTokenSource<TOptions>, ConfigurationChangeTokenSource<TOptions>>();

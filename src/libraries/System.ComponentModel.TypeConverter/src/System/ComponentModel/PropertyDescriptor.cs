@@ -121,17 +121,8 @@ namespace System.ComponentModel
         /// <summary>
         /// Allows interested objects to be notified when this property changes.
         /// </summary>
-        public virtual void AddValueChanged(object component, EventHandler handler)
+        public virtual void AddValueChanged(object component!!, EventHandler handler!!)
         {
-            if (component == null)
-            {
-                throw new ArgumentNullException(nameof(component));
-            }
-            if (handler == null)
-            {
-                throw new ArgumentNullException(nameof(handler));
-            }
-
             if (_valueChangedHandlers == null)
             {
                 _valueChangedHandlers = new Hashtable();
@@ -399,17 +390,8 @@ namespace System.ComponentModel
         /// <summary>
         /// Allows interested objects to be notified when this property changes.
         /// </summary>
-        public virtual void RemoveValueChanged(object component, EventHandler handler)
+        public virtual void RemoveValueChanged(object component!!, EventHandler handler!!)
         {
-            if (component == null)
-            {
-                throw new ArgumentNullException(nameof(component));
-            }
-            if (handler == null)
-            {
-                throw new ArgumentNullException(nameof(handler));
-            }
-
             if (_valueChangedHandlers != null)
             {
                 EventHandler? h = (EventHandler?)_valueChangedHandlers[component];

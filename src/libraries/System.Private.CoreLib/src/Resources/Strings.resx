@@ -1597,9 +1597,6 @@
   <data name="ArgumentNull_Generic" xml:space="preserve">
     <value>Value cannot be null.</value>
   </data>
-  <data name="ArgumentNull_Key" xml:space="preserve">
-    <value>Key cannot be null.</value>
-  </data>
   <data name="ArgumentNull_Path" xml:space="preserve">
     <value>Path cannot be null.</value>
   </data>
@@ -3291,9 +3288,6 @@
   </data>
   <data name="SpinLock_TryReliableEnter_ArgumentException" xml:space="preserve">
     <value>The tookLock argument must be set to false before calling this method.</value>
-  </data>
-  <data name="SpinWait_SpinUntil_ArgumentNull" xml:space="preserve">
-    <value>The condition argument is null.</value>
   </data>
   <data name="SpinWait_SpinUntil_TimeoutWrong" xml:space="preserve">
     <value>The timeout must represent a value between -1 and Int32.MaxValue, inclusive.</value>

@@ -24,18 +24,13 @@ namespace System.Security.Cryptography.X509Certificates
         public abstract byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm);
         protected abstract PublicKey BuildPublicKey();
 
-        public static X509SignatureGenerator CreateForECDsa(ECDsa key)
+        public static X509SignatureGenerator CreateForECDsa(ECDsa key!!)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-
             return new ECDsaX509SignatureGenerator(key);
         }
 
-        public static X509SignatureGenerator CreateForRSA(RSA key, RSASignaturePadding signaturePadding)
+        public static X509SignatureGenerator CreateForRSA(RSA key!!, RSASignaturePadding signaturePadding)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
             if (signaturePadding == null)
                 throw new ArgumentNullException(nameof(signaturePadding));
 

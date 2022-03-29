@@ -159,21 +159,8 @@ namespace System.Xml.Schema
 
         private static readonly string[] s_methodNames = new string[12] { "None", "Initialize", "top-level ValidateAttribute", "top-level ValidateText or ValidateWhitespace", "ValidateElement", "ValidateAttribute", "ValidateEndOfAttributes", "ValidateText", "ValidateWhitespace", "ValidateEndElement", "SkipToEndElement", "EndValidation" };
 
-        public XmlSchemaValidator(XmlNameTable nameTable, XmlSchemaSet schemas, IXmlNamespaceResolver namespaceResolver, XmlSchemaValidationFlags validationFlags)
+        public XmlSchemaValidator(XmlNameTable nameTable!!, XmlSchemaSet schemas!!, IXmlNamespaceResolver namespaceResolver!!, XmlSchemaValidationFlags validationFlags)
         {
-            if (nameTable == null)
-            {
-                throw new ArgumentNullException(nameof(nameTable));
-            }
-            if (schemas == null)
-            {
-                throw new ArgumentNullException(nameof(schemas));
-            }
-            if (namespaceResolver == null)
-            {
-                throw new ArgumentNullException(nameof(namespaceResolver));
-            }
-
             _nameTable = nameTable;
             _nsResolver = namespaceResolver;
             _validationFlags = validationFlags;
@@ -328,12 +315,8 @@ namespace System.Xml.Schema
         }
 
         //Methods
-        public void AddSchema(XmlSchema schema)
+        public void AddSchema(XmlSchema schema!!)
         {
-            if (schema == null)
-            {
-                throw new ArgumentNullException(nameof(schema));
-            }
             if ((_validationFlags & XmlSchemaValidationFlags.ProcessInlineSchema) == 0)
             { //Do not process schema if processInlineSchema is not set
                 return;
@@ -418,17 +401,8 @@ namespace System.Xml.Schema
             ValidateElement(localName, namespaceUri, schemaInfo, null, null, null, null);
         }
 
-        public void ValidateElement(string localName, string namespaceUri, XmlSchemaInfo? schemaInfo, string? xsiType, string? xsiNil, string? xsiSchemaLocation, string? xsiNoNamespaceSchemaLocation)
+        public void ValidateElement(string localName!!, string namespaceUri!!, XmlSchemaInfo? schemaInfo, string? xsiType, string? xsiNil, string? xsiSchemaLocation, string? xsiNoNamespaceSchemaLocation)
         {
-            if (localName == null)
-            {
-                throw new ArgumentNullException(nameof(localName));
-            }
-            if (namespaceUri == null)
-            {
-                throw new ArgumentNullException(nameof(namespaceUri));
-            }
-
             CheckStateTransition(ValidatorState.Element, s_methodNames[(int)ValidatorState.Element]);
 
             ClearPSVI();
@@ -507,37 +481,18 @@ namespace System.Xml.Schema
             }
         }
 
-        public object? ValidateAttribute(string localName, string namespaceUri, string attributeValue, XmlSchemaInfo? schemaInfo)
+        public object? ValidateAttribute(string localName, string namespaceUri, string attributeValue!!, XmlSchemaInfo? schemaInfo)
         {
-            if (attributeValue == null)
-            {
-                throw new ArgumentNullException(nameof(attributeValue));
-            }
-
             return ValidateAttribute(localName, namespaceUri, null, attributeValue, schemaInfo);
         }
 
-        public object? ValidateAttribute(string localName, string namespaceUri, XmlValueGetter attributeValue, XmlSchemaInfo? schemaInfo)
+        public object? ValidateAttribute(string localName, string namespaceUri, XmlValueGetter attributeValue!!, XmlSchemaInfo? schemaInfo)
         {
-            if (attributeValue == null)
-            {
-                throw new ArgumentNullException(nameof(attributeValue));
-            }
-
             return ValidateAttribute(localName, namespaceUri, attributeValue, null, schemaInfo);
         }
 
-        private object? ValidateAttribute(string localName, string namespaceUri, XmlValueGetter? attributeValueGetter, string? attributeStringValue, XmlSchemaInfo? schemaInfo)
+        private object? ValidateAttribute(string localName!!, string namespaceUri!!, XmlValueGetter? attributeValueGetter, string? attributeStringValue, XmlSchemaInfo? schemaInfo)
         {
-            if (localName == null)
-            {
-                throw new ArgumentNullException(nameof(localName));
-            }
-            if (namespaceUri == null)
-            {
-                throw new ArgumentNullException(nameof(namespaceUri));
-            }
-
             ValidatorState toState = _validationStack.Length > 1 ? ValidatorState.Attribute : ValidatorState.TopLevelAttribute;
             CheckStateTransition(toState, s_methodNames[(int)toState]);
 
@@ -744,13 +699,8 @@ namespace System.Xml.Schema
             return typedVal;
         }
 
-        public void GetUnspecifiedDefaultAttributes(ArrayList defaultAttributes)
+        public void GetUnspecifiedDefaultAttributes(ArrayList defaultAttributes!!)
         {
-            if (defaultAttributes == null)
-            {
-                throw new ArgumentNullException(nameof(defaultAttributes));
-            }
-
             CheckStateTransition(ValidatorState.Attribute, "GetUnspecifiedDefaultAttributes");
             GetUnspecifiedDefaultAttributes(defaultAttributes, false);
         }
@@ -771,21 +721,13 @@ namespace System.Xml.Schema
             }
         }
 
-        public void ValidateText(string elementValue)
+        public void ValidateText(string elementValue!!)
         {
-            if (elementValue == null)
-            {
-                throw new ArgumentNullException(nameof(elementValue));
-            }
             ValidateText(elementValue, null);
         }
 
-        public void ValidateText(XmlValueGetter elementValue)
+        public void ValidateText(XmlValueGetter elementValue!!)
         {
-            if (elementValue == null)
-            {
-                throw new ArgumentNullException(nameof(elementValue));
-            }
             ValidateText(null, elementValue);
         }
 
@@ -854,22 +796,13 @@ namespace System.Xml.Schema
             }
         }
 
-        public void ValidateWhitespace(string elementValue)
+        public void ValidateWhitespace(string elementValue!!)
         {
-            if (elementValue == null)
-            {
-                throw new ArgumentNullException(nameof(elementValue));
-            }
             ValidateWhitespace(elementValue, null);
         }
 
-        public void ValidateWhitespace(XmlValueGetter elementValue)
+        public void ValidateWhitespace(XmlValueGetter elementValue!!)
         {
-            if (elementValue == null)
-            {
-                throw new ArgumentNullException(nameof(elementValue));
-            }
-
             ValidateWhitespace(null, elementValue);
         }
 
@@ -928,12 +861,8 @@ namespace System.Xml.Schema
             return InternalValidateEndElement(schemaInfo, null);
         }
 
-        public object? ValidateEndElement(XmlSchemaInfo? schemaInfo, object typedValue)
+        public object? ValidateEndElement(XmlSchemaInfo? schemaInfo, object typedValue!!)
         {
-            if (typedValue == null)
-            {
-                throw new ArgumentNullException(nameof(typedValue));
-            }
             if (_textValue.Length > 0)
             {
                 throw new InvalidOperationException(SR.Sch_InvalidEndElementCall);

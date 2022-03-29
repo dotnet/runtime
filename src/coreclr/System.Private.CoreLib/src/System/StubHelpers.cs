@@ -545,10 +545,7 @@ namespace System.StubHelpers
                 throw new InvalidOperationException(SR.Interop_Marshal_SafeHandle_InvalidOperation);
             }
 
-            if (handle is null)
-            {
-                throw new ArgumentNullException(nameof(handle));
-            }
+            ArgumentNullException.ThrowIfNull(handle);
 
             return StubHelpers.AddToCleanupList(ref cleanupWorkList, handle);
         }

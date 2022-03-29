@@ -109,10 +109,8 @@ namespace System.Drawing
         /// <summary>
         /// Creates an instance of the <see cref='Graphics'/> class from an existing <see cref='Image'/>.
         /// </summary>
-        public static Graphics FromImage(Image image)
+        public static Graphics FromImage(Image image!!)
         {
-            if (image == null)
-                throw new ArgumentNullException(nameof(image));
             if ((image.PixelFormat & PixelFormat.Indexed) != 0)
                 throw new ArgumentException(SR.GdiplusCannotCreateGraphicsFromIndexedPixelFormat, nameof(image));
 
@@ -283,24 +281,16 @@ namespace System.Drawing
         /// <summary>
         /// Draws a line connecting the two specified points.
         /// </summary>
-        public void DrawLine(Pen pen, float x1, float y1, float x2, float y2)
+        public void DrawLine(Pen pen!!, float x1, float y1, float x2, float y2)
         {
-            if (pen == null)
-                throw new ArgumentNullException(nameof(pen));
-
             CheckErrorStatus(Gdip.GdipDrawLine(new HandleRef(this, NativeGraphics), new HandleRef(pen, pen.NativePen), x1, y1, x2, y2));
         }
 
         /// <summary>
         /// Draws a series of cubic Bezier curves from an array of points.
         /// </summary>
-        public unsafe void DrawBeziers(Pen pen, PointF[] points)
+        public unsafe void DrawBeziers(Pen pen!!, PointF[] points!!)
         {
-            if (pen == null)
-                throw new ArgumentNullException(nameof(pen));
-            if (points == null)
-                throw new ArgumentNullException(nameof(points));
-
             fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawBeziers(
@@ -313,13 +303,8 @@ namespace System.Drawing
         /// <summary>
         /// Draws a series of cubic Bezier curves from an array of points.
         /// </summary>
-        public unsafe void DrawBeziers(Pen pen, Point[] points)
+        public unsafe void DrawBeziers(Pen pen!!, Point[] points!!)
         {
-            if (pen == null)
-                throw new ArgumentNullException(nameof(pen));
-            if (points == null)
-                throw new ArgumentNullException(nameof(points));
-
             fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawBeziersI(
@@ -333,13 +318,8 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interior of a path.
         /// </summary>
-        public void FillPath(Brush brush, GraphicsPath path)
+        public void FillPath(Brush brush!!, GraphicsPath path!!)
         {
-            if (brush == null)
-                throw new ArgumentNullException(nameof(brush));
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             CheckErrorStatus(Gdip.GdipFillPath(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(brush, brush.NativeBrush),
@@ -349,24 +329,16 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interior of a <see cref='Region'/>.
         /// </summary>
-        public void FillRegion(Brush brush, Region region)
+        public void FillRegion(Brush brush!!, Region region!!)
         {
-            if (brush == null)
-                throw new ArgumentNullException(nameof(brush));
-            if (region == null)
-                throw new ArgumentNullException(nameof(region));
-
             CheckErrorStatus(Gdip.GdipFillRegion(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(brush, brush.NativeBrush),
                 new HandleRef(region, region.NativeRegion)));
         }
 
-        public void DrawIcon(Icon icon, int x, int y)
+        public void DrawIcon(Icon icon!!, int x, int y)
         {
-            if (icon == null)
-                throw new ArgumentNullException(nameof(icon));
-
             if (_backingImage != null)
             {
                 // We don't call the icon directly because we want to stay in GDI+ all the time
@@ -386,11 +358,8 @@ namespace System.Drawing
         /// it passes the call to the actual image. This version crops the image to the given
         /// dimensions and allows the user to specify a rectangle within the image to draw.
         /// </summary>
-        public void DrawIcon(Icon icon, Rectangle targetRect)
+        public void DrawIcon(Icon icon!!, Rectangle targetRect)
         {
-            if (icon == null)
-                throw new ArgumentNullException(nameof(icon));
-
             if (_backingImage != null)
             {
                 // We don't call the icon directly because we want to stay in GDI+ all the time
@@ -410,11 +379,8 @@ namespace System.Drawing
         /// it passes the call to the actual image. This version stretches the image to the given
         /// dimensions and allows the user to specify a rectangle within the image to draw.
         /// </summary>
-        public void DrawIconUnstretched(Icon icon, Rectangle targetRect)
+        public void DrawIconUnstretched(Icon icon!!, Rectangle targetRect)
         {
-            if (icon == null)
-                throw new ArgumentNullException(nameof(icon));
-
             if (_backingImage != null)
             {
                 DrawImageUnscaled(icon.ToBitmap(), targetRect);
@@ -490,13 +456,11 @@ namespace System.Drawing
 
         public unsafe void EnumerateMetafile(
             Metafile metafile,
-            PointF[] destPoints,
+            PointF[] destPoints!!,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
             ImageAttributes? imageAttr)
         {
-            if (destPoints == null)
-                throw new ArgumentNullException(nameof(destPoints));
             if (destPoints.Length != 3)
                 throw new ArgumentException(SR.GdiplusDestPointsInvalidParallelogram);
 
@@ -514,13 +478,11 @@ namespace System.Drawing
 
         public unsafe void EnumerateMetafile(
             Metafile metafile,
-            Point[] destPoints,
+            Point[] destPoints!!,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
             ImageAttributes? imageAttr)
         {
-            if (destPoints == null)
-                throw new ArgumentNullException(nameof(destPoints));
             if (destPoints.Length != 3)
                 throw new ArgumentException(SR.GdiplusDestPointsInvalidParallelogram);
 
@@ -618,15 +580,13 @@ namespace System.Drawing
 
         public unsafe void EnumerateMetafile(
             Metafile metafile,
-            PointF[] destPoints,
+            PointF[] destPoints!!,
             RectangleF srcRect,
             GraphicsUnit unit,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
             ImageAttributes? imageAttr)
         {
-            if (destPoints == null)
-                throw new ArgumentNullException(nameof(destPoints));
             if (destPoints.Length != 3)
                 throw new ArgumentException(SR.GdiplusDestPointsInvalidParallelogram);
 
@@ -646,15 +606,13 @@ namespace System.Drawing
 
         public unsafe void EnumerateMetafile(
             Metafile metafile,
-            Point[] destPoints,
+            Point[] destPoints!!,
             Rectangle srcRect,
             GraphicsUnit unit,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
             ImageAttributes? imageAttr)
         {
-            if (destPoints == null)
-                throw new ArgumentNullException(nameof(destPoints));
             if (destPoints.Length != 3)
                 throw new ArgumentException(SR.GdiplusDestPointsInvalidParallelogram);
 
@@ -907,11 +865,8 @@ namespace System.Drawing
             return new GraphicsContainer(state);
         }
 
-        public void EndContainer(GraphicsContainer container)
+        public void EndContainer(GraphicsContainer container!!)
         {
-            if (container == null)
-                throw new ArgumentNullException(nameof(container));
-
             Gdip.CheckStatus(Gdip.GdipEndContainer(new HandleRef(this, NativeGraphics), container.nativeGraphicsContainer));
             PopContext(container.nativeGraphicsContainer);
         }
@@ -935,11 +890,8 @@ namespace System.Drawing
             return new GraphicsContainer(state);
         }
 
-        public void AddMetafileComment(byte[] data)
+        public void AddMetafileComment(byte[] data!!)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-
             Gdip.CheckStatus(Gdip.GdipComment(new HandleRef(this, NativeGraphics), data.Length, data));
         }
 

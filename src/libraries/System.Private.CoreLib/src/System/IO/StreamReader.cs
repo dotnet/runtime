@@ -344,12 +344,8 @@ namespace System.IO
             return result;
         }
 
-        public override int Read(char[] buffer, int index, int count)
+        public override int Read(char[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
             if (index < 0 || count < 0)
             {
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -427,12 +423,8 @@ namespace System.IO
             return sb.ToString();
         }
 
-        public override int ReadBlock(char[] buffer, int index, int count)
+        public override int ReadBlock(char[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
             if (index < 0 || count < 0)
             {
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -1006,12 +998,8 @@ namespace System.IO
             return sb.ToString();
         }
 
-        public override Task<int> ReadAsync(char[] buffer, int index, int count)
+        public override Task<int> ReadAsync(char[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
             if (index < 0 || count < 0)
             {
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -1229,12 +1217,8 @@ namespace System.IO
             return charsRead;
         }
 
-        public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
+        public override Task<int> ReadBlockAsync(char[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
             if (index < 0 || count < 0)
             {
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);

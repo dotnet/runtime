@@ -69,13 +69,8 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
         /// </exception>
-        public static JsonNode? SerializeToNode<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
+        public static JsonNode? SerializeToNode<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo!!)
         {
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
             return WriteNodeUsingGeneratedSerializer(value, jsonTypeInfo);
         }
 
@@ -97,13 +92,8 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// <paramref name="inputType"/> or <paramref name="context"/> is <see langword="null"/>.
         /// </exception>
-        public static JsonNode? SerializeToNode(object? value, Type inputType, JsonSerializerContext context)
+        public static JsonNode? SerializeToNode(object? value, Type inputType, JsonSerializerContext context!!)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, runtimeType);
             return WriteNodeUsingGeneratedSerializer(value, jsonTypeInfo);

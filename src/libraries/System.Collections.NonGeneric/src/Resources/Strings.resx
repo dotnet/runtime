@@ -78,9 +78,6 @@
   <data name="ArgumentNull_Dictionary" xml:space="preserve">
     <value>Dictionary cannot be null.</value>
   </data>
-  <data name="ArgumentNull_Key" xml:space="preserve">
-    <value>Key cannot be null.</value>
-  </data>
   <data name="ArgumentOutOfRange_Index" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
   </data>

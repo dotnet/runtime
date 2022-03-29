@@ -228,13 +228,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="underlyingTypeInfo">Serialization metadata for the underlying nullable type.</param>
         /// <returns>A <see cref="JsonConverter{T}"/> instance that converts <typeparamref name="T?"/> values</returns>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
-        public static JsonConverter<T?> GetNullableConverter<T>(JsonTypeInfo<T> underlyingTypeInfo) where T : struct
+        public static JsonConverter<T?> GetNullableConverter<T>(JsonTypeInfo<T> underlyingTypeInfo!!) where T : struct
         {
-            if (underlyingTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(underlyingTypeInfo));
-            }
-
             JsonConverter<T>? underlyingConverter = underlyingTypeInfo.PropertyInfoForTypeInfo?.ConverterBase as JsonConverter<T>;
             if (underlyingConverter == null)
             {

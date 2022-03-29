@@ -10,69 +10,34 @@ namespace System.IO
 {
     public static partial class FileSystemAclExtensions
     {
-        public static DirectorySecurity GetAccessControl(this DirectoryInfo directoryInfo)
+        public static DirectorySecurity GetAccessControl(this DirectoryInfo directoryInfo!!)
         {
-            if (directoryInfo == null)
-            {
-                throw new ArgumentNullException(nameof(directoryInfo));
-            }
-
             return new DirectorySecurity(directoryInfo.FullName, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
-        public static DirectorySecurity GetAccessControl(this DirectoryInfo directoryInfo, AccessControlSections includeSections)
+        public static DirectorySecurity GetAccessControl(this DirectoryInfo directoryInfo!!, AccessControlSections includeSections)
         {
-            if (directoryInfo == null)
-            {
-                throw new ArgumentNullException(nameof(directoryInfo));
-            }
-
             return new DirectorySecurity(directoryInfo.FullName, includeSections);
         }
 
-        public static void SetAccessControl(this DirectoryInfo directoryInfo, DirectorySecurity directorySecurity)
+        public static void SetAccessControl(this DirectoryInfo directoryInfo, DirectorySecurity directorySecurity!!)
         {
-            if (directorySecurity == null)
-            {
-                throw new ArgumentNullException(nameof(directorySecurity));
-            }
-
             string fullPath = Path.GetFullPath(directoryInfo.FullName);
             directorySecurity.Persist(fullPath);
         }
 
-        public static FileSecurity GetAccessControl(this FileInfo fileInfo)
+        public static FileSecurity GetAccessControl(this FileInfo fileInfo!!)
         {
-            if (fileInfo == null)
-            {
-                throw new ArgumentNullException(nameof(fileInfo));
-            }
-
             return GetAccessControl(fileInfo, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
-        public static FileSecurity GetAccessControl(this FileInfo fileInfo, AccessControlSections includeSections)
+        public static FileSecurity GetAccessControl(this FileInfo fileInfo!!, AccessControlSections includeSections)
         {
-            if (fileInfo == null)
-            {
-                throw new ArgumentNullException(nameof(fileInfo));
-            }
-
             return new FileSecurity(fileInfo.FullName, includeSections);
         }
 
-        public static void SetAccessControl(this FileInfo fileInfo, FileSecurity fileSecurity)
+        public static void SetAccessControl(this FileInfo fileInfo!!, FileSecurity fileSecurity!!)
         {
-            if (fileInfo == null)
-            {
-                throw new ArgumentNullException(nameof(fileInfo));
-            }
-
-            if (fileSecurity == null)
-            {
-                throw new ArgumentNullException(nameof(fileSecurity));
-            }
-
             string fullPath = Path.GetFullPath(fileInfo.FullName);
             // Appropriate security check should be done for us by FileSecurity.
             fileSecurity.Persist(fullPath);
@@ -84,13 +49,8 @@ namespace System.IO
         /// <param name="fileStream">An object that represents the file for retrieving security descriptors from</param>
         /// <exception cref="ArgumentNullException"><paramref name="fileStream" /> is <see langword="null" />.</exception>
         /// <exception cref="ObjectDisposedException">The file stream is closed.</exception>
-        public static FileSecurity GetAccessControl(this FileStream fileStream)
+        public static FileSecurity GetAccessControl(this FileStream fileStream!!)
         {
-            if (fileStream == null)
-            {
-                throw new ArgumentNullException(nameof(fileStream));
-            }
-
             SafeFileHandle handle = fileStream.SafeFileHandle;
             if (handle.IsClosed)
             {
@@ -107,18 +67,8 @@ namespace System.IO
         /// <param name="fileSecurity">An object that determines the access control and audit security for the file.</param>
         /// <exception cref="ArgumentNullException"><paramref name="fileStream" /> or <paramref name="fileSecurity" /> is <see langword="null" />.</exception>
         /// <exception cref="ObjectDisposedException">The file stream is closed.</exception>
-        public static void SetAccessControl(this FileStream fileStream, FileSecurity fileSecurity)
+        public static void SetAccessControl(this FileStream fileStream!!, FileSecurity fileSecurity!!)
         {
-            if (fileStream == null)
-            {
-                throw new ArgumentNullException(nameof(fileStream));
-            }
-
-            if (fileSecurity == null)
-            {
-                throw new ArgumentNullException(nameof(fileSecurity));
-            }
-
             SafeFileHandle handle = fileStream.SafeFileHandle;
             if (handle.IsClosed)
             {
@@ -135,18 +85,8 @@ namespace System.IO
         /// <exception cref="DirectoryNotFoundException">Could not find a part of the path.</exception>
         /// <exception cref="UnauthorizedAccessException">Access to the path is denied.</exception>
         /// <remarks>This extension method was added to .NET Core to bring the functionality that was provided by the `System.IO.DirectoryInfo.Create(System.Security.AccessControl.DirectorySecurity)` .NET Framework method.</remarks>
-        public static void Create(this DirectoryInfo directoryInfo, DirectorySecurity directorySecurity)
+        public static void Create(this DirectoryInfo directoryInfo!!, DirectorySecurity directorySecurity!!)
         {
-            if (directoryInfo == null)
-            {
-                throw new ArgumentNullException(nameof(directoryInfo));
-            }
-
-            if (directorySecurity == null)
-            {
-                throw new ArgumentNullException(nameof(directorySecurity));
-            }
-
             FileSystem.CreateDirectory(directoryInfo.FullName, directorySecurity.GetSecurityDescriptorBinaryForm());
         }
 
@@ -170,13 +110,8 @@ namespace System.IO
         /// <exception cref="IOException">An I/O error occurs.</exception>
         /// <exception cref="UnauthorizedAccessException">Access to the path is denied.</exception>
         /// <remarks>This extension method was added to .NET Core to bring the functionality that was provided by the `System.IO.FileStream.#ctor(System.String,System.IO.FileMode,System.Security.AccessControl.FileSystemRights,System.IO.FileShare,System.Int32,System.IO.FileOptions,System.Security.AccessControl.FileSecurity)` .NET Framework constructor.</remarks>
-        public static FileStream Create(this FileInfo fileInfo, FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity? fileSecurity)
+        public static FileStream Create(this FileInfo fileInfo!!, FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity? fileSecurity)
         {
-            if (fileInfo == null)
-            {
-                throw new ArgumentNullException(nameof(fileInfo));
-            }
-
             // don't include inheritable in our bounds check for share
             FileShare tempshare = share & ~FileShare.Inheritable;
 
@@ -242,9 +177,8 @@ namespace System.IO
         /// <exception cref="DirectoryNotFoundException">Could not find a part of the path.</exception>
         /// <exception cref="UnauthorizedAccessException">Access to the path is denied.</exception>
         /// <remarks>This extension method was added to .NET Core to bring the functionality that was provided by the `System.IO.Directory.CreateDirectory(System.String,System.Security.AccessControl.DirectorySecurity)` .NET Framework method.</remarks>
-        public static DirectoryInfo CreateDirectory(this DirectorySecurity directorySecurity, string path)
+        public static DirectoryInfo CreateDirectory(this DirectorySecurity directorySecurity!!, string path)
         {
-            ArgumentNullException.ThrowIfNull(directorySecurity);
             ArgumentException.ThrowIfNullOrEmpty(path);
 
             DirectoryInfo dirInfo = new DirectoryInfo(path);

@@ -312,8 +312,8 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         private static byte[] Encode(
-            Oid policyId,
-            Oid hashAlgorithmId,
+            Oid policyId!!,
+            Oid hashAlgorithmId!!,
             ReadOnlyMemory<byte> messageHash,
             ReadOnlyMemory<byte> serialNumber,
             DateTimeOffset timestamp,
@@ -323,11 +323,6 @@ namespace System.Security.Cryptography.Pkcs
             ReadOnlyMemory<byte>? tsaName,
             X509ExtensionCollection? extensions)
         {
-            if (policyId == null)
-                throw new ArgumentNullException(nameof(policyId));
-            if (hashAlgorithmId == null)
-                throw new ArgumentNullException(nameof(hashAlgorithmId));
-
             var tstInfo = new Rfc3161TstInfo
             {
                 // The only legal value as of 2017.

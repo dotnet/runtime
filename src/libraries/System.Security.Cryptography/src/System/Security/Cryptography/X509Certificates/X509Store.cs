@@ -126,11 +126,8 @@ namespace System.Security.Cryptography.X509Certificates
             get { return _storePal != null; }
         }
 
-        public void Add(X509Certificate2 certificate)
+        public void Add(X509Certificate2 certificate!!)
         {
-            if (certificate == null)
-                throw new ArgumentNullException(nameof(certificate));
-
             if (_storePal == null)
                 throw new CryptographicException(SR.Cryptography_X509_StoreNotOpen);
 
@@ -140,11 +137,8 @@ namespace System.Security.Cryptography.X509Certificates
             _storePal.Add(certificate.Pal);
         }
 
-        public void AddRange(X509Certificate2Collection certificates)
+        public void AddRange(X509Certificate2Collection certificates!!)
         {
-            if (certificates == null)
-                throw new ArgumentNullException(nameof(certificates));
-
             int i = 0;
             try
             {
@@ -166,11 +160,8 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public void Remove(X509Certificate2 certificate)
+        public void Remove(X509Certificate2 certificate!!)
         {
-            if (certificate == null)
-                throw new ArgumentNullException(nameof(certificate));
-
             if (_storePal == null)
                 throw new CryptographicException(SR.Cryptography_X509_StoreNotOpen);
 
@@ -180,11 +171,8 @@ namespace System.Security.Cryptography.X509Certificates
             _storePal.Remove(certificate.Pal);
         }
 
-        public void RemoveRange(X509Certificate2Collection certificates)
+        public void RemoveRange(X509Certificate2Collection certificates!!)
         {
-            if (certificates == null)
-                throw new ArgumentNullException(nameof(certificates));
-
             int i = 0;
             try
             {

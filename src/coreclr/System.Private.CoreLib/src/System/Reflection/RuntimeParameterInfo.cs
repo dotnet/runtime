@@ -507,11 +507,8 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
         }
 
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
             if (MdToken.IsNullToken(m_tkParamDef))
                 return Array.Empty<object>();
 
@@ -521,11 +518,8 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
-        public override bool IsDefined(Type attributeType, bool inherit)
+        public override bool IsDefined(Type attributeType!!, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
             if (MdToken.IsNullToken(m_tkParamDef))
                 return false;
 

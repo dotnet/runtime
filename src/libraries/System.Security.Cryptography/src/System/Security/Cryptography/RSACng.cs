@@ -20,11 +20,8 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">if <paramref name="key" /> is not an RSA key</exception>
         /// <exception cref="ArgumentNullException">if <paramref name="key" /> is null.</exception>
         [SupportedOSPlatform("windows")]
-        public RSACng(CngKey key)
+        public RSACng(CngKey key!!)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-
             if (key.AlgorithmGroup != CngAlgorithmGroup.Rsa)
                 throw new ArgumentException(SR.Cryptography_ArgRSARequiresRSAKey, nameof(key));
 

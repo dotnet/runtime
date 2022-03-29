@@ -69,13 +69,8 @@ namespace System.Collections.ObjectModel
             }
         }
 
-        public bool Contains(TKey key)
+        public bool Contains(TKey key!!)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
             if (dict != null)
             {
                 return dict.ContainsKey(key);
@@ -92,13 +87,8 @@ namespace System.Collections.ObjectModel
             return false;
         }
 
-        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TItem item)
+        public bool TryGetValue(TKey key!!, [MaybeNullWhen(false)] out TItem item)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
             if (dict != null)
             {
                 return dict.TryGetValue(key, out item!);
@@ -135,13 +125,8 @@ namespace System.Collections.ObjectModel
             return false;
         }
 
-        public bool Remove(TKey key)
+        public bool Remove(TKey key!!)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
             if (dict != null)
             {
                 TItem item;

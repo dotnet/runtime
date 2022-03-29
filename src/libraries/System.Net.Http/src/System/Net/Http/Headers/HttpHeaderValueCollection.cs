@@ -78,12 +78,8 @@ namespace System.Net.Http.Headers
             return _store.ContainsParsedValue(_descriptor, item);
         }
 
-        public void CopyTo(T[] array, int arrayIndex)
+        public void CopyTo(T[] array!!, int arrayIndex)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
             // Allow arrayIndex == array.Length in case our own collection is empty
             if ((arrayIndex < 0) || (arrayIndex > array.Length))
             {
@@ -166,13 +162,8 @@ namespace System.Net.Http.Headers
             return _store.GetHeaderString(_descriptor);
         }
 
-        private void CheckValue(T item)
+        private void CheckValue(T item!!)
         {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
-
             if (_descriptor.Parser == GenericHeaderParser.TokenListParser)
             {
                 // The collection expects valid HTTP tokens, which are typed as string.

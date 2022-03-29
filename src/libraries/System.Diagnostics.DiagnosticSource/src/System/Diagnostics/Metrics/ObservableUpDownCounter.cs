@@ -20,35 +20,20 @@ namespace System.Diagnostics.Metrics
     {
         private object _callback;
 
-        internal ObservableUpDownCounter(Meter meter, string name, Func<T> observeValue, string? unit, string? description) : base(meter, name, unit, description)
+        internal ObservableUpDownCounter(Meter meter, string name, Func<T> observeValue!!, string? unit, string? description) : base(meter, name, unit, description)
         {
-            if (observeValue is null)
-            {
-                throw new ArgumentNullException(nameof(observeValue));
-            }
-
             _callback = observeValue;
             Publish();
         }
 
-        internal ObservableUpDownCounter(Meter meter, string name, Func<Measurement<T>> observeValue, string? unit, string? description) : base(meter, name, unit, description)
+        internal ObservableUpDownCounter(Meter meter, string name, Func<Measurement<T>> observeValue!!, string? unit, string? description) : base(meter, name, unit, description)
         {
-            if (observeValue is null)
-            {
-                throw new ArgumentNullException(nameof(observeValue));
-            }
-
             _callback = observeValue;
             Publish();
         }
 
-        internal ObservableUpDownCounter(Meter meter, string name, Func<IEnumerable<Measurement<T>>> observeValues, string? unit, string? description) : base(meter, name, unit, description)
+        internal ObservableUpDownCounter(Meter meter, string name, Func<IEnumerable<Measurement<T>>> observeValues!!, string? unit, string? description) : base(meter, name, unit, description)
         {
-            if (observeValues is null)
-            {
-                throw new ArgumentNullException(nameof(observeValues));
-            }
-
             _callback = observeValues;
             Publish();
         }

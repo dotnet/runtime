@@ -14,23 +14,13 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the receive operation.</param>
         /// <returns>The created async enumerable.</returns>
         /// <exception cref="System.ArgumentNullException">The <paramref name="source"/> is null (Nothing in Visual Basic).</exception>
-        public static IAsyncEnumerable<TOutput> ReceiveAllAsync<TOutput>(this IReceivableSourceBlock<TOutput> source, CancellationToken cancellationToken = default)
+        public static async IAsyncEnumerable<TOutput> ReceiveAllAsync<TOutput>(this IReceivableSourceBlock<TOutput> source!!, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            while (await source.OutputAvailableAsync(cancellationToken).ConfigureAwait(false))
             {
-                throw new ArgumentNullException(nameof(source));
-            }
-
-            return ReceiveAllAsyncCore(source, cancellationToken);
-
-            static async IAsyncEnumerable<TOutput> ReceiveAllAsyncCore(IReceivableSourceBlock<TOutput> source, [EnumeratorCancellation] CancellationToken cancellationToken)
-            {
-                while (await source.OutputAvailableAsync(cancellationToken).ConfigureAwait(false))
+                while (source.TryReceive(out TOutput? item))
                 {
-                    while (source.TryReceive(out TOutput? item))
-                    {
-                        yield return item;
-                    }
+                    yield return item;
                 }
             }
         }

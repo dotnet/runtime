@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libproc
+    internal static partial class @libproc
     {
         // Constants from sys\param.h
         private const int MAXCOMLEN = 16;

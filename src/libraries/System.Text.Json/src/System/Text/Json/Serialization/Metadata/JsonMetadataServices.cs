@@ -20,18 +20,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="propertyInfo">Provides serialization metadata about the property or field.</param>
         /// <returns>A <see cref="JsonPropertyInfo"/> instance intialized with the provided metadata.</returns>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
-        public static JsonPropertyInfo CreatePropertyInfo<T>(JsonSerializerOptions options, JsonPropertyInfoValues<T> propertyInfo)
+        public static JsonPropertyInfo CreatePropertyInfo<T>(JsonSerializerOptions options!!, JsonPropertyInfoValues<T> propertyInfo!!)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
-            if (propertyInfo == null)
-            {
-                throw new ArgumentNullException(nameof(propertyInfo));
-            }
-
             Type? declaringType = propertyInfo.DeclaringType;
             if (declaringType == null)
             {

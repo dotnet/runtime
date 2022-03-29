@@ -55,10 +55,8 @@ namespace System.Security.Cryptography.X509Certificates
             ((ICollection)this).CopyTo(array, index);
         }
 
-        void ICollection.CopyTo(Array array, int index)
+        void ICollection.CopyTo(Array array!!, int index)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
             if (index < 0 || index >= array.Length)

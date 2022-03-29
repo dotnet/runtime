@@ -679,11 +679,8 @@ namespace System.Reflection
         internal static void ParseAttributeArguments(ConstArray attributeBlob,
             ref CustomAttributeCtorParameter[] customAttributeCtorParameters,
             ref CustomAttributeNamedParameter[] customAttributeNamedParameters,
-            RuntimeModule customAttributeModule)
+            RuntimeModule customAttributeModule!!)
         {
-            if (customAttributeModule is null)
-                throw new ArgumentNullException(nameof(customAttributeModule));
-
             Debug.Assert(customAttributeCtorParameters is not null);
             Debug.Assert(customAttributeNamedParameters is not null);
 
@@ -713,11 +710,8 @@ namespace System.Reflection
         private readonly CustomAttributeType m_type;
         private readonly CustomAttributeEncodedArgument m_encodedArgument;
 
-        public CustomAttributeNamedParameter(string argumentName, CustomAttributeEncoding fieldOrProperty, CustomAttributeType type)
+        public CustomAttributeNamedParameter(string argumentName!!, CustomAttributeEncoding fieldOrProperty, CustomAttributeType type)
         {
-            if (argumentName is null)
-                throw new ArgumentNullException(nameof(argumentName));
-
             m_argumentName = argumentName;
             m_fieldOrProperty = fieldOrProperty;
             m_padding = fieldOrProperty;

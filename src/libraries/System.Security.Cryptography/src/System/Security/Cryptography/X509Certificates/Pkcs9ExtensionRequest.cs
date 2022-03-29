@@ -14,11 +14,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
-        private static byte[] EncodeAttribute(IEnumerable<X509Extension> extensions)
+        private static byte[] EncodeAttribute(IEnumerable<X509Extension> extensions!!)
         {
-            if (extensions == null)
-                throw new ArgumentNullException(nameof(extensions));
-
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
             using (writer.PushSequence())

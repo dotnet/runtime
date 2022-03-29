@@ -45,12 +45,8 @@ namespace System.IO
             Initialize(buffer, offset, capacity, access);
         }
 
-        protected void Initialize(SafeBuffer buffer, long offset, long capacity, FileAccess access)
+        protected void Initialize(SafeBuffer buffer!!, long offset, long capacity, FileAccess access)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -329,12 +325,8 @@ namespace System.IO
         // Reads 'count' structs of type T from unmanaged memory, into 'array' starting at 'offset'.
         // Note: this method is not safe, since it overwrites the contents of structures, it can
         // be used to modify the private members of a struct.
-        public int ReadArray<T>(long position, T[] array, int offset, int count) where T : struct
+        public int ReadArray<T>(long position, T[] array!!, int offset, int count) where T : struct
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
-            }
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -569,12 +561,8 @@ namespace System.IO
         }
 
         // Writes 'count' structs of type T from 'array' (starting at 'offset') into unmanaged memory.
-        public void WriteArray<T>(long position, T[] array, int offset, int count) where T : struct
+        public void WriteArray<T>(long position, T[] array!!, int offset, int count) where T : struct
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
-            }
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);

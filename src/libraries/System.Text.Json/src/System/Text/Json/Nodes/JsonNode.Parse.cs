@@ -66,15 +66,10 @@ namespace System.Text.Json.Nodes
         ///   <paramref name="json"/> does not represent a valid single JSON value.
         /// </exception>
         public static JsonNode? Parse(
-            [StringSyntax(StringSyntaxAttribute.Json)] string json,
+            [StringSyntax(StringSyntaxAttribute.Json)] string json!!,
             JsonNodeOptions? nodeOptions = null,
             JsonDocumentOptions documentOptions = default(JsonDocumentOptions))
         {
-            if (json == null)
-            {
-                throw new ArgumentNullException(nameof(json));
-            }
-
             JsonElement element = JsonElement.ParseValue(json, documentOptions);
             return JsonNodeConverter.Create(element, nodeOptions);
         }
@@ -114,15 +109,10 @@ namespace System.Text.Json.Nodes
         ///   <paramref name="utf8Json"/> does not represent a valid single JSON value.
         /// </exception>
         public static JsonNode? Parse(
-            Stream utf8Json,
+            Stream utf8Json!!,
             JsonNodeOptions? nodeOptions = null,
             JsonDocumentOptions documentOptions = default)
         {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
             JsonElement element = JsonElement.ParseValue(utf8Json, documentOptions);
             return JsonNodeConverter.Create(element, nodeOptions);
         }

@@ -42,22 +42,16 @@ namespace System.Security.Cryptography.X509Certificates
             return List.Add(value);
         }
 
-        public void AddRange(X509Certificate[] value)
+        public void AddRange(X509Certificate[] value!!)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             for (int i = 0; i < value.Length; i++)
             {
                 Add(value[i]);
             }
         }
 
-        public void AddRange(X509CertificateCollection value)
+        public void AddRange(X509CertificateCollection value!!)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             for (int i = 0; i < value.Count; i++)
             {
                 Add(value[i]);

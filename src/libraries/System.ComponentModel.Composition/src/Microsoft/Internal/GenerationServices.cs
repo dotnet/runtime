@@ -162,24 +162,9 @@ namespace Microsoft.Internal
         /// <param name="dictionary"></param>
         /// <param name="key"></param>
         /// <param name="value"></param>
-        public static void AddItemToLocalDictionary(this ILGenerator ilGenerator, LocalBuilder dictionary, object key, object value)
+        public static void AddItemToLocalDictionary(this ILGenerator ilGenerator, LocalBuilder dictionary!!, object key!!, object value!!)
         {
             Debug.Assert(ilGenerator != null);
-
-            if (dictionary == null)
-            {
-                throw new ArgumentNullException(nameof(dictionary));
-            }
-
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
 
             ilGenerator.Emit(OpCodes.Ldloc, dictionary);
             ilGenerator.LoadValue(key);
@@ -192,24 +177,9 @@ namespace Microsoft.Internal
         /// <param name="dictionary"></param>
         /// <param name="key"></param>
         /// <param name="value"></param>
-        public static void AddLocalToLocalDictionary(this ILGenerator ilGenerator, LocalBuilder dictionary, object key, LocalBuilder value)
+        public static void AddLocalToLocalDictionary(this ILGenerator ilGenerator, LocalBuilder dictionary!!, object key!!, LocalBuilder value!!)
         {
             Debug.Assert(ilGenerator != null);
-
-            if (dictionary == null)
-            {
-                throw new ArgumentNullException(nameof(dictionary));
-            }
-
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
 
             ilGenerator.Emit(OpCodes.Ldloc, dictionary);
             ilGenerator.LoadValue(key);
@@ -221,33 +191,18 @@ namespace Microsoft.Internal
         /// <param name="ilGenerator"></param>
         /// <param name="exception"></param>
         /// <param name="dataStore"></param>
-        public static void GetExceptionDataAndStoreInLocal(this ILGenerator ilGenerator, LocalBuilder exception, LocalBuilder dataStore)
+        public static void GetExceptionDataAndStoreInLocal(this ILGenerator ilGenerator, LocalBuilder exception!!, LocalBuilder dataStore!!)
         {
             Debug.Assert(ilGenerator != null);
-
-            if (exception == null)
-            {
-                throw new ArgumentNullException(nameof(exception));
-            }
-
-            if (dataStore == null)
-            {
-                throw new ArgumentNullException(nameof(dataStore));
-            }
 
             ilGenerator.Emit(OpCodes.Ldloc, exception);
             ilGenerator.Emit(OpCodes.Callvirt, ExceptionGetData);
             ilGenerator.Emit(OpCodes.Stloc, dataStore);
         }
 
-        private static void LoadEnumerable(this ILGenerator ilGenerator, IEnumerable enumerable)
+        private static void LoadEnumerable(this ILGenerator ilGenerator, IEnumerable enumerable!!)
         {
             Debug.Assert(ilGenerator != null);
-
-            if (enumerable == null)
-            {
-                throw new ArgumentNullException(nameof(enumerable));
-            }
 
             // We load enumerable as an array - this is the most compact and efficient way of representing it
             Type elementType;

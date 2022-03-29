@@ -69,13 +69,8 @@ namespace System.Reflection.PortableExecutable
         /// The caller is responsible for keeping the memory alive and unmodified throughout the lifetime of the <see cref="PEReader"/>.
         /// The content of the image is not read during the construction of the <see cref="PEReader"/>
         /// </remarks>
-        public unsafe PEReader(byte* peImage, int size, bool isLoadedImage)
+        public unsafe PEReader(byte* peImage!!, int size, bool isLoadedImage)
         {
-            if (peImage == null)
-            {
-                throw new ArgumentNullException(nameof(peImage));
-            }
-
             if (size < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(size));
@@ -150,13 +145,8 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="ArgumentOutOfRangeException">Size is negative or extends past the end of the stream.</exception>
         /// <exception cref="IOException">Error reading from the stream (only when prefetching data).</exception>
         /// <exception cref="BadImageFormatException"><see cref="PEStreamOptions.PrefetchMetadata"/> is specified and the PE headers of the image are invalid.</exception>
-        public unsafe PEReader(Stream peStream, PEStreamOptions options, int size)
+        public unsafe PEReader(Stream peStream!!, PEStreamOptions options, int size)
         {
-            if (peStream == null)
-            {
-                throw new ArgumentNullException(nameof(peStream));
-            }
-
             if (!peStream.CanRead || !peStream.CanSeek)
             {
                 throw new ArgumentException(SR.StreamMustSupportReadAndSeek, nameof(peStream));

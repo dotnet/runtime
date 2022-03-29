@@ -73,20 +73,14 @@ namespace System.Security.Cryptography.X509Certificates
             return X509Pal.Instance.EncodeX509SubjectKeyIdentifierExtension(subjectKeyIdentifier);
         }
 
-        private static byte[] EncodeExtension(string subjectKeyIdentifier)
+        private static byte[] EncodeExtension(string subjectKeyIdentifier!!)
         {
-            if (subjectKeyIdentifier == null)
-                throw new ArgumentNullException(nameof(subjectKeyIdentifier));
-
             byte[] subjectKeyIdentifiedBytes = subjectKeyIdentifier.LaxDecodeHexString();
             return EncodeExtension(subjectKeyIdentifiedBytes);
         }
 
-        private static byte[] EncodeExtension(PublicKey key, X509SubjectKeyIdentifierHashAlgorithm algorithm)
+        private static byte[] EncodeExtension(PublicKey key!!, X509SubjectKeyIdentifierHashAlgorithm algorithm)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-
             byte[] subjectKeyIdentifier = GenerateSubjectKeyIdentifierFromPublicKey(key, algorithm);
             return EncodeExtension(subjectKeyIdentifier);
         }

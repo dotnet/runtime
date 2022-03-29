@@ -12,15 +12,13 @@ namespace Internal.Cryptography
     internal abstract class HashProvider : IDisposable
     {
         // Adds new data to be hashed. This can be called repeatedly in order to hash data from noncontiguous sources.
-        public void AppendHashData(byte[] data, int offset, int count)
+        public void AppendHashData(byte[] data!!, int offset, int count)
         {
             // AppendHashData can be called via exposed APIs (e.g. a type that derives from
             // HMACSHA1 and calls HashCore) and could be passed bad data from there.  It could
             // also receive a bad count from HashAlgorithm reading from a Stream that returns
             // an invalid number of bytes read.  Since our implementations of AppendHashDataCore
             // end up using unsafe code, we want to be sure the arguments are valid.
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)

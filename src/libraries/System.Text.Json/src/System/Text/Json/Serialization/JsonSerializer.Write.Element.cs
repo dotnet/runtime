@@ -68,13 +68,8 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
         /// </exception>
-        public static JsonElement SerializeToElement<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
+        public static JsonElement SerializeToElement<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo!!)
         {
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
             return WriteElementUsingGeneratedSerializer(value, jsonTypeInfo);
         }
 
@@ -96,13 +91,8 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// <paramref name="inputType"/> or <paramref name="context"/> is <see langword="null"/>.
         /// </exception>
-        public static JsonElement SerializeToElement(object? value, Type inputType, JsonSerializerContext context)
+        public static JsonElement SerializeToElement(object? value, Type inputType, JsonSerializerContext context!!)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
             Type type = GetRuntimeTypeAndValidateInputType(value, inputType);
             JsonTypeInfo typeInfo = GetTypeInfo(context, type);
             return WriteElementUsingGeneratedSerializer(value, typeInfo);

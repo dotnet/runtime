@@ -19,13 +19,8 @@ namespace System
         // respecting types.  This calls memmove internally.  The count and
         // offset parameters here are in bytes.  If you want to use traditional
         // array element indices and counts, use Array.Copy.
-        public static unsafe void BlockCopy(Array src, int srcOffset, Array dst, int dstOffset, int count)
+        public static unsafe void BlockCopy(Array src!!, int srcOffset, Array dst!!, int dstOffset, int count)
         {
-            if (src == null)
-                throw new ArgumentNullException(nameof(src));
-            if (dst == null)
-                throw new ArgumentNullException(nameof(dst));
-
             nuint uSrcLen = src.NativeLength;
             if (src.GetType() != typeof(byte[]))
             {
@@ -63,12 +58,8 @@ namespace System
             Memmove(ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(dst), uDstOffset), ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(src), uSrcOffset), uCount);
         }
 
-        public static int ByteLength(Array array)
+        public static int ByteLength(Array array!!)
         {
-            // Is the array present?
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-
             // Is it of primitive types?
             if (!array.GetCorElementTypeOfElementType().IsPrimitiveType())
                 throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(array));

@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class @libc
     {
         [StructLayout(LayoutKind.Sequential)]
         internal struct AttrList

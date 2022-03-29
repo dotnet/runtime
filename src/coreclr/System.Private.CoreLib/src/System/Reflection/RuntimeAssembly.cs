@@ -184,12 +184,10 @@ namespace System.Reflection
                                             ObjectHandleOnStack assemblyLoadContext);
 
         [RequiresUnreferencedCode("Types might be removed")]
-        public override Type? GetType(string name, bool throwOnError, bool ignoreCase)
+        public override Type? GetType(
+            string name!!, // throw on null strings regardless of the value of "throwOnError"
+            bool throwOnError, bool ignoreCase)
         {
-            // throw on null strings regardless of the value of "throwOnError"
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             RuntimeType? type = null;
             object? keepAlive = null;
             AssemblyLoadContext? assemblyLoadContextStack = AssemblyLoadContext.CurrentContextualReflectionContext;
@@ -262,8 +260,8 @@ namespace System.Reflection
         // Load a resource based on the NameSpace of the type.
         public override Stream? GetManifestResourceStream(Type type, string name)
         {
-            if (type == null && name == null)
-                throw new ArgumentNullException(nameof(type));
+            if (name == null)
+                ArgumentNullException.ThrowIfNull(type);
 
             string? nameSpace = type?.Namespace;
 
@@ -304,22 +302,16 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
         }
 
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
-        public override bool IsDefined(Type attributeType, bool inherit)
+        public override bool IsDefined(Type attributeType!!, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
@@ -576,11 +568,8 @@ namespace System.Reflection
         }
 
         // Useful for binding to a very specific version of a satellite assembly
-        public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version)
+        public override Assembly GetSatelliteAssembly(CultureInfo culture!!, Version? version)
         {
-            if (culture == null)
-                throw new ArgumentNullException(nameof(culture));
-
             return InternalGetSatelliteAssembly(culture, version, throwOnFileNotFound: true)!;
         }
 

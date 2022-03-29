@@ -40,10 +40,8 @@ namespace System.Security.Cryptography.Pkcs
         public ContentInfo ContentInfo { get; private set; }
         public bool Detached { get; private set; }
 
-        public SignedCms(SubjectIdentifierType signerIdentifierType, ContentInfo contentInfo, bool detached)
+        public SignedCms(SubjectIdentifierType signerIdentifierType, ContentInfo contentInfo!!, bool detached)
         {
-            if (contentInfo == null)
-                throw new ArgumentNullException(nameof(contentInfo));
             if (contentInfo.Content == null)
                 throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "contentInfo.Content"), nameof(contentInfo));
 
@@ -158,11 +156,8 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        public void Decode(byte[] encodedMessage)
+        public void Decode(byte[] encodedMessage!!)
         {
-            if (encodedMessage == null)
-                throw new ArgumentNullException(nameof(encodedMessage));
-
             Decode(new ReadOnlySpan<byte>(encodedMessage));
         }
 
@@ -298,13 +293,8 @@ namespace System.Security.Cryptography.Pkcs
 
         public void ComputeSignature(CmsSigner signer) => ComputeSignature(signer, true);
 
-        public void ComputeSignature(CmsSigner signer, bool silent)
+        public void ComputeSignature(CmsSigner signer!!, bool silent)
         {
-            if (signer == null)
-            {
-                throw new ArgumentNullException(nameof(signer));
-            }
-
             // While it shouldn't be possible to change the length of ContentInfo.Content
             // after it's built, use the property at this stage, then use the saved value
             // (if applicable) after this point.
@@ -407,11 +397,8 @@ namespace System.Security.Cryptography.Pkcs
             UpdateMetadata();
         }
 
-        public void RemoveSignature(SignerInfo signerInfo)
+        public void RemoveSignature(SignerInfo signerInfo!!)
         {
-            if (signerInfo == null)
-                throw new ArgumentNullException(nameof(signerInfo));
-
             int idx = SignerInfos.FindIndexForSigner(signerInfo);
 
             if (idx < 0)

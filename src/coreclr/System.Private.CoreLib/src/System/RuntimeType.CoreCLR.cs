@@ -1719,12 +1719,9 @@ namespace System
         #region Static Members
 
         #region Internal
-        internal static RuntimeType? GetType(string typeName, bool throwOnError, bool ignoreCase,
+        internal static RuntimeType? GetType(string typeName!!, bool throwOnError, bool ignoreCase,
             ref StackCrawlMark stackMark)
         {
-            if (typeName == null)
-                throw new ArgumentNullException(nameof(typeName));
-
             return RuntimeTypeHandle.GetTypeByName(
                 typeName, throwOnError, ignoreCase, ref stackMark);
         }
@@ -2669,8 +2666,7 @@ namespace System
             if (IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_GenericParameter);
 
-            if (ifaceType is null)
-                throw new ArgumentNullException(nameof(ifaceType));
+            ArgumentNullException.ThrowIfNull(ifaceType);
 
             RuntimeType? ifaceRtType = ifaceType as RuntimeType;
 
@@ -2812,10 +2808,8 @@ namespace System
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         protected override PropertyInfo? GetPropertyImpl(
-            string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
+            string name!!, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
-
             ListBuilder<PropertyInfo> candidates = GetPropertyCandidates(name, bindingAttr, types, false);
 
             if (candidates.Count == 0)
@@ -2849,10 +2843,8 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
-        public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
+        public override EventInfo? GetEvent(string name!!, BindingFlags bindingAttr)
         {
-            if (name is null) throw new ArgumentNullException(nameof(name));
-
             FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
             RuntimeEventInfo[] cache = Cache.GetEventList(listType, name);
@@ -2876,10 +2868,8 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
+        public override FieldInfo? GetField(string name!!, BindingFlags bindingAttr)
         {
-            if (name is null) throw new ArgumentNullException();
-
             FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
             RuntimeFieldInfo[] cache = Cache.GetFieldList(listType, name);
@@ -2915,10 +2905,8 @@ namespace System
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        public override Type? GetInterface(string fullname, bool ignoreCase)
+        public override Type? GetInterface(string fullname!!, bool ignoreCase)
         {
-            if (fullname is null) throw new ArgumentNullException(nameof(fullname));
-
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic;
 
             bindingAttr &= ~BindingFlags.Static;
@@ -2950,10 +2938,8 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public override Type? GetNestedType(string fullname, BindingFlags bindingAttr)
+        public override Type? GetNestedType(string fullname!!, BindingFlags bindingAttr)
         {
-            if (fullname is null) throw new ArgumentNullException(nameof(fullname));
-
             bindingAttr &= ~BindingFlags.Static;
             string name, ns;
             SplitName(fullname, out name!, out ns!);
@@ -2979,10 +2965,8 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(GetAllMembers)]
-        public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
+        public override MemberInfo[] GetMember(string name!!, MemberTypes type, BindingFlags bindingAttr)
         {
-            if (name is null) throw new ArgumentNullException(nameof(name));
-
             ListBuilder<MethodInfo> methods = default;
             ListBuilder<ConstructorInfo> constructors = default;
             ListBuilder<PropertyInfo> properties = default;
@@ -3061,10 +3045,8 @@ namespace System
             return compressMembers;
         }
 
-        public override MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
+        public override MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member!!)
         {
-            if (member is null) throw new ArgumentNullException(nameof(member));
-
             RuntimeType? runtimeType = this;
             while (runtimeType != null)
             {
@@ -3217,10 +3199,8 @@ namespace System
 
         #region Hierarchy
 
-        public override bool IsSubclassOf(Type type)
+        public override bool IsSubclassOf(Type type!!)
         {
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
             RuntimeType? rtType = type as RuntimeType;
             if (rtType == null)
                 return false;
@@ -3352,11 +3332,8 @@ namespace System
         }
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
-        public override Type MakeGenericType(Type[] instantiation)
+        public override Type MakeGenericType(Type[] instantiation!!)
         {
-            if (instantiation == null)
-                throw new ArgumentNullException(nameof(instantiation));
-
             if (!IsGenericTypeDefinition)
                 throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
 

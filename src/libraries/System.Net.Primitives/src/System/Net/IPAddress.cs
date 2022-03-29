@@ -231,13 +231,8 @@ namespace System.Net
             return (address != null);
         }
 
-        public static IPAddress Parse(string ipString)
+        public static IPAddress Parse(string ipString!!)
         {
-            if (ipString == null)
-            {
-                throw new ArgumentNullException(nameof(ipString));
-            }
-
             return IPAddressParser.Parse(ipString.AsSpan(), tryParse: false)!;
         }
 

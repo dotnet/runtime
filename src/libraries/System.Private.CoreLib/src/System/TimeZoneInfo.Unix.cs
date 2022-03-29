@@ -289,11 +289,8 @@ namespace System
                 return Utc;
             }
 
-            if (id == null)
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-            else if (id.Length == 0 || id.Contains('\0'))
+            ArgumentNullException.ThrowIfNull(id);
+            if (id.Length == 0 || id.Contains('\0'))
             {
                 throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id));
             }
