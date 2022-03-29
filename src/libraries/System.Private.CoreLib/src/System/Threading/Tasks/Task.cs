@@ -2663,13 +2663,12 @@ namespace System.Threading.Tasks
         /// </exception>
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.timeout);
             }
+            cancellationToken.ThrowIfCancellationRequested();
 
             return Wait((int)totalMilliseconds, cancellationToken);
         }
