@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Xml
     {
         private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlNodeList), typeof(XmlDocument) };
         private readonly Type[] _outputTypes = { typeof(Stream) };
-        private CryptoStream _cs;
+        private CryptoStream? _cs;
 
         public XmlDsigBase64Transform()
         {
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Xml
             }
             if (obj is XmlDocument)
             {
-                LoadXmlNodeListInput(((XmlDocument)obj).SelectNodes("//."));
+                LoadXmlNodeListInput(((XmlDocument)obj).SelectNodes("//.")!);
                 return;
             }
         }
@@ -93,7 +93,7 @@ namespace System.Security.Cryptography.Xml
             StringBuilder sb = new StringBuilder();
             foreach (XmlNode node in nodeList)
             {
-                XmlNode result = node.SelectSingleNode("self::text()");
+                XmlNode? result = node.SelectSingleNode("self::text()");
                 if (result != null)
                     sb.Append(result.OuterXml);
             }
@@ -118,14 +118,14 @@ namespace System.Security.Cryptography.Xml
 
         public override object GetOutput()
         {
-            return _cs;
+            return _cs!;
         }
 
         public override object GetOutput(Type type)
         {
             if (type != typeof(Stream) && !type.IsSubclassOf(typeof(Stream)))
                 throw new ArgumentException(SR.Cryptography_Xml_TransformIncorrectInputType, nameof(type));
-            return _cs;
+            return _cs!;
         }
     }
 }
