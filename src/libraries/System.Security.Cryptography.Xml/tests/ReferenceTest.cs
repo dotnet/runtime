@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [InlineData(" ")]
         [InlineData("uri")]
         [InlineData("http://mysite.com/")]
-        public void Ctor_Uri(string uri)
+        public void Ctor_Uri(string? uri)
         {
             Reference reference = new Reference(uri);
 
@@ -189,7 +189,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             Reference reference = new Reference();
             // adding an empty hash value
-            byte[] hash = new byte[20];
+            byte[]? hash = new byte[20];
             reference.DigestMethod = SignedXml.XmlDsigSHA1Url;
             reference.DigestValue = hash;
             XmlElement xel = reference.GetXml();

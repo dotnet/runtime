@@ -191,7 +191,7 @@ namespace System.Security.Cryptography.Xml
         /// <summary>
         ///     Convert the byte array into a hex string
         /// </summary>
-        private static string FormatBytes(byte[] bytes)
+        private static string FormatBytes(byte[]? bytes)
         {
             if (bytes == null)
                 return NullString;
@@ -807,8 +807,8 @@ namespace System.Security.Cryptography.Xml
         /// <param name="expectedHash">hash value the signature expected the reference to have</param>
         internal static void LogVerifyReferenceHash(SignedXml signedXml,
                                                     Reference reference,
-                                                    byte[] actualHash,
-                                                    byte[] expectedHash)
+                                                    byte[]? actualHash,
+                                                    byte[]? expectedHash)
         {
             Debug.Assert(signedXml != null, "signedXml != null");
             Debug.Assert(reference != null, "reference != null");
@@ -850,8 +850,8 @@ namespace System.Security.Cryptography.Xml
                                                  SignatureDescription signatureDescription,
                                                  HashAlgorithm hashAlgorithm,
                                                  AsymmetricSignatureDeformatter asymmetricSignatureDeformatter,
-                                                 byte[] actualHashValue,
-                                                 byte[] signatureValue)
+                                                 byte[]? actualHashValue,
+                                                 byte[]? signatureValue)
         {
             Debug.Assert(signedXml != null, "signedXml != null");
             Debug.Assert(signatureDescription != null, "signatureDescription != null");
@@ -896,8 +896,8 @@ namespace System.Security.Cryptography.Xml
         /// <param name="signatureValue">raw signature value</param>
         internal static void LogVerifySignedInfo(SignedXml signedXml,
                                                  KeyedHashAlgorithm mac,
-                                                 byte[] actualHashValue,
-                                                 byte[] signatureValue)
+                                                 byte[]? actualHashValue,
+                                                 byte[]? signatureValue)
         {
             Debug.Assert(signedXml != null, "signedXml != null");
             Debug.Assert(mac != null, "mac != null");

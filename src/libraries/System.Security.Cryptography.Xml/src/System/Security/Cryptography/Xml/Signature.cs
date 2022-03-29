@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Xml
     {
         private string _id;
         private SignedInfo _signedInfo;
-        private byte[] _signatureValue;
+        private byte[]? _signatureValue;
         private string _signatureValueId;
         private KeyInfo _keyInfo;
         private IList _embeddedObjects;
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        public byte[] SignatureValue
+        public byte[]? SignatureValue
         {
             get { return _signatureValue; }
             set { _signatureValue = value; }

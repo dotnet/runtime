@@ -91,7 +91,7 @@ namespace System.Security.Cryptography.Xml
                     if (elem.LocalName == "Except" && elem.NamespaceURI == XmlDecryptionTransformNamespaceUrl)
                     {
                         // the Uri is required
-                        string uri = Utils.GetAttribute(elem, "URI", XmlDecryptionTransformNamespaceUrl);
+                        string? uri = Utils.GetAttribute(elem, "URI", XmlDecryptionTransformNamespaceUrl);
                         if (uri == null || uri.Length == 0 || uri[0] != '#')
                             throw new CryptographicException(SR.Cryptography_Xml_UriRequired);
                         if (!Utils.VerifyAttributes(elem, "URI"))

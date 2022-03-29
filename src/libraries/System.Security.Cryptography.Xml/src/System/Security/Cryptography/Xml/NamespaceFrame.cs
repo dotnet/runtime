@@ -16,24 +16,24 @@ namespace System.Security.Cryptography.Xml
 
         internal NamespaceFrame() { }
 
-        internal void AddRendered(XmlAttribute attr)
+        internal void AddRendered(XmlAttribute? attr)
         {
             _rendered.Add(Utils.GetNamespacePrefix(attr), attr);
         }
 
         internal XmlAttribute? GetRendered(string nsPrefix)
         {
-            return (XmlAttribute)_rendered[nsPrefix];
+            return (XmlAttribute?)_rendered[nsPrefix];
         }
 
-        internal void AddUnrendered(XmlAttribute attr)
+        internal void AddUnrendered(XmlAttribute? attr)
         {
             _unrendered.Add(Utils.GetNamespacePrefix(attr), attr);
         }
 
         internal XmlAttribute? GetUnrendered(string nsPrefix)
         {
-            return (XmlAttribute)_unrendered[nsPrefix];
+            return (XmlAttribute?)_unrendered[nsPrefix];
         }
 
         internal Hashtable GetUnrendered()

@@ -98,41 +98,41 @@ namespace System.Security.Cryptography.Xml
             return true;
         }
 
-        internal static bool IsNamespaceNode(XmlNode n)
+        internal static bool IsNamespaceNode(XmlNode? n)
         {
             return n.NodeType == XmlNodeType.Attribute && (n.Prefix.Equals("xmlns") || (n.Prefix.Length == 0 && n.LocalName.Equals("xmlns")));
         }
 
-        internal static bool IsXmlNamespaceNode(XmlNode n)
+        internal static bool IsXmlNamespaceNode(XmlNode? n)
         {
             return n.NodeType == XmlNodeType.Attribute && n.Prefix.Equals("xml");
         }
 
         // We consider xml:space style attributes as default namespace nodes since they obey the same propagation rules
-        internal static bool IsDefaultNamespaceNode(XmlNode n)
+        internal static bool IsDefaultNamespaceNode(XmlNode? n)
         {
             bool b1 = n.NodeType == XmlNodeType.Attribute && n.Prefix.Length == 0 && n.LocalName.Equals("xmlns");
             bool b2 = IsXmlNamespaceNode(n);
             return b1 || b2;
         }
 
-        internal static bool IsEmptyDefaultNamespaceNode(XmlNode n)
+        internal static bool IsEmptyDefaultNamespaceNode(XmlNode? n)
         {
             return IsDefaultNamespaceNode(n) && n.Value!.Length == 0;
         }
 
-        internal static string GetNamespacePrefix(XmlAttribute a)
+        internal static string GetNamespacePrefix(XmlAttribute? a)
         {
             Debug.Assert(IsNamespaceNode(a) || IsXmlNamespaceNode(a));
             return a.Prefix.Length == 0 ? string.Empty : a.LocalName;
         }
 
-        internal static bool HasNamespacePrefix(XmlAttribute a, string nsPrefix)
+        internal static bool HasNamespacePrefix(XmlAttribute? a, string nsPrefix)
         {
             return GetNamespacePrefix(a).Equals(nsPrefix);
         }
 
-        internal static bool IsNonRedundantNamespaceDecl(XmlAttribute a, XmlAttribute? nearestAncestorWithSamePrefix)
+        internal static bool IsNonRedundantNamespaceDecl(XmlAttribute? a, XmlAttribute? nearestAncestorWithSamePrefix)
         {
             if (nearestAncestorWithSamePrefix == null)
                 return !IsEmptyDefaultNamespaceNode(a);
@@ -140,7 +140,7 @@ namespace System.Security.Cryptography.Xml
                 return !nearestAncestorWithSamePrefix.Value.Equals(a.Value);
         }
 
-        internal static bool IsXmlPrefixDefinitionNode(XmlAttribute a)
+        internal static bool IsXmlPrefixDefinitionNode(XmlAttribute? a)
         {
             return false;
             //            return a.Prefix.Equals("xmlns") && a.LocalName.Equals("xml") && a.Value.Equals(NamespaceUrlForXmlPrefix);
@@ -324,7 +324,7 @@ namespace System.Security.Cryptography.Xml
             return false;
         }
 
-        internal static string GetIdFromLocalUri(string uri, out bool discardComments)
+        internal static string GetIdFromLocalUri(string? uri, out bool discardComments)
         {
             string idref = uri.Substring(1);
             // initialize the return value
@@ -345,7 +345,7 @@ namespace System.Security.Cryptography.Xml
             return idref;
         }
 
-        internal static string ExtractIdFromLocalUri(string uri)
+        internal static string ExtractIdFromLocalUri(string? uri)
         {
             string idref = uri.Substring(1);
 

@@ -62,8 +62,8 @@ namespace System.Security.Cryptography.Xml
             _ancestorStack.RemoveAt(_ancestorStack.Count - 1);
         }
 
-        internal abstract void TrackNamespaceNode(XmlAttribute attr, SortedList nsListToRender, Hashtable nsLocallyDeclared);
-        internal abstract void TrackXmlNamespaceNode(XmlAttribute attr, SortedList nsListToRender, SortedList attrListToRender, Hashtable nsLocallyDeclared);
+        internal abstract void TrackNamespaceNode(XmlAttribute? attr, SortedList nsListToRender, Hashtable nsLocallyDeclared);
+        internal abstract void TrackXmlNamespaceNode(XmlAttribute? attr, SortedList nsListToRender, SortedList attrListToRender, Hashtable nsLocallyDeclared);
         internal abstract void GetNamespacesToRender(XmlElement element, SortedList attrListToRender, SortedList nsListToRender, Hashtable nsLocallyDeclared);
 
         internal void LoadUnrenderedNamespaces(Hashtable nsLocallyDeclared)
@@ -84,13 +84,13 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        internal void AddRendered(XmlAttribute attr)
+        internal void AddRendered(XmlAttribute? attr)
         {
             //red flag
             GetCurrentScope()!.AddRendered(attr);
         }
 
-        internal void AddUnrendered(XmlAttribute attr)
+        internal void AddUnrendered(XmlAttribute? attr)
         {
             //red flag
             GetCurrentScope()!.AddUnrendered(attr);

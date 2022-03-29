@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.Xml
             XmlAttributeCollection attrList = Attributes;
             if (attrList != null)
             {
-                foreach (XmlAttribute attr in attrList)
+                foreach (XmlAttribute? attr in attrList)
                 {
                     if (((CanonicalXmlAttribute)attr).IsInNodeSet || Utils.IsNamespaceNode(attr) || Utils.IsXmlNamespaceNode(attr))
                     {
@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.Xml
             if (!Utils.IsCommittedNamespace(this, Prefix, NamespaceURI))
             {
                 string name = ((Prefix.Length > 0) ? "xmlns" + ":" + Prefix : "xmlns");
-                XmlAttribute nsattrib = (XmlAttribute)OwnerDocument.CreateAttribute(name);
+                XmlAttribute? nsattrib = (XmlAttribute)OwnerDocument.CreateAttribute(name);
                 nsattrib.Value = NamespaceURI;
                 anc.TrackNamespaceNode(nsattrib, nsListToRender, nsLocallyDeclared);
             }
@@ -106,7 +106,7 @@ namespace System.Security.Cryptography.Xml
             XmlAttributeCollection attrList = Attributes;
             if (attrList != null)
             {
-                foreach (XmlAttribute attr in attrList)
+                foreach (XmlAttribute? attr in attrList)
                 {
                     if (((CanonicalXmlAttribute)attr).IsInNodeSet || Utils.IsNamespaceNode(attr) || Utils.IsXmlNamespaceNode(attr))
                     {
@@ -129,7 +129,7 @@ namespace System.Security.Cryptography.Xml
             if (!Utils.IsCommittedNamespace(this, Prefix, NamespaceURI))
             {
                 string name = ((Prefix.Length > 0) ? "xmlns" + ":" + Prefix : "xmlns");
-                XmlAttribute nsattrib = (XmlAttribute)OwnerDocument.CreateAttribute(name);
+                XmlAttribute? nsattrib = (XmlAttribute)OwnerDocument.CreateAttribute(name);
                 nsattrib.Value = NamespaceURI;
                 anc.TrackNamespaceNode(nsattrib, nsListToRender, nsLocallyDeclared);
             }

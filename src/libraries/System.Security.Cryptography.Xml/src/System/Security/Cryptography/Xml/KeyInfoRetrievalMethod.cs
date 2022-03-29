@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Xml
 
         public KeyInfoRetrievalMethod() { }
 
-        public KeyInfoRetrievalMethod(string strUri)
+        public KeyInfoRetrievalMethod(string? strUri)
         {
             _uri = strUri;
         }
@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Xml
         // public properties
         //
 
-        public string Uri
+        public string? Uri
         {
             get { return _uri; }
             set { _uri = value; }

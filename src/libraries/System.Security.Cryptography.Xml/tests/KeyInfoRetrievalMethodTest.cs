@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void TestNewKeyNode()
         {
-            string uri = "http://www.go-mono.com/";
+            string? uri = "http://www.go-mono.com/";
             KeyInfoRetrievalMethod uri1 = new KeyInfoRetrievalMethod();
             uri1.Uri = uri;
             XmlElement xel = uri1.GetXml();

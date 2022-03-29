@@ -11,18 +11,18 @@ namespace System.Security.Cryptography.Xml
     {
         internal const string DefaultDigestMethod = SignedXml.XmlDsigSHA256Url;
 
-        private string _id;
-        private string _uri;
-        private string _type;
+        private string? _id;
+        private string? _uri;
+        private string? _type;
         private TransformChain _transformChain;
         private string _digestMethod;
-        private byte[] _digestValue;
-        private HashAlgorithm _hashAlgorithm;
+        private byte[]? _digestValue;
+        private HashAlgorithm? _hashAlgorithm;
         private readonly object? _refTarget;
         private readonly ReferenceTargetType _refTargetType;
         private XmlElement? _cachedXml;
-        private SignedXml _signedXml;
-        internal CanonicalXmlNodeList _namespaces;
+        private SignedXml? _signedXml;
+        internal CanonicalXmlNodeList? _namespaces;
 
         //
         // public constructors
@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Xml
             _digestMethod = DefaultDigestMethod;
         }
 
-        public Reference(string uri)
+        public Reference(string? uri)
         {
             _transformChain = new TransformChain();
             _refTarget = uri;
@@ -69,13 +69,13 @@ namespace System.Security.Cryptography.Xml
         // public properties
         //
 
-        public string Id
+        public string? Id
         {
             get { return _id; }
             set { _id = value; }
         }
 
-        public string Uri
+        public string? Uri
         {
             get { return _uri; }
             set
@@ -85,7 +85,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        public string Type
+        public string? Type
         {
             get { return _type; }
             set
@@ -105,7 +105,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        public byte[] DigestValue
+        public byte[]? DigestValue
         {
             get { return _digestValue; }
             set
@@ -133,7 +133,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        internal SignedXml SignedXml
+        internal SignedXml? SignedXml
         {
             get { return _signedXml; }
             set { _signedXml = value; }
@@ -337,7 +337,7 @@ namespace System.Security.Cryptography.Xml
 
         // What we want to do is pump the input through the TransformChain and then
         // hash the output of the chain document is the document context for resolving relative references
-        internal byte[] CalculateHashValue(XmlDocument document, CanonicalXmlNodeList refList)
+        internal byte[]? CalculateHashValue(XmlDocument document, CanonicalXmlNodeList refList)
         {
             // refList is a list of elements that might be targets of references
             // Now's the time to create our hashing algorithm
@@ -351,7 +351,7 @@ namespace System.Security.Cryptography.Xml
             WebResponse response = null;
             Stream inputStream = null;
             XmlResolver resolver = null;
-            byte[] hashval = null;
+            byte[]? hashval = null;
 
             try
             {

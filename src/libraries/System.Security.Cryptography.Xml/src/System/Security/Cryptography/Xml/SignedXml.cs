@@ -193,7 +193,7 @@ namespace System.Security.Cryptography.Xml
             get { return m_signature.SignedInfo.SignatureLength; }
         }
 
-        public byte[] SignatureValue
+        public byte[]? SignatureValue
         {
             get { return m_signature.SignatureValue; }
         }
@@ -273,14 +273,14 @@ namespace System.Security.Cryptography.Xml
             return bRet;
         }
 
-        public bool CheckSignature(AsymmetricAlgorithm key)
+        public bool CheckSignature(AsymmetricAlgorithm? key)
         {
             if (!CheckSignatureFormat())
             {
                 return false;
             }
 
-            if (!CheckSignedInfo(key))
+            if (!CheckSignedInfo(key!))
             {
                 SignedXmlDebugLog.LogVerificationFailure(this, SR.Log_VerificationFailed_SignedInfo);
                 return false;
@@ -358,7 +358,7 @@ namespace System.Security.Cryptography.Xml
                 }
             }
 
-            using (AsymmetricAlgorithm publicKey = Utils.GetAnyPublicKey(certificate))
+            using (AsymmetricAlgorithm? publicKey = Utils.GetAnyPublicKey(certificate))
             {
                 if (!CheckSignature(publicKey))
                 {
@@ -451,7 +451,7 @@ namespace System.Security.Cryptography.Xml
                 "RIPEMD160" => SignedXml.XmlDsigMoreHMACRIPEMD160Url,
                 _ => throw new CryptographicException(SR.Cryptography_Xml_SignatureMethodKeyMismatch),
             };
-            byte[] hashValue = GetC14NDigest(hash);
+            byte[]? hashValue = GetC14NDigest(hash);
 
             SignedXmlDebugLog.LogSigning(this, hash);
             m_signature.SignatureValue = new byte[signatureLength / 8];
@@ -603,7 +603,7 @@ namespace System.Security.Cryptography.Xml
         //
 
         private bool _bCacheValid;
-        private byte[] _digestedSignedInfo;
+        private byte[]? _digestedSignedInfo;
 
         private static bool DefaultSignatureFormatValidator(SignedXml signedXml)
         {
@@ -770,7 +770,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        private byte[] GetC14NDigest(HashAlgorithm hash)
+        private byte[]? GetC14NDigest(HashAlgorithm hash)
         {
             bool isKeyedHashAlgorithm = hash is KeyedHashAlgorithm;
             if (isKeyedHashAlgorithm || !_bCacheValid || !SignedInfo.CacheValid)
@@ -916,7 +916,7 @@ namespace System.Security.Cryptography.Xml
                 }
 
                 SignedXmlDebugLog.LogVerifyReference(this, digestedReference);
-                byte[] calculatedHash;
+                byte[]? calculatedHash;
                 try
                 {
                     calculatedHash = digestedReference.CalculateHashValue(_containingDocument, m_signature.ReferencedItems);
@@ -944,7 +944,7 @@ namespace System.Security.Cryptography.Xml
         // This method makes no attempt to disguise the length of either of its inputs. It is assumed the attacker has
         // knowledge of the algorithms used, and thus the output length. Length is difficult to properly blind in modern CPUs.
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-        private static bool CryptographicEquals(byte[] a, byte[] b)
+        private static bool CryptographicEquals(byte[]? a, byte[]? b)
         {
             System.Diagnostics.Debug.Assert(a != null);
             System.Diagnostics.Debug.Assert(b != null);
@@ -1012,7 +1012,7 @@ namespace System.Security.Cryptography.Xml
             HashAlgorithm hashAlgorithm = signatureDescription.CreateDigest();
             if (hashAlgorithm == null)
                 throw new CryptographicException(SR.Cryptography_Xml_CreateHashAlgorithmFailed);
-            byte[] hashval = GetC14NDigest(hashAlgorithm);
+            byte[]? hashval = GetC14NDigest(hashAlgorithm);
 
             AsymmetricSignatureDeformatter asymmetricSignatureDeformatter = signatureDescription.CreateDeformatter(key);
             SignedXmlDebugLog.LogVerifySignedInfo(this,
@@ -1051,7 +1051,7 @@ namespace System.Security.Cryptography.Xml
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidSignatureLength);
 
             // Calculate the hash
-            byte[] hashValue = GetC14NDigest(macAlg);
+            byte[]? hashValue = GetC14NDigest(macAlg);
             SignedXmlDebugLog.LogVerifySignedInfo(this, macAlg, hashValue, m_signature.SignatureValue);
 
             return m_signature.SignatureValue.AsSpan().SequenceEqual(hashValue.AsSpan(0, m_signature.SignatureValue.Length));

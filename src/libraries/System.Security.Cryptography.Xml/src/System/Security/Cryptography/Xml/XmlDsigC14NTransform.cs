@@ -80,7 +80,7 @@ namespace System.Security.Cryptography.Xml
             return new MemoryStream(_cXml.GetBytes());
         }
 
-        public override byte[] GetDigestedOutput(HashAlgorithm hash)
+        public override byte[]? GetDigestedOutput(HashAlgorithm hash)
         {
             return _cXml.GetDigestedBytes(hash);
         }

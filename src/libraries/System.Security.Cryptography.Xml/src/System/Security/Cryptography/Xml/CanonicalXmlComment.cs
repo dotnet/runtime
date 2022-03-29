@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Xml
                 hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
             rgbData = utf8.GetBytes("<!--");
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
-            rgbData = utf8.GetBytes(Value);
+            rgbData = utf8.GetBytes(Value!);
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
             rgbData = utf8.GetBytes("-->");
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);

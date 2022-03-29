@@ -115,7 +115,7 @@ namespace System.Security.Cryptography.Xml
             _certificates.Add(x509);
         }
 
-        public ArrayList SubjectKeyIds
+        public ArrayList? SubjectKeyIds
         {
             get { return _subjectKeyIds; }
         }
@@ -286,12 +286,12 @@ namespace System.Security.Cryptography.Xml
             Clear();
 
             if (x509CRLNodes.Count != 0)
-                _CRL = Convert.FromBase64String(Utils.DiscardWhiteSpaces(x509CRLNodes.Item(0).InnerText));
+                _CRL = Convert.FromBase64String(Utils.DiscardWhiteSpaces(x509CRLNodes.Item(0)!.InnerText));
 
             foreach (XmlNode issuerSerialNode in x509IssuerSerialNodes)
             {
-                XmlNode x509IssuerNameNode = issuerSerialNode.SelectSingleNode("ds:X509IssuerName", nsm);
-                XmlNode x509SerialNumberNode = issuerSerialNode.SelectSingleNode("ds:X509SerialNumber", nsm);
+                XmlNode? x509IssuerNameNode = issuerSerialNode.SelectSingleNode("ds:X509IssuerName", nsm);
+                XmlNode? x509SerialNumberNode = issuerSerialNode.SelectSingleNode("ds:X509SerialNumber", nsm);
                 if (x509IssuerNameNode == null || x509SerialNumberNode == null)
                     throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "IssuerSerial");
                 InternalAddIssuerSerial(x509IssuerNameNode.InnerText.Trim(), x509SerialNumberNode.InnerText.Trim());

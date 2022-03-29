@@ -657,7 +657,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
             s.Position = 0;
 
-            byte[] digest;
+            byte[]? digest;
             using (HashAlgorithm hash = SHA1.Create())
             {
                 digest = hash.ComputeHash(s);
@@ -717,7 +717,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
             s.Position = 0;
 
-            byte[] digest;
+            byte[]? digest;
             using (HashAlgorithm hash = SHA1.Create())
             {
                 digest = hash.ComputeHash(s);

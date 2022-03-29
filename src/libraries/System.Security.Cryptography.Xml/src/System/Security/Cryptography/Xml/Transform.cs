@@ -149,7 +149,7 @@ namespace System.Security.Cryptography.Xml
 
         public abstract object GetOutput(Type type);
 
-        public virtual byte[] GetDigestedOutput(HashAlgorithm hash)
+        public virtual byte[]? GetDigestedOutput(HashAlgorithm hash)
         {
             return hash.ComputeHash((Stream)GetOutput(typeof(Stream)));
         }
@@ -193,7 +193,7 @@ namespace System.Security.Cryptography.Xml
                     return _propagatedNamespaces;
                 }
 
-                CanonicalXmlNodeList namespaces = null;
+                CanonicalXmlNodeList? namespaces = null;
                 if (reference != null)
                     namespaces = reference._namespaces;
                 else if (signedXml?._context != null)

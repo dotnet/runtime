@@ -7,7 +7,7 @@ namespace System.Security.Cryptography.Xml
 {
     public abstract class EncryptedReference
     {
-        private string _uri;
+        private string? _uri;
         private string? _referenceType;
         private TransformChain? _transformChain;
         internal XmlElement? _cachedXml;
@@ -16,18 +16,18 @@ namespace System.Security.Cryptography.Xml
         {
         }
 
-        protected EncryptedReference(string uri) : this(uri, new TransformChain())
+        protected EncryptedReference(string? uri) : this(uri, new TransformChain())
         {
         }
 
-        protected EncryptedReference(string uri, TransformChain transformChain)
+        protected EncryptedReference(string? uri, TransformChain transformChain)
         {
             TransformChain = transformChain;
             Uri = uri;
             _cachedXml = null;
         }
 
-        public string Uri
+        public string? Uri
         {
             get { return _uri; }
             set
@@ -108,7 +108,7 @@ namespace System.Security.Cryptography.Xml
 
             ReferenceType = value.LocalName;
 
-            string uri = Utils.GetAttribute(value, "URI", EncryptedXml.XmlEncNamespaceUrl);
+            string? uri = Utils.GetAttribute(value, "URI", EncryptedXml.XmlEncNamespaceUrl);
             if (uri == null)
                 throw new ArgumentNullException(SR.Cryptography_Xml_UriRequired);
             Uri = uri;

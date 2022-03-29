@@ -131,7 +131,7 @@ namespace System.Security.Cryptography.Xml
                 if (signatureList == null) return _inputNodeList;
 
                 CanonicalXmlNodeList resultNodeList = new CanonicalXmlNodeList();
-                foreach (XmlNode node in _inputNodeList)
+                foreach (XmlNode? node in _inputNodeList)
                 {
                     if (node == null) continue;
                     // keep namespaces
