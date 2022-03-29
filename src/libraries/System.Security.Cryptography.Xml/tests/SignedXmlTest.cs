@@ -1784,6 +1784,21 @@ namespace System.Security.Cryptography.Xml.Tests
                </Signature>
             </root>";
 
+        private SignedXml CreateSubjectForMultipleEnvelopedSignatures(string xml, string signatureParent)
+        {
+            var doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            var subject = new SignedXml(doc);
+
+            XmlNode parentNode = string.IsNullOrEmpty(signatureParent) ? doc.DocumentElement : doc.SelectSingleNode("//x[@ID='" + signatureParent + "']");
+            XmlElement signatureElement = parentNode["Signature"];
+
+            subject.LoadXml(signatureElement);
+
+            return subject;
+        }
+
         [Theory]
         [InlineData("a"/*, 1*/)]
         [InlineData("b"/*, 2*/)]
@@ -1792,15 +1807,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "SignedXml has been failing validation on nested signatures all the time with .NET Framework and .NET (Core) up to .NET 6. This test was added together with a fix for .NET 7.")]
         public void CheckSignatureMultipleEnvelopedSignatures(string signatureParent/*, int expectedPosition*/)
         {
-            var doc = new XmlDocument();
-            doc.LoadXml(multipleSignaturesXml);
-
-            var subject = new SignedXml(doc);
-
-            XmlNode parentNode = string.IsNullOrEmpty(signatureParent) ? doc.DocumentElement : doc.SelectSingleNode("//x[@ID='" + signatureParent + "']");
-            XmlElement signatureElement = parentNode["Signature"];
-
-            subject.LoadXml(signatureElement);
+            SignedXml subject = CreateSubjectForMultipleEnvelopedSignatures(multipleSignaturesXml, signatureParent);
 
             // When debugging this test, it might make sense to validate the actual signature
             // position rather than the external-visible behaviour. The test relies on private
@@ -1813,6 +1820,29 @@ namespace System.Security.Cryptography.Xml.Tests
             //Assert.Equal(expectedPosition, actualPosition);
 
             Assert.True(subject.CheckSignature(), "Multiple signatures, validating " + signatureParent);
+        }
+
+        [Theory]
+        [InlineData("a", "a", false)]
+        [InlineData("a", "b", true)]
+        [InlineData("b", "b", false)]
+        [InlineData("b", "c", false)]
+        [InlineData("y", "b", true)]
+        [InlineData("y", "c", false)]
+        [InlineData("y", "y", false)]
+        [InlineData("", "a", false)]
+        [InlineData("", "b", false)]
+        [InlineData("", "c", false)]
+        [InlineData("", "y", false)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "SignedXml has been failing validation on nested signatures all the time with .NET Framework and .NET (Core) up to .NET 6. This test was added together with a fix for .NET 7.")]
+        public void CheckSignatureDetectsTamperedDataOnMultipleEnvelopedSignatures(
+            string signatureParent, string tamperNode, bool expected)
+        {
+            var tampered = multipleSignaturesXml.Replace($"ID=\"{tamperNode}\"", $"ID=\"{tamperNode}\" Hackerz=\"true\"");
+
+            SignedXml subject = CreateSubjectForMultipleEnvelopedSignatures(tampered, signatureParent);
+
+            Assert.Equal(expected, subject.CheckSignature());
         }
     }
 }
