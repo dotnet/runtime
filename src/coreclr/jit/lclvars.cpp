@@ -3825,8 +3825,30 @@ var_types LclVarDsc::GetRegisterType() const
 // Return Value:
 //    TYP_UNDEF if the layout is not enregistrable, the register type otherwise.
 //
+// Notes:
+//    Special cases are small OSX ARM64 memory params (where args are not widened)
+//    and small local promoted fields (which use Tier0 frame space as stack homes).
+//
 var_types LclVarDsc::GetActualRegisterType() const
 {
+    if (varTypeIsSmall(TypeGet()))
+    {
+        if (compMacOsArm64Abi() && lvIsParam && !lvIsRegArg)
+        {
+            return GetRegisterType();
+        }
+
+        if (lvIsOSRLocal && lvIsStructField)
+        {
+#if defined(TARGET_X86)
+            // Revisit when we support OSR on x86
+            unreached();
+#else
+            return GetRegisterType();
+#endif
+        }
+    }
+
     return genActualType(GetRegisterType());
 }
 
