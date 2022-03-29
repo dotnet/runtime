@@ -158,7 +158,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        private string AsString(DateTimeOffset dateTime)
+        private static string AsString(DateTimeOffset dateTime)
         {
             if (dateTime.Offset == TimeSpan.Zero)
             {
@@ -756,7 +756,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        private void WriteAlternateLink(XmlWriter writer, SyndicationLink link, Uri baseUri)
+        private static void WriteAlternateLink(XmlWriter writer, SyndicationLink link, Uri baseUri)
         {
             writer.WriteStartElement(Rss20Constants.LinkTag, Rss20Constants.Rss20Namespace);
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(baseUri, link.BaseUri);
@@ -928,7 +928,7 @@ namespace System.ServiceModel.Syndication
 
             if (SerializeExtensionsAsAtom)
             {
-                _atomSerializer.WriteElement(writer, Atom10Constants.IdTag, Feed.Id);
+                Atom10FeedFormatter.WriteElement(writer, Atom10Constants.IdTag, Feed.Id);
 
                 // dont write out the 1st alternate link since that would have been written out anyway
                 bool isFirstAlternateLink = true;
@@ -939,7 +939,7 @@ namespace System.ServiceModel.Syndication
                         isFirstAlternateLink = false;
                         continue;
                     }
-                    _atomSerializer.WriteLink(writer, Feed.Links[i], Feed.BaseUri);
+                    Atom10FeedFormatter.WriteLink(writer, Feed.Links[i], Feed.BaseUri);
                 }
             }
 
@@ -1085,7 +1085,7 @@ namespace System.ServiceModel.Syndication
                 }
                 if (SerializeExtensionsAsAtom)
                 {
-                    _atomSerializer.WriteLink(writer, item.Links[i], item.BaseUri);
+                    Atom10FeedFormatter.WriteLink(writer, item.Links[i], item.BaseUri);
                 }
             }
 
@@ -1093,20 +1093,20 @@ namespace System.ServiceModel.Syndication
             {
                 if (SerializeExtensionsAsAtom)
                 {
-                    _atomSerializer.WriteItemLastUpdatedTimeTo(writer, item.LastUpdatedTime);
+                    Atom10FeedFormatter.WriteItemLastUpdatedTimeTo(writer, item.LastUpdatedTime);
                 }
             }
 
             if (SerializeExtensionsAsAtom)
             {
-                _atomSerializer.WriteContentTo(writer, Atom10Constants.RightsTag, item.Copyright);
+                Atom10FeedFormatter.WriteContentTo(writer, Atom10Constants.RightsTag, item.Copyright);
             }
 
             if (!serializedContentAsDescription)
             {
                 if (SerializeExtensionsAsAtom)
                 {
-                    _atomSerializer.WriteContentTo(writer, Atom10Constants.ContentTag, item.Content);
+                    Atom10FeedFormatter.WriteContentTo(writer, Atom10Constants.ContentTag, item.Content);
                 }
             }
 
@@ -1121,7 +1121,7 @@ namespace System.ServiceModel.Syndication
             WriteElementExtensions(writer, item, Version);
         }
 
-        private void WriteMediaEnclosure(XmlWriter writer, SyndicationLink link, Uri baseUri)
+        private static void WriteMediaEnclosure(XmlWriter writer, SyndicationLink link, Uri baseUri)
         {
             writer.WriteStartElement(Rss20Constants.EnclosureTag, Rss20Constants.Rss20Namespace);
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(baseUri, link.BaseUri);

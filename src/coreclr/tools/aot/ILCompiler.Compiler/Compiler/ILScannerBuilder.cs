@@ -69,6 +69,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ILScannerBuilder UseLogger(Logger logger)
+        {
+            _logger = logger;
+            return this;
+        }
+
         public IILScanner ToILScanner()
         {
             var nodeFactory = new ILScanNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler, _preinitializationManager);

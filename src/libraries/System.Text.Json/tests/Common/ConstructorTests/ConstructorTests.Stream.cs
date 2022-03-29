@@ -14,6 +14,11 @@ namespace System.Text.Json.Serialization.Tests
         [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", ~RuntimeConfiguration.Release)]
         public async Task ReadSimpleObjectAsync()
         {
+            if (StreamingSerializer is null)
+            {
+                return;
+            }
+
             async Task RunTestAsync<T>(byte[] testData)
             {
                 using (MemoryStream stream = new MemoryStream(testData))
@@ -23,11 +28,12 @@ namespace System.Text.Json.Serialization.Tests
                         DefaultBufferSize = 1
                     };
 
-                    var obj = await JsonSerializerWrapperForStream.DeserializeWrapper<T>(stream, options);
+                    var obj = await StreamingSerializer.DeserializeWrapper<T>(stream, options);
                     ((ITestClass)obj).Verify();
                 }
             }
 
+            // TODO: should be refactored to a theory
             // Array size is the count of the following tests.
             Task[] tasks = new Task[16];
 
@@ -61,6 +67,11 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadSimpleObjectWithTrailingTriviaAsync()
         {
+            if (StreamingSerializer is null)
+            {
+                return;
+            }
+
             async Task RunTestAsync<T>(string testData)
             {
                 byte[] data = Encoding.UTF8.GetBytes(testData + " /* Multi\r\nLine Comment */\t");
@@ -72,11 +83,12 @@ namespace System.Text.Json.Serialization.Tests
                         ReadCommentHandling = JsonCommentHandling.Skip,
                     };
 
-                    var obj = await JsonSerializerWrapperForStream.DeserializeWrapper<T>(stream, options);
+                    var obj = await StreamingSerializer.DeserializeWrapper<T>(stream, options);
                     ((ITestClass)obj).Verify();
                 }
             }
 
+            // TODO: should be refactored to a theory
             // Array size is the count of the following tests.
             Task[] tasks = new Task[14];
 
@@ -108,6 +120,11 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task Cannot_DeserializeAsync_ObjectWith_Ctor_With_65_Params()
         {
+            if (StreamingSerializer is null)
+            {
+                return;
+            }
+
             async Task RunTestAsync<T>()
             {
                 StringBuilder sb = new StringBuilder();
@@ -128,7 +145,7 @@ namespace System.Text.Json.Serialization.Tests
                         DefaultBufferSize = 1
                     };
 
-                    await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForStream.DeserializeWrapper<T>(stream, options));
+                    await Assert.ThrowsAsync<NotSupportedException>(async () => await StreamingSerializer.DeserializeWrapper<T>(stream, options));
                 }
 
                 using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes("{}")))
@@ -138,7 +155,7 @@ namespace System.Text.Json.Serialization.Tests
                         DefaultBufferSize = 1
                     };
 
-                    await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForStream.DeserializeWrapper<T>(stream, options));
+                    await Assert.ThrowsAsync<NotSupportedException>(async () => await StreamingSerializer.DeserializeWrapper<T>(stream, options));
                 }
             }
 
@@ -153,6 +170,11 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ExerciseStreamCodePaths()
         {
+            if (StreamingSerializer is null)
+            {
+                return;
+            }
+
             static string GetPropertyName(int index) =>
                 new string(new char[] { Convert.ToChar(index + 65), 'V', 'a', 'l', 'u', 'e' });
 
@@ -207,7 +229,7 @@ namespace System.Text.Json.Serialization.Tests
                         DefaultBufferSize = 1
                     };
 
-                    ClassWithStrings obj = await JsonSerializerWrapperForStream.DeserializeWrapper<ClassWithStrings>(stream, options);
+                    ClassWithStrings obj = await StreamingSerializer.DeserializeWrapper<ClassWithStrings>(stream, options);
                     obj.Verify(value);
                 }
             }

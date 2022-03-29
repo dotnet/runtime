@@ -21,26 +21,11 @@
     <PackageProjectUrl>https://github.com/dotnet/runtime/tree/main/src/libraries/System.Runtime.InteropServices/gen/LibraryImportGenerator</PackageProjectUrl>
     <Description>LibraryImportGenerator</Description>
     <PackageTags>LibraryImportGenerator, analyzers</PackageTags>
-    <!-- TODO: Enable when this package shipped. -->
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- Code included from System.Runtime.InteropServices -->
     <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs" Link="Production\StringMarshalling.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="Resources.Designer.cs"
-             DesignTime="True"
-             AutoGen="True"
-             DependentUpon="Resources.resx" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Update="Resources.resx"
-                      Generator="ResXFileCodeGenerator"
-                      LastGenOutput="Resources.Designer.cs" />
   </ItemGroup>
 
   <ItemGroup>

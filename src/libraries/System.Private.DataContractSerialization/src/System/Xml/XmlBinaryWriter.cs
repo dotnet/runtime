@@ -1186,17 +1186,12 @@ namespace System.Xml
             WriteEndElement();
         }
 
-        private void WriteEndArray()
-        {
-            EndArray();
-        }
-
         private unsafe void UnsafeWriteArray(string? prefix, string localName, string? namespaceUri,
                                XmlBinaryNodeType nodeType, int count, byte* array, byte* arrayMax)
         {
             WriteStartArray(prefix, localName, namespaceUri, count);
             _writer.UnsafeWriteArray(nodeType, count, array, arrayMax);
-            WriteEndArray();
+            // WriteEndArray();
         }
 
         private unsafe void UnsafeWriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri,
@@ -1204,10 +1199,10 @@ namespace System.Xml
         {
             WriteStartArray(prefix, localName, namespaceUri, count);
             _writer.UnsafeWriteArray(nodeType, count, array, arrayMax);
-            WriteEndArray();
+            // WriteEndArray();
         }
 
-        private void CheckArray(Array array!!, int offset, int count)
+        private static void CheckArray(Array array!!, int offset, int count)
         {
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
@@ -1424,7 +1419,7 @@ namespace System.Xml
                 {
                     WriteStartArray(prefix, localName, namespaceUri, count);
                     _writer.WriteDateTimeArray(array, offset, count);
-                    WriteEndArray();
+                    // WriteEndArray();
                 }
             }
         }
@@ -1437,7 +1432,7 @@ namespace System.Xml
                 {
                     WriteStartArray(prefix, localName, namespaceUri, count);
                     _writer.WriteDateTimeArray(array, offset, count);
-                    WriteEndArray();
+                    // WriteEndArray();
                 }
             }
         }
@@ -1451,7 +1446,7 @@ namespace System.Xml
                 {
                     WriteStartArray(prefix, localName, namespaceUri, count);
                     _writer.WriteGuidArray(array, offset, count);
-                    WriteEndArray();
+                    // WriteEndArray();
                 }
             }
         }
@@ -1464,7 +1459,7 @@ namespace System.Xml
                 {
                     WriteStartArray(prefix, localName, namespaceUri, count);
                     _writer.WriteGuidArray(array, offset, count);
-                    WriteEndArray();
+                    // WriteEndArray();
                 }
             }
         }
@@ -1478,7 +1473,7 @@ namespace System.Xml
                 {
                     WriteStartArray(prefix, localName, namespaceUri, count);
                     _writer.WriteTimeSpanArray(array, offset, count);
-                    WriteEndArray();
+                    // WriteEndArray();
                 }
             }
         }
@@ -1491,7 +1486,7 @@ namespace System.Xml
                 {
                     WriteStartArray(prefix, localName, namespaceUri, count);
                     _writer.WriteTimeSpanArray(array, offset, count);
-                    WriteEndArray();
+                    // WriteEndArray();
                 }
             }
         }

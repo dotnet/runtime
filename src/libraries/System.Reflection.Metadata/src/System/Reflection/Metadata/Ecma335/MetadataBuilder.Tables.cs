@@ -1862,7 +1862,7 @@ namespace System.Reflection.Metadata.Ecma335
             Debug.Assert(metadataSizes.MetadataTableStreamSize == endPosition - startPosition);
         }
 
-        private void SerializeTablesHeader(BlobBuilder writer, MetadataSizes metadataSizes)
+        private static void SerializeTablesHeader(BlobBuilder writer, MetadataSizes metadataSizes)
         {
             int startPosition = writer.Count;
 

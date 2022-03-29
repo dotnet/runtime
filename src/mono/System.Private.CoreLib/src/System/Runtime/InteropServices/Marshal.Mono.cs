@@ -162,6 +162,11 @@ namespace System.Runtime.InteropServices
                     throw new ApplicationException($"Custom marshaler '{type.FullName}' does not implement a static GetInstance method that takes a single string parameter and returns an ICustomMarshaler.");
                 }
 
+                if (getInstanceMethod.ContainsGenericParameters)
+                {
+                    throw new System.TypeLoadException($"Custom marshaler '{type.FullName}' contains unassigned generic type parameter(s).");
+                }
+
                 Exception? exc;
                 try
                 {

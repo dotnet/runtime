@@ -770,7 +770,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return true if an instance of the specified type might be an attribute or a namespace node.
         /// </summary>
-        private bool MaybeAttrNmsp(XmlQueryType typ)
+        private static bool MaybeAttrNmsp(XmlQueryType typ)
         {
             return (typ.NodeKinds & (XmlNodeKindFlags.Attribute | XmlNodeKindFlags.Namespace)) != XmlNodeKindFlags.None;
         }
@@ -778,7 +778,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return true if an instance of the specified type might be a non-empty content type (attr/nsmp don't count).
         /// </summary>
-        private bool MaybeContent(XmlQueryType typ)
+        private static bool MaybeContent(XmlQueryType typ)
         {
             return !typ.IsNode || (typ.NodeKinds & ~(XmlNodeKindFlags.Attribute | XmlNodeKindFlags.Namespace)) != XmlNodeKindFlags.None;
         }

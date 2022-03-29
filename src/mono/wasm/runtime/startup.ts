@@ -42,7 +42,7 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
         module.postRun = [module.postRun];
     }
 
-    // when user set configSrc or config, we are running our default startup sequence. 
+    // when user set configSrc or config, we are running our default startup sequence.
     if (module.configSrc || module.config) {
         // execution order == [0] ==
         // - default or user Module.instantiateWasm (will start downloading dotnet.wasm)
@@ -150,10 +150,16 @@ export function mono_wasm_setenv(name: string, value: string): void {
 }
 
 export function mono_wasm_set_runtime_options(options: string[]): void {
+    if (!Array.isArray(options))
+        throw new Error("Expected runtime_options to be an array of strings");
+
     const argv = Module._malloc(options.length * 4);
     let aindex = 0;
     for (let i = 0; i < options.length; ++i) {
-        Module.setValue(<any>argv + (aindex * 4), cwraps.mono_wasm_strdup(options[i]), "i32");
+        const option = options[i];
+        if (typeof (option) !== "string")
+            throw new Error("Expected runtime_options to be an array of strings");
+        Module.setValue(<any>argv + (aindex * 4), cwraps.mono_wasm_strdup(option), "i32");
         aindex += 1;
     }
     cwraps.mono_wasm_parse_runtime_options(options.length, argv);
@@ -237,8 +243,17 @@ function _handle_fetched_asset(asset: AssetEntry, url?: string) {
 }
 
 function _apply_configuration_from_args(config: MonoConfig) {
-    for (const k in (config.environment_variables || {}))
-        mono_wasm_setenv(k, config.environment_variables![k]);
+    const envars = (config.environment_variables || {});
+    if (typeof (envars) !== "object")
+        throw new Error("Expected config.environment_variables to be unset or a dictionary-style object");
+
+    for (const k in envars) {
+        const v = envars![k];
+        if (typeof (v) === "string")
+            mono_wasm_setenv(k, v);
+        else
+            throw new Error(`Expected environment variable '${k}' to be a string but it was ${typeof v}: '${v}'`);
+    }
 
     if (config.runtime_options)
         mono_wasm_set_runtime_options(config.runtime_options);

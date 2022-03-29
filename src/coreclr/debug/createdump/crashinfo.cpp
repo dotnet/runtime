@@ -67,7 +67,7 @@ CrashInfo::~CrashInfo()
         kern_return_t result = ::mach_port_deallocate(mach_task_self(), m_task);
         if (result != KERN_SUCCESS)
         {
-            fprintf(stderr, "~CrashInfo: mach_port_deallocate FAILED %x %s\n", result, mach_error_string(result));
+            printf_error("~CrashInfo: mach_port_deallocate FAILED %x %s\n", result, mach_error_string(result));
         }
     }
 #endif
@@ -241,25 +241,25 @@ CrashInfo::InitializeDAC()
         m_hdac = LoadLibraryA(dacPath.c_str());
         if (m_hdac == nullptr)
         {
-            fprintf(stderr, "LoadLibraryA(%s) FAILED %d\n", dacPath.c_str(), GetLastError());
+            printf_error("LoadLibraryA(%s) FAILED %d\n", dacPath.c_str(), GetLastError());
             goto exit;
         }
         pfnCLRDataCreateInstance = (PFN_CLRDataCreateInstance)GetProcAddress(m_hdac, "CLRDataCreateInstance");
         if (pfnCLRDataCreateInstance == nullptr)
         {
-            fprintf(stderr, "GetProcAddress(CLRDataCreateInstance) FAILED %d\n", GetLastError());
+            printf_error("GetProcAddress(CLRDataCreateInstance) FAILED %d\n", GetLastError());
             goto exit;
         }
         hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), dataTarget, (void**)&m_pClrDataEnumRegions);
         if (FAILED(hr))
         {
-            fprintf(stderr, "CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %08x\n", hr);
+            printf_error("CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %08x\n", hr);
             goto exit;
         }
         hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), dataTarget, (void**)&m_pClrDataProcess);
         if (FAILED(hr))
         {
-            fprintf(stderr, "CLRDataCreateInstance(IXCLRDataProcess) FAILED %08x\n", hr);
+            printf_error("CLRDataCreateInstance(IXCLRDataProcess) FAILED %08x\n", hr);
             goto exit;
         }
     }
@@ -302,7 +302,7 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
         HRESULT hr = m_pClrDataEnumRegions->EnumMemoryRegions(this, minidumpType, CLRDATA_ENUM_MEM_DEFAULT);
         if (FAILED(hr))
         {
-            fprintf(stderr, "EnumMemoryRegions FAILED %08x\n", hr);
+            printf_error("EnumMemoryRegions FAILED %08x\n", hr);
             return false;
         }
         TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration FINISHED\n");
@@ -324,7 +324,7 @@ CrashInfo::EnumerateManagedModules()
         TRACE("EnumerateManagedModules: Module enumeration STARTED\n");
 
         if (FAILED(hr = m_pClrDataProcess->StartEnumModules(&enumModules))) {
-            fprintf(stderr, "StartEnumModules FAILED %08x\n", hr);
+            printf_error("StartEnumModules FAILED %08x\n", hr);
             return false;
         }
 
@@ -766,32 +766,6 @@ CrashInfo::SearchMemoryRegions(const std::set<MemoryRegion>& regions, const Memo
         }
     }
     return nullptr;
-}
-
-void
-CrashInfo::Trace(const char* format, ...)
-{
-    if (g_diagnostics)
-    {
-        va_list args;
-        va_start(args, format);
-        vfprintf(stdout, format, args);
-        fflush(stdout);
-        va_end(args);
-    }
-}
-
-void
-CrashInfo::TraceVerbose(const char* format, ...)
-{
-    if (g_diagnosticsVerbose)
-    {
-        va_list args;
-        va_start(args, format);
-        vfprintf(stdout, format, args);
-        fflush(stdout);
-        va_end(args);
-    }
 }
 
 //

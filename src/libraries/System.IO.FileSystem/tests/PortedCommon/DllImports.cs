@@ -5,17 +5,15 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-internal static class DllImports
+internal static partial class DllImports
 {
-    [DllImport("kernel32.dll", SetLastError = true)]
-    internal static extern int GetLogicalDrives();
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    internal static partial int GetLogicalDrives();
 
-    [DllImport("kernel32.dll", EntryPoint = "GetDiskFreeSpaceExW", CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
-    internal static extern bool GetDiskFreeSpaceEx(string drive, out long freeBytesForUser, out long totalBytes, out long freeBytes);
+    [LibraryImport("kernel32.dll", EntryPoint = "GetDiskFreeSpaceExW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    [return:MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool GetDiskFreeSpaceEx(string drive, out long freeBytesForUser, out long totalBytes, out long freeBytes);
 
-    [DllImport("kernel32.dll", EntryPoint = "GetVolumeInformationW", CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
-    internal static extern bool GetVolumeInformation(string drive, [Out]StringBuilder volumeName, int volumeNameBufLen, out int volSerialNumber, out int maxFileNameLen, out int fileSystemFlags, [Out]StringBuilder fileSystemName, int fileSystemNameBufLen);
-
-    [DllImport("kernel32.dll", EntryPoint = "GetDriveTypeW", CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
-    internal static extern int GetDriveType(string drive);
+    [LibraryImport("kernel32.dll", EntryPoint = "GetDriveTypeW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    internal static partial int GetDriveType(string drive);
 }
