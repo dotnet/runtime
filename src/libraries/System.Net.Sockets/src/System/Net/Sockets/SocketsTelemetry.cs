@@ -20,9 +20,9 @@ namespace System.Net.Sockets
         private PollingCounter? _datagramsReceivedCounter;
         private PollingCounter? _datagramsSentCounter;
 
-        private static long _currentOutgoingConnectAttempts;
-        private static long _outgoingConnectionsEstablished;
-        private static long _incomingConnectionsEstablished;
+        private long _currentOutgoingConnectAttempts;
+        private long _outgoingConnectionsEstablished;
+        private long _incomingConnectionsEstablished;
         private long _bytesReceived;
         private long _bytesSent;
         private long _datagramsReceived;
@@ -77,18 +77,18 @@ namespace System.Net.Sockets
         }
 
         [NonEvent]
-        public static void ConnectStart(Internals.SocketAddress address)
+        public void ConnectStart(Internals.SocketAddress address)
         {
             Interlocked.Increment(ref _currentOutgoingConnectAttempts);
 
-            if (Log.IsEnabled(EventLevel.Informational, EventKeywords.All))
+            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
             {
-                Log.ConnectStart(address.ToString());
+                ConnectStart(address.ToString());
             }
         }
 
         [NonEvent]
-        public static void AfterConnect(SocketError error, string? exceptionMessage = null)
+        public void AfterConnect(SocketError error, string? exceptionMessage = null)
         {
             long newCount = Interlocked.Decrement(ref _currentOutgoingConnectAttempts);
             Debug.Assert(newCount >= 0);
@@ -100,10 +100,10 @@ namespace System.Net.Sockets
             }
             else
             {
-                Log.ConnectFailed(error, exceptionMessage);
+                ConnectFailed(error, exceptionMessage);
             }
 
-            Log.ConnectStop();
+            ConnectStop();
         }
 
         [NonEvent]
@@ -125,7 +125,7 @@ namespace System.Net.Sockets
         }
 
         [NonEvent]
-        public static void AfterAccept(SocketError error, string? exceptionMessage = null)
+        public void AfterAccept(SocketError error, string? exceptionMessage = null)
         {
             if (error == SocketError.Success)
             {
@@ -134,10 +134,10 @@ namespace System.Net.Sockets
             }
             else
             {
-                Log.AcceptFailed(error, exceptionMessage);
+                AcceptFailed(error, exceptionMessage);
             }
 
-            Log.AcceptStop();
+            AcceptStop();
         }
 
         [NonEvent]

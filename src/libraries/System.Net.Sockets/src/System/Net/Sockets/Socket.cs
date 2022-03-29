@@ -1037,7 +1037,7 @@ namespace System.Net.Sockets
             }
             catch (Exception ex)
             {
-                SocketsTelemetry.AfterAccept(SocketError.Interrupted, ex.Message);
+                SocketsTelemetry.Log.AfterAccept(SocketError.Interrupted, ex.Message);
                 throw;
             }
 
@@ -1047,12 +1047,12 @@ namespace System.Net.Sockets
                 Debug.Assert(acceptedSocketHandle.IsInvalid);
                 UpdateAcceptSocketErrorForDisposed(ref errorCode);
 
-                SocketsTelemetry.AfterAccept(errorCode);
+                SocketsTelemetry.Log.AfterAccept(errorCode);
 
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
-            SocketsTelemetry.AfterAccept(SocketError.Success);
+            SocketsTelemetry.Log.AfterAccept(SocketError.Success);
 
             Debug.Assert(!acceptedSocketHandle.IsInvalid);
 
@@ -2618,7 +2618,7 @@ namespace System.Net.Sockets
             }
             catch (Exception ex)
             {
-                SocketsTelemetry.AfterAccept(SocketError.Interrupted, ex.Message);
+                SocketsTelemetry.Log.AfterAccept(SocketError.Interrupted, ex.Message);
 
                 // Clear in-use flag on event args object.
                 e.Complete();
@@ -2696,7 +2696,7 @@ namespace System.Net.Sockets
 
                 WildcardBindForConnectIfNecessary(endPointSnapshot.AddressFamily);
 
-                SocketsTelemetry.ConnectStart(e._socketAddress!);
+                SocketsTelemetry.Log.ConnectStart(e._socketAddress!);
 
                 // Prepare for the native call.
                 try
@@ -2706,7 +2706,7 @@ namespace System.Net.Sockets
                 }
                 catch (Exception ex)
                 {
-                    SocketsTelemetry.AfterConnect(SocketError.NotSocket, ex.Message);
+                    SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, ex.Message);
                     throw;
                 }
 
@@ -2722,7 +2722,7 @@ namespace System.Net.Sockets
                 }
                 catch (Exception ex)
                 {
-                    SocketsTelemetry.AfterConnect(SocketError.NotSocket, ex.Message);
+                    SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, ex.Message);
 
                     _localEndPoint = null;
 
@@ -3080,7 +3080,7 @@ namespace System.Net.Sockets
 
         private void DoConnect(EndPoint endPointSnapshot, Internals.SocketAddress socketAddress)
         {
-            SocketsTelemetry.ConnectStart(socketAddress);
+            SocketsTelemetry.Log.ConnectStart(socketAddress);
             SocketError errorCode;
             try
             {
@@ -3088,7 +3088,7 @@ namespace System.Net.Sockets
             }
             catch (Exception ex)
             {
-                SocketsTelemetry.AfterConnect(SocketError.NotSocket, ex.Message);
+                SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, ex.Message);
                 throw;
             }
 
@@ -3101,12 +3101,12 @@ namespace System.Net.Sockets
                 UpdateStatusAfterSocketError(socketException);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, socketException);
 
-                SocketsTelemetry.AfterConnect(errorCode);
+                SocketsTelemetry.Log.AfterConnect(errorCode);
 
                 throw socketException;
             }
 
-            SocketsTelemetry.AfterConnect(SocketError.Success);
+            SocketsTelemetry.Log.AfterConnect(SocketError.Success);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"connection to:{endPointSnapshot}");
 

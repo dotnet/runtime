@@ -112,6 +112,7 @@ namespace System.Net.Sockets.Tests
 
                     await WaitForEventAsync(events, "AcceptStop");
                     await WaitForEventAsync(events, "ConnectStop");
+                    await connectTask;
 
                     await WaitForEventCountersAsync(events);
                 });
