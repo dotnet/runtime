@@ -116,6 +116,9 @@ jobs:
       - src/mono/nuget/Microsoft.NET.Runtime.MonoAOTCompiler.Task/*
       - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
       - src/mono/mono/*
+      - eng/testing/scenarios/BuildWasmAppsJobsList.txt
+      - eng/Version.Details.xml
+      - src/mono/wasm/emscripten-version.txt
     - subset: wasmdebuggertests
       include:
       - src/mono/wasm/debugger/*

@@ -2669,7 +2669,7 @@ void ILStubLinker::TransformArgForJIT(LocalDesc *pLoc)
             // JIT will handle structures
             if (pLoc->InternalToken.IsValueType())
             {
-                _ASSERTE(pLoc->InternalToken.IsBlittable());
+                _ASSERTE(pLoc->InternalToken.IsNativeValueType() || !pLoc->InternalToken.GetMethodTable()->ContainsPointers());
                 break;
             }
             FALLTHROUGH;

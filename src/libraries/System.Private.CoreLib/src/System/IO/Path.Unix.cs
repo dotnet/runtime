@@ -13,14 +13,19 @@ namespace System.IO
 
         public static char[] GetInvalidPathChars() => new char[] { '\0' };
 
+        // Checks if the given path is available for use.
+        private static bool ExistsCore(string fullPath, out bool isDirectory)
+        {
+            bool result = Interop.Sys.LStat(fullPath, out Interop.Sys.FileStatus fileInfo) == Interop.Errors.ERROR_SUCCESS;
+            isDirectory = result && (fileInfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
+
+            return result;
+        }
+
         // Expands the given path to a fully qualified path.
         public static string GetFullPath(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             if (path.Contains('\0'))
                 throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));

@@ -82,13 +82,13 @@ namespace BasicEventSourceTests
             Assert.NotNull(EventSource.GenerateManifest(typeof(Sdt.EventWithReturnEventSource), string.Empty, EventManifestOptions.AllowEventSourceOverride));
 
             e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.NegativeEventIdEventSource), string.Empty));
-            AsserExceptionStringsEqual(() => GetResourceString("EventSource_NeedPositiveId", "WriteInteger"), e);
+            AsserExceptionStringsEqual(() => GetResourceString("EventSource_NeedPositiveId"), e);
 
             e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.NegativeEventIdEventSource), string.Empty, strictOptions));
-            AsserExceptionStringsEqual(() => GetResourceString("EventSource_NeedPositiveId", "WriteInteger"), e);
+            AsserExceptionStringsEqual(() => GetResourceString("EventSource_NeedPositiveId"), e);
 
             e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.NegativeEventIdEventSource), string.Empty, EventManifestOptions.AllowEventSourceOverride));
-            AsserExceptionStringsEqual(() => GetResourceString("EventSource_NeedPositiveId", "WriteInteger"), e);
+            AsserExceptionStringsEqual(() => GetResourceString("EventSource_NeedPositiveId"), e);
 
             e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.OutOfRangeKwdEventSource), string.Empty, strictOptions));
             AsserExceptionStringsEqual(() => string.Join(Environment.NewLine,
@@ -124,7 +124,7 @@ namespace BasicEventSourceTests
 
             e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.EnumKindMismatchEventSource), string.Empty, strictOptions));
             AsserExceptionStringsEqual(() => string.Join(Environment.NewLine,
-                                     GetResourceString("EventSource_EnumKindMismatch", "Op1", "EventKeywords", "Opcodes"),
+                                     GetResourceString("EventSource_EnumKindMismatch", "EventKeywords", "Opcodes"),
                                      GetResourceString("EventSource_UndefinedKeyword", "0x1", "WriteInteger")),
                           e);
 
@@ -144,14 +144,14 @@ namespace BasicEventSourceTests
 
             e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.EventIdReusedEventSource), string.Empty, strictOptions));
             AsserExceptionStringsEqual(() => string.Join(Environment.NewLine,
-                                     GetResourceString("EventSource_EventIdReused", "WriteInteger2", 1, "WriteInteger1"),
+                                     GetResourceString("EventSource_EventIdReused", "WriteInteger2", 1),
                                      GetResourceString("EventSource_TaskOpcodePairReused", "WriteInteger2", 1, "WriteInteger1", 1)),
                           e);
 
 
             e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.EventIdReusedEventSource), string.Empty, strictOptions));
             AsserExceptionStringsEqual(() => string.Join(Environment.NewLine,
-                                     GetResourceString("EventSource_EventIdReused", "WriteInteger2", 1, "WriteInteger1"),
+                                     GetResourceString("EventSource_EventIdReused", "WriteInteger2", 1),
                                      GetResourceString("EventSource_TaskOpcodePairReused", "WriteInteger2", 1, "WriteInteger1", 1)),
                           e);
 

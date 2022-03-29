@@ -28,6 +28,7 @@ namespace System
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") == "aot";
         public static bool IsNotMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") != "aot";
+        public static bool IsNativeAot => IsNotMonoRuntime && !IsReflectionEmitSupported;
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
@@ -50,27 +51,35 @@ namespace System
         public static bool IsNotArm64Process => !IsArm64Process;
         public static bool IsArmOrArm64Process => IsArmProcess || IsArm64Process;
         public static bool IsNotArmNorArm64Process => !IsArmOrArm64Process;
+        public static bool IsArmv6Process => (int)RuntimeInformation.ProcessArchitecture == 7; // Architecture.Armv6
         public static bool IsX86Process => RuntimeInformation.ProcessArchitecture == Architecture.X86;
         public static bool IsNotX86Process => !IsX86Process;
-        public static bool IsArgIteratorSupported => IsMonoRuntime || (IsWindows && IsNotArmProcess);
+        public static bool IsArgIteratorSupported => IsMonoRuntime || (IsWindows && IsNotArmProcess && !IsNativeAot);
         public static bool IsArgIteratorNotSupported => !IsArgIteratorSupported;
         public static bool Is32BitProcess => IntPtr.Size == 4;
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
 
         public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
-        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
 
+#if NETCOREAPP
+        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS && !RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
+                                                                     && !RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
+#else
+        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
+#endif
+        
         public static bool IsThreadingSupported => !IsBrowser;
-        public static bool IsBinaryFormatterSupported => IsNotMobile;
+        public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
         public static bool IsSymLinkSupported => !IsiOS && !IstvOS;
 
         public static bool IsSpeedOptimized => !IsSizeOptimized;
         public static bool IsSizeOptimized => IsBrowser || IsAndroid || IsAppleMobile;
 
-        public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
-        public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || GetIsBrowserDomSupported();
+        public static bool IsBrowserDomSupported => IsEnvironmentVariableTrue("IsBrowserDomSupported");
+        public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || IsBrowserDomSupported;
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
+        public static bool IsWebSocketSupported => IsEnvironmentVariableTrue("IsWebSocketSupported");
         public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
         public static bool LocalEchoServerIsAvailable => IsBrowser;
 
@@ -85,41 +94,15 @@ namespace System
             return !(bool)typeof(LambdaExpression).GetMethod("get_CanCompileToIL").Invoke(null, Array.Empty<object>());
         }
 
-        // Please make sure that you have the libgdiplus dependency installed.
-        // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
-        public static bool IsDrawingSupported
-        {
-            get
-            {
-#if NETCOREAPP
-                if (!IsWindows)
-                {
-                    if (IsMobile)
-                    {
-                        return false;
-                    }
-                    else if (IsOSX)
-                    {
-                        return NativeLibrary.TryLoad("libgdiplus.dylib", out _);
-                    }
-                    else
-                    {
-                       return NativeLibrary.TryLoad("libgdiplus.so", out _) || NativeLibrary.TryLoad("libgdiplus.so.0", out _);
-                    }
-                }
-#endif
-
-                return IsNotWindowsNanoServer && IsNotWindowsServerCore;
-
-            }
-        }
+        // Drawing is not supported on non windows platforms in .NET 7.0+.
+        public static bool IsDrawingSupported => IsWindows && IsNotWindowsNanoServer && IsNotWindowsServerCore;
 
         public static bool IsAsyncFileIOSupported => !IsBrowser && !(IsWindows && IsMonoRuntime); // https://github.com/dotnet/runtime/issues/34582
 
-        public static bool IsLineNumbersSupported => true;
+        public static bool IsLineNumbersSupported => !IsNativeAot;
 
         public static bool IsInContainer => GetIsInContainer();
-        public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime; // matches definitions in clr.featuredefines.props
+        public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime && !IsNativeAot; // matches definitions in clr.featuredefines.props
         public static bool SupportsSsl3 => GetSsl3Support();
         public static bool SupportsSsl2 => IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater;
 
@@ -130,7 +113,9 @@ namespace System
         public static bool IsReflectionEmitSupported => true;
 #endif
 
-        public static bool IsInvokingStaticConstructorsSupported => true;
+        public static bool IsInvokingStaticConstructorsSupported => !IsNativeAot;
+
+        public static bool IsMetadataUpdateSupported => !IsNativeAot;
 
         // System.Security.Cryptography.Xml.XmlDsigXsltTransform.GetOutput() relies on XslCompiledTransform which relies
         // heavily on Reflection.Emit
@@ -139,6 +124,10 @@ namespace System
         public static bool IsPreciseGcSupported => !IsMonoRuntime;
 
         public static bool IsNotIntMaxValueArrayIndexSupported => s_largeArrayIsNotSupported.Value;
+
+        public static bool IsAssemblyLoadingSupported => !IsNativeAot;
+        public static bool IsMethodBodySupported => !IsNativeAot;
+        public static bool IsDebuggerTypeProxyAttributeSupported => !IsNativeAot;
 
         private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
         public static bool IsNonZeroLowerBoundArraySupported
@@ -162,6 +151,28 @@ namespace System
             }
         }
 
+        private static volatile Tuple<bool> s_lazyMetadataTokensSupported;
+        public static bool IsMetadataTokenSupported
+        {
+            get
+            {
+                if (s_lazyMetadataTokensSupported == null)
+                {
+                    bool metadataTokensSupported = false;
+                    try
+                    {
+                        _ = typeof(PlatformDetection).MetadataToken;
+                        metadataTokensSupported = true;
+                    }
+                    catch (InvalidOperationException)
+                    {
+                    }
+                    s_lazyMetadataTokensSupported = Tuple.Create<bool>(metadataTokensSupported);
+                }
+                return s_lazyMetadataTokensSupported.Item1;
+            }
+        }
+
         public static bool IsDomainJoinedMachine => !Environment.MachineName.Equals(Environment.UserDomainName, StringComparison.OrdinalIgnoreCase);
         public static bool IsNotDomainJoinedMachine => !IsDomainJoinedMachine;
 
@@ -172,6 +183,7 @@ namespace System
 
         // Changed to `true` when linking
         public static bool IsBuiltWithAggressiveTrimming => false;
+        public static bool IsNotBuiltWithAggressiveTrimming => !IsBuiltWithAggressiveTrimming;
 
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
@@ -187,7 +199,12 @@ namespace System
 
             if (IsOpenSslSupported)
             {
-                return OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2);
+                if (OpenSslVersion.Major >= 3)
+                {
+                    return true;
+                }
+                
+                return OpenSslVersion.Major == 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2);
             }
 
             if (IsAndroid)
@@ -325,34 +342,59 @@ namespace System
             return (IsLinux && File.Exists("/.dockerenv"));
         }
 
-        private static bool GetSsl3Support()
+        private static bool GetProtocolSupportFromWindowsRegistry(SslProtocols protocol, bool defaultProtocolSupport)
         {
-            if (IsWindows)
+            string registryProtocolName = protocol switch 
             {
-                string clientKey = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\SSL 3.0\Client";
-                string serverKey = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\SSL 3.0\Server";
+#pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
+                SslProtocols.Ssl3 => "SSL 3.0",
+#pragma warning restore CS0618
+                SslProtocols.Tls => "TLS 1.0",
+                SslProtocols.Tls11 => "TLS 1.1",
+                SslProtocols.Tls12 => "TLS 1.2",
+#if !NETFRAMEWORK
+                SslProtocols.Tls13 => "TLS 1.3",
+#endif
+                _ => throw new Exception($"Registry key not defined for {protocol}.")
+            };
 
-                object client, server;
-                try
-                {
-                    client = Registry.GetValue(clientKey, "Enabled", null);
-                    server = Registry.GetValue(serverKey, "Enabled", null);
-                }
-                catch (SecurityException)
-                {
-                    // Insufficient permission, assume that we don't have SSL3 (since we aren't exactly sure)
-                    return false;
-                }
+            string clientKey = @$"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\{registryProtocolName}\Client";
+            string serverKey = @$"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\{registryProtocolName}\Server";
 
+            object client, server;
+            try
+            {
+                client = Registry.GetValue(clientKey, "Enabled", defaultProtocolSupport ? 1 : 0);
+                server = Registry.GetValue(serverKey, "Enabled", defaultProtocolSupport ? 1 : 0);
                 if (client is int c && server is int s)
                 {
                     return c == 1 && s == 1;
                 }
+            }
+            catch (SecurityException)
+            {
+                // Insufficient permission, assume that we don't have protocol support (since we aren't exactly sure)
+                return false;
+            }
+            catch { }
+
+            return defaultProtocolSupport;
+        }
+
+        private static bool GetSsl3Support()
+        {
+            if (IsWindows)
+            {
 
                 // Missing key. If we're pre-20H1 then assume SSL3 is enabled.
                 // Otherwise, disabled. (See comments on https://github.com/dotnet/runtime/issues/1166)
                 // Alternatively the returned values must have been some other types.
-                return !IsWindows10Version2004OrGreater;
+                bool ssl3DefaultSupport = !IsWindows10Version2004OrGreater;
+
+#pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Ssl3, ssl3DefaultSupport);
+#pragma warning restore CS0618
+                
             }
 
             return (IsOSX || (IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
@@ -376,9 +418,13 @@ namespace System
         private static bool GetTls10Support()
         {
             // on Windows, macOS, and Android TLS1.0/1.1 are supported.
-            if (IsWindows || IsOSXLike || IsAndroid)
+            if (IsOSXLike || IsAndroid)
             {
                 return true;
+            } 
+            if (IsWindows)
+            {
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls, true);
             }
 
             return OpenSslGetTlsSupport(SslProtocols.Tls);
@@ -386,11 +432,12 @@ namespace System
 
         private static bool GetTls11Support()
         {
-            // on Windows, macOS, and Android TLS1.0/1.1 are supported.
-            // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
+            // on Windows, macOS, and Android TLS1.0/1.1 are supported.            
             if (IsWindows)
             {
-                return !IsWindows7;
+                // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
+                bool defaultProtocolSupport = !IsWindows7;
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport);
             }
             else if (IsOSXLike || IsAndroid)
             {
@@ -403,7 +450,8 @@ namespace System
         private static bool GetTls12Support()
         {
             // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
-            return !IsWindows7;
+            bool defaultProtocolSupport =  !IsWindows7;
+            return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport);
         }
 
         private static bool GetTls13Support()
@@ -414,25 +462,17 @@ namespace System
                 {
                     return false;
                 }
-
-                string clientKey = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client";
-                string serverKey = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server";
-
-                object client, server;
-                try
-                {
-                    client = Registry.GetValue(clientKey, "Enabled", null);
-                    server = Registry.GetValue(serverKey, "Enabled", null);
-                    if (client is int c && server is int s)
-                    {
-                        return c == 1 && s == 1;
-                    }
-                }
-                catch { }
                 // assume no if positive entry is missing on older Windows
                 // Latest insider builds have TLS 1.3 enabled by default.
                 // The build number is approximation.
-                return IsWindows10Version2004Build19573OrGreater;
+                bool defaultProtocolSupport = IsWindows10Version2004Build19573OrGreater;
+
+#if NETFRAMEWORK
+                return false;
+#else
+                return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls13, defaultProtocolSupport);
+#endif
+
             }
             else if (IsOSX || IsMacCatalyst || IsiOS || IstvOS)
             {
@@ -465,12 +505,12 @@ namespace System
 #endif
         }
 
-        private static bool GetIsBrowserDomSupported()
+        private static bool IsEnvironmentVariableTrue(string variableName)
         {
             if (!IsBrowser)
                 return false;
 
-            var val = Environment.GetEnvironmentVariable("IsBrowserDomSupported");
+            var val = Environment.GetEnvironmentVariable(variableName);
             return (val != null && val == "true");
         }
     }

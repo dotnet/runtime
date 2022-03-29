@@ -32,6 +32,9 @@ function(create_standalone_jit)
   elseif((TARGETDETAILS_ARCH STREQUAL "arm") OR (TARGETDETAILS_ARCH STREQUAL "armel"))
     set(JIT_ARCH_SOURCES ${JIT_ARM_SOURCES})
     set(JIT_ARCH_HEADERS ${JIT_ARM_HEADERS})
+  elseif((TARGETDETAILS_ARCH STREQUAL "armv6") OR (TARGETDETAILS_ARCH STREQUAL "armv6l"))
+    set(JIT_ARCH_SOURCES ${JIT_ARMV6_SOURCES})
+    set(JIT_ARCH_HEADERS ${JIT_ARMV6_HEADERS})
   elseif(TARGETDETAILS_ARCH STREQUAL "x86")
     set(JIT_ARCH_SOURCES ${JIT_I386_SOURCES})
     set(JIT_ARCH_HEADERS ${JIT_I386_HEADERS})
@@ -101,6 +104,7 @@ set( JIT_SOURCES
   fgprofile.cpp
   fgstmt.cpp
   flowgraph.cpp
+  forwardsub.cpp
   gcdecode.cpp
   gcencode.cpp
   gcinfo.cpp
@@ -218,6 +222,10 @@ set( JIT_ARM64_SOURCES
   unwindarm64.cpp
   hwintrinsicarm64.cpp
   hwintrinsiccodegenarm64.cpp
+)
+
+set( JIT_ARMV6_SOURCES
+  # Not supported as JIT target
 )
 
 set( JIT_S390X_SOURCES
@@ -362,6 +370,10 @@ set( JIT_ARM_HEADERS
   registerarm.h
 )
 
+set ( JIT_ARMV6_HEADERS
+  # Not supported as JIT target
+)
+
 set ( JIT_S390X_HEADERS
   # Not supported as JIT target
 )
@@ -380,6 +392,8 @@ convert_to_absolute_path(JIT_I386_SOURCES ${JIT_I386_SOURCES})
 convert_to_absolute_path(JIT_I386_HEADERS ${JIT_I386_HEADERS})
 convert_to_absolute_path(JIT_ARM64_SOURCES ${JIT_ARM64_SOURCES})
 convert_to_absolute_path(JIT_ARM64_HEADERS ${JIT_ARM64_HEADERS})
+convert_to_absolute_path(JIT_ARMV6_SOURCES ${JIT_ARMV6_SOURCES})
+convert_to_absolute_path(JIT_ARMV6_HEADERS ${JIT_ARMV6_HEADERS})
 convert_to_absolute_path(JIT_S390X_SOURCES ${JIT_S390X_SOURCES})
 convert_to_absolute_path(JIT_S390X_HEADERS ${JIT_S390X_HEADERS})
 
@@ -389,6 +403,9 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
 elseif(CLR_CMAKE_TARGET_ARCH_ARM)
   set(JIT_ARCH_SOURCES ${JIT_ARM_SOURCES})
   set(JIT_ARCH_HEADERS ${JIT_ARM_HEADERS})
+elseif(CLR_CMAKE_TARGET_ARCH_ARMV6)
+  set(JIT_ARCH_SOURCES ${JIT_ARMV6_SOURCES})
+  set(JIT_ARCH_HEADERS ${JIT_ARMV6_HEADERS})
 elseif(CLR_CMAKE_TARGET_ARCH_I386)
   set(JIT_ARCH_SOURCES ${JIT_I386_SOURCES})
   set(JIT_ARCH_HEADERS ${JIT_I386_HEADERS})
@@ -550,13 +567,13 @@ if (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
 endif (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
 
 if (CLR_CMAKE_TARGET_UNIX)
-    if (NOT ARCH_TARGET_NAME STREQUAL s390x)
+    if (NOT ARCH_TARGET_NAME STREQUAL s390x AND NOT ARCH_TARGET_NAME STREQUAL armv6)
       if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
         install_clr(TARGETS clrjit_universal_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} DESTINATIONS . COMPONENT jit)
       else()
         install_clr(TARGETS clrjit_unix_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} DESTINATIONS . COMPONENT jit)
       endif()
-    endif(NOT ARCH_TARGET_NAME STREQUAL s390x)
+    endif(NOT ARCH_TARGET_NAME STREQUAL s390x AND NOT ARCH_TARGET_NAME STREQUAL armv6)
 endif()
 
 if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_PGO_INSTRUMENT)

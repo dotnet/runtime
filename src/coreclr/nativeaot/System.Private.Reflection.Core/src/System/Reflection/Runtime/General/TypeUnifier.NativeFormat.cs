@@ -34,6 +34,8 @@ using Internal.Reflection.Core.Execution;
 //   - The TypeUnifier extension class provides a more friendly interface to the rest of the codebase.
 //
 
+#pragma warning disable CA1067 // override Equals because it implements IEquatable<T>
+
 namespace System.Reflection.Runtime.General
 {
     internal static partial class TypeUnifier

@@ -48,7 +48,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 InFlightCounter++;
                 if (InFlightCounter == 1)
                 {
-                    Debug.Assert(InFlight == null);
+                    Debug.Assert(InFlight == null, "InFlight == null");
                     InFlight = GCHandle.Alloc(this, GCHandleType.Normal);
                 }
             }
@@ -61,12 +61,12 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             lock (this)
             {
-                Debug.Assert(InFlightCounter != 0);
+                Debug.Assert(InFlightCounter != 0, "InFlightCounter != 0");
 
                 InFlightCounter--;
                 if (InFlightCounter == 0)
                 {
-                    Debug.Assert(InFlight.HasValue);
+                    Debug.Assert(InFlight.HasValue, "InFlight.HasValue");
                     InFlight.Value.Free();
                     InFlight = null;
                 }

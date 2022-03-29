@@ -14,14 +14,11 @@
 #define __DACIMPL_H__
 
 #include "gcinterface.dac.h"
-
-#if defined(TARGET_ARM) || defined(FEATURE_CORESYSTEM) // @ARMTODO: STL breaks the build with current VC headers
 //---------------------------------------------------------------------------------------
 // Setting DAC_HASHTABLE tells the DAC to use the hand rolled hashtable for
 // storing code:DAC_INSTANCE .  Otherwise, the DAC uses the STL unordered_map to.
 
 #define DAC_HASHTABLE
-#endif // TARGET_ARM|| FEATURE_CORESYSTEM
 
 #ifndef DAC_HASHTABLE
 #pragma push_macro("return")
@@ -509,7 +506,6 @@ struct ProcessModIter
     bool m_nextDomain;
     AppDomain::AssemblyIterator m_assemIter;
     Assembly* m_curAssem;
-    Assembly::ModuleIterator m_modIter;
 
     ProcessModIter(void)
         : m_domainIter(FALSE)
@@ -545,7 +541,7 @@ struct ProcessModIter
             }
 
             // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
-            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetLoadedAssembly();
+            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
             return pAssembly;
         }
         return NULL;
@@ -554,27 +550,13 @@ struct ProcessModIter
     Module* NextModule(void)
     {
         SUPPORTS_DAC;
-        for (;;)
+        m_curAssem = NextAssem();
+        if (!m_curAssem)
         {
-            if (!m_curAssem)
-            {
-                m_curAssem = NextAssem();
-                if (!m_curAssem)
-                {
-                    return NULL;
-                }
-
-                m_modIter = m_curAssem->IterateModules();
-            }
-
-            if (!m_modIter.Next())
-            {
-                m_curAssem = NULL;
-                continue;
-            }
-
-            return m_modIter.GetModule();
+            return NULL;
         }
+
+        return m_curAssem->GetModule();
     }
 };
 
@@ -1520,11 +1502,6 @@ public:
                                              DWORD &dwSize,
                                              _Out_writes_(cchPath) LPWSTR wszPath,
                                              const DWORD cchPath);
-#if defined(FEATURE_CORESYSTEM)
-    static bool GetILImageNameFromNgenImage(LPCWSTR ilExtension,
-                                            _Out_writes_(cchFilePath) LPWSTR wszFilePath,
-                                            const DWORD cchFilePath);
-#endif // FEATURE_CORESYSTEM
 };
 
 extern ClrDataAccess* g_dacImpl;

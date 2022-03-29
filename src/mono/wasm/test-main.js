@@ -124,17 +124,19 @@ loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
         disableDotnet6Compatibility: true,
         config: null,
         configSrc: "./mono-config.json",
-        onConfigLoaded: () => {
+        onConfigLoaded: (config) => {
             if (!Module.config) {
                 const err = new Error("Could not find ./mono-config.json. Cancelling run");
-                set_exit_code(1,);
+                set_exit_code(1);
                 throw err;
             }
             // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
             for (let variable in processedArguments.setenv) {
-                Module.config.environment_variables[variable] = processedArguments.setenv[variable];
+                config.environment_variables[variable] = processedArguments.setenv[variable];
             }
-
+            config.diagnostic_tracing = !!processedArguments.diagnostic_tracing;
+        },
+        preRun: () => {
             if (!processedArguments.enable_gc) {
                 INTERNAL.mono_wasm_enable_on_demand_gc(0);
             }
@@ -212,7 +214,9 @@ const App = {
                 const result = await MONO.mono_run_main(main_assembly_name, app_args);
                 set_exit_code(result);
             } catch (error) {
-                set_exit_code(1, error);
+                if (error.name != "ExitStatus") {
+                    set_exit_code(1, error);
+                }
             }
         } else {
             set_exit_code(1, "Unhandled argument: " + processedArguments.applicationArgs[0]);
@@ -240,7 +244,7 @@ globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.
 
 function set_exit_code(exit_code, reason) {
     if (reason) {
-        console.error(reason.toString());
+        console.error(`${JSON.stringify(reason)}`);
         if (reason.stack) {
             console.error(reason.stack);
         }
@@ -281,6 +285,7 @@ function processArguments(incomingArguments) {
     let setenv = {};
     let runtime_args = [];
     let enable_gc = true;
+    let diagnostic_tracing = false;
     let working_dir = '/';
     while (incomingArguments && incomingArguments.length > 0) {
         const currentArg = incomingArguments[0];
@@ -298,6 +303,8 @@ function processArguments(incomingArguments) {
             runtime_args.push(arg);
         } else if (currentArg == "--disable-on-demand-gc") {
             enable_gc = false;
+        } else if (currentArg == "--diagnostic_tracing") {
+            diagnostic_tracing = true;
         } else if (currentArg.startsWith("--working-dir=")) {
             const arg = currentArg.substring("--working-dir=".length);
             working_dir = arg;
@@ -318,6 +325,7 @@ function processArguments(incomingArguments) {
         setenv,
         runtime_args,
         enable_gc,
+        diagnostic_tracing,
         working_dir,
     }
 }
@@ -347,6 +355,27 @@ try {
 } catch (e) {
     console.error(e);
 }
+
+if (is_node) {
+    const modulesToLoad = processedArguments.setenv["NPM_MODULES"];
+    if (modulesToLoad) {
+        modulesToLoad.split(',').forEach(module => {
+            const parts = module.split(':');
+
+            let message = `Loading npm '${parts[0]}'`;
+            const moduleExport = require(parts[0]);
+            if (parts.length == 2) {
+                message += ` and attaching to global as '${parts[1]}'.`;
+                globalThis[parts[1]] = moduleExport;
+            }
+
+            console.log(message);
+        });
+    }
+}
+
+// Must be after loading npm modules.
+processedArguments.setenv["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
 
 async function loadDotnet(file) {
     let loadScript = undefined;

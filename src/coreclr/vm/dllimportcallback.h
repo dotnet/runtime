@@ -16,6 +16,12 @@
 #include "class.h"
 #include "dllimport.h"
 
+class UMThunkMarshInfo;
+typedef DPTR(class UMThunkMarshInfo) PTR_UMThunkMarshInfo;
+
+class UMEntryThunk;
+typedef DPTR(class UMEntryThunk) PTR_UMEntryThunk;
+
 //----------------------------------------------------------------------
 // This structure collects all information needed to marshal an
 // unmanaged->managed thunk. The only information missing is the
@@ -188,9 +194,6 @@ public:
         m_state = kRunTimeInited;
 #endif // _DEBUG
     }
-
-    // asm entrypoint
-    static VOID STDCALL DoRunTimeInit(UMEntryThunk* pThis);
 
     PCODE GetManagedTarget() const
     {
@@ -396,14 +399,7 @@ private:
 };
 
 #if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-//-------------------------------------------------------------------------
-// One-time creation of special prestub to initialize UMEntryThunks.
-//-------------------------------------------------------------------------
-Stub *GenerateUMThunkPrestub();
-
 EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
-EXCEPTION_HANDLER_DECL(UMThunkPrestubHandler);
-
 #endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
 extern "C" void TheUMEntryPrestub(void);

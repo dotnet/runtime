@@ -221,9 +221,6 @@
     <data name="DSPropertyValueSupportOneOperation" xml:space="preserve">
         <value>Only one type of operation can be performed in a sequence.</value>
     </data>
-    <data name="ConfigSectionsUnique" xml:space="preserve">
-        <value>The '{0}' section can only appear once in a configuration file.</value>
-    </data>
     <data name="DSUnknownFailure" xml:space="preserve">
         <value>An unknown error occurred.</value>
     </data>
@@ -313,9 +310,6 @@
     </data>
     <data name="EmptyStringParameter" xml:space="preserve">
         <value>The specified string parameter is empty.</value>
-    </data>
-    <data name="SupportedPlatforms" xml:space="preserve">
-        <value>The System.DirectoryServices.ActiveDirectory namespace is only supported on computers running Windows 2000 and later operating systems.</value>
     </data>
     <data name="TargetShouldBeADAMServer" xml:space="preserve">
         <value>The name specified in the directory context must be an ADAM instance.</value>
@@ -466,9 +460,6 @@
     </data>
     <data name="ComputerNotJoinedToDomain" xml:space="preserve">
         <value>The local computer is not joined to a domain or the domain cannot be contacted.</value>
-    </data>
-    <data name="VersionFailure" xml:space="preserve">
-        <value>Failed to get the version of the operating system, error is "{0}".</value>
     </data>
     <data name="NoHostName" xml:space="preserve">
         <value>Unable to obtain DNS hostname of Active Directory domain controller with ntdsa object name "{0}".</value>

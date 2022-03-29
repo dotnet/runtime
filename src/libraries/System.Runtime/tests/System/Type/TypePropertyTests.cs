@@ -147,6 +147,7 @@ namespace System.Tests.Types
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/864", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [Fact]
         public void GenericTypeArguments_Get_ReturnsExpected()
         {

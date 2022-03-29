@@ -76,7 +76,7 @@ mono_debug_open_method (MonoCompile *cfg)
 
 	header = cfg->header;
 	g_assert (header);
-	
+
 	info->jit = jit = g_new0 (MonoDebugMethodJitInfo, 1);
 	info->line_numbers = g_array_new (FALSE, TRUE, sizeof (MonoDebugLineNumberEntry));
 	jit->num_locals = header->num_locals;
@@ -118,7 +118,7 @@ write_variable (MonoInst *inst, MonoDebugVarInfo *var)
  *
  *  Register symbol information for the method with valgrind
  */
-static void 
+static void
 mono_debug_add_vg_method (MonoMethod *method, MonoDebugMethodJitInfo *jit)
 {
 #ifdef VALGRIND_ADD_LINE_INFO
@@ -143,7 +143,7 @@ mono_debug_add_vg_method (MonoMethod *method, MonoDebugMethodJitInfo *jit)
 	addresses = g_new0 (guint32, header->code_size + 1);
 	lines = g_new0 (guint32, header->code_size + 1);
 
-	/* 
+	/*
 	 * Very simple code to convert the addr->offset mappings that mono has
 	 * into [addr-addr] ->line number mappings.
 	 */
@@ -183,7 +183,7 @@ mono_debug_add_vg_method (MonoMethod *method, MonoDebugMethodJitInfo *jit)
 		else
 			address = addresses [i];
 	}
-	
+
 	address = 0;
 	line_number = 0;
 	i = 0;
@@ -193,7 +193,7 @@ mono_debug_add_vg_method (MonoMethod *method, MonoDebugMethodJitInfo *jit)
 		else {
 			if (line_number > 0) {
 				//g_assert (addresses [i] - 1 >= address);
-				
+
 				if (addresses [i] - 1 >= address) {
 					VALGRIND_ADD_LINE_INFO (jit->code_start + address, jit->code_start + addresses [i] - 1, filename, line_number);
 					//printf ("[%d-%d] -> %d.\n", address, addresses [i] - 1, line_number);
@@ -294,7 +294,7 @@ mono_debug_free_method (MonoCompile *cfg)
 		if (info->line_numbers)
 			g_array_free (info->line_numbers, TRUE);
 		g_free (info);
-		cfg->debug_info = NULL;	
+		cfg->debug_info = NULL;
 	}
 }
 
@@ -359,7 +359,7 @@ encode_value (gint32 value, guint8 *buf, guint8 **endbuf)
 
 	//printf ("ENCODE: %d 0x%x.\n", value, value);
 
-	/* 
+	/*
 	 * Same encoding as the one used in the metadata, extended to handle values
 	 * greater than 0x1fffffff.
 	 */
@@ -393,7 +393,7 @@ decode_value (guint8 *ptr, guint8 **rptr)
 {
 	guint8 b = *ptr;
 	gint32 len;
-	
+
 	if ((b & 0x80) == 0){
 		len = b;
 		++ptr;
@@ -597,7 +597,7 @@ deserialize_debug_info (MonoMethod *method, guint8 *code_start, guint8 *buf, gui
 }
 
 void
-mono_debug_add_aot_method (MonoMethod *method, guint8 *code_start, 
+mono_debug_add_aot_method (MonoMethod *method, guint8 *code_start,
 			   guint8 *debug_info, guint32 debug_info_len)
 {
 	MonoDebugMethodJitInfo *jit;
@@ -654,7 +654,7 @@ print_var_info (MonoDebugVarInfo *info, int idx, const char *name, const char *t
  *
  * Prints to stdout the information about the local variables in
  * a method (if \p only_arguments is false) or about the arguments.
- * The information includes the storage info (where the variable 
+ * The information includes the storage info (where the variable
  * lives, in a register or in memory).
  * The method is found by looking up what method has been emitted at
  * the instruction address \p ip.

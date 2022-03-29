@@ -358,8 +358,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="isMatch">Whether to return once we know there's a match without determining where exactly it matched.</param>
         /// <param name="input">The input span</param>
         /// <param name="startat">The position to start search in the input span.</param>
-        /// <param name="end">The non-inclusive position to end the search in the input span.</param>
-        public SymbolicMatch FindMatch(bool isMatch, ReadOnlySpan<char> input, int startat, int end)
+        public SymbolicMatch FindMatch(bool isMatch, ReadOnlySpan<char> input, int startat)
         {
             int timeoutOccursAt = 0;
             if (_checkTimeout)
@@ -368,7 +367,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 timeoutOccursAt = Environment.TickCount + (int)(_timeout + 0.5);
             }
 
-            if (startat == end)
+            if (startat == input.Length)
             {
                 // Covers the special-case of an empty match at the end of the input.
                 uint prevKind = GetCharKind(input, startat - 1);
@@ -385,7 +384,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // May return -1 as a legitimate value when the initial state is nullable and startat == 0.
             // Returns NoMatchExists when there is no match.
-            i = FindFinalStatePosition(input, end, i, timeoutOccursAt, out int i_q0_A1, out int watchdog);
+            i = FindFinalStatePosition(input, i, timeoutOccursAt, out int i_q0_A1, out int watchdog);
 
             if (i == NoMatchExists)
             {
@@ -412,7 +411,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 i_start = i < startat ?
                     startat :
                     FindStartPosition(input, i, i_q0_A1); // Walk in reverse to locate the start position of the match
-                i_end = FindEndPosition(input, end, i_start);
+                i_end = FindEndPosition(input, i_start);
             }
 
             return new SymbolicMatch(i_start, i_end + 1 - i_start);
@@ -421,11 +420,10 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Find match end position using the original pattern, end position is known to exist.</summary>
         /// <param name="input">input span</param>
         /// <param name="i">inclusive start position</param>
-        /// <param name="exclusiveEnd">exclusive end position</param>
         /// <returns></returns>
-        private int FindEndPosition(ReadOnlySpan<char> input, int exclusiveEnd, int i)
+        private int FindEndPosition(ReadOnlySpan<char> input, int i)
         {
-            int i_end = exclusiveEnd;
+            int i_end = input.Length;
 
             // Pick the correct start state based on previous character kind.
             uint prevCharKind = GetCharKind(input, i - 1);
@@ -443,9 +441,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
             }
 
-            while (i < exclusiveEnd)
+            while (i < input.Length)
             {
-                int j = Math.Min(exclusiveEnd, i + AntimirovThresholdLeeway);
+                int j = Math.Min(input.Length, i + AntimirovThresholdLeeway);
                 bool done = _builder._antimirov ?
                     FindEndPositionDeltas<AntimirovTransition>(input, ref i, j, ref state, ref i_end) :
                     FindEndPositionDeltas<BrzozowskiTransition>(input, ref i, j, ref state, ref i_end);
@@ -456,7 +454,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
             }
 
-            Debug.Assert(i_end != exclusiveEnd);
+            Debug.Assert(i_end < input.Length);
             return i_end;
         }
 
@@ -567,12 +565,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>Returns NoMatchExists if no match exists. Returns -1 when i=0 and the initial state is nullable.</summary>
         /// <param name="input">given input span</param>
-        /// <param name="k">input length or bounded input length</param>
         /// <param name="i">start position</param>
         /// <param name="timeoutOccursAt">The time at which timeout occurs, if timeouts are being checked.</param>
         /// <param name="initialStateIndex">last position the initial state of <see cref="_dotStarredPattern"/> was visited</param>
         /// <param name="watchdog">length of match when positive</param>
-        private int FindFinalStatePosition(ReadOnlySpan<char> input, int k, int i, int timeoutOccursAt, out int initialStateIndex, out int watchdog)
+        private int FindFinalStatePosition(ReadOnlySpan<char> input, int i, int timeoutOccursAt, out int initialStateIndex, out int watchdog)
         {
             // Get the correct start state of the dot-star pattern, which in general depends on the previous character kind in the input.
             uint prevCharKindId = GetCharKind(input, i - 1);
@@ -599,7 +596,7 @@ namespace System.Text.RegularExpressions.Symbolic
             watchdog = -1;
 
             // Search for a match end position within input[i..k-1]
-            while (i < k)
+            while (i < input.Length)
             {
                 if (q.IsInitialState)
                 {
@@ -609,7 +606,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     if (_findOpts is RegexFindOptimizations findOpts)
                     {
                         // Find the first position i that matches with some likely character.
-                        if (!findOpts.TryFindNextStartingPosition(input, ref i, 0, 0, k))
+                        if (!findOpts.TryFindNextStartingPosition(input, ref i, 0, 0, input.Length))
                         {
                             // no match was found
                             return NoMatchExists;
@@ -629,7 +626,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
 
                 int result;
-                int j = Math.Min(k, i + AntimirovThresholdLeeway);
+                int j = Math.Min(input.Length, i + AntimirovThresholdLeeway);
                 bool done = _builder._antimirov ?
                     FindFinalStatePositionDeltas<AntimirovTransition>(input, j, ref i, ref q, ref watchdog, out result) :
                     FindFinalStatePositionDeltas<BrzozowskiTransition>(input, j, ref i, ref q, ref watchdog, out result);

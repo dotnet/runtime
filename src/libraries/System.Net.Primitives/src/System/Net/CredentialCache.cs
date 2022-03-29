@@ -57,20 +57,8 @@ namespace System.Net
 
         public void Add(string host, int port, string authenticationType, NetworkCredential credential)
         {
-            if (host == null)
-            {
-                throw new ArgumentNullException(nameof(host));
-            }
-
-            if (authenticationType == null)
-            {
-                throw new ArgumentNullException(nameof(authenticationType));
-            }
-
-            if (host.Length == 0)
-            {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(host)), nameof(host));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(host);
+            ArgumentNullException.ThrowIfNull(authenticationType);
 
             if (port < 0)
             {
@@ -200,18 +188,8 @@ namespace System.Net
 
         public NetworkCredential? GetCredential(string host, int port, string authenticationType)
         {
-            if (host == null)
-            {
-                throw new ArgumentNullException(nameof(host));
-            }
-            if (authenticationType == null)
-            {
-                throw new ArgumentNullException(nameof(authenticationType));
-            }
-            if (host.Length == 0)
-            {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(host)), nameof(host));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(host);
+            ArgumentNullException.ThrowIfNull(authenticationType);
             if (port < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(port));

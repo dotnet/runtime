@@ -5,7 +5,7 @@ f is for format, like printf
 Previously one would say like:
 	if (!expr)
 	  g_error(...)
-  
+
 now:
 	g_assertf(expr, ...);
 */

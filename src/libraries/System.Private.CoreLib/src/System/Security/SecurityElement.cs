@@ -18,9 +18,6 @@ namespace System.Security
         private const int AttributesTypical = 4 * 2;  // 4 attributes, times 2 strings per attribute
         private const int ChildrenTypical = 1;
 
-        private static readonly char[] s_tagIllegalCharacters = new char[] { ' ', '<', '>' };
-        private static readonly char[] s_textIllegalCharacters = new char[] { '<', '>' };
-        private static readonly char[] s_valueIllegalCharacters = new char[] { '<', '>', '\"' };
         private static readonly char[] s_escapeChars = new char[] { '<', '>', '\"', '\'', '&' };
         private static readonly string[] s_escapeStringPairs = new string[]
         {
@@ -298,34 +295,17 @@ namespace System.Security
             return element;
         }
 
-        public static bool IsValidTag([NotNullWhen(true)] string? tag)
-        {
-            if (tag == null)
-                return false;
+        public static bool IsValidTag([NotNullWhen(true)] string? tag) =>
+            tag != null && tag.AsSpan().IndexOfAny(' ', '<', '>') < 0;
 
-            return tag.IndexOfAny(s_tagIllegalCharacters) == -1;
-        }
+        public static bool IsValidText([NotNullWhen(true)] string? text) =>
+            text != null && text.AsSpan().IndexOfAny('<', '>') < 0;
 
-        public static bool IsValidText([NotNullWhen(true)] string? text)
-        {
-            if (text == null)
-                return false;
+        public static bool IsValidAttributeName([NotNullWhen(true)] string? name) =>
+            IsValidTag(name);
 
-            return text.IndexOfAny(s_textIllegalCharacters) == -1;
-        }
-
-        public static bool IsValidAttributeName([NotNullWhen(true)] string? name)
-        {
-            return IsValidTag(name);
-        }
-
-        public static bool IsValidAttributeValue([NotNullWhen(true)] string? value)
-        {
-            if (value == null)
-                return false;
-
-            return value.IndexOfAny(s_valueIllegalCharacters) == -1;
-        }
+        public static bool IsValidAttributeValue([NotNullWhen(true)] string? value) =>
+            value != null && value.AsSpan().IndexOfAny('<', '>', '\"') < 0;
 
         private static string GetEscapeSequence(char c)
         {
@@ -361,7 +341,7 @@ namespace System.Security
             {
                 index = str.IndexOfAny(s_escapeChars, newIndex);
 
-                if (index == -1)
+                if (index < 0)
                 {
                     if (sb == null)
                         return str;
@@ -425,7 +405,7 @@ namespace System.Security
             {
                 index = str.IndexOf('&', newIndex);
 
-                if (index == -1)
+                if (index < 0)
                 {
                     if (sb == null)
                         return str;

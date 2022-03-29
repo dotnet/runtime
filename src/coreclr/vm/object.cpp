@@ -1917,6 +1917,13 @@ void ExceptionObject::SetStackTrace(I1ARRAYREF stackTrace, PTRARRAYREF dynamicMe
     }
     CONTRACTL_END;
 
+#ifdef STRESS_LOG
+    if (StressLog::StressLogOn(~0u, 0))
+    {
+        StressLog::CreateThreadStressLog();
+    }
+#endif
+
     SpinLock::AcquireLock(&g_StackTraceArrayLock);
 
     SetObjectReference((OBJECTREF*)&_stackTrace, (OBJECTREF)stackTrace);

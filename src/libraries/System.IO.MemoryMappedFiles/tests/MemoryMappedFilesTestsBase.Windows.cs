@@ -43,10 +43,9 @@ namespace System.IO.MemoryMappedFiles.Tests
             internal short wProcessorRevision;
         }
 
-        protected static int geteuid()
-        {
-            throw new PlatformNotSupportedException();
-        }
+        protected static int geteuid() => throw new PlatformNotSupportedException();
+
+        protected static int mkfifo(string path, int mode) => throw new PlatformNotSupportedException();
 
         /// <summary>Asserts that the handle's inheritability matches the specified value.</summary>
         protected static void AssertInheritability(SafeHandle handle, HandleInheritability inheritability)

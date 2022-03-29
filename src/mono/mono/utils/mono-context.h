@@ -596,7 +596,7 @@ typedef struct {
 #ifdef __mono_ppc64__
 
 typedef struct {
-	gulong sc_ir;          // pc 
+	gulong sc_ir;          // pc
 	gulong sc_sp;          // r1
 	host_mgreg_t regs [32];
 	double fregs [32];
@@ -787,9 +787,9 @@ typedef struct MonoContext {
 	gpointer *fp;
 } MonoContext;
 
-#define MONO_CONTEXT_SET_IP(ctx,eip) do { (ctx)->ip = (gpointer)(eip); } while (0); 
-#define MONO_CONTEXT_SET_BP(ctx,ebp) do { (ctx)->fp = (gpointer*)(ebp); } while (0); 
-#define MONO_CONTEXT_SET_SP(ctx,esp) do { (ctx)->sp = (gpointer*)(esp); } while (0); 
+#define MONO_CONTEXT_SET_IP(ctx,eip) do { (ctx)->ip = (gpointer)(eip); } while (0);
+#define MONO_CONTEXT_SET_BP(ctx,ebp) do { (ctx)->fp = (gpointer*)(ebp); } while (0);
+#define MONO_CONTEXT_SET_SP(ctx,esp) do { (ctx)->sp = (gpointer*)(esp); } while (0);
 
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->ip))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->fp))
@@ -917,13 +917,13 @@ typedef struct ucontext MonoContext;
 	do {								\
 		(ctx)->uc_mcontext.gregs[14] = (unsigned long)ip;	\
 		(ctx)->uc_mcontext.psw.addr = (unsigned long)ip;	\
-	} while (0); 
+	} while (0);
 
 #define MONO_CONTEXT_SET_SP(ctx,bp) MONO_CONTEXT_SET_BP((ctx),(bp))
 #define MONO_CONTEXT_SET_BP(ctx,bp) 					\
 	do {		 						\
 		(ctx)->uc_mcontext.gregs[15] = (unsigned long)bp;	\
-	} while (0) 
+	} while (0)
 
 #define MONO_CONTEXT_GET_IP(ctx) (gpointer) (ctx)->uc_mcontext.psw.addr
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->uc_mcontext.gregs[15]))

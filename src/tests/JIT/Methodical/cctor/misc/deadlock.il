@@ -9,30 +9,31 @@
 }
 .assembly deadlock {}
 .assembly extern xunit.core {}
+.namespace Test_deadlock {
 .class public A extends [mscorlib]System.Object
 {
-.field static public class A a
-.field static public class B b
+.field static public class Test_deadlock.A a
+.field static public class Test_deadlock.B b
 .method public static rtspecialname specialname void .cctor ()
 {
 ldnull
-stsfld class B A::b
-ldsfld class A B::a
-stsfld class A A::a
+stsfld class Test_deadlock.B Test_deadlock.A::b
+ldsfld class Test_deadlock.A Test_deadlock.B::a
+stsfld class Test_deadlock.A Test_deadlock.A::a
 ret
 }
 }
 
 .class public B extends [mscorlib]System.Object
 {
-.field static public class A a
-.field static public class B b
+.field static public class Test_deadlock.A a
+.field static public class Test_deadlock.B b
 .method public static rtspecialname specialname void .cctor ()
 {
 ldnull
-stsfld class A B::a
-ldsfld class B A::b
-stsfld class B B::b
+stsfld class Test_deadlock.A Test_deadlock.B::a
+ldsfld class Test_deadlock.B Test_deadlock.A::b
+stsfld class Test_deadlock.B Test_deadlock.B::b
 ret
 }
 }
@@ -43,8 +44,9 @@ ret
     01 00 00 00
 )
 .entrypoint
-ldsfld class B A::b
+ldsfld class Test_deadlock.B Test_deadlock.A::b
 pop
 ldc.i4 100
 ret
+}
 }

@@ -88,8 +88,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            var result = quaternion;
-            return GetElementUnsafe(ref result, index);
+            return GetElementUnsafe(ref quaternion, index);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -112,7 +111,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            var result = quaternion;
+            Quaternion result = quaternion;
             SetElementUnsafe(ref result, index, value);
             return result;
         }

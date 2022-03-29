@@ -1739,7 +1739,9 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	static GHashTable *cache;
 	const char *name;
 	gboolean generic = FALSE;
+#ifndef DISABLE_JIT
 	gboolean return_native_struct;
+#endif
 
 	sig = mini_get_underlying_reg_signature (sig);
 
@@ -1763,7 +1765,9 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	 * stack, pass this address to the interp_entry and when we return it we use
 	 * CEE_MONO_LDNATIVEOBJ
 	 */
-	return_native_struct = sig->ret->type == MONO_TYPE_VALUETYPE && sig->pinvoke;
+#ifndef DISABLE_JIT
+	return_native_struct = sig->ret->type == MONO_TYPE_VALUETYPE && sig->pinvoke && !sig->marshalling_disabled;
+#endif
 
 	/* Create the signature for the wrapper */
 	csig = g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + (sig->param_count * sizeof (MonoType*)));
@@ -3521,19 +3525,29 @@ mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_va
 
 	if (method->is_inflated) {
 		MonoMethodInflated *inflated = (MonoMethodInflated*)method;
-		MonoGenericContext *context = &inflated->context;
+		MonoGenericContext *ctx = &inflated->context;
 
-		if (!mono_generic_context_is_sharable_full (context, allow_type_vars, allow_partial))
+		if (!mono_generic_context_is_sharable_full (ctx, allow_type_vars, allow_partial))
 			return FALSE;
 
 		g_assert (inflated->declaring);
 
-#if 0
-		if (inflated->declaring->is_generic) {
-			if (has_constraints (mono_method_get_generic_container (inflated->declaring))) {
+		/*
+		 * If all the parameters are primitive types and constraints prevent
+		 * them from being instantiated with enums, then only the primitive
+		 * type instantiation is possible, thus sharing is not useful.
+		 * Happens with generic math interfaces.
+		 */
+		if ((!ctx->class_inst || is_primitive_inst (ctx->class_inst)) &&
+			(!ctx->method_inst || is_primitive_inst (ctx->method_inst))) {
+			MonoGenericContainer *container = mono_method_get_generic_container (inflated->declaring);
+			if (container && has_constraints (container)) {
+				for (int i = 0; i < container->type_argc; ++i) {
+					if (!gparam_can_be_enum (&container->type_params [i]))
+						return FALSE;
+				}
 			}
 		}
-#endif
 	}
 
 	if (mono_class_is_ginst (method->klass)) {
@@ -3544,12 +3558,6 @@ mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_va
 		g_assert (mono_class_get_generic_class (method->klass)->container_class &&
 				mono_class_is_gtd (mono_class_get_generic_class (method->klass)->container_class));
 
-		/*
-		 * If all the parameters are primitive types and constraints prevent
-		 * them from being instantiated with enums, then only the primitive
-		 * type instantiation is possible, thus sharing is not useful.
-		 * Happens with generic math interfaces.
-		 */
 		if ((!ctx->class_inst || is_primitive_inst (ctx->class_inst)) &&
 			(!ctx->method_inst || is_primitive_inst (ctx->method_inst))) {
 			MonoGenericContainer *container = mono_class_get_generic_container (mono_class_get_generic_class (method->klass)->container_class);

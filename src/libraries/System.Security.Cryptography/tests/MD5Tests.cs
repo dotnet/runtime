@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
@@ -24,6 +27,49 @@ namespace System.Security.Cryptography.Tests
 
         protected override int HashData(ReadOnlySpan<byte> source, Span<byte> destination) =>
             MD5.HashData(source, destination);
+
+        protected override int HashData(Stream source, Span<byte> destination) =>
+            MD5.HashData(source, destination);
+
+        protected override byte[] HashData(Stream source) => MD5.HashData(source);
+
+        protected override ValueTask<int> HashDataAsync(Stream source, Memory<byte> destination, CancellationToken cancellationToken) =>
+            MD5.HashDataAsync(source, destination, cancellationToken);
+
+        protected override ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken) =>
+            MD5.HashDataAsync(source, cancellationToken);
+
+        [Fact]
+        public void MD5_VerifyLargeStream_MultipleOf4096()
+        {
+            // Verfied with:
+            // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl dgst -md5
+            VerifyRepeating("0102030405060708", 1024, "5fc6366852074da6e4795a014574282c");
+        }
+
+        [Fact]
+        public void MD5_VerifyLargeStream_NotMultipleOf4096()
+        {
+            // Verfied with:
+            // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl dgst -md5
+            VerifyRepeating("0102030405060708", 1025, "c5f6181a24446a583b14282f32786513");
+        }
+
+        [Fact]
+        public async Task MD5_VerifyLargeStream_NotMultipleOf4096_Async()
+        {
+            // Verfied with:
+            // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl dgst -md5
+            await VerifyRepeatingAsync("0102030405060708", 1025, "c5f6181a24446a583b14282f32786513");
+        }
+
+        [Fact]
+        public async Task MD5_VerifyLargeStream_MultipleOf4096_Async()
+        {
+            // Verfied with:
+            // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl dgst -md5
+            await VerifyRepeatingAsync("0102030405060708", 1024, "5fc6366852074da6e4795a014574282c");
+        }
 
         // Test cases are defined in RFC 1321, section A.5
 
@@ -80,9 +126,27 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public void MD5_Rfc1321_1_AsStream()
+        {
+            VerifyRepeating(string.Empty, 0, "d41d8cd98f00b204e9800998ecf8427e");
+        }
+
+        [Fact]
         public void MD5_Rfc1321_7_AsStream()
         {
             VerifyRepeating("1234567890", 8, "57edf4a22be3c955ac49da2e2107b67a");
+        }
+
+        [Fact]
+        public async Task MD5_Rfc1321_1_AsStream_Async()
+        {
+            await VerifyRepeatingAsync(string.Empty, 0, "d41d8cd98f00b204e9800998ecf8427e");
+        }
+
+        [Fact]
+        public async Task MD5_Rfc1321_7_AsStream_Async()
+        {
+            await VerifyRepeatingAsync("1234567890", 8, "57edf4a22be3c955ac49da2e2107b67a");
         }
     }
 }

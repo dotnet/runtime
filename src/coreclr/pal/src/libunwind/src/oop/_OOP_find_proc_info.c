@@ -28,6 +28,8 @@ _OOP_find_proc_info (
     int ret = 0;
 
     unw_dyn_info_t di;
+    memset(&di, 0, sizeof(di));
+
     di.start_ip = start_ip;
     di.end_ip = end_ip;
     di.gp = pi->gp;

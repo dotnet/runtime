@@ -2048,6 +2048,31 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
+        [InlineData(">>")]
+        [InlineData(">>>")]
+        [InlineData(">>a")]
+        [InlineData(">a>")]
+        public static void TryGetDateTimeAndOffset_InvalidPropertyValue(string testData)
+        {
+            string jsonString = JsonSerializer.Serialize(new { DateTimeProperty = testData });
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            using (JsonDocument doc = JsonDocument.Parse(dataUtf8, default))
+            {
+                JsonElement root = doc.RootElement;
+
+                Assert.False(root.GetProperty("DateTimeProperty").TryGetDateTime(out DateTime datetimeValue));
+                Assert.Equal(default, datetimeValue);
+                Assert.Throws<FormatException>(() => root.GetProperty("DateTimeProperty").GetDateTime());
+
+                Assert.False(root.GetProperty("DateTimeProperty").TryGetDateTimeOffset(out DateTimeOffset datetimeOffsetValue));
+                Assert.Equal(default, datetimeOffsetValue);
+                Assert.Throws<FormatException>(() => root.GetProperty("DateTimeProperty").GetDateTimeOffset());
+            }
+        }
+
+        [Theory]
         [InlineData("")]
         [InlineData("    ")]
         [InlineData("1 2")]

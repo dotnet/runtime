@@ -76,7 +76,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
  * mono_arch_get_call_filter:
  *
  * Returns a pointer to a method which calls an exception filter. We
- * also use this function to call finally handlers (we pass NULL as 
+ * also use this function to call finally handlers (we pass NULL as
  * @exc object in this case).
  *
  * call_filter (MonoContext *ctx, gpointer ip)
@@ -127,7 +127,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 
 	sparc_mov_reg_reg (code, sparc_fp, sparc_o7);
 
-	/* 
+	/*
 	 * Modify the second frame so it is identical to the one used in the
 	 * method containing the filter.
 	 */
@@ -173,7 +173,7 @@ throw_exception (MonoObject *exc, gpointer sp, gpointer ip, gboolean rethrow, gb
 	MonoContext ctx;
 	static void (*restore_context) (MonoContext *);
 	gpointer *window;
-	
+
 	if (!restore_context)
 		restore_context = mono_get_restore_context ();
 
@@ -198,7 +198,7 @@ throw_exception (MonoObject *exc, gpointer sp, gpointer ip, gboolean rethrow, gb
 	g_assert_not_reached ();
 }
 
-static gpointer 
+static gpointer
 get_throw_exception (gboolean rethrow, gboolean preserve_ips)
 {
 	guint32 *start, *code;
@@ -228,8 +228,8 @@ get_throw_exception (gboolean rethrow, gboolean preserve_ips)
 /**
  * mono_arch_get_throw_exception:
  * \returns a function pointer which can be used to raise exceptions.
- * The returned function has the following 
- * signature: void (*func) (MonoException *exc); 
+ * The returned function has the following
+ * signature: void (*func) (MonoException *exc);
  */
 gpointer
 mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
@@ -293,11 +293,11 @@ mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
 
 /**
  * mono_arch_get_throw_corlib_exception:
- * \returns a function pointer which can be used to raise 
- * corlib exceptions. The returned function has the following 
- * signature: void (*func) (guint32 ex_token, guint32 offset); 
- * Here, offset is the offset which needs to be substracted from the caller IP 
- * to get the IP of the throw. Passing the offset has the advantage that it 
+ * \returns a function pointer which can be used to raise
+ * corlib exceptions. The returned function has the following
+ * signature: void (*func) (guint32 ex_token, guint32 offset);
+ * Here, offset is the offset which needs to be substracted from the caller IP
+ * to get the IP of the throw. Passing the offset has the advantage that it
  * needs no relocations in the caller.
  */
 gpointer
@@ -356,16 +356,16 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 
 /* mono_arch_unwind_frame:
  *
- * This function is used to gather information from @ctx. It return the 
+ * This function is used to gather information from @ctx. It return the
  * MonoJitInfo of the corresponding function, unwinds one stack frame and
- * stores the resulting context into @new_ctx. It also stores a string 
+ * stores the resulting context into @new_ctx. It also stores a string
  * describing the stack location into @trace (if not NULL), and modifies
- * the @lmf if necessary. @native_offset return the IP offset from the 
+ * the @lmf if necessary. @native_offset return the IP offset from the
  * start of the function or -1 if that info is not available.
  */
 gboolean
-mono_arch_unwind_frame (MonoJitTlsData *jit_tls, 
-						MonoJitInfo *ji, MonoContext *ctx, 
+mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
+						MonoJitInfo *ji, MonoContext *ctx,
 						MonoContext *new_ctx, MonoLMF **lmf,
 						host_mgreg_t **save_locations,
 						StackFrameInfo *frame)
@@ -490,7 +490,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj)
 	mctx.fp = window [sparc_fp - 16];
 
 	mono_handle_exception (&mctx, obj);
-	
+
 	/* We can't use restore_context to return from a signal handler */
 	ctx->uc_mcontext.gregs [REG_PC] = mctx.ip;
 	ctx->uc_mcontext.gregs [REG_nPC] = mctx.ip + 4;

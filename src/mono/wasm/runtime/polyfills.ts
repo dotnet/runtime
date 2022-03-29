@@ -1,4 +1,7 @@
-import { ENVIRONMENT_IS_NODE, Module } from "./imports";
+import { ENVIRONMENT_IS_NODE, Module, requirePromise } from "./imports";
+
+let node_fs: any | undefined = undefined;
+let node_url: any | undefined = undefined;
 
 export async function fetch_like(url: string): Promise<Response> {
     try {
@@ -6,8 +9,11 @@ export async function fetch_like(url: string): Promise<Response> {
             return globalThis.fetch(url, { credentials: "same-origin" });
         }
         else if (ENVIRONMENT_IS_NODE) {
-            const node_fs = Module.imports!.require!("fs");
-            const node_url = Module.imports!.require!("url");
+            if (!node_fs) {
+                const node_require = await requirePromise;
+                node_url = node_require("url");
+                node_fs = node_require("fs");
+            }
             if (url.startsWith("file://")) {
                 url = node_url.fileURLToPath(url);
             }
@@ -21,6 +27,8 @@ export async function fetch_like(url: string): Promise<Response> {
             };
         }
         else if (typeof (read) === "function") {
+            // note that it can't open files with unicode names, like Straße.xml
+            // https://bugs.chromium.org/p/v8/issues/detail?id=12541
             const arrayBuffer = new Uint8Array(read(url, "binary"));
             return <Response><any>{
                 ok: true,

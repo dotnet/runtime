@@ -1062,6 +1062,11 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 {
                     printf(".%02u", curAssertion->op1.lcl.ssaNum);
                 }
+                if (curAssertion->op2.zeroOffsetFieldSeq != nullptr)
+                {
+                    printf(" Zero");
+                    gtDispFieldSeq(curAssertion->op2.zeroOffsetFieldSeq);
+                }
                 break;
 
             case O2K_CONST_INT:
@@ -1582,10 +1587,14 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                         goto DONE_ASSERTION; // Don't make an assertion
                     }
 
-                    assertion.op2.kind       = O2K_LCLVAR_COPY;
-                    assertion.op2.lcl.lclNum = lclNum2;
-                    assertion.op2.vn         = vnStore->VNConservativeNormalValue(op2->gtVNPair);
-                    assertion.op2.lcl.ssaNum = op2->AsLclVarCommon()->GetSsaNum();
+                    FieldSeqNode* zeroOffsetFieldSeq = nullptr;
+                    GetZeroOffsetFieldMap()->Lookup(op2, &zeroOffsetFieldSeq);
+
+                    assertion.op2.kind               = O2K_LCLVAR_COPY;
+                    assertion.op2.vn                 = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+                    assertion.op2.lcl.lclNum         = lclNum2;
+                    assertion.op2.lcl.ssaNum         = op2->AsLclVarCommon()->GetSsaNum();
+                    assertion.op2.zeroOffsetFieldSeq = zeroOffsetFieldSeq;
 
                     // Ok everything has been set and the assertion looks good
                     assertion.assertionKind = assertionKind;
@@ -2189,7 +2198,7 @@ AssertionIndex Compiler::optCreateJtrueAssertions(GenTree*                   op1
 AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
 {
     GenTree* relop = tree->gtGetOp1();
-    if ((relop->OperKind() & GTK_RELOP) == 0)
+    if (!relop->OperIsCompare())
     {
         return NO_ASSERTION_INDEX;
     }
@@ -2349,7 +2358,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
 
     GenTree* relop = tree->AsOp()->gtOp1;
-    if ((relop->OperKind() & GTK_RELOP) == 0)
+    if (!relop->OperIsCompare())
     {
         return NO_ASSERTION_INDEX;
     }
@@ -2392,8 +2401,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
     ValueNum op2VN = vnStore->VNConservativeNormalValue(op2->gtVNPair);
     // If op1 is lcl and op2 is const or lcl, create assertion.
-    if ((op1->gtOper == GT_LCL_VAR) &&
-        ((op2->OperKind() & GTK_CONST) || (op2->gtOper == GT_LCL_VAR))) // Fix for Dev10 851483
+    if ((op1->gtOper == GT_LCL_VAR) && (op2->OperIsConst() || (op2->gtOper == GT_LCL_VAR))) // Fix for Dev10 851483
     {
         return optCreateJtrueAssertions(op1, op2, assertionKind);
     }
@@ -2577,7 +2585,6 @@ void Compiler::optAssertionGen(GenTree* tree)
 
         case GT_OBJ:
         case GT_BLK:
-        case GT_DYN_BLK:
         case GT_IND:
             // R-value indirections create non-null assertions, but not all indirections are R-values.
             // Those under ADDR nodes or on the LHS of ASGs are "locations", and will not end up
@@ -3318,14 +3325,30 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
         return nullptr;
     }
 
-    // Extract the matching lclNum and ssaNum.
-    const unsigned copyLclNum = (op1.lcl.lclNum == lclNum) ? op2.lcl.lclNum : op1.lcl.lclNum;
-    unsigned       copySsaNum = SsaConfig::RESERVED_SSA_NUM;
+    // Extract the matching lclNum and ssaNum, as well as the field sequence.
+    unsigned      copyLclNum;
+    unsigned      copySsaNum;
+    FieldSeqNode* zeroOffsetFieldSeq;
+    if (op1.lcl.lclNum == lclNum)
+    {
+        copyLclNum         = op2.lcl.lclNum;
+        copySsaNum         = op2.lcl.ssaNum;
+        zeroOffsetFieldSeq = op2.zeroOffsetFieldSeq;
+    }
+    else
+    {
+        copyLclNum         = op1.lcl.lclNum;
+        copySsaNum         = op1.lcl.ssaNum;
+        zeroOffsetFieldSeq = nullptr;  // Only the RHS of an assignment can have a FldSeq.
+        assert(optLocalAssertionProp); // Were we to perform replacements in global propagation, that makes copy
+                                       // assertions for control flow ("if (a == b) { ... }"), where both operands
+                                       // could have a FldSeq, we'd need to save it for "op1" too.
+    }
+
     if (!optLocalAssertionProp)
     {
         // Extract the ssaNum of the matching lclNum.
         unsigned ssaNum = (op1.lcl.lclNum == lclNum) ? op1.lcl.ssaNum : op2.lcl.ssaNum;
-        copySsaNum      = (op1.lcl.lclNum == lclNum) ? op2.lcl.ssaNum : op1.lcl.ssaNum;
 
         if (ssaNum != tree->GetSsaNum())
         {
@@ -3351,12 +3374,25 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
     tree->SetLclNum(copyLclNum);
     tree->SetSsaNum(copySsaNum);
 
+    // The sequence we are propagating (if any) represents the inner fields.
+    if (zeroOffsetFieldSeq != nullptr)
+    {
+        FieldSeqNode* outerZeroOffsetFieldSeq = nullptr;
+        if (GetZeroOffsetFieldMap()->Lookup(tree, &outerZeroOffsetFieldSeq))
+        {
+            zeroOffsetFieldSeq = GetFieldSeqStore()->Append(zeroOffsetFieldSeq, outerZeroOffsetFieldSeq);
+            GetZeroOffsetFieldMap()->Remove(tree);
+        }
+
+        fgAddFieldSeqForZeroOffset(tree, zeroOffsetFieldSeq);
+    }
+
 #ifdef DEBUG
     if (verbose)
     {
         printf("\nAssertion prop in " FMT_BB ":\n", compCurBB->bbNum);
         optPrintAssertion(curAssertion, index);
-        gtDispTree(tree, nullptr, nullptr, true);
+        DISPNODE(tree);
     }
 #endif
 
@@ -3608,7 +3644,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_T
 
 GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
-    assert(tree->OperKind() & GTK_RELOP);
+    assert(tree->OperIsCompare());
 
     if (!optLocalAssertionProp)
     {
@@ -4627,9 +4663,9 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 
         case GT_OBJ:
         case GT_BLK:
-        case GT_DYN_BLK:
         case GT_IND:
         case GT_NULLCHECK:
+        case GT_STORE_DYN_BLK:
             return optAssertionProp_Ind(assertions, tree, stmt);
 
         case GT_BOUNDS_CHECK:
@@ -4667,15 +4703,15 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 }
 
 //------------------------------------------------------------------------
-// optImpliedAssertions: Given a tree node that makes an assertion this
-//                       method computes the set of implied assertions
-//                       that are also true. The updated assertions are
-//                       maintained on the Compiler object.
+// optImpliedAssertions: Given an assertion this method computes the set
+//                       of implied assertions that are also true.
 //
 // Arguments:
 //      assertionIndex   : The id of the assertion.
 //      activeAssertions : The assertions that are already true at this point.
-
+//                         This method will add the discovered implied assertions
+//                         to this set.
+//
 void Compiler::optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& activeAssertions)
 {
     noway_assert(!optLocalAssertionProp);
@@ -4824,7 +4860,6 @@ void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
 // Return Value:
 //      The assertions we have about the value number.
 //
-
 ASSERT_VALRET_TP Compiler::optGetVnMappedAssertions(ValueNum vn)
 {
     ASSERT_TP set = BitVecOps::UninitVal();

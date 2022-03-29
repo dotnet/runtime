@@ -277,23 +277,23 @@ namespace System.Security.Cryptography
         {
             if (hashAlgorithmName == HashAlgorithmName.SHA1)
             {
-                return 160 / 8;
+                return HMACSHA1.HashSizeInBytes;
             }
             else if (hashAlgorithmName == HashAlgorithmName.SHA256)
             {
-                return 256 / 8;
+                return HMACSHA256.HashSizeInBytes;
             }
             else if (hashAlgorithmName == HashAlgorithmName.SHA384)
             {
-                return 384 / 8;
+                return HMACSHA384.HashSizeInBytes;
             }
             else if (hashAlgorithmName == HashAlgorithmName.SHA512)
             {
-                return 512 / 8;
+                return HMACSHA512.HashSizeInBytes;
             }
             else if (hashAlgorithmName == HashAlgorithmName.MD5)
             {
-                return 128 / 8;
+                return HMACMD5.HashSizeInBytes;
             }
             else
             {

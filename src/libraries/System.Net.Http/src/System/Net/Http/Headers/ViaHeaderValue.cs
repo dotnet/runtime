@@ -176,14 +176,15 @@ namespace System.Net.Http.Headers
             Debug.Assert(protocolVersion != null);
 
             // Read <receivedBy> in '[<protocolName>/]<protocolVersion> <receivedBy> [<comment>]'
-            int receivedByLength = HttpRuleParser.GetHostLength(input, current, true, out string? receivedBy);
-
+            int receivedByLength = HttpRuleParser.GetHostLength(input, current, true);
             if (receivedByLength == 0)
             {
                 return 0;
             }
 
+            string receivedBy = input.Substring(current, receivedByLength);
             current = current + receivedByLength;
+
             current = current + HttpRuleParser.GetWhitespaceLength(input, current);
 
             string? comment = null;
@@ -281,7 +282,7 @@ namespace System.Net.Http.Headers
 
             // 'receivedBy' can either be a host or a token. Since a token is a valid host, we only verify if the value
             // is a valid host.;
-            if (HttpRuleParser.GetHostLength(receivedBy, 0, true, out _) != receivedBy.Length)
+            if (HttpRuleParser.GetHostLength(receivedBy, 0, true) != receivedBy.Length)
             {
                 throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, receivedBy));
             }

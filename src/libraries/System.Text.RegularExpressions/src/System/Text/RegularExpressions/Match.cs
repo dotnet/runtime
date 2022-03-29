@@ -61,9 +61,6 @@ namespace System.Text.RegularExpressions
             _textend = begpos + len;
             _textstart = startpos;
             _balancing = false;
-
-            Debug.Assert(!(_textbeg < 0 || _textstart < _textbeg || _textend < _textstart || Text.Length < _textend),
-                "The parameters are out of range.");
         }
 
         /// <summary>Returns an empty Match object.</summary>
@@ -332,31 +329,6 @@ namespace System.Text.RegularExpressions
 
             _balancing = false;
         }
-
-#if DEBUG
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        internal bool IsDebug => _regex != null && _regex.IsDebug;
-
-        internal virtual void Dump()
-        {
-            for (int i = 0; i < _matchcount.Length; i++)
-            {
-                Debug.WriteLine($"Capnum {i}:");
-
-                for (int j = 0; j < _matchcount[i]; j++)
-                {
-                    string text = "";
-
-                    if (_matches[i][j * 2] >= 0)
-                    {
-                        text = Text.Substring(_matches[i][j * 2], _matches[i][j * 2 + 1]);
-                    }
-
-                    Debug.WriteLine($"  ({_matches[i][j * 2]},{_matches[i][j * 2 + 1]}) {text}");
-                }
-            }
-        }
-#endif
     }
 
     /// <summary>
@@ -364,8 +336,7 @@ namespace System.Text.RegularExpressions
     /// </summary>
     internal sealed class MatchSparse : Match
     {
-        // the lookup hashtable
-        internal new readonly Hashtable _caps;
+        private new readonly Hashtable _caps;
 
         internal MatchSparse(Regex regex, Hashtable caps, int capcount, string text, int begpos, int len, int startpos) :
             base(regex, capcount, text, begpos, len, startpos)
@@ -374,22 +345,5 @@ namespace System.Text.RegularExpressions
         }
 
         public override GroupCollection Groups => _groupcoll ??= new GroupCollection(this, _caps);
-
-#if DEBUG
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        internal override void Dump()
-        {
-            if (_caps != null)
-            {
-                foreach (object? entry in _caps)
-                {
-                    DictionaryEntry kvp = (DictionaryEntry)entry!;
-                    Debug.WriteLine($"Slot {kvp.Key} -> {kvp.Value}");
-                }
-            }
-
-            base.Dump();
-        }
-#endif
     }
 }

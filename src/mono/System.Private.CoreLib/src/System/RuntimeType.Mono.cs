@@ -2317,14 +2317,11 @@ namespace System
             return RuntimeTypeHandle.IsSubclassOf(this, rtType);
         }
 
-        private const int DEFAULT_PACKING_SIZE = 8;
-
         internal StructLayoutAttribute? GetStructLayoutAttribute()
         {
             if (IsInterface || HasElementType || IsGenericParameter)
                 return null;
 
-            int pack, size;
             LayoutKind layoutKind = LayoutKind.Auto;
             switch (Attributes & TypeAttributes.LayoutMask)
             {
@@ -2343,13 +2340,7 @@ namespace System
                 default: break;
             }
 
-            GetPacking(out pack, out size);
-
-            // Metadata parameter checking should not have allowed 0 for packing size.
-            // The runtime later converts a packing size of 0 to 8 so do the same here
-            // because it's more useful from a user perspective.
-            if (pack == 0)
-                pack = DEFAULT_PACKING_SIZE;
+            GetPacking(out int pack, out int size);
 
             return new StructLayoutAttribute(layoutKind) { Pack = pack, Size = size, CharSet = charSet };
         }

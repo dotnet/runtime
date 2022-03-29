@@ -105,4 +105,7 @@ System.Security.Cryptography.X509Certificates.X509SelectionFlag</PackageDescript
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading" />
   </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Reference Include="System.Security.Cryptography" />
+  </ItemGroup>
 </Project>

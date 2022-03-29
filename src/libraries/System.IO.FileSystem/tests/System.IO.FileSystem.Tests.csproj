@@ -58,6 +58,8 @@
     <Compile Include="Enumeration\SymbolicLinksTests.cs" />
     <Compile Include="LargeFileTests.cs" />
     <Compile Include="PathInternalTests.cs" />
+    <Compile Include="Path\Exists_Directory.cs" />
+    <Compile Include="Path\Exists_File.cs" />
     <Compile Include="RandomAccess\Base.cs" />
     <Compile Include="RandomAccess\GetLength.cs" />
     <Compile Include="RandomAccess\Read.cs" />

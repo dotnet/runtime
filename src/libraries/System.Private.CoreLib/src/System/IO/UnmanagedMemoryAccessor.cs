@@ -319,7 +319,7 @@ namespace System.IO
                 }
                 else
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_NotEnoughBytesToRead, typeof(T)), nameof(position));
+                    throw new ArgumentException(SR.Argument_NotEnoughBytesToRead, nameof(position));
                 }
             }
 
@@ -561,7 +561,7 @@ namespace System.IO
                 }
                 else
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_NotEnoughBytesToWrite, typeof(T)), nameof(position));
+                    throw new ArgumentException(SR.Argument_NotEnoughBytesToWrite, nameof(position));
                 }
             }
 

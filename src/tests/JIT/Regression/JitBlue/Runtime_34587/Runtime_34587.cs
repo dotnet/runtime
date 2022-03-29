@@ -664,7 +664,7 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Avx.IsSupported)
+            if (Avx2.IsSupported)
             {
                 succeeded &= Vector256.IsHardwareAccelerated;
                 succeeded &= Vector256<byte>.Count == 32;

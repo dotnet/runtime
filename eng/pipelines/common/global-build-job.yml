@@ -3,6 +3,7 @@ parameters:
   nameSuffix: ''
   buildArgs: ''
   archType: ''
+  hostedOs: ''
   osGroup: ''
   osSubgroup: ''
   container: ''
@@ -35,8 +36,12 @@ parameters:
 jobs:
 - template: /eng/common/templates/job/job.yml
   parameters:
-    name: ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
-    displayName: ${{ format('Build {0}{1} {2} {3} {4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
+    ${{ if eq(parameters.hostedOs, '') }}:
+      name: ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
+      displayName: ${{ format('Build {0}{1} {2} {3} {4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
+    ${{ if ne(parameters.hostedOs, '') }}:
+      name: ${{ format('build_{0}{1}_{2}_{3}_{4}_{5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.hostedOs, parameters.buildConfig, parameters.nameSuffix) }}
+      displayName: ${{ format('Build {0}{1} {2} {3} {4} {5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.hostedOs, parameters.buildConfig, parameters.nameSuffix) }}
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
     condition: and(succeeded(), ${{ parameters.condition }})
@@ -136,7 +141,7 @@ jobs:
           df -h
         displayName: Disk Usage before Build
 
-    - ${{ if contains(parameters.nameSuffix, 'Windows_wasm') }}:
+    - ${{ if eq(parameters.platform, 'Browser_wasm_win') }}:
       # Update machine certs
       - task: PowerShell@2
         displayName: Update machine certs

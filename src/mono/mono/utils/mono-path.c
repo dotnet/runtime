@@ -1,7 +1,7 @@
 /**
  * \file
  * Routines for handling path names.
- * 
+ *
  * Authors:
  * 	Gonzalo Paniagua Javier (gonzalo@novell.com)
  * 	Miguel de Icaza (miguel@novell.com)
@@ -69,7 +69,7 @@ mono_path_canonicalize (const char *path)
 			if (backc > 0) {
 				backc--;
 			} else {
-				if (dest != lastpos) 
+				if (dest != lastpos)
 					/* The two strings can overlap */
 					memmove (dest, lastpos, len + 1);
 				dest += len + 1;
@@ -86,9 +86,9 @@ mono_path_canonicalize (const char *path)
 	if (*(lastpos-1) == G_DIR_SEPARATOR && *(lastpos-2) == G_DIR_SEPARATOR && *lastpos == 0)
 		lastpos = lastpos-1;
 #endif
-	
+
 	if (dest != lastpos) strcpy (dest, lastpos);
-	
+
 	g_strreverse (abspath);
 
 	/* We strip away all trailing dir separators. This is not correct for the root directory,
@@ -126,7 +126,7 @@ resolve_symlink (const char *path)
 			g_free (copy);
 			return p;
 		}
-		
+
 		buffer [n] = 0;
 		if (!g_path_is_absolute (buffer)) {
 			dir = g_path_get_dirname (p);

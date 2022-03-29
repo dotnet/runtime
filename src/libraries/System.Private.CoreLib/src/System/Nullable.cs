@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Runtime.Versioning;
 
+#pragma warning disable CA1066 // Implement IEquatable when overriding Object.Equals
+
 namespace System
 {
     // Because we have special type system support that says a boxed Nullable<T>

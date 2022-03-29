@@ -40,7 +40,7 @@ namespace strswitch
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
-        static int Main(string[] args)
+        static int Main()
         {
             string[] s = { "one", "two", "three", "four", "five", "six" };
             //Start recording

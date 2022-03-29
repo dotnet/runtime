@@ -227,17 +227,25 @@ namespace System.Net.Http
 
         private static string ComputeHash(string data, string algorithm)
         {
-            // Disable MD5 insecure warning.
-#pragma warning disable CA5351
-            using (HashAlgorithm hash = algorithm.StartsWith(Sha256, StringComparison.OrdinalIgnoreCase) ? SHA256.Create() : (HashAlgorithm)MD5.Create())
-#pragma warning restore CA5351
-            {
-                Span<byte> result = stackalloc byte[hash.HashSize / 8]; // HashSize is in bits
-                bool hashComputed = hash.TryComputeHash(Encoding.UTF8.GetBytes(data), result, out int bytesWritten);
-                Debug.Assert(hashComputed && bytesWritten == result.Length);
+            Span<byte> hashBuffer = stackalloc byte[SHA256.HashSizeInBytes]; // SHA256 is the largest hash produced
+            byte[] dataBytes = Encoding.UTF8.GetBytes(data);
+            int written;
 
-                return HexConverter.ToString(result, HexConverter.Casing.Lower);
+            if (algorithm.StartsWith(Sha256, StringComparison.OrdinalIgnoreCase))
+            {
+                written = SHA256.HashData(dataBytes, hashBuffer);
+                Debug.Assert(written == SHA256.HashSizeInBytes);
             }
+            else
+            {
+                // Disable MD5 insecure warning.
+#pragma warning disable CA5351
+                written = MD5.HashData(dataBytes, hashBuffer);
+                Debug.Assert(written == MD5.HashSizeInBytes);
+#pragma warning restore CA5351
+            }
+
+            return HexConverter.ToString(hashBuffer.Slice(0, written), HexConverter.Casing.Lower);
         }
 
         internal sealed class DigestResponse
@@ -422,31 +430,25 @@ namespace System.Net.Http
 
     internal static class StringBuilderExtensions
     {
-        // Characters that require escaping in quoted string
-        private static readonly char[] SpecialCharacters = new[] { '"', '\\' };
-
         public static void AppendKeyValue(this StringBuilder sb, string key, string value, bool includeQuotes = true, bool includeComma = true)
         {
-            sb.Append(key);
-            sb.Append('=');
+            sb.Append(key).Append('=');
+
             if (includeQuotes)
             {
+                ReadOnlySpan<char> valueSpan = value;
                 sb.Append('"');
-                int lastSpecialIndex = 0;
-                int specialIndex;
                 while (true)
                 {
-                    specialIndex = value.IndexOfAny(SpecialCharacters, lastSpecialIndex);
-                    if (specialIndex >= 0)
+                    int i = valueSpan.IndexOfAny('"', '\\'); // Characters that require escaping in quoted string
+                    if (i >= 0)
                     {
-                        sb.Append(value, lastSpecialIndex, specialIndex - lastSpecialIndex);
-                        sb.Append('\\');
-                        sb.Append(value[specialIndex]);
-                        lastSpecialIndex = specialIndex + 1;
+                        sb.Append(valueSpan.Slice(0, i)).Append('\\').Append(valueSpan[i]);
+                        valueSpan = valueSpan.Slice(i + 1);
                     }
                     else
                     {
-                        sb.Append(value, lastSpecialIndex, value.Length - lastSpecialIndex);
+                        sb.Append(valueSpan);
                         break;
                     }
                 }
@@ -459,8 +461,7 @@ namespace System.Net.Http
 
             if (includeComma)
             {
-                sb.Append(',');
-                sb.Append(' ');
+                sb.Append(',').Append(' ');
             }
         }
     }

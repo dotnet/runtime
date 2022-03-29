@@ -41,7 +41,7 @@ test_list_nth (void)
 	nth = g_list_nth (list, 1);
 	if (nth->data != bar)
 		return FAILED ("nth failed. #1");
-	
+
 	nth = g_list_nth (list, 2);
 	if (nth->data != baz)
 		return FAILED ("nth failed. #2");
@@ -73,7 +73,7 @@ test_list_index (void)
 	i = g_list_index (list, bar);
 	if (i != 1)
 		return FAILED ("index failed. #1: %d", i);
-	
+
 	i = g_list_index (list, baz);
 	if (i != 2)
 		return FAILED ("index failed. #2: %d", i);
@@ -104,7 +104,7 @@ test_list_last (void)
 	GList *foo = g_list_prepend (NULL, (char*)"foo");
 	GList *bar = g_list_prepend (NULL, (char*)"bar");
 	GList *last;
-	
+
 	foo = g_list_concat (foo, bar);
 	last = g_list_last (foo);
 
@@ -114,7 +114,7 @@ test_list_last (void)
 	foo = g_list_concat (foo, g_list_prepend (NULL, (char*)"baz"));
 	foo = g_list_concat (foo, g_list_prepend (NULL, (char*)"quux"));
 
-	last = g_list_last (foo);	
+	last = g_list_last (foo);
 	if (strcmp ("quux", last->data))
 		return FAILED ("last failed. #2");
 
@@ -141,7 +141,7 @@ test_list_concat (void)
 
 	if (g_list_first (list) != foo)
 		return FAILED ("Concat failed. #4");
-	
+
 	if (g_list_last (list) != bar)
 		return FAILED ("Concat failed. #5");
 
@@ -176,7 +176,7 @@ test_list_insert_sorted (void)
 	/* insert at the beginning */
 	list = g_list_insert_sorted (list, (char*)"", compare);
 	if (strcmp ("", list->data))
-		return FAILED ("insert_sorted failed. #2");		
+		return FAILED ("insert_sorted failed. #2");
 
 	/* insert at the end */
 	list = g_list_insert_sorted (list, (char*)"aaaa", compare);
@@ -206,7 +206,7 @@ test_list_copy (void)
 			return FAILED ("copy failed.");
 
 	g_list_free (list);
-	g_list_free (copy);	
+	g_list_free (copy);
 	return OK;
 }
 
@@ -234,7 +234,7 @@ test_list_reverse (void)
 	}
 
 	g_list_free (list);
-	g_list_free (reverse);	
+	g_list_free (reverse);
 	return OK;
 }
 
@@ -267,7 +267,7 @@ test_list_remove_link (void)
 	GList *list = foo;
 
 	foo = g_list_concat (foo, bar);
-	foo = g_list_concat (foo, baz);	
+	foo = g_list_concat (foo, baz);
 
 	list = g_list_remove_link (list, bar);
 
@@ -277,7 +277,7 @@ test_list_remove_link (void)
 	if (bar->next != NULL)
 		return FAILED ("remove_link failed #2");
 
-	g_list_free (list);	
+	g_list_free (list);
 	g_list_free (bar);
 	return OK;
 }
@@ -299,7 +299,7 @@ test_list_insert_before (void)
 		return FAILED ("2");
 
 	if (strcmp (g_list_nth_data (foo, 1), (char*)"baz"))
-		return FAILED ("3: %s", g_list_nth_data (foo, 1));	
+		return FAILED ("3: %s", g_list_nth_data (foo, 1));
 
 	g_list_free (foo);
 	return OK;
@@ -400,26 +400,26 @@ test_list_find_custom (void)
 	char *foo = (char*)"foo";
 	char *bar = (char*)"bar";
 	char *baz = (char*)"baz";
-	
+
 	list = g_list_prepend (list, baz);
 	list = g_list_prepend (list, bar);
 	list = g_list_prepend (list, foo);
-	
+
 	found = g_list_find_custom (list, baz, find_custom);
-	
+
 	if (found == NULL)
 		return FAILED ("Find failed");
-	
+
 	g_list_free (list);
-	
+
 	return OK;
 }
 
 static Test list_tests [] = {
 	{       "length", test_list_length},
 	{          "nth", test_list_nth},
-	{        "index", test_list_index},	
-	{         "last", test_list_last},	
+	{        "index", test_list_index},
+	{         "last", test_list_last},
 	{       "append", test_list_append},
 	{       "concat", test_list_concat},
 	{"insert_sorted", test_list_insert_sorted},

@@ -18,14 +18,7 @@ namespace System.Net.Mail
 
         public void Add(string addresses)
         {
-            if (addresses == null)
-            {
-                throw new ArgumentNullException(nameof(addresses));
-            }
-            if (addresses.Length == 0)
-            {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(addresses)), nameof(addresses));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(addresses);
 
             ParseValue(addresses);
         }

@@ -1399,7 +1399,6 @@ namespace System.Drawing
         {
             public int GdiplusVersion;             // Must be 1
 
-            // public DebugEventProc DebugEventCallback; // Ignored on free builds
             public IntPtr DebugEventCallback;
 
             public bool SuppressBackgroundThread;     // FALSE unless you're prepared to call
@@ -1416,7 +1415,6 @@ namespace System.Drawing
                 // In Windows 7 GDI+1.1 story is different as there are different binaries per GDI+ version.
                 bool isWindows7 = os.Platform == PlatformID.Win32NT && os.Version.Major == 6 && os.Version.Minor == 1;
                 result.GdiplusVersion = isWindows7 ? 1 : 2;
-                // result.DebugEventCallback = null;
                 result.SuppressBackgroundThread = false;
                 result.SuppressExternalCodecs = false;
                 return result;

@@ -11,7 +11,10 @@ internal static partial class Interop
 {
     internal static partial class NCrypt
     {
+        internal const string NCRYPT_CIPHER_KEY_BLOB = "CipherKeyBlob";
         internal const string NCRYPT_PKCS8_PRIVATE_KEY_BLOB = "PKCS8_PRIVATEKEY";
+
+        internal const int NCRYPT_CIPHER_KEY_BLOB_MAGIC = 0x52485043;  //'CPHR'
 
         [GeneratedDllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
         internal static partial ErrorCode NCryptOpenKey(SafeNCryptProviderHandle hProvider, out SafeNCryptKeyHandle phKey, string pszKeyName, int dwLegacyKeySpec, CngKeyOpenOptions dwFlags);

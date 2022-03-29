@@ -1681,7 +1681,7 @@ dotnet_diagnostic.xUnit2012.severity = warning
 dotnet_diagnostic.xUnit2013.severity = none
 
 # xUnit2014: Do not use throws check to check for asynchronously thrown exception
-dotnet_diagnostic.xUnit2014.severity = warning
+dotnet_diagnostic.xUnit2014.severity = none
 
 # xUnit2015: Do not use typeof expression to check the exception type
 dotnet_diagnostic.xUnit2015.severity = warning

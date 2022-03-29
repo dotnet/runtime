@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System.Diagnostics;
 using System;
-
+//keep the same line number for class in the original file and the updates ones
 namespace ApplyUpdateReferencedAssembly
 {
     public class MethodBody1 {
@@ -36,6 +36,18 @@ namespace ApplyUpdateReferencedAssembly
 
     public class MethodBody4 {
         public static void StaticMethod4 () {
+        }
+    }
+
+
+
+
+
+
+    public class MethodBody5 {
+        public static void StaticMethod1 () {
+            Console.WriteLine("beforeoriginal");
+            Console.WriteLine("original");
         }
     }
 }

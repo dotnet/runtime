@@ -400,8 +400,8 @@ namespace HashTableDetail
 {
     // Use the C++ detection idiom (https://isocpp.org/blog/2017/09/detection-idiom-a-stopgap-for-concepts-simon-brand) to call the
     // derived table's EnumMemoryRegionsForEntry method if it defines one.
-    template<typename...>
-    using void_t = void;
+    template <class... > struct make_void { using type = void; };
+    template <class... T> using void_t = typename make_void<T...>::type;
 
     template<typename B>
     struct negation : std::integral_constant<bool, !bool(B::value)> { };

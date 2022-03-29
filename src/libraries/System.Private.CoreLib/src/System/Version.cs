@@ -304,11 +304,11 @@ namespace System
             // We musn't have any separators after build.
             int buildEnd = -1;
             int minorEnd = input.Slice(majorEnd + 1).IndexOf('.');
-            if (minorEnd != -1)
+            if (minorEnd >= 0)
             {
                 minorEnd += (majorEnd + 1);
                 buildEnd = input.Slice(minorEnd + 1).IndexOf('.');
-                if (buildEnd != -1)
+                if (buildEnd >= 0)
                 {
                     buildEnd += (minorEnd + 1);
                     if (input.Slice(buildEnd + 1).Contains('.'))

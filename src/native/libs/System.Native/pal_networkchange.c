@@ -35,6 +35,7 @@ Error SystemNative_CreateNetworkChangeListenerSocket(int32_t* retSocket)
     sa.nl_family = AF_NETLINK;
     sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR | RTMGRP_IPV4_ROUTE | RTMGRP_IPV6_ROUTE;
     int32_t sock = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+
 #elif HAVE_RT_MSGHDR
     int32_t sock = socket(PF_ROUTE, SOCK_RAW, 0);
 #endif
@@ -42,6 +43,20 @@ Error SystemNative_CreateNetworkChangeListenerSocket(int32_t* retSocket)
     {
         *retSocket = -1;
         return (Error)(SystemNative_ConvertErrorPlatformToPal(errno));
+    }
+
+    // Added receive timeout to prevent recvmsg method in SystemNative_ReadEvents to block thread indefinitely.
+    // This allows method SystemNative_ReadEvents to periodically exit and allows .NET thread to exit if needed.
+    struct timeval tv;
+    tv.tv_sec = 1; //we will wait in SystemNative_ReadEvents method for max one second (TODO: is this good default value?)
+    tv.tv_usec = 0;
+
+    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) != 0)
+    {
+        *retSocket = -1;
+        Error palError = (Error)(SystemNative_ConvertErrorPlatformToPal(errno));
+        close(sock);
+        return palError;
     }
 
 #if HAVE_LINUX_RTNETLINK_H

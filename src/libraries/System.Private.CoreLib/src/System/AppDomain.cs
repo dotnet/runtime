@@ -80,13 +80,10 @@ namespace System
 
         public string ApplyPolicy(string assemblyName)
         {
-            if (assemblyName == null)
+            ArgumentException.ThrowIfNullOrEmpty(assemblyName);
+            if (assemblyName[0] == '\0')
             {
-                throw new ArgumentNullException(nameof(assemblyName));
-            }
-            if (assemblyName.Length == 0 || assemblyName[0] == '\0')
-            {
-                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(assemblyName));
+                throw new ArgumentException(SR.Argument_EmptyString, nameof(assemblyName));
             }
 
             return assemblyName;

@@ -9,7 +9,7 @@
 
 #ifdef MONO_JEMALLOC_ENABLED
 
-void 
+void
 mono_init_jemalloc (void)
 {
 	GMemVTable g_mem_vtable = { MONO_JEMALLOC_MALLOC, MONO_JEMALLOC_REALLOC, MONO_JEMALLOC_FREE, MONO_JEMALLOC_CALLOC};

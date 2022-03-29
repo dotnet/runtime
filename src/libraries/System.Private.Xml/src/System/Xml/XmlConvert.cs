@@ -755,7 +755,7 @@ namespace System.Xml
             return ToString(value, "yyyy-MM-ddTHH:mm:ss.fffffffzzzzzz");
         }
 
-        public static string ToString(DateTime value, string format)
+        public static string ToString(DateTime value, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format)
         {
             return value.ToString(format, DateTimeFormatInfo.InvariantInfo);
         }
@@ -793,7 +793,7 @@ namespace System.Xml
             return xsdDateTime.ToString();
         }
 
-        public static string ToString(DateTimeOffset value, string format)
+        public static string ToString(DateTimeOffset value, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format)
         {
             return value.ToString(format, DateTimeFormatInfo.InvariantInfo);
         }
@@ -1250,12 +1250,12 @@ namespace System.Xml
             return ToDateTime(s, AllDateTimeFormats);
         }
 
-        public static DateTime ToDateTime(string s, string format)
+        public static DateTime ToDateTime(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format)
         {
             return DateTime.ParseExact(s, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
-        public static DateTime ToDateTime(string s, string[] formats)
+        public static DateTime ToDateTime(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string[] formats)
         {
             return DateTime.ParseExact(s, formats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
@@ -1299,7 +1299,7 @@ namespace System.Xml
             return dateTimeOffset;
         }
 
-        public static DateTimeOffset ToDateTimeOffset(string s, string format)
+        public static DateTimeOffset ToDateTimeOffset(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format)
         {
             if (s == null)
             {
@@ -1308,7 +1308,7 @@ namespace System.Xml
             return DateTimeOffset.ParseExact(s, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
-        public static DateTimeOffset ToDateTimeOffset(string s, string[] formats)
+        public static DateTimeOffset ToDateTimeOffset(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string[] formats)
         {
             if (s == null)
             {

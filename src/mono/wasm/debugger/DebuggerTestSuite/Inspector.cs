@@ -73,6 +73,12 @@ namespace DebuggerTests
             }
         }
 
+        public void ClearWaiterFor(string what)
+        {
+            if (notifications.ContainsKey(what))
+                notifications.Remove(what);
+        }
+
         void NotifyOf(string what, JObject args)
         {
             if (notifications.TryGetValue(what, out TaskCompletionSource<JObject>? tcs))
@@ -94,6 +100,18 @@ namespace DebuggerTests
         public void On(string evtName, Func<JObject, CancellationToken, Task> cb)
         {
             eventListeners[evtName] = cb;
+        }
+
+        public Task<JObject> WaitForEvent(string evtName)
+        {
+            var eventReceived = new TaskCompletionSource<JObject>();
+            On(evtName, async (args, token) =>
+            {
+                eventReceived.SetResult(args);
+                await Task.CompletedTask;
+            });
+
+            return eventReceived.Task.WaitAsync(Token);
         }
 
         void FailAllWaiters(Exception? exception = null)

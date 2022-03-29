@@ -111,7 +111,7 @@ mini_llvmonly_get_delegate_arg (MonoMethod *method, gpointer method_ptr)
  * This is used for:
  * - generic sharing (ARG is the rgctx)
  * - gsharedvt signature wrappers (ARG is a function descriptor)
- * 
+ *
  */
 MonoFtnDesc*
 mini_llvmonly_create_ftndesc (MonoMethod *m, gpointer addr, gpointer arg)
@@ -160,7 +160,7 @@ mini_llvmonly_add_method_wrappers (MonoMethod *m, gpointer compiled_method, gboo
 	addr = compiled_method;
 
 	if (add_unbox_tramp) {
-		/* 
+		/*
 		 * The unbox trampolines call the method directly, so need to add
 		 * an rgctx tramp before them.
 		 */

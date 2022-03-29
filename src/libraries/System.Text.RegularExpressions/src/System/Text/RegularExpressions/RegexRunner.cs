@@ -145,16 +145,10 @@ namespace System.Text.RegularExpressions
             bool initialized = false;
             while (true)
             {
-#if DEBUG
-                if (regex.IsDebug)
-                {
-                    Debug.WriteLine("");
-                    Debug.WriteLine($"Search range: from {runtextbeg} to {runtextend}");
-                    Debug.WriteLine($"Firstchar search starting at {runtextpos} stopping at {stoppos}");
-                }
-#endif
-
                 // Find the next potential location for a match in the input.
+#if DEBUG
+                Debug.WriteLineIf(Regex.EnableDebugTracing, $"Calling FindFirstChar at {nameof(runtextbeg)}={runtextbeg}, {nameof(runtextpos)}={runtextpos}, {nameof(runtextend)}={runtextend}");
+#endif
                 if (FindFirstChar())
                 {
                     if (!ignoreTimeout)
@@ -170,15 +164,10 @@ namespace System.Text.RegularExpressions
                         initialized = true;
                     }
 
-#if DEBUG
-                    if (regex.IsDebug)
-                    {
-                        Debug.WriteLine($"Executing engine starting at {runtextpos}");
-                        Debug.WriteLine("");
-                    }
-#endif
-
                     // See if there's a match at this position.
+#if DEBUG
+                    Debug.WriteLineIf(Regex.EnableDebugTracing, $"Calling Go at {nameof(runtextpos)}={runtextpos}");
+#endif
                     Go();
 
                     // If we got a match, we're done.
@@ -264,16 +253,10 @@ namespace System.Text.RegularExpressions
             bool initialized = false;
             while (true)
             {
-#if DEBUG
-                if (regex.IsDebug)
-                {
-                    Debug.WriteLine("");
-                    Debug.WriteLine($"Search range: from {runtextbeg} to {runtextend}");
-                    Debug.WriteLine($"Firstchar search starting at {runtextpos} stopping at {stoppos}");
-                }
-#endif
-
                 // Find the next potential location for a match in the input.
+#if DEBUG
+                Debug.WriteLineIf(Regex.EnableDebugTracing, $"Calling FindFirstChar at {nameof(runtextbeg)}={runtextbeg}, {nameof(runtextpos)}={runtextpos}, {nameof(runtextend)}={runtextend}");
+#endif
                 if (FindFirstChar())
                 {
                     if (!ignoreTimeout)
@@ -290,11 +273,7 @@ namespace System.Text.RegularExpressions
                     }
 
 #if DEBUG
-                    if (regex.IsDebug)
-                    {
-                        Debug.WriteLine($"Executing engine starting at {runtextpos}");
-                        Debug.WriteLine("");
-                    }
+                    Debug.WriteLineIf(Regex.EnableDebugTracing, $"Calling Go at {nameof(runtextpos)}={runtextpos}");
 #endif
 
                     // See if there's a match at this position.
@@ -405,19 +384,6 @@ namespace System.Text.RegularExpressions
 
             if (0 > _timeoutOccursAt && 0 < currentMillis)
                 return;
-
-#if DEBUG
-            if (runregex!.IsDebug)
-            {
-                Debug.WriteLine("");
-                Debug.WriteLine("RegEx match timeout occurred!");
-                Debug.WriteLine($"Specified timeout:       {TimeSpan.FromMilliseconds(_timeout)}");
-                Debug.WriteLine($"Timeout check frequency: {TimeoutCheckFrequency}");
-                Debug.WriteLine($"Search pattern:          {runregex.pattern}");
-                Debug.WriteLine($"Input:                   {runtext}");
-                Debug.WriteLine("About to throw RegexMatchTimeoutException.");
-            }
-#endif
 
             throw new RegexMatchTimeoutException(runtext!, runregex!.pattern!, TimeSpan.FromMilliseconds(_timeout));
         }
@@ -714,81 +680,77 @@ namespace System.Text.RegularExpressions
         /// Dump the current state
         /// </summary>
         [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        internal virtual void DumpState()
+        internal virtual void DebugTraceCurrentState()
         {
-            Debug.WriteLine($"Text:  {TextposDescription()}");
-            Debug.WriteLine($"Track: {StackDescription(runtrack!, runtrackpos)}");
-            Debug.WriteLine($"Stack: {StackDescription(runstack!, runstackpos)}");
-        }
+            Debug.WriteLineIf(Regex.EnableDebugTracing, $"Text:  {DescribeTextPosition()}");
+            Debug.WriteLineIf(Regex.EnableDebugTracing, $"Track: {DescribeStack(runtrack!, runtrackpos)}");
+            Debug.WriteLineIf(Regex.EnableDebugTracing, $"Stack: {DescribeStack(runstack!, runstackpos)}");
 
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        private static string StackDescription(int[] a, int index)
-        {
-            var sb = new StringBuilder();
-
-            sb.Append(a.Length - index);
-            sb.Append('/');
-            sb.Append(a.Length);
-
-            if (sb.Length < 8)
+            string DescribeTextPosition()
             {
-                sb.Append(' ', 8 - sb.Length);
-            }
+                var sb = new StringBuilder();
 
-            sb.Append('(');
+                sb.Append(runtextpos);
 
-            for (int i = index; i < a.Length; i++)
-            {
-                if (i > index)
+                if (sb.Length < 8)
                 {
-                    sb.Append(' ');
+                    sb.Append(' ', 8 - sb.Length);
                 }
-                sb.Append(a[i]);
+
+                if (runtextpos > runtextbeg)
+                {
+                    sb.Append(RegexCharClass.DescribeChar(runtext![runtextpos - 1]));
+                }
+                else
+                {
+                    sb.Append('^');
+                }
+
+                sb.Append('>');
+
+                for (int i = runtextpos; i < runtextend; i++)
+                {
+                    sb.Append(RegexCharClass.DescribeChar(runtext![i]));
+                }
+                if (sb.Length >= 64)
+                {
+                    sb.Length = 61;
+                    sb.Append("...");
+                }
+                else
+                {
+                    sb.Append('$');
+                }
+
+                return sb.ToString();
             }
 
-            sb.Append(')');
-
-            return sb.ToString();
-        }
-
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        internal virtual string TextposDescription()
-        {
-            var sb = new StringBuilder();
-
-            sb.Append(runtextpos);
-
-            if (sb.Length < 8)
+            static string DescribeStack(int[] stack, int index)
             {
-                sb.Append(' ', 8 - sb.Length);
-            }
+                var sb = new StringBuilder();
 
-            if (runtextpos > runtextbeg)
-            {
-                sb.Append(RegexCharClass.CharDescription(runtext![runtextpos - 1]));
-            }
-            else
-            {
-                sb.Append('^');
-            }
+                sb.Append(stack.Length - index).Append('/').Append(stack.Length);
 
-            sb.Append('>');
+                if (sb.Length < 8)
+                {
+                    sb.Append(' ', 8 - sb.Length);
+                }
 
-            for (int i = runtextpos; i < runtextend; i++)
-            {
-                sb.Append(RegexCharClass.CharDescription(runtext![i]));
-            }
-            if (sb.Length >= 64)
-            {
-                sb.Length = 61;
-                sb.Append("...");
-            }
-            else
-            {
-                sb.Append('$');
-            }
+                sb.Append('(');
 
-            return sb.ToString();
+                for (int i = index; i < stack.Length; i++)
+                {
+                    if (i > index)
+                    {
+                        sb.Append(' ');
+                    }
+                    sb.Append(stack[i]);
+                }
+
+                sb.Append(')');
+
+                return sb.ToString();
+            }
         }
 #endif
     }

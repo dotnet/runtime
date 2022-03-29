@@ -75,6 +75,23 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void GetDictionaryInvalidValues()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"InvalidDictionary:0", "true"},
+                {"InvalidDictionary:1", "invalid"},
+            };
+            var config = new ConfigurationBuilder().AddInMemoryCollection(input).Build();
+            var dict = new Dictionary<string, bool>();
+
+            config.Bind("InvalidDictionary", dict);
+
+            Assert.Single(dict);
+            Assert.True(dict["0"]);
+        }
+
+        [Fact]
         public void BindList()
         {
             var input = new Dictionary<string, string>
@@ -464,6 +481,77 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val_1", options.StringDictionary["abc"]);
             Assert.Equal("val_2", options.StringDictionary["def"]);
             Assert.Equal("val_3", options.StringDictionary["ghi"]);
+        }
+
+        [Fact]
+        public void ShouldPreserveExistingKeysInDictionary()
+        {
+            var input = new Dictionary<string, string> { { "ascii:b", "98" } };
+            var config = new ConfigurationBuilder().AddInMemoryCollection(input).Build();
+            var origin = new Dictionary<string, int> { ["a"] = 97 };
+
+            config.Bind("ascii", origin);
+            
+            Assert.Equal(2, origin.Count);
+            Assert.Equal(97, origin["a"]);
+            Assert.Equal(98, origin["b"]);
+        }
+
+        [Fact]
+        public void ShouldPreserveExistingKeysInNestedDictionary()
+        {
+            var input = new Dictionary<string, string> { ["ascii:b"] = "98" };
+            var config = new ConfigurationBuilder().AddInMemoryCollection(input).Build();
+            var origin = new Dictionary<string, IDictionary<string, int>>
+            {
+                ["ascii"] = new Dictionary<string, int> { ["a"] = 97 }
+            };
+
+            config.Bind(origin);
+
+            Assert.Equal(2, origin["ascii"].Count);
+            Assert.Equal(97, origin["ascii"]["a"]);
+            Assert.Equal(98, origin["ascii"]["b"]);
+        }
+
+        [Fact]
+        public void ShouldPreserveExistingKeysInDictionaryWithEnumAsKeyType()
+        {
+            var input = new Dictionary<string, string>
+            {
+                ["abc:def"] = "val_2",
+                ["abc:ghi"] = "val_3"
+            };
+            var config = new ConfigurationBuilder().AddInMemoryCollection(input).Build();
+            var origin = new Dictionary<KeyEnum, IDictionary<KeyUintEnum, string>>
+            {
+                [KeyEnum.abc] = new Dictionary<KeyUintEnum, string> {  [KeyUintEnum.abc] = "val_1" }
+            };
+
+            config.Bind(origin);
+
+            Assert.Equal(3, origin[KeyEnum.abc].Count);
+            Assert.Equal("val_1", origin[KeyEnum.abc][KeyUintEnum.abc]);
+            Assert.Equal("val_2", origin[KeyEnum.abc][KeyUintEnum.def]);
+            Assert.Equal("val_3", origin[KeyEnum.abc][KeyUintEnum.ghi]);
+        }
+
+        [Fact]
+        public void ShouldPreserveExistingValuesInArrayWhenItIsDictionaryElement()
+        {
+            var input = new Dictionary<string, string>
+            {
+                ["ascii:b"] = "98",
+            };
+            var config = new ConfigurationBuilder().AddInMemoryCollection(input).Build();
+            var origin = new Dictionary<string, int[]>
+            {
+                ["ascii"] = new int[] { 97 }
+            };
+
+            config.Bind(origin);
+
+            Assert.Equal(new int[] { 97, 98 }, origin["ascii"]);
         }
 
         [Fact]

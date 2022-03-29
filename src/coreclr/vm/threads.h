@@ -132,7 +132,7 @@ class     Frame;
 class     ThreadBaseObject;
 class     AppDomainStack;
 class     LoadLevelLimiter;
-class     DomainFile;
+class     DomainAssembly;
 class     DeadlockAwareLock;
 struct    HelperMethodFrameCallerList;
 class     ThreadLocalIBCInfo;

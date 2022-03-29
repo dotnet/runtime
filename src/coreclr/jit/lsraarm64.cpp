@@ -522,7 +522,6 @@ int LinearScan::BuildNode(GenTree* tree)
         break;
 
         case GT_BLK:
-        case GT_DYN_BLK:
             // These should all be eliminated prior to Lowering.
             assert(!"Non-store block node in Lowering");
             srcCount = 0;
@@ -544,14 +543,14 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 1);
 
-            // Need a variable number of temp regs (see genLclHeap() in codegenamd64.cpp):
+            // Need a variable number of temp regs (see genLclHeap() in codegenarm64.cpp):
             // Here '-' means don't care.
             //
             //  Size?                   Init Memory?    # temp regs
             //   0                          -               0
-            //   const and <=6 ptr words    -               0
+            //   const and <=UnrollLimit    -               0
             //   const and <PageSize        No              0
-            //   >6 ptr words               Yes             0
+            //   >UnrollLimit               Yes             0
             //   Non-const                  Yes             0
             //   Non-const                  No              2
             //
@@ -570,12 +569,9 @@ int LinearScan::BuildNode(GenTree* tree)
                     // Note: The Gentree node is not updated here as it is cheap to recompute stack aligned size.
                     // This should also help in debugging as we can examine the original size specified with
                     // localloc.
-                    sizeVal         = AlignUp(sizeVal, STACK_ALIGN);
-                    size_t stpCount = sizeVal / (REGSIZE_BYTES * 2);
+                    sizeVal = AlignUp(sizeVal, STACK_ALIGN);
 
-                    // For small allocations up to 4 'stp' instructions (i.e. 16 to 64 bytes of localloc)
-                    //
-                    if (stpCount <= 4)
+                    if (sizeVal <= LCLHEAP_UNROLL_LIMIT)
                     {
                         // Need no internal registers
                     }
@@ -1091,55 +1087,52 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             }
         }
     }
-    else
+    else if (intrin.op2 != nullptr)
     {
-        if (intrin.op2 != nullptr)
+        // RMW intrinsic operands doesn't have to be delayFree when they can be assigned the same register as op1Reg
+        // (i.e. a register that corresponds to read-modify-write operand) and one of them is the last use.
+
+        assert(intrin.op1 != nullptr);
+
+        bool forceOp2DelayFree = false;
+        if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
         {
-            // RMW intrinsic operands doesn't have to be delayFree when they can be assigned the same register as op1Reg
-            // (i.e. a register that corresponds to read-modify-write operand) and one of them is the last use.
-
-            assert(intrin.op1 != nullptr);
-
-            bool forceOp2DelayFree = false;
-            if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
+            if (!intrin.op2->IsCnsIntOrI() && (!intrin.op1->isContained() || intrin.op1->OperIsLocal()))
             {
-                if (!intrin.op2->IsCnsIntOrI() && (!intrin.op1->isContained() || intrin.op1->OperIsLocal()))
-                {
-                    // If the index is not a constant and the object is not contained or is a local
-                    // we will need a general purpose register to calculate the address
-                    // internal register must not clobber input index
-                    // TODO-Cleanup: An internal register will never clobber a source; this code actually
-                    // ensures that the index (op2) doesn't interfere with the target.
-                    buildInternalIntRegisterDefForNode(intrinsicTree);
-                    forceOp2DelayFree = true;
-                }
-
-                if (!intrin.op2->IsCnsIntOrI() && !intrin.op1->isContained())
-                {
-                    // If the index is not a constant or op1 is in register,
-                    // we will use the SIMD temp location to store the vector.
-                    var_types requiredSimdTempType = (intrin.id == NI_Vector64_GetElement) ? TYP_SIMD8 : TYP_SIMD16;
-                    compiler->getSIMDInitTempVarNum(requiredSimdTempType);
-                }
+                // If the index is not a constant and the object is not contained or is a local
+                // we will need a general purpose register to calculate the address
+                // internal register must not clobber input index
+                // TODO-Cleanup: An internal register will never clobber a source; this code actually
+                // ensures that the index (op2) doesn't interfere with the target.
+                buildInternalIntRegisterDefForNode(intrinsicTree);
+                forceOp2DelayFree = true;
             }
 
-            if (forceOp2DelayFree)
+            if (!intrin.op2->IsCnsIntOrI() && !intrin.op1->isContained())
             {
-                srcCount += BuildDelayFreeUses(intrin.op2);
+                // If the index is not a constant or op1 is in register,
+                // we will use the SIMD temp location to store the vector.
+                var_types requiredSimdTempType = (intrin.id == NI_Vector64_GetElement) ? TYP_SIMD8 : TYP_SIMD16;
+                compiler->getSIMDInitTempVarNum(requiredSimdTempType);
             }
-            else
-            {
-                srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1) : BuildOperandUses(intrin.op2);
-            }
+        }
 
-            if (intrin.op3 != nullptr)
-            {
-                srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1) : BuildOperandUses(intrin.op3);
+        if (forceOp2DelayFree)
+        {
+            srcCount += BuildDelayFreeUses(intrin.op2);
+        }
+        else
+        {
+            srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1) : BuildOperandUses(intrin.op2);
+        }
 
-                if (intrin.op4 != nullptr)
-                {
-                    srcCount += isRMW ? BuildDelayFreeUses(intrin.op4, intrin.op1) : BuildOperandUses(intrin.op4);
-                }
+        if (intrin.op3 != nullptr)
+        {
+            srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1) : BuildOperandUses(intrin.op3);
+
+            if (intrin.op4 != nullptr)
+            {
+                srcCount += isRMW ? BuildDelayFreeUses(intrin.op4, intrin.op1) : BuildOperandUses(intrin.op4);
             }
         }
     }

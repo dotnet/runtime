@@ -410,7 +410,7 @@ bb_formation_il_pass (const unsigned char *start, const unsigned char *end, Mono
 				offset = cli_addr + 5 + (gint32)read32 (ip + 1);
 				ip += 5;
 			}
-			
+
 			branch = bb_split (bb, current, root, offset, TRUE, method, error);
 			if (!branch)
 				return;
@@ -442,7 +442,7 @@ bb_formation_il_pass (const unsigned char *start, const unsigned char *end, Mono
 				return;
 
 			bb_link (current, next);
-			tmp = next;			
+			tmp = next;
 
 			for (j = 0; j < n; ++j) {
 				if (ip >= end) {
@@ -545,7 +545,7 @@ mono_basic_block_split (MonoMethod *method, MonoError *error, MonoMethodHeader *
 	bb_formation_il_pass (start, end, bb, &root, method, error);
 	if (!is_ok (error))
 		goto fail;
-	
+
 	bb_formation_eh_pass (header, bb, &root, method, error);
 	if (!is_ok (error))
 		goto fail;
@@ -567,14 +567,14 @@ fail:
  * mono_opcode_value_and_size:
  *
  * Returns the size of the opcode starting at *@ip, or -1 on error.
- * Value is the opcode number. 
+ * Value is the opcode number.
 */
 int
 mono_opcode_value_and_size (const unsigned char **ip, const unsigned char *end, MonoOpcodeEnum *value)
 {
 	const unsigned char *start = *ip, *p;
 	int i = *value = mono_opcode_value (ip, end);
-	int size = 0; 
+	int size = 0;
 	if (i < 0 || i >= MONO_CEE_LAST)
 		return -1;
 	p = *ip;

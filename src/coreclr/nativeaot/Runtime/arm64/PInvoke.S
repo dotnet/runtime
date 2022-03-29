@@ -188,7 +188,7 @@ NoAbort:
         EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0xA0
         EPILOG_RETURN
 
-    NESTED_END RhpReversePInvokeTrapThread
+    NESTED_END RhpReversePInvokeAttachOrTrapThread, _TEXT
 
 //
 // RhpPInvoke

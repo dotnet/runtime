@@ -84,9 +84,6 @@
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
-  <data name="Argument_StringZeroLength" xml:space="preserve">
-    <value>String cannot be of zero length.</value>
-  </data>
   <data name="IdentityReference_AccountNameTooLong" xml:space="preserve">
     <value>Account name is too long.</value>
   </data>

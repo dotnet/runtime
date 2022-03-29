@@ -208,7 +208,7 @@ namespace System
 
                 // Do a quick search for the first element of "value".
                 int relativeIndex = IndexOf(ref Unsafe.Add(ref searchSpace, index), valueHead, remainingSearchSpaceLength);
-                if (relativeIndex == -1)
+                if (relativeIndex < 0)
                     break;
                 index += relativeIndex;
 
@@ -774,11 +774,17 @@ namespace System
             if (valueLength == 0)
                 return searchSpaceLength;  // A zero-length sequence is always treated as "found" at the end of the search space.
 
-            T valueHead = value;
-            ref T valueTail = ref Unsafe.Add(ref value, 1);
             int valueTailLength = valueLength - 1;
+            if (valueTailLength == 0)
+            {
+                return LastIndexOf(ref searchSpace, value, searchSpaceLength);
+            }
 
             int index = 0;
+
+            T valueHead = value;
+            ref T valueTail = ref Unsafe.Add(ref value, 1);
+
             while (true)
             {
                 Debug.Assert(0 <= index && index <= searchSpaceLength); // Ensures no deceptive underflows in the computation of "remainingSearchSpaceLength".
@@ -788,7 +794,7 @@ namespace System
 
                 // Do a quick search for the first element of "value".
                 int relativeIndex = LastIndexOf(ref searchSpace, valueHead, remainingSearchSpaceLength);
-                if (relativeIndex == -1)
+                if (relativeIndex < 0)
                     break;
 
                 // Found the first element of "value". See if the tail matches.

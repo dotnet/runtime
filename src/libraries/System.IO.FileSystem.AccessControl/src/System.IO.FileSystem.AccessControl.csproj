@@ -86,8 +86,6 @@
              Link="Common\System\IO\FileSystem.DirectoryCreation.Windows.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
     <Reference Include="System.Buffers" Condition="'$(TargetsWindows)' == 'true'" />
     <Reference Include="System.Collections" Condition="'$(TargetsWindows)' == 'true'" />
     <Reference Include="System.Collections.NonGeneric" />
@@ -100,6 +98,8 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.Handles" />
     <Reference Include="System.Runtime.InteropServices" Condition="'$(TargetsWindows)' == 'true'" />
+    <Reference Include="System.Security.AccessControl" />
+    <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading.Tasks" Condition="'$(TargetsWindows)' == 'true'" />
   </ItemGroup>
 </Project>

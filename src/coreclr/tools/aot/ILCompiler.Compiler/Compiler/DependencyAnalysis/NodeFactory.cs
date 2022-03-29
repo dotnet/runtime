@@ -245,6 +245,10 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new ExternSymbolNode(name);
             });
+            _externIndirectSymbols = new NodeCache<string, ExternSymbolNode>((string name) =>
+            {
+                return new ExternSymbolNode(name, isIndirection: true);
+            });
 
             _pInvokeModuleFixups = new NodeCache<PInvokeModuleData, PInvokeModuleFixupNode>((PInvokeModuleData moduleData) =>
             {
@@ -739,6 +743,13 @@ namespace ILCompiler.DependencyAnalysis
         public ISortableSymbolNode ExternSymbol(string name)
         {
             return _externSymbols.GetOrAdd(name);
+        }
+
+        private NodeCache<string, ExternSymbolNode> _externIndirectSymbols;
+
+        public ISortableSymbolNode ExternIndirectSymbol(string name)
+        {
+            return _externIndirectSymbols.GetOrAdd(name);
         }
 
         private NodeCache<PInvokeModuleData, PInvokeModuleFixupNode> _pInvokeModuleFixups;

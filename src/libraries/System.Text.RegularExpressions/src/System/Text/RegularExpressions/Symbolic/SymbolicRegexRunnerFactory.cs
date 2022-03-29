@@ -89,14 +89,17 @@ namespace System.Text.RegularExpressions.Symbolic
 
             protected override void Go()
             {
-                ReadOnlySpan<char> inputSpan = runtext;
+                int beginning = runtextbeg;
+                ReadOnlySpan<char> inputSpan = runtext.AsSpan(beginning, runtextend - beginning);
 
                 // Perform the match.
-                SymbolicMatch pos = _matcher.FindMatch(quick, inputSpan, runtextpos, runtextend);
+                SymbolicMatch pos = _matcher.FindMatch(quick, inputSpan, runtextpos - beginning);
+
+                // Transfer the result back to the RegexRunner state.
                 if (pos.Success)
                 {
                     // If we successfully matched, capture the match, and then jump the current position to the end of the match.
-                    int start = pos.Index;
+                    int start = pos.Index + beginning;
                     int end = start + pos.Length;
                     Capture(0, start, end);
                     runtextpos = end;

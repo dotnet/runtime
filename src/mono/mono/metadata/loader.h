@@ -25,7 +25,7 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoMethod *
 mono_get_method_constrained (MonoImage *image, uint32_t token, MonoClass *constrained_class,
 			     MonoGenericContext *context, MonoMethod **cil_method);
 
-MONO_API void               
+MONO_API void
 mono_free_method           (MonoMethod *method);
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoMethodSignature*

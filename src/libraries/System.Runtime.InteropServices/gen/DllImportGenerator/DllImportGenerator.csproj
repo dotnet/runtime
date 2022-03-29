@@ -16,18 +16,14 @@
 
   <PropertyGroup>
     <Authors>Microsoft</Authors>
-    <PackageProjectUrl>https://github.com/dotnet/runtimelab/tree/feature/DllImportGenerator</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/dotnet/runtimelab/tree/feature/DllImportGenerator</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/dotnet/runtime/tree/main/src/libraries/System.Runtime.InteropServices/gen/DllImportGenerator</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/dotnet/runtime/</RepositoryUrl>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Description>DllImportGenerator</Description>
     <PackageReleaseNotes>Summary of changes made in this release of the package.</PackageReleaseNotes>
     <Copyright>Copyright</Copyright>
     <PackageTags>DllImportGenerator, analyzers</PackageTags>
     <NoPackageAnalysis>true</NoPackageAnalysis>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <RestoreAdditionalProjectSources>https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet5/nuget/v3/index.json ;$(RestoreAdditionalProjectSources)</RestoreAdditionalProjectSources>
   </PropertyGroup>
 
   <ItemGroup>

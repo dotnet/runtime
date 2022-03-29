@@ -33,15 +33,7 @@ namespace System.Security.Principal
 
         public NTAccount(string domainName, string accountName)
         {
-            if (accountName == null)
-            {
-                throw new ArgumentNullException(nameof(accountName));
-            }
-
-            if (accountName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(accountName));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(accountName);
 
             if (accountName.Length > MaximumAccountNameLength)
             {
@@ -65,15 +57,7 @@ namespace System.Security.Principal
 
         public NTAccount(string name)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
-            if (name.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(name));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             if (name.Length > (MaximumDomainNameLength + 1 /* '\' */ + MaximumAccountNameLength))
             {

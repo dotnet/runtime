@@ -139,7 +139,7 @@ namespace System.Reflection.Runtime.TypeParsing
             }
             _index = src;
             string fullName = new string(buffer, 0, dst);
-            return AssemblyNameParser.Parse(fullName);
+            return RuntimeAssemblyName.Parse(fullName);
         }
 
         //
@@ -173,7 +173,7 @@ namespace System.Reflection.Runtime.TypeParsing
             }
             _index = src;
             string fullName = new string(buffer, 0, dst);
-            return AssemblyNameParser.Parse(fullName);
+            return RuntimeAssemblyName.Parse(fullName);
         }
 
         //

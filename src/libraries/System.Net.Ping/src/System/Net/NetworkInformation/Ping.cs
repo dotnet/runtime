@@ -227,7 +227,7 @@ namespace System.Net.NetworkInformation
             {
                 return SendPingCore(addressSnapshot, buffer, timeout, options);
             }
-            catch (Exception e)
+            catch (Exception e) when (e is not PlatformNotSupportedException)
             {
                 throw new PingException(SR.net_ping, e);
             }
@@ -336,7 +336,7 @@ namespace System.Net.NetworkInformation
                 Task<PingReply> pingReplyTask = SendPingAsyncCore(addressSnapshot, buffer, timeout, options);
                 return await pingReplyTask.ConfigureAwait(false);
             }
-            catch (Exception e)
+            catch (Exception e) when (e is not PlatformNotSupportedException)
             {
                 throw new PingException(SR.net_ping, e);
             }
@@ -388,7 +388,7 @@ namespace System.Net.NetworkInformation
                 IPAddress[] addresses = Dns.GetHostAddresses(hostNameOrAddress);
                 return SendPingCore(addresses[0], buffer, timeout, options);
             }
-            catch (Exception e)
+            catch (Exception e) when (e is not PlatformNotSupportedException)
             {
                 throw new PingException(SR.net_ping, e);
             }
@@ -407,7 +407,7 @@ namespace System.Net.NetworkInformation
                 Task<PingReply> pingReplyTask = SendPingAsyncCore(addresses[0], buffer, timeout, options);
                 return await pingReplyTask.ConfigureAwait(false);
             }
-            catch (Exception e)
+            catch (Exception e) when (e is not PlatformNotSupportedException)
             {
                 throw new PingException(SR.net_ping, e);
             }

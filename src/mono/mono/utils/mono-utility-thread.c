@@ -22,7 +22,7 @@ typedef struct {
 	MonoSemType *response_sem;
 
 	// Variably-sized, size is thread->payload_size
-	gpointer payload [MONO_ZERO_LEN_ARRAY]; 
+	gpointer payload [MONO_ZERO_LEN_ARRAY];
 } UtilityThreadQueueEntry;
 
 static void
@@ -38,7 +38,7 @@ utility_thread_handle_inbox (MonoUtilityThread *thread, gboolean at_shutdown)
 	UtilityThreadQueueEntry *entry = (UtilityThreadQueueEntry *) mono_lock_free_queue_dequeue (&thread->work_queue);
 	if (!entry)
 		return FALSE;
-	
+
 	thread->callbacks.command (thread->state_ptr, &entry->payload, at_shutdown);
 	if (entry->response_sem) {
 		*entry->finished = TRUE;

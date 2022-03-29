@@ -64,7 +64,7 @@ namespace Microsoft.Win32
                 return baseKey;
             }
 
-            throw new ArgumentException(SR.Format(SR.Arg_RegInvalidKeyName, nameof(keyName)), nameof(keyName));
+            throw new ArgumentException(SR.Arg_RegInvalidKeyName, nameof(keyName));
         }
 
         public static object? GetValue(string keyName, string? valueName, object? defaultValue)

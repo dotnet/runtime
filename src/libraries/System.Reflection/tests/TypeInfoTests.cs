@@ -1490,9 +1490,9 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [InlineData(typeof(StructWithoutExplicitStructLayout), LayoutKind.Sequential, CharSet.Ansi, 8)]
+        [InlineData(typeof(StructWithoutExplicitStructLayout), LayoutKind.Sequential, CharSet.Ansi, 0)]
         [InlineData(typeof(StructWithExplicitStructLayout), LayoutKind.Explicit, CharSet.Ansi, 1)]
-        [InlineData(typeof(ClassWithoutExplicitStructLayout), LayoutKind.Auto, CharSet.Ansi, 8)]
+        [InlineData(typeof(ClassWithoutExplicitStructLayout), LayoutKind.Auto, CharSet.Ansi, 0)]
         [InlineData(typeof(ClassWithExplicitStructLayout), LayoutKind.Explicit, CharSet.Unicode, 2)]
         public void StructLayoutAttribute(Type type, LayoutKind kind, CharSet charset, int pack)
         {

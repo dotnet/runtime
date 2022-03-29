@@ -10,3 +10,12 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         build-essential python curl git lldb-6.0 liblldb-6.0-dev \
         libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev \
         libssl-dev libnuma-dev libkrb5-dev zlib1g-dev ninja-build
+
+# Install V8 Engine
+SHELL ["/bin/bash", "-c"]
+
+RUN curl -sSL "https://netcorenativeassets.blob.core.windows.net/resource-packages/external/linux/chromium-v8/v8-linux64-rel-8.5.183.zip" -o ./v8.zip \
+    && unzip ./v8.zip -d /usr/local/v8 \
+    && echo $'#!/usr/bin/env bash\n\
+"/usr/local/v8/d8" --snapshot_blob="/usr/local/v8/snapshot_blob.bin" "$@"\n' > /usr/local/bin/v8 \
+    && chmod +x /usr/local/bin/v8

@@ -402,7 +402,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     }
                     break;
                 case "Xunit.SkipOnMonoAttribute":
-                    if (options.GlobalOptions.RuntimeFlavor() != "Mono")
+                    if (options.GlobalOptions.RuntimeFlavor().ToLowerInvariant() != "mono")
                     {
                         // If we're building tests not for Mono, we can skip handling the specifics of the SkipOnMonoAttribute.
                         continue;
@@ -419,7 +419,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     testInfos = FilterForSkippedTargetFrameworkMonikers(testInfos, (int)filterAttribute.ConstructorArguments[0].Value!);
                     break;
                 case "Xunit.SkipOnCoreClrAttribute":
-                    if (options.GlobalOptions.RuntimeFlavor() != "CoreCLR")
+                    if (options.GlobalOptions.RuntimeFlavor().ToLowerInvariant() != "coreclr")
                     {
                         // If we're building tests not for CoreCLR, we can skip handling the specifics of the SkipOnCoreClrAttribute.
                         continue;
@@ -599,12 +599,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
     private static ImmutableArray<ITestInfo> FilterForSkippedRuntime(ImmutableArray<ITestInfo> testInfos, int skippedRuntimeValue, AnalyzerConfigOptionsProvider options)
     {
         Xunit.TestRuntimes skippedRuntimes = (Xunit.TestRuntimes)skippedRuntimeValue;
-        string runtimeFlavor = options.GlobalOptions.RuntimeFlavor();
-        if (runtimeFlavor == "Mono" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.Mono))
+        string runtimeFlavor = options.GlobalOptions.RuntimeFlavor().ToLowerInvariant();
+        if (runtimeFlavor == "mono" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.Mono))
         {
             return ImmutableArray<ITestInfo>.Empty;
         }
-        else if (runtimeFlavor == "CoreCLR" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.CoreCLR))
+        else if (runtimeFlavor == "coreclr" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.CoreCLR))
         {
             return ImmutableArray<ITestInfo>.Empty;
         }

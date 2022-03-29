@@ -16,7 +16,7 @@ using System.Threading;
 
 namespace System.Reflection
 {
-    internal partial class RuntimeAssembly : Assembly
+    internal sealed partial class RuntimeAssembly : Assembly
     {
         internal RuntimeAssembly() { throw new NotSupportedException(); }
 
@@ -88,11 +88,21 @@ namespace System.Reflection
         {
             get
             {
-                var codeBase = GetCodeBase();
+                if (IsDynamic)
+                {
+                    throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
+                }
+
+                string? codeBase = GetCodeBase();
                 if (codeBase is null)
                 {
-                    // Not supported if the assembly was loaded from memory
+                    // Not supported if the assembly was loaded from single-file bundle.
                     throw new NotSupportedException(SR.NotSupported_CodeBase);
+                }
+                if (codeBase.Length == 0)
+                {
+                    // For backward compatibility, return CoreLib codebase for assemblies loaded from memory.
+                    codeBase = typeof(object).Assembly.CodeBase;
                 }
                 return codeBase;
             }

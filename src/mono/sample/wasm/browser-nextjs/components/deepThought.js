@@ -11,7 +11,9 @@ async function createRuntime() {
         return createDotnetRuntime({
             configSrc: "./mono-config.json",
             disableDotnet6Compatibility: true,
-            scriptDirectory: "/",
+            locateFile: (path, prefix) => {
+                return '/' + path;
+            },
             instantiateWasm: async (imports, successCallback) => {
                 try {
                     const arrayBufferResult = await WebAssembly.instantiate(arrayBuffer, imports);

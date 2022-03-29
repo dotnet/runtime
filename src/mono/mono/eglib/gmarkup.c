@@ -87,12 +87,12 @@ void
 g_markup_parse_context_free (GMarkupParseContext *context)
 {
 	GSList *l;
-	
+
 	g_return_if_fail (context != NULL);
 
 	if (context->user_data_dnotify != NULL)
 		(context->user_data_dnotify) (context->user_data);
-	
+
 	if (context->text != NULL)
 		g_string_free (context->text, TRUE);
 	for (l = context->level; l; l = l->next)
@@ -159,7 +159,7 @@ parse_value (const char *p, const char *end, char **value, GError **gerror)
 {
 	const char *start;
 	int l;
-	
+
 	if (*p != '"'){
 		set_error ("%s", "Expected the attribute value to start with a quote");
 		return end;
@@ -184,7 +184,7 @@ parse_name (const char *p, const char *end, char **value)
 {
 	const char *start = p;
 	int l;
-	
+
 	if (p < end && my_isnamestartchar (*p))
 		for (; p < end && my_isnamechar (*p); p++)
 			;
@@ -209,22 +209,22 @@ parse_attributes (const char *p, const char *end, char ***names, char ***values,
 		p = skip_space (p, end);
 		if (p == end)
 			return end;
-			
+
 		if (*p == '>'){
 			*full_stop = 0;
-			return p; 
+			return p;
 		}
 		if (state == SKIP_XML_DECLARATION && *p == '?' && ((p+1) < end) && *(p+1) == '>'){
 			*full_stop = 0;
 			return p+1;
 		}
-		
+
 		if (*p == '/' && ((p+1) < end && *(p+1) == '>')){
 			*full_stop = 1;
 			return p+1;
 		} else {
 			char *name, *value;
-			
+
 			p = parse_name (p, end, &name);
 			if (p == end)
 				return p;
@@ -258,9 +258,9 @@ parse_attributes (const char *p, const char *end, char ***names, char ***values,
 			(*names) [nnames-1] = name;
 			(*values) [nnames-1] = value;
 			(*names) [nnames] = NULL;
-			(*values) [nnames] = NULL;			
+			(*values) [nnames] = NULL;
 		}
-	} 
+	}
 }
 
 static void
@@ -270,7 +270,7 @@ destroy_parse_state (GMarkupParseContext *context)
 
 	for (p = context->level; p != NULL; p = p->next)
 		g_free (p->data);
-	
+
 	g_slist_free (context->level);
 	if (context->text != NULL)
 		g_string_free (context->text, TRUE);
@@ -284,13 +284,13 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 			      GError **gerror)
 {
 	const char *p,  *end;
-	
+
 	g_return_val_if_fail (context != NULL, FALSE);
 	g_return_val_if_fail (text != NULL, FALSE);
 	g_return_val_if_fail (text_len >= 0, FALSE);
 
 	end = text + text_len;
-	
+
 	for (p = text; p < end; p++){
 		char c = *p;
 
@@ -328,12 +328,12 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 				p += 2;
 				break;
 			}
-			
+
 			if (!my_isnamestartchar (*p)){
 				set_error ("%s", "Expected an element name");
 				goto fail;
 			}
-			
+
 			for (++p; p < end && my_isnamechar (*p); p++)
 				;
 			if (p == end){
@@ -341,7 +341,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 				goto fail;
 			}
 			element_end = p;
-			
+
 			for (; p < end && my_isspace (*p); p++)
 				;
 			if (p == end){
@@ -382,7 +382,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 				g_free (ename);
 				goto fail;
 			}
-			
+
 			if (full_stop){
 				if (context->parser.end_element != NULL &&  context->state == START_ELEMENT){
 					context->parser.end_element (context, ename, context->user_data, gerror);
@@ -395,7 +395,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 			} else {
 				context->level = g_slist_prepend (context->level, ename);
 			}
-			
+
 			context->state = TEXT;
 			break;
 		} /* case START_ELEMENT */
@@ -422,7 +422,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 				break;
 			}
 			break;
-			
+
 		case FLUSH_TEXT:
 			if (context->parser.text != NULL && context->text != NULL){
 				context->parser.text (context, context->text->str, context->text->len,
@@ -430,7 +430,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 				if (gerror != NULL && *gerror != NULL)
 					goto fail;
 			}
-			
+
 			if (c == '/')
 				context->state = CLOSING_ELEMENT;
 			else {
@@ -447,7 +447,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 				set_error ("%s", "Too many closing tags, not enough open tags");
 				goto fail;
 			}
-			
+
 			text = (char*)current->data;
 			if (context->parser.end_element != NULL){
 				context->parser.end_element (context, text, context->user_data, gerror);
@@ -460,13 +460,13 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 
 			while (p < end && *p != '>')
 				p++;
-			
+
 			context->level = context->level->next;
 			g_slist_free_1 (current);
 			context->state = TEXT;
 			break;
 		} /* case CLOSING_ELEMENT */
-			
+
 		} /* switch */
 	}
 
@@ -475,7 +475,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
  fail:
 	if (context->parser.error && gerror != NULL && *gerror)
 		context->parser.error (context, *gerror, context->user_data);
-	
+
 	destroy_parse_state (context);
 	return FALSE;
 }

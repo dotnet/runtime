@@ -44,7 +44,7 @@ namespace System.Linq.Expressions.Interpreter
             string.Create(CultureInfo.InvariantCulture, $"{Index}: {(IsBoxed ? "boxed" : null)} {(InClosure ? "in closure" : null)}");
     }
 
-    internal readonly struct LocalDefinition
+    internal readonly struct LocalDefinition : IEquatable<LocalDefinition>
     {
         internal LocalDefinition(int localIndex, ParameterExpression parameter)
         {
@@ -53,27 +53,14 @@ namespace System.Linq.Expressions.Interpreter
         }
 
         public int Index { get; }
+
         public ParameterExpression Parameter { get; }
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            if (obj is LocalDefinition)
-            {
-                LocalDefinition other = (LocalDefinition)obj;
-                return other.Index == Index && other.Parameter == Parameter;
-            }
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is LocalDefinition other && Equals(other);
 
-            return false;
-        }
+        public bool Equals(LocalDefinition other) => other.Index == Index && other.Parameter == Parameter;
 
-        public override int GetHashCode()
-        {
-            if (Parameter == null)
-            {
-                return 0;
-            }
-            return Parameter.GetHashCode() ^ Index.GetHashCode();
-        }
+        public override int GetHashCode() => Parameter is null ? 0 : Parameter.GetHashCode() ^ Index.GetHashCode();
     }
 
     internal sealed class LocalVariables

@@ -130,6 +130,7 @@ namespace System.Net
                     SetCertificate(sslContext, credential.CertificateContext);
                 }
 
+                Interop.AppleCrypto.SslBreakOnCertRequested(sslContext, true);
                 Interop.AppleCrypto.SslBreakOnServerAuth(sslContext, true);
                 Interop.AppleCrypto.SslBreakOnClientAuth(sslContext, true);
             }
@@ -316,7 +317,7 @@ namespace System.Net
             Interop.AppleCrypto.SslSetMaxProtocolVersion(sslContext, maxProtocolId);
         }
 
-        private static void SetCertificate(SafeSslHandle sslContext, SslStreamCertificateContext context)
+        internal static void SetCertificate(SafeSslHandle sslContext, SslStreamCertificateContext context)
         {
             Debug.Assert(sslContext != null, "sslContext != null");
 

@@ -680,6 +680,9 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 	// When this API becomes available on an arbitrary thread, we can use it,
 	// not available on current Zircon
 	//
+#elif HOST_WASI
+	// Thread scheduling isn't yet implemented in the WASI build
+	return;
 #else /* !HOST_WIN32 and not HOST_FUCHSIA */
 	pthread_t tid;
 	int policy;

@@ -432,7 +432,7 @@ HMODULE WINAPI MonoLoadImage(LPCWSTR FileName)
 	if (FileHandle == INVALID_HANDLE_VALUE)
 		return NULL;
 
-	FileSize = GetFileSize(FileHandle, NULL); 
+	FileSize = GetFileSize(FileHandle, NULL);
 	if (FileSize == INVALID_FILE_SIZE)
 		goto CloseFile;
 

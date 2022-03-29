@@ -1147,7 +1147,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void GetProcesses_EmptyMachineName_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => Process.GetProcesses(""));
+            AssertExtensions.Throws<ArgumentException>("machineName", () => Process.GetProcesses(""));
         }
 
         [Fact]
@@ -1292,7 +1292,7 @@ namespace System.Diagnostics.Tests
         public void GetProcessesByName_EmptyMachineName_ThrowsArgumentException()
         {
             Process currentProcess = Process.GetCurrentProcess();
-            AssertExtensions.Throws<ArgumentException>(null, () => Process.GetProcessesByName(currentProcess.ProcessName, ""));
+            AssertExtensions.Throws<ArgumentException>("machineName", () => Process.GetProcessesByName(currentProcess.ProcessName, ""));
         }
 
         [Fact]

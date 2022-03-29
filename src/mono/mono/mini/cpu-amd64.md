@@ -284,7 +284,6 @@ float_cgt_membase: dest:i src1:f src2:b len:35
 float_cgt_un_membase: dest:i src1:f src2:b len:48
 float_clt_membase: dest:i src1:f src2:b len:35
 float_clt_un_membase: dest:i src1:f src2:b len:42
-float_conv_to_u: dest:i src1:f len:46
 
 # R4 opcodes
 r4_conv_to_i1: dest:i src1:f len:32

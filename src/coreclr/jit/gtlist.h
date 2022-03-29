@@ -16,15 +16,22 @@
 GTNODE(NONE             , char               ,0,GTK_SPECIAL)
 
 //-----------------------------------------------------------------------------
+//  Nodes related to locals:
+//-----------------------------------------------------------------------------
+
+GTNODE(PHI              , GenTreePhi         ,0,GTK_SPECIAL)            // phi node for ssa.
+GTNODE(PHI_ARG          , GenTreePhiArg      ,0,GTK_LEAF)               // phi(phiarg, phiarg, phiarg)
+GTNODE(LCL_VAR          , GenTreeLclVar      ,0,GTK_LEAF)               // local variable
+GTNODE(LCL_FLD          , GenTreeLclFld      ,0,GTK_LEAF)               // field in a non-primitive variable
+GTNODE(STORE_LCL_VAR    , GenTreeLclVar      ,0,(GTK_UNOP|GTK_NOVALUE)) // store to local variable
+GTNODE(STORE_LCL_FLD    , GenTreeLclFld      ,0,(GTK_UNOP|GTK_NOVALUE)) // store to a part of the variable
+GTNODE(LCL_VAR_ADDR     , GenTreeLclVar      ,0,GTK_LEAF)               // address of local variable
+GTNODE(LCL_FLD_ADDR     , GenTreeLclFld      ,0,GTK_LEAF)               // address of field in a non-primitive variable
+
+//-----------------------------------------------------------------------------
 //  Leaf nodes (i.e. these nodes have no sub-operands):
 //-----------------------------------------------------------------------------
 
-GTNODE(LCL_VAR          , GenTreeLclVar      ,0,(GTK_LEAF|GTK_LOCAL))     // local variable
-GTNODE(LCL_FLD          , GenTreeLclFld      ,0,(GTK_LEAF|GTK_LOCAL))     // field in a non-primitive variable
-GTNODE(LCL_VAR_ADDR     , GenTreeLclVar      ,0,GTK_LEAF)               // address of local variable
-GTNODE(LCL_FLD_ADDR     , GenTreeLclFld      ,0,GTK_LEAF)               // address of field in a non-primitive variable
-GTNODE(STORE_LCL_VAR    , GenTreeLclVar      ,0,(GTK_UNOP|GTK_LOCAL|GTK_NOVALUE)) // store to local variable
-GTNODE(STORE_LCL_FLD    , GenTreeLclFld      ,0,(GTK_UNOP|GTK_LOCAL|GTK_NOVALUE)) // store to field in a non-primitive variable
 GTNODE(CATCH_ARG        , GenTree            ,0,GTK_LEAF)               // Exception object in a catch block
 GTNODE(LABEL            , GenTree            ,0,GTK_LEAF)               // Jump-target
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,GTK_LEAF)               // Address of a function
@@ -34,10 +41,10 @@ GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,GTK_LEAF|GTK_NOTLIR)    // Place
 //  Constant nodes:
 //-----------------------------------------------------------------------------
 
-GTNODE(CNS_INT          , GenTreeIntCon      ,0,(GTK_LEAF|GTK_CONST))
-GTNODE(CNS_LNG          , GenTreeLngCon      ,0,(GTK_LEAF|GTK_CONST))
-GTNODE(CNS_DBL          , GenTreeDblCon      ,0,(GTK_LEAF|GTK_CONST))
-GTNODE(CNS_STR          , GenTreeStrCon      ,0,(GTK_LEAF|GTK_CONST))
+GTNODE(CNS_INT          , GenTreeIntCon      ,0,GTK_LEAF)
+GTNODE(CNS_LNG          , GenTreeLngCon      ,0,GTK_LEAF)
+GTNODE(CNS_DBL          , GenTreeDblCon      ,0,GTK_LEAF)
+GTNODE(CNS_STR          , GenTreeStrCon      ,0,GTK_LEAF)
 
 //-----------------------------------------------------------------------------
 //  Unary  operators (1 operand):
@@ -83,8 +90,7 @@ GTNODE(OBJ              , GenTreeObj         ,0,(GTK_UNOP|GTK_EXOP))            
 GTNODE(STORE_OBJ        , GenTreeObj         ,0,(GTK_BINOP|GTK_EXOP|GTK_NOVALUE)) // Object that MAY have gc pointers, and thus includes the relevant gc layout info.
 GTNODE(BLK              , GenTreeBlk         ,0,(GTK_UNOP|GTK_EXOP))              // Block/object with no gc pointers, and with a known size (e.g. a struct with no gc fields)
 GTNODE(STORE_BLK        , GenTreeBlk         ,0,(GTK_BINOP|GTK_EXOP|GTK_NOVALUE)) // Block/object with no gc pointers, and with a known size (e.g. a struct with no gc fields)
-GTNODE(DYN_BLK          , GenTreeDynBlk      ,0,GTK_SPECIAL)               // Dynamically sized block object
-GTNODE(STORE_DYN_BLK    , GenTreeDynBlk      ,0,(GTK_SPECIAL|GTK_NOVALUE)) // Dynamically sized block object
+GTNODE(STORE_DYN_BLK    , GenTreeStoreDynBlk ,0,(GTK_SPECIAL|GTK_NOVALUE))        // Dynamically sized block store
 
 GTNODE(BOX              , GenTreeBox         ,0,(GTK_UNOP|GTK_EXOP|GTK_NOTLIR))
 GTNODE(FIELD            , GenTreeField       ,0,(GTK_UNOP|GTK_EXOP)) // Member-field
@@ -110,9 +116,9 @@ GTNODE(MOD              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(UDIV             , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(UMOD             , GenTreeOp          ,0,GTK_BINOP)
 
-GTNODE(OR               , GenTreeOp          ,1,(GTK_BINOP|GTK_LOGOP))
-GTNODE(XOR              , GenTreeOp          ,1,(GTK_BINOP|GTK_LOGOP))
-GTNODE(AND              , GenTreeOp          ,1,(GTK_BINOP|GTK_LOGOP))
+GTNODE(OR               , GenTreeOp          ,1,GTK_BINOP)
+GTNODE(XOR              , GenTreeOp          ,1,GTK_BINOP)
+GTNODE(AND              , GenTreeOp          ,1,GTK_BINOP)
 
 GTNODE(LSH              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(RSH              , GenTreeOp          ,0,GTK_BINOP)
@@ -121,12 +127,12 @@ GTNODE(ROL              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(ROR              , GenTreeOp          ,0,GTK_BINOP)
 
 GTNODE(ASG              , GenTreeOp          ,0,(GTK_BINOP|GTK_NOTLIR))
-GTNODE(EQ               , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
-GTNODE(NE               , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
-GTNODE(LT               , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
-GTNODE(LE               , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
-GTNODE(GE               , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
-GTNODE(GT               , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
+GTNODE(EQ               , GenTreeOp          ,0,GTK_BINOP)
+GTNODE(NE               , GenTreeOp          ,0,GTK_BINOP)
+GTNODE(LT               , GenTreeOp          ,0,GTK_BINOP)
+GTNODE(LE               , GenTreeOp          ,0,GTK_BINOP)
+GTNODE(GE               , GenTreeOp          ,0,GTK_BINOP)
+GTNODE(GT               , GenTreeOp          ,0,GTK_BINOP)
 
 // These are similar to GT_EQ/GT_NE but they generate "test" instead of "cmp" instructions.
 // Currently these are generated during lowering for code like ((x & y) eq|ne 0) only on
@@ -135,8 +141,8 @@ GTNODE(GT               , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
 // codegen which emits a "test reg, reg" instruction, that would be more difficult to do
 // during lowering because the source operand is used twice so it has to be a lclvar.
 // Because of this there is no need to also add GT_TEST_LT/LE/GE/GT opers.
-GTNODE(TEST_EQ          , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
-GTNODE(TEST_NE          , GenTreeOp          ,0,(GTK_BINOP|GTK_RELOP))
+GTNODE(TEST_EQ          , GenTreeOp          ,0,GTK_BINOP)
+GTNODE(TEST_NE          , GenTreeOp          ,0,GTK_BINOP)
 
 GTNODE(COMMA            , GenTreeOp          ,0,(GTK_BINOP|GTK_NOTLIR))
 
@@ -258,13 +264,6 @@ GTNODE(RETFILT          , GenTreeOp          ,0,(GTK_UNOP|GTK_NOVALUE))   // end
 #if !defined(FEATURE_EH_FUNCLETS)
 GTNODE(END_LFIN         , GenTreeVal         ,0,(GTK_LEAF|GTK_NOVALUE))   // end locally-invoked finally
 #endif // !FEATURE_EH_FUNCLETS
-
-//-----------------------------------------------------------------------------
-//  Nodes used for optimizations.
-//-----------------------------------------------------------------------------
-
-GTNODE(PHI              , GenTreePhi         ,0,GTK_SPECIAL)              // phi node for ssa.
-GTNODE(PHI_ARG          , GenTreePhiArg      ,0,(GTK_LEAF|GTK_LOCAL))     // phi(phiarg, phiarg, phiarg)
 
 //-----------------------------------------------------------------------------
 //  Nodes used by Lower to generate a closer CPU representation of other nodes

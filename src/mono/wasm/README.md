@@ -161,7 +161,25 @@ To build and run the samples with AOT, add `/p:RunAOTCompilation=true` to the ab
 
 Also check [bench](../sample/wasm/browser-bench/README.md) sample to measure mono/wasm runtime performance.
 
-### Upgrading Emscripten
+## Templates
+
+The wasm templates, located in the `templates` directory, are templates for `dotnet new`, VS and VS for Mac. They are packaged and distributed as part of the `wasm-tools` workload. We have 2 templates, `wasmbrowser` and `wasmconsole`, for browser and console WebAssembly applications.
+
+For details about using `dotnet new` see the dotnet tool [documentation](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-new).
+
+To test changes in the templates, use `dotnet new -i <path>`.
+
+Example use of the `wasmconsole` template:
+
+    > dotnet new wasmconsole
+    > dotnet publish
+    > cd bin/Debug/net7.0/browser-wasm/AppBundle
+    > node main.cjs
+    mono_wasm_runtime_ready fe00e07a-5519-4dfe-b35a-f867dbaf2e28
+    Hello World!
+    Args:
+
+## Upgrading Emscripten
 
 Bumping Emscripten version involves these steps:
 

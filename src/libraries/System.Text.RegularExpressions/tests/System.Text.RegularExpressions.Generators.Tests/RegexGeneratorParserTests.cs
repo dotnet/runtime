@@ -442,6 +442,30 @@ namespace System.Text.RegularExpressions.Generator.Tests
             ", compile: true));
         }
 
+        [Fact]
+        public async Task Valid_ClassWithGenericConstraints()
+        {
+            Assert.Empty(await RunGenerator(@"
+                using D;
+                using System.Text.RegularExpressions;
+                namespace A
+                {
+                    public partial class B<U>
+                    {
+                        private partial class C<T> where T : IBlah
+                        {
+                            [RegexGenerator(""ab"")]
+                            private static partial Regex Valid();
+                        }
+                    }
+                }
+                namespace D
+                {
+                    internal interface IBlah { }
+                }
+            ", compile: true));
+        }
+
         public static IEnumerable<object[]> Valid_Modifiers_MemberData()
         {
             foreach (string type in new[] { "class", "struct", "record", "record struct", "record class", "interface" })

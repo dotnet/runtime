@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
     public static partial class DynamicRevocationTests
     {
         // The CI machines are doing an awful lot of things at once, be generous with the timeout;
-        internal static readonly TimeSpan s_urlRetrievalLimit = TimeSpan.FromSeconds(15);
+        internal static readonly TimeSpan s_urlRetrievalLimit = TimeSpan.FromSeconds(30);
 
         private static readonly Oid s_tlsServerOid = new Oid("1.3.6.1.5.5.7.3.1", null);
 

@@ -50,16 +50,16 @@ gunichar2 *mono_unicode_from_external (const gchar *in, gsize *bytes)
 	gchar *encoding_list;
 	int i;
 	glong lbytes;
-	
+
 	if(in==NULL) {
 		return(NULL);
 	}
-	
+
 	encoding_list=g_getenv ("MONO_EXTERNAL_ENCODINGS");
 	if(encoding_list==NULL) {
 		encoding_list = g_strdup("");
 	}
-	
+
 	encodings=g_strsplit (encoding_list, ":", 0);
 	g_free (encoding_list);
 	for(i=0;encodings[i]!=NULL; i++) {
@@ -88,9 +88,9 @@ gunichar2 *mono_unicode_from_external (const gchar *in, gsize *bytes)
 			return((gunichar2 *)res);
 		}
 	}
-	
+
 	g_strfreev (encodings);
-	
+
 	if(g_utf8_validate (in, -1, NULL)) {
 		glong items_written;
 		gunichar2 *unires=g_utf8_to_utf16 (in, -1, NULL, &items_written, NULL);
@@ -125,20 +125,20 @@ gchar *mono_utf8_from_external (const gchar *in)
 	gchar **encodings;
 	gchar *encoding_list;
 	int i;
-	
+
 	if(in==NULL) {
 		return(NULL);
 	}
-	
+
 	encoding_list=g_getenv ("MONO_EXTERNAL_ENCODINGS");
 	if(encoding_list==NULL) {
 		encoding_list = g_strdup("");
 	}
-	
+
 	encodings=g_strsplit (encoding_list, ":", 0);
 	g_free (encoding_list);
 	for(i=0;encodings[i]!=NULL; i++) {
-		
+
 		/* "default_locale" is a special case encoding */
 		if(!strcmp (encodings[i], "default_locale")) {
 			res=g_locale_to_utf8 (in, -1, NULL, NULL, NULL);
@@ -156,9 +156,9 @@ gchar *mono_utf8_from_external (const gchar *in)
 			return(res);
 		}
 	}
-	
+
 	g_strfreev (encodings);
-	
+
 	if(g_utf8_validate (in, -1, NULL)) {
 		return(g_strdup (in));
 	}
@@ -184,7 +184,7 @@ gchar *mono_unicode_to_external_checked (const gunichar2 *uni, MonoError *err)
 	gchar *utf8;
 	gchar *encoding_list;
 	GError *gerr = NULL;
-	
+
 	/* Turn the unicode into utf8 to start with, because its
 	 * easier to work with gchar * than gunichar2 *
 	 */
@@ -194,7 +194,7 @@ gchar *mono_unicode_to_external_checked (const gunichar2 *uni, MonoError *err)
 		g_error_free (gerr);
 		return utf8;
 	}
-	
+
 	encoding_list=g_getenv ("MONO_EXTERNAL_ENCODINGS");
 	if(encoding_list==NULL) {
 		/* Do UTF8 */
@@ -202,7 +202,7 @@ gchar *mono_unicode_to_external_checked (const gunichar2 *uni, MonoError *err)
 	} else {
 		gchar *res, **encodings;
 		int i;
-		
+
 		encodings=g_strsplit (encoding_list, ":", 0);
 		g_free (encoding_list);
 		for(i=0; encodings[i]!=NULL; i++) {
@@ -217,14 +217,14 @@ gchar *mono_unicode_to_external_checked (const gunichar2 *uni, MonoError *err)
 			if(res!=NULL) {
 				g_free (utf8);
 				g_strfreev (encodings);
-				
+
 				return(res);
 			}
 		}
-	
+
 		g_strfreev (encodings);
 	}
-	
+
 	/* Nothing else worked, so just return the utf8 */
 	return(utf8);
 }
@@ -333,7 +333,7 @@ mono_utf8_validate_and_len_with_bounds (const gchar *source, glong max_bytes, gl
 	while (*ptr != 0) {
 		length = trailingBytesForUTF8 [*ptr] + 1;
 		srcPtr = (guchar*) ptr + length;
-		
+
 		/* since *ptr is not zero we must ensure that we can decode the current char + the byte after
 		   srcPtr points to the first byte after the current char.*/
 		if (srcPtr >= end) {

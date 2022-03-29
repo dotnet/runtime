@@ -83,7 +83,7 @@ namespace System.IO.Compression
             {
                 File.SetLastWriteTime(destinationFileName, source.LastWriteTime.DateTime);
             }
-            catch (UnauthorizedAccessException)
+            catch
             {
                 // some OSes like Android (#35374) might not support setting the last write time, the extraction should not fail because of that
             }

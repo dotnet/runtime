@@ -18,6 +18,7 @@ Microsoft.Extensions.Logging.LogLevel
 Microsoft.Extensions.Logging.Logger&lt;T&gt;
 Microsoft.Extensions.Logging.LoggerMessage
 Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
+    <DisableSourceGeneratorPropertyName>DisableMicrosoftExtensionsLoggingSourceGenerator</DisableSourceGeneratorPropertyName>
   </PropertyGroup>
 
   <ItemGroup>

@@ -56,6 +56,12 @@ namespace System
                 _daylightTransitionEnd.Equals(other._daylightTransitionEnd) &&
                 _daylightTransitionStart.Equals(other._daylightTransitionStart);
 
+            /// <summary>Indicates whether the current instance is equal to another instance.</summary>
+            /// <param name="obj">An instance to compare with this instance.</param>
+            /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+            public override bool Equals([NotNullWhen(true)] object? obj) =>
+                obj is AdjustmentRule other && Equals(other);
+
             public override int GetHashCode() => _dateStart.GetHashCode();
 
             private AdjustmentRule(

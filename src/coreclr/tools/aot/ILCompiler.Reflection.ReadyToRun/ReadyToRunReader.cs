@@ -1072,7 +1072,12 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 PgoInfoKey key = new PgoInfoKey(mdReader, owningType, methodHandle, methodTypeArgs);
                 PgoInfo info = new PgoInfo(key, this, pgoFormatVersion, Image, pgoOffset);
-                _pgoInfos.Add(key, info);
+
+                // Since we do non-assembly qualified name based matching for generic instantiations, we can have conflicts.
+                // This is rare, so the current strategy is to just ignore them. This will allow the tooling to work, although
+                // the text output for PGO will be slightly wrong.
+                if (!_pgoInfos.ContainsKey(key))
+                    _pgoInfos.Add(key, info);
                 curParser = allEntriesEnum.GetNext();
             }
 

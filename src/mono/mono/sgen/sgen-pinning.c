@@ -89,7 +89,7 @@ sgen_scan_pin_queue_objects (ScanCopyContext ctx)
 void
 sgen_pin_stage_ptr (void *ptr)
 {
-	/*very simple multiplicative hash function, tons better than simple and'ng */ 
+	/*very simple multiplicative hash function, tons better than simple and'ng */
 	int hash_idx = ((mword)ptr * 1737350767) & (PIN_HASH_SIZE - 1);
 	if (pin_hash_filter [hash_idx] == ptr)
 		return;

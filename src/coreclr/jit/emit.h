@@ -614,6 +614,15 @@ protected:
             assert((ins != INS_invalid) && (ins < INS_count));
             _idIns = ins;
         }
+        bool idInsIs(instruction ins) const
+        {
+            return idIns() == ins;
+        }
+        template <typename... T>
+        bool idInsIs(instruction ins, T... rest) const
+        {
+            return idInsIs(ins) || idInsIs(rest...);
+        }
 
         insFormat idInsFmt() const
         {
@@ -2874,9 +2883,131 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 /* static */ emitAttr emitter::emitGetMemOpSize(instrDesc* id)
 {
     emitAttr defaultSize = id->idOpSize();
-    emitAttr newSize     = defaultSize;
+
     switch (id->idIns())
     {
+        case INS_pextrb:
+        case INS_pinsrb:
+        case INS_vpbroadcastb:
+        {
+            return EA_1BYTE;
+        }
+
+        case INS_pextrw:
+        case INS_pextrw_sse41:
+        case INS_pinsrw:
+        case INS_pmovsxbq:
+        case INS_pmovzxbq:
+        case INS_vpbroadcastw:
+        {
+            return EA_2BYTE;
+        }
+
+        case INS_addss:
+        case INS_cmpss:
+        case INS_comiss:
+        case INS_cvtss2sd:
+        case INS_cvtss2si:
+        case INS_cvttss2si:
+        case INS_divss:
+        case INS_extractps:
+        case INS_insertps:
+        case INS_maxss:
+        case INS_minss:
+        case INS_movss:
+        case INS_mulss:
+        case INS_pextrd:
+        case INS_pinsrd:
+        case INS_pmovsxbd:
+        case INS_pmovsxwq:
+        case INS_pmovzxbd:
+        case INS_pmovzxwq:
+        case INS_rcpss:
+        case INS_roundss:
+        case INS_rsqrtss:
+        case INS_sqrtss:
+        case INS_subss:
+        case INS_ucomiss:
+        case INS_vbroadcastss:
+        case INS_vfmadd132ss:
+        case INS_vfmadd213ss:
+        case INS_vfmadd231ss:
+        case INS_vfmsub132ss:
+        case INS_vfmsub213ss:
+        case INS_vfmsub231ss:
+        case INS_vfnmadd132ss:
+        case INS_vfnmadd213ss:
+        case INS_vfnmadd231ss:
+        case INS_vfnmsub132ss:
+        case INS_vfnmsub213ss:
+        case INS_vfnmsub231ss:
+        case INS_vpbroadcastd:
+        {
+            return EA_4BYTE;
+        }
+
+        case INS_addsd:
+        case INS_cmpsd:
+        case INS_comisd:
+        case INS_cvtsd2si:
+        case INS_cvtsd2ss:
+        case INS_cvttsd2si:
+        case INS_divsd:
+        case INS_maxsd:
+        case INS_minsd:
+        case INS_movhpd:
+        case INS_movhps:
+        case INS_movlpd:
+        case INS_movlps:
+        case INS_movq:
+        case INS_movsd:
+        case INS_mulsd:
+        case INS_pextrq:
+        case INS_pinsrq:
+        case INS_pmovsxbw:
+        case INS_pmovsxdq:
+        case INS_pmovsxwd:
+        case INS_pmovzxbw:
+        case INS_pmovzxdq:
+        case INS_pmovzxwd:
+        case INS_roundsd:
+        case INS_sqrtsd:
+        case INS_subsd:
+        case INS_ucomisd:
+        case INS_vbroadcastsd:
+        case INS_vfmadd132sd:
+        case INS_vfmadd213sd:
+        case INS_vfmadd231sd:
+        case INS_vfmsub132sd:
+        case INS_vfmsub213sd:
+        case INS_vfmsub231sd:
+        case INS_vfnmadd132sd:
+        case INS_vfnmadd213sd:
+        case INS_vfnmadd231sd:
+        case INS_vfnmsub132sd:
+        case INS_vfnmsub213sd:
+        case INS_vfnmsub231sd:
+        case INS_vpbroadcastq:
+        {
+            return EA_8BYTE;
+        }
+
+        case INS_cvtdq2pd:
+        case INS_cvtps2pd:
+        {
+            if (defaultSize == 32)
+            {
+                return EA_16BYTE;
+            }
+            else
+            {
+                assert(defaultSize == 16);
+                return EA_8BYTE;
+            }
+        }
+
+        case INS_vbroadcastf128:
+        case INS_vbroadcasti128:
         case INS_vextractf128:
         case INS_vextracti128:
         case INS_vinsertf128:
@@ -2885,36 +3016,22 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
             return EA_16BYTE;
         }
 
-        case INS_pextrb:
-        case INS_pinsrb:
+        case INS_movddup:
         {
-            return EA_1BYTE;
-        }
-
-        case INS_pextrw:
-        case INS_pextrw_sse41:
-        case INS_pinsrw:
-        {
-            return EA_2BYTE;
-        }
-
-        case INS_extractps:
-        case INS_insertps:
-        case INS_pextrd:
-        case INS_pinsrd:
-        {
-            return EA_4BYTE;
-        }
-
-        case INS_pextrq:
-        case INS_pinsrq:
-        {
-            return EA_8BYTE;
+            if (defaultSize == 32)
+            {
+                return EA_32BYTE;
+            }
+            else
+            {
+                assert(defaultSize == 16);
+                return EA_8BYTE;
+            }
         }
 
         default:
         {
-            return id->idOpSize();
+            return defaultSize;
         }
     }
 }

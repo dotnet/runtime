@@ -155,9 +155,12 @@ namespace System.Data.Tests.SqlTypes
             SqlByte testByte180II = new SqlByte(180);
 
             Assert.False(testByte0.Equals(testByte158));
+            Assert.False(testByte0.Equals((object)testByte158));
             Assert.False(testByte158.Equals(testByte180));
+            Assert.False(testByte158.Equals((object)testByte180));
             Assert.False(testByte180.Equals(new SqlString("TEST")));
             Assert.True(testByte180.Equals(testByte180II));
+            Assert.True(testByte180.Equals((object)testByte180II));
         }
 
         [Fact]

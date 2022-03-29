@@ -329,22 +329,6 @@ void NPrintToHandleA(HANDLE Handle, const char *pszString, size_t BytesToWrite)
 
     while (BytesToWrite > 0) {
         DWORD dwChunkToWrite = (DWORD) min(BytesToWrite, maxWriteFileSize);
-        // No CharNextExA on CoreSystem, we just assume no multi-byte characters (this code path shouldn't be
-        // used in the production codepath for currently supported CoreSystem based products anyway).
-#ifndef FEATURE_CORESYSTEM
-        if (dwChunkToWrite < BytesToWrite) {
-            break;
-            // must go by char to find biggest string that will fit, taking DBCS chars into account
-            //dwChunkToWrite = 0;
-            //const char *charNext = pszString;
-            //while (dwChunkToWrite < maxWriteFileSize-2 && charNext) {
-            //    charNext = CharNextExA(0, pszString+dwChunkToWrite, 0);
-            //    dwChunkToWrite = (DWORD)(charNext - pszString);
-            //}
-            //if (dwChunkToWrite == 0)
-            //    break;
-        }
-#endif // !FEATURE_CORESYSTEM
 
         // Try to write to handle.  If this is not a CUI app, then this is probably
         // not going to work unless the dev took special pains to set their own console

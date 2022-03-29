@@ -1,15 +1,6 @@
-import { createRequire } from 'module';
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
 import createDotnetRuntime from './dotnet.js'
 
 const { MONO } = await createDotnetRuntime(() => ({
-    imports: {
-        //TODO internalize into dotnet.js if possible
-        require: createRequire(import.meta.url)
-    },
-    //TODO internalize into dotnet.js if possible
-    scriptDirectory: dirname(fileURLToPath(import.meta.url)) + '/',
     disableDotnet6Compatibility: true,
     configSrc: "./mono-config.json",
 }));

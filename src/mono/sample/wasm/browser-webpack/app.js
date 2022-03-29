@@ -5,7 +5,6 @@ async function dotnetMeaning() {
     try {
         const { BINDING } = await createDotnetRuntime({
             configSrc: "./mono-config.json",
-            scriptDirectory: "./",
         });
         const meaningFunction = BINDING.bind_static_method("[Wasm.Browser.WebPack.Sample] Sample.Test:Main");
         return meaningFunction();

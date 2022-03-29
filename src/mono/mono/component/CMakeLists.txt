@@ -41,6 +41,7 @@ list(APPEND components
 )
 set(${MONO_HOT_RELOAD_COMPONENT_NAME}-sources
   ${MONO_COMPONENT_PATH}/hot_reload.c
+  ${MONO_COMPONENT_PATH}/hot_reload-internals.h
   ${MONO_COMPONENT_PATH}/hot_reload.h
   )
 set(${MONO_HOT_RELOAD_COMPONENT_NAME}-stub-sources

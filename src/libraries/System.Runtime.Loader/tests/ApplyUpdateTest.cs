@@ -71,6 +71,7 @@ namespace System.Reflection.Metadata
         [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
         void LambdaCapturesThis()
         {
+            // Tests that changes to the body of a lambda that captures 'this' is supported.
             ApplyUpdateUtil.TestCase(static () =>
             {
                 var assm = typeof (ApplyUpdate.Test.LambdaCapturesThis).Assembly;
@@ -263,25 +264,92 @@ namespace System.Reflection.Metadata
             });
         }
 
-	[ActiveIssue ("https://github.com/dotnet/runtime/issues/50249", TestRuntimes.Mono)]
-	[ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
-	public static void TestAddLambdaCapturingThis()
-	{
-	    ApplyUpdateUtil.TestCase(static () =>
-	    {
-		var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis).Assembly;
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestAddLambdaCapturingThis()
+        {
+            // Test that adding a lambda that captures 'this' (to a method that already has a lambda that captures 'this') is supported
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis).Assembly;
 
-		var x = new System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis();
+                var x = new System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis();
 
-		Assert.Equal("123", x.TestMethod());
+                Assert.Equal("123", x.TestMethod());
 
-		ApplyUpdateUtil.ApplyUpdate(assm);
+                ApplyUpdateUtil.ApplyUpdate(assm);
 
-		string result = x.TestMethod();
-		Assert.Equal("42123abcd", result);
-	    });
-	}
+                string result = x.TestMethod();
+                Assert.Equal("42123abcd", result);
+            });
+        }
 
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestAddStaticField()
+        {
+            // Test that adding a new static field to an existing class is supported
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddStaticField).Assembly;
+
+                var x = new System.Reflection.Metadata.ApplyUpdate.Test.AddStaticField();
+
+                x.TestMethod();
+
+                Assert.Equal ("abcd", x.GetField);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                x.TestMethod();
+
+                string result = x.GetField;
+                Assert.Equal("4567", result);
+            });
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63643", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestAddNestedClass()
+        {
+            // Test that adding a new nested class to an existing class is supported
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddNestedClass).Assembly;
+
+                var x = new System.Reflection.Metadata.ApplyUpdate.Test.AddNestedClass();
+
+                var r = x.TestMethod();
+
+                Assert.Equal ("123", r);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                r = x.TestMethod();
+
+                Assert.Equal("123456", r);
+            });
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestAddStaticLambda()
+        {
+            // Test that adding a new static lambda to an existing method body is supported
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddStaticLambda).Assembly;
+
+                var x = new System.Reflection.Metadata.ApplyUpdate.Test.AddStaticLambda();
+
+                var r = x.TestMethod();
+
+                Assert.Equal ("abcd", r);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                r = x.TestMethod();
+
+                Assert.Equal("abcd1abcd", r);
+            });
+        }
 
         class NonRuntimeAssembly : Assembly
         {

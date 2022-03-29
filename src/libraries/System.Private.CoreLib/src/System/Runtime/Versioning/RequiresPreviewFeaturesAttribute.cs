@@ -15,7 +15,12 @@ namespace System.Runtime.Versioning
                 AttributeTargets.Property |
                 AttributeTargets.Field |
                 AttributeTargets.Event, Inherited = false)]
-    public sealed class RequiresPreviewFeaturesAttribute : Attribute
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+        sealed class RequiresPreviewFeaturesAttribute : Attribute
     {
         /// <summary>
         /// Initializes a new instance of the <seealso cref="RequiresPreviewFeaturesAttribute"/> class.

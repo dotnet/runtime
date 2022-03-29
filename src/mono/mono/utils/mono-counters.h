@@ -57,7 +57,7 @@ typedef struct _MonoCounter MonoCounter;
 MONO_API void mono_counters_enable (int section_mask);
 MONO_API void mono_counters_init (void);
 
-/* 
+/*
  * register addr as the address of a counter of type type.
  * It may be a function pointer if MONO_COUNTER_CALLBACK is specified:
  * the function should return the value and take no arguments.
@@ -68,7 +68,7 @@ MONO_API void mono_counters_register_with_size (const char *name, int type, void
 typedef void (*MonoCounterRegisterCallback) (MonoCounter*);
 MONO_API void mono_counters_on_register (MonoCounterRegisterCallback callback);
 
-/* 
+/*
  * Create a readable dump of the counters for section_mask sections (ORed section values)
  */
 MONO_API void mono_counters_dump (int section_mask, FILE *outfile);

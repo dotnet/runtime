@@ -566,7 +566,7 @@ namespace System.Resources
 
             // First, compare type names
             int comma = asmTypeName.IndexOf(',');
-            if (((comma == -1) ? asmTypeName.Length : comma) != typeName.Length)
+            if (((comma < 0) ? asmTypeName.Length : comma) != typeName.Length)
                 return false;
 
             // case sensitive

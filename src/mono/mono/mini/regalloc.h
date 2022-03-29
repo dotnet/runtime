@@ -14,7 +14,7 @@ enum {
 	MONO_REG_SIMD
 };
 
- 
+
 #ifdef MONO_ARCH_NEED_SIMD_BANK
 #define MONO_NUM_REGBANKS 5
 #else
@@ -29,7 +29,7 @@ typedef struct {
 	regmask_t free_mask [MONO_NUM_REGBANKS];
 
 	/* symbolic -> hard register assignment */
-	/* 
+	/*
 	 * If the register is spilled, then this contains -spill - 1, where 'spill'
 	 * is the index of the spill variable.
 	 */

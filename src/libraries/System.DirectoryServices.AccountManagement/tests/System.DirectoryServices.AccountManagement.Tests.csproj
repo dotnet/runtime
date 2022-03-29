@@ -3,15 +3,9 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;net48</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ComputerPrincipalTest.cs" />
-    <Compile Include="ExtendedUserPrincipal.cs" />
-    <Compile Include="GroupPrincipalTest.cs" />
-    <Compile Include="PrincipalTest.cs" />
     <Compile Include="PrincipalContextTests.cs" />
-    <Compile Include="UserPrincipalTest.cs" />
     <Compile Include="AccountManagementTests.cs" />
-    <Compile Include="$(CommonTestPath)System\DirectoryServices\LdapConfiguration.cs"
-             Link="Common\DirectoryServices\LdapConfiguration.cs" />
+    <Compile Include="$(CommonTestPath)System\DirectoryServices\LdapConfiguration.cs" Link="Common\DirectoryServices\LdapConfiguration.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(CommonTestPath)System\DirectoryServices\LDAP.Configuration.xml">

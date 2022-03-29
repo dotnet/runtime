@@ -972,7 +972,7 @@ namespace BINDER_SPACE
             {
                 // Search Assembly.ni.dll, then Assembly.dll
                 // The Assembly.ni.dll paths are rare, and intended for supporting managed C++ R2R assemblies.
-                SString candidates[] = { W(".ni.dll"),  W(".dll") };
+                const WCHAR* const candidates[] = { W(".ni.dll"),  W(".dll") };
 
                 // Loop through the binding paths looking for a matching assembly
                 for (int i = 0; i < 2; i++)

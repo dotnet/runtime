@@ -118,6 +118,7 @@ CONFIG_INTEGER(JitNoCSE2, W("JitNoCSE2"), 0)
 CONFIG_INTEGER(JitNoForceFallback, W("JitNoForceFallback"), 0) // Set to non-zero to prevent NOWAY assert testing.
                                                                // Overrides COMPlus_JitForceFallback and JIT stress
                                                                // flags.
+CONFIG_INTEGER(JitNoForwardSub, W("JitNoForwardSub"), 0)       // Disables forward sub
 CONFIG_INTEGER(JitNoHoist, W("JitNoHoist"), 0)
 CONFIG_INTEGER(JitNoInline, W("JitNoInline"), 0)                 // Disables inlining of all methods
 CONFIG_INTEGER(JitNoMemoryBarriers, W("JitNoMemoryBarriers"), 0) // If 1, don't generate memory barriers
@@ -463,10 +464,24 @@ CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
 // Enable partial compilation for Tier0 methods
 CONFIG_INTEGER(TC_PartialCompilation, W("TC_PartialCompilation"), 0)
+#if defined(DEBUG)
+// Randomly sprinkle patchpoints. Value is the likelyhood any given stack-empty point becomes a patchpoint.
+CONFIG_INTEGER(JitRandomOnStackReplacement, W("JitRandomOnStackReplacement"), 0)
+// Place patchpoint at the specified IL offset, if possible. Overrides random placement.
+CONFIG_INTEGER(JitOffsetOnStackReplacement, W("JitOffsetOnStackReplacement"), -1)
+#endif // debug
 
 #if defined(DEBUG)
-CONFIG_STRING(JitEnableOsrRange, W("JitEnableOsrRange")) // Enable osr for only some methods
-#endif                                                   // debug
+// EnableOsrRange allows you to limit the set of methods that will rely on OSR to escape
+// from Tier0 code. Methods outside the range that would normally be jitted at Tier0
+// and have patchpoints will instead be switched to optimized.
+CONFIG_STRING(JitEnableOsrRange, W("JitEnableOsrRange"))
+// EnablePatchpointRange allows you to limit the set of Tier0 methods that
+// will have patchpoints, and hence control which methods will create OSR methods.
+// Unlike EnableOsrRange, it will not alter the optimization setting for methods
+// outside the enabled range.
+CONFIG_STRING(JitEnablePatchpointRange, W("JitEnablePatchpointRange"))
+#endif
 
 // Profile instrumentation options
 CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
@@ -487,6 +502,14 @@ CONFIG_INTEGER(JitNoteFailedExactDevirtualization, W("JitNoteFailedExactDevirtua
 // Control when Virtual Calls are expanded
 CONFIG_INTEGER(JitExpandCallsEarly, W("JitExpandCallsEarly"), 1) // Expand Call targets early (in the global morph
                                                                  // phase)
+
+// Force the generation of CFG checks
+CONFIG_INTEGER(JitForceControlFlowGuard, W("JitForceControlFlowGuard"), 0);
+// JitCFGUseDispatcher values:
+// 0: Never use dispatcher
+// 1: Use dispatcher on all platforms that support it
+// 2: Default behavior, depends on platform (yes on x64, no on arm64)
+CONFIG_INTEGER(JitCFGUseDispatcher, W("JitCFGUseDispatcher"), 2)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the

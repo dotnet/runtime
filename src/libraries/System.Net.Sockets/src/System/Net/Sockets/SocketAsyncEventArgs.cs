@@ -153,7 +153,7 @@ namespace System.Net.Sockets
                         if (!_buffer.Equals(default))
                         {
                             // Can't have both set
-                            throw new ArgumentException(SR.Format(SR.net_ambiguousbuffers, nameof(Buffer)));
+                            throw new ArgumentException(SR.net_ambiguousbuffers);
                         }
 
                         // Copy the user-provided list into our internal buffer list,
@@ -358,7 +358,7 @@ namespace System.Net.Sockets
                     // Can't have both Buffer and BufferList.
                     if (_bufferList != null)
                     {
-                        throw new ArgumentException(SR.Format(SR.net_ambiguousbuffers, nameof(BufferList)));
+                        throw new ArgumentException(SR.net_ambiguousbuffers);
                     }
 
                     // Offset and count can't be negative and the
@@ -391,7 +391,7 @@ namespace System.Net.Sockets
             {
                 if (buffer.Length != 0 && _bufferList != null)
                 {
-                    throw new ArgumentException(SR.Format(SR.net_ambiguousbuffers, nameof(BufferList)));
+                    throw new ArgumentException(SR.net_ambiguousbuffers);
                 }
 
                 _buffer = buffer;
@@ -559,7 +559,7 @@ namespace System.Net.Sockets
                 // Caller specified a buffer - see if it is large enough
                 if (_count < _acceptAddressBufferCount)
                 {
-                    throw new ArgumentException(SR.Format(SR.net_buffercounttoosmall, nameof(Count)));
+                    throw new ArgumentException(SR.net_buffercounttoosmall, nameof(Count));
                 }
             }
             else

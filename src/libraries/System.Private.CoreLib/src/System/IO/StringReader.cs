@@ -224,10 +224,73 @@ namespace System.IO
             return Task.FromResult(ReadLine());
         }
 
+        /// <summary>
+        /// Reads a line of characters asynchronously from the current string and returns the data as a string.
+        /// </summary>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A value task that represents the asynchronous read operation. The value of the <c>TResult</c>
+        /// parameter contains the next line from the string reader, or is <see langword="null" /> if all of the characters have been read.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The number of characters in the next line is larger than <see cref="int.MaxValue"/>.</exception>
+        /// <exception cref="ObjectDisposedException">The string reader has been disposed.</exception>
+        /// <exception cref="InvalidOperationException">The reader is currently in use by a previous read operation.</exception>
+        /// <example>
+        /// The following example shows how to read one line at a time from a string asynchronously.
+        /// <code lang="C#">
+        /// using System.Text;
+        ///
+        /// StringBuilder stringToRead = new();
+        /// stringToRead.AppendLine("Characters in 1st line to read");
+        /// stringToRead.AppendLine("and 2nd line");
+        /// stringToRead.AppendLine("and the end");
+        ///
+        /// string readText;
+        /// using CancellationTokenSource tokenSource = new (TimeSpan.FromSeconds(1));
+        /// using StringReader reader = new (stringToRead.ToString());
+        /// while ((readText = await reader.ReadLineAsync(tokenSource.Token)) is not null)
+        /// {
+        ///     Console.WriteLine(readText);
+        /// }
+        /// </code>
+        /// </example>
+        public override ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested
+                ? ValueTask.FromCanceled<string?>(cancellationToken)
+                : new ValueTask<string?>(ReadLine());
+
         public override Task<string> ReadToEndAsync()
         {
             return Task.FromResult(ReadToEnd());
         }
+
+        /// <summary>
+        /// Reads all characters from the current position to the end of the string asynchronously and returns them as a single string.
+        /// </summary>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous read operation. The value of the <c>TResult</c> parameter contains
+        /// a string with the characters from the current position to the end of the string.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The number of characters is larger than <see cref="int.MaxValue"/>.</exception>
+        /// <exception cref="ObjectDisposedException">The string reader has been disposed.</exception>
+        /// <exception cref="InvalidOperationException">The reader is currently in use by a previous read operation.</exception>
+        /// <example>
+        /// The following example shows how to read an entire string asynchronously.
+        /// <code lang="C#">
+        /// using System.Text;
+        ///
+        /// StringBuilder stringToRead = new();
+        /// stringToRead.AppendLine("Characters in 1st line to read");
+        /// stringToRead.AppendLine("and 2nd line");
+        /// stringToRead.AppendLine("and the end");
+        ///
+        /// using CancellationTokenSource tokenSource = new (TimeSpan.FromSeconds(1));
+        /// using StringReader reader = new (stringToRead.ToString());
+        /// var readText = await reader.ReadToEndAsync(tokenSource.Token);
+        /// Console.WriteLine(readText);
+        /// </code>
+        /// </example>
+        public override Task<string> ReadToEndAsync(CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested
+                ? Task.FromCanceled<string>(cancellationToken)
+                : Task.FromResult(ReadToEnd());
 
         public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {

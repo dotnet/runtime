@@ -311,7 +311,7 @@ mono_error_set_class (MonoError *oerror, MonoClass *klass)
 
 	if (is_managed_exception (error))
 		return;
-	error->exn.klass = klass;	
+	error->exn.klass = klass;
 }
 
 static void
@@ -716,9 +716,9 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 	case MONO_ERROR_ARGUMENT_NULL:
 		exception = mono_exception_new_argument_null (error->first_argument, error_out);
 		break;
-	
-	case MONO_ERROR_ARGUMENT_OUT_OF_RANGE: 
-		exception = mono_exception_new_argument_out_of_range(error->first_argument, error->full_message, error_out); 
+
+	case MONO_ERROR_ARGUMENT_OUT_OF_RANGE:
+		exception = mono_exception_new_argument_out_of_range(error->first_argument, error->full_message, error_out);
 		break;
 
 	case MONO_ERROR_NOT_VERIFIABLE:
@@ -852,7 +852,7 @@ mono_error_box (const MonoError *ierror, MonoImage *image)
 	to->exn.klass = from->exn.klass;
 
 #undef DUP_STR
-	
+
 	return box;
 }
 
@@ -896,7 +896,7 @@ mono_error_set_from_boxed (MonoError *oerror, const MonoErrorBoxed *box)
 	DUP_STR (full_message_with_fields);
 	DUP_STR (first_argument);
 	to->exn.klass = from->exn.klass;
-		  
+
 #undef DUP_STR
 	return (to->flags & MONO_ERROR_INCOMPLETE) == 0 ;
 }

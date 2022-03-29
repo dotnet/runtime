@@ -1,8 +1,8 @@
 /**
  * \file
  * Images created at runtime.
- *   
- * 
+ *
+ *
  * Author:
  *   Paolo Molaro (lupus@ximian.com)
  *
@@ -213,11 +213,11 @@ mono_dynamic_image_get_registered_token (MonoDynamicImage *dynimage, guint32 tok
 #endif
 
 /**
- * 
+ *
  * mono_dynamic_image_is_valid_token:
- * 
+ *
  * Returns TRUE if token is valid in the given image.
- * 
+ *
  */
 gboolean
 mono_dynamic_image_is_valid_token (MonoDynamicImage *image, guint32 token)
@@ -234,7 +234,7 @@ mono_dynamic_image_is_valid_token (MonoDynamicImage *image, guint32 token)
  * mono_reflection_lookup_dynamic_token:
  *
  * Finish the Builder object pointed to by TOKEN and return the corresponding
- * runtime structure. If HANDLE_CLASS is not NULL, it is set to the class required by 
+ * runtime structure. If HANDLE_CLASS is not NULL, it is set to the class required by
  * mono_ldtoken. If valid_token is TRUE, assert if it is not found in the token->object
  * mapping table.
  *
@@ -250,7 +250,7 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
 	MonoClass *klass;
 
 	error_init (error);
-	
+
 	lookup_dyn_token (assembly, token, &obj);
 	if (MONO_HANDLE_IS_NULL (obj)) {
 		if (valid_token)
@@ -343,7 +343,7 @@ mono_dynamic_image_create (MonoDynamicAssembly *assembly, char *assembly_name, c
 	image = g_new0 (MonoDynamicImage, 1);
 
 	MONO_PROFILER_RAISE (image_loading, (&image->image));
-	
+
 	/*g_print ("created image %p\n", image);*/
 	/* keep in sync with image.c */
 	image->image.name = assembly_name;
@@ -392,7 +392,7 @@ mono_dynamic_image_create (MonoDynamicAssembly *assembly, char *assembly_name, c
 	image->image.assembly = (MonoAssembly*)assembly;
 	image->pe_kind = 0x1; /* ILOnly */
 	image->machine = 0x14c; /* I386 */
-	
+
 	MONO_PROFILER_RAISE (image_loaded, (&image->image));
 
 	dynamic_images_lock ();

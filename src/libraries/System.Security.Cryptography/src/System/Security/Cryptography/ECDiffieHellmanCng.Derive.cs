@@ -1,70 +1,145 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.NativeCrypto;
+using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
-    internal static partial class ECDiffieHellmanImplementation
+    public sealed partial class ECDiffieHellmanCng : ECDiffieHellman
     {
-        public sealed partial class ECDiffieHellmanCng : ECDiffieHellman
+        public override byte[] DeriveKeyMaterial(ECDiffieHellmanPublicKey otherPartyPublicKey)
         {
-            // For the public ECDiffieHellmanCng this is exposed as the HashAlgorithm property
-            // which is a CngAlgorithm type. We're not doing that, but we do need the default value
-            // for DeriveKeyMaterial.
-            public override byte[] DeriveKeyMaterial(ECDiffieHellmanPublicKey otherPartyPublicKey)
+            if (otherPartyPublicKey == null)
+                throw new ArgumentNullException(nameof(otherPartyPublicKey));
+
+            if (otherPartyPublicKey is ECDiffieHellmanCngPublicKey otherKey)
             {
-                if (otherPartyPublicKey == null)
+                using (CngKey import = otherKey.Import())
                 {
-                    throw new ArgumentNullException(nameof(otherPartyPublicKey));
+                    return DeriveKeyMaterial(import);
                 }
-
-                // ECDiffieHellmanCng on .NET Framework will throw an ArgumentException in this method
-                // if otherPartyPublicKey is not an ECDiffieHellmanCngPublicKey.  All of the other methods
-                // will use Import/Export to coerce the correct type for interop.
-
-                // None of the other Core types will match that behavior, so the ECDiffieHellman.Create() on
-                // Windows on .NET Core won't, either.
-
-                // The default behavior for ECDiffieHellmanCng / ECDiffieHellman.Create() on .NET Framework was
-                // to derive from hash, no prepend, no append, SHA-2-256.
-                return DeriveKeyFromHash(otherPartyPublicKey, HashAlgorithmName.SHA256);
             }
 
-            private SafeNCryptSecretHandle DeriveSecretAgreementHandle(ECDiffieHellmanPublicKey otherPartyPublicKey)
+            // This deviates from the .NET Framework behavior.  .NET Framework can't handle unknown public
+            // key types, but on .NET Core there are automatically two: the public class produced by
+            // this class' PublicKey member, and the private class produced by ECDiffieHellman.Create().PublicKey
+            //
+            // So let's just work.
+            ECParameters otherPartyParameters = otherPartyPublicKey.ExportParameters();
+
+            using (ECDiffieHellmanCng otherPartyCng = new ECDiffieHellmanCng())
             {
-                if (otherPartyPublicKey == null)
+                otherPartyCng.ImportParameters(otherPartyParameters);
+
+                using (otherKey = (ECDiffieHellmanCngPublicKey)otherPartyCng.PublicKey)
+                using (CngKey importedKey = otherKey.Import())
                 {
-                    throw new ArgumentNullException(nameof(otherPartyPublicKey));
+                    return DeriveKeyMaterial(importedKey);
                 }
+            }
+        }
 
-                ECParameters otherPartyParameters = otherPartyPublicKey.ExportParameters();
+        public byte[] DeriveKeyMaterial(CngKey otherPartyPublicKey)
+        {
+            if (otherPartyPublicKey == null)
+                throw new ArgumentNullException(nameof(otherPartyPublicKey));
+            if (otherPartyPublicKey.AlgorithmGroup != CngAlgorithmGroup.ECDiffieHellman)
+                throw new ArgumentException(SR.Cryptography_ArgECDHRequiresECDHKey, nameof(otherPartyPublicKey));
+            if (otherPartyPublicKey.KeySize != KeySize)
+                throw new ArgumentException(SR.Cryptography_ArgECDHKeySizeMismatch, nameof(otherPartyPublicKey));
 
-                using (ECDiffieHellmanCng otherPartyCng = (ECDiffieHellmanCng)Create(otherPartyParameters))
-                using (SafeNCryptKeyHandle otherPartyHandle = otherPartyCng.GetDuplicatedKeyHandle())
+            // Setting the flag to UseSecretAsHmacKey even when the KDF isn't HMAC, because that's what .NET Framework does.
+            Interop.NCrypt.SecretAgreementFlags flags =
+                UseSecretAgreementAsHmacKey
+                    ? Interop.NCrypt.SecretAgreementFlags.UseSecretAsHmacKey
+                    : Interop.NCrypt.SecretAgreementFlags.None;
+
+            using (SafeNCryptSecretHandle handle = DeriveSecretAgreementHandle(otherPartyPublicKey))
+            {
+                switch (KeyDerivationFunction)
                 {
-                    string? importedKeyAlgorithmGroup =
-                        CngKeyLite.GetPropertyAsString(
-                            otherPartyHandle,
-                            CngKeyLite.KeyPropertyName.AlgorithmGroup,
-                            CngPropertyOptions.None);
+                    case ECDiffieHellmanKeyDerivationFunction.Hash:
+                        return Interop.NCrypt.DeriveKeyMaterialHash(
+                            handle,
+                            HashAlgorithm.Algorithm,
+                            _secretPrepend,
+                            _secretAppend,
+                            flags);
+                    case ECDiffieHellmanKeyDerivationFunction.Hmac:
+                        return Interop.NCrypt.DeriveKeyMaterialHmac(
+                            handle,
+                            HashAlgorithm.Algorithm,
+                            _hmacKey,
+                            _secretPrepend,
+                            _secretAppend,
+                            flags);
+                    case ECDiffieHellmanKeyDerivationFunction.Tls:
+                        if (_label == null || _seed == null)
+                        {
+                            throw new InvalidOperationException(SR.Cryptography_TlsRequiresLabelAndSeed);
+                        }
 
-                    if (importedKeyAlgorithmGroup != BCryptNative.AlgorithmName.ECDH)
-                    {
-                        throw new ArgumentException(SR.Cryptography_ArgECDHRequiresECDHKey, nameof(otherPartyPublicKey));
-                    }
-
-                    if (CngKeyLite.GetKeyLength(otherPartyHandle) != KeySize)
-                    {
-                        throw new ArgumentException(SR.Cryptography_ArgECDHKeySizeMismatch, nameof(otherPartyPublicKey));
-                    }
-
-                    using (SafeNCryptKeyHandle localHandle = GetDuplicatedKeyHandle())
-                    {
-                        return Interop.NCrypt.DeriveSecretAgreement(localHandle, otherPartyHandle);
-                    }
+                        return Interop.NCrypt.DeriveKeyMaterialTls(
+                            handle,
+                            _label,
+                            _seed,
+                            flags);
+                    default:
+                        Debug.Fail($"Unknown KDF ({KeyDerivationFunction})");
+                        // Match .NET Framework behavior
+                        goto case ECDiffieHellmanKeyDerivationFunction.Tls;
                 }
+            }
+        }
+
+        /// <summary>
+        ///     Get a handle to the secret agreement generated between two parties
+        /// </summary>
+        public SafeNCryptSecretHandle DeriveSecretAgreementHandle(ECDiffieHellmanPublicKey otherPartyPublicKey)
+        {
+            if (otherPartyPublicKey == null)
+                throw new ArgumentNullException(nameof(otherPartyPublicKey));
+
+            if (otherPartyPublicKey is ECDiffieHellmanCngPublicKey otherKey)
+            {
+                using (CngKey importedKey = otherKey.Import())
+                {
+                    return DeriveSecretAgreementHandle(importedKey);
+                }
+            }
+
+            ECParameters otherPartyParameters = otherPartyPublicKey.ExportParameters();
+
+            using (ECDiffieHellmanCng otherPartyCng = new ECDiffieHellmanCng())
+            {
+                otherPartyCng.ImportParameters(otherPartyParameters);
+
+                using (otherKey = (ECDiffieHellmanCngPublicKey)otherPartyCng.PublicKey)
+                using (CngKey importedKey = otherKey.Import())
+                {
+                    return DeriveSecretAgreementHandle(importedKey);
+                }
+            }
+        }
+
+        /// <summary>
+        ///     Get a handle to the secret agreement between two parties
+        /// </summary>
+        public SafeNCryptSecretHandle DeriveSecretAgreementHandle(CngKey otherPartyPublicKey)
+        {
+            if (otherPartyPublicKey == null)
+                throw new ArgumentNullException(nameof(otherPartyPublicKey));
+            if (otherPartyPublicKey.AlgorithmGroup != CngAlgorithmGroup.ECDiffieHellman)
+                throw new ArgumentException(SR.Cryptography_ArgECDHRequiresECDHKey, nameof(otherPartyPublicKey));
+            if (otherPartyPublicKey.KeySize != KeySize)
+                throw new ArgumentException(SR.Cryptography_ArgECDHKeySizeMismatch, nameof(otherPartyPublicKey));
+
+            // This looks strange, but the Handle property returns a duplicate so we need to dispose of it when we're done
+            using (SafeNCryptKeyHandle localHandle = Key.Handle)
+            using (SafeNCryptKeyHandle otherPartyHandle = otherPartyPublicKey.Handle)
+            {
+                return Interop.NCrypt.DeriveSecretAgreement(localHandle, otherPartyHandle);
             }
         }
     }

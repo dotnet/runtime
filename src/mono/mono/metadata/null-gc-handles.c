@@ -36,7 +36,7 @@ typedef struct {
 
 #define EMPTY_HANDLE_DATA(type) {NULL, NULL, 0, (type), 0, NULL}
 
-/* weak and weak-track arrays will be allocated in malloc memory 
+/* weak and weak-track arrays will be allocated in malloc memory
  */
 static HandleData gc_handles [] = {
 	EMPTY_HANDLE_DATA (HANDLE_WEAK),
@@ -236,12 +236,12 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
  * This returns a handle that wraps the object, this is used to keep a
  * reference to a managed object from the unmanaged world and preventing the
  * object from being disposed.
- * 
+ *
  * If \p pinned is false the address of the object can not be obtained, if it is
  * true the address of the object can be obtained.  This will also pin the
  * object so it will not be possible by a moving garbage collector to move the
- * object. 
- * 
+ * object.
+ *
  * \returns a handle that can be used to access the object from
  * unmanaged code.
  */
@@ -261,14 +261,14 @@ mono_gchandle_new_internal (MonoObject *obj, gboolean pinned)
  * Unlike the \c mono_gchandle_new_internal the object can be reclaimed by the
  * garbage collector.  In this case the value of the GCHandle will be
  * set to zero.
- * 
+ *
  * If \p track_resurrection is TRUE the object will be tracked through
  * finalization and if the object is resurrected during the execution
  * of the finalizer, then the returned weakref will continue to hold
  * a reference to the object.   If \p track_resurrection is FALSE, then
  * the weak reference's target will become NULL as soon as the object
  * is passed on to the finalizer.
- * 
+ *
  * \returns a handle that can be used to access the object from
  * unmanaged code.
  */
@@ -388,7 +388,7 @@ mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
  *
  * Frees the \p gchandle handle.  If there are no outstanding
  * references, the garbage collector can reclaim the memory of the
- * object wrapped. 
+ * object wrapped.
  */
 void
 mono_gchandle_free_internal (guint32 gchandle)

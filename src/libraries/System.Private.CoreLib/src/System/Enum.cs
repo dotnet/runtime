@@ -951,7 +951,7 @@ namespace System
                 // Find the next separator.
                 ReadOnlySpan<char> subvalue;
                 int endIndex = value.IndexOf(EnumSeparatorChar);
-                if (endIndex == -1)
+                if (endIndex < 0)
                 {
                     // No next separator; use the remainder as the next value.
                     subvalue = value.Trim();

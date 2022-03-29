@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
-    internal readonly struct SymbolicMatch
+    internal readonly struct SymbolicMatch : IEquatable<SymbolicMatch>
     {
         /// <summary>Indicates failure to find a match.</summary>
         internal static SymbolicMatch NoMatch => new SymbolicMatch(-1, -1);
@@ -20,17 +20,21 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         public int Index { get; }
+
         public int Length { get; }
+
         public bool Success => Index >= 0;
 
         public static bool operator ==(SymbolicMatch left, SymbolicMatch right) =>
-            left.Index == right.Index && left.Length == right.Length;
+            left.Equals(right);
 
         public static bool operator !=(SymbolicMatch left, SymbolicMatch right) =>
-            !(left == right);
+            !left.Equals(right);
 
         public override bool Equals([NotNullWhen(true)] object? obj) =>
-            obj is SymbolicMatch other && this == other;
+            obj is SymbolicMatch other && Equals(other);
+
+        public bool Equals(SymbolicMatch other) => Index == other.Index && Length == other.Length;
 
         public override int GetHashCode() => HashCode.Combine(Index, Length);
     }

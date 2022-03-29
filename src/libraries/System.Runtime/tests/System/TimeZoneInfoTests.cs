@@ -2489,6 +2489,7 @@ namespace System.Tests
             // 0x3E, 0x2C, 0x30, 0x2F, 0x30, 0x2C, 0x4A, 0x33, 0x36, 0x35, 0x2F, 0x32, 0x35, 0x0A
         };
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64134")]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData("<+00>0<+01>,0/0,J365/25", 1, 1, true)]
@@ -2919,6 +2920,20 @@ namespace System.Tests
 
             // BaseUtcOffsetDelta should be counted to the returned offset during the daylight time.
             Assert.Equal(new TimeSpan(2, 0, 0), customTimeZone.GetUtcOffset(new DateTime(2021, 3, 10, 2, 0, 0)));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64111", TestPlatforms.Linux)]
+        public static void NoBackwardTimeZones()
+        {
+            ReadOnlyCollection<TimeZoneInfo> tzCollection = TimeZoneInfo.GetSystemTimeZones();
+            HashSet<String> tzDisplayNames = new HashSet<String>();
+
+            foreach (TimeZoneInfo timezone in tzCollection)
+            {
+                tzDisplayNames.Add(timezone.DisplayName);
+            }
+            Assert.Equal(tzCollection.Count, tzDisplayNames.Count);
         }
 
         private static bool IsEnglishUILanguage => CultureInfo.CurrentUICulture.Name.Length == 0 || CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";

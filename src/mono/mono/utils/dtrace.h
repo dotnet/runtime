@@ -1,10 +1,10 @@
 /* *
  * \file
  * DTrace probes
- * 
+ *
  * Authors:
  *   Andreas Faerber <andreas.faerber@web.de>
- * 
+ *
  */
 
 #ifndef __UTILS_DTRACE_H__

@@ -161,7 +161,7 @@ namespace System.Reflection.Tests
             if (asm.Location.Length > 0)
             {
                 Assert.Throws<ArgumentNullException>(() => asm.GetFile(null));
-                AssertExtensions.Throws<ArgumentException>(null, () => asm.GetFile(""));
+                Assert.Throws<ArgumentException>(() => asm.GetFile(""));
                 Assert.Null(asm.GetFile("NonExistentfile.dll"));
                 Assert.NotNull(asm.GetFile("System.Reflection.Tests.dll"));
 

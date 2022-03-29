@@ -20,7 +20,7 @@
 #define MAX_INLINE_COPIES 16
 #define MAX_INLINE_COPY_SIZE 10000
 
-void 
+void
 mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, int align)
 {
 	int val_reg;
@@ -109,7 +109,7 @@ set_1:
 	}
 }
 
-void 
+void
 mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int soffset, int size, int align)
 {
 	int cur_reg;

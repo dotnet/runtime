@@ -146,8 +146,6 @@ namespace System.Reflection.TypeLoading
         {
             get
             {
-                const int DefaultPackingSize = 8;
-
                 // Note: CoreClr checks HasElementType and IsGenericParameter in addition to IsInterface but those properties cannot be true here as this
                 // RoType subclass is solely for TypeDef types.)
                 if (IsInterface)
@@ -169,12 +167,6 @@ namespace System.Reflection.TypeLoading
                     _ => CharSet.None,
                 };
                 GetPackSizeAndSize(out int pack, out int size);
-
-                // Metadata parameter checking should not have allowed 0 for packing size.
-                // The runtime later converts a packing size of 0 to 8 so do the same here
-                // because it's more useful from a user perspective.
-                if (pack == 0)
-                    pack = DefaultPackingSize;
 
                 return new StructLayoutAttribute(layoutKind)
                 {

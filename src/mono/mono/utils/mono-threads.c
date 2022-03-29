@@ -1616,8 +1616,13 @@ mono_thread_info_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	if (!*staddr)
 		return;
 
+#ifdef HOST_WASI
+	// TODO: Fix the stack positioning on WASI and re-enable the following check.
+	// Currently it works as a prototype anyway.
+#else
 	/* Sanity check the result */
 	g_assert ((current > *staddr) && (current < *staddr + *stsize));
+#endif
 
 #ifndef TARGET_WASM
 	/* When running under emacs, sometimes staddr is not aligned to a page size */

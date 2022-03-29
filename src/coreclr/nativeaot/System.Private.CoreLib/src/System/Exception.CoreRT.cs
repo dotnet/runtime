@@ -180,7 +180,7 @@ namespace System
 
         internal void RestoreDispatchState(DispatchState DispatchState)
         {
-            IntPtr[] stackTrace = DispatchState.StackTrace;
+            IntPtr[]? stackTrace = DispatchState.StackTrace;
             int idxFirstFreeStackTraceEntry = 0;
             if (stackTrace != null)
             {

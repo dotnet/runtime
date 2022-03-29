@@ -40,7 +40,7 @@ public class A
         return success;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         // Test that a function with HFA args gets the expected contents of the structs.
 

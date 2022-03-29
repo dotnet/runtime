@@ -478,7 +478,9 @@ public class PInvokeTableGenerator : Task
     private static void Error (string msg) => throw new LogAsErrorException(msg);
 }
 
+#pragma warning disable CA1067
 internal sealed class PInvoke : IEquatable<PInvoke>
+#pragma warning restore CA1067
 {
     public PInvoke(string entryPoint, string module, MethodInfo method)
     {

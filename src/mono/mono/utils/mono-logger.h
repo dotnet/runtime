@@ -8,10 +8,10 @@
 #include <mono/utils/mono-publib.h>
 MONO_BEGIN_DECLS
 
-MONO_API void 
+MONO_API void
 mono_trace_set_level_string (const char *value);
 
-MONO_API void 
+MONO_API void
 mono_trace_set_mask_string (const char *value);
 
 typedef void (*MonoPrintCallback) (const char *string, mono_bool is_stdout);

@@ -1772,7 +1772,7 @@ private:
 
     // The following keep track of information about internal (temporary register) intervals
     // during the building of a single node.
-    static const int MaxInternalCount = 4;
+    static const int MaxInternalCount = 5;
     RefPosition*     internalDefs[MaxInternalCount];
     int              internalCount = 0;
     bool             setInternalRegsDelayFree;

@@ -42,6 +42,14 @@ namespace Internal.Cryptography
         public static bool IsRC2Supported => true;
 #endif
 
+        [UnsupportedOSPlatformGuard("browser")]
+        internal static bool HasMD5 { get; } =
+#if NET5_0_OR_GREATER
+            !OperatingSystem.IsBrowser();
+#else
+            true;
+#endif
+
         [return: NotNullIfNotNull("src")]
         public static byte[]? CloneByteArray(this byte[]? src)
         {

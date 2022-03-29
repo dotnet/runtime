@@ -459,7 +459,7 @@ namespace System
             }
 #endif // FEATURE_COMINTEROP
 
-            if (namedParams != null && Array.IndexOf(namedParams, null!) != -1)
+            if (namedParams != null && Array.IndexOf(namedParams, null!) >= 0)
                 throw new ArgumentException(SR.Arg_NamedParamNull, nameof(namedParams));
 
             int argCnt = (providedArgs != null) ? providedArgs.Length : 0;

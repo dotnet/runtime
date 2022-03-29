@@ -101,14 +101,14 @@ namespace System.Text.Json.Serialization.Metadata
                 // doesn't match the parameter type, use reflection to get the default value.
                 Type parameterType = parameterInfo.ParameterType;
 
-                GenericMethodHolder holder;
+                DefaultValueHolder holder;
                 if (matchingProperty.Options.TryGetClass(parameterType, out JsonTypeInfo? typeInfo))
                 {
-                    holder = typeInfo.GenericMethods;
+                    holder = typeInfo.DefaultValueHolder;
                 }
                 else
                 {
-                    holder = GenericMethodHolder.CreateHolder(parameterInfo.ParameterType);
+                    holder = DefaultValueHolder.CreateHolder(parameterInfo.ParameterType);
                 }
 
                 jsonParameterInfo.DefaultValue = holder.DefaultValue;

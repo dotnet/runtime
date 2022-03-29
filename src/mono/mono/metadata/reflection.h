@@ -27,7 +27,7 @@ typedef struct {
 
 #define MONO_SIZEOF_CUSTOM_ATTR_INFO (offsetof (MonoCustomAttrInfo, attrs))
 
-/* 
+/*
  * Information which isn't in the MonoMethod structure is stored here for
  * dynamic methods.
  */

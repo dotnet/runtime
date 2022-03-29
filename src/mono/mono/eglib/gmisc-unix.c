@@ -43,8 +43,8 @@
 static pthread_mutex_t env_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* MONO Comment
- * 
- * As per the UNIX spec, 
+ *
+ * As per the UNIX spec,
  * "The return value from getenv() may point to static data which may be overwritten by subsequent calls to getenv(), setenv(), or unsetenv()."
  * Source: Unix Manual Pages for getenv, IEEE Std 1003.1
  *
@@ -56,7 +56,7 @@ static pthread_mutex_t env_lock = PTHREAD_MUTEX_INITIALIZER;
  * g_getenv does not mimic the behavior of POSIX getenv anymore.
  *
  * The memory address returned will be unique to the invocaton, and must be freed.
- * */ 
+ * */
 gchar *
 g_getenv (const gchar *variable)
 {

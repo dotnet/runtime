@@ -83,7 +83,6 @@ namespace System.Drawing {
                     }
                     else {
                         throw new ArgumentException(SR.Format(SR.TextParseFailedFormat,
-                                                                  "text",
                                                                   text,
                                                                   "x, y, width, height"));
                     }
