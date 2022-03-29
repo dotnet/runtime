@@ -35,7 +35,7 @@
       <_CoreClrBuildArg Condition="'$(Ninja)' == 'true' and !$([MSBuild]::IsOsPlatform(Windows))" Include="-ninja" />
       <_CoreClrBuildArg Condition="'$(Ninja)' == 'false' and $([MSBuild]::IsOsPlatform(Windows))" Include="-msbuild" />
       <_CoreClrBuildArg Condition="'$(PgoInstrument)' == 'true'" Include="-pgoinstrument" />
-      <_CoreClrBuildArg Condition="'$(NativeOptimizationDataSupported)' == 'true' and '$(PgoInstrument)' != 'true'" Include="-pgodatapath &quot;$(PgoPackagePath)&quot;" />
+      <_CoreClrBuildArg Condition="'$(NativeOptimizationDataSupported)' == 'true' and '$(NoPgoOptimize)' != 'true' and '$(PgoInstrument)' != 'true'" Include="-pgodatapath &quot;$(PgoPackagePath)&quot;" />
       <_CoreClrBuildArg Condition="'$(HostArchitecture)' != ''" Include="-hostarch $(HostArchitecture)" />
     </ItemGroup>
 

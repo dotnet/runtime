@@ -235,7 +235,7 @@
                             ClrCrossComponentsSubset=true;
                             HostArchitecture=$(BuildArchitecture);
                             PgoInstrument=false;
-                            NativeOptimizationDataSupported=false;
+                            NoPgoOptimize=true;
                             CrossBuild=false;
                             CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
       Category="clr" />
@@ -248,7 +248,7 @@
                             ClrCrossComponentsSubset=true;
                             HostArchitecture=x86;
                             PgoInstrument=false;
-                            NativeOptimizationDataSupported=false;
+                            NoPgoOptimize=true;
                             CrossBuild=false;
                             CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
       Category="clr" />
@@ -270,7 +270,7 @@
                             ClrCrossComponentsSubset=true;
                             HostArchitecture=$(CrossDacHostArch);
                             PgoInstrument=false;
-                            NativeOptimizationDataSupported=false;
+                            NoPgoOptimize=true;
                             TargetOS=Linux;
                             CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1" Category="clr" />
   </ItemGroup>
@@ -282,7 +282,7 @@
                             ClrCrossComponentsSubset=true;
                             HostArchitecture=$(CrossDacHostArch);
                             PgoInstrument=false;
-                            NativeOptimizationDataSupported=false;
+                            NoPgoOptimize=true;
                             TargetOS=alpine;
                             CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1" Category="clr" />
   </ItemGroup>
