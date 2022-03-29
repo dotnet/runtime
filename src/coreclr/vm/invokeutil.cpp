@@ -140,7 +140,6 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest
 
     switch (type) {
     case ELEMENT_TYPE_BOOLEAN:
-    case ELEMENT_TYPE_CHAR:
     case ELEMENT_TYPE_U1:
     case ELEMENT_TYPE_I1:
         _ASSERTE(rArg != NULL);
@@ -149,6 +148,7 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest
 
     case ELEMENT_TYPE_I2:
     case ELEMENT_TYPE_U2:
+    case ELEMENT_TYPE_CHAR:
         _ASSERTE(rArg != NULL);
         *(PVOID *)pArgDst = (INT16*)*rArg;
         break;
@@ -175,30 +175,28 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest
 
     case ELEMENT_TYPE_VALUETYPE:
     {
+        if (Nullable::IsNullableType(th))
         {
-            if (Nullable::IsNullableType(th))
-            {
-                // ASSUMPTION: we only receive T or NULL values, not Nullable<T> values
-                // and the values are boxed, unlike other value types.
-                MethodTable* pMT = th.AsMethodTable();
-                OBJECTREF src = (OBJECTREF)(Object*)*rArg;
-                if (!pMT->UnBoxIntoArg(argDest, src))
-                    COMPlusThrow(kArgumentException, W("Arg_ObjObj"));
-            }
-            else if (rArg == NULL) {
-                // A byref-like type can't be boxed but the Invoke() arg value can be passed as a null object where that is
-                // marshalled as a null reference to indicate we need to initialize the byref-like type here.
-                MethodTable* pMT = th.GetMethodTable();
-                if (pMT->IsByRefLike())
-                    InitValueClassArg(argDest, pMT);
-                else
-                    COMPlusThrow(kArgumentException, W("Arg_ObjObj"));
-            }
+            // ASSUMPTION: we only receive T or NULL values, not Nullable<T> values
+            // and the values are boxed, unlike other value types.
+            MethodTable* pMT = th.AsMethodTable();
+            OBJECTREF src = (OBJECTREF)(Object*)*rArg;
+            if (!pMT->UnBoxIntoArg(argDest, src))
+                COMPlusThrow(kArgumentException, W("Arg_ObjObj"));
+        }
+        else if (rArg == NULL) {
+            // A byref-like type can't be boxed but the Invoke() arg value can be passed as a null object where that is
+            // marshalled as a null reference to indicate we need to initialize the byref-like type here.
+            MethodTable* pMT = th.GetMethodTable();
+            if (pMT->IsByRefLike())
+                InitValueClassArg(argDest, pMT);
             else
-            {
-                MethodTable* pMT = th.GetMethodTable();
-                CopyValueClassArg(argDest, rArg, pMT, 0);
-            }
+                COMPlusThrow(kArgumentException, W("Arg_ObjObj"));
+        }
+        else
+        {
+            MethodTable* pMT = th.GetMethodTable();
+            CopyValueClassArg(argDest, rArg, pMT, 0);
         }
         break;
     }

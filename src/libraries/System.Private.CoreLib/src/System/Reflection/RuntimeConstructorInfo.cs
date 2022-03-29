@@ -184,7 +184,7 @@ namespace System.Reflection
                                 culture,
                                 invokeAttr);
 
-                            Invoker.InvokeUnsafe(obj, (IntPtr*)(void*)byrefStorage, copyOfParameters, invokeAttr);
+                            Invoker.InvokeUnsafe(obj, byrefStorage, copyOfParameters, invokeAttr);
                         }
                         finally
                         {
@@ -286,7 +286,7 @@ namespace System.Reflection
                                 culture,
                                 invokeAttr);
 
-                            retValue = Invoker.InvokeUnsafe(obj: null, (IntPtr*)(void*)byrefStorage, copyOfParameters, invokeAttr);
+                            retValue = Invoker.InvokeUnsafe(obj: null, byrefStorage, copyOfParameters, invokeAttr);
                         }
                         finally
                         {

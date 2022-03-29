@@ -532,7 +532,7 @@ namespace System.Reflection.Emit
                                 culture,
                                 invokeAttr);
 
-                            retValue = Invoker.InvokeUnsafe(obj, (IntPtr*)(void*)byrefStorage, invokeAttr);
+                            retValue = Invoker.InvokeUnsafe(obj, byrefStorage, invokeAttr);
                         }
                         finally
                         {
