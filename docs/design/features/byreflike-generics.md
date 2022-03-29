@@ -13,7 +13,7 @@ Supporting ByRefLike type as Generic parameters will impact the following IL ins
 - `stsfld` / `ldsfld` &ndash; Type fields of a ByRefLike parameter cannot be marked `static`.
 - `newarr` / `stelem` / `ldelem` / `ldelema` &ndash; Arrays are not able to contain ByRefLike types.
     - `newobj` &ndash; For multi-dimensional array construction.
-- `constrained.callvirt` &ndash; This IL sequence must resolve to a method implemented on `object`, or a default interface method.
+- `constrained.callvirt` &ndash; If this IL sequence resolves to a method implemented on `object` or default interface method, an error will occur during the attempt to box the instance.
 
 If any of the above instructions are attempted to be used with a ByRefLike type, the runtime will throw an `InvalidProgramException`.
 
@@ -24,11 +24,24 @@ The following instructions are already set up to support this feature since thei
 - `isinst` &ndash; Will always place `null` on stack.
 - `castclass` &ndash; Will always throw `System.InvalidCastException`.
 
-## Proposal
+## API Proposal
 
-Support for the following will be indicated by the `RuntimeFeature.GenericsAcceptByRefLike` property.
+Support for the following will be indicated by a new property. For .NET 7, the feature will be marked with `RequiresPreviewFeaturesAttribute` to indicate it is in [preview](https://github.com/dotnet/designs/blob/main/accepted/2021/preview-features/preview-features.md).
 
-A new `GenericParameterAttributes` value will be defined which also represents metadata defined in the `CorGenericParamAttr` enumeration. Space is provided between the existing constraints group to permit constraint growth.
+```diff
+namespace System.Runtime.CompilerServices
+{
+    public static partial class RuntimeFeature
+    {
++        /// <summary>
++        /// Represents a runtime feature where byref-like types can be used in Generic parameters.
++        /// </summary>
++        public const string GenericsAcceptByRefLike = nameof(GenericsAcceptByRefLike);
+    }
+}
+```
+
+A new `GenericParameterAttributes` value will be defined which also represents metadata defined in the `CorGenericParamAttr` enumeration. Space is provided between the existing constraints group to permit constraint growth while keeping the bit-mask contiguous.
 
 ```diff
 namespace System.Reflection
@@ -56,6 +69,8 @@ The expansion of metadata will impact at least the following:
 - F# &ndash; https://github.com/fsharp/fsharp
 - C++/CLI &ndash; The MSVC team
 
+## Semantic Proposal
+
 An API that is a JIT-time intrinsic will be needed to determine if a parameter is ByRefLike. This API would represent a check to occur at JIT time code-gen to avoid taking paths that would be invalid for some values of `T`. The existing `Type.IsByRefLike` property will be made an intrinsic (e.g., `typeof(T).IsByRefLike`).
 
 For dispatch to object implemented methods and to default interface methods, the behavior shall be that an `InvalidProgramException` should be thrown. The JIT would insert the following IL at code-gen time.
@@ -65,12 +80,4 @@ newobj instance void System.InvalidProgramException::.ctor()
 throw
 ```
 
-When boxing due to a constrained call that cannot be made, instead of allocating a normal boxed object, an object of `InvalidBoxedObject` type will be created. It will have implementations of the various overridable object methods which throw `InvalidProgramException`, and interface dispatch shall have a special case for attempting to invoke an interface method on such an object, that will also throw an `InvalidProgramException`.
-
-The `Reflection.Emit` API will need to be updated to respect the behavior of this flag. How it will handle support is an open question.
-
-## Open questions
-
-- This scenario is the inverse of [Generic constraints](https://docs.microsoft.com/dotnet/csharp/programming-guide/generics/constraints-on-type-parameters) as it is an "allow". What does this look like as a general case as to potentially support pointers in the future? See https://github.com/dotnet/runtime/issues/13627.
-
-- Should `Reflection` support this scenario initially? This includes calling and using API calls such as `MakeGenericType` / `MakeGenericMethod`.
+The `Reflection.Emit` API will need to be updated to respect the behavior of this flag. The current Reflection API requires boxing of all types which makes usage of ByRefLike types impossible. Until the Reflection API can fully support ByRefLike types, this feature must be blocked when using Reflection. For example, API calls such as `MakeGenericType` / `MakeGenericMethod` are invalid.
