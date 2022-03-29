@@ -143,6 +143,13 @@ def main(main_args):
     except PermissionError as pe:
         print("Skipping file. Got error: %s", pe)
 
+    # create a file in the in work_item directories, otherwise Helix complains
+    workitem_directory = path.join(source_directory, "workitem")
+    os.mkdir(workitem_directory)
+    foo_txt = os.path.join(workitem_directory, "foo.txt")
+    with open(foo_txt, "w") as foo_txt_file:
+        foo_txt_file.write("hello world!")
+
     # Set variables
     print('Setting pipeline variables:')
     set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)
