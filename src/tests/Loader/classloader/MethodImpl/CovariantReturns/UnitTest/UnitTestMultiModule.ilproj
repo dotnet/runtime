@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
   </PropertyGroup>
   
   <ItemGroup>
