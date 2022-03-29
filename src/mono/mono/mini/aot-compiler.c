@@ -2145,7 +2145,7 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	ARM_B_COND (code, ARMCOND_EQ, 0);
 
 	/* Loop footer */
-	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_R0, sizeof (target_mgreg_t) * 2);
+	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_R0, (guint32)(sizeof (target_mgreg_t) * 2));
 	loop_branch_back = code;
 	ARM_B (code, 0);
 	arm_patch (loop_branch_back, loop_start);
@@ -2740,7 +2740,7 @@ arch_emit_imt_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 	ARM_B_COND (code, ARMCOND_EQ, 0);
 
 	/* Loop footer */
-	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_R0, sizeof (target_mgreg_t) * 2);
+	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_R0, (guint32)(sizeof (target_mgreg_t) * 2));
 	labels [4] = code;
 	ARM_B (code, 0);
 	arm_patch (labels [4], labels [1]);
@@ -2765,7 +2765,7 @@ arch_emit_imt_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 	ARM_LDR_IMM (code2, ARMREG_R0, ARMREG_PC, (code - (labels [0] + 8)));
 
 	emit_bytes (acfg, buf, code - buf);
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (target_mgreg_t)) + (code - (labels [0] + 8)) - 4);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", (int)((offset * sizeof (target_mgreg_t)) + (code - (labels [0] + 8)) - 4));
 
 	*tramp_size = code - buf + 4;
 #elif defined(TARGET_ARM64)
@@ -2979,7 +2979,7 @@ arch_emit_unbox_arbitrary_trampoline (MonoAotCompile *acfg, int offset, int *tra
 
 	/* Emit it */
 	emit_bytes (acfg, buf, code - buf);
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (target_mgreg_t)) + (code - (label + 8)) - 4);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", (int)((offset * sizeof (target_mgreg_t)) + (code - (label + 8)) - 4));
 	*tramp_size = 4 * 4;
 #else
 	g_error ("NOT IMPLEMENTED: needed for AOT<>interp mixed mode transition");

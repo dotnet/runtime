@@ -3093,7 +3093,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/* restore callee saved registers */
 			for (i = 0; i < X86_NREG; ++i)
-				if (X86_IS_CALLEE_SAVED_REG (i) && cfg->used_int_regs & (1 << i))
+				if (X86_IS_CALLEE_SAVED_REG (i) && cfg->used_int_regs & ((regmask_t)1 << i))
 					pos -= 4;
 			if (cfg->used_int_regs & (1 << X86_ESI)) {
 				x86_mov_reg_membase (code, X86_ESI, X86_EBP, pos, 4);
@@ -3414,7 +3414,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 				else {
 					mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_R8, ins->inst_p0);
-					x86_fld (code, NULL, TRUE);
+					x86_fld (code, (gsize)NULL, TRUE);
 				}
 			}
 			break;
@@ -3435,7 +3435,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 				else {
 					mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_R4, ins->inst_p0);
-					x86_fld (code, NULL, FALSE);
+					x86_fld (code, (gsize)NULL, FALSE);
 				}
 			}
 			break;
@@ -4290,8 +4290,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			int nursery_shift, card_table_shift;
 			gpointer card_table_mask;
 			size_t nursery_size;
-			gulong card_table = (gsize)mono_gc_get_card_table (&card_table_shift, &card_table_mask);
-			gulong nursery_start = (gsize)mono_gc_get_nursery (&nursery_shift, &nursery_size);
+			gulong card_table = (gulong)(gsize)mono_gc_get_card_table (&card_table_shift, &card_table_mask);
+			gulong nursery_start = (gulong)(gsize)mono_gc_get_nursery (&nursery_shift, &nursery_size);
 			gboolean card_table_nursery_check = mono_gc_card_table_nursery_check ();
 
 			/*
@@ -5283,7 +5283,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		/* EBP is restored by LEAVE */
 	} else {
 		for (i = 0; i < X86_NREG; ++i) {
-			if ((cfg->used_int_regs & X86_CALLER_REGS & (1 << i)) && (i != X86_EBP)) {
+			if ((cfg->used_int_regs & X86_CALLER_REGS & ((regmask_t)1 << i)) && (i != X86_EBP)) {
 				pos -= 4;
 			}
 		}

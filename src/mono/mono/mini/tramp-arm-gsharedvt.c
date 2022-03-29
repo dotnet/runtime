@@ -218,10 +218,14 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	mono_add_unwind_op_offset (unwind_ops, code, buf, ARMREG_LR, ((- cfa_offset) + 4));
 	ARM_MOV_REG_REG (code, fp, ARMREG_SP);
 	mono_add_unwind_op_def_cfa_reg (unwind_ops, code, buf, fp);
+MONO_PRAGMA_WARNING_PUSH()
+MONO_PRAGMA_WARNING_DISABLE(4310) // cast truncates constant value
+MONO_PRAGMA_WARNING_DISABLE(4127) /* conditional expression is constant */
 	/* Allocate stack frame */
 	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 32 + (16 * sizeof (double)));
 	if (MONO_ARCH_FRAME_ALIGNMENT > 8)
 		ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, (MONO_ARCH_FRAME_ALIGNMENT - 8));
+MONO_PRAGMA_WARNING_POP()
 	offset = 4;
 	info_offset = -offset;
 	offset += 4;

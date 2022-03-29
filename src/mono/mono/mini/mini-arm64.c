@@ -2240,7 +2240,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		/* Callee saved regs */
 		cfg->arch.saved_gregs_offset = offset;
 		for (i = 0; i < 32; ++i)
-			if ((MONO_ARCH_CALLEE_SAVED_REGS & (1 << i)) && (cfg->used_int_regs & (1 << i)))
+			if ((MONO_ARCH_CALLEE_SAVED_REGS & (1 << i)) && (cfg->used_int_regs & ((regmask_t)1 << i)))
 				offset += 8;
 	}
 
@@ -2762,7 +2762,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		break;
 	case ArgVtypeByRef:
 	case ArgVtypeByRefOnStack: {
-		MonoInst *vtaddr, *load, *arg;
+		MonoInst *vtaddr, *arg;
 
 		/* Pass the vtype address in a reg/on the stack */
 		if (ainfo->gsharedvt) {
@@ -3350,18 +3350,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_LOCALLOC_IMM: {
-			int imm, offset;
+			int aligned_imm, aligned_imm_offset;
 
-			imm = ALIGN_TO (ins->inst_imm, MONO_ARCH_FRAME_ALIGNMENT);
-			g_assert (arm_is_arith_imm (imm));
-			arm_subx_imm (code, ARMREG_SP, ARMREG_SP, imm);
+			aligned_imm = ALIGN_TO (ins->inst_imm, MONO_ARCH_FRAME_ALIGNMENT);
+			g_assert (arm_is_arith_imm (aligned_imm));
+			arm_subx_imm (code, ARMREG_SP, ARMREG_SP, aligned_imm);
 
 			/* Init */
 			g_assert (MONO_ARCH_FRAME_ALIGNMENT == 16);
-			offset = 0;
-			while (offset < imm) {
-				arm_stpx (code, ARMREG_RZR, ARMREG_RZR, ARMREG_SP, offset);
-				offset += 16;
+			aligned_imm_offset = 0;
+			while (aligned_imm_offset < aligned_imm) {
+				arm_stpx (code, ARMREG_RZR, ARMREG_RZR, ARMREG_SP, aligned_imm_offset);
+				aligned_imm_offset += 16;
 			}
 			arm_movspx (code, dreg, ARMREG_SP);
 			if (cfg->param_area)
@@ -3409,13 +3409,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_add_seq_point (cfg, bb, ins, code - cfg->native_code);
 
 			if (cfg->compile_aot) {
-				const guint32 offset = code - cfg->native_code;
+				const guint32 bp_tramp_offset = code - cfg->native_code;
 				guint32 val;
 
 				arm_ldrx (code, ARMREG_IP1, info_var->inst_basereg, info_var->inst_offset);
-				/* Add the offset */
-				val = ((offset / 4) * sizeof (target_mgreg_t)) + MONO_STRUCT_OFFSET (SeqPointInfo, bp_addrs);
-				/* Load the info->bp_addrs [offset], which is either 0 or the address of the bp trampoline */
+				/* Add the bp_tramp_offset */
+				val = ((bp_tramp_offset / 4) * sizeof (target_mgreg_t)) + MONO_STRUCT_OFFSET (SeqPointInfo, bp_addrs);
+				/* Load the info->bp_addrs [bp_tramp_offset], which is either 0 or the address of the bp trampoline */
 				code = emit_ldrx (code, ARMREG_IP1, ARMREG_IP1, val);
 				/* Skip the load if its 0 */
 				arm_cbzx (code, ARMREG_IP1, code + 8);
@@ -4129,20 +4129,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/* FP */
 		case OP_R8CONST: {
-			guint64 imm = *(guint64*)ins->inst_p0;
+			guint64 r8_imm = *(guint64*)ins->inst_p0;
 
-			if (imm == 0) {
+			if (r8_imm == 0) {
 				arm_fmov_rx_to_double (code, dreg, ARMREG_RZR);
 			} else {
-				code = emit_imm64 (code, ARMREG_LR, imm);
+				code = emit_imm64 (code, ARMREG_LR, r8_imm);
 				arm_fmov_rx_to_double (code, ins->dreg, ARMREG_LR);
 			}
 			break;
 		}
 		case OP_R4CONST: {
-			guint64 imm = *(guint32*)ins->inst_p0;
+			guint64 r4_imm = *(guint32*)ins->inst_p0;
 
-			code = emit_imm64 (code, ARMREG_LR, imm);
+			code = emit_imm64 (code, ARMREG_LR, r4_imm);
 			if (cfg->r4fp) {
 				arm_fmov_rx_to_double (code, dreg, ARMREG_LR);
 			} else {
@@ -4885,8 +4885,8 @@ emit_store_regarray (guint8 *code, guint64 regs, int basereg, int offset)
 	int i;
 
 	for (i = 0; i < 32; ++i) {
-		if (regs & (1 << i)) {
-			if (i + 1 < 32 && (regs & (1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
+		if (regs & ((guint64)1 << i)) {
+			if (i + 1 < 32 && (regs & ((guint64)1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
 				arm_stpx (code, i, i + 1, basereg, offset + (i * 8));
 				i++;
 			} else if (i == ARMREG_SP) {
@@ -4912,8 +4912,8 @@ emit_load_regarray (guint8 *code, guint64 regs, int basereg, int offset)
 	int i;
 
 	for (i = 0; i < 32; ++i) {
-		if (regs & (1 << i)) {
-			if ((regs & (1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
+		if (regs & ((guint64)1 << i)) {
+			if ((regs & ((guint64)1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
 				if (offset + (i * 8) < 500)
 					arm_ldpx (code, i, i + 1, basereg, offset + (i * 8));
 				else {
@@ -4944,8 +4944,8 @@ emit_store_regset (guint8 *code, guint64 regs, int basereg, int offset)
 
 	pos = 0;
 	for (i = 0; i < 32; ++i) {
-		if (regs & (1 << i)) {
-			if ((regs & (1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
+		if (regs & ((guint64)1 << i)) {
+			if ((regs & ((guint64)1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
 				arm_stpx (code, i, i + 1, basereg, offset + (pos * 8));
 				i++;
 				pos++;
@@ -4974,8 +4974,8 @@ emit_load_regset (guint8 *code, guint64 regs, int basereg, int offset)
 
 	pos = 0;
 	for (i = 0; i < 32; ++i) {
-		if (regs & (1 << i)) {
-			if ((regs & (1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
+		if (regs & ((guint64)1 << i)) {
+			if ((regs & ((guint64)1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
 				arm_ldpx (code, i, i + 1, basereg, offset + (pos * 8));
 				i++;
 				pos++;
@@ -5019,8 +5019,8 @@ emit_store_regset_cfa (MonoCompile *cfg, guint8 *code, guint64 regs, int basereg
 	pos = 0;
 	for (i = 0; i < 32; ++i) {
 		nregs = 1;
-		if (regs & (1 << i)) {
-			if ((regs & (1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
+		if (regs & ((guint64)1 << i)) {
+			if ((regs & ((guint64)1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
 				if (offset < 256) {
 					arm_stpx (code, i, i + 1, basereg, offset + (pos * 8));
 				} else {

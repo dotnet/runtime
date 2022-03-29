@@ -6732,9 +6732,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		case OP_LDADDR: {
 			MonoInst *var = ins->inst_i0;
-			MonoClass *klass = var->klass;
 
-			if (var->opcode == OP_VTARG_ADDR && !MONO_CLASS_IS_SIMD(cfg, klass)) {
+			if (var->opcode == OP_VTARG_ADDR && !MONO_CLASS_IS_SIMD(cfg, var->klass)) {
 				/* The variable contains the vtype address */
 				values [ins->dreg] = values [var->dreg];
 			} else if (var->opcode == OP_GSHAREDVT_LOCAL) {
@@ -7701,9 +7700,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					default:
 						g_assert_not_reached ();
 					}
-					LLVMValueRef args [] = { l, r };
+					LLVMValueRef call_args [] = { l, r };
 					llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
-					result = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+					result = call_overloaded_intrins (ctx, iid, ovr_tag, call_args, "");
 				}
 #else
 				LLVMValueRef cmp = LLVMBuildICmp (builder, op, l, r, "");
