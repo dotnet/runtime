@@ -710,14 +710,14 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal class ValueTypeClass
     {
         public byte[] valueTypeBuffer;
-        public JArray json;
+        public JObject json;
         public JArray jsonProps;
         public int typeId;
         public JArray valueTypeProxy;
         public string valueTypeVarName;
         public bool valueTypeAutoExpand;
         public string Id;
-        public ValueTypeClass(string varName, byte[] buffer, JArray json, int id, bool expand_properties, int valueTypeId)
+        public ValueTypeClass(string varName, byte[] buffer, JObject json, int id, bool expand_properties, int valueTypeId)
         {
             valueTypeBuffer = buffer;
             this.json = json;
@@ -1633,7 +1633,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return -1;
         }
 
-        public async Task<JArray> CreateJArrayForProperties(int typeId, ElementType elementType, ArraySegment<byte> object_buffer, JArray attributes, bool isAutoExpandable, string objectIdStr, bool isOwn, CancellationToken token)
+        public async Task<JArray> CreateJArrayForProperties(int typeId, ArraySegment<byte> object_buffer, bool isAutoExpandable, string objectIdStr, bool isOwn, CancellationToken token, params JToken[] attributesCollections)
         {
             JArray ret = new JArray();
             using var retDebuggerCmdReader =  await GetTypePropertiesReader(typeId, token);
@@ -1652,32 +1652,36 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (getMethodId == 0 || await GetParamCount(getMethodId, token) != 0 || await MethodIsStatic(getMethodId, token))
                     continue;
                 JObject propRet = null;
-                if (attributes.Where(attribute => attribute["name"].Value<string>().Equals(propertyNameStr)).Any())
+                if (attributesCollections
+                    .Any(attributes => attributes
+                    .Where(attribute => attribute["name"].Value<string>().Equals(propertyNameStr)).Any()))
                     continue;
                 if (isAutoExpandable)
                 {
-                    try {
+                    try
+                    {
                         propRet = await InvokeMethod(object_buffer, getMethodId, propertyNameStr, token);
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        continue;
+                        logger.LogDebug($"Method {getMethodId} of object {objectId.Value} could not be ivoked as AutoExpandable, error - {ex.Message}.");
                     }
                 }
-                else
+                if (propRet == null)
                 {
-                    propRet = JObject.FromObject(new {
-                            get = new
-                            {
-                                type = "function",
-                                objectId = $"dotnet:methodId:{objectId.Value}:{getMethodId}:{elementType}",
-                                className = "Function",
-                                description = "get " + propertyNameStr + " ()",
-                                methodId = getMethodId,
-                                objectIdValue = objectIdStr
-                            },
-                            name = propertyNameStr
-                        });
+                    propRet = JObject.FromObject(new
+                    {
+                        get = new
+                        {
+                            type = "function",
+                            objectId = $"dotnet:methodId:{objectId.Value}:{getMethodId}",
+                            className = "Function",
+                            description = "get " + propertyNameStr + " ()",
+                            methodId = getMethodId,
+                            objectIdValue = objectIdStr
+                        },
+                        name = propertyNameStr
+                    });
                 }
                 if (isOwn)
                     propRet["isOwn"] = true;
@@ -1715,13 +1719,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 var props = await CreateJArrayForProperties(
                     typesToGetProperties[i],
-                    ElementType.ValueType,
                     valueType.valueTypeBuffer,
-                    valueType.json,
                     valueType.valueTypeAutoExpand,
                     valueType.Id,
                     isOwn: i == 0,
-                    token);
+                    token,
+                    valueType.json["result"],
+                    valueType.json["internalProperties"],
+                    valueType.json["privateProperties"]);
                 properties.AddRange(props);
             }
             return properties;
@@ -1878,7 +1883,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             var description = className;
             var numFields = retDebuggerCmdReader.ReadInt32();
             var fields = await GetTypeFields(typeId, token);
-            JArray valueTypeFields = new JArray();
             if (className.IndexOf("System.Nullable<") == 0) //should we call something on debugger-agent to check???
             {
                 retDebuggerCmdReader.ReadByte(); //ignoring the boolean type
@@ -1889,10 +1893,28 @@ namespace Microsoft.WebAssembly.Diagnostics
                 else
                     return CreateJObject<string>(null, "object", className, false, className, null, null, "null", true);
             }
-            for (int i = 0; i < numFields ; i++)
+
+            JArray fieldsPublic = new JArray();
+            JArray fieldsInternal = new JArray();
+            JArray fieldsPrivate = new JArray();
+            for (int i = 0; i < numFields; i++)
             {
-                fieldValueType = await CreateJObjectForVariableValue(retDebuggerCmdReader, fields.ElementAt(i).Name, true, fields.ElementAt(i).TypeId, false, token);
-                valueTypeFields.Add(fieldValueType);
+                fieldValueType = await CreateJObjectForVariableValue(retDebuggerCmdReader, fields[i].Name, true, fields[i].TypeId, false, token);
+                switch (fields[i].ProtectionLevel)
+                {
+                    case FieldAttributes.Public:
+                        fieldsPublic.Add(fieldValueType);
+                        break;
+                    case FieldAttributes.FamANDAssem:
+                    case FieldAttributes.Private:
+                        fieldsPrivate.Add(fieldValueType);
+                        break;
+                    case FieldAttributes.Family:
+                    case FieldAttributes.Assembly:
+                    case FieldAttributes.FamORAssem:
+                        fieldsInternal.Add(fieldValueType);
+                        break;
+                }
             }
 
             long endPos = retDebuggerCmdReader.BaseStream.Position;
@@ -1902,6 +1924,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             byte[] valueTypeBuffer = new byte[endPos - initialPos];
             retDebuggerCmdReader.Read(valueTypeBuffer, 0, (int)(endPos - initialPos));
             retDebuggerCmdReader.BaseStream.Position = endPos;
+            var valueTypeFields = JObject.FromObject(new
+            {
+                result = fieldsPublic,
+                internalProperties = fieldsInternal,
+                privateProperties = fieldsPrivate
+            });
             valueTypes[valueTypeId] = new ValueTypeClass(name, valueTypeBuffer, valueTypeFields, typeId, AutoExpandable(className), valueTypeId);
             if (AutoInvokeToString(className) || isEnum == 1) {
                 int methodId = await GetMethodIdByName(typeId, "ToString", token);
@@ -2210,16 +2238,31 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         }
 
-        public async Task<JArray> GetValueTypeValues(int valueTypeId, bool accessorPropertiesOnly, CancellationToken token)
+        public async Task<JToken> GetValueTypeValues(int valueTypeId, bool accessorPropertiesOnly, CancellationToken token, bool sortByAccessLevel)
         {
             if (valueTypes[valueTypeId].jsonProps == null)
-            {
                 valueTypes[valueTypeId].jsonProps = await GetPropertiesValuesOfValueType(valueTypeId, token);
-            }
             if (accessorPropertiesOnly)
-                return valueTypes[valueTypeId].jsonProps;
-            var ret = new JArray(valueTypes[valueTypeId].jsonProps.Union(valueTypes[valueTypeId].jsonProps));
-            return ret;
+                return sortByAccessLevel ?
+                    JObject.FromObject(new
+                    {
+                        result = valueTypes[valueTypeId].jsonProps,
+                        internalProperties = new JArray(),
+                        privateProperties = new JArray()
+                    }) :
+                    valueTypes[valueTypeId].jsonProps;
+            var publicValues = valueTypes[valueTypeId].json["result"].Union(valueTypes[valueTypeId].jsonProps);
+            var internalValues = valueTypes[valueTypeId].json["internalProperties"];
+            var privateValues = valueTypes[valueTypeId].json["privateProperties"];
+
+            return sortByAccessLevel ?
+                JObject.FromObject(new
+                {
+                    result = publicValues,
+                    internalProperties = internalValues,
+                    privateProperties = privateValues
+                }) :
+                new JArray(publicValues.Union(internalValues).Union(privateValues));
         }
 
         public async Task<JArray> GetValueTypeProxy(int valueTypeId, CancellationToken token)
@@ -2231,6 +2274,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             var retDebuggerCmdReader =  await GetTypePropertiesReader(valueTypes[valueTypeId].typeId, token);
             if (retDebuggerCmdReader == null)
                 return null;
+
+            valueTypes[valueTypeId].valueTypeProxy = new JArray();
+            valueTypes[valueTypeId].valueTypeProxy.AddRange(
+                valueTypes[valueTypeId].json["result"],
+                valueTypes[valueTypeId].json["internalProperties"],
+                valueTypes[valueTypeId].json["privateProperties"]);
 
             var nProperties = retDebuggerCmdReader.ReadInt32();
 
@@ -2455,13 +2504,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                 commandParamsObjWriter.WriteObj(new DotnetObjectId("object", objectId), this);
                 var props = await CreateJArrayForProperties(
                     typeId,
-                    ElementType.Class,
                     commandParamsObjWriter.GetParameterBuffer(),
-                    new JArray(objects.Values),
                     getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute),
                     $"dotnet:object:{objectId}",
                     i == 0,
-                    token);
+                    token,
+                    new JArray(objects.Values));
                 var properties = await GetProperties(props, allFields, typeId, token);
                 objects.TryAddRange(properties);
 
@@ -2806,10 +2854,10 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal static class HelperExtensions
     {
-        public static void AddRange(this JArray arr, JArray addedArr)
+        public static void AddRange(this JArray arr, params JToken[] addedArrays)
         {
-            foreach (var item in addedArr)
-                arr.Add(item);
+            foreach (var addedArray in addedArrays)
+                arr.Merge(addedArray);
         }
 
         public static void TryAddRange(this Dictionary<string, JToken> dict, JArray addedArr)

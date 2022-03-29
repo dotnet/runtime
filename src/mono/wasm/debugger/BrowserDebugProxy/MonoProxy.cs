@@ -757,7 +757,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     case "valuetype":
                     {
-                        var resValType = await context.SdbAgent.GetValueTypeValues(objectId.Value, accessorPropertiesOnly, token);
+                        var resValType = await context.SdbAgent.GetValueTypeValues(objectId.Value, accessorPropertiesOnly, token, sortByAccessLevel);
                         return resValType switch
                         {
                             null => ValueOrError<JToken>.WithError($"Could not get properties for {objectId}"),
