@@ -3096,8 +3096,13 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls, gboolean f
 		mono_walk_stack_with_state (process_frame, &tls->context, opts, &user_data);
 	} else {
 		// FIXME:
+#ifdef HOST_WASI
+		mono_walk_stack_with_state (process_frame, NULL, opts, &user_data);
+		tls->context.valid = TRUE;
+#else
 		tls->frame_count = 0;
 		return;
+#endif		
 	}
 
 	new_frame_count = g_slist_length (user_data.frames);
@@ -7285,7 +7290,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				g_free (req);
 				return err;
 			}
-#ifdef TARGET_WASM
+#if defined(TARGET_WASM) && !defined(HOST_WASI)
 			int isBPOnManagedCode = 0;
 			SingleStepReq *ss_req = req->info;
 			if (ss_req && ss_req->bps) {

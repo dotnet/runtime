@@ -19,14 +19,9 @@ wasi_transport_recv (void *buf, int len)
 	int res;
 	int total = 0;
 	int fd = conn_fd;
-	int flags = 0;
-	static gint64 last_keepalive;
-	gint64 msecs;
-
 	int again = 0;
 
 	do {
-	again:
 		res = read (fd, (char *) buf + total, len - total);
 		if (res > 0)
 			total += res;
@@ -62,7 +57,7 @@ wasi_transport_connect (const char *address)
 	
 	while (!handshake_ok)
 	{
-        int sock_accept_result = sock_accept (4, 4, &conn_fd);
+        sock_accept (4, 4, &conn_fd);
         int res = write (conn_fd, (const char*)"", 0);
         if (conn_fd == -1 || res == -1)
         {
