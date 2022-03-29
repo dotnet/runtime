@@ -166,6 +166,7 @@ export type DotnetModuleConfig = {
     onDotnetReady?: () => void;
 
     imports?: DotnetModuleConfigImports;
+    exports?: string[];
 } & Partial<EmscriptenModule>
 
 export type DotnetModuleConfigImports = {

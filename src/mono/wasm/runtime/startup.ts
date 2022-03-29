@@ -266,6 +266,8 @@ function _apply_configuration_from_args(config: MonoConfig) {
 }
 
 function finalize_startup(config: MonoConfig | MonoConfigError | undefined): void {
+    const globalThisAny = globalThis as any;
+
     try {
         if (!config || config.isError) {
             return;
@@ -275,6 +277,23 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
         }
 
         const moduleExt = Module as DotnetModule;
+
+        if(!Module.disableDotnet6Compatibility && Module.exports){
+            // Export emscripten defined in module through EXPORTED_RUNTIME_METHODS
+            // Useful to export IDBFS or other similar types generally exposed as 
+            // global types when emscripten is not modularized.
+            for (let i = 0; i < Module.exports.length; ++i) {
+                const exportName = Module.exports[i];
+                const exportValue = (<any>Module)[exportName];
+
+                if(exportValue) {
+                    globalThisAny[exportName] = exportValue;
+                }
+                else{
+                    console.warn(`MONO_WASM: The exported symbol ${exportName} could not be found in the emscripten module`);
+                }
+            }
+        }
 
         try {
             _apply_configuration_from_args(config);
