@@ -52,7 +52,11 @@ namespace System.Linq
 
     internal sealed class SystemCore_EnumerableDebugViewEmptyException : Exception
     {
+#pragma warning disable CA1822
+        // This property value is used by the debugger EE as the message
+        // displayed when a dynamic object has no members.
         public string Empty => SR.EmptyEnumerable;
+#pragma warning restore CA1822
     }
 
     internal sealed class SystemCore_EnumerableDebugView

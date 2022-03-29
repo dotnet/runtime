@@ -1658,3 +1658,30 @@ void
 mono_dummy_jit_icall_val (gpointer val)
 {
 }
+
+void
+mini_init_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, MonoGSharedMethodInfo *info)
+{
+	if (G_LIKELY (mrgctx->entries))
+		return;
+
+	MonoMethod *m = mrgctx->method;
+	int ninline = mono_class_rgctx_get_array_size (0, TRUE);
+
+	// The +1 is for the NULL check at the beginning
+	// FIXME: memory management
+	gpointer *entries = mono_mem_manager_alloc0 (get_default_mem_manager (), (sizeof (gpointer) * (info->num_entries + 1)));
+	for (int i = 0; i < info->num_entries; ++i) {
+		gpointer data = mini_instantiate_gshared_info (&info->entries [i],
+													   mono_method_get_context (m), m->klass);
+		g_assert (data);
+
+		/* The first few entries are stored inline, the rest are stored in mrgctx->entries */
+		if (i < ninline)
+			mrgctx->infos [i] = data;
+		else
+			entries [i - ninline] = data;
+	}
+	mono_memory_barrier ();
+	mrgctx->entries = entries;
+}

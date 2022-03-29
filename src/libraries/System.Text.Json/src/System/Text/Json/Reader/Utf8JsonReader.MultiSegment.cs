@@ -626,7 +626,7 @@ namespace System.Text.Json
             throw GetInvalidLiteralMultiSegment(readSoFar.Slice(0, written).ToArray());
         }
 
-        private int FindMismatch(ReadOnlySpan<byte> span, ReadOnlySpan<byte> literal)
+        private static int FindMismatch(ReadOnlySpan<byte> span, ReadOnlySpan<byte> literal)
         {
             Debug.Assert(span.Length > 0);
 

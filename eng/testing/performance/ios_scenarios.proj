@@ -48,5 +48,17 @@
       <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
+    <HelixWorkItem Include="SOD - Maui iOS Podcast IPA Size" Condition="'$(iOSLlvmBuild)' == 'False'">
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <PreCommands>cd $(ScenarioDirectory)mauiios;copy %HELIX_CORRELATION_PAYLOAD%\MauiiOSPodcastIPA\MauiiOSPodcast.ipa .;$(Python) pre.py --name MauiiOSPodcast.ipa</PreCommands>
+      <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
+      <PostCommands>$(Python) post.py</PostCommands>
+    </HelixWorkItem>
+    <HelixWorkItem Include="SOD - Maui iOS Podcast IPA Size Unzipped" Condition="'$(iOSLlvmBuild)' == 'False'">
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <PreCommands>cd $(ScenarioDirectory)mauiios;copy %HELIX_CORRELATION_PAYLOAD%\MauiiOSPodcastIPA\MauiiOSPodcast.ipa .;$(Python) pre.py --unzip --name MauiiOSPodcast.ipa</PreCommands>
+      <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
+      <PostCommands>$(Python) post.py</PostCommands>
+    </HelixWorkItem>
   </ItemGroup>
 </Project>

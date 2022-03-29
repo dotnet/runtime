@@ -38,6 +38,7 @@ struct S
 {{
 }}
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {{
     public Native(S s) {{ }}
@@ -79,6 +80,7 @@ struct S
 {
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s) { }
@@ -122,6 +124,7 @@ struct S
 {
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s) { }
@@ -169,6 +172,7 @@ struct S
 {
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s) { }
@@ -220,6 +224,7 @@ struct S
 {{
 }}
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {{
     public Native(S s) {{ }}
@@ -268,6 +273,7 @@ struct S
 {
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s) { }

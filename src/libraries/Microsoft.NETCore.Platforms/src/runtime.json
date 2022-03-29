@@ -1175,6 +1175,23 @@
         "fedora-x64"
       ]
     },
+    "fedora.37": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.37-arm64": {
+      "#import": [
+        "fedora.37",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.37-x64": {
+      "#import": [
+        "fedora.37",
+        "fedora-x64"
+      ]
+    },
     "freebsd": {
       "#import": [
         "unix"

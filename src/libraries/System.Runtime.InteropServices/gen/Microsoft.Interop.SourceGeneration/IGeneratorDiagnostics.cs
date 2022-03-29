@@ -38,7 +38,7 @@ namespace Microsoft.Interop
         {
             SyntaxReference? syntaxReference = attributeData.ApplicationSyntaxReference;
             Location location = syntaxReference is not null
-                ? syntaxReference.GetSyntax().GetLocation()
+                ? syntaxReference.SyntaxTree.GetLocation(syntaxReference.Span)
                 : Location.None;
 
             return location.CreateDiagnostic(descriptor, args);

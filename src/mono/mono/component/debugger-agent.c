@@ -8229,6 +8229,9 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		ERROR_DECL (error);
 		GPtrArray *array;
 
+		if (!klass)
+			goto invalid_argument;
+
 		error_init (error);
 		array = mono_class_get_methods_by_name (klass, name, flags & ~BINDING_FLAGS_IGNORE_CASE, mlisttype, TRUE, error);
 		if (!is_ok (error)) {

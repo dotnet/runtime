@@ -637,6 +637,7 @@ struct GetReadyToRunHelper_TOKENout
 struct GetReadyToRunDelegateCtorHelper_TOKENIn
 {
     Agnostic_CORINFO_RESOLVED_TOKEN TargetMethod;
+    mdToken                         targetConstraint;
     DWORDLONG                       delegateType;
 };
 

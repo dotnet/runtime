@@ -216,7 +216,7 @@ namespace System.Drawing
             static TypeConverter GetFloatConverter() => TypeDescriptor.GetConverter(typeof(float));
         }
 
-        private (string?, string?) ParseSizeTokens(string text, char separator)
+        private static (string?, string?) ParseSizeTokens(string text, char separator)
         {
             string? size = null;
             string? units = null;
@@ -257,7 +257,7 @@ namespace System.Drawing
             return (size, units);
         }
 
-        private GraphicsUnit ParseGraphicsUnits(string units) =>
+        private static GraphicsUnit ParseGraphicsUnits(string units) =>
             units switch
             {
                 "display" => GraphicsUnit.Display,

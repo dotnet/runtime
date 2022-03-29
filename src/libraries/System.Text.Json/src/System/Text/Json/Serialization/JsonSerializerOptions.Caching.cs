@@ -172,7 +172,7 @@ namespace System.Text.Json
                     Debug.Assert(key._cachingContext == null);
 
                     ctx = new CachingContext(options);
-                    bool success = cache.TryAdd(key, new(ctx));
+                    bool success = cache.TryAdd(key, new WeakReference<CachingContext>(ctx));
                     Debug.Assert(success);
 
                     return ctx;

@@ -3572,8 +3572,33 @@ public:
 #endif
 };
 
-/* gtCast -- conversion to a different type  (GT_CAST) */
-
+// GenTreeCast - conversion to a different type (GT_CAST).
+//
+// This node represents all "conv[.ovf].{type}[.un]" IL opcodes.
+//
+// There are four semantically significant values that determine what it does:
+//
+//  1) "genActualType(CastOp())"              - the type being cast from.
+//  2) "gtCastType"                           - the type being cast to.
+//  3) "IsUnsigned" (the "GTF_UNSIGNED" flag) - whether the cast is "unsigned".
+//  4) "gtOverflow" (the "GTF_OVERFLOW" flag) - whether the cast is checked.
+//
+// Different "kinds" of casts use these values differently; not all are always
+// meaningful or legal:
+//
+//  1) For casts from FP types, "IsUnsigned" will always be "false".
+//  2) Checked casts use "IsUnsigned" to represent the fact the type being cast
+//     from is unsigned. The target type's signedness is similarly significant.
+//  3) For unchecked casts, "IsUnsigned" is significant for "int -> long", where
+//     it decides whether the cast sign- or zero-extends its source, and "integer
+//     -> FP" cases. For all other unchecked casts, "IsUnsigned" is meaningless.
+//  4) For unchecked casts, signedness of the target type is only meaningful if
+//     the cast is to an FP or small type. In the latter case (and everywhere
+//     else in IR) it decided whether the value will be sign- or zero-extended.
+//
+// For additional context on "GT_CAST"'s semantics, see "IntegralRange::ForCast"
+// methods and "GenIntCastDesc"'s constructor.
+//
 struct GenTreeCast : public GenTreeOp
 {
     GenTree*& CastOp()

@@ -1229,6 +1229,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
 	case MONO_PATCH_INFO_AOT_JIT_INFO:
 	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE:
+	case MONO_PATCH_INFO_GSHARED_METHOD_INFO:
 		return hash | (gssize)ji->data.target;
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
 		return hash | (gssize)ji->data.gsharedvt->method;
@@ -1357,6 +1358,63 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 	}
 
 	return ji1->data.target == ji2->data.target;
+}
+
+/* Make a copy of MonoGSharedMethodInfo and all its nested data into MEM_MANAGER */
+MonoGSharedMethodInfo *
+mini_gshared_method_info_dup (MonoMemoryManager *mem_manager, MonoGSharedMethodInfo *info)
+{
+	MonoGSharedMethodInfo *res = (MonoGSharedMethodInfo *)mono_mem_manager_alloc0 (mem_manager, sizeof (MonoGSharedMethodInfo));
+	memcpy (res, info, sizeof (MonoGSharedMethodInfo));
+
+	MonoRuntimeGenericContextInfoTemplate *oentries = info->entries;
+	res->entries = (MonoRuntimeGenericContextInfoTemplate *)mono_mem_manager_alloc0 (mem_manager, sizeof (MonoRuntimeGenericContextInfoTemplate) * info->num_entries);
+	memcpy (res->entries, oentries, sizeof (MonoRuntimeGenericContextInfoTemplate) * info->num_entries);
+
+	for (int i = 0; i < info->num_entries; ++i) {
+		MonoRuntimeGenericContextInfoTemplate *entry = &info->entries [i];
+		MonoRuntimeGenericContextInfoTemplate *new_entry = &res->entries [i];
+		switch (mini_rgctx_info_type_to_patch_info_type (entry->info_type)) {
+		case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE: {
+			MonoDelegateClassMethodPair *old_info = (MonoDelegateClassMethodPair*)entry->data;
+			MonoDelegateClassMethodPair *new_info = mono_mem_manager_alloc0 (mem_manager, sizeof (MonoDelegateClassMethodPair));
+			memcpy (new_info, old_info, sizeof (MonoDelegateClassMethodPair));
+			new_entry->data = new_info;
+			break;
+		}
+		case MONO_PATCH_INFO_VIRT_METHOD: {
+			MonoJumpInfoVirtMethod *old_info = (MonoJumpInfoVirtMethod *)entry->data;
+			MonoJumpInfoVirtMethod *new_info = (MonoJumpInfoVirtMethod *)mono_mem_manager_alloc0 (mem_manager, sizeof (MonoJumpInfoVirtMethod));
+			memcpy (new_info, old_info, sizeof (MonoJumpInfoVirtMethod));
+			new_entry->data = new_info;
+			break;
+		}
+		case MONO_PATCH_INFO_GSHAREDVT_METHOD: {
+			MonoGSharedVtMethodInfo *old_info = (MonoGSharedVtMethodInfo*)entry->data;
+			MonoGSharedVtMethodInfo *new_info = (MonoGSharedVtMethodInfo*)mono_mem_manager_alloc0 (mem_manager, sizeof (MonoGSharedVtMethodInfo));
+			memcpy (new_info, old_info, sizeof (MonoGSharedVtMethodInfo));
+
+			MonoRuntimeGenericContextInfoTemplate *old_entries = old_info->entries;
+			MonoRuntimeGenericContextInfoTemplate *new_entries = (MonoRuntimeGenericContextInfoTemplate *)mono_mem_manager_alloc0 (mem_manager, sizeof (MonoRuntimeGenericContextInfoTemplate) * old_info->count_entries);
+			memcpy (new_entries, old_entries, sizeof (MonoRuntimeGenericContextInfoTemplate) * old_info->count_entries);
+			new_info->entries = new_entries;
+
+			new_entry->data = new_info;
+			break;
+		}
+		case MONO_PATCH_INFO_GSHAREDVT_CALL: {
+			MonoJumpInfoGSharedVtCall *old_info = (MonoJumpInfoGSharedVtCall*)entry->data;
+			MonoJumpInfoGSharedVtCall *new_info = (MonoJumpInfoGSharedVtCall*)mono_mem_manager_alloc0 (mem_manager, sizeof (MonoJumpInfoGSharedVtCall));
+			memcpy (new_info, old_info, sizeof (MonoJumpInfoGSharedVtCall));
+			new_entry->data = new_info;
+			break;
+		}
+		default:
+			break;
+		}
+	}
+
+	return res;
 }
 
 gpointer
@@ -1694,6 +1752,9 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		target = NULL;
 		break;
 	}
+	case MONO_PATCH_INFO_GSHARED_METHOD_INFO:
+		target = mini_gshared_method_info_dup (mem_manager, (MonoGSharedMethodInfo*)patch_info->data.target);
+		break;
 	default:
 		g_assert_not_reached ();
 	}
@@ -2770,7 +2831,9 @@ static gpointer
 get_ftnptr_for_method (MonoMethod *method, MonoError *error)
 {
 	if (!mono_llvm_only) {
-		return mono_jit_compile_method (method, error);
+		gpointer res = mono_jit_compile_method (method, error);
+		res = mini_add_method_trampoline (method, res, mono_method_needs_static_rgctx_invoke (method, TRUE), FALSE);
+		return res;
 	} else {
 		return mini_llvmonly_load_method_ftndesc (method, FALSE, FALSE, error);
 	}
@@ -4265,7 +4328,6 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 	g_hash_table_destroy (info->delegate_trampoline_hash);
 	g_hash_table_destroy (info->static_rgctx_trampoline_hash);
 	g_hash_table_destroy (info->mrgctx_hash);
-	g_hash_table_destroy (info->method_rgctx_hash);
 	g_hash_table_destroy (info->interp_method_pointer_hash);
 	mono_conc_hashtable_destroy (info->runtime_invoke_hash);
 	g_hash_table_destroy (info->seq_points);
@@ -4902,6 +4964,7 @@ register_icalls (void)
 	register_icall (mono_throw_invalid_program, mono_icall_sig_void_ptr, FALSE);
 	register_icall_no_wrapper (mono_dummy_jit_icall, mono_icall_sig_void);
 	//register_icall_no_wrapper (mono_dummy_jit_icall_val, mono_icall_sig_void_ptr);
+	register_icall_no_wrapper (mini_init_method_rgctx, mono_icall_sig_void_ptr_ptr);
 
 	register_icall_with_wrapper (mono_monitor_enter_internal, mono_icall_sig_int32_obj);
 	register_icall_with_wrapper (mono_monitor_enter_v4_internal, mono_icall_sig_void_obj_ptr);
