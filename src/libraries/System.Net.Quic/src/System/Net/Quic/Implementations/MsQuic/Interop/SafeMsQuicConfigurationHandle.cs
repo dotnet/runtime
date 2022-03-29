@@ -282,7 +282,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             if (flags == QUIC_ALLOWED_CIPHER_SUITE_FLAGS.NONE)
             {
-                throw new ArgumentException(SR.net_quic_empty_cipher_suite);
+                throw new ArgumentException(SR.net_quic_empty_cipher_suite, nameof(SslClientAuthenticationOptions.CipherSuitesPolicy));
             }
 
             return flags;

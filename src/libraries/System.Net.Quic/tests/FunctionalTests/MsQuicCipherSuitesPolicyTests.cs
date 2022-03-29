@@ -49,6 +49,7 @@ namespace System.Net.Quic.Tests
 
             var clientOptions = CreateQuicClientOptions();
             clientOptions.ClientAuthenticationOptions.CipherSuitesPolicy = policy;
+            clientOptions.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, 5000);
             Assert.Throws<ArgumentException>(() => CreateQuicConnection(clientOptions));
         }
 
