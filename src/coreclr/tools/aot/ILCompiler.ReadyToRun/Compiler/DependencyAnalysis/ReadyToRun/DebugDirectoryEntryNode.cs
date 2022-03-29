@@ -180,7 +180,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return builder.ToObjectData();
         }
 
-        public byte[] GenerateRSDSEntryData(byte[] md5Hash)
+        public byte[] GenerateRSDSEntryData(byte[] hash)
         {
             MemoryStream rsdsEntry = new MemoryStream(RSDSSize);
 
@@ -191,11 +191,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // The PDB signature will be the same as our NGEN signature.
                 // However we want the printed version of the GUID to be the same as the
                 // byte dump of the signature so we swap bytes to make this work.
-                Debug.Assert(md5Hash.Length == 16);
-                writer.Write((uint)((md5Hash[0] * 256 + md5Hash[1]) * 256 + md5Hash[2]) * 256 + md5Hash[3]);
-                writer.Write((ushort)(md5Hash[4] * 256 + md5Hash[5]));
-                writer.Write((ushort)(md5Hash[6] * 256 + md5Hash[7]));
-                writer.Write(md5Hash, 8, 8);
+                Debug.Assert(hash.Length >= 16);
+                writer.Write((uint)((hash[0] * 256 + hash[1]) * 256 + hash[2]) * 256 + hash[3]);
+                writer.Write((ushort)(hash[4] * 256 + hash[5]));
+                writer.Write((ushort)(hash[6] * 256 + hash[7]));
+                writer.Write(hash, 8, 8);
 
                 // Age
                 writer.Write(1);
