@@ -935,9 +935,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/coverage/OSThreadId/osthreadid/*">
             <Issue>Accessing a reflection blocked internal detail</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/paramthreadstart/ThreadStartBool/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/220</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/TieredCompilation/**">
             <Issue>No crossgen folder under Core_Root</Issue>
         </ExcludeList>
@@ -1001,7 +998,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Attributes/LCID/LCIDTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/171</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Attributes/SuppressGCTransition/SuppressGCTransitionTest/*">
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/165</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/**/*">
@@ -1124,10 +1121,10 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/inl/caninline_ro/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/183</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/_il_relinitializearray/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/initializearray_il_d/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: RuntimeHelpers.InitializeArray</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/_il_dbginitializearray/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/initializearray_il_r/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: RuntimeHelpers.InitializeArray</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/basics/throwinfilter_il_d/*">
@@ -1136,16 +1133,16 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/basics/throwinfilter_il_r/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/188</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/interactions/throw1dimarray_d/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/interactions/throw1dimarray_il_d/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Non-exception throw</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/interactions/throw1dimarray_r/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/interactions/throw1dimarray_il_r/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Non-exception throw</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/interactions/throw2dimarray_d/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/interactions/throw2dimarray_il_d/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Non-exception throw</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/interactions/throw2dimarray_r/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/interactions/throw2dimarray_il_r/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Non-exception throw</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ObjectStackAllocation/ObjectStackAllocationTests/*">
@@ -1220,9 +1217,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/AssemblyDependencyResolver/AssemblyDependencyResolverTests/AssemblyDependencyResolverTests/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/165</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/AssemblyLoadContext30Extensions/AssemblyLoadContext30Extensions/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/165</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/binding/tracing/BinderTracingTest.Basic/*">
             <Issue>AOT incompatible</Issue>
         </ExcludeList>
@@ -1244,11 +1238,8 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/347422/b347422/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/194</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/529206/vsw529206ModuleCctor/*">
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/vsw529206/vsw529206ModuleCctor/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: compat for exceptions thrown from module cctor</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/asurt150271/test3/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/202</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TSAmbiguities/CollapsedInterfaces/HelloWorld/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Thorough checking of invalid inputs</Issue>
@@ -1270,9 +1261,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/ContextualReflection/ContextualReflection/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/165</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/regressions/GitHub_15544/main/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/155: AssemblyName.GetAssemblyName</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/profiler/**/*">
             <Issue>CoreCLR test</Issue>
@@ -1344,40 +1332,40 @@
 
         <!-- Arrays with non-zero lower bounds -->
         <!-- https://github.com/dotnet/runtimelab/issues/155 -->
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\_il_relhuge_b\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\_il_relhuge_i4\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\_il_relhuge_objref\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\_il_relhuge_r4\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\_il_relhuge_r8\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\_il_relhuge_struct\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\_il_relhuge_u8\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\_il_dbgaddress\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\_il_dbgldelem_get\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\_il_reladdress\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\_il_relgcarr\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\_il_relldelem_get\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\_il_dbgfloat64_range1\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\_il_dbgfloat64_range2\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\_il_dbgint32_1\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\_il_dbgint32_m1\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\_il_dbgint32_neg_range\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\_il_dbgint32_range1\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\_il_dbgint32_range2\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\_il_relfloat64_range1\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\_il_relfloat64_range2\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\_il_relint32_1\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\_il_relint32_m1\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\_il_relint32_neg_range\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\_il_relint32_range1\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\_il_relint32_range2\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\int64\arrays\_il_relhugedim\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\refany\_il_dbgarray2\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\refany\_il_dbgarray3\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\refany\_il_relarray3\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\tailcall\_il_dbgdeep_array_nz\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\tailcall\_il_reldeep_array_nz\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\VT\port\_il_dbghuge_gcref\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\VT\port\_il_relhuge_gcref\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_b_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_i4_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_objref_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_r4_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_r8_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_struct_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_u8_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\address_il_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\ldelem_get_il_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\address_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\gcarr_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\ldelem_get_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\float64_range1_il_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\float64_range2_il_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_1_il_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_m1_il_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_neg_range_il_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_range1_il_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_range2_il_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\float64_range1_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\float64_range2_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_1_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_m1_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_neg_range_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_range1_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_range2_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\int64\arrays\hugedim_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\refany\array2_il_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\refany\array3_il_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\refany\array3_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\tailcall\deep_array_nz_il_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\tailcall\deep_array_nz_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\VT\port\huge_gcref_il_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\VT\port\huge_gcref_il_r\*" />
 
         <!-- Covariant returns -->
         <!-- https://github.com/dotnet/runtimelab/issues/205 -->

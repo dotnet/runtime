@@ -112,15 +112,24 @@
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
 
+    <PropertyGroup>
+      <_DefaultExportedFunctions Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_EmccVersion)', '3.1.7'))"
+                                >_malloc,_memalign,_memset,_htons,_ntohs</_DefaultExportedFunctions>
+
+      <!-- _htons,_ntohs,__get_daylight,__get_timezone,__get_tzname are exported temporarily, until the issue is fixed in emscripten, https://github.com/dotnet/runtime/issues/64724  -->
+      <_DefaultExportedFunctions Condition="'$(_DefaultExportedFunctions)' == '' and $([MSBuild]::VersionGreaterThan('$(_EmccVersion)', '3.0'))"
+                                >g_free,_malloc,_memalign,_memset,_htons,_ntohs,__get_daylight,__get_timezone,__get_tzname</_DefaultExportedFunctions>
+      <_DefaultExportedFunctions Condition="'$(_DefaultExportedFunctions)' == '' and $([MSBuild]::VersionLessThan('$(_EmccVersion)', '3.0'))"
+                                >g_free,_malloc,_htons,_ntohs,__get_daylight,__get_timezone,__get_tzname,_memalign</_DefaultExportedFunctions>
+    </PropertyGroup>
+
     <ItemGroup>
       <_EmccLinkFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' == 'true'" />
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
       <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
       <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=&quot;['FS','print','ccall','cwrap','setValue','getValue','UTF8ToString','UTF8ArrayToString','FS_createPath','FS_createDataFile','removeRunDependency','addRunDependency', 'FS_readFile']&quot;"  />
-      <!-- _htons,_ntohs,__get_daylight,__get_timezone,__get_tzname are exported temporarily, until the issue is fixed in emscripten, https://github.com/dotnet/runtime/issues/64724  -->
-      <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=_free,_malloc,_memalign,_memset,_htons,_ntohs,__get_daylight,__get_timezone,__get_tzname" Condition="$([MSBuild]::VersionGreaterThan('$(_EmccVersion)', '3.0'))" />
-      <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=_free,_malloc,_htons,_ntohs,__get_daylight,__get_timezone,__get_tzname,_memalign" Condition="$([MSBuild]::VersionLessThan('$(_EmccVersion)', '3.0'))" />
+      <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=$(_DefaultExportedFunctions)" Condition="'$(_DefaultExportedFunctions)' != ''" />
       <_EmccLinkFlags Include="--source-map-base http://example.com" />
       <_EmccLinkFlags Include="-s STRICT_JS=1" />
       <_EmccLinkFlags Include="-s EXPORT_NAME=&quot;'createDotnetRuntime'&quot;" />

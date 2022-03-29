@@ -135,5 +135,8 @@ namespace System
 
         internal const string Rfc2898OutdatedCtorMessage = "The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.";
         internal const string Rfc2898OutdatedCtorDiagId = "SYSLIB0041";
+
+        internal const string EccXmlExportImportMessage = "ToXmlString and FromXmlString have no implementation for ECC types, and are obsolete. Use a standard import and export format such as ExportSubjectPublicKeyInfo or ImportSubjectPublicKeyInfo for public keys and ExportPkcs8PrivateKey or ImportPkcs8PrivateKey for private keys.";
+        internal const string EccXmlExportImportDiagId = "SYSLIB0042";
     }
 }

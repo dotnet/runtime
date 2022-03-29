@@ -194,19 +194,37 @@ namespace Microsoft.Interop
         public static bool IsCallerAllocatedSpanConstructor(
             IMethodSymbol ctor,
             ITypeSymbol managedType,
-            ITypeSymbol spanOfByte,
-            CustomTypeMarshallerKind variant)
+            ITypeSymbol spanOfT,
+            CustomTypeMarshallerKind variant,
+            out ITypeSymbol? spanElementType)
         {
+            spanElementType = null;
             if (variant == CustomTypeMarshallerKind.LinearCollection)
             {
                 return ctor.Parameters.Length == 3
-                && SymbolEqualityComparer.Default.Equals(managedType, ctor.Parameters[0].Type)
-                && SymbolEqualityComparer.Default.Equals(spanOfByte, ctor.Parameters[1].Type)
-                && ctor.Parameters[2].Type.SpecialType == SpecialType.System_Int32;
+                    && SymbolEqualityComparer.Default.Equals(managedType, ctor.Parameters[0].Type)
+                    && IsSpanOfUnmanagedType(ctor.Parameters[1].Type, spanOfT, out spanElementType)
+                    && spanElementType.SpecialType == SpecialType.System_Byte
+                    && ctor.Parameters[2].Type.SpecialType == SpecialType.System_Int32;
             }
             return ctor.Parameters.Length == 2
                 && SymbolEqualityComparer.Default.Equals(managedType, ctor.Parameters[0].Type)
-                && SymbolEqualityComparer.Default.Equals(spanOfByte, ctor.Parameters[1].Type);
+                && IsSpanOfUnmanagedType(ctor.Parameters[1].Type, spanOfT, out spanElementType);
+
+            static bool IsSpanOfUnmanagedType(ITypeSymbol typeToCheck, ITypeSymbol spanOfT, out ITypeSymbol? typeArgument)
+            {
+                typeArgument = null;
+                if (typeToCheck is INamedTypeSymbol namedType
+                    && SymbolEqualityComparer.Default.Equals(spanOfT, namedType.ConstructedFrom)
+                    && namedType.TypeArguments.Length == 1
+                    && namedType.TypeArguments[0].IsUnmanagedType)
+                {
+                    typeArgument = namedType.TypeArguments[0];
+                    return true;
+                }
+
+                return false;
+            }
         }
 
         public static IMethodSymbol? FindGetPinnableReference(ITypeSymbol type)

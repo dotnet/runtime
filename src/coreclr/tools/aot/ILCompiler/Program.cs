@@ -607,7 +607,6 @@ namespace ILCompiler
                 }
             }
 
-            _rootedAssemblies = new List<string>(_rootedAssemblies.Select(a => ILLinkify(a)));
             _conditionallyRootedAssemblies = new List<string>(_conditionallyRootedAssemblies.Select(a => ILLinkify(a)));
             _trimmedAssemblies = new List<string>(_trimmedAssemblies.Select(a => ILLinkify(a)));
 
@@ -626,10 +625,16 @@ namespace ILCompiler
             // Root whatever assemblies were specified on the command line
             foreach (var rootedAssembly in _rootedAssemblies)
             {
+                // For compatibility with IL Linker, the parameter could be a file name or an assembly name.
+                // This is the logic IL Linker uses to decide how to interpret the string. Really.
+                EcmaModule module = File.Exists(rootedAssembly)
+                    ? typeSystemContext.GetModuleFromPath(rootedAssembly)
+                    : typeSystemContext.GetModuleForSimpleName(rootedAssembly);
+
                 // We only root the module type. The rest will fall out because we treat _rootedAssemblies
                 // same as conditionally rooted ones and here we're fulfilling the condition ("something is used").
                 compilationRoots.Add(
-                    new GenericRootProvider<ModuleDesc>(typeSystemContext.GetModuleForSimpleName(rootedAssembly),
+                    new GenericRootProvider<ModuleDesc>(module,
                     (ModuleDesc module, IRootingServiceProvider rooter) => rooter.AddCompilationRoot(module.GetGlobalModuleType(), "Command line root")));
             }
 
