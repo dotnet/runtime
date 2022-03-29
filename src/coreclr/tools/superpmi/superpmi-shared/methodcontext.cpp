@@ -6463,9 +6463,7 @@ void MethodContext::recAppendClassName(
 
     // The API has two different behaviors depending on whether the input specified length is zero or non-zero:
     // (1) zero: returns the length of the string (which the caller can use to allocate a buffer)
-    // (2) non-zero: two cases:
-    //     (a) EE: fills the entire string into the buffer, or crashes if the buffer isn't large enough.
-    //     (b) crossgen2: fills as much of the buffer with the name as there is space available.
+    // (2) non-zero: fill as much of the buffer with the name as there is space available.
     // We don't want the input length to be part of the key, since the caller could potentially pass in a smaller
     // or larger buffer, and we'll fill in as much of the buffer as possible. We do need to handle both the zero
     // and non-zero cases, though, so we'll get one record for first call using zero (with the correct buffer size result),
@@ -6546,12 +6544,19 @@ int MethodContext::repAppendClassName(char16_t**           ppBuf,
 
     if ((ppBuf != nullptr) && (*ppBuf != nullptr) && (*pnBufLen > 0) && (name != nullptr))
     {
-        // Copy over as much as possible (note that the EE crashes is the buffer is too small).
-        size_t sizeToCopy = min(*pnBufLen, nLen + 1 /* include null terminator */);
-        wcscpy_s((WCHAR*)*ppBuf, sizeToCopy, (const WCHAR*)name);
-        (*ppBuf)[sizeToCopy - 1] = 0;
-        (*ppBuf) += nLen;
-        (*pnBufLen) -= nLen;
+        // Copy as much as will fit.
+        char16_t* pBuf = *ppBuf;
+        int nLenToCopy = min(*pnBufLen, nLen + /* null terminator */ 1);
+        for (int i = 0; i < nLenToCopy; i++)
+        {
+            pBuf[i] = name[i];
+        }
+        pBuf[nLenToCopy - 1] = 0; // null terminate the string if it wasn't already
+
+        // Update the buffer pointer and buffer size pointer based on the amount actually copied.
+        // Don't include the null terminator. `*ppBuf` will point at the added null terminator.
+        (*ppBuf) += nLenToCopy - 1;
+        (*pnBufLen) -= nLenToCopy - 1;
     }
 
     return nLen;

@@ -1934,14 +1934,21 @@ namespace Internal.JitInterface
             if (pnBufLen > 0)
             {
                 char* buffer = *ppBuf;
-                for (int i = 0; i < Math.Min(name.Length, pnBufLen); i++)
+                int lengthToCopy = Math.Min(name.Length, pnBufLen);
+                for (int i = 0; i < lengthToCopy; i++)
                     buffer[i] = name[i];
                 if (name.Length < pnBufLen)
+                {
                     buffer[name.Length] = (char)0;
+                }
                 else
+                {
                     buffer[pnBufLen - 1] = (char)0;
-                pnBufLen -= length;
-                *ppBuf = buffer + length;
+                    lengthToCopy -= 1;
+                }
+
+                pnBufLen -= lengthToCopy;
+                *ppBuf = buffer + lengthToCopy;
             }
 
             return length;
