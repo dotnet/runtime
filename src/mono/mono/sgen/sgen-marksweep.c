@@ -1828,16 +1828,16 @@ sweep_job_func (void *thread_data_untyped, SgenThreadPoolJob *job)
 		g_usleep (100);
 	}
 
-	MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
-	MONO_DISABLE_WARNING(4189) /* local variable is initialized but not referenced */
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+MONO_DISABLE_WARNING(4189) /* local variable is initialized but not referenced */
 	if (SGEN_MAX_ASSERT_LEVEL >= 6) {
 		for (block_index = num_blocks; block_index < allocated_blocks.next_slot; ++block_index) {
 			MSBlockInfo *block = BLOCK_UNTAG (*sgen_array_list_get_slot (&allocated_blocks, block_index));
 			SGEN_ASSERT (6, block && block->state == BLOCK_STATE_SWEPT, "How did a new block to be swept get added while swept?");
 		}
 	}
-	MONO_RESTORE_WARNING
-	MONO_RESTORE_WARNING
+MONO_RESTORE_WARNING
+MONO_RESTORE_WARNING
 
 	/*
 	 * Concurrently sweep all the blocks to reduce workload during minor
@@ -2702,7 +2702,7 @@ major_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int job
 	sgen_binary_protocol_major_card_table_scan_start (sgen_timestamp (), scan_type & CARDTABLE_SCAN_MOD_UNION);
 	FOREACH_BLOCK_RANGE_HAS_REFERENCES_NO_LOCK (block, first_block, last_block, index, has_references) {
 #ifdef PREFETCH_CARDS
-		MONO_DISABLE_WARNING(4189) /* local variable is initialized but not referenced */
+MONO_DISABLE_WARNING(4189) /* local variable is initialized but not referenced */
 		int prefetch_index = index + 6;
 		if (prefetch_index < allocated_blocks.next_slot) {
 			MSBlockInfo *prefetch_block = BLOCK_UNTAG (*sgen_array_list_get_slot (&allocated_blocks, prefetch_index));
@@ -2713,7 +2713,7 @@ major_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int job
 				PREFETCH_WRITE (prefetch_cards + 32);
 			}
 		}
-		MONO_RESTORE_WARNING
+MONO_RESTORE_WARNING
 #endif
 		if (!has_references)
 			continue;

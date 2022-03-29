@@ -1347,7 +1347,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 
 		memset (&ctx, 0, sizeof (ctx));
 
-		MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 		if (FALSE && mono_class_is_ginst (klass)) {
 			ctx.class_inst = mono_class_get_generic_class (klass)->context.class_inst;
 			ctx.method_inst = NULL;
@@ -1356,7 +1356,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			if (!ref->method)
 				return FALSE;
 		}
-		MONO_RESTORE_WARNING
+MONO_RESTORE_WARNING
 
 		memset (&ctx, 0, sizeof (ctx));
 

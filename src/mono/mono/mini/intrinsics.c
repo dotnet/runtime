@@ -482,10 +482,10 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		MonoInst *esize_ins;
 		if (mini_is_gsharedvt_variable_type (t)) {
 			esize_ins = mini_emit_get_gsharedvt_info_klass (cfg, mono_class_from_mono_type_internal (t), MONO_RGCTX_INFO_CLASS_SIZEOF);
-			MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 			if (SIZEOF_REGISTER == 8)
 				MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, esize_ins->dreg, esize_ins->dreg);
-			MONO_RESTORE_WARNING
+MONO_RESTORE_WARNING
 		} else {
 			t = mini_type_get_underlying_type (t);
 			int esize = mono_class_array_element_size (mono_class_from_mono_type_internal (t));
@@ -513,12 +513,12 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 			return ins;
 		} else if (fsig->params [1]->type == MONO_TYPE_U8) {
 			int sreg = args [1]->dreg;
-			MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 			if (SIZEOF_REGISTER == 4) {
 				sreg = alloc_ireg (cfg);
 				EMIT_NEW_UNALU (cfg, ins, OP_LCONV_TO_U4, sreg, args [1]->dreg);
 			}
-			MONO_RESTORE_WARNING
+MONO_RESTORE_WARNING
 			int dreg = alloc_preg (cfg);
 			EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, args [0]->dreg, sreg);
 			ins->type = STACK_PTR;

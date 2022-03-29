@@ -51,14 +51,12 @@ mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, 
 
 	val_reg = alloc_preg (cfg);
 
-	MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (SIZEOF_REGISTER == 8)
 		MONO_EMIT_NEW_I8CONST (cfg, val_reg, val);
 	else
 		MONO_EMIT_NEW_ICONST (cfg, val_reg, val);
-	MONO_RESTORE_WARNING
 
-	MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (align < TARGET_SIZEOF_VOID_P) {
 		if (align % 2 == 1)
 			goto set_1;
@@ -88,7 +86,7 @@ mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, 
 			size -= 8;
 		}
 	}
-	MONO_RESTORE_WARNING
+MONO_RESTORE_WARNING
 
 set_4:
 	while (size >= 4) {
@@ -122,7 +120,7 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 	g_assert (size < MAX_INLINE_COPY_SIZE);
 	g_assert (align > 0);
 
-	MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (align < TARGET_SIZEOF_VOID_P) {
 		if (align == 4)
 			goto copy_4;
@@ -154,7 +152,7 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 			size -= 8;
 		}
 	}
-	MONO_RESTORE_WARNING
+MONO_RESTORE_WARNING
 
 copy_4:
 	while (size >= 4) {

@@ -539,10 +539,10 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		if (decompose_long_opcode (cfg, ins, &repl))
 			emulate = FALSE;
 #else
-		MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 		if (COMPILE_LLVM (cfg) && decompose_long_opcode (cfg, ins, &repl))
 			emulate = FALSE;
-		MONO_RESTORE_WARNING
+MONO_RESTORE_WARNING
 #endif
 
 		if (emulate && mono_find_jit_opcode_emulation (ins->opcode))

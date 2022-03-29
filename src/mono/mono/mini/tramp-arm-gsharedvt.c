@@ -218,14 +218,12 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	mono_add_unwind_op_offset (unwind_ops, code, buf, ARMREG_LR, ((- cfa_offset) + 4));
 	ARM_MOV_REG_REG (code, fp, ARMREG_SP);
 	mono_add_unwind_op_def_cfa_reg (unwind_ops, code, buf, fp);
-MONO_PRAGMA_WARNING_PUSH()
-MONO_PRAGMA_WARNING_DISABLE(4310) // cast truncates constant value
-MONO_PRAGMA_WARNING_DISABLE(4127) /* conditional expression is constant */
 	/* Allocate stack frame */
-	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 32 + (16 * sizeof (double)));
+	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, (guint32)(32 + (16 * sizeof (double))));
+MONO_WARNING_DISABLE(4127) /* conditional expression is constant */
 	if (MONO_ARCH_FRAME_ALIGNMENT > 8)
 		ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, (MONO_ARCH_FRAME_ALIGNMENT - 8));
-MONO_PRAGMA_WARNING_POP()
+MONO_RESTORE_WARNING
 	offset = 4;
 	info_offset = -offset;
 	offset += 4;
@@ -252,7 +250,7 @@ MONO_PRAGMA_WARNING_POP()
 		/* Save caller fregs */
 		ARM_SUB_REG_IMM8 (code, ARMREG_IP, fp, -caller_freg_area_offset);
 		for (i = 0; i < 8; ++i)
-			ARM_FSTD (code, i * 2, ARMREG_IP, (i * sizeof (double)));
+			ARM_FSTD (code, i * 2, ARMREG_IP, ((int)(i * sizeof (double))));
 	}
 
 	/*
@@ -311,7 +309,7 @@ MONO_PRAGMA_WARNING_POP()
 		/* Load argument fregs */
 		ARM_SUB_REG_IMM8 (code, ARMREG_LR, fp, -callee_freg_area_offset);
 		for (i = 0; i < 8; ++i)
-			ARM_FLDD (code, i * 2, ARMREG_LR, (i * sizeof (double)));
+			ARM_FLDD (code, i * 2, ARMREG_LR, ((int)(i * sizeof (double))));
 	}
 	/* Pop callee register area */
 	ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 4 * TARGET_SIZEOF_VOID_P);

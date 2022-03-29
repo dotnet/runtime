@@ -4853,7 +4853,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 
 #define STIND_OFFSET_IMM(datatype,unaligned) do { \
-MONO_DISABLE_WARNING(4127) \
+	MONO_DISABLE_WARNING(4127) \
 	gpointer ptr = LOCAL_VAR (ip [1], gpointer); \
 	NULL_CHECK (ptr); \
 	ptr = (char*)ptr + (gint16)ip [3]; \
@@ -4862,6 +4862,7 @@ MONO_DISABLE_WARNING(4127) \
 	else \
 		*(datatype*)ptr = LOCAL_VAR (ip [2], datatype); \
 	ip += 4; \
+	MONO_RESTORE_WARNING \
 } while (0)
 		MINT_IN_CASE(MINT_STIND_OFFSET_IMM_I1)
 			STIND_OFFSET_IMM(gint8, FALSE);

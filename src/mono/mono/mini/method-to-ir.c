@@ -85,6 +85,8 @@
 #include "llvmonly-runtime.h"
 #include "mono/utils/mono-tls-inline.h"
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 #define BRANCH_COST 10
 #define CALL_COST 10
 /* Used for the JIT */
@@ -1133,21 +1135,17 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 			ins->opcode = OP_LCONV_TO_U;
 			break;
 		case STACK_R8:
-			MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 			if (TARGET_SIZEOF_VOID_P == 8)
 				ins->opcode = OP_FCONV_TO_U8;
 			else
 				ins->opcode = OP_FCONV_TO_U4;
 			break;
-			MONO_RESTORE_WARNING
 		case STACK_R4:
-			MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 			if (TARGET_SIZEOF_VOID_P == 8)
 				ins->opcode = OP_RCONV_TO_U8;
 			else
 				ins->opcode = OP_RCONV_TO_U4;
 			break;
-			MONO_RESTORE_WARNING
 		}
 		break;
 	case MONO_CEE_CONV_I8:
@@ -4428,10 +4426,8 @@ mini_emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboole
 			int index_reg = sp [1]->dreg;
 			size_t offset = (mono_class_array_element_size (klass) * sp [1]->inst_c0) + MONO_STRUCT_OFFSET (MonoArray, vector);
 
-			MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 			if (SIZEOF_REGISTER == 8 && COMPILE_LLVM (cfg) && sp [1]->inst_c0 < 0)
 				MONO_EMIT_NEW_UNALU (cfg, OP_ZEXT_I4, index_reg, index_reg);
-			MONO_RESTORE_WARNING
 
 			if (safety_checks)
 				MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index_reg);
@@ -8569,12 +8565,10 @@ calli_end:
 				ins->klass = (MonoClass *)GUINT_TO_POINTER (n);
 				MONO_ADD_INS (cfg->cbb, ins);
 			} else {
-				MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 				if (TARGET_SIZEOF_VOID_P == 8)
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, offset_reg, src1->dreg, 3);
 				else
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, offset_reg, src1->dreg, 2);
-				MONO_RESTORE_WARNING
 
 #if SIZEOF_REGISTER == 8
 				/* The upper word might not be zero, and we add it to a 64 bit address later */
@@ -9188,11 +9182,9 @@ calli_end:
 				int ctor_inline_costs = 0;
 				handle_ctor_call (cfg, cmethod, fsig, context_used, sp, ip, &ctor_inline_costs);
 
-				MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 				// don't contribute to inline_const if ctor has [MethodImpl(MethodImplOptions.AggressiveInlining)]
 				if (!COMPILE_LLVM(cfg) || !(cmethod->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))
 					inline_costs += ctor_inline_costs;
-				MONO_RESTORE_WARNING
 
 				CHECK_CFG_EXCEPTION;
 			}
@@ -10338,10 +10330,8 @@ field_access_end:
 				int index_reg = sp [1]->dreg;
 				size_t offset = (mono_class_array_element_size (klass) * sp [1]->inst_c0) + MONO_STRUCT_OFFSET (MonoArray, vector);
 
-				MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 				if (SIZEOF_REGISTER == 8 && COMPILE_LLVM (cfg))
 					MONO_EMIT_NEW_UNALU (cfg, OP_ZEXT_I4, index_reg, index_reg);
-				MONO_RESTORE_WARNING
 
 				MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index_reg);
 				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), array_reg, (target_mgreg_t)offset);
@@ -12966,12 +12956,10 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 
 					lvreg = 0;
 
-					MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 					if (COMPILE_SOFT_FLOAT (cfg) && store_opcode == OP_STORER8_MEMBASE_REG) {
 						regtype = 'l';
 						store_opcode = OP_STOREI8_MEMBASE_REG;
 					}
-					MONO_RESTORE_WARNING
 
 					ins->dreg = alloc_dreg (cfg, stacktypes [regtype]);
 

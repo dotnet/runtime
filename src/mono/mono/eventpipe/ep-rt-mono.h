@@ -1526,14 +1526,14 @@ ep_rt_spin_lock_set_owning_thread_id (
 	ep_rt_spin_lock_handle_t *spin_lock,
 	MonoNativeThreadId thread_id)
 {
-	MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (sizeof (spin_lock->owning_thread_id) == sizeof (uint32_t))
 		ep_rt_volatile_store_uint32_t ((uint32_t *)&spin_lock->owning_thread_id, MONO_NATIVE_THREAD_ID_TO_UINT (thread_id));
 	else if (sizeof (spin_lock->owning_thread_id) == sizeof (uint64_t))
 		ep_rt_volatile_store_uint64_t ((uint64_t *)&spin_lock->owning_thread_id, MONO_NATIVE_THREAD_ID_TO_UINT (thread_id));
 	else
 		spin_lock->owning_thread_id = thread_id;
-	MONO_RESTORE_WARNING
+MONO_RESTORE_WARNING
 }
 
 static
@@ -1541,14 +1541,14 @@ inline
 MonoNativeThreadId
 ep_rt_spin_lock_get_owning_thread_id (const ep_rt_spin_lock_handle_t *spin_lock)
 {
-	MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (sizeof (spin_lock->owning_thread_id) == sizeof (uint32_t))
 		return MONO_UINT_TO_NATIVE_THREAD_ID (ep_rt_volatile_load_uint32_t ((const uint32_t *)&spin_lock->owning_thread_id));
 	else if (sizeof (spin_lock->owning_thread_id) == sizeof (uint64_t))
 		return MONO_UINT_TO_NATIVE_THREAD_ID (ep_rt_volatile_load_uint64_t ((const uint64_t *)&spin_lock->owning_thread_id));
 	else
 		return spin_lock->owning_thread_id;
-	MONO_RESTORE_WARNING
+MONO_RESTORE_WARNING
 }
 #endif
 

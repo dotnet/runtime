@@ -3403,11 +3403,11 @@ get_type_start_id (MonoType *type)
 
 	start_id = (((start_id * 215497) >> 16) ^ ((start_id * 1823231) + start_id));
 
-	MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	// Mix in highest bits on 64-bit systems only
 	if (sizeof (type) > 4)
 		start_id = start_id ^ (((uint64_t)type >> 31) >> 1);
-	MONO_RESTORE_WARNING
+MONO_RESTORE_WARNING
 
 	return start_id;
 }

@@ -1988,7 +1988,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		else
 			offset += 32;
 		break;
-	case RegTypeStructByAddr:
+	case RegTypeStructByAddr: {
 		MonoInst *ins;
 
 		ins = cfg->vret_addr;
@@ -2003,6 +2003,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		}
 		offset += sizeof (target_mgreg_t);
 		break;
+	}
 	default:
 		break;
 	}
@@ -5286,8 +5287,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			labels [1] = code;
 			ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R2, 0);
 			ARM_STR_IMM (code, ARMREG_R0, ARMREG_R3, 0);
-			ARM_ADD_REG_IMM (code, ARMREG_R2, ARMREG_R2, sizeof (target_mgreg_t), 0);
-			ARM_ADD_REG_IMM (code, ARMREG_R3, ARMREG_R3, sizeof (target_mgreg_t), 0);
+			ARM_ADD_REG_IMM (code, ARMREG_R2, ARMREG_R2, (guint32)sizeof (target_mgreg_t), 0);
+			ARM_ADD_REG_IMM (code, ARMREG_R3, ARMREG_R3, (guint32)sizeof (target_mgreg_t), 0);
 			ARM_SUB_REG_IMM (code, ARMREG_R1, ARMREG_R1, 1, 0);
 			arm_patch (labels [0], code);
 			ARM_CMP_REG_IMM (code, ARMREG_R1, 0, 0);
@@ -6203,7 +6204,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		mono_emit_unwind_op_def_cfa_offset (cfg, code, prev_sp_offset);
 		reg_offset = 0;
 		for (i = 0; i < 16; ++i) {
-			if ((cfg->used_int_regs & (1 << i))) {
+			if ((cfg->used_int_regs & ((regmask_t)1 << i))) {
 				mono_emit_unwind_op_offset (cfg, code, i, (- prev_sp_offset) + reg_offset);
 				mini_gc_set_slot_type_from_cfa (cfg, (- prev_sp_offset) + reg_offset, SLOT_NOREF);
 				reg_offset += 4;
@@ -6719,9 +6720,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			/* Restore saved r7, restore LR to PC */
 			/* Skip lr from the lmf */
 			mono_emit_unwind_op_def_cfa_offset (cfg, code, 3 * 4);
-MONO_DISABLE_WARNING(4310) // cast truncates constant value
-			ARM_ADD_REG_IMM (code, ARMREG_SP, ARMREG_SP, sizeof (target_mgreg_t), 0);
-MONO_RESTORE_WARNING
+			ARM_ADD_REG_IMM (code, ARMREG_SP, ARMREG_SP, (guint32)sizeof (target_mgreg_t), 0);
 			mono_emit_unwind_op_def_cfa_offset (cfg, code, 2 * 4);
 			ARM_POP (code, (1 << ARMREG_R7) | (1 << ARMREG_PC));
 		}
@@ -7067,9 +7066,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entri
 					ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0);
 					ARM_LDR_REG_REG (code, ARMREG_R1, ARMREG_IP, ARMREG_R1);
 					/* Save it to the fourth slot */
-MONO_DISABLE_WARNING(4310) // cast truncates constant value
-					ARM_STR_IMM (code, ARMREG_R1, ARMREG_SP, 3 * sizeof (target_mgreg_t));
-MONO_RESTORE_WARNING
+					ARM_STR_IMM (code, ARMREG_R1, ARMREG_SP, (guint32)(3 * sizeof (target_mgreg_t)));
 					/* Restore registers and branch */
 					ARM_POP4 (code, ARMREG_R0, ARMREG_R1, ARMREG_IP, ARMREG_PC);
 
@@ -7078,7 +7075,7 @@ MONO_RESTORE_WARNING
 					ARM_POP2 (code, ARMREG_R0, ARMREG_R1);
 					if (large_offsets) {
 						mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, 2 * sizeof (target_mgreg_t));
-						ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 2 * sizeof (target_mgreg_t));
+						ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, (guint32)(2 * sizeof (target_mgreg_t)));
 					}
 					mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, 0);
 					ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, vtable_offset);

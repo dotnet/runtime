@@ -162,14 +162,14 @@ visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, MonoPtrSet *visited)
 			int idx = var->inst_c0;
 			MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
-			MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 			cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
 			if (SIZEOF_REGISTER == 4 && (var->type == STACK_I8 || (var->type == STACK_R8 && COMPILE_SOFT_FLOAT (cfg)))) {
 				/* Make the component vregs volatile as well (#612206) */
 				get_vreg_to_inst (cfg, MONO_LVREG_LS (var->dreg))->flags |= MONO_INST_VOLATILE;
 				get_vreg_to_inst (cfg, MONO_LVREG_MS (var->dreg))->flags |= MONO_INST_VOLATILE;
 			}
-			MONO_RESTORE_WARNING
+MONO_RESTORE_WARNING
 		}
 
 		/* SREGS */
@@ -183,14 +183,14 @@ visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, MonoPtrSet *visited)
 				int idx = var->inst_c0;
 				MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
-				MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 				cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
 				if (SIZEOF_REGISTER == 4 && (var->type == STACK_I8 || (var->type == STACK_R8 && COMPILE_SOFT_FLOAT (cfg)))) {
 					/* Make the component vregs volatile as well (#612206) */
 					get_vreg_to_inst (cfg, MONO_LVREG_LS (var->dreg))->flags |= MONO_INST_VOLATILE;
 					get_vreg_to_inst (cfg, MONO_LVREG_MS (var->dreg))->flags |= MONO_INST_VOLATILE;
 				}
-				MONO_RESTORE_WARNING
+MONO_RESTORE_WARNING
 			}
 		}
 	}
