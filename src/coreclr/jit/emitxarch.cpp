@@ -9535,7 +9535,7 @@ void emitter::emitDispIns(
             regNumber reg3 = id->idReg3();
             if (ins == INS_bextr || ins == INS_bzhi || ins == INS_shrx || ins == INS_shlx || ins == INS_sarx)
             {
-                // BMI bextr and bzhi encodes the reg2 in VEX.vvvv and reg3 in modRM,
+                // BMI bextr,bzhi, shrx, shlx and sarx encode the reg2 in VEX.vvvv and reg3 in modRM,
                 // which is different from most of other instructions
                 regNumber tmp = reg2;
                 reg2          = reg3;

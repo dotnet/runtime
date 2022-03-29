@@ -6,28 +6,28 @@ public class Test
 {	
 	 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-    private static uint Shl(uint x, int y) => x<< y;
+    private static uint Shlx32bit(uint x, int y) => x<< y;
 	
 	[MethodImpl(MethodImplOptions.NoInlining)]
-    private static int Sar(int x, int y) => x >> y;
+    private static int Sarx32bit(int x, int y) => x >> y;
  
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static uint Shr(uint x, int y) => x >> y;
+    private static uint Shrx32bit(uint x, int y) => x >> y;
 	
 	[MethodImpl(MethodImplOptions.NoInlining)]
     private static uint Ror(uint x) => BitOperations.RotateRight(x, 2);
 
   	[MethodImpl(MethodImplOptions.NoInlining)]
-    private static ulong Shlx(ulong x, int y) => x << y;
+    private static ulong Shlx64bit(ulong x, int y) => x << y;
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-    private static long Sarx(long x, int y) => x >> y;
+    private static long Sarx64bit(long x, int y) => x >> y;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static ulong Shrx(ulong x, int y) => x >> y;
+    private static ulong Shrx64bit(ulong x, int y) => x >> y;
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-    private static unsafe ulong ShrxRef(ulong *x, int y) => *x >> y;
+    private static unsafe ulong ShrxRef64bit(ulong *x, int y) => *x >> y;
 		
  	[MethodImpl(MethodImplOptions.NoInlining)]
     private static ulong Rorx(ulong x) => BitOperations.RotateRight(x, 2);
@@ -36,11 +36,11 @@ public static unsafe int Main()
 {
 	try
 	{
-		uint  valUInt = 0xFFFFFFFE;
-		int   valInt = 8;		
-		ulong valULong = 8;
-		long  valLong = 8;
-		int   shiftBy = 1;		
+		uint  valUInt = 0;
+		int   valInt = 0;		
+		ulong valULong = 0;
+		long  valLong = 0;
+		int   shiftBy = 0;		
 		uint  resUInt = 0;
 		int   resInt = 0;
 		ulong resULong = 0;
@@ -53,13 +53,13 @@ public static unsafe int Main()
 		int   MOD64 = 64;
 		
 		//
-		// shl tests
+		// Shlx32bit tests
 		//
 		valUInt = 0;
 		shiftBy = 1;
-		resUInt = Shl(valUInt, shiftBy);
+		resUInt = Shlx32bit(valUInt, shiftBy);
 		expectedUInt = (uint) (valUInt * Math.Pow(2, (shiftBy % MOD32)));
-		Console.Write("UnitTest Shl({0},{1}): {2}", valUInt, shiftBy, resUInt);
+		Console.Write("UnitTest Shlx32bit({0},{1}): {2}", valUInt, shiftBy, resUInt);
 		if (resUInt != expectedUInt)
 		{
 			Console.Write(" != {0} Failed.\n", expectedUInt);
@@ -69,9 +69,9 @@ public static unsafe int Main()
 		
 		valUInt = 8;
 		shiftBy = 1;
-		resUInt = Shl(valUInt, shiftBy);
+		resUInt = Shlx32bit(valUInt, shiftBy);
 		expectedUInt = (uint) (valUInt * Math.Pow(2, (shiftBy % MOD32)));
-		Console.Write("UnitTest Shl({0},{1}): {2}", valUInt, shiftBy, resUInt);
+		Console.Write("UnitTest Shlx32bit({0},{1}): {2}", valUInt, shiftBy, resUInt);
 		if (resUInt != expectedUInt)
 		{
 			Console.Write(" != {0} Failed.\n", expectedUInt);
@@ -81,9 +81,9 @@ public static unsafe int Main()
 		
 		valUInt = 1;
 		shiftBy = 31;
-		resUInt = Shl(valUInt, shiftBy);
+		resUInt = Shlx32bit(valUInt, shiftBy);
 		expectedUInt = (uint) (valUInt * Math.Pow(2, (shiftBy % MOD32)));
-		Console.Write("UnitTest Shl({0},{1}): {2}", valUInt, shiftBy, resUInt);
+		Console.Write("UnitTest Shlx32bit({0},{1}): {2}", valUInt, shiftBy, resUInt);
 		if (resUInt != expectedUInt)
 		{
 			Console.Write(" != {0} Failed.\n", expectedUInt);
@@ -93,9 +93,9 @@ public static unsafe int Main()
 
 		valUInt = 1;
 		shiftBy = 33;
-		resUInt = Shl(valUInt, shiftBy);
+		resUInt = Shlx32bit(valUInt, shiftBy);
 		expectedUInt = (uint) (valUInt * Math.Pow(2, (shiftBy % MOD32)));
-		Console.Write("UnitTest Shl({0},{1}): {2}", valUInt, shiftBy, resUInt);
+		Console.Write("UnitTest Shlx32bit({0},{1}): {2}", valUInt, shiftBy, resUInt);
 		if (resUInt != expectedUInt)
 		{
 			Console.Write(" != {0} Failed.\n", expectedUInt);
@@ -105,9 +105,9 @@ public static unsafe int Main()
 		
 		valUInt = 0xFFFFFFFF;
 		shiftBy = 1;
-		resUInt = Shl(valUInt, shiftBy);
-		expectedUInt = (uint) (valUInt * Math.Pow(2, shiftBy));
-		Console.Write("UnitTest Shl({0},{1}): {2}", valUInt, shiftBy, resUInt);
+		resUInt = Shlx32bit(valUInt, shiftBy);
+		expectedUInt = (uint) (valUInt * Math.Pow(2, (shiftBy % MOD32)));
+		Console.Write("UnitTest Shlx32bit({0},{1}): {2}", valUInt, shiftBy, resUInt);
 		if (resUInt != expectedUInt)
 		{
 			Console.Write(" != {0} Failed.\n", expectedUInt);
@@ -116,13 +116,13 @@ public static unsafe int Main()
 		Console.Write(" == {0} Passed.\n", expectedUInt);
 
 		// 
-		// sar tests
+		// Sarx32bit tests
 		//
 		valInt = 0;
 		shiftBy = 1;
-		resInt = Sar(valInt, shiftBy);
+		resInt = Sarx32bit(valInt, shiftBy);
 		expectedInt = (int) (valInt / Math.Pow(2, (shiftBy % MOD32)));
-		Console.Write("UnitTest Sar({0},{1}): {2}", valInt, shiftBy, resInt);
+		Console.Write("UnitTest Sarx32bit({0},{1}): {2}", valInt, shiftBy, resInt);
 		if (resInt != expectedInt)
 		{
 			Console.Write(" != {0} Failed.\n", expectedInt);
@@ -132,9 +132,9 @@ public static unsafe int Main()
 		
 		valInt = -8;
 		shiftBy = 1;
-		resInt = Sar(valInt, shiftBy);
+		resInt = Sarx32bit(valInt, shiftBy);
 		expectedInt = (int) (valInt / Math.Pow(2, (shiftBy % MOD32)));
-		Console.Write("UnitTest Sar({0},{1}): {2}", valInt, shiftBy, resInt);
+		Console.Write("UnitTest Sarx32bit({0},{1}): {2}", valInt, shiftBy, resInt);
 		if (resInt != expectedInt)
 		{
 			Console.Write(" != {0} Failed.\n", expectedInt);
@@ -144,9 +144,9 @@ public static unsafe int Main()
 		
 		valInt = 1;
 		shiftBy = 33;
-		resInt = Sar(valInt, shiftBy);
+		resInt = Sarx32bit(valInt, shiftBy);
 		expectedInt = (int) (valInt / Math.Pow(2, (shiftBy % MOD32)));
-		Console.Write("UnitTest Sar({0},{1}): {2}", valInt, shiftBy, resInt);
+		Console.Write("UnitTest Sarx32bit({0},{1}): {2}", valInt, shiftBy, resInt);
 		if (resInt != expectedInt)
 		{
 			Console.Write(" != {0} Failed.\n", expectedInt);
@@ -156,9 +156,9 @@ public static unsafe int Main()
 
 		valInt = 0x7FFFFFFF;
 		shiftBy = 33;
-		resInt = Sar(valInt, shiftBy);
+		resInt = Sarx32bit(valInt, shiftBy);
 		expectedInt = (int) (valInt / Math.Pow(2, (shiftBy % MOD32)));
-		Console.Write("UnitTest Sar({0},{1}): {2}", valInt, shiftBy, resInt);
+		Console.Write("UnitTest Sarx32bit({0},{1}): {2}", valInt, shiftBy, resInt);
 		if (resInt != expectedInt)
 		{
 			Console.Write(" != {0} Failed.\n", expectedInt);
@@ -168,9 +168,9 @@ public static unsafe int Main()
 		
 		valInt = 0x7FFFFFFF;
 		shiftBy = 30;
-		resInt = Sar(valInt, shiftBy);
-		expectedInt = (int) (valInt / Math.Pow(2, shiftBy));
-		Console.Write("UnitTest Sar({0},{1}): {2}", valInt, shiftBy, resInt);
+		resInt = Sarx32bit(valInt, shiftBy);
+		expectedInt = (int) (valInt / Math.Pow(2, (shiftBy % MOD32)));
+		Console.Write("UnitTest Sarx32bit({0},{1}): {2}", valInt, shiftBy, resInt);
 		if (resInt != expectedInt)
 		{
 			Console.Write(" != {0} Failed.\n", expectedInt);
@@ -179,13 +179,13 @@ public static unsafe int Main()
 		Console.Write(" == {0} Passed.\n", expectedInt);		
 
 		//
-		// shr tests
+		// Shrx32bit tests
 		//
 		valUInt = 1;
 		shiftBy = 1;
-		resUInt = Shr(valUInt, shiftBy);
+		resUInt = Shrx32bit(valUInt, shiftBy);
 		expectedUInt = (uint) (valUInt / Math.Pow(2, (shiftBy % MOD32)));
-		Console.Write("UnitTest Shr({0},{1}): {2}", valUInt, shiftBy, resUInt);
+		Console.Write("UnitTest Shrx32bit({0},{1}): {2}", valUInt, shiftBy, resUInt);
 		if (resUInt != expectedUInt)
 		{
 			Console.Write(" != {0} Failed.\n", expectedUInt);
@@ -195,9 +195,9 @@ public static unsafe int Main()
 		
 		valUInt = 8;
 		shiftBy = 2;
-		resUInt = Shr(valUInt, shiftBy);
+		resUInt = Shrx32bit(valUInt, shiftBy);
 		expectedUInt = (uint) (valUInt / Math.Pow(2, (shiftBy % MOD32)));
-		Console.Write("UnitTest Shr({0},{1}): {2}", valUInt, shiftBy, resUInt);
+		Console.Write("UnitTest Shrx32bit({0},{1}): {2}", valUInt, shiftBy, resUInt);
 		if (resUInt != expectedUInt)
 		{
 			Console.Write(" != {0} Failed.\n", expectedUInt);
@@ -207,9 +207,9 @@ public static unsafe int Main()
 		
 		valUInt = 1;
 		shiftBy = 33;
-		resUInt = Shr(valUInt, shiftBy);
-		expectedUInt = (uint) (valUInt / Math.Pow(2, shiftBy));
-		Console.Write("UnitTest Shr({0},{1}): {2}", valUInt, shiftBy, resUInt);
+		resUInt = Shrx32bit(valUInt, shiftBy);
+		expectedUInt = (uint) (valUInt / Math.Pow(2, (shiftBy % MOD32)));
+		Console.Write("UnitTest Shrx32bit({0},{1}): {2}", valUInt, shiftBy, resUInt);
 		if (resUInt != expectedUInt)
 		{
 			Console.Write(" != {0} Failed.\n", expectedUInt);
@@ -219,9 +219,9 @@ public static unsafe int Main()
 		
 		valUInt = 0xFFFFFFFF;
 		shiftBy = 31;
-		resUInt = Shr(valUInt, shiftBy);
+		resUInt = Shrx32bit(valUInt, shiftBy);
 		expectedUInt = (uint) (valUInt / Math.Pow(2, (shiftBy % MOD32)));
-		Console.Write("UnitTest Shr({0},{1}): {2}", valUInt, shiftBy, resUInt);
+		Console.Write("UnitTest Shrx32bit({0},{1}): {2}", valUInt, shiftBy, resUInt);
 		if (resUInt != expectedUInt)
 		{
 			Console.Write(" != {0} Failed.\n", expectedUInt);
@@ -231,9 +231,9 @@ public static unsafe int Main()
 
 		valUInt = 0xFFFFFFFF;
 		shiftBy = 33;
-		resUInt = Shr(valUInt, shiftBy);
+		resUInt = Shrx32bit(valUInt, shiftBy);
 		expectedUInt = (uint) (valUInt / Math.Pow(2, (shiftBy % MOD32)));
-		Console.Write("UnitTest Shr({0},{1}): {2}", valUInt, shiftBy, resUInt);
+		Console.Write("UnitTest Shrx32bit({0},{1}): {2}", valUInt, shiftBy, resUInt);
 		if (resUInt != expectedUInt)
 		{
 			Console.Write(" != {0} Failed.\n", expectedUInt);
@@ -256,13 +256,13 @@ public static unsafe int Main()
 		Console.Write(" Passed.\n");			
 		
 		//
-		// Shlx tests
+		// Shlx64bit tests
 		//
 		valULong = 0;
 		shiftBy = 1;
-		resULong = Shlx(valULong, shiftBy);
+		resULong = Shlx64bit(valULong, shiftBy);
 		expectedULong = (ulong) (valULong * Math.Pow(2, (shiftBy % MOD64)));
-		Console.Write("UnitTest Shlx({0},{1}): {2}", valULong, shiftBy, resULong);
+		Console.Write("UnitTest Shlx64bit({0},{1}): {2}", valULong, shiftBy, resULong);
 		if (resULong != expectedULong)
 		{
 			Console.Write(" != {0} Failed.\n", expectedULong);
@@ -272,9 +272,9 @@ public static unsafe int Main()
 		
 		valULong = 8;
 		shiftBy = 1;
-		resULong = Shlx(valULong, shiftBy);
+		resULong = Shlx64bit(valULong, shiftBy);
 		expectedULong = (ulong) (valULong * Math.Pow(2, (shiftBy % MOD64)));
-		Console.Write("UnitTest Shlx({0},{1}): {2}", valULong, shiftBy, resULong);
+		Console.Write("UnitTest Shlx64bit({0},{1}): {2}", valULong, shiftBy, resULong);
 		if (resULong != expectedULong)
 		{
 			Console.Write(" != {0} Failed.\n", expectedULong);
@@ -283,10 +283,10 @@ public static unsafe int Main()
 		Console.Write(" == {0} Passed.\n", expectedULong);		
 		
 		valULong = 1;
-		shiftBy = 31;
-		resULong = Shlx(valULong, shiftBy);
+		shiftBy = 63;
+		resULong = Shlx64bit(valULong, shiftBy);
 		expectedULong = (ulong) (valULong * Math.Pow(2, (shiftBy % MOD64)));
-		Console.Write("UnitTest Shlx({0},{1}): {2}", valULong, shiftBy, resULong);
+		Console.Write("UnitTest Shlx64bit({0},{1}): {2}", valULong, shiftBy, resULong);
 		if (resULong != expectedULong)
 		{
 			Console.Write(" != {0} Failed.\n", expectedULong);
@@ -295,10 +295,10 @@ public static unsafe int Main()
 		Console.Write(" == {0} Passed.\n", expectedULong);			
 
 		valULong = 1;
-		shiftBy = 33;
-		resULong = Shlx(valULong, shiftBy);
+		shiftBy = 65;
+		resULong = Shlx64bit(valULong, shiftBy);
 		expectedULong = (ulong) (valULong * Math.Pow(2, (shiftBy % MOD64)));
-		Console.Write("UnitTest Shlx({0},{1}): {2}", valULong, shiftBy, resULong);
+		Console.Write("UnitTest Shlx64bit({0},{1}): {2}", valULong, shiftBy, resULong);
 		if (resULong != expectedULong)
 		{
 			Console.Write(" != {0} Failed.\n", expectedULong);
@@ -306,11 +306,11 @@ public static unsafe int Main()
 		}
 		Console.Write(" == {0} Passed.\n", expectedULong);	
 		
-		valULong = 0xFFFFFFFF;
+		valULong = 0xFFFFFFFFFFFFFFFF;
 		shiftBy = 1;
-		resULong = Shlx(valULong, shiftBy);
-		expectedULong = (ulong) (valULong * Math.Pow(2, shiftBy));
-		Console.Write("UnitTest Shlx({0},{1}): {2}", valULong, shiftBy, resULong);
+		resULong = Shlx64bit(valULong, shiftBy);
+		expectedULong = (ulong) (valULong ^ 1);
+		Console.Write("UnitTest Shlx64bit({0},{1}): {2}", valULong, shiftBy, resULong);
 		if (resULong != expectedULong)
 		{
 			Console.Write(" != {0} Failed.\n", expectedULong);
@@ -319,13 +319,13 @@ public static unsafe int Main()
 		Console.Write(" == {0} Passed.\n", expectedULong);
 
 		// 
-		// Sarx tests
+		// Sarx64bit tests
 		//
 		valLong = 1;
 		shiftBy = 1;
-		resLong = Sarx(valLong, shiftBy);
+		resLong = Sarx64bit(valLong, shiftBy);
 		expectedLong = (long) (valLong / Math.Pow(2, (shiftBy % MOD64)));
-		Console.Write("UnitTest Sarx({0},{1}): {2}", valLong, shiftBy, resLong);
+		Console.Write("UnitTest Sarx64bit({0},{1}): {2}", valLong, shiftBy, resLong);
 		if (resLong != expectedLong)
 		{
 			Console.Write(" != {0} Failed.\n", expectedLong);
@@ -335,9 +335,9 @@ public static unsafe int Main()
 		
 		valLong = -8;
 		shiftBy = 1;
-		resLong = Sarx(valLong, shiftBy);
+		resLong = Sarx64bit(valLong, shiftBy);
 		expectedLong = (long) (valLong / Math.Pow(2, (shiftBy % MOD64)));
-		Console.Write("UnitTest Sarx({0},{1}): {2}", valLong, shiftBy, resLong);
+		Console.Write("UnitTest Sarx64bit({0},{1}): {2}", valLong, shiftBy, resLong);
 		if (resLong != expectedLong)
 		{
 			Console.Write(" != {0} Failed.\n", expectedLong);
@@ -347,9 +347,9 @@ public static unsafe int Main()
 		
 		valLong = -8;
 		shiftBy = 65;
-		resLong = Sarx(valLong, shiftBy);
+		resLong = Sarx64bit(valLong, shiftBy);
 		expectedLong = (long) (valLong / Math.Pow(2, (shiftBy % MOD64)));
-		Console.Write("UnitTest Sarx({0},{1}): {2}", valLong, shiftBy, resLong);
+		Console.Write("UnitTest Sarx64bit({0},{1}): {2}", valLong, shiftBy, resLong);
 		if (resLong != expectedLong)
 		{
 			Console.Write(" != {0} Failed.\n", expectedLong);
@@ -359,10 +359,10 @@ public static unsafe int Main()
 
 		valLong = 0x7FFFFFFFFFFFFFFF;
 		shiftBy = 63;
-		resLong = Sarx(valLong, shiftBy);
+		resLong = Sarx64bit(valLong, shiftBy);
 		expectedLong = 0;
-		Console.Write("UnitTest Sarx({0},{1}): {2}", valLong, shiftBy, resLong);
-		if (resLong != 0)
+		Console.Write("UnitTest Sarx64bit({0},{1}): {2}", valLong, shiftBy, resLong);
+		if (resLong != expectedLong)
 		{
 			Console.Write(" != {0} Failed.\n", expectedLong);
 			return 101;
@@ -371,9 +371,10 @@ public static unsafe int Main()
 		
 		valLong = 0x7FFFFFFFFFFFFFFF;
 		shiftBy = 65;
-		resLong = Sarx(valLong, shiftBy);
-		expectedLong = 0x3FFFFFFFFFFFFFFF;
-		Console.Write("UnitTest Sarx({0},{1}): {2}", valLong, shiftBy, resLong);
+		shiftBy = (int) Math.Pow(2, (shiftBy % MOD64));
+		resLong = Sarx64bit(valLong, shiftBy);
+		expectedLong = 0x1FFFFFFFFFFFFFFF;
+		Console.Write("UnitTest Sarx64bit({0},{1}): {2}", valLong, shiftBy, resLong);
 		if (resLong != expectedLong)
 		{
 			Console.Write(" != {0} Failed.\n", expectedLong);
@@ -382,13 +383,13 @@ public static unsafe int Main()
 		Console.Write(" == {0} Passed.\n", expectedLong);
 
 		//
-		// Shrx tests
+		// Shrx64bit tests
 		//
 		valULong = 1;
 		shiftBy = 1;
-		resULong = Shrx(valULong, shiftBy);
+		resULong = Shrx64bit(valULong, shiftBy);
 		expectedULong = (ulong) (valULong / Math.Pow(2, (shiftBy % MOD64)));
-		Console.Write("UnitTest Shrx({0},{1}): {2}", valULong, shiftBy, resULong);
+		Console.Write("UnitTest Shrx64bit({0},{1}): {2}", valULong, shiftBy, resULong);
 		if (resULong != expectedULong)
 		{
 			Console.Write(" != {0} Failed.\n", expectedULong);
@@ -398,9 +399,9 @@ public static unsafe int Main()
 		
 		valULong = 8;
 		shiftBy = 2;
-		resULong = Shrx(valULong, shiftBy);
+		resULong = Shrx64bit(valULong, shiftBy);
 		expectedULong = (ulong) (valULong / Math.Pow(2, (shiftBy % MOD64)));
-		Console.Write("UnitTest Shrx({0},{1}): {2}", valULong, shiftBy, resULong);
+		Console.Write("UnitTest Shrx64bit({0},{1}): {2}", valULong, shiftBy, resULong);
 		if (resULong != expectedULong)
 		{
 			Console.Write(" != {0} Failed.\n", expectedULong);
@@ -410,9 +411,9 @@ public static unsafe int Main()
 		
 		valULong = 0xFFFFFFFFFFFFFFFF;
 		shiftBy = 63;
-		resULong = Shrx(valULong, shiftBy);
+		resULong = Shrx64bit(valULong, shiftBy);
 		expectedULong = 1;
-		Console.Write("UnitTest Shrx({0},{1}): {2}", valULong, shiftBy, resULong);
+		Console.Write("UnitTest Shrx64bit({0},{1}): {2}", valULong, shiftBy, resULong);
 		if (resULong != expectedULong)
 		{
 			Console.Write(" != {0} Failed.\n", expectedULong);
@@ -422,9 +423,9 @@ public static unsafe int Main()
 
 		valULong = 0x7FFFFFFFFFFFFFFF;
 		shiftBy = 65;
-		resULong = Shrx(valULong, shiftBy);
+		resULong = Shrx64bit(valULong, shiftBy);
 		expectedULong = 0x3FFFFFFFFFFFFFFF;
-		Console.Write("UnitTest Shrx({0},{1}): {2}", valULong, shiftBy, resULong);
+		Console.Write("UnitTest Shrx64bit({0},{1}): {2}", valULong, shiftBy, resULong);
 		if (resULong != expectedULong)
 		{
 			Console.Write(" != {0} Failed.\n", expectedULong);
@@ -434,9 +435,10 @@ public static unsafe int Main()
 
 		valULong = 8;
 		shiftBy = 65;
-		resULong = Shrx(valULong, shiftBy);
-		expectedULong = 4;
-		Console.Write("UnitTest Shrx({0},{1}): {2}", valULong, shiftBy, resULong);
+		resULong = Shrx64bit(valULong, shiftBy);
+		//expectedULong = 4;
+		expectedULong = (ulong) (valULong / Math.Pow(2, (shiftBy % MOD64)));
+		Console.Write("UnitTest Shrx64bit({0},{1}): {2}", valULong, shiftBy, resULong);
 		if (resULong != expectedULong)
 		{
 			Console.Write(" != {0} Failed.\n", expectedULong);
@@ -445,13 +447,13 @@ public static unsafe int Main()
 		Console.Write(" == {0} Passed.\n", expectedULong);	
 		
 		//
-		// ShrxRef
+		// ShrxRef64bit
 		//
 		valULong = 8;
 		shiftBy = 1;
-		resULong = ShrxRef(&valULong, shiftBy);		
+		resULong = ShrxRef64bit(&valULong, shiftBy);		
 		expectedULong = (ulong) (valULong / Math.Pow(2, (shiftBy % MOD64)));		
-		Console.Write("UnitTest ShrxRef({0},{1}): {2}", valULong, shiftBy, resULong);
+		Console.Write("UnitTest ShrxRef64bit({0},{1}): {2}", valULong, shiftBy, resULong);
 		if (resULong != expectedULong)
 		{
 			Console.Write(" != {0} Failed.\n", expectedULong);

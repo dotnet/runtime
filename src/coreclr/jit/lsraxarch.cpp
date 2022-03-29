@@ -926,8 +926,8 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
         assert(shiftBy->OperIsConst());
     }
 #if defined(TARGET_64BIT)
-    else if (compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && tree->OperIs(GT_LSH, GT_RSH, GT_RSZ) &&
-             !tree->isContained() && (genActualType(tree->TypeGet()) == TYP_LONG))
+    else if (tree->OperIsShift() && !tree->isContained() &&
+             compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
     {
         srcCount += BuildOperandUses(source, srcCandidates);
         srcCount += BuildOperandUses(shiftBy, srcCandidates);

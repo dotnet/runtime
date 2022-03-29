@@ -4405,8 +4405,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         }
     }
 #if defined(TARGET_64BIT)
-    else if (compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && tree->OperIs(GT_LSH, GT_RSH, GT_RSZ) &&
-             (genActualType(targetType) == TYP_LONG))
+    else if (tree->OperIsShift() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
     {
         // Try to emit shlx, sarx, shrx if BMI2 is available instead of mov+shl, mov+sar, mov+shr.
         switch (tree->OperGet())
