@@ -291,6 +291,16 @@ VNFunc GetVNFuncForNode(GenTree* node)
                 assert(varTypeIsFloating(node->gtGetOp2()));
                 assert((node->gtFlags & GTF_RELOP_NAN_UN) == 0);
             }
+            else if (node->gtGetOp1()->IsIntegralConst(0))
+            {
+                // Normalize "0 == X" to "0 u>= X"
+                return VNF_GE_UN;
+            }
+            else if (node->gtGetOp2()->IsIntegralConst(0))
+            {
+                // Normalize "X == 0" to "X <= 0"
+                return VNF_LE_UN;
+            }
             break;
 
         case GT_NE:
@@ -298,6 +308,16 @@ VNFunc GetVNFuncForNode(GenTree* node)
             {
                 assert(varTypeIsFloating(node->gtGetOp2()));
                 assert((node->gtFlags & GTF_RELOP_NAN_UN) != 0);
+            }
+            else if (node->gtGetOp1()->IsIntegralConst(0))
+            {
+                // Normalize "0 != X" to "0 < X"
+                return VNF_LT_UN;
+            }
+            else if (node->gtGetOp2()->IsIntegralConst(0))
+            {
+                // Normalize "X != 0" to "X > 0"
+                return VNF_GT_UN;
             }
             break;
 
