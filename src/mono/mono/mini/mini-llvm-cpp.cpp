@@ -38,16 +38,12 @@
 #include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/MDBuilder.h>
 
-#if LLVM_API_VERSION >= 1100
 #include <llvm/IR/InstrTypes.h> // CallBase
 #include <llvm/Support/Host.h> // llvm::sys::getHostCPUFeatures
 #include <llvm/Analysis/TargetTransformInfo.h> // Intrinsic::ID
 #include <llvm/IR/IntrinsicsX86.h>
 #include <llvm/IR/IntrinsicsAArch64.h>
 #include <llvm/IR/IntrinsicsWebAssembly.h>
-#else
-#include <llvm/IR/CallSite.h>
-#endif
 
 #include "mini-llvm-cpp.h"
 
@@ -83,19 +79,11 @@ mono_llvm_dump_type (LLVMTypeRef type)
 	outs ().flush ();
 }
 
-#if LLVM_API_VERSION >= 1100
 static inline llvm::Align
 to_align (int alignment)
 {
 	return llvm::Align (alignment);
 }
-#else
-static inline int
-to_align (int alignment)
-{
-	return alignment;
-}
-#endif
 
 /* Missing overload for building an alloca with an alignment */
 LLVMValueRef
@@ -530,21 +518,13 @@ mono_llvm_add_param_byval_attr (LLVMValueRef param, LLVMTypeRef type)
 void
 mono_llvm_add_instr_attr (LLVMValueRef val, int index, AttrKind kind)
 {
-	#if LLVM_API_VERSION >= 1100
 	unwrap<CallBase> (val)->addAttribute (index, convert_attr (kind));
-	#else
-	CallSite (unwrap<Instruction> (val)).addAttribute (index, convert_attr (kind));
-	#endif
 }
 
 void
 mono_llvm_add_instr_byval_attr (LLVMValueRef val, int index, LLVMTypeRef type)
 {
-#if LLVM_API_VERSION >= 1100
 	unwrap<CallBase> (val)->addAttribute (index, Attribute::getWithByValType (*unwrap (LLVMGetGlobalContext ()), unwrap (type)));
-#else
-	CallSite (unwrap<Instruction> (val)).addAttribute (index, Attribute::getWithByValType (*unwrap (LLVMGetGlobalContext ()), unwrap (type)));
-#endif
 }
 
 void*
@@ -657,11 +637,7 @@ mono_llvm_check_cpu_features (const CpuFeatureAliasFlag *features, int length)
 }
 
 static const Intrinsic::ID not_intrinsic =
-#if LLVM_API_VERSION >= 1100
 	Intrinsic::IndependentIntrinsics::not_intrinsic;
-#else
-	Intrinsic::ID::not_intrinsic;
-#endif
 
 /* Map our intrinsic ID to the LLVM intrinsic id */
 static Intrinsic::ID
@@ -669,15 +645,11 @@ get_intrins_id (IntrinsicId id)
 {
 	Intrinsic::ID intrins_id = not_intrinsic;
 	switch (id) {
-#if LLVM_API_VERSION >= 1100
 #define Generic IndependentIntrinsics
 #define X86 X86Intrinsics
 #define Arm64 AARCH64Intrinsics
 #define Wasm WASMIntrinsics
 #define INTRINS(id, llvm_id, arch) case INTRINS_ ## id: intrins_id = Intrinsic::arch::llvm_id; break;
-#else
-#define INTRINS(id, llvm_id, _) case INTRINS_ ## id: intrins_id = Intrinsic::ID::llvm_id; break;
-#endif
 
 #define INTRINS_OVR(id, llvm_id, arch, ty) INTRINS(id, llvm_id, arch)
 #define INTRINS_OVR_2_ARG(id, llvm_id, arch, ty1, ty2) INTRINS(id, llvm_id, arch)
