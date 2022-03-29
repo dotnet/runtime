@@ -81,14 +81,14 @@ namespace System.Security.Cryptography.Xml
                     // Special-case handling for KeyValue -- we have to go one level deeper
                     if (kicString == "http://www.w3.org/2000/09/xmldsig# KeyValue")
                     {
-                        if (!Utils.VerifyAttributes(elem, (string[])null))
+                        if (!Utils.VerifyAttributes(elem, (string[]?)null))
                         {
                             throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "KeyInfo/KeyValue");
                         }
                         XmlNodeList nodeList2 = elem.ChildNodes;
                         foreach (XmlNode node2 in nodeList2)
                         {
-                            XmlElement elem2 = node2 as XmlElement;
+                            XmlElement? elem2 = node2 as XmlElement;
                             if (elem2 != null)
                             {
                                 kicString += "/" + elem2.LocalName;
@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.Xml
                         }
                     }
 
-                    KeyInfoClause keyInfoClause = CryptoHelpers.CreateFromName<KeyInfoClause>(kicString);
+                    KeyInfoClause? keyInfoClause = CryptoHelpers.CreateFromName<KeyInfoClause>(kicString);
                     // if we don't know what kind of KeyInfoClause we're looking at, use a generic KeyInfoNode:
                     keyInfoClause ??= new KeyInfoNode();
 
@@ -138,7 +138,7 @@ namespace System.Security.Cryptography.Xml
 
             while (tempEnum.MoveNext())
             {
-                tempObj = tempEnum.Current;
+                tempObj = tempEnum.Current!;
                 if (requestedObjectType.Equals(tempObj.GetType()))
                     requestedList.Add(tempObj);
             }

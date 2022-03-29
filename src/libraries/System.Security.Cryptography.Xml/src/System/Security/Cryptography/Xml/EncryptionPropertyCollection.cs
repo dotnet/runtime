@@ -116,7 +116,7 @@ namespace System.Security.Cryptography.Xml
 
         public EncryptionProperty Item(int index)
         {
-            return (EncryptionProperty)_props[index];
+            return (EncryptionProperty)_props[index]!;
         }
 
         [System.Runtime.CompilerServices.IndexerName("ItemOf")]
@@ -124,7 +124,7 @@ namespace System.Security.Cryptography.Xml
         {
             get
             {
-                return (EncryptionProperty)((IList)this)[index];
+                return (EncryptionProperty)((IList)this)[index]!;
             }
             set
             {

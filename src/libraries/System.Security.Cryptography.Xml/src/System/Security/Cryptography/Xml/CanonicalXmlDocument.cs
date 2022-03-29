@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.Xml
 
         public override XmlElement CreateElement(string? prefix, string localName, string? namespaceURI)
         {
-            return new CanonicalXmlElement(prefix, localName, namespaceURI, this, _defaultNodeSetInclusionState);
+            return new CanonicalXmlElement(prefix!, localName, namespaceURI!, this, _defaultNodeSetInclusionState);
         }
 
         public override XmlAttribute CreateAttribute(string? prefix, string localName, string? namespaceURI)
@@ -83,12 +83,12 @@ namespace System.Security.Cryptography.Xml
 
         public override XmlWhitespace CreateWhitespace(string? prefix)
         {
-            return new CanonicalXmlWhitespace(prefix, this, _defaultNodeSetInclusionState);
+            return new CanonicalXmlWhitespace(prefix!, this, _defaultNodeSetInclusionState);
         }
 
         public override XmlSignificantWhitespace CreateSignificantWhitespace(string? text)
         {
-            return new CanonicalXmlSignificantWhitespace(text, this, _defaultNodeSetInclusionState);
+            return new CanonicalXmlSignificantWhitespace(text!, this, _defaultNodeSetInclusionState);
         }
 
         public override XmlProcessingInstruction CreateProcessingInstruction(string target, string data)
@@ -98,7 +98,7 @@ namespace System.Security.Cryptography.Xml
 
         public override XmlComment CreateComment(string? data)
         {
-            return new CanonicalXmlComment(data, this, _defaultNodeSetInclusionState, _includeComments);
+            return new CanonicalXmlComment(data!, this, _defaultNodeSetInclusionState, _includeComments);
         }
 
         public override XmlEntityReference CreateEntityReference(string name)
@@ -108,7 +108,7 @@ namespace System.Security.Cryptography.Xml
 
         public override XmlCDataSection CreateCDataSection(string? data)
         {
-            return new CanonicalXmlCDataSection(data, this, _defaultNodeSetInclusionState);
+            return new CanonicalXmlCDataSection(data!, this, _defaultNodeSetInclusionState);
         }
     }
 }
