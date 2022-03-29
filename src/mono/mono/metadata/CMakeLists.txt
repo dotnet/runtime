@@ -181,7 +181,6 @@ if(MONO_GC STREQUAL "sgen")
     set(metadata_gc_sources
         sgen-bridge.c
         sgen-bridge-internals.h
-        sgen-old-bridge.c
         sgen-new-bridge.c
         sgen-tarjan-bridge.c
         sgen-toggleref.c
