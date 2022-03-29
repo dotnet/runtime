@@ -13745,6 +13745,7 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
         {
             unsigned offset = lclNode->GetLclOffs() + static_cast<uint16_t>(offsetNode->IconValue());
 
+            // Note: the emitter does not expect out-of-bounds access for LCL_FLD_ADDR.
             if (FitsIn<uint16_t>(offset) && (offset < lvaLclExactSize(lclNode->GetLclNum())))
             {
                 // Compose the field sequence: [LCL, ADDR, OFFSET].
