@@ -710,23 +710,23 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal class ValueTypeClass
     {
         public byte[] valueTypeBuffer;
-        public JArray valueTypeJson;
-        public JArray valueTypeJsonProps;
+        public JArray json;
+        public JArray jsonProps;
         public int typeId;
         public JArray valueTypeProxy;
         public string valueTypeVarName;
         public bool valueTypeAutoExpand;
-        public int Id;
+        public string Id;
         public ValueTypeClass(string varName, byte[] buffer, JArray json, int id, bool expand_properties, int valueTypeId)
         {
             valueTypeBuffer = buffer;
-            valueTypeJson = json;
+            this.json = json;
             typeId = id;
-            valueTypeJsonProps = null;
+            jsonProps = null;
             valueTypeProxy = null;
             valueTypeVarName = varName;
             valueTypeAutoExpand = expand_properties;
-            Id = valueTypeId;
+            Id = $"dotnet:valuetype:{valueTypeId}";
         }
     }
     internal class PointerValue
@@ -1699,7 +1699,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<JArray> GetPropertiesValuesOfValueType(int valueTypeId, CancellationToken token)
         {
-            JArray ret = new JArray();
+            JArray properties = new JArray();
             var valueType = valueTypes[valueTypeId];
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write(valueType.typeId);
@@ -1707,17 +1707,24 @@ namespace Microsoft.WebAssembly.Diagnostics
             var parentsCount = retDebuggerCmdReader.ReadInt32();
             List<int> typesToGetProperties = new List<int>();
             typesToGetProperties.Add(valueType.typeId);
-            for (int i = 0 ; i < parentsCount; i++)
+            for (int i = 0; i < parentsCount; i++)
             {
                 typesToGetProperties.Add(retDebuggerCmdReader.ReadInt32());
             }
-            for (int i = 0 ; i < typesToGetProperties.Count; i++)
+            for (int i = 0; i < typesToGetProperties.Count; i++)
             {
-                var properties = await CreateJArrayForProperties(typesToGetProperties[i], ElementType.ValueType, valueType.valueTypeBuffer, valueType.valueTypeJson, valueType.valueTypeAutoExpand, $"dotnet:valuetype:{valueType.Id}", i == 0, token);
-                ret = new JArray(ret.Union(properties));
+                var props = await CreateJArrayForProperties(
+                    typesToGetProperties[i],
+                    ElementType.ValueType,
+                    valueType.valueTypeBuffer,
+                    valueType.json,
+                    valueType.valueTypeAutoExpand,
+                    valueType.Id,
+                    isOwn: i == 0,
+                    token);
+                properties.AddRange(props);
             }
-
-            return ret;
+            return properties;
         }
 
         private static bool AutoExpandable(string className) {
@@ -2205,13 +2212,13 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<JArray> GetValueTypeValues(int valueTypeId, bool accessorPropertiesOnly, CancellationToken token)
         {
-            if (valueTypes[valueTypeId].valueTypeJsonProps == null)
+            if (valueTypes[valueTypeId].jsonProps == null)
             {
-                valueTypes[valueTypeId].valueTypeJsonProps = await GetPropertiesValuesOfValueType(valueTypeId, token);
+                valueTypes[valueTypeId].jsonProps = await GetPropertiesValuesOfValueType(valueTypeId, token);
             }
             if (accessorPropertiesOnly)
-                return valueTypes[valueTypeId].valueTypeJsonProps;
-            var ret = new JArray(valueTypes[valueTypeId].valueTypeJson.Union(valueTypes[valueTypeId].valueTypeJsonProps));
+                return valueTypes[valueTypeId].jsonProps;
+            var ret = new JArray(valueTypes[valueTypeId].jsonProps.Union(valueTypes[valueTypeId].jsonProps));
             return ret;
         }
 
@@ -2219,7 +2226,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             if (valueTypes[valueTypeId].valueTypeProxy != null)
                 return valueTypes[valueTypeId].valueTypeProxy;
-            valueTypes[valueTypeId].valueTypeProxy = new JArray(valueTypes[valueTypeId].valueTypeJson);
+            valueTypes[valueTypeId].valueTypeProxy = new JArray(valueTypes[valueTypeId].json);
 
             var retDebuggerCmdReader =  await GetTypePropertiesReader(valueTypes[valueTypeId].typeId, token);
             if (retDebuggerCmdReader == null)
