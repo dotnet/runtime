@@ -1266,6 +1266,16 @@ bool GenTreeCall::AreArgsComplete() const
     return false;
 }
 
+//-------------------------------------------------------------------------
+// SetRetBufArg: Sets the "return buffer" argument use.
+//
+void GenTreeCall::SetLclRetBufArg(Use* retBufArg)
+{
+    assert(retBufArg->GetNode()->TypeIs(TYP_I_IMPL, TYP_BYREF) && retBufArg->GetNode()->OperIs(GT_ADDR, GT_ASG));
+    assert(HasRetBufArg());
+    gtRetBufArg = retBufArg;
+}
+
 //--------------------------------------------------------------------------
 // Equals: Check if 2 CALL nodes are equal.
 //
@@ -5376,6 +5386,12 @@ bool GenTree::OperRequiresAsgFlag()
         }
     }
 #endif // FEATURE_HW_INTRINSICS
+    if (gtOper == GT_CALL)
+    {
+        // If the call has return buffer argument, it produced a definition and hence
+        // should be marked with assignment.
+        return AsCall()->GetLclRetBufArgNode() != nullptr;
+    }
     return false;
 }
 
@@ -7942,20 +7958,45 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     copy->gtCallMoreFlags = tree->gtCallMoreFlags;
     copy->gtCallArgs      = nullptr;
     copy->gtCallLateArgs  = nullptr;
+    copy->gtRetBufArg     = nullptr;
 
     GenTreeCall::Use** argsTail = &copy->gtCallArgs;
     for (GenTreeCall::Use& use : tree->Args())
     {
-        *argsTail = gtNewCallArgs(gtCloneExpr(use.GetNode(), addFlags, deepVarNum, deepVarVal));
-        argsTail  = &((*argsTail)->NextRef());
+        GenTree* argNode     = use.GetNode();
+        GenTree* copyArgNode = gtCloneExpr(argNode, addFlags, deepVarNum, deepVarVal);
+        *argsTail            = gtNewCallArgs(copyArgNode);
+
+        if (tree->gtRetBufArg == &use)
+        {
+            // Set the return buffer arg, if any.
+            assert(copy->gtRetBufArg == nullptr);
+            copy->gtRetBufArg = *argsTail;
+        }
+
+        argsTail = &((*argsTail)->NextRef());
     }
 
     argsTail = &copy->gtCallLateArgs;
     for (GenTreeCall::Use& use : tree->LateArgs())
     {
-        *argsTail = gtNewCallArgs(gtCloneExpr(use.GetNode(), addFlags, deepVarNum, deepVarVal));
-        argsTail  = &((*argsTail)->NextRef());
+        GenTree* argNode     = use.GetNode();
+        GenTree* copyArgNode = gtCloneExpr(argNode, addFlags, deepVarNum, deepVarVal);
+        *argsTail            = gtNewCallArgs(copyArgNode);
+
+        if (tree->gtRetBufArg == &use)
+        {
+            // Set the return buffer arg, if any.
+            assert(copy->gtRetBufArg == nullptr);
+            copy->gtRetBufArg = *argsTail;
+        }
+
+        argsTail = &((*argsTail)->NextRef());
     }
+
+    // Either there was not return buffer for the "tree" or else we successfully set the
+    // return buffer in the copy.
+    assert((tree->gtRetBufArg == nullptr) || (copy->gtRetBufArg != nullptr));
 
     // The call sig comes from the EE and doesn't change throughout the compilation process, meaning
     // we only really need one physical copy of it. Therefore a shallow pointer copy will suffice.
@@ -9767,6 +9808,35 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                         layout = varDsc->GetLayout();
                     }
                 }
+                else if (tree->OperIs(GT_INDEX))
+                {
+                    GenTreeIndex*        asInd  = tree->AsIndex();
+                    CORINFO_CLASS_HANDLE clsHnd = asInd->gtStructElemClass;
+                    if (clsHnd != nullptr)
+                    {
+                        // We could create a layout with `typGetObjLayout(asInd->gtStructElemClass)` but we
+                        // don't want to affect the layout table.
+                        const unsigned  classSize      = info.compCompHnd->getClassSize(clsHnd);
+                        const char16_t* shortClassName = eeGetShortClassName(clsHnd);
+                        printf("<%S, %u>", shortClassName, classSize);
+                    }
+                }
+                else if (tree->OperIsIndir())
+                {
+                    ArrayInfo arrInfo;
+                    if (TryGetArrayInfo(tree->AsIndir(), &arrInfo))
+                    {
+                        if (varTypeIsStruct(arrInfo.m_elemType))
+                        {
+                            CORINFO_CLASS_HANDLE clsHnd = arrInfo.m_elemStructType;
+                            // We could create a layout with `typGetObjLayout(asInd->gtStructElemClass)` but we
+                            // don't want to affect the layout table.
+                            const unsigned  classSize      = info.compCompHnd->getClassSize(clsHnd);
+                            const char16_t* shortClassName = eeGetShortClassName(clsHnd);
+                            printf("<%S, %u>", shortClassName, classSize);
+                        }
+                    }
+                }
 
                 if (layout != nullptr)
                 {
@@ -9781,7 +9851,10 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 {
                     printf("(AX)"); // Variable has address exposed.
                 }
-
+                if (varDsc->IsHiddenBufferStructArg())
+                {
+                    printf("(RB)"); // Variable is hidden return buffer
+                }
                 if (varDsc->lvUnusedStruct)
                 {
                     assert(varDsc->lvPromoted);
@@ -10204,11 +10277,11 @@ void Compiler::gtDispClassLayout(ClassLayout* layout, var_types type)
     }
     else if (varTypeIsSIMD(type))
     {
-        printf("<%s>", layout->GetClassName());
+        printf("<%S>", layout->GetShortClassName());
     }
     else
     {
-        printf("<%s, %u>", layout->GetClassName(), layout->GetSize());
+        printf("<%S, %u>", layout->GetShortClassName(), layout->GetSize());
     }
 }
 
@@ -12110,7 +12183,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         if ((cls1Hnd != NO_CLASS_HANDLE) && (cls2Hnd != NO_CLASS_HANDLE))
         {
             JITDUMP("Asking runtime to compare %p (%s) and %p (%s) for equality\n", dspPtr(cls1Hnd),
-                    info.compCompHnd->getClassName(cls1Hnd), dspPtr(cls2Hnd), info.compCompHnd->getClassName(cls2Hnd));
+                    eeGetClassName(cls1Hnd), dspPtr(cls2Hnd), eeGetClassName(cls2Hnd));
             TypeCompareState s = info.compCompHnd->compareTypesForEquality(cls1Hnd, cls2Hnd);
 
             if (s != TypeCompareState::May)
@@ -15460,6 +15533,17 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
         {
             blkNode = AsOp()->gtOp1->AsBlk();
         }
+    }
+    else if (OperIs(GT_CALL))
+    {
+        GenTree* retBufArg = AsCall()->GetLclRetBufArgNode();
+        if (retBufArg == nullptr)
+        {
+            return false;
+        }
+
+        unsigned size = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
+        return retBufArg->DefinesLocalAddr(comp, size, pLclVarTree, pIsEntire);
     }
     else if (OperIsBlk())
     {
@@ -20835,7 +20919,8 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
     else if (varTypeIsFloating(simdBaseType))
     {
         // var tmp1 = op1.ToVector128Unsafe();
-        // return AdvSimd.Arm64.ConvertToSingleLower(tmp1);
+        // var tmp2 = AdvSimd.InsertScalar(tmp1, op2);
+        // return AdvSimd.Arm64.ConvertToSingleLower(tmp2);
 
         CorInfoType tmp2BaseJitType = CORINFO_TYPE_DOUBLE;
 
@@ -20850,8 +20935,9 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
     else
     {
         // var tmp1 = op1.ToVector128Unsafe();
-        // var tmp2 = AdvSimd.InsertScalar(tmp1.AsUInt64(), 1, op2.AsUInt64());
-        // return AdvSimd.ExtractNarrowingUpper(tmp2).As<T>();
+        // var tmp2 = AdvSimd.InsertScalar(tmp1.AsUInt64(), 1, op2.AsUInt64()).As<T>(); - signed integer use int64,
+        // unsigned integer use uint64
+        // return AdvSimd.ExtractNarrowingLower(tmp2);
 
         CorInfoType tmp2BaseJitType = varTypeIsSigned(simdBaseType) ? CORINFO_TYPE_LONG : CORINFO_TYPE_ULONG;
 

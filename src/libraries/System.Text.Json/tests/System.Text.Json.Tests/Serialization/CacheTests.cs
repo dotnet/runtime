@@ -218,7 +218,7 @@ namespace System.Text.Json.Serialization.Tests
             //
             // If either of them changes, this test will need to be kept in sync.
 
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke(static () =>
                 {
                     var options = new JsonSerializerOptions();
 

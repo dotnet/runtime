@@ -377,6 +377,9 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?:w*)+\\.", "(?>w*)+\\.")]
         [InlineData("(a[bcd]e*)*fg", "(a[bcd](?>e*))*fg")]
         [InlineData("(\\w[bcd]\\s*)*fg", "(\\w[bcd](?>\\s*))*fg")]
+        // Nothing handling
+        [InlineData(@"\wabc(?!)def", "(?!)")]
+        [InlineData(@"\wabc(?!)def|ghi(?!)", "(?!)")]
         // IgnoreCase set creation
         [InlineData("(?i)abcd", "[Aa][Bb][Cc][Dd]")]
         [InlineData("(?i)abcd|efgh", "[Aa][Bb][Cc][Dd]|[Ee][Ff][Gg][Hh]")]

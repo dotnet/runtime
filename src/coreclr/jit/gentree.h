@@ -1587,6 +1587,11 @@ public:
         return OperIsMultiOp(OperGet());
     }
 
+    bool OperIsSsaDef() const
+    {
+        return OperIs(GT_ASG, GT_CALL);
+    }
+
     // This is here for cleaner FEATURE_SIMD #ifdefs.
     static bool OperIsSIMD(genTreeOps gtOper)
     {
@@ -2109,6 +2114,10 @@ public:
     inline bool IsCnsIntOrI() const;
 
     inline bool IsIntegralConst() const;
+
+    inline bool IsIntegralConstUnsignedPow2() const;
+
+    inline bool IsIntegralConstAbsPow2() const;
 
     inline bool IsIntCnsFitsInI32(); // Constant fits in INT32
 
@@ -3563,8 +3572,33 @@ public:
 #endif
 };
 
-/* gtCast -- conversion to a different type  (GT_CAST) */
-
+// GenTreeCast - conversion to a different type (GT_CAST).
+//
+// This node represents all "conv[.ovf].{type}[.un]" IL opcodes.
+//
+// There are four semantically significant values that determine what it does:
+//
+//  1) "genActualType(CastOp())"              - the type being cast from.
+//  2) "gtCastType"                           - the type being cast to.
+//  3) "IsUnsigned" (the "GTF_UNSIGNED" flag) - whether the cast is "unsigned".
+//  4) "gtOverflow" (the "GTF_OVERFLOW" flag) - whether the cast is checked.
+//
+// Different "kinds" of casts use these values differently; not all are always
+// meaningful or legal:
+//
+//  1) For casts from FP types, "IsUnsigned" will always be "false".
+//  2) Checked casts use "IsUnsigned" to represent the fact the type being cast
+//     from is unsigned. The target type's signedness is similarly significant.
+//  3) For unchecked casts, "IsUnsigned" is significant for "int -> long", where
+//     it decides whether the cast sign- or zero-extends its source, and "integer
+//     -> FP" cases. For all other unchecked casts, "IsUnsigned" is meaningless.
+//  4) For unchecked casts, signedness of the target type is only meaningful if
+//     the cast is to an FP or small type. In the latter case (and everywhere
+//     else in IR) it decided whether the value will be sign- or zero-extended.
+//
+// For additional context on "GT_CAST"'s semantics, see "IntegralRange::ForCast"
+// methods and "GenIntCastDesc"'s constructor.
+//
 struct GenTreeCast : public GenTreeOp
 {
     GenTree*& CastOp()
@@ -4826,13 +4860,47 @@ struct GenTreeCall final : public GenTree
 
     GenTreeCall(var_types type) : GenTree(GT_CALL, type)
     {
-        fgArgInfo = nullptr;
+        fgArgInfo   = nullptr;
+        gtRetBufArg = nullptr;
     }
 #if DEBUGGABLE_GENTREE
     GenTreeCall() : GenTree()
     {
     }
 #endif
+
+    GenTree* GetLclRetBufArgNode() const
+    {
+        if (gtRetBufArg == nullptr)
+        {
+            return nullptr;
+        }
+
+        assert(HasRetBufArg());
+        GenTree* lclRetBufArgNode = gtRetBufArg->GetNode();
+
+        switch (lclRetBufArgNode->OperGet())
+        {
+            // Get the true value from setup args
+            case GT_ASG:
+                return lclRetBufArgNode->AsOp()->gtGetOp2();
+            case GT_STORE_LCL_VAR:
+                return lclRetBufArgNode->AsUnOp()->gtGetOp1();
+
+            // Get the value from putarg wrapper nodes
+            case GT_PUTARG_REG:
+            case GT_PUTARG_STK:
+                return lclRetBufArgNode->AsOp()->gtGetOp1();
+
+            // Otherwise the node should be in the Use*
+            default:
+                return lclRetBufArgNode;
+        }
+    }
+
+    void SetLclRetBufArg(Use* retBufArg);
+
+    Use* gtRetBufArg; // The argument that holds return buffer argument
 };
 
 struct GenTreeCmpXchg : public GenTree
@@ -8341,6 +8409,49 @@ inline bool GenTree::IsIntegralConst() const
 #else  // !TARGET_64BIT
     return ((gtOper == GT_CNS_INT) || (gtOper == GT_CNS_LNG));
 #endif // !TARGET_64BIT
+}
+
+//-------------------------------------------------------------------------
+// IsIntegralConstUnsignedPow2: Determines whether the unsigned value of
+//                              an integral constant is the power of 2.
+//
+// Return Value:
+//     Returns true if the unsigned value of a GenTree's integral constant
+//     is the power of 2.
+//
+// Notes:
+//     Integral constant nodes store its value in signed form.
+//     This should handle cases where an unsigned-int was logically used in
+//     user code.
+//
+inline bool GenTree::IsIntegralConstUnsignedPow2() const
+{
+    if (IsIntegralConst())
+    {
+        return isPow2((UINT64)AsIntConCommon()->IntegralValue());
+    }
+
+    return false;
+}
+
+//-------------------------------------------------------------------------
+// IsIntegralConstAbsPow2: Determines whether the absolute value of
+//                         an integral constant is the power of 2.
+//
+// Return Value:
+//     Returns true if the absolute value of a GenTree's integral constant
+//     is the power of 2.
+//
+inline bool GenTree::IsIntegralConstAbsPow2() const
+{
+    if (IsIntegralConst())
+    {
+        INT64  svalue = AsIntConCommon()->IntegralValue();
+        size_t value  = (svalue == SSIZE_T_MIN) ? static_cast<size_t>(svalue) : static_cast<size_t>(abs(svalue));
+        return isPow2(value);
+    }
+
+    return false;
 }
 
 // Is this node an integer constant that fits in a 32-bit signed integer (INT32)

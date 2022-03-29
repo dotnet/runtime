@@ -676,6 +676,12 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
 
 		MonoClass *inflated_class = mono_class_from_mono_type_internal (inflated_type);
+		/*
+		 * metadata-update: no EnC with the JIT.  But even if ther was, adding fields to
+		 * generic types isn't supported, and fields in added generic types would be
+		 * contiguous.  So this is ok.
+		 */
+		g_assert (!m_field_is_from_update (field));
 		int i = field - m_class_get_fields (m_field_get_parent (field));
 		gpointer dummy = NULL;
 
@@ -1122,7 +1128,7 @@ tramp_info_hash (gconstpointer key)
 {
 	GSharedVtTrampInfo *tramp = (GSharedVtTrampInfo *)key;
 
-	return (gsize)tramp->addr;
+	return (guint)(gsize)tramp->addr;
 }
 
 static gboolean
@@ -1178,11 +1184,9 @@ get_wrapper_shared_vtype (MonoType *t)
 	if (m_class_get_type_token (klass) && mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), NULL, NULL))
 		return NULL;
 
-	int num_fields = mono_class_get_field_count (klass);
-	MonoClassField *klass_fields = m_class_get_fields (klass);
-
-	for (int i = 0; i < num_fields; ++i) {
-		MonoClassField *field = &klass_fields [i];
+	gpointer iter = NULL;
+	MonoClassField *field;
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 
 		if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
 			continue;
@@ -2331,9 +2335,9 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 
 		/* The value is offset by 1 */
 		if (m_class_is_valuetype (m_field_get_parent (field)) && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
-			return GUINT_TO_POINTER (field->offset - MONO_ABI_SIZEOF (MonoObject) + 1);
+			return GUINT_TO_POINTER (m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject) + 1);
 		else
-			return GUINT_TO_POINTER (field->offset + 1);
+			return GUINT_TO_POINTER (m_field_get_offset (field) + 1);
 	}
 	case MONO_RGCTX_INFO_METHOD_RGCTX: {
 		MonoMethodInflated *method = (MonoMethodInflated *)data;
@@ -2582,6 +2586,19 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 	return NULL;
 }
 
+gpointer
+mini_instantiate_gshared_info (MonoRuntimeGenericContextInfoTemplate *oti,
+							   MonoGenericContext *context, MonoClass *klass)
+{
+	ERROR_DECL (error);
+	// FIXME:
+	MonoJitMemoryManager *jit_mm = jit_mm_for_class (klass);
+
+	gpointer res = instantiate_info (jit_mm->mem_manager, oti, context, klass, error);
+	mono_error_assert_ok (error);
+	return res;
+}
+
 /*
  * LOCKING: loader lock
  */
@@ -2780,6 +2797,7 @@ info_equal (gpointer data1, gpointer data2, MonoRgctxInfoType info_type)
  * mini_rgctx_info_type_to_patch_info_type:
  *
  *   Return the type of the runtime object referred to by INFO_TYPE.
+ * The types are identified by MONO_PATCH_INFO_ values.
  */
 MonoJumpInfoType
 mini_rgctx_info_type_to_patch_info_type (MonoRgctxInfoType info_type)
@@ -2812,7 +2830,19 @@ mini_rgctx_info_type_to_patch_info_type (MonoRgctxInfoType info_type)
 	case MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER:
 	case MONO_RGCTX_INFO_INTERP_METHOD:
 	case MONO_RGCTX_INFO_LLVMONLY_INTERP_ENTRY:
+	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE:
+	case MONO_RGCTX_INFO_METHOD_DELEGATE_CODE:
 		return MONO_PATCH_INFO_METHOD;
+	case MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO:
+		return MONO_PATCH_INFO_DELEGATE_TRAMPOLINE;
+	case MONO_RGCTX_INFO_VIRT_METHOD_CODE:
+	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE:
+		return MONO_PATCH_INFO_VIRT_METHOD;
+	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO:
+		return MONO_PATCH_INFO_GSHAREDVT_METHOD;
+	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE:
+	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT:
+		return MONO_PATCH_INFO_GSHAREDVT_CALL;
 	default:
 		printf ("%d\n", info_type);
 		g_assert_not_reached ();
@@ -2937,7 +2967,12 @@ mono_class_rgctx_get_array_size (int n, gboolean mrgctx)
 static gpointer*
 alloc_rgctx_array (MonoMemoryManager *mem_manager, int n, gboolean is_mrgctx)
 {
-	gint32 size = mono_class_rgctx_get_array_size (n, is_mrgctx) * sizeof (gpointer);
+	int size;
+
+	if (is_mrgctx && n == 0)
+		size = sizeof (MonoMethodRuntimeGenericContext) + (mono_class_rgctx_get_array_size (n, is_mrgctx) * sizeof (gpointer));
+	else
+		size = mono_class_rgctx_get_array_size (n, is_mrgctx) * sizeof (gpointer);
 	gpointer *array = (gpointer *)mono_mem_manager_alloc0 (mem_manager, size);
 
 	if (is_mrgctx) {
@@ -3149,24 +3184,6 @@ mono_method_fill_runtime_generic_context (MonoMethodRuntimeGenericContext *mrgct
 	return info;
 }
 
-static guint
-mrgctx_hash_func (gconstpointer key)
-{
-	const MonoMethodRuntimeGenericContext *mrgctx = (const MonoMethodRuntimeGenericContext *)key;
-
-	return mono_aligned_addr_hash (mrgctx->class_vtable) ^ mono_metadata_generic_inst_hash (mrgctx->method_inst);
-}
-
-static gboolean
-mrgctx_equal_func (gconstpointer a, gconstpointer b)
-{
-	const MonoMethodRuntimeGenericContext *mrgctx1 = (const MonoMethodRuntimeGenericContext *)a;
-	const MonoMethodRuntimeGenericContext *mrgctx2 = (const MonoMethodRuntimeGenericContext *)b;
-
-	return mrgctx1->class_vtable == mrgctx2->class_vtable &&
-		mono_metadata_generic_inst_equal (mrgctx1->method_inst, mrgctx2->method_inst);
-}
-
 /*
  * mini_method_get_mrgctx:
  * @class_vtable: a vtable
@@ -3179,7 +3196,6 @@ static MonoMethodRuntimeGenericContext*
 mini_method_get_mrgctx (MonoVTable *class_vtable, MonoMethod *method)
 {
 	MonoMethodRuntimeGenericContext *mrgctx;
-	MonoMethodRuntimeGenericContext key;
 	MonoGenericInst *method_inst = mini_method_get_context (method)->method_inst;
 	MonoJitMemoryManager *jit_mm;
 
@@ -3187,38 +3203,22 @@ mini_method_get_mrgctx (MonoVTable *class_vtable, MonoMethod *method)
 
 	jit_mm = jit_mm_for_method (method);
 
-	if (!method_inst) {
-		g_assert (mini_method_is_default_method (method));
-
-		jit_mm_lock (jit_mm);
-		if (!jit_mm->mrgctx_hash)
-			jit_mm->mrgctx_hash = g_hash_table_new (NULL, NULL);
-		mrgctx = (MonoMethodRuntimeGenericContext*)g_hash_table_lookup (jit_mm->mrgctx_hash, method);
-		jit_mm_unlock (jit_mm);
-	} else {
-		g_assert (!method_inst->is_open);
-
-		jit_mm_lock (jit_mm);
-		if (!jit_mm->method_rgctx_hash)
-			jit_mm->method_rgctx_hash = g_hash_table_new (mrgctx_hash_func, mrgctx_equal_func);
-
-		key.class_vtable = class_vtable;
-		key.method_inst = method_inst;
-
-		mrgctx = (MonoMethodRuntimeGenericContext *)g_hash_table_lookup (jit_mm->method_rgctx_hash, &key);
-		jit_mm_unlock (jit_mm);
-	}
+	jit_mm_lock (jit_mm);
+	if (!jit_mm->mrgctx_hash)
+		jit_mm->mrgctx_hash = g_hash_table_new (NULL, NULL);
+	mrgctx = (MonoMethodRuntimeGenericContext*)g_hash_table_lookup (jit_mm->mrgctx_hash, method);
+	jit_mm_unlock (jit_mm);
 
 	if (!mrgctx) {
 		mrgctx = (MonoMethodRuntimeGenericContext*)alloc_rgctx_array (jit_mm->mem_manager, 0, TRUE);
 		mrgctx->class_vtable = class_vtable;
 		mrgctx->method_inst = method_inst;
+		mrgctx->method = method;
+
+		//printf ("MRGCTX: %s -> %p\n", mono_method_get_full_name (method), mrgctx);
 
 		jit_mm_lock (jit_mm);
-		if (!method_inst)
-			g_hash_table_insert (jit_mm->mrgctx_hash, method, mrgctx);
-		else
-			g_hash_table_insert (jit_mm->method_rgctx_hash, mrgctx, mrgctx);
+		g_hash_table_insert (jit_mm->mrgctx_hash, method, mrgctx);
 		jit_mm_unlock (jit_mm);
 
 		/*
@@ -3962,6 +3962,8 @@ mini_method_needs_mrgctx (MonoMethod *m)
 {
 	if (mono_class_is_ginst (m->klass) && mini_method_is_default_method (m))
 		return TRUE;
+	if (m->flags & METHOD_ATTRIBUTE_STATIC || m_class_is_valuetype (m->klass))
+		return TRUE;
 	return (mini_method_get_context (m) && mini_method_get_context (m)->method_inst);
 }
 
@@ -4034,7 +4036,7 @@ get_shared_gparam_name (MonoTypeEnum constraint, const char *name)
 		memset (&t, 0, sizeof (t));
 		t.type = constraint;
 		tname = mono_type_full_name (&t);
-		int len = strlen (tname);
+		size_t len = strlen (tname);
 		for (int i = 0; i < len; ++i)
 			tname [i] = toupper (tname [i]);
 		res = g_strdup_printf ("%s_%s", name, tname);

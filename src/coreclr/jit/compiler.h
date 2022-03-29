@@ -218,6 +218,10 @@ public:
     {
     }
 
+    LclSsaVarDsc(BasicBlock* block) : m_block(block), m_asg(nullptr)
+    {
+    }
+
     LclSsaVarDsc(BasicBlock* block, GenTreeOp* asg) : m_block(block), m_asg(asg)
     {
         assert((asg == nullptr) || asg->OperIs(GT_ASG));
@@ -392,12 +396,13 @@ enum class DoNotEnregisterReason
 #endif
     LclAddrNode, // the local is accessed with LCL_ADDR_VAR/FLD.
     CastTakesAddr,
-    StoreBlkSrc,      // the local is used as STORE_BLK source.
-    OneAsgRetyping,   // fgMorphOneAsgBlockOp prevents this local from being enregister.
-    SwizzleArg,       // the local is passed using LCL_FLD as another type.
-    BlockOpRet,       // the struct is returned and it promoted or there is a cast.
-    ReturnSpCheck,    // the local is used to do SP check
-    SimdUserForcesDep // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
+    StoreBlkSrc,          // the local is used as STORE_BLK source.
+    OneAsgRetyping,       // fgMorphOneAsgBlockOp prevents this local from being enregister.
+    SwizzleArg,           // the local is passed using LCL_FLD as another type.
+    BlockOpRet,           // the struct is returned and it promoted or there is a cast.
+    ReturnSpCheck,        // the local is used to do SP check
+    SimdUserForcesDep,    // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
+    HiddenBufferStructArg // the argument is a hidden return buffer passed to a method.
 };
 
 enum class AddressExposedReason
@@ -527,6 +532,11 @@ public:
     unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
 
+#ifdef DEBUG
+    unsigned char lvHiddenBufferStructArg : 1; // True when this struct (or its field) are passed as hidden buffer
+                                               // pointer.
+#endif
+
 #ifdef FEATURE_HFA_FIELDS_PRESENT
     CorInfoHFAElemType _lvHfaElemKind : 3; // What kind of an HFA this is (CORINFO_HFA_ELEM_NONE if it is not an HFA).
 #endif                                     // FEATURE_HFA_FIELDS_PRESENT
@@ -581,6 +591,9 @@ public:
     unsigned char lvHasExplicitInit : 1; // The local is explicitly initialized and doesn't need zero initialization in
                                          // the prolog. If the local has gc pointers, there are no gc-safe points
                                          // between the prolog and the explicit initialization.
+
+    unsigned char lvIsOSRLocal : 1; // Root method local in an OSR method. Any stack home will be on the Tier0 frame.
+                                    // Initial value will be defined by Tier0. Requires special handing in prolog.
 
     union {
         unsigned lvFieldLclStart; // The index of the local var representing the first field in the promoted struct
@@ -751,6 +764,18 @@ public:
     {
         return m_addrExposed;
     }
+
+#ifdef DEBUG
+    void SetHiddenBufferStructArg(char value)
+    {
+        lvHiddenBufferStructArg = value;
+    }
+
+    bool IsHiddenBufferStructArg() const
+    {
+        return lvHiddenBufferStructArg;
+    }
+#endif
 
 private:
     regNumberSmall _lvRegNum; // Used to store the register this variable is in (or, the low register of a
@@ -2476,13 +2501,13 @@ enum LoopFlags : unsigned short
 
     // LPFLG_UNUSED  = 0x0001,
     // LPFLG_UNUSED  = 0x0002,
-    LPFLG_ITER = 0x0004, // loop of form: for (i = icon or lclVar; test_condition(); i++)
+    LPFLG_ITER = 0x0004, // loop of form: for (i = icon or expression; test_condition(); i++)
     // LPFLG_UNUSED    = 0x0008,
 
     LPFLG_CONTAINS_CALL = 0x0010, // If executing the loop body *may* execute a call
-    LPFLG_VAR_INIT      = 0x0020, // iterator is initialized with a local var (var # found in lpVarInit)
-    LPFLG_CONST_INIT    = 0x0040, // iterator is initialized with a constant (found in lpConstInit)
-    LPFLG_SIMD_LIMIT    = 0x0080, // iterator is compared with vector element count (found in lpConstLimit)
+    // LPFLG_UNUSED     = 0x0020,
+    LPFLG_CONST_INIT = 0x0040, // iterator is initialized with a constant (found in lpConstInit)
+    LPFLG_SIMD_LIMIT = 0x0080, // iterator is compared with vector element count (found in lpConstLimit)
 
     LPFLG_VAR_LIMIT    = 0x0100, // iterator is compared with a local var (var # found in lpVarLimit)
     LPFLG_CONST_LIMIT  = 0x0200, // iterator is compared with a constant (found in lpConstLimit)
@@ -3784,6 +3809,7 @@ public:
     // Getters and setters for address-exposed and do-not-enregister local var properties.
     bool lvaVarAddrExposed(unsigned varNum) const;
     void lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReason reason));
+    void lvaSetHiddenBufferStructArg(unsigned varNum);
     void lvaSetVarLiveInOutOfHandler(unsigned varNum);
     bool lvaVarDoNotEnregister(unsigned varNum);
 
@@ -4148,8 +4174,6 @@ public:
         bool ShouldPromoteStructVar(unsigned lclNum);
         void PromoteStructVar(unsigned lclNum);
         void SortStructFields();
-
-        bool CanConstructAndPromoteField(lvaStructPromotionInfo* structPromotionInfo);
 
         lvaStructFieldInfo GetFieldInfo(CORINFO_FIELD_HANDLE fieldHnd, BYTE ordinal);
         bool TryPromoteStructField(lvaStructFieldInfo& outerFieldInfo);
@@ -4964,7 +4988,7 @@ private:
     bool impIsClassExact(CORINFO_CLASS_HANDLE classHnd);
     bool impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array);
 
-    CORINFO_RESOLVED_TOKEN* impAllocateToken(const CORINFO_RESOLVED_TOKEN& token);
+    methodPointerInfo* impAllocateMethodPointerInfo(const CORINFO_RESOLVED_TOKEN& token, mdToken tokenConstrained);
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -6463,7 +6487,7 @@ private:
 #endif
     GenTree* fgOptimizeDelegateConstructor(GenTreeCall*            call,
                                            CORINFO_CONTEXT_HANDLE* ExactContextHnd,
-                                           CORINFO_RESOLVED_TOKEN* ldftnToken);
+                                           methodPointerInfo*      ldftnToken);
     GenTree* fgMorphLeaf(GenTree* tree);
     void fgAssignSetVarDef(GenTree* tree);
     GenTree* fgMorphOneAsgBlockOp(GenTree* tree);
@@ -6486,9 +6510,11 @@ private:
     GenTree* fgOptimizeAddition(GenTreeOp* add);
     GenTree* fgOptimizeMultiply(GenTreeOp* mul);
     GenTree* fgOptimizeBitwiseAnd(GenTreeOp* andOp);
+    GenTree* fgOptimizeBitwiseXor(GenTreeOp* xorOp);
     GenTree* fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow, GenTreeFlags precedingSideEffects);
     GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
+    GenTree* fgMorphUModToAndSub(GenTreeOp* tree);
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
     GenTree* fgMorphMultiOp(GenTreeMultiOp* multiOp);
     GenTree* fgMorphConst(GenTree* tree);
@@ -6905,16 +6931,11 @@ public:
 
         var_types lpIterOperType() const; // For overflow instructions
 
-        // Set to the block where we found the initialization for LPFLG_CONST_INIT or LPFLG_VAR_INIT loops.
+        // Set to the block where we found the initialization for LPFLG_CONST_INIT loops.
         // Initially, this will be 'head', but 'head' might change if we insert a loop pre-header block.
         BasicBlock* lpInitBlock;
 
-        union {
-            int lpConstInit;    // initial constant value of iterator
-                                // : Valid if LPFLG_CONST_INIT
-            unsigned lpVarInit; // initial local var number to which we initialize the iterator
-                                // : Valid if LPFLG_VAR_INIT
-        };
+        int lpConstInit; // initial constant value of iterator : Valid if LPFLG_CONST_INIT
 
         // The following is for LPFLG_ITER loops only (i.e. the loop condition is "i RELOP const or var")
 
@@ -7493,7 +7514,7 @@ public:
     void optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToLiveDefsMap* curSsaName);
     void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
     void optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
-    void optCopyPropPushDef(GenTreeOp*           asg,
+    void optCopyPropPushDef(GenTree*             defNode,
                             GenTreeLclVarCommon* lclNode,
                             unsigned             lclNum,
                             LclNumToLiveDefsMap* curSsaName);
@@ -8452,6 +8473,7 @@ public:
 
 #if defined(DEBUG)
     const WCHAR* eeGetCPString(size_t stringHandle);
+    const char16_t* eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd);
 #endif
 
     const char* eeGetClassName(CORINFO_CLASS_HANDLE clsHnd);
@@ -8877,21 +8899,6 @@ private:
     }
 
 #ifdef FEATURE_SIMD
-
-    // Should we support SIMD intrinsics?
-    bool featureSIMD;
-
-    // Should we recognize SIMD types?
-    // We always do this on ARM64 to support HVA types.
-    bool supportSIMDTypes()
-    {
-#ifdef TARGET_ARM64
-        return true;
-#else
-        return featureSIMD;
-#endif
-    }
-
     // Have we identified any SIMD types?
     // This is currently used by struct promotion to avoid getting type information for a struct
     // field to see if it is a SIMD type, if we haven't seen any SIMD types or operations in
@@ -9935,6 +9942,9 @@ public:
         // If set, tries to hide alignment instructions behind unconditional jumps.
         bool compJitHideAlignBehindJmp;
 
+        // If set, tracks the hidden return buffer for struct arg.
+        bool compJitOptimizeStructHiddenBuffer;
+
 #ifdef LATE_DISASM
         bool doLateDisasm; // Run the late disassembler
 #endif                     // LATE_DISASM
@@ -10534,6 +10544,10 @@ public:
 
     unsigned compArgSize; // total size of arguments in bytes (including register args (lvIsRegArg))
 
+#ifdef TARGET_ARM
+    bool compHasSplitParam;
+#endif
+
     unsigned compMapILargNum(unsigned ILargNum);      // map accounting for hidden args
     unsigned compMapILvarNum(unsigned ILvarNum);      // map accounting for hidden args
     unsigned compMap2ILvarNum(unsigned varNum) const; // map accounting for hidden args
@@ -10579,9 +10593,6 @@ public:
     // class handle as an out parameter if the type is a value class.  Returns the
     // size of the type these describe.
     unsigned compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd);
-
-    // Returns true if the method being compiled has a return buffer.
-    bool compHasRetBuffArg();
 
 #ifdef DEBUG
     // Components used by the compiler may write unit test suites, and
@@ -10638,6 +10649,7 @@ public:
         unsigned m_totalNumberOfStructEnregVars;
 
         unsigned m_addrExposed;
+        unsigned m_hiddenStructArg;
         unsigned m_VMNeedsStackAddr;
         unsigned m_localField;
         unsigned m_blockOp;
@@ -12054,21 +12066,19 @@ extern Histogram bbOneBBSizeTable;
 
 #if COUNT_LOOPS
 
-extern unsigned totalLoopMethods;        // counts the total number of methods that have natural loops
-extern unsigned maxLoopsPerMethod;       // counts the maximum number of loops a method has
-extern unsigned totalLoopOverflows;      // # of methods that identified more loops than we can represent
-extern unsigned totalLoopCount;          // counts the total number of natural loops
-extern unsigned totalUnnatLoopCount;     // counts the total number of (not-necessarily natural) loops
-extern unsigned totalUnnatLoopOverflows; // # of methods that identified more unnatural loops than we can represent
-extern unsigned iterLoopCount;           // counts the # of loops with an iterator (for like)
-extern unsigned simpleTestLoopCount;     // counts the # of loops with an iterator and a simple loop condition (iter <
-                                         // const)
-extern unsigned  constIterLoopCount;     // counts the # of loops with a constant iterator (for like)
-extern bool      hasMethodLoops;         // flag to keep track if we already counted a method as having loops
-extern unsigned  loopsThisMethod;        // counts the number of loops in the current method
-extern bool      loopOverflowThisMethod; // True if we exceeded the max # of loops in the method.
-extern Histogram loopCountTable;         // Histogram of loop counts
-extern Histogram loopExitCountTable;     // Histogram of loop exit counts
+extern unsigned  totalLoopMethods;        // counts the total number of methods that have natural loops
+extern unsigned  maxLoopsPerMethod;       // counts the maximum number of loops a method has
+extern unsigned  totalLoopOverflows;      // # of methods that identified more loops than we can represent
+extern unsigned  totalLoopCount;          // counts the total number of natural loops
+extern unsigned  totalUnnatLoopCount;     // counts the total number of (not-necessarily natural) loops
+extern unsigned  totalUnnatLoopOverflows; // # of methods that identified more unnatural loops than we can represent
+extern unsigned  iterLoopCount;           // counts the # of loops with an iterator (for like)
+extern unsigned  constIterLoopCount;      // counts the # of loops with a constant iterator (for like)
+extern bool      hasMethodLoops;          // flag to keep track if we already counted a method as having loops
+extern unsigned  loopsThisMethod;         // counts the number of loops in the current method
+extern bool      loopOverflowThisMethod;  // True if we exceeded the max # of loops in the method.
+extern Histogram loopCountTable;          // Histogram of loop counts
+extern Histogram loopExitCountTable;      // Histogram of loop exit counts
 
 #endif // COUNT_LOOPS
 

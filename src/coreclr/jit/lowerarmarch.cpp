@@ -612,28 +612,6 @@ void Lowering::LowerRotate(GenTree* tree)
     ContainCheckShiftRotate(tree->AsOp());
 }
 
-#ifdef FEATURE_SIMD
-//----------------------------------------------------------------------------------------------
-// Lowering::LowerSIMD: Perform containment analysis for a SIMD intrinsic node.
-//
-//  Arguments:
-//     simdNode - The SIMD intrinsic node.
-//
-void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
-{
-    assert(simdNode->gtType != TYP_SIMD32);
-
-    if (simdNode->TypeGet() == TYP_SIMD12)
-    {
-        // GT_SIMD node requiring to produce TYP_SIMD12 in fact
-        // produces a TYP_SIMD16 result
-        simdNode->gtType = TYP_SIMD16;
-    }
-
-    ContainCheckSIMD(simdNode);
-}
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
 
 //----------------------------------------------------------------------------------------------

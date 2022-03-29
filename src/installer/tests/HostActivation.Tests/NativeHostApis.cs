@@ -128,24 +128,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
+        [PlatformSpecific(TestPlatforms.Windows)] // The test setup only works on Windows (and MLL was Windows-only anyway)
         public void Hostfxr_get_available_sdks_with_multilevel_lookup()
         {
             var f = new SdkResolutionFixture(sharedTestState);
 
-            // With multi-level lookup (windows only): get local and global sdks sorted by ascending version,
-            // with global sdk coming before local sdk when versions are equal
+            // Starting with .NET 7, multi-level lookup is completely disabled for hostfxr API calls.
+            // This test is still valuable to validate that it is in fact disabled
             string expectedList = string.Join(';', new[]
             {
                 Path.Combine(f.LocalSdkDir, "0.1.2"),
-                Path.Combine(f.ProgramFilesGlobalSdkDir, "1.2.3"),
                 Path.Combine(f.LocalSdkDir, "1.2.3"),
-                Path.Combine(f.ProgramFilesGlobalSdkDir, "2.3.4-preview"),
-                Path.Combine(f.SelfRegisteredGlobalSdkDir, "3.0.0"),
-                Path.Combine(f.ProgramFilesGlobalSdkDir, "4.5.6"),
                 Path.Combine(f.LocalSdkDir, "5.6.7-preview"),
-                Path.Combine(f.SelfRegisteredGlobalSdkDir, "5.6.7"),
-                Path.Combine(f.SelfRegisteredGlobalSdkDir, "15.1.4-preview"),
             });
 
             using (TestOnlyProductBehavior.Enable(f.Dotnet.GreatestVersionHostFxrFilePath))
@@ -317,7 +311,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
+        [PlatformSpecific(TestPlatforms.Windows)] // The test setup only works on Windows (and MLL was Windows-only anyway)
         public void Hostfxr_get_dotnet_environment_info_with_multilevel_lookup_with_dotnet_root()
         {
             var f = new SdkResolutionFixture(sharedTestState);
@@ -325,33 +319,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             {
                 "0.1.2",
                 "1.2.3",
-                "1.2.3",
-                "2.3.4-preview",
-                "3.0.0",
-                "4.5.6",
                 "5.6.7-preview",
-                "5.6.7",
-                "15.1.4-preview"
             });
 
             string expectedSdkPaths = string.Join(';', new[]
             {
                 Path.Combine(f.LocalSdkDir, "0.1.2"),
-                Path.Combine(f.ProgramFilesGlobalSdkDir, "1.2.3"),
                 Path.Combine(f.LocalSdkDir, "1.2.3"),
-                Path.Combine(f.ProgramFilesGlobalSdkDir, "2.3.4-preview"),
-                Path.Combine(f.SelfRegisteredGlobalSdkDir, "3.0.0"),
-                Path.Combine(f.ProgramFilesGlobalSdkDir, "4.5.6"),
                 Path.Combine(f.LocalSdkDir, "5.6.7-preview"),
-                Path.Combine(f.SelfRegisteredGlobalSdkDir, "5.6.7"),
-                Path.Combine(f.SelfRegisteredGlobalSdkDir, "15.1.4-preview"),
             });
 
             string expectedFrameworkNames = string.Join(';', new[]
             {
-                "HostFxr.Test.A",
-                "HostFxr.Test.A",
-                "HostFxr.Test.B",
                 "HostFxr.Test.B",
                 "HostFxr.Test.B",
                 "HostFxr.Test.C"
@@ -359,20 +338,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             string expectedFrameworkVersions = string.Join(';', new[]
             {
-                "1.2.3",
-                "3.0.0",
                 "4.0.0",
-                "5.6.7-A",
                 "5.6.7-A",
                 "3.0.0"
             });
 
             string expectedFrameworkPaths = string.Join(';', new[]
             {
-                Path.Combine(f.ProgramFilesGlobalFrameworksDir, "HostFxr.Test.A"),
-                Path.Combine(f.ProgramFilesGlobalFrameworksDir, "HostFxr.Test.A"),
                 Path.Combine(f.LocalFrameworksDir, "HostFxr.Test.B"),
-                Path.Combine(f.ProgramFilesGlobalFrameworksDir, "HostFxr.Test.B"),
                 Path.Combine(f.LocalFrameworksDir, "HostFxr.Test.B"),
                 Path.Combine(f.LocalFrameworksDir, "HostFxr.Test.C")
             });
@@ -396,51 +369,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
+        [PlatformSpecific(TestPlatforms.Windows)] // The test setup only works on Windows (and MLL was Windows-only anyway)
         public void Hostfxr_get_dotnet_environment_info_with_multilevel_lookup_only()
         {
             var f = new SdkResolutionFixture(sharedTestState);
-            string expectedSdkVersions = string.Join(';', new[]
-            {
-                "1.2.3",
-                "2.3.4-preview",
-                "3.0.0",
-                "4.5.6",
-                "5.6.7",
-                "15.1.4-preview"
-            });
 
-            string expectedSdkPaths = string.Join(';', new[]
-            {
-                Path.Combine(f.ProgramFilesGlobalSdkDir, "1.2.3"),
-                Path.Combine(f.ProgramFilesGlobalSdkDir, "2.3.4-preview"),
-                Path.Combine(f.SelfRegisteredGlobalSdkDir, "3.0.0"),
-                Path.Combine(f.ProgramFilesGlobalSdkDir, "4.5.6"),
-                Path.Combine(f.SelfRegisteredGlobalSdkDir, "5.6.7"),
-                Path.Combine(f.SelfRegisteredGlobalSdkDir, "15.1.4-preview"),
-            });
-
-            string expectedFrameworkNames = string.Join(';', new[]
-            {
-                "HostFxr.Test.A",
-                "HostFxr.Test.A",
-                "HostFxr.Test.B",
-            });
-
-            string expectedFrameworkVersions = string.Join(';', new[]
-            {
-                "1.2.3",
-                "3.0.0",
-                "5.6.7-A",
-            });
-
-            string expectedFrameworkPaths = string.Join(';', new[]
-            {
-                Path.Combine(f.ProgramFilesGlobalFrameworksDir, "HostFxr.Test.A"),
-                Path.Combine(f.ProgramFilesGlobalFrameworksDir, "HostFxr.Test.A"),
-                Path.Combine(f.ProgramFilesGlobalFrameworksDir, "HostFxr.Test.B"),
-            });
-
+            // Multi-level lookup is completely disabled on 7+
+            // The test runs the API with the dotnet root directory set to a location which doesn't have any SDKs or frameworks
             using (TestOnlyProductBehavior.Enable(f.Dotnet.GreatestVersionHostFxrFilePath))
             {
                 // We pass f.WorkingDir so that we don't resolve dotnet_dir to the global installation
@@ -453,40 +388,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("hostfxr_get_dotnet_environment_info:Success")
-                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk versions:[{expectedSdkVersions}]")
-                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk paths:[{expectedSdkPaths}]")
-                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework names:[{expectedFrameworkNames}]")
-                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework versions:[{expectedFrameworkVersions}]")
-                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework paths:[{expectedFrameworkPaths}]");
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk versions:[]")
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk paths:[]")
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework names:[]")
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework versions:[]")
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework paths:[]");
             }
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
+        [PlatformSpecific(TestPlatforms.Windows)] // The test setup only works on Windows (and MLL was Windows-only anyway)
         public void Hostfxr_get_dotnet_environment_info_with_multilevel_lookup_only_self_register_program_files()
         {
             var f = new SdkResolutionFixture(sharedTestState);
-
-            string expectedFrameworkNames = string.Join(';', new[]
-            {
-                "HostFxr.Test.A",
-                "HostFxr.Test.A",
-                "HostFxr.Test.B",
-            });
-
-            string expectedFrameworkVersions = string.Join(';', new[]
-            {
-                "1.2.3",
-                "3.0.0",
-                "5.6.7-A",
-            });
-
-            string expectedFrameworkPaths = string.Join(';', new[]
-            {
-                Path.Combine(f.ProgramFilesGlobalFrameworksDir, "HostFxr.Test.A"),
-                Path.Combine(f.ProgramFilesGlobalFrameworksDir, "HostFxr.Test.A"),
-                Path.Combine(f.ProgramFilesGlobalFrameworksDir, "HostFxr.Test.B"),
-            });
 
             using (TestOnlyProductBehavior.Enable(f.Dotnet.GreatestVersionHostFxrFilePath))
             {
@@ -501,9 +415,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("hostfxr_get_dotnet_environment_info:Success")
-                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework names:[{expectedFrameworkNames}]")
-                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework versions:[{expectedFrameworkVersions}]")
-                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework paths:[{expectedFrameworkPaths}]");
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework names:[]")
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework versions:[]")
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework paths:[]");
             }
         }
 

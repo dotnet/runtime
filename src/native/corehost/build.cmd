@@ -41,7 +41,6 @@ if /i [%1] == [commit]      (set __CommitSha=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [configureonly] ( set __ConfigureOnly=1&&shift&goto Arg_Loop)
 if /i [%1] == [incremental-native-build] ( set __IncrementalNativeBuild=1&&shift&goto Arg_Loop)
 if /i [%1] == [rootDir]     ( set __rootDir=%2&&shift&&shift&goto Arg_Loop)
-if /i [%1] == [coreclrartifacts]  (set __CoreClrArtifacts=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [msbuild] (set __Ninja=0)
 if /i [%1] == [runtimeflavor]  (set __RuntimeFlavor=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [runtimeconfiguration]  (set __RuntimeConfiguration=%2&&shift&&shift&goto Arg_Loop)
@@ -127,25 +126,6 @@ if [%__Ninja%] == [1] (
 call "%CMakePath%" --build "%__IntermediatesDir%" --target install --config %CMAKE_BUILD_TYPE% -- %__generatorArgs%
 IF ERRORLEVEL 1 (
     goto :Failure
-)
-
-if "%__RuntimeFlavor%" NEQ "Mono" (
-    echo Copying "%__CoreClrArtifacts%\corehost\singlefilehost.exe"  "%__CMakeBinDir%/corehost/"
-    copy /B /Y "%__CoreClrArtifacts%\corehost\singlefilehost.exe"  "%__CMakeBinDir%/corehost/"
-
-    echo Copying "%__CoreClrArtifacts%\corehost\PDB\singlefilehost.pdb"  "%__CMakeBinDir%/corehost/PDB/"
-    copy /B /Y "%__CoreClrArtifacts%\corehost\PDB\singlefilehost.pdb"  "%__CMakeBinDir%/corehost/PDB/"
-
-    echo Embedding "%__CoreClrArtifacts%\mscordaccore.dll" into "%__CMakeBinDir%\corehost\singlefilehost.exe"
-    if not exist "%__CoreClrArtifacts%\x64\dactabletools\InjectResource.exe" (
-        "%__CoreClrArtifacts%\dactabletools\InjectResource.exe"     /bin:"%__CoreClrArtifacts%\mscordaccore.dll" /dll:"%__CMakeBinDir%\corehost\singlefilehost.exe" /name:MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER
-    ) else (
-        "%__CoreClrArtifacts%\x64\dactabletools\InjectResource.exe" /bin:"%__CoreClrArtifacts%\mscordaccore.dll" /dll:"%__CMakeBinDir%\corehost\singlefilehost.exe" /name:MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER
-    )
-
-    IF ERRORLEVEL 1 (
-        goto :Failure
-    )
 )
 
 echo Done building Native components

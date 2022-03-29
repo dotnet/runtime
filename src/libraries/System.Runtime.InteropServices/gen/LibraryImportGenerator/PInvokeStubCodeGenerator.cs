@@ -145,7 +145,7 @@ namespace Microsoft.Interop
             //
             // [LibraryImport(NativeExportsNE_Binary, EntryPoint = "transpose_matrix")]
             // [return: MarshalUsing(CountElementName = "numColumns")]
-            // [return: MarshalUsing(CountElementName = "numRows", ElementIndirectionLevel = 1)]
+            // [return: MarshalUsing(CountElementName = "numRows", ElementIndirectionDepth = 1)]
             // public static partial int[][] TransposeMatrix(
             //  int[][] matrix,
             //  [MarshalUsing(CountElementName="numColumns")] ref int[] numRows,
@@ -512,10 +512,8 @@ namespace Microsoft.Interop
                 ParameterList(
                     SeparatedList(
                         _paramMarshallers.Select(marshaler => marshaler.Generator.AsParameter(marshaler.TypeInfo)))),
-                _retMarshaller.Generator.AsNativeType(_retMarshaller.TypeInfo),
-                _retMarshaller.Generator is IAttributedReturnTypeMarshallingGenerator attributedReturn
-                ? attributedReturn.GenerateAttributesForReturnType(_retMarshaller.TypeInfo)
-                : null
+                _retMarshaller.Generator.AsReturnType(_retMarshaller.TypeInfo),
+                _retMarshaller.Generator.GenerateAttributesForReturnType(_retMarshaller.TypeInfo)
             );
         }
 

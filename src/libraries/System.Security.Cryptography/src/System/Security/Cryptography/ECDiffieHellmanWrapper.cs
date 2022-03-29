@@ -197,7 +197,9 @@ namespace System.Security.Cryptography
 
             public override byte[] ToByteArray() => _wrapped.ToByteArray();
 
+#pragma warning disable 0672, SYSLIB0042 // Member overrides an obsolete member, ToXmlString is obsolete.
             public override string ToXmlString() => _wrapped.ToXmlString();
+#pragma warning restore 0672, SYSLIB0042
 
             public override bool Equals(object? obj) => _wrapped.Equals(obj);
 

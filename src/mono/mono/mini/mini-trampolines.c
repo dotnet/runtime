@@ -558,9 +558,15 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 			klass = mrgctx->class_vtable->klass;
 			method_inst = mrgctx->method_inst;
 		} else if ((m->flags & METHOD_ATTRIBUTE_STATIC) || m_class_is_valuetype (m->klass)) {
+			MonoMethodRuntimeGenericContext *mrgctx = (MonoMethodRuntimeGenericContext*)mono_arch_find_static_call_vtable (regs, code);
+
+			klass = mrgctx->class_vtable->klass;
+			method_inst = mrgctx->method_inst;
+			/*
 			MonoVTable *vtable = mono_arch_find_static_call_vtable (regs, code);
 
 			klass = vtable->klass;
+			*/
 		} else {
 			MonoObject *this_argument = (MonoObject *)mono_arch_get_this_arg_from_call (regs, code);
 

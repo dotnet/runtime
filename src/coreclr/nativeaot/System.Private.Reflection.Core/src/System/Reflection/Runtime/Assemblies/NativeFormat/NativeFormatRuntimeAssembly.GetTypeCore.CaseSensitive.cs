@@ -68,7 +68,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             return null;
         }
 
-        private bool TryResolveNamespaceDefinitionCaseSensitive(MetadataReader reader, string[] namespaceParts, ScopeDefinitionHandle scopeDefinitionHandle, out NamespaceDefinition namespaceDefinition)
+        private static bool TryResolveNamespaceDefinitionCaseSensitive(MetadataReader reader, string[] namespaceParts, ScopeDefinitionHandle scopeDefinitionHandle, out NamespaceDefinition namespaceDefinition)
         {
             namespaceDefinition = scopeDefinitionHandle.GetScopeDefinition(reader).RootNamespaceDefinition.GetNamespaceDefinition(reader);
             NamespaceDefinitionHandleCollection candidates = namespaceDefinition.NamespaceDefinitions;

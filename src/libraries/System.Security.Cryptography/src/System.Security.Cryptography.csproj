@@ -232,6 +232,8 @@
              Link="Common\System\Security\Cryptography\KeyBlobHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HashOneShotHelpers.cs"
              Link="Common\System\Security\Cryptography\HashOneShotHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\IRuntimeAlgorithm.cs"
+             Link="Common\System\Security\Cryptography\IRuntimeAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\KeyFormatHelper.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.Encrypted.cs"
@@ -437,6 +439,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\SubjectAlternativeNameBuilder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedName.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedNameBuilder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedNameFlags.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X501Attribute.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509BasicConstraintsExtension.cs" />
@@ -823,6 +826,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslPkcs12Reader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslSingleCertLoader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslX509CertificateReader.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslX509ChainEventSource.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslX509ChainProcessor.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslX509Encoder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.OpenSsl.cs" />
@@ -1671,8 +1675,6 @@
              Link="Common\System\Security\Cryptography\ECDiffieHellmanCng.ImportExport.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaCng.cs"
              Link="Common\System\Security\Cryptography\ECDsaCng.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaCng.HashData.cs"
-             Link="Common\System\Security\Cryptography\ECDsaCng.HashData.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaCng.ImportExport.cs"
              Link="Common\System\Security\Cryptography\ECDsaCng.ImportExport.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaCng.SignVerify.cs"
@@ -1789,6 +1791,7 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.Formats.Asn1" />
     <Reference Include="System.Memory" />

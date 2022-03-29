@@ -353,6 +353,7 @@ namespace Microsoft.Win32
             public CoTaskMemUnicodeSafeHandle Password;
             public int Flags;
 #if NET7_0_OR_GREATER
+            [CustomTypeMarshaller(typeof(EvtRpcLogin), Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling)]
             public struct Marshaller
             {
                 public struct Native
@@ -380,18 +381,16 @@ namespace Microsoft.Win32
                     _value.Flags = managed.Flags;
                 }
 
-                public Native Value
+                public Native ToNativeValue() => _value;
+
+                public void FromNativeValue(Native value)
                 {
-                    get => _value;
-                    set
+                    // SafeHandle fields cannot change the underlying handle value during marshalling.
+                    if (_value.Password != value.Password)
                     {
-                        // SafeHandle fields cannot change the underlying handle value during marshalling.
-                        if (_value.Password != value.Password)
-                        {
-                            throw new InvalidOperationException();
-                        }
-                        _value = value;
+                        throw new InvalidOperationException();
                     }
+                    _value = value;
                 }
 
                 public EvtRpcLogin ToManaged()
@@ -701,6 +700,7 @@ namespace Microsoft.Win32
             public uint Type;
 
 #if NET7_0_OR_GREATER
+            [CustomTypeMarshaller(typeof(EvtStringVariant), Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
             [StructLayout(LayoutKind.Explicit)]
             public struct Native
             {

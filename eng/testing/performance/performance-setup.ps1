@@ -157,6 +157,7 @@ if ($AndroidMono) {
 
     Copy-Item -path "$SourceDirectory\androidHelloWorld\HelloAndroid.apk" $PayloadDirectory -Verbose      
     Copy-Item -path "$SourceDirectory\MauiAndroidDefault.apk" $PayloadDirectory -Verbose
+    Copy-Item -path "$SourceDirectory\MauiAndroidPodcast.apk" $PayloadDirectory -Verbose
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
 }
 
@@ -171,6 +172,7 @@ if ($iOSMono) {
         Copy-Item -path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
         Copy-Item -path "$SourceDirectory\MauiiOSDefaultIPA" $PayloadDirectory\MauiiOSDefaultIPA -Recurse
         Copy-Item -path "$SourceDirectory\MauiMacCatalystDefault\MauiMacCatalystDefault.app" $PayloadDirectory\MauiMacCatalystDefault -Recurse
+        Copy-Item -path "$SourceDirectory\MauiiOSPodcastIPA" $PayloadDirectory\MauiiOSPodcastIPA -Recurse
     }
 
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'

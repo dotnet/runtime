@@ -1604,10 +1604,6 @@ public:
                               DWORD *which,
                               BOOL skipPrologs=FALSE);
 
-    // If a method has multiple copies of code (because of EnC or code-pitching),
-    // this returns the DJI corresponding to 'pbAddr'
-    DebuggerJitInfo *GetJitInfoByAddress(const BYTE *pbAddr );
-
     void Init(TADDR newAddress);
 
 #if defined(FEATURE_EH_FUNCLETS)

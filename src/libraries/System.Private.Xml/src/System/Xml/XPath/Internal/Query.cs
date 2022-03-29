@@ -182,7 +182,7 @@ namespace MS.Internal.Xml.XPath
         // On my best knowledge this happens only in XsltContext.ResolveFunction() / IXsltContextFunction.ReturnType
 
 
-        protected XPathResultType GetXPathType(object value)
+        protected static XPathResultType GetXPathType(object value)
         {
             if (value is XPathNodeIterator) return XPathResultType.NodeSet;
             if (value is string) return XPathResultType.String;

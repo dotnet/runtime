@@ -25,7 +25,6 @@
 #include "mono-proclib.h"
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/atomic.h>
-#include <mono/utils/mono-counters.h>
 
 #define BEGIN_CRITICAL_SECTION do { \
 	MonoThreadInfo *__info = mono_thread_info_current_unchecked (); \
@@ -34,8 +33,6 @@
 #define END_CRITICAL_SECTION \
 	if (__info) __info->inside_critical_region = FALSE;	\
 } while (0)	\
-
-static void* malloced_shared_area = NULL;
 
 int
 mono_pagesize (void)
@@ -231,40 +228,6 @@ mono_file_unmap (void *addr, void *handle)
 
 int
 mono_mprotect (void *addr, size_t length, int flags)
-{
-	return 0;
-}
-
-void*
-mono_shared_area (void)
-{
-	if (!malloced_shared_area)
-		malloced_shared_area = mono_malloc_shared_area (mono_process_current_pid ());
-	/* get the pid here */
-	return malloced_shared_area;
-}
-
-void
-mono_shared_area_remove (void)
-{
-	if (malloced_shared_area)
-		g_free (malloced_shared_area);
-	malloced_shared_area = NULL;
-}
-
-void*
-mono_shared_area_for_pid (void *pid)
-{
-	return NULL;
-}
-
-void
-mono_shared_area_unload (void *area)
-{
-}
-
-int
-mono_shared_area_instances (void **array, int count)
 {
 	return 0;
 }

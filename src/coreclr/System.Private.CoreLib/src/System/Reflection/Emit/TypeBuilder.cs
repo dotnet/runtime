@@ -485,7 +485,7 @@ namespace System.Reflection.Emit
             AssemblyBuilder containingAssem = m_module.ContainingAssemblyBuilder;
 
             // cannot have two types within the same assembly of the same name
-            containingAssem._assemblyData.CheckTypeNameConflict(fullname, enclosingType);
+            containingAssem.CheckTypeNameConflict(fullname, enclosingType);
 
             if (enclosingType != null)
             {
@@ -573,7 +573,7 @@ namespace System.Reflection.Emit
             ThrowIfCreated();
 
             // form the value class name
-            strValueClassName = ModuleBuilderData.MultiByteValueClass + size.ToString();
+            strValueClassName = $"$ArrayType${size}";
 
             // Is this already defined in this module?
             Type? temp = m_module.FindTypeBuilderWithName(strValueClassName, false);
@@ -2002,7 +2002,7 @@ namespace System.Reflection.Emit
                     exceptions, (exceptions != null) ? exceptions.Length : 0,
                     tokenFixups, (tokenFixups != null) ? tokenFixups.Length : 0);
 
-                if (m_module.ContainingAssemblyBuilder._assemblyData._access == AssemblyBuilderAccess.Run)
+                if (m_module.ContainingAssemblyBuilder._access == AssemblyBuilderAccess.Run)
                 {
                     // if we don't need the data structures to build the method any more
                     // throw them away.

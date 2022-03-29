@@ -86,7 +86,7 @@ namespace System.Net.Http.Headers
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex));
             }
 
-            object? storeValue = _store.GetParsedValues(_descriptor);
+            object? storeValue = _store.GetParsedAndInvalidValues(_descriptor);
 
             if (storeValue == null)
             {
@@ -97,18 +97,30 @@ namespace System.Net.Http.Headers
 
             if (storeValues == null)
             {
-                // We only have 1 value: If it is the "special value" just return, otherwise add the value to the
-                // array and return.
-                Debug.Assert(storeValue is T);
-                if (arrayIndex == array.Length)
+                if (storeValue is not HttpHeaders.InvalidValue)
                 {
-                    throw new ArgumentException(SR.net_http_copyto_array_too_small);
+                    Debug.Assert(storeValue is T);
+                    if (arrayIndex == array.Length)
+                    {
+                        throw new ArgumentException(SR.net_http_copyto_array_too_small);
+                    }
+                    array[arrayIndex] = (T)storeValue;
                 }
-                array[arrayIndex] = (T)storeValue;
             }
             else
             {
-                storeValues.CopyTo(array, arrayIndex);
+                foreach (object item in storeValues)
+                {
+                    if (item is not HttpHeaders.InvalidValue)
+                    {
+                        Debug.Assert(item is T);
+                        if (arrayIndex == array.Length)
+                        {
+                            throw new ArgumentException(SR.net_http_copyto_array_too_small);
+                        }
+                        array[arrayIndex++] = (T)item;
+                    }
+                }
             }
         }
 
@@ -122,8 +134,8 @@ namespace System.Net.Http.Headers
 
         public IEnumerator<T> GetEnumerator()
         {
-            object? storeValue = _store.GetParsedValues(_descriptor);
-            return storeValue is null ?
+            object? storeValue = _store.GetParsedAndInvalidValues(_descriptor);
+            return storeValue is null || storeValue is HttpHeaders.InvalidValue ?
                 ((IEnumerable<T>)Array.Empty<T>()).GetEnumerator() : // use singleton empty array enumerator
                 Iterate(storeValue);
 
@@ -134,6 +146,10 @@ namespace System.Net.Http.Headers
                     // We have multiple values. Iterate through the values and return them.
                     foreach (object item in storeValues)
                     {
+                        if (item is HttpHeaders.InvalidValue)
+                        {
+                            continue;
+                        }
                         Debug.Assert(item is T);
                         yield return (T)item;
                     }
@@ -178,7 +194,7 @@ namespace System.Net.Http.Headers
         {
             // This is an O(n) operation.
 
-            object? storeValue = _store.GetParsedValues(_descriptor);
+            object? storeValue = _store.GetParsedAndInvalidValues(_descriptor);
 
             if (storeValue == null)
             {
@@ -189,11 +205,23 @@ namespace System.Net.Http.Headers
 
             if (storeValues == null)
             {
-                return 1;
+                if (storeValue is not HttpHeaders.InvalidValue)
+                {
+                    return 1;
+                }
+                return 0;
             }
             else
             {
-                return storeValues.Count;
+                int count = 0;
+                foreach (object item in storeValues)
+                {
+                    if (item is not HttpHeaders.InvalidValue)
+                    {
+                        count++;
+                    }
+                }
+                return count;
             }
         }
     }

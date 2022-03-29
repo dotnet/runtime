@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <FeatureGenericMath>false</FeatureGenericMath>
     <NoWarn>$(NoWarn),1718,SYSLIB0013</NoWarn>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
@@ -10,9 +9,6 @@
     <!-- Disable nullability public only feature for NullabilityInfoContextTests -->
     <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
     <EnableRegexGenerator>true</EnableRegexGenerator>
-  </PropertyGroup>
-  <PropertyGroup>
-    <DefineConstants Condition="'$(FeatureGenericMath)' == 'true'">$(DefineConstants);FEATURE_GENERIC_MATH</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
@@ -251,7 +247,7 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="System\ExitCodeTests.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureGenericMath)' == 'true'">
+  <ItemGroup>
     <Compile Include="System\ByteTests.GenericMath.cs" />
     <Compile Include="System\CharTests.GenericMath.cs" />
     <Compile Include="System\DoubleTests.GenericMath.cs" />

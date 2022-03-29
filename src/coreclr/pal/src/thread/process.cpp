@@ -3134,6 +3134,7 @@ PROCBuildCreateDumpCommandLine(
     char** pprogram,
     char** ppidarg,
     const char* dumpName,
+    const char* logFileName,
     INT dumpType,
     ULONG32 flags)
 {
@@ -3206,6 +3207,12 @@ PROCBuildCreateDumpCommandLine(
     if (flags & GenerateDumpFlagsCrashReportEnabled)
     {
         argv.push_back("--crashreport");
+    }
+
+    if (logFileName != nullptr)
+    {
+        argv.push_back("--logtofile");
+        argv.push_back(logFileName);
     }
 
     argv.push_back(*ppidarg);
@@ -3285,14 +3292,16 @@ Return
 BOOL
 PROCAbortInitialize()
 {
-    CLRConfigNoCache enabledCfg= CLRConfigNoCache::Get("DbgEnableMiniDump", /*noprefix*/ false, &getenv);
+    CLRConfigNoCache enabledCfg = CLRConfigNoCache::Get("DbgEnableMiniDump", /*noprefix*/ false, &getenv);
 
     DWORD enabled = 0;
-    if (enabledCfg.IsSet()
-        && enabledCfg.TryAsInteger(10, enabled)
-        && enabled)
+    if (enabledCfg.IsSet() && enabledCfg.TryAsInteger(10, enabled) && enabled)
     {
         CLRConfigNoCache dmpNameCfg = CLRConfigNoCache::Get("DbgMiniDumpName", /*noprefix*/ false, &getenv);
+        const char* dumpName = dmpNameCfg.IsSet() ? dmpNameCfg.AsString() : nullptr;
+
+        CLRConfigNoCache dmpLogToFileCfg = CLRConfigNoCache::Get("CreateDumpLogToFile", /*noprefix*/ false, &getenv);
+        const char* logFilePath = dmpLogToFileCfg.IsSet() ? dmpLogToFileCfg.AsString() : nullptr;
 
         CLRConfigNoCache dmpTypeCfg = CLRConfigNoCache::Get("DbgMiniDumpType", /*noprefix*/ false, &getenv);
         DWORD dumpType = UndefinedDumpType;
@@ -3306,11 +3315,17 @@ PROCAbortInitialize()
         }
 
         ULONG32 flags = GenerateDumpFlagsNone;
-        CLRConfigNoCache createDumpCfg = CLRConfigNoCache::Get("CreateDumpDiagnostics", /*noprefix*/ false, &getenv);
+        CLRConfigNoCache createDumpDiag = CLRConfigNoCache::Get("CreateDumpDiagnostics", /*noprefix*/ false, &getenv);
         DWORD val = 0;
-        if (createDumpCfg.IsSet() && createDumpCfg.TryAsInteger(10, val) && val == 1)
+        if (createDumpDiag.IsSet() && createDumpDiag.TryAsInteger(10, val) && val == 1)
         {
             flags |= GenerateDumpFlagsLoggingEnabled;
+        }
+        CLRConfigNoCache createDumpVerboseDiag = CLRConfigNoCache::Get("CreateDumpVerboseDiagnostics", /*noprefix*/ false, &getenv);
+        val = 0;
+        if (createDumpVerboseDiag.IsSet() && createDumpVerboseDiag.TryAsInteger(10, val) && val == 1)
+        {
+            flags |= GenerateDumpFlagsVerboseLoggingEnabled;
         }
         CLRConfigNoCache enabldReportCfg = CLRConfigNoCache::Get("EnableCrashReport", /*noprefix*/ false, &getenv);
         val = 0;
@@ -3318,9 +3333,10 @@ PROCAbortInitialize()
         {
             flags |= GenerateDumpFlagsCrashReportEnabled;
         }
+
         char* program = nullptr;
         char* pidarg = nullptr;
-        if (!PROCBuildCreateDumpCommandLine(g_argvCreateDump, &program, &pidarg, dmpNameCfg.AsString(), dumpType, flags))
+        if (!PROCBuildCreateDumpCommandLine(g_argvCreateDump, &program, &pidarg, dumpName, logFilePath, dumpType, flags))
         {
             return FALSE;
         }
@@ -3367,7 +3383,7 @@ PAL_GenerateCoreDump(
     }
     char* program = nullptr;
     char* pidarg = nullptr;
-    BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, dumpType, flags);
+    BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, nullptr, dumpType, flags);
     if (result)
     {
         result = PROCCreateCrashDump(argvCreateDump);

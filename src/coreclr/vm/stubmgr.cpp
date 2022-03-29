@@ -1004,8 +1004,7 @@ BOOL PrecodeStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     }
     CONTRACTL_END;
 
-    // Forwarded to from RangeSectionStubManager
-    return FALSE;
+    return GetStubPrecodeRangeList()->IsInRange(stubStartAddress) || GetFixupPrecodeRangeList()->IsInRange(stubStartAddress);
 }
 
 BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
@@ -1033,7 +1032,14 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
     else
 #endif // HAS_COMPACT_ENTRYPOINTS
     {
-        Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(stubStartAddress);
+        // When the target slot points to the fixup part of the fixup precode, we need to compensate
+        // for that to get the actual stub address
+        Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(stubStartAddress - FixupPrecode::FixupCodeOffset, TRUE /* speculative */);
+        if ((pPrecode == NULL) || (pPrecode->GetType() != PRECODE_FIXUP))
+        {
+            pPrecode = Precode::GetPrecodeFromEntryPoint(stubStartAddress);
+        }
+
         PREFIX_ASSUME(pPrecode != NULL);
 
         switch (pPrecode->GetType())
@@ -1497,21 +1503,6 @@ BOOL RangeSectionStubManager::TraceManager(Thread *thread,
     return TRUE;
 }
 #endif
-
-PCODE RangeSectionStubManager::GetMethodThunkTarget(PCODE stubStartAddress)
-{
-    WRAPPER_NO_CONTRACT;
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    return rel32Decode(stubStartAddress+1);
-#elif defined(TARGET_ARM)
-    TADDR pInstr = PCODEToPINSTR(stubStartAddress);
-    return *dac_cast<PTR_PCODE>(pInstr + 2 * sizeof(DWORD));
-#else
-    PORTABILITY_ASSERT("RangeSectionStubManager::GetMethodThunkTarget");
-    return NULL;
-#endif
-}
 
 #ifdef DACCESS_COMPILE
 LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
@@ -2390,6 +2381,8 @@ PrecodeStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p PrecodeStubManager\n", dac_cast<TADDR>(this)));
+    GetStubPrecodeRangeList()->EnumMemoryRegions(flags);
+    GetFixupPrecodeRangeList()->EnumMemoryRegions(flags);
 }
 
 void

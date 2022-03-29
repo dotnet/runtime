@@ -156,6 +156,7 @@ void CommandLine::DumpHelp(const char* program)
     printf("-2 : JIT failed to initialize\n");
     printf("1  : there were compilation failures\n");
     printf("2  : there were assembly diffs\n");
+    printf("3  : there were missing values in method context\n");
     printf("\n");
     printf("Examples:\n");
     printf(" %s " MAKEDLLNAME_A("clrjit") " test.mch\n", program);

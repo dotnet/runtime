@@ -5111,7 +5111,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                     assert(rmwSrc == data->gtGetOp2());
                     genCodeForShiftRMW(tree);
                 }
-                else if (data->OperGet() == GT_ADD && (rmwSrc->IsIntegralConst(1) || rmwSrc->IsIntegralConst(-1)))
+                else if (data->OperIs(GT_ADD) && rmwSrc->isContainedIntOrIImmed() &&
+                         (rmwSrc->IsIntegralConst(1) || rmwSrc->IsIntegralConst(-1)))
                 {
                     // Generate "inc/dec [mem]" instead of "add/sub [mem], 1".
                     //
@@ -5123,7 +5124,6 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                     //     addr modes with inc/dec.  For this reason, inc/dec [mem]
                     //     is not generated while generating debuggable code.  Update
                     //     the above if condition once Decode() routine is fixed.
-                    assert(rmwSrc->isContainedIntOrIImmed());
                     instruction ins = rmwSrc->IsIntegralConst(1) ? INS_inc : INS_dec;
                     GetEmitter()->emitInsRMW(ins, emitTypeSize(tree), tree);
                 }
