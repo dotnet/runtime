@@ -298,7 +298,7 @@ VNFunc GetVNFuncForNode(GenTree* node)
             }
             else if (node->gtGetOp2()->IsIntegralConst(0))
             {
-                // Normalize "X == 0" to "X <= 0"
+                // Normalize "X == 0" to "X u<= 0"
                 return VNF_LE_UN;
             }
             break;
@@ -311,12 +311,12 @@ VNFunc GetVNFuncForNode(GenTree* node)
             }
             else if (node->gtGetOp1()->IsIntegralConst(0))
             {
-                // Normalize "0 != X" to "0 < X"
+                // Normalize "0 != X" to "0 u< X"
                 return VNF_LT_UN;
             }
             else if (node->gtGetOp2()->IsIntegralConst(0))
             {
-                // Normalize "X != 0" to "X > 0"
+                // Normalize "X != 0" to "X u> 0"
                 return VNF_GT_UN;
             }
             break;
