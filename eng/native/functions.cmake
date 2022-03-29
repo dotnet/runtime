@@ -175,7 +175,7 @@ function(find_unwind_libs UnwindLibs)
       find_library(UNWIND_ARCH NAMES unwind-s390x)
     endif()
 
-    if(CLR_CMAKE_HOST_ARCH_PPC64LE)
+    if(CLR_CMAKE_HOST_ARCH_POWERPC64)
       find_library(UNWIND_ARCH NAMES unwind-ppc64le)
     endif()
 
