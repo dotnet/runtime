@@ -10,8 +10,6 @@ namespace Microsoft.Extensions.Hosting.Systemd
     [UnsupportedOSPlatform("browser")]
     public class SystemdNotifier : ISystemdNotifier
     {
-        private const string NOTIFY_SOCKET = "NOTIFY_SOCKET";
-
         private readonly string _socketPath;
 
         public SystemdNotifier() :
@@ -48,7 +46,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
 
         private static string GetNotifySocketPath()
         {
-            string socketPath = Environment.GetEnvironmentVariable(NOTIFY_SOCKET);
+            string socketPath = Environment.GetEnvironmentVariable(SystemdHelpers.NOTIFY_SOCKET_ENVVAR_KEY);
 
             if (string.IsNullOrEmpty(socketPath))
             {

@@ -13,6 +13,9 @@ namespace Microsoft.Extensions.Hosting.Systemd
     /// </summary>
     public static partial class SystemdHelpers
     {
+        internal const string NOTIFY_SOCKET_ENVVAR_KEY = "NOTIFY_SOCKET";
+        internal const string LISTEN_PID_ENVVAR_KEY = "LISTEN_PID";
+
         private static bool? _isSystemdService;
 
         /// <summary>
@@ -33,13 +36,30 @@ namespace Microsoft.Extensions.Hosting.Systemd
             try
             {
                 // Check whether our direct parent is 'systemd'.
+                // This will not work for containerised applications, since our direct parent will be some container runtime
                 int parentPid = Interop.libc.GetParentPid();
                 string ppidString = parentPid.ToString(NumberFormatInfo.InvariantInfo);
                 byte[] comm = File.ReadAllBytes("/proc/" + ppidString + "/comm");
-                return comm.AsSpan().SequenceEqual(Encoding.ASCII.GetBytes("systemd\n"));
+                if (comm.AsSpan().SequenceEqual(Encoding.ASCII.GetBytes("systemd\n")))
+                {
+                    return true;
+                }
             }
             catch
             {
+            }
+
+            // Convention for containers is to have the PID of the containerised process set to 1
+            if (Environment.ProcessId == 1)
+            {
+                if(!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(NOTIFY_SOCKET_ENVVAR_KEY)))
+                {
+                    return true;
+                }
+                if(!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(LISTEN_PID_ENVVAR_KEY)))
+                {
+                    return true;
+                }
             }
 
             return false;
