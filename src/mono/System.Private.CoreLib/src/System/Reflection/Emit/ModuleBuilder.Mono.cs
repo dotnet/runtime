@@ -87,13 +87,13 @@ namespace System.Reflection.Emit
         private static extern void set_wrappers_type(ModuleBuilder mb, Type? ab);
 
         [DynamicDependency(nameof(table_indexes))]  // Automatically keeps all previous fields too due to StructLayout
-        internal ModuleBuilder(AssemblyBuilder assb, string name, bool emitSymbolInfo)
+        internal ModuleBuilder(AssemblyBuilder assb, string name)
         {
             this.name = this.scopename = name;
             this.fqname = name;
             this.assembly = this.assemblyb = assb;
             guid = Guid.NewGuid().ToByteArray();
-            table_idx = get_next_table_index(this, 0x00, 1);
+            table_idx = get_next_table_index(0x00, 1);
             name_cache = new Dictionary<ITypeName, TypeBuilder>();
             us_string_cache = new Dictionary<string, int>(512);
 
@@ -466,7 +466,7 @@ namespace System.Reflection.Emit
                 return result;
         }
 
-        internal int get_next_table_index(object obj, int table, int count)
+        internal int get_next_table_index(int table, int count)
         {
             if (table_indexes == null)
             {

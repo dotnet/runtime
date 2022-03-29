@@ -1202,6 +1202,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Normaliz\Interop.Normalization.cs">
       <Link>Common\Interop\Windows\Normaliz\Interop.Normalization.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs">
+      <Link>Common\DisableRuntimeMarshalling.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)SkipLocalsInit.cs">
       <Link>Common\SkipLocalsInit.cs</Link>
     </Compile>

@@ -61,11 +61,7 @@ namespace System.Security.Cryptography
             }
             set
             {
-                if (value is null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
+                ArgumentNullException.ThrowIfNull(value);
                 _hMacCommon.ChangeKey(value);
                 base.Key = _hMacCommon.ActualKey!;
             }

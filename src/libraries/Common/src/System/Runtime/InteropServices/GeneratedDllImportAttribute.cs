@@ -22,14 +22,13 @@ namespace System.Runtime.InteropServices
         public CharSet CharSet { get; set; }
         public string? EntryPoint { get; set; }
         public bool ExactSpelling { get; set; }
-        public bool PreserveSig { get; set; }
         public bool SetLastError { get; set; }
 
         public GeneratedDllImportAttribute(string dllName)
         {
-            this.Value = dllName;
+            LibraryName = dllName;
         }
 
-        public string Value { get; private set; }
+        public string LibraryName { get; private set; }
     }
 }

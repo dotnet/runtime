@@ -575,15 +575,10 @@ namespace System.Xml.Schema
             }
         }
 
-        internal override Exception? TryParseValue(object value, XmlNameTable? nameTable, IXmlNamespaceResolver? namespaceResolver, out object? typedValue)
+        internal override Exception? TryParseValue(object value!!, XmlNameTable? nameTable, IXmlNamespaceResolver? namespaceResolver, out object? typedValue)
         {
             Exception? exception;
             typedValue = null;
-
-            if (value == null)
-            {
-                return new ArgumentNullException(nameof(value));
-            }
 
             string? s = value as string;
             if (s != null)

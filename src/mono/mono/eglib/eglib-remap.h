@@ -318,3 +318,7 @@
 #define g_ascii_charcmp monoeg_ascii_charcmp
 #define g_ascii_charcasecmp monoeg_ascii_charcasecmp
 #define g_warning_d monoeg_warning_d
+
+#ifdef HAVE_CLOCK_NANOSLEEP
+#define g_clock_nanosleep monoeg_clock_nanosleep
+#endif

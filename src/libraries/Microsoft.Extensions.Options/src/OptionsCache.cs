@@ -28,10 +28,10 @@ namespace Microsoft.Extensions.Options
         /// <param name="name">The name of the options instance.</param>
         /// <param name="createOptions">The func used to create the new instance.</param>
         /// <returns>The options instance.</returns>
-        public virtual TOptions GetOrAdd(string name, Func<TOptions> createOptions!!)
+        public virtual TOptions GetOrAdd(string? name, Func<TOptions> createOptions!!)
         {
             name ??= Options.DefaultName;
-            Lazy<TOptions> value;
+            Lazy<TOptions>? value;
 
 #if NETSTANDARD2_1
             value = _cache.GetOrAdd(name, static (name, createOptions) => new Lazy<TOptions>(createOptions), createOptions);
@@ -51,9 +51,9 @@ namespace Microsoft.Extensions.Options
         /// <param name="name">The name of the options instance.</param>
         /// <param name="options">The options instance.</param>
         /// <returns>true if the options were retrieved; otherwise, false.</returns>
-        internal bool TryGetValue(string name, out TOptions options)
+        internal bool TryGetValue(string? name, [MaybeNullWhen(false)] out TOptions options)
         {
-            if (_cache.TryGetValue(name ?? Options.DefaultName, out Lazy<TOptions> lazy))
+            if (_cache.TryGetValue(name ?? Options.DefaultName, out Lazy<TOptions>? lazy))
             {
                 options = lazy.Value;
                 return true;
@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="name">The name of the options instance.</param>
         /// <param name="options">The options instance.</param>
         /// <returns>Whether anything was added.</returns>
-        public virtual bool TryAdd(string name, TOptions options!!)
+        public virtual bool TryAdd(string? name, TOptions options!!)
         {
             return _cache.TryAdd(name ?? Options.DefaultName, new Lazy<TOptions>(
 #if !NETSTANDARD2_1
@@ -83,7 +83,7 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="name">The name of the options instance.</param>
         /// <returns>Whether anything was removed.</returns>
-        public virtual bool TryRemove(string name) =>
+        public virtual bool TryRemove(string? name) =>
             _cache.TryRemove(name ?? Options.DefaultName, out _);
     }
 }

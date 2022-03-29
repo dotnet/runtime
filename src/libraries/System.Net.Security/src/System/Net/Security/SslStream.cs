@@ -57,12 +57,132 @@ namespace System.Net.Security
         private bool _shutdown;
         private bool _handshakeCompleted;
 
-        // Never updated directly, special properties are used.  This is the read buffer.
-        internal byte[]? _internalBuffer;
-        internal int _internalOffset;
-        internal int _internalBufferCount;
-        internal int _decryptedBytesOffset;
-        internal int _decryptedBytesCount;
+        // FrameOverhead = 5 byte header + HMAC trailer + padding (if block cipher)
+        // HMAC: 32 bytes for SHA-256 or 20 bytes for SHA-1 or 16 bytes for the MD5
+        private const int FrameOverhead = 64;
+        private const int InitialHandshakeBufferSize = 4096 + FrameOverhead; // try to fit at least 4K ServerCertificate
+        private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
+
+        private SslBuffer _buffer;
+
+        // internal buffer for storing incoming data. Wrapper around ArrayBuffer which adds
+        // separation between decrypted and still encrypted part of the active region.
+        //   - Encrypted: Contains incoming TLS frames, the last such frame may be incomplete
+        //   - Decrypted: Contains decrypted data from *one* TLS frame which have not been read by the user yet.
+        private struct SslBuffer
+        {
+            private ArrayBuffer _buffer;
+            private int _decryptedLength;
+
+            // padding between decrypted part of the active memory and following undecrypted TLS frame.
+            private int _decryptedPadding;
+
+            private bool _isValid;
+
+            public SslBuffer(int initialSize)
+            {
+                _buffer = new ArrayBuffer(initialSize, true);
+                _decryptedLength = 0;
+                _decryptedPadding = 0;
+                _isValid = true;
+            }
+
+            public bool IsValid => _isValid;
+
+            public Span<byte> DecryptedSpan => _buffer.ActiveSpan.Slice(0, _decryptedLength);
+
+            public ReadOnlySpan<byte> DecryptedReadOnlySpanSliced(int length)
+            {
+                Debug.Assert(length <= DecryptedLength, "length <= DecryptedLength");
+                return _buffer.ActiveSpan.Slice(0, length);
+            }
+
+            public int DecryptedLength => _decryptedLength;
+
+            public int ActiveLength => _buffer.ActiveLength;
+
+            public Span<byte> EncryptedSpanSliced(int length) => _buffer.ActiveSpan.Slice(_decryptedLength + _decryptedPadding, length);
+
+            public ReadOnlySpan<byte> EncryptedReadOnlySpan => _buffer.ActiveSpan.Slice(_decryptedLength + _decryptedPadding);
+
+            public int EncryptedLength => _buffer.ActiveLength - _decryptedPadding - _decryptedLength;
+
+            public Memory<byte> AvailableMemory => _buffer.AvailableMemory;
+
+            public int AvailableLength => _buffer.AvailableLength;
+
+            public int Capacity => _buffer.Capacity;
+
+            public void Commit(int byteCount) => _buffer.Commit(byteCount);
+
+            public void EnsureAvailableSpace(int byteCount)
+            {
+                if (_isValid)
+                {
+                    _buffer.EnsureAvailableSpace(byteCount);
+                }
+                else
+                {
+                    _isValid = true;
+                    _buffer = new ArrayBuffer(byteCount, true);
+                }
+            }
+
+            public void Discard(int byteCount)
+            {
+                Debug.Assert(byteCount <= _decryptedLength, "byteCount <= _decryptedBytes");
+
+                _buffer.Discard(byteCount);
+                _decryptedLength -= byteCount;
+
+                // if drained all decrypted data, discard also the tail of the frame so that only
+                // encrypted part of the active memory of the _buffer remains
+                if (_decryptedLength == 0)
+                {
+                    _buffer.Discard(_decryptedPadding);
+                    _decryptedPadding = 0;
+                }
+            }
+
+            public void DiscardEncrypted(int byteCount)
+            {
+                // should be called only during handshake -> no pending decrypted data
+                Debug.Assert(_decryptedLength == 0, "_decryptedBytes == 0");
+                Debug.Assert(_decryptedPadding == 0, "_encryptedOffset == 0");
+
+                _buffer.Discard(byteCount);
+            }
+
+            public void OnDecrypted(int decryptedOffset, int decryptedCount, int frameSize)
+            {
+                Debug.Assert(_decryptedLength == 0, "_decryptedBytes == 0");
+                Debug.Assert(_decryptedPadding == 0, "_encryptedOffset == 0");
+
+                if (decryptedCount > 0)
+                {
+                    // discard padding before decrypted contents
+                    _buffer.Discard(decryptedOffset);
+
+                    _decryptedPadding = frameSize - decryptedOffset - decryptedCount;
+                    _decryptedLength = decryptedCount;
+                }
+                else
+                {
+                    // No user data available, discard entire frame
+                    _buffer.Discard(frameSize);
+                }
+            }
+
+            public void ReturnBuffer()
+            {
+                _buffer.Dispose();
+                _decryptedLength = 0;
+                _decryptedPadding = 0;
+                _isValid = false;
+            }
+        }
+
+
 
         private int _nestedWrite;
         private int _nestedRead;
@@ -152,13 +272,18 @@ namespace System.Net.Security
 
         private SslAuthenticationOptions CreateAuthenticationOptions(SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
-            if (sslServerAuthenticationOptions.ServerCertificate == null && sslServerAuthenticationOptions.ServerCertificateContext == null &&
-                    sslServerAuthenticationOptions.ServerCertificateSelectionCallback == null && _certSelectionDelegate == null)
+            if (sslServerAuthenticationOptions.ServerCertificate == null &&
+                sslServerAuthenticationOptions.ServerCertificateContext == null &&
+                sslServerAuthenticationOptions.ServerCertificateSelectionCallback == null &&
+                _certSelectionDelegate == null)
             {
                 throw new ArgumentNullException(nameof(sslServerAuthenticationOptions.ServerCertificate));
             }
 
-            if ((sslServerAuthenticationOptions.ServerCertificate != null || sslServerAuthenticationOptions.ServerCertificateContext != null || _certSelectionDelegate != null) && sslServerAuthenticationOptions.ServerCertificateSelectionCallback != null)
+            if ((sslServerAuthenticationOptions.ServerCertificate != null ||
+                 sslServerAuthenticationOptions.ServerCertificateContext != null ||
+                 _certSelectionDelegate != null) &&
+                sslServerAuthenticationOptions.ServerCertificateSelectionCallback != null)
             {
                 throw new InvalidOperationException(SR.Format(SR.net_conflicting_options, nameof(ServerCertificateSelectionCallback)));
             }
@@ -715,10 +840,10 @@ namespace System.Net.Security
             // If there's any data in the buffer, take one byte, and we're done.
             try
             {
-                if (_decryptedBytesCount > 0)
+                if (_buffer.DecryptedLength > 0)
                 {
-                    int b = _internalBuffer![_decryptedBytesOffset++];
-                    _decryptedBytesCount--;
+                    int b = _buffer.DecryptedSpan[0];
+                    _buffer.Discard(1);
                     ReturnReadBufferIfEmpty();
                     return b;
                 }

@@ -206,14 +206,12 @@ namespace Microsoft.Interop.Analyzers
         private void PrepareForAnalysis(CompilationStartAnalysisContext context)
         {
             INamedTypeSymbol? generatedMarshallingAttribute = context.Compilation.GetTypeByMetadataName(TypeNames.GeneratedMarshallingAttribute);
-            INamedTypeSymbol? blittableTypeAttribute = context.Compilation.GetTypeByMetadataName(TypeNames.BlittableTypeAttribute);
             INamedTypeSymbol? nativeMarshallingAttribute = context.Compilation.GetTypeByMetadataName(TypeNames.NativeMarshallingAttribute);
             INamedTypeSymbol? marshalUsingAttribute = context.Compilation.GetTypeByMetadataName(TypeNames.MarshalUsingAttribute);
             INamedTypeSymbol? genericContiguousCollectionMarshallerAttribute = context.Compilation.GetTypeByMetadataName(TypeNames.GenericContiguousCollectionMarshallerAttribute);
             INamedTypeSymbol? spanOfByte = context.Compilation.GetTypeByMetadataName(TypeNames.System_Span_Metadata)!.Construct(context.Compilation.GetSpecialType(SpecialType.System_Byte));
 
             if (generatedMarshallingAttribute is not null
-                && blittableTypeAttribute is not null
                 && nativeMarshallingAttribute is not null
                 && marshalUsingAttribute is not null
                 && genericContiguousCollectionMarshallerAttribute is not null
@@ -221,7 +219,6 @@ namespace Microsoft.Interop.Analyzers
             {
                 var perCompilationAnalyzer = new PerCompilationAnalyzer(
                     generatedMarshallingAttribute,
-                    blittableTypeAttribute,
                     nativeMarshallingAttribute,
                     marshalUsingAttribute,
                     genericContiguousCollectionMarshallerAttribute,
@@ -236,7 +233,6 @@ namespace Microsoft.Interop.Analyzers
         private class PerCompilationAnalyzer
         {
             private readonly INamedTypeSymbol _generatedMarshallingAttribute;
-            private readonly INamedTypeSymbol _blittableTypeAttribute;
             private readonly INamedTypeSymbol _nativeMarshallingAttribute;
             private readonly INamedTypeSymbol _marshalUsingAttribute;
             private readonly INamedTypeSymbol _genericContiguousCollectionMarshallerAttribute;
@@ -244,7 +240,6 @@ namespace Microsoft.Interop.Analyzers
             private readonly INamedTypeSymbol _structLayoutAttribute;
 
             public PerCompilationAnalyzer(INamedTypeSymbol generatedMarshallingAttribute,
-                                          INamedTypeSymbol blittableTypeAttribute,
                                           INamedTypeSymbol nativeMarshallingAttribute,
                                           INamedTypeSymbol marshalUsingAttribute,
                                           INamedTypeSymbol genericContiguousCollectionMarshallerAttribute,
@@ -252,7 +247,6 @@ namespace Microsoft.Interop.Analyzers
                                           INamedTypeSymbol structLayoutAttribute)
             {
                 _generatedMarshallingAttribute = generatedMarshallingAttribute;
-                _blittableTypeAttribute = blittableTypeAttribute;
                 _nativeMarshallingAttribute = nativeMarshallingAttribute;
                 _marshalUsingAttribute = marshalUsingAttribute;
                 _genericContiguousCollectionMarshallerAttribute = genericContiguousCollectionMarshallerAttribute;
@@ -264,8 +258,6 @@ namespace Microsoft.Interop.Analyzers
             {
                 INamedTypeSymbol type = (INamedTypeSymbol)context.Symbol;
 
-                AttributeData? blittableTypeAttributeData = null;
-                AttributeData? nativeMarshallingAttributeData = null;
                 foreach (AttributeData attr in type.GetAttributes())
                 {
                     if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, _generatedMarshallingAttribute))
@@ -274,45 +266,12 @@ namespace Microsoft.Interop.Analyzers
                         // we let the source generator handle error checking.
                         return;
                     }
-                    else if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, _blittableTypeAttribute))
-                    {
-                        blittableTypeAttributeData = attr;
-                    }
                     else if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, _nativeMarshallingAttribute))
                     {
-                        nativeMarshallingAttributeData = attr;
+                        AnalyzeNativeMarshalerType(context, type, attr, isNativeMarshallingAttribute: true);
+                        return;
                     }
                 }
-
-                if (HasMultipleMarshallingAttributes(blittableTypeAttributeData, nativeMarshallingAttributeData))
-                {
-                    context.ReportDiagnostic(
-                        blittableTypeAttributeData!.CreateDiagnostic(
-                            CannotHaveMultipleMarshallingAttributesRule,
-                            type.ToDisplayString()));
-                }
-                else if (blittableTypeAttributeData is not null && (!type.HasOnlyBlittableFields() || type.IsAutoLayout(_structLayoutAttribute)))
-                {
-                    context.ReportDiagnostic(
-                        blittableTypeAttributeData.CreateDiagnostic(
-                            BlittableTypeMustBeBlittableRule,
-                            type.ToDisplayString()));
-                }
-                else if (nativeMarshallingAttributeData is not null)
-                {
-                    AnalyzeNativeMarshalerType(context, type, nativeMarshallingAttributeData, isNativeMarshallingAttribute: true);
-                }
-            }
-
-            private bool HasMultipleMarshallingAttributes(AttributeData? blittableTypeAttributeData, AttributeData? nativeMarshallingAttributeData)
-            {
-                return (blittableTypeAttributeData, nativeMarshallingAttributeData) switch
-                {
-                    (null, null) => false,
-                    (not null, null) => false,
-                    (null, not null) => false,
-                    _ => true
-                };
             }
 
             public void AnalyzeElement(SymbolAnalysisContext context)
@@ -545,7 +504,7 @@ namespace Microsoft.Interop.Analyzers
                     // This ensures that marshalling via pinning the managed value and marshalling via the default marshaller will have the same ABI.
                     if (!valuePropertyIsRefReturn // Ref returns are already reported above as invalid, so don't issue another warning here about them
                         && nativeType is not (
-                        IPointerTypeSymbol _ or
+                        IPointerTypeSymbol or
                         { SpecialType: SpecialType.System_IntPtr } or
                         { SpecialType: SpecialType.System_UIntPtr }))
                     {

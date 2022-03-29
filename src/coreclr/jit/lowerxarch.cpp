@@ -5275,7 +5275,8 @@ void Lowering::ContainCheckIntrinsic(GenTreeOp* node)
     NamedIntrinsic intrinsicName = node->AsIntrinsic()->gtIntrinsicName;
 
     if ((intrinsicName == NI_System_Math_Ceiling) || (intrinsicName == NI_System_Math_Floor) ||
-        (intrinsicName == NI_System_Math_Round) || (intrinsicName == NI_System_Math_Sqrt))
+        (intrinsicName == NI_System_Math_Truncate) || (intrinsicName == NI_System_Math_Round) ||
+        (intrinsicName == NI_System_Math_Sqrt))
     {
         GenTree* op1 = node->gtGetOp1();
 

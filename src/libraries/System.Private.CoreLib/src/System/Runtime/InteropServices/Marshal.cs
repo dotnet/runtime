@@ -43,10 +43,7 @@ namespace System.Runtime.InteropServices
 
         public static unsafe string PtrToStringAnsi(IntPtr ptr, int len)
         {
-            if (ptr == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(ptr));
-            }
+            ArgumentNullException.ThrowIfNull(ptr);
             if (len < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(len), len, SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -67,10 +64,7 @@ namespace System.Runtime.InteropServices
 
         public static unsafe string PtrToStringUni(IntPtr ptr, int len)
         {
-            if (ptr == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(ptr));
-            }
+            ArgumentNullException.ThrowIfNull(ptr);
             if (len < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(len), len, SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -92,10 +86,7 @@ namespace System.Runtime.InteropServices
 
         public static unsafe string PtrToStringUTF8(IntPtr ptr, int byteLen)
         {
-            if (ptr == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(ptr));
-            }
+            ArgumentNullException.ThrowIfNull(ptr);
             if (byteLen < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(byteLen), byteLen, SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -143,8 +134,7 @@ namespace System.Runtime.InteropServices
 
         public static unsafe int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
         {
-            if (pUnk == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(pUnk));
+            ArgumentNullException.ThrowIfNull(pUnk);
 
             fixed (Guid* pIID = &iid)
             fixed (IntPtr* p = &ppv)
@@ -155,16 +145,14 @@ namespace System.Runtime.InteropServices
 
         public static unsafe int AddRef(IntPtr pUnk)
         {
-            if (pUnk == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(pUnk));
+            ArgumentNullException.ThrowIfNull(pUnk);
 
             return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)pUnk + 1 /* IUnknown.AddRef slot */)))(pUnk);
         }
 
         public static unsafe int Release(IntPtr pUnk)
         {
-            if (pUnk == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(pUnk));
+            ArgumentNullException.ThrowIfNull(pUnk);
 
             return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)pUnk + 2 /* IUnknown.Release slot */)))(pUnk);
         }
@@ -605,14 +593,11 @@ namespace System.Runtime.InteropServices
             Justification = "AOT compilers can see the T.")]
         public static void DestroyStructure<T>(IntPtr ptr) => DestroyStructure(ptr, typeof(T));
 
-// CoreCLR has a different implementation for Windows only
+        // CoreCLR has a different implementation for Windows only
 #if !CORECLR || !TARGET_WINDOWS
         public static IntPtr GetHINSTANCE(Module m)
         {
-            if (m is null)
-            {
-                throw new ArgumentNullException(nameof(m));
-            }
+            ArgumentNullException.ThrowIfNull(m);
 
             return (IntPtr)(-1);
         }
@@ -634,6 +619,7 @@ namespace System.Runtime.InteropServices
         }
 
 #if !CORECLR
+#pragma warning disable IDE0060
         private static Exception? GetExceptionForHRInternal(int errorCode, IntPtr errorInfo)
         {
             switch (errorCode)
@@ -863,6 +849,7 @@ namespace System.Runtime.InteropServices
                     return new COMException("", errorCode);
             }
         }
+#pragma warning restore IDE0060
 #endif
 
         /// <summary>
@@ -1139,10 +1126,7 @@ namespace System.Runtime.InteropServices
 
         public static TDelegate GetDelegateForFunctionPointer<TDelegate>(IntPtr ptr)
         {
-            if (ptr == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(ptr));
-            }
+            ArgumentNullException.ThrowIfNull(ptr);
 
             Type t = typeof(TDelegate);
             if (t.IsGenericType)
@@ -1256,10 +1240,7 @@ namespace System.Runtime.InteropServices
 
         public static string PtrToStringBSTR(IntPtr ptr)
         {
-            if (ptr == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(ptr));
-            }
+            ArgumentNullException.ThrowIfNull(ptr);
 
             return PtrToStringUni(ptr, (int)(SysStringByteLen(ptr) / sizeof(char)));
         }

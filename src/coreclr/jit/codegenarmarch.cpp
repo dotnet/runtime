@@ -622,7 +622,7 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
     assert(varTypeIsFloating(srcNode));
     assert(srcNode->TypeGet() == treeNode->TypeGet());
 
-    // Right now only Abs/Ceiling/Floor/Round/Sqrt are treated as math intrinsics.
+    // Right now only Abs/Ceiling/Floor/Truncate/Round/Sqrt are treated as math intrinsics.
     //
     switch (treeNode->AsIntrinsic()->gtIntrinsicName)
     {
@@ -640,6 +640,11 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
         case NI_System_Math_Floor:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_frintm, emitActualTypeSize(treeNode), treeNode, srcNode);
+            break;
+
+        case NI_System_Math_Truncate:
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitInsBinary(INS_frintz, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
 
         case NI_System_Math_Round:
@@ -1508,7 +1513,7 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
     genConsumeRegs(op1);
     regNumber targetReg = REG_ZR;
 
-    GetEmitter()->emitInsLoadStoreOp(INS_ldr, EA_4BYTE, targetReg, tree);
+    GetEmitter()->emitInsLoadStoreOp(ins_Load(tree->TypeGet()), emitActualTypeSize(tree), targetReg, tree);
 #endif
 }
 

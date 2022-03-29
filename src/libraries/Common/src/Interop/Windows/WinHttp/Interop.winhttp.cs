@@ -38,15 +38,40 @@ internal static partial class Interop
             string acceptTypes,
             uint flags);
 
-        [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool WinHttpAddRequestHeaders(
+        public static partial bool WinHttpAddRequestHeaders(
             SafeWinHttpHandle requestHandle,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(SimpleStringBufferMarshaller))] StringBuilder headers,
+#else
 #pragma warning disable CA1838 // Uses pooled StringBuilder
             [In] StringBuilder headers,
-#pragma warning restore CA1838
+#pragma warning restore CA1838 // Uses pooled StringBuilder
+#endif
             uint headersLength,
             uint modifiers);
+
+#if NET7_0_OR_GREATER
+        private unsafe struct SimpleStringBufferMarshaller
+        {
+            public SimpleStringBufferMarshaller(StringBuilder builder)
+            {
+                int length = builder.Length + 1;
+                Value = NativeMemory.Alloc(sizeof(char) * (nuint)length);
+                Span<char> buffer = new(Value, length);
+                buffer.Clear();
+                builder.CopyTo(0, buffer, length - 1);
+            }
+
+            public void* Value { get; }
+
+            public void FreeNative()
+            {
+                NativeMemory.Free(Value);
+            }
+        }
+#endif
 
         [GeneratedDllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -187,15 +212,12 @@ internal static partial class Interop
         public static partial bool WinHttpGetIEProxyConfigForCurrentUser(
             out WINHTTP_CURRENT_USER_IE_PROXY_CONFIG proxyConfig);
 
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
-        [return: MarshalAs(UnmanagedType.Bool)]public static extern bool WinHttpGetProxyForUrl(
+        [GeneratedDllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]public static partial bool WinHttpGetProxyForUrl(
             SafeWinHttpHandle? sessionHandle,
             string url,
             ref WINHTTP_AUTOPROXY_OPTIONS autoProxyOptions,
             out WINHTTP_PROXY_INFO proxyInfo);
-#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
         [GeneratedDllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
         public static partial IntPtr WinHttpSetStatusCallback(

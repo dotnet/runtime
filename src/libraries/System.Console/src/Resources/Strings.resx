@@ -218,9 +218,6 @@
   <data name="ArgumentOutOfRange_BeepFrequency" xml:space="preserve">
     <value>The frequency must be between {0} and {1}.</value>
   </data>
-  <data name="ArgumentNull_Array" xml:space="preserve">
-    <value>Array cannot be null.</value>
-  </data>
   <data name="ArgumentOutOfRange_IndexCountBuffer" xml:space="preserve">
     <value>Index and count must refer to a location within the buffer.</value>
   </data>

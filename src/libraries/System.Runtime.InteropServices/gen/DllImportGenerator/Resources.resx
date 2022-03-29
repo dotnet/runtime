@@ -268,6 +268,9 @@
   <data name="RefValuePropertyUnsupportedMessage" xml:space="preserve">
     <value>The 'Value' property on the native type '{0}' must not be a 'ref' or 'readonly ref' property.</value>
   </data>
+  <data name="RuntimeMarshallingMustBeDisabled" xml:space="preserve">
+    <value />
+  </data>
   <data name="SafeHandleByRefMustBeConcrete" xml:space="preserve">
     <value>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</value>
   </data>

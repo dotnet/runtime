@@ -17,7 +17,9 @@ namespace DllImportGenerator.UnitTests
         public async Task SkipLocalsInitAdded()
         {
             string source = @"
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+[assembly:DisableRuntimeMarshalling]
 partial class C
 {
     [GeneratedDllImportAttribute(""DoesNotExist"")]
@@ -66,7 +68,7 @@ partial class C
         {
             yield return new object[] { TestTargetFramework.Net, true };
             yield return new object[] { TestTargetFramework.Net6, true };
-            yield return new object[] { TestTargetFramework.Net5, false };
+            yield return new object[] { TestTargetFramework.Net5, true };
             yield return new object[] { TestTargetFramework.Core, false };
             yield return new object[] { TestTargetFramework.Standard, false };
             yield return new object[] { TestTargetFramework.Framework, false };
@@ -79,28 +81,10 @@ partial class C
             string source = $@"
 using System.Runtime.InteropServices;
 {CodeSnippets.GeneratedDllImportAttributeDeclaration}
-namespace System.Runtime.InteropServices
-{{
-    sealed class NativeMarshallingAttribute : System.Attribute
-    {{
-        public NativeMarshallingAttribute(System.Type nativeType) {{ }}
-    }}
-}}
 partial class C
 {{
     [GeneratedDllImportAttribute(""DoesNotExist"")]
-    public static partial S Method();
-}}
-
-[NativeMarshalling(typeof(Native))]
-struct S
-{{
-}}
-
-struct Native
-{{
-    public Native(S s) {{ }}
-    public S ToManaged() {{ return default; }}
+    public static partial bool Method();
 }}";
             Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
 

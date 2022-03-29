@@ -3,7 +3,7 @@
     <!-- Set the RuntimeIdentifier so that the DotNetHost and DotNetHostPolicy packages resolve for the corresponding runtime. -->
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(Configuration)' == 'Debug' or '$(Coverage)' == 'true') and '$(RuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- Binplace properties -->
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
     <BinPlaceNative>true</BinPlaceNative>

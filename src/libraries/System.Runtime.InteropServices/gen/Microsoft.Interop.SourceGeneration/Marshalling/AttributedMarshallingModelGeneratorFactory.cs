@@ -9,6 +9,8 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
+    public readonly record struct AttributedMarshallingModelOptions(InteropGenerationOptions InteropOptions, bool RuntimeMarshallingDisabled);
+
     public class AttributedMarshallingModelGeneratorFactory : IMarshallingGeneratorFactory
     {
         private static readonly BlittableMarshaller s_blittable = new BlittableMarshaller();
@@ -19,7 +21,7 @@ namespace Microsoft.Interop
 
         public AttributedMarshallingModelGeneratorFactory(
             IMarshallingGeneratorFactory innerMarshallingGenerator,
-            InteropGenerationOptions options)
+            AttributedMarshallingModelOptions options)
         {
             Options = options;
             _innerMarshallingGenerator = innerMarshallingGenerator;
@@ -30,7 +32,7 @@ namespace Microsoft.Interop
         public AttributedMarshallingModelGeneratorFactory(
             IMarshallingGeneratorFactory innerMarshallingGenerator,
             IMarshallingGeneratorFactory elementMarshallingGenerator,
-            InteropGenerationOptions options)
+            AttributedMarshallingModelOptions options)
         {
             Options = options;
             _innerMarshallingGenerator = innerMarshallingGenerator;
@@ -38,14 +40,21 @@ namespace Microsoft.Interop
             _elementMarshallingGenerator = elementMarshallingGenerator;
         }
 
-        public InteropGenerationOptions Options { get; }
+        private AttributedMarshallingModelOptions Options { get; }
 
         public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
             return info.MarshallingAttributeInfo switch
             {
-                NativeMarshallingAttributeInfo marshalInfo => CreateCustomNativeTypeMarshaller(info, context, marshalInfo),
-                BlittableTypeAttributeInfo => s_blittable,
+                NativeMarshallingAttributeInfo marshalInfo when Options.RuntimeMarshallingDisabled => CreateCustomNativeTypeMarshaller(info, context, marshalInfo),
+                NativeMarshallingAttributeInfo { ValuePropertyType: SpecialTypeInfo specialType } marshalInfo when specialType.SpecialType.IsAlwaysBlittable() => CreateCustomNativeTypeMarshaller(info, context, marshalInfo),
+                NativeMarshallingAttributeInfo { ValuePropertyType: PointerTypeInfo } marshalInfo => CreateCustomNativeTypeMarshaller(info, context, marshalInfo),
+                UnmanagedBlittableMarshallingInfo when Options.RuntimeMarshallingDisabled => s_blittable,
+                UnmanagedBlittableMarshallingInfo or NativeMarshallingAttributeInfo when !Options.RuntimeMarshallingDisabled =>
+                    throw new MarshallingNotSupportedException(info, context)
+                    {
+                        NotSupportedDetails = Resources.RuntimeMarshallingMustBeDisabled
+                    },
                 GeneratedNativeMarshallingAttributeInfo => s_forwarder,
                 MissingSupportMarshallingInfo => s_forwarder,
                 _ => _innerMarshallingGenerator.Create(info, context)
@@ -286,7 +295,7 @@ namespace Microsoft.Interop
                     new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: true),
                     elementType,
                     isBlittable,
-                    Options);
+                    Options.InteropOptions);
             }
 
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);

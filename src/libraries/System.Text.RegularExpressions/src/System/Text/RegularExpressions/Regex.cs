@@ -117,21 +117,10 @@ namespace System.Text.RegularExpressions
             // and is used as input into RegexOptions.Compiled and RegexOptions.NonBacktracking.
             _code = RegexWriter.Write(tree, culture);
 
-            if ((options & RegexOptions.NonBacktracking) != 0)
-            {
-                // NonBacktracking doesn't support captures (other than the implicit top-level capture).
-                capnames = null;
-                capslist = null;
-                caps = null;
-                capsize = 1;
-            }
-            else
-            {
-                capnames = tree.CapNames;
-                capslist = tree.CapsList;
-                caps = _code.Caps;
-                capsize = _code.CapSize;
-            }
+            capnames = tree.CapNames;
+            capslist = tree.CapsList;
+            caps = _code.Caps;
+            capsize = _code.CapSize;
         }
 
         internal static void ValidatePattern(string pattern)

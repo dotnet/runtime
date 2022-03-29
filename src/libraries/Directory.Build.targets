@@ -1,4 +1,4 @@
-<Project InitialTargets="UpdateProjectReferencesWithAttributes">
+<Project>
   <PropertyGroup>
     <!-- Override strong name key to default to Open for test projects,
          Tests which wish to control this should set TestStrongNameKeyId. -->
@@ -154,24 +154,6 @@
   </Target>
 
   <Import Project="$(RepositoryEngineeringDir)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
-
-  <Target Name="UpdateProjectReferencesWithAttributes" Condition="'@(ProjectReference)' != ''">
-    <ItemGroup>
-      <ProjectReference Condition="'%(Filename)' == 'System.Private.CoreLib'">
-        <!-- Don't flow TargetFramework and Platform to use same inputs and outputs as the CoreLib's build as part of the runtime. -->
-        <UndefineProperties>$(UndefineProperties);TargetFramework;Platform</UndefineProperties>
-        <SetConfiguration Condition="'$(RuntimeFlavor)' == 'CoreCLR' and
-                                     '$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration)</SetConfiguration>
-        <SetConfiguration Condition="'$(RuntimeFlavor)' == 'Mono' and
-                                     '$(Configuration)' != '$(MonoConfiguration)'">Configuration=$(MonoConfiguration)</SetConfiguration>
-        <Private>false</Private>
-      </ProjectReference>
-    </ItemGroup>
-    <!-- Disable TargetArchitectureMismatch warning when we reference CoreLib which is platform specific. -->
-    <PropertyGroup Condition="@(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))">
-      <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
-    </PropertyGroup>
-  </Target>
 
   <!--
     Do not clean binplace assets in the ref targeting pack to avoid incremental build failures

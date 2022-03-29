@@ -204,11 +204,8 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(TrimSerializationWarning)]
-        public XmlSerializer(Type type, string? defaultNamespace)
+        public XmlSerializer(Type type!!, string? defaultNamespace)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
             DefaultNamespace = defaultNamespace;
             _rootType = type;
 
@@ -266,11 +263,8 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(TrimSerializationWarning)]
-        public XmlSerializer(Type type, XmlAttributeOverrides? overrides, Type[]? extraTypes, XmlRootAttribute? root, string? defaultNamespace, string? location)
+        public XmlSerializer(Type type!!, XmlAttributeOverrides? overrides, Type[]? extraTypes, XmlRootAttribute? root, string? defaultNamespace, string? location)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
             DefaultNamespace = defaultNamespace;
             _rootType = type;
             _mapping = GenerateXmlTypeMapping(type, overrides, extraTypes, root, defaultNamespace);
@@ -751,12 +745,8 @@ namespace System.Xml.Serialization
             return GetXmlSerializerAssemblyName(type, null);
         }
 
-        public static string GetXmlSerializerAssemblyName(Type type, string? defaultNamespace)
+        public static string GetXmlSerializerAssemblyName(Type type!!, string? defaultNamespace)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
             return Compiler.GetTempAssemblyName(type.Assembly.GetName(), defaultNamespace);
         }
 

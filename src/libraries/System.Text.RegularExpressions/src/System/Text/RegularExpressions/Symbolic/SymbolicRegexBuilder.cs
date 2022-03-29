@@ -54,7 +54,8 @@ namespace System.Text.RegularExpressions.Symbolic
             TElement?,                                     // _test
             TransitionRegex<TElement>?,                    // _first
             TransitionRegex<TElement>?,                    // _second
-            SymbolicRegexNode<TElement>?),                 // _leaf
+            SymbolicRegexNode<TElement>?,                  // _leaf
+            DerivativeEffect?),                            // _effect
             TransitionRegex<TElement>> _trCache = new();
 
         /// <summary>
@@ -63,6 +64,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         internal DfaMatchingState<TElement>[]? _statearray;
         internal DfaMatchingState<TElement>[]? _delta;
+        internal List<(DfaMatchingState<TElement>, List<DerivativeEffect>)>[]? _capturingDelta;
         private const int InitialStateLimit = 1024;
 
         /// <summary>
@@ -112,6 +114,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
                 _mintermsCount = mintermsCount;
                 _delta = new DfaMatchingState<TElement>[InitialStateLimit << _mintermsCount];
+                _capturingDelta = new List<(DfaMatchingState<TElement>, List<DerivativeEffect>)>[InitialStateLimit << _mintermsCount];
             }
 
             // initialized to False but updated later to the actual condition ony if \b or \B occurs anywhere in the regex
@@ -137,6 +140,26 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         internal SymbolicRegexNode<TElement> MkOr(params SymbolicRegexNode<TElement>[] regexes) =>
             SymbolicRegexNode<TElement>.MkOr(this, regexes);
+
+        /// <summary>
+        /// Make an ordered disjunction of given regexes, simplify by eliminating any regex that accepts no inputs
+        /// </summary>
+        internal SymbolicRegexNode<TElement> MkOrderedOr(params SymbolicRegexNode<TElement>[] regexes)
+        {
+            SymbolicRegexNode<TElement>? or = null;
+            foreach (SymbolicRegexNode<TElement> elem in regexes)
+            {
+                if (elem.IsNothing)
+                    continue;
+
+                or = or is null ? elem :  SymbolicRegexNode<TElement>.MkOrderedOr(this, or, elem);
+
+                if (elem.IsAnyStar)
+                    break; // .* is the absorbing element
+            }
+
+            return or ?? _nothing;
+        }
 
         /// <summary>
         /// Make a conjunction of given regexes, simplify by eliminating regexes that accept everything
@@ -227,7 +250,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             if (lower == 0 && upper == 0)
             {
-                return isLazy ? _epsilon : _eagerEmptyLoop;
+                return _epsilon;
             }
 
             if (!isLazy && lower == 0 && upper == int.MaxValue && regex._kind == SymbolicRegexKind.Singleton)
@@ -294,6 +317,12 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <returns></returns>
         internal SymbolicRegexNode<TElement> MkNot(SymbolicRegexNode<TElement> node) => SymbolicRegexNode<TElement>.MkNot(this, node);
 
+        internal SymbolicRegexNode<TElement> MkCapture(SymbolicRegexNode<TElement> child, int captureNum) => MkConcat(MkCaptureStart(captureNum), MkConcat(child, MkCaptureEnd(captureNum)));
+
+        internal SymbolicRegexNode<TElement> MkCaptureStart(int captureNum) => SymbolicRegexNode<TElement>.MkCaptureStart(this, captureNum);
+
+        internal SymbolicRegexNode<TElement> MkCaptureEnd(int captureNum) => SymbolicRegexNode<TElement>.MkCaptureEnd(this, captureNum);
+
         internal SymbolicRegexNode<T> Transform<T>(SymbolicRegexNode<TElement> sr, SymbolicRegexBuilder<T> builderT, Func<TElement, T> predicateTransformer) where T : notnull
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
@@ -345,9 +374,19 @@ namespace System.Text.RegularExpressions.Symbolic
                     Debug.Assert(sr._alts is not null);
                     return builderT.MkOr(sr._alts.Transform(builderT, predicateTransformer));
 
+                case SymbolicRegexKind.OrderedOr:
+                    Debug.Assert(sr._left is not null && sr._right is not null);
+                    return builderT.MkOrderedOr(Transform(sr._left, builderT, predicateTransformer), Transform(sr._right, builderT, predicateTransformer));
+
                 case SymbolicRegexKind.And:
                     Debug.Assert(sr._alts is not null);
                     return builderT.MkAnd(sr._alts.Transform(builderT, predicateTransformer));
+
+                case SymbolicRegexKind.CaptureStart:
+                    return builderT.MkCaptureStart(sr._lower);
+
+                case SymbolicRegexKind.CaptureEnd:
+                    return builderT.MkCaptureEnd(sr._lower);
 
                 case SymbolicRegexKind.Concat:
                     {
@@ -414,6 +453,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     int newsize = _statearray.Length + 1024;
                     Array.Resize(ref _statearray, newsize);
                     Array.Resize(ref _delta, newsize << _mintermsCount);
+                    Array.Resize(ref _capturingDelta, newsize << _mintermsCount);
                 }
                 _statearray[state.Id] = state;
                 return state;

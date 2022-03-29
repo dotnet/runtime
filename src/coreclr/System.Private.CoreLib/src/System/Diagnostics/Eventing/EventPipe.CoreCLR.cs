@@ -40,11 +40,8 @@ namespace System.Diagnostics.Tracing
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_DeleteProvider")]
         internal static partial void DeleteProvider(IntPtr provHandle);
 
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we annotate blittable types used in interop in CoreLib (like Guid)
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_EventActivityIdControl")]
-        internal static extern int EventActivityIdControl(uint controlCode, ref Guid activityId);
-#pragma warning restore DLLIMPORTGENANALYZER015
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_EventActivityIdControl")]
+        internal static partial int EventActivityIdControl(uint controlCode, ref Guid activityId);
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_WriteEventData")]
         internal static unsafe partial void WriteEventData(IntPtr eventHandle, EventProvider.EventData* pEventData, uint dataCount, Guid* activityId, Guid* relatedActivityId);

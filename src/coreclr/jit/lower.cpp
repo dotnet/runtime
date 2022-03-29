@@ -7065,7 +7065,16 @@ void Lowering::ContainCheckBitCast(GenTree* node)
 void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 {
     assert(ind->TypeGet() != TYP_STRUCT);
-    TryCreateAddrMode(ind->Addr(), true, ind);
+
+#if defined(TARGET_ARM64)
+    // Verify containment safety before creating an LEA that must be contained.
+    //
+    const bool isContainable = IsSafeToContainMem(ind, ind->Addr());
+#else
+    const bool     isContainable         = true;
+#endif
+    TryCreateAddrMode(ind->Addr(), isContainable, ind);
+
     if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {
         if (varTypeIsFloating(ind) && ind->Data()->IsCnsFltOrDbl())
@@ -7085,7 +7094,7 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 #if defined(TARGET_XARCH) || defined(TARGET_ARM)
             bool shouldSwitchToInteger = true;
 #else // TARGET_ARM64
-            bool shouldSwitchToInteger = !data->IsCnsNonZeroFltOrDbl();
+            bool   shouldSwitchToInteger = !data->IsCnsNonZeroFltOrDbl();
 #endif
 
             if (shouldSwitchToInteger)
@@ -7133,7 +7142,17 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
         // TODO-Cleanup: We're passing isContainable = true but ContainCheckIndir rejects
         // address containment in some cases so we end up creating trivial (reg + offfset)
         // or (reg + reg) LEAs that are not necessary.
-        TryCreateAddrMode(ind->Addr(), true, ind);
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if defined(TARGET_ARM64)
+        // Verify containment safety before creating an LEA that must be contained.
+        //
+        const bool isContainable = IsSafeToContainMem(ind, ind->Addr());
+#else
+        const bool isContainable         = true;
+#endif
+
+        TryCreateAddrMode(ind->Addr(), isContainable, ind);
         ContainCheckIndir(ind);
 
         if (ind->OperIs(GT_NULLCHECK) || ind->IsUnusedValue())
@@ -7174,15 +7193,18 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     // - On ARM64, always use GT_NULLCHECK for a dead indirection.
     // - On ARM, always use GT_IND.
     // - On XARCH, use GT_IND if we have a contained address, and GT_NULLCHECK otherwise.
-    // In all cases, change the type to TYP_INT.
+    // In all cases we try to preserve the original type and never make it wider to avoid AVEs.
+    // For structs we conservatively lower it to BYTE. For 8-byte primitives we lower it to TYP_INT
+    // on XARCH as an optimization.
     //
     assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK, GT_OBJ));
 
-    ind->gtType = TYP_INT;
+    ind->ChangeType(comp->gtTypeForNullCheck(ind));
+
 #ifdef TARGET_ARM64
     bool useNullCheck = true;
 #elif TARGET_ARM
-    bool         useNullCheck          = false;
+    bool           useNullCheck          = false;
 #else  // TARGET_XARCH
     bool useNullCheck = !ind->Addr()->isContained();
 #endif // !TARGET_XARCH

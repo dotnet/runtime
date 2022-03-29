@@ -60,6 +60,18 @@ namespace System
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
 
+        private static Lazy<bool> s_isCheckedRuntime => new Lazy<bool>(() => AssemblyConfigurationEquals("Checked"));
+        private static Lazy<bool> s_isReleaseRuntime => new Lazy<bool>(() => AssemblyConfigurationEquals("Release"));
+        private static Lazy<bool> s_isDebugRuntime => new Lazy<bool>(() => AssemblyConfigurationEquals("Debug"));
+
+        public static bool IsCheckedRuntime => s_isCheckedRuntime.Value;
+        public static bool IsReleaseRuntime => s_isReleaseRuntime.Value;
+        public static bool IsDebugRuntime => s_isDebugRuntime.Value;
+
+        // For use as needed on tests that time out when run on a Debug runtime.
+        // Not relevant for timeouts on external activities, such as network timeouts.
+        public static int SlowRuntimeTimeoutModifier = (PlatformDetection.IsDebugRuntime ? 5 : 1);
+
         public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
 
 #if NETCOREAPP
@@ -68,7 +80,7 @@ namespace System
 #else
         public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
 #endif
-        
+
         public static bool IsThreadingSupported => !IsBrowser;
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
         public static bool IsSymLinkSupported => !IsiOS && !IstvOS;
@@ -86,9 +98,9 @@ namespace System
         public static bool IsUsingLimitedCultures => !IsNotMobile;
         public static bool IsNotUsingLimitedCultures => IsNotMobile;
 
-        public static bool IsLinqExpressionsBuiltWithIsInterpretingOnly => s_LinqExpressionsBuiltWithIsInterpretingOnly.Value;
+        public static bool IsLinqExpressionsBuiltWithIsInterpretingOnly => s_linqExpressionsBuiltWithIsInterpretingOnly.Value;
         public static bool IsNotLinqExpressionsBuiltWithIsInterpretingOnly => !IsLinqExpressionsBuiltWithIsInterpretingOnly;
-        private static readonly Lazy<bool> s_LinqExpressionsBuiltWithIsInterpretingOnly = new Lazy<bool>(GetLinqExpressionsBuiltWithIsInterpretingOnly);
+        private static readonly Lazy<bool> s_linqExpressionsBuiltWithIsInterpretingOnly = new Lazy<bool>(GetLinqExpressionsBuiltWithIsInterpretingOnly);
         private static bool GetLinqExpressionsBuiltWithIsInterpretingOnly()
         {
             return !(bool)typeof(LambdaExpression).GetMethod("get_CanCompileToIL").Invoke(null, Array.Empty<object>());
@@ -203,7 +215,7 @@ namespace System
                 {
                     return true;
                 }
-                
+
                 return OpenSslVersion.Major == 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2);
             }
 
@@ -465,7 +477,7 @@ namespace System
                 // assume no if positive entry is missing on older Windows
                 // Latest insider builds have TLS 1.3 enabled by default.
                 // The build number is approximation.
-                bool defaultProtocolSupport = IsWindows10Version2004Build19573OrGreater;
+                bool defaultProtocolSupport = IsWindows10Version20348OrGreater;
 
 #if NETFRAMEWORK
                 return false;
@@ -512,6 +524,14 @@ namespace System
 
             var val = Environment.GetEnvironmentVariable(variableName);
             return (val != null && val == "true");
+        }
+
+        private static bool AssemblyConfigurationEquals(string configuration)
+        {
+            AssemblyConfigurationAttribute assemblyConfigurationAttribute = typeof(string).Assembly.GetCustomAttribute<AssemblyConfigurationAttribute>();
+
+            return assemblyConfigurationAttribute != null &&
+                string.Equals(assemblyConfigurationAttribute.Configuration, configuration, StringComparison.InvariantCulture);
         }
     }
 }

@@ -69,10 +69,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> or <paramref name="objectInfo"/> is null.</exception>
         /// <returns>A <see cref="JsonTypeInfo{T}"/> instance representing the class or struct.</returns>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
-        public static JsonTypeInfo<T> CreateObjectInfo<T>(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo) where T : notnull
-            => new JsonTypeInfoInternal<T>(
-                options ?? throw new ArgumentNullException(nameof(options)),
-                objectInfo ?? throw new ArgumentNullException(nameof(objectInfo)));
+        public static JsonTypeInfo<T> CreateObjectInfo<T>(JsonSerializerOptions options!!, JsonObjectInfoValues<T> objectInfo!!) where T : notnull
+            => new JsonTypeInfoInternal<T>(options, objectInfo);
 
         /// <summary>
         /// Creates metadata for a primitive or a type with a custom converter.

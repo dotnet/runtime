@@ -161,13 +161,8 @@ namespace System.Text.Json
         /// for <paramref name="typeToConvert"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode("Getting a converter for a type may require reflection which depends on unreferenced code.")]
-        public JsonConverter GetConverter(Type typeToConvert)
+        public JsonConverter GetConverter(Type typeToConvert!!)
         {
-            if (typeToConvert == null)
-            {
-                throw new ArgumentNullException(nameof(typeToConvert));
-            }
-
             RootBuiltInConverters();
             return GetConverterInternal(typeToConvert);
         }

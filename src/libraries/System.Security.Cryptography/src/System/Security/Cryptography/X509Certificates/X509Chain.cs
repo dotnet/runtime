@@ -57,8 +57,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 _chainPolicy = value;
             }
         }

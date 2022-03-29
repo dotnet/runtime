@@ -6,6 +6,13 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(BuildTargetFramework)' == 'net48'">
+    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
+    <!-- Filter out ProjectReferences which aren't compatible with the above TargetFramework. -->
+    <OmitIncompatibleProjectReferences>true</OmitIncompatibleProjectReferences>
+    <FilterTraversalProjectReferences>true</FilterTraversalProjectReferences>
+  </PropertyGroup>
+
   <ItemGroup>
     <_allRef Include="$(MSBuildThisFileDirectory)*\ref\*.csproj"
              Exclude="@(ProjectExclusions)" />

@@ -1611,12 +1611,12 @@ void LinearScan::buildUpperVectorRestoreRefPosition(Interval* lclVarInterval, Ls
 int LinearScan::ComputeOperandDstCount(GenTree* operand)
 {
     // GT_ARGPLACE is the only non-LIR node that is currently in the trees at this stage, though
-    // note that it is not in the linear order. It seems best to check for !IsLIR() rather than
-    // GT_ARGPLACE directly, since it's that characteristic that makes it irrelevant for this method.
-    if (!operand->IsLIR())
+    // note that it is not in the linear order.
+    if (operand->OperIs(GT_ARGPLACE))
     {
         return 0;
     }
+
     if (operand->isContained())
     {
         int dstCount = 0;

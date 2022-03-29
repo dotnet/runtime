@@ -16,18 +16,8 @@ namespace System.Security.Cryptography.Cose
             : base(protectedHeader, unprotectedHeader, content, signature, protectedHeaderAsBstr) { }
 
         [UnsupportedOSPlatform("browser")]
-        public static byte[] Sign(byte[] content, ECDsa key, HashAlgorithmName hashAlgorithm, bool isDetached = false)
+        public static byte[] Sign(byte[] content!!, ECDsa key!!, HashAlgorithmName hashAlgorithm, bool isDetached = false)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
-
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
             byte[] encodedProtectedHeader = CreateEncodedProtectedHeader(KeyType.ECDsa, hashAlgorithm);
             byte[] toBeSigned = CreateToBeSigned(SigStructureCoxtextSign1, encodedProtectedHeader, content);
             byte[] signature = SignWithECDsa(key, toBeSigned, hashAlgorithm);
@@ -35,18 +25,8 @@ namespace System.Security.Cryptography.Cose
         }
 
         [UnsupportedOSPlatform("browser")]
-        public static byte[] Sign(byte[] content, RSA key, HashAlgorithmName hashAlgorithm, bool isDetached = false)
+        public static byte[] Sign(byte[] content!!, RSA key!!, HashAlgorithmName hashAlgorithm, bool isDetached = false)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
-
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
             byte[] encodedProtectedHeader = CreateEncodedProtectedHeader(KeyType.RSA, hashAlgorithm);
             byte[] toBeSigned = CreateToBeSigned(SigStructureCoxtextSign1, encodedProtectedHeader, content);
             byte[] signature = SignWithRSA(key, toBeSigned, hashAlgorithm);
@@ -54,28 +34,8 @@ namespace System.Security.Cryptography.Cose
         }
 
         [UnsupportedOSPlatform("browser")]
-        public static byte[] Sign(byte[] content, CoseHeaderMap protectedHeaders, CoseHeaderMap unprotectedHeaders, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, bool isDetached = false)
+        public static byte[] Sign(byte[] content!!, CoseHeaderMap protectedHeaders!!, CoseHeaderMap unprotectedHeaders!!, AsymmetricAlgorithm key!!, HashAlgorithmName hashAlgorithm, bool isDetached = false)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
-
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
-            if (protectedHeaders == null)
-            {
-                throw new ArgumentNullException(nameof(protectedHeaders));
-            }
-
-            if (unprotectedHeaders == null)
-            {
-                throw new ArgumentNullException(nameof(unprotectedHeaders));
-            }
-
             KeyType keyType = key switch
             {
                 ECDsa => KeyType.ECDsa,

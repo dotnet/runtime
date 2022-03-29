@@ -1075,10 +1075,8 @@ namespace System.Xml
         private byte[]? _bytes;
 
 
-        public void SetOutput(Stream stream, IXmlDictionary? dictionary, XmlBinaryWriterSession? session, bool ownsStream)
+        public void SetOutput(Stream stream!!, IXmlDictionary? dictionary, XmlBinaryWriterSession? session, bool ownsStream)
         {
-            if (stream == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(stream)));
             if (_writer == null)
                 _writer = new XmlBinaryNodeWriter();
             _writer.SetOutput(stream, dictionary, session, ownsStream);
@@ -1209,10 +1207,8 @@ namespace System.Xml
             WriteEndArray();
         }
 
-        private void CheckArray(Array array, int offset, int count)
+        private void CheckArray(Array array!!, int offset, int count)
         {
-            if (array == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(array)));
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
             if (offset > array.Length)

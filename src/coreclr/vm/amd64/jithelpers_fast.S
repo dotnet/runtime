@@ -453,7 +453,7 @@ LEAF_ENTRY JIT_ValidateIndirectCall, _TEST
 LEAF_END JIT_ValidateIndirectCall, _TEST
 
 LEAF_ENTRY JIT_DispatchIndirectCall, _TEST
-        mov r10, 0xCDCDCDCDCDCDCDCD // The real helper clobbers these registers, so clobber them too in the fake helper
-        mov r11, 0xCDCDCDCDCDCDCDCD
+        movabs r10, 0xCDCDCDCDCDCDCDCD // The real helper clobbers these registers, so clobber them too in the fake helper
+        movabs r11, 0xCDCDCDCDCDCDCDCD
         rex64 jmp rax
 LEAF_END JIT_DispatchIndirectCall, _TEST

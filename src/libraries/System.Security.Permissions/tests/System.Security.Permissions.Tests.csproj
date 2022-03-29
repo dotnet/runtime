@@ -20,7 +20,7 @@
     <Compile Include="SecurityElementTests.cs" />
     <Compile Include="TrustManagerContextTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup>
     <Compile Include="XamlLoadPermissionTests.cs"/>
   </ItemGroup>
   <ItemGroup>

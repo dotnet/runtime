@@ -198,7 +198,7 @@ namespace System
                 if (length == 0)
                     return Empty;
 
-                throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.Throw(nameof(value));
             }
 
             byte* pStart = (byte*)(value + startIndex);
@@ -258,7 +258,7 @@ namespace System
                 if (length == 0)
                     return Empty;
 
-                throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.Throw(nameof(value));
             }
 
             byte* pStart = (byte*)(value + startIndex);

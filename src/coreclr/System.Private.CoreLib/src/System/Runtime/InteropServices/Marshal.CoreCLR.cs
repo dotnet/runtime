@@ -283,11 +283,9 @@ namespace System.Runtime.InteropServices
             GetTypeFromCLSID(clsid, server, ObjectHandleOnStack.Create(ref type));
             return type;
         }
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we annotate blittable types used in interop in CoreLib (like Guid)
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetTypeFromCLSID", CharSet = CharSet.Unicode)]
-        private static extern void GetTypeFromCLSID(in Guid clsid, string? server, ObjectHandleOnStack retType);
-#pragma warning restore DLLIMPORTGENANALYZER015
+
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetTypeFromCLSID", CharSet = CharSet.Unicode)]
+        private static partial void GetTypeFromCLSID(in Guid clsid, string? server, ObjectHandleOnStack retType);
 
         /// <summary>
         /// Return the IUnknown* for an Object if the current context is the one
@@ -698,32 +696,48 @@ namespace System.Runtime.InteropServices
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
 
-            CreateBindCtx(0, out IBindCtx bindctx);
+            ThrowExceptionForHR(CreateBindCtx(0, out IntPtr bindctx));
 
-            MkParseDisplayName(bindctx, monikerName, out _, out IMoniker pmoniker);
-            BindMoniker(pmoniker, 0, ref IID_IUnknown, out object obj);
-
-            return obj;
+            try
+            {
+                ThrowExceptionForHR(MkParseDisplayName(bindctx, monikerName, out _, out IntPtr pmoniker));
+                try
+                {
+                    ThrowExceptionForHR(BindMoniker(pmoniker, 0, ref IID_IUnknown, out IntPtr ptr));
+                    try
+                    {
+                        return GetObjectForIUnknown(ptr);
+                    }
+                    finally
+                    {
+                        Release(ptr);
+                    }
+                }
+                finally
+                {
+                    Release(pmoniker);
+                }
+            }
+            finally
+            {
+                Release(bindctx);
+            }
         }
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // These methods use built-in COM interop, which is not supported by the source generator.
-
         // Revist after https://github.com/mono/linker/issues/1989 is fixed
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:UnrecognizedReflectionPattern",
             Justification = "The calling method is annotated with RequiresUnreferencedCode")]
-        [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
-        private static extern void CreateBindCtx(uint reserved, out IBindCtx ppbc);
+        [GeneratedDllImport(Interop.Libraries.Ole32)]
+        private static partial int CreateBindCtx(uint reserved, out IntPtr ppbc);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:UnrecognizedReflectionPattern",
             Justification = "The calling method is annotated with RequiresUnreferencedCode")]
-        [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
-        private static extern void MkParseDisplayName(IBindCtx pbc, [MarshalAs(UnmanagedType.LPWStr)] string szUserName, out uint pchEaten, out IMoniker ppmk);
+        [GeneratedDllImport(Interop.Libraries.Ole32)]
+        private static partial int MkParseDisplayName(IntPtr pbc, [MarshalAs(UnmanagedType.LPWStr)] string szUserName, out uint pchEaten, out IntPtr ppmk);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:UnrecognizedReflectionPattern",
             Justification = "The calling method is annotated with RequiresUnreferencedCode")]
-        [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
-        private static extern void BindMoniker(IMoniker pmk, uint grfOpt, ref Guid iidResult, [MarshalAs(UnmanagedType.Interface)] out object ppvResult);
-#pragma warning restore DLLIMPORTGENANALYZER015
+        [GeneratedDllImport(Interop.Libraries.Ole32)]
+        private static partial int BindMoniker(IntPtr pmk, uint grfOpt, ref Guid iidResult, out IntPtr ppvResult);
 
         [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.InternalCall)]

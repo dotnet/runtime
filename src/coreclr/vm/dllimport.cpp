@@ -3349,6 +3349,7 @@ BOOL NDirect::MarshalingRequired(
                 // any types that contain gc pointers, but all "unmanaged" types are treated as blittable
                 // as long as they aren't auto-layout and don't have any auto-layout fields.
                 if (!runtimeMarshallingEnabled &&
+                    !hndArgType.IsEnum() &&
                     (hndArgType.GetMethodTable()->ContainsPointers()
                         || hndArgType.GetMethodTable()->IsAutoLayoutOrHasAutoLayoutField()))
                 {

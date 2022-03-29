@@ -4,6 +4,13 @@
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(BuildTargetFramework)' == 'net48'">
+    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
+    <!-- Filter out ProjectReferences which aren't compatible with the above TargetFramework. -->
+    <OmitIncompatibleProjectReferences>true</OmitIncompatibleProjectReferences>
+    <FilterTraversalProjectReferences>true</FilterTraversalProjectReferences>
+  </PropertyGroup>
+
   <ItemGroup>
     <_allSrc Include="$(MSBuildThisFileDirectory)*\src\*.*proj"
              Exclude="@(ProjectExclusions);
@@ -33,7 +40,7 @@
     <NetCoreAppProject Include="$(CoreLibProject);
                                 @(_allSrc)"
                        Exclude="@(NonNetCoreAppProject)" />
-    <ManualShimProject Include="shims\manual\*.csproj" />
+    <ManualShimProject Include="shims\manual\*.csproj" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''" />
     <ApiCompatProject Include="shims\ApiCompat.proj"
                       Condition="'$(DotNetBuildFromSource)' != 'true' and
                                  ('$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == '') and

@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
-using Microsoft.CodeAnalysis;
 using Xunit;
 
 using static Microsoft.Interop.Analyzers.ConvertToGeneratedDllImportAnalyzer;
@@ -96,30 +95,6 @@ unsafe partial class Test
                 VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
                     .WithLocation(2)
                     .WithArguments("Method_Ref"));
-        }
-
-        [ConditionalFact]
-        public async Task PreserveSigFalse_ReportsDiagnostic()
-        {
-            string source = @$"
-using System.Runtime.InteropServices;
-partial class Test
-{{
-    [DllImport(""DoesNotExist"", PreserveSig = false)]
-    public static extern void {{|#0:Method1|}}();
-
-    [DllImport(""DoesNotExist"", PreserveSig = true)]
-    public static extern void {{|#1:Method2|}}();
-}}
-";
-            await VerifyCS.VerifyAnalyzerAsync(
-                source,
-                VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
-                    .WithLocation(0)
-                    .WithArguments("Method1"),
-                VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
-                    .WithLocation(1)
-                    .WithArguments("Method2"));
         }
 
         [ConditionalFact]

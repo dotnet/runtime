@@ -247,7 +247,7 @@
     <Compile Include="System\Type\TypeTests.Get.cs" />
     <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs" Link="Common\System\RandomDataGenerator.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="System\ExitCodeTests.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureGenericMath)' == 'true'">

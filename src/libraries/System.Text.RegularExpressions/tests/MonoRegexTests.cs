@@ -60,12 +60,8 @@ namespace System.Text.RegularExpressions.Tests
                     string expected = allEngineCases[i].Expected;
                     if (RegexHelpers.IsNonBacktracking(engine))
                     {
-                        // NonBacktracking doesn't support captures other than top-level. Remove the rest from the expected results.
-                        int j = expected.IndexOf(')');
-                        if (j >= 0)
-                        {
-                            expected = expected.Substring(0, j + 1);
-                        }
+                        // NonBacktracking doesn't support multiple captures. Remove everything but the last from the expected results.
+                        expected = Regex.Replace(expected, "(\\([0-9]+,[0-9]+\\))+", "$1");
                     }
 
                     (string Pattern, RegexOptions Options, string Input, string Expected) testCase = allEngineCases[i];

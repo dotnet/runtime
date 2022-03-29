@@ -12,7 +12,7 @@
 
   <PropertyGroup>
     <IsRuntimeAssembly>true</IsRuntimeAssembly>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>

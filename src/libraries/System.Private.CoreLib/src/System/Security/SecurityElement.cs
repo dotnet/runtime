@@ -58,8 +58,7 @@ namespace System.Security
             get => _tag;
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(Tag));
+                ArgumentNullException.ThrowIfNull(value, nameof(Tag));
 
                 if (!IsValidTag(value))
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, value));

@@ -1257,8 +1257,29 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         usedDI = impCurStmtDI;
     }
 
-    assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_FIELD, GT_IND, GT_OBJ, GT_CALL, GT_MKREFANY, GT_RET_EXPR, GT_COMMA) ||
-           (src->TypeGet() != TYP_STRUCT && src->OperIsSimdOrHWintrinsic()));
+#ifdef DEBUG
+#ifdef FEATURE_HW_INTRINSICS
+    if (src->OperIs(GT_HWINTRINSIC))
+    {
+        const GenTreeHWIntrinsic* intrinsic = src->AsHWIntrinsic();
+
+        if (HWIntrinsicInfo::IsMultiReg(intrinsic->GetHWIntrinsicId()))
+        {
+            assert(src->TypeGet() == TYP_STRUCT);
+        }
+        else
+        {
+            assert(varTypeIsSIMD(src));
+        }
+    }
+    else
+#endif // FEATURE_HW_INTRINSICS
+    {
+        assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_FIELD, GT_IND, GT_OBJ, GT_CALL, GT_MKREFANY, GT_RET_EXPR,
+                           GT_COMMA) ||
+               ((src->TypeGet() != TYP_STRUCT) && src->OperIsSIMD()));
+    }
+#endif // DEBUG
 
     var_types asgType = src->TypeGet();
 
@@ -1827,7 +1848,9 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
 #endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-            assert(varTypeIsSIMD(structVal) && (structVal->gtType == structType));
+            assert(structVal->gtType == structType);
+            assert(varTypeIsSIMD(structVal) ||
+                   HWIntrinsicInfo::IsMultiReg(structVal->AsHWIntrinsic()->GetHWIntrinsicId()));
             break;
 #endif
 
@@ -4424,6 +4447,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Sqrt:
             case NI_System_Math_Tan:
             case NI_System_Math_Tanh:
+            case NI_System_Math_Truncate:
             {
                 retNode = impMathIntrinsic(method, sig, callType, ni, tailCall);
                 break;
@@ -5069,6 +5093,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "Tanh") == 0)
             {
                 result = NI_System_Math_Tanh;
+            }
+            else if (strcmp(methodName, "Truncate") == 0)
+            {
+                result = NI_System_Math_Truncate;
             }
         }
         else if (strcmp(className, "GC") == 0)
@@ -20425,7 +20453,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
     switch (intrinsicName)
     {
         // AMD64/x86 has SSE2 instructions to directly compute sqrt/abs and SSE4.1
-        // instructions to directly compute round/ceiling/floor.
+        // instructions to directly compute round/ceiling/floor/truncate.
 
         case NI_System_Math_Abs:
         case NI_System_Math_Sqrt:
@@ -20433,6 +20461,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
 
         case NI_System_Math_Ceiling:
         case NI_System_Math_Floor:
+        case NI_System_Math_Truncate:
         case NI_System_Math_Round:
             return compOpportunisticallyDependsOn(InstructionSet_SSE41);
 
@@ -20448,6 +20477,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Abs:
         case NI_System_Math_Ceiling:
         case NI_System_Math_Floor:
+        case NI_System_Math_Truncate:
         case NI_System_Math_Round:
         case NI_System_Math_Sqrt:
             return true;
@@ -20521,6 +20551,7 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Sqrt:
         case NI_System_Math_Tan:
         case NI_System_Math_Tanh:
+        case NI_System_Math_Truncate:
         {
             assert((intrinsicName > NI_SYSTEM_MATH_START) && (intrinsicName < NI_SYSTEM_MATH_END));
             return true;

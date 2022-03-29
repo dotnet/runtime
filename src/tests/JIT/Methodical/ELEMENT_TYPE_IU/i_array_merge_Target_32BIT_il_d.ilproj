@@ -7,6 +7,6 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="i_array_merge-i386.il" />
+    <Compile Include="i_array_merge_Target_32BIT.il" />
   </ItemGroup>
 </Project>

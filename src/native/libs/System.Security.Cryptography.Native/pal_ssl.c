@@ -411,6 +411,27 @@ static int verify_callback(int preverify_ok, X509_STORE_CTX* store)
 
 int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
 {
+#ifdef NEED_OPENSSL_1_1
+    // TLS1.3 uses different API for renegotiation/delayed client cert request
+    #ifndef TLS1_3_VERSION
+    #define TLS1_3_VERSION 0x0304
+    #endif
+    if (SSL_version(ssl) == TLS1_3_VERSION)
+    {
+        // this is just a sanity check, if TLS 1.3 was negotiated, then the function must be available
+        if (API_EXISTS(SSL_verify_client_post_handshake))
+        {
+            // Post-handshake auth reqires SSL_VERIFY_PEER to be set
+            CryptoNative_SslSetVerifyPeer(ssl);
+            return SSL_verify_client_post_handshake(ssl);
+        }
+        else
+        {
+            return 0;
+        }
+    }
+#endif
+
     // The openssl context is destroyed so we can't use ticket or session resumption.
     SSL_set_options(ssl, SSL_OP_NO_TICKET | SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
 
@@ -731,6 +752,19 @@ static int client_certificate_cb(SSL *ssl, void* state)
 void CryptoNative_SslSetClientCertCallback(SSL* ssl, int set)
 {
     SSL_set_cert_cb(ssl, set ? client_certificate_cb : NULL, NULL);
+}
+
+void CryptoNative_SslSetPostHandshakeAuth(SSL* ssl, int32_t val)
+{
+#ifdef NEED_OPENSSL_1_1
+    if (API_EXISTS(SSL_set_post_handshake_auth))
+    {
+        SSL_set_post_handshake_auth(ssl, val);
+    }
+#else
+    (void)ssl;
+    (void)val;
+#endif
 }
 
 int32_t CryptoNative_SslSetData(SSL* ssl, void *ptr)

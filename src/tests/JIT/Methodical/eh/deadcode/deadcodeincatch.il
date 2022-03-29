@@ -19,15 +19,7 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-// MVID: {3B8B6D1B-A317-4591-BD66-1D1000E3767F}
-.imagebase 0x00400000
-.subsystem 0x00000003
-.file alignment 512
-.corflags 0x00000001
-// Image base: 0x03010000
-//
-// ============== CLASS STRUCTURE DECLARATION ==================
-//
+
 .namespace hello
 {
   .class private auto ansi beforefieldinit Class1
@@ -60,30 +52,7 @@
             stsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
             ret
     } // end of method Class1::.cctor
-    
-  } // end of class Class1
 
-} // end of namespace hello
-
-
-// =============================================================
-
-
-// =============== GLOBAL FIELDS AND METHODS ===================
-
-
-// =============================================================
-
-
-// =============== CLASS MEMBERS DECLARATION ===================
-//   note that class flags, 'extends' and 'implements' clauses
-//          are provided here for information only
-
-.namespace hello
-{
-  .class private auto ansi beforefieldinit Class1
-         extends [mscorlib]System.Object
-  {
     .method public hidebysig static void 
             inTry() cil managed
     {
@@ -212,11 +181,4 @@
     } // end of method Class1::.ctor
 
   } // end of class Class1
-
-
-// =============================================================
-
 } // end of namespace hello
-
-//*********** DISASSEMBLY COMPLETE ***********************
-// WARNING: Created Win32 resource file deadcodeincatch.res

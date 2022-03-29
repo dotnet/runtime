@@ -223,7 +223,7 @@ namespace System.Collections
 
         // Note: this constructor is a bogus constructor that does nothing
         // and is for use only with SyncHashtable.
-        internal Hashtable(bool trash)
+        internal Hashtable(bool _)
         {
         }
 
@@ -342,23 +342,17 @@ namespace System.Collections
         }
 
         [Obsolete("This constructor has been deprecated. Use Hashtable(IDictionary, float, IEqualityComparer) instead.")]
-        public Hashtable(IDictionary d, float loadFactor, IHashCodeProvider? hcp, IComparer? comparer)
-            : this(d != null ? d.Count : 0, loadFactor, hcp, comparer)
+        public Hashtable(IDictionary d!!, float loadFactor, IHashCodeProvider? hcp, IComparer? comparer)
+            : this(d.Count, loadFactor, hcp, comparer)
         {
-            if (d == null)
-                throw new ArgumentNullException(nameof(d), SR.ArgumentNull_Dictionary);
-
             IDictionaryEnumerator e = d.GetEnumerator();
             while (e.MoveNext())
                 Add(e.Key, e.Value);
         }
 
-        public Hashtable(IDictionary d, float loadFactor, IEqualityComparer? equalityComparer)
-            : this(d != null ? d.Count : 0, loadFactor, equalityComparer)
+        public Hashtable(IDictionary d!!, float loadFactor, IEqualityComparer? equalityComparer)
+            : this(d.Count, loadFactor, equalityComparer)
         {
-            if (d == null)
-                throw new ArgumentNullException(nameof(d), SR.ArgumentNull_Dictionary);
-
             IDictionaryEnumerator e = d.GetEnumerator();
             while (e.MoveNext())
                 Add(e.Key, e.Value);
@@ -565,10 +559,8 @@ namespace System.Collections
 
         // Copies the values in this hash table to an array at
         // a given index.  Note that this only copies values, and not keys.
-        public virtual void CopyTo(Array array, int arrayIndex)
+        public virtual void CopyTo(Array array!!, int arrayIndex)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Array);
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             if (arrayIndex < 0)

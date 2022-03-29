@@ -122,8 +122,8 @@ namespace System.Text.RegularExpressions.Tests
                     yield return new object[] { engine, options, "aba|bab", "baaabbbaba", "(6,9)" };
                     yield return new object[] { engine, options, "(aa|aaa)*|(a|aaaaa)", "aa", "(0,2)(0,2)" };
                     yield return new object[] { engine, options, "(a.|.a.)*|(a|.a...)", "aa", "(0,2)(0,2)" };
-                    yield return new object[] { engine, options, "ab|a", "xabc", "(1,3)", "(1,2)" };
-                    yield return new object[] { engine, options, "ab|a", "xxabc", "(2,4)", "(2,3)" };
+                    yield return new object[] { engine, options, "ab|a", "xabc", "(1,3)" };
+                    yield return new object[] { engine, options, "ab|a", "xxabc", "(2,4)" };
                     yield return new object[] { engine, options, "(?i)(Ab|cD)*", "aBcD", "(0,4)(2,4)" };
                     yield return new object[] { engine, options, "[^-]", "--a", "(2,3)" };
                     yield return new object[] { engine, options, "[a-]*", "--a", "(0,3)" };
@@ -289,18 +289,18 @@ namespace System.Text.RegularExpressions.Tests
                     yield return new object[] { engine, options, "X(.?){6,8}Y", "X1234567Y", "(0,9)(8,8)" }; // was "(0,9)(7,8)"
                     yield return new object[] { engine, options, "X(.?){7,8}Y", "X1234567Y", "(0,9)(8,8)" }; // was "(0,9)(7,8)"
                     yield return new object[] { engine, options, "X(.?){8,8}Y", "X1234567Y", "(0,9)(8,8)" };
-                    yield return new object[] { engine, options, "(a|ab|c|bcd){0,}(d*)", "ababcd", "(0,1)(1,1)", "(0,6)" }; // was "(0,6)(3,6)(6,6)"
-                    yield return new object[] { engine, options, "(a|ab|c|bcd){1,}(d*)", "ababcd", "(0,1)(1,1)", "(0,6)" }; // was "(0,6)(3,6)(6,6)"
+                    yield return new object[] { engine, options, "(a|ab|c|bcd){0,}(d*)", "ababcd", "(0,1)(1,1)" }; // was "(0,6)(3,6)(6,6)"
+                    yield return new object[] { engine, options, "(a|ab|c|bcd){1,}(d*)", "ababcd", "(0,1)(1,1)" }; // was "(0,6)(3,6)(6,6)"
                     yield return new object[] { engine, options, "(a|ab|c|bcd){2,}(d*)", "ababcd", "(0,6)(3,6)(6,6)" };
                     yield return new object[] { engine, options, "(a|ab|c|bcd){3,}(d*)", "ababcd", "(0,6)(3,6)(6,6)" };
                     yield return new object[] { engine, options, "(a|ab|c|bcd){4,}(d*)", "ababcd", "NOMATCH" };
-                    yield return new object[] { engine, options, "(a|ab|c|bcd){0,10}(d*)", "ababcd", "(0,1)(1,1)", "(0,6)" }; // was "(0,6)(3,6)(6,6)"
-                    yield return new object[] { engine, options, "(a|ab|c|bcd){1,10}(d*)", "ababcd", "(0,1)(1,1)", "(0,6)" }; // was "(0,6)(3,6)(6,6)"
+                    yield return new object[] { engine, options, "(a|ab|c|bcd){0,10}(d*)", "ababcd", "(0,1)(1,1)" }; // was "(0,6)(3,6)(6,6)"
+                    yield return new object[] { engine, options, "(a|ab|c|bcd){1,10}(d*)", "ababcd", "(0,1)(1,1)" }; // was "(0,6)(3,6)(6,6)"
                     yield return new object[] { engine, options, "(a|ab|c|bcd){2,10}(d*)", "ababcd", "(0,6)(3,6)(6,6)" };
                     yield return new object[] { engine, options, "(a|ab|c|bcd){3,10}(d*)", "ababcd", "(0,6)(3,6)(6,6)" };
                     yield return new object[] { engine, options, "(a|ab|c|bcd){4,10}(d*)", "ababcd", "NOMATCH" };
-                    yield return new object[] { engine, options, "(a|ab|c|bcd)*(d*)", "ababcd", "(0,1)(1,1)", "(0,6)" }; // was "(0,6)(3,6)(6,6)"
-                    yield return new object[] { engine, options, "(a|ab|c|bcd)+(d*)", "ababcd", "(0,1)(1,1)", "(0,6)" }; // was "(0,6)(3,6)(6,6)"
+                    yield return new object[] { engine, options, "(a|ab|c|bcd)*(d*)", "ababcd", "(0,1)(1,1)" }; // was "(0,6)(3,6)(6,6)"
+                    yield return new object[] { engine, options, "(a|ab|c|bcd)+(d*)", "ababcd", "(0,1)(1,1)" }; // was "(0,6)(3,6)(6,6)"
                     yield return new object[] { engine, options, "(ab|a|c|bcd){0,}(d*)", "ababcd", "(0,6)(4,5)(5,6)" }; // was "(0,6)(3,6)(6,6)"
                     yield return new object[] { engine, options, "(ab|a|c|bcd){1,}(d*)", "ababcd", "(0,6)(4,5)(5,6)" }; // was "(0,6)(3,6)(6,6)"
                     yield return new object[] { engine, options, "(ab|a|c|bcd){2,}(d*)", "ababcd", "(0,6)(4,5)(5,6)" }; // was "(0,6)(3,6)(6,6)"
@@ -358,11 +358,11 @@ namespace System.Text.RegularExpressions.Tests
                     yield return new object[] { engine, options, "(a)*?", "aaa", "(0,0)" };
                     yield return new object[] { engine, options, "(a*?)*?", "aaa", "(0,0)" };
                     yield return new object[] { engine, options, "(a*)*(x)", "x", "(0,1)(0,0)(0,1)" };
-                    yield return new object[] { engine, options, "(a*)*(x)(\\1)", "x", "(0,1)(0,0)(0,1)(1,1)", "NONBACKTRACKINGINCOMPATIBLE" };
-                    yield return new object[] { engine, options, "(a*)*(x)(\\1)", "ax", "(0,2)(1,1)(1,2)(2,2)", "NONBACKTRACKINGINCOMPATIBLE" };
-                    yield return new object[] { engine, options, "(a*)*(x)(\\1)", "axa", "(0,2)(1,1)(1,2)(2,2)", "NONBACKTRACKINGINCOMPATIBLE" }; // was "(0,3)(0,1)(1,2)(2,3)"
-                    yield return new object[] { engine, options, "(a*)*(x)(\\1)(x)", "axax", "(0,4)(0,1)(1,2)(2,3)(3,4)", "NONBACKTRACKINGINCOMPATIBLE" };
-                    yield return new object[] { engine, options, "(a*)*(x)(\\1)(x)", "axxa", "(0,3)(1,1)(1,2)(2,2)(2,3)", "NONBACKTRACKINGINCOMPATIBLE" };
+                    yield return new object[] { engine, options, "(a*)*(x)(\\1)", "x", "(0,1)(0,0)(0,1)(1,1)", true };
+                    yield return new object[] { engine, options, "(a*)*(x)(\\1)", "ax", "(0,2)(1,1)(1,2)(2,2)", true };
+                    yield return new object[] { engine, options, "(a*)*(x)(\\1)", "axa", "(0,2)(1,1)(1,2)(2,2)", true }; // was "(0,3)(0,1)(1,2)(2,3)"
+                    yield return new object[] { engine, options, "(a*)*(x)(\\1)(x)", "axax", "(0,4)(0,1)(1,2)(2,3)(3,4)", true };
+                    yield return new object[] { engine, options, "(a*)*(x)(\\1)(x)", "axxa", "(0,3)(1,1)(1,2)(2,2)(2,3)", true };
                     yield return new object[] { engine, options, "(a*)*(x)", "ax", "(0,2)(1,1)(1,2)" };
                     yield return new object[] { engine, options, "(a*)*(x)", "axa", "(0,2)(1,1)(1,2)" }; // was "(0,2)(0,1)(1,2)"
                     yield return new object[] { engine, options, "(a*)+(x)", "x", "(0,1)(0,0)(0,1)" };
@@ -377,17 +377,12 @@ namespace System.Text.RegularExpressions.Tests
 
         [Theory]
         [MemberData(nameof(Inputs))]
-        public async Task Test(RegexEngine engine, RegexOptions options, string pattern, string input, string captures, string nonBacktrackingCaptures = null)
+        public async Task Test(RegexEngine engine, RegexOptions options, string pattern, string input, string expected, bool skipNonBacktracking = false)
         {
             if (input == "NULL")
             {
                 input = "";
             }
-
-            bool nonBacktracking = engine == RegexEngine.NonBacktracking;
-            string expected = nonBacktracking && nonBacktrackingCaptures != null ?
-                nonBacktrackingCaptures : // nonBacktrackingCaptures value overrides the expected result in NonBacktracking mode
-                captures;
 
             if (expected == "BADBR")
             {
@@ -395,7 +390,7 @@ namespace System.Text.RegularExpressions.Tests
                 return;
             }
 
-            if (nonBacktracking && nonBacktrackingCaptures == "NONBACKTRACKINGINCOMPATIBLE")
+            if (engine == RegexEngine.NonBacktracking && skipNonBacktracking)
             {
                 // In particular: backreferences are not supported in NonBacktracking mode
                 await Assert.ThrowsAnyAsync<NotSupportedException>(() => RegexHelpers.GetRegexAsync(engine, pattern, options));
@@ -424,9 +419,8 @@ namespace System.Text.RegularExpressions.Tests
                 .Cast<Group>()
                 .Select(g => (start: g.Index, end: g.Index + g.Length)));
 
-            // NonBacktracking mode only provides the top-level match.
             // The .NET implementation sometimes has extra captures beyond what the original data specifies, so we assert a subset.
-            if (nonBacktracking ? !actualSet.IsSubsetOf(expectedSet) : !expectedSet.IsSubsetOf(actualSet))
+            if (!expectedSet.IsSubsetOf(actualSet))
             {
                 throw new Xunit.Sdk.XunitException($"Actual: {string.Join(", ", actualSet)}{Environment.NewLine}Expected: {string.Join(", ", expected)}");
             }

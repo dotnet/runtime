@@ -78,20 +78,19 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)Interop\Windows\WinInet\Interop.wininet_errors.cs"
              Link="Common\Interop\Windows\WinInet\Interop.wininet_errors.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Windows.cs"
              Link="Common\System\Net\ContextAwareResult.Windows.cs" />
     <Compile Include="System\Net\WebExceptionPal.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Unix.cs"
              Link="Common\System\Net\ContextAwareResult.Unix.cs" />
     <Compile Include="System\Net\WebExceptionPal.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
@@ -110,6 +109,7 @@
     <Reference Include="System.Security.Claims" />
     <Reference Include="System.Security.Cryptography" />
     <Reference Include="System.Security.Principal" />
+    <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>

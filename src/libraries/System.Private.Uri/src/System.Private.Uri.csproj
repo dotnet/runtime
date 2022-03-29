@@ -37,10 +37,10 @@
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="System\ValueStringBuilderExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\Uri.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsAnyOS)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
     <Compile Include="System\Uri.Unix.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -43578,7 +43578,11 @@ Object * GCHeap::NextObj (Object * object)
 #else //MULTIPLE_HEAPS
     gc_heap* hp = 0;
 #endif //MULTIPLE_HEAPS
+#ifdef USE_REGIONS
+    unsigned int g = heap_segment_gen_num (hs);
+#else
     unsigned int g = hp->object_gennum ((uint8_t*)object);
+#endif
     if ((g == 0) && hp->settings.demotion)
         return NULL;//could be racing with another core allocating.
     int align_const = get_alignment_constant (!large_object_p);

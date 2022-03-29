@@ -93,13 +93,10 @@ namespace System.Reflection.TypeLoading
             return modules.ToArray();
         }
 
-        public sealed override Module LoadModule(string moduleName, byte[]? rawModule, byte[]? rawSymbolStore)
+#pragma warning disable CS8995 // Nullable type is null-checked and will throw if null.
+        public sealed override Module LoadModule(string moduleName!!, byte[]? rawModule!!, byte[]? rawSymbolStore)
+#pragma warning restore CS8995
         {
-            if (moduleName == null)
-                throw new ArgumentNullException(nameof(moduleName));
-            if (rawModule == null)
-                throw new ArgumentNullException(nameof(rawModule));
-
             if (!TryGetAssemblyFileInfo(moduleName, includeManifestModule: false, out AssemblyFileInfo afi))
                 throw new ArgumentException(SR.Format(SR.SpecifiedFileNameInvalid, moduleName)); // Name not in manifest.
 

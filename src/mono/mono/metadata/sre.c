@@ -2406,7 +2406,7 @@ mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly,
 		MonoObject *prop;
 
 		for (i = 0; i < mono_array_length_internal (properties); ++i) {
-			MonoType *ptype;
+			MonoType *ptype = NULL;
 			char *pname;
 
 			prop = (MonoObject *)mono_array_get_internal (properties, gpointer, i);
@@ -2430,7 +2430,7 @@ mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly,
 		MonoObject *field;
 
 		for (i = 0; i < mono_array_length_internal (fields); ++i) {
-			MonoType *ftype;
+			MonoType *ftype = NULL;
 			char *fname;
 
 			field = (MonoObject *)mono_array_get_internal (fields, gpointer, i);

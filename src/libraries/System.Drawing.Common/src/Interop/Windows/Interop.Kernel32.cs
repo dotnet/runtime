@@ -3,6 +3,9 @@
 
 using System;
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.GeneratedMarshalling;
+#endif
 
 internal static partial class Interop
 {
@@ -19,7 +22,15 @@ internal static partial class Interop
             return IntGlobalAlloc(uFlags, new UIntPtr(dwBytes));
         }
 
-        [DllImport(Libraries.Gdi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Auto)]
-        internal static extern IntPtr SelectObject(HandleRef hdc, HandleRef obj);
+        [GeneratedDllImport(Libraries.Gdi32, CharSet = CharSet.Auto, ExactSpelling = true, SetLastError = true)]
+        internal static partial IntPtr SelectObject(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hdc,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef obj);
     }
 }

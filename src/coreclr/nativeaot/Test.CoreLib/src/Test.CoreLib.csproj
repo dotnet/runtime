@@ -3,6 +3,11 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <!--
+      DLLIMPORTGEN003: DllImportGenerator Target Framework Not Supported.
+     -->
+    <NoWarn>$(NoWarn);DLLIMPORTGEN003</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <DefineConstants>FEATURE_GC_STRESS;$(DefineConstants)</DefineConstants>
@@ -183,6 +188,9 @@
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\LayoutKind.cs">
       <Link>System\Runtime\InteropServices\LayoutKind.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\UnmanagedCallConvAttribute.cs">
+      <Link>System\Runtime\InteropServices\UnmanagedCallConvAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\UnmanagedCallersOnlyAttribute.cs">
       <Link>System\Runtime\InteropServices\UnmanagedCallersOnlyAttribute.cs</Link>

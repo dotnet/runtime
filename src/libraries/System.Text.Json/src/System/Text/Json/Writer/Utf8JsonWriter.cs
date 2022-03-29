@@ -704,8 +704,8 @@ namespace System.Text.Json
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000
         /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
-        public void WriteStartArray(string propertyName)
-            => WriteStartArray((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan());
+        public void WriteStartArray(string propertyName!!)
+            => WriteStartArray(propertyName.AsSpan());
 
         /// <summary>
         /// Writes the beginning of a JSON object with a property name as the key.
@@ -724,8 +724,8 @@ namespace System.Text.Json
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000
         /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
-        public void WriteStartObject(string propertyName)
-            => WriteStartObject((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan());
+        public void WriteStartObject(string propertyName!!)
+            => WriteStartObject(propertyName.AsSpan());
 
         /// <summary>
         /// Writes the beginning of a JSON array with a property name as the key.

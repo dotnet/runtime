@@ -219,4 +219,7 @@
   <data name="ConstantAndElementCountInfoDisallowed" xml:space="preserve">
     <value>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionLevel'</value>
   </data>
+  <data name="RuntimeMarshallingMustBeDisabled" xml:space="preserve">
+    <value>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</value>
+  </data>
 </root>

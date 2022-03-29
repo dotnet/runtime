@@ -39,7 +39,11 @@ namespace System.Net.Http
         public static IWebProxy DefaultProxy
         {
             get => LazyInitializer.EnsureInitialized(ref s_defaultProxy, () => SystemProxyInfo.Proxy);
-            set => s_defaultProxy = value ?? throw new ArgumentNullException(nameof(value));
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                s_defaultProxy = value;
+            }
         }
 
         public HttpRequestHeaders DefaultRequestHeaders =>
@@ -51,7 +55,8 @@ namespace System.Net.Http
             set
             {
                 CheckDisposedOrStarted();
-                _defaultRequestVersion = value ?? throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
+                _defaultRequestVersion = value;
             }
         }
 

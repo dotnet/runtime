@@ -304,6 +304,15 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Runtime marshalling must be disabled in this project by applying the &apos;System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute&apos; to the assembly to enable marshalling this type..
+        /// </summary>
+        internal static string RuntimeMarshallingMustBeDisabled {
+            get {
+                return ResourceManager.GetString("RuntimeMarshallingMustBeDisabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to An abstract type derived from &apos;SafeHandle&apos; cannot be marshalled by reference. The provided type must be concrete..
         /// </summary>
         internal static string SafeHandleByRefMustBeConcrete {

@@ -3224,6 +3224,10 @@ emit_marshal_scalar_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_stloc (mb, 3);
 		break;
 
+	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
+		mono_mb_emit_stloc (mb, 3);
+		break;
+
 	default:
 		break;
 	}

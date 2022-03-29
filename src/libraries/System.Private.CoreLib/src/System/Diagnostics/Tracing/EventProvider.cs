@@ -135,9 +135,9 @@ namespace System.Diagnostics.Tracing
         /// reason the ETW Register call failed a NotSupported exception will be thrown.
         /// </summary>
         // <SecurityKernel Critical="True" Ring="0">
-        // <CallsSuppressUnmanagedCode Name="Interop.Advapi32.EventRegister(System.Guid&,Microsoft.Win32.Interop.Advapi32+EtwEnableCallback,System.Void*,System.Int64&):System.UInt32" />
+        // <CallsSuppressUnmanagedCode Name="Interop.Advapi32.EventRegister(System.Guid*,Microsoft.Win32.Interop.Advapi32+EtwEnableCallback,System.Void*,System.Int64&):System.UInt32" />
         // <SatisfiesLinkDemand Name="Win32Exception..ctor(System.Int32)" />
-        // <ReferencesCritical Name="Method: EtwEnableCallBack(Guid&, Int32, Byte, Int64, Int64, Void*, Void*):Void" Ring="1" />
+        // <ReferencesCritical Name="Method: EtwEnableCallBack(Guid*, Int32, Byte, Int64, Int64, Void*, Void*):Void" Ring="1" />
         // </SecurityKernel>
         internal unsafe void Register(EventSource eventSource)
         {
@@ -234,7 +234,7 @@ namespace System.Diagnostics.Tracing
         // <UsesUnsafeCode Name="Parameter callbackContext of type: Void*" />
         // </SecurityKernel>
         private unsafe void EtwEnableCallBack(
-                        in System.Guid sourceId,
+                        System.Guid* sourceId,
                         int controlCode,
                         byte setLevel,
                         long anyKeyword,

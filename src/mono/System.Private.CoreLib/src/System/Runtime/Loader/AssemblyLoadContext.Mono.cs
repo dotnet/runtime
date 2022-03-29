@@ -36,6 +36,7 @@ namespace System.Runtime.Loader
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+#pragma warning disable IDE0060
         private Assembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -44,6 +45,7 @@ namespace System.Runtime.Loader
             // TODO: Handle nativeImagePath
             return InternalLoadFile(NativeALC, assemblyPath, ref stackMark);
         }
+#pragma warning restore IDE0060
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         internal Assembly InternalLoad(byte[] arrAssembly, byte[]? arrSymbols)

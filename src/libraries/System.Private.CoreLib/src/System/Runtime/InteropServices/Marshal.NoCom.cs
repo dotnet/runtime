@@ -162,6 +162,7 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
+#pragma warning disable IDE0060
         internal static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError)
         {
             if (throwOnError)
@@ -169,6 +170,7 @@ namespace System.Runtime.InteropServices
 
             return null;
         }
+#pragma warning restore IDE0060
 
         [SupportedOSPlatform("windows")]
         public static string GetTypeInfoName(ITypeInfo typeInfo)
@@ -182,24 +184,9 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static bool IsComObject(object o)
-        {
-            if (o is null)
-            {
-                throw new ArgumentNullException(nameof(o));
-            }
+        public static bool IsComObject(object o!!) => false;
 
-            return false;
-        }
-
-        public static bool IsTypeVisibleFromCom(Type t)
-        {
-            if (t is null)
-            {
-                throw new ArgumentNullException(nameof(t));
-            }
-            return false;
-        }
+        public static bool IsTypeVisibleFromCom(Type t!!) => false;
 
         [SupportedOSPlatform("windows")]
         public static int ReleaseComObject(object o)

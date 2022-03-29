@@ -105,10 +105,22 @@ namespace System.Data
             get { return _remotingFormat; }
             set
             {
-                if (value != SerializationFormat.Binary && value != SerializationFormat.Xml)
+                switch (value)
                 {
-                    throw ExceptionBuilder.InvalidRemotingFormat(value);
+                    case SerializationFormat.Xml:
+                        break;
+
+                    case SerializationFormat.Binary:
+                        if (LocalAppContextSwitches.AllowUnsafeSerializationFormatBinary)
+                        {
+                            break;
+                        }
+                        throw ExceptionBuilder.SerializationFormatBinaryNotSupported();
+
+                    default:
+                        throw ExceptionBuilder.InvalidRemotingFormat(value);
                 }
+
                 _remotingFormat = value;
                 // this property is inherited to DataTable from DataSet.So we set this value to DataTable also
                 for (int i = 0; i < Tables.Count; i++)
@@ -253,6 +265,12 @@ namespace System.Data
                         schemaSerializationMode = (SchemaSerializationMode)e.Value!;
                         break;
                 }
+            }
+
+            if (remotingFormat == SerializationFormat.Binary &&
+                !LocalAppContextSwitches.AllowUnsafeSerializationFormatBinary)
+            {
+                throw ExceptionBuilder.SerializationFormatBinaryNotSupported();
             }
 
             if (schemaSerializationMode == SchemaSerializationMode.ExcludeSchema)

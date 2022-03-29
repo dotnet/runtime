@@ -41,8 +41,8 @@ namespace System
         private readonly byte _k;  // Do not rename (binary serialization)
 
         // Creates a new guid from an array of bytes.
-        public Guid(byte[] b) :
-            this(new ReadOnlySpan<byte>(b ?? throw new ArgumentNullException(nameof(b))))
+        public Guid(byte[] b!!) :
+            this(new ReadOnlySpan<byte>(b))
         {
         }
 
@@ -218,8 +218,8 @@ namespace System
             this = result.ToGuid();
         }
 
-        public static Guid Parse(string input) =>
-            Parse(input != null ? (ReadOnlySpan<char>)input : throw new ArgumentNullException(nameof(input)));
+        public static Guid Parse(string input!!) =>
+            Parse((ReadOnlySpan<char>)input);
 
         public static Guid Parse(ReadOnlySpan<char> input)
         {
@@ -256,10 +256,8 @@ namespace System
             }
         }
 
-        public static Guid ParseExact(string input, string format) =>
-            ParseExact(
-                input != null ? (ReadOnlySpan<char>)input : throw new ArgumentNullException(nameof(input)),
-                format != null ? (ReadOnlySpan<char>)format : throw new ArgumentNullException(nameof(format)));
+        public static Guid ParseExact(string input!!, string format!!) =>
+            ParseExact((ReadOnlySpan<char>)input, (ReadOnlySpan<char>)format);
 
         public static Guid ParseExact(ReadOnlySpan<char> input, ReadOnlySpan<char> format)
         {

@@ -283,46 +283,33 @@ namespace System
         #endregion
 
         #region Public Static Methods
-        public static string? GetName<TEnum>(TEnum value) where TEnum : struct, Enum
-            => GetEnumName((RuntimeType)typeof(TEnum), ToUInt64(value));
+        public static string? GetName<TEnum>(TEnum value) where TEnum : struct, Enum =>
+            GetEnumName((RuntimeType)typeof(TEnum), ToUInt64(value));
 
-        public static string? GetName(Type enumType!!, object value)
-        {
-            return enumType.GetEnumName(value);
-        }
+        public static string? GetName(Type enumType!!, object value) =>
+            enumType.GetEnumName(value);
 
-        public static string[] GetNames<TEnum>() where TEnum : struct, Enum
-            => new ReadOnlySpan<string>(InternalGetNames((RuntimeType)typeof(TEnum))).ToArray();
+        public static string[] GetNames<TEnum>() where TEnum : struct, Enum =>
+            new ReadOnlySpan<string>(InternalGetNames((RuntimeType)typeof(TEnum))).ToArray();
 
-        public static string[] GetNames(Type enumType!!)
-        {
-            return enumType.GetEnumNames();
-        }
+        public static string[] GetNames(Type enumType!!) =>
+            enumType.GetEnumNames();
 
-        internal static string[] InternalGetNames(RuntimeType enumType)
-        {
+        internal static string[] InternalGetNames(RuntimeType enumType) =>
             // Get all of the names
-            return GetEnumInfo(enumType, true).Names;
-        }
+            GetEnumInfo(enumType, true).Names;
 
-        public static Type GetUnderlyingType(Type enumType)
-        {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
-
-            return enumType.GetEnumUnderlyingType();
-        }
+        public static Type GetUnderlyingType(Type enumType!!) =>
+            enumType.GetEnumUnderlyingType();
 
 #if !CORERT
-        public static TEnum[] GetValues<TEnum>() where TEnum : struct, Enum
-            => (TEnum[])GetValues(typeof(TEnum));
+        public static TEnum[] GetValues<TEnum>() where TEnum : struct, Enum =>
+            (TEnum[])GetValues(typeof(TEnum));
 #endif
 
         [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload instead.")]
-        public static Array GetValues(Type enumType!!)
-        {
-            return enumType.GetEnumValues();
-        }
+        public static Array GetValues(Type enumType!!) =>
+            enumType.GetEnumValues();
 
         [Intrinsic]
         public bool HasFlag(Enum flag!!)
@@ -640,7 +627,7 @@ namespace System
             {
                 if (throwOnFailure)
                 {
-                    throw new ArgumentNullException(nameof(value));
+                    ArgumentNullException.Throw(nameof(value));
                 }
                 result = default;
                 return false;
@@ -1475,10 +1462,8 @@ namespace System
 
         #endregion
 
-        private static RuntimeType ValidateRuntimeType(Type enumType)
+        private static RuntimeType ValidateRuntimeType(Type enumType!!)
         {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
             if (!enumType.IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
             if (enumType is not RuntimeType rtType)

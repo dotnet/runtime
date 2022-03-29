@@ -106,8 +106,6 @@ namespace Internal.Cryptography
             return output;
         }
 
-        public abstract bool TransformOneShot(ReadOnlySpan<byte> input, Span<byte> output, out int bytesWritten);
-
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)

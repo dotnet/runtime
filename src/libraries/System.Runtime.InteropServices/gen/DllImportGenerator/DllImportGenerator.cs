@@ -21,9 +21,6 @@ namespace Microsoft.Interop
     [Generator]
     public sealed class DllImportGenerator : IIncrementalGenerator
     {
-        private const string GeneratedDllImport = nameof(GeneratedDllImport);
-        private const string GeneratedDllImportAttribute = nameof(GeneratedDllImportAttribute);
-
         internal sealed record IncrementalStubGenerationContext(
             StubEnvironment Environment,
             DllImportStubContext StubContext,
@@ -351,7 +348,6 @@ namespace Microsoft.Interop
             CharSet charSet = CharSet.Ansi;
             string? entryPoint = null;
             bool exactSpelling = false; // VB has different and unusual default behavior here.
-            bool preserveSig = true;
             bool setLastError = false;
 
             // All other data on attribute is defined as NamedArguments.
@@ -360,7 +356,7 @@ namespace Microsoft.Interop
                 switch (namedArg.Key)
                 {
                     default:
-                        Debug.Fail($"An unknown member was found on {GeneratedDllImport}");
+                        Debug.Fail($"An unknown member was found on {attrData.AttributeClass}");
                         continue;
                     case nameof(GeneratedDllImportData.CharSet):
                         userDefinedValues |= DllImportMember.CharSet;
@@ -373,10 +369,6 @@ namespace Microsoft.Interop
                     case nameof(GeneratedDllImportData.ExactSpelling):
                         userDefinedValues |= DllImportMember.ExactSpelling;
                         exactSpelling = (bool)namedArg.Value.Value!;
-                        break;
-                    case nameof(GeneratedDllImportData.PreserveSig):
-                        userDefinedValues |= DllImportMember.PreserveSig;
-                        preserveSig = (bool)namedArg.Value.Value!;
                         break;
                     case nameof(GeneratedDllImportData.SetLastError):
                         userDefinedValues |= DllImportMember.SetLastError;
@@ -391,7 +383,6 @@ namespace Microsoft.Interop
                 CharSet = charSet,
                 EntryPoint = entryPoint,
                 ExactSpelling = exactSpelling,
-                PreserveSig = preserveSig,
                 SetLastError = setLastError,
             };
         }
@@ -464,7 +455,10 @@ namespace Microsoft.Interop
                 dllImportStub.Environment,
                 dllImportStub.StubContext.ElementTypeInformation,
                 dllImportStub.DllImportData.SetLastError && !options.GenerateForwarders,
-                (elementInfo, ex) => diagnostics.ReportMarshallingNotSupported(originalSyntax, elementInfo, ex.NotSupportedDetails),
+                (elementInfo, ex) =>
+                {
+                    diagnostics.ReportMarshallingNotSupported(originalSyntax, elementInfo, ex.NotSupportedDetails);
+                },
                 dllImportStub.StubContext.GeneratorFactory);
 
             // Check if the generator should produce a forwarder stub - regular DllImport.
@@ -581,12 +575,6 @@ namespace Microsoft.Interop
                 ExpressionSyntax value = CreateBoolExpressionSyntax(targetDllImportData.ExactSpelling);
                 newAttributeArgs.Add(AttributeArgument(name, null, value));
             }
-            if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.PreserveSig))
-            {
-                NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.PreserveSig));
-                ExpressionSyntax value = CreateBoolExpressionSyntax(targetDllImportData.PreserveSig);
-                newAttributeArgs.Add(AttributeArgument(name, null, value));
-            }
             if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.SetLastError))
             {
                 NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.SetLastError));
@@ -626,9 +614,6 @@ namespace Microsoft.Interop
         private static GeneratedDllImportData GetTargetDllImportDataFromStubData(GeneratedDllImportData dllImportData, string originalMethodName, bool forwardAll)
         {
             DllImportMember membersToForward = DllImportMember.All
-                               // https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.preservesig
-                               // If PreserveSig=false (default is true), the P/Invoke stub checks/converts a returned HRESULT to an exception.
-                               & ~DllImportMember.PreserveSig
                                // https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.setlasterror
                                // If SetLastError=true (default is false), the P/Invoke stub gets/caches the last error after invoking the native function.
                                & ~DllImportMember.SetLastError;
@@ -643,7 +628,6 @@ namespace Microsoft.Interop
                 EntryPoint = dllImportData.EntryPoint,
                 ExactSpelling = dllImportData.ExactSpelling,
                 SetLastError = dllImportData.SetLastError,
-                PreserveSig = dllImportData.PreserveSig,
                 IsUserDefined = dllImportData.IsUserDefined & membersToForward
             };
 

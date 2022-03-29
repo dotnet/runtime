@@ -7,7 +7,7 @@
     <DefineConstants>$(DefineConstants);REFLECTION_FROM_USAGE</DefineConstants>
 
     <!-- Look for MULTIMODULE_BUILD #define for the more specific incompatible parts -->
-    <NativeAotMultimoduleIncompatible>true</NativeAotMultimoduleIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Reflection.cs" />

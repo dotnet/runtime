@@ -28,9 +28,6 @@ namespace System.Net.Security
             }
             _context = null;
             _exception = null;
-            _internalBuffer = null;
-            _internalBufferCount = 0;
-            _internalOffset = 0;
             _nestedWrite = 0;
             _handshakeCompleted = false;
         }
@@ -56,7 +53,7 @@ namespace System.Net.Security
         //
         private Task ProcessAuthenticationAsync(bool isAsync = false, bool isApm = false, CancellationToken cancellationToken = default)
         {
-            return Task.Run(() => {});
+            return Task.Run(() => { });
         }
 
         private Task RenegotiateAsync(AsyncReadWriteAdapter adapter) => throw new PlatformNotSupportedException();

@@ -19,7 +19,7 @@
     <Compile Include="DnsEndPointTest.cs" />
     <Compile Include="DualModeSocketTest.cs" />
     <Compile Include="ExecutionContextFlowTest.cs" />
-    <Compile Include="InlineCompletions.Unix.cs" Condition="'$(TargetsUnix)' == 'true'"/>
+    <Compile Include="InlineCompletions.Unix.cs" Condition="'$(TargetPlatformIdentifier)' == 'Unix'"/>
     <Compile Include="IPPacketInformationTest.cs" />
     <Compile Include="KeepAliveTest.cs" />
     <Compile Include="LingerStateTest.cs" />

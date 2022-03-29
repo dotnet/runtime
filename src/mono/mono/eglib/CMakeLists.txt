@@ -43,6 +43,10 @@ set(eglib_common_sources
     gunicode.c
     unicode-data.h)
 
+if(HAVE_CLOCK_NANOSLEEP)
+list(APPEND eglib_common_sources gclock-nanosleep.c)
+endif()
+
 addprefix(eglib_sources ../eglib/ "${eglib_platform_sources};${eglib_common_sources}")
 
 add_library(eglib_objects OBJECT "${eglib_sources}")

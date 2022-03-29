@@ -339,7 +339,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-            srcCount = BuildHWIntrinsic(tree->AsHWIntrinsic());
+            srcCount = BuildHWIntrinsic(tree->AsHWIntrinsic(), &dstCount);
             break;
 #endif // FEATURE_HW_INTRINSICS
 
@@ -610,6 +610,15 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_NULLCHECK:
         {
             assert(dstCount == 0);
+#ifdef TARGET_X86
+            if (varTypeIsByte(tree))
+            {
+                // on X86 we have to use byte-able regs for byte-wide loads
+                BuildUse(tree->gtGetOp1(), RBM_BYTE_REGS);
+                srcCount = 1;
+                break;
+            }
+#endif
             // If we have a contained address on a nullcheck, we transform it to
             // an unused GT_IND, since we require a target register.
             BuildUse(tree->gtGetOp1());
@@ -1817,6 +1826,7 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
 
         case NI_System_Math_Ceiling:
         case NI_System_Math_Floor:
+        case NI_System_Math_Truncate:
         case NI_System_Math_Round:
         case NI_System_Math_Sqrt:
             break;
@@ -1983,12 +1993,15 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 //
 // Arguments:
 //    tree       - The GT_HWINTRINSIC node of interest
+//    pDstCount  - OUT parameter - the number of registers defined for the given node
 //
 // Return Value:
 //    The number of sources consumed by this node.
 //
-int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
+int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount)
 {
+    assert(pDstCount != nullptr);
+
     NamedIntrinsic      intrinsicId = intrinsicTree->GetHWIntrinsicId();
     var_types           baseType    = intrinsicTree->GetSimdBaseType();
     size_t              numArgs     = intrinsicTree->GetOperandCount();
@@ -2454,6 +2467,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         assert(dstCount == 0);
     }
 
+    *pDstCount = dstCount;
     return srcCount;
 }
 #endif

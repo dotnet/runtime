@@ -18,8 +18,7 @@ namespace Microsoft.Interop
         CharSet = 1 << 0,
         EntryPoint = 1 << 1,
         ExactSpelling = 1 << 2,
-        PreserveSig = 1 << 3,
-        SetLastError = 1 << 4,
+        SetLastError = 1 << 3,
         All = ~None
     }
 
@@ -39,7 +38,6 @@ namespace Microsoft.Interop
         public CharSet CharSet { get; init; }
         public string? EntryPoint { get; init; }
         public bool ExactSpelling { get; init; }
-        public bool PreserveSig { get; init; }
         public bool SetLastError { get; init; }
     }
 }

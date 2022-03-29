@@ -37,12 +37,35 @@ namespace Microsoft.Interop
                 return true;
             }
 
-            if (info.MarshallingAttributeInfo is NativeContiguousCollectionMarshallingInfo collectionMarshalling
-                && collectionMarshalling.UseDefaultMarshalling
-                && collectionMarshalling.ElementCountInfo is NoCountInfo or SizeAndParamIndexInfo
-                && collectionMarshalling.ElementMarshallingInfo is NoMarshallingInfo or MarshalAsInfo { UnmanagedType: not UnmanagedType.CustomMarshaler }
-                && info.ManagedType is IArrayTypeSymbol)
+            if (info.ManagedType is SzArrayType)
             {
+                CountInfo countInfo;
+                MarshallingInfo elementMarshallingInfo;
+                if (info.MarshallingAttributeInfo is NativeContiguousCollectionMarshallingInfo collectionMarshalling
+                    && collectionMarshalling.UseDefaultMarshalling
+                    && collectionMarshalling.ElementCountInfo is NoCountInfo or SizeAndParamIndexInfo
+                    && collectionMarshalling.ElementMarshallingInfo is NoMarshallingInfo or MarshalAsInfo { UnmanagedType: not UnmanagedType.CustomMarshaler }
+                    )
+                {
+                    countInfo = collectionMarshalling.ElementCountInfo;
+                    elementMarshallingInfo = collectionMarshalling.ElementMarshallingInfo;
+                }
+                else if (info.MarshallingAttributeInfo is MissingSupportCollectionMarshallingInfo missingSupport)
+                {
+                    countInfo = missingSupport.CountInfo;
+                    elementMarshallingInfo = missingSupport.ElementMarshallingInfo;
+                }
+                else
+                {
+                    // This condition can be hit in two ways:
+                    // 1. User uses the MarshalUsing attribute to provide count info or element marshalling information.
+                    // Since the MarshalUsing attribute doesn't exist on downlevel platforms where we don't support arrays,
+                    // this case is unlikely to come in supported scenarios, but could come up with a custom CoreLib implementation
+                    // 2. User provides a MarsalAs attribute with the ArraySubType field set to UnmanagedType.CustomMarshaler
+                    // As mentioned above, we don't support ICustomMarshaler in the generator so we fail to forward the attribute instead of partially fowarding it.
+                    return false;
+                }
+
                 List<AttributeArgumentSyntax> marshalAsArguments = new List<AttributeArgumentSyntax>
                 {
                     AttributeArgument(
@@ -51,17 +74,17 @@ namespace Microsoft.Interop
                             Literal((int)UnmanagedType.LPArray))))
                 };
 
-                if (collectionMarshalling.ElementCountInfo is SizeAndParamIndexInfo countInfo)
+                if (countInfo is SizeAndParamIndexInfo sizeParamIndex)
                 {
-                    if (countInfo.ConstSize != SizeAndParamIndexInfo.UnspecifiedConstSize)
+                    if (sizeParamIndex.ConstSize != SizeAndParamIndexInfo.UnspecifiedConstSize)
                     {
                         marshalAsArguments.Add(
                             AttributeArgument(NameEquals("SizeConst"), null,
                                 LiteralExpression(SyntaxKind.NumericLiteralExpression,
-                                    Literal(countInfo.ConstSize)))
+                                    Literal(sizeParamIndex.ConstSize)))
                         );
                     }
-                    if (countInfo.ParamAtIndex is { ManagedIndex: int paramIndex })
+                    if (sizeParamIndex.ParamAtIndex is { ManagedIndex: int paramIndex })
                     {
                         marshalAsArguments.Add(
                             AttributeArgument(NameEquals("SizeParamIndex"), null,
@@ -71,7 +94,7 @@ namespace Microsoft.Interop
                     }
                 }
 
-                if (collectionMarshalling.ElementMarshallingInfo is MarshalAsInfo elementMarshalAs)
+                if (elementMarshallingInfo is MarshalAsInfo elementMarshalAs)
                 {
                     marshalAsArguments.Add(
                         AttributeArgument(NameEquals("ArraySubType"), null,
@@ -94,9 +117,23 @@ namespace Microsoft.Interop
                 .WithModifiers(TokenList(Token(info.RefKindSyntax)))
                 .WithType(info.ManagedType.Syntax);
 
+            List<AttributeSyntax> rehydratedAttributes = new();
             if (TryRehydrateMarshalAsAttribute(info, out AttributeSyntax marshalAsAttribute))
             {
-                param = param.AddAttributeLists(AttributeList(SingletonSeparatedList(marshalAsAttribute)));
+                rehydratedAttributes.Add(marshalAsAttribute);
+            }
+            if (info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.In))
+            {
+                rehydratedAttributes.Add(Attribute(IdentifierName(TypeNames.System_Runtime_InteropServices_InAttribute)));
+            }
+            if (info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
+            {
+                rehydratedAttributes.Add(Attribute(IdentifierName(TypeNames.System_Runtime_InteropServices_OutAttribute)));
+            }
+
+            if (rehydratedAttributes.Count > 0)
+            {
+                param = param.AddAttributeLists(AttributeList(SeparatedList(rehydratedAttributes)));
             }
 
             return param;

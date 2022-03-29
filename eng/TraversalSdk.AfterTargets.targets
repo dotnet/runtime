@@ -1,0 +1,18 @@
+<Project>
+
+  <!-- Uses the Microsoft.DotNet.Build.Tasks.TargetFramework package to filter out target frameworks from ProjectReferences. -->
+  <PropertyGroup Condition="'$(FilterTraversalProjectReferences)' == 'true'">
+    <BuildDependsOn>$(BuildDependsOn);ResolveP2PReferences</BuildDependsOn>
+    <CleanDependsOn>$(CleanDependsOn);ResolveP2PReferences</CleanDependsOn>
+    <RebuildDependsOn>$(RebuildDependsOn);ResolveP2PReferences</RebuildDependsOn>
+    <TestDependsOn>$(TestDependsOn);ResolveP2PReferences</TestDependsOn>
+    <VSTestDependsOn>$(VSTestDependsOn);ResolveP2PReferences</VSTestDependsOn>
+    <PackDependsOn>$(PackDependsOn);ResolveP2PReferences</PackDependsOn>
+    <PublishDependsOn>$(PublishDependsOn);ResolveP2PReferences</PublishDependsOn>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(FilterTraversalProjectReferences)' == 'true'">
+    <ProjectReference Update="@(ProjectReference)" SkipGetTargetFrameworkProperties="false" />
+  </ItemGroup>
+
+</Project>

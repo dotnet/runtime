@@ -517,6 +517,9 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(SSL_write) \
     REQUIRED_FUNCTION(SSL_use_certificate) \
     REQUIRED_FUNCTION(SSL_use_PrivateKey) \
+    LIGHTUP_FUNCTION(SSL_verify_client_post_handshake) \
+    LIGHTUP_FUNCTION(SSL_set_post_handshake_auth) \
+    REQUIRED_FUNCTION(SSL_version) \
     FALLBACK_FUNCTION(X509_check_host) \
     REQUIRED_FUNCTION(X509_check_purpose) \
     REQUIRED_FUNCTION(X509_cmp_current_time) \
@@ -977,6 +980,9 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_write SSL_write_ptr
 #define SSL_use_certificate SSL_use_certificate_ptr
 #define SSL_use_PrivateKey SSL_use_PrivateKey_ptr
+#define SSL_verify_client_post_handshake SSL_verify_client_post_handshake_ptr
+#define SSL_set_post_handshake_auth SSL_set_post_handshake_auth_ptr
+#define SSL_version SSL_version_ptr
 #define TLS_method TLS_method_ptr
 #define X509_check_host X509_check_host_ptr
 #define X509_check_purpose X509_check_purpose_ptr

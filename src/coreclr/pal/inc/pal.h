@@ -4222,6 +4222,7 @@ PALIMPORT double __cdecl sinh(double);
 PALIMPORT double __cdecl sqrt(double);
 PALIMPORT double __cdecl tan(double);
 PALIMPORT double __cdecl tanh(double);
+PALIMPORT double __cdecl trunc(double);
 
 PALIMPORT int __cdecl _finitef(float);
 PALIMPORT int __cdecl _isnanf(float);
@@ -4254,6 +4255,7 @@ PALIMPORT float __cdecl sinhf(float);
 PALIMPORT float __cdecl sqrtf(float);
 PALIMPORT float __cdecl tanf(float);
 PALIMPORT float __cdecl tanhf(float);
+PALIMPORT float __cdecl truncf(float);
 #endif // !PAL_STDCPP_COMPAT
 
 #ifndef PAL_STDCPP_COMPAT

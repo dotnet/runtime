@@ -164,8 +164,8 @@ namespace System.Net
         public static IAsyncResult BeginGetHostEntry(string hostNameOrAddress, AsyncCallback? requestCallback, object? stateObject) =>
             TaskToApm.Begin(GetHostEntryAsync(hostNameOrAddress), requestCallback, stateObject);
 
-        public static IPHostEntry EndGetHostEntry(IAsyncResult asyncResult) =>
-            TaskToApm.End<IPHostEntry>(asyncResult ?? throw new ArgumentNullException(nameof(asyncResult)));
+        public static IPHostEntry EndGetHostEntry(IAsyncResult asyncResult!!) =>
+            TaskToApm.End<IPHostEntry>(asyncResult);
 
         public static IPAddress[] GetHostAddresses(string hostNameOrAddress)
             => GetHostAddresses(hostNameOrAddress, AddressFamily.Unspecified);
@@ -232,8 +232,8 @@ namespace System.Net
         public static IAsyncResult BeginGetHostAddresses(string hostNameOrAddress, AsyncCallback? requestCallback, object? state) =>
             TaskToApm.Begin(GetHostAddressesAsync(hostNameOrAddress), requestCallback, state);
 
-        public static IPAddress[] EndGetHostAddresses(IAsyncResult asyncResult) =>
-            TaskToApm.End<IPAddress[]>(asyncResult ?? throw new ArgumentNullException(nameof(asyncResult)));
+        public static IPAddress[] EndGetHostAddresses(IAsyncResult asyncResult!!) =>
+            TaskToApm.End<IPAddress[]>(asyncResult);
 
         [Obsolete("GetHostByName has been deprecated. Use GetHostEntry instead.")]
         public static IPHostEntry GetHostByName(string hostName!!)
@@ -251,8 +251,8 @@ namespace System.Net
             TaskToApm.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: true, throwOnIIPAny: true, AddressFamily.Unspecified, CancellationToken.None), requestCallback, stateObject);
 
         [Obsolete("EndGetHostByName has been deprecated. Use EndGetHostEntry instead.")]
-        public static IPHostEntry EndGetHostByName(IAsyncResult asyncResult) =>
-            TaskToApm.End<IPHostEntry>(asyncResult ?? throw new ArgumentNullException(nameof(asyncResult)));
+        public static IPHostEntry EndGetHostByName(IAsyncResult asyncResult!!) =>
+            TaskToApm.End<IPHostEntry>(asyncResult);
 
         [Obsolete("GetHostByAddress has been deprecated. Use GetHostEntry instead.")]
         public static IPHostEntry GetHostByAddress(string address!!)

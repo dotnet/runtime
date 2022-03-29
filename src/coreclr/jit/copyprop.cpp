@@ -161,18 +161,13 @@ void Compiler::optCopyProp(Statement*               stmt,
         }
 
         if ((gsShadowVarInfo != nullptr) && newLclVarDsc->lvIsParam &&
-            (gsShadowVarInfo[newLclNum].shadowCopy == lclNum))
+            (gsShadowVarInfo[newLclNum].shadowCopy != BAD_VAR_NUM))
         {
             continue;
         }
 
         ValueNum newLclDefVN = GetUseAsgDefVNOrTreeVN(newLclDefNode);
         if (newLclDefVN == ValueNumStore::NoVN)
-        {
-            continue;
-        }
-
-        if (newLclDefNode->TypeGet() != tree->TypeGet())
         {
             continue;
         }
@@ -222,6 +217,17 @@ void Compiler::optCopyProp(Statement*               stmt,
         }
 
         if (newSsaNum == SsaConfig::RESERVED_SSA_NUM)
+        {
+            continue;
+        }
+
+        var_types newLclType = newLclVarDsc->TypeGet();
+        if (!newLclVarDsc->lvNormalizeOnLoad())
+        {
+            newLclType = genActualType(newLclType);
+        }
+
+        if (newLclType != tree->TypeGet())
         {
             continue;
         }

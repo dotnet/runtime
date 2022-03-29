@@ -227,7 +227,7 @@ namespace System.Reflection.Emit
             basic_init(this);
 
             // Netcore only allows one module per assembly
-            manifest_module = new ModuleBuilder(this, "RefEmit_InMemoryManifestModule", false);
+            manifest_module = new ModuleBuilder(this, "RefEmit_InMemoryManifestModule");
             modules = new ModuleBuilder[] { manifest_module };
         }
 

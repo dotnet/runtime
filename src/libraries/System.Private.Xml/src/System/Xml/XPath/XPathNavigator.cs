@@ -1453,10 +1453,7 @@ namespace System.Xml.XPath
 
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 switch (NodeType)
                 {

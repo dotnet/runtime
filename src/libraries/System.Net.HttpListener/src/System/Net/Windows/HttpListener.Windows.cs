@@ -1020,7 +1020,7 @@ namespace System.Net
                                     {
                                         if (userContext != null)
                                         {
-                                            userContext.Close();
+                                            userContext.Dispose();
                                         }
                                     }
                                 }

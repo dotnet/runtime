@@ -9,6 +9,8 @@ namespace System.Text.RegularExpressions.Symbolic
         Leaf,
         Conditional,
         Union,
-        Lookaround
+        OrderedUnion,
+        Lookaround,
+        Effect
     }
 }

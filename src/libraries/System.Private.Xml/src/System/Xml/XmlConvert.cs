@@ -1661,10 +1661,5 @@ namespace System.Xml
         {
             return CreateException(index == 0 ? SR.Xml_BadStartNameChar : SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(name, index), exceptionType, 0, index + 1);
         }
-
-        internal static ArgumentException CreateInvalidNameArgumentException(string? name, string? argumentName)
-        {
-            return (name == null) ? new ArgumentNullException(argumentName) : new ArgumentException(SR.Xml_EmptyName, argumentName);
-        }
     }
 }

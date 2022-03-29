@@ -122,5 +122,8 @@ namespace System
 
         internal const string AssemblyNameMembersMessage = "AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported.";
         internal const string AssemblyNameMembersDiagId = "SYSLIB0037";
+
+        internal const string SystemDataSerializationFormatBinaryMessage = "SerializationFormat.Binary is obsolete and should not be used. See https://aka.ms/serializationformat-binary-obsolete for more information.";
+        internal const string SystemDataSerializationFormatBinaryDiagId = "SYSLIB0038";
     }
 }

@@ -57,6 +57,7 @@ protected:
         OneAsgBlock,
         StructBlock,
         SkipCallSrc,
+        SkipMultiRegIntrinsicSrc,
         Nop
     };
 
@@ -635,6 +636,16 @@ void MorphCopyBlockHelper::PrepareSrc()
 //
 void MorphCopyBlockHelper::TrySpecialCases()
 {
+#ifdef FEATURE_HW_INTRINSICS
+    if (m_src->OperIsHWIntrinsic() && HWIntrinsicInfo::IsMultiReg(m_src->AsHWIntrinsic()->GetHWIntrinsicId()))
+    {
+        assert(m_src->IsMultiRegNode());
+        JITDUMP("Not morphing a multireg intrinsic\n");
+        m_transformationDecision = BlockTransformation::SkipMultiRegIntrinsicSrc;
+        m_result                 = m_asg;
+    }
+#endif // FEATURE_HW_INTRINSICS
+
 #if FEATURE_MULTIREG_RET
     // If this is a multi-reg return, we will not do any morphing of this node.
     if (m_src->IsMultiRegCall())

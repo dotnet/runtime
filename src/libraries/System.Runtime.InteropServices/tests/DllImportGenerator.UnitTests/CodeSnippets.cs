@@ -194,7 +194,6 @@ partial class Test
         CharSet = CharSet.Unicode,
         EntryPoint = ""UserDefinedEntryPoint"",
         ExactSpelling = true,
-        PreserveSig = false,
         SetLastError = true)]
     public static partial void Method();
 }
@@ -217,7 +216,6 @@ partial class Test
         CharSet = (CharSet)2,
         EntryPoint = EntryPointName,
         ExactSpelling = 0 != 1,
-        PreserveSig = IsTrue,
         SetLastError = IsFalse)]
     public static partial void Method1();
 
@@ -225,7 +223,6 @@ partial class Test
         CharSet = (CharSet)Two,
         EntryPoint = EntryPointName,
         ExactSpelling = One != Two,
-        PreserveSig = !IsFalse,
         SetLastError = !IsTrue)]
     public static partial void Method2();
 }
@@ -327,6 +324,8 @@ partial class Test
 }
 ";
 
+        public static readonly string DisableRuntimeMarshalling = "[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]";
+
         /// <summary>
         /// Declaration with parameters with <see cref="CharSet"/> set.
         /// </summary>
@@ -366,8 +365,9 @@ partial class Test
         /// <summary>
         /// Declaration with parameters.
         /// </summary>
-        public static string BasicParametersAndModifiersNoRef(string typeName) => @$"
+        public static string BasicParametersAndModifiersNoRef(string typeName, string preDeclaration = "") => @$"
 using System.Runtime.InteropServices;
+{preDeclaration}
 partial class Test
 {{
     [GeneratedDllImport(""DoesNotExist"")]
@@ -380,8 +380,9 @@ partial class Test
         /// <summary>
         /// Declaration with parameters and unsafe.
         /// </summary>
-        public static string BasicParametersAndModifiersUnsafe(string typeName) => @$"
+        public static string BasicParametersAndModifiersUnsafe(string typeName, string preDeclaration = "") => @$"
 using System.Runtime.InteropServices;
+{preDeclaration}
 partial class Test
 {{
     [GeneratedDllImport(""DoesNotExist"")]
@@ -397,8 +398,9 @@ partial class Test
         /// <summary>
         /// Declaration with [In, Out] style attributes on a by-value parameter.
         /// </summary>
-        public static string ByValueParameterWithModifier(string typeName, string attributeName) => @$"
+        public static string ByValueParameterWithModifier(string typeName, string attributeName, string preDeclaration = "") => @$"
 using System.Runtime.InteropServices;
+{preDeclaration}
 partial class Test
 {{
     [GeneratedDllImport(""DoesNotExist"")]
@@ -406,7 +408,7 @@ partial class Test
         [{attributeName}] {typeName} p);
 }}";
 
-        public static string ByValueParameterWithModifier<T>(string attributeName) => ByValueParameterWithModifier(typeof(T).ToString(), attributeName);
+        public static string ByValueParameterWithModifier<T>(string attributeName, string preDeclaration = "") => ByValueParameterWithModifier(typeof(T).ToString(), attributeName, preDeclaration);
 
         /// <summary>
         /// Declaration with by-value parameter with custom name.
@@ -486,29 +488,15 @@ partial class Test
         /// <summary>
         /// Declaration with PreserveSig = false.
         /// </summary>
-        public static string PreserveSigFalse(string typeName) => @$"
+        public static string SetLastErrorTrue(string typeName) => @$"
 using System.Runtime.InteropServices;
 partial class Test
 {{
-    [GeneratedDllImport(""DoesNotExist"", PreserveSig = false)]
-    public static partial {typeName} Method1();
-
-    [GeneratedDllImport(""DoesNotExist"", PreserveSig = false)]
-    public static partial {typeName} Method2({typeName} p);
+    [GeneratedDllImport(""DoesNotExist"", SetLastError = true)]
+    public static partial {typeName} Method({typeName} p);
 }}";
 
-        public static string PreserveSigFalse<T>() => PreserveSigFalse(typeof(T).ToString());
-
-        /// <summary>
-        /// Declaration with PreserveSig = false and void return.
-        /// </summary>
-        public static readonly string PreserveSigFalseVoidReturn = @$"
-using System.Runtime.InteropServices;
-partial class Test
-{{
-    [GeneratedDllImport(""DoesNotExist"", PreserveSig = false)]
-    public static partial void Method();
-}}";
+        public static string SetLastErrorTrue<T>() => SetLastErrorTrue(typeof(T).ToString());
 
         public static string DelegateParametersAndModifiers = BasicParametersAndModifiers("MyDelegate") + @"
 delegate int MyDelegate(int a);";
@@ -529,13 +517,13 @@ delegate int MyDelegate(int a);";
     private void* vptr;
 }}";
 
-        public static string BlittableStructParametersAndModifiers = BasicParametersAndModifiers("MyStruct") + $@"
-[BlittableType]
+        public static string BlittableStructParametersAndModifiers = BasicParametersAndModifiers("MyStruct", DisableRuntimeMarshalling) + $@"
 {BlittableMyStruct()}
 ";
 
-        public static string MarshalAsArrayParametersAndModifiers(string elementType) => $@"
+        public static string MarshalAsArrayParametersAndModifiers(string elementType, string preDeclaration = "") => $@"
 using System.Runtime.InteropServices;
+{preDeclaration}
 partial class Test
 {{
     [GeneratedDllImport(""DoesNotExist"")]
@@ -550,10 +538,11 @@ partial class Test
         );
 }}";
 
-        public static string MarshalAsArrayParametersAndModifiers<T>() => MarshalAsArrayParametersAndModifiers(typeof(T).ToString());
+        public static string MarshalAsArrayParametersAndModifiers<T>(string preDeclaration = "") => MarshalAsArrayParametersAndModifiers(typeof(T).ToString(), preDeclaration);
 
         public static string MarshalAsArrayParameterWithSizeParam(string sizeParamType, bool isByRef) => $@"
 using System.Runtime.InteropServices;
+{DisableRuntimeMarshalling}
 partial class Test
 {{
     [GeneratedDllImport(""DoesNotExist"")]
@@ -566,8 +555,9 @@ partial class Test
         public static string MarshalAsArrayParameterWithSizeParam<T>(bool isByRef) => MarshalAsArrayParameterWithSizeParam(typeof(T).ToString(), isByRef);
 
 
-        public static string MarshalAsArrayParameterWithNestedMarshalInfo(string elementType, UnmanagedType nestedMarshalInfo) => $@"
+        public static string MarshalAsArrayParameterWithNestedMarshalInfo(string elementType, UnmanagedType nestedMarshalInfo, string preDeclaration = "") => $@"
 using System.Runtime.InteropServices;
+{preDeclaration}
 partial class Test
 {{
     [GeneratedDllImport(""DoesNotExist"")]
@@ -576,28 +566,14 @@ partial class Test
         );
 }}";
 
-        public static string MarshalAsArrayParameterWithNestedMarshalInfo<T>(UnmanagedType nestedMarshalType) => MarshalAsArrayParameterWithNestedMarshalInfo(typeof(T).ToString(), nestedMarshalType);
-        
-        public static string ArrayPreserveSigFalse(string elementType) => $@"
-using System.Runtime.InteropServices;
-partial class Test
-{{
-    [GeneratedDllImport(""DoesNotExist"", PreserveSig = false)]
-    [return:MarshalAs(UnmanagedType.LPArray, SizeConst=10)]
-    public static partial {elementType}[] Method1();
-
-    [GeneratedDllImport(""DoesNotExist"", PreserveSig = false)]
-    [return:MarshalAs(UnmanagedType.LPArray, SizeParamIndex=0)]
-    public static partial {elementType}[] Method2(int i);
-}}";
-
-        public static string ArrayPreserveSigFalse<T>() => ArrayPreserveSigFalse(typeof(T).ToString());
+        public static string MarshalAsArrayParameterWithNestedMarshalInfo<T>(UnmanagedType nestedMarshalType, string preDeclaration = "") => MarshalAsArrayParameterWithNestedMarshalInfo(typeof(T).ToString(), nestedMarshalType, preDeclaration);
 
         /// <summary>
         /// Declaration with parameters with MarshalAs.
         /// </summary>
-        public static string MarshalUsingParametersAndModifiers(string typeName, string nativeTypeName) => @$"
+        public static string MarshalUsingParametersAndModifiers(string typeName, string nativeTypeName, string preDeclaration = "") => @$"
 using System.Runtime.InteropServices;
+{preDeclaration}
 partial class Test
 {{
     [GeneratedDllImport(""DoesNotExist"")]
@@ -610,7 +586,7 @@ partial class Test
 }}
 ";
 
-        public static string CustomStructMarshallingParametersAndModifiers = BasicParametersAndModifiers("S") + @"
+        public static string CustomStructMarshallingParametersAndModifiers = BasicParametersAndModifiers("S", DisableRuntimeMarshalling) + @"
 [NativeMarshalling(typeof(Native))]
 struct S
 {
@@ -629,7 +605,7 @@ struct Native
 }
 ";
 
-        public static string CustomStructMarshallingMarshalUsingParametersAndModifiers = MarshalUsingParametersAndModifiers("S", "Native") + @"
+        public static string CustomStructMarshallingMarshalUsingParametersAndModifiers = MarshalUsingParametersAndModifiers("S", "Native", DisableRuntimeMarshalling) + @"
 struct S
 {
     public bool b;
@@ -647,7 +623,7 @@ struct Native
 }
 ";
 
-        public static string CustomStructMarshallingStackallocParametersAndModifiersNoRef = BasicParametersAndModifiersNoRef("S") + @"
+        public static string CustomStructMarshallingStackallocParametersAndModifiersNoRef = BasicParametersAndModifiersNoRef("S", DisableRuntimeMarshalling) + @"
 [NativeMarshalling(typeof(Native))]
 struct S
 {
@@ -667,7 +643,7 @@ struct Native
     public const int BufferSize = 1;
 }
 ";
-        public static string CustomStructMarshallingStackallocOnlyRefParameter = BasicParameterWithByRefModifier("ref", "S") + @"
+        public static string CustomStructMarshallingStackallocOnlyRefParameter = BasicParameterWithByRefModifier("ref", "S", DisableRuntimeMarshalling) + @"
 [NativeMarshalling(typeof(Native))]
 struct S
 {
@@ -688,7 +664,7 @@ struct Native
     public const bool RequiresStackBuffer = false;
 }
 ";
-        public static string CustomStructMarshallingOptionalStackallocParametersAndModifiers = BasicParametersAndModifiers("S") + @"
+        public static string CustomStructMarshallingOptionalStackallocParametersAndModifiers = BasicParametersAndModifiers("S", DisableRuntimeMarshalling) + @"
 [NativeMarshalling(typeof(Native))]
 struct S
 {
@@ -714,7 +690,7 @@ struct Native
 }
 ";
 
-        public static string CustomStructMarshallingStackallocValuePropertyParametersAndModifiersNoRef = BasicParametersAndModifiersNoRef("S") + @"
+        public static string CustomStructMarshallingStackallocValuePropertyParametersAndModifiersNoRef = BasicParametersAndModifiersNoRef("S", DisableRuntimeMarshalling) + @"
 [NativeMarshalling(typeof(Native))]
 struct S
 {
@@ -735,7 +711,7 @@ struct Native
     public const int BufferSize = 1;
 }
 ";
-        public static string CustomStructMarshallingValuePropertyParametersAndModifiers = BasicParametersAndModifiers("S") + @"
+        public static string CustomStructMarshallingValuePropertyParametersAndModifiers = BasicParametersAndModifiers("S", DisableRuntimeMarshalling) + @"
 [NativeMarshalling(typeof(Native))]
 struct S
 {
@@ -754,7 +730,7 @@ struct Native
     public int Value { get; set; }
 }
 ";
-        public static string CustomStructMarshallingPinnableParametersAndModifiers = BasicParametersAndModifiers("S") + @"
+        public static string CustomStructMarshallingPinnableParametersAndModifiers = BasicParametersAndModifiers("S", DisableRuntimeMarshalling) + @"
 [NativeMarshalling(typeof(Native))]
 class S
 {
@@ -785,6 +761,8 @@ unsafe struct Native
         public static string CustomStructMarshallingNativeTypePinnable = @"
 using System.Runtime.InteropServices;
 using System;
+
+[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -842,7 +820,7 @@ partial class Test
 }
 ";
 
-        public static string CustomStructMarshallingByRefValueProperty = BasicParametersAndModifiers("S") + @"
+        public static string CustomStructMarshallingByRefValueProperty = BasicParametersAndModifiers("S", DisableRuntimeMarshalling) + @"
 [NativeMarshalling(typeof(Native))]
 class S
 {
@@ -862,8 +840,9 @@ unsafe struct Native
 }
 ";
 
-        public static string BasicParameterWithByRefModifier(string byRefKind, string typeName) => @$"
+        public static string BasicParameterWithByRefModifier(string byRefKind, string typeName, string preDeclaration = "") => @$"
 using System.Runtime.InteropServices;
+{preDeclaration}
 partial class Test
 {{
     [GeneratedDllImport(""DoesNotExist"")]
@@ -871,8 +850,9 @@ partial class Test
         {byRefKind} {typeName} p);
 }}";
 
-        public static string BasicParameterByValue(string typeName) => @$"
+        public static string BasicParameterByValue(string typeName, string preDeclaration = "") => @$"
 using System.Runtime.InteropServices;
+{preDeclaration}
 partial class Test
 {{
     [GeneratedDllImport(""DoesNotExist"")]
@@ -880,15 +860,16 @@ partial class Test
         {typeName} p);
 }}";
 
-        public static string BasicReturnType(string typeName) => @$"
+        public static string BasicReturnType(string typeName, string preDeclaration = "") => @$"
 using System.Runtime.InteropServices;
+{preDeclaration}
 partial class Test
 {{
     [GeneratedDllImport(""DoesNotExist"")]
     public static partial {typeName} Method();
 }}";
 
-        public static string CustomStructMarshallingManagedToNativeOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")  + @"
+        public static string CustomStructMarshallingManagedToNativeOnlyOutParameter => BasicParameterWithByRefModifier("out", "S", DisableRuntimeMarshalling)  + @"
 [NativeMarshalling(typeof(Native))]
 [StructLayout(LayoutKind.Sequential)]
 struct S
@@ -906,7 +887,7 @@ struct Native
 }
 ";
 
-        public static string CustomStructMarshallingManagedToNativeOnlyReturnValue => BasicReturnType("S")  + @"
+        public static string CustomStructMarshallingManagedToNativeOnlyReturnValue => BasicReturnType("S", DisableRuntimeMarshalling)  + @"
 [NativeMarshalling(typeof(Native))]
 [StructLayout(LayoutKind.Sequential)]
 struct S
@@ -924,7 +905,7 @@ struct Native
 }
 ";
 
-        public static string CustomStructMarshallingNativeToManagedOnlyInParameter => BasicParameterWithByRefModifier("in", "S")  + @"
+        public static string CustomStructMarshallingNativeToManagedOnlyInParameter => BasicParameterWithByRefModifier("in", "S", DisableRuntimeMarshalling)  + @"
 [NativeMarshalling(typeof(Native))]
 struct S
 {
@@ -939,7 +920,7 @@ struct Native
 }
 ";
 
-        public static string ArrayMarshallingWithCustomStructElementWithValueProperty => MarshalAsArrayParametersAndModifiers("IntStructWrapper") + @"
+        public static string ArrayMarshallingWithCustomStructElementWithValueProperty => MarshalAsArrayParametersAndModifiers("IntStructWrapper", DisableRuntimeMarshalling) + @"
 [NativeMarshalling(typeof(IntStructWrapperNative))]
 public struct IntStructWrapper
 {
@@ -959,7 +940,7 @@ public struct IntStructWrapperNative
 }
 ";
 
-        public static string ArrayMarshallingWithCustomStructElement => MarshalAsArrayParametersAndModifiers("IntStructWrapper") + @"
+        public static string ArrayMarshallingWithCustomStructElement => MarshalAsArrayParametersAndModifiers("IntStructWrapper", DisableRuntimeMarshalling) + @"
 [NativeMarshalling(typeof(IntStructWrapperNative))]
 public struct IntStructWrapper
 {
@@ -1057,8 +1038,7 @@ partial class Test
     public static int Foo() => throw null;
 }}";
 
-        public static string MaybeBlittableGenericTypeParametersAndModifiers(string typeArgument) => BasicParametersAndModifiers($"Generic<{typeArgument}>") + @"
-[BlittableType]
+        public static string MaybeBlittableGenericTypeParametersAndModifiers(string typeArgument) => BasicParametersAndModifiers($"Generic<{typeArgument}>", DisableRuntimeMarshalling) + @"
 struct Generic<T>
 {
 #pragma warning disable CS0649
@@ -1069,30 +1049,13 @@ struct Generic<T>
         public static string MaybeBlittableGenericTypeParametersAndModifiers<T>() =>
             MaybeBlittableGenericTypeParametersAndModifiers(typeof(T).ToString());
 
-        public static string ImplicitlyBlittableStructParametersAndModifiers(string visibility = "") => BasicParametersAndModifiers("MyStruct") + $@"
-// Implicitly blittable
-{BlittableMyStruct(visibility)}
-";
-
-        public static string ImplicitlyBlittableGenericTypeParametersAndModifiers(string typeArgument, string visibility = "") => BasicParametersAndModifiers($"Generic<{typeArgument}>") + $@"
-{visibility} struct Generic<T>
-{{
-#pragma warning disable CS0649
-#pragma warning disable CS0169
-    public T field;
-}}
-";
-
-        public static string ImplicitlyBlittableGenericTypeParametersAndModifiers<T>(string visibility = "") =>
-            ImplicitlyBlittableGenericTypeParametersAndModifiers(typeof(T).ToString(), visibility);
-
-        public static string RecursiveImplicitlyBlittableStruct => BasicParametersAndModifiers("RecursiveStruct") + @"
+        public static string RecursiveImplicitlyBlittableStruct => BasicParametersAndModifiers("RecursiveStruct", DisableRuntimeMarshalling) + @"
 struct RecursiveStruct
 {
     RecursiveStruct s;
     int i;
 }";
-        public static string MutuallyRecursiveImplicitlyBlittableStruct => BasicParametersAndModifiers("RecursiveStruct1") + @"
+        public static string MutuallyRecursiveImplicitlyBlittableStruct => BasicParametersAndModifiers("RecursiveStruct1", DisableRuntimeMarshalling) + @"
 struct RecursiveStruct1
 {
     RecursiveStruct2 s;
@@ -1105,7 +1068,7 @@ struct RecursiveStruct2
     int i;
 }";
 
-        public static string CollectionByValue(string elementType) => BasicParameterByValue($"TestCollection<{elementType}>") + @"
+        public static string CollectionByValue(string elementType) => BasicParameterByValue($"TestCollection<{elementType}>", DisableRuntimeMarshalling) + @"
 [NativeMarshalling(typeof(Marshaller<>))]
 class TestCollection<T> {}
 
@@ -1123,6 +1086,7 @@ ref struct Marshaller<T>
 
         public static string MarshalUsingCollectionCountInfoParametersAndModifiers(string collectionType) => $@"
 using System.Runtime.InteropServices;
+{DisableRuntimeMarshalling}
 partial class Test
 {{
     [GeneratedDllImport(""DoesNotExist"")]
@@ -1136,7 +1100,7 @@ partial class Test
         out int pOutSize
         );
 }}";
-        
+
         public static string CustomCollectionWithMarshaller(bool enableDefaultMarshalling)
         {
             string nativeMarshallingAttribute = enableDefaultMarshalling ? "[NativeMarshalling(typeof(Marshaller<>))]" : string.Empty;
@@ -1163,6 +1127,7 @@ ref struct Marshaller<T>
 
         public static string MarshalUsingCollectionParametersAndModifiers(string collectionType, string marshallerType) => $@"
 using System.Runtime.InteropServices;
+{DisableRuntimeMarshalling}
 partial class Test
 {{
     [GeneratedDllImport(""DoesNotExist"")]
@@ -1183,6 +1148,7 @@ partial class Test
 
         public static string MarshalUsingCollectionReturnValueLength(string collectionType, string marshallerType) => $@"
 using System.Runtime.InteropServices;
+{DisableRuntimeMarshalling}
 partial class Test
 {{
     [GeneratedDllImport(""DoesNotExist"")]
@@ -1197,6 +1163,7 @@ partial class Test
 
         public static string MarshalUsingArrayParameterWithSizeParam(string sizeParamType, bool isByRef) => $@"
 using System.Runtime.InteropServices;
+{DisableRuntimeMarshalling}
 partial class Test
 {{
     [GeneratedDllImport(""DoesNotExist"")]
@@ -1210,6 +1177,7 @@ partial class Test
 
         public static string MarshalUsingCollectionWithConstantAndElementCount => $@"
 using System.Runtime.InteropServices;
+{DisableRuntimeMarshalling}
 partial class Test
 {{
     [GeneratedDllImport(""DoesNotExist"")]
@@ -1221,6 +1189,7 @@ partial class Test
 
         public static string MarshalUsingCollectionWithNullElementName => $@"
 using System.Runtime.InteropServices;
+{DisableRuntimeMarshalling}
 partial class Test
 {{
     [GeneratedDllImport(""DoesNotExist"")]
@@ -1230,7 +1199,7 @@ partial class Test
         );
 }}";
 
-        public static string GenericCollectionMarshallingArityMismatch => BasicParameterByValue("TestCollection<int>") + @"
+        public static string GenericCollectionMarshallingArityMismatch => BasicParameterByValue("TestCollection<int>", DisableRuntimeMarshalling) + @"
 [NativeMarshalling(typeof(Marshaller<,>))]
 class TestCollection<T> {}
 
@@ -1246,6 +1215,7 @@ ref struct Marshaller<T, U>
 
         public static string GenericCollectionWithCustomElementMarshalling => @"
 using System.Runtime.InteropServices;
+[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]
 partial class Test
 {
     [GeneratedDllImport(""DoesNotExist"")]
@@ -1271,6 +1241,7 @@ struct IntWrapper
 
         public static string GenericCollectionWithCustomElementMarshallingDuplicateElementIndirectionLevel => @"
 using System.Runtime.InteropServices;
+[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]
 partial class Test
 {
     [GeneratedDllImport(""DoesNotExist"")]
@@ -1288,6 +1259,7 @@ struct IntWrapper
 
         public static string GenericCollectionWithCustomElementMarshallingUnusedElementIndirectionLevel => @"
 using System.Runtime.InteropServices;
+[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]
 partial class Test
 {
     [GeneratedDllImport(""DoesNotExist"")]
@@ -1305,6 +1277,7 @@ struct IntWrapper
 
         public static string MarshalAsAndMarshalUsingOnReturnValue => @"
 using System.Runtime.InteropServices;
+[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]
 partial class Test
 {
     [GeneratedDllImport(""DoesNotExist"")]
@@ -1316,6 +1289,7 @@ partial class Test
 
         public static string RecursiveCountElementNameOnReturnValue => @"
 using System.Runtime.InteropServices;
+[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]
 partial class Test
 {
     [GeneratedDllImport(""DoesNotExist"")]
@@ -1326,6 +1300,7 @@ partial class Test
 
         public static string RecursiveCountElementNameOnParameter => @"
 using System.Runtime.InteropServices;
+[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]
 partial class Test
 {
     [GeneratedDllImport(""DoesNotExist"")]
@@ -1336,6 +1311,7 @@ partial class Test
 ";
         public static string MutuallyRecursiveCountElementNameOnParameter => @"
 using System.Runtime.InteropServices;
+[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]
 partial class Test
 {
     [GeneratedDllImport(""DoesNotExist"")]
@@ -1347,6 +1323,7 @@ partial class Test
 ";
         public static string MutuallyRecursiveSizeParamIndexOnParameter => @"
 using System.Runtime.InteropServices;
+[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]
 partial class Test
 {
     [GeneratedDllImport(""DoesNotExist"")]
@@ -1359,6 +1336,7 @@ partial class Test
 
         public static string CollectionsOfCollectionsStress => @"
 using System.Runtime.InteropServices;
+[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]
 partial class Test
 {
     [GeneratedDllImport(""DoesNotExist"")]

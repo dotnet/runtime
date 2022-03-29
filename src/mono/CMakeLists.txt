@@ -737,7 +737,7 @@ else()
   set(EGLIB_SEARCHSEP ":")
   set(EGLIB_OS "UNIX")
   set(EGLIB_PIDTYPE "int")
-  set(EGLIB_GSIZE_FORMAT "\"lu\"")
+  set(EGLIB_GSIZE_FORMAT "\"zu\"")
 endif()
 
 set(EGLIB_GSIZE "size_t")
