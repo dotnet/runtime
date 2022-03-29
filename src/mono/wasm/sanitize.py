@@ -21,7 +21,7 @@ def remove(*paths):
 
 
 def rewrite_package_json(path):
-    package = open(path, "rb+")
+    package = open(path, "r+")
     settings = json.load(package)
     settings["devDependencies"] = {}
     package.seek(0)
