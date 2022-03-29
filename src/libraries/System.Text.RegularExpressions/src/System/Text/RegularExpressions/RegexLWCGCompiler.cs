@@ -4,6 +4,7 @@
 using System.Threading;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions
 {
@@ -65,6 +66,8 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Begins the definition of a new method (no args) with a specified return value.</summary>
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "Native AOT does not use compiled Regex")]
         private DynamicMethod DefineDynamicMethod(string methname, Type? returntype, Type hostType, Type[] paramTypes)
         {
             // We're claiming that these are static methods, but really they are instance methods.

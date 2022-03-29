@@ -15,6 +15,8 @@ namespace System.Text.RegularExpressions
     /// <summary>
     /// RegexCompiler translates a block of RegexCode to MSIL, and creates a subclass of the RegexRunner type.
     /// </summary>
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+        Justification = "Native AOT does not use compiled Regex")]
     internal abstract class RegexCompiler
     {
         private static readonly FieldInfo s_runtextstartField = RegexRunnerField("runtextstart");
