@@ -838,9 +838,26 @@ namespace DebuggerTests
             }
         }
 
-        public static void Evaluate()
+        public struct TestStruct
         {
-            var testClass = new TestClass();
+            public string fieldPublic = "public";
+            private string fieldPrivate = "private";
+            internal string fieldInternal = "internal";
+
+            public TestStruct()
+            {
+                var a = fieldPrivate;
+            }
+        }
+
+        public static void EvaluateClass()
+        {
+            var test = new TestClass();
+        }
+
+        public static void EvaluateStruct()
+        {
+            var test = new TestStruct();
         }
     }
 
