@@ -183,7 +183,7 @@ steps:
       chmod -R a+r .
       # remove net6.0-maccatalyst to work around https://github.com/dotnet/sdk/issues/21877
       cp MauiTesting.csproj MauiTesting.csproj.bak
-      sed -i'' -e 's/([>;])net[0-9]+.[0-9]-maccatalyst([;<])/\1\2/' -f MauiTesting.csproj
+      sed -i'' -e 's/\([>;]\)net[0-9]\+\.[0-9]-maccatalyst\([;<]\)/\1\2/' -f MauiTesting.csproj
       cat MauiTesting.csproj
       ../dotnet publish -bl:MauiiOS.binlog -f net6.0-ios --self-contained -r ios-arm64 -c Release /p:_RequireCodeSigning=false
       mv ./bin/Release/net6.0-ios/ios-arm64/publish/MauiTesting.ipa ./MauiiOSDefault.ipa
