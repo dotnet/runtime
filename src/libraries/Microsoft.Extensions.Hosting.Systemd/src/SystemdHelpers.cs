@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
                 int parentPid = Interop.libc.GetParentPid();
                 string ppidString = parentPid.ToString(NumberFormatInfo.InvariantInfo);
                 byte[] comm = File.ReadAllBytes("/proc/" + ppidString + "/comm");
-                return comm.AsSpan().SequenceEqual(Encoding.ASCII.GetBytes("systemd\n")); 
+                return comm.AsSpan().SequenceEqual(Encoding.ASCII.GetBytes("systemd\n"));
             }
             catch
             {
