@@ -142,6 +142,7 @@ namespace System.Net.Security
         internal X509CertificateCollection? ClientCertificates { get; set; }
         internal List<SslApplicationProtocol>? ApplicationProtocols { get; set; }
         internal bool IsServer { get; set; }
+        internal bool IsClient => !IsServer;
         internal SslStreamCertificateContext? CertificateContext { get; set; }
         internal SslProtocols EnabledSslProtocols { get; set; }
         internal X509RevocationMode CertificateRevocationCheckMode { get; set; }

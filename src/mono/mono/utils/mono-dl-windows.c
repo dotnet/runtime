@@ -14,6 +14,7 @@
 #if defined(HOST_WIN32)
 
 #include <mono/utils/mono-dl.h>
+#include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-dl-windows-internals.h>
 #include <mono/utils/mono-embed.h>
 #include <mono/utils/mono-path.h>
@@ -46,7 +47,7 @@ mono_dl_get_so_suffixes (void)
 }
 
 void*
-mono_dl_open_file (const char *file, int flags)
+mono_dl_open_file (const char *file, int flags, MonoError *error)
 {
 	gpointer hModule = NULL;
 	if (file) {
@@ -73,8 +74,13 @@ mono_dl_open_file (const char *file, int flags)
 
 		g_free (file_utf16);
 
-		if (!hModule)
+		if (!hModule) {
+			if (last_error == ERROR_BAD_EXE_FORMAT || last_error == ERROR_BAD_FORMAT)
+				mono_error_set_error (error, MONO_ERROR_BAD_IMAGE, NULL);
+			else
+				mono_error_set_error (error, MONO_ERROR_FILE_NOT_FOUND, NULL);
 			SetLastError (last_error);
+		}
 	} else {
 #if HAVE_API_SUPPORT_WIN32_GET_MODULE_HANDLE
 		hModule = GetModuleHandleW (NULL);
@@ -86,10 +92,13 @@ mono_dl_open_file (const char *file, int flags)
 }
 
 void
-mono_dl_close_handle (MonoDl *module)
+mono_dl_close_handle (MonoDl *module, MonoError *error)
 {
-	if (!module->main_module)
-		FreeLibrary ((HMODULE)module->handle);
+	if (!module->main_module) {
+		if (FreeLibrary ((HMODULE)module->handle) == FALSE) {
+			mono_error_set_invalid_operation (error, NULL);
+		}
+	}
 }
 
 #if HAVE_API_SUPPORT_WIN32_ENUM_PROCESS_MODULES

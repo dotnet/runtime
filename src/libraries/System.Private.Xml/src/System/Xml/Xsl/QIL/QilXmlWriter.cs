@@ -265,7 +265,7 @@ namespace System.Xml.Xsl.Qil
         /// </summary>
         protected override void EndScope(QilNode node)
         {
-            _ngen.ClearName(node);
+            NameGenerator.ClearName(node);
         }
 
         /// <summary>
@@ -430,7 +430,7 @@ namespace System.Xml.Xsl.Qil
             /// Clear name annotation from a node.
             /// </summary>
             /// <param name="n">the node</param>
-            public void ClearName(QilNode n)
+            public static void ClearName(QilNode n)
             {
                 if (n.Annotation is NameAnnotation)
                     n.Annotation = ((NameAnnotation)n.Annotation).PriorAnnotation;

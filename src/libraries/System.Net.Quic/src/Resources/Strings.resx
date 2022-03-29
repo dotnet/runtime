@@ -165,5 +165,8 @@
   <data name="net_ssl_app_protocols_invalid" xml:space="preserve">
     <value>The application protocol list is invalid.</value>
   </data>
+  <data name="net_quic_tls_version_notsupported" xml:space="preserve">
+    <value>Could not use a TLS version required by Quic. TLS 1.3 may have been disabled in the registry.</value>
+  </data>
 </root>
 

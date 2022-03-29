@@ -804,7 +804,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        private JObject GetPrototype(DotnetObjectId objectId, JObject args)
+        private static JObject GetPrototype(DotnetObjectId objectId, JObject args)
         {
             var o = JObject.FromObject(new
             {
@@ -816,10 +816,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             return o;
         }
 
-        private JObject ConvertToFirefoxContent(JToken res)
+        private static JObject ConvertToFirefoxContent(ValueOrError<JToken> res)
         {
             JObject variables = new JObject();
-            foreach (var variable in res)
+            //TODO check if res.Error and do something
+            foreach (var variable in res.Value)
             {
                 JObject variableDesc;
                 if (variable["get"] != null)

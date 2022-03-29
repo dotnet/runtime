@@ -240,7 +240,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             return !Log.HasLoggedErrors;
         }
 
-        private void EnsureWritable(string file)
+        private static void EnsureWritable(string file)
         {
             if (File.Exists(file))
             {

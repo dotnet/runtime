@@ -40,7 +40,7 @@ internal static partial class Interop
 #endif
             HandleRef hPrinter, string pDeviceName, IntPtr /*DEVMODE*/ pDevModeOutput, IntPtr /*DEVMODE*/ pDevModeInput, int fMode);
 
-        [LibraryImport(Libraries.Winspool, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Winspool, EntryPoint = "EnumPrintersW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int EnumPrinters(int flags, string? name, int level, IntPtr pPrinterEnum/*buffer*/, int cbBuf, out int pcbNeeded, out int pcReturned);
     }
 }

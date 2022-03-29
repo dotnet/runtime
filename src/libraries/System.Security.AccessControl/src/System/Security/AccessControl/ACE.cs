@@ -1088,7 +1088,7 @@ namespace System.Security.AccessControl
 
         #region Private Methods
 
-        private AceQualifier QualifierFromType(AceType type, out bool isCallback)
+        private static AceQualifier QualifierFromType(AceType type, out bool isCallback)
         {
             //
             // Better performance might be achieved by using a hard-coded table

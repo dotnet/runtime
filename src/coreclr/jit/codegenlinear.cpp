@@ -1600,6 +1600,13 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             assert(cast->isContained());
             genConsumeAddress(cast->CastOp());
         }
+        else if (tree->OperIs(GT_CAST))
+        {
+            // Can be contained as part of LEA on ARM64
+            GenTreeCast* cast = tree->AsCast();
+            assert(cast->isContained());
+            genConsumeAddress(cast->CastOp());
+        }
 #endif
         else if (tree->OperIsLocalRead())
         {

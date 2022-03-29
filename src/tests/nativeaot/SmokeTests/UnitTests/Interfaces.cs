@@ -930,6 +930,16 @@ public class Interfaces
             {
                 throw new Exception($"{actual} != {expected}");
             }
+
+            // Uncomment after we pick up fix for https://github.com/dotnet/roslyn/issues/60069
+#if false
+            Func<string> del = T.GetCookie;
+            actual = del();
+            if (actual != expected)
+            {
+                throw new Exception($"{actual} != {expected}");
+            }
+#endif
         }
 
         static void TestSimpleInterfaceWithGenericMethod<T, U>(string expected) where T : ISimple
@@ -939,11 +949,25 @@ public class Interfaces
             {
                 throw new Exception($"{actual} != {expected}");
             }
+
+            Func<string> del = T.GetCookieGeneric<U>;
+            actual = del();
+            if (actual != expected)
+            {
+                throw new Exception($"{actual} != {expected}");
+            }
         }
 
         static void TestVariantInterface<T, U>(string expected) where T : IVariant<U>
         {
             string actual = T.WhichMethod(default);
+            if (actual != expected)
+            {
+                throw new Exception($"{actual} != {expected}");
+            }
+
+            Func<U, string> del = T.WhichMethod;
+            actual = del(default);
             if (actual != expected)
             {
                 throw new Exception($"{actual} != {expected}");

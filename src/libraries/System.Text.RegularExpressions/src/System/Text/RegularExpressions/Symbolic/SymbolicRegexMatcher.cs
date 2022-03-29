@@ -1053,8 +1053,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Only create data used for capturing mode if there are subcaptures
                 if (capsize > 1)
                 {
-                    Current = new();
-                    Next = new();
+                    Current = new SparseIntMap<Registers>();
+                    Next = new SparseIntMap<Registers>();
                     InitialRegisters = new Registers(new int[capsize], new int[capsize]);
                 }
             }

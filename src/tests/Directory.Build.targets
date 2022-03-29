@@ -430,6 +430,12 @@
 
   </Target>
 
+  <Target Name="GetProjectsWithDisabledBuild" Returns="@(ProjectWithDisabledBuild)">
+    <ItemGroup Condition="'$(_WillCLRTestProjectBuild)' != 'true'">
+      <ProjectWithDisabledBuild Include="$(MSBuildProjectFullPath)" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="GetRequiresProcessIsolation" Returns="@(ProjectRequiringProcessIsolation)">
     <ItemGroup Condition="'$(RequiresProcessIsolation)' == 'true'">
       <ProjectRequiringProcessIsolation Include="$(MSBuildProjectFullPath)" />
