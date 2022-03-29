@@ -2046,19 +2046,29 @@ MAPmmapAndRecord(
         // Once PROT_WRITE and PROT_EXEC are set together, Apple Silicon will require the use of
         // PAL_JitWriteProtect to switch between executable and writable.
         LPVOID pvMappedFile = mmap(NULL, len + adjust, PROT_READ, MAP_PRIVATE, fd, offset - adjust);
-        if (pvMappedFile == MAP_FAILED ||
-            (mprotect(pvBaseAddress, len + adjust, prot | PROT_WRITE) == -1))
+        if (MAP_FAILED == pvMappedFile)
         {
+            ERROR_(LOADER)("mmap failed with code %d: %s.\n", errno, strerror(errno));
             palError = FILEGetLastErrorFromErrno();
         }
         else
         {
-            PAL_JitWriteProtect(true);
-            memcpy(pvBaseAddress, pvMappedFile, len + adjust);
-            PAL_JitWriteProtect(false);
-            if (munmap(pvMappedFile, len + adjust) == -1)
+            if (-1 == mprotect(pvBaseAddress, len + adjust, prot | PROT_WRITE))
             {
+                ERROR_(LOADER)("mprotect failed with code %d: %s.\n", errno, strerror(errno));
                 palError = FILEGetLastErrorFromErrno();
+            }
+            else
+            {
+                PAL_JitWriteProtect(true);
+                memcpy(pvBaseAddress, pvMappedFile, len + adjust);
+                PAL_JitWriteProtect(false);
+            }
+            if (-1 == munmap(pvMappedFile, len + adjust))
+            {
+                ERROR_(LOADER)("Unable to unmap the file. Expect trouble.\n");
+                if (NO_ERROR == palError)
+                    palError = FILEGetLastErrorFromErrno();
             }
         }
 #else
