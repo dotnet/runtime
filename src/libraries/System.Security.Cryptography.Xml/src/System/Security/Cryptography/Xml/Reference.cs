@@ -219,7 +219,7 @@ namespace System.Security.Cryptography.Xml
             // Transforms
             bool hasTransforms = false;
             TransformChain = new TransformChain();
-            XmlNodeList transformsNodes = value.SelectNodes("ds:Transforms", nsm);
+            XmlNodeList? transformsNodes = value.SelectNodes("ds:Transforms", nsm);
             if (transformsNodes != null && transformsNodes.Count != 0)
             {
                 if (transformsNodes.Count > 1)
@@ -227,15 +227,15 @@ namespace System.Security.Cryptography.Xml
                     throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference/Transforms");
                 }
                 hasTransforms = true;
-                XmlElement transformsElement = transformsNodes[0] as XmlElement;
-                if (!Utils.VerifyAttributes(transformsElement, (string[])null))
+                XmlElement transformsElement = (transformsNodes[0] as XmlElement)!;
+                if (!Utils.VerifyAttributes(transformsElement, (string[]?)null))
                 {
                     throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference/Transforms");
                 }
-                XmlNodeList transformNodes = transformsElement.SelectNodes("ds:Transform", nsm);
+                XmlNodeList? transformNodes = transformsElement.SelectNodes("ds:Transform", nsm);
                 if (transformNodes != null)
                 {
-                    if (transformNodes.Count != transformsElement.SelectNodes("*").Count)
+                    if (transformNodes.Count != transformsElement.SelectNodes("*")!.Count)
                     {
                         throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference/Transforms");
                     }
@@ -245,13 +245,13 @@ namespace System.Security.Cryptography.Xml
                     }
                     foreach (XmlNode transformNode in transformNodes)
                     {
-                        XmlElement transformElement = transformNode as XmlElement;
-                        string algorithm = Utils.GetAttribute(transformElement, "Algorithm", SignedXml.XmlDsigNamespaceUrl);
+                        XmlElement transformElement = (transformNode as XmlElement)!;
+                        string? algorithm = Utils.GetAttribute(transformElement, "Algorithm", SignedXml.XmlDsigNamespaceUrl);
                         if (algorithm == null || !Utils.VerifyAttributes(transformElement, "Algorithm"))
                         {
                             throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
                         }
-                        Transform transform = CryptoHelpers.CreateFromName<Transform>(algorithm);
+                        Transform? transform = CryptoHelpers.CreateFromName<Transform>(algorithm);
                         if (transform == null)
                         {
                             throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
@@ -265,7 +265,7 @@ namespace System.Security.Cryptography.Xml
                         {
                             // Walk back to the Signature tag. Find the nearest signature ancestor
                             // Signature-->SignedInfo-->Reference-->Transforms-->Transform
-                            XmlNode signatureTag = transformElement.SelectSingleNode("ancestor::ds:Signature[1]", nsm);
+                            XmlNode? signatureTag = transformElement.SelectSingleNode("ancestor::ds:Signature[1]", nsm);
 
                             // Resolve the reference to get starting point for position calculation.
                             XmlNode referenceTarget =
@@ -273,7 +273,7 @@ namespace System.Security.Cryptography.Xml
                                 ? transformElement.OwnerDocument
                                 : SignedXml.GetIdElement(transformElement.OwnerDocument, Utils.GetIdFromLocalUri(_uri, out bool _));
 
-                            XmlNodeList signatureList = referenceTarget?.SelectNodes(".//ds:Signature", nsm);
+                            XmlNodeList? signatureList = referenceTarget?.SelectNodes(".//ds:Signature", nsm);
                             if (signatureList != null)
                             {
                                 int position = 0;
@@ -293,26 +293,26 @@ namespace System.Security.Cryptography.Xml
             }
 
             // DigestMethod
-            XmlNodeList digestMethodNodes = value.SelectNodes("ds:DigestMethod", nsm);
+            XmlNodeList? digestMethodNodes = value.SelectNodes("ds:DigestMethod", nsm);
             if (digestMethodNodes == null || digestMethodNodes.Count == 0 || digestMethodNodes.Count > 1)
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference/DigestMethod");
-            XmlElement digestMethodElement = digestMethodNodes[0] as XmlElement;
-            _digestMethod = Utils.GetAttribute(digestMethodElement, "Algorithm", SignedXml.XmlDsigNamespaceUrl);
+            XmlElement digestMethodElement = (digestMethodNodes[0] as XmlElement)!;
+            _digestMethod = Utils.GetAttribute(digestMethodElement, "Algorithm", SignedXml.XmlDsigNamespaceUrl)!;
             if (_digestMethod == null || !Utils.VerifyAttributes(digestMethodElement, "Algorithm"))
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference/DigestMethod");
 
 
             // DigestValue
-            XmlNodeList digestValueNodes = value.SelectNodes("ds:DigestValue", nsm);
+            XmlNodeList? digestValueNodes = value.SelectNodes("ds:DigestValue", nsm);
             if (digestValueNodes == null || digestValueNodes.Count == 0 || digestValueNodes.Count > 1)
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference/DigestValue");
-            XmlElement digestValueElement = digestValueNodes[0] as XmlElement;
+            XmlElement digestValueElement = (digestValueNodes[0] as XmlElement)!;
             _digestValue = Convert.FromBase64String(Utils.DiscardWhiteSpaces(digestValueElement.InnerText));
-            if (!Utils.VerifyAttributes(digestValueElement, (string[])null))
+            if (!Utils.VerifyAttributes(digestValueElement, (string[]?)null))
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference/DigestValue");
             // Verify that there aren't any extra nodes that aren't allowed
             int expectedChildNodeCount = hasTransforms ? 3 : 2;
-            if (value.SelectNodes("*").Count != expectedChildNodeCount)
+            if (value.SelectNodes("*")!.Count != expectedChildNodeCount)
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference");
 
             // cache the Xml
