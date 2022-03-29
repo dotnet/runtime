@@ -23,12 +23,12 @@ namespace Microsoft.Extensions.Caching.Distributed
             _memCache = new MemoryCache(optionsAccessor.Value, loggerFactory);
         }
 
-        public byte[] Get(string key!!)
+        public byte[]? Get(string key!!)
         {
-            return (byte[])_memCache.Get(key);
+            return (byte[]?)_memCache.Get(key);
         }
 
-        public Task<byte[]> GetAsync(string key!!, CancellationToken token = default(CancellationToken))
+        public Task<byte[]?> GetAsync(string key!!, CancellationToken token = default(CancellationToken))
         {
             return Task.FromResult(Get(key));
         }

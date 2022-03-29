@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,12 +19,12 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private readonly MemoryCache _cache;
 
-        private CacheEntryTokens _tokens; // might be null if user is not using the tokens or callbacks
+        private CacheEntryTokens? _tokens; // might be null if user is not using the tokens or callbacks
         private TimeSpan _absoluteExpirationRelativeToNow;
         private TimeSpan _slidingExpiration;
         private long _size = -1;
-        private CacheEntry _previous; // this field is not null only before the entry is added to the cache and tracking is enabled
-        private object _value;
+        private CacheEntry? _previous; // this field is not null only before the entry is added to the cache and tracking is enabled
+        private object? _value;
         private DateTime _absoluteExpiration;
         private short _absoluteExpirationOffsetMinutes;
         private bool _isDisposed;
@@ -132,11 +133,13 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// Gets the <see cref="IChangeToken"/> instances which cause the cache entry to expire.
         /// </summary>
+        [MemberNotNull(nameof(_tokens))]
         public IList<IChangeToken> ExpirationTokens => GetOrCreateTokens().ExpirationTokens;
 
         /// <summary>
         /// Gets or sets the callbacks will be fired after the cache entry is evicted from the cache.
         /// </summary>
+        [MemberNotNull(nameof(_tokens))]
         public IList<PostEvictionCallbackRegistration> PostEvictionCallbacks => GetOrCreateTokens().PostEvictionCallbacks;
 
         /// <summary>
@@ -167,7 +170,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         public object Key { get; }
 
-        public object Value
+        public object? Value
         {
             get => _value;
             set
@@ -268,7 +271,7 @@ namespace Microsoft.Extensions.Caching.Memory
             // start a new thread to avoid issues with callbacks called from RegisterChangeCallback
             Task.Factory.StartNew(state =>
             {
-                var entry = (CacheEntry)state;
+                var entry = (CacheEntry)state!;
                 entry.SetExpired(EvictionReason.TokenExpired);
                 entry._cache.EntryExpired(entry);
             }, obj, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
@@ -280,7 +283,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal void PropagateOptionsToCurrent()
         {
-            CacheEntry parent = _current.Value;
+            CacheEntry? parent = _current.Value;
             if (parent == null)
             {
                 return;
@@ -297,6 +300,7 @@ namespace Microsoft.Extensions.Caching.Memory
             _tokens?.PropagateTokens(parent);
         }
 
+        [MemberNotNull(nameof(_tokens))]
         private CacheEntryTokens GetOrCreateTokens()
         {
             if (_tokens != null)

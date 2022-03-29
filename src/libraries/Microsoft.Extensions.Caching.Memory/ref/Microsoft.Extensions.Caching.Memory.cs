@@ -10,8 +10,8 @@ namespace Microsoft.Extensions.Caching.Distributed
     {
         public MemoryDistributedCache(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryDistributedCacheOptions> optionsAccessor) { }
         public MemoryDistributedCache(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryDistributedCacheOptions> optionsAccessor, Microsoft.Extensions.Logging.ILoggerFactory loggerFactory) { }
-        public byte[] Get(string key) { throw null; }
-        public System.Threading.Tasks.Task<byte[]> GetAsync(string key, System.Threading.CancellationToken token = default(System.Threading.CancellationToken)) { throw null; }
+        public byte[]? Get(string key) { throw null; }
+        public System.Threading.Tasks.Task<byte[]?> GetAsync(string key, System.Threading.CancellationToken token = default(System.Threading.CancellationToken)) { throw null; }
         public void Refresh(string key) { }
         public System.Threading.Tasks.Task RefreshAsync(string key, System.Threading.CancellationToken token = default(System.Threading.CancellationToken)) { throw null; }
         public void Remove(string key) { }
@@ -33,13 +33,13 @@ namespace Microsoft.Extensions.Caching.Memory
         protected virtual void Dispose(bool disposing) { }
         ~MemoryCache() { }
         public void Remove(object key) { }
-        public bool TryGetValue(object key, out object result) { throw null; }
+        public bool TryGetValue(object key, out object? result) { throw null; }
         public void Clear() { }
     }
     public partial class MemoryCacheOptions : Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryCacheOptions>
     {
         public MemoryCacheOptions() { }
-        public Microsoft.Extensions.Internal.ISystemClock Clock { get { throw null; } set { } }
+        public Microsoft.Extensions.Internal.ISystemClock? Clock { get { throw null; } set { } }
         public double CompactionPercentage { get { throw null; } set { } }
         public System.TimeSpan ExpirationScanFrequency { get { throw null; } set { } }
         Microsoft.Extensions.Caching.Memory.MemoryCacheOptions Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryCacheOptions>.Value { get { throw null; } }

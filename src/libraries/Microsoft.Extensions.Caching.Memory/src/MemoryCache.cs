@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -107,7 +108,7 @@ namespace Microsoft.Extensions.Caching.Memory
             entry.LastAccessed = utcNow;
 
             CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
-            if (coherentState._entries.TryGetValue(entry.Key, out CacheEntry priorEntry))
+            if (coherentState._entries.TryGetValue(entry.Key, out CacheEntry? priorEntry))
             {
                 priorEntry.SetExpired(EvictionReason.Replaced);
             }
@@ -182,7 +183,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         /// <inheritdoc />
-        public bool TryGetValue(object key!!, out object result)
+        public bool TryGetValue(object key!!, out object? result)
         {
             CheckDisposed();
 
@@ -229,7 +230,7 @@ namespace Microsoft.Extensions.Caching.Memory
             CheckDisposed();
 
             CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
-            if (coherentState._entries.TryRemove(key, out CacheEntry entry))
+            if (coherentState._entries.TryRemove(key, out CacheEntry? entry))
             {
                 if (_options.HasSizeLimit)
                 {
@@ -278,7 +279,7 @@ namespace Microsoft.Extensions.Caching.Memory
             void ScheduleTask(DateTime utcNow)
             {
                 _lastExpirationScan = utcNow;
-                Task.Factory.StartNew(state => ((MemoryCache)state).ScanForExpiredItems(), this,
+                Task.Factory.StartNew(state => ((MemoryCache)state!).ScanForExpiredItems(), this,
                     CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             }
         }
@@ -335,7 +336,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 _logger.LogDebug("Overcapacity compaction triggered");
 
             // Spawn background thread for compaction
-            ThreadPool.QueueUserWorkItem(s => ((MemoryCache)s).OvercapacityCompaction(), this);
+            ThreadPool.QueueUserWorkItem(s => ((MemoryCache)s!).OvercapacityCompaction(), this);
         }
 
         private void OvercapacityCompaction()
@@ -481,6 +482,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 Throw();
             }
 
+            [DoesNotReturn]
             static void Throw() => throw new ObjectDisposedException(typeof(MemoryCache).FullName);
         }
 
