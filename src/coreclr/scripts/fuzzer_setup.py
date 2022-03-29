@@ -79,7 +79,10 @@ def main(main_args):
 
     coreclr_args = setup_args(main_args)
     arch_name = coreclr_args.arch
-    os_name = "win" if coreclr_args.platform.lower() == "windows" else "linux"
+    os_name = coreclr_args.platform.lower()
+    if os_name == "windows":
+        os_name = "win"
+
     run_configuration = "{}-{}".format(os_name, arch_name)
     source_directory = coreclr_args.source_directory
 
@@ -109,7 +112,7 @@ def main(main_args):
         acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json"])
     else:
         # Need to accept files without any extension, which is how executable file's names look.
-        acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in [".py", ".dll", ".so", ".json", ".a"])
+        acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in [".py", ".dll", ".so", ".dylib", ".json", ".a"])
 
     # copy CORE_ROOT
     print('Copying {} -> {}'.format(coreclr_args.core_root_directory, coreroot_directory))
@@ -139,13 +142,6 @@ def main(main_args):
             copy_directory(publish_dir, dst_directory, verbose_output=True, match_func=acceptable_copy)
     except PermissionError as pe:
         print("Skipping file. Got error: %s", pe)
-
-    # create foo.txt in work_item directories
-    workitem_directory = path.join(source_directory, "workitem")
-    os.mkdir(workitem_directory)
-    foo_txt = os.path.join(workitem_directory, "foo.txt")
-    with open(foo_txt, "w") as foo_txt_file:
-        foo_txt_file.write("hello world!")
 
     # Set variables
     print('Setting pipeline variables:')
