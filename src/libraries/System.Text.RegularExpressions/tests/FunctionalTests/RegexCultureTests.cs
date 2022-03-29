@@ -338,7 +338,6 @@ namespace System.Text.RegularExpressions.Tests
 
         private const char Turkish_I_withDot = '\u0130';
         private const char Turkish_i_withoutDot = '\u0131';
-        private const char Kelvin_sign = '\u212A';
 
         /// <summary>
         /// This test is to make sure that the generated IgnoreCaseRelation table for NonBacktracking does not need to be updated.

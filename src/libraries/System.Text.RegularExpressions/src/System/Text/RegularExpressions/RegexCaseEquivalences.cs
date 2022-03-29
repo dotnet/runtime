@@ -14,6 +14,12 @@ namespace System.Text.RegularExpressions
     /// </summary>
     internal static partial class RegexCaseEquivalences
     {
+
+        private static char[] s_specialCasingSetBehaviors { get; } = new char[5]
+        {
+            'I', 'i', '\u0130', 'I', '\u0131'
+        };
+
         /// <summary>
         /// Performs a fast lookup which determines if a character is involved in case conversion, as well as
         /// returns the characters that should be considered equivalent in case it does participate in case conversion.
@@ -33,16 +39,16 @@ namespace System.Text.RegularExpressions
                 equivalences = c switch
                 {
                     // Invariant mappings
-                    'i' or 'I' when mappingBehavior is RegexCaseBehavior.Invariant => new[] { 'I', 'i' },
+                    'i' or 'I' when mappingBehavior is RegexCaseBehavior.Invariant => s_specialCasingSetBehaviors.AsSpan(0, 2), // 'I' and 'i'
 
                     // Non-Turkish mappings
-                    'i' when mappingBehavior is RegexCaseBehavior.NonTurkish => new[] { 'I', 'i', '\u0130' },
-                    'I' when mappingBehavior is RegexCaseBehavior.NonTurkish => new[] { 'I', 'i', },
-                    '\u0130' when mappingBehavior is RegexCaseBehavior.NonTurkish => new[] { 'i', '\u0130' },
+                    'i' when mappingBehavior is RegexCaseBehavior.NonTurkish => s_specialCasingSetBehaviors.AsSpan(0, 3), // 'I', 'i', and '\u0130'
+                    'I' when mappingBehavior is RegexCaseBehavior.NonTurkish => s_specialCasingSetBehaviors.AsSpan(0, 2), // 'I' and 'i'
+                    '\u0130' when mappingBehavior is RegexCaseBehavior.NonTurkish => s_specialCasingSetBehaviors.AsSpan(1, 2), // 'i' and '\u0130'
 
                     // Turkish mappings
-                    'I' or '\u0131' when mappingBehavior is RegexCaseBehavior.Turkish => new[] { 'I', '\u0131' },
-                    'i' or '\u0130' when mappingBehavior is RegexCaseBehavior.Turkish => new[] { 'i', '\u0130' },
+                    'I' or '\u0131' when mappingBehavior is RegexCaseBehavior.Turkish => s_specialCasingSetBehaviors.AsSpan(3, 2), // 'I' and '\u0131'
+                    'i' or '\u0130' when mappingBehavior is RegexCaseBehavior.Turkish => s_specialCasingSetBehaviors.AsSpan(1, 2), // 'i' and '\u0130'
 
                     // Default
                     _ => null
@@ -109,7 +115,7 @@ namespace System.Text.RegularExpressions
         ///                                  the number of characters that are considered equivalent to <paramref name="c"/>. The rest of the 13 bits of the ushort represent
         ///                                  the index that should be used to get those equivalent characters in the 'EquivalenceCasingValues' table. We first calculate the
         ///                                  index2 based on the value obtained from the first level lookup table and adding <paramref name="c"/> modulo 1024. If the value of
-        ///                                  EquivalnceCasingMap[index2] is 0xFFFF then <paramref name="c"/> isn't involved in case conversion so we return false. Otherwise,
+        ///                                  EquivalenceCasingMap[index2] is 0xFFFF then <paramref name="c"/> isn't involved in case conversion so we return false. Otherwise,
         ///                                  we decompose the ushort into the highest 3 bits, and the other 13 to compute two different numbers: the number of equivalence characters
         ///                                  to grab from the third table (highest 3 bits and save it as count), and the index (aka. index3) to grab them from (other 13 bits).
         ///       EquivalenceCasingValues => The final table contains ushort representing characters. We grab the index3 computed in the previous table, and we use it
@@ -146,9 +152,9 @@ namespace System.Text.RegularExpressions
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             ReadOnlySpan<char> PerformSecondLevelLookup()
             {
-                // Bitwise And to 0x03ff to perform an optimal modulo 1024 (0x400) operation. 0x03ff = 0x400 - 1
-                Debug.Assert(((c & 0x03ff) + FirstLevelLookupValue) < 0xFFFF);
-                ushort index2 = (ushort)((c & 0x03ff) + FirstLevelLookupValue);
+                // Bitwise And to 0b11_1111_1111 to perform an optimal modulo 1024 (0b100_0000_0000) operation.
+                Debug.Assert(((c & 0b11_1111_1111) + FirstLevelLookupValue) < 0xFFFF);
+                ushort index2 = (ushort)((c & 0b11_1111_1111) + FirstLevelLookupValue);
                 ushort mappingValue = EquivalenceCasingMap[index2];
                 if (mappingValue == 0xFFFF)
                 {

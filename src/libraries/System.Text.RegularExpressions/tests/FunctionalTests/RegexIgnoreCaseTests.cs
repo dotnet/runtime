@@ -10,7 +10,7 @@ using Xunit;
 namespace System.Text.RegularExpressions.Tests
 {
     // This test takes a long time to run since it needs to compute all possible lowercase mappings across
-    // 3 different culutres and then creates Regex matches for all of our engines for each mapping.
+    // 3 different cultures and then creates Regex matches for all of our engines for each mapping.
     [OuterLoop]
     public class RegexIgnoreCaseTests
     {
@@ -63,7 +63,7 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> Unicode_IgnoreCase_TestData()
         {
-            foreach (string culture in new[] { "", "en-US", "tr-TR" })
+            foreach (string culture in new[] { "", "EN-US", "tr-TR", "AZ" })
             {
                 foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
                 {

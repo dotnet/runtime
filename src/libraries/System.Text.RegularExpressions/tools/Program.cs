@@ -144,7 +144,7 @@ namespace GenerateRegexCasingTable
         {
             if ((int)x == (int)y)
                 return 0;
-            else if ((int)x > y)
+            else if ((int)x > (int)y)
                 return 1;
             else
                 return -1;

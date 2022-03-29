@@ -1170,7 +1170,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // Detect whether every branch begins with one or more unique characters.
-                const int SetCharsSize = 5; // arbitrary limit
+                const int SetCharsSize = 5; // arbitrary limit (for IgnoreCase, we want this to be at least 3 to handle the vast majority of values)
                 Span<char> setChars = stackalloc char[SetCharsSize];
                 if (useSwitchedBranches)
                 {
@@ -3931,11 +3931,8 @@ namespace System.Text.RegularExpressions.Generator
             // We know that the whole class wasn't ASCII, and we don't know anything about the non-ASCII
             // characters other than that some might be included, for example if the character class
             // were [\w\d], so since ch >= 128, we need to fall back to calling CharInClass.
-            return negate switch
-            {
-                false => $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0 : RegexRunner.CharInClass((char)ch, {Literal(charClass)}))",
-                true => $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) == 0 : !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))",
-            };
+            return negate ? $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) == 0 : !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))"
+                : $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0 : RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
         }
 
         /// <summary>
