@@ -153,7 +153,7 @@ namespace System.Security.Cryptography.Xml
 
         public XmlElement GetXml()
         {
-            if (CacheValid) return (_cachedXml);
+            if (CacheValid) return (_cachedXml!);
 
             XmlDocument document = new XmlDocument();
             document.PreserveWhitespace = true;
@@ -188,13 +188,13 @@ namespace System.Security.Cryptography.Xml
 
             if (DigestValue == null)
             {
-                if (_hashAlgorithm.Hash == null)
+                if (_hashAlgorithm!.Hash == null)
                     throw new CryptographicException(SR.Cryptography_Xml_DigestValueRequired);
                 DigestValue = _hashAlgorithm.Hash;
             }
 
             XmlElement digestValueElement = document.CreateElement("DigestValue", SignedXml.XmlDsigNamespaceUrl);
-            digestValueElement.AppendChild(document.CreateTextNode(Convert.ToBase64String(_digestValue)));
+            digestValueElement.AppendChild(document.CreateTextNode(Convert.ToBase64String(_digestValue!)));
             referenceElement.AppendChild(digestValueElement);
 
             return referenceElement;
@@ -347,10 +347,10 @@ namespace System.Security.Cryptography.Xml
 
             // Let's go get the target.
             string baseUri = (document == null ? System.Environment.CurrentDirectory + "\\" : document.BaseURI);
-            Stream hashInputStream = null;
-            WebResponse response = null;
-            Stream inputStream = null;
-            XmlResolver resolver = null;
+            Stream? hashInputStream = null;
+            WebResponse? response = null;
+            Stream? inputStream = null;
+            XmlResolver? resolver = null;
             byte[]? hashval = null;
 
             try
@@ -369,10 +369,10 @@ namespace System.Security.Cryptography.Xml
                         if (_uri == null)
                         {
                             // We need to create a DocumentNavigator out of the XmlElement
-                            resolver = (SignedXml.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
+                            resolver = (SignedXml!.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
                             // In the case of a Uri-less reference, we will simply pass null to the transform chain.
                             // The first transform in the chain is expected to know how to retrieve the data to hash.
-                            hashInputStream = TransformChain.TransformToOctetStream((Stream)null, resolver, baseUri);
+                            hashInputStream = TransformChain.TransformToOctetStream((Stream?)null, resolver, baseUri);
                         }
                         else if (_uri.Length == 0)
                         {
@@ -382,7 +382,7 @@ namespace System.Security.Cryptography.Xml
                                 throw new CryptographicException(SR.Format(SR.Cryptography_Xml_SelfReferenceRequiresContext, _uri));
 
                             // Normalize the containing document
-                            resolver = (SignedXml.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
+                            resolver = (SignedXml!.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
                             XmlDocument docWithNoComments = Utils.DiscardComments(Utils.PreProcessDocumentInput(document, resolver, baseUri));
                             hashInputStream = TransformChain.TransformToOctetStream(docWithNoComments, resolver, baseUri);
                         }
@@ -398,12 +398,12 @@ namespace System.Security.Cryptography.Xml
                                     throw new CryptographicException(SR.Format(SR.Cryptography_Xml_SelfReferenceRequiresContext, _uri));
 
                                 // We should not discard comments here!!!
-                                resolver = (SignedXml.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
+                                resolver = (SignedXml!.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
                                 hashInputStream = TransformChain.TransformToOctetStream(Utils.PreProcessDocumentInput(document, resolver, baseUri), resolver, baseUri);
                                 break;
                             }
 
-                            XmlElement elem = SignedXml.GetIdElement(document, idref);
+                            XmlElement? elem = SignedXml!.GetIdElement(document, idref);
                             if (elem != null)
                                 _namespaces = Utils.GetPropagatedAttributes(elem.ParentNode as XmlElement);
 
@@ -414,12 +414,12 @@ namespace System.Security.Cryptography.Xml
                                 {
                                     foreach (XmlNode node in refList)
                                     {
-                                        XmlElement tempElem = node as XmlElement;
+                                        XmlElement? tempElem = node as XmlElement;
                                         if ((tempElem != null) && (Utils.HasAttribute(tempElem, "Id", SignedXml.XmlDsigNamespaceUrl))
-                                            && (Utils.GetAttribute(tempElem, "Id", SignedXml.XmlDsigNamespaceUrl).Equals(idref)))
+                                            && (Utils.GetAttribute(tempElem, "Id", SignedXml.XmlDsigNamespaceUrl)!.Equals(idref)))
                                         {
                                             elem = tempElem;
-                                            if (_signedXml._context != null)
+                                            if (_signedXml!._context != null)
                                                 _namespaces = Utils.GetPropagatedAttributes(_signedXml._context);
                                             break;
                                         }
@@ -430,9 +430,9 @@ namespace System.Security.Cryptography.Xml
                             if (elem == null)
                                 throw new CryptographicException(SR.Cryptography_Xml_InvalidReference);
 
-                            XmlDocument normDocument = Utils.PreProcessElementInput(elem, resolver, baseUri);
+                            XmlDocument normDocument = Utils.PreProcessElementInput(elem, resolver!, baseUri);
                             // Add the propagated attributes
-                            Utils.AddNamespaces(normDocument.DocumentElement, _namespaces);
+                            Utils.AddNamespaces(normDocument.DocumentElement!, _namespaces);
 
                             resolver = (SignedXml.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
                             if (discardComments)
@@ -454,7 +454,7 @@ namespace System.Security.Cryptography.Xml
                         break;
                     case ReferenceTargetType.XmlElement:
                         // We need to create a DocumentNavigator out of the XmlElement
-                        resolver = (SignedXml.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
+                        resolver = (SignedXml!.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
                         hashInputStream = TransformChain.TransformToOctetStream(Utils.PreProcessElementInput((XmlElement)_refTarget, resolver, baseUri), resolver, baseUri);
                         break;
                     default:
@@ -463,7 +463,7 @@ namespace System.Security.Cryptography.Xml
 
                 // Compute the new hash value
                 hashInputStream = SignedXmlDebugLog.LogReferenceData(this, hashInputStream);
-                hashval = _hashAlgorithm.ComputeHash(hashInputStream);
+                hashval = _hashAlgorithm.ComputeHash(hashInputStream!);
             }
             finally
             {

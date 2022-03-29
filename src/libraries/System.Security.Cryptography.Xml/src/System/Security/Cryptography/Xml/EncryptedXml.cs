@@ -189,7 +189,7 @@ namespace System.Security.Cryptography.Xml
             {
                 if (cipherData.CipherReference.CipherValue != null)
                     return cipherData.CipherReference.CipherValue;
-                Stream decInputStream;
+                Stream? decInputStream;
                 if (cipherData.CipherReference.Uri == null)
                 {
                     throw new CryptographicException(SR.Cryptography_Xml_UriNotSupported);
