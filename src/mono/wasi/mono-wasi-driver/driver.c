@@ -12,8 +12,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include <glib.h>
-
 #define INVARIANT_GLOBALIZATION 1
 
 #include <mono/metadata/assembly.h>
@@ -21,6 +19,12 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/mono-gc.h>
+#include <mono/metadata/loader.h>
+#include <mono/metadata/object.h>
+#include <mono/metadata/metadata.h>
+#include <mono/metadata/class.h>
+#include <mono/metadata/appdomain.h>
+#include <mono/metadata/mono-debug.h>
 
 #include <mono/metadata/mono-private-unstable.h>
 
@@ -30,8 +34,6 @@
 #include <mono/jit/mono-private-unstable.h>
 
 #include "wasm/runtime/pinvoke.h"
-#include <mono/mini/debugger-agent-external.h>
-#include <mono/component/debugger-engine.h>
 
 void mono_wasm_enable_debugging (int);
 
@@ -58,6 +60,9 @@ mono_string_instance_is_interned (MonoString *str_raw);
 
 void mono_trace_init (void);
 
+#define g_new(type, size)  ((type *) malloc (sizeof (type) * (size)))
+#define g_new0(type, size) ((type *) calloc (sizeof (type), (size)))
+
 static MonoDomain *root_domain;
 
 #define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
@@ -72,6 +77,7 @@ wasm_trace_logger (const char *log_domain, const char *log_level, const char *me
 
 typedef uint32_t target_mword;
 typedef target_mword SgenDescriptor;
+typedef SgenDescriptor MonoGCDescriptor;
 
 typedef struct WasmAssembly_ WasmAssembly;
 
@@ -113,6 +119,15 @@ struct WasmSatelliteAssembly_ {
 
 static WasmSatelliteAssembly *satellite_assemblies;
 static int satellite_assembly_count;
+
+int32_t time(int32_t x) {
+	// In the current prototype, libSystem.Native.a is built using Emscripten, whereas the WASI-enabled runtime is being built
+	// using WASI SDK. Emscripten says that time() returns int32, whereas WASI SDK says it returns int64.
+	// TODO: Build libSystem.Native.a using WASI SDK.
+	// In the meantime, as a workaround we can define an int32-returning implementation for time() here.
+	struct timeval time;
+	return (gettimeofday(&time, NULL) == 0) ? time.tv_sec : 0;
+}
 
 typedef struct
 {
@@ -399,7 +414,13 @@ mono_wasm_load_runtime (const char *argv, int debug_level)
     // corlib assemblies.
 	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
-	mono_debugger_agent_parse_options(argv);
+	if (debug_level != 0)
+	{
+		mono_jit_parse_options (1, &argv);
+		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
+		// Disable optimizations which interfere with debugging
+		interp_opts = "-all";
+	}
 	// When the list of app context properties changes, please update RuntimeConfigReservedProperties for
 	// target _WasmGenerateRuntimeConfig in WasmApp.targets file
 	const char *appctx_keys[2];
@@ -436,19 +457,6 @@ mono_wasm_load_runtime (const char *argv, int debug_level)
 
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
 
-	/*
-	 * debug_level > 0 enables debugging and sets the debug log level to debug_level
-	 * debug_level == 0 disables debugging and enables interpreter optimizations
-	 * debug_level < 0 enabled debugging and disables debug logging.
-	 *
-	 * Note: when debugging is enabled interpreter optimizations are disabled.
-	 */
-	if (debug_level) {
-		// Disable optimizations which interfere with debugging
-		interp_opts = "-all";
-		mono_wasm_enable_debugging (debug_level);
-	}
-	mono_debug_init (MONO_DEBUG_FORMAT_MONO);
 	mono_ee_interp_init (interp_opts);
 	mono_marshal_ilgen_init ();
 	mono_method_builder_ilgen_init ();

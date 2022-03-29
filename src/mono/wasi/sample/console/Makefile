@@ -20,4 +20,4 @@ $(BIN_DIR)/WasiConsoleApp.dll: WasiConsoleApp/*.csproj WasiConsoleApp/*.cs
 	cp -R $(BROWSER_WASM_RUNTIME_PATH) $(BIN_DIR)/runtime
 
 debug: all
-	wasmtime --tcplisten localhost:64000 --dir=. console.wasm "transport=wasi_socket,address=127.0.0.1:64000,loglevel=0"
+	/home/thaysgrazia/wasmtime/target/release/wasmtime --tcplisten localhost:64000 --dir=. console.wasm "debug"
