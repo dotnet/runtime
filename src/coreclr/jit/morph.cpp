@@ -5888,11 +5888,27 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 {
     assert(tree->gtOper == GT_FIELD);
 
-    CORINFO_FIELD_HANDLE symHnd          = tree->AsField()->gtFldHnd;
-    unsigned             fldOffset       = tree->AsField()->gtFldOffset;
-    GenTree*             objRef          = tree->AsField()->GetFldObj();
-    bool                 fieldMayOverlap = false;
-    bool                 objIsLocal      = false;
+    CORINFO_FIELD_HANDLE symHnd     = tree->AsField()->gtFldHnd;
+    unsigned             fldOffset  = tree->AsField()->gtFldOffset;
+    GenTree*             objRef     = tree->AsField()->GetFldObj();
+    bool                 objIsLocal = false;
+
+    FieldSeqNode* fieldSeq = FieldSeqStore::NotAField();
+    if (!tree->AsField()->gtFldMayOverlap)
+    {
+        if (objRef != nullptr)
+        {
+            fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd, FieldSeqNode::FieldKind::Instance);
+        }
+        else
+        {
+            // Only simple statics get importred as GT_FIELDs.
+            fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd, FieldSeqNode::FieldKind::SimpleStatic);
+        }
+    }
+
+    // Reset the flag because we may reuse the node.
+    tree->AsField()->gtFldMayOverlap = false;
 
     if (fgGlobalMorph && (objRef != nullptr) && (objRef->gtOper == GT_ADDR))
     {
@@ -5904,13 +5920,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
     noway_assert(((objRef != nullptr) && (objRef->IsLocalAddrExpr() != nullptr)) ||
                  ((tree->gtFlags & GTF_GLOB_REF) != 0));
-
-    if (tree->AsField()->gtFldMayOverlap)
-    {
-        fieldMayOverlap = true;
-        // Reset the flag because we may reuse the node.
-        tree->AsField()->gtFldMayOverlap = false;
-    }
 
 #ifdef FEATURE_SIMD
     // if this field belongs to simd struct, translate it to simd intrinsic.
@@ -6167,10 +6176,8 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         if (fldOffset != 0)
         {
             // Generate the "addr" node.
-            /* Add the member offset to the object's address */
-            FieldSeqNode* fieldSeq =
-                fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
-            addr = gtNewOperNode(GT_ADD, (var_types)(objRefType == TYP_I_IMPL ? TYP_I_IMPL : TYP_BYREF), addr,
+            // Add the member offset to the object's address.
+            addr = gtNewOperNode(GT_ADD, (objRefType == TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF, addr,
                                  gtNewIconHandleNode(fldOffset, GTF_ICON_FIELD_OFF, fieldSeq));
         }
 
@@ -6284,8 +6291,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
             if (fldOffset != 0)
             {
-                FieldSeqNode* fieldSeq =
-                    fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
                 GenTree* fldOffsetNode = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, fldOffset, fieldSeq);
 
                 /* Add the TLS static field offset to the address */
@@ -6302,8 +6307,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         }
         else
         {
-            assert(!fieldMayOverlap);
-
             // Normal static field reference
             //
             // If we can we access the static's address directly
@@ -6319,9 +6322,11 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
             // For boxed statics, this direct address will be for the box. We have already added
             // the indirection for the field itself and attached the sequence, in importation.
-            bool          isBoxedStatic = gtIsStaticFieldPtrToBoxedStruct(tree->TypeGet(), symHnd);
-            FieldSeqNode* fldSeq =
-                !isBoxedStatic ? GetFieldSeqStore()->CreateSingleton(symHnd) : FieldSeqStore::NotAField();
+            bool isBoxedStatic = gtIsStaticFieldPtrToBoxedStruct(tree->TypeGet(), symHnd);
+            if (isBoxedStatic)
+            {
+                fieldSeq = FieldSeqStore::NotAField();
+            }
 
             // TODO-CQ: enable this optimization for 32 bit targets.
             bool isStaticReadOnlyInited = false;
@@ -6361,7 +6366,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 {
                     handleKind = GTF_ICON_STATIC_HDL;
                 }
-                GenTree* addr = gtNewIconHandleNode((size_t)fldAddr, handleKind, fldSeq);
+                GenTree* addr = gtNewIconHandleNode((size_t)fldAddr, handleKind, fieldSeq);
 
                 // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS, if we need to.
                 if (((tree->gtFlags & GTF_FLD_INITCLASS) != 0) && !isStaticReadOnlyInited)
@@ -6397,7 +6402,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 static_assert_no_msg(GTF_FLD_INITCLASS == GTF_CLS_VAR_INITCLASS);
                 tree->SetOper(GT_CLS_VAR);
                 tree->AsClsVar()->gtClsVarHnd = symHnd;
-                tree->AsClsVar()->gtFieldSeq  = fldSeq;
+                tree->AsClsVar()->gtFieldSeq  = fieldSeq;
             }
 
             return tree;
@@ -6424,8 +6429,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->TypeGet() == TYP_REF);
 
         // Since we don't make a constant zero to attach the field sequence to, associate it with the "addr" node.
-        FieldSeqNode* fieldSeq =
-            fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
         fgAddFieldSeqForZeroOffset(addr, fieldSeq);
     }
 
@@ -13912,7 +13915,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
         bool    op2IsConstIndex = op2->OperGet() == GT_CNS_INT && op2->AsIntCon()->gtFieldSeq != nullptr &&
                                op2->AsIntCon()->gtFieldSeq->IsConstantIndexFieldSeq();
 
-        assert(!op2IsConstIndex || op2->AsIntCon()->gtFieldSeq->m_next == nullptr);
+        assert(!op2IsConstIndex || op2->AsIntCon()->gtFieldSeq->GetNext() == nullptr);
 
         if (mult == 0)
         {
@@ -13958,7 +13961,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
             if (op2->OperGet() == GT_CNS_INT && op2->AsIntCon()->gtFieldSeq != nullptr &&
                 op2->AsIntCon()->gtFieldSeq->IsConstantIndexFieldSeq())
             {
-                assert(op2->AsIntCon()->gtFieldSeq->m_next == nullptr);
+                assert(op2->AsIntCon()->gtFieldSeq->GetNext() == nullptr);
                 GenTree* otherOp = op1;
                 if (otherOp->OperGet() == GT_NEG)
                 {
@@ -14618,7 +14621,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
                     if (cns->gtOper == GT_CNS_INT && cns->AsIntCon()->gtFieldSeq != nullptr &&
                         cns->AsIntCon()->gtFieldSeq->IsConstantIndexFieldSeq())
                     {
-                        assert(cns->AsIntCon()->gtFieldSeq->m_next == nullptr);
+                        assert(cns->AsIntCon()->gtFieldSeq->GetNext() == nullptr);
                         op2->AsIntCon()->gtFieldSeq = cns->AsIntCon()->gtFieldSeq;
                     }
 

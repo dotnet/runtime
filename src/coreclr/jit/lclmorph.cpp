@@ -1029,7 +1029,8 @@ private:
             // TODO-ADDR: ObjectAllocator produces FIELD nodes with FirstElemPseudoField as field
             // handle so we cannot use FieldSeqNode::GetFieldHandle() because it asserts on such
             // handles. ObjectAllocator should be changed to create LCL_FLD nodes directly.
-            assert(!indir->OperIs(GT_FIELD) || (indir->AsField()->gtFldHnd == fieldSeq->GetTail()->m_fieldHnd));
+            assert(!indir->OperIs(GT_FIELD) ||
+                   (indir->AsField()->gtFldHnd == fieldSeq->GetTail()->GetFieldHandleValue()));
         }
         else
         {
