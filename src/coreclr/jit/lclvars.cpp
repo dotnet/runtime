@@ -3827,23 +3827,25 @@ var_types LclVarDsc::GetRegisterType() const
 //
 // Notes:
 //    Special cases are small OSX ARM64 memory params (where args are not widened)
-//    and small local promoted fields (which use Tier0 frame space as stack homes)
+//    and small local promoted fields (which use Tier0 frame space as stack homes).
 //
 var_types LclVarDsc::GetActualRegisterType() const
 {
     if (varTypeIsSmall(TypeGet()))
     {
-
-#ifdef OSX_ARM64_ABI
-        if (lvIsParam && !lvIsRegArg)
+        if (compMacOsArm64Abi() && lvIsParam && !lvIsRegArg)
         {
             return GetRegisterType();
         }
-#endif
 
         if (lvIsOSRLocal && lvIsStructField)
         {
+#if defined(TARGET_X86)
+            // Revisit when we support OSR on x86
+            unreached();
+#else
             return GetRegisterType();
+#endif
         }
     }
 
