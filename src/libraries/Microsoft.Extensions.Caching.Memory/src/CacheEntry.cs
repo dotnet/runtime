@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Caching.Memory
     internal sealed partial class CacheEntry : ICacheEntry
     {
         private static readonly Action<object> ExpirationCallback = ExpirationTokensExpired;
-        private static readonly AsyncLocal<CacheEntry> _current = new AsyncLocal<CacheEntry>();
+        private static readonly AsyncLocal<CacheEntry?> _current = new AsyncLocal<CacheEntry?>();
 
         private readonly MemoryCache _cache;
 
@@ -39,14 +39,14 @@ namespace Microsoft.Extensions.Caching.Memory
             _cache = memoryCache;
             if (memoryCache.TrackLinkedCacheEntries)
             {
-                var holder = _current;
+                AsyncLocal<CacheEntry> holder = _current;
                 _previous = holder.Value;
                 holder.Value = this;
             }
         }
 
         // internal for testing
-        internal static CacheEntry Current => _current.Value;
+        internal static CacheEntry? Current => _current.Value;
 
         private ref ulong RawAbsoluteExpiration => ref Unsafe.As<DateTime, ulong>(ref _absoluteExpiration);
 
@@ -203,7 +203,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     _cache.SetEntry(this);
 
-                    CacheEntry parent = _previous;
+                    CacheEntry? parent = _previous;
                     if (parent != null)
                     {
                         if (HasAbsoluteExpiration && (!parent.HasAbsoluteExpiration || RawAbsoluteExpiration < parent.RawAbsoluteExpiration))

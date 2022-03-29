@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal void AttachTokens(CacheEntry cacheEntry)
             {
-                var expirationTokens = _expirationTokens;
+                List<IChangeToken>? expirationTokens = _expirationTokens;
                 if (expirationTokens is not null)
                 {
                     lock (this)
@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal bool CheckForExpiredTokens(CacheEntry cacheEntry)
             {
-                var expirationTokens = _expirationTokens;
+                List<IChangeToken>? expirationTokens = _expirationTokens;
                 if (expirationTokens is not null)
                 {
                     for (int i = 0; i < expirationTokens.Count; i++)

@@ -97,7 +97,7 @@ namespace Microsoft.Extensions.Caching.Memory
             // it was set by cascading it to its parent.
             if (entry.AbsoluteExpirationRelativeToNow.Ticks > 0)
             {
-                var absoluteExpiration = utcNow + entry.AbsoluteExpirationRelativeToNow;
+                DateTime absoluteExpiration = utcNow + entry.AbsoluteExpirationRelativeToNow;
                 if (!entry.HasAbsoluteExpiration || absoluteExpiration < entry.AbsoluteExpiration)
                 {
                     entry.SetAbsoluteExpirationUtc(absoluteExpiration);
@@ -190,7 +190,7 @@ namespace Microsoft.Extensions.Caching.Memory
             DateTime utcNow = UtcNow;
 
             CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
-            if (coherentState._entries.TryGetValue(key, out CacheEntry tmp))
+            if (coherentState._entries.TryGetValue(key, out CacheEntry? tmp))
             {
                 CacheEntry entry = tmp;
                 // Check if expired due to expiration tokens, timers, etc. and if so, remove it.
@@ -252,7 +252,7 @@ namespace Microsoft.Extensions.Caching.Memory
             CheckDisposed();
 
             CoherentState oldState = Interlocked.Exchange(ref _coherentState, new CoherentState());
-            foreach (var entry in oldState._entries)
+            foreach (KeyValuePair<object, CacheEntry> entry in oldState._entries)
             {
                 entry.Value.SetExpired(EvictionReason.Removed);
                 entry.Value.InvokeEvictionCallbacks();
@@ -308,9 +308,9 @@ namespace Microsoft.Extensions.Caching.Memory
                 return false;
             }
 
+            long sizeRead = coherentState.Size;
             for (int i = 0; i < 100; i++)
             {
-                long sizeRead = coherentState.Size;
                 long newSize = sizeRead + entry.Size;
 
                 if ((ulong)newSize > (ulong)sizeLimit)
@@ -499,7 +499,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal int Count => _entries.Count;
 
-            internal long Size => Interlocked.Read(ref _cacheSize);
+            internal long Size => Volatile.Read(ref _cacheSize);
 
             internal void RemoveEntry(CacheEntry entry, MemoryCacheOptions options)
             {
