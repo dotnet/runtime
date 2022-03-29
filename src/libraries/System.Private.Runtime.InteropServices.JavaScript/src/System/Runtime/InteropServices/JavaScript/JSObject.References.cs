@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         private GCHandle? InFlight;
         private int InFlightCounter;
-        public int JSHandle => (int)handle;
+        public IntPtr JSHandle => handle;
         public bool IsDisposed { get; private set; }
 
         public JSObject() : base(true)
@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices.JavaScript
             SetHandle(jsHandle);
         }
 
-        protected JSObject(string typeName, object[] _params) : base(true)
+        public JSObject(string typeName, params object[] _params) : base(true)
         {
             InFlight = null;
             InFlightCounter = 0;
@@ -100,7 +100,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is JSObject other && JSHandle == other.JSHandle;
 
-        public override int GetHashCode() => JSHandle;
+        public override int GetHashCode() => (int)JSHandle;
 
         public override string ToString()
         {

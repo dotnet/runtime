@@ -370,18 +370,7 @@ export function bindings_lazy_init(): void {
     (<any>ArrayBuffer.prototype)[wasm_type_symbol] = 2;
     (<any>DataView.prototype)[wasm_type_symbol] = 3;
     (<any>Function.prototype)[wasm_type_symbol] = 4;
-    (<any>Map.prototype)[wasm_type_symbol] = 5;
-    if (typeof SharedArrayBuffer !== "undefined")
-        (<any>SharedArrayBuffer.prototype)[wasm_type_symbol] = 6;
-    (<any>Int8Array.prototype)[wasm_type_symbol] = 10;
     (<any>Uint8Array.prototype)[wasm_type_symbol] = 11;
-    (<any>Uint8ClampedArray.prototype)[wasm_type_symbol] = 12;
-    (<any>Int16Array.prototype)[wasm_type_symbol] = 13;
-    (<any>Uint16Array.prototype)[wasm_type_symbol] = 14;
-    (<any>Int32Array.prototype)[wasm_type_symbol] = 15;
-    (<any>Uint32Array.prototype)[wasm_type_symbol] = 16;
-    (<any>Float32Array.prototype)[wasm_type_symbol] = 17;
-    (<any>Float64Array.prototype)[wasm_type_symbol] = 18;
 
     runtimeHelpers._box_buffer_size = 65536;
     runtimeHelpers._unbox_buffer_size = 65536;
