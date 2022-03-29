@@ -5197,7 +5197,6 @@ public:
     bool     fgHaveValidEdgeWeights;   // true if we were successful in computing all of the edge weights
     bool     fgSlopUsedInEdgeWeights;  // true if their was some slop used when computing the edge weights
     bool     fgRangeUsedInEdgeWeights; // true if some of the edgeWeight are expressed in Min..Max form
-    bool     fgNeedsUpdateFlowGraph;   // true if we need to run fgUpdateFlowGraph
     weight_t fgCalledCount;            // count of the number of times this method was called
                                        // This is derived from the profile data
                                        // or is BB_UNITY_WEIGHT when we don't have profile data
@@ -5775,9 +5774,13 @@ protected:
 
     void fgComputeEnterBlocksSet(); // Compute the set of entry blocks, 'fgEnterBlks'.
 
-    bool fgRemoveUnreachableBlocks(); // Remove blocks determined to be unreachable by the bbReach sets.
+    // Remove blocks determined to be unreachable by the 'canRemoveBlock'.
+    template <typename CanRemoveBlockBody>
+    bool fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock);
 
     void fgComputeReachability(); // Perform flow graph node reachability analysis.
+
+    void fgRemoveDeadBlocks(); // Identify and remove dead blocks.
 
     BasicBlock* fgIntersectDom(BasicBlock* a, BasicBlock* b); // Intersect two immediate dominator sets.
 
