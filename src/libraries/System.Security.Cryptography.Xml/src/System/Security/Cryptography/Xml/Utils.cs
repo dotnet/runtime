@@ -324,7 +324,7 @@ namespace System.Security.Cryptography.Xml
             return false;
         }
 
-        internal static string GetIdFromLocalUri(string? uri, out bool discardComments)
+        internal static string GetIdFromLocalUri(string uri, out bool discardComments)
         {
             string idref = uri.Substring(1);
             // initialize the return value

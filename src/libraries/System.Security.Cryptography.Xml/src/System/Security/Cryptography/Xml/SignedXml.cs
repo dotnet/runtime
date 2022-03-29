@@ -810,7 +810,7 @@ namespace System.Security.Cryptography.Xml
             }
             if (reference.Uri.Length > 0 && reference.Uri[0] == '#')
             {
-                string idref = Utils.ExtractIdFromLocalUri(reference.Uri);
+                string idref = Utils.ExtractIdFromLocalUri(reference.Uri!);
                 if (idref == "xpointer(/)")
                 {
                     _refLevelCache![index] = 0;

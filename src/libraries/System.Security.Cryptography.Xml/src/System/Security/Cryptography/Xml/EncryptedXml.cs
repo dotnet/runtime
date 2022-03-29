@@ -344,7 +344,7 @@ namespace System.Security.Cryptography.Xml
                 kiRetrievalMethod = keyInfoEnum.Current as KeyInfoRetrievalMethod;
                 if (kiRetrievalMethod != null)
                 {
-                    string idref = Utils.ExtractIdFromLocalUri(kiRetrievalMethod.Uri);
+                    string idref = Utils.ExtractIdFromLocalUri(kiRetrievalMethod.Uri!);
                     ek = new EncryptedKey();
                     ek.LoadXml(GetIdElement(_document, idref)!);
                     break;
@@ -450,7 +450,7 @@ namespace System.Security.Cryptography.Xml
                 kiRetrievalMethod = keyInfoEnum.Current as KeyInfoRetrievalMethod;
                 if (kiRetrievalMethod != null)
                 {
-                    string idref = Utils.ExtractIdFromLocalUri(kiRetrievalMethod.Uri);
+                    string idref = Utils.ExtractIdFromLocalUri(kiRetrievalMethod.Uri!);
                     ek = new EncryptedKey();
                     ek.LoadXml(GetIdElement(_document, idref)!);
                     try
