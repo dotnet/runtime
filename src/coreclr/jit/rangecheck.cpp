@@ -1025,7 +1025,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     else if (binop->OperIs(GT_RSH))
     {
         r = RangeOps::ShiftRight(op1Range, op2Range);
-        JITDUMP("BinOp multiply ranges %s %s = %s\n", op1Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
+        JITDUMP("Right shift range: %s >> %s = %s\n", op1Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
                 op2Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
                 r.ToString(m_pCompiler->getAllocatorDebugOnly()));
     }
