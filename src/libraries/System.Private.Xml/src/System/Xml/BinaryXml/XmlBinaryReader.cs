@@ -1083,7 +1083,7 @@ namespace System.Xml
         public override bool ReadContentAsBoolean()
         {
             int origPos = _pos;
-            bool value = false;
+            bool value;
             try
             {
                 if (SetupContentAsXXX("ReadContentAsBoolean"))
@@ -2536,7 +2536,7 @@ namespace System.Xml
 
         private bool ReadInit(bool skipXmlDecl)
         {
-            string? err = null;
+            string? err;
             if (!_sniffed)
             {
                 // check magic header
@@ -2809,8 +2809,7 @@ namespace System.Xml
                     case BinXmlToken.CData:
                         // skip
                         _pos++;
-                        int pos;
-                        ScanText(out pos);
+                        ScanText(out _);
                         // try again
                         break;
                     case BinXmlToken.EndCData:

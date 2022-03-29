@@ -49,9 +49,7 @@ namespace System.Net.Security
 
         internal static int EnumeratePackages(out int pkgnum, out SafeFreeContextBuffer pkgArray)
         {
-            int res = -1;
-            SafeFreeContextBuffer_SECURITY? pkgArray_SECURITY = null;
-            res = Interop.SspiCli.EnumerateSecurityPackagesW(out pkgnum, out pkgArray_SECURITY);
+            int res = Interop.SspiCli.EnumerateSecurityPackagesW(out pkgnum, out SafeFreeContextBuffer_SECURITY? pkgArray_SECURITY);
             pkgArray = pkgArray_SECURITY;
 
             if (res != 0)
@@ -230,11 +228,8 @@ namespace System.Net.Security
             ref SafeSspiAuthDataHandle authdata,
             out SafeFreeCredentials outCredential)
         {
-            int errorCode = -1;
-            long timeStamp;
-
             outCredential = new SafeFreeCredential_SECURITY();
-            errorCode = Interop.SspiCli.AcquireCredentialsHandleW(
+            int errorCode = Interop.SspiCli.AcquireCredentialsHandleW(
                             null,
                             package,
                             (int)intent,
@@ -243,7 +238,7 @@ namespace System.Net.Security
                             null,
                             null,
                             ref outCredential._handle,
-                            out timeStamp);
+                            out _);
 
             if (errorCode != 0)
             {
@@ -260,7 +255,6 @@ namespace System.Net.Security
             out SafeFreeCredentials outCredential)
         {
             int errorCode = -1;
-            long timeStamp;
 
             outCredential = new SafeFreeCredential_SECURITY();
 
@@ -273,7 +267,7 @@ namespace System.Net.Security
                                 null,
                                 null,
                                 ref outCredential._handle,
-                                out timeStamp);
+                                out _);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Verbose(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
 

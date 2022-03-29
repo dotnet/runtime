@@ -110,7 +110,7 @@ namespace System.Drawing
         /// </summary>
         public object Clone()
         {
-            IntPtr cloneFormat = IntPtr.Zero;
+            IntPtr cloneFormat;
 
             int status = Gdip.GdipCloneStringFormat(new HandleRef(this, nativeFormat), out cloneFormat);
 
@@ -167,7 +167,7 @@ namespace System.Drawing
         {
             get
             {
-                StringAlignment alignment = 0;
+                StringAlignment alignment;
                 int status = Gdip.GdipGetStringFormatAlign(new HandleRef(this, nativeFormat), out alignment);
 
                 if (status != Gdip.Ok)
@@ -197,7 +197,7 @@ namespace System.Drawing
         {
             get
             {
-                StringAlignment alignment = 0;
+                StringAlignment alignment;
                 int status = Gdip.GdipGetStringFormatLineAlign(new HandleRef(this, nativeFormat), out alignment);
 
                 if (status != Gdip.Ok)
@@ -279,7 +279,7 @@ namespace System.Drawing
         /// </summary>
         public float[] GetTabStops(out float firstTabOffset)
         {
-            int count = 0;
+            int count;
             int status = Gdip.GdipGetStringFormatTabStopCount(new HandleRef(this, nativeFormat), out count);
 
             if (status != Gdip.Ok)
@@ -393,9 +393,8 @@ namespace System.Drawing
             get
             {
                 StringDigitSubstitute digitSubstitute;
-                int lang = 0;
 
-                int status = Gdip.GdipGetStringFormatDigitSubstitution(new HandleRef(this, nativeFormat), out lang, out digitSubstitute);
+                int status = Gdip.GdipGetStringFormatDigitSubstitution(new HandleRef(this, nativeFormat), out _, out digitSubstitute);
 
                 if (status != Gdip.Ok)
                     throw Gdip.StatusException(status);
@@ -411,9 +410,8 @@ namespace System.Drawing
         {
             get
             {
-                StringDigitSubstitute digitSubstitute;
-                int language = 0;
-                int status = Gdip.GdipGetStringFormatDigitSubstitution(new HandleRef(this, nativeFormat), out language, out digitSubstitute);
+                int language;
+                int status = Gdip.GdipGetStringFormatDigitSubstitution(new HandleRef(this, nativeFormat), out language, out _);
 
                 if (status != Gdip.Ok)
                     throw Gdip.StatusException(status);

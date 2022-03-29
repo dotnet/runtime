@@ -128,7 +128,7 @@ namespace System.Net.NetworkInformation
 
             // Skip IP header.
             IcmpHeader receivedHeader = MemoryMarshal.Read<IcmpHeader>(receiveBuffer.AsSpan(icmpHeaderOffset));
-            ushort identifier = 0;
+            ushort identifier;
             type = receivedHeader.Type;
             code = receivedHeader.Code;
 

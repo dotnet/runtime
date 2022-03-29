@@ -168,7 +168,7 @@ namespace System.Runtime.Serialization
                 EmitSourceLabel("} End method");
             Ret();
 
-            Delegate? retVal = null;
+            Delegate? retVal;
             retVal = _dynamicMethod.CreateDelegate(_delegateType);
             _dynamicMethod = null!;
             _delegateType = null!;
@@ -608,7 +608,7 @@ namespace System.Runtime.Serialization
 
         internal Type LoadMember(MemberInfo memberInfo)
         {
-            Type? memberType = null;
+            Type? memberType;
             if (memberInfo is FieldInfo)
             {
                 FieldInfo fieldInfo = (FieldInfo)memberInfo;

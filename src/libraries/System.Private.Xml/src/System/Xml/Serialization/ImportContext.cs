@@ -512,8 +512,7 @@ namespace System.Xml.Serialization
                         XmlAttribute attribute = attrs[i];
                         if (attribute.LocalName == Wsdl.ArrayType && attribute.NamespaceURI == Wsdl.Namespace)
                         {
-                            string dims;
-                            XmlQualifiedName qname = TypeScope.ParseWsdlArrayType(attribute.Value, out dims, item);
+                            XmlQualifiedName qname = TypeScope.ParseWsdlArrayType(attribute.Value, out _, item);
                             XmlSchemaType? type = (XmlSchemaType?)_schemas.Find(qname, typeof(XmlSchemaType), false);
                             AddRef(refs, type);
                         }

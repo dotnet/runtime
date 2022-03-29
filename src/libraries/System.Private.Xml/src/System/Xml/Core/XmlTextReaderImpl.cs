@@ -636,7 +636,7 @@ namespace System.Xml
 
         private void FinishInitUriString()
         {
-            Stream? stream = null;
+            Stream? stream;
             Debug.Assert(_laterInitParam != null);
             Debug.Assert(_laterInitParam.inputUriResolver != null);
             Debug.Assert(_laterInitParam.inputbaseUri != null);
@@ -2557,8 +2557,7 @@ namespace System.Xml
 
         internal int DtdParserProxy_ParseNumericCharRef(StringBuilder? internalSubsetBuilder)
         {
-            EntityType entType;
-            return this.ParseNumericCharRef(true, internalSubsetBuilder, out entType);
+            return this.ParseNumericCharRef(true, internalSubsetBuilder, out _);
         }
 
         internal int DtdParserProxy_ParseNamedCharRef(bool expand, StringBuilder? internalSubsetBuilder)
@@ -4140,8 +4139,7 @@ namespace System.Xml
                         {
                             _fragmentType = XmlNodeType.Element;
                         }
-                        int i;
-                        switch (HandleEntityReference(false, EntityExpandType.OnlyGeneral, out i))
+                        switch (HandleEntityReference(false, EntityExpandType.OnlyGeneral, out _))
                         {
                             case EntityType.Unexpanded:
                                 if (_parsingFunction == ParsingFunction.EntityReference)
@@ -4159,8 +4157,6 @@ namespace System.Xml
                                 }
                                 continue;
                             default:
-                                chars = _ps.chars;
-                                pos = _ps.charPos;
                                 continue;
                         }
                     }
@@ -4198,11 +4194,7 @@ namespace System.Xml
 
             ReadData:
                 // read new characters into the buffer
-                if (ReadData() != 0)
-                {
-                    pos = _ps.charPos;
-                }
-                else
+                if (ReadData() == 0)
                 {
                     if (needMoreChars)
                     {
@@ -4232,9 +4224,6 @@ namespace System.Xml
                     OnEof();
                     return false;
                 }
-
-                pos = _ps.charPos;
-                chars = _ps.chars;
             }
         }
 
@@ -4778,8 +4767,7 @@ namespace System.Xml
             if (startTag.type == XmlNodeType.Element)
             {
                 // parse the bad name
-                int colonPos;
-                int endPos = ParseQName(out colonPos);
+                int endPos = ParseQName(out _);
 
                 Debug.Assert(_ps.chars != null);
                 string[] args = new string[4];
@@ -5522,7 +5510,7 @@ namespace System.Xml
             // skip over the text if not in full parsing mode
             if (_parsingMode != ParsingMode.Full)
             {
-                while (!ParseText(out startPos, out endPos, ref orChars));
+                while (!ParseText(out _, out _, ref orChars));
                 goto IgnoredNode;
             }
 
@@ -5583,7 +5571,7 @@ namespace System.Xml
                 // V2 reader -> do not cache the whole value yet, read only up to 4kB to decide whether the value is a whitespace
                 else
                 {
-                    bool fullValue = false;
+                    bool fullValue;
 
                     // if it's a partial text value, not a whitespace -> return
                     if (orChars > 0x20)
@@ -5618,7 +5606,7 @@ namespace System.Xml
                         _stringBuilder.Length = 0;
                         if (!fullValue)
                         {
-                            while (!ParseText(out startPos, out endPos, ref orChars));
+                            while (!ParseText(out _, out _, ref orChars));
                         }
                         goto IgnoredNode;
                     }
@@ -5829,7 +5817,6 @@ namespace System.Xml
                             int offset = pos - _ps.charPos;
                             if (ZeroEndingStream(pos))
                             {
-                                chars = _ps.chars;
                                 pos = _ps.charPos + offset;
                                 goto ReturnPartialValue;
                             }
@@ -5968,12 +5955,10 @@ namespace System.Xml
         {
             Debug.Assert(_parsingFunction == ParsingFunction.PartialTextValue || _parsingFunction == ParsingFunction.InReadValueChunk ||
                           _parsingFunction == ParsingFunction.InReadContentAsBinary || _parsingFunction == ParsingFunction.InReadElementContentAsBinary);
-            int startPos;
-            int endPos;
             int orChars = 0;
 
             _parsingFunction = _nextParsingFunction;
-            while (!ParseText(out startPos, out endPos, ref orChars));
+            while (!ParseText(out _, out _, ref orChars));
         }
 
         private void FinishReadValueChunk()
@@ -6398,7 +6383,7 @@ namespace System.Xml
                 {
                     if (_ignorePIs || _parsingMode != ParsingMode.Full)
                     {
-                        while (!ParsePIValue(out startPos, out endPos));
+                        while (!ParsePIValue(out _, out _));
                         return false;
                     }
                     sb = _stringBuilder;
@@ -6625,7 +6610,7 @@ namespace System.Xml
             }
             else
             {
-                while (!ParseCDataOrComment(type, out startPos, out endPos));
+                while (!ParseCDataOrComment(type, out _, out _));
             }
         }
 
@@ -6871,10 +6856,8 @@ namespace System.Xml
 
         private void SkipDtd()
         {
-            int colonPos;
-
             // parse dtd name
-            int pos = ParseQName(out colonPos);
+            int pos = ParseQName(out _);
             _ps.charPos = pos;
 
             // check whitespace
@@ -7643,8 +7626,7 @@ namespace System.Xml
 
         private int ParseName()
         {
-            int colonPos;
-            return ParseQName(false, 0, out colonPos);
+            return ParseQName(false, 0, out _);
         }
 
         private int ParseQName(out int colonPos)
@@ -8366,8 +8348,8 @@ namespace System.Xml
                 }
             }
 
-            int startPos = 0;
-            int pos = 0;
+            int startPos;
+            int pos;
 
             while (true)
             {
@@ -8416,8 +8398,6 @@ namespace System.Xml
                             ThrowUnclosedElements();
                         }
                         _incReadState = IncrementalReadState.Text;
-                        startPos = _ps.charPos;
-                        pos = startPos;
                         break;
                     default:
                         Debug.Fail($"Unexpected read state {_incReadState}");
@@ -8445,7 +8425,7 @@ namespace System.Xml
                     }
                     else
                     {
-                        while (XmlCharType.IsAttributeValueChar(c = chars[pos]))
+                        while (XmlCharType.IsAttributeValueChar(chars[pos]))
                         {
                             pos++;
                         }
@@ -8535,9 +8515,8 @@ namespace System.Xml
                                         Debug.Assert(_ps.charPos - pos == 0);
                                         Debug.Assert(_ps.charPos - startPos == 0);
 
-                                        int colonPos;
                                         // ParseQName can flush the buffer, so we need to update the startPos, pos and chars after calling it
-                                        int endPos = ParseQName(true, 2, out colonPos);
+                                        int endPos = ParseQName(true, 2, out _);
                                         if (XmlConvert.StrEqual(chars, _ps.charPos + 2, endPos - _ps.charPos - 2, _curNode.GetNameWPrefix(_nameTable)) &&
                                             (_ps.chars[endPos] == '>' || XmlCharType.IsWhiteSpace(_ps.chars[endPos])))
                                         {
@@ -8575,9 +8554,8 @@ namespace System.Xml
                                         Debug.Assert(_ps.charPos - pos == 0);
                                         Debug.Assert(_ps.charPos - startPos == 0);
 
-                                        int colonPos;
                                         // ParseQName can flush the buffer, so we need to update the startPos, pos and chars after calling it
-                                        int endPos = ParseQName(true, 1, out colonPos);
+                                        int endPos = ParseQName(true, 1, out _);
                                         if (XmlConvert.StrEqual(_ps.chars, _ps.charPos + 1, endPos - _ps.charPos - 1, _curNode.localName) &&
                                             (_ps.chars[endPos] == '>' || _ps.chars[endPos] == '/' || XmlCharType.IsWhiteSpace(_ps.chars[endPos])))
                                         {

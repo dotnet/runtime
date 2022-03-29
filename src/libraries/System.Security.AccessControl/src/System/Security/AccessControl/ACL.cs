@@ -1008,7 +1008,6 @@ namespace System.Security.AccessControl
         {
             GenericAce pivot;
             int leftHold, rightHold;
-            int pivotIndex;
 
             if (left >= right)
             {
@@ -1019,7 +1018,6 @@ namespace System.Security.AccessControl
             rightHold = right;
 
             pivot = _acl[left];
-            pivotIndex = left;
 
             while (left < right)
             {
@@ -1049,7 +1047,7 @@ namespace System.Security.AccessControl
             }
 
             _acl[left] = pivot;
-            pivotIndex = left;
+            int pivotIndex = left;
             left = leftHold;
             right = rightHold;
 
@@ -1386,8 +1384,6 @@ namespace System.Security.AccessControl
 
                 if (ace is ObjectAce objectAce)
                 {
-                    bool commonAccessBitsWithObjectTypeExist = true;
-
                     //
                     // if what we are trying to remove has an object type
                     // but the existing ace does not then this is an invalid case
@@ -1403,7 +1399,7 @@ namespace System.Security.AccessControl
                     // if object types match (since at this point we have ensured that both have object types present)
                     // then we have common access bits with object type
                     //
-                    commonAccessBitsWithObjectTypeExist = ((objectFlags & ObjectAceFlags.ObjectAceTypePresent) == 0) ||
+                    bool commonAccessBitsWithObjectTypeExist = ((objectFlags & ObjectAceFlags.ObjectAceTypePresent) == 0) ||
                                                                                     objectAce.ObjectTypesMatch(objectFlags, objectType);
                     if (!commonAccessBitsWithObjectTypeExist)
                     {
@@ -1442,8 +1438,6 @@ namespace System.Security.AccessControl
 
                 if (ace is ObjectAce objectAce)
                 {
-                    bool commonInheritanceFlagsExist = true;
-
                     //
                     // if what we are trying to remove has an inherited object type
                     // but the existing ace does not then this is an invalid case
@@ -1458,7 +1452,7 @@ namespace System.Security.AccessControl
                     // if what we are trying to remove has no inherited object type or
                     // if inherited object types match then we have common inheritance flags
                     //
-                    commonInheritanceFlagsExist = ((objectFlags & ObjectAceFlags.InheritedObjectAceTypePresent) == 0) ||
+                    bool commonInheritanceFlagsExist = ((objectFlags & ObjectAceFlags.InheritedObjectAceTypePresent) == 0) ||
                                                                        objectAce.InheritedObjectTypesMatch(objectFlags, inheritedObjectType);
                     if (!commonInheritanceFlagsExist)
                     {

@@ -314,8 +314,8 @@ namespace System.Drawing
             int imageHeight;
             int targetX = 0;
             int targetY = 0;
-            int targetWidth = 0;
-            int targetHeight = 0;
+            int targetWidth;
+            int targetHeight;
 
             Size cursorSize = Size;
 
@@ -398,7 +398,6 @@ namespace System.Drawing
             if (result > 0)
             {
                 hSaveRgn = hTempRgn;
-                hTempRgn = IntPtr.Zero;
             }
             else
             {
@@ -811,7 +810,7 @@ namespace System.Drawing
 
                 Size size = Size;
                 bitmap = new Bitmap(size.Width, size.Height); // initialized to transparent
-                Graphics? graphics = null;
+                Graphics? graphics;
                 using (graphics = Graphics.FromImage(bitmap))
                 {
                     try

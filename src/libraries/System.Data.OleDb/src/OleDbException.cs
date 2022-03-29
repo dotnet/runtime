@@ -67,11 +67,8 @@ namespace System.Data.OleDb
         internal static OleDbException CreateException(UnsafeNativeMethods.IErrorInfo errorInfo, OleDbHResult errorCode, Exception? inner)
         {
             OleDbErrorCollection errors = new OleDbErrorCollection(errorInfo);
-            string? message = null;
-            string? source = null;
-            OleDbHResult hr = 0;
-            hr = errorInfo.GetDescription(out message);
-            hr = errorInfo.GetSource(out source);
+            errorInfo.GetDescription(out string? message);
+            errorInfo.GetSource(out string? source);
 
             int count = errors.Count;
             if (0 < errors.Count)

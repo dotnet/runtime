@@ -149,7 +149,7 @@ namespace Internal.Cryptography.Pal
         {
             string blobFormatString = blobFormat.Format;
 
-            int numBytesNeeded = 0;
+            int numBytesNeeded;
             NTSTATUS ntStatus = Interop.BCrypt.BCryptExportKey(bCryptKeyHandle, IntPtr.Zero, blobFormatString, null, 0, out numBytesNeeded, 0);
             if (ntStatus != NTSTATUS.STATUS_SUCCESS)
                 throw new CryptographicException(Interop.Kernel32.GetMessage((int)ntStatus));

@@ -359,7 +359,7 @@ namespace System.Security.Cryptography.Xml
         internal static void RemoveAllChildren(XmlElement inputElement)
         {
             XmlNode child = inputElement.FirstChild;
-            XmlNode sibling = null;
+            XmlNode sibling;
 
             while (child != null)
             {

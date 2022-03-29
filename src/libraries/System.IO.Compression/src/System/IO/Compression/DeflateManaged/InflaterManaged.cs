@@ -165,7 +165,7 @@ namespace System.IO.Compression
         private bool Decode()
         {
             bool eob = false;
-            bool result = false;
+            bool result;
 
             if (Finished())
             {

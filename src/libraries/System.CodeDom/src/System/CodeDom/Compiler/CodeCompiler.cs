@@ -253,7 +253,6 @@ namespace System.CodeDom.Compiler
 
             var filenames = new string[sources.Length];
 
-            CompilerResults results = null;
             for (int i = 0; i < sources.Length; i++)
             {
                 string name = options.TempFiles.AddExtension(i + FileExtension);
@@ -265,7 +264,7 @@ namespace System.CodeDom.Compiler
                 }
                 filenames[i] = name;
             }
-            return results = FromFileBatch(options, filenames);
+            return FromFileBatch(options, filenames);
         }
 
         protected static string JoinStringArray(string[] sa, string separator)

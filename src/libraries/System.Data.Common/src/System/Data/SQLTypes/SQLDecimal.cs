@@ -703,7 +703,6 @@ namespace System.Data.SqlTypes
                         {
                             dVal = Math.Floor(dInt / s_DUINT_BASE);
                             _data4 = (uint)(dInt - dVal * s_DUINT_BASE);
-                            dInt = dVal;
                             _bLen++;
                         }
                     }
@@ -1123,7 +1122,7 @@ namespace System.Data.SqlTypes
             if (IsNull)
                 throw new SqlNullValueException();
 
-            double dRet = 0.0;
+            double dRet;
 
             dRet = _data4;
             dRet = dRet * s_lInt32Base + _data3;
@@ -2729,9 +2728,8 @@ namespace System.Data.SqlTypes
                 // D8. Unnormalize: Divide D and R to get result
                 if (D1 > 1)
                 {
-                    uint ret;
-                    MpDiv1(rgulD, ref ciulD, D1, out ret);
-                    MpDiv1(rgulR, ref ciulR, D1, out ret);
+                    MpDiv1(rgulD, ref ciulD, D1, out _);
+                    MpDiv1(rgulR, ref ciulR, D1, out _);
                 }
             }
         }

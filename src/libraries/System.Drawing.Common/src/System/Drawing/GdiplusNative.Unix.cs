@@ -30,7 +30,7 @@ namespace System.Drawing
             {
                 var assembly = System.Reflection.Assembly.GetExecutingAssembly();
 
-                IntPtr lib = IntPtr.Zero;
+                IntPtr lib;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
                     if (!NativeLibrary.TryLoad("libgdiplus.dylib", assembly, default, out lib))

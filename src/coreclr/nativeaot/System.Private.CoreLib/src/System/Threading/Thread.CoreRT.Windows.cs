@@ -200,11 +200,10 @@ namespace System.Threading
                 stackSize = AllocationGranularity;
             }
 
-            uint threadId;
             _osHandle = Interop.Kernel32.CreateThread(IntPtr.Zero, (IntPtr)stackSize,
                 &ThreadEntryPoint, (IntPtr)thisThreadHandle,
                 Interop.Kernel32.CREATE_SUSPENDED | Interop.Kernel32.STACK_SIZE_PARAM_IS_A_RESERVATION,
-                out threadId);
+                out _);
 
             if (_osHandle.IsInvalid)
             {

@@ -905,7 +905,7 @@ namespace Microsoft.Win32
         /// </summary>
         private int OnSessionEnding(IntPtr lParam)
         {
-            int endOk = 1;
+            int endOk;
 
             SessionEndReasons reason = SessionEndReasons.SystemShutdown;
 

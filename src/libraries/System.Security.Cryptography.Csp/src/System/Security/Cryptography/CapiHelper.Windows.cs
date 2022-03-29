@@ -366,7 +366,7 @@ namespace Internal.NativeCrypto
             byte[] impType = new byte[Constants.SIZE_OF_DWORD];
             int cb = sizeof(byte) * Constants.SIZE_OF_DWORD;
             SafeKeyHandle safeKeyHandle = SafeKeyHandle.InvalidHandle;
-            int impTypeReturn = 0;
+            int impTypeReturn;
             int returnType = 0; //using 0 for bool and 1 for string return types
             bool retVal = false;
             string? retStr = null;

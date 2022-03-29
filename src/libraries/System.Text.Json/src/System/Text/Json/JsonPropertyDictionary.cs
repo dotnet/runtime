@@ -113,7 +113,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(propertyName));
             }
 
-            return TryRemoveProperty(propertyName, out T? removedValue);
+            return TryRemoveProperty(propertyName, out _);
         }
 
         public bool Contains(KeyValuePair<string, T?> item)

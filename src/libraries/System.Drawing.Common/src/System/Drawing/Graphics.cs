@@ -382,7 +382,7 @@ namespace System.Drawing
 
         public IntPtr GetHdc()
         {
-            IntPtr hdc = IntPtr.Zero;
+            IntPtr hdc;
             Gdip.CheckStatus(Gdip.GdipGetDC(new HandleRef(this, NativeGraphics), out hdc));
 
             _nativeHdc = hdc; // need to cache the hdc to be able to release with a call to IDeviceContext.ReleaseHdc().
@@ -1566,8 +1566,8 @@ namespace System.Drawing
                 ref layout,
                 new HandleRef(stringFormat, stringFormat?.nativeFormat ?? IntPtr.Zero),
                 ref boundingBox,
-                out int a,
-                out int b));
+                out _,
+                out _));
 
             return boundingBox.Size;
         }
@@ -1592,8 +1592,8 @@ namespace System.Drawing
                 ref layout,
                 new HandleRef(stringFormat, stringFormat?.nativeFormat ?? IntPtr.Zero),
                 ref boundingBox,
-                out int a,
-                out int b));
+                out _,
+                out _));
 
             return boundingBox.Size;
         }

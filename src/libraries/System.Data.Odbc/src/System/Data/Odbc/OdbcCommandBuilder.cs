@@ -242,7 +242,7 @@ namespace System.Data.Odbc
                     rParams.Add(parameter);
                 }
             }
-            retcode = hstmt.CloseCursor();
+            hstmt.CloseCursor();
             return rParams.ToArray();
         }
 

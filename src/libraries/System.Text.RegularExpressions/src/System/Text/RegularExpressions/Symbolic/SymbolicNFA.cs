@@ -114,7 +114,7 @@ namespace System.Text.RegularExpressions.Symbolic
             Stack<Transition> todo = new();
             todo.Push(transition._second);
             todo.Push(transition._first);
-            while (todo.TryPop(out Transition? top))
+            while (todo.TryPop(out _))
             {
                 switch (transition._kind)
                 {

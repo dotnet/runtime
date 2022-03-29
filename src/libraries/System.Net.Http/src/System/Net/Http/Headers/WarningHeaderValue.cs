@@ -178,7 +178,7 @@ namespace System.Net.Http.Headers
             }
 
             // Read <text> in '<code> <agent> <text> ["<date>"]'
-            int textLength = 0;
+            int textLength;
             int textStartIndex = current;
             if (HttpRuleParser.GetQuotedStringLength(input, current, out textLength) != HttpParseResult.Parsed)
             {
@@ -190,7 +190,7 @@ namespace System.Net.Http.Headers
             current = current + textLength;
 
             // Read <date> in '<code> <agent> <text> ["<date>"]'
-            DateTimeOffset? date = null;
+            DateTimeOffset? date;
             if (!TryReadDate(input, ref current, out date))
             {
                 return 0;
@@ -328,7 +328,7 @@ namespace System.Net.Http.Headers
 
             // 'receivedBy' can either be a host or a token. Since a token is a valid host, we only verify if the value
             // is a valid host.
-             if (HttpRuleParser.GetHostLength(agent, 0, true, out string? host) != agent.Length)
+             if (HttpRuleParser.GetHostLength(agent, 0, true, out _) != agent.Length)
             {
                 throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, agent));
             }

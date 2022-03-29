@@ -39,7 +39,6 @@ namespace Internal.Cryptography.Pal
         {
             foreach (UnixPkcs12Reader.CertAndKey certAndKey in _pkcs12.EnumerateAll())
             {
-                AppleCertificatePal pal = (AppleCertificatePal)certAndKey.Cert!;
                 collection.Add(new X509Certificate2(AppleCertificatePal.ImportPkcs12(certAndKey)));
             }
         }

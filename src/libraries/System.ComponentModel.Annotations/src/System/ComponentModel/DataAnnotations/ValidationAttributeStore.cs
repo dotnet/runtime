@@ -106,8 +106,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             EnsureValidationContext(validationContext);
             var typeItem = GetTypeStoreItem(validationContext.ObjectType);
-            PropertyStoreItem? item;
-            return typeItem.TryGetPropertyStoreItem(validationContext.MemberName!, out item);
+            return typeItem.TryGetPropertyStoreItem(validationContext.MemberName!, out _);
         }
 
         /// <summary>

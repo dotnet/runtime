@@ -515,7 +515,7 @@ namespace System.Xml.Serialization
             }
             if (typeDesc.Kind == TypeKind.Serializable)
             {
-                SerializableMapping? serializableMapping = null;
+                SerializableMapping? serializableMapping;
 
                 // get the schema method info
                 object[] attrs = type.GetCustomAttributes(typeof(XmlSchemaProviderAttribute), false);

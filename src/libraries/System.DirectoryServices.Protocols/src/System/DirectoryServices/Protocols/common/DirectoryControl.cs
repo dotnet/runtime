@@ -173,7 +173,7 @@ namespace System.DirectoryServices.Protocols
                 else if (controls[i].Type == "1.2.840.113556.1.4.474")
                 {
                     // The control is a SortControl.
-                    int result = 0;
+                    int result;
                     string attribute = null;
                     object[] o = BerConverter.TryDecode("{ea}", value, out bool decodeSucceeded);
 

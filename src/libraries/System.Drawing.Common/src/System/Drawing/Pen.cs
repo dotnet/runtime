@@ -91,7 +91,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(brush));
             }
 
-            IntPtr pen = IntPtr.Zero;
+            IntPtr pen;
             int status = Gdip.GdipCreatePen2(new HandleRef(brush, brush.NativeBrush),
                 width,
                 (int)GraphicsUnit.World,
@@ -115,7 +115,7 @@ namespace System.Drawing
         /// </summary>
         public object Clone()
         {
-            IntPtr clonedPen = IntPtr.Zero;
+            IntPtr clonedPen;
             int status = Gdip.GdipClonePen(new HandleRef(this, NativePen), out clonedPen);
             Gdip.CheckStatus(status);
 
@@ -226,7 +226,7 @@ namespace System.Drawing
         {
             get
             {
-                int startCap = 0;
+                int startCap;
                 int status = Gdip.GdipGetPenStartCap(new HandleRef(this, NativePen), out startCap);
                 Gdip.CheckStatus(status);
 
@@ -268,7 +268,7 @@ namespace System.Drawing
         {
             get
             {
-                int endCap = 0;
+                int endCap;
                 int status = Gdip.GdipGetPenEndCap(new HandleRef(this, NativePen), out endCap);
                 Gdip.CheckStatus(status);
 
@@ -311,7 +311,7 @@ namespace System.Drawing
         {
             get
             {
-                int dashCap = 0;
+                int dashCap;
                 int status = Gdip.GdipGetPenDashCap197819(new HandleRef(this, NativePen), out dashCap);
                 Gdip.CheckStatus(status);
 
@@ -341,7 +341,7 @@ namespace System.Drawing
         {
             get
             {
-                int lineJoin = 0;
+                int lineJoin;
                 int status = Gdip.GdipGetPenLineJoin(new HandleRef(this, NativePen), out lineJoin);
                 Gdip.CheckStatus(status);
 
@@ -396,7 +396,7 @@ namespace System.Drawing
         {
             get
             {
-                PenAlignment penMode = 0;
+                PenAlignment penMode;
                 int status = Gdip.GdipGetPenMode(new HandleRef(this, NativePen), out penMode);
                 Gdip.CheckStatus(status);
 
@@ -543,7 +543,7 @@ namespace System.Drawing
         {
             get
             {
-                int type = -1;
+                int type;
                 int status = Gdip.GdipGetPenFillType(new HandleRef(this, NativePen), out type);
                 Gdip.CheckStatus(status);
 
@@ -565,7 +565,7 @@ namespace System.Drawing
                         throw new ArgumentException(SR.GdiplusInvalidParameter);
                     }
 
-                    int colorARGB = 0;
+                    int colorARGB;
                     int status = Gdip.GdipGetPenColor(new HandleRef(this, NativePen), out colorARGB);
                     Gdip.CheckStatus(status);
 
@@ -659,7 +659,7 @@ namespace System.Drawing
 
         private IntPtr GetNativeBrush()
         {
-            IntPtr nativeBrush = IntPtr.Zero;
+            IntPtr nativeBrush;
             int status = Gdip.GdipGetPenBrushFill(new HandleRef(this, NativePen), out nativeBrush);
             Gdip.CheckStatus(status);
 
@@ -673,7 +673,7 @@ namespace System.Drawing
         {
             get
             {
-                int dashStyle = 0;
+                int dashStyle;
                 int status = Gdip.GdipGetPenDashStyle(new HandleRef(this, NativePen), out dashStyle);
                 Gdip.CheckStatus(status);
 
@@ -714,7 +714,7 @@ namespace System.Drawing
         /// </summary>
         private void EnsureValidDashPattern()
         {
-            int retval = 0;
+            int retval;
             int status = Gdip.GdipGetPenDashCount(new HandleRef(this, NativePen), out retval);
             Gdip.CheckStatus(status);
 
@@ -832,7 +832,7 @@ namespace System.Drawing
         {
             get
             {
-                int count = 0;
+                int count;
                 int status = Gdip.GdipGetPenCompoundCount(new HandleRef(this, NativePen), out count);
                 Gdip.CheckStatus(status);
 

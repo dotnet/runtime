@@ -209,7 +209,7 @@ namespace System.Xml
             if (stream == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.XmlInvalidStream));
             int blockSize = 256;
-            int bytesRead = 0;
+            int bytesRead;
             byte[] block = new byte[blockSize];
             while (true)
             {

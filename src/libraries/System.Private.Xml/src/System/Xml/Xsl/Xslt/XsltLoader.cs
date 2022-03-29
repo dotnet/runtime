@@ -848,7 +848,7 @@ namespace System.Xml.Xsl.Xslt
 
             _input.MoveToElement();
 
-            List<XslNode>? content = null;
+            List<XslNode>? content;
 
             if (V1)
             {
@@ -1300,11 +1300,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 scriptNs = _compiler.CreatePhantomNamespace();
             }
-            string? language = ParseStringAttribute(1, "language");
-            if (language == null)
-            {
-                language = "jscript";
-            }
+            ParseStringAttribute(1, "language");
 
             if (!_compiler.Settings.EnableScript)
             {
@@ -1856,7 +1852,6 @@ namespace System.Xml.Xsl.Xslt
             {
                 if (!_input.BackwardCompatibility)
                 {
-                    separator = select != null ? " " : string.Empty;
                 }
             }
             else
@@ -1864,7 +1859,7 @@ namespace System.Xml.Xsl.Xslt
                 ReportNYI("xsl:value-of/@separator");
             }
 
-            List<XslNode>? content = null;
+            List<XslNode>? content;
 
             if (V1)
             {
@@ -1882,7 +1877,6 @@ namespace System.Xml.Xsl.Xslt
                 if (content.Count != 0)
                 {
                     ReportNYI("xsl:value-of/*");
-                    content = null;
                 }
             }
 
@@ -2111,7 +2105,6 @@ namespace System.Xml.Xsl.Xslt
             if (select != null) ReportNYI("xsl:attribute/@select");
             string? separator = ParseStringAttribute(3, "separator");
             if (separator != null) ReportNYI("xsl:attribute/@separator");
-            separator = separator != null ? separator : (select != null ? " " : string.Empty);
 
             ParseTypeAttribute(4);
             ParseValidationAttribute(5, /*defVal:*/false);
@@ -2147,7 +2140,7 @@ namespace System.Xml.Xsl.Xslt
                 CheckError(sortNumber != 0, SR.Xslt_SortStable);
             }
 
-            List<XslNode>? content = null;
+            List<XslNode>? content;
             if (V1)
             {
                 CheckNoContent();
@@ -2158,7 +2151,6 @@ namespace System.Xml.Xsl.Xslt
                 if (content.Count != 0)
                 {
                     ReportNYI("xsl:sort/*");
-                    content = null;
                 }
             }
 
@@ -2838,8 +2830,8 @@ namespace System.Xml.Xsl.Xslt
         // Does not suppress errors
         private XmlQualifiedName ResolveQName(bool ignoreDefaultNs, string qname)
         {
-            string prefix, localName, namespaceName;
-            ResolveQName(ignoreDefaultNs, qname, out localName, out namespaceName, out prefix);
+            string localName, namespaceName;
+            ResolveQName(ignoreDefaultNs, qname, out localName, out namespaceName, out _);
             return new XmlQualifiedName(localName, namespaceName);
         }
 

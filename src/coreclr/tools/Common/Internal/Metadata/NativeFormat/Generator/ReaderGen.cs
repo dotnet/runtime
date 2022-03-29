@@ -20,6 +20,7 @@ class ReaderGen : CsWriter
         WriteLine("#pragma warning disable 649");
         WriteLine("#pragma warning disable 169");
         WriteLine("#pragma warning disable 282 // There is no defined ordering between fields in multiple declarations of partial class or struct");
+        WriteLine("#pragma warning disable IDE0059");
         WriteLine();
 
         WriteLine("using System;");

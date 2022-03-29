@@ -51,7 +51,6 @@ namespace System.Reflection.TypeLoading.Ecma
 
         private bool TryGetRawDefaultValue(out object? rawDefaultValue)
         {
-            rawDefaultValue = null;
             MetadataReader reader = Reader;
             ConstantHandle ch = Parameter.GetDefaultValue();
             if (!ch.IsNil)

@@ -1444,7 +1444,7 @@ dotnet_diagnostic.IDE0057.severity = suggestion
 dotnet_diagnostic.IDE0058.severity = silent
 
 # IDE0059: Unnecessary assignment of a value
-dotnet_diagnostic.IDE0059.severity = suggestion
+dotnet_diagnostic.IDE0059.severity = warning
 
 # IDE0060: Remove unused parameter
 dotnet_diagnostic.IDE0060.severity = silent

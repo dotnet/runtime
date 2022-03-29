@@ -564,7 +564,7 @@ namespace System.Security.Cryptography
                 if (padding == RSASignaturePadding.Pkcs1)
                 {
                     Interop.AppleCrypto.PAL_HashAlgorithm palAlgId =
-                        PalAlgorithmFromAlgorithmName(hashAlgorithm, out int expectedSize);
+                        PalAlgorithmFromAlgorithmName(hashAlgorithm, out _);
                     return Interop.AppleCrypto.VerifySignature(
                         GetKeys().PublicKey,
                         hash,

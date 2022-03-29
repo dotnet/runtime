@@ -51,7 +51,7 @@ namespace Internal.Cryptography
 
         public static HashAlgorithmName NameOrOidToHashAlgorithmName(string nameOrOid)
         {
-            HashAlgorithmName? name = null;
+            HashAlgorithmName? name;
 
             if (nameOrOid == null)
             {

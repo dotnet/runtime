@@ -57,8 +57,7 @@ namespace System.Net.Sockets
         private static T CreateDelegate<T>([NotNull] ref T? cache, SafeSocketHandle socketHandle, string guidString) where T: Delegate
         {
             Guid guid = new Guid(guidString);
-            IntPtr ptr = IntPtr.Zero;
-            int length;
+            IntPtr ptr;
             SocketError errorCode;
 
             unsafe
@@ -70,7 +69,7 @@ namespace System.Net.Sockets
                    sizeof(Guid),
                    out ptr,
                    sizeof(IntPtr),
-                   out length,
+                   out _,
                    IntPtr.Zero,
                    IntPtr.Zero);
             }

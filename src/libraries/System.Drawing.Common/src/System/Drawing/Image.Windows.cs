@@ -41,9 +41,7 @@ namespace System.Drawing
 
             nativeImage = image;
 
-            int type = -1;
-
-            Gdip.CheckStatus(Gdip.GdipGetImageType(new HandleRef(this, nativeImage), out type));
+            Gdip.CheckStatus(Gdip.GdipGetImageType(new HandleRef(this, nativeImage), out _));
             EnsureSave(this, null, stream);
             return image;
         }
@@ -71,7 +69,7 @@ namespace System.Drawing
         /// </summary>
         public object Clone()
         {
-            IntPtr cloneImage = IntPtr.Zero;
+            IntPtr cloneImage;
 
             Gdip.CheckStatus(Gdip.GdipCloneImage(new HandleRef(this, nativeImage), out cloneImage));
             ValidateImage(cloneImage);
@@ -386,7 +384,7 @@ namespace System.Drawing
         /// </summary>
         public Image GetThumbnailImage(int thumbWidth, int thumbHeight, GetThumbnailImageAbort? callback, IntPtr callbackData)
         {
-            IntPtr thumbImage = IntPtr.Zero;
+            IntPtr thumbImage;
 
             Gdip.CheckStatus(Gdip.GdipGetImageThumbnail(
                 new HandleRef(this, nativeImage),

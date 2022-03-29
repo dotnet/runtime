@@ -1127,7 +1127,6 @@ namespace System.Xml.Linq
                     }
 
                     _currentContainer.AddNodeSkipNotify(newNode);
-                    newNode = null;
                 }
 
                 return true;
@@ -1247,7 +1246,6 @@ namespace System.Xml.Linq
                     }
 
                     _currentContainer.AddNodeSkipNotify(newNode);
-                    newNode = null;
                 }
 
                 return true;

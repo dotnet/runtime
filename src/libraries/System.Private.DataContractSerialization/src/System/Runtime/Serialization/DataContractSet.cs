@@ -121,7 +121,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void InternalAdd(XmlQualifiedName name, DataContract dataContract)
         {
-            DataContract? dataContractInSet = null;
+            DataContract? dataContractInSet;
             if (Contracts.TryGetValue(name, out dataContractInSet))
             {
                 if (!dataContractInSet.Equals(dataContract))

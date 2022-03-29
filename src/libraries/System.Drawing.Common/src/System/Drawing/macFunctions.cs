@@ -61,8 +61,8 @@ namespace System.Drawing
         internal static CarbonContext GetCGContextForView(IntPtr handle)
         {
             IntPtr context = IntPtr.Zero;
-            IntPtr port = IntPtr.Zero;
-            IntPtr window = IntPtr.Zero;
+            IntPtr port;
+            IntPtr window;
 
             window = GetControlOwner(handle);
 

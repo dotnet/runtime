@@ -140,9 +140,8 @@ namespace Internal.Cryptography
         {
             unsafe
             {
-                int numBytesNeeded;
                 IntPtr value;
-                ErrorCode errorCode = Interop.NCrypt.NCryptGetProperty(ncryptHandle, propertyName, &value, IntPtr.Size, out numBytesNeeded, options);
+                ErrorCode errorCode = Interop.NCrypt.NCryptGetProperty(ncryptHandle, propertyName, &value, IntPtr.Size, out _, options);
                 if (errorCode == ErrorCode.NTE_NOT_FOUND)
                     return IntPtr.Zero;
                 if (errorCode != ErrorCode.ERROR_SUCCESS)

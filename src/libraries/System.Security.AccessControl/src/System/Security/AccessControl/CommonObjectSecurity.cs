@@ -446,8 +446,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                bool modified;
-                ModifyAccess(AccessControlModification.Add, rule, out modified);
+                ModifyAccess(AccessControlModification.Add, rule, out _);
             }
             finally
             {
@@ -466,8 +465,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                bool modified;
-                ModifyAccess(AccessControlModification.Set, rule, out modified);
+                ModifyAccess(AccessControlModification.Set, rule, out _);
             }
             finally
             {
@@ -486,8 +484,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                bool modified;
-                ModifyAccess(AccessControlModification.Reset, rule, out modified);
+                ModifyAccess(AccessControlModification.Reset, rule, out _);
             }
             finally
             {
@@ -513,8 +510,7 @@ namespace System.Security.AccessControl
                     return true;
                 }
 
-                bool modified;
-                return ModifyAccess(AccessControlModification.Remove, rule, out modified);
+                return ModifyAccess(AccessControlModification.Remove, rule, out _);
             }
             finally
             {
@@ -538,8 +534,7 @@ namespace System.Security.AccessControl
                     return;
                 }
 
-                bool modified;
-                ModifyAccess(AccessControlModification.RemoveAll, rule, out modified);
+                ModifyAccess(AccessControlModification.RemoveAll, rule, out _);
             }
             finally
             {
@@ -565,8 +560,7 @@ namespace System.Security.AccessControl
                     return;
                 }
 
-                bool modified;
-                ModifyAccess(AccessControlModification.RemoveSpecific, rule, out modified);
+                ModifyAccess(AccessControlModification.RemoveSpecific, rule, out _);
             }
             finally
             {
@@ -585,8 +579,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                bool modified;
-                ModifyAudit(AccessControlModification.Add, rule, out modified);
+                ModifyAudit(AccessControlModification.Add, rule, out _);
             }
             finally
             {
@@ -605,8 +598,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                bool modified;
-                ModifyAudit(AccessControlModification.Set, rule, out modified);
+                ModifyAudit(AccessControlModification.Set, rule, out _);
             }
             finally
             {
@@ -625,8 +617,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                bool modified;
-                return ModifyAudit(AccessControlModification.Remove, rule, out modified);
+                return ModifyAudit(AccessControlModification.Remove, rule, out _);
             }
             finally
             {
@@ -645,8 +636,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                bool modified;
-                ModifyAudit(AccessControlModification.RemoveAll, rule, out modified);
+                ModifyAudit(AccessControlModification.RemoveAll, rule, out _);
             }
             finally
             {
@@ -665,8 +655,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                bool modified;
-                ModifyAudit(AccessControlModification.RemoveSpecific, rule, out modified);
+                ModifyAudit(AccessControlModification.RemoveSpecific, rule, out _);
             }
             finally
             {

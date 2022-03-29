@@ -94,11 +94,10 @@ namespace System.Data.OleDb
 
         internal OleDbHResult CreateAccessor(UnsafeNativeMethods.IAccessor iaccessor, int flags, ColumnBinding[] bindings)
         {
-            OleDbHResult hr = 0;
             int[] rowBindStatus = new int[BindingCount()];
 
             _iaccessor = iaccessor;
-            hr = iaccessor.CreateAccessor(flags, (IntPtr)rowBindStatus.Length, this, (IntPtr)_dataLength, out _accessorHandle, rowBindStatus);
+            OleDbHResult hr = iaccessor.CreateAccessor(flags, (IntPtr)rowBindStatus.Length, this, (IntPtr)_dataLength, out _accessorHandle, rowBindStatus);
 
             for (int k = 0; k < rowBindStatus.Length; ++k)
             {
@@ -204,14 +203,13 @@ namespace System.Data.OleDb
             Debug.Assert(0 == offset % 8, "invalid alignment");
             ValidateCheck(offset, 2 * ODB.SizeOf_Variant);
 
-            IntPtr buffer = ADP.PtrZero;
             bool mustRelease = false;
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 DangerousAddRef(ref mustRelease);
 
-                buffer = ADP.IntPtrOffset(DangerousGetHandle(), offset);
+                IntPtr buffer = ADP.IntPtrOffset(DangerousGetHandle(), offset);
 
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
@@ -331,8 +329,7 @@ namespace System.Data.OleDb
             if ((ODB.DB_INVALID_HACCESSOR != accessorHandle) && (null != iaccessor))
             {
                 OleDbHResult hr;
-                int refcount;
-                hr = iaccessor.ReleaseAccessor(accessorHandle, out refcount);
+                hr = iaccessor.ReleaseAccessor(accessorHandle, out _);
                 if (hr < 0)
                 { // ignore any error msgs
                     SafeNativeMethods.Wrapper.ClearErrorInfo();

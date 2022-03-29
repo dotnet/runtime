@@ -1622,7 +1622,7 @@ namespace System.Data
             set
             {
                 UniqueConstraint? key = null;
-                UniqueConstraint? existingKey = null;
+                UniqueConstraint? existingKey;
 
                 // Loading with persisted property
                 if (fInitInProgress && value != null)
@@ -2176,7 +2176,7 @@ namespace System.Data
                 try
                 {
                     DataRowState saveRowState = targetRow.RowState;
-                    int saveIdxRecord = (saveRowState == DataRowState.Added) ? targetRow._newRecord : saveIdxRecord = targetRow._oldRecord;
+                    int saveIdxRecord = (saveRowState == DataRowState.Added) ? targetRow._newRecord : targetRow._oldRecord;
                     int newRecord;
                     int oldRecord;
                     if (targetRow.RowState == DataRowState.Unchanged && row.RowState == DataRowState.Unchanged)
@@ -2737,7 +2737,7 @@ namespace System.Data
 
         internal void InsertRow(DataRow row, long proposedID, int pos, bool fireEvent)
         {
-            Exception? deferredException = null;
+            Exception? deferredException;
 
             if (row == null)
             {
@@ -3920,7 +3920,7 @@ namespace System.Data
             // get record for version
             int record = dr.GetRecordFromVersion(version);
 
-            bool equalValues = false;
+            bool equalValues;
             if (DataStorage.IsTypeCustomType(dc.DataType) && newValue != dc[record])
             {
                 // if UDT storage, need to check if reference changed.
@@ -4245,7 +4245,7 @@ namespace System.Data
 
         internal void SetNewRecord(DataRow row, int proposedRecord, DataRowAction action = DataRowAction.Change, bool isInMerge = false, bool fireEvent = true, bool suppressEnsurePropertyChanged = false)
         {
-            Exception? deferredException = null;
+            Exception? deferredException;
             SetNewRecordWorker(row, proposedRecord, action, isInMerge, suppressEnsurePropertyChanged, -1, fireEvent, out deferredException); // we are going to call below overload from insert
             if (deferredException != null)
             {

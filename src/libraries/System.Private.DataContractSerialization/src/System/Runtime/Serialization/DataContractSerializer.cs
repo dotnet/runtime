@@ -382,7 +382,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    XmlObjectSerializerWriteContext? context = null;
+                    XmlObjectSerializerWriteContext? context;
                     if (IsRootXmlAny(_rootName, contract))
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.IsAnyCannotBeSerializedAsDerivedType, graphType, contract.UnderlyingType)));
 

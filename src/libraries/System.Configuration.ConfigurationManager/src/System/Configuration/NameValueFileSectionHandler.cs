@@ -28,7 +28,7 @@ namespace System.Configuration
 
             if (fileAttribute != null && fileAttribute.Value.Length != 0)
             {
-                string filename = null;
+                string filename;
                 filename = fileAttribute.Value;
                 IConfigErrorInfo configXmlNode = fileAttribute as IConfigErrorInfo;
                 if (configXmlNode == null)

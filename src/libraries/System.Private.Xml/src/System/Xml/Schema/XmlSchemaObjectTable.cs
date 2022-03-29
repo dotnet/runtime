@@ -25,7 +25,7 @@ namespace System.Xml.Schema
 
         internal void Insert(XmlQualifiedName name, XmlSchemaObject value)
         {
-            XmlSchemaObject? oldValue = null;
+            XmlSchemaObject? oldValue;
             if (_table.TryGetValue(name, out oldValue))
             {
                 _table[name] = value; //set new value

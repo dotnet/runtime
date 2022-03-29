@@ -41,8 +41,8 @@ namespace System.Data
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
-            System.Reflection.ConstructorInfo? ctor = null;
-            object[]? values = null;
+            System.Reflection.ConstructorInfo? ctor;
+            object[]? values;
 
             if (destinationType == typeof(InstanceDescriptor) && value is DataRelation)
             {

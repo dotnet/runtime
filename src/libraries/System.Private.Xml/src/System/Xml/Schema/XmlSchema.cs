@@ -139,7 +139,7 @@ namespace System.Xml.Schema
                 bool ignoreXS = false;
                 if (this.Namespaces != null)
                 { //User may have set both nsManager and Namespaces property on the XmlSchema object
-                    ignoreXS = this.Namespaces.TryLookupPrefix("xs", out string? p) || this.Namespaces.TryLookupNamespace(XmlReservedNs.NsXs, out string? n);
+                    ignoreXS = this.Namespaces.TryLookupPrefix("xs", out _) || this.Namespaces.TryLookupNamespace(XmlReservedNs.NsXs, out _);
                 }
                 if (!ignoreXS && namespaceManager.LookupPrefix(XmlReservedNs.NsXs) == null &&
                     namespaceManager.LookupNamespace("xs") == null)
@@ -156,7 +156,7 @@ namespace System.Xml.Schema
             }
             else if (this.Namespaces != null && this.Namespaces.Count > 0)
             {
-                if (!this.Namespaces.TryLookupPrefix("xs", out string? p) && !this.Namespaces.TryLookupNamespace(XmlReservedNs.NsXs, out string? n))
+                if (!this.Namespaces.TryLookupPrefix("xs", out _) && !this.Namespaces.TryLookupNamespace(XmlReservedNs.NsXs, out _))
                 { //Prefix xs not defined AND schema namespace not already mapped to a prefix
                     this.Namespaces.Add("xs", XmlReservedNs.NsXs);
                 }

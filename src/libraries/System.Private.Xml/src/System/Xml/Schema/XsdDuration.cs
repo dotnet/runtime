@@ -259,7 +259,7 @@ namespace System.Xml.Schema
 
         internal Exception? TryToTimeSpan(DurationType durationType, out TimeSpan result)
         {
-            Exception? exception = null;
+            Exception? exception;
             ulong ticks = 0;
 
             // Throw error if result cannot fit into a long
@@ -446,7 +446,6 @@ namespace System.Xml.Schema
             length = s.Length;
 
             pos = 0;
-            numDigits = 0;
 
             if (pos >= length) goto InvalidFormat;
 
@@ -505,7 +504,7 @@ namespace System.Xml.Schema
                 result._days = value;
                 if (++pos == length) goto Done;
 
-                errorCode = TryParseDigits(s, ref pos, false, out value, out numDigits);
+                errorCode = TryParseDigits(s, ref pos, false, out _, out numDigits);
                 if (errorCode != null) goto Error;
 
                 if (pos >= length) goto InvalidFormat;

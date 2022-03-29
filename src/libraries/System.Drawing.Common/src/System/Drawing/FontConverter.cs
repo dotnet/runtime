@@ -128,7 +128,7 @@ namespace System.Drawing
             char separator = culture.TextInfo.ListSeparator[0]; // For vi-VN: ','
             string fontName = font; // start with the assumption that only the font name was provided.
             string? style = null;
-            string? sizeStr = null;
+            string? sizeStr;
             float fontSize = 8.25f;
             FontStyle fontStyle = FontStyle.Regular;
             GraphicsUnit units = GraphicsUnit.Point;

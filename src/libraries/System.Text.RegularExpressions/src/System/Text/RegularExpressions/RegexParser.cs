@@ -252,7 +252,7 @@ namespace System.Text.RegularExpressions
 
         private RegexNode ScanRegex()
         {
-            char ch = '@'; // nonspecial ch, means at beginning
+            char ch;
             bool isQuantifier = false;
 
             StartGroup(new RegexNode(RegexNode.Capture, _options, 0, -1));
@@ -563,7 +563,7 @@ namespace System.Text.RegularExpressions
          */
         private RegexCharClass? ScanCharClass(bool caseInsensitive, bool scanOnly)
         {
-            char ch = '\0';
+            char ch;
             char chPrev = '\0';
             bool inRange = false;
             bool firstChar = true;

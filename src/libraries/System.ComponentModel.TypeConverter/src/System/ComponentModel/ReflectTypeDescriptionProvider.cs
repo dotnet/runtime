@@ -262,7 +262,7 @@ namespace System.ComponentModel
         {
             Debug.Assert(objectType != null, "Should have arg-checked before coming in here");
 
-            object? obj = null;
+            object? obj;
 
             if (argTypes != null)
             {

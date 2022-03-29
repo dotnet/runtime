@@ -606,7 +606,7 @@ namespace System.Net.Http
             // again; just return null.
             if (_canCalculateLength)
             {
-                long length = 0;
+                long length;
                 if (TryComputeLength(out length))
                 {
                     return length;

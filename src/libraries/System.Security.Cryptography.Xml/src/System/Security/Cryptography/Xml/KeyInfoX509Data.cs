@@ -45,8 +45,8 @@ namespace System.Security.Cryptography.Xml
                 throw new ArgumentNullException(nameof(cert));
 
             X509Certificate2 certificate = new X509Certificate2(cert);
-            X509ChainElementCollection elements = null;
-            X509Chain chain = null;
+            X509ChainElementCollection elements;
+            X509Chain chain;
             switch (includeOption)
             {
                 case X509IncludeOption.ExcludeRoot:

@@ -94,7 +94,7 @@ namespace System.ComponentModel
             if (_resourceSets == null)
             {
                 _resourceSets = new Hashtable();
-                resources = FillResources(culture, out ResourceSet? dummy);
+                resources = FillResources(culture, out _);
                 _resourceSets[culture] = resources;
             }
             else
@@ -102,7 +102,7 @@ namespace System.ComponentModel
                 resources = (SortedList<string, object?>?)_resourceSets[culture];
                 if (resources == null || (resources.Comparer.Equals(StringComparer.OrdinalIgnoreCase) != IgnoreCase))
                 {
-                    resources = FillResources(culture, out ResourceSet? dummy);
+                    resources = FillResources(culture, out _);
                     _resourceSets[culture] = resources;
                 }
             }
@@ -165,7 +165,7 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    PropertyInfo? prop = null;
+                    PropertyInfo? prop;
 
                     try
                     {

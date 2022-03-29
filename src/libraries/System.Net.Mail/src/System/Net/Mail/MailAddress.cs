@@ -284,7 +284,7 @@ namespace System.Net.Mail
         // Encodes the full email address, folding as needed
         internal string Encode(int charsConsumed, bool allowUnicode)
         {
-            string encodedAddress = string.Empty;
+            string encodedAddress;
             IEncodableStream encoder;
 
             Debug.Assert(Address != null, "address was null");

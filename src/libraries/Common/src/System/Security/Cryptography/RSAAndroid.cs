@@ -690,7 +690,7 @@ namespace System.Security.Cryptography
                     Span<byte>.Empty,
                     hashAlgorithm, padding,
                     true,
-                    out int bytesWritten,
+                    out _,
                     out byte[]? signature))
                 {
                     Debug.Fail("TrySignHash should not return false in allocation mode");

@@ -112,7 +112,7 @@ namespace System.Security.Cryptography
             }
 
             string algorithm;
-            int keySize = 0;
+            int keySize;
 
             if (curve.IsNamed)
             {

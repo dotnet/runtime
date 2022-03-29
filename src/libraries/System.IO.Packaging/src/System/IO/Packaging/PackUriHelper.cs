@@ -389,7 +389,7 @@ namespace System.IO.Packaging
             if (partUri == null)
                 return new ArgumentNullException(nameof(partUri));
 
-            Exception? argumentException = null;
+            Exception? argumentException;
 
             argumentException = GetExceptionIfAbsoluteUri(partUri);
             if (argumentException != null)

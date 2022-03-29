@@ -1169,7 +1169,6 @@ namespace System.Net.Sockets
 
             ValidateBufferArguments(buffer, offset, size);
 
-            errorCode = SocketError.Success;
             ValidateBlockingMode();
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} size:{size}");
 
@@ -1886,7 +1885,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            int realOptionLength = 0;
+            int realOptionLength;
 
             // IOControl is used for Windows-specific IOCTL operations.  If we need to add support for IOCTLs specific
             // to other platforms, we will likely need to add a new API, as the control codes may overlap with those
@@ -2037,7 +2036,7 @@ namespace System.Net.Sockets
                 return GetIPv6MulticastOpt(optionName);
             }
 
-            int optionValue = 0;
+            int optionValue;
 
             // This can throw ObjectDisposedException.
             SocketError errorCode = SocketPal.GetSockOpt(
@@ -2238,7 +2237,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            SocketError errorCode = SocketError.Success;
+            SocketError errorCode;
 
             // This can throw ObjectDisposedException (handle, and retrieving the delegate).
             errorCode = SocketPal.Disconnect(this, _handle, reuseSocket);
@@ -2856,7 +2855,7 @@ namespace System.Net.Sockets
 
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.Disconnect);
-            SocketError socketError = SocketError.Success;
+            SocketError socketError;
             try
             {
                 socketError = e.DoOperationDisconnect(this, _handle, cancellationToken);
@@ -3402,7 +3401,7 @@ namespace System.Net.Sockets
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "skipping the call");
                 return;
             }
-            SocketError errorCode = SocketError.Success;
+            SocketError errorCode;
             try
             {
                 errorCode = SocketPal.SetSockOpt(_handle, optionLevel, optionName, optionValue);
@@ -3565,8 +3564,7 @@ namespace System.Net.Sockets
         // This method ignores all failures.
         internal void InternalSetBlocking(bool desired)
         {
-            bool current;
-            InternalSetBlocking(desired, out current);
+            InternalSetBlocking(desired, out _);
         }
 
         // CreateAcceptSocket - pulls unmanaged results and assembles them into a new Socket object.

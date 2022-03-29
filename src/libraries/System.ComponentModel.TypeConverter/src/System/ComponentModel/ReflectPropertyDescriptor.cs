@@ -791,7 +791,7 @@ namespace System.ComponentModel
 
                 while (currentReflectType != null && currentReflectType != typeof(object))
                 {
-                    MemberInfo? memberInfo = null;
+                    MemberInfo? memberInfo;
 
                     BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly;
                     // Fill in our member info so we can get at the custom attributes.

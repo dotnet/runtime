@@ -520,7 +520,7 @@ namespace System.Xml.Serialization
         private object? ReadTypedPrimitive(XmlQualifiedName type, bool elementCanBeType)
         {
             InitPrimitiveIDs();
-            object? value = null;
+            object? value;
             if (!IsPrimitiveNamespace(type.Namespace) || (object)type.Name == (object)_urTypeID)
                 return ReadXmlNodes(elementCanBeType);
 
@@ -682,7 +682,7 @@ namespace System.Xml.Serialization
         protected object? ReadTypedNull(XmlQualifiedName type)
         {
             InitPrimitiveIDs();
-            object? value = null;
+            object? value;
             if (!IsPrimitiveNamespace(type.Namespace) || (object)type.Name == (object)_urTypeID)
             {
                 return null;
@@ -1770,10 +1770,9 @@ namespace System.Xml.Serialization
         protected void ReadReferencedElements()
         {
             _r.MoveToContent();
-            string? dummy;
             while (_r.NodeType != XmlNodeType.EndElement && _r.NodeType != XmlNodeType.None)
             {
-                ReadReferencingElement(null, null, true, out dummy);
+                ReadReferencingElement(null, null, true, out _);
                 _r.MoveToContent();
             }
             DoFixups();
@@ -1790,8 +1789,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected object? ReadReferencedElement(string? name, string? ns)
         {
-            string? dummy;
-            return ReadReferencingElement(name, ns, out dummy);
+            return ReadReferencingElement(name, ns, out _);
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
@@ -1810,7 +1808,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected object? ReadReferencingElement(string? name, string? ns, bool elementCanBeType, out string? fixupReference)
         {
-            object? o = null;
+            object? o;
             EnsureCallbackTables();
 
             _r.MoveToContent();
@@ -1885,8 +1883,7 @@ namespace System.Xml.Serialization
             string? xsiTypeName = null;
             string? xsiTypeNs = null;
             int skippableNodeCount = 0;
-            int lineNumber = -1, linePosition = -1;
-            XmlNode? unknownNode = null;
+            XmlNode? unknownNode;
             if (Reader.NodeType == XmlNodeType.Attribute)
             {
                 XmlAttribute attr = Document.CreateAttribute(elemName, elemNs);
@@ -1895,7 +1892,7 @@ namespace System.Xml.Serialization
             }
             else
                 unknownNode = Document.CreateElement(elemName, elemNs);
-            GetCurrentPosition(out lineNumber, out linePosition);
+            GetCurrentPosition(out _, out _);
             XmlElement? unknownElement = unknownNode as XmlElement;
 
             while (Reader.MoveToNextAttribute())

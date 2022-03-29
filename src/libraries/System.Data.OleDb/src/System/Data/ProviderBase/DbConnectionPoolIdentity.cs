@@ -47,11 +47,10 @@ namespace System.Data.ProviderBase
             // not having to P/Invoke twice (once to get the buffer, once to get the data)
 
             uint length = (uint)SecurityIdentifier.MaxBinaryLength;
-            byte[] resultSid = new byte[length];
 
             // NOTE - We copied this code from System.Security.Principal.Win32.CreateWellKnownSid...
 
-            if (0 == UnsafeNativeMethods.CreateWellKnownSid((int)sidType, null, out resultSid, ref length))
+            if (0 == UnsafeNativeMethods.CreateWellKnownSid((int)sidType, null, out byte[] resultSid, ref length))
             {
                 IntegratedSecurityError(Win32_CreateWellKnownSid);
             }

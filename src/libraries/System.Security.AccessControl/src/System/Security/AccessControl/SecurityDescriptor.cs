@@ -385,7 +385,6 @@ namespace System.Security.AccessControl
             {
                 MarshalInt(binaryForm, daclOffset, offset - originalOffset);
                 GenericDacl.GetBinaryForm(binaryForm, offset);
-                offset += GenericDacl.BinaryLength;
             }
             else
             {

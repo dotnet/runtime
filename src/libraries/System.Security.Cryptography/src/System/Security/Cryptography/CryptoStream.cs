@@ -717,7 +717,6 @@ namespace System.Security.Cryptography
                 pinHandle.Free();
             }
             ArrayPool<byte>.Shared.Return(rentedBuffer);
-            rentedBuffer = null;
         }
 
         private void CheckCopyToArguments(Stream destination, int bufferSize)

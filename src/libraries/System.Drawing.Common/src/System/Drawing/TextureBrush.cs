@@ -34,7 +34,7 @@ namespace System.Drawing
                 throw new InvalidEnumArgumentException(nameof(wrapMode), unchecked((int)wrapMode), typeof(WrapMode));
             }
 
-            IntPtr brush = IntPtr.Zero;
+            IntPtr brush;
             int status = Gdip.GdipCreateTexture(new HandleRef(image, image.nativeImage),
                                                    (int)wrapMode,
                                                    out brush);
@@ -55,7 +55,7 @@ namespace System.Drawing
                 throw new InvalidEnumArgumentException(nameof(wrapMode), unchecked((int)wrapMode), typeof(WrapMode));
             }
 
-            IntPtr brush = IntPtr.Zero;
+            IntPtr brush;
             int status = Gdip.GdipCreateTexture2(new HandleRef(image, image.nativeImage),
                                                     unchecked((int)wrapMode),
                                                     dstRect.X,
@@ -80,7 +80,7 @@ namespace System.Drawing
                 throw new InvalidEnumArgumentException(nameof(wrapMode), unchecked((int)wrapMode), typeof(WrapMode));
             }
 
-            IntPtr brush = IntPtr.Zero;
+            IntPtr brush;
             int status = Gdip.GdipCreateTexture2I(new HandleRef(image, image.nativeImage),
                                                      unchecked((int)wrapMode),
                                                      dstRect.X,
@@ -102,7 +102,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(image));
             }
 
-            IntPtr brush = IntPtr.Zero;
+            IntPtr brush;
             int status = Gdip.GdipCreateTextureIA(new HandleRef(image, image.nativeImage),
                                                      new HandleRef(imageAttr, (imageAttr == null) ?
                                                        IntPtr.Zero : imageAttr.nativeImageAttributes),
@@ -125,7 +125,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(image));
             }
 
-            IntPtr brush = IntPtr.Zero;
+            IntPtr brush;
             int status = Gdip.GdipCreateTextureIAI(new HandleRef(image, image.nativeImage),
                                                      new HandleRef(imageAttr, (imageAttr == null) ?
                                                        IntPtr.Zero : imageAttr.nativeImageAttributes),
@@ -147,7 +147,7 @@ namespace System.Drawing
 
         public override object Clone()
         {
-            IntPtr cloneBrush = IntPtr.Zero;
+            IntPtr cloneBrush;
             int status = Gdip.GdipCloneBrush(new HandleRef(this, NativeBrush), out cloneBrush);
             Gdip.CheckStatus(status);
 
@@ -180,7 +180,7 @@ namespace System.Drawing
         {
             get
             {
-                int mode = 0;
+                int mode;
                 int status = Gdip.GdipGetTextureWrapMode(new HandleRef(this, NativeBrush), out mode);
                 Gdip.CheckStatus(status);
 

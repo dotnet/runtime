@@ -225,7 +225,7 @@ namespace System.Net
 
             var key = new CredentialHostKey(host, port, authenticationType);
 
-            NetworkCredential? match = null;
+            NetworkCredential? match;
             _cacheForHosts.TryGetValue(key, out match);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Returning {((match == null) ? "null" : "(" + match.UserName + ":" + match.Domain + ")")}");

@@ -517,7 +517,7 @@ namespace System.IO.Ports
                 eventsToPoll |= Interop.PollEvents.POLLOUT;
             }
 
-            Interop.PollEvents events = Interop.PollEvents.POLLNONE;
+            Interop.PollEvents events;
             Interop.Error ret = Interop.Serial.Poll(
                 _handle,
                 eventsToPoll,

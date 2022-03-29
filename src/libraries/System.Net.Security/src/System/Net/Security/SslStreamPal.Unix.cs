@@ -118,7 +118,7 @@ namespace System.Net.Security
         public static SecurityStatusPal Renegotiate(ref SafeFreeCredentials? credentialsHandle, ref SafeDeleteSslContext? securityContext, SslAuthenticationOptions sslAuthenticationOptions, out byte[]? outputBuffer)
         {
             var sslContext = ((SafeDeleteSslContext)securityContext!).SslContext;
-            SecurityStatusPal status = Interop.OpenSsl.SslRenegotiate(sslContext, out outputBuffer);
+            SecurityStatusPal status = Interop.OpenSsl.SslRenegotiate(sslContext, out _);
 
             outputBuffer = Array.Empty<byte>();
             if (status.ErrorCode != SecurityStatusPalErrorCode.OK)

@@ -498,7 +498,7 @@ namespace System.Xml.XPath
                 XContainer? container = currentNode.GetParent();
                 if (container != null)
                 {
-                    XNode? next = null;
+                    XNode? next;
                     for (XNode node = currentNode; node != null; node = next)
                     {
                         next = node.NextNode;
@@ -548,7 +548,7 @@ namespace System.Xml.XPath
                     {
                         mask &= ~TextMask;
                     }
-                    XNode? next = null;
+                    XNode? next;
                     for (XNode node = currentNode; ; node = next)
                     {
                         next = node.NextNode;

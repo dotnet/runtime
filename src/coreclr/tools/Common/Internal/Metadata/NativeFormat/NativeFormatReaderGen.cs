@@ -6,6 +6,7 @@
 #pragma warning disable 649
 #pragma warning disable 169
 #pragma warning disable 282 // There is no defined ordering between fields in multiple declarations of partial class or struct
+#pragma warning disable IDE0059
 
 using System;
 using System.Reflection;

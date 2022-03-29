@@ -81,7 +81,6 @@ namespace System.Transactions
         internal static Transaction? FastGetTransaction(TransactionScope? currentScope, ContextData contextData, out Transaction? contextTransaction)
         {
             Transaction? current = null;
-            contextTransaction = null;
 
             contextTransaction = contextData.CurrentTransaction;
 
@@ -159,7 +158,7 @@ namespace System.Transactions
                     etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "Transaction.get_Current");
                 }
 
-                GetCurrentTransactionAndScope(TxLookup.Default, out Transaction? current, out TransactionScope? currentScope, out Transaction? contextValue);
+                GetCurrentTransactionAndScope(TxLookup.Default, out Transaction? current, out TransactionScope? currentScope, out _);
 
                 if (currentScope != null)
                 {
@@ -1277,7 +1276,7 @@ namespace System.Transactions
 
         internal static ContextData LookupContextData(TxLookup defaultLookup)
         {
-            ContextData? currentData = null;
+            ContextData? currentData;
             if (CallContextCurrentData.TryGetCurrentData(out currentData))
             {
                 if (currentData.CurrentScope == null && currentData.CurrentTransaction == null && defaultLookup != TxLookup.DefaultCallContext)

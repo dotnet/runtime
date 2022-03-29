@@ -236,8 +236,7 @@ namespace Internal.Runtime.TypeLoader
                 if (nativeLayoutReader == null)
                     continue;
 
-                ExternalReferencesTable externalFixupsTable;
-                NativeHashtable genericMethodTemplatesHashtable = LoadHashtable(moduleInfo, ReflectionMapBlob.GenericMethodsTemplateMap, out externalFixupsTable);
+                NativeHashtable genericMethodTemplatesHashtable = LoadHashtable(moduleInfo, ReflectionMapBlob.GenericMethodsTemplateMap, out _);
 
                 if (genericMethodTemplatesHashtable.IsNull)
                     continue;

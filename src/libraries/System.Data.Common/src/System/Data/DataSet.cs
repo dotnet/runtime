@@ -357,15 +357,13 @@ namespace System.Data
                 // old behaviour
                 string strSchema = GetXmlSchemaForRemoting(null);
 
-                string? strData = null;
                 info.AddValue(KEY_XMLSCHEMA, strSchema);
 
                 StringBuilder strBuilder = new StringBuilder(EstimatedXmlStringSize() * 2);
                 StringWriter strWriter = new StringWriter(strBuilder, CultureInfo.InvariantCulture);
                 XmlTextWriter w = new XmlTextWriter(strWriter);
                 WriteXml(w, XmlWriteMode.DiffGram);
-                strData = strWriter.ToString();
-                info.AddValue(KEY_XMLDIFFGRAM, strData);
+                info.AddValue(KEY_XMLDIFFGRAM, strWriter.ToString());
             }
         }
 
@@ -1978,7 +1976,7 @@ namespace System.Data
                 // Generate SchemaTree and write it out
                 if (writer != null)
                 {
-                    XmlTreeGen? treeGen = null;
+                    XmlTreeGen treeGen;
                     if (schemaFormat == SchemaFormat.WebService &&
                         SchemaSerializationMode == SchemaSerializationMode.ExcludeSchema &&
                         writer.WriteState == WriteState.Element)
@@ -2804,7 +2802,7 @@ namespace System.Data
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public XmlReadMode ReadXml(string fileName, XmlReadMode mode)
         {
-            XmlTextReader? xr = null;
+            XmlTextReader xr;
             if (mode == XmlReadMode.Fragment)
             {
                 FileStream stream = new FileStream(fileName, FileMode.Open);
@@ -3262,8 +3260,8 @@ namespace System.Data
                     }
                 }
 
-                ForeignKeyConstraint? constraint = null;
-                ConstraintCollection? constraints = null;
+                ForeignKeyConstraint? constraint;
+                ConstraintCollection? constraints;
                 for (int i = 0; i < Tables.Count; i++)
                 {
                     constraints = Tables[i].Constraints;
@@ -3302,8 +3300,8 @@ namespace System.Data
                     }
                 }
 
-                ForeignKeyConstraint? constraint = null;
-                ConstraintCollection? constraints = null;
+                ForeignKeyConstraint? constraint;
+                ConstraintCollection? constraints;
                 for (int i = 0; i < Tables.Count; i++)
                 {
                     constraints = Tables[i].Constraints;

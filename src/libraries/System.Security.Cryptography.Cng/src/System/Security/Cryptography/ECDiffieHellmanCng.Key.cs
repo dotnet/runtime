@@ -68,7 +68,7 @@ namespace System.Security.Cryptography
                 }
                 else
                 {
-                    int keySize = 0;
+                    int keySize;
                     // Get the proper KeySize from algorithm name
                     if (alg == CngAlgorithm.ECDiffieHellmanP256)
                         keySize = 256;
@@ -108,10 +108,9 @@ namespace System.Security.Cryptography
             else
             {
                 CngAlgorithm algorithm;
-                int keySize = 0;
 
                 // Map the current key size to a CNG algorithm name
-                keySize = KeySize;
+                int keySize = KeySize;
                 switch (keySize)
                 {
                     case 256:

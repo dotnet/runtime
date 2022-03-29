@@ -749,7 +749,6 @@ namespace System.Xml
                     var tuple_0 = await ParseTextAsync(orChars).ConfigureAwait(false);
                     startPos = tuple_0.Item1;
                     endPos = tuple_0.Item2;
-                    orChars = tuple_0.Item3;
 
                     endOfValue = tuple_0.Item4;
 
@@ -2356,10 +2355,8 @@ namespace System.Xml
             if (startTag.type == XmlNodeType.Element)
             {
                 // parse the bad name
-                int colonPos;
 
                 var tuple_5 = await ParseQNameAsync().ConfigureAwait(false);
-                colonPos = tuple_5.Item1;
 
                 int endPos = tuple_5.Item2;
 
@@ -2977,7 +2974,7 @@ namespace System.Xml
             // the whole value is in buffer
 
             ValueTask<(int, int, int, bool)> parseTextTask = ParseTextAsync(orChars).Preserve();
-            bool fullValue = false;
+            bool fullValue;
             if (!parseTextTask.IsCompletedSuccessfully)
             {
                 return _ParseTextAsync(parseTextTask.AsTask());
@@ -3033,8 +3030,6 @@ namespace System.Xml
                 do
                 {
                     tuple_9 = await ParseTextAsync(orChars).ConfigureAwait(false);
-                    startPos = tuple_9.Item1;
-                    endPos = tuple_9.Item2;
                     orChars = tuple_9.Item3;
                 } while (!tuple_9.Item4);
 
@@ -3109,7 +3104,7 @@ namespace System.Xml
                 // V2 reader -> do not cache the whole value yet, read only up to 4kB to decide whether the value is a whitespace
                 else
                 {
-                    bool fullValue = false;
+                    bool fullValue;
 
                     // if it's a partial text value, not a whitespace -> return
                     if (orChars > 0x20)
@@ -3153,8 +3148,6 @@ namespace System.Xml
                             do
                             {
                                 tuple_13 = await ParseTextAsync(orChars).ConfigureAwait(false);
-                                startPos = tuple_13.Item1;
-                                endPos = tuple_13.Item2;
                                 orChars = tuple_13.Item3;
                             } while (!tuple_13.Item4);
                         }
@@ -4059,8 +4052,6 @@ namespace System.Xml
                         do
                         {
                             tuple_19 = await ParsePIValueAsync().ConfigureAwait(false);
-                            startPos = tuple_19.Item1;
-                            endPos = tuple_19.Item2;
                         } while (!tuple_19.Item3);
 
                         return false;
@@ -4314,8 +4305,6 @@ namespace System.Xml
                 do
                 {
                     tuple_23 = await ParseCDataOrCommentTupleAsync(type).ConfigureAwait(false);
-                    startPos = tuple_23.Item1;
-                    endPos = tuple_23.Item2;
                 } while (!tuple_23.Item3);
             }
         }
@@ -4564,12 +4553,10 @@ namespace System.Xml
 
         private async Task SkipDtdAsync()
         {
-            int colonPos;
 
             // parse dtd name
 
             var tuple_24 = await ParseQNameAsync().ConfigureAwait(false);
-            colonPos = tuple_24.Item1;
 
             int pos = tuple_24.Item2;
 
@@ -5496,7 +5483,6 @@ namespace System.Xml
                         var tuple_36 = await ParseTextAsync(orChars).ConfigureAwait(false);
                         startPos = tuple_36.Item1;
                         endPos = tuple_36.Item2;
-                        orChars = tuple_36.Item3;
 
                         endOfValue = tuple_36.Item4;
 

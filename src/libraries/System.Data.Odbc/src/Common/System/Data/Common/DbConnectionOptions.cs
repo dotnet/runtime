@@ -322,7 +322,7 @@ namespace System.Data.Common
 
         internal string? ExpandDataDirectories(ref string? filename, ref int position)
         {
-            string? value = null;
+            string? value;
             StringBuilder builder = new StringBuilder(_usersConnectionString.Length);
             string? datadir = null;
 

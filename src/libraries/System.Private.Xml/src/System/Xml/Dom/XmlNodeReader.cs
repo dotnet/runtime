@@ -226,7 +226,7 @@ namespace System.Xml
             //See comments in HasValue
             get
             {
-                string? retValue = null;
+                string? retValue;
                 XmlNodeType nt = _curNode.NodeType;
                 if (_nAttrInd != -1)
                 {
@@ -626,7 +626,7 @@ namespace System.Xml
         }
         private bool MoveToAttributeFromElement(XmlElement elem, string name, string ns)
         {
-            XmlAttribute? attr = null;
+            XmlAttribute? attr;
             if (ns.Length == 0)
                 attr = elem.GetAttributeNode(name);
             else
@@ -677,7 +677,7 @@ namespace System.Xml
         {
             if (_bCreatedOnAttribute)
                 return;
-            XmlAttribute? attr = null;
+            XmlAttribute? attr;
             switch (_curNode.NodeType)
             {
                 case XmlNodeType.Element:
@@ -1067,7 +1067,7 @@ namespace System.Xml
             }
             else if (_bOnAttrVal)
             {
-                XmlNode? nextSibling = null;
+                XmlNode? nextSibling;
                 if (_curNode.NodeType == XmlNodeType.EntityReference && bResolveEntity)
                 {
                     //going down to ent ref node
@@ -1528,12 +1528,10 @@ namespace System.Xml
                 FinishReadBinary();
             }
 
-            bool bRead = false;
             if ((_readerNav.CreatedOnAttribute))
                 return false;
             ReSetReadingMarks();
-            bRead = ReadNextNode(fSkipChildren);
-            if (bRead)
+            if (ReadNextNode(fSkipChildren))
             {
                 return true;
             }

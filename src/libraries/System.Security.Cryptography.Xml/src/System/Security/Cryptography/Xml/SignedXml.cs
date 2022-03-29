@@ -242,8 +242,7 @@ namespace System.Security.Cryptography.Xml
 
         public bool CheckSignature()
         {
-            AsymmetricAlgorithm signingKey;
-            return CheckSignatureReturningKey(out signingKey);
+            return CheckSignatureReturningKey(out _);
         }
 
         public bool CheckSignatureReturningKey(out AsymmetricAlgorithm signingKey)
@@ -252,7 +251,7 @@ namespace System.Security.Cryptography.Xml
 
             signingKey = null;
             bool bRet = false;
-            AsymmetricAlgorithm key = null;
+            AsymmetricAlgorithm key;
 
             if (!CheckSignatureFormat())
             {
@@ -643,7 +642,7 @@ namespace System.Security.Cryptography.Xml
             }
 
             // Figure out how many bits the signature is using
-            int actualSignatureSize = 0;
+            int actualSignatureSize;
             if (!int.TryParse(SignedInfo.SignatureLength, out actualSignatureSize))
             {
                 // If the value wasn't a valid integer, then we'll conservatively reject it all together
@@ -917,7 +916,7 @@ namespace System.Security.Cryptography.Xml
                 }
 
                 SignedXmlDebugLog.LogVerifyReference(this, digestedReference);
-                byte[] calculatedHash = null;
+                byte[] calculatedHash;
                 try
                 {
                     calculatedHash = digestedReference.CalculateHashValue(_containingDocument, m_signature.ReferencedItems);
