@@ -681,7 +681,7 @@ namespace System.Security.Cryptography.Xml
             {
                 Transform transform = transformChain[i];
 
-                if (!IsSafeTransform(transform.Algorithm))
+                if (!IsSafeTransform(transform.Algorithm!))
                 {
                     return false;
                 }

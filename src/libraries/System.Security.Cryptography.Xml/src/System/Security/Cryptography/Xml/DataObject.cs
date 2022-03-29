@@ -122,7 +122,6 @@ namespace System.Security.Cryptography.Xml
             if (!string.IsNullOrEmpty(_encoding))
                 objectElement.SetAttribute("Encoding", _encoding);
 
-            // red flag - not changed, but always false
             if (_elData != null)
             {
                 foreach (XmlNode node in _elData)

@@ -24,7 +24,8 @@ namespace System.Security.Cryptography.Xml
             get { return _references.Count; }
         }
 
-        public int Add(object value)
+#pragma warning disable CS8995 // Nullable type 'object?' is null-checked and will throw if null.
+        public int Add(object? value)
         {
             if (value is null)
             {
@@ -36,6 +37,7 @@ namespace System.Security.Cryptography.Xml
 
             return _references.Add(value);
         }
+#pragma warning restore
 
         public void Clear()
         {
@@ -52,7 +54,7 @@ namespace System.Security.Cryptography.Xml
             return _references.IndexOf(value);
         }
 
-        public void Insert(int index, object value)
+        public void Insert(int index, object? value)
         {
             if (value is null)
             {
@@ -64,6 +66,7 @@ namespace System.Security.Cryptography.Xml
 
             _references.Insert(index, value);
         }
+#pragma warning restore
 
         public void Remove(object? value)
         {
@@ -77,7 +80,7 @@ namespace System.Security.Cryptography.Xml
 
         public EncryptedReference? Item(int index)
         {
-            return (EncryptedReference)_references[index];
+            return (EncryptedReference?)_references[index];
         }
 
         [System.Runtime.CompilerServices.IndexerName("ItemOf")]
@@ -85,7 +88,7 @@ namespace System.Security.Cryptography.Xml
         {
             get
             {
-                return Item(index);
+                return Item(index)!;
             }
             set
             {

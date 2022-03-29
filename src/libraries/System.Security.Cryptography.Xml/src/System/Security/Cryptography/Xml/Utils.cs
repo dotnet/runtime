@@ -347,7 +347,7 @@ namespace System.Security.Cryptography.Xml
 
         internal static string ExtractIdFromLocalUri(string? uri)
         {
-            string idref = uri.Substring(1);
+            string idref = uri!.Substring(1);
 
             // Deal with XPointer of type #xpointer(id("ID")). Other XPointer support isn't handled here and is anyway optional
             if (idref.StartsWith("xpointer(id(", StringComparison.Ordinal))
@@ -396,7 +396,7 @@ namespace System.Security.Cryptography.Xml
             int numBytes;
             long totalBytes = 0;
 
-            while ((numBytes = input.Read(bytes, 0, count)) > 0)
+            while ((numBytes = input!.Read(bytes, 0, count)) > 0)
             {
                 output.Write(bytes, 0, numBytes);
                 totalBytes += numBytes;

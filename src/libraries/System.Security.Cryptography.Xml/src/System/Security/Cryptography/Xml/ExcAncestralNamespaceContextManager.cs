@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Xml
             _inclusivePrefixSet = Utils.TokenizePrefixListString(inclusiveNamespacesPrefixList);
         }
 
-        private bool HasNonRedundantInclusivePrefix(XmlAttribute? attr)
+        private bool HasNonRedundantInclusivePrefix(XmlAttribute attr)
         {
             string nsPrefix = Utils.GetNamespacePrefix(attr);
             return _inclusivePrefixSet.ContainsKey(nsPrefix) &&
@@ -33,8 +33,8 @@ namespace System.Security.Cryptography.Xml
             }
 
             int rDepth;
-            XmlAttribute? local = (XmlAttribute)nsLocallyDeclared[nsPrefix];
-            XmlAttribute rAncestral = GetNearestRenderedNamespaceWithMatchingPrefix(nsPrefix, out rDepth);
+            XmlAttribute? local = (XmlAttribute?)nsLocallyDeclared[nsPrefix];
+            XmlAttribute? rAncestral = GetNearestRenderedNamespaceWithMatchingPrefix(nsPrefix, out rDepth);
 
             if (local != null)
             {
@@ -66,7 +66,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        internal override void TrackNamespaceNode(XmlAttribute? attr, SortedList nsListToRender, Hashtable nsLocallyDeclared)
+        internal override void TrackNamespaceNode(XmlAttribute attr, SortedList nsListToRender, Hashtable nsLocallyDeclared)
         {
             if (!Utils.IsXmlPrefixDefinitionNode(attr))
             {
@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        internal override void TrackXmlNamespaceNode(XmlAttribute? attr, SortedList nsListToRender, SortedList attrListToRender, Hashtable nsLocallyDeclared)
+        internal override void TrackXmlNamespaceNode(XmlAttribute attr, SortedList nsListToRender, SortedList attrListToRender, Hashtable nsLocallyDeclared)
         {
             // exclusive canonicalization treats Xml namespaces as simple attributes. They are not propagated.
             attrListToRender.Add(attr, null);

@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Xml
         private readonly Type[] _outputTypes = { typeof(Stream) };
         private readonly bool _includeComments;
         private string? _inclusiveNamespacesPrefixList;
-        private ExcCanonicalXml _excCanonicalXml;
+        private ExcCanonicalXml? _excCanonicalXml;
 
         public XmlDsigExcC14NTransform() : this(false, null) { }
 
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.Xml
             {
                 foreach (XmlNode n in nodeList)
                 {
-                    XmlElement e = n as XmlElement;
+                    XmlElement? e = n as XmlElement;
                     if (e != null)
                     {
                         if (e.LocalName.Equals("InclusiveNamespaces")
@@ -77,15 +77,15 @@ namespace System.Security.Cryptography.Xml
             XmlResolver resolver = (ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
             if (obj is Stream)
             {
-                _excCanonicalXml = new ExcCanonicalXml((Stream)obj, _includeComments, _inclusiveNamespacesPrefixList, resolver, BaseURI);
+                _excCanonicalXml = new ExcCanonicalXml((Stream)obj, _includeComments, _inclusiveNamespacesPrefixList!, resolver, BaseURI!);
             }
             else if (obj is XmlDocument)
             {
-                _excCanonicalXml = new ExcCanonicalXml((XmlDocument)obj, _includeComments, _inclusiveNamespacesPrefixList, resolver);
+                _excCanonicalXml = new ExcCanonicalXml((XmlDocument)obj, _includeComments, _inclusiveNamespacesPrefixList!, resolver);
             }
             else if (obj is XmlNodeList)
             {
-                _excCanonicalXml = new ExcCanonicalXml((XmlNodeList)obj, _includeComments, _inclusiveNamespacesPrefixList, resolver);
+                _excCanonicalXml = new ExcCanonicalXml((XmlNodeList)obj, _includeComments, _inclusiveNamespacesPrefixList!, resolver);
             }
             else
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(obj));
@@ -107,19 +107,19 @@ namespace System.Security.Cryptography.Xml
 
         public override object GetOutput()
         {
-            return new MemoryStream(_excCanonicalXml.GetBytes());
+            return new MemoryStream(_excCanonicalXml!.GetBytes());
         }
 
         public override object GetOutput(Type type)
         {
             if (type != typeof(Stream) && !type.IsSubclassOf(typeof(Stream)))
                 throw new ArgumentException(SR.Cryptography_Xml_TransformIncorrectInputType, nameof(type));
-            return new MemoryStream(_excCanonicalXml.GetBytes());
+            return new MemoryStream(_excCanonicalXml!.GetBytes());
         }
 
         public override byte[]? GetDigestedOutput(HashAlgorithm hash)
         {
-            return _excCanonicalXml.GetDigestedBytes(hash);
+            return _excCanonicalXml!.GetDigestedBytes(hash);
         }
     }
 }

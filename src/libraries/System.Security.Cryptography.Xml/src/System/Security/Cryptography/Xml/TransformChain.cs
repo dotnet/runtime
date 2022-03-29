@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Xml
             {
                 if (index >= _transforms.Count)
                     throw new ArgumentException(SR.ArgumentOutOfRange_IndexMustBeLess, nameof(index));
-                return (Transform)_transforms[index];
+                return (Transform)_transforms[index]!;
             }
         }
 
@@ -187,14 +187,12 @@ namespace System.Security.Cryptography.Xml
             nsm.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);
 
             XmlNodeList? transformNodes = value.SelectNodes("ds:Transform", nsm);
-            //red flag
             if (transformNodes!.Count == 0)
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Transforms");
 
             _transforms.Clear();
             for (int i = 0; i < transformNodes.Count; ++i)
             {
-                //red flag
                 XmlElement transformElement = (XmlElement)transformNodes.Item(i)!;
                 string? algorithm = Utils.GetAttribute(transformElement, "Algorithm", SignedXml.XmlDsigNamespaceUrl);
                 Transform? transform = CryptoHelpers.CreateFromName<Transform>(algorithm);

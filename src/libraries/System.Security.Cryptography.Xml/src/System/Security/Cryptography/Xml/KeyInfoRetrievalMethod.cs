@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.Xml
             set { _uri = value; }
         }
 
-        public string Type
+        public string? Type
         {
             get { return _type; }
             set { _type = value; }

@@ -45,7 +45,7 @@ namespace System.Security.Cryptography.Xml
                 throw new ArgumentNullException(nameof(nodeList));
             }
 
-            XmlDocument doc = Utils.GetOwnerDocument(nodeList);
+            XmlDocument? doc = Utils.GetOwnerDocument(nodeList);
             if (doc == null)
                 throw new ArgumentException(nameof(nodeList));
 
@@ -69,7 +69,7 @@ namespace System.Security.Cryptography.Xml
         {
             _c14nDoc.WriteHash(hash, DocPosition.BeforeRootElement, _ancMgr);
             hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-            byte[]? res = (byte[])hash.Hash.Clone();
+            byte[]? res = (byte[]?)hash.Hash!.Clone();
             // reinitialize the hash so it is still usable after the call
             hash.Initialize();
             return res;

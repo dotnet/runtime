@@ -48,7 +48,7 @@ namespace System.Security.Cryptography.Xml.Tests
             doc.LoadXml(value);
 
             KeyInfoRetrievalMethod uri1 = new KeyInfoRetrievalMethod();
-            uri1.LoadXml(doc.DocumentElement);
+            uri1.LoadXml(doc.DocumentElement!);
 
             // verify that proper XML is generated (equals to original)
             string s = (uri1.GetXml().OuterXml);
@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.Xml.Tests
         public void InvalidKeyNode1()
         {
             KeyInfoRetrievalMethod uri1 = new KeyInfoRetrievalMethod();
-            Assert.Throws<ArgumentNullException>(() => uri1.LoadXml(null));
+            Assert.Throws<ArgumentNullException>(() => uri1.LoadXml(null!));
         }
 
         [Fact]
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
             KeyInfoRetrievalMethod uri1 = new KeyInfoRetrievalMethod();
             // no exception is thrown
-            uri1.LoadXml(doc.DocumentElement);
+            uri1.LoadXml(doc.DocumentElement!);
             AssertCrypto.AssertXmlEquals("invalid", "<RetrievalMethod xmlns=\"http://www.w3.org/2000/09/xmldsig#\" />", (uri1.GetXml().OuterXml));
         }
     }

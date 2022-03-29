@@ -74,7 +74,6 @@ namespace System.Security.Cryptography.Xml
 
         public virtual XmlElement GetXml()
         {
-            // red flag
             if (CacheValid) return _cachedXml!;
 
             XmlDocument document = new XmlDocument();

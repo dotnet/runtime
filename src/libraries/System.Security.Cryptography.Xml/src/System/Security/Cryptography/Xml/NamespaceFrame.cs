@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Xml
 
         internal NamespaceFrame() { }
 
-        internal void AddRendered(XmlAttribute? attr)
+        internal void AddRendered(XmlAttribute attr)
         {
             _rendered.Add(Utils.GetNamespacePrefix(attr), attr);
         }
@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.Xml
             return (XmlAttribute?)_rendered[nsPrefix];
         }
 
-        internal void AddUnrendered(XmlAttribute? attr)
+        internal void AddUnrendered(XmlAttribute attr)
         {
             _unrendered.Add(Utils.GetNamespacePrefix(attr), attr);
         }

@@ -58,7 +58,7 @@ namespace System.Security.Cryptography.Xml
         // public properties
         //
 
-        public string Algorithm
+        public string? Algorithm
         {
             get { return _algorithm; }
             set { _algorithm = value; }
@@ -128,7 +128,7 @@ namespace System.Security.Cryptography.Xml
             XmlElement transformElement = document.CreateElement(name, SignedXml.XmlDsigNamespaceUrl);
             if (!string.IsNullOrEmpty(Algorithm))
                 transformElement.SetAttribute("Algorithm", Algorithm);
-            XmlNodeList children = GetInnerXml();
+            XmlNodeList? children = GetInnerXml();
             if (children != null)
             {
                 foreach (XmlNode node in children)
@@ -154,15 +154,15 @@ namespace System.Security.Cryptography.Xml
             return hash.ComputeHash((Stream)GetOutput(typeof(Stream)));
         }
 
-        public XmlElement Context
+        public XmlElement? Context
         {
             get
             {
                 if (_context != null)
                     return _context;
 
-                Reference reference = Reference;
-                SignedXml signedXml = (reference == null ? SignedXml : reference.SignedXml);
+                Reference? reference = Reference;
+                SignedXml? signedXml = (reference == null ? SignedXml : reference.SignedXml);
                 if (signedXml == null)
                     return null;
 
@@ -182,7 +182,7 @@ namespace System.Security.Cryptography.Xml
                     return _propagatedNamespaces;
 
                 Reference? reference = Reference;
-                SignedXml signedXml = (reference == null ? SignedXml : reference.SignedXml);
+                SignedXml? signedXml = (reference == null ? SignedXml : reference.SignedXml);
 
                 // If the reference is not a Uri reference with a DataObject target, return an empty hashtable.
                 if (reference != null &&
