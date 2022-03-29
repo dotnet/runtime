@@ -1371,6 +1371,7 @@ struct FilterSuperPMIExceptionsParam_ee_il
     const char**          classNamePtr;
     const char*           fieldOrMethodOrClassNamePtr;
     char16_t*             classNameWidePtr;
+    unsigned              classSize;
     EXCEPTION_POINTERS    exceptionPointers;
 };
 
@@ -1480,6 +1481,36 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
 #endif // DEBUG || FEATURE_JIT_METHOD_PERF
 
 #ifdef DEBUG
+
+//------------------------------------------------------------------------
+// eeTryGetClassSize: wraps getClassSize but if doing SuperPMI replay
+// and the value isn't found, use a bogus size.
+//
+// NOTE: This is only allowed for JitDump output.
+//
+// Return value:
+//      Either the actual class size, or (unsigned)-1 if SuperPMI didn't have it.
+//
+unsigned Compiler::eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd)
+{
+    FilterSuperPMIExceptionsParam_ee_il param;
+
+    param.pThis    = this;
+    param.pJitInfo = &info;
+    param.clazz    = clsHnd;
+
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
+            pParam->classSize = pParam->pJitInfo->compCompHnd->getClassSize(pParam->clazz);
+        },
+        &param);
+
+    if (!success)
+    {
+        param.classSize = (unsigned)-1; // Use the maximum unsigned value as the size
+    }
+    return param.classSize;
+}
 
 //------------------------------------------------------------------------
 // eeGetShortClassName: wraps appendClassName to provide functionality

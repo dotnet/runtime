@@ -431,19 +431,7 @@ int MyICJI::appendClassName(_Outptr_result_buffer_(*pnBufLen) char16_t** ppBuf,
                             bool                                    fAssembly)
 {
     jitInstance->mc->cr->AddCall("appendClassName");
-    const WCHAR* result = jitInstance->mc->repAppendClassName(cls, fNamespace, fFullInst, fAssembly);
-    int          nLen   = 0;
-    if (ppBuf != nullptr && result != nullptr)
-    {
-        nLen = (int)wcslen(result);
-        if (*pnBufLen > nLen)
-        {
-            wcscpy_s((WCHAR*)*ppBuf, *pnBufLen, result);
-            (*ppBuf) += nLen;
-            (*pnBufLen) -= nLen;
-        }
-    }
-    return nLen;
+    return jitInstance->mc->repAppendClassName(ppBuf, pnBufLen, cls, fNamespace, fFullInst, fAssembly);
 }
 
 // Quick check whether the type is a value class. Returns the same value as getClassAttribs(cls) &

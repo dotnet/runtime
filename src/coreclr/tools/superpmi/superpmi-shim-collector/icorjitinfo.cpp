@@ -499,10 +499,11 @@ int interceptor_ICJI::appendClassName(_Outptr_result_buffer_(*pnBufLen) char16_t
                                       bool                                       fAssembly)
 {
     mc->cr->AddCall("appendClassName");
-    char16_t* pBuf = *ppBuf;
-    int    nLen = original_ICorJitInfo->appendClassName(ppBuf, pnBufLen, cls, fNamespace, fFullInst, fAssembly);
-    mc->recAppendClassName(cls, fNamespace, fFullInst, fAssembly, pBuf);
-    return nLen;
+    char16_t* pBufIn    = (ppBuf == nullptr) ? nullptr : *ppBuf;
+    int       nBufLenIn = (pnBufLen == nullptr) ? 0 : *pnBufLen; // pnBufLen should never be nullptr, but don't crash if it is.
+    int       nLenOut   = original_ICorJitInfo->appendClassName(ppBuf, pnBufLen, cls, fNamespace, fFullInst, fAssembly);
+    mc->recAppendClassName(nBufLenIn, cls, fNamespace, fFullInst, fAssembly, nLenOut, pBufIn);
+    return nLenOut;
 }
 
 // Quick check whether the type is a value class. Returns the same value as getClassAttribs(cls) &
