@@ -12,6 +12,9 @@ using Xunit;
 
 namespace System.Net.NameResolution.Tests
 {
+    [CollectionDefinition(nameof(DisableParallelization), DisableParallelization = true)]
+    public class DisableParallelization { }
+
     public class GetHostEntryTest
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -81,7 +84,7 @@ namespace System.Net.NameResolution.Tests
         [ConditionalTheory(nameof(GetHostEntryWorks))]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
-        public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName)    
+        public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName)
         {
             await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(hostName));
         }
@@ -122,7 +125,7 @@ namespace System.Net.NameResolution.Tests
                 {
                     Assert.NotEqual(AddressFamily.InterNetworkV6, address.AddressFamily);
                 }
-            }   
+            }
         }
 
         [ConditionalTheory(nameof(GetHostEntry_DisableIPv6_Condition))]
