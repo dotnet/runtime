@@ -9,17 +9,68 @@ internal static partial class Interop
     internal static partial class WinMM
     {
 #pragma warning disable CA1823 // unused fields
+#if NET7_0_OR_GREATER
+        [NativeMarshalling(typeof(Native))]
+#endif
         internal struct WAVEOUTCAPS
         {
+            private const int szPnameLength = 32;
             private ushort wMid;
             private ushort wPid;
             private uint vDriverVersion;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = szPnameLength)]
             internal string szPname;
             private uint dwFormats;
             private ushort wChannels;
             private ushort wReserved1;
             private ushort dwSupport;
+#if NET7_0_OR_GREATER
+            [CustomTypeMarshaller(typeof(WAVEOUTCAPS))]
+            internal unsafe struct Native
+            {
+                private ushort wMid;
+                private ushort wPid;
+                private uint vDriverVersion;
+                internal fixed char szPname[szPnameLength];
+                private uint dwFormats;
+                private ushort wChannels;
+                private ushort wReserved1;
+                private ushort dwSupport;
+
+                public Native(WAVEOUTCAPS managed)
+                {
+                    wMid = managed.wMid;
+                    wPid = managed.wPid;
+                    vDriverVersion = managed.vDriverVersion;
+                    fixed (char* pszPname = szPname)
+                    {
+                        managed.szPname.AsSpan().CopyTo(new Span<char>(pszPname, szPnameLength));
+                    }
+                    dwFormats = managed.dwFormats;
+                    wChannels = managed.wChannels;
+                    wReserved1 = managed.wReserved1;
+                    dwSupport = managed.dwSupport;
+                }
+
+                public WAVEOUTCAPS ToManaged()
+                {
+                    fixed (char* pszPname = szPname)
+                    {
+                        return new WAVEOUTCAPS
+                        {
+                            wMid = wMid,
+                            wPid = wPid,
+                            vDriverVersion = vDriverVersion,
+                            szPname = new Span<char>(pszPname, szPnameLength).ToString(),
+                            dwFormats = dwFormats,
+                            wChannels = wChannels,
+                            wReserved1 = wReserved1,
+                            dwSupport = dwSupport,
+                        };
+                    }
+                }
+            }
+#endif
         }
 #pragma warning restore CA1823
 
@@ -34,10 +85,7 @@ internal static partial class Interop
         /// information about the capabilities of the device.</param>
         /// <param name="cbwoc">Size, in bytes, of the WAVEOUTCAPS structure.</param>
         /// <returns>MMSYSERR</returns>
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable types.
-        [DllImport(Libraries.WinMM)]
-        internal static extern MMSYSERR waveOutGetDevCaps(IntPtr uDeviceID, ref WAVEOUTCAPS caps, int cbwoc);
-#pragma warning restore DLLIMPORTGENANALYZER015
+        [LibraryImport(Libraries.WinMM)]
+        internal static partial MMSYSERR waveOutGetDevCaps(IntPtr uDeviceID, ref WAVEOUTCAPS caps, int cbwoc);
     }
 }

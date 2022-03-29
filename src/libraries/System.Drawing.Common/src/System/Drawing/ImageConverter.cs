@@ -111,7 +111,7 @@ namespace System.Drawing
 
         public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
 
-        private unsafe Stream? GetBitmapStream(ReadOnlySpan<byte> rawData)
+        private static unsafe Stream? GetBitmapStream(ReadOnlySpan<byte> rawData)
         {
             try
             {

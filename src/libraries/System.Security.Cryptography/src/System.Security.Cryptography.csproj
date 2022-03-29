@@ -232,6 +232,8 @@
              Link="Common\System\Security\Cryptography\KeyBlobHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HashOneShotHelpers.cs"
              Link="Common\System\Security\Cryptography\HashOneShotHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\IRuntimeAlgorithm.cs"
+             Link="Common\System\Security\Cryptography\IRuntimeAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\KeyFormatHelper.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.Encrypted.cs"
@@ -1673,8 +1675,6 @@
              Link="Common\System\Security\Cryptography\ECDiffieHellmanCng.ImportExport.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaCng.cs"
              Link="Common\System\Security\Cryptography\ECDsaCng.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaCng.HashData.cs"
-             Link="Common\System\Security\Cryptography\ECDsaCng.HashData.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaCng.ImportExport.cs"
              Link="Common\System\Security\Cryptography\ECDsaCng.ImportExport.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaCng.SignVerify.cs"

@@ -337,6 +337,18 @@ namespace System.Net.Sockets
             Dispose();
         }
 
+        public void Close(TimeSpan timeout) => Close(ToTimeoutSeconds(timeout));
+
+        private static int ToTimeoutSeconds(TimeSpan timeout)
+        {
+            long totalSeconds = (long)timeout.TotalSeconds;
+            if (totalSeconds < -1 || totalSeconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            }
+            return (int)totalSeconds;
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (Interlocked.Exchange(ref _disposed, 1) != 0)

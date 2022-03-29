@@ -130,7 +130,7 @@ namespace System.Net.Mime
             return multiResult;
         }
 
-        internal Stream EndGetContentStream(IAsyncResult result)
+        internal static Stream EndGetContentStream(IAsyncResult result)
         {
             object o = MultiAsyncResult.End(result)!;
             if (o is Exception e)

@@ -53,7 +53,6 @@
 
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/abi-details.h>
-#include <mono/metadata/w32error.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-os-wait.h>
 #include <mono/metadata/exception-internals.h>
@@ -1270,7 +1269,7 @@ start_wrapper (gpointer data)
 }
 
 static void
-throw_thread_start_exception (guint32 error_code, MonoError *error)
+throw_thread_start_exception (const char *msg, MonoError *error)
 {
 	ERROR_DECL (method_error);
 
@@ -1282,9 +1281,7 @@ throw_thread_start_exception (guint32 error_code, MonoError *error)
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, throw_method)
 	g_assert (throw_method);
 
-	char *msg = g_strdup_printf ("0x%x", error_code);
 	MonoException *ex = mono_get_exception_execution_engine (msg);
-	g_free (msg);
 
 	gpointer args [1];
 	args [0] = ex;
@@ -1365,7 +1362,13 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoThreadStart
 		mono_g_hash_table_remove (threads_starting_up, thread);
 		mono_threads_unlock ();
 
-		throw_thread_start_exception (mono_w32error_get_last(), error);
+#if HOST_WIN32
+		char *err_msg = g_strdup_printf ("0x%x", GetLastError ());
+		throw_thread_start_exception (err_msg, error);
+		g_free (err_msg);
+#else
+		throw_thread_start_exception ("mono_thread_platform_create_thread() failed", error);
+#endif
 
 		/* ref is not going to be decremented in start_wrapper_internal */
 		mono_atomic_dec_i32 (&start_info->ref);

@@ -1771,10 +1771,22 @@ parse_qualified_method_name (char *method_name)
 void
 mono_jit_parse_options (int argc, char * argv[])
 {
+	ERROR_DECL (error);
 	int i;
 	char *trace_options = NULL;
 	int mini_verbose_level = 0;
 	guint32 opt;
+
+	/* Make a copy since mono_options_parse_options () modifies argv */
+	char **copy_argv = g_new0 (char*, argc);
+	memcpy (copy_argv, argv, sizeof (char*) * argc);
+	argv = copy_argv;
+
+	mono_options_parse_options ((const char**)argv, argc, &argc, error);
+	if (!is_ok (error)) {
+		g_printerr ("%s", mono_error_get_message (error));
+		mono_error_cleanup (error);
+	}
 
 	/*
 	 * Some options have no effect here, since they influence the behavior of
@@ -1864,6 +1876,9 @@ mono_jit_parse_options (int argc, char * argv[])
 
 	if (mini_verbose_level)
 		mono_set_verbose_level (mini_verbose_level);
+
+	/* Free the copy */
+	g_free (argv);
 }
 
 static void

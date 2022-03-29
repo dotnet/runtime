@@ -42,6 +42,7 @@
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapPartialResultsProcessor.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\SafeHandles.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\Interop\SortKeyInterop.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
       Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
       <Link>Common\DisableRuntimeMarshalling.cs</Link>
@@ -58,6 +59,7 @@
     <Compile Include="System\DirectoryServices\Protocols\common\QuotaControl.Windows.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\LdapPal.Windows.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\BerPal.Windows.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\Interop\SortKeyInterop.Windows.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.Windows.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.Windows.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\SafeHandles.Windows.cs" />
@@ -76,6 +78,7 @@
     <Compile Include="System\DirectoryServices\Protocols\common\QuotaControl.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\LdapPal.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\BerPal.Linux.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\Interop\SortKeyInterop.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LocalAppContextSwitches.cs" />

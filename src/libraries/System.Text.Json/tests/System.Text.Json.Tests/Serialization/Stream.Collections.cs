@@ -15,137 +15,138 @@ namespace System.Text.Json.Serialization.Tests
 {
     public partial class StreamTests
     {
-        [Fact]
+        // Empty class functioning as witness type for TElement
+        public class Witness<T> { }
+
+        [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", TestPlatforms.Browser)]
-        public async Task HandleCollectionsAsync()
+        [MemberData(nameof(GetTestedCollectionData))]
+        public async Task HandleCollectionsAsync<TCollection, TElement>(TCollection collection, int bufferSize, Witness<TElement> elementType)
         {
-            await RunTestAsync<string>();
-            await RunTestAsync<ClassWithKVP>();
-            await RunTestAsync<ImmutableStructWithStrings>();
+            _ = elementType; // only needed by Xunit to inject the right TElement type parameter
+
+            var options = new JsonSerializerOptions { DefaultBufferSize = bufferSize };
+            await PerformSerialization<TCollection, TElement>(collection, options);
+
+            options = new JsonSerializerOptions(options) { ReferenceHandler = ReferenceHandler.Preserve };
+            await PerformSerialization<TCollection, TElement>(collection, options);
         }
 
-        private async Task RunTestAsync<TElement>()
-        {
-            foreach ((Type, int) pair in CollectionTestData<TElement>())
-            {
-                Type type = pair.Item1;
-                int bufferSize = pair.Item2;
-
-                // bufferSize * 0.9 is the threshold size from codebase, subtract 2 for [ or { characters, then create a
-                // string containing (threshold - 2) amount of char 'a' which when written into output buffer produces buffer
-                // which size equal to or very close to threshold size, then adding the string to the list, then adding a big
-                // object to the list which changes depth of written json and should cause buffer flush.
-                int thresholdSize = (int)(bufferSize * 0.9 - 2);
-
-                var options = new JsonSerializerOptions
-                {
-                    DefaultBufferSize = bufferSize,
-                    WriteIndented = true
-                };
-
-                var optionsWithPreservedReferenceHandling = new JsonSerializerOptions(options)
-                {
-                    ReferenceHandler = ReferenceHandler.Preserve
-                };
-
-                object obj = GetPopulatedCollection<TElement>(type, thresholdSize);
-                await PerformSerialization<TElement>(obj, type, options);
-                await PerformSerialization<TElement>(obj, type, optionsWithPreservedReferenceHandling);
-            }
-        }
-
-        private async Task PerformSerialization<TElement>(object obj, Type type, JsonSerializerOptions options)
-        {
-            string expectedjson = JsonSerializer.Serialize(obj, options);
-
-            using var memoryStream = new MemoryStream();
-            await Serializer.SerializeWrapper(memoryStream, obj, options);
-            string serialized = Encoding.UTF8.GetString(memoryStream.ToArray());
-            JsonTestHelper.AssertJsonEqual(expectedjson, serialized);
-
-            memoryStream.Position = 0;
-
-            if (options.ReferenceHandler == null || !GetTypesNonRoundtrippableWithReferenceHandler().Contains(type))
-            {
-                await TestDeserialization<TElement>(memoryStream, expectedjson, type, options);
-
-                // Deserialize with extra whitespace
-                string jsonWithWhiteSpace = GetPayloadWithWhiteSpace(expectedjson);
-                using var memoryStreamWithWhiteSpace = new MemoryStream(Encoding.UTF8.GetBytes(jsonWithWhiteSpace));
-                await TestDeserialization<TElement>(memoryStreamWithWhiteSpace, expectedjson, type, options);
-            }
-        }
-
-        private async Task TestDeserialization<TElement>(
-            Stream memoryStream,
-            string expectedJson,
-            Type type,
+        private async Task PerformSerialization<TCollection, TElement>(
+            TCollection collection,
             JsonSerializerOptions options)
         {
-            try
+            string expectedjson = JsonSerializer.Serialize(collection, options);
+            string actualJson = await Serializer.SerializeWrapper(collection, options);
+            JsonTestHelper.AssertJsonEqual(expectedjson, actualJson);
+
+            if (options.ReferenceHandler == ReferenceHandler.Preserve &&
+                TypeHelper<TElement>.NonRoundtrippableWithReferenceHandler.Contains(typeof(TCollection)))
             {
-                object deserialized = await Serializer.DeserializeWrapper(memoryStream, type, options);
-                string serialized = JsonSerializer.Serialize(deserialized, options);
-
-                // Stack elements reversed during serialization.
-                if (StackTypes<TElement>().Contains(type))
-                {
-                    deserialized = JsonSerializer.Deserialize(serialized, type, options);
-                    serialized = JsonSerializer.Serialize(deserialized, options);
-                }
-
-                // TODO: https://github.com/dotnet/runtime/issues/35611.
-                // Can't control order of dictionary elements when serializing, so reference metadata might not match up.
-                if(!(CollectionTestTypes.DictionaryTypes<TElement>().Contains(type) && options.ReferenceHandler == ReferenceHandler.Preserve))
-                {
-                    JsonTestHelper.AssertJsonEqual(expectedJson, serialized);
-                }
+                return;
             }
-            catch (NotSupportedException ex)
+
+            await TestDeserialization<TCollection, TElement>(actualJson, options);
+
+            // Deserialize with extra whitespace
+            string jsonWithWhiteSpace = GetPayloadWithWhiteSpace(actualJson);
+            await TestDeserialization<TCollection, TElement>(jsonWithWhiteSpace, options);
+        }
+
+        private async Task TestDeserialization<TCollection, TElement>(string json, JsonSerializerOptions options)
+        {
+            if (TypeHelper<TElement>.NotSupportedForDeserialization.Contains(typeof(TCollection)))
             {
-                Assert.True(GetTypesNotSupportedForDeserialization<TElement>().Contains(type));
-                Assert.Contains(type.ToString(), ex.ToString());
+                NotSupportedException exception = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<TCollection>(json, options));
+                Assert.Contains(typeof(TCollection).ToString(), exception.ToString());
+                return;
+            }
+
+            TCollection deserialized = await Serializer.DeserializeWrapper<TCollection>(json, options);
+
+            // Validate the integrity of the deserialized value by reserializing
+            // it using the non-streaming serializer and comparing the roundtripped value.
+            string roundtrippedJson = JsonSerializer.Serialize(deserialized, options);
+
+            // Stack elements reversed during serialization.
+            if (TypeHelper<TElement>.StackTypes.Contains(typeof(TCollection)))
+            {
+                deserialized = JsonSerializer.Deserialize<TCollection>(roundtrippedJson, options);
+                roundtrippedJson = JsonSerializer.Serialize(deserialized, options);
+            }
+
+            // TODO: https://github.com/dotnet/runtime/issues/35611.
+            // Can't control order of dictionary elements when serializing, so reference metadata might not match up.
+            if (options.ReferenceHandler == ReferenceHandler.Preserve &&
+                TypeHelper<TElement>.DictionaryTypes.Contains(typeof(TCollection)))
+            {
+                return;
+            }
+
+            JsonTestHelper.AssertJsonEqual(json, roundtrippedJson);
+        }
+
+        public static IEnumerable<object[]> GetTestedCollectionData()
+        {
+            return new IEnumerable<object[]>[] {
+                GetTestedCollectionsForElement<string>(),
+                GetTestedCollectionsForElement<ClassWithKVP>(),
+                GetTestedCollectionsForElement<ImmutableStructWithStrings>(),
+            }.SelectMany(x => x);
+
+            static IEnumerable<object[]> GetTestedCollectionsForElement<TElement>()
+            {
+                foreach ((Type collectionType, int bufferSize) in CollectionTestData<TElement>())
+                {
+                    // bufferSize * 0.9 is the threshold size from codebase, subtract 2 for [ or { characters, then create a
+                    // string containing (threshold - 2) amount of char 'a' which when written into output buffer produces buffer
+                    // which size equal to or very close to threshold size, then adding the string to the list, then adding a big
+                    // object to the list which changes depth of written json and should cause buffer flush.
+                    int elementSize = (int)(bufferSize * 0.9 - 2);
+                    object collection = GetPopulatedCollection<TElement>(collectionType, elementSize);
+                    yield return new object[] { collection, bufferSize, new Witness<TElement>() };
+                }
             }
         }
 
-        private static object GetPopulatedCollection<TElement>(Type type, int stringLength)
+        private static object GetPopulatedCollection<TElement>(Type collectionType, int elementSize)
         {
-            if (type == typeof(TElement[]))
+            if (collectionType == typeof(TElement[]))
             {
-                return GetArr_TypedElements<TElement>(stringLength);
+                return GetArr_TypedElements<TElement>(elementSize);
             }
-            else if (type == typeof(ImmutableList<TElement>))
+            else if (collectionType == typeof(ImmutableList<TElement>))
             {
-                return ImmutableList.CreateRange(GetArr_TypedElements<TElement>(stringLength));
+                return ImmutableList.CreateRange(GetArr_TypedElements<TElement>(elementSize));
             }
-            else if (type == typeof(ImmutableStack<TElement>))
+            else if (collectionType == typeof(ImmutableStack<TElement>))
             {
-                return ImmutableStack.CreateRange(GetArr_TypedElements<TElement>(stringLength));
+                return ImmutableStack.CreateRange(GetArr_TypedElements<TElement>(elementSize));
             }
-            else if (type == typeof(ImmutableDictionary<string, TElement>))
+            else if (collectionType == typeof(ImmutableDictionary<string, TElement>))
             {
-                return ImmutableDictionary.CreateRange(GetDict_TypedElements<TElement>(stringLength));
+                return ImmutableDictionary.CreateRange(GetDict_TypedElements<TElement>(elementSize));
             }
-            else if (type == typeof(KeyValuePair<TElement, TElement>))
+            else if (collectionType == typeof(KeyValuePair<TElement, TElement>))
             {
-                TElement item = GetCollectionElement<TElement>(stringLength);
+                TElement item = GetCollectionElement<TElement>(elementSize);
                 return new KeyValuePair<TElement, TElement>(item, item);
             }
             else if (
-                typeof(IDictionary<string, TElement>).IsAssignableFrom(type) ||
-                typeof(IReadOnlyDictionary<string, TElement>).IsAssignableFrom(type) ||
-                typeof(IDictionary).IsAssignableFrom(type))
+                typeof(IDictionary<string, TElement>).IsAssignableFrom(collectionType) ||
+                typeof(IReadOnlyDictionary<string, TElement>).IsAssignableFrom(collectionType) ||
+                typeof(IDictionary).IsAssignableFrom(collectionType))
             {
-                return Activator.CreateInstance(type, new object[] { GetDict_TypedElements<TElement>(stringLength) });
+                return Activator.CreateInstance(collectionType, new object[] { GetDict_TypedElements<TElement>(elementSize) });
             }
-            else if (typeof(IEnumerable<TElement>).IsAssignableFrom(type))
+            else if (typeof(IEnumerable<TElement>).IsAssignableFrom(collectionType))
             {
-                return Activator.CreateInstance(type, new object[] { GetArr_TypedElements<TElement>(stringLength) });
+                return Activator.CreateInstance(collectionType, new object[] { GetArr_TypedElements<TElement>(elementSize) });
             }
             else
             {
-                return Activator.CreateInstance(type, new object[] { GetArr_BoxedElements<TElement>(stringLength) });
+                return Activator.CreateInstance(collectionType, new object[] { GetArr_BoxedElements<TElement>(elementSize) });
             }
         }
 
@@ -177,17 +178,18 @@ namespace System.Text.Json.Serialization.Tests
 
         private const int NumElements = 15;
 
-        private static TElement[] GetArr_TypedElements<TElement>(int stringLength)
+        private static TElement[] GetArr_TypedElements<TElement>(int elementSize)
         {
             Debug.Assert(NumElements > 2);
             var arr = new TElement[NumElements];
 
-            TElement item = GetCollectionElement<TElement>(stringLength);
+            Random random = new Random(Seed: elementSize);
+            TElement item = GetCollectionElement<TElement>(elementSize, random);
             arr[0] = item;
 
             for (int i = 1; i < NumElements - 1; i++)
             {
-                arr[i] = GetCollectionElement<TElement>(stringLength);
+                arr[i] = GetCollectionElement<TElement>(elementSize, random);
             }
 
             arr[NumElements - 1] = item;
@@ -195,17 +197,18 @@ namespace System.Text.Json.Serialization.Tests
             return arr;
         }
 
-        private static object[] GetArr_BoxedElements<TElement>(int stringLength)
+        private static object[] GetArr_BoxedElements<TElement>(int elementSize)
         {
             Debug.Assert(NumElements > 2);
             var arr = new object[NumElements];
 
-            TElement item = GetCollectionElement<TElement>(stringLength);
+            Random random = new Random(Seed: elementSize);
+            TElement item = GetCollectionElement<TElement>(elementSize, random);
             arr[0] = item;
 
             for (int i = 1; i < NumElements - 1; i++)
             {
-                arr[i] = GetCollectionElement<TElement>(stringLength);
+                arr[i] = GetCollectionElement<TElement>(elementSize, random);
             }
 
             arr[NumElements - 1] = item;
@@ -213,11 +216,12 @@ namespace System.Text.Json.Serialization.Tests
             return arr;
         }
 
-        private static Dictionary<string, TElement> GetDict_TypedElements<TElement>(int stringLength)
+        private static Dictionary<string, TElement> GetDict_TypedElements<TElement>(int elementSize)
         {
             Debug.Assert(NumElements > 2);
 
-            TElement item = GetCollectionElement<TElement>(stringLength);
+            Random random = new Random(Seed: elementSize);
+            TElement item = GetCollectionElement<TElement>(elementSize, random);
 
             var dict = new Dictionary<string, TElement>();
 
@@ -225,7 +229,7 @@ namespace System.Text.Json.Serialization.Tests
 
             for (int i = 1; i < NumElements - 1; i++)
             {
-                TElement newItem = GetCollectionElement<TElement>(stringLength);
+                TElement newItem = GetCollectionElement<TElement>(elementSize, random);
                 dict[$"{newItem}{i}"] = newItem;
             }
 
@@ -234,18 +238,12 @@ namespace System.Text.Json.Serialization.Tests
             return dict;
         }
 
-        private static TElement GetCollectionElement<TElement>(int stringLength)
+        private static TElement GetCollectionElement<TElement>(int elementSize, Random? random = null)
         {
             Type type = typeof(TElement);
+            char randomChar = (char)(random ??= new(Seed: elementSize)).Next('a', 'z');
 
-            Random rand = new Random();
-            char randomChar = (char)rand.Next('a', 'z');
-
-            string value = new string(randomChar, stringLength);
-            var kvp = new KeyValuePair<string, SimpleStruct>(value, new SimpleStruct {
-                One = 1,
-                Two = 2
-            });
+            string value = new string(randomChar, elementSize);
 
             if (type == typeof(string))
             {
@@ -253,6 +251,11 @@ namespace System.Text.Json.Serialization.Tests
             }
             else if (type == typeof(ClassWithKVP))
             {
+                var kvp = new KeyValuePair<string, SimpleStruct>(value, new SimpleStruct {
+                    One = 1,
+                    Two = 2
+                });
+
                 return (TElement)(object)new ClassWithKVP { MyKvp = kvp };
             }
             else
@@ -263,7 +266,7 @@ namespace System.Text.Json.Serialization.Tests
             throw new NotImplementedException();
         }
 
-        private static IEnumerable<(Type, int)> CollectionTestData<TElement>()
+        private static IEnumerable<(Type collectionType, int bufferSize)> CollectionTestData<TElement>()
         {
             foreach (Type type in CollectionTypes<TElement>())
             {
@@ -295,7 +298,7 @@ namespace System.Text.Json.Serialization.Tests
                 yield return type;
             }
             // Stack types
-            foreach (Type type in StackTypes<TElement>())
+            foreach (Type type in TypeHelper<TElement>.StackTypes)
             {
                 yield return type;
             }
@@ -311,30 +314,35 @@ namespace System.Text.Json.Serialization.Tests
             yield return typeof(KeyValuePair<TElement, TElement>); // KeyValuePairConverter
         }
 
-        private static HashSet<Type> StackTypes<TElement>() => new HashSet<Type>
+        private static class TypeHelper<TElement>
         {
-            typeof(ConcurrentStack<TElement>), // ConcurrentStackOfTConverter
-            typeof(Stack), // IEnumerableWithAddMethodConverter
-            typeof(Stack<TElement>), // StackOfTConverter
-            typeof(ImmutableStack<TElement>) // ImmutableEnumerableOfTConverter
-        };
+            public static HashSet<Type> DictionaryTypes { get; } = new HashSet<Type>(CollectionTestTypes.DictionaryTypes<TElement>());
 
-        private static HashSet<Type> GetTypesNotSupportedForDeserialization<TElement>() => new HashSet<Type>
-        {
-            typeof(WrapperForIEnumerable),
-            typeof(WrapperForIReadOnlyCollectionOfT<TElement>),
-            typeof(GenericIReadOnlyDictionaryWrapper<string, TElement>)
-        };
+            public static HashSet<Type> StackTypes { get; } = new HashSet<Type>
+            {
+                typeof(ConcurrentStack<TElement>), // ConcurrentStackOfTConverter
+                typeof(Stack), // IEnumerableWithAddMethodConverter
+                typeof(Stack<TElement>), // StackOfTConverter
+                typeof(ImmutableStack<TElement>) // ImmutableEnumerableOfTConverter
+            };
 
-        // Non-generic types cannot roundtrip when they contain a $ref written on serialization and they are the root type.
-        private static HashSet<Type> GetTypesNonRoundtrippableWithReferenceHandler() => new HashSet<Type>
-        {
-            typeof(Hashtable),
-            typeof(Queue),
-            typeof(Stack),
-            typeof(WrapperForIList),
-            typeof(WrapperForIEnumerable)
-        };
+            public static HashSet<Type> NotSupportedForDeserialization { get; } = new HashSet<Type>
+            {
+                typeof(WrapperForIEnumerable),
+                typeof(WrapperForIReadOnlyCollectionOfT<TElement>),
+                typeof(GenericIReadOnlyDictionaryWrapper<string, TElement>)
+            };
+
+            // Non-generic types cannot roundtrip when they contain a $ref written on serialization and they are the root type.
+            public static HashSet<Type> NonRoundtrippableWithReferenceHandler { get; } = new HashSet<Type>
+            {
+                typeof(Hashtable),
+                typeof(Queue),
+                typeof(Stack),
+                typeof(WrapperForIList),
+                typeof(WrapperForIEnumerable)
+            };
+        }
 
         private class ClassWithKVP
         {
@@ -382,7 +390,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal("[]", JsonSerializer.Serialize(GetEmptyCollection<int>(type)));
             }
 
-            foreach (Type type in StackTypes<int>())
+            foreach (Type type in TypeHelper<int>.StackTypes)
             {
                 Assert.Equal("[]", JsonSerializer.Serialize(GetEmptyCollection<int>(type)));
             }

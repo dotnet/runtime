@@ -229,7 +229,7 @@
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
         <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
-        <target state="needs-review-translation">正規表現メソッドは、部分的、パラメーターなし、非ジェネリックであり、正規表現を返す必要があります</target>
+        <target state="new">RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</target>
         <note />
       </trans-unit>
       <trans-unit id="ReplacementError">

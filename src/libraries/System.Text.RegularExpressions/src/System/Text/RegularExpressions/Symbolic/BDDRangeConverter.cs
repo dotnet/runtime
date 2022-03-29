@@ -33,7 +33,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 return new[] { (0u, ((uint)1 << maxBit << 1) - 1) }; //note: maxBit could be 31
 
             var rc = new BDDRangeConverter();
-            return rc.LiftRanges(maxBit + 1, maxBit - set.Ordinal, rc.ToRangesFromOrdinal(set));
+            return LiftRanges(maxBit + 1, maxBit - set.Ordinal, rc.ToRangesFromOrdinal(set));
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// then res = {[0000 1010, 0000 1110], [0001 1010, 0001 1110],
         ///             [0010 1010, 0010 1110], [0011 1010, 0011 1110]},
         /// </summary>
-        private (uint, uint)[] LiftRanges(int toBits, int newBits, (uint, uint)[] ranges)
+        private static (uint, uint)[] LiftRanges(int toBits, int newBits, (uint, uint)[] ranges)
         {
             // nothing happens if no new bits are added
             if (newBits == 0)

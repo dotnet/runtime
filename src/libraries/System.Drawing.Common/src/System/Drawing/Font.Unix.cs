@@ -70,7 +70,7 @@ namespace System.Drawing
             Gdip.CheckStatus(status);
         }
 
-        internal void unitConversion(GraphicsUnit fromUnit, GraphicsUnit toUnit, float nSrc, out float nTrg)
+        internal static void unitConversion(GraphicsUnit fromUnit, GraphicsUnit toUnit, float nSrc, out float nTrg)
         {
             float inchs;
             nTrg = 0;

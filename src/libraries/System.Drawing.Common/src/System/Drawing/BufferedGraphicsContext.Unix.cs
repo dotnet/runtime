@@ -37,16 +37,16 @@ namespace System.Drawing
 {
     public sealed partial class BufferedGraphicsContext : IDisposable
     {
+#pragma warning disable CA1822
         private BufferedGraphics AllocBuffer(Graphics? targetGraphics, IntPtr targetDC, Rectangle targetRectangle)
         {
             BufferedGraphics graphics = new BufferedGraphics(targetGraphics, targetDC, targetRectangle);
             return graphics;
         }
+#pragma warning restore CA1822
 
-        private void Dispose(bool disposing)
-        {
-            // Do nothing on Unix.
-        }
+        // Do nothing on Unix.
+        partial void Dispose(bool disposing);
 
         public void Invalidate()
         {

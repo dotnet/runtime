@@ -854,7 +854,7 @@ namespace System.Reflection
             }
         }
 
-        private void InvokeClassConstructor()
+        private static void InvokeClassConstructor()
         {
             // [TODO] Mechanism for invoking class constructor
             // See https://github.com/dotnet/runtime/issues/40351
