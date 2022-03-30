@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -28,10 +29,12 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void InvalidOptionsThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new TokenBucketRateLimiterOptions(-1, QueueProcessingOrder.NewestFirst, 1, TimeSpan.FromMinutes(2), 1, autoReplenishment: false));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, -1, TimeSpan.FromMinutes(2), 1, autoReplenishment: false));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1, TimeSpan.FromMinutes(2), -1, autoReplenishment: false));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1, TimeSpan.FromDays(49).Add(TimeSpan.FromMilliseconds(1)), 1, autoReplenishment: false));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new TokenBucketRateLimiterOptions(-1, QueueProcessingOrder.NewestFirst, 1, TimeSpan.FromMinutes(2), 1, autoReplenishment: false));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, -1, TimeSpan.FromMinutes(2), 1, autoReplenishment: false));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1, TimeSpan.FromMinutes(2), -1, autoReplenishment: false));
         }
 
         [Fact]
@@ -708,9 +711,9 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public async Task ReplenishWorksWhenTicksWrap()
+        public async Task ReplenishWorksWithTicksOverInt32Max()
         {
-            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(10, QueueProcessingOrder.OldestFirst, 2,
+            using var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(10, QueueProcessingOrder.OldestFirst, 2,
                 TimeSpan.FromMilliseconds(2), 1, autoReplenishment: false));
 
             var lease = limiter.Acquire(10);
@@ -720,8 +723,9 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(wait.IsCompleted);
 
             var replenishInternalMethod = typeof(TokenBucketRateLimiter).GetMethod("ReplenishInternal", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)!;
-            // This will set the last tick to the max value
-            replenishInternalMethod.Invoke(limiter, new object[] { uint.MaxValue });
+            // Ensure next tick is over uint.MaxValue
+            var tick = Stopwatch.GetTimestamp() + uint.MaxValue;
+            replenishInternalMethod.Invoke(limiter, new object[] { tick });
 
             lease = await wait;
             Assert.True(lease.IsAcquired);
@@ -729,20 +733,10 @@ namespace System.Threading.RateLimiting.Test
             wait = limiter.WaitAsync(1);
             Assert.False(wait.IsCompleted);
 
-            // ticks wrapped, should replenish
-            replenishInternalMethod.Invoke(limiter, new object[] { 2U });
+            // ticks would wrap if using uint
+            replenishInternalMethod.Invoke(limiter, new object[] { tick + 2L * TimeSpan.TicksPerMillisecond });
             lease = await wait;
             Assert.True(lease.IsAcquired);
-
-            replenishInternalMethod.Invoke(limiter, new object[] { uint.MaxValue });
-
-            wait = limiter.WaitAsync(2);
-            Assert.False(wait.IsCompleted);
-
-            // ticks wrapped, but only 1 millisecond passed, make sure the wrapping behaves correctly and replenish doesn't happen
-            replenishInternalMethod.Invoke(limiter, new object[] { 1U });
-            Assert.False(wait.IsCompleted);
-            Assert.Equal(1, limiter.GetAvailablePermits());
         }
 
         [Fact]

@@ -15,8 +15,8 @@ namespace System.Threading.RateLimiting
     {
         private int _tokenCount;
         private int _queueCount;
-        private uint _lastReplenishmentTick = (uint)Environment.TickCount;
-        private long? _idleSince = Stopwatch.GetTimestamp();
+        private long _lastReplenishmentTick;
+        private long? _idleSince;
         private bool _disposed;
 
         private readonly Timer? _renewTimer;
@@ -47,6 +47,8 @@ namespace System.Threading.RateLimiting
         {
             _options = options;
             _tokenCount = options.TokenLimit;
+
+            _idleSince = _lastReplenishmentTick = Stopwatch.GetTimestamp();
 
             if (_options.AutoReplenishment)
             {
@@ -218,20 +220,13 @@ namespace System.Threading.RateLimiting
             Debug.Assert(limiter is not null);
 
             // Use Environment.TickCount instead of DateTime.UtcNow to avoid issues on systems where the clock can change
-            uint nowTicks = (uint)Environment.TickCount;
+            long nowTicks = Stopwatch.GetTimestamp();
             limiter!.ReplenishInternal(nowTicks);
         }
 
         // Used in tests that test behavior with specific time intervals
-        private void ReplenishInternal(uint nowTicks)
+        private void ReplenishInternal(long nowTicks)
         {
-            bool wrapped = false;
-            // (uint)TickCount will wrap every ~50 days, we can detect that by checking if the new ticks is less than the last replenishment
-            if (nowTicks < _lastReplenishmentTick)
-            {
-                wrapped = true;
-            }
-
             // method is re-entrant (from Timer), lock to avoid multiple simultaneous replenishes
             lock (Lock)
             {
@@ -240,9 +235,7 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                // Fix the wrapping by using a long and adding uint.MaxValue in the wrapped case
-                long nonWrappedTicks = wrapped ? (long)nowTicks + uint.MaxValue : nowTicks;
-                if (nonWrappedTicks - _lastReplenishmentTick < _options.ReplenishmentPeriod.TotalMilliseconds)
+                if ((long)((nowTicks - _lastReplenishmentTick) * TickFrequency) < _options.ReplenishmentPeriod.Ticks)
                 {
                     return;
                 }
