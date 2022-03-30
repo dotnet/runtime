@@ -182,7 +182,7 @@ namespace System.Net.Quic.Tests
                 QuicStream clientStream = clientConnection.OpenBidirectionalStream();
                 ValueTask writeTask = clientStream.WriteAsync(Encoding.UTF8.GetBytes("PING"), endStream: true);
                 ValueTask<QuicStream> acceptTask = serverConnection.AcceptStreamAsync();
-                await new Task[] { writeTask.AsTask(), acceptTask.AsTask()}.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+                await new Task[] { writeTask.AsTask(), acceptTask.AsTask() }.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
                 QuicStream serverStream = acceptTask.Result;
                 await serverStream.ReadAsync(buffer);
             }
@@ -530,30 +530,6 @@ namespace System.Net.Quic.Tests
                     await exTask;
                 }
             }
-        }
-
-        [Fact]
-        public async Task Read_ConcurrentReads_Throws()
-        {
-            using SemaphoreSlim sem = new SemaphoreSlim(0);
-
-            await RunBidirectionalClientServer(
-                async clientStream =>
-                {
-                    await sem.WaitAsync();
-                },
-                async serverStream =>
-                {
-                    ValueTask<int> readTask = serverStream.ReadAsync(new byte[1]);
-                    Assert.False(readTask.IsCompleted);
-
-                    await Assert.ThrowsAsync<InvalidOperationException>(async () => await serverStream.ReadAsync(new byte[1]));
-
-                    sem.Release();
-
-                    int res = await readTask;
-                    Assert.Equal(0, res);
-                });
         }
 
         [Fact]
