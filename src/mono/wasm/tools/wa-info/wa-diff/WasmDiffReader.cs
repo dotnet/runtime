@@ -171,7 +171,7 @@ namespace WebAssemblyInfo
         {
             UInt32 otherIdx;
 
-            if (HasFunctionNames && GetFunctionIdx(name, out otherIdx))
+            if (HasFunctionNames && data != null && ((WasmDiffReader)data).GetFunctionIdx(name, out otherIdx))
                 CompareFunction(idx, name, otherIdx, name, (WasmDiffReader?)data);
             else
                 CompareFunction(idx, name, idx, null, (WasmDiffReader?)data);
