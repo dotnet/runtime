@@ -12985,6 +12985,26 @@ DONE_MORPHING_CHILDREN:
             }
             break;
 
+        case GT_RETURN:
+        {
+            // Force dependent promotion for promoted locals which we'll use indirectly.
+            // Only needed for "TYP_STRUCT" because we expect the "IND(ADDR(LCL))" logic
+            // to transform primitives into "LCL_FLD"s (marking the local DNER).
+            // TODO-ADDR: support "TYP_STRUCT" "LCL_FLD"s, always convert such indirs to
+            // them in "LocalAddressVisitor", and have this code morph the local field
+            // into the promoted field local.
+            GenTreeLclVarCommon* lclNode  = nullptr;
+            bool                 isEntire = false;
+            if ((op1 != nullptr) && op1->TypeIs(TYP_STRUCT) && op1->OperIsIndir() &&
+                op1->AsIndir()->Addr()->DefinesLocalAddr(this, 0, &lclNode, &isEntire) &&
+                lvaGetDesc(lclNode)->lvPromoted)
+            {
+                assert(!lvaIsImplicitByRefLocal(lclNode->GetLclNum()));
+                lvaSetVarDoNotEnregister(lclNode->GetLclNum() DEBUGARG(DoNotEnregisterReason::BlockOpRet));
+            }
+        }
+        break;
+
         case GT_COLON:
             if (fgGlobalMorph)
             {
@@ -14346,7 +14366,6 @@ GenTree* Compiler::fgMorphRetInd(GenTreeUnOp* ret)
 
             unsigned lclVarSize;
             if (!lclVar->TypeIs(TYP_STRUCT))
-
             {
                 lclVarSize = genTypeSize(varDsc->TypeGet());
             }
