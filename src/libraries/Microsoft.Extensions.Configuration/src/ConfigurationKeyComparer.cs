@@ -51,9 +51,9 @@ namespace Microsoft.Extensions.Configuration
                 }
 
                 xSpan = xDelimiterIndex == -1 ? default :
-                    SkipAheadOnDelimiter(xSpan.Slice(xDelimiterIndex));
+                    SkipAheadOnDelimiter(xSpan.Slice(xDelimiterIndex + 1));
                 ySpan = yDelimiterIndex == -1 ? default :
-                    SkipAheadOnDelimiter(ySpan.Slice(yDelimiterIndex));
+                    SkipAheadOnDelimiter(ySpan.Slice(yDelimiterIndex + 1));
             }
 
             return xSpan.IsEmpty ? (ySpan.IsEmpty ? 0 : -1) : 1;
