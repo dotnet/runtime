@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using System.Threading;
 
@@ -16,8 +17,10 @@ namespace Microsoft.Extensions.Logging.Console
         private readonly BlockingCollection<LogMessageEntry> _messageQueue = new BlockingCollection<LogMessageEntry>(_maxQueuedMessages);
         private readonly Thread _outputThread;
 
-        public IConsole Console;
-        public IConsole ErrorConsole;
+        [DisallowNull]
+        public IConsole? Console;
+        [DisallowNull]
+        public IConsole? ErrorConsole;
 
         public ConsoleLoggerProcessor()
         {
@@ -53,8 +56,8 @@ namespace Microsoft.Extensions.Logging.Console
         // for testing
         internal virtual void WriteMessage(LogMessageEntry entry)
         {
-            IConsole console = entry.LogAsError ? ErrorConsole : Console;
-            console.Write(entry.Message);
+            IConsole? console = entry.LogAsError ? ErrorConsole : Console;
+            console!.Write(entry.Message);
         }
 
         private void ProcessLogQueue()
