@@ -3698,6 +3698,61 @@ emit_amd64_intrinsics (const char *class_ns, const char *class_name, MonoCompile
 }
 #endif // !TARGET_ARM64
 
+#ifdef TARGET_WASM
+
+static SimdIntrinsic wasmbase_methods [] = {
+	{SN_Constant},
+	{SN_Splat}
+};
+
+static SimdIntrinsic wasm_vector128_methods [] = {
+	{SN_Create},
+};
+
+
+static const IntrinGroup supported_wasm_intrinsics [] = {
+	{ "WasmBase", 0, wasmbase_methods, sizeof (wasmbase_methods) },
+	{ "Vector128", 0, wasm_vector128_methods, sizeof (wasm_vector128_methods) },
+};
+
+static MonoInst*
+emit_wasmbase_intrinsics (
+	MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **args,
+	MonoClass *klass, const IntrinGroup *intrin_group,
+	const SimdIntrinsic *info, int id, MonoTypeEnum arg0_type,
+	gboolean is_64bit)
+{
+	switch (id) {
+		case SN_Constant:
+			MonoInst* inst = emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_V128_CONST, 0, arg0_type, fsig, args);
+			return inst;
+	}
+	g_assert_not_reached ();
+
+	return NULL;
+}
+
+static
+MonoInst*
+emit_wasm_intrinsics (const char *class_ns, const char *class_name, MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
+		return emit_hardware_intrinsics (cfg, cmethod, fsig, args,
+			supported_wasm_intrinsics, sizeof (supported_wasm_intrinsics),
+			emit_wasmbase_intrinsics);
+	}
+
+	/* if (!strcmp (class_ns, "System.Numerics")) {
+		if (!strcmp (class_name, "Vector"))
+			return emit_sys_numerics_vector (cfg, cmethod, fsig, args);
+		if (!strcmp (class_name, "Vector`1"))
+			return emit_sys_numerics_vector_t (cfg, cmethod, fsig, args);
+	} */
+
+	return NULL;
+}
+#endif // TARGET_WASM
+
 #ifdef TARGET_ARM64
 static
 MonoInst*
@@ -3719,6 +3774,16 @@ MonoInst*
 emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *simd_inst = emit_amd64_intrinsics (class_ns, class_name, cfg, cmethod, fsig, args);
+	if (simd_inst != NULL)
+		cfg->uses_simd_intrinsics |= MONO_CFG_USES_SIMD_INTRINSICS;
+	return simd_inst;
+}
+#elif TARGET_WASM
+static
+MonoInst*
+emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	MonoInst *simd_inst = emit_wasm_intrinsics (class_ns, class_name, cfg, cmethod, fsig, args);
 	if (simd_inst != NULL)
 		cfg->uses_simd_intrinsics |= MONO_CFG_USES_SIMD_INTRINSICS;
 	return simd_inst;

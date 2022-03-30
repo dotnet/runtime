@@ -4757,3 +4757,12 @@ namespace System.Runtime.Intrinsics.X86
         }
     }
 }
+namespace System.Runtime.Intrinsics.Wasm
+{
+    [CLSCompliant(false)]
+    public abstract partial class WasmBase
+    {
+        public bool IsSupported { get { throw null; } }
+        public static Vector128<byte> Constant(ulong p1, ulong p2) { throw null; }
+    }
+}

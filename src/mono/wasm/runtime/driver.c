@@ -444,10 +444,25 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 	free (user_data);
 }
 
+#include <wasm_simd128.h>
+
+EMSCRIPTEN_KEEPALIVE int __attribute__ ((noinline))
+test_simd(int b)
+{
+	v128_t v = wasm_i32x4_splat (b); // wasm_i32x4_const(1, b, b, 4);
+	v = wasm_u16x8_avgr(v, v);
+	int i = wasm_i32x4_extract_lane (v, 2);
+	v = wasm_i64x2_sub(v, v);
+
+    return i;
+}
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
+
+	test_simd (123);
 
 #ifndef INVARIANT_GLOBALIZATION
 	mono_wasm_link_icu_shim ();

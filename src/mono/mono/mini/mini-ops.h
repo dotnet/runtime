@@ -846,6 +846,12 @@ MINI_OP(OP_EXPAND_R8, "expand_r8", XREG, FREG, NONE)
 
 #endif
 
+// wasm specific SIMD v128
+
+#if defined(TARGET_WASM)
+MINI_OP(OP_WASM_SIMD_V128_CONST, "v128_const", VREG, XREG, NONE)
+#endif
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 
 MINI_OP(OP_ADDPS, "addps", XREG, XREG, XREG)

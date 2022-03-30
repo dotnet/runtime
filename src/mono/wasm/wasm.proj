@@ -124,6 +124,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <_EmccCommonFlags Include="-msimd128" />
       <_EmccLinkFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' == 'true'" />
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
