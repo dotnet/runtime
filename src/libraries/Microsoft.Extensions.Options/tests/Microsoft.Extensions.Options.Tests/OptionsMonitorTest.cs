@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -418,5 +419,70 @@ namespace Microsoft.Extensions.Options.Tests
 
             public IChangeToken GetChangeToken() => _changeToken;
         }
+
+        [Fact]
+        public void CallsPublicGetOrAddForCustomOptionsCache()
+        {
+            DerivedOptionsCache derivedOptionsCache = new();
+            CreateMonitor(derivedOptionsCache).Get(null);
+            Assert.Equal(1, derivedOptionsCache.GetOrAddCalls);
+
+            ImplementedOptionsCache implementedOptionsCache = new();
+            CreateMonitor(implementedOptionsCache).Get(null);
+            Assert.Equal(1, implementedOptionsCache.GetOrAddCalls);
+
+            static OptionsMonitor<FakeOptions> CreateMonitor(IOptionsMonitorCache<FakeOptions> cache) =>
+                new OptionsMonitor<FakeOptions>(
+                    new OptionsFactory<FakeOptions>(Enumerable.Empty<IConfigureOptions<FakeOptions>>(), Enumerable.Empty<IPostConfigureOptions<FakeOptions>>()),
+                    Enumerable.Empty<IOptionsChangeTokenSource<FakeOptions>>(),
+                    cache);
+        }
+
+        private sealed class DerivedOptionsCache : OptionsCache<FakeOptions>
+        {
+            public int GetOrAddCalls { get; private set; }
+
+            public override FakeOptions GetOrAdd(string? name, Func<FakeOptions> createOptions)
+            {
+                GetOrAddCalls++;
+                return base.GetOrAdd(name, createOptions);
+            }
+        }
+
+        private sealed class ImplementedOptionsCache : IOptionsMonitorCache<FakeOptions>
+        {
+            public int GetOrAddCalls { get; private set; }
+
+            public void Clear() => throw new NotImplementedException();
+
+            public FakeOptions GetOrAdd(string? name, Func<FakeOptions> createOptions)
+            {
+                GetOrAddCalls++;
+                return createOptions();
+            }
+
+            public bool TryAdd(string? name, FakeOptions options) => throw new NotImplementedException();
+
+            public bool TryRemove(string? name) => throw new NotImplementedException();
+        }
+
+#if NET // need GC.GetAllocatedBytesForCurrentThread()
+        /// <summary>
+        /// Tests the fix for https://github.com/dotnet/runtime/issues/61086
+        /// </summary>
+        [Fact]
+        public void TestCurrentValueDoesNotAllocateOnceValueIsCached()
+        {
+            var monitor = new OptionsMonitor<FakeOptions>(
+                new OptionsFactory<FakeOptions>(Enumerable.Empty<IConfigureOptions<FakeOptions>>(), Enumerable.Empty<IPostConfigureOptions<FakeOptions>>()),
+                Enumerable.Empty<IOptionsChangeTokenSource<FakeOptions>>(),
+                new OptionsCache<FakeOptions>());
+            Assert.NotNull(monitor.CurrentValue); // populate the cache
+
+            long initialBytes = GC.GetAllocatedBytesForCurrentThread();
+            _ = monitor.CurrentValue;
+            Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - initialBytes);
+        }
+#endif
     }
 }

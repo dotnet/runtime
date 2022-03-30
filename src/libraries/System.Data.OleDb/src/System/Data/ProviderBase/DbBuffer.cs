@@ -43,7 +43,7 @@ namespace System.Data.ProviderBase
         {
         }
 
-        private int BaseOffset { get { return 0; } }
+        private const int BaseOffset = 0;
 
         public override bool IsInvalid
         {

@@ -106,7 +106,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
 
-        private bool CheckAllHandlesValidForMethod(MethodDesc method)
+        private static bool CheckAllHandlesValidForMethod(MethodDesc method)
         {
             if (!method.OwningType.RetrieveRuntimeTypeHandleIfPossible())
                 return false;
@@ -118,7 +118,7 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        internal bool RetrieveExactFunctionPointerIfPossible(MethodDesc method, out IntPtr result)
+        internal static bool RetrieveExactFunctionPointerIfPossible(MethodDesc method, out IntPtr result)
         {
             result = IntPtr.Zero;
 
@@ -132,7 +132,7 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.TryLookupExactMethodPointerForComponents(method.OwningType.RuntimeTypeHandle, method.NameAndSignature, genMethodArgs, out result);
         }
 
-        internal bool RetrieveMethodDictionaryIfPossible(InstantiatedMethod method)
+        internal static bool RetrieveMethodDictionaryIfPossible(InstantiatedMethod method)
         {
             if (method.RuntimeMethodDictionary != IntPtr.Zero)
                 return true;
@@ -274,7 +274,7 @@ namespace Internal.Runtime.TypeLoader
                     {
                         // This call to ComputeTemplate will find the native layout info for the type, and the template
                         // For metadata loaded types, a template will not exist, but we may find the NativeLayout describing the generic dictionary
-                        typeAsDefType.ComputeTemplate(state, false);
+                        TypeDesc.ComputeTemplate(state, false);
 
                         Debug.Assert(state.TemplateType == null || (state.TemplateType is DefType && !state.TemplateType.RuntimeTypeHandle.IsNull()));
 
@@ -305,7 +305,7 @@ namespace Internal.Runtime.TypeLoader
 
                     if (typeAsArrayType.IsSzArray && !typeAsArrayType.ElementType.IsPointer)
                     {
-                        typeAsArrayType.ComputeTemplate(state);
+                        TypeDesc.ComputeTemplate(state);
                         Debug.Assert(state.TemplateType != null && state.TemplateType is ArrayType && !state.TemplateType.RuntimeTypeHandle.IsNull());
 
                         ParseNativeLayoutInfo(state, type);
@@ -384,7 +384,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private GenericDictionaryCell[] GetGenericMethodDictionaryCellsForMetadataBasedLoad(InstantiatedMethod method, InstantiatedMethod nonTemplateMethod)
+        private static GenericDictionaryCell[] GetGenericMethodDictionaryCellsForMetadataBasedLoad(InstantiatedMethod method, InstantiatedMethod nonTemplateMethod)
         {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             uint r2rNativeLayoutInfoToken;
@@ -433,7 +433,7 @@ namespace Internal.Runtime.TypeLoader
 
             uint nativeLayoutInfoToken;
             NativeFormatModuleInfo nativeLayoutModule;
-            MethodDesc templateMethod = (new TemplateLocator()).TryGetGenericMethodTemplate(nonTemplateMethod, out nativeLayoutModule, out nativeLayoutInfoToken);
+            MethodDesc templateMethod = TemplateLocator.TryGetGenericMethodTemplate(nonTemplateMethod, out nativeLayoutModule, out nativeLayoutInfoToken);
 
             // If the templateMethod found in the static image is missing or universal, see if the R2R layout
             // can provide something more specific.
@@ -465,7 +465,7 @@ namespace Internal.Runtime.TypeLoader
             // its template MUST be a universal canonical template method
             Debug.Assert(!method.IsNonSharableMethod || (method.IsNonSharableMethod && templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal)));
 
-            NativeReader nativeLayoutInfoReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(nativeLayoutModule.Handle);
+            NativeReader nativeLayoutInfoReader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(nativeLayoutModule.Handle);
 
             var methodInfoParser = new NativeParser(nativeLayoutInfoReader, nativeLayoutInfoToken);
             var context = new NativeLayoutInfoLoadContext
@@ -986,7 +986,7 @@ namespace Internal.Runtime.TypeLoader
             TypeLoaderLogger.WriteLine("Allocated new type " + type.ToString() + " with hashcode value = 0x" + type.GetHashCode().LowLevelToString() + " with MethodTable = " + rtt.ToIntPtr().LowLevelToString() + " of size " + rtt.ToEETypePtr()->BaseSize.LowLevelToString());
         }
 
-        private void AllocateRuntimeMethodDictionary(InstantiatedMethod method)
+        private static void AllocateRuntimeMethodDictionary(InstantiatedMethod method)
         {
             Debug.Assert(method.RuntimeMethodDictionary == IntPtr.Zero && method.Dictionary != null);
 
@@ -1084,6 +1084,7 @@ namespace Internal.Runtime.TypeLoader
         // Returns either the registered type handle or half-baked type handle. This method should be only called
         // during final phase of type building.
         //
+#pragma warning disable CA1822
         public RuntimeTypeHandle GetRuntimeTypeHandle(TypeDesc type)
         {
 #if DEBUG
@@ -1098,6 +1099,7 @@ namespace Internal.Runtime.TypeLoader
             Debug.Assert(!rtth.IsNull());
             return rtth;
         }
+#pragma warning restore CA1822
 
         public RuntimeTypeHandle[] GetRuntimeTypeHandles(Instantiation types)
         {
@@ -1634,7 +1636,7 @@ namespace Internal.Runtime.TypeLoader
             FinishTypeAndMethodBuilding();
         }
 
-        internal bool TryComputeFieldOffset(DefType declaringType, uint fieldOrdinal, out int fieldOffset)
+        internal static bool TryComputeFieldOffset(DefType declaringType, uint fieldOrdinal, out int fieldOffset)
         {
             TypeLoaderLogger.WriteLine("Computing offset of field #" + fieldOrdinal.LowLevelToString() + " on type " + declaringType.ToString());
 
@@ -1692,7 +1694,7 @@ namespace Internal.Runtime.TypeLoader
             IntPtr** lazySignature = (IntPtr**)signature.ToPointer();
             typeManager = new TypeManagerHandle(lazySignature[0][0]);
             offset = checked((uint)new IntPtr(lazySignature[1]).ToInt32());
-            reader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(typeManager);
+            reader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(typeManager);
 
             NativeParser parser = new NativeParser(reader, offset);
 
@@ -1911,11 +1913,11 @@ namespace Internal.Runtime.TypeLoader
 
                 uint nativeLayoutInfoToken;
                 NativeFormatModuleInfo nativeLayoutModule;
-                MethodDesc templateMethod = (new TemplateLocator()).TryGetGenericMethodTemplate(methodContext, out nativeLayoutModule, out nativeLayoutInfoToken);
+                MethodDesc templateMethod = TemplateLocator.TryGetGenericMethodTemplate(methodContext, out nativeLayoutModule, out nativeLayoutInfoToken);
                 if (templateMethod == null)
                     throw new TypeBuilder.MissingTemplateException();
 
-                NativeReader nativeLayoutInfoReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(nativeLayoutModule.Handle);
+                NativeReader nativeLayoutInfoReader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(nativeLayoutModule.Handle);
 
                 nativeLayoutParser = new NativeParser(nativeLayoutInfoReader, nativeLayoutInfoToken);
                 nlilContext = new NativeLayoutInfoLoadContext
@@ -2191,7 +2193,7 @@ namespace Internal.Runtime.TypeLoader
                 DefType declaringType = (DefType)context.ResolveRuntimeTypeHandle(declaringTypeHandle);
                 Debug.Assert(declaringType.HasInstantiation);
 
-                bool success = new TypeBuilder().TryComputeFieldOffset(declaringType, fieldOrdinal, out fieldOffset);
+                bool success = TypeBuilder.TryComputeFieldOffset(declaringType, fieldOrdinal, out fieldOffset);
 
                 TypeSystemContextFactory.Recycle(context);
 

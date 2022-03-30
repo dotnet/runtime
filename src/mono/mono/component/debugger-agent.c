@@ -414,6 +414,7 @@ static gboolean buffer_replies;
 	DebuggerTlsData *tls; \
 	tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
 #else
+/* the thread argument is omitted on wasm, to avoid compiler warning */
 #define GET_TLS_DATA_FROM_THREAD(...) \
 	DebuggerTlsData *tls; \
 	tls = &debugger_wasm_thread;
@@ -8012,7 +8013,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			buffer_add_string (buf, p->name);
 			buffer_add_methodid (buf, domain, p->get);
 			buffer_add_methodid (buf, domain, p->set);
-			buffer_add_int (buf, p->attrs);
+			buffer_add_int (buf, p->attrs & ~MONO_PROPERTY_META_FLAG_MASK);
 			i ++;
 		}
 		g_assert (i == nprops);
@@ -8227,6 +8228,9 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			mlisttype = 0; // MLISTTYPE_All
 		ERROR_DECL (error);
 		GPtrArray *array;
+
+		if (!klass)
+			goto invalid_argument;
 
 		error_init (error);
 		array = mono_class_get_methods_by_name (klass, name, flags & ~BINDING_FLAGS_IGNORE_CASE, mlisttype, TRUE, error);

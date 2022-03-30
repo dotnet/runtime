@@ -28,6 +28,7 @@ namespace System.Threading
             _stopped = new ManualResetEvent(false);
         }
 
+#pragma warning disable CA1822
         private ThreadPriority GetPriorityLive()
         {
             return ThreadPriority.Normal;
@@ -37,6 +38,7 @@ namespace System.Threading
         {
             return true;
         }
+#pragma warning restore CA1822
 
         [UnmanagedCallersOnly]
         private static void OnThreadExit()
@@ -132,9 +134,7 @@ namespace System.Threading
             return true;
         }
 
-        private void InitializeComOnNewThread()
-        {
-        }
+        partial void InitializeComOnNewThread();
 
         internal static void InitializeComForFinalizerThread()
         {

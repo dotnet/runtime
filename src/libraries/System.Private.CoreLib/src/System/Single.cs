@@ -671,6 +671,12 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Pow(TSelf, TSelf)" />
         public static float Pow(float x, float y) => MathF.Pow(x, y);
 
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ReciprocalEstimate(TSelf)" />
+        public static float ReciprocalEstimate(float x) => MathF.ReciprocalEstimate(x);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
+        public static float ReciprocalSqrtEstimate(float x) => MathF.ReciprocalSqrtEstimate(x);
+
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
         public static float Round(float x) => MathF.Round(x);
 
@@ -691,6 +697,9 @@ namespace System
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Sin(TSelf)" />
         public static float Sin(float x) => MathF.Sin(x);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.SinCos(TSelf)" />
+        public static (float Sin, float Cos) SinCos(float x) => MathF.SinCos(x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Sinh(TSelf)" />
         public static float Sinh(float x) => MathF.Sinh(x);

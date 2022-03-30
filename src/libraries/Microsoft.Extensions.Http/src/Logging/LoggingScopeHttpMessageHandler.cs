@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Http.Logging
     public class LoggingScopeHttpMessageHandler : DelegatingHandler
     {
         private ILogger _logger;
-        private readonly HttpClientFactoryOptions _options;
+        private readonly HttpClientFactoryOptions? _options;
 
         private static readonly Func<string, bool> _shouldNotRedactHeaderValue = (header) => false;
 
@@ -72,19 +72,19 @@ namespace Microsoft.Extensions.Http.Logging
                 public static readonly EventId ResponseHeader = new EventId(103, "RequestPipelineResponseHeader");
             }
 
-            private static readonly Func<ILogger, HttpMethod, string, IDisposable> _beginRequestPipelineScope = LoggerMessage.DefineScope<HttpMethod, string>("HTTP {HttpMethod} {Uri}");
+            private static readonly Func<ILogger, HttpMethod, string?, IDisposable?> _beginRequestPipelineScope = LoggerMessage.DefineScope<HttpMethod, string?>("HTTP {HttpMethod} {Uri}");
 
-            private static readonly Action<ILogger, HttpMethod, string, Exception> _requestPipelineStart = LoggerMessage.Define<HttpMethod, string>(
+            private static readonly Action<ILogger, HttpMethod, string?, Exception?> _requestPipelineStart = LoggerMessage.Define<HttpMethod, string?>(
                 LogLevel.Information,
                 EventIds.PipelineStart,
                 "Start processing HTTP request {HttpMethod} {Uri}");
 
-            private static readonly Action<ILogger, double, int, Exception> _requestPipelineEnd = LoggerMessage.Define<double, int>(
+            private static readonly Action<ILogger, double, int, Exception?> _requestPipelineEnd = LoggerMessage.Define<double, int>(
                 LogLevel.Information,
                 EventIds.PipelineEnd,
                 "End processing HTTP request after {ElapsedMilliseconds}ms - {StatusCode}");
 
-            public static IDisposable BeginRequestPipelineScope(ILogger logger, HttpRequestMessage request)
+            public static IDisposable? BeginRequestPipelineScope(ILogger logger, HttpRequestMessage request)
             {
                 return _beginRequestPipelineScope(logger, request.Method, GetUriString(request.RequestUri));
             }

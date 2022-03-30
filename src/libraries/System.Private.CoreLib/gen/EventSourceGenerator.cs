@@ -3,14 +3,15 @@
 
 using System;
 using System.Collections.Generic;
-
+using System.Collections.Immutable;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Generators
 {
     [Generator]
-    public partial class EventSourceGenerator : ISourceGenerator
+    public partial class EventSourceGenerator : IIncrementalGenerator
     {
         // Example input:
         //
@@ -32,77 +33,16 @@ namespace Generators
         //         }
         //     }
 
-        public void Initialize(GeneratorInitializationContext context)
-            => context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
-
-        public void Execute(GeneratorExecutionContext context)
+        public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            SyntaxReceiver? receiver = context.SyntaxReceiver as SyntaxReceiver;
-            if ((receiver?.CandidateClasses?.Count ?? 0) == 0)
-            {
-                // nothing to do yet
-                return;
-            }
+            IncrementalValuesProvider<EventSourceClass> eventSourceClasses =
+                context.SyntaxProvider
+                .CreateSyntaxProvider(IsSyntaxTargetForGeneration, GetSemanticTargetForGeneration)
+                .Where(x => x is not null);
 
-            Parser? p = new Parser(context.Compilation, context.ReportDiagnostic, context.CancellationToken);
-            EventSourceClass[]? eventSources = p.GetEventSourceClasses(receiver.CandidateClasses);
-
-            if (eventSources?.Length > 0)
-            {
-                Emitter? e = new Emitter(context);
-                e.Emit(eventSources, context.CancellationToken);
-            }
+            context.RegisterSourceOutput(eventSourceClasses, EmitSourceFile);
         }
 
-        private sealed class SyntaxReceiver : ISyntaxReceiver
-        {
-            private List<ClassDeclarationSyntax>? _candidateClasses;
-
-            public List<ClassDeclarationSyntax>? CandidateClasses => _candidateClasses;
-
-            public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
-            {
-                // Only add classes annotated [EventSourceAutoGenerate] to reduce busy work.
-                const string EventSourceAttribute = "EventSourceAutoGenerateAttribute";
-                const string EventSourceAttributeShort = "EventSourceAutoGenerate";
-
-                // Only classes
-                if (syntaxNode is ClassDeclarationSyntax classDeclaration)
-                {
-                    // Check if has EventSource attribute before adding to candidates
-                    // as we don't want to add every class in the project
-                    foreach (AttributeListSyntax? cal in classDeclaration.AttributeLists)
-                    {
-                        foreach (AttributeSyntax? ca in cal.Attributes)
-                        {
-                            // Check if Span length matches before allocating the string to check more
-                            int length = ca.Name.Span.Length;
-                            if (length != EventSourceAttribute.Length && length != EventSourceAttributeShort.Length)
-                            {
-                                continue;
-                            }
-
-                            // Possible match, now check the string value
-                            string attrName = ca.Name.ToString();
-                            if (attrName == EventSourceAttribute || attrName == EventSourceAttributeShort)
-                            {
-                                // Match add to candidates
-                                _candidateClasses ??= new List<ClassDeclarationSyntax>();
-                                _candidateClasses.Add(classDeclaration);
-                                return;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        private sealed class EventSourceClass
-        {
-            public string Namespace = string.Empty;
-            public string ClassName = string.Empty;
-            public string SourceName = string.Empty;
-            public Guid Guid = Guid.Empty;
-        }
+        private sealed record EventSourceClass(string Namespace, string ClassName, string SourceName, Guid Guid);
     }
 }

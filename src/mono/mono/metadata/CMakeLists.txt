@@ -32,18 +32,10 @@ else()
 endif()
 
 set(metadata_win32_sources
-    w32file-win32.c
-    w32event-win32.c
-    w32error-win32.c)
+    w32event-win32.c)
 
 set(metadata_unix_sources
-    w32event-unix.c
-    w32process-unix-osx.c
-    w32process-unix-bsd.c
-    w32process-unix-haiku.c
-    w32process-unix-default.c
-    w32file-unix.c
-    w32error-unix.c)
+    w32event-unix.c)
 
 if(HOST_WIN32)
 set(metadata_platform_sources ${metadata_win32_sources})
@@ -83,7 +75,6 @@ set(metadata_common_sources
     environment.c
     exception.c
     exception-internals.h
-    w32file.h
     gc-internals.h
     gc_wrapper.h
     icall.c
@@ -123,9 +114,6 @@ set(metadata_common_sources
     mono-hash.h
     mono-conc-hash.c
     mono-conc-hash.h
-    mono-perfcounters.c
-    mono-perfcounters.h
-    mono-perfcounters-def.h
     mono-ptr-array.h
     monitor.h
     object.c
@@ -133,7 +121,6 @@ set(metadata_common_sources
     opcodes.c
     property-bag.h
     property-bag.c
-    w32process.h
     profiler.c
     profiler-private.h
     runtime.c
@@ -163,14 +150,11 @@ set(metadata_common_sources
     w32event.h
     w32handle.h
     w32handle.c
-    w32error.h
     reflection.c
     dynamic-image.c
     sre.c
     sre-encode.c
     custom-attrs.c
-    fdhandle.h
-    fdhandle.c
     callspec.h
     callspec.c
     assembly-load-context.c

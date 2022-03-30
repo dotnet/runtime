@@ -119,7 +119,7 @@
       </trans-unit>
       <trans-unit id="InvalidLangVersionMessage">
         <source>C# LangVersion of 11 or greater is required</source>
-        <target state="new">C# LangVersion of 11 or greater is required</target>
+        <target state="translated">Wymagane jest wersja 11 lub nowsza języka C# LangVersion</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidRegexArgumentsMessage">
@@ -228,8 +228,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>Regex method must be partial, parameterless, non-generic, and return Regex</source>
-        <target state="translated">Metoda wyrażenia regularnego musi być częściowa, bez parametrów, niegeneryczna i zwracać wyrażenie regularne</target>
+        <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
+        <target state="translated">Metoda RegexGenerator musi być częściowa, bez parametrów, niestanowa, nieabstrakcyjna i zwracać wyrażenia regularne</target>
         <note />
       </trans-unit>
       <trans-unit id="ReplacementError">

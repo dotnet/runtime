@@ -67,7 +67,6 @@ if(ENABLE_MINIMAL)
 endif()
 
 set(DISABLE_COM 1)
-set(DISABLE_PERFCOUNTERS 1)
 
 # Dependencies between options
 if(ENABLE_INTERP_LIB)

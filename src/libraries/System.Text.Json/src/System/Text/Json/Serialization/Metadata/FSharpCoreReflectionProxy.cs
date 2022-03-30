@@ -217,7 +217,7 @@ namespace System.Text.Json.Serialization.Metadata
         private static TDelegate CreateDelegate<TDelegate>(MethodInfo methodInfo) where TDelegate : Delegate
             => (TDelegate)Delegate.CreateDelegate(typeof(TDelegate), methodInfo, throwOnBindFailure: true)!;
 
-        private TMemberInfo EnsureMemberExists<TMemberInfo>(TMemberInfo? memberInfo, string memberName) where TMemberInfo : MemberInfo
+        private static TMemberInfo EnsureMemberExists<TMemberInfo>(TMemberInfo? memberInfo, string memberName) where TMemberInfo : MemberInfo
         {
             if (memberInfo is null)
             {

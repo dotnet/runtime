@@ -863,9 +863,9 @@ namespace System.Xml.XPath
         }
     }
 
-    internal readonly struct XPathEvaluator
+    internal static class XPathEvaluator
     {
-        public object Evaluate<T>(XNode node, string expression, IXmlNamespaceResolver? resolver) where T : class
+        public static object Evaluate<T>(XNode node, string expression, IXmlNamespaceResolver? resolver) where T : class
         {
             XPathNavigator navigator = node.CreateNavigator();
             object result = navigator.Evaluate(expression, resolver);
@@ -878,7 +878,7 @@ namespace System.Xml.XPath
             return (T)result;
         }
 
-        private IEnumerable<T> EvaluateIterator<T>(XPathNodeIterator result)
+        private static IEnumerable<T> EvaluateIterator<T>(XPathNodeIterator result)
         {
             foreach (XPathNavigator navigator in result)
             {
@@ -957,7 +957,7 @@ namespace System.Xml.XPath
         /// IEnumerable</returns>
         public static object XPathEvaluate(this XNode node!!, string expression, IXmlNamespaceResolver? resolver)
         {
-            return default(XPathEvaluator).Evaluate<object>(node, expression, resolver);
+            return XPathEvaluator.Evaluate<object>(node, expression, resolver);
         }
 
         /// <summary>
@@ -1005,7 +1005,7 @@ namespace System.Xml.XPath
         /// <returns>An <see cref="IEnumerable&lt;XElement&gt;"/> corresponding to the resulting set of elements</returns>
         public static IEnumerable<XElement> XPathSelectElements(this XNode node!!, string expression, IXmlNamespaceResolver? resolver)
         {
-            return (IEnumerable<XElement>)default(XPathEvaluator).Evaluate<XElement>(node, expression, resolver);
+            return (IEnumerable<XElement>)XPathEvaluator.Evaluate<XElement>(node, expression, resolver);
         }
 
         private static XText CalibrateText(XText n)

@@ -108,6 +108,19 @@
 
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AndroidTestRunner.dll</MainLibraryFileName>
     </PropertyGroup>
+
+    <ItemGroup>
+      <_AndroidEnv Condition="'$(XUnitSingleThreadedMode)' == 'true'" Include="XUNIT_SINGLE_THREADED">
+        <Value>1</Value>
+      </_AndroidEnv>
+      <_AndroidEnv Condition="'$(XUnitUseRandomizedTestOrderer)' == 'true'" Include="XUNIT_RANDOM_ORDER_SEED">
+        <Value>1883302047</Value>
+      </_AndroidEnv>
+      <_AndroidEnv Condition="'$(XUnitSingleThreadedMode)' == 'true'" Include="XUNIT_VERBOSE">
+        <Value>1</Value>
+      </_AndroidEnv>
+    </ItemGroup>
+
     <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
       <AotInputAssemblies Include="$(PublishDir)\*.dll">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
@@ -140,6 +153,7 @@
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="$(MainLibraryFileName)"
+        EnvironmentVariables="@(_AndroidEnv)"
         ForceAOT="$(RunAOTCompilation)"
         ForceInterpreter="$(MonoForceInterpreter)"
         StripDebugSymbols="False"

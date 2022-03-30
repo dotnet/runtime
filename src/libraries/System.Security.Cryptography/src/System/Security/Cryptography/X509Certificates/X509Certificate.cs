@@ -690,7 +690,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private void VerifyContentType(X509ContentType contentType)
+        private static void VerifyContentType(X509ContentType contentType)
         {
             if (!(contentType == X509ContentType.Cert || contentType == X509ContentType.SerializedCert || contentType == X509ContentType.Pkcs12))
                 throw new CryptographicException(SR.Cryptography_X509_InvalidContentType);

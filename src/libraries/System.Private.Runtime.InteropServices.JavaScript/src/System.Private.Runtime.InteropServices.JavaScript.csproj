@@ -13,22 +13,9 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSException.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSObject.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\DataView.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Float32Array.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Float64Array.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Int8Array.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Int16Array.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Int32Array.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Uint8Array.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Uint16Array.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Uint32Array.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Uint8ClampedArray.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\TypedArray.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Array.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\ArrayBuffer.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\SharedArrayBuffer.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Map.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\CoreObject.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\HostObject.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Function.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSObject.References.cs" />
   </ItemGroup>

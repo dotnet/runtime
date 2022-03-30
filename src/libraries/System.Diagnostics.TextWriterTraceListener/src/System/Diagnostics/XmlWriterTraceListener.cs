@@ -136,7 +136,9 @@ namespace System.Diagnostics
                 {
                     InternalWrite("<DataItem>");
                     if (data[i] != null)
+                    {
                         WriteData(data[i]!);
+                    }
                     InternalWrite("</DataItem>");
                 }
             }
@@ -169,7 +171,7 @@ namespace System.Diagnostics
                     // Rewind the blob to point to the root, this is needed to support multiple XMLTL in one TraceData call
                     xmlBlob.MoveToRoot();
                     _xmlBlobWriter!.WriteNode(xmlBlob, false);
-                    InternalWrite(_strBldr.ToString());
+                    InternalWrite(_strBldr);
                 }
                 catch (Exception)
                 {
@@ -200,7 +202,7 @@ namespace System.Diagnostics
         {
             WriteStartHeader(source, eventType, id, eventCache);
             InternalWrite("\" RelatedActivityID=\"");
-            InternalWrite(relatedActivityId.ToString("B"));
+            InternalWrite(relatedActivityId);
             WriteEndHeader();
         }
 
@@ -215,7 +217,7 @@ namespace System.Diagnostics
             InternalWrite(FixedHeader);
 
             InternalWrite("<EventID>");
-            InternalWrite(((uint)id).ToString(CultureInfo.InvariantCulture));
+            InternalWrite((uint)id);
             InternalWrite("</EventID>");
 
             InternalWrite("<Type>3</Type>");
@@ -225,19 +227,11 @@ namespace System.Diagnostics
             InternalWrite("\">0</SubType>");
 
             InternalWrite("<Level>");
-            int sev = (int)eventType;
-            if (sev > 255)
-                sev = 255;
-            if (sev < 0)
-                sev = 0;
-            InternalWrite(sev.ToString(CultureInfo.InvariantCulture));
+            InternalWrite(Math.Clamp((int)eventType, 0, 255));
             InternalWrite("</Level>");
 
             InternalWrite("<TimeCreated SystemTime=\"");
-            if (eventCache != null)
-                InternalWrite(eventCache.DateTime.ToString("o", CultureInfo.InvariantCulture));
-            else
-                InternalWrite(DateTime.Now.ToString("o", CultureInfo.InvariantCulture));
+            InternalWrite(eventCache != null ? eventCache.DateTime : DateTime.Now);
             InternalWrite("\" />");
 
             InternalWrite("<Source Name=\"");
@@ -245,10 +239,7 @@ namespace System.Diagnostics
             InternalWrite("\" />");
 
             InternalWrite("<Correlation ActivityID=\"");
-            if (eventCache != null)
-                InternalWrite(Trace.CorrelationManager.ActivityId.ToString("B"));
-            else
-                InternalWrite(Guid.Empty.ToString("B"));
+            InternalWrite(eventCache != null ? Trace.CorrelationManager.ActivityId : Guid.Empty);
         }
 
         [ResourceExposure(ResourceScope.None)]
@@ -274,9 +265,9 @@ namespace System.Diagnostics
             InternalWrite("<Execution ProcessName=\"");
             InternalWrite(processName);
             InternalWrite("\" ProcessID=\"");
-            InternalWrite(((uint)Environment.ProcessId).ToString(CultureInfo.InvariantCulture));
+            InternalWrite((uint)Environment.ProcessId);
             InternalWrite("\" ThreadID=\"");
-            WriteEscaped(Environment.CurrentManagedThreadId.ToString(CultureInfo.InvariantCulture));
+            InternalWrite((uint)Environment.CurrentManagedThreadId);
             InternalWrite("\" />");
 
             InternalWrite("<Channel/>");
@@ -292,40 +283,40 @@ namespace System.Diagnostics
 
         private void WriteFooter(TraceEventCache? eventCache)
         {
-            bool writeLogicalOps = IsEnabled(TraceOptions.LogicalOperationStack);
-            bool writeCallstack = IsEnabled(TraceOptions.Callstack);
-
-            if (eventCache != null && (writeLogicalOps || writeCallstack))
+            if (eventCache != null)
             {
-                InternalWrite("<System.Diagnostics xmlns=\"http://schemas.microsoft.com/2004/08/System.Diagnostics\">");
+                bool writeLogicalOps = IsEnabled(TraceOptions.LogicalOperationStack);
+                bool writeCallstack = IsEnabled(TraceOptions.Callstack);
 
-                if (writeLogicalOps)
+                if (writeLogicalOps || writeCallstack)
                 {
-                    InternalWrite("<LogicalOperationStack>");
+                    InternalWrite("<System.Diagnostics xmlns=\"http://schemas.microsoft.com/2004/08/System.Diagnostics\">");
 
-                    Stack s = eventCache.LogicalOperationStack;
-
-                    foreach (object? correlationId in s)
+                    if (writeLogicalOps)
                     {
-                        InternalWrite("<LogicalOperation>");
-                        WriteEscaped(correlationId?.ToString());
-                        InternalWrite("</LogicalOperation>");
+                        InternalWrite("<LogicalOperationStack>");
+                        foreach (object? correlationId in eventCache.LogicalOperationStack)
+                        {
+                            InternalWrite("<LogicalOperation>");
+                            WriteEscaped(correlationId?.ToString());
+                            InternalWrite("</LogicalOperation>");
+                        }
+                        InternalWrite("</LogicalOperationStack>");
                     }
-                    InternalWrite("</LogicalOperationStack>");
+
+                    InternalWrite("<Timestamp>");
+                    InternalWrite(eventCache.Timestamp);
+                    InternalWrite("</Timestamp>");
+
+                    if (writeCallstack)
+                    {
+                        InternalWrite("<Callstack>");
+                        WriteEscaped(eventCache.Callstack);
+                        InternalWrite("</Callstack>");
+                    }
+
+                    InternalWrite("</System.Diagnostics>");
                 }
-
-                InternalWrite("<Timestamp>");
-                InternalWrite(eventCache.Timestamp.ToString(CultureInfo.InvariantCulture));
-                InternalWrite("</Timestamp>");
-
-                if (writeCallstack)
-                {
-                    InternalWrite("<Callstack>");
-                    WriteEscaped(eventCache.Callstack);
-                    InternalWrite("</Callstack>");
-                }
-
-                InternalWrite("</System.Diagnostics>");
             }
 
             InternalWrite("</ApplicationData></E2ETraceEvent>");
@@ -342,49 +333,105 @@ namespace System.Diagnostics
                 switch (str[i])
                 {
                     case '&':
-                        InternalWrite(str.Substring(lastIndex, i - lastIndex));
+                        InternalWrite(str.AsSpan(lastIndex, i - lastIndex));
                         InternalWrite("&amp;");
                         lastIndex = i + 1;
                         break;
                     case '<':
-                        InternalWrite(str.Substring(lastIndex, i - lastIndex));
+                        InternalWrite(str.AsSpan(lastIndex, i - lastIndex));
                         InternalWrite("&lt;");
                         lastIndex = i + 1;
                         break;
                     case '>':
-                        InternalWrite(str.Substring(lastIndex, i - lastIndex));
+                        InternalWrite(str.AsSpan(lastIndex, i - lastIndex));
                         InternalWrite("&gt;");
                         lastIndex = i + 1;
                         break;
                     case '"':
-                        InternalWrite(str.Substring(lastIndex, i - lastIndex));
+                        InternalWrite(str.AsSpan(lastIndex, i - lastIndex));
                         InternalWrite("&quot;");
                         lastIndex = i + 1;
                         break;
                     case '\'':
-                        InternalWrite(str.Substring(lastIndex, i - lastIndex));
+                        InternalWrite(str.AsSpan(lastIndex, i - lastIndex));
                         InternalWrite("&apos;");
                         lastIndex = i + 1;
                         break;
                     case (char)0xD:
-                        InternalWrite(str.Substring(lastIndex, i - lastIndex));
+                        InternalWrite(str.AsSpan(lastIndex, i - lastIndex));
                         InternalWrite("&#xD;");
                         lastIndex = i + 1;
                         break;
                     case (char)0xA:
-                        InternalWrite(str.Substring(lastIndex, i - lastIndex));
+                        InternalWrite(str.AsSpan(lastIndex, i - lastIndex));
                         InternalWrite("&#xA;");
                         lastIndex = i + 1;
                         break;
                 }
             }
-            InternalWrite(str.Substring(lastIndex, str.Length - lastIndex));
+            InternalWrite(str.AsSpan(lastIndex, str.Length - lastIndex));
         }
 
         private void InternalWrite(string? message)
         {
             EnsureWriter();
             _writer?.Write(message);
+        }
+
+        private void InternalWrite(ReadOnlySpan<char> message)
+        {
+            EnsureWriter();
+            _writer?.Write(message);
+        }
+
+        private void InternalWrite<T>(T message) where T : ISpanFormattable
+        {
+            Debug.Assert(typeof(T) == typeof(int) || typeof(T) == typeof(uint) || typeof(T) == typeof(long), "We only currently stackalloc enough space for these types.");
+
+            EnsureWriter();
+            if (_writer is TextWriter writer)
+            {
+                Span<char> span = stackalloc char[20]; // max length of longest formatted long with invariant culture
+                message.TryFormat(span, out int charsWritten, format: default, provider: CultureInfo.InvariantCulture);
+                Debug.Assert(charsWritten > 0);
+                writer.Write(span.Slice(0, charsWritten));
+            }
+        }
+
+        private void InternalWrite(Guid message)
+        {
+            EnsureWriter();
+            if (_writer is TextWriter writer)
+            {
+                Span<char> span = stackalloc char[38]; // length of a Guid formatted as "B"
+                message.TryFormat(span, out int charsWritten, format: "B");
+                Debug.Assert(charsWritten == span.Length);
+                writer.Write(span);
+            }
+        }
+
+        private void InternalWrite(DateTime message)
+        {
+            EnsureWriter();
+            if (_writer is TextWriter writer)
+            {
+                Span<char> span = stackalloc char[33]; // max length of a DateTime formatted as "o"
+                message.TryFormat(span, out int charsWritten, format: "o");
+                Debug.Assert(charsWritten > 0);
+                writer.Write(span.Slice(0, charsWritten));
+            }
+        }
+
+        private void InternalWrite(StringBuilder message)
+        {
+            EnsureWriter();
+            if (_writer is TextWriter writer)
+            {
+                foreach (ReadOnlyMemory<char> chunk in message.GetChunks())
+                {
+                    writer.Write(chunk.Span);
+                }
+            }
         }
     }
 }

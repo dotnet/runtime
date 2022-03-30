@@ -251,7 +251,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        private TimeSpan? TryReadTimeToLiveFromExtension(SyndicationElementExtensionCollection elementExtensions)
+        private static TimeSpan? TryReadTimeToLiveFromExtension(SyndicationElementExtensionCollection elementExtensions)
         {
             SyndicationElementExtension timeToLiveElement = elementExtensions
                                       .FirstOrDefault(e => e.OuterName == Rss20Constants.TimeToLiveTag && e.OuterNamespace == Rss20Constants.Rss20Namespace);
@@ -280,7 +280,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        private void TryReadSkipHoursFromExtension(SyndicationElementExtensionCollection elementExtensions, Collection<int> skipHours)
+        private static void TryReadSkipHoursFromExtension(SyndicationElementExtensionCollection elementExtensions, Collection<int> skipHours)
         {
             SyndicationElementExtension skipHoursElement = elementExtensions
                                       .FirstOrDefault(e => e.OuterName == Rss20Constants.SkipHoursTag && e.OuterNamespace == Rss20Constants.Rss20Namespace);
@@ -314,7 +314,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        private void TryReadSkipDaysFromExtension(SyndicationElementExtensionCollection elementExtensions, Collection<string> skipDays)
+        private static void TryReadSkipDaysFromExtension(SyndicationElementExtensionCollection elementExtensions, Collection<string> skipDays)
         {
             SyndicationElementExtension skipDaysElement = elementExtensions
                                       .FirstOrDefault(e => e.OuterName == Rss20Constants.SkipDaysTag && e.OuterNamespace == Rss20Constants.Rss20Namespace);
@@ -350,7 +350,7 @@ namespace System.ServiceModel.Syndication
 
         private static bool IsValidDay(string day) => s_acceptedDays.Contains(day);
 
-        private SyndicationTextInput TryReadTextInputFromExtension(SyndicationElementExtensionCollection elementExtensions)
+        private static SyndicationTextInput TryReadTextInputFromExtension(SyndicationElementExtensionCollection elementExtensions)
         {
             SyndicationElementExtension textInputElement = elementExtensions
                                       .FirstOrDefault(e => e.OuterName == Rss20Constants.TextInputTag && e.OuterNamespace == Rss20Constants.Rss20Namespace);

@@ -173,6 +173,7 @@ namespace System.Net
             }
         }
 
+#pragma warning disable CA1822
         // This allows ContextAwareResult to not let anyone trigger the CompletedSynchronously tripwire while the context is being captured.
         [Conditional("DEBUG")]
         protected void DebugProtectState(bool protect)
@@ -181,6 +182,7 @@ namespace System.Net
             _protectState = protect;
 #endif
         }
+#pragma warning restore CA1822
 
         // Interface property, returning synchronous completion status.
         public bool CompletedSynchronously
