@@ -306,7 +306,7 @@ export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: 
     try {
         const js_name = conv_string_root(nameRoot);
         if (!js_name || (typeof (js_name) !== "string")) {
-            return wrap_error(is_exception, "ERR12: Invalid method name object '" + nameRoot.value + "'");
+            return wrap_error(is_exception, "ERR12: Invalid method name object @" + nameRoot.value);
         }
 
         const obj = get_js_obj(js_handle);

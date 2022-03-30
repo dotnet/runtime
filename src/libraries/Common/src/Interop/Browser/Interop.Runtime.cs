@@ -36,7 +36,7 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void ReleaseCSOwnedObject(IntPtr jsHandle);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void CreateCSOwnedObjectRef(in string className, object[] parms, out int exceptionalResult, out object result);
+        internal static extern void CreateCSOwnedObjectRef(in string className, in object[] parms, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void TypedArrayCopyToRef(IntPtr jsHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

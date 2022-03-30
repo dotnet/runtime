@@ -235,8 +235,8 @@ export function _wrap_delegate_gc_handle_as_function(gc_handle: GCHandle, after_
     return result;
 }
 
-export function mono_wasm_create_cs_owned_object_ref(core_name: MonoStringRef, args: MonoArray, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
-    const argsRoot = mono_wasm_new_root(args),
+export function mono_wasm_create_cs_owned_object_ref(core_name: MonoStringRef, args: MonoObjectRef, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    const argsRoot = mono_wasm_new_external_root<MonoArray>(args),
         nameRoot = mono_wasm_new_external_root<MonoString>(core_name),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {

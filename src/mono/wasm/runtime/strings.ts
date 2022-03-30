@@ -57,7 +57,9 @@ export class StringDecoder {
             if (isInterned) {
                 result = interned_string_table.get(root.value)!;
                 // console.log(`intern table cache hit ${mono_string} ${result.length}`);
-            } else {
+            }
+
+            if (!isInterned || !result) {
                 result = this.decode(<any>pChars, <any>pChars + lengthBytes);
                 if (isInterned) {
                     // console.log("interned", mono_string, result.length);
