@@ -1204,7 +1204,7 @@ bool CallArg::IsArgAddedLate() const
 #ifdef DEBUG
 void CallArg::CheckIsStruct()
 {
-    GenTree* node = GetArgNode();
+    GenTree* node = GetNode();
     if (AbiInfo.IsStruct)
     {
         if (!varTypeIsStruct(node) && !node->OperIs(GT_FIELD_LIST))
@@ -1839,7 +1839,7 @@ void GenTreeCall::ReplaceCallOperand(GenTree** useEdge, GenTree* replacement)
         else
         {
             assert((replacement->gtFlags & GTF_LATE_ARG) == 0);
-            assert(gtArgs.FindByNode(replacement)->GetArgNode() == replacement);
+            assert(gtArgs.FindByNode(replacement)->GetNode() == replacement);
         }
     }
 }
@@ -12570,7 +12570,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         }
         else
         {
-            arg1 = op1->AsCall()->gtArgs.GetThisArg()->GetArgNode();
+            arg1 = op1->AsCall()->gtArgs.GetThisArg()->GetNode();
         }
 
         arg1 = gtNewMethodTableLookup(arg1);
@@ -12583,7 +12583,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         }
         else
         {
-            arg2 = op2->AsCall()->gtArgs.GetThisArg()->GetArgNode();
+            arg2 = op2->AsCall()->gtArgs.GetThisArg()->GetNode();
         }
 
         arg2 = gtNewMethodTableLookup(arg2);
@@ -12615,7 +12615,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     GenTree* const opOther  = (op1Kind == TPK_Handle) ? op2 : op1;
 
     // Tunnel through the handle operand to get at the class handle involved.
-    GenTree* const       opHandleArgument = opHandle->AsCall()->gtArgs.GetArgByIndex(0)->GetArgNode();
+    GenTree* const       opHandleArgument = opHandle->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
     CORINFO_CLASS_HANDLE clsHnd           = gtGetHelperArgClassHandle(opHandleArgument);
 
     // If we couldn't find the class handle, give up.
@@ -12650,7 +12650,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     }
     else
     {
-        objOp = opOther->AsCall()->gtArgs.GetThisArg()->GetArgNode();
+        objOp = opOther->AsCall()->gtArgs.GetThisArg()->GetNode();
     }
 
     bool                 pIsExact   = false;
@@ -13271,7 +13271,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
                 return nullptr;
             }
 
-            boxTypeHandle = newobjCall->gtArgs.GetArgByIndex(0)->GetArgNode();
+            boxTypeHandle = newobjCall->gtArgs.GetArgByIndex(0)->GetNode();
         }
         else
         {
@@ -17126,7 +17126,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
                 if ((ni == NI_System_Array_Clone) || (ni == NI_System_Object_MemberwiseClone))
                 {
-                    objClass = gtGetClassHandle(call->gtArgs.GetThisArg()->GetArgNode(), pIsExact, pIsNonNull);
+                    objClass = gtGetClassHandle(call->gtArgs.GetThisArg()->GetNode(), pIsExact, pIsNonNull);
                     break;
                 }
 
@@ -17392,7 +17392,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
         case CORINFO_HELP_ISINSTANCEOFANY:
         {
             // Fetch the class handle from the helper call arglist
-            GenTree*             typeArg = call->gtArgs.GetArgByIndex(0)->GetArgNode();
+            GenTree*             typeArg = call->gtArgs.GetArgByIndex(0)->GetNode();
             CORINFO_CLASS_HANDLE castHnd = gtGetHelperArgClassHandle(typeArg);
 
             // We generally assume the type being cast to is the best type
@@ -17418,7 +17418,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
             // type from the value being cast instead.
             if (castHnd == nullptr)
             {
-                GenTree* valueArg = call->gtArgs.GetArgByIndex(1)->GetArgNode();
+                GenTree* valueArg = call->gtArgs.GetArgByIndex(1)->GetNode();
                 castHnd           = gtGetClassHandle(valueArg, pIsExact, pIsNonNull);
             }
 

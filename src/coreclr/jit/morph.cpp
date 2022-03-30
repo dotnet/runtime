@@ -615,7 +615,7 @@ const char* getWellKnownArgName(WellKnownArg arg)
 void CallArg::Dump(Compiler* comp)
 {
     printf("CallArg[arg %u", AbiInfo.ArgNum);
-    printf(" [%06u].%s", comp->dspTreeID(GetArgNode()), GenTree::OpName(GetEarlyNode()->OperGet()));
+    printf(" [%06u].%s", comp->dspTreeID(GetNode()), GenTree::OpName(GetEarlyNode()->OperGet()));
     printf(" %s", varTypeName(AbiInfo.ArgType));
     printf(" (%s)", AbiInfo.PassedByRef ? "By ref" : "By value");
     if (AbiInfo.GetRegNum() != REG_STK)
@@ -3275,7 +3275,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
             fieldList->AddField(this, argx->AsOp()->gtGetOp1(), OFFSETOF__CORINFO_TypedReference__dataPtr, TYP_BYREF);
             fieldList->AddField(this, argx->AsOp()->gtGetOp2(), OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL);
-            arg.SetNode(fieldList);
+            arg.SetEarlyNode(fieldList);
 #else  // !TARGET_X86
 
             // Get a new temp
@@ -3460,7 +3460,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
     for (CallArg& arg : call->gtArgs.Args())
     {
         bool     isLateArg = (arg.GetEarlyNode()->gtFlags & GTF_LATE_ARG) != 0;
-        GenTree* argx      = arg.GetArgNode();
+        GenTree* argx      = arg.GetNode();
 
         if (!arg.AbiInfo.IsStruct)
         {
@@ -3555,7 +3555,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 //
 GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 {
-    GenTree* argNode = arg->GetArgNode();
+    GenTree* argNode = arg->GetNode();
     assert(varTypeIsStruct(argNode->TypeGet()));
 
 #if !defined(TARGET_ARMARCH) && !defined(UNIX_AMD64_ABI)
@@ -6312,7 +6312,7 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                 if (opts.OptimizationEnabled())
                 {
                     // First, see if this arg is an implicit byref param.
-                    GenTreeLclVar* const lcl = arg.GetArgNode()->IsImplicitByrefParameterValue(this);
+                    GenTreeLclVar* const lcl = arg.GetNode()->IsImplicitByrefParameterValue(this);
 
                     if (lcl != nullptr)
                     {
@@ -6377,20 +6377,20 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                                         continue;
                                     }
 
-                                    JITDUMP("... checking other arg [%06u]...\n", dspTreeID(arg2.GetArgNode()));
-                                    DISPTREE(arg2.GetArgNode());
+                                    JITDUMP("... checking other arg [%06u]...\n", dspTreeID(arg2.GetNode()));
+                                    DISPTREE(arg2.GetNode());
 
                                     // Do we pass 'lcl' more than once to the callee?
                                     if (arg2.AbiInfo.IsStruct && arg2.AbiInfo.PassedByRef)
                                     {
                                         GenTreeLclVarCommon* const lcl2 =
-                                            arg2.GetArgNode()->IsImplicitByrefParameterValue(this);
+                                            arg2.GetNode()->IsImplicitByrefParameterValue(this);
 
                                         if ((lcl2 != nullptr) && (lclNum == lcl2->GetLclNum()))
                                         {
                                             // not copying would introduce aliased implicit byref structs
                                             // in the callee ... we can't optimize.
-                                            interferingArg = arg2.GetArgNode();
+                                            interferingArg = arg2.GetNode();
                                             break;
                                         }
                                         else
@@ -6431,7 +6431,7 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                                         bool hasExposure   = false;
 
                                         // See if there is any way arg could refer to a parameter struct.
-                                        GenTree* arg2Node = arg2.GetArgNode();
+                                        GenTree* arg2Node = arg2.GetNode();
                                         if (arg2Node->OperIs(GT_LCL_VAR))
                                         {
                                             GenTreeLclVarCommon* arg2LclNode = arg2Node->AsLclVarCommon();
@@ -6496,14 +6496,14 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
 
                                         if (hasExposure)
                                         {
-                                            interferingArg = arg2.GetArgNode();
+                                            interferingArg = arg2.GetNode();
                                             break;
                                         }
                                     }
                                     else
                                     {
                                         JITDUMP("...arg is not a byref or implicit byref (%s)\n",
-                                                varTypeName(arg2.GetArgNode()->TypeGet()));
+                                                varTypeName(arg2.GetNode()->TypeGet()));
                                     }
                                 }
 
@@ -6636,7 +6636,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     {
         noway_assert(call->TypeGet() == TYP_VOID);
         noway_assert(call->gtArgs.HasRetBuffer());
-        GenTree* retValBuf = call->gtArgs.GetRetBufferArg()->GetArgNode();
+        GenTree* retValBuf = call->gtArgs.GetRetBufferArg()->GetNode();
         if (retValBuf->gtOper != GT_LCL_VAR || retValBuf->AsLclVarCommon()->GetLclNum() != info.compRetBuffArg)
         {
             failTailCall("Need to copy return buffer");
@@ -7356,7 +7356,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     {
         JITDUMP("Moving this pointer into arg list\n");
         CallArg* thisArg = call->gtArgs.GetThisArg();
-        GenTree* objp    = thisArg->GetArgNode();
+        GenTree* objp    = thisArg->GetNode();
         GenTree* thisPtr = nullptr;
 
         // JIT will need one or two copies of "this" in the following cases:
@@ -8472,7 +8472,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         // Transform it into a null check.
 
         assert(call->gtArgs.CountArgs() >= 1);
-        GenTree* thisPtr = call->gtArgs.GetArgByIndex(0)->GetArgNode();
+        GenTree* thisPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
 
         GenTree* nullCheck = gtNewNullCheck(thisPtr, compCurBB);
 
@@ -8575,13 +8575,13 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ARRADDR_ST)))
     {
         assert(call->gtArgs.CountArgs() == 3);
-        GenTree* value = call->gtArgs.GetArgByIndex(2)->GetArgNode();
+        GenTree* value = call->gtArgs.GetArgByIndex(2)->GetNode();
         if (value->IsIntegralConst(0))
         {
             assert(value->OperGet() == GT_CNS_INT);
 
-            GenTree* arr   = call->gtArgs.GetArgByIndex(0)->GetArgNode();
-            GenTree* index = call->gtArgs.GetArgByIndex(1)->GetArgNode();
+            GenTree* arr   = call->gtArgs.GetArgByIndex(0)->GetNode();
+            GenTree* index = call->gtArgs.GetArgByIndex(1)->GetNode();
 
             // Either or both of the array and index arguments may have been spilled to temps by `fgMorphArgs`. Copy
             // the spill trees as well if necessary.
@@ -8680,7 +8680,7 @@ GenTree* Compiler::fgExpandVirtualVtableCallTarget(GenTreeCall* call)
 
     assert(call->gtArgs.HasThisPointer());
     // get a reference to the thisPtr being passed
-    GenTree* thisPtr = call->gtArgs.GetThisArg()->GetArgNode();
+    GenTree* thisPtr = call->gtArgs.GetThisArg()->GetNode();
 
     // fgMorphArgs must enforce this invariant by creating a temp
     //

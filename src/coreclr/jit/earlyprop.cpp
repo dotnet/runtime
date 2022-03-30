@@ -58,7 +58,7 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8))
             {
                 // This is an array allocation site. Grab the array length node.
-                arrayLength = call->gtArgs.GetArgByIndex(1)->GetArgNode();
+                arrayLength = call->gtArgs.GetArgByIndex(1)->GetNode();
             }
             else if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_READYTORUN_NEWARR_1))
             {
@@ -67,7 +67,7 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
                 // as that's always the length. See DetermineABIArgInformation for where the handle is inserted.
                 for (CallArg& arg : call->gtArgs.Args())
                 {
-                    arrayLength = arg.GetArgNode();
+                    arrayLength = arg.GetNode();
                 }
             }
 #ifdef DEBUG

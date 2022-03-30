@@ -7455,7 +7455,7 @@ Compiler::NodeToIntMap* Compiler::FindReachableNodesInNodeTestData()
                     unsigned     i    = 0;
                     for (CallArg& arg : call->gtArgs.Args())
                     {
-                        GenTree* argNode = arg.GetArgNode();
+                        GenTree* argNode = arg.GetNode();
                         if (GetNodeTestData()->Lookup(argNode, &tlAndN))
                         {
                             reachable->Set(argNode, 0);

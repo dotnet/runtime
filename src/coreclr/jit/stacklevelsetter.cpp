@@ -245,7 +245,7 @@ unsigned StackLevelSetter::PopArgumentsFromCall(GenTreeCall* call)
             const unsigned slotCount = arg.AbiInfo.GetStackSlotsNumber();
             if (slotCount != 0)
             {
-                GenTree* node = arg.GetArgNode();
+                GenTree* node = arg.GetNode();
                 assert(node->OperIsPutArgStkOrSplit());
 
                 GenTreePutArgStk* putArg = node->AsPutArgStk();

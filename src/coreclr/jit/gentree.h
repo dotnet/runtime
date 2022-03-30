@@ -4290,7 +4290,8 @@ public:
 
     // Get the real argument node, i.e. not a setup or placeholder node.
     // This is the same as GetEarlyNode() until morph.
-    GenTree* GetArgNode()
+    // After lowering, this is a PUTARG_* node.
+    GenTree* GetNode()
     {
         return m_lateNode == nullptr ? m_earlyNode : m_lateNode;
     }
