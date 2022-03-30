@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.Pkcs
                     Type = SubjectIdentifierType.IssuerAndSerialNumber;
 
                     var name = new X500DistinguishedName(issuerNameSpan.ToArray());
-                    Value = new X509IssuerSerial(name.Name!, serial.ToBigEndianHex());
+                    Value = new X509IssuerSerial(name.Name, serial.ToBigEndianHex());
                 }
             }
             else if (subjectKeyIdentifier != null)
