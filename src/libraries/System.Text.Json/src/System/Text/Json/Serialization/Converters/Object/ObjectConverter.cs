@@ -59,16 +59,16 @@ namespace System.Text.Json.Serialization.Converters
 
             Debug.Assert(options.UnknownTypeHandling == JsonUnknownTypeHandling.JsonNode);
 
-            JsonNode jsonNode = JsonNodeConverter.Instance.Read(ref reader, typeToConvert, options)!;
+            JsonNode node = JsonNodeConverter.Instance.Read(ref reader, typeToConvert, options)!;
 
             if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve &&
-                JsonSerializer.TryHandleReferenceFromJsonNode(ref reader, ref state, jsonNode, out referenceValue))
+                JsonSerializer.TryHandleReferenceFromJsonNode(ref reader, ref state, node, out referenceValue))
             {
                 value = referenceValue;
             }
             else
             {
-                value = jsonNode;
+                value = node;
             }
 
             return true;
