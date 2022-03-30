@@ -1234,8 +1234,24 @@ void CallArg::CheckIsStruct()
 #endif
 
 CallArgs::CallArgs()
+    : m_head(nullptr)
+    , m_lateHead(nullptr)
+    , m_nextStackByteOffset(0)
+    , m_hasThisPointer(false)
+    , m_hasRetBuffer(false)
+    , m_isVarArgs(false)
+    , m_abiInformationDetermined(false)
+    , m_hasRegArgs(false)
+    , m_hasStackArgs(false)
+    , m_argsComplete(false)
+    , m_argsSorted(false)
+    , m_needsTemps(false)
+#ifdef UNIX_X86_ABI
+    , m_stkSizeBytes(0)
+    , m_padStkAlign(0)
+    , m_alignmentDone(false)
+#endif
 {
-    Clear();
 }
 
 CallArg* CallArgs::FindByNode(GenTree* node)
@@ -1564,27 +1580,6 @@ bool CallArgs::Remove(CallArg* arg)
     }
 
     return false;
-}
-
-void CallArgs::Clear()
-{
-    m_head                     = nullptr;
-    m_lateHead                 = nullptr;
-    m_nextStackByteOffset      = 0;
-    m_hasThisPointer           = false;
-    m_hasRetBuffer             = false;
-    m_isVarArgs                = false;
-    m_abiInformationDetermined = false;
-    m_hasRegArgs               = false;
-    m_hasStackArgs             = false;
-    m_argsComplete             = false;
-    m_argsSorted               = false;
-    m_needsTemps               = false;
-#ifdef UNIX_X86_ABI
-    m_stkSizeBytes  = 0;
-    m_padStkAlign   = 0;
-    m_alignmentDone = false;
-#endif
 }
 
 //---------------------------------------------------------------

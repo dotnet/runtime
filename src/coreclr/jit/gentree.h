@@ -4403,7 +4403,6 @@ public:
     CallArg* InsertAfterThisOrFirst(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
     void PushLateBack(CallArg* node);
     bool Remove(CallArg* arg);
-    void Clear();
 
     template <typename CopyNodeFunc>
     void InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc copyFunc);
