@@ -227,7 +227,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             get
             {
                 ThrowIfDisposed();
-                return  _writeTimeout;
+                return _writeTimeout;
             }
             set
             {
@@ -305,11 +305,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private CancellationTokenRegistration HandleWriteStartState(bool emptyBuffer, CancellationToken cancellationToken)
         {
-            if (_state.SendState == SendState.Pending)
-            {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "write"));
-            }
-
             if (_state.SendState == SendState.Closed)
             {
                 throw new InvalidOperationException(SR.net_quic_writing_notallowed);
@@ -375,6 +370,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (_state.SendState == SendState.ConnectionClosed)
                 {
                     throw GetConnectionAbortedException(_state);
+                }
+
+                if (_state.SendState == SendState.Pending || _state.SendState == SendState.Finished)
+                {
+                    throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "write"));
                 }
 
                 // Change the state in the same lock where we check for final states to prevent coming back from Aborted/ConnectionClosed.
@@ -515,7 +515,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     ex = new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "read"));
                     break;
                 case ReadState.Aborted:
-                    ex =  preCanceled ? new OperationCanceledException(cancellationToken) :
+                    ex = preCanceled ? new OperationCanceledException(cancellationToken) :
                           ThrowHelper.GetStreamAbortedException(abortError);
                     break;
                 case ReadState.ConnectionClosed:
@@ -823,7 +823,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     // Handle race condition when stream can be closed handling SHUTDOWN_COMPLETE.
                     StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
-                } catch (ObjectDisposedException) { };
+                }
+                catch (ObjectDisposedException) { };
             }
 
             if (abortRead)
@@ -831,7 +832,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 try
                 {
                     StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE, 0xffffffff);
-                } catch (ObjectDisposedException) { };
+                }
+                catch (ObjectDisposedException) { };
             }
 
             if (completeRead)
