@@ -1,59 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
-//
-// Types in this file are used for generated p/invokes (docs/design/features/source-generator-pinvokes.md).
-//
 namespace System.Runtime.InteropServices
 {
-    [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Delegate)]
-#if LIBRARYIMPORT_GENERATOR_TEST
-    public
-#else
-    internal
-#endif
-    sealed class NativeMarshallingAttribute : Attribute
-    {
-        public NativeMarshallingAttribute(Type nativeType)
-        {
-            NativeType = nativeType;
-        }
-
-        public Type NativeType { get; }
-    }
-
-    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.ReturnValue, AllowMultiple = true)]
-#if LIBRARYIMPORT_GENERATOR_TEST
-    public
-#else
-    internal
-#endif
-    sealed class MarshalUsingAttribute : Attribute
-    {
-        public MarshalUsingAttribute()
-        {
-            CountElementName = string.Empty;
-        }
-
-        public MarshalUsingAttribute(Type nativeType)
-            : this()
-        {
-            NativeType = nativeType;
-        }
-
-        public Type? NativeType { get; }
-
-        public string CountElementName { get; set; }
-
-        public int ConstantElementCount { get; set; }
-
-        public int ElementIndirectionDepth { get; set; }
-
-        public const string ReturnsCountValue = "return-value";
-    }
-
     /// <summary>
     /// Attribute used to indicate that the type can be used to convert a value of the provided <see cref="ManagedType"/> to a native representation.
     /// </summary>
@@ -63,12 +12,7 @@ namespace System.Runtime.InteropServices
     /// <seealso cref="LibraryImportAttribute"/>
     /// </remarks>
     [AttributeUsage(AttributeTargets.Struct)]
-#if LIBRARYIMPORT_GENERATOR_TEST
-    public
-#else
-    internal
-#endif
-    sealed class CustomTypeMarshallerAttribute : Attribute
+    public sealed class CustomTypeMarshallerAttribute : Attribute
     {
         public CustomTypeMarshallerAttribute(Type managedType, CustomTypeMarshallerKind marshallerKind = CustomTypeMarshallerKind.Value)
         {

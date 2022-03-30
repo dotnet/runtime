@@ -340,9 +340,6 @@ mon_finalize (MonoThreadsSync *mon)
 
 	mon->data = monitor_freelist;
 	monitor_freelist = mon;
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_dec_i32 (&mono_perfcounters->gc_sync_blocks);
-#endif
 }
 
 /* LOCKING: this is called with monitor_mutex held */
@@ -412,9 +409,6 @@ mon_new (gsize id)
 	new_->nest = 1;
 	new_->data = NULL;
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_inc_i32 (&mono_perfcounters->gc_sync_blocks);
-#endif
 	return new_;
 }
 
@@ -754,7 +748,7 @@ signal_monitor (gpointer mon_untyped)
 	mono_coop_mutex_unlock (mon->entry_mutex);
 }
 
-static gint64 thread_contentions; /* for Monitor.LockContentionCount, otherwise mono_perfcounters struct is used */
+static gint64 thread_contentions; /* for Monitor.LockContentionCount */
 
 /* If allow_interruption==TRUE, the method will be interrupted if abort or suspend
  * is requested. In this case it returns -1.
@@ -810,11 +804,7 @@ retry:
 	}
 
 	/* The object must be locked by someone else... */
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_inc_i32 (&mono_perfcounters->thread_contentions);
-#else
 	mono_atomic_inc_i64 (&thread_contentions);
-#endif
 
 	/* If ms is 0 we don't block, but just fail straight away */
 	if (ms == 0) {
@@ -875,10 +865,6 @@ retry_contended:
 	}
 	waitms = ms;
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_inc_i32 (&mono_perfcounters->thread_queue_len);
-	mono_atomic_inc_i32 (&mono_perfcounters->thread_queue_max);
-#endif
 	thread = mono_thread_internal_current ();
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
@@ -898,9 +884,6 @@ retry_contended:
 	mon_add_entry_count (mon, -1);
 	mono_coop_mutex_unlock (mon->entry_mutex);
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_dec_i32 (&mono_perfcounters->thread_queue_len);
-#endif
 
 	if (timedout || (interrupted && allow_interruption)) {
 		/* we're done */
@@ -1470,9 +1453,5 @@ ves_icall_System_Threading_Monitor_Monitor_Enter (MonoObjectHandle obj, MonoErro
 gint64
 ves_icall_System_Threading_Monitor_Monitor_LockContentionCount (void)
 {
-#ifndef DISABLE_PERFCOUNTERS
-	return mono_perfcounters->thread_contentions;
-#else
 	return thread_contentions;
-#endif
 }

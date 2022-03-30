@@ -231,9 +231,6 @@ mono_gc_init_icalls (void)
 void
 mono_gc_collect (int generation)
 {
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_inc_i32 (&mono_perfcounters->gc_induced);
-#endif
 	GC_gcollect ();
 }
 
@@ -446,10 +443,6 @@ on_gc_notification (GC_EventType event)
 	case GC_EVENT_START:
 		e = MONO_GC_EVENT_START;
 		MONO_GC_BEGIN (1);
-#ifndef DISABLE_PERFCOUNTERS
-		if (mono_perfcounters)
-			mono_atomic_inc_i32 (&mono_perfcounters->gc_collections0);
-#endif
 		mono_atomic_inc_i32 (&mono_gc_stats.major_gc_count);
 		gc_start_time = mono_100ns_ticks ();
 		break;
@@ -464,17 +457,6 @@ on_gc_notification (GC_EventType event)
 			sleep(0);
 #endif
 
-#ifndef DISABLE_PERFCOUNTERS
-		if (mono_perfcounters) {
-			guint64 heap_size = GC_get_heap_size ();
-			guint64 used_size = heap_size - GC_get_free_bytes ();
-			/* FIXME: change these to mono_atomic_store_i64 () */
-			UnlockedWrite64 (&mono_perfcounters->gc_total_bytes, used_size);
-			UnlockedWrite64 (&mono_perfcounters->gc_committed_bytes, heap_size);
-			UnlockedWrite64 (&mono_perfcounters->gc_reserved_bytes, heap_size);
-			UnlockedWrite64 (&mono_perfcounters->gc_gen0size, heap_size);
-		}
-#endif
 		UnlockedAdd64 (&mono_gc_stats.major_gc_time, mono_100ns_ticks () - gc_start_time);
 		mono_trace_message (MONO_TRACE_GC, "gc took %" G_GINT64_FORMAT " usecs", (mono_100ns_ticks () - gc_start_time) / 10);
 		break;
@@ -512,14 +494,6 @@ static void
 on_gc_heap_resize (GC_word new_size)
 {
 	guint64 heap_size = GC_get_heap_size ();
-#ifndef DISABLE_PERFCOUNTERS
-	if (mono_perfcounters) {
-		/* FIXME: change these to mono_atomic_store_i64 () */
-		UnlockedWrite64 (&mono_perfcounters->gc_committed_bytes, heap_size);
-		UnlockedWrite64 (&mono_perfcounters->gc_reserved_bytes, heap_size);
-		UnlockedWrite64 (&mono_perfcounters->gc_gen0size, heap_size);
-	}
-#endif
 
 	MONO_PROFILER_RAISE (gc_resize, (new_size));
 }
@@ -1450,9 +1424,6 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 		handles->entries [slot] = obj;
 	}
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_inc_i32 (&mono_perfcounters->gc_num_handles);
-#endif
 	unlock_handles (handles);
 	res = MONO_GC_HANDLE (slot, handles->type);
 	MONO_PROFILER_RAISE (gc_handle_created, (res, (MonoGCHandleType)handles->type, obj));
@@ -1615,9 +1586,6 @@ mono_gchandle_free_internal (MonoGCHandle gch)
 	} else {
 		/* print a warning? */
 	}
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_dec_i32 (&mono_perfcounters->gc_num_handles);
-#endif
 	/*g_print ("freed entry %d of type %d\n", slot, handles->type);*/
 	unlock_handles (handles);
 	MONO_PROFILER_RAISE (gc_handle_deleted, (gchandle, (MonoGCHandleType)handles->type));

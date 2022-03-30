@@ -28,10 +28,10 @@ namespace System.Xml
         {
 #if DEBUG
             int max = 0, tempVal = 0;
-            Array enumValues = Enum.GetValues(typeof(XmlNodeType));
+            XmlNodeType[] enumValues = Enum.GetValues<XmlNodeType>();
             for (int i = 0; i < enumValues.Length; i++)
             {
-                tempVal = (int)enumValues.GetValue(i)!;
+                tempVal = (int)enumValues[i];
                 if (tempVal > max)
                     max = tempVal;
             }
