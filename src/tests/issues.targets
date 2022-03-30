@@ -54,6 +54,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/rvastatics/RVAOrderingTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/55966</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/StructABI/structreturn/*">
+            <Issue>https://github.com/dotnet/runtime/issues/67355</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base/Pause*/**">
             <Issue>https://github.com/dotnet/runtime/issues/62423</Issue>
         </ExcludeList>
