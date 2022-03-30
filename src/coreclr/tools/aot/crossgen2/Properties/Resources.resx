@@ -144,6 +144,9 @@
   <data name="HelpOption" xml:space="preserve">
     <value>Display this usage message</value>
   </data>
+  <data name="VersionOption" xml:space="preserve">
+    <value>Display the Crossgen2 compiler version used</value>
+  </data>
   <data name="InputBubbleOption" xml:space="preserve">
     <value>True when the entire input forms a version bubble (default = per-assembly bubble)</value>
   </data>
