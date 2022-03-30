@@ -4431,7 +4431,7 @@ public:
 
     unsigned CountArgs();
 
-    template <typename CallArg* (CallArg::*Next)()>
+    template <CallArg* (CallArg::*Next)()>
     class CallArgIterator
     {
         CallArg* m_arg;
