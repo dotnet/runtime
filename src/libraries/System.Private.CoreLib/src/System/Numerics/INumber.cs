@@ -6,26 +6,6 @@ using System.Globalization;
 
 namespace System.Numerics
 {
-    public interface INumberBase<TSelf>
-        : IAdditionOperators<TSelf, TSelf, TSelf>,
-          IAdditiveIdentity<TSelf, TSelf>,
-          IDecrementOperators<TSelf>,
-          IEqualityOperators<TSelf, TSelf>,     // implies IEquatable<TSelf>
-          IIncrementOperators<TSelf>,
-          IMultiplicativeIdentity<TSelf, TSelf>,
-          IMultiplyOperators<TSelf, TSelf, TSelf>,
-          ISubtractionOperators<TSelf, TSelf, TSelf>,
-          IUnaryPlusOperators<TSelf, TSelf>,
-          IUnaryNegationOperators<TSelf, TSelf>
-        where TSelf : INumberBase<TSelf>
-    {
-        /// <summary>Gets the value <c>1</c> for the type.</summary>
-        static abstract TSelf One { get; }
-
-        /// <summary>Gets the value <c>0</c> for the type.</summary>
-        static abstract TSelf Zero { get; }
-    }
-
     /// <summary>Defines a number type.</summary>
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
     public interface INumber<TSelf>
@@ -143,41 +123,5 @@ namespace System.Numerics
         /// <returns><c>true</c> if <paramref name="s" /> was successfully parsed; otherwise, <c>false</c>.</returns>
         /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
         static abstract bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out TSelf result);
-    }
-
-    /// <summary>Defines a number that is represented in a base-2 format.</summary>
-    /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
-    public interface IBinaryNumber<TSelf>
-        : IBitwiseOperators<TSelf, TSelf, TSelf>,
-          INumber<TSelf>
-        where TSelf : IBinaryNumber<TSelf>
-    {
-        /// <summary>Determines if a value is a power of two.</summary>
-        /// <param name="value">The value to be checked.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> is a power of two; otherwise, <c>false</c>.</returns>
-        static abstract bool IsPow2(TSelf value);
-
-        /// <summary>Computes the log2 of a value.</summary>
-        /// <param name="value">The value whose log2 is to be computed.</param>
-        /// <returns>The log2 of <paramref name="value" />.</returns>
-        static abstract TSelf Log2(TSelf value);
-    }
-
-    /// <summary>Defines a number type which can represent both positive and negative values.</summary>
-    /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
-    public interface ISignedNumber<TSelf>
-        : INumber<TSelf>
-        where TSelf : ISignedNumber<TSelf>
-    {
-        /// <summary>Gets the value <c>-1</c> for the type.</summary>
-        static abstract TSelf NegativeOne { get; }
-    }
-
-    /// <summary>Defines a number type which can only represent positive values, that is it cannot represent negative values.</summary>
-    /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
-    public interface IUnsignedNumber<TSelf>
-        : INumber<TSelf>
-        where TSelf : IUnsignedNumber<TSelf>
-    {
     }
 }

@@ -512,6 +512,18 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.NumberToFloatingPointBits.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Parsing.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\BitOperations.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IBinaryFloatingPointIeee754.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IBinaryNumber.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IExponentialFunctions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IFloatingPointIeee754.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IHyperbolicFunctions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\ILogarithmicFunctions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\INumberBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IPowerFunctions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IRootFunctions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\ISignedNumber.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\ITrigonometricFunctions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnsignedNumber.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix3x2.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix4x4.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Plane.cs" />
@@ -2375,7 +2387,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IEqualityOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IFloatingPoint.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IIncrementOperators.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IInteger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IBinaryInteger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IMinMaxValue.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IModulusOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IMultiplicativeIdentity.cs" />
