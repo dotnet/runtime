@@ -55,6 +55,7 @@ namespace System.Security.Cryptography.Cose
         public System.ReadOnlyMemory<byte>? Content { get { throw null; } }
         public System.Security.Cryptography.Cose.CoseHeaderMap ProtectedHeaders { get { throw null; } }
         public System.Security.Cryptography.Cose.CoseHeaderMap UnprotectedHeaders { get { throw null; } }
+        public static System.Security.Cryptography.Cose.CoseSign1Message DecodeSign1(byte[] cborPayload) { throw null; }
         public static System.Security.Cryptography.Cose.CoseSign1Message DecodeSign1(ReadOnlySpan<byte> cborPayload) { throw null; }
     }
     public sealed partial class CoseSign1Message : System.Security.Cryptography.Cose.CoseMessage

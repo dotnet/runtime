@@ -55,9 +55,14 @@ namespace System.Security.Cryptography.Cose
 
         [UnsupportedOSPlatform("browser")]
         public static bool TrySign(
-            ReadOnlySpan<byte> content, Span<byte> destination,
-            AsymmetricAlgorithm key!!, HashAlgorithmName hashAlgorithm, out int bytesWritten,
-            CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false)
+            ReadOnlySpan<byte> content,
+            Span<byte> destination,
+            AsymmetricAlgorithm key!!,
+            HashAlgorithmName hashAlgorithm,
+            out int bytesWritten,
+            CoseHeaderMap? protectedHeaders = null,
+            CoseHeaderMap? unprotectedHeaders = null,
+            bool isDetached = false)
         {
             KeyType keyType = GetKeyType(key);
             ValidateBeforeSign(protectedHeaders, unprotectedHeaders, keyType, hashAlgorithm, out int? algHeaderValueToSlip);
@@ -69,20 +74,10 @@ namespace System.Security.Cryptography.Cose
                 return false;
             }
 
-            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(expectedSize);
+            bytesWritten = CreateCoseSign1Message(content, destination, key, hashAlgorithm, protectedHeaders, unprotectedHeaders, isDetached, algHeaderValueToSlip, keyType);
+            Debug.Assert(expectedSize == bytesWritten);
 
-            try
-            {
-                bytesWritten = CreateCoseSign1Message(content, rentedBuffer, key, hashAlgorithm, protectedHeaders, unprotectedHeaders, isDetached, algHeaderValueToSlip, keyType);
-                Debug.Assert(expectedSize == bytesWritten);
-
-                rentedBuffer.AsSpan(0, bytesWritten).CopyTo(destination);
-                return true;
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(rentedBuffer, clearArray: true);
-            }
+            return true;
         }
 
         internal static KeyType GetKeyType(AsymmetricAlgorithm key)
@@ -95,19 +90,14 @@ namespace System.Security.Cryptography.Cose
             };
         }
 
-        internal static void ValidateBeforeSign(
-            CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders, KeyType keyType, HashAlgorithmName hashAlgorithm,
-            out int? algHeaderValueToSlip)
+        internal static void ValidateBeforeSign(CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders, KeyType keyType, HashAlgorithmName hashAlgorithm, out int? algHeaderValueToSlip)
         {
             ThrowIfDuplicateLabels(protectedHeaders, unprotectedHeaders);
             algHeaderValueToSlip = ValidateOrSlipAlgorithmHeader(protectedHeaders, unprotectedHeaders, keyType, hashAlgorithm);
         }
 
         [UnsupportedOSPlatform("browser")]
-        internal static int CreateCoseSign1Message(
-            ReadOnlySpan<byte> content, Span<byte> buffer,
-            AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm,
-            CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders, bool isDetached, int? algHeaderValueToSlip, KeyType keyType)
+        internal static int CreateCoseSign1Message(ReadOnlySpan<byte> content, Span<byte> buffer, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders, bool isDetached, int? algHeaderValueToSlip, KeyType keyType)
         {
             var writer = new CborWriter();
             writer.WriteTag(Sign1Tag);
@@ -155,6 +145,7 @@ namespace System.Security.Cryptography.Cose
                 }
                 else
                 {
+                    Debug.Assert(keyType == KeyType.RSA);
                     signatureBytesWritten = SignWithRSA((RSA)key, encodedToBeSigned, hashAlgorithm, buffer);
                 }
             }
@@ -162,7 +153,7 @@ namespace System.Security.Cryptography.Cose
             {
                 if (rentedToBeSignedBuffer != null)
                 {
-                    ArrayPool<byte>.Shared.Return(rentedToBeSignedBuffer);
+                    ArrayPool<byte>.Shared.Return(rentedToBeSignedBuffer, clearArray: true);
                 }
             }
 
@@ -181,8 +172,12 @@ namespace System.Security.Cryptography.Cose
             signature.CopyTo(destination);
             return signature.Length;
 #else
-            bool success = key.TrySignData(data, destination, hashAlgorithm, out int bytesWritten);
-            Debug.Assert(success);
+            if (!key.TrySignData(data, destination, hashAlgorithm, out int bytesWritten))
+            {
+                Debug.Fail("TrySignData failed with a pre-calculated destination");
+                throw new CryptographicException();
+            }
+
             return bytesWritten;
 #endif
         }
@@ -195,8 +190,12 @@ namespace System.Security.Cryptography.Cose
             signature.CopyTo(destination);
             return signature.Length;
 #else
-            bool success = key.TrySignData(data, destination, hashAlgorithm, RSASignaturePadding.Pss, out int bytesWritten);
-            Debug.Assert(success);
+            if (!key.TrySignData(data, destination, hashAlgorithm, RSASignaturePadding.Pss, out int bytesWritten))
+            {
+                Debug.Fail("TrySignData failed with a pre-calculated destination");
+                throw new CryptographicException();
+            }
+
             return bytesWritten;
 #endif
         }
@@ -415,8 +414,8 @@ namespace System.Security.Cryptography.Cose
             const int SizeOfNull = 1;
 
             int encodedSize = SizeOfTag + SizeOfArrayOfFour +
-                CoseHeaderMap.ComputeEncodedSize(protectedHeaders, isProtectedHeader: true, algHeaderValueToSlip) +
-                CoseHeaderMap.ComputeEncodedSize(unprotectedHeaders, isProtectedHeader: false);
+                CoseHelpers.GetByteStringEncodedSize(CoseHeaderMap.ComputeEncodedSize(protectedHeaders, algHeaderValueToSlip)) +
+                CoseHeaderMap.ComputeEncodedSize(unprotectedHeaders);
 
             if (isDetached)
             {
@@ -424,7 +423,7 @@ namespace System.Security.Cryptography.Cose
             }
             else
             {
-                encodedSize += CoseHelpers.GetEncodedSize(contentLength) + contentLength;
+                encodedSize += CoseHelpers.GetByteStringEncodedSize(contentLength);
             }
 
             int signatureSize;
@@ -438,7 +437,7 @@ namespace System.Security.Cryptography.Cose
                 signatureSize = (keySize + 7) / 8;
             }
 
-            encodedSize += CoseHelpers.GetEncodedSize(signatureSize) + signatureSize;
+            encodedSize += CoseHelpers.GetByteStringEncodedSize(signatureSize);
 
             return encodedSize;
         }

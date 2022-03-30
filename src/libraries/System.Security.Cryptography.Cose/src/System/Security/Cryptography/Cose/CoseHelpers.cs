@@ -9,31 +9,31 @@ namespace System.Security.Cryptography.Cose
     {
         private static readonly UTF8Encoding s_utf8EncodingStrict = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
-        internal static int GetEncodedSize(ReadOnlySpan<byte> value)
+        internal static int GetByteStringEncodedSize(int bstrLength)
         {
-            return GetEncodedSize(value.Length) + value.Length;
+            return GetIntegerEncodedSize(bstrLength) + bstrLength;
         }
 
-        internal static int GetEncodedSize(string value)
+        internal static int GetTextStringEncodedSize(string value)
         {
             int strEncodedLength = s_utf8EncodingStrict.GetByteCount(value);
-            return GetEncodedSize(strEncodedLength) + strEncodedLength;
+            return GetIntegerEncodedSize(strEncodedLength) + strEncodedLength;
         }
 
-        internal static int GetEncodedSize(long value)
+        internal static int GetIntegerEncodedSize(long value)
         {
             if (value < 0)
             {
                 ulong unsignedRepresentation = (value == long.MinValue) ? (ulong)long.MaxValue : (ulong)(-value) - 1;
-                return GetEncodedSize(unsignedRepresentation);
+                return GetIntegerEncodedSize(unsignedRepresentation);
             }
             else
             {
-                return GetEncodedSize((ulong)value);
+                return GetIntegerEncodedSize((ulong)value);
             }
         }
 
-        internal static int GetEncodedSize(ulong value)
+        internal static int GetIntegerEncodedSize(ulong value)
         {
             if (value < 24)
             {

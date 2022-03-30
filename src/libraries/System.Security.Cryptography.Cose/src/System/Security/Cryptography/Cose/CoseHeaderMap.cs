@@ -236,33 +236,26 @@ namespace System.Security.Cryptography.Cose
             return writer.Encode(destination);
         }
 
-        internal static int ComputeEncodedSize(CoseHeaderMap? map, bool isProtectedHeader, int? algHeaderValueToSlip = null)
+        internal static int ComputeEncodedSize(CoseHeaderMap? map, int? algHeaderValueToSlip = null)
         {
             map ??= s_emptyMap;
 
             // encoded map length => map length + (label + value)*
-            Debug.Assert(algHeaderValueToSlip == null || isProtectedHeader);
-
             int encodedSize = 0;
             int mapLength = map._headerParameters.Count;
+
             if (algHeaderValueToSlip != null)
             {
                 mapLength += 1;
                 encodedSize += CoseHeaderLabel.Algorithm.EncodedSize;
-                encodedSize += CoseHelpers.GetEncodedSize(algHeaderValueToSlip.Value);
+                encodedSize += CoseHelpers.GetIntegerEncodedSize(algHeaderValueToSlip.Value);
             }
 
-            encodedSize += CoseHelpers.GetEncodedSize(mapLength);
+            encodedSize += CoseHelpers.GetIntegerEncodedSize(mapLength);
 
             foreach ((CoseHeaderLabel label, ReadOnlyMemory<byte> encodedValue) in map)
             {
                 encodedSize += label.EncodedSize + encodedValue.Length;
-            }
-
-            // bstr(encoded map length)
-            if (isProtectedHeader)
-            {
-                encodedSize = CoseHelpers.GetEncodedSize(encodedSize) + encodedSize;
             }
 
             return encodedSize;
