@@ -1143,6 +1143,9 @@ namespace WebAssemblyInfo
 
             idx = nameToFunction[name];
 
+            if (imports != null)
+                idx -= (UInt32)imports.Length;
+
             return true;
         }
 
