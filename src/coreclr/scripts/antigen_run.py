@@ -202,6 +202,16 @@ def main(main_args):
         path_to_corerun += ".exe"
         path_to_tool += ".exe"
 
+    if not is_windows:
+        # Disable core dumps. The fuzzers have their own graceful handling for
+        # runtime crashes. Especially on macOS we can quickly fill up the drive
+        # with dumps if we find lots of crashes since dumps there are very big.
+        try:
+            import resource
+            resource.setrlimit(resource.RLIMIT_CORE, 0)
+        except:
+            pass
+
     try:
         # Run tool such that issues are placed in a temp folder
         with TempDir() as temp_location:
