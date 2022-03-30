@@ -104,6 +104,23 @@ namespace System.IO.Compression.Tests
         }
 
         /// <summary>
+        /// This test checks whether or not ZipFile.ExtractToDirectory() is capable of handling filenames
+		/// which contain invalid path characters in Windows.
+        /// </summary>
+        [Theory]
+        [InlineData("InvalidWindowsFileNameChars.zip", "Test______________________________________.txt")]
+        [InlineData("InvalidWindowsFileNameChars.zip", "Test______________________________________/TestText1______________________________________.txt")]
+        [InlineData("InvalidWindowsFileNameChars.zip", "TestEmpty")]
+        [InlineData("InvalidWindowsFileNameChars.zip", "Test/normalText.txt")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Windows_ZipWithInvalidFileNames(string zipFile, string testPath)
+        {
+            var testDirectory = GetTestFilePath();
+            ZipFile.ExtractToDirectory(compat(zipFile), testDirectory);
+            Assert.True(File.Exists(testDirectory + testPath));
+        }
+
+        /// <summary>
         /// This test ensures that a zipfile with path names that are invalid to this OS will throw errors
         /// when an attempt is made to extract them.
         /// </summary>
