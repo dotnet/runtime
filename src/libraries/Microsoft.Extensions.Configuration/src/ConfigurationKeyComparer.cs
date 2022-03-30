@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Configuration
 {
@@ -11,7 +12,7 @@ namespace Microsoft.Extensions.Configuration
     /// </summary>
     public class ConfigurationKeyComparer : IComparer<string>
     {
-        private static readonly string[] _keyDelimiterArray = new[] { ConfigurationPath.KeyDelimiter };
+        private static readonly char s_keyDelimiter = ConfigurationPath.KeyDelimiter[0];
 
         /// <summary>
         /// The default instance.
@@ -29,64 +30,93 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>Less than 0 if x is less than y, 0 if x is equal to y and greater than 0 if x is greater than y.</returns>
         public int Compare(string? x, string? y)
         {
-            if (x is not null && y is not null)
+            if (x == null || y == null)
             {
-                if (x.Contains(ConfigurationPath.KeyDelimiter) && y.Contains(ConfigurationPath.KeyDelimiter))
+                return (x is null ? 0 : GetPartsCount(x)) - (y is null ? 0 : GetPartsCount(y));
+            }
+
+            int xIndex = 0;
+            int yIndex = 0;
+
+            // Compare each part until we get two parts that are not equal
+            while (xIndex < x.Length && yIndex < y.Length)
+            {
+                if (x[xIndex] == s_keyDelimiter)
                 {
-                    int xIndex = 0;
-                    int yIndex = 0;
+                    xIndex++;
+                    continue;
+                }
 
-                    // Compare each part until we get two parts that are not equal
-                    while (xIndex < x.Length && yIndex < y.Length)
-                    {
-                        int nextXIndex = x.IndexOf(ConfigurationPath.KeyDelimiter, xIndex);
-                        int nextYIndex = y.IndexOf(ConfigurationPath.KeyDelimiter, yIndex);
+                if (y[yIndex] == s_keyDelimiter)
+                {
+                    yIndex++;
+                    continue;
+                }
 
-                        ReadOnlySpan<char> xSpan;
-                        if (nextXIndex >= 0)
-                        {
-                            xSpan = x.AsSpan().Slice(xIndex, nextXIndex - xIndex);
-                            xIndex = nextXIndex + 1;
-                        }
-                        else
-                        {
-                            xSpan = x.AsSpan().Slice(xIndex, x.Length - xIndex);
-                            xIndex = x.Length;
-                        }
-
-                        ReadOnlySpan<char> ySpan;
-                        if (nextYIndex >= 0)
-                        {
-                            ySpan = y.AsSpan().Slice(yIndex, nextYIndex - yIndex);
-                            yIndex = nextYIndex + 1;
-                        }
-                        else
-                        {
-                            ySpan = y.AsSpan().Slice(yIndex, y.Length - yIndex);
-                            yIndex = y.Length;
-                        }
-
-                        int compareResult = Compare(xSpan, ySpan);
-                        if (compareResult != 0)
-                        {
-                            return compareResult;
-                        }
-                    }
-
-                    string[] xParts = x.Split(_keyDelimiterArray, StringSplitOptions.RemoveEmptyEntries);
-                    string[] yParts = y.Split(_keyDelimiterArray, StringSplitOptions.RemoveEmptyEntries);
-
-                    // If we get here, the common parts are equal.
-                    // If they are of the same length, then they are totally identical
-                    return xParts.Length - yParts.Length;
+                ReadOnlySpan<char> xSpan;
+                int nextXIndex = x.IndexOf(s_keyDelimiter, xIndex);
+                if (nextXIndex >= 0)
+                {
+                    xSpan = x.AsSpan().Slice(xIndex, nextXIndex - xIndex);
+                    xIndex = nextXIndex + 1;
                 }
                 else
                 {
-                    return Compare(x.AsSpan(), y.AsSpan());
+                    xSpan = x.AsSpan().Slice(xIndex, x.Length - xIndex);
+                    xIndex = x.Length;
+                }
+
+                ReadOnlySpan<char> ySpan;
+                int nextYIndex = y.IndexOf(s_keyDelimiter, yIndex);
+                if (nextYIndex >= 0)
+                {
+                    ySpan = y.AsSpan().Slice(yIndex, nextYIndex - yIndex);
+                    yIndex = nextYIndex + 1;
+                }
+                else
+                {
+                    ySpan = y.AsSpan().Slice(yIndex, y.Length - yIndex);
+                    yIndex = y.Length;
+                }
+
+                int compareResult = Compare(xSpan, ySpan);
+                if (compareResult != 0)
+                {
+                    return compareResult;
                 }
             }
 
-            return x?.Length ?? 0 - y?.Length ?? 0;
+            if (xIndex >= x.Length)
+            {
+                return yIndex >= y.Length ? 0 : -GetPartsCount(y, yIndex);
+            }
+
+            return GetPartsCount(x, xIndex);
+
+            static int GetPartsCount(string s, int sliceIndex = 0)
+            {
+                ReadOnlySpan<char> a = s.AsSpan().Slice(sliceIndex, s.Length - sliceIndex);
+                int count = 0, aIndex = 0;
+                while (aIndex < a.Length)
+                {
+                    int nextAIndex = a.Slice(aIndex).IndexOf(s_keyDelimiter);
+                    if (nextAIndex < 0)
+                    {
+                        return count + 1;
+                    }
+
+                    if (a[aIndex] == s_keyDelimiter)
+                    {
+                        aIndex++;
+                        continue;
+                    }
+
+                    aIndex += nextAIndex + 1;
+                    count++;
+                }
+
+                return count;
+            }
 
             static int Compare(ReadOnlySpan<char> a, ReadOnlySpan<char> b)
             {
