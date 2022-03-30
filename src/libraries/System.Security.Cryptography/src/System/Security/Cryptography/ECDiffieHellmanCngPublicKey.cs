@@ -34,11 +34,13 @@ namespace System.Security.Cryptography
             base.Dispose(disposing);
         }
 
+        [Obsolete(Obsoletions.EccXmlExportImportMessage, DiagnosticId = Obsoletions.EccXmlExportImportDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override string ToXmlString()
         {
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete(Obsoletions.EccXmlExportImportMessage, DiagnosticId = Obsoletions.EccXmlExportImportDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static ECDiffieHellmanCngPublicKey FromXmlString(string xml)
         {
             throw new PlatformNotSupportedException();

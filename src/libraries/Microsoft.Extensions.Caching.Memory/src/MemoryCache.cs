@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.Caching.Memory
             _options = optionsAccessor.Value;
             _logger = loggerFactory.CreateLogger<MemoryCache>();
 
-            _coherentState = new();
+            _coherentState = new CoherentState();
 
             if (_options.Clock == null)
             {

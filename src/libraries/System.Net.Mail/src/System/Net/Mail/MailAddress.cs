@@ -276,8 +276,6 @@ namespace System.Net.Mail
             return StringComparer.InvariantCultureIgnoreCase.GetHashCode(ToString());
         }
 
-        private static readonly EncodedStreamFactory s_encoderFactory = new EncodedStreamFactory();
-
         // Encodes the full email address, folding as needed
         internal string Encode(int charsConsumed, bool allowUnicode)
         {
@@ -300,7 +298,7 @@ namespace System.Net.Mail
                 else
                 {
                     //encode the displayname since it's non-ascii
-                    encoder = s_encoderFactory.GetEncoderForHeader(_displayNameEncoding, false, charsConsumed);
+                    encoder = EncodedStreamFactory.GetEncoderForHeader(_displayNameEncoding, false, charsConsumed);
                     encoder.EncodeString(_displayName, _displayNameEncoding);
                     encodedAddress = encoder.GetEncodedString();
                 }

@@ -10,7 +10,7 @@ namespace System.Diagnostics
         /// not an absolute level, but instead contributes to the actual thread priority by
         /// considering the priority class of the process.
         /// </summary>
-        private ThreadPriorityLevel PriorityLevelCore
+        private static ThreadPriorityLevel PriorityLevelCore
         {
             // Does not appear to be a POSIX API to do this on macOS.
             // Considered the posix pthread_getschedparam, and pthread_setschedparam,
@@ -25,7 +25,7 @@ namespace System.Diagnostics
         /// </summary>
         public TimeSpan PrivilegedProcessorTime => new TimeSpan((long)GetThreadInfo().pth_system_time);
 
-        private DateTime GetStartTime() => throw new PlatformNotSupportedException(); // macOS does not provide a way to get this data
+        private static DateTime GetStartTime() => throw new PlatformNotSupportedException(); // macOS does not provide a way to get this data
 
         /// <summary>
         /// Returns the amount of time the associated thread has spent using the CPU.

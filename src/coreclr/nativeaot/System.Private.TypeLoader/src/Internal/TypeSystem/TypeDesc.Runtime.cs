@@ -163,7 +163,7 @@ namespace Internal.TypeSystem
                 {
                     RuntimeTypeHandle rtth;
                     if ((type is ArrayType &&
-                          (TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType_LookupOnly(typeAsParameterType.ParameterType.RuntimeTypeHandle, type.IsMdArray, type.IsMdArray ? ((ArrayType)type).Rank : -1, out rtth) ||
+                          (TypeLoaderEnvironment.TryGetArrayTypeForElementType_LookupOnly(typeAsParameterType.ParameterType.RuntimeTypeHandle, type.IsMdArray, type.IsMdArray ? ((ArrayType)type).Rank : -1, out rtth) ||
                            TypeLoaderEnvironment.Instance.TryGetArrayTypeHandleForNonDynamicArrayTypeFromTemplateTable(type as ArrayType, out rtth)))
                            ||
                         (type is PointerType && TypeSystemContext.PointerTypesCache.TryGetValue(typeAsParameterType.ParameterType.RuntimeTypeHandle, out rtth))
@@ -232,7 +232,7 @@ namespace Internal.TypeSystem
             return ComputeTemplate(GetOrCreateTypeBuilderState(), templateRequired);
         }
 
-        internal TypeDesc ComputeTemplate(TypeBuilderState state, bool templateRequired = true)
+        internal static TypeDesc ComputeTemplate(TypeBuilderState state, bool templateRequired = true)
         {
             TypeDesc templateType = state.TemplateType;
 

@@ -72,8 +72,8 @@ namespace System.Transactions
             var whereaboutsCopy = new byte[whereabouts.Length];
             Buffer.BlockCopy(whereabouts, 0, whereaboutsCopy, 0, whereabouts.Length);
 
-            DistributedTransaction dTx = ConvertToDistributedTransaction(transaction);
-            byte[] cookie = dTx.GetExportCookie(whereaboutsCopy);
+            ConvertToDistributedTransaction(transaction);
+            byte[] cookie = DistributedTransaction.GetExportCookie(whereaboutsCopy);
 
             if (etwLog.IsEnabled())
             {
@@ -143,8 +143,8 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransmitterPropagationToken");
             }
 
-            DistributedTransaction dTx = ConvertToDistributedTransaction(transaction);
-            byte[] token = dTx.GetTransmitterPropagationToken();
+            ConvertToDistributedTransaction(transaction);
+            byte[] token = DistributedTransaction.GetTransmitterPropagationToken();
 
             if (etwLog.IsEnabled())
             {
@@ -209,8 +209,8 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetDtcTransaction");
             }
 
-            DistributedTransaction dTx = ConvertToDistributedTransaction(transaction);
-            IDtcTransaction transactionNative = dTx.GetDtcTransaction();
+            ConvertToDistributedTransaction(transaction);
+            IDtcTransaction transactionNative = DistributedTransaction.GetDtcTransaction();
 
             if (etwLog.IsEnabled())
             {
@@ -245,8 +245,7 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetWhereabouts");
             }
 
-            DistributedTransactionManager dTm = TransactionManager.DistributedTransactionManager;
-            byte[] returnValue = dTm.GetWhereabouts();
+            byte[] returnValue = DistributedTransactionManager.GetWhereabouts();
 
             if (etwLog.IsEnabled())
             {

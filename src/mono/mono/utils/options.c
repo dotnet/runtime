@@ -86,7 +86,7 @@ mono_options_print_usage (void)
 }
 
 /*
- * mono_optiond_parse_options:
+ * mono_options_parse_options:
  *
  *   Set options based on the command line arguments in ARGV/ARGC.
  * Remove processed arguments from ARGV and set *OUT_ARGC to the

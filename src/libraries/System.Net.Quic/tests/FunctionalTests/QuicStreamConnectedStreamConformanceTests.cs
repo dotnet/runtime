@@ -15,6 +15,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
+    [ConditionalClass(typeof(QuicTestBase<MockProviderFactory>), nameof(QuicTestBase<MockProviderFactory>.IsSupported))]
     public sealed class MockQuicStreamConformanceTests : QuicStreamConformanceTests
     {
         protected override QuicImplementationProvider Provider => QuicImplementationProviders.Mock;

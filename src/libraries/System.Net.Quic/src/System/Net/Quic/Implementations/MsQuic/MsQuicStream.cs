@@ -119,6 +119,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             _state.StateGCHandle = GCHandle.Alloc(_state);
             try
             {
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 MsQuicApi.Api.SetCallbackHandlerDelegate(
                     _state.Handle,
                     s_streamDelegate,
@@ -164,6 +165,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             try
             {
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 uint status = MsQuicApi.Api.StreamOpenDelegate(
                     connectionState.Handle,
                     flags,
@@ -173,6 +175,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 QuicExceptionHelpers.ThrowIfFailed(status, "Failed to open stream to peer.");
 
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, QUIC_STREAM_START_FLAGS.FAIL_BLOCKED);
                 QuicExceptionHelpers.ThrowIfFailed(status, "Could not start stream.");
             }
@@ -425,6 +428,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             long abortError;
             bool preCanceled = false;
 
+            int bytesRead = -1;
+            bool reenableReceive = false;
             lock (_state)
             {
                 initialReadState = _state.ReadState;
@@ -487,22 +492,32 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     _state.ReadState = ReadState.None;
 
-                    int taken = CopyMsQuicBuffersToUserBuffer(_state.ReceiveQuicBuffers.AsSpan(0, _state.ReceiveQuicBuffersCount), destination.Span);
-                    ReceiveComplete(taken);
+                    bytesRead = CopyMsQuicBuffersToUserBuffer(_state.ReceiveQuicBuffers.AsSpan(0, _state.ReceiveQuicBuffersCount), destination.Span);
 
-                    if (taken != _state.ReceiveQuicBuffersTotalBytes)
+                    if (bytesRead != _state.ReceiveQuicBuffersTotalBytes)
                     {
                         // Need to re-enable receives because MsQuic will pause them when we don't consume the entire buffer.
-                        EnableReceive();
+                        reenableReceive = true;
                     }
                     else if (_state.ReceiveIsFinal)
                     {
                         // This was a final message and we've consumed everything. We can complete the state without waiting for PEER_SEND_SHUTDOWN
                         _state.ReadState = ReadState.ReadsCompleted;
                     }
-
-                    return new ValueTask<int>(taken);
                 }
+            }
+
+            // methods below need to be called outside of the lock
+            if (bytesRead > -1)
+            {
+                ReceiveComplete(bytesRead);
+
+                if (reenableReceive)
+                {
+                    EnableReceive();
+                }
+
+                return new ValueTask<int>(bytesRead);
             }
 
             // All success scenarios returned at this point. Failure scenarios below:
@@ -614,6 +629,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS flags, long errorCode)
         {
+            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
             uint status = MsQuicApi.Api.StreamShutdownDelegate(_state.Handle, flags, errorCode);
             QuicExceptionHelpers.ThrowIfFailed(status, "StreamShutdown failed.");
         }
@@ -852,6 +868,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void EnableReceive()
         {
+            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
             uint status = MsQuicApi.Api.StreamReceiveSetEnabledDelegate(_state.Handle, enabled: true);
             QuicExceptionHelpers.ThrowIfFailed(status, "StreamReceiveSetEnabled failed.");
         }
@@ -1296,6 +1313,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             _state.BufferArrays[0] = handle;
             _state.SendBufferCount = 1;
 
+            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
             uint status = MsQuicApi.Api.StreamSendDelegate(
                 _state.Handle,
                 quicBuffers,
@@ -1359,6 +1377,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 ++count;
             }
 
+            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
             uint status = MsQuicApi.Api.StreamSendDelegate(
                 _state.Handle,
                 quicBuffers,
@@ -1419,6 +1438,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _state.BufferArrays[i] = handle;
             }
 
+            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
             uint status = MsQuicApi.Api.StreamSendDelegate(
                 _state.Handle,
                 quicBuffers,
@@ -1441,6 +1461,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void ReceiveComplete(int bufferLength)
         {
+            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
             uint status = MsQuicApi.Api.StreamReceiveCompleteDelegate(_state.Handle, (ulong)bufferLength);
             QuicExceptionHelpers.ThrowIfFailed(status, "Could not complete receive call.");
         }

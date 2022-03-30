@@ -82,6 +82,9 @@
 /* Host Platform is Darwin */
 #cmakedefine HOST_DARWIN 1
 
+/* Host Platform is OSX or Mac Catalyst */
+#cmakedefine HOST_OSX 1
+
 /* Host Platform is iOS */
 #cmakedefine HOST_IOS 1
 
@@ -153,9 +156,6 @@
 
 /* Define to 1 if you have the <sys/sysctl.h> header file. */
 #cmakedefine HAVE_SYS_SYSCTL_H 1
-
-/* Define to 1 if you have the <libproc.h> header file. */
-#cmakedefine HAVE_LIBPROC_H 1
 
 /* Define to 1 if you have the <sys/prctl.h> header file. */
 #cmakedefine HAVE_SYS_PRCTL_H 1
@@ -279,12 +279,6 @@
 /* Disable Soft Debugger Agent. */
 #cmakedefine DISABLE_DEBUGGER_AGENT 1
 
-/* Disable Performance Counters. */
-#cmakedefine DISABLE_PERFCOUNTERS 1
-
-/* Disable shared perfcounters. */
-#cmakedefine DISABLE_SHARED_PERFCOUNTERS 1
-
 /* Disable support code for the LLDB plugin. */
 #cmakedefine DISABLE_LLDB 1
 
@@ -311,9 +305,6 @@
 
 /* Disable Threads */
 #cmakedefine DISABLE_THREADS 1
-
-/* Disable perf counters */
-#cmakedefine DISABLE_PERF_COUNTERS
 
 /* Disable MONO_LOG_DEST */
 #cmakedefine DISABLE_LOG_DEST
@@ -350,9 +341,6 @@
 
 /* Define to 1 if you have the <execinfo.h> header file. */
 #cmakedefine HAVE_EXECINFO_H 1
-
-/* Define to 1 if you have the <sys/auxv.h> header file. */
-#cmakedefine HAVE_SYS_AUXV_H 1
 
 /* Define to 1 if you have the <sys/resource.h> header file. */
 #cmakedefine HAVE_SYS_RESOURCE_H 1
@@ -398,9 +386,6 @@
 
 /* Define to 1 if you have the `getpwuid_r' function. */
 #cmakedefine HAVE_GETPWUID_R 1
-
-/* Define to 1 if you have the `readlink' function. */
-#cmakedefine HAVE_READLINK 1
 
 /* Define to 1 if you have the `chmod' function. */
 #cmakedefine HAVE_CHMOD 1
@@ -511,6 +496,7 @@
 /* Define to 1 if you have the `pthread_jit_write_protect_np' function. */
 #cmakedefine HAVE_PTHREAD_JIT_WRITE_PROTECT_NP 1
 
+/* Have getauxval */
 #cmakedefine01 HAVE_GETAUXVAL
 
 /* Define to 1 if you have the declaration of `pthread_mutexattr_setprotocol',
@@ -519,9 +505,6 @@
 
 /* Enable support for using sigaltstack for SIGSEGV and stack overflow handling, this doesn't work on some platforms */
 #cmakedefine ENABLE_SIGALTSTACK 1
-
-/* Define to 1 if you have the `shm_open' function. */
-#cmakedefine HAVE_SHM_OPEN 1
 
 /* Define to 1 if you have the `poll' function. */
 #cmakedefine HAVE_POLL 1
@@ -819,7 +802,7 @@
 /* The JIT/AOT targets Mac Catalyst */
 #cmakedefine TARGET_MACCAT 1
 
-/* The JIT/AOT targets OSX */
+/* The JIT/AOT targets OSX or Mac Catalyst */
 #cmakedefine TARGET_OSX 1
 
 /* The JIT/AOT targets Apple platforms */

@@ -348,10 +348,10 @@ void CopyWriteBarrier(PCODE dstCode, PCODE srcCode, PCODE endCode)
 
     size_t size = (PBYTE)end - (PBYTE)src;
 
-    ExecutableWriterHolder<void> writeBarrierWriterHolder;
+    ExecutableWriterHolderNoLog<void> writeBarrierWriterHolder;
     if (IsWriteBarrierCopyEnabled())
     {
-        writeBarrierWriterHolder = ExecutableWriterHolder<void>((void*)dst, size);
+        writeBarrierWriterHolder.AssignExecutableWriterHolder((void*)dst, size);
         dst = (TADDR)writeBarrierWriterHolder.GetRW();
     }
 
@@ -458,10 +458,10 @@ void UpdateGCWriteBarriers(bool postGrow = false)
         if(to)
         {
             to = (PBYTE)PCODEToPINSTR((PCODE)GetWriteBarrierCodeLocation(to));
-            ExecutableWriterHolder<BYTE> barrierWriterHolder;
+            ExecutableWriterHolderNoLog<BYTE> barrierWriterHolder;
             if (IsWriteBarrierCopyEnabled())
             {
-                barrierWriterHolder = ExecutableWriterHolder<BYTE>(to, barrierSize);
+                barrierWriterHolder.AssignExecutableWriterHolder(to, barrierSize);
                 to = barrierWriterHolder.GetRW();
             }
             GWB_PATCH_OFFSET(g_lowest_address);
@@ -721,97 +721,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContextPointers->Lr = NULL;
 }
 
-TADDR FixupPrecode::GetMethodDesc()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    // This lookup is also manually inlined in PrecodeFixupThunk assembly code
-    TADDR base = *PTR_TADDR(GetBase());
-    if (base == NULL)
-        return NULL;
-    return base + (m_MethodDescChunkIndex * MethodDesc::ALIGNMENT);
-}
-
-#ifdef DACCESS_COMPILE
-void FixupPrecode::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-    DacEnumMemoryRegion(dac_cast<TADDR>(this), sizeof(FixupPrecode));
-
-    DacEnumMemoryRegion(GetBase(), sizeof(TADDR));
-}
-#endif // DACCESS_COMPILE
-
 #ifndef DACCESS_COMPILE
-
-void StubPrecode::Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
-{
-    WRAPPER_NO_CONTRACT;
-
-    int n = 0;
-
-    m_rgCode[n++] = 0xf8df; // ldr r12, [pc, #8]
-    m_rgCode[n++] = 0xc008;
-    m_rgCode[n++] = 0xf8df; // ldr pc, [pc, #0]
-    m_rgCode[n++] = 0xf000;
-
-    _ASSERTE(n == ARRAY_SIZE(m_rgCode));
-
-    m_pTarget = GetPreStubEntryPoint();
-    m_pMethodDesc = (TADDR)pMD;
-}
-
-void NDirectImportPrecode::Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
-{
-    WRAPPER_NO_CONTRACT;
-
-    int n = 0;
-
-    m_rgCode[n++] = 0xf8df; // ldr r12, [pc, #4]
-    m_rgCode[n++] = 0xc004;
-    m_rgCode[n++] = 0xf8df; // ldr pc, [pc, #4]
-    m_rgCode[n++] = 0xf004;
-
-    _ASSERTE(n == ARRAY_SIZE(m_rgCode));
-
-    m_pMethodDesc = (TADDR)pMD;
-    m_pTarget = GetEEFuncEntryPoint(NDirectImportThunk);
-}
-
-void FixupPrecode::Init(FixupPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex /*=0*/, int iPrecodeChunkIndex /*=0*/)
-{
-    WRAPPER_NO_CONTRACT;
-
-    m_rgCode[0] = 0x46fc;   // mov r12, pc
-    m_rgCode[1] = 0xf8df;   // ldr pc, [pc, #4]
-    m_rgCode[2] = 0xf004;
-
-    // Initialize chunk indices only if they are not initialized yet. This is necessary to make MethodDesc::Reset work.
-    if (m_PrecodeChunkIndex == 0)
-    {
-        _ASSERTE(FitsInU1(iPrecodeChunkIndex));
-        m_PrecodeChunkIndex = static_cast<BYTE>(iPrecodeChunkIndex);
-    }
-
-    if (iMethodDescChunkIndex != -1)
-    {
-        if (m_MethodDescChunkIndex == 0)
-        {
-            _ASSERTE(FitsInU1(iMethodDescChunkIndex));
-            m_MethodDescChunkIndex = static_cast<BYTE>(iMethodDescChunkIndex);
-        }
-
-        if (*(void**)GetBase() == NULL)
-            *(void**)GetBase() = (BYTE*)pMD - (iMethodDescChunkIndex * MethodDesc::ALIGNMENT);
-    }
-
-    _ASSERTE(GetMethodDesc() == (TADDR)pMD);
-
-    if (pLoaderAllocator != NULL)
-    {
-        m_pTarget = GetEEFuncEntryPoint(PrecodeFixupThunk);
-    }
-}
 
 void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
@@ -1203,53 +1113,6 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
 
     _ASSERTE(resolveWorkerTarget == (PCODE)ResolveWorkerChainLookupAsmStub);
     _ASSERTE(patcherTarget == NULL);
-}
-
-BOOL DoesSlotCallPrestub(PCODE pCode)
-{
-    PTR_WORD pInstr = dac_cast<PTR_WORD>(PCODEToPINSTR(pCode));
-
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    if (MethodDescChunk::GetMethodDescFromCompactEntryPoint(pCode, TRUE) != NULL)
-    {
-        return TRUE;
-    }
-#endif // HAS_COMPACT_ENTRYPOINTS
-
-    // FixupPrecode
-    if (pInstr[0] == 0x46fc && // // mov r12, pc
-        pInstr[1] == 0xf8df &&
-        pInstr[2] == 0xf004)
-    {
-        PCODE pTarget = dac_cast<PTR_FixupPrecode>(pInstr)->m_pTarget;
-
-        // Check for jump stub (NGen case)
-        if (isJump(pTarget))
-        {
-            pTarget = decodeJump(pTarget);
-        }
-
-        return pTarget == (TADDR)PrecodeFixupThunk;
-    }
-
-    // StubPrecode
-    if (pInstr[0] == 0xf8df && // ldr r12, [pc + 8]
-        pInstr[1] == 0xc008 &&
-        pInstr[2] == 0xf8df && // ldr pc, [pc]
-        pInstr[3] == 0xf000)
-    {
-        PCODE pTarget = dac_cast<PTR_StubPrecode>(pInstr)->m_pTarget;
-
-        // Check for jump stub (NGen case)
-        if (isJump(pTarget))
-        {
-            pTarget = decodeJump(pTarget);
-        }
-
-        return pTarget == GetPreStubEntryPoint();
-    }
-
-    return FALSE;
 }
 
 Stub *GenerateInitPInvokeFrameHelper()

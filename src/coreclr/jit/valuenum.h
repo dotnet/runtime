@@ -685,20 +685,13 @@ public:
                                bool         srcIsUnsigned    = false,
                                bool         hasOverflowCheck = false);
 
-    // Returns true iff the VN represents an application of VNF_NotAField.
     bool IsVNNotAField(ValueNum vn);
 
-    // PtrToLoc values need to express a field sequence as one of their arguments.  VN for null represents
-    // empty sequence, otherwise, "FieldSeq(VN(FieldHandle), restOfSeq)".
     ValueNum VNForFieldSeq(FieldSeqNode* fieldSeq);
 
-    // Requires that "vn" represents a field sequence, that is, is the result of a call to VNForFieldSeq.
-    // Returns the FieldSequence it represents.
     FieldSeqNode* FieldSeqVNToFieldSeq(ValueNum vn);
 
-    // Both argument must represent field sequences; returns the value number representing the
-    // concatenation "fsVN1 || fsVN2".
-    ValueNum FieldSeqVNAppend(ValueNum fsVN1, ValueNum fsVN2);
+    ValueNum FieldSeqVNAppend(ValueNum innerFieldSeqVN, FieldSeqNode* outerFieldSeq);
 
     // If "opA" has a PtrToLoc, PtrToArrElem, or PtrToStatic application as its value numbers, and "opB" is an integer
     // with a "fieldSeq", returns the VN for the pointer form extended with the field sequence; or else NoVN.
@@ -1020,9 +1013,9 @@ public:
     // Prints, to standard out, a representation of "vn".
     void vnDump(Compiler* comp, ValueNum vn, bool isPtr = false);
 
-    // Requires "fieldSeq" to be a field sequence VNFuncApp.
+    // Requires "fieldSeq" to be a field sequence VN.
     // Prints a representation (comma-separated list of field names) on standard out.
-    void vnDumpFieldSeq(Compiler* comp, VNFuncApp* fieldSeq, bool isHead);
+    void vnDumpFieldSeq(Compiler* comp, ValueNum fieldSeqVN);
 
     // Requires "mapSelect" to be a map select VNFuncApp.
     // Prints a representation of a MapSelect operation on standard out.

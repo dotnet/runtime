@@ -964,6 +964,7 @@ namespace System.Net.Quic.Tests
         }
     }
 
+    [ConditionalClass(typeof(QuicTestBase<MockProviderFactory>), nameof(QuicTestBase<MockProviderFactory>.IsSupported))]
     public sealed class QuicStreamTests_MockProvider : QuicStreamTests<MockProviderFactory>
     {
         public QuicStreamTests_MockProvider(ITestOutputHelper output) : base(output) { }

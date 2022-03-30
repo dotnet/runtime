@@ -324,7 +324,9 @@ exit:
 static void
 remove_cached_module (gpointer key, gpointer value, gpointer user_data)
 {
-	mono_dl_close((MonoDl*)value);
+	ERROR_DECL (close_error);
+	mono_dl_close((MonoDl*)value, close_error);
+	mono_error_cleanup (close_error);
 }
 
 void
@@ -355,7 +357,7 @@ static gpointer
 lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_out);
 
 static gpointer
-pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char *import, char **error_msg_out);
+pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char *import);
 
 static void
 pinvoke_probe_convert_status_for_api (MonoLookupPInvokeStatus *status, const char **exc_class, const char **exc_arg)
@@ -490,27 +492,39 @@ convert_dllimport_flags (int flags)
 }
 
 static MonoDl *
-netcore_probe_for_module_variations (const char *mdirname, const char *file_name, int raw_flags)
+netcore_probe_for_module_variations (const char *mdirname, const char *file_name, int raw_flags, MonoError *error)
 {
 	void *iter = NULL;
 	char *full_name = NULL;
 	MonoDl *module = NULL;
 
+	ERROR_DECL (bad_image_error);
+
 	while (module == NULL && (full_name = mono_dl_build_path (mdirname, file_name, &iter))) {
-		char *error_msg = NULL;
-		module = mono_dl_open_full (full_name, MONO_DL_LAZY, raw_flags, &error_msg);
-		if (!module) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "DllImport error loading library '%s': '%s'.", full_name, error_msg);
-			g_free (error_msg);
-		}
+		mono_error_cleanup (error);
+		error_init_reuse (error);
+		module = mono_dl_open_full (full_name, MONO_DL_LAZY, raw_flags, error);
+		if (!module)
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "DllImport error loading library '%s': '%s'.", full_name, mono_error_get_message_without_fields (error));
 		g_free (full_name);
+		if (!module && !is_ok (error) && mono_error_get_error_code (error) == MONO_ERROR_BAD_IMAGE) {
+			mono_error_cleanup (bad_image_error);
+			mono_error_move (bad_image_error, error);
+		}
 	}
+
+	if (!module && !is_ok (bad_image_error)) {
+		mono_error_cleanup (error);
+		mono_error_move (error, bad_image_error);
+	}
+
+	mono_error_cleanup (bad_image_error);
 
 	return module;
 }
 
 static MonoDl *
-netcore_probe_for_module (MonoImage *image, const char *file_name, int flags)
+netcore_probe_for_module (MonoImage *image, const char *file_name, int flags, MonoError *error)
 {
 	MonoDl *module = NULL;
 	int lflags = convert_dllimport_flags (flags);
@@ -518,25 +532,57 @@ netcore_probe_for_module (MonoImage *image, const char *file_name, int flags)
 	// TODO: this algorithm doesn't quite match CoreCLR, so respecting DLLIMPORTSEARCHPATH_LEGACY_BEHAVIOR makes little sense
 	// If the difference becomes a problem, overhaul this algorithm to match theirs exactly
 
+	ERROR_DECL (bad_image_error);
+
 	// Try without any path additions
-	module = netcore_probe_for_module_variations (NULL, file_name, lflags);
+	module = netcore_probe_for_module_variations (NULL, file_name, lflags, error);
+	if (!module && !is_ok (error) && mono_error_get_error_code (error) == MONO_ERROR_BAD_IMAGE)
+		mono_error_move (bad_image_error, error);
 
 	// Check the NATIVE_DLL_SEARCH_DIRECTORIES
-	for (int i = 0; i < pinvoke_search_directories_count && module == NULL; ++i)
-		module = netcore_probe_for_module_variations (pinvoke_search_directories[i], file_name, lflags);
+	for (int i = 0; i < pinvoke_search_directories_count && module == NULL; ++i) {
+		mono_error_cleanup (error);
+		error_init_reuse (error);
+		module = netcore_probe_for_module_variations (pinvoke_search_directories[i], file_name, lflags, error);
+		if (!module && !is_ok (error) && mono_error_get_error_code (error) == MONO_ERROR_BAD_IMAGE) {
+			mono_error_cleanup (bad_image_error);
+			mono_error_move (bad_image_error, error);
+		}
+	}
 
 	// Check the assembly directory if the search flag is set and the image exists
 	if ((flags & DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY) != 0 && image != NULL &&
 		module == NULL && (image->filename != NULL)) {
+		mono_error_cleanup (error);
+		error_init_reuse (error);
 		char *mdirname = g_path_get_dirname (image->filename);
 		if (mdirname)
-			module = netcore_probe_for_module_variations (mdirname, file_name, lflags);
+			module = netcore_probe_for_module_variations (mdirname, file_name, lflags, error);
 		g_free (mdirname);
 	}
 
 	// TODO: Pass remaining flags on to LoadLibraryEx on Windows where appropriate, see https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.dllimportsearchpath?view=netcore-3.1
 
+	if (!module && !is_ok (bad_image_error)) {
+		mono_error_cleanup (error);
+		mono_error_move (error, bad_image_error);
+	}
+
+	mono_error_cleanup (bad_image_error);
+
 	return module;
+}
+
+static MonoDl *
+netcore_probe_for_module_nofail (MonoImage *image, const char *file_name, int flags)
+{
+	MonoDl *result = NULL;
+
+	ERROR_DECL (error);
+	result = netcore_probe_for_module (image, file_name, flags, error);
+	mono_error_cleanup (error);
+
+	return result;
 }
 
 static MonoDl *
@@ -757,13 +803,28 @@ netcore_check_alc_cache (MonoAssemblyLoadContext *alc, const char *scope)
 	return result;
 }
 
+static MonoDl*
+netcore_lookup_self_native_handle()
+{
+	ERROR_DECL (load_error);
+	if (!internal_module)
+		internal_module = mono_dl_open_self (load_error);
+
+	if (!internal_module)
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT, "DllImport error loading library '__Internal': '%s'.", mono_error_get_message_without_fields (load_error));
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found via __Internal.");
+	mono_error_cleanup (load_error);
+
+	return internal_module;
+}
+
 static MonoDl *
 netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, const char *scope, guint32 flags)
 {
 	MonoDl *module = NULL;
 	MonoDl *cached;
 	MonoAssembly *assembly = mono_image_get_assembly (image);
-	char *error_msg = NULL;
 
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -771,18 +832,7 @@ netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, c
 
 	// We allow a special name to dlopen from the running process namespace, which is not present in CoreCLR
 	if (strcmp (scope, "__Internal") == 0) {
-		if (!internal_module)
-			internal_module = mono_dl_open_self (&error_msg);
-		module = internal_module;
-
-		if (!module) {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT, "DllImport error loading library '__Internal': '%s'.", error_msg);
-			g_free (error_msg);
-		}
-
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found via __Internal: '%s'.", scope);
-
-		return module;
+		return netcore_lookup_self_native_handle();
 	}
 
 	/*
@@ -835,7 +885,7 @@ netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, c
 		goto add_to_alc_cache;
 	}
 
-	module = netcore_probe_for_module (image, scope, flags);
+	module = netcore_probe_for_module_nofail (image, scope, flags);
 	if (module) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found via filesystem probing: '%s'.", scope);
 		goto add_to_global_cache;
@@ -953,7 +1003,6 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 	const char *orig_scope = NULL;
 	const char *new_scope = NULL;
 	const char *error_scope = NULL;
-	char *error_msg = NULL;
 	MonoDl *module = NULL;
 	gpointer addr = NULL;
 
@@ -1065,7 +1114,8 @@ retry_with_libcoreclr:
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT,
 				"DllImport searching in: '%s' ('%s').", new_scope, module->full_name);
 
-	addr = pinvoke_probe_for_symbol (module, piinfo, new_import, &error_msg);
+
+	addr = pinvoke_probe_for_symbol (module, piinfo, new_import);
 
 	if (!addr) {
 #ifndef HOST_WIN32
@@ -1087,24 +1137,22 @@ exit:
 	}
 	g_free ((char *)new_import);
 	g_free ((char *)new_scope);
-	g_free (error_msg);
 	return addr;
 }
 
 static gpointer
-pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char *import, char **error_msg_out)
+pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char *import)
 {
-	char *error_msg = NULL;
 	gpointer addr = NULL;
 
-	g_assert (error_msg_out);
+	ERROR_DECL (symbol_error);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT,
 				"Searching for '%s'.", import);
 
 #ifdef HOST_WIN32 // For netcore, name mangling is Windows-exclusive
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_NO_MANGLE)
-		error_msg = mono_dl_symbol (module, import, &addr);
+		addr = mono_dl_symbol (module, import, symbol_error);
 	else {
 		/*
 		 * Search using a variety of mangled names
@@ -1169,17 +1217,17 @@ pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char 
 					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT,
 								"Probing '%s'.", mangled_name);
 
-					error_msg = mono_dl_symbol (module, mangled_name, &addr);
+					error_init_reuse (symbol_error);
+					addr = mono_dl_symbol (module, mangled_name, symbol_error);
 
 					if (addr)
 						mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT,
 									"Found as '%s'.", mangled_name);
 					else
 						mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT,
-									"Could not find '%s' due to '%s'.", mangled_name, error_msg);
+									"Could not find '%s' due to '%s'.", mangled_name, mono_error_get_message_without_fields (symbol_error));
 
-					g_free (error_msg);
-					error_msg = NULL;
+					mono_error_cleanup (symbol_error);
 
 					if (mangled_name != import)
 						g_free (mangled_name);
@@ -1188,16 +1236,18 @@ pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char 
 		}
 	}
 #else
-	error_msg = mono_dl_symbol (module, import, &addr);
+	addr = mono_dl_symbol (module, import, symbol_error);
+	mono_error_cleanup (symbol_error);
 #endif
 
-	*error_msg_out = error_msg;
 	return addr;
 }
 
 void
 ves_icall_System_Runtime_InteropServices_NativeLibrary_FreeLib (gpointer lib, MonoError *error)
 {
+	ERROR_DECL (close_error);
+
 	MonoDl *module;
 	guint32 ref_count;
 
@@ -1217,14 +1267,22 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_FreeLib (gpointer lib, Mo
 
 		g_hash_table_remove (native_library_module_map, module->handle);
 		g_hash_table_add (native_library_module_blocklist, module);
-		mono_dl_close (module);
+		mono_dl_close (module, close_error);
 	} else {
-		MonoDl raw_module = { { 0 } };
-		raw_module.handle = lib;
-		mono_dl_close (&raw_module);
+		MonoDl *raw_module = (MonoDl *) g_malloc0 (sizeof (MonoDl));
+		if (raw_module) {
+			raw_module->handle = lib;
+			mono_dl_close (raw_module, close_error);
+		}
 	}
 
 leave:
+
+	if (!is_ok (close_error)) {
+		mono_error_set_invalid_operation (error, NULL);
+		mono_error_cleanup (close_error);
+	}
+
 	native_library_unlock ();
 }
 
@@ -1246,15 +1304,21 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_GetSymbol (gpointer lib, 
 
 	module = netcore_handle_lookup (lib);
 	if (module) {
-		mono_dl_symbol (module, symbol_name, &symbol);
-		if (!symbol)
+		symbol = mono_dl_symbol (module, symbol_name, error);
+		if (!symbol) {
+			mono_error_cleanup (error);
+			error_init_reuse (error);
 			mono_error_set_generic_error (error, "System", "EntryPointNotFoundException", "%s: %s", module->full_name, symbol_name);
+		}
 	} else {
 		MonoDl raw_module = { { 0 } };
 		raw_module.handle = lib;
-		mono_dl_symbol (&raw_module, symbol_name, &symbol);
-		if (!symbol)
+		symbol = mono_dl_symbol (&raw_module, symbol_name, error);
+		if (!symbol) {
+			mono_error_cleanup (error);
+			error_init_reuse (error);
 			mono_error_set_generic_error (error, "System", "EntryPointNotFoundException", "%p: %s", lib, symbol_name);
+		}
 	}
 
 	native_library_unlock ();
@@ -1299,9 +1363,18 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_LoadByName (MonoStringHan
 	goto_if_nok (error, leave);
 
 	// FIXME: implement search flag defaults properly
-	module = netcore_probe_for_module (image, lib_name, has_search_flag ? search_flag : DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY);
-	if (!module)
-		mono_error_set_generic_error (error, "System", "DllNotFoundException", "%s", lib_name);
+	{
+		ERROR_DECL (load_error);
+		module = netcore_probe_for_module (image, lib_name, has_search_flag ? search_flag : DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY, load_error);
+		if (!module) {
+			if (mono_error_get_error_code (load_error) == MONO_ERROR_BAD_IMAGE)
+				mono_error_set_generic_error (error, "System", "BadImageFormatException", "%s", lib_name);
+			else
+				mono_error_set_generic_error (error, "System", "DllNotFoundException", "%s", lib_name);
+		}
+		mono_error_cleanup (load_error);
+	}
+
 	goto_if_nok (error, leave);
 
 	native_library_lock ();
@@ -1322,7 +1395,6 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_LoadFromPath (MonoStringH
 {
 	MonoDl *module;
 	gpointer handle = NULL;
-	char *error_msg = NULL;
 	char *lib_path;
 
 	ERROR_LOCAL_BEGIN (local_error, error, throw_on_error)
@@ -1330,12 +1402,20 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_LoadFromPath (MonoStringH
 	lib_path = mono_string_handle_to_utf8 (lib_path_handle, error);
 	goto_if_nok (error, leave);
 
-	module = mono_dl_open (lib_path, MONO_DL_LAZY, &error_msg);
+	ERROR_DECL (load_error);
+	module = mono_dl_open (lib_path, MONO_DL_LAZY, load_error);
 	if (!module) {
+		const char *error_msg = mono_error_get_message_without_fields (load_error);
+		guint16 error_code = mono_error_get_error_code (load_error);
+
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "DllImport error loading library '%s': '%s'.", lib_path, error_msg);
-		mono_error_set_generic_error (error, "System", "DllNotFoundException", "'%s': '%s'", lib_path, error_msg);
-		g_free (error_msg);
+
+		if (error_code == MONO_ERROR_BAD_IMAGE)
+			mono_error_set_generic_error (error, "System", "BadImageFormatException", "'%s': '%s'", lib_path, error_msg);
+		else
+			mono_error_set_generic_error (error, "System", "DllNotFoundException", "'%s': '%s'", lib_path, error_msg);
 	}
+	mono_error_cleanup (load_error);
 	goto_if_nok (error, leave);
 
 	native_library_lock ();
@@ -1382,7 +1462,7 @@ void
 mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const char *destfname)
 {
 	MonoDl *lib;
-	char *file, *buffer, *err, *internal_path;
+	char *file, *buffer, *internal_path;
 	if (!bundle_save_library_initialized)
 		bundle_save_library_initialize ();
 
@@ -1390,11 +1470,15 @@ mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const 
 	buffer = g_str_from_file_region (fd, offset, size);
 	g_file_set_contents (file, buffer, size, NULL);
 
-	lib = mono_dl_open (file, MONO_DL_LAZY, &err);
-	if (lib == NULL){
-		fprintf (stderr, "Error loading shared library: %s %s\n", file, err);
+	ERROR_DECL (load_error);
+	lib = mono_dl_open (file, MONO_DL_LAZY, load_error);
+	if (!lib) {
+		fprintf (stderr, "Error loading shared library: %s %s\n", file, mono_error_get_message_without_fields (load_error));
+		mono_error_cleanup (load_error);
 		exit (1);
 	}
+	mono_error_assert_ok (load_error);
+
 	// Register the name with "." as this is how it will be found when embedded
 	internal_path = g_build_filename (".", destfname, (const char*)NULL);
  	mono_loader_register_module (internal_path, lib);

@@ -815,7 +815,7 @@ namespace System.Net.Http
             return (pendingRequestsCts, DisposeTokenSource: false, pendingRequestsCts);
         }
 
-        private Uri? CreateUri(string? uri) =>
+        private static Uri? CreateUri(string? uri) =>
             string.IsNullOrEmpty(uri) ? null : new Uri(uri, UriKind.RelativeOrAbsolute);
 
         private HttpRequestMessage CreateRequestMessage(HttpMethod method, Uri? uri) =>

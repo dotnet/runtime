@@ -333,9 +333,9 @@ namespace System.IO
         }
 
 #if CORERT // TODO: https://github.com/dotnet/corert/issues/3251
-        private bool HasOverriddenBeginEndRead() => true;
+        private static bool HasOverriddenBeginEndRead() => true;
 
-        private bool HasOverriddenBeginEndWrite() => true;
+        private static bool HasOverriddenBeginEndWrite() => true;
 #else
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool HasOverriddenBeginEndRead();

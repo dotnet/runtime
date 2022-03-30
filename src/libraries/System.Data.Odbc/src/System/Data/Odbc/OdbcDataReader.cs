@@ -2679,7 +2679,7 @@ namespace System.Data.Odbc
             return keyColumns;
         }
 
-        internal bool SameIndexColumn(string currentindexname, string indexname, int ordinal, int ncols)
+        internal static bool SameIndexColumn(string currentindexname, string indexname, int ordinal, int ncols)
         {
             if (string.IsNullOrEmpty(currentindexname))
             {
