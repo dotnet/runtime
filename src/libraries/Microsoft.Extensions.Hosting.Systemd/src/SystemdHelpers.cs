@@ -13,9 +13,6 @@ namespace Microsoft.Extensions.Hosting.Systemd
     /// </summary>
     public static partial class SystemdHelpers
     {
-        private const string NOTIFY_SOCKET = "NOTIFY_SOCKET";
-        private const string LISTEN_PID = "LISTEN_PID";
-
         private static bool? _isSystemdService;
 
         /// <summary>
@@ -23,9 +20,9 @@ namespace Microsoft.Extensions.Hosting.Systemd
         /// </summary>
         /// <returns><c>True</c> if the current process is hosted as a systemd Service, otherwise <c>false</c>.</returns>
         public static bool IsSystemdService()
-            => _isSystemdService ?? (bool)(_isSystemdService = CheckParentIsSystemd());
+            => _isSystemdService ?? (bool)(_isSystemdService = GetIsSystemdService());
 
-        private static bool CheckParentIsSystemd()
+        private static bool GetIsSystemdService()
         {
             // No point in testing anything unless it's Unix
             if (Environment.OSVersion.Platform != PlatformID.Unix)
@@ -38,8 +35,8 @@ namespace Microsoft.Extensions.Hosting.Systemd
             // manager, or passing listen handles.
             if (Environment.ProcessId == 1)
             {
-                return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(NOTIFY_SOCKET)) ||
-                    !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(LISTEN_PID));
+                return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("NOTIFY_SOCKET")) ||
+                    !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LISTEN_PID"));
             }
 
             try
