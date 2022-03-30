@@ -1049,7 +1049,9 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             ConfigurationBuilder configurationBuilder = new();
             configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
             {
-                { nameof(ClassWithReadOnlyPropertyThatThrows.Safe), "value" }
+                { nameof(ClassWithReadOnlyPropertyThatThrows.Safe), "value" },
+                { nameof(ClassWithReadOnlyPropertyThatThrows.StringThrows), "value" },
+                { $"{nameof(ClassWithReadOnlyPropertyThatThrows.EnumerableThrows)}:0", "0" },
             });
             IConfiguration config = configurationBuilder.Build();
 
