@@ -3378,6 +3378,8 @@ public:
         return (GetSsaNum() != SsaConfig::RESERVED_SSA_NUM);
     }
 
+    FieldSeqNode* GetFieldSeq() const;
+
 #if DEBUGGABLE_GENTREE
     GenTreeLclVarCommon() : GenTreeUnOp()
     {
