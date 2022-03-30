@@ -255,7 +255,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
 
                 Debug.Assert(state.Connection != null);
-                state.Connection._localEndPoint = MsQuicParameterHelpers.GetIPEndPointParam(MsQuicApi.Api, state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_ADDRESS);
+                state.Connection._localEndPoint = MsQuicParameterHelpers.GetIPEndPointParam(MsQuicApi.Api, state.Handle, (uint)QUIC_PARAM_CONN.LOCAL_ADDRESS);
                 state.Connection.SetNegotiatedAlpn(connectionEvent.Data.Connected.NegotiatedAlpn, connectionEvent.Data.Connected.NegotiatedAlpnLength);
                 state.Connection = null;
 
@@ -607,13 +607,13 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override int GetRemoteAvailableUnidirectionalStreamCount()
         {
             Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-            return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_UNIDI_STREAM_COUNT);
+            return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, (uint)QUIC_PARAM_CONN.LOCAL_UNIDI_STREAM_COUNT);
         }
 
         internal override int GetRemoteAvailableBidirectionalStreamCount()
         {
             Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-            return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_BIDI_STREAM_COUNT);
+            return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, (uint)QUIC_PARAM_CONN.LOCAL_BIDI_STREAM_COUNT);
         }
 
         internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default)
@@ -643,7 +643,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (_remoteEndPoint is IPEndPoint ipEndPoint)
             {
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                MsQuicParameterHelpers.SetIPEndPointParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, ipEndPoint);
+                MsQuicParameterHelpers.SetIPEndPointParam(MsQuicApi.Api, _state.Handle, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, ipEndPoint);
                 targetHost = _state.TargetHost ?? ((IPEndPoint)_remoteEndPoint).Address.ToString();
                 port = ((IPEndPoint)_remoteEndPoint).Port;
 
@@ -660,7 +660,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     // This is form of IPAddress and _state.TargetHost is set to different string
                     Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                    MsQuicParameterHelpers.SetIPEndPointParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, new IPEndPoint(address, port));
+                    MsQuicParameterHelpers.SetIPEndPointParam(MsQuicApi.Api, _state.Handle, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, new IPEndPoint(address, port));
                     targetHost = _state.TargetHost!;
                 }
                 else
@@ -694,7 +694,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch
             {
-                _state.StateGCHandle.Free();
                 _state.Connection = null;
                 throw;
             }

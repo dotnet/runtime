@@ -65,14 +65,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal delegate uint SetParamDelegate(
             SafeHandle handle,
-            QUIC_PARAM_LEVEL level,
             uint param,
             uint bufferLength,
             byte* buffer);
 
         internal delegate uint GetParamDelegate(
             SafeHandle handle,
-            QUIC_PARAM_LEVEL level,
             uint param,
             ref uint bufferLength,
             byte* buffer);
@@ -162,6 +160,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal ulong MaxBytesPerKey;
             internal ulong HandshakeIdleTimeoutMs;
             internal ulong IdleTimeoutMs;
+            internal ulong MtuDiscoverySearchCompleteTimeoutUs;
             internal uint TlsClientMaxSendBuffer;
             internal uint TlsServerMaxSendBuffer;
             internal uint StreamRecvWindowDefault;
@@ -175,47 +174,52 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal uint MaxAckDelayMs;
             internal uint DisconnectTimeoutMs;
             internal uint KeepAliveIntervalMs;
+            internal ushort CongestionControlAlgorithm; // QUIC_CONGESTION_CONTROL_ALGORITHM
             internal ushort PeerBidiStreamCount;
             internal ushort PeerUnidiStreamCount;
-            internal ushort RetryMemoryLimit;              // Global only
-            internal ushort LoadBalancingMode;             // Global only
-            internal byte MaxOperationsPerDrain;
+            internal ushort MaxBindingStatelessOperations;
+            internal ushort StatelessOperationExpirationMs;
+            internal ushort MinimumMtu;
+            internal ushort MaximumMtu;
             internal QuicSettingsEnabledFlagsFlags EnabledFlags;
-            internal uint* DesiredVersionsList;
-            internal uint DesiredVersionsListLength;
+            internal byte MaxOperationsPerDrain;
+            internal byte MtuDiscoveryMissingProbeCount;
         }
 
         [Flags]
         internal enum QuicSettingsIsSetFlags : ulong
         {
-            MaxBytesPerKey = 1 << 0,
-            HandshakeIdleTimeoutMs = 1 << 1,
-            IdleTimeoutMs = 1 << 2,
-            TlsClientMaxSendBuffer = 1 << 3,
-            TlsServerMaxSendBuffer = 1 << 4,
-            StreamRecvWindowDefault = 1 << 5,
-            StreamRecvBufferDefault = 1 << 6,
-            ConnFlowControlWindow = 1 << 7,
-            MaxWorkerQueueDelayUs = 1 << 8,
-            MaxStatelessOperations = 1 << 9,
-            InitialWindowPackets = 1 << 10,
-            SendIdleTimeoutMs = 1 << 11,
-            InitialRttMs = 1 << 12,
-            MaxAckDelayMs = 1 << 13,
-            DisconnectTimeoutMs = 1 << 14,
-            KeepAliveIntervalMs = 1 << 15,
-            PeerBidiStreamCount = 1 << 16,
-            PeerUnidiStreamCount = 1 << 17,
-            RetryMemoryLimit = 1 << 18,
-            LoadBalancingMode = 1 << 19,
-            MaxOperationsPerDrain = 1 << 20,
-            SendBufferingEnabled = 1 << 21,
-            PacingEnabled = 1 << 22,
-            MigrationEnabled = 1 << 23,
-            DatagramReceiveEnabled = 1 << 24,
-            ServerResumptionLevel = 1 << 25,
-            DesiredVersionsList = 1 << 26,
-            VersionNegotiationExtEnabled = 1 << 27,
+            MaxBytesPerKey = 1UL << 0,
+            HandshakeIdleTimeoutMs = 1UL << 1,
+            IdleTimeoutMs = 1UL << 2,
+            MtuDiscoverySearchCompleteTimeoutUs = 1UL << 3,
+            TlsClientMaxSendBuffer = 1UL << 4,
+            TlsServerMaxSendBuffer = 1UL << 5,
+            StreamRecvWindowDefault = 1UL << 6,
+            StreamRecvBufferDefault = 1UL << 7,
+            ConnFlowControlWindow = 1UL << 8,
+            MaxWorkerQueueDelayUs = 1UL << 9,
+            MaxStatelessOperations = 1UL << 10,
+            InitialWindowPackets = 1UL << 11,
+            SendIdleTimeoutMs = 1UL << 12,
+            InitialRttMs = 1UL << 13,
+            MaxAckDelayMs = 1UL << 14,
+            DisconnectTimeoutMs = 1UL << 15,
+            KeepAliveIntervalMs = 1UL << 16,
+            CongestionControlAlgorithm = 1UL << 17,
+            PeerBidiStreamCount = 1UL << 18,
+            PeerUnidiStreamCount = 1UL << 19,
+            MaxBindingStatelessOperations = 1UL << 20,
+            StatelessOperationExpirationMs = 1UL << 21,
+            MinimumMtu = 1UL << 22,
+            MaximumMtu = 1UL << 23,
+            SendBufferingEnabled = 1UL << 24,
+            PacingEnabled = 1UL << 25,
+            MigrationEnabled = 1UL << 26,
+            DatagramReceiveEnabled = 1UL << 27,
+            ServerResumptionLevel = 1UL << 28,
+            MaxOperationsPerDrain = 1UL << 29,
+            MtuDiscoveryMissingProbeCount = 1UL << 31,
         }
 
         [Flags]
@@ -577,6 +581,14 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         // TODO: missing SendResumptionTicket
 
         [StructLayout(LayoutKind.Sequential)]
+        internal struct StreamEventDataStartComplete
+        {
+            internal uint Status;
+            internal ulong Id;
+            internal byte PeerAccepted;
+        };
+
+        [StructLayout(LayoutKind.Sequential)]
         internal struct StreamEventDataReceive
         {
             internal ulong AbsoluteOffset;
@@ -620,7 +632,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Explicit)]
         internal struct StreamEventDataUnion
         {
-            // TODO: missing START_COMPLETE
+            [FieldOffset(0)]
+            internal StreamEventDataStartComplete StartComplete;
+
             [FieldOffset(0)]
             internal StreamEventDataReceive Receive;
 
@@ -791,7 +805,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     __del_gen_native__marshaller.FreeNative();
                 }
             }
-            internal uint SetParam(SafeHandle handle, QUIC_PARAM_LEVEL level, uint param, uint bufferLength, byte* buffer)
+            internal uint SetParam(SafeHandle handle, uint param, uint bufferLength, byte* buffer)
             {
                 uint __retVal;
                 //
@@ -805,7 +819,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     //
                     handle.DangerousAddRef(ref handle__addRefd);
                     IntPtr __handle_gen_native = handle.DangerousGetHandle();
-                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, QUIC_PARAM_LEVEL, uint, uint, byte*, uint>)_functionPointer)(__handle_gen_native, level, param, bufferLength, buffer);
+                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, uint, uint, byte*, uint>)_functionPointer)(__handle_gen_native, param, bufferLength, buffer);
                 }
                 finally
                 {
@@ -818,7 +832,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
                 return __retVal;
             }
-            internal uint GetParam(SafeHandle handle, QUIC_PARAM_LEVEL level, uint param, ref uint bufferLength, byte* buffer)
+            internal uint GetParam(SafeHandle handle, uint param, ref uint bufferLength, byte* buffer)
             {
                 IntPtr __handle_gen_native = default;
                 uint __retVal;
@@ -835,7 +849,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     __handle_gen_native = handle.DangerousGetHandle();
                     fixed (uint* __bufferLength_gen_native = &bufferLength)
                     {
-                        __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, QUIC_PARAM_LEVEL, uint, uint*, byte*, uint>)_functionPointer)(__handle_gen_native, level, param, __bufferLength_gen_native, buffer);
+                        __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, uint, uint*, byte*, uint>)_functionPointer)(__handle_gen_native, param, __bufferLength_gen_native, buffer);
                     }
                 }
                 finally
