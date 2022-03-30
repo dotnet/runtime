@@ -42,9 +42,7 @@ namespace System.Text.RegularExpressions
                     'i' or 'I' when mappingBehavior is RegexCaseBehavior.Invariant => s_specialCasingSetBehaviors.AsSpan(0, 2), // 'I' and 'i'
 
                     // Non-Turkish mappings
-                    'i' when mappingBehavior is RegexCaseBehavior.NonTurkish => s_specialCasingSetBehaviors.AsSpan(0, 3), // 'I', 'i', and '\u0130'
-                    'I' when mappingBehavior is RegexCaseBehavior.NonTurkish => s_specialCasingSetBehaviors.AsSpan(0, 2), // 'I' and 'i'
-                    '\u0130' when mappingBehavior is RegexCaseBehavior.NonTurkish => s_specialCasingSetBehaviors.AsSpan(1, 2), // 'i' and '\u0130'
+                    'i' or 'I' or '\u0130' when mappingBehavior is RegexCaseBehavior.NonTurkish => s_specialCasingSetBehaviors.AsSpan(0, 3), // 'I', 'i', and '\u0130'
 
                     // Turkish mappings
                     'I' or '\u0131' when mappingBehavior is RegexCaseBehavior.Turkish => s_specialCasingSetBehaviors.AsSpan(3, 2), // 'I' and '\u0131'

@@ -29,6 +29,7 @@ namespace System.Text.RegularExpressions
         private readonly string _pattern;
         private int _currentPos;
         private readonly CultureInfo _culture;
+        private bool _hasIgnoreCaseBackReferenceNodes;
 
         private int _autocap;
         private int _capcount;
@@ -57,6 +58,7 @@ namespace System.Text.RegularExpressions
             _pattern = pattern;
             _options = options;
             _culture = culture;
+            _hasIgnoreCaseBackReferenceNodes = false;
             _caps = caps;
             _capsize = capsize;
             _capnames = capnames;
@@ -110,7 +112,7 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            return new RegexTree(root, captureCount, parser._capnamelist?.ToArray(), parser._capnames!, sparseMapping, options, culture);
+            return new RegexTree(root, captureCount, parser._capnamelist?.ToArray(), parser._capnames!, sparseMapping, options, parser._hasIgnoreCaseBackReferenceNodes ? culture : null);
         }
 
         /// <summary>
@@ -336,7 +338,7 @@ namespace System.Text.RegularExpressions
 
                     case '[':
                         {
-                            string setString = ScanCharClass(UseOptionI(), scanOnly: false)!.ToStringClass(_options);
+                            string setString = ScanCharClass(UseOptionI(), scanOnly: false)!.ToStringClass();
                             _unit = new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, setString);
                         }
                         break;
@@ -1211,10 +1213,15 @@ namespace System.Text.RegularExpressions
                         cc.AddCaseEquivalences(_culture);
                     }
 
-                    return new RegexNode(RegexNodeKind.Set, (_options & ~RegexOptions.IgnoreCase), cc.ToStringClass(_options));
+                    return new RegexNode(RegexNodeKind.Set, (_options & ~RegexOptions.IgnoreCase), cc.ToStringClass());
 
                 default:
-                    return ScanBasicBackslash(scanOnly);
+                    RegexNode? result = ScanBasicBackslash(scanOnly);
+                    if (result != null && result.Kind == RegexNodeKind.Backreference && (result.Options & RegexOptions.IgnoreCase) != 0)
+                    {
+                        _hasIgnoreCaseBackReferenceNodes = true;
+                    }
+                    return result;
             }
         }
 

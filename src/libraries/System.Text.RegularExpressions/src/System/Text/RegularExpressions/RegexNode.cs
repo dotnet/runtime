@@ -111,9 +111,7 @@ namespace System.Text.RegularExpressions
                         'i' or 'I' when mappingBehavior is RegexCaseBehavior.Invariant => "\0\u0004\0IJij",
 
                         // Non-Turkish mappings
-                        'i' when mappingBehavior is RegexCaseBehavior.NonTurkish => "\0\u0006\0IJij\u0130\u0131",
-                        'I' when mappingBehavior is RegexCaseBehavior.NonTurkish => "\0\u0004\0IJij",
-                        '\u0130' when mappingBehavior is RegexCaseBehavior.NonTurkish => "\0\u0004\0ij\u0130\u0131",
+                        'i' or 'I' or '\u0130' when mappingBehavior is RegexCaseBehavior.NonTurkish => "\0\u0006\0IJij\u0130\u0131",
 
                         // Turkish mappings
                         'I' or '\u0131' when mappingBehavior is RegexCaseBehavior.Turkish => "\0\u0004\0IJ\u0131\u0132",
@@ -1053,7 +1051,7 @@ namespace System.Text.RegularExpressions
                             }
 
                             prev.Kind = RegexNodeKind.Set;
-                            prev.Str = prevCharClass.ToStringClass(Options);
+                            prev.Str = prevCharClass.ToStringClass();
                             if ((prev.Options & RegexOptions.IgnoreCase) != 0)
                             {
                                 prev.Options &= ~RegexOptions.IgnoreCase;

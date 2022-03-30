@@ -21,6 +21,7 @@ namespace System.Text.RegularExpressions
         private static readonly FieldInfo s_runtextposField = RegexRunnerField("runtextpos");
         private static readonly FieldInfo s_runtrackposField = RegexRunnerField("runtrackpos");
         private static readonly FieldInfo s_runstackField = RegexRunnerField("runstack");
+        private static readonly FieldInfo s_textInfo = typeof(CompiledRegexRunner).GetField("_textInfo", BindingFlags.Instance | BindingFlags.NonPublic)!;
 
         private static readonly MethodInfo s_captureMethod = RegexRunnerMethod("Capture");
         private static readonly MethodInfo s_transferCaptureMethod = RegexRunnerMethod("TransferCapture");
@@ -38,9 +39,6 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_charIsDigitMethod = typeof(char).GetMethod("IsDigit", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsWhiteSpaceMethod = typeof(char).GetMethod("IsWhiteSpace", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charGetUnicodeInfo = typeof(char).GetMethod("GetUnicodeCategory", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charToLowerInvariantMethod = typeof(char).GetMethod("ToLowerInvariant", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_cultureInfoGetCurrentCultureMethod = typeof(CultureInfo).GetMethod("get_CurrentCulture")!;
-        private static readonly MethodInfo s_cultureInfoGetTextInfoMethod = typeof(CultureInfo).GetMethod("get_TextInfo")!;
         private static readonly MethodInfo s_spanGetItemMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Item", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanGetLengthMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Length")!;
         private static readonly MethodInfo s_spanIndexOfChar = typeof(MemoryExtensions).GetMethod("IndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
@@ -77,8 +75,6 @@ namespace System.Text.RegularExpressions
         /// <summary>Pool of ReadOnlySpan of char locals.</summary>
         private Stack<LocalBuilder>? _readOnlySpanCharLocalsPool;
 
-        /// <summary>Local representing a cached TextInfo for the culture to use for all case-insensitive operations.</summary>
-        private LocalBuilder? _textInfo;
         /// <summary>Local representing a timeout counter for loops (set loops and node loops).</summary>
         private LocalBuilder? _loopTimeoutCounter;
         /// <summary>A frequency with which the timeout should be validated.</summary>
@@ -336,33 +332,14 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>Sets the culture local to CultureInfo.CurrentCulture.</summary>
-        private void InitLocalCultureInfo()
-        {
-            Debug.Assert(_textInfo != null);
-            Call(s_cultureInfoGetCurrentCultureMethod);
-            Callvirt(s_cultureInfoGetTextInfoMethod);
-            Stloc(_textInfo);
-        }
-
-        /// <summary>Whether ToLower operations should be performed with the invariant culture as opposed to the one in <see cref="_textInfo"/>.</summary>
-        private bool UseToLowerInvariant => _textInfo == null || (_options & RegexOptions.CultureInvariant) != 0;
-
-        /// <summary>Invokes either char.ToLowerInvariant(c) or _textInfo.ToLower(c).</summary>
+        /// <summary>Invokes textInfo.ToLower(c).</summary>
         private void CallToLower()
         {
-            if (UseToLowerInvariant)
-            {
-                Call(s_charToLowerInvariantMethod);
-            }
-            else
-            {
-                using RentedLocalBuilder currentCharLocal = RentInt32Local();
-                Stloc(currentCharLocal);
-                Ldloc(_textInfo!);
-                Ldloc(currentCharLocal);
-                Callvirt(s_textInfoToLowerMethod);
-            }
+            using RentedLocalBuilder currentCharLocal = RentInt32Local();
+            Stloc(currentCharLocal);
+            Ldthisfld(s_textInfo);
+            Ldloc(currentCharLocal);
+            Callvirt(s_textInfoToLowerMethod);
         }
 
         /// <summary>Generates the implementation for TryFindNextPossibleStartingPosition.</summary>
@@ -375,8 +352,6 @@ namespace System.Text.RegularExpressions
             LocalBuilder inputSpan = DeclareReadOnlySpanChar();
             LocalBuilder pos = DeclareInt32();
             bool rtl = (_options & RegexOptions.RightToLeft) != 0;
-
-            _textInfo = null;
 
             // Load necessary locals
             // int pos = base.runtextpos;
@@ -1289,9 +1264,6 @@ namespace System.Text.RegularExpressions
             {
                 _loopTimeoutCounter = DeclareInt32();
             }
-
-            // CultureInfo culture = CultureInfo.CurrentCulture; // only if the whole expression or any subportion is ignoring case, and we're not using invariant
-            InitializeCultureForTryMatchAtCurrentPositionIfNecessary(analysis);
 
             // ReadOnlySpan<char> inputSpan = input;
             Ldarg_1();
@@ -4652,17 +4624,6 @@ namespace System.Text.RegularExpressions
             // return;
             MarkLabel(returnLabel);
             Ret();
-        }
-
-        private void InitializeCultureForTryMatchAtCurrentPositionIfNecessary(AnalysisResults analysis)
-        {
-            _textInfo = null;
-            if (analysis.HasIgnoreCase && (_options & RegexOptions.CultureInvariant) == 0)
-            {
-                // cache CultureInfo in local variable which saves excessive thread local storage accesses
-                _textInfo = DeclareTextInfo();
-                InitLocalCultureInfo();
-            }
         }
 
         /// <summary>Emits a a check for whether the character is in the specified character class.</summary>

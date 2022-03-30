@@ -886,6 +886,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, "en-US", "cH", "Ch", RegexOptions.IgnoreCase, new string[] { "Ch" } };
                 yield return new object[] { engine, "en-US", "AA", "Aa", RegexOptions.IgnoreCase, new string[] { "Aa" } };
                 yield return new object[] { engine, "en-US", "aA", "Aa", RegexOptions.IgnoreCase, new string[] { "Aa" } };
+                yield return new object[] { engine, "en-US", "\u0130", "\u0049", RegexOptions.IgnoreCase, new string[] { "\u0049" } };
                 yield return new object[] { engine, "en-US", "\u0130", "\u0069", RegexOptions.IgnoreCase, new string[] { "\u0069" } };
             }
         }

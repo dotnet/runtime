@@ -238,12 +238,12 @@ namespace System.Text.RegularExpressions.Tests
                     // Expected answers in the default en-US culture
                     yield return new object[] { "(?i:I)", option, engine, enUS, "xy\u0131ab", "" };
                     yield return new object[] { "(?i:iI+)", option, engine, enUS, "abcIIIxyz", "III" };
-                    yield return new object[] { "(?i:iI+)", option, engine, enUS, "abcIi\u0130xyz", "Ii" };
-                    yield return new object[] { "(?i:iI+)", option, engine, enUS, "abcI\u0130ixyz", "\u0130i" };
+                    yield return new object[] { "(?i:iI+)", option, engine, enUS, "abcIi\u0130xyz", "Ii\u0130" };
+                    yield return new object[] { "(?i:iI+)", option, engine, enUS, "abcI\u0130ixyz", "I\u0130i" };
                     yield return new object[] { "(?i:iI+)", option, engine, enUS, "abc\u0130IIxyz", "\u0130II" };
                     yield return new object[] { "(?i:iI+)", option, engine, enUS, "abc\u0130\u0131Ixyz", "" };
                     yield return new object[] { "(?i:iI+)", option, engine, enUS, "abc\u0130Iixyz", "\u0130Ii" };
-                    yield return new object[] { "(?i:[^IJKLM]I)", option, engine, enUS, "ii\u0130i\u0131ab", "\u0130i" };
+                    yield return new object[] { "(?i:[^IJKLM]I)", option, engine, enUS, "ii\u0130i\u0131ab", "" };
 
                     // Expected answers in the invariant culture
                     yield return new object[] { "(?i:I)", option, engine, invariant, "xy\u0131ab", "" };

@@ -131,7 +131,7 @@ namespace System.Text.RegularExpressions.Tests
         private static RegexFindOptimizations ComputeOptimizations(string pattern, RegexOptions options)
         {
             RegexTree tree = RegexParser.Parse(pattern, options, CultureInfo.InvariantCulture);
-            return new RegexFindOptimizations(tree.Root, options, CultureInfo.InvariantCulture);
+            return new RegexFindOptimizations(tree.Root, options);
         }
     }
 }

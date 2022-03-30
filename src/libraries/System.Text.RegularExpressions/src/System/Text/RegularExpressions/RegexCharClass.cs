@@ -1379,17 +1379,16 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Constructs the string representation of the class.
         /// </summary>
-        public string ToStringClass(RegexOptions options = RegexOptions.None)
+        public string ToStringClass()
         {
-            bool isNonBacktracking = (options & RegexOptions.NonBacktracking) != 0;
             var vsb = new ValueStringBuilder(stackalloc char[256]);
-            ToStringClass(isNonBacktracking, ref vsb);
+            ToStringClass(ref vsb);
             return vsb.ToString();
         }
 
-        private void ToStringClass(bool isNonBacktracking, ref ValueStringBuilder vsb)
+        private void ToStringClass(ref ValueStringBuilder vsb)
         {
-            Canonicalize(isNonBacktracking);
+            Canonicalize();
 
             int initialLength = vsb.Length;
             int categoriesLength = _categories?.Length ?? 0;
@@ -1427,13 +1426,13 @@ namespace System.Text.RegularExpressions
             }
 
             // Append a subtractor if there is one.
-            _subtractor?.ToStringClass(isNonBacktracking, ref vsb);
+            _subtractor?.ToStringClass(ref vsb);
         }
 
         /// <summary>
         /// Logic to reduce a character class to a unique, sorted form.
         /// </summary>
-        private void Canonicalize(bool isNonBacktracking)
+        private void Canonicalize()
         {
             List<(char First, char Last)>? rangelist = _rangelist;
             if (rangelist != null)

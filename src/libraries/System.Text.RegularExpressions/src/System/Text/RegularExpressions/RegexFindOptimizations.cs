@@ -15,7 +15,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Lookup table used for optimizing ASCII when doing set queries.</summary>
         private readonly uint[]?[]? _asciiLookups;
 
-        public RegexFindOptimizations(RegexNode root, RegexOptions options, CultureInfo culture)
+        public RegexFindOptimizations(RegexNode root, RegexOptions options)
         {
             _rightToLeft = (options & RegexOptions.RightToLeft) != 0;
 

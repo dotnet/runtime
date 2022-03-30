@@ -161,6 +161,13 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine($"        // Description:");
             DescribeExpression(writer, rm.Tree.Root.Child(0), "        // ", analysis); // skip implicit root capture
             writer.WriteLine();
+            if (rm.Tree.Culture != null)
+            {
+                // If the RegexTree has Culture set, then we need to emit the textInfo field that should be used at match time for casing operations.
+                writer.WriteLine($"        /// <summary>TextInfo that will be used for Backreference case comparisons.</summary>");
+                writer.WriteLine($"        public readonly global::System.Globalization.TextInfo textInfo = global::System.Globalization.CultureInfo.GetCultureInfo(\"{rm.Tree.Culture.Name}\").TextInfo;");
+                writer.WriteLine();
+            }
             writer.WriteLine($"        /// <summary>Scan the <paramref name=\"inputSpan\"/> starting from base.runtextstart for the next match.</summary>");
             writer.WriteLine($"        /// <param name=\"inputSpan\">The text being scanned by the regular expression.</param>");
             writer.WriteLine($"        protected override void Scan(ReadOnlySpan<char> inputSpan)");
@@ -385,7 +392,6 @@ namespace System.Text.RegularExpressions.Generator
         {
             RegexOptions options = (RegexOptions)rm.Options;
             RegexTree regexTree = rm.Tree;
-            bool hasTextInfo = false;
             bool rtl = (options & RegexOptions.RightToLeft) != 0;
 
             // In some cases, we need to emit declarations at the beginning of the method, but we only discover we need them later.
@@ -777,7 +783,7 @@ namespace System.Text.RegularExpressions.Generator
                         for (; setIndex < setsToUse; setIndex++)
                         {
                             string spanIndex = $"span[i{(sets[setIndex].Distance > 0 ? $" + {sets[setIndex].Distance}" : "")}]";
-                            string charInClassExpr = MatchCharacterClass(hasTextInfo, options, spanIndex, sets[setIndex].Set, negate: false, additionalDeclarations, requiredHelpers);
+                            string charInClassExpr = MatchCharacterClass(options, spanIndex, sets[setIndex].Set, negate: false, additionalDeclarations, requiredHelpers);
 
                             if (setIndex == start)
                             {
@@ -826,7 +832,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     using (EmitBlock(writer, "while ((uint)--pos < (uint)inputSpan.Length)"))
                     {
-                        using (EmitBlock(writer, $"if ({MatchCharacterClass(hasTextInfo, options, "inputSpan[pos]", set.Set, negate: false, additionalDeclarations, requiredHelpers)})"))
+                        using (EmitBlock(writer, $"if ({MatchCharacterClass(options, "inputSpan[pos]", set.Set, negate: false, additionalDeclarations, requiredHelpers)})"))
                         {
                             writer.WriteLine("base.runtextpos = pos + 1;");
                             writer.WriteLine("return true;");
@@ -892,7 +898,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     // We found the literal.  Walk backwards from it finding as many matches as we can against the loop.
                     writer.WriteLine("int prev = i - 1;");
-                    using (EmitBlock(writer, $"while ((uint)prev < (uint)slice.Length && {MatchCharacterClass(hasTextInfo, options, "slice[prev]", target.LoopNode.Str!, negate: false, additionalDeclarations, requiredHelpers)})"))
+                    using (EmitBlock(writer, $"while ((uint)prev < (uint)slice.Length && {MatchCharacterClass(options, "slice[prev]", target.LoopNode.Str!, negate: false, additionalDeclarations, requiredHelpers)})"))
                     {
                         writer.WriteLine("prev--;");
                     }
@@ -974,7 +980,6 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine("int pos = base.runtextpos;");
             writer.WriteLine($"int matchStart = pos;");
             bool hasTimeout = EmitLoopTimeoutCounterIfNeeded(writer, rm);
-            bool hasTextInfo = EmitInitializeCultureForTryMatchAtCurrentPositionIfNecessary(writer, rm, analysis);
             writer.Flush();
             int additionalDeclarationsPosition = ((StringWriter)writer.InnerWriter).GetStringBuilder().Length;
             int additionalDeclarationsIndent = writer.Indent;
@@ -1557,7 +1562,7 @@ namespace System.Text.RegularExpressions.Generator
                             writer.WriteLine($"matchIndex = base.MatchIndex({capnum});");
                             using (EmitBlock(writer, $"for (int i = 0; i < matchLength; i++)"))
                             {
-                                using (EmitBlock(writer, $"if ({ToLower(hasTextInfo, options, $"inputSpan[matchIndex + i]")} != {ToLower(hasTextInfo, options, $"{sliceSpan}[i]")})"))
+                                using (EmitBlock(writer, $"if ({ToLower($"inputSpan[matchIndex + i]")} != {ToLower($"{sliceSpan}[i]")})"))
                                 {
                                     Goto(doneLabel);
                                 }
@@ -1580,7 +1585,7 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine($"matchIndex = base.MatchIndex({capnum});");
                         using (EmitBlock(writer, $"for (int i = 0; i < matchLength; i++)"))
                         {
-                            using (EmitBlock(writer, $"if ({ToLowerIfNeeded(hasTextInfo, options, $"inputSpan[matchIndex + i]", caseInsensitive)} != {ToLowerIfNeeded(hasTextInfo, options, $"inputSpan[pos - matchLength + i]", caseInsensitive)})"))
+                            using (EmitBlock(writer, $"if ({ToLowerIfNeeded($"inputSpan[matchIndex + i]", caseInsensitive)} != {ToLowerIfNeeded($"inputSpan[pos - matchLength + i]", caseInsensitive)})"))
                             {
                                 Goto(doneLabel);
                             }
@@ -2440,7 +2445,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 if (node.IsSetFamily)
                 {
-                    expr = $"{MatchCharacterClass(hasTextInfo, options, expr, node.Str!, negate: true, additionalDeclarations, requiredHelpers)}";
+                    expr = $"{MatchCharacterClass(options, expr, node.Str!, negate: true, additionalDeclarations, requiredHelpers)}";
                 }
                 else
                 {
@@ -3236,7 +3241,7 @@ namespace System.Text.RegularExpressions.Generator
                     string expr = $"inputSpan[pos - {iterationLocal} - 1]";
                     if (node.IsSetFamily)
                     {
-                        expr = MatchCharacterClass(hasTextInfo, options, expr, node.Str!, negate: false, additionalDeclarations, requiredHelpers);
+                        expr = MatchCharacterClass(options, expr, node.Str!, negate: false, additionalDeclarations, requiredHelpers);
                     }
                     else
                     {
@@ -3321,7 +3326,7 @@ namespace System.Text.RegularExpressions.Generator
                     string expr = $"{sliceSpan}[{iterationLocal}]";
                     if (node.IsSetFamily)
                     {
-                        expr = MatchCharacterClass(hasTextInfo, options, expr, node.Str!, negate: false, additionalDeclarations, requiredHelpers);
+                        expr = MatchCharacterClass(options, expr, node.Str!, negate: false, additionalDeclarations, requiredHelpers);
                     }
                     else
                     {
@@ -3390,7 +3395,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 if (node.IsSetFamily)
                 {
-                    expr = MatchCharacterClass(hasTextInfo, options, expr, node.Str!, negate: false, additionalDeclarations, requiredHelpers);
+                    expr = MatchCharacterClass(options, expr, node.Str!, negate: false, additionalDeclarations, requiredHelpers);
                 }
                 else
                 {
@@ -3750,24 +3755,11 @@ namespace System.Text.RegularExpressions.Generator
             }
         }
 
-        private static bool EmitInitializeCultureForTryMatchAtCurrentPositionIfNecessary(IndentedTextWriter writer, RegexMethod rm, AnalysisResults analysis)
-        {
-            if (analysis.HasIgnoreCase && ((RegexOptions)rm.Options & RegexOptions.CultureInvariant) == 0)
-            {
-                writer.WriteLine("TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;");
-                return true;
-            }
+        private static string ToLower(string expression) => $"textInfo.ToLower({expression})";
 
-            return false;
-        }
+        private static string ToLowerIfNeeded(string expression, bool toLower) => toLower ? ToLower(expression) : expression;
 
-        private static bool UseToLowerInvariant(bool hasTextInfo, RegexOptions options) => !hasTextInfo || (options & RegexOptions.CultureInvariant) != 0;
-
-        private static string ToLower(bool hasTextInfo, RegexOptions options, string expression) => UseToLowerInvariant(hasTextInfo, options) ? $"char.ToLowerInvariant({expression})" : $"textInfo.ToLower({expression})";
-
-        private static string ToLowerIfNeeded(bool hasTextInfo, RegexOptions options, string expression, bool toLower) => toLower ? ToLower(hasTextInfo, options, expression) : expression;
-
-        private static string MatchCharacterClass(bool hasTextInfo, RegexOptions options, string chExpr, string charClass, bool negate, HashSet<string> additionalDeclarations, Dictionary<string, string[]> requiredHelpers)
+        private static string MatchCharacterClass(RegexOptions options, string chExpr, string charClass, bool negate, HashSet<string> additionalDeclarations, Dictionary<string, string[]> requiredHelpers)
         {
             // We need to perform the equivalent of calling RegexRunner.CharInClass(ch, charClass),
             // but that call is relatively expensive.  Before we fall back to it, we try to optimize
