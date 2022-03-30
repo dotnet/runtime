@@ -1237,6 +1237,10 @@ CallArgs::CallArgs()
     : m_head(nullptr)
     , m_lateHead(nullptr)
     , m_nextStackByteOffset(0)
+#ifdef UNIX_X86_ABI
+    , m_stkSizeBytes(0)
+    , m_padStkAlign(0)
+#endif
     , m_hasThisPointer(false)
     , m_hasRetBuffer(false)
     , m_isVarArgs(false)
@@ -1247,8 +1251,6 @@ CallArgs::CallArgs()
     , m_argsSorted(false)
     , m_needsTemps(false)
 #ifdef UNIX_X86_ABI
-    , m_stkSizeBytes(0)
-    , m_padStkAlign(0)
     , m_alignmentDone(false)
 #endif
 {
