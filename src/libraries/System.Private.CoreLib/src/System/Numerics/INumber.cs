@@ -4,7 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
-namespace System
+namespace System.Numerics
 {
     public interface INumberBase<TSelf>
         : IAdditionOperators<TSelf, TSelf, TSelf>,
