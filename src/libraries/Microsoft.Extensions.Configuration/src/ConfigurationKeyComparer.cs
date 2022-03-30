@@ -52,26 +52,26 @@ namespace Microsoft.Extensions.Configuration
                     continue;
                 }
 
-                int nextXIndex = xSpan.IndexOf(s_keyDelimiter);
-                if (nextXIndex < 0)
+                int xSegmentLength = xSpan.IndexOf(s_keyDelimiter);
+                if (xSegmentLength < 0)
                 {
-                    nextXIndex = xSpan.Length;
+                    xSegmentLength = xSpan.Length;
                 }
 
-                int nextYIndex = ySpan.IndexOf(s_keyDelimiter);
-                if (nextYIndex < 0)
+                int ySegmentLength = ySpan.IndexOf(s_keyDelimiter);
+                if (ySegmentLength < 0)
                 {
-                    nextYIndex = ySpan.Length;
+                    ySegmentLength = ySpan.Length;
                 }
 
-                int compareResult = Compare(xSpan.Slice(0, nextXIndex), ySpan.Slice(0, nextYIndex));
+                int compareResult = Compare(xSpan.Slice(0, xSegmentLength), ySpan.Slice(0, ySegmentLength));
                 if (compareResult != 0)
                 {
                     return compareResult;
                 }
 
-                xSpan = xSpan.Slice(nextXIndex);
-                ySpan = ySpan.Slice(nextYIndex);
+                xSpan = xSpan.Slice(xSegmentLength);
+                ySpan = ySpan.Slice(ySegmentLength);
             }
 
             if (xSpan.IsEmpty)
@@ -83,22 +83,22 @@ namespace Microsoft.Extensions.Configuration
 
             static int CountPartsIn(ReadOnlySpan<char> a)
             {
-                int count = 0, aIndex = 0;
-                while (aIndex < a.Length)
+                int count = 0;
+                while (!a.IsEmpty)
                 {
-                    int nextAIndex = a.Slice(aIndex).IndexOf(s_keyDelimiter);
-                    if (nextAIndex < 0)
+                    int segmentLength = a.IndexOf(s_keyDelimiter);
+                    if (segmentLength < 0)
                     {
                         return count + 1;
                     }
 
-                    if (a[aIndex] == s_keyDelimiter)
+                    if (a[0] == s_keyDelimiter)
                     {
-                        aIndex++;
+                        a = a.Slice(1);
                         continue;
                     }
 
-                    aIndex += nextAIndex + 1;
+                    a = a.Slice(segmentLength);
                     count++;
                 }
 
