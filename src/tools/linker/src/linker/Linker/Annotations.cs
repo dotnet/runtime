@@ -593,18 +593,21 @@ namespace Mono.Linker
 		/// </summary>
 		/// <remarks>Unlike <see cref="IsMethodInRequiresUnreferencedCodeScope(MethodDefinition)"/> only static methods 
 		/// and .ctors are reported as requiring unreferenced code when the declaring type has RUC on it.</remarks>
-		internal bool DoesMethodRequireUnreferencedCode (MethodDefinition method, [NotNullWhen (returnValue: true)] out RequiresUnreferencedCodeAttribute? attribute)
+		internal bool DoesMethodRequireUnreferencedCode (MethodDefinition originalMethod, [NotNullWhen (returnValue: true)] out RequiresUnreferencedCodeAttribute? attribute)
 		{
-			if (method.IsStaticConstructor ()) {
-				attribute = null;
-				return false;
-			}
-			if (TryGetLinkerAttribute (method, out attribute))
-				return true;
+			MethodDefinition? method = originalMethod;
+			do {
+				if (method.IsStaticConstructor ()) {
+					attribute = null;
+					return false;
+				}
+				if (TryGetLinkerAttribute (method, out attribute))
+					return true;
 
-			if ((method.IsStatic || method.IsConstructor) && method.DeclaringType is not null &&
-				TryGetLinkerAttribute (method.DeclaringType, out attribute))
-				return true;
+				if ((method.IsStatic || method.IsConstructor) && method.DeclaringType is not null &&
+					TryGetLinkerAttribute (method.DeclaringType, out attribute))
+					return true;
+			} while (context.CompilerGeneratedState.TryGetOwningMethodForCompilerGeneratedMember (method, out method));
 
 			return false;
 		}
