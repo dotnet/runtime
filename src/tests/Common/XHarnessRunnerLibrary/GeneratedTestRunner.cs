@@ -61,8 +61,9 @@ public sealed class GeneratedTestRunner : TestRunner
         string lastTestResults = LastTestRun.GetTestResultOutput(_assemblyName);
         if (_writeBase64TestResults)
         {
-            byte[] base64Results = Convert.ToBase64String(lastTestResults);
-            writer.WriteLine($"STARTRESULTXML {Encoding.UTF16.GetByteCount(lastTestResults)} {base64Results} ENDRESULTXML");
+            byte[] encodedBytes = Encoding.Unicode.GetBytes(lastTestResults);
+            string base64Results = Convert.ToBase64String(encodedBytes);
+            writer.WriteLine($"STARTRESULTXML {Encoding.UTF16.GetByteCount(encodedBytes.Length)} {base64Results} ENDRESULTXML");
         }
         else
         {
