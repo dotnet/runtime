@@ -630,7 +630,7 @@ unsigned long ZEXPORT crc32_z(crc, buf, len)
 #endif /* DYNAMIC_CRC_TABLE */
 
     /* Pre-condition the CRC */
-    crc ^= 0xffffffff;
+    crc = (~crc) & 0xffffffff;
 
     /* Compute the CRC up to a word boundary. */
     while (len && ((z_size_t)buf & 7) != 0) {
@@ -749,7 +749,7 @@ unsigned long ZEXPORT crc32_z(crc, buf, len)
 #endif /* DYNAMIC_CRC_TABLE */
 
     /* Pre-condition the CRC */
-    crc ^= 0xffffffff;
+    crc = (~crc) & 0xffffffff;
 
 #ifdef W
 
@@ -1077,7 +1077,7 @@ uLong ZEXPORT crc32_combine64(crc1, crc2, len2)
 #ifdef DYNAMIC_CRC_TABLE
     once(&made, make_crc_table);
 #endif /* DYNAMIC_CRC_TABLE */
-    return multmodp(x2nmodp(len2, 3), crc1) ^ crc2;
+    return multmodp(x2nmodp(len2, 3), crc1) ^ (crc2 & 0xffffffff);
 }
 
 /* ========================================================================= */
@@ -1112,5 +1112,5 @@ uLong crc32_combine_op(crc1, crc2, op)
     uLong crc2;
     uLong op;
 {
-    return multmodp(op, crc1) ^ crc2;
+    return multmodp(op, crc1) ^ (crc2 & 0xffffffff);
 }
