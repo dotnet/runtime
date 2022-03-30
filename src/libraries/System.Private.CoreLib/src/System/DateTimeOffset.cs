@@ -45,7 +45,7 @@ namespace System
           IAdditiveIdentity<DateTimeOffset, TimeSpan>,
           IComparisonOperators<DateTimeOffset, DateTimeOffset>,
           IMinMaxValue<DateTimeOffset>,
-          ISpanParseable<DateTimeOffset>,
+          ISpanParsable<DateTimeOffset>,
           ISubtractionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>,
           ISubtractionOperators<DateTimeOffset, DateTimeOffset, TimeSpan>
     {
@@ -886,20 +886,20 @@ namespace System
         static DateTimeOffset IMinMaxValue<DateTimeOffset>.MaxValue => MaxValue;
 
         //
-        // IParseable
+        // IParsable
         //
 
-        /// <inheritdoc cref="IParseable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out DateTimeOffset result) => TryParse(s, provider, DateTimeStyles.None, out result);
 
         //
-        // ISpanParseable
+        // ISpanParsable
         //
 
-        /// <inheritdoc cref="ISpanParseable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
         public static DateTimeOffset Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, provider, DateTimeStyles.None);
 
-        /// <inheritdoc cref="ISpanParseable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out DateTimeOffset result) => TryParse(s, provider, DateTimeStyles.None, out result);
 
         //

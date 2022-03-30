@@ -1670,12 +1670,12 @@ namespace System
         }
 
         //
-        // IParseable
+        // IParsable
         //
 
-        static char IParseable<char>.Parse(string s, IFormatProvider? provider) => Parse(s);
+        static char IParsable<char>.Parse(string s, IFormatProvider? provider) => Parse(s);
 
-        static bool IParseable<char>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out char result) => TryParse(s, out result);
+        static bool IParsable<char>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
         //
         // IShiftOperators
@@ -1691,10 +1691,10 @@ namespace System
         // static char IShiftOperators<char, char>.operator >>>(char value, int shiftAmount) => (char)(value >> shiftAmount);
 
         //
-        // ISpanParseable
+        // ISpanParsable
         //
 
-        static char ISpanParseable<char>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+        static char ISpanParsable<char>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
         {
             if (s.Length != 1)
             {
@@ -1703,7 +1703,7 @@ namespace System
             return s[0];
         }
 
-        static bool ISpanParseable<char>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out char result)
+        static bool ISpanParsable<char>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out char result)
         {
             if (s.Length != 1)
             {

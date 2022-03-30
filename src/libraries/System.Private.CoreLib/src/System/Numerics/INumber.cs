@@ -14,7 +14,7 @@ namespace System.Numerics
           IModulusOperators<TSelf, TSelf, TSelf>,
           INumberBase<TSelf>,
           ISpanFormattable,                     // implies IFormattable
-          ISpanParseable<TSelf>                 // implies IParseable<TSelf>
+          ISpanParsable<TSelf>                 // implies IParseable<TSelf>
         where TSelf : INumber<TSelf>
     {
         /// <summary>Computes the absolute of a value.</summary>

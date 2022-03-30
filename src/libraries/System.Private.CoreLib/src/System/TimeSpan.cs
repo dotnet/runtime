@@ -40,7 +40,7 @@ namespace System
           IMinMaxValue<TimeSpan>,
           IMultiplyOperators<TimeSpan, double, TimeSpan>,
           IMultiplicativeIdentity<TimeSpan, double>,
-          ISpanParseable<TimeSpan>,
+          ISpanParsable<TimeSpan>,
           ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>,
           IUnaryNegationOperators<TimeSpan, TimeSpan>,
           IUnaryPlusOperators<TimeSpan, TimeSpan>
