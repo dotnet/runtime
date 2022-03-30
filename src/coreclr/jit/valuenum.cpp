@@ -9793,7 +9793,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         {
             generateUniqueVN = true;
             // TODO-ARGS: Should this really be early arg?
-            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetArgByIndex(1)->GetNode()->gtVNPair);
+            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetArgByIndex(1)->GetEarlyNode()->gtVNPair);
 
             // The New Array helper may throw an overflow exception
             vnpExc = vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NewArrOverflowExc, vnp1));
@@ -9830,7 +9830,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         case VNF_JitReadyToRunNewArr:
         {
             generateUniqueVN  = true;
-            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetArgByIndex(0)->GetNode()->gtVNPair);
+            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetArgByIndex(0)->GetEarlyNode()->gtVNPair);
 
             // The New Array helper may throw an overflow exception
             vnpExc = vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NewArrOverflowExc, vnp1));
@@ -9871,7 +9871,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
     if (call->IsR2RRelativeIndir())
     {
 #ifdef DEBUG
-        assert(args->GetArgByIndex(0)->GetNode()->OperGet() == GT_ARGPLACE);
+        assert(args->GetArgByIndex(0)->GetEarlyNode()->OperGet() == GT_ARGPLACE);
 
         // Find the corresponding late arg.
         GenTree* indirectCellAddress = args->GetArgByIndex(0)->GetArgNode();
@@ -9988,17 +9988,17 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
     for (LateArg lateArg : call->gtArgs.LateArgs())
     {
         CallArg* arg = lateArg.GetArg();
-        if (arg->GetNode()->OperIs(GT_ARGPLACE))
+        if (arg->GetEarlyNode()->OperIs(GT_ARGPLACE))
         {
             assert(lateArg.GetNode()->gtVNPair.BothDefined());
-            arg->GetNode()->gtVNPair = lateArg.GetNode()->gtVNPair;
+            arg->GetEarlyNode()->gtVNPair = lateArg.GetNode()->gtVNPair;
 #ifdef DEBUG
             if (verbose)
             {
                 printf("VN of ARGPLACE tree ");
-                Compiler::printTreeID(arg->GetNode());
+                Compiler::printTreeID(arg->GetEarlyNode());
                 printf(" updated to ");
-                vnpPrint(arg->GetNode()->gtVNPair, 1);
+                vnpPrint(arg->GetEarlyNode()->gtVNPair, 1);
                 printf("\n");
             }
 #endif

@@ -120,7 +120,7 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTree* arg
 
     for (CallArg& arg : tree->AsCall()->gtArgs.Args())
     {
-        tree->gtFlags |= (arg.GetNode()->gtFlags & GTF_ALL_EFFECT);
+        tree->gtFlags |= (arg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT);
     }
 
     // Perform the morphing
@@ -615,7 +615,7 @@ const char* getWellKnownArgName(WellKnownArg arg)
 void CallArg::Dump(Compiler* comp)
 {
     printf("CallArg[arg %u", AbiInfo.ArgNum);
-    printf(" [%06u].%s", comp->dspTreeID(GetArgNode()), GenTree::OpName(GetNode()->OperGet()));
+    printf(" [%06u].%s", comp->dspTreeID(GetArgNode()), GenTree::OpName(GetEarlyNode()->OperGet()));
     printf(" %s", varTypeName(AbiInfo.ArgType));
     printf(" (%s)", AbiInfo.PassedByRef ? "By ref" : "By value");
     if (AbiInfo.GetRegNum() != REG_STK)
@@ -725,7 +725,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
     for (CallArg& arg : Args())
     {
-        GenTree* argx = arg.GetNode();
+        GenTree* argx = arg.GetEarlyNode();
 
         if (arg.AbiInfo.GetRegNum() == REG_STK)
         {
@@ -789,7 +789,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     break;
                 }
 
-                if (!prevArg.GetNode()->IsInvariant())
+                if (!prevArg.GetEarlyNode()->IsInvariant())
                 {
                     SetNeedsTemp(&prevArg);
                 }
@@ -854,7 +854,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
                 // For all previous arguments, if they have any GTF_ALL_EFFECT
                 //  we require that they be evaluated into a temp
-                if ((prevArg.GetNode()->gtFlags & GTF_ALL_EFFECT) != 0)
+                if ((prevArg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0)
                 {
                     SetNeedsTemp(&prevArg);
                 }
@@ -997,7 +997,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
     {
         for (CallArg& arg : Args())
         {
-            GenTree* argx = arg.GetNode();
+            GenTree* argx = arg.GetEarlyNode();
 
             // Examine the register args that are currently not marked needTmp
             //
@@ -1061,7 +1061,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
         for (CallArg& arg : Args())
         {
-            if ((arg.GetNode()->gtFlags & GTF_ALL_EFFECT) != 0)
+            if ((arg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0)
             {
                 SetNeedsTemp(&arg);
             }
@@ -1144,7 +1144,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
         //
         if (!arg->m_processed)
         {
-            GenTree* argx = arg->GetNode();
+            GenTree* argx = arg->GetEarlyNode();
 
             // put constants at the end of the table
             //
@@ -1181,7 +1181,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
             //
             if (!arg->m_processed)
             {
-                GenTree* argx = arg->GetNode();
+                GenTree* argx = arg->GetEarlyNode();
 
                 // put calls at the beginning of the table
                 //
@@ -1257,7 +1257,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
             //
             if (!arg->m_processed)
             {
-                GenTree* argx = arg->GetNode();
+                GenTree* argx = arg->GetEarlyNode();
 
                 if ((argx->gtOper == GT_LCL_VAR) || (argx->gtOper == GT_LCL_FLD))
                 {
@@ -1301,7 +1301,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
             //
             if (!arg->m_processed)
             {
-                GenTree* argx = arg->GetNode();
+                GenTree* argx = arg->GetEarlyNode();
 
                 // We should have already handled these kinds of args
                 assert(argx->gtOper != GT_LCL_VAR);
@@ -1508,7 +1508,7 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
         CallArg& arg = *lateArg.GetArg();
         assert(arg.GetLateNode() == nullptr);
 
-        GenTree* argx     = arg.GetNode();
+        GenTree* argx     = arg.GetEarlyNode();
         GenTree* setupArg = nullptr;
         GenTree* defArg;
 
@@ -1732,8 +1732,8 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
 
         if (setupArg != nullptr)
         {
-            noway_assert(arg.GetNode() == argx);
-            arg.SetNode(setupArg);
+            noway_assert(arg.GetEarlyNode() == argx);
+            arg.SetEarlyNode(setupArg);
         }
 
         arg.SetLateNode(defArg);
@@ -1922,13 +1922,13 @@ void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
         assert(thisArg != nullptr);
 
         GenTree* cloned;
-        if (thisArg->GetNode()->OperIsLocal())
+        if (thisArg->GetEarlyNode()->OperIsLocal())
         {
-            cloned = comp->gtClone(thisArg->GetNode(), true);
+            cloned = comp->gtClone(thisArg->GetEarlyNode(), true);
         }
         else
         {
-            cloned = comp->fgInsertCommaFormTemp(&thisArg->NodeRef());
+            cloned = comp->fgInsertCommaFormTemp(&thisArg->EarlyNodeRef());
             call->gtFlags |= GTF_ASG;
         }
         noway_assert(cloned != nullptr);
@@ -2051,9 +2051,9 @@ void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
 
         if (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL)
         {
-            noway_assert(call->gtArgs.GetArgByIndex(0)->GetNode()->TypeGet() == TYP_I_IMPL ||
-                         call->gtArgs.GetArgByIndex(0)->GetNode()->TypeGet() == TYP_BYREF ||
-                         call->gtArgs.GetArgByIndex(0)->GetNode()->gtOper ==
+            noway_assert(call->gtArgs.GetArgByIndex(0)->GetEarlyNode()->TypeGet() == TYP_I_IMPL ||
+                         call->gtArgs.GetArgByIndex(0)->GetEarlyNode()->TypeGet() == TYP_BYREF ||
+                         call->gtArgs.GetArgByIndex(0)->GetEarlyNode()->gtOper ==
                              GT_NOP); // the arg was already morphed to a register (fgMorph called twice)
             maxRegArgs = 1;
         }
@@ -2154,7 +2154,7 @@ void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
                 const CorInfoType    corType = strip(comp->info.compCompHnd->getArgType(sig, sigArg, &argClass));
                 const var_types      sigType = JITtype2varType(corType);
 
-                const GenTree* nodeArg = arg.GetNode();
+                const GenTree* nodeArg = arg.GetEarlyNode();
                 assert(nodeArg != nullptr);
                 const var_types nodeType = nodeArg->TypeGet();
 
@@ -2169,7 +2169,7 @@ void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
 
     for (CallArg& arg : Args())
     {
-        GenTree* argx = arg.GetNode()->gtSkipPutArgType();
+        GenTree* argx = arg.GetEarlyNode()->gtSkipPutArgType();
 
         // Change the node to TYP_I_IMPL so we don't report GC info
         // NOTE: We deferred this from the importer because of the inliner.
@@ -2387,7 +2387,7 @@ void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
 
         if (isStructArg)
         {
-            assert(argx == arg.GetNode());
+            assert(argx == arg.GetEarlyNode());
             assert(structSize != 0);
 
             Compiler::structPassingKind howToPassStruct;
@@ -2423,8 +2423,8 @@ void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
             }
         }
 
-        const var_types argType = arg.GetNode()->TypeGet();
-        if (arg.GetNode()->OperIs(GT_PUTARG_TYPE))
+        const var_types argType = arg.GetEarlyNode()->TypeGet();
+        if (arg.GetEarlyNode()->OperIs(GT_PUTARG_TYPE))
         {
             byteSize = genTypeSize(argType);
         }
@@ -2933,7 +2933,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     bool hasMultiregStructArgs = false;
     for (CallArg& arg : call->gtArgs.Args())
     {
-        GenTree** parentArgx = &arg.NodeRef();
+        GenTree** parentArgx = &arg.EarlyNodeRef();
 
         // Morph the arg node, and update the parent and argEntry pointers.
         GenTree* argx = *parentArgx;
@@ -3298,7 +3298,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             GenTree* asg         = gtNewOperNode(GT_COMMA, TYP_VOID, asgPtrSlot, asgTypeSlot);
 
             // Change the expression to "(tmp=val)"
-            arg.SetNode(asg);
+            arg.SetEarlyNode(asg);
 
             call->gtArgs.SetTemp(&arg, tmp);
             lvaSetVarAddrExposed(tmp DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
@@ -3339,7 +3339,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 GenTreeLclVarCommon* lcl       = lclNode->AsLclVarCommon();
                 LclVarDsc*           varDsc    = lvaGetDesc(lcl);
                 GenTreeFieldList*    fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
-                arg.SetNode(fieldList);
+                arg.SetEarlyNode(fieldList);
 
                 for (unsigned fieldLclNum = varDsc->lvFieldLclStart;
                      fieldLclNum < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++fieldLclNum)
@@ -3365,7 +3365,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         }
 #endif // TARGET_X86
 
-        flagsSummary |= arg.GetNode()->gtFlags;
+        flagsSummary |= arg.GetEarlyNode()->gtFlags;
 
     } // end foreach argument loop
 
@@ -3460,7 +3460,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 
     for (CallArg& arg : call->gtArgs.Args())
     {
-        bool     isLateArg = (arg.GetNode()->gtFlags & GTF_LATE_ARG) != 0;
+        bool     isLateArg = (arg.GetEarlyNode()->gtFlags & GTF_LATE_ARG) != 0;
         GenTree* argx      = arg.GetArgNode();
 
         if (!arg.AbiInfo.IsStruct)
@@ -3515,7 +3515,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
                     }
                     else
                     {
-                        arg.SetNode(newArgx);
+                        arg.SetEarlyNode(newArgx);
                     }
                 }
             }
@@ -4131,7 +4131,7 @@ GenTreeFieldList* Compiler::fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl)
 //
 void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg, CORINFO_CLASS_HANDLE copyBlkClass)
 {
-    GenTree* argx = arg->GetNode();
+    GenTree* argx = arg->GetEarlyNode();
     noway_assert(argx->gtOper != GT_MKREFANY);
 
     // If we're optimizing, see if we can avoid making a copy.
@@ -4169,7 +4169,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg, CORI
                 ((totalAppearances == 1) && call->IsNoReturn()) || //
                 ((totalAppearances == 1) && !fgMightHaveLoop()))
             {
-                arg->SetNode(lcl);
+                arg->SetEarlyNode(lcl);
                 JITDUMP("did not need to make outgoing copy for last use of implicit byref V%2d\n", varNum);
                 return;
             }
@@ -4257,7 +4257,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg, CORI
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
-    arg->SetNode(argNode);
+    arg->SetEarlyNode(argNode);
 }
 
 #ifdef TARGET_ARM
@@ -6326,12 +6326,12 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                         if (varDsc->lvPromoted)
                         {
                             JITDUMP("Arg [%06u] is promoted implicit byref V%02u, so no tail call\n",
-                                    dspTreeID(arg.GetNode()), lclNum);
+                                    dspTreeID(arg.GetEarlyNode()), lclNum);
                         }
                         else
                         {
                             JITDUMP("Arg [%06u] is unpromoted implicit byref V%02u, seeing if we can still tail call\n",
-                                    dspTreeID(arg.GetNode()), lclNum);
+                                    dspTreeID(arg.GetEarlyNode()), lclNum);
 
                             // We have to worry about introducing aliases if we bypass copying
                             // the struct at the call. We'll do some limited analysis to see if we
@@ -6792,7 +6792,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
             if (call->gtArgs.HasThisPointer())
             {
-                var_types thisArgType = call->gtArgs.GetThisArg()->GetNode()->TypeGet();
+                var_types thisArgType = call->gtArgs.GetThisArg()->GetEarlyNode()->TypeGet();
                 if (thisArgType != TYP_REF)
                 {
                     flags |= CORINFO_TAILCALL_THIS_ARG_IS_BYREF;
@@ -6866,7 +6866,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             call->ClearExpandedEarly();
         }
         else if ((tailCallResult == TAILCALL_OPTIMIZED) &&
-                 ((call->gtArgs.GetThisArg()->GetNode()->gtFlags & GTF_SIDE_EFFECT) != 0))
+                 ((call->gtArgs.GetThisArg()->GetEarlyNode()->gtFlags & GTF_SIDE_EFFECT) != 0))
         {
             // We generate better code when we expand this late in lower instead.
             //
@@ -7556,7 +7556,7 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
     if (origCall->gtArgs.HasRetBuffer())
     {
         JITDUMP("Transferring retbuf\n");
-        GenTree* retBufArg = origCall->gtArgs.GetRetBufferArg()->GetNode();
+        GenTree* retBufArg = origCall->gtArgs.GetRetBufferArg()->GetEarlyNode();
 
         assert(info.compRetBuffArg != BAD_VAR_NUM);
         assert(retBufArg->OperIsLocal());
@@ -7939,7 +7939,7 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
     if (thisArg != nullptr)
     {
         GenTree* thisPtr = nullptr;
-        GenTree* objp    = thisArg->GetNode();
+        GenTree* objp    = thisArg->GetEarlyNode();
 
         if ((call->IsDelegateInvoke() || call->IsVirtualVtable()) && !objp->OperIs(GT_LCL_VAR))
         {
@@ -8169,7 +8169,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     // below has the correct second argument.
     for (CallArg& arg : recursiveTailCall->gtArgs.Args())
     {
-        GenTree* earlyArg = arg.GetNode();
+        GenTree* earlyArg = arg.GetEarlyNode();
         if (!earlyArg->IsNothingNode() && !earlyArg->IsArgPlaceHolderNode())
         {
             if ((earlyArg->gtFlags & GTF_LATE_ARG) != 0)
@@ -8589,7 +8589,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             GenTreeOp* argSetup = nullptr;
             for (CallArg& arg : call->gtArgs.Args())
             {
-                GenTree* const argNode = arg.GetNode();
+                GenTree* const argNode = arg.GetEarlyNode();
                 if (argNode->OperGet() != GT_ASG)
                 {
                     continue;

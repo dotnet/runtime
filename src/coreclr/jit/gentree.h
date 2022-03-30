@@ -4232,7 +4232,7 @@ class CallArg
 {
     friend class CallArgs;
 
-    GenTree*     m_node;
+    GenTree*     m_earlyNode;
     GenTree*     m_lateNode;
     CallArg*     m_next;
     CallArg*     m_lateNext;
@@ -4254,7 +4254,7 @@ public:
     CallArgABIInformation AbiInfo;
 
     CallArg(WellKnownArg specialArgKind)
-        : m_node(nullptr)
+        : m_earlyNode(nullptr)
         , m_lateNode(nullptr)
         , m_next(nullptr)
         , m_lateNext(nullptr)
@@ -4271,9 +4271,9 @@ public:
     CallArg& operator=(CallArg&) = delete;
 
     // clang-format off
-    GenTree*& NodeRef() { return m_node; }
-    GenTree* GetNode() { return m_node; }
-    void SetNode(GenTree* node) { m_node = node; }
+    GenTree*& EarlyNodeRef() { return m_earlyNode; }
+    GenTree* GetEarlyNode() { return m_earlyNode; }
+    void SetEarlyNode(GenTree* node) { m_earlyNode = node; }
     GenTree*& LateNodeRef() { return m_lateNode; }
     GenTree* GetLateNode() { return m_lateNode; }
     void SetLateNode(GenTree* lateNode) { m_lateNode = lateNode; }
@@ -4289,10 +4289,10 @@ public:
     // clang-format on
 
     // Get the real argument node, i.e. not a setup or placeholder node.
-    // This is the same as GetNode() until morph.
+    // This is the same as GetEarlyNode() until morph.
     GenTree* GetArgNode()
     {
-        return m_lateNode == nullptr ? m_node : m_lateNode;
+        return m_lateNode == nullptr ? m_earlyNode : m_lateNode;
     }
 
     bool IsArgAddedLate() const;
@@ -5248,7 +5248,7 @@ struct GenTreeCall final : public GenTree
         }
 
         CallArg* retBufArg        = gtArgs.GetRetBufferArg();
-        GenTree* lclRetBufArgNode = retBufArg->GetNode();
+        GenTree* lclRetBufArgNode = retBufArg->GetEarlyNode();
         if (lclRetBufArgNode->IsArgPlaceHolderNode())
         {
             lclRetBufArgNode = retBufArg->GetLateNode();

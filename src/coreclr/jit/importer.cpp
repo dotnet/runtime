@@ -881,23 +881,23 @@ void Compiler::impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig, CallArgs* a
 
             var_types jitSigType = JITtype2varType(corType);
 
-            if (!impCheckImplicitArgumentCoercion(jitSigType, arg.GetNode()->TypeGet()))
+            if (!impCheckImplicitArgumentCoercion(jitSigType, arg.GetEarlyNode()->TypeGet()))
             {
                 BADCODE("the call argument has a type that can't be implicitly converted to the signature type");
             }
 
             // insert implied casts (from float to double or double to float)
-            if ((jitSigType == TYP_DOUBLE) && (arg.GetNode()->TypeGet() == TYP_FLOAT))
+            if ((jitSigType == TYP_DOUBLE) && (arg.GetEarlyNode()->TypeGet() == TYP_FLOAT))
             {
-                arg.SetNode(gtNewCastNode(TYP_DOUBLE, arg.GetNode(), false, TYP_DOUBLE));
+                arg.SetEarlyNode(gtNewCastNode(TYP_DOUBLE, arg.GetEarlyNode(), false, TYP_DOUBLE));
             }
-            else if ((jitSigType == TYP_FLOAT) && (arg.GetNode()->TypeGet() == TYP_DOUBLE))
+            else if ((jitSigType == TYP_FLOAT) && (arg.GetEarlyNode()->TypeGet() == TYP_DOUBLE))
             {
-                arg.SetNode(gtNewCastNode(TYP_FLOAT, arg.GetNode(), false, TYP_FLOAT));
+                arg.SetEarlyNode(gtNewCastNode(TYP_FLOAT, arg.GetEarlyNode(), false, TYP_FLOAT));
             }
 
             // insert any widening or narrowing casts for backwards compatibility
-            arg.SetNode(impImplicitIorI4Cast(arg.GetNode(), jitSigType));
+            arg.SetEarlyNode(impImplicitIorI4Cast(arg.GetEarlyNode(), jitSigType));
 
             if (corType != CORINFO_TYPE_CLASS && corType != CORINFO_TYPE_BYREF && corType != CORINFO_TYPE_PTR &&
                 corType != CORINFO_TYPE_VAR)
@@ -914,15 +914,15 @@ void Compiler::impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig, CallArgs* a
                 }
             }
 
-            const var_types nodeArgType = arg.GetNode()->TypeGet();
+            const var_types nodeArgType = arg.GetEarlyNode()->TypeGet();
             if (!varTypeIsStruct(jitSigType) && genTypeSize(nodeArgType) != genTypeSize(jitSigType))
             {
                 assert(!varTypeIsStruct(nodeArgType));
                 // Some ABI require precise size information for call arguments less than target pointer size,
                 // for example arm64 OSX. Create a special node to keep this information until morph
                 // consumes it into `CallArgs`.
-                GenTree* putArgType = gtNewOperNode(GT_PUTARG_TYPE, jitSigType, arg.GetNode());
-                arg.SetNode(putArgType);
+                GenTree* putArgType = gtNewOperNode(GT_PUTARG_TYPE, jitSigType, arg.GetEarlyNode());
+                arg.SetEarlyNode(putArgType);
             }
 
             sigArgs = info.compCompHnd->getArgNext(sigArgs);
@@ -3201,7 +3201,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     }
 
     // Strip helper call away
-    fieldTokenNode = fieldTokenNode->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+    fieldTokenNode = fieldTokenNode->AsCall()->gtArgs.GetArgByIndex(0)->GetEarlyNode();
 
     if (fieldTokenNode->gtOper == GT_IND)
     {
@@ -4125,7 +4125,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     }
                     assert(op1->AsCall()->gtArgs.CountArgs() == 1);
                     op1 = gtNewHelperCallNode(typeHandleHelper, TYP_REF,
-                                              op1->AsCall()->gtArgs.GetArgByIndex(0)->GetNode());
+                                              op1->AsCall()->gtArgs.GetArgByIndex(0)->GetEarlyNode());
                     op1->gtType = TYP_REF;
                     retNode     = op1;
                 }
@@ -4217,7 +4217,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     {
                         assert(call->gtArgs.CountArgs() == 1);
                         CORINFO_CLASS_HANDLE hClass =
-                            gtGetHelperArgClassHandle(call->gtArgs.GetArgByIndex(0)->GetNode());
+                            gtGetHelperArgClassHandle(call->gtArgs.GetArgByIndex(0)->GetEarlyNode());
                         if (hClass != NO_CLASS_HANDLE)
                         {
                             retNode =
@@ -4784,9 +4784,9 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
         {
             assert((typeTo->AsCall()->gtArgs.CountArgs() == 1) && (typeFrom->AsCall()->gtArgs.CountArgs() == 1));
             CORINFO_CLASS_HANDLE hClassTo =
-                gtGetHelperArgClassHandle(typeTo->AsCall()->gtArgs.GetArgByIndex(0)->GetNode());
+                gtGetHelperArgClassHandle(typeTo->AsCall()->gtArgs.GetArgByIndex(0)->GetEarlyNode());
             CORINFO_CLASS_HANDLE hClassFrom =
-                gtGetHelperArgClassHandle(typeFrom->AsCall()->gtArgs.GetArgByIndex(0)->GetNode());
+                gtGetHelperArgClassHandle(typeFrom->AsCall()->gtArgs.GetArgByIndex(0)->GetEarlyNode());
 
             if (hClassTo == NO_CLASS_HANDLE || hClassFrom == NO_CLASS_HANDLE)
             {
@@ -7471,7 +7471,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 
     for (CallArg& arg : node->AsCall()->gtArgs.Args())
     {
-        node->gtFlags |= arg.GetNode()->gtFlags & GTF_GLOB_EFFECT;
+        node->gtFlags |= arg.GetEarlyNode()->gtFlags & GTF_GLOB_EFFECT;
     }
 
     node->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)pResolvedToken->hClass;
@@ -7908,14 +7908,14 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
 
     if (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL)
     {
-        GenTree* thisPtr = call->gtArgs.Args().begin()->GetNode();
+        GenTree* thisPtr = call->gtArgs.Args().begin()->GetEarlyNode();
         impBashVarAddrsToI(thisPtr);
         assert(thisPtr->TypeGet() == TYP_I_IMPL || thisPtr->TypeGet() == TYP_BYREF);
     }
 
     for (CallArg& arg : call->gtArgs.Args())
     {
-        GenTree* argNode = arg.GetNode();
+        GenTree* argNode = arg.GetEarlyNode();
         call->gtFlags |= argNode->gtFlags & GTF_GLOB_EFFECT;
 
         // We should not be passing gc typed args to an unmanaged call.
@@ -9461,7 +9461,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     for (CallArg& arg : call->AsCall()->gtArgs.Args())
     {
-        call->gtFlags |= arg.GetNode()->gtFlags & GTF_GLOB_EFFECT;
+        call->gtFlags |= arg.GetEarlyNode()->gtFlags & GTF_GLOB_EFFECT;
     }
 
     //-------------------------------------------------------------------------
@@ -9758,7 +9758,7 @@ DONE:
         if (compIsForInlining() && opcode == CEE_CALLVIRT)
         {
             assert(call->AsCall()->gtArgs.HasThisPointer());
-            GenTree* callObj = call->AsCall()->gtArgs.GetThisArg()->GetNode();
+            GenTree* callObj = call->AsCall()->gtArgs.GetThisArg()->GetEarlyNode();
 
             if ((call->AsCall()->IsVirtual() || (call->gtFlags & GTF_CALL_NULLCHECK)) &&
                 impInlineIsGuaranteedThisDerefBeforeAnySideEffects(nullptr, &call->AsCall()->gtArgs, callObj,
@@ -17337,7 +17337,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 #endif // defined(TARGET_ARM64)
                 {
                     assert(iciCall->gtArgs.HasRetBuffer());
-                    GenTree* dest = gtCloneExpr(iciCall->gtArgs.GetRetBufferArg()->GetNode());
+                    GenTree* dest = gtCloneExpr(iciCall->gtArgs.GetRetBufferArg()->GetEarlyNode());
                     // spill temp only exists if there are multiple return points
                     if (fgNeedReturnSpillTemp())
                     {
@@ -18933,7 +18933,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
 
         CORINFO_CLASS_HANDLE sigClass;
         CorInfoType          corType = strip(info.compCompHnd->getArgType(&sig, sigArg, &sigClass));
-        GenTree*             argNode = argUse == nullptr ? nullptr : argUse->GetNode()->gtSkipPutArgType();
+        GenTree*             argNode = argUse == nullptr ? nullptr : argUse->GetEarlyNode()->gtSkipPutArgType();
 
         if (corType == CORINFO_TYPE_CLASS)
         {
@@ -19555,7 +19555,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 break;
         }
 
-        GenTree* actualArg = gtFoldExpr(arg.GetNode());
+        GenTree* actualArg = gtFoldExpr(arg.GetEarlyNode());
         impInlineRecordArgInfo(pInlineInfo, actualArg, ilArgCnt, inlineResult);
 
         if (inlineResult->IsFailure())
@@ -19595,7 +19595,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         var_types sigType         = ((clsAttr & CORINFO_FLG_VALUECLASS) != 0) ? TYP_BYREF : TYP_REF;
         lclVarInfo[0].lclTypeInfo = sigType;
 
-        GenTree* thisArgNode = thisArg->GetNode();
+        GenTree* thisArgNode = thisArg->GetEarlyNode();
 
         assert(varTypeIsGC(thisArgNode->TypeGet()) ||     // "this" is managed
                ((thisArgNode->TypeGet() == TYP_I_IMPL) && // "this" is unmgd but the method's class doesnt care
@@ -20236,7 +20236,7 @@ bool Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*    ad
     {
         for (CallArg& arg : additionalCallArgs->Args())
         {
-            if (GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(arg.GetNode()->gtFlags))
+            if (GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(arg.GetEarlyNode()->gtFlags))
             {
                 return false;
             }
@@ -20889,7 +20889,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // See what we know about the type of 'this' in the call.
     assert(call->gtArgs.HasThisPointer());
     CallArg*             thisArg      = call->gtArgs.GetThisArg();
-    GenTree*             thisObj      = thisArg->GetNode()->gtEffectiveVal(false);
+    GenTree*             thisObj      = thisArg->GetEarlyNode()->gtEffectiveVal(false);
     bool                 isExact      = false;
     bool                 objIsNonNull = false;
     CORINFO_CLASS_HANDLE objClass     = gtGetClassHandle(thisObj, &isExact, &objIsNonNull);
@@ -21252,8 +21252,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                                 JITDUMP("Success! invoking unboxed entry point on local copy, and passing method table "
                                         "arg\n");
                                 // TODO-CallArgs-REVIEW: Might discard commas otherwise?
-                                assert(thisObj == thisArg->GetNode());
-                                thisArg->SetNode(localCopyThis);
+                                assert(thisObj == thisArg->GetEarlyNode());
+                                thisArg->SetEarlyNode(localCopyThis);
                                 call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
 
                                 call->gtArgs.InsertInstParam(this, methodTableArg);
@@ -21289,9 +21289,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                         if (localCopyThis != nullptr)
                         {
                             JITDUMP("Success! invoking unboxed entry point on local copy\n");
-                            assert(thisObj == thisArg->GetNode());
+                            assert(thisObj == thisArg->GetEarlyNode());
                             // TODO-CallArgs-REVIEW: Might discard commas otherwise?
-                            thisArg->SetNode(localCopyThis);
+                            thisArg->SetEarlyNode(localCopyThis);
                             call->gtCallMethHnd = unboxedEntryMethod;
                             call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
                             derivedMethod         = unboxedEntryMethod;
@@ -21336,7 +21336,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                         // Get the method table from the boxed object.
                         //
                         // TODO-CallArgs-REVIEW: Use thisObj here? Differs by gtEffectiveVal.
-                        GenTree* const clonedThisArg = gtClone(thisArg->GetNode());
+                        GenTree* const clonedThisArg = gtClone(thisArg->GetEarlyNode());
 
                         if (clonedThisArg == nullptr)
                         {
@@ -21353,10 +21353,10 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             //
                             GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
                             GenTree* const boxPayload =
-                                gtNewOperNode(GT_ADD, TYP_BYREF, thisArg->GetNode(), payloadOffset);
+                                gtNewOperNode(GT_ADD, TYP_BYREF, thisArg->GetEarlyNode(), payloadOffset);
 
-                            assert(thisObj == thisArg->GetNode());
-                            thisArg->SetNode(boxPayload);
+                            assert(thisObj == thisArg->GetEarlyNode());
+                            thisArg->SetEarlyNode(boxPayload);
                             call->gtCallMethHnd = unboxedEntryMethod;
                             call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
 
@@ -21377,9 +21377,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                         JITDUMP("revising call to invoke unboxed entry\n");
 
                         GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
-                        GenTree* const boxPayload = gtNewOperNode(GT_ADD, TYP_BYREF, thisArg->GetNode(), payloadOffset);
+                        GenTree* const boxPayload = gtNewOperNode(GT_ADD, TYP_BYREF, thisArg->GetEarlyNode(), payloadOffset);
 
-                        thisArg->SetNode(boxPayload);
+                        thisArg->SetEarlyNode(boxPayload);
                         call->gtCallMethHnd = unboxedEntryMethod;
                         call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
                         derivedMethod         = unboxedEntryMethod;
@@ -21535,7 +21535,7 @@ public:
     {
         for (CallArg& arg : call->gtArgs.Args())
         {
-            comp->fgWalkTreePre(&arg.NodeRef(), SpillRetExprVisitor, this);
+            comp->fgWalkTreePre(&arg.EarlyNodeRef(), SpillRetExprVisitor, this);
         }
 
         // TODO-ARGS-REVIEW: Different order of this and rest of args

@@ -196,7 +196,7 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
                         newState.isUnderIndir = true;
                     }
 
-                    comp->fgWalkTreePre(&arg.NodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
+                    comp->fgWalkTreePre(&arg.EarlyNodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
                 }
                 for (LateArg arg : tree->AsCall()->gtArgs.LateArgs())
                 {

@@ -10874,7 +10874,7 @@ public:
 
                 for (CallArg& arg : call->gtArgs.Args())
                 {
-                    result = WalkTree(&arg.NodeRef(), call);
+                    result = WalkTree(&arg.EarlyNodeRef(), call);
                     if (result == fgWalkResult::WALK_ABORT)
                     {
                         return result;

@@ -5378,7 +5378,7 @@ void CodeGen::genCall(GenTreeCall* call)
     target_ssize_t stackArgBytes = 0;
     for (CallArg& arg : call->gtArgs.Args())
     {
-        GenTree* argNode = arg.GetNode();
+        GenTree* argNode = arg.GetEarlyNode();
         if (argNode->OperIs(GT_PUTARG_STK) && ((argNode->gtFlags & GTF_LATE_ARG) == 0))
         {
             GenTree* source = argNode->AsPutArgStk()->gtGetOp1();

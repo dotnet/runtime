@@ -1571,7 +1571,7 @@ public:
             objUse = call->gtArgs.GetThisArg();
         }
 
-        assert(objUse->GetNode()->TypeIs(TYP_REF));
+        assert(objUse->GetEarlyNode()->TypeIs(TYP_REF));
 
         // Grab a temp to hold the 'this' object as it will be used three times
         //
@@ -1588,12 +1588,12 @@ public:
         GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
         GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const asgNode       = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, objUse->GetNode());
+        GenTree* const asgNode       = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, objUse->GetEarlyNode());
         GenTree* const asgCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
 
         // Update the call
         //
-        objUse->SetNode(asgCommaNode);
+        objUse->SetEarlyNode(asgCommaNode);
 
         JITDUMP("Modified call is now\n");
         DISPTREE(call);

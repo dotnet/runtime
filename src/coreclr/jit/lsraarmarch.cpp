@@ -336,7 +336,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     for (CallArg& arg : call->gtArgs.Args())
     {
-        GenTree* argNode = arg.GetNode();
+        GenTree* argNode = arg.GetEarlyNode();
 
         // Skip arguments that have been moved to the Late Arg list
         if ((argNode->gtFlags & GTF_LATE_ARG) == 0)

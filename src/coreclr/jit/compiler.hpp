@@ -4375,7 +4375,7 @@ void GenTree::VisitOperands(TVisitor visitor)
 
             for (CallArg& arg : call->gtArgs.Args())
             {
-                if (visitor(arg.GetNode()) == VisitResult::Abort)
+                if (visitor(arg.GetEarlyNode()) == VisitResult::Abort)
                 {
                     return;
                 }

@@ -1259,7 +1259,7 @@ CallArg* CallArgs::FindByNode(GenTree* node)
     assert(node != nullptr);
     for (CallArg& arg : Args())
     {
-        if ((arg.GetNode() == node) || (arg.GetLateNode() == node))
+        if ((arg.GetEarlyNode() == node) || (arg.GetLateNode() == node))
         {
             return &arg;
         }
@@ -1475,7 +1475,7 @@ bool CallArgs::IsNonStandard(Compiler* comp, GenTreeCall* call, CallArg* arg)
 CallArg* CallArgs::PushFront(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg)
 {
     CallArg* arg = new (comp, CMK_CallArgs) CallArg(wellKnownArg);
-    arg->SetNode(node);
+    arg->SetEarlyNode(node);
     arg->SetNext(m_head);
     m_head = arg;
     AddedWellKnownArg(wellKnownArg);
@@ -1491,7 +1491,7 @@ CallArg* CallArgs::PushBack(Compiler* comp, GenTree* node, WellKnownArg wellKnow
     }
 
     *slot = new (comp, CMK_CallArgs) CallArg(wellKnownArg);
-    (*slot)->SetNode(node);
+    (*slot)->SetEarlyNode(node);
     AddedWellKnownArg(wellKnownArg);
     return *slot;
 }
@@ -1513,7 +1513,7 @@ CallArg* CallArgs::InsertAfter(Compiler* comp, CallArg* after, GenTree* arg, Wel
 #endif
 
     CallArg* newArg = new (comp, CMK_CallArgs) CallArg(wellKnownArg);
-    newArg->SetNode(arg);
+    newArg->SetEarlyNode(arg);
     newArg->SetNext(after->GetNext());
     after->SetNext(newArg);
     AddedWellKnownArg(wellKnownArg);
@@ -1898,7 +1898,7 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
 
         for (; (i1 != end1) && (i2 != end2); ++i1, ++i2)
         {
-            if (!Compare(i1->GetNode(), i2->GetNode()))
+            if (!Compare(i1->GetEarlyNode(), i2->GetEarlyNode()))
             {
                 return false;
             }
@@ -1960,7 +1960,7 @@ void CallArgs::ResetArgABIInformation()
         if ((*link)->IsArgAddedLate())
         {
             JITDUMP("Removing arg %s [%06u] to prepare for re-morphing call\n",
-                    getWellKnownArgName((*link)->GetWellKnownArg()), Compiler::dspTreeID((*link)->GetNode()));
+                    getWellKnownArgName((*link)->GetWellKnownArg()), Compiler::dspTreeID((*link)->GetEarlyNode()));
 
             *link = (*link)->GetNext();
         }
@@ -2737,7 +2737,7 @@ AGAIN:
         case GT_CALL:
             for (CallArg& arg : tree->AsCall()->gtArgs.Args())
             {
-                hash = genTreeHashAdd(hash, gtHashValue(arg.GetNode()));
+                hash = genTreeHashAdd(hash, gtHashValue(arg.GetEarlyNode()));
             }
 
             if (tree->AsCall()->gtCallType == CT_INDIRECT)
@@ -3106,7 +3106,7 @@ unsigned Compiler::gtSetCallArgsOrder(CallArgs* args, bool lateArgs, int* callCo
     {
         for (CallArg& arg : args->Args())
         {
-            GenTree* argNode  = arg.GetNode();
+            GenTree* argNode  = arg.GetEarlyNode();
             unsigned argLevel = gtSetEvalOrder(argNode);
 
             if (arg.GetWellKnownArg() == WellKnownArg::ThisPointer)
@@ -5757,9 +5757,9 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
             }
             for (CallArg& arg : call->gtArgs.Args())
             {
-                if (arg.GetNode() == operand)
+                if (arg.GetEarlyNode() == operand)
                 {
-                    *pUse = &arg.NodeRef();
+                    *pUse = &arg.EarlyNodeRef();
                     return true;
                 }
                 if (arg.GetLateNode() == operand)
@@ -8347,7 +8347,7 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
     for (CallArg& arg : other->Args())
     {
         CallArg* carg     = new (comp, CMK_CallArgs) CallArg(arg.GetWellKnownArg());
-        carg->m_node      = arg.m_node != nullptr ? copyNode(arg.m_node) : nullptr;
+        carg->m_earlyNode = arg.m_earlyNode != nullptr ? copyNode(arg.m_earlyNode) : nullptr;
         carg->m_lateNode  = arg.m_lateNode != nullptr ? copyNode(arg.m_lateNode) : nullptr;
         carg->m_needTmp   = arg.m_needTmp;
         carg->m_needPlace = arg.m_needPlace;
@@ -9220,7 +9220,7 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
             if (m_statePtr != nullptr)
             {
                 CallArg* arg = static_cast<CallArg*>(m_statePtr);
-                m_edge       = &arg->NodeRef();
+                m_edge       = &arg->EarlyNodeRef();
                 m_statePtr   = arg->GetNext();
                 return;
             }
@@ -11869,11 +11869,11 @@ void Compiler::gtDispArgList(GenTreeCall* call, GenTree* lastCallOperand, Indent
 
     for (CallArg& arg : call->gtArgs.Args())
     {
-        if (!arg.GetNode()->IsNothingNode() && !arg.GetNode()->IsArgPlaceHolderNode())
+        if (!arg.GetEarlyNode()->IsNothingNode() && !arg.GetEarlyNode()->IsArgPlaceHolderNode())
         {
             char buf[256];
             gtGetArgMsg(call, &arg, buf, sizeof(buf));
-            gtDispChild(arg.GetNode(), indentStack, (arg.GetNode() == lastCallOperand) ? IIArcBottom : IIArc, buf,
+            gtDispChild(arg.GetEarlyNode(), indentStack, (arg.GetEarlyNode() == lastCallOperand) ? IIArcBottom : IIArc, buf,
                         false);
         }
     }
@@ -12053,7 +12053,7 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
                 CallArg* curArg = call->gtArgs.FindByNode(operand);
                 assert(curArg);
 
-                if (operand == curArg->GetNode())
+                if (operand == curArg->GetEarlyNode())
                 {
                     gtGetArgMsg(call, curArg, buf, sizeof(buf));
                 }
@@ -12234,8 +12234,8 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
     {
         case NI_System_Enum_HasFlag:
         {
-            GenTree* thisOp = call->gtArgs.GetArgByIndex(0)->GetNode();
-            GenTree* flagOp = call->gtArgs.GetArgByIndex(1)->GetNode();
+            GenTree* thisOp = call->gtArgs.GetArgByIndex(0)->GetEarlyNode();
+            GenTree* flagOp = call->gtArgs.GetArgByIndex(1)->GetEarlyNode();
             GenTree* result = gtOptimizeEnumHasFlag(thisOp, flagOp);
 
             if (result != nullptr)
@@ -12249,8 +12249,8 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
         case NI_System_Type_op_Inequality:
         {
             noway_assert(call->TypeGet() == TYP_INT);
-            GenTree* op1 = call->gtArgs.GetArgByIndex(0)->GetNode();
-            GenTree* op2 = call->gtArgs.GetArgByIndex(1)->GetNode();
+            GenTree* op1 = call->gtArgs.GetArgByIndex(0)->GetEarlyNode();
+            GenTree* op2 = call->gtArgs.GetArgByIndex(1)->GetEarlyNode();
 
             // If either operand is known to be a RuntimeType, this can be folded
             GenTree* result = gtFoldTypeEqualityCall(ni == NI_System_Type_op_Equality, op1, op2);
@@ -12492,8 +12492,8 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         JITDUMP("Optimizing compare of types-from-handles to instead compare handles\n");
         assert((tree->AsOp()->gtGetOp1()->AsCall()->gtArgs.CountArgs() == 1) &&
                (tree->AsOp()->gtGetOp2()->AsCall()->gtArgs.CountArgs() == 1));
-        GenTree* op1ClassFromHandle  = tree->AsOp()->gtGetOp1()->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
-        GenTree* op2ClassFromHandle  = tree->AsOp()->gtGetOp2()->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+        GenTree* op1ClassFromHandle  = tree->AsOp()->gtGetOp1()->AsCall()->gtArgs.GetArgByIndex(0)->GetEarlyNode();
+        GenTree* op2ClassFromHandle  = tree->AsOp()->gtGetOp2()->AsCall()->gtArgs.GetArgByIndex(0)->GetEarlyNode();
         CORINFO_CLASS_HANDLE cls1Hnd = NO_CLASS_HANDLE;
         CORINFO_CLASS_HANDLE cls2Hnd = NO_CLASS_HANDLE;
 
@@ -13152,7 +13152,7 @@ GenTree* Compiler::gtFoldBoxNullable(GenTree* tree)
     JITDUMP("\nAttempting to optimize BOX_NULLABLE(&x) %s null [%06u]\n", GenTree::OpName(oper), dspTreeID(tree));
 
     // Get the address of the struct being boxed
-    GenTree* const arg = call->gtArgs.GetArgByIndex(1)->GetNode();
+    GenTree* const arg = call->gtArgs.GetArgByIndex(1)->GetEarlyNode();
 
     if (arg->OperIs(GT_ADDR) && ((arg->gtFlags & GTF_LATE_ARG) == 0))
     {
@@ -15169,7 +15169,7 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags)
                 {
                     // I'm a little worried that args that assign to temps that are late args will look like
                     // side effects...but better to be conservative for now.
-                    if (gtTreeHasSideEffects(arg.GetNode(), flags))
+                    if (gtTreeHasSideEffects(arg.GetEarlyNode(), flags))
                     {
                         return true;
                     }

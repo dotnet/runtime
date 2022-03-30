@@ -1348,7 +1348,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
 //
 void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
 {
-    GenTree** ppArg = late ? &callArg->LateNodeRef() : &callArg->NodeRef();
+    GenTree** ppArg = late ? &callArg->LateNodeRef() : &callArg->EarlyNodeRef();
     GenTree*  arg   = *ppArg;
     assert(arg != nullptr);
 
@@ -1804,12 +1804,12 @@ void Lowering::InsertProfTailCallHook(GenTreeCall* call, GenTree* insertionPoint
     {
         for (CallArg& arg : call->gtArgs.Args())
         {
-            assert(!arg.GetNode()->OperIs(GT_PUTARG_REG)); // We don't expect to see these in gtCallArgs
+            assert(!arg.GetEarlyNode()->OperIs(GT_PUTARG_REG)); // We don't expect to see these in gtCallArgs
 
-            if (arg.GetNode()->OperIs(GT_PUTARG_STK))
+            if (arg.GetEarlyNode()->OperIs(GT_PUTARG_STK))
             {
                 // found it
-                insertionPoint = arg.GetNode();
+                insertionPoint = arg.GetEarlyNode();
                 break;
             }
         }
@@ -1913,9 +1913,9 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
 
     for (CallArg& arg : call->gtArgs.Args())
     {
-        if (arg.GetNode()->OperIs(GT_PUTARG_STK))
+        if (arg.GetEarlyNode()->OperIs(GT_PUTARG_STK))
         {
-            putargs.Push(arg.GetNode());
+            putargs.Push(arg.GetEarlyNode());
         }
     }
 
@@ -2227,7 +2227,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     // arg 0 == callTarget.
     CallArg* argEntry = call->gtArgs.GetArgByIndex(numArgs - 1);
     assert(argEntry != nullptr);
-    GenTree* arg0 = argEntry->GetNode()->AsPutArgStk()->gtGetOp1();
+    GenTree* arg0 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
 
     ContainCheckRange(callTargetRange);
     BlockRange().InsertAfter(arg0, std::move(callTargetRange));
@@ -2237,12 +2237,12 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     assert(isClosed);
     BlockRange().Remove(std::move(secondArgRange));
 
-    argEntry->GetNode()->AsPutArgStk()->gtOp1 = callTarget;
+    argEntry->GetEarlyNode()->AsPutArgStk()->gtOp1 = callTarget;
 
     // arg 1 == flags
     argEntry = call->gtArgs.GetArgByIndex(numArgs - 2);
     assert(argEntry != nullptr);
-    GenTree* arg1 = argEntry->GetNode()->AsPutArgStk()->gtGetOp1();
+    GenTree* arg1 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
     assert(arg1->gtOper == GT_CNS_INT);
 
     ssize_t tailCallHelperFlags = 1 |                                  // always restore EDI,ESI,EBX
@@ -2252,7 +2252,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     // arg 2 == numberOfNewStackArgsWords
     argEntry = call->gtArgs.GetArgByIndex(numArgs - 3);
     assert(argEntry != nullptr);
-    GenTree* arg2 = argEntry->GetNode()->AsPutArgStk()->gtGetOp1();
+    GenTree* arg2 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
     assert(arg2->gtOper == GT_CNS_INT);
 
     arg2->AsIntCon()->gtIconVal = nNewStkArgsWords;
@@ -2261,7 +2261,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     // arg 3 == numberOfOldStackArgsWords
     argEntry = call->gtArgs.GetArgByIndex(numArgs - 4);
     assert(argEntry != nullptr);
-    GenTree* arg3 = argEntry->GetNode()->AsPutArgStk()->gtGetOp1();
+    GenTree* arg3 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
     assert(arg3->gtOper == GT_CNS_INT);
 #endif // DEBUG
 
@@ -2385,7 +2385,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             // Finally move all GT_PUTARG_* nodes
             for (CallArg& arg : call->gtArgs.Args())
             {
-                GenTree* node = arg.GetNode();
+                GenTree* node = arg.GetEarlyNode();
                 // Non-value nodes in early args are setup nodes for late args.
                 if (node->IsValue())
                 {
@@ -6455,7 +6455,7 @@ void Lowering::CheckCall(GenTreeCall* call)
 {
     for (CallArg& arg : call->gtArgs.Args())
     {
-        CheckCallArg(arg.GetNode());
+        CheckCallArg(arg.GetEarlyNode());
     }
 
     for (LateArg arg : call->gtArgs.LateArgs())
