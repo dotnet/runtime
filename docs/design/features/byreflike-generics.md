@@ -99,25 +99,25 @@ The expansion of metadata will impact at least the following:
 
 ## Semantic Proposal
 
-An API that is a JIT-time intrinsic will be needed to determine if a parameter is ByRefLike. This API would represent a check to occur at JIT time code-gen to avoid taking paths that would be invalid for some values of `T`. The existing `Type.IsByRefLike` property will be made an intrinsic (e.g., `typeof(T).IsByRefLike`).
+An API that is a JIT-time intrinsic will be needed to determine if a parameter is ByRefLike. This API would represent a check to occur at JIT time to avoid taking paths that would be invalid for some values of `T`. The existing `Type.IsByRefLike` property will be made an intrinsic (e.g., `typeof(T).IsByRefLike`).
 
-For dispatch to object implemented methods and to default interface methods, the behavior shall be that an `InvalidProgramException` should be thrown. The JIT would insert the following IL at code-gen time.
+For dispatch to object implemented methods and to default interface methods, the behavior shall be that an `InvalidProgramException` should be thrown. The JIT will insert the following IL at code-gen time.
 
 ```
 newobj instance void System.InvalidProgramException::.ctor()
 throw
 ```
 
-The `Reflection.Emit` API will need to be updated to respect the behavior of this flag. The current Reflection API requires boxing of all types which makes usage of ByRefLike types impossible. Until the Reflection API can fully support ByRefLike types, this feature must be blocked when using Reflection. For example, API calls such as `MakeGenericType` / `MakeGenericMethod` are invalid.
+The `Reflection.Emit` API will be updated to respect ByRefLike support in Generics. The current Reflection API requires boxing of all types which makes usage of ByRefLike types impossible. Until the Reflection API can fully support ByRefLike types, this feature must be blocked when using Reflection. For example, API calls such as `MakeGenericType` / `MakeGenericMethod` will be invalid when `T` is ByRefLike.
 
 ## Special IL Sequences
 
-The following are IL sequences involving the `box` instruction. They are used for optimized scenarios and shall continue to be valid, even with ByRefLike types, in cases where the result can be computed at JIT time and elided safely. They will be added to the ECMA-335 addendum.
+The following are IL sequences involving the `box` instruction. They are used in scenario optimizations and shall continue to be valid, even with ByRefLike types, in cases where the result can be computed at JIT time and elided safely. They will be added to the ECMA-335 addendum.
 
 `box` ; `unbox.any`
 
 `box` ; `br_true/false`
 
-`box` ; `isinst` ; `br_true/false`
-
 `box` ; `isinst` ; `unbox.any`
+
+`box` ; `isinst` ; `br_true/false`
