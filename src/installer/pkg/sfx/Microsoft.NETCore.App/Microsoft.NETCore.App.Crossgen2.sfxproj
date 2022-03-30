@@ -27,8 +27,7 @@
              Properties="RunningPublish=true
               ;RuntimeIdentifier=$(RuntimeIdentifier)
               ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
-              ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets
-              ;Configuration=$(RuntimeConfiguration)"
+              ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets"
              Targets="Restore;Publish;PublishItemsOutputGroup">
       <Output TaskParameter="TargetOutputs"
               ItemName="_RawCrossgenPublishFiles" />
