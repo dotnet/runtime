@@ -105,7 +105,7 @@ namespace System.Data.Common
 
         public void AddRange(System.Array values) => AddEnumerableRange(values, false);
 
-        private void AddEnumerableRange(IEnumerable values, bool doClone)
+        private void AddEnumerableRange(Array values, bool doClone)
         {
             if (null == values)
             {
