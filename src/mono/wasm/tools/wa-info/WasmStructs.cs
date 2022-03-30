@@ -128,7 +128,7 @@ namespace WebAssemblyInfo
             if (reader == null)
                 return $"[{idx.ToString()}]";
 
-            return reader.GetFunctionName(idx);
+            return reader.GetFunctionName(idx, false);
         }
 
         static string FunctionType(UInt32 idx, WasmReader? reader)

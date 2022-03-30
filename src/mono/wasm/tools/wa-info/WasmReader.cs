@@ -1124,9 +1124,9 @@ namespace WebAssemblyInfo
 
         public bool HasFunctionNames { get { return functionNames != null && functionNames.Count > 0; } }
 
-        public string? GetFunctionName(UInt32 idx)
+        public string? GetFunctionName(UInt32 idx, bool needsOffset = true)
         {
-            string? name = HasFunctionNames ? functionNames[FunctionOffset(idx)] : null;
+            string? name = HasFunctionNames ? functionNames[needsOffset ? FunctionOffset(idx) : idx] : null;
             if (string.IsNullOrEmpty(name))
                 name = $"idx:{idx}";
 
