@@ -32,26 +32,12 @@ namespace Microsoft.Extensions.Configuration
             ReadOnlySpan<char> xSpan = x.AsSpan();
             ReadOnlySpan<char> ySpan = y.AsSpan();
 
-            if (x == null || y == null)
-            {
-                return (x is null ? 0 : CountPartsIn(xSpan)) - (y is null ? 0 : CountPartsIn(ySpan));
-            }
+            xSpan = SkipAheadOnDelimiter(xSpan);
+            ySpan = SkipAheadOnDelimiter(ySpan);
 
             // Compare each part until we get two parts that are not equal
             while (!xSpan.IsEmpty && !ySpan.IsEmpty)
             {
-                if (xSpan[0] == s_keyDelimiter)
-                {
-                    xSpan = xSpan.Slice(1);
-                    continue;
-                }
-
-                if (ySpan[0] == s_keyDelimiter)
-                {
-                    ySpan = ySpan.Slice(1);
-                    continue;
-                }
-
                 int xSegmentLength = xSpan.IndexOf(s_keyDelimiter);
                 if (xSegmentLength < 0)
                 {
@@ -72,37 +58,20 @@ namespace Microsoft.Extensions.Configuration
 
                 xSpan = xSpan.Slice(xSegmentLength);
                 ySpan = ySpan.Slice(ySegmentLength);
+
+                xSpan = SkipAheadOnDelimiter(xSpan);
+                ySpan = SkipAheadOnDelimiter(ySpan);
             }
 
-            if (xSpan.IsEmpty)
-            {
-                return ySpan.IsEmpty ? 0 : -CountPartsIn(ySpan);
-            }
+            return xSpan.IsEmpty ? (ySpan.IsEmpty ? 0 : -1) : 1;
 
-            return CountPartsIn(xSpan);
-
-            static int CountPartsIn(ReadOnlySpan<char> a)
+            static ReadOnlySpan<char> SkipAheadOnDelimiter(ReadOnlySpan<char> a)
             {
-                int count = 0;
-                while (!a.IsEmpty)
+                while (!a.IsEmpty && a[0] == s_keyDelimiter)
                 {
-                    int segmentLength = a.IndexOf(s_keyDelimiter);
-                    if (segmentLength < 0)
-                    {
-                        return count + 1;
-                    }
-
-                    if (a[0] == s_keyDelimiter)
-                    {
-                        a = a.Slice(1);
-                        continue;
-                    }
-
-                    a = a.Slice(segmentLength);
-                    count++;
+                    a = a.Slice(1);
                 }
-
-                return count;
+                return a;
             }
 
             static int Compare(ReadOnlySpan<char> a, ReadOnlySpan<char> b)
