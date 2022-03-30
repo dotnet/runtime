@@ -114,21 +114,6 @@
     <SkipImportILTargets Condition="'$(CLRTestBuildAllTargets)' != '' And '$(CLRTestNeedTarget)' != '$(CLRTestBuildAllTargets)'">true</SkipImportILTargets>
   </PropertyGroup>
 
-  <Target Name="CopyMergedWrapperReferences"
-      Condition="'$(IsMergedTestRunnerAssembly)' == 'true'"
-      AfterTargets="Build"
-      BeforeTargets="CopyNativeProjectBinaries">
-    <ItemGroup>
-      <MergedWrapperReferenceFolders Include="@(ProjectReference->'$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)/..', '$(OutDir)/..'))/%(ProjectReference.FileName)')" />
-      <!-- For merged project wrappers, include native libraries in all project references -->
-      <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/$(LibPrefix)*$(LibSuffix)" />
-    </ItemGroup>
-    <Copy SourceFiles="@(MergedWrapperReferenceFiles)"
-        DestinationFiles="@(MergedWrapperReferenceFiles->'$(OutDir)/%(FileName)%(Extension)')" 
-        SkipUnchangedFiles="true"
-        />
-  </Target>
-
   <Target Name="CopyNativeProjectBinaries" Condition="'$(_CopyNativeProjectBinaries)' == 'true'">
     <ItemGroup Condition="'$(UseVisualStudioNativeBinariesLayout)' == 'true'">
       <NativeProjectBinaries Include="$(NativeProjectOutputFolder)\*.*" />
@@ -224,6 +209,11 @@
     <Message Text= "Native binaries will be copied from :%(NativeProjectOutputFoldersToCopy.Identity)" />
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyNativeProjectBinaries" Properties="NativeProjectOutputFolder=%(NativeProjectOutputFoldersToCopy.Identity)" Condition="'@(NativeProjectReference)' != ''" />
+
+    <MSBuild Projects="@(ProjectReference)"
+        Targets="CopyAllNativeProjectReferenceBinaries"
+        Condition="'$(IsMergedTestRunnerAssembly)' == 'true'"
+        BuildInParallel="true" />
   </Target>
 
   <Target Name="CopyAllNativeProjectReferenceBinaries"
