@@ -181,11 +181,8 @@ def main(main_args):
         # Disable core dumps. The fuzzers have their own graceful handling for
         # runtime crashes. Especially on macOS we can quickly fill up the drive
         # with dumps if we find lots of crashes since dumps there are very big.
-        try:
-            import resource
-            resource.setrlimit(resource.RLIMIT_CORE, 0)
-        except:
-            pass
+        import resource
+        resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
 
     with TempDir() as temp_location:
         summary_file_name = "issues-summary-{}.txt".format(tag_name)
