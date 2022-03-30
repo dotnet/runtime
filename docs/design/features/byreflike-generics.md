@@ -15,7 +15,7 @@ Supporting ByRefLike type as Generic parameters will impact the following IL ins
     - `newobj` &ndash; For multi-dimensional array construction.
 - `constrained.callvirt` &ndash; If this IL sequence resolves to a method implemented on `object` or default interface method, an error will occur during the attempt to box the instance.
 
-If any of the above instructions are attempted to be used with a ByRefLike type, the runtime will throw an `InvalidProgramException`.
+If any of the above instructions are attempted to be used with a ByRefLike type, the runtime will throw an `InvalidProgramException`. Sequences involving some of the above instructions are considered optimizations and represent cases that will remain valid regardless of a `T` being ByRefLike. See "Special IL Sequences" section below for details.
 
 The following instructions are already set up to support this feature since their behavior will fail as currently defined due to the inability to box a ByRefLike type.
 
@@ -40,6 +40,34 @@ namespace System.Runtime.CompilerServices
     }
 }
 ```
+
+The compiler will need an indication for existing troublesome APIs where ByRefLike types will be permissable, but where the failure will be handled at runtime. An attribute will be created and added to these APIs.
+
+```csharp
+namespace System.Runtime.CompilerServices
+{
+    /// <summary>
+    /// Indicates to the compiler that constrain checks should be suppressed
+    /// and will instead be enforced at run-time.
+    /// </summary>
+    public sealed class SuppressConstraintChecksAttribute : Attribute
+    { }
+}
+```
+
+Troublesome APIs:
+- [`Span<T>`](https://docs.microsoft.com/dotnet/api/system.span-1)
+    - `public Span(T[]? array);`
+    - `public Span(T[]? array, int start, int length);`
+    - `public T[] ToArray();`
+    - `public static implicit operator Span<T>(ArraySegment<T> segment);`
+    - `public static implicit operator Span<T>(T[]? array);`
+- [`ReadOnlySpan<T>`](https://docs.microsoft.com/dotnet/api/system.readonlyspan-1)
+    - `public ReadOnlySpan(T[]? array);`
+    - `public ReadOnlySpan(T[]? array, int start, int length);`
+    - `public T[] ToArray();`
+    - `public static implicit operator ReadOnlySpan<T>(ArraySegment<T> segment);`
+    - `public static implicit operator ReadOnlySpan<T>(T[]? array);`
 
 A new `GenericParameterAttributes` value will be defined which also represents metadata defined in the `CorGenericParamAttr` enumeration. Space is provided between the existing constraints group to permit constraint growth while keeping the bit-mask contiguous.
 
@@ -81,3 +109,15 @@ throw
 ```
 
 The `Reflection.Emit` API will need to be updated to respect the behavior of this flag. The current Reflection API requires boxing of all types which makes usage of ByRefLike types impossible. Until the Reflection API can fully support ByRefLike types, this feature must be blocked when using Reflection. For example, API calls such as `MakeGenericType` / `MakeGenericMethod` are invalid.
+
+## Special IL Sequences
+
+The following are IL sequences involving the `box` instruction. They are used for optimized scenarios and shall continue to be valid, even with ByRefLike types, in cases where the result can be computed at JIT time and elided safely. They will be added to the ECMA-335 addendum.
+
+`box` ; `unbox.any`
+
+`box` ; `br_true/false`
+
+`box` ; `isinst` ; `br_true/false`
+
+`box` ; `isinst` ; `unbox.any`
