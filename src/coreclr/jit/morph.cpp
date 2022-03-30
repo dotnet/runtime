@@ -12632,24 +12632,11 @@ DONE_MORPHING_CHILDREN:
 
             break;
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         case GT_DIV:
-            if (!varTypeIsFloating(tree->gtType))
-            {
-                // Codegen for this instruction needs to be able to throw two exceptions:
-                fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
-                fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
-            }
-            break;
-        case GT_UDIV:
-            // Codegen for this instruction needs to be able to throw one exception:
-            fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
-            break;
-#endif
-
 #ifdef TARGET_LOONGARCH64
-        case GT_DIV:
         case GT_MOD:
+#endif
             if (!varTypeIsFloating(tree->gtType))
             {
                 // Codegen for this instruction needs to be able to throw two exceptions:
@@ -12658,11 +12645,15 @@ DONE_MORPHING_CHILDREN:
             }
             break;
         case GT_UDIV:
+#ifdef TARGET_LOONGARCH64
         case GT_UMOD:
+#endif
             // Codegen for this instruction needs to be able to throw one exception:
             fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
             break;
-#endif
+
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+
         case GT_ADD:
 
         CM_OVF_OP:

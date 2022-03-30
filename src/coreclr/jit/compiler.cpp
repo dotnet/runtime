@@ -902,16 +902,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         howToReturnStruct   = SPK_ByReference;
         useType             = TYP_UNKNOWN;
     }
-#endif
-    if (TargetOS::IsWindows && !TargetArchitecture::IsArm32 && callConvIsInstanceMethodCallConv(callConv) &&
-        !isNativePrimitiveStructType(clsHnd))
-    {
-        canReturnInRegister = false;
-        howToReturnStruct   = SPK_ByReference;
-        useType             = TYP_UNKNOWN;
-    }
-
-#ifdef TARGET_LOONGARCH64
+#elif TARGET_LOONGARCH64
     if (structSize <= (TARGET_POINTER_SIZE * 2))
     {
         uint32_t floatFieldFlags = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(clsHnd);
@@ -927,7 +918,14 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
             useType           = TYP_STRUCT;
         }
     }
-#endif // TARGET_LOONGARCH64
+#endif
+    if (TargetOS::IsWindows && !TargetArchitecture::IsArm32 && callConvIsInstanceMethodCallConv(callConv) &&
+        !isNativePrimitiveStructType(clsHnd))
+    {
+        canReturnInRegister = false;
+        howToReturnStruct   = SPK_ByReference;
+        useType             = TYP_UNKNOWN;
+    }
 
     // Check for cases where a small struct is returned in a register
     // via a primitive type.

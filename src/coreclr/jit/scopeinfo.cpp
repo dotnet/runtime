@@ -1609,17 +1609,21 @@ void CodeGen::psiBegProlog()
                     noway_assert(EA_SIZE_IN_BYTES(lclVarDsc->lvSize()) <= 16);
                     if (emitter::isFloatReg(lclVarDsc->GetArgReg()))
                     {
-                        // regType = lclVarDsc->lvIs4Field1 ? TYP_FLOAT : TYP_DOUBLE;
                         regType = TYP_DOUBLE;
                     }
                     else
+                    {
                         regType = lclVarDsc->GetLayout()->GetGCPtrType(0);
+                    }
                 }
                 else
                 {
                     regType = compiler->mangleVarArgsType(lclVarDsc->TypeGet());
                     if (emitter::isGeneralRegisterOrR0(lclVarDsc->GetArgReg()) && isFloatRegType(regType))
+                    {
+                        // For LoongArch64's ABI, the float args may be passed by integer register.
                         regType = TYP_LONG;
+                    }
                 }
 #else
                 var_types regType = compiler->mangleVarArgsType(lclVarDsc->TypeGet());
