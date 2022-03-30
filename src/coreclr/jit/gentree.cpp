@@ -11873,8 +11873,8 @@ void Compiler::gtDispArgList(GenTreeCall* call, GenTree* lastCallOperand, Indent
         {
             char buf[256];
             gtGetArgMsg(call, &arg, buf, sizeof(buf));
-            gtDispChild(arg.GetEarlyNode(), indentStack, (arg.GetEarlyNode() == lastCallOperand) ? IIArcBottom : IIArc, buf,
-                        false);
+            gtDispChild(arg.GetEarlyNode(), indentStack, (arg.GetEarlyNode() == lastCallOperand) ? IIArcBottom : IIArc,
+                        buf, false);
         }
     }
 }

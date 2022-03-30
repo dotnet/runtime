@@ -8207,9 +8207,8 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         if (!arg.IsArgAddedLate())
         {
             Statement* paramAssignStmt =
-                fgAssignRecursiveCallArgToCallerParam(lateArg, &arg,
-                                                      fgGetArgParameterLclNum(recursiveTailCall, &arg), block,
-                                                      callDI, tmpAssignmentInsertionPoint,
+                fgAssignRecursiveCallArgToCallerParam(lateArg, &arg, fgGetArgParameterLclNum(recursiveTailCall, &arg),
+                                                      block, callDI, tmpAssignmentInsertionPoint,
                                                       paramAssignmentInsertionPoint);
 
             if ((tmpAssignmentInsertionPoint == lastStmt) && (paramAssignStmt != nullptr))

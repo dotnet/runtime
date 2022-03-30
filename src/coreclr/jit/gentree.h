@@ -4431,7 +4431,7 @@ public:
 
     unsigned CountArgs();
 
-    template<typename CallArg* (CallArg::*Next)()>
+    template <typename CallArg* (CallArg::*Next)()>
     class CallArgIterator
     {
         CallArg* m_arg;
@@ -4473,7 +4473,7 @@ public:
         }
     };
 
-    using ArgIterator = CallArgIterator<&CallArg::GetNext>;
+    using ArgIterator     = CallArgIterator<&CallArg::GetNext>;
     using LateArgIterator = CallArgIterator<&CallArg::GetLateNext>;
 
     IteratorPair<ArgIterator> Args()
