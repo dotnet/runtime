@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 
 using JSObject = System.Runtime.InteropServices.JavaScript.JSObject;
 using JSException = System.Runtime.InteropServices.JavaScript.JSException;
-using HostObject = System.Runtime.InteropServices.JavaScript.HostObject;
 using Uint8Array = System.Runtime.InteropServices.JavaScript.Uint8Array;
 using Function = System.Runtime.InteropServices.JavaScript.Function;
 
@@ -196,7 +195,7 @@ namespace System.Net.Http
                 // Process headers
                 // Cors has its own restrictions on headers.
                 // https://developer.mozilla.org/en-US/docs/Web/API/Headers
-                using (HostObject jsHeaders = new HostObject("Headers"))
+                using (JSObject jsHeaders = new JSObject("Headers"))
                 {
                     foreach (KeyValuePair<string, IEnumerable<string>> header in request.Headers)
                     {
@@ -219,7 +218,7 @@ namespace System.Net.Http
                 }
 
 
-                JSObject abortController = new HostObject("AbortController");
+                JSObject abortController = new JSObject("AbortController");
                 using JSObject signal = (JSObject)abortController.GetObjectProperty("signal");
                 requestObject.SetObjectProperty("signal", signal);
 

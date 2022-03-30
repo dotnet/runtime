@@ -1162,8 +1162,8 @@ namespace System.Net.Http.Headers
             }
 
             int currentIndex = 0;
-            ReadStoreValues<string?>(values, info.RawValue, null, ref currentIndex);
             ReadStoreValues<object?>(values, info.ParsedAndInvalidValues, descriptor.Parser, ref currentIndex);
+            ReadStoreValues<string?>(values, info.RawValue, null, ref currentIndex);
 
             Debug.Assert(currentIndex == length);
         }
@@ -1196,8 +1196,8 @@ namespace System.Net.Http.Headers
                 }
 
                 int currentIndex = 0;
-                ReadStoreValues<string?>(values, info.RawValue, null, ref currentIndex);
                 ReadStoreValues<object?>(values, info.ParsedAndInvalidValues, descriptor.Parser, ref currentIndex);
+                ReadStoreValues<string?>(values, info.RawValue, null, ref currentIndex);
                 Debug.Assert(currentIndex == length);
             }
 
@@ -1208,9 +1208,7 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(info != null);
 
-            int valueCount = Count<string>(info.RawValue);
-            valueCount += Count<object>(info.ParsedAndInvalidValues);
-            return valueCount;
+            return Count<object>(info.ParsedAndInvalidValues) + Count<string>(info.RawValue);
 
             static int Count<T>(object? valueStore) =>
                 valueStore is null ? 0 :

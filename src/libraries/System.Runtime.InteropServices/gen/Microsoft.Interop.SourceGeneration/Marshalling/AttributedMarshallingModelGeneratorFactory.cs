@@ -165,7 +165,7 @@ namespace Microsoft.Interop
                 {
                     throw new MarshallingNotSupportedException(info, context);
                 }
-                marshallingStrategy = new StackallocOptimizationMarshalling(marshallingStrategy, marshalInfo.BufferSize.Value);
+                marshallingStrategy = new StackallocOptimizationMarshalling(marshallingStrategy, marshalInfo.BufferElementType.Syntax, marshalInfo.BufferSize.Value);
             }
 
             if ((marshalInfo.MarshallingFeatures & CustomTypeMarshallerFeatures.UnmanagedResources) != 0)

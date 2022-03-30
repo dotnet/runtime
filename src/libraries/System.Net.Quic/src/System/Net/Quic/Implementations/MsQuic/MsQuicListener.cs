@@ -88,6 +88,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             _stateHandle = GCHandle.Alloc(_state);
             try
             {
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 uint status = MsQuicApi.Api.ListenerOpenDelegate(
                     MsQuicApi.Api.Registration,
                     s_listenerDelegate,
@@ -186,6 +187,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             QuicBuffer[]? buffers = null;
             try
             {
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 MsQuicAlpnHelper.Prepare(applicationProtocols, out handles, out buffers);
                 status = MsQuicApi.Api.ListenerStartDelegate(_state.Handle, (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(buffers, 0), (uint)applicationProtocols.Count, ref address);
             }
@@ -201,6 +203,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             QuicExceptionHelpers.ThrowIfFailed(status, "ListenerStart failed.");
 
+            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
             SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.LISTENER, (uint)QUIC_PARAM_LISTENER.LOCAL_ADDRESS);
             return MsQuicAddressHelpers.INetToIPEndPoint(ref inetAddress);
         }
@@ -217,6 +220,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_state.Handle != null)
             {
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 MsQuicApi.Api.ListenerStopDelegate(_state.Handle);
             }
         }
@@ -277,6 +281,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 connectionHandle = new SafeMsQuicConnectionHandle(evt->Data.NewConnection.Connection);
 
+                Debug.Assert(!Monitor.IsEntered(state), "!Monitor.IsEntered(state)");
                 uint status = MsQuicApi.Api.ConnectionSetConfigurationDelegate(connectionHandle, connectionConfiguration);
                 if (MsQuicStatusHelper.SuccessfulStatusCode(status))
                 {

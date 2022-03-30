@@ -143,6 +143,7 @@ namespace Microsoft.Interop
         CustomTypeMarshallerFeatures MarshallingFeatures,
         CustomTypeMarshallerPinning PinningFeatures,
         bool UseDefaultMarshalling,
+        ManagedTypeInfo? BufferElementType,
         int? BufferSize) : MarshallingInfo;
 
     /// <summary>
@@ -178,6 +179,7 @@ namespace Microsoft.Interop
             MarshallingFeatures,
             PinningFeatures,
             UseDefaultMarshalling,
+            SpecialTypeInfo.Byte,
             BufferSize
         );
 
@@ -672,6 +674,26 @@ namespace Microsoft.Interop
                     GetMarshallingInfo(elementType, useSiteAttributes, indirectionLevel + 1, inspectedElements, ref maxIndirectionDepthUsed));
             }
 
+            ManagedTypeInfo? bufferElementTypeInfo = null;
+            if (customTypeMarshallerData.Value.Features.HasFlag(CustomTypeMarshallerFeatures.CallerAllocatedBuffer))
+            {
+                ITypeSymbol? bufferElementType = null;
+                INamedTypeSymbol spanOfT = _compilation.GetTypeByMetadataName(TypeNames.System_Span_Metadata)!;
+                foreach (IMethodSymbol ctor in nativeType.Constructors)
+                {
+                    if (ManualTypeMarshallingHelper.IsCallerAllocatedSpanConstructor(ctor, type, spanOfT, customTypeMarshallerData.Value.Kind, out bufferElementType))
+                        break;
+                }
+
+                if (bufferElementType is null)
+                {
+                    _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.ValueInCallerAllocatedBufferRequiresSpanConstructorMessage), nativeType.ToDisplayString(), type.ToDisplayString());
+                    return NoMarshallingInfo.Instance;
+                }
+
+                bufferElementTypeInfo = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(bufferElementType);
+            }
+
             return new NativeMarshallingAttributeInfo(
                 ManagedTypeInfo.CreateTypeInfoForTypeSymbol(nativeType),
                 toNativeValueMethod is not null ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(toNativeValueMethod.ReturnType) : null,
@@ -679,6 +701,7 @@ namespace Microsoft.Interop
                 customTypeMarshallerData.Value.Features,
                 pinning,
                 UseDefaultMarshalling: !isMarshalUsingAttribute,
+                bufferElementTypeInfo,
                 customTypeMarshallerData.Value.BufferSize);
         }
 

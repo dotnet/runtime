@@ -2887,6 +2887,101 @@ namespace System.Net.Http.Functional.Tests
                 }, options: new LoopbackServer.Options{UseSsl = true});
         }
 
+        [Fact]
+        public async Task ConnectCallback_MultipleRequests_EachRequestIsUsedOnce()
+        {
+            using HttpClientHandler handler = CreateHttpClientHandler();
+            using HttpClient client = CreateHttpClient(handler);
+
+            handler.MaxConnectionsPerServer = 2;
+
+            TaskCompletionSource connectCallbackEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource connectCallback1Gate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource connectCallback2Gate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            var uri = new Uri("https://example.com");
+            HttpRequestMessage request1 = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+            HttpRequestMessage request2 = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+            HttpRequestMessage request3 = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+
+            List<int> requestsSeen = new();
+
+            GetUnderlyingSocketsHttpHandler(handler).ConnectCallback = async (context, cancellation) =>
+            {
+                if (context.InitialRequestMessage == request1) requestsSeen.Add(1);
+                else if (context.InitialRequestMessage == request2) requestsSeen.Add(2);
+                else if (context.InitialRequestMessage == request3) requestsSeen.Add(3);
+                else requestsSeen.Add(-1);
+
+                connectCallbackEntered.SetResult();
+
+                if (context.InitialRequestMessage == request1) await connectCallback1Gate.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                if (context.InitialRequestMessage == request2) await connectCallback2Gate.Task.WaitAsync(TestHelper.PassingTestTimeout);
+
+                throw new Exception("No connection");
+            };
+
+            Task requestTask1 = client.SendAsync(request1);
+            await connectCallbackEntered.Task.WaitAsync(TestHelper.PassingTestTimeout);
+            Assert.Equal(new[] { 1 }, requestsSeen);
+
+            connectCallbackEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            Task requestTask2, requestTask3;
+
+            if (UseVersion.Major == 1)
+            {
+                requestTask2 = client.SendAsync(request2);
+                await connectCallbackEntered.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                Assert.Equal(new[] { 1, 2 }, requestsSeen);
+
+                connectCallbackEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                requestTask3 = client.SendAsync(request3);
+                await Task.Delay(1);
+                Assert.Equal(new[] { 1, 2 }, requestsSeen);
+
+                connectCallback2Gate.SetResult();
+                await connectCallbackEntered.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                Assert.Equal(new[] { 1, 2, 3 }, requestsSeen);
+
+                // First request was not canceled when the second connection attempt failed
+                Assert.NotEqual(TaskStatus.Faulted, requestTask1.Status);
+
+                connectCallback1Gate.SetResult();
+            }
+            else if (UseVersion.Major == 2)
+            {
+                requestTask2 = client.SendAsync(request2);
+                await Task.Delay(1);
+                Assert.Equal(new[] { 1 }, requestsSeen);
+
+                requestTask3 = client.SendAsync(request3);
+                await Task.Delay(1);
+                Assert.Equal(new[] { 1 }, requestsSeen);
+
+                connectCallback1Gate.SetResult();
+                await connectCallbackEntered.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                Assert.Equal(new[] { 1, 2 }, requestsSeen);
+
+                connectCallbackEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                connectCallback2Gate.SetResult();
+                await connectCallbackEntered.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                Assert.Equal(new[] { 1, 2, 3 }, requestsSeen);
+            }
+            else
+            {
+                throw new UnreachableException(UseVersion.ToString());
+            }
+
+            await Assert.ThrowsAsync<HttpRequestException>(() => requestTask1).WaitAsync(TestHelper.PassingTestTimeout);
+            await Assert.ThrowsAsync<HttpRequestException>(() => requestTask2).WaitAsync(TestHelper.PassingTestTimeout);
+            await Assert.ThrowsAsync<HttpRequestException>(() => requestTask3).WaitAsync(TestHelper.PassingTestTimeout);
+
+            Assert.Equal(new[] { 1, 2, 3 }, requestsSeen);
+        }
+
         private static bool PlatformSupportsUnixDomainSockets => Socket.OSSupportsUnixDomainSockets;
    }
 

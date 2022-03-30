@@ -14,7 +14,7 @@ CrashInfo::Initialize()
     m_fd = open(memPath, O_RDONLY);
     if (m_fd == -1)
     {
-        fprintf(stderr, "open(%s) FAILED %d (%s)\n", memPath, errno, strerror(errno));
+        printf_error("open(%s) FAILED %d (%s)\n", memPath, errno, strerror(errno));
         return false;
     }
     // Get the process info
@@ -58,7 +58,7 @@ CrashInfo::EnumerateAndSuspendThreads()
     DIR* taskDir = opendir(taskPath);
     if (taskDir == nullptr)
     {
-        fprintf(stderr, "opendir(%s) FAILED %s\n", taskPath, strerror(errno));
+        printf_error("opendir(%s) FAILED %s\n", taskPath, strerror(errno));
         return false;
     }
 
@@ -76,7 +76,7 @@ CrashInfo::EnumerateAndSuspendThreads()
             }
             else
             {
-                fprintf(stderr, "ptrace(ATTACH, %d) FAILED %s\n", tid, strerror(errno));
+                printf_error("ptrace(ATTACH, %d) FAILED %s\n", tid, strerror(errno));
                 closedir(taskDir);
                 return false;
             }
@@ -102,7 +102,7 @@ CrashInfo::GetAuxvEntries()
     int fd = open(auxvPath, O_RDONLY, 0);
     if (fd == -1)
     {
-        fprintf(stderr, "open(%s) FAILED %s\n", auxvPath, strerror(errno));
+        printf_error("open(%s) FAILED %s\n", auxvPath, strerror(errno));
         return false;
     }
     bool result = false;
@@ -159,7 +159,7 @@ CrashInfo::EnumerateModuleMappings()
     FILE* mapsFile = fopen(mapPath, "r");
     if (mapsFile == nullptr)
     {
-        fprintf(stderr, "fopen(%s) FAILED %s\n", mapPath, strerror(errno));
+        printf_error("fopen(%s) FAILED %s\n", mapPath, strerror(errno));
         return false;
     }
     // linuxGateAddress is the beginning of the kernel's mapping of
@@ -377,7 +377,7 @@ GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name)
     FILE *statusFile = fopen(statusPath, "r");
     if (statusFile == nullptr)
     {
-        fprintf(stderr, "GetStatus fopen(%s) FAILED\n", statusPath);
+        printf_error("GetStatus fopen(%s) FAILED\n", statusPath);
         return false;
     }
 
