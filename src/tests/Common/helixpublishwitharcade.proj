@@ -282,7 +282,8 @@
 
   <Target Name="DiscoverMergedTestWrappers">
     <ItemGroup>
-      <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" />
+      <!-- Exclude WASM support files. They can interfere with our discovery process and create extra work items that don't work. -->
+      <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" Exclude="$(TestBinDir)**\supportFiles\*.MergedTestAssembly" />
     </ItemGroup>
   </Target>
 
