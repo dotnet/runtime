@@ -5,7 +5,9 @@ using System;
 using System.IO;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Tracing.Tests.Common;
 
 namespace Tracing.Tests
@@ -22,7 +24,11 @@ namespace Tracing.Tests
                 using (SimpleEventListener listener = new SimpleEventListener("Simple"))
                 {
                     // Trigger the allocator task.
-                    System.Threading.Tasks.Task.Run(new Action(Allocator));
+                    Task.Run(new Action(Allocator));
+
+                    // If on Windows, attempt some Overlapped IO (triggers ThreadPool events)
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                        DoOverlappedIO();
 
                     // Wait for events.
                     Thread.Sleep(1000);
@@ -56,6 +62,14 @@ namespace Tracing.Tests
 
                 Thread.Sleep(10);
             }
+        }
+
+        private static unsafe void DoOverlappedIO()
+        {
+            Console.WriteLine("DOOVERLAPPEDIO");
+            Overlapped overlapped = new();
+            NativeOverlapped* pOverlap = overlapped.Pack(null, null);
+            Overlapped.Free(pOverlap);
         }
     }
 
