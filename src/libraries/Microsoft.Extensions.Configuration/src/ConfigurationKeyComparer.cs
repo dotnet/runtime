@@ -30,72 +30,60 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>Less than 0 if x is less than y, 0 if x is equal to y and greater than 0 if x is greater than y.</returns>
         public int Compare(string? x, string? y)
         {
+            ReadOnlySpan<char> xSpan = x.AsSpan();
+            ReadOnlySpan<char> ySpan = y.AsSpan();
+
             if (x == null || y == null)
             {
-                return (x is null ? 0 : GetPartsCount(x)) - (y is null ? 0 : GetPartsCount(y));
+                return (x is null ? 0 : CountPartsIn(xSpan)) - (y is null ? 0 : CountPartsIn(ySpan));
             }
 
-            int xIndex = 0;
-            int yIndex = 0;
-
             // Compare each part until we get two parts that are not equal
-            while (xIndex < x.Length && yIndex < y.Length)
+            while (!xSpan.IsEmpty && !ySpan.IsEmpty)
             {
-                if (x[xIndex] == s_keyDelimiter)
+                if (xSpan[0] == s_keyDelimiter)
                 {
-                    xIndex++;
+                    xSpan = xSpan.Slice(1);
                     continue;
                 }
 
-                if (y[yIndex] == s_keyDelimiter)
+                if (ySpan[0] == s_keyDelimiter)
                 {
-                    yIndex++;
+                    ySpan = ySpan.Slice(1);
                     continue;
                 }
 
-                ReadOnlySpan<char> xSpan;
-                int nextXIndex = x.IndexOf(s_keyDelimiter, xIndex);
-                if (nextXIndex >= 0)
+                int nextXIndex = xSpan.IndexOf(s_keyDelimiter);
+                if (nextXIndex < 0)
                 {
-                    xSpan = x.AsSpan().Slice(xIndex, nextXIndex - xIndex);
-                    xIndex = nextXIndex + 1;
-                }
-                else
-                {
-                    xSpan = x.AsSpan().Slice(xIndex, x.Length - xIndex);
-                    xIndex = x.Length;
+                    nextXIndex = xSpan.Length;
                 }
 
-                ReadOnlySpan<char> ySpan;
-                int nextYIndex = y.IndexOf(s_keyDelimiter, yIndex);
-                if (nextYIndex >= 0)
+                int nextYIndex = ySpan.IndexOf(s_keyDelimiter);
+                if (nextYIndex < 0)
                 {
-                    ySpan = y.AsSpan().Slice(yIndex, nextYIndex - yIndex);
-                    yIndex = nextYIndex + 1;
-                }
-                else
-                {
-                    ySpan = y.AsSpan().Slice(yIndex, y.Length - yIndex);
-                    yIndex = y.Length;
+                    nextYIndex = ySpan.Length;
                 }
 
-                int compareResult = Compare(xSpan, ySpan);
+                int compareResult = Compare(xSpan.Slice(0, nextXIndex), ySpan.Slice(0, nextYIndex));
                 if (compareResult != 0)
                 {
                     return compareResult;
                 }
+
+                xSpan = xSpan.Slice(nextXIndex);
+                ySpan = ySpan.Slice(nextYIndex);
             }
 
-            if (xIndex >= x.Length)
+            if (xSpan.IsEmpty)
             {
-                return yIndex >= y.Length ? 0 : -GetPartsCount(y, yIndex);
+                return ySpan.IsEmpty ? 0 : -CountPartsIn(ySpan);
             }
 
-            return GetPartsCount(x, xIndex);
+            return CountPartsIn(xSpan);
 
-            static int GetPartsCount(string s, int sliceIndex = 0)
+            static int CountPartsIn(ReadOnlySpan<char> a)
             {
-                ReadOnlySpan<char> a = s.AsSpan().Slice(sliceIndex, s.Length - sliceIndex);
                 int count = 0, aIndex = 0;
                 while (aIndex < a.Length)
                 {
