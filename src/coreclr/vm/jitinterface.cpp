@@ -3372,7 +3372,7 @@ int CEEInfo::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char16_t**   
         // Copy as much as will fit.
         WCHAR* pBuf = (WCHAR*)*ppBuf;
         int nLenToCopy = min(*pnBufLen, nLen + /* null terminator */ 1);
-        for (int i = 0; i < nLenToCopy; i++)
+        for (int i = 0; i < nLenToCopy - 1; i++)
         {
             pBuf[i] = szString[i];
         }

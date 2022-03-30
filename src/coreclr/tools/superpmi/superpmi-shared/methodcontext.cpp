@@ -6547,7 +6547,7 @@ int MethodContext::repAppendClassName(char16_t**           ppBuf,
         // Copy as much as will fit.
         char16_t* pBuf = *ppBuf;
         int nLenToCopy = min(*pnBufLen, nLen + /* null terminator */ 1);
-        for (int i = 0; i < nLenToCopy; i++)
+        for (int i = 0; i < nLenToCopy - 1; i++)
         {
             pBuf[i] = name[i];
         }
