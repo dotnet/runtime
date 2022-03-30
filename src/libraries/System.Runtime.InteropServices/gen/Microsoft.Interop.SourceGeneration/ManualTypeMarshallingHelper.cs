@@ -75,7 +75,12 @@ namespace Microsoft.Interop
             return (true, managedType, new CustomTypeMarshallerData(kind, direction, features, bufferSize));
         }
 
-
+        /// <summary>
+        /// Get the supported <see cref="CustomTypeMarshallerPinning"/> for a marshaller type
+        /// </summary>
+        /// <param name="marshallerType">The marshaller type.</param>
+        /// <param name="managedType">The mananged type that would be marshalled.</param>
+        /// <returns>Supported <see cref="CustomTypeMarshallerPinning"/></returns>
         public static CustomTypeMarshallerPinning GetMarshallerPinningFeatures(ITypeSymbol marshallerType, ITypeSymbol? managedType)
         {
             CustomTypeMarshallerPinning pinning = CustomTypeMarshallerPinning.None;
