@@ -194,11 +194,11 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
                 }
             }
 
-            // A local stack slot is at least 4 bytes in size, regardless of
-            // what the local var is typed as, so auto-promote it here
-            // unless it is a field of a promoted struct
-            // TODO-CQ: if the field is promoted shouldn't we also be able to do this?
-            if (!varDsc->lvIsStructField)
+            // Most locals have their own stack slots of a least 4 bytes in
+            // size. Use a wider store in that case.
+            // TODO-CQ: if the field is promoted independently shouldn't we
+            // also be able to do this?
+            if (!varDsc->lvIsStructField && (!varDsc->lvIsParam || !compMacOsArm64Abi()))
             {
                 storeLoc->gtType = TYP_INT;
                 con->SetIconValue(ival);
