@@ -50,6 +50,7 @@ namespace System.Runtime.CompilerServices
     /// Indicates to the compiler that constrain checks should be suppressed
     /// and will instead be enforced at run-time.
     /// </summary>
+    [AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property)]
     public sealed class SuppressConstraintChecksAttribute : Attribute
     { }
 }
