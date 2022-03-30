@@ -99,6 +99,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 proc.ErrorDataReceived += (sender, e) =>
                 {
                     var str = e.Data;
+                    Console.WriteLine($"{message_prefix} browser-stderr: {str}");
                     Logger.LogTrace($"{message_prefix} browser-stderr: {str}");
 
                     if (tcs.Task.IsCompleted)
@@ -116,6 +117,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 proc.OutputDataReceived += (sender, e) =>
                 {
+                    Console.WriteLine($"{message_prefix} browser-stdout: {e.Data}");
                     Logger.LogTrace($"{message_prefix} browser-stdout: {e.Data}");
                 };
 
