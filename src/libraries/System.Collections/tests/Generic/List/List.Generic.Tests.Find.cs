@@ -290,18 +290,21 @@ namespace System.Collections.Tests
         [Fact]
         public void Find_ListSizeCanBeChanged()
         {
+            var expected = new List<int>() { 1, 2, 3, 2, 3, 4, 3, 4, 4 };
+
             var list = new List<int>() { 1, 2, 3 };
-            var results = list.FindAll(i =>
+
+            list.Find(i =>
             {
                 if (i < 4)
                 {
                     list.Add(i + 1);
                 }
 
-                return true;
+                return false;
             });
 
-            Assert.Equal(list, results);
+            Assert.Equal(list, expected);
         }
 
         #endregion
@@ -1001,8 +1004,11 @@ namespace System.Collections.Tests
         [Fact]
         public void FindAll_ListSizeCanBeChanged()
         {
+            var expected = new List<int>() { 1, 2, 3, 2, 3, 4, 3, 4, 4 };
+
             var list = new List<int>() { 1, 2, 3 };
-            var results = list.FindAll(i =>
+
+            list.FindAll(i =>
             {
                 if (i < 4)
                 {
@@ -1012,7 +1018,7 @@ namespace System.Collections.Tests
                 return true;
             });
 
-            Assert.Equal(list, results);
+            Assert.Equal(list, expected);
         }
 
         #endregion
