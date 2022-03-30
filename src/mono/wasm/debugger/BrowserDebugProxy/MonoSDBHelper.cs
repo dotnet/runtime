@@ -1603,8 +1603,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<JObject> InvokeMethodInObject(DotnetObjectId objectId, int methodId, string varName, CancellationToken token)
         {
-            if (objectId.IsValueType)
-                return await InvokeMethod(valueTypes[objectId.Value].valueTypeBuffer, methodId, varName, token);
+            if (objectId.IsValueType && valueTypes.TryGetValue(objectId.Value, out var valueType))
+                return await InvokeMethod(valueType.valueTypeBuffer, methodId, varName, token);
             using var commandParamsObjWriter = new MonoBinaryWriter();
             commandParamsObjWriter.Write(ElementType.Class, objectId.Value);
             return await InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, varName, token);
@@ -2204,13 +2204,15 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<JArray> GetValueTypeValues(int valueTypeId, bool accessorPropertiesOnly, CancellationToken token)
         {
-            if (valueTypes[valueTypeId].valueTypeJsonProps == null)
+            if (!valueTypes.TryGetValue(valueTypeId, out ValueTypeClass valueType))
+                return null;
+            if (valueType.valueTypeJsonProps == null)
             {
-                valueTypes[valueTypeId].valueTypeJsonProps = await GetPropertiesValuesOfValueType(valueTypeId, token);
+                valueType.valueTypeJsonProps = await GetPropertiesValuesOfValueType(valueTypeId, token);
             }
             if (accessorPropertiesOnly)
-                return valueTypes[valueTypeId].valueTypeJsonProps;
-            var ret = new JArray(valueTypes[valueTypeId].valueTypeJson.Union(valueTypes[valueTypeId].valueTypeJsonProps));
+                return valueType.valueTypeJsonProps;
+            var ret = new JArray(valueType.valueTypeJson.Union(valueType.valueTypeJsonProps));
             return ret;
         }
 
