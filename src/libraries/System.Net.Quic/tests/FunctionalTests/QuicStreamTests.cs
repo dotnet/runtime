@@ -182,7 +182,7 @@ namespace System.Net.Quic.Tests
                 QuicStream clientStream = clientConnection.OpenBidirectionalStream();
                 ValueTask writeTask = clientStream.WriteAsync(Encoding.UTF8.GetBytes("PING"), endStream: true);
                 ValueTask<QuicStream> acceptTask = serverConnection.AcceptStreamAsync();
-                await new Task[] { writeTask.AsTask(), acceptTask.AsTask()}.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+                await new Task[] { writeTask.AsTask(), acceptTask.AsTask() }.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
                 QuicStream serverStream = acceptTask.Result;
                 await serverStream.ReadAsync(buffer);
             }
@@ -816,6 +816,40 @@ namespace System.Net.Quic.Tests
                             waitForAbortTcs.SetException(ex);
                         }
                     };
+                });
+        }
+
+
+        [Fact)]
+        public async Task WriteAsync_LocalAbort_Throws()
+        {
+            if (IsMockProvider)
+            {
+                // Mock provider does not support aborting pending writes via AbortWrite
+                return;
+            }
+
+            const int ExpectedErrorCode = 0xfffffff;
+
+            TaskCompletionSource waitForAbortTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await RunBidirectionalClientServer(
+                clientStream =>
+                {
+                    return Task.CompletedTask;
+                },
+                async serverStream =>
+                {
+                    // write large enough buffer to make the call asynchronous
+                    byte[] buffer = ArrayPool<byte>.Shared.Rent(16 * 1024 * 1024);
+                    var writeTask = serverStream.WriteAsync(buffer);
+                    Assert.False(writeTask.IsCompleted);
+
+                    serverStream.AbortWrite(ExpectedErrorCode);
+
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => writeTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+
+                    ArrayPool<byte>.Shared.Return(buffer);
                 });
         }
 
