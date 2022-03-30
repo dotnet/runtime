@@ -63,7 +63,7 @@ public sealed class GeneratedTestRunner : TestRunner
         {
             byte[] encodedBytes = Encoding.Unicode.GetBytes(lastTestResults);
             string base64Results = Convert.ToBase64String(encodedBytes);
-            writer.WriteLine($"STARTRESULTXML {Encoding.UTF16.GetByteCount(encodedBytes.Length)} {base64Results} ENDRESULTXML");
+            writer.WriteLine($"STARTRESULTXML {encodedBytes.Length} {base64Results} ENDRESULTXML");
         }
         else
         {
