@@ -149,7 +149,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             try
             {
-                Debug.Assert(!Monitor.IsEntered(_state));
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 MsQuicApi.Api.SetCallbackHandlerDelegate(
                     _state.Handle,
                     s_connectionDelegate,
@@ -187,7 +187,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             _state.StateGCHandle = GCHandle.Alloc(_state);
             try
             {
-                Debug.Assert(!Monitor.IsEntered(_state));
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 uint status = MsQuicApi.Api.ConnectionOpenDelegate(
                     MsQuicApi.Api.Registration,
                     s_connectionDelegate,
@@ -606,13 +606,13 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override int GetRemoteAvailableUnidirectionalStreamCount()
         {
-            Debug.Assert(!Monitor.IsEntered(_state));
+            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_UNIDI_STREAM_COUNT);
         }
 
         internal override int GetRemoteAvailableBidirectionalStreamCount()
         {
-            Debug.Assert(!Monitor.IsEntered(_state));
+            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_BIDI_STREAM_COUNT);
         }
 
@@ -642,7 +642,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_remoteEndPoint is IPEndPoint ipEndPoint)
             {
-                Debug.Assert(!Monitor.IsEntered(_state));
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 MsQuicParameterHelpers.SetIPEndPointParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, ipEndPoint);
                 targetHost = _state.TargetHost ?? ((IPEndPoint)_remoteEndPoint).Address.ToString();
                 port = ((IPEndPoint)_remoteEndPoint).Port;
@@ -659,7 +659,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (!string.IsNullOrEmpty(_state.TargetHost) && !dnsHost.Equals(_state.TargetHost, StringComparison.InvariantCultureIgnoreCase) && IPAddress.TryParse(dnsHost, out IPAddress? address))
                 {
                     // This is form of IPAddress and _state.TargetHost is set to different string
-                    Debug.Assert(!Monitor.IsEntered(_state));
+                    Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                     MsQuicParameterHelpers.SetIPEndPointParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, new IPEndPoint(address, port));
                     targetHost = _state.TargetHost!;
                 }
@@ -678,7 +678,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             try
             {
-                Debug.Assert(!Monitor.IsEntered(_state));
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 status = MsQuicApi.Api.ConnectionStartDelegate(
                     _state.Handle,
                     _configuration,
@@ -712,7 +712,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             try
             {
-                Debug.Assert(!Monitor.IsEntered(_state));
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 MsQuicApi.Api.ConnectionShutdownDelegate(
                     _state.Handle,
                     Flags,
@@ -840,7 +840,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (_state.Handle != null && !_state.Handle.IsInvalid && !_state.Handle.IsClosed)
             {
                 // Handle can be null if outbound constructor failed and we are called from finalizer.
-                Debug.Assert(!Monitor.IsEntered(_state));
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 MsQuicApi.Api.ConnectionShutdownDelegate(
                     _state.Handle,
                     QUIC_CONNECTION_SHUTDOWN_FLAGS.SILENT,

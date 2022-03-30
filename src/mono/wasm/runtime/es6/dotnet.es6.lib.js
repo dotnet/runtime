@@ -92,8 +92,6 @@ const linked_functions = [
     "mono_wasm_typed_array_copy_to",
     "mono_wasm_typed_array_from",
     "mono_wasm_typed_array_copy_from",
-    "mono_wasm_add_event_listener",
-    "mono_wasm_remove_event_listener",
     "mono_wasm_cancel_promise",
     "mono_wasm_web_socket_open",
     "mono_wasm_web_socket_send",
