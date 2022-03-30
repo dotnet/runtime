@@ -107,14 +107,12 @@ namespace System.IO.Compression.Tests
         /// This test checks whether or not ZipFile.ExtractToDirectory() is capable of handling filenames
 		/// which contain invalid path characters in Windows.
         ///  Archive:  InvalidWindowsFileNameChars.zip
-        ///  Length      Date    Time    Name
-        /// ---------  ---------- -----   ----
-        ///        0  2022-03-27 13:44   Test/
-        ///       12  2022-03-27 13:44   Test/normalText.txt
-        ///        0  2022-03-27 13:44   Test"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_/
-        ///       14  2022-03-27 13:44   Test"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_/TestText1"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_.txt
-        ///        0  2022-03-27 13:44   TestEmpty/
-        ///       14  2022-03-27 13:44   TestText"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_.txt
+        ///  Test/
+        ///  Test/normalText.txt
+        ///  Test"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_/
+        ///  Test"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_/TestText1"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_.txt
+        ///  TestEmpty/
+        ///  TestText"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_.txt
         /// </summary>
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
