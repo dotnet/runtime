@@ -171,5 +171,12 @@
   <data name="net_quic_empty_cipher_suite" xml:space="preserve">
     <value>CipherSuitePolicy must specify at least one cipher supported by QUIC.</value>
   </data>
+  <!-- Referenced in shared IPEndPointExtensions.cs-->
+  <data name="net_InvalidAddressFamily" xml:space="preserve">
+    <value>The AddressFamily {0} is not valid for the {1} end point, use {2} instead.</value>
+  </data>
+  <data name="net_InvalidSocketAddressSize" xml:space="preserve">
+    <value>The supplied {0} is an invalid size for the {1} end point.</value>
+  </data>
 </root>
 
