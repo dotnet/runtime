@@ -35,9 +35,9 @@ namespace System.Diagnostics
     {
 #pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
         private static readonly IEnumerable<KeyValuePair<string, string?>> s_emptyBaggageTags = new KeyValuePair<string, string?>[0];
-        private static readonly DiagnosticEnumerable<KeyValuePair<string, object?>> s_emptyTagObjects = new DiagLinkedList<KeyValuePair<string, object?>>();
-        private static readonly DiagnosticEnumerable<ActivityLink> s_emptyLinks = new DiagLinkedList<ActivityLink>();
-        private static readonly DiagnosticEnumerable<ActivityEvent> s_emptyEvents = new DiagLinkedList<ActivityEvent>();
+        private static readonly ActivityItemEnumerable<KeyValuePair<string, object?>> s_emptyTagObjects = new DiagLinkedList<KeyValuePair<string, object?>>();
+        private static readonly ActivityItemEnumerable<ActivityLink> s_emptyLinks = new DiagLinkedList<ActivityLink>();
+        private static readonly ActivityItemEnumerable<ActivityEvent> s_emptyEvents = new DiagLinkedList<ActivityEvent>();
 #pragma warning restore CA1825
         private static readonly ActivitySource s_defaultSource = new ActivitySource(string.Empty);
 
@@ -1339,7 +1339,7 @@ namespace System.Diagnostics
             private set => _state = (_state & ~State.FormatFlags) | (State)((byte)value & (byte)State.FormatFlags);
         }
 
-        private sealed class BaggageLinkedList : DiagnosticEnumerable<KeyValuePair<string, string?>>
+        private sealed class BaggageLinkedList : ActivityItemEnumerable<KeyValuePair<string, string?>>
         {
             private DiagNode<KeyValuePair<string, string?>>? _first;
 
@@ -1418,7 +1418,7 @@ namespace System.Diagnostics
             public override Enumerator GetEnumerator() => new Enumerator(_first);
         }
 
-        private sealed class TagsLinkedList : DiagnosticEnumerable<KeyValuePair<string, object?>>
+        private sealed class TagsLinkedList : ActivityItemEnumerable<KeyValuePair<string, object?>>
         {
             private DiagNode<KeyValuePair<string, object?>>? _first;
             private DiagNode<KeyValuePair<string, object?>>? _last;

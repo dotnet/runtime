@@ -14,7 +14,7 @@ namespace System.Diagnostics
     }
 
     // We are not using the public LinkedList<T> because we need to ensure thread safety operation on the list.
-    internal sealed class DiagLinkedList<T> : DiagnosticEnumerable<T>
+    internal sealed class DiagLinkedList<T> : ActivityItemEnumerable<T>
     {
         private DiagNode<T>? _first;
         private DiagNode<T>? _last;
@@ -149,7 +149,7 @@ namespace System.Diagnostics
         public override Enumerator GetEnumerator() => new Enumerator(_first);
     }
 
-    public abstract class DiagnosticEnumerable<T> : IEnumerable<T>
+    public abstract class ActivityItemEnumerable<T> : IEnumerable<T>
     {
         public abstract Enumerator GetEnumerator();
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();

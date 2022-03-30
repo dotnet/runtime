@@ -101,7 +101,7 @@ namespace System.Diagnostics
             void System.Collections.IEnumerator.Reset() { throw null; }
         }
     }
-    public abstract class DiagnosticEnumerable<T> : System.Collections.Generic.IEnumerable<T>
+    public abstract class ActivityItemEnumerable<T> : System.Collections.Generic.IEnumerable<T>
     {
         public abstract Enumerator GetEnumerator();
         System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }
