@@ -38,36 +38,29 @@ namespace Microsoft.Extensions.Configuration
             // Compare each part until we get two parts that are not equal
             while (!xSpan.IsEmpty && !ySpan.IsEmpty)
             {
-                int xSegmentLength = xSpan.IndexOf(s_keyDelimiter);
-                if (xSegmentLength < 0)
-                {
-                    xSegmentLength = xSpan.Length;
-                }
+                int xDelimiterIndex = xSpan.IndexOf(KeyDelimiter);
+                int yDelimiterIndex = ySpan.IndexOf(KeyDelimiter);
 
-                int ySegmentLength = ySpan.IndexOf(s_keyDelimiter);
-                if (ySegmentLength < 0)
-                {
-                    ySegmentLength = ySpan.Length;
-                }
+                int compareResult = Compare(
+                    xDelimiterIndex == -1 ? xSpan : xSpan.Slice(0, xDelimiterIndex),
+                    yDelimiterIndex == -1 ? ySpan : ySpan.Slice(0, yDelimiterIndex));
 
-                int compareResult = Compare(xSpan.Slice(0, xSegmentLength), ySpan.Slice(0, ySegmentLength));
                 if (compareResult != 0)
                 {
                     return compareResult;
                 }
 
-                xSpan = xSpan.Slice(xSegmentLength);
-                ySpan = ySpan.Slice(ySegmentLength);
-
-                xSpan = SkipAheadOnDelimiter(xSpan);
-                ySpan = SkipAheadOnDelimiter(ySpan);
+                xSpan = xDelimiterIndex == -1 ? default :
+                    SkipAheadOnDelimiter(xSpan.Slice(xDelimiterIndex));
+                ySpan = yDelimiterIndex == -1 ? default :
+                    SkipAheadOnDelimiter(ySpan.Slice(yDelimiterIndex));
             }
 
             return xSpan.IsEmpty ? (ySpan.IsEmpty ? 0 : -1) : 1;
 
             static ReadOnlySpan<char> SkipAheadOnDelimiter(ReadOnlySpan<char> a)
             {
-                while (!a.IsEmpty && a[0] == s_keyDelimiter)
+                while (!a.IsEmpty && a[0] == KeyDelimiter)
                 {
                     a = a.Slice(1);
                 }
