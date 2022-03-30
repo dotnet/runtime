@@ -165,5 +165,8 @@
   <data name="net_ssl_app_protocols_invalid" xml:space="preserve">
     <value>The application protocol list is invalid.</value>
   </data>
+  <data name="net_io_invalidnestedcall" xml:space="preserve">
+    <value> This method may not be called when another {0} operation is pending.</value>
+  </data>
 </root>
 

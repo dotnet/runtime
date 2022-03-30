@@ -305,6 +305,11 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private CancellationTokenRegistration HandleWriteStartState(bool emptyBuffer, CancellationToken cancellationToken)
         {
+            if (_state.SendState == SendState.Pending)
+            {
+                throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "write"));
+            }
+
             if (_state.SendState == SendState.Closed)
             {
                 throw new InvalidOperationException(SR.net_quic_writing_notallowed);
@@ -507,7 +512,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             switch (initialReadState)
             {
                 case ReadState.PendingRead:
-                    ex = new InvalidOperationException("Only one read is supported at a time.");
+                    ex = new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "read"));
                     break;
                 case ReadState.Aborted:
                     ex =  preCanceled ? new OperationCanceledException(cancellationToken) :
