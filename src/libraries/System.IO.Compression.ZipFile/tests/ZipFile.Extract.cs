@@ -110,7 +110,6 @@ namespace System.IO.Compression.Tests
         [Theory]
         [InlineData("InvalidWindowsFileNameChars.zip", "Test______________________________________.txt")]
         [InlineData("InvalidWindowsFileNameChars.zip", "Test______________________________________/TestText1______________________________________.txt")]
-        [InlineData("InvalidWindowsFileNameChars.zip", "TestEmpty")]
         [InlineData("InvalidWindowsFileNameChars.zip", "Test/normalText.txt")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void Windows_ZipWithInvalidFileNames(string zipFile, string testPath)
