@@ -1103,9 +1103,10 @@ namespace System.Collections.Tests
         [Fact]
         public static void TrueForAll_ListSizeCanBeChanged()
         {
-            var list = new List<int>() { 1, 2, 3 };
-            var results = new List<int> { 1, 2, 3, 2, 3, 4, 3, 4, 4 };
-            list.TrueForAll(i =>
+            List<int> list = new List<int>() { 1, 2, 3 };
+            List<int> expectedList = new List<int> { 1, 2, 3, 2, 3, 4, 3, 4, 4 };
+
+            bool result = list.TrueForAll(i =>
             {
                 if (i < 4)
                 {
@@ -1115,7 +1116,8 @@ namespace System.Collections.Tests
                 return true;
             });
 
-            Assert.Equal(list, results);
+            Assert.True(result);
+            Assert.Equal(expectedList, list);
         }
     }
 }
