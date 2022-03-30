@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Configuration
     /// </summary>
     public class ConfigurationKeyComparer : IComparer<string>
     {
-        private static readonly char s_keyDelimiter = ConfigurationPath.KeyDelimiter[0];
+        private const char KeyDelimiter = ':';
 
         /// <summary>
         /// The default instance.
