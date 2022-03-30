@@ -106,17 +106,25 @@ namespace System.IO.Compression.Tests
         /// <summary>
         /// This test checks whether or not ZipFile.ExtractToDirectory() is capable of handling filenames
 		/// which contain invalid path characters in Windows.
+        ///  Archive:  InvalidWindowsFileNameChars.zip
+        ///  Length      Date    Time    Name
+        /// ---------  ---------- -----   ----
+        ///        0  2022-03-27 13:44   Test/
+        ///       12  2022-03-27 13:44   Test/normalText.txt
+        ///        0  2022-03-27 13:44   Test"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_/
+        ///       14  2022-03-27 13:44   Test"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_/TestText1"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_.txt
+        ///        0  2022-03-27 13:44   TestEmpty/
+        ///       14  2022-03-27 13:44   TestText"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_.txt
         /// </summary>
-        [Theory]
-        [InlineData("InvalidWindowsFileNameChars.zip", "Test______________________________________.txt")]
-        [InlineData("InvalidWindowsFileNameChars.zip", "Test______________________________________/TestText1______________________________________.txt")]
-        [InlineData("InvalidWindowsFileNameChars.zip", "Test/normalText.txt")]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void Windows_ZipWithInvalidFileNames(string zipFile, string testPath)
+        public void Windows_ZipWithInvalidFileNames()
         {
             var testDirectory = GetTestFilePath();
-            ZipFile.ExtractToDirectory(compat(zipFile), testDirectory);
-            Assert.True(File.Exists(testDirectory + testPath));
+            ZipFile.ExtractToDirectory(compat("InvalidWindowsFileNameChars.zip"), testDirectory);
+            Assert.True(File.Exists(testDirectory + "Test______________________________________.txt"));
+            Assert.True(File.Exists(testDirectory + "Test______________________________________/TestText1______________________________________.txt"));
+            Assert.True(File.Exists(testDirectory + "Test/normalText.txt"));
         }
 
         /// <summary>
