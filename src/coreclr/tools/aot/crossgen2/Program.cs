@@ -183,8 +183,8 @@ namespace ILCompiler
         {
             return  Assembly
                    .GetExecutingAssembly()
-                   .GetCustomAttribute<AssemblyFileVersionAttribute>()
-                   .Version;
+                   .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                   .InformationalVersion;
         }
 
         public static TargetArchitecture GetTargetArchitectureFromArg(string archArg, out bool armelAbi)
@@ -342,7 +342,7 @@ namespace ILCompiler
             if (_commandLineOptions.Version)
             {
                 string version = GetCompilerVersion();
-                Console.WriteLine("Crossgen2 Compiler Version is {0}.", version);
+                Console.WriteLine(version);
                 return 1;
             }
 
