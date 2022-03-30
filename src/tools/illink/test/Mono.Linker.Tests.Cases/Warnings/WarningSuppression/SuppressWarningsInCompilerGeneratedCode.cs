@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -158,14 +158,17 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 		class SuppressInLocalFunction
 		{
-			// Suppression currently doesn't propagate to local functions
-
 			[UnconditionalSuppressMessage ("Test", "IL2026")]
 			static void TestCallRUCMethod ()
 			{
 				LocalFunction ();
 
-				[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Trimmer)]
+				void LocalFunction () => RequiresUnreferencedCodeMethod ();
+			}
+
+			[UnconditionalSuppressMessage ("Test", "IL2026")]
+			static void TestCallRUCMethodUnused ()
+			{
 				void LocalFunction () => RequiresUnreferencedCodeMethod ();
 			}
 
@@ -174,7 +177,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			{
 				LocalFunction ();
 
-				[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Trimmer)]
 				void LocalFunction () => typeof (SuppressWarningsInCompilerGeneratedCode)
 					.GetMethod ("RequiresUnreferencedCodeMethod", System.Reflection.BindingFlags.NonPublic)
 					.Invoke (null, new object[] { });
@@ -185,7 +187,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			{
 				LocalFunction ();
 
-				[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Trimmer)]
 				void LocalFunction ()
 				{ var _ = new Action (RequiresUnreferencedCodeMethod); }
 			}
@@ -195,7 +196,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			{
 				LocalFunction ();
 
-				[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Trimmer)]
 				void LocalFunction () => typeof (TypeWithRUCMethod).RequiresNonPublicMethods ();
 			}
 
@@ -204,7 +204,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			{
 				LocalFunction ();
 
-				[ExpectedWarning ("IL2077", ProducedBy = ProducedBy.Trimmer)]
 				void LocalFunction () => unknownType.RequiresNonPublicMethods ();
 			}
 
@@ -213,7 +212,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			{
 				LocalFunction ();
 
-				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer)]
 				void LocalFunction () => MethodWithGenericWhichRequiresMethods<TUnknown> ();
 			}
 
@@ -222,7 +220,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			{
 				LocalFunction ();
 
-				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer)]
 				void LocalFunction () => new TypeWithGenericWhichRequiresNonPublicFields<TUnknown> ();
 			}
 
@@ -242,8 +239,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			{
 				LocalFunction<TUnknown> ();
 
-				[ExpectedWarning ("IL2087", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2087", ProducedBy = ProducedBy.Trimmer)]
 				void LocalFunction<TSecond> ()
 				{
 					typeof (TUnknown).RequiresPublicMethods ();
@@ -279,7 +274,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			{
 				var _ = new Action (LocalFunction);
 
-				[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Trimmer)]
 				void LocalFunction () => RequiresUnreferencedCodeMethod ();
 			}
 
@@ -290,7 +284,23 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				{
 					typeof (DynamicallyAccessedLocalFunction).RequiresNonPublicMethods ();
 
-					[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Trimmer)]
+					LocalFunction ();
+
+					void LocalFunction () => RequiresUnreferencedCodeMethod ();
+				}
+			}
+
+			class DynamicallyAccessedLocalFunctionUnused
+			{
+				[UnconditionalSuppressMessage ("Test", "IL2026")]
+				public static void TestCallRUCMethodInDynamicallyAccessedLocalFunction ()
+				{
+					typeof (DynamicallyAccessedLocalFunctionUnused).RequiresNonPublicMethods ();
+
+					// This local function is unused except for the dynamic reference above,
+					// so the linker isn't able to figure out which user method it belongs to,
+					// and the warning is not suppressed.
+					[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", ProducedBy = ProducedBy.Trimmer)]
 					void LocalFunction () => RequiresUnreferencedCodeMethod ();
 				}
 			}
@@ -311,7 +321,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			{
 				LocalFunction ();
 
-				[ExpectedWarning ("IL2067", ProducedBy = ProducedBy.Trimmer)]
 				[UnconditionalSuppressMessage ("Test", "IL2026")] // This supresses the RequiresUnreferencedCodeMethod
 				void LocalFunction (Type unknownType = null)
 				{
@@ -320,9 +329,35 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				}
 			}
 
+			class TestSuppressionOnOuterWithSameName
+			{
+				public static void Test ()
+				{
+					Outer ();
+					Outer (0);
+				}
+
+				[UnconditionalSuppressMessage ("Test", "IL2026")]
+				static void Outer ()
+				{
+					// Even though this method has the same name as Outer(int i),
+					// it should not suppress warnings originating from compiler-generated
+					// code for the lambda contained in Outer(int i).
+				}
+
+				static void Outer (int i)
+				{
+					LocalFunction ();
+
+					[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--")]
+					void LocalFunction () => RequiresUnreferencedCodeMethod ();
+				}
+			}
+
 			public static void Test ()
 			{
 				TestCallRUCMethod ();
+				TestCallRUCMethodUnused ();
 				TestReflectionAccessRUCMethod ();
 				TestLdftnOnRUCMethod ();
 				TestDynamicallyAccessedMethod ();
@@ -335,20 +370,28 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				TestGenericLocalFunctionWithAnnotationsAndClosure<TestType> ();
 				TestCallRUCMethodInLtftnLocalFunction ();
 				DynamicallyAccessedLocalFunction.TestCallRUCMethodInDynamicallyAccessedLocalFunction ();
+				DynamicallyAccessedLocalFunctionUnused.TestCallRUCMethodInDynamicallyAccessedLocalFunction ();
 				TestSuppressionOnLocalFunction ();
 				TestSuppressionOnOuterAndLocalFunction ();
+				TestSuppressionOnOuterWithSameName.Test ();
 			}
 		}
 
 		class SuppressInLambda
 		{
-			// Suppression currently doesn't propagate to lambdas
-
 			[UnconditionalSuppressMessage ("Test", "IL2026")]
 			static void TestCallRUCMethod ()
 			{
+				Action lambda =
+				() => RequiresUnreferencedCodeMethod ();
+
+				lambda ();
+			}
+
+			[UnconditionalSuppressMessage ("Test", "IL2026")]
+			static void TestCallRUCMethodUnused ()
+			{
 				Action _ =
-				[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Trimmer)]
 				() => RequiresUnreferencedCodeMethod ();
 			}
 
@@ -356,7 +399,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			static void TestReflectionAccessRUCMethod ()
 			{
 				Action _ =
-				[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Trimmer)]
 				() => typeof (SuppressWarningsInCompilerGeneratedCode)
 					.GetMethod ("RequiresUnreferencedCodeMethod", System.Reflection.BindingFlags.NonPublic)
 					.Invoke (null, new object[] { });
@@ -366,7 +408,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			static void TestLdftnOnRUCMethod ()
 			{
 				Action _ =
-				[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Trimmer)]
 				() => { var _ = new Action (RequiresUnreferencedCodeMethod); };
 			}
 
@@ -374,7 +415,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			static void TestDynamicallyAccessedMethod ()
 			{
 				Action _ =
-				[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Trimmer)]
 				() => typeof (TypeWithRUCMethod).RequiresNonPublicMethods ();
 			}
 
@@ -382,7 +422,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			static void TestMethodParameterWithRequirements (Type unknownType = null)
 			{
 				Action _ =
-				[ExpectedWarning ("IL2077", ProducedBy = ProducedBy.Trimmer)]
 				() => unknownType.RequiresNonPublicMethods ();
 			}
 
@@ -390,7 +429,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			static void TestGenericMethodParameterRequirement<TUnknown> ()
 			{
 				Action _ =
-				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer)]
 				() => MethodWithGenericWhichRequiresMethods<TUnknown> ();
 			}
 
@@ -398,24 +436,119 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			static void TestGenericTypeParameterRequirement<TUnknown> ()
 			{
 				Action _ =
-				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer)]
 				() => new TypeWithGenericWhichRequiresNonPublicFields<TUnknown> ();
+			}
+
+			class DynamicallyAccessedLambda
+			{
+				[UnconditionalSuppressMessage ("Test", "IL2026")]
+				public static void TestCallRUCMethodInDynamicallyAccessedLambda ()
+				{
+					typeof (DynamicallyAccessedLambda).RequiresNonPublicMethods ();
+
+					Action lambda = () => RequiresUnreferencedCodeMethod ();
+
+					lambda ();
+				}
+			}
+
+			class DynamicallyAccessedLambdaUnused
+			{
+				[UnconditionalSuppressMessage ("Test", "IL2026")]
+				public static void TestCallRUCMethodInDynamicallyAccessedLambda ()
+				{
+					typeof (DynamicallyAccessedLambdaUnused).RequiresNonPublicMethods ();
+
+					Action _ = () => RequiresUnreferencedCodeMethod ();
+				}
+			}
+
+			static void TestSuppressionOnLambda ()
+			{
+				var lambda =
+				// https://github.com/dotnet/roslyn/issues/59746
+				[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Analyzer)]
+				[UnconditionalSuppressMessage ("Test", "IL2026")]
+				() => RequiresUnreferencedCodeMethod ();
+
+				lambda ();
+			}
+
+			[UnconditionalSuppressMessage ("Test", "IL2067")]
+			static void TestSuppressionOnOuterAndLambda ()
+			{
+				var lambda =
+				// https://github.com/dotnet/roslyn/issues/59746
+				[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Analyzer)]
+				[UnconditionalSuppressMessage ("Test", "IL2026")]
+				(Type unknownType) => {
+					RequiresUnreferencedCodeMethod ();
+					unknownType.RequiresNonPublicMethods ();
+				};
+
+				lambda (null);
+			}
+
+			class TestSuppressionOnOuterWithSameName
+			{
+				public static void Test ()
+				{
+					Outer ();
+					Outer (0);
+				}
+
+				[UnconditionalSuppressMessage ("Test", "IL2026")]
+				static void Outer ()
+				{
+					// Even though this method has the same name as Outer(int i),
+					// it should not suppress warnings originating from compiler-generated
+					// code for the lambda contained in Outer(int i).
+				}
+
+				static void Outer (int i)
+				{
+					var lambda =
+					[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--")]
+					() => RequiresUnreferencedCodeMethod ();
+
+					lambda ();
+				}
 			}
 
 			public static void Test ()
 			{
 				TestCallRUCMethod ();
+				TestCallRUCMethodUnused ();
 				TestReflectionAccessRUCMethod ();
 				TestLdftnOnRUCMethod ();
 				TestDynamicallyAccessedMethod ();
 				TestMethodParameterWithRequirements ();
 				TestGenericMethodParameterRequirement<TestType> ();
 				TestGenericTypeParameterRequirement<TestType> ();
+				DynamicallyAccessedLambda.TestCallRUCMethodInDynamicallyAccessedLambda ();
+				DynamicallyAccessedLambdaUnused.TestCallRUCMethodInDynamicallyAccessedLambda ();
+				TestSuppressionOnLambda ();
+				TestSuppressionOnOuterAndLambda ();
+				TestSuppressionOnOuterWithSameName.Test ();
+
 			}
 		}
 
 		class SuppressInComplex
 		{
+			[UnconditionalSuppressMessage ("Test", "IL2026")]
+			static void TestIteratorLocalFunction ()
+			{
+				LocalFunction ();
+
+				IEnumerable<int> LocalFunction ()
+				{
+					yield return 0;
+					RequiresUnreferencedCodeMethod ();
+					yield return 1;
+				}
+			}
+
 			[UnconditionalSuppressMessage ("Test", "IL2026")]
 			static async void TestIteratorLocalFunctionInAsync ()
 			{
@@ -439,7 +572,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				LocalFunction ();
 				await MethodAsync ();
 
-				[ExpectedWarning ("IL2026", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 				IEnumerable<int> LocalFunction ()
 				{
 					yield return 0;
@@ -457,6 +589,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 			public static void Test ()
 			{
+				TestIteratorLocalFunction ();
 				TestIteratorLocalFunctionInAsync ();
 				TestIteratorLocalFunctionInAsyncWithoutInner ();
 				TestDynamicallyAccessedMethodViaGenericMethodParameterInIterator ();

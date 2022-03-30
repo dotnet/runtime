@@ -2901,13 +2901,15 @@ namespace Mono.Linker.Steps
 			if (originMember is not IMemberDefinition member)
 				return false;
 
-			MethodDefinition? userDefinedMethod = Context.CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember (member);
-			if (userDefinedMethod == null)
-				return false;
+			MethodDefinition? owningMethod;
+			while (Context.CompilerGeneratedState.TryGetOwningMethodForCompilerGeneratedMember (member, out owningMethod)) {
+				Debug.Assert (owningMethod != member);
+				if (Annotations.IsMethodInRequiresUnreferencedCodeScope (owningMethod))
+					return true;
+				member = owningMethod;
+			}
 
-			Debug.Assert (userDefinedMethod != originMember);
-
-			return Annotations.IsMethodInRequiresUnreferencedCodeScope (userDefinedMethod);
+			return false;
 		}
 
 		internal void CheckAndReportRequiresUnreferencedCode (MethodDefinition method)
