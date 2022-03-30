@@ -12520,8 +12520,7 @@ DONE_MORPHING_CHILDREN:
             ival1                  = 0;
 
             // Don't remove a volatile GT_IND, even if the address points to a local variable.
-            // For TYP_STRUCT INDs, we do not know their size, and so will not morph as well.
-            if (!tree->AsIndir()->IsVolatile() && !tree->TypeIs(TYP_STRUCT))
+            if ((tree->gtFlags & GTF_IND_VOLATILE) == 0)
             {
                 /* Try to Fold *(&X) into X */
                 if (op1->gtOper == GT_ADDR)
@@ -12534,9 +12533,13 @@ DONE_MORPHING_CHILDREN:
 
                     temp = op1->AsOp()->gtOp1; // X
 
-                    if (typ == temp->TypeGet())
+                    // In the test below, if they're both TYP_STRUCT, this of course does *not* mean that
+                    // they are the *same* struct type.  In fact, they almost certainly aren't.  If the
+                    // address has an associated field sequence, that identifies this case; go through
+                    // the "lcl_fld" path rather than this one.
+                    FieldSeqNode* addrFieldSeq = nullptr; // This is an unused out parameter below.
+                    if (typ == temp->TypeGet() && !GetZeroOffsetFieldMap()->Lookup(op1, &addrFieldSeq))
                     {
-                        assert(typ != TYP_STRUCT);
                         foldAndReturnTemp = true;
                     }
                     else if (temp->OperIsLocal())
@@ -12712,9 +12715,14 @@ DONE_MORPHING_CHILDREN:
             // out-of-bounds w.r.t. the local).
             if ((temp != nullptr) && !foldAndReturnTemp)
             {
-                assert(temp->OperIsLocalRead());
+                assert(temp->OperIsLocal());
 
-                unsigned lclNum = temp->AsLclVarCommon()->GetLclNum();
+                const unsigned   lclNum = temp->AsLclVarCommon()->GetLclNum();
+                LclVarDsc* const varDsc = lvaGetDesc(lclNum);
+
+                const var_types tempTyp = temp->TypeGet();
+                const bool useExactSize = varTypeIsStruct(tempTyp) || (tempTyp == TYP_BLK) || (tempTyp == TYP_LCLBLK);
+                const unsigned varSize  = useExactSize ? varDsc->lvExactSize : genTypeSize(temp);
 
                 // Make sure we do not enregister this lclVar.
                 lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
@@ -12722,7 +12730,7 @@ DONE_MORPHING_CHILDREN:
                 // If the size of the load is greater than the size of the lclVar, we cannot fold this access into
                 // a lclFld: the access represented by an lclFld node must begin at or after the start of the
                 // lclVar and must not extend beyond the end of the lclVar.
-                if ((ival1 >= 0) && ((ival1 + genTypeSize(typ)) <= lvaLclExactSize(lclNum)))
+                if ((ival1 >= 0) && ((ival1 + genTypeSize(typ)) <= varSize))
                 {
                     GenTreeLclFld* lclFld;
 
@@ -13814,47 +13822,6 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
         DEBUG_DESTROY_NODE(add);
 
         return op1;
-    }
-
-    // Reduce local addresses: ADD(ADDR(LCL_VAR), OFFSET) => ADDR(LCL_FLD OFFSET).
-    // TODO-ADDR: do ADD(LCL_FLD/VAR_ADDR, OFFSET) => LCL_FLD_ADDR instead.
-    //
-    if (opts.OptimizationEnabled() && fgGlobalMorph && op1->OperIs(GT_ADDR) && op2->IsCnsIntOrI() &&
-        op1->AsUnOp()->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-    {
-        GenTreeUnOp*         addrNode   = op1->AsUnOp();
-        GenTreeLclVarCommon* lclNode    = addrNode->gtGetOp1()->AsLclVarCommon();
-        GenTreeIntCon*       offsetNode = op2->AsIntCon();
-        if (FitsIn<uint16_t>(offsetNode->IconValue()))
-        {
-            unsigned offset = lclNode->GetLclOffs() + static_cast<uint16_t>(offsetNode->IconValue());
-
-            // Note: the emitter does not expect out-of-bounds access for LCL_FLD_ADDR.
-            if (FitsIn<uint16_t>(offset) && (offset < lvaLclExactSize(lclNode->GetLclNum())))
-            {
-                // Compose the field sequence: [LCL, ADDR, OFFSET].
-                FieldSeqNode* fieldSeq           = lclNode->GetFieldSeq();
-                FieldSeqNode* zeroOffsetFieldSeq = nullptr;
-                if (GetZeroOffsetFieldMap()->Lookup(addrNode, &zeroOffsetFieldSeq))
-                {
-                    fieldSeq = GetFieldSeqStore()->Append(fieldSeq, zeroOffsetFieldSeq);
-                    GetZeroOffsetFieldMap()->Remove(addrNode);
-                }
-                fieldSeq = GetFieldSeqStore()->Append(fieldSeq, offsetNode->gtFieldSeq);
-
-                // Types of location nodes under ADDRs do not matter. We arbitrarily choose TYP_UBYTE.
-                lclNode->ChangeType(TYP_UBYTE);
-                lclNode->SetOper(GT_LCL_FLD);
-                lclNode->AsLclFld()->SetLclOffs(offset);
-                lclNode->AsLclFld()->SetFieldSeq(fieldSeq);
-                lvaSetVarDoNotEnregister(lclNode->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
-
-                DEBUG_DESTROY_NODE(offsetNode);
-                DEBUG_DESTROY_NODE(add);
-
-                return addrNode;
-            }
-        }
     }
 
     // Note that these transformations are legal for floating-point ADDs as well.
