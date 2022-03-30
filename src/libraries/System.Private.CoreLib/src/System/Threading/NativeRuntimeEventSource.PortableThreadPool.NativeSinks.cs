@@ -46,6 +46,7 @@ namespace System.Diagnostics.Tracing
         {
             public const EventOpcode IOEnqueue = (EventOpcode)13;
             public const EventOpcode IODequeue = (EventOpcode)14;
+            public const EventOpcode IOPack = (EventOpcode)15;
             public const EventOpcode Wait = (EventOpcode)90;
             public const EventOpcode Sample = (EventOpcode)100;
             public const EventOpcode Adjustment = (EventOpcode)101;
@@ -224,6 +225,15 @@ namespace System.Diagnostics.Tracing
                 return;
             }
             LogThreadPoolWorkingThreadCount(Count, ClrInstanceID);
+        }
+
+        [Event(65, Level = EventLevel.Verbose, Message = Messages.IO, Task = Tasks.ThreadPool, Opcode = Opcodes.IOPack, Version = 0, Keywords = Keywords.ThreadingKeyword)]
+        private unsafe void ThreadPoolIOPack(
+            IntPtr NativeOverlapped,
+            IntPtr Overlapped,
+            ushort ClrInstanceID = DefaultClrInstanceId)
+        {
+            throw new NotImplementedException();
         }
     }
 }
