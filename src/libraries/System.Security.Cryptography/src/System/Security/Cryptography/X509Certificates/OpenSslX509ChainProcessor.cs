@@ -1388,9 +1388,12 @@ namespace System.Security.Cryptography.X509Certificates
                         // * For compatibility with Windows / .NET Framework, do not report X509_V_CRL_NOT_YET_VALID.
                         // * X509_V_ERR_DIFFERENT_CRL_SCOPE will result in X509_V_ERR_UNABLE_TO_GET_CRL
                         //   which will trigger OCSP, so is ignorable.
+                        // * X509_V_ERR_AKID_SKID_MISMATCH does not map to anything, and will result in a
+                        //   partial chain, so let PartialChain be what gets reported.
                         if (errorCode != X509VerifyStatusCodeUniversal.X509_V_OK &&
                             errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_CRL_NOT_YET_VALID &&
-                            errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_DIFFERENT_CRL_SCOPE)
+                            errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_DIFFERENT_CRL_SCOPE &&
+                            errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_AKID_SKID_MISMATCH)
                         {
                             if (_errors == null)
                             {
