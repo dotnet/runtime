@@ -423,17 +423,11 @@ namespace Microsoft.Extensions.Configuration
             object? instance;
             try
             {
-                instance = Activator.CreateInstance(type);
+                instance = Activator.CreateInstance(Nullable.GetUnderlyingType(type) ?? type);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type), ex);
-            }
-
-            if (instance is null
-                && Nullable.GetUnderlyingType(type) is { } nullableUnderlyingType)
-            {
-                return Activator.CreateInstance(nullableUnderlyingType)!;
             }
 
             return instance ?? throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type));
