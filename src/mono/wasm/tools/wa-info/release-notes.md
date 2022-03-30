@@ -1,3 +1,13 @@
+### Release version 0.0.8
+
+Changes:
+
+wa-diff
+ * fix method lookup and comparison
+
+wa-info
+ * fix call instruction disassembly
+
 ### Release version 0.0.7
 
 Changes:
