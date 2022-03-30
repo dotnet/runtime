@@ -220,7 +220,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	mono_add_unwind_op_def_cfa_reg (unwind_ops, code, buf, fp);
 	/* Allocate stack frame */
 	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, (guint32)(32 + (16 * sizeof (double))));
-MONO_WARNING_DISABLE(4127) /* conditional expression is constant */
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (MONO_ARCH_FRAME_ALIGNMENT > 8)
 		ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, (MONO_ARCH_FRAME_ALIGNMENT - 8));
 MONO_RESTORE_WARNING

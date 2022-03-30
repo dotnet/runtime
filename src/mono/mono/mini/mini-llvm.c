@@ -1132,8 +1132,8 @@ ovf_op_to_intrins (int opcode)
 static IntrinsicId
 simd_ins_to_intrins (int opcode)
 {
-	switch (opcode) {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
+	switch (opcode) {
 	case OP_CVTPD2DQ:
 		return INTRINS_SSE_CVTPD2DQ;
 	case OP_CVTPS2DQ:
@@ -1148,11 +1148,14 @@ simd_ins_to_intrins (int opcode)
 		return INTRINS_SSE_SQRT_SS;
 	case OP_SSE2_SQRTSD:
 		return INTRINS_SSE_SQRT_SD;
-#endif
 	default:
 		g_assert_not_reached ();
 		return (IntrinsicId)0;
 	}
+#else
+	g_assert_not_reached ();
+	return (IntrinsicId)0;
+#endif
 }
 
 static LLVMTypeRef
