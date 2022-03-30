@@ -173,6 +173,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                     GCHandle.ToIntPtr(_state.StateGCHandle),
                     out _state.Handle);
 
+                if (status == MsQuicStatusCodes.Aborted || status == MsQuicStatusCodes.InvalidState)
+                {
+                    // connection already aborted (from either direction), throw relevant exception
+                    throw ThrowHelper.GetConnectionAbortedException(connectionState.AbortErrorCode);
+                }
+
                 QuicExceptionHelpers.ThrowIfFailed(status, "Failed to open stream to peer.");
 
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
