@@ -18,7 +18,7 @@ BINDIR?=$(TOP)/artifacts/bin
 OBJDIR?=$(TOP)/artifacts/obj
 _MSBUILD_WASM_BUILD_ARGS=/p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG)
 XHARNESS_BROWSER?=chrome
-HELIX_TARGET_QUEUE?=Ubuntu.1804.Amd64.Open
+HELIX_TARGET_QUEUE?=Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-webassembly-20220329135503-af466c5
 
 all: build-all
 
@@ -113,7 +113,8 @@ submit-debugger-tests-helix: build-debugger-tests-helix
 		$(TOP)/eng/common/msbuild.sh --ci -restore $(TOP)/src/libraries/sendtohelix.proj \
 		/p:TestRunNamePrefixSuffix=WasmDebugger /p:HelixBuild=`date "+%Y%m%d.%H%M"` /p:Creator=`whoami` \
 		/bl:$(TOP)/artifacts/log/$(CONFIG)/SendToHelix.binlog -p:HelixTargetQueue=$(HELIX_TARGET_QUEUE) \
-		/p:RuntimeFlavor=mono /p:TargetRuntimeIdentifier= /p:MonoForceInterpreter= /p:TestScope=innerloop \
+		/p:RuntimeFlavor=mono /p:RunInFirefox=1 \
+		/p:TargetRuntimeIdentifier= /p:MonoForceInterpreter= /p:TestScope=innerloop \
 		/p:_Scenarios=wasmdebuggertests \
 		$(_MSBUILD_WASM_BUILD_ARGS) \
 		$(MSBUILD_ARGS)
