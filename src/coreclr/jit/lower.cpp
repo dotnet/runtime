@@ -1594,9 +1594,9 @@ void Lowering::LowerArgsForCall(GenTreeCall* call)
     }
 
     JITDUMP("\nlate:\n======\n");
-    for (LateArg arg : call->gtArgs.LateArgs())
+    for (CallArg& arg : call->gtArgs.LateArgs())
     {
-        LowerArg(call, arg.GetArg(), true);
+        LowerArg(call, &arg, true);
     }
 }
 
@@ -1816,12 +1816,12 @@ void Lowering::InsertProfTailCallHook(GenTreeCall* call, GenTree* insertionPoint
 
         if (insertionPoint == nullptr)
         {
-            for (LateArg arg : call->gtArgs.LateArgs())
+            for (CallArg& arg : call->gtArgs.LateArgs())
             {
-                if (arg.GetNode()->OperIs(GT_PUTARG_REG, GT_PUTARG_STK))
+                if (arg.GetLateNode()->OperIs(GT_PUTARG_REG, GT_PUTARG_STK))
                 {
                     // found it
-                    insertionPoint = arg.GetNode();
+                    insertionPoint = arg.GetLateNode();
                     break;
                 }
             }
@@ -1919,11 +1919,11 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
         }
     }
 
-    for (LateArg arg : call->gtArgs.LateArgs())
+    for (CallArg& arg : call->gtArgs.LateArgs())
     {
-        if (arg.GetNode()->OperIs(GT_PUTARG_STK))
+        if (arg.GetLateNode()->OperIs(GT_PUTARG_STK))
         {
-            putargs.Push(arg.GetNode());
+            putargs.Push(arg.GetLateNode());
         }
     }
 
@@ -2394,9 +2394,9 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
                 }
             }
 
-            for (LateArg arg : call->gtArgs.LateArgs())
+            for (CallArg& arg : call->gtArgs.LateArgs())
             {
-                GenTree* node = arg.GetNode();
+                GenTree* node = arg.GetLateNode();
                 assert(node->OperIsPutArg() || node->OperIsFieldList());
                 MoveCFGCallArg(call, node);
             }
@@ -6458,9 +6458,9 @@ void Lowering::CheckCall(GenTreeCall* call)
         CheckCallArg(arg.GetEarlyNode());
     }
 
-    for (LateArg arg : call->gtArgs.LateArgs())
+    for (CallArg& arg : call->gtArgs.LateArgs())
     {
-        CheckCallArg(arg.GetNode());
+        CheckCallArg(arg.GetLateNode());
     }
 }
 

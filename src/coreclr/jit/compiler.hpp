@@ -4381,9 +4381,9 @@ void GenTree::VisitOperands(TVisitor visitor)
                 }
             }
 
-            for (LateArg arg : call->gtArgs.LateArgs())
+            for (CallArg& arg : call->gtArgs.LateArgs())
             {
-                if (visitor(arg.GetNode()) == VisitResult::Abort)
+                if (visitor(arg.GetLateNode()) == VisitResult::Abort)
                 {
                     return;
                 }

@@ -1891,10 +1891,10 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
     }
 
     {
-        auto i1   = c1->gtArgs.Args().begin();
-        auto end1 = c1->gtArgs.Args().end();
-        auto i2   = c2->gtArgs.Args().begin();
-        auto end2 = c2->gtArgs.Args().end();
+        CallArgs::ArgIterator i1   = c1->gtArgs.Args().begin();
+        CallArgs::ArgIterator end1 = c1->gtArgs.Args().end();
+        CallArgs::ArgIterator i2   = c2->gtArgs.Args().begin();
+        CallArgs::ArgIterator end2 = c2->gtArgs.Args().end();
 
         for (; (i1 != end1) && (i2 != end2); ++i1, ++i2)
         {
@@ -1911,14 +1911,14 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
     }
 
     {
-        auto i1   = c1->gtArgs.LateArgs().begin();
-        auto end1 = c1->gtArgs.LateArgs().end();
-        auto i2   = c2->gtArgs.LateArgs().begin();
-        auto end2 = c2->gtArgs.LateArgs().end();
+        CallArgs::LateArgIterator i1   = c1->gtArgs.LateArgs().begin();
+        CallArgs::LateArgIterator end1 = c1->gtArgs.LateArgs().end();
+        CallArgs::LateArgIterator i2   = c2->gtArgs.LateArgs().begin();
+        CallArgs::LateArgIterator end2 = c2->gtArgs.LateArgs().end();
 
         for (; (i1 != end1) && (i2 != end2); ++i1, ++i2)
         {
-            if (!Compare(i1.GetNode(), i2.GetNode()))
+            if (!Compare(i1->GetLateNode(), i2->GetLateNode()))
             {
                 return false;
             }
@@ -2751,9 +2751,9 @@ AGAIN:
                 hash = genTreeHashAdd(hash, tree->AsCall()->gtCallMethHnd);
             }
 
-            for (LateArg arg : tree->AsCall()->gtArgs.LateArgs())
+            for (CallArg& arg : tree->AsCall()->gtArgs.LateArgs())
             {
-                hash = genTreeHashAdd(hash, gtHashValue(arg.GetNode()));
+                hash = genTreeHashAdd(hash, gtHashValue(arg.GetLateNode()));
             }
             break;
 
@@ -3095,29 +3095,29 @@ unsigned Compiler::gtSetCallArgsOrder(CallArgs* args, bool lateArgs, int* callCo
 
     if (lateArgs)
     {
-        for (LateArg arg : args->LateArgs())
+        for (CallArg& arg : args->LateArgs())
         {
-            GenTree* argNode  = arg.GetNode();
-            unsigned argLevel = gtSetEvalOrder(argNode);
-            update(argNode, argLevel);
+            GenTree* node  = arg.GetLateNode();
+            unsigned level = gtSetEvalOrder(node);
+            update(node, level);
         }
     }
     else
     {
         for (CallArg& arg : args->Args())
         {
-            GenTree* argNode  = arg.GetEarlyNode();
-            unsigned argLevel = gtSetEvalOrder(argNode);
+            GenTree* node  = arg.GetEarlyNode();
+            unsigned level = gtSetEvalOrder(node);
 
             if (arg.GetWellKnownArg() == WellKnownArg::ThisPointer)
             {
                 // TODO-ARGS: Quirk to match old costs assigned to 'this'
-                costEx += argNode->GetCostEx();
-                costSz += argNode->GetCostSz() + 1;
+                costEx += node->GetCostEx();
+                costSz += node->GetCostSz() + 1;
             }
             else
             {
-                update(argNode, argLevel);
+                update(node, level);
             }
         }
     }
@@ -8361,11 +8361,11 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
 
     // Now copy late pointers. Note that these may not come in order.
     tail = &m_lateHead;
-    for (LateArg arg : other->LateArgs())
+    for (CallArg& arg : other->LateArgs())
     {
         CallArg* it      = m_head;
         CallArg* otherIt = other->m_head;
-        while (otherIt != arg.GetArg())
+        while (otherIt != &arg)
         {
             assert(it != nullptr && otherIt != nullptr);
             it      = it->m_next;
@@ -9224,7 +9224,7 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
                 m_statePtr   = arg->GetNext();
                 return;
             }
-            m_statePtr = call->gtArgs.LateArgs().begin().GetArg();
+            m_statePtr = &*call->gtArgs.LateArgs().begin();
             m_advance  = &GenTreeUseEdgeIterator::AdvanceCall<CALL_LATE_ARGS>;
             FALLTHROUGH;
 
@@ -11548,11 +11548,11 @@ void Compiler::gtDispTree(GenTree*     tree,
                                 (call->gtControlExpr == lastChild) ? IIArcBottom : IIArc, "control expr", topOnly);
                 }
 
-                for (LateArg arg : call->gtArgs.LateArgs())
+                for (CallArg& arg : call->gtArgs.LateArgs())
                 {
-                    IndentInfo arcType = (arg.GetArg()->GetLateNext() == nullptr) ? IIArcBottom : IIArc;
-                    gtGetLateArgMsg(call, arg.GetArg(), buf, sizeof(buf));
-                    gtDispChild(arg.GetNode(), indentStack, arcType, buf, topOnly);
+                    IndentInfo arcType = (arg.GetLateNext() == nullptr) ? IIArcBottom : IIArc;
+                    gtGetLateArgMsg(call, &arg, buf, sizeof(buf));
+                    gtDispChild(arg.GetLateNode(), indentStack, arcType, buf, topOnly);
                 }
             }
         }

@@ -10881,9 +10881,9 @@ public:
                     }
                 }
 
-                for (LateArg arg : call->gtArgs.LateArgs())
+                for (CallArg& arg : call->gtArgs.LateArgs())
                 {
-                    result = WalkTree(&arg.NodeRef(), call);
+                    result = WalkTree(&arg.LateNodeRef(), call);
                     if (result == fgWalkResult::WALK_ABORT)
                     {
                         return result;

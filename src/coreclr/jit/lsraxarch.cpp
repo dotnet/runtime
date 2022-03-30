@@ -1092,9 +1092,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     // First, determine internal registers.
     // We will need one for any float arguments to a varArgs call.
-    for (LateArg arg : call->gtArgs.LateArgs())
+    for (CallArg& arg : call->gtArgs.LateArgs())
     {
-        GenTree* argNode = arg.GetNode();
+        GenTree* argNode = arg.GetLateNode();
         if (argNode->OperIsPutArgReg())
         {
             HandleFloatVarArgs(call, argNode, &callHasFloatRegArgs);
@@ -1110,7 +1110,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     }
 
     // Now, count reg args
-    for (LateArg arg : call->gtArgs.LateArgs())
+    for (CallArg& arg : call->gtArgs.LateArgs())
     {
         // By this point, lowering has ensured that all call arguments are one of the following:
         // - an arg setup store
@@ -1121,8 +1121,8 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // - a put arg
         //
         // Note that this property is statically checked by LinearScan::CheckBlock.
-        CallArgABIInformation& abiInfo = arg.GetArg()->AbiInfo;
-        GenTree*               argNode = arg.GetNode();
+        CallArgABIInformation& abiInfo = arg.AbiInfo;
+        GenTree*               argNode = arg.GetLateNode();
 
         // Each register argument corresponds to one source.
         if (argNode->OperIsPutArgReg())

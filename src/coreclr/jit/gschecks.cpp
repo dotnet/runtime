@@ -198,9 +198,9 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
 
                     comp->fgWalkTreePre(&arg.EarlyNodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
                 }
-                for (LateArg arg : tree->AsCall()->gtArgs.LateArgs())
+                for (CallArg& arg : tree->AsCall()->gtArgs.LateArgs())
                 {
-                    comp->fgWalkTreePre(&arg.NodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
+                    comp->fgWalkTreePre(&arg.LateNodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
                 }
 
                 if (tree->AsCall()->gtCallType == CT_INDIRECT)

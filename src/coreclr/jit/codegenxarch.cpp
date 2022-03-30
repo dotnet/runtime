@@ -5322,10 +5322,10 @@ void CodeGen::genCall(GenTreeCall* call)
     }
 
     // Consume all the arg regs
-    for (LateArg arg : call->gtArgs.LateArgs())
+    for (CallArg& arg : call->gtArgs.LateArgs())
     {
-        CallArgABIInformation& abiInfo = arg.GetArg()->AbiInfo;
-        GenTree*               argNode = arg.GetNode();
+        CallArgABIInformation& abiInfo = arg.AbiInfo;
+        GenTree*               argNode = arg.GetLateNode();
 
         if (abiInfo.GetRegNum() == REG_STK)
         {

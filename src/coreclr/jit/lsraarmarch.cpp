@@ -247,10 +247,10 @@ int LinearScan::BuildCall(GenTreeCall* call)
     // Each register argument corresponds to one source.
     bool callHasFloatRegArgs = false;
 
-    for (LateArg arg : call->gtArgs.LateArgs())
+    for (CallArg& arg : call->gtArgs.LateArgs())
     {
-        CallArgABIInformation& abiInfo = arg.GetArg()->AbiInfo;
-        GenTree*               argNode = arg.GetNode();
+        CallArgABIInformation& abiInfo = arg.AbiInfo;
+        GenTree*               argNode = arg.GetLateNode();
 
 #ifdef DEBUG
         regNumber argReg = abiInfo.GetRegNum();

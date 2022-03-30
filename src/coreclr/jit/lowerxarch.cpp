@@ -4545,11 +4545,11 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
         }
     }
 
-    for (LateArg arg : call->gtArgs.LateArgs())
+    for (CallArg& arg : call->gtArgs.LateArgs())
     {
-        if (arg.GetNode()->OperIs(GT_PUTARG_STK))
+        if (arg.GetLateNode()->OperIs(GT_PUTARG_STK))
         {
-            LowerPutArgStk(arg.GetNode()->AsPutArgStk());
+            LowerPutArgStk(arg.GetLateNode()->AsPutArgStk());
         }
     }
 }

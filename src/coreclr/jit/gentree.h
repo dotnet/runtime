@@ -4310,34 +4310,6 @@ public:
 #endif
 };
 
-// Used in iterator to avoid pitfall with accessing early arg when iterating
-// late args.
-class LateArg
-{
-    CallArg* m_arg;
-
-public:
-    explicit LateArg(CallArg* arg) : m_arg(arg)
-    {
-    }
-    CallArg* GetArg()
-    {
-        return m_arg;
-    }
-    GenTree* GetNode()
-    {
-        return m_arg->GetLateNode();
-    }
-    void SetNode(GenTree* node)
-    {
-        m_arg->SetLateNode(node);
-    }
-    GenTree*& NodeRef()
-    {
-        return m_arg->LateNodeRef();
-    }
-};
-
 class CallArgs
 {
     CallArg* m_head;
@@ -4458,6 +4430,7 @@ public:
 
     unsigned CountArgs();
 
+    template<typename CallArg* (CallArg::*Next)()>
     class CallArgIterator
     {
         CallArg* m_arg;
@@ -4484,7 +4457,7 @@ public:
 
         CallArgIterator& operator++()
         {
-            m_arg = m_arg->GetNext();
+            m_arg = (m_arg->*Next)();
             return *this;
         }
 
@@ -4499,60 +4472,17 @@ public:
         }
     };
 
-    IteratorPair<CallArgIterator> Args()
+    using ArgIterator = CallArgIterator<&CallArg::GetNext>;
+    using LateArgIterator = CallArgIterator<&CallArg::GetLateNext>;
+
+    IteratorPair<ArgIterator> Args()
     {
-        return IteratorPair<CallArgIterator>(CallArgIterator(m_head), CallArgIterator(nullptr));
+        return IteratorPair<ArgIterator>(ArgIterator(m_head), ArgIterator(nullptr));
     }
 
-    class LateArgsIterator
+    IteratorPair<LateArgIterator> LateArgs()
     {
-        CallArg* m_arg;
-
-    public:
-        explicit LateArgsIterator(CallArg* arg) : m_arg(arg)
-        {
-        }
-
-        LateArg operator*() const
-        {
-            return LateArg(m_arg);
-        }
-
-        CallArg* GetArg() const
-        {
-            return m_arg;
-        }
-
-        GenTree* GetNode() const
-        {
-            return m_arg->GetLateNode();
-        }
-
-        GenTree*& NodeRef()
-        {
-            return m_arg->LateNodeRef();
-        }
-
-        LateArgsIterator& operator++()
-        {
-            m_arg = m_arg->GetLateNext();
-            return *this;
-        }
-
-        bool operator==(const LateArgsIterator& i) const
-        {
-            return m_arg == i.m_arg;
-        }
-
-        bool operator!=(const LateArgsIterator& i) const
-        {
-            return m_arg != i.m_arg;
-        }
-    };
-
-    IteratorPair<LateArgsIterator> LateArgs()
-    {
-        return IteratorPair<LateArgsIterator>(LateArgsIterator(m_lateHead), LateArgsIterator(nullptr));
+        return IteratorPair<LateArgIterator>(LateArgIterator(m_lateHead), LateArgIterator(nullptr));
     }
 };
 

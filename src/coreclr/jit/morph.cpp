@@ -1503,9 +1503,8 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
     unsigned regArgInx = 0;
     // Now go through the argument table and perform the necessary evaluation into temps.
     // SortArgs stored the sorted result in the late list.
-    for (LateArg lateArg : LateArgs())
+    for (CallArg& arg : LateArgs())
     {
-        CallArg& arg = *lateArg.GetArg();
         assert(arg.GetLateNode() == nullptr);
 
         GenTree* argx     = arg.GetEarlyNode();
@@ -1758,11 +1757,11 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
     if (comp->verbose)
     {
         printf("\nShuffled argument table:    ");
-        for (LateArg arg : LateArgs())
+        for (CallArg& arg : LateArgs())
         {
-            if (arg.GetArg()->AbiInfo.GetRegNum() != REG_STK)
+            if (arg.AbiInfo.GetRegNum() != REG_STK)
             {
-                printf("%s ", getRegName(arg.GetArg()->AbiInfo.GetRegNum()));
+                printf("%s ", getRegName(arg.AbiInfo.GetRegNum()));
             }
         }
         printf("\n");
@@ -2916,10 +2915,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     // If we are remorphing, process the late arguments (which were determined by a previous caller).
     if (reMorphing)
     {
-        for (LateArg arg : call->gtArgs.LateArgs())
+        for (CallArg& arg : call->gtArgs.LateArgs())
         {
-            arg.SetNode(fgMorphTree(arg.GetNode()));
-            flagsSummary |= arg.GetNode()->gtFlags;
+            arg.SetLateNode(fgMorphTree(arg.GetLateNode()));
+            flagsSummary |= arg.GetLateNode()->gtFlags;
         }
     }
 
@@ -8200,16 +8199,16 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     }
 
     // Process late args.
-    for (LateArg arg : recursiveTailCall->gtArgs.LateArgs())
+    for (CallArg& arg : recursiveTailCall->gtArgs.LateArgs())
     {
         // A late argument is an actual argument that needs to be assigned to the corresponding caller's parameter.
-        GenTree* lateArg = arg.GetNode();
+        GenTree* lateArg = arg.GetLateNode();
         // Late-added non-standard args are extra args that are not passed as locals, so skip those
-        if (!arg.GetArg()->IsArgAddedLate())
+        if (!arg.IsArgAddedLate())
         {
             Statement* paramAssignStmt =
-                fgAssignRecursiveCallArgToCallerParam(lateArg, arg.GetArg(),
-                                                      fgGetArgParameterLclNum(recursiveTailCall, arg.GetArg()), block,
+                fgAssignRecursiveCallArgToCallerParam(lateArg, &arg,
+                                                      fgGetArgParameterLclNum(recursiveTailCall, &arg), block,
                                                       callDI, tmpAssignmentInsertionPoint,
                                                       paramAssignmentInsertionPoint);
 

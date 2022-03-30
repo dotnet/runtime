@@ -9985,20 +9985,19 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
     // First: do value numbering of any argument placeholder nodes in the argument list
     // (by transferring from the VN of the late arg that they are standing in for...)
 
-    for (LateArg lateArg : call->gtArgs.LateArgs())
+    for (CallArg& arg : call->gtArgs.LateArgs())
     {
-        CallArg* arg = lateArg.GetArg();
-        if (arg->GetEarlyNode()->OperIs(GT_ARGPLACE))
+        if (arg.GetEarlyNode()->OperIs(GT_ARGPLACE))
         {
-            assert(lateArg.GetNode()->gtVNPair.BothDefined());
-            arg->GetEarlyNode()->gtVNPair = lateArg.GetNode()->gtVNPair;
+            assert(arg.GetLateNode()->gtVNPair.BothDefined());
+            arg.GetEarlyNode()->gtVNPair = arg.GetLateNode()->gtVNPair;
 #ifdef DEBUG
             if (verbose)
             {
                 printf("VN of ARGPLACE tree ");
-                Compiler::printTreeID(arg->GetEarlyNode());
+                Compiler::printTreeID(arg.GetEarlyNode());
                 printf(" updated to ");
-                vnpPrint(arg->GetEarlyNode()->gtVNPair, 1);
+                vnpPrint(arg.GetEarlyNode()->gtVNPair, 1);
                 printf("\n");
             }
 #endif
