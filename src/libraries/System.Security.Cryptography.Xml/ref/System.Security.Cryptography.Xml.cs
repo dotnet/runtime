@@ -80,8 +80,7 @@ namespace System.Security.Cryptography.Xml
         protected EncryptedReference() { }
         protected EncryptedReference(string? uri) { }
         protected EncryptedReference(string? uri, System.Security.Cryptography.Xml.TransformChain transformChain) { }
-        [System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute(true, "_cachedXml")]
-        protected internal bool CacheValid { [System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute(true, "_cachedXml")] get { throw null; } }
+        protected internal bool CacheValid { get { throw null; } }
         protected string? ReferenceType { get { throw null; } set { } }
         public System.Security.Cryptography.Xml.TransformChain TransformChain { get { throw null; } set { } }
         public string? Uri { get { throw null; } set { } }
@@ -193,11 +192,11 @@ namespace System.Security.Cryptography.Xml
         public System.Security.Cryptography.Xml.EncryptionProperty Item(int index) { throw null; }
         public void Remove(System.Security.Cryptography.Xml.EncryptionProperty value) { }
         public void RemoveAt(int index) { }
-        int System.Collections.IList.Add(object value) { throw null; }
-        bool System.Collections.IList.Contains(object value) { throw null; }
-        int System.Collections.IList.IndexOf(object value) { throw null; }
-        void System.Collections.IList.Insert(int index, object value) { }
-        void System.Collections.IList.Remove(object value) { }
+        int System.Collections.IList.Add(object? value) { throw null; }
+        bool System.Collections.IList.Contains(object? value) { throw null; }
+        int System.Collections.IList.IndexOf(object? value) { throw null; }
+        void System.Collections.IList.Insert(int index, object? value) { }
+        void System.Collections.IList.Remove(object? value) { }
     }
     public partial interface IRelDecryptor
     {
