@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -840,16 +839,14 @@ namespace System.Net.Quic.Tests
                 },
                 async serverStream =>
                 {
-                    // write large enough buffer to make the call asynchronous
-                    byte[] buffer = ArrayPool<byte>.Shared.Rent(16 * 1024 * 1024);
-                    var writeTask = serverStream.WriteAsync(buffer);
-                    Assert.False(writeTask.IsCompleted);
+                    // It may happen, that the WriteAsync call finishes early (before the AbortWrite 
+                    // below), and we hit a check on the next iteration of the WriteForever.
+                    // But in most cases it will still exercise aborting the outstanding write task.
 
+                    var writeTask = WriteForever(serverStream, 1024 * 1024);
                     serverStream.AbortWrite(ExpectedErrorCode);
 
-                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => writeTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
-
-                    ArrayPool<byte>.Shared.Return(buffer);
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => writeTask.WaitAsync(TimeSpan.FromSeconds(3)));
                 });
         }
 
