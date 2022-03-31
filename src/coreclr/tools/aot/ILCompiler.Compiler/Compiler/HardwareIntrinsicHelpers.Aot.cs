@@ -208,7 +208,7 @@ namespace ILCompiler
                     "Atomics" => Atomics,
                     "Vector64" => Vector64,
                     "Vector128" => Vector128,
-                    "Rcpc" => Rcpc
+                    "Rcpc" => Rcpc,
                _ => throw new NotSupportedException(),
                 };
             }
