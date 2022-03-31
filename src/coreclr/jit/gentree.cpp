@@ -10940,9 +10940,6 @@ void Compiler::gtDispTree(GenTree*     tree,
                     case GenTreePutArgStk::Kind::Push:
                         printf(" (Push)");
                         break;
-                    case GenTreePutArgStk::Kind::PushAllSlots:
-                        printf(" (PushAllSlots)");
-                        break;
                     default:
                         unreached();
                 }

@@ -467,8 +467,6 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
     if (src->OperIs(GT_FIELD_LIST))
     {
 #ifdef TARGET_X86
-        putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Invalid;
-
         GenTreeFieldList* fieldList = src->AsFieldList();
 
         // The code generator will push these fields in reverse order by offset. Reorder the list here s.t. the order
@@ -476,42 +474,35 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         assert(fieldList->Uses().IsSorted());
         fieldList->Uses().Reverse();
 
-        // Now that the fields have been sorted, the kind of code we will generate.
-        bool     allFieldsAreSlots = true;
-        unsigned prevOffset        = putArgStk->GetStackByteSize();
+        // Containment checks.
         for (GenTreeFieldList::Use& use : fieldList->Uses())
         {
-            GenTree* const fieldNode   = use.GetNode();
-            const unsigned fieldOffset = use.GetOffset();
-
+            GenTree* const  fieldNode = use.GetNode();
+            const var_types fieldType = use.GetType();
             assert(!fieldNode->TypeIs(TYP_LONG));
-
-            // We can treat as a slot any field that is stored at a slot boundary, where the previous
-            // field is not in the same slot. (Note that we store the fields in reverse order.)
-            const bool fieldIsSlot = ((fieldOffset % 4) == 0) && ((prevOffset - fieldOffset) >= 4);
-            if (!fieldIsSlot)
-            {
-                allFieldsAreSlots = false;
-            }
 
             // For x86 we must mark all integral fields as contained or reg-optional, and handle them
             // accordingly in code generation, since we may have up to 8 fields, which cannot all be in
             // registers to be consumed atomically by the call.
             if (varTypeIsIntegralOrI(fieldNode))
             {
-                if (fieldNode->OperGet() == GT_LCL_VAR)
+                // If we are loading from an in-memory local, we would like to use "push", but this
+                // is only legal if we can safely load all 4 bytes. Retype the local node here to
+                // TYP_INT for such legal cases to make downstream (LSRA & codegen) logic simpler.
+                // Retyping is ok because we model this node as STORE<field type>(LOAD<node type>).
+                // If the field came from promotion, we allow the padding to remain undefined, if
+                // from decomposition, the field type will be INT (naturally blocking the retyping).
+                if (varTypeIsSmall(fieldNode) && (genTypeSize(fieldType) <= genTypeSize(fieldNode)) &&
+                    fieldNode->OperIsLocalRead())
                 {
-                    const LclVarDsc* varDsc = comp->lvaGetDesc(fieldNode->AsLclVarCommon());
-                    if (!varDsc->lvDoNotEnregister)
-                    {
-                        fieldNode->SetRegOptional();
-                    }
-                    else
-                    {
-                        MakeSrcContained(putArgStk, fieldNode);
-                    }
+                    fieldNode->ChangeType(TYP_INT);
                 }
-                else if (fieldNode->IsIntCnsFitsInI32())
+
+                if (IsContainableImmed(putArgStk, fieldNode))
+                {
+                    MakeSrcContained(putArgStk, fieldNode);
+                }
+                else if (IsContainableMemoryOp(fieldNode) && IsSafeToContainMem(putArgStk, fieldNode))
                 {
                     MakeSrcContained(putArgStk, fieldNode);
                 }
@@ -519,14 +510,12 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
                 {
                     // For the case where we cannot directly push the value, if we run out of registers,
                     // it would be better to defer computation until we are pushing the arguments rather
-                    // than spilling, but this situation is not all that common, as most cases of promoted
-                    // structs do not have a large number of fields, and of those most are lclVars or
-                    // copy-propagated constants.
+                    // than spilling, but this situation is not all that common, as most cases of FIELD_LIST
+                    // are promoted structs, which do not not have a large number of fields, and of those
+                    // most are lclVars or copy-propagated constants.
                     fieldNode->SetRegOptional();
                 }
             }
-
-            prevOffset = fieldOffset;
         }
 
         // Set the copy kind.
@@ -535,14 +524,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         // this tuning should probably be undertaken as a whole.
         // Also, if there are  floating point fields, it may be better to use the "Unroll" mode
         // of copying the struct as a whole, if the fields are not register candidates.
-        if (allFieldsAreSlots)
-        {
-            putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::PushAllSlots;
-        }
-        else
-        {
-            putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
-        }
+        putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
 #endif // TARGET_X86
         return;
     }
