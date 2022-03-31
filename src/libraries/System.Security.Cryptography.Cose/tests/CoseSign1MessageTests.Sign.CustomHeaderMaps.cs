@@ -166,7 +166,7 @@ namespace System.Security.Cryptography.Cose.Tests
                 mapForCustomHeader = useProtectedMap ? protectedHeaders : unprotectedHeaders;
 
                 expectedProtectedHeaders = GetExpectedProtectedHeaders(algorithm);
-                expectedUnprotectedHeaders = new();
+                expectedUnprotectedHeaders = new List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>();
                 listForCustomHeader = useProtectedMap ? expectedProtectedHeaders : expectedUnprotectedHeaders;
             }
         }
