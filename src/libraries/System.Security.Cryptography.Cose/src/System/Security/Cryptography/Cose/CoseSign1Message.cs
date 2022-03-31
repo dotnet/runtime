@@ -12,6 +12,7 @@ namespace System.Security.Cryptography.Cose
     {
         private const string SigStructureCoxtextSign1 = "Signature1";
         private const int Sign1ArrayLegth = 4;
+        private byte[]? _toBeSigned;
 
         internal CoseSign1Message(CoseHeaderMap protectedHeader, CoseHeaderMap unprotectedHeader, byte[]? content, byte[] signature, byte[] protectedHeaderAsBstr)
             : base(protectedHeader, unprotectedHeader, content, signature, protectedHeaderAsBstr) { }
@@ -38,19 +39,12 @@ namespace System.Security.Cryptography.Cose
             ValidateBeforeSign(protectedHeaders, unprotectedHeaders, keyType, hashAlgorithm, out int? algHeaderValueToSlip);
 
             int expectedSize = ComputeEncodedSize(protectedHeaders, unprotectedHeaders, algHeaderValueToSlip, content.Length, isDetached, key.KeySize, keyType);
-            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(expectedSize);
+            byte[] buffer = new byte[expectedSize];
 
-            try
-            {
-                int bytesWritten = CreateCoseSign1Message(content, rentedBuffer, key, hashAlgorithm, protectedHeaders, unprotectedHeaders, isDetached, algHeaderValueToSlip, keyType);
-                Debug.Assert(expectedSize == bytesWritten);
+            int bytesWritten = CreateCoseSign1Message(content, buffer, key, hashAlgorithm, protectedHeaders, unprotectedHeaders, isDetached, algHeaderValueToSlip, keyType);
+            Debug.Assert(expectedSize == bytesWritten);
 
-                return rentedBuffer.AsSpan(0, bytesWritten).ToArray();
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(rentedBuffer, clearArray: true);
-            }
+            return buffer;
         }
 
         [UnsupportedOSPlatform("browser")]
@@ -105,6 +99,8 @@ namespace System.Security.Cryptography.Cose
 
             int protectedMapBytesWritten = CoseHeaderMap.Encode(protectedHeaders, buffer, true, algHeaderValueToSlip);
             ReadOnlySpan<byte> encodedProtectedHeaders = buffer.Slice(0, protectedMapBytesWritten);
+            // We're going to use the encoded protected headers again after this step (for the toBeSigned construction),
+            // so don't overwrite them yet.
             writer.WriteByteString(encodedProtectedHeaders);
 
             int unprotectedMapBytesWritten = CoseHeaderMap.Encode(unprotectedHeaders, buffer.Slice(protectedMapBytesWritten));
@@ -244,16 +240,21 @@ namespace System.Security.Cryptography.Cose
 
             byte[] rentedbuffer = ArrayPool<byte>.Shared.Rent(ComputeToBeSignedEncodedSize(SigStructureCoxtextSign1, _protectedHeaderAsBstr, content));
 
-            try
+            if (_toBeSigned == null)
             {
-                Span<byte> buffer = rentedbuffer;
-                int bytesWritten = CreateToBeSigned(SigStructureCoxtextSign1, _protectedHeaderAsBstr, content, buffer);
-                toBeSigned = buffer.Slice(0, bytesWritten).ToArray();
+                try
+                {
+                    Span<byte> buffer = rentedbuffer;
+                    int bytesWritten = CreateToBeSigned(SigStructureCoxtextSign1, _protectedHeaderAsBstr, content, buffer);
+                    _toBeSigned = buffer.Slice(0, bytesWritten).ToArray();
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(rentedbuffer, clearArray: true);
+                }
             }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(rentedbuffer, clearArray: true);
-            }
+
+            toBeSigned = _toBeSigned;
         }
 
         private static ReadOnlyMemory<byte> GetCoseAlgorithmFromProtectedHeaders(CoseHeaderMap protectedHeaders)
