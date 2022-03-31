@@ -157,25 +157,23 @@ namespace System.Reflection
             for (int i = 0; i < parameters.Length; i++)
             {
                 bool copyBackArg = false;
-                object? arg = parameters[i];
-                if (arg == Type.Missing)
-                {
-                    paramInfos ??= GetParametersNoCopy();
-                    if (paramInfos[i].DefaultValue == DBNull.Value)
-                    {
-                        throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
-                    }
-
-                    copyBackArg = true;
-                    arg = paramInfos[i].DefaultValue;
-                }
-
                 bool isValueType;
+                object? arg = parameters[i];
                 RuntimeType sigType = sigTypes[i];
 
-                if (ReferenceEquals(arg?.GetType(), sigType))
+                if (arg is null)
                 {
-                    // Fast path that avoids calling CheckValue()
+                    // Fast path that avoids calling CheckValue() for reference types.
+                    isValueType = RuntimeTypeHandle.IsValueType(sigType);
+                    if (isValueType || RuntimeTypeHandle.IsByRef(sigType))
+                    {
+                        paramInfos ??= GetParametersNoCopy();
+                        isValueType = sigType.CheckValue(ref arg, ref copyBackArg, paramInfos[i], binder, culture, invokeAttr);
+                    }
+                }
+                else if (ReferenceEquals(arg.GetType(), sigType))
+                {
+                    // Fast path that avoids calling CheckValue() when argument value matches the signature type.
                     isValueType = RuntimeTypeHandle.IsValueType(sigType);
                 }
                 else

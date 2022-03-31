@@ -1673,12 +1673,26 @@ namespace System
         internal bool CheckValue(
             ref object? value,
             ref bool copyBack,
-            ParameterInfo? _,
+            ParameterInfo? paramInfo,
             Binder? binder,
             CultureInfo? culture,
             BindingFlags invokeAttr)
         {
+            // These are already fast-pathed by the caller.
+            Debug.Assert(!ReferenceEquals(value?.GetType(), this));
+            Debug.Assert(value != null || RuntimeTypeHandle.IsValueType(this));
+
             copyBack = true;
+
+            if (value == Type.Missing && paramInfo != null)
+            {
+                if (paramInfo.DefaultValue == DBNull.Value)
+                {
+                    throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
+                }
+
+                value = paramInfo.DefaultValue;
+            }
 
             if (TryConvertToType(ref value))
                 return true;

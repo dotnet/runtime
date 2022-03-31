@@ -3496,7 +3496,19 @@ namespace System
             CultureInfo? culture,
             BindingFlags invokeAttr)
         {
-            Debug.Assert(!ReferenceEquals(value?.GetType(), this));
+            // These are already fast-pathed by the caller.
+            Debug.Assert(!(value == null && (RuntimeTypeHandle.IsValueType(this) || RuntimeTypeHandle.IsByRef(this))) ||
+                !ReferenceEquals(value?.GetType(), this));
+
+            if (ReferenceEquals(value, Type.Missing) && paramInfo != null)
+            {
+                if (paramInfo.DefaultValue == DBNull.Value)
+                {
+                    throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
+                }
+
+                value = paramInfo.DefaultValue;
+            }
 
             // Fast path to whether a value can be assigned to type.
             if (IsInstanceOfType(value))

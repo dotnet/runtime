@@ -144,9 +144,7 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest
     case ELEMENT_TYPE_I1:
     {
         _ASSERTE(rArg != NULL);
-        ARG_SLOT data = 0;
-        data = *(INT8*)rArg;
-        *(PVOID *)pArgDst = (PVOID)data;
+        *(INT8 *)pArgDst = *(INT8 *)rArg;
         break;
     }
 
@@ -155,9 +153,7 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest
     case ELEMENT_TYPE_CHAR:
     {
         _ASSERTE(rArg != NULL);
-        ARG_SLOT data = 0;
-        data = *(INT16*)rArg;
-        *(PVOID *)pArgDst = (PVOID)data;
+        *(INT16 *)pArgDst = *(INT16 *)rArg;
         break;
     }
 
@@ -168,9 +164,7 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest
     IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
     {
         _ASSERTE(rArg != NULL);
-        ARG_SLOT data = 0;
-        data = *(INT32*)rArg;
-        *(PVOID *)pArgDst = (PVOID)data;
+        *(INT32 *)pArgDst = *(INT32 *)rArg;
         break;
     }
 

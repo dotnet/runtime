@@ -236,10 +236,17 @@ namespace System.Reflection
 
             CheckConsistency(obj);
 
+            bool _b = false;
             RuntimeType fieldType = (RuntimeType)FieldType;
-            if (!ReferenceEquals(value?.GetType(), fieldType))
+            if (value is null)
             {
-                bool _b = false;
+                if (RuntimeTypeHandle.IsValueType(fieldType))
+                {
+                    fieldType.CheckValue(ref value, ref _b, paramInfo: null, binder, culture, invokeAttr);
+                }
+            }
+            else if (!ReferenceEquals(value.GetType(), fieldType))
+            {
                 fieldType.CheckValue(ref value, ref _b, paramInfo: null, binder, culture, invokeAttr);
             }
 
