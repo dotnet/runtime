@@ -69,7 +69,7 @@
     <Delete Files="@(CleanPreexistingPayloads)" />
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" />
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePayloadDirectories" Properties="Scenarios=$(_Scenarios)" StopOnFirstFailure="true" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePayloadDirectories" Properties="$(_PropertiesToPass)" StopOnFirstFailure="true" />
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePALTestArchive" Properties="$(_PropertiesToPass)" StopOnFirstFailure="true" />
 
     <ItemGroup>
