@@ -117,7 +117,7 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        private void ValidateHeaderValue(CoseHeaderLabel label, CborReaderState? state, ReadOnlyMemory<byte>? encodedValue)
+        private static void ValidateHeaderValue(CoseHeaderLabel label, CborReaderState? state, ReadOnlyMemory<byte>? encodedValue)
         {
             if (state != null)
             {

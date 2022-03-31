@@ -69,7 +69,7 @@ function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<a
         case MarshalType.ARRAY_UINT:
         case MarshalType.ARRAY_FLOAT:
         case MarshalType.ARRAY_DOUBLE:
-            throw new Error("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
+            throw new Error("Marshaling of primitive arrays are not supported.");
         case <MarshalType>20: // clr .NET DateTime
             return new Date(corebindings._get_date_value(root.value));
         case <MarshalType>21: // clr .NET DateTimeOffset

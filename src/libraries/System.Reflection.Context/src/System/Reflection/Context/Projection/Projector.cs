@@ -79,7 +79,7 @@ namespace System.Reflection.Context.Projection
         public abstract MemberInfo? ProjectMember(MemberInfo? value);
 
         [return: NotNullIfNotNull("values")]
-        public Type[]? Unproject(Type[]? values)
+        public static Type[]? Unproject(Type[]? values)
         {
             if (values == null)
                 return null;
@@ -94,7 +94,7 @@ namespace System.Reflection.Context.Projection
         }
 
         [return: NotNullIfNotNull("value")]
-        public Type? Unproject(Type? value)
+        public static Type? Unproject(Type? value)
         {
             if (value is ProjectingType projectingType)
                 return projectingType.UnderlyingType;

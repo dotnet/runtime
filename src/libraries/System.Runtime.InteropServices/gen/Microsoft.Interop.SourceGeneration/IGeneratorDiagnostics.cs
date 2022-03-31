@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -38,7 +37,7 @@ namespace Microsoft.Interop
         {
             SyntaxReference? syntaxReference = attributeData.ApplicationSyntaxReference;
             Location location = syntaxReference is not null
-                ? syntaxReference.GetSyntax().GetLocation()
+                ? syntaxReference.SyntaxTree.GetLocation(syntaxReference.Span)
                 : Location.None;
 
             return location.CreateDiagnostic(descriptor, args);
@@ -49,15 +48,7 @@ namespace Microsoft.Interop
             DiagnosticDescriptor descriptor,
             params object[] args)
         {
-            IEnumerable<Location> locationsInSource = locations.Where(l => l.IsInSource);
-            if (!locationsInSource.Any())
-                return Diagnostic.Create(descriptor, Location.None, args);
-
-            return Diagnostic.Create(
-                descriptor,
-                location: locationsInSource.First(),
-                additionalLocations: locationsInSource.Skip(1),
-                messageArgs: args);
+            return CreateDiagnostic(locations, descriptor, properties: null, args);
         }
 
         public static Diagnostic CreateDiagnostic(
@@ -66,16 +57,26 @@ namespace Microsoft.Interop
             ImmutableDictionary<string, string> properties,
             params object[] args)
         {
-            IEnumerable<Location> locationsInSource = locations.Where(l => l.IsInSource);
-            if (!locationsInSource.Any())
-                return Diagnostic.Create(descriptor, Location.None, args);
+            Location firstLocation = null;
+            List<Location> additionalLocations = null;
+            foreach (Location location in locations)
+            {
+                if (location.IsInSource)
+                {
+                    if (firstLocation is null)
+                    {
+                        firstLocation = location;
+                    }
+                    else
+                    {
+                        (additionalLocations ??= new()).Add(location);
+                    }
+                }
+            }
 
-            return Diagnostic.Create(
-                descriptor,
-                location: locationsInSource.First(),
-                additionalLocations: locationsInSource.Skip(1),
-                properties: properties,
-                messageArgs: args);
+            return firstLocation is null ?
+                Diagnostic.Create(descriptor, Location.None, args) :
+                Diagnostic.Create(descriptor, firstLocation, additionalLocations, properties, args);
         }
 
         public static Diagnostic CreateDiagnostic(

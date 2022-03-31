@@ -18,6 +18,8 @@ System.Composition.Hosting.ContainerConfiguration</PackageDescription>
     <Compile Include="System\Composition\Debugging\ContainerConfigurationDebuggerProxy.cs" />
     <Compile Include="System\Composition\Debugging\DiscoveredPartDebuggerProxy.cs" />
     <Compile Include="System\Composition\Hosting\ContainerConfiguration.cs" />
+    <Compile Include="System\Composition\Hosting\InstanceExportDescriptorProvider.cs" />
+    <Compile Include="System\Composition\Hosting\SinglePartExportDescriptorProvider.cs" />
     <Compile Include="System\Composition\TypedParts\ActivationFeatures\ActivationFeature.cs" />
     <Compile Include="System\Composition\TypedParts\ActivationFeatures\DisposalFeature.cs" />
     <Compile Include="System\Composition\TypedParts\ActivationFeatures\LifetimeFeature.cs" />

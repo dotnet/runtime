@@ -1010,8 +1010,8 @@ HRESULT CordbFunction::GetSig(SigParser *pMethodSigParser,
     // may change and the cached value will not match.
     if (!m_fCachedMethodValuesValid)
     {
-        PCCOR_SIGNATURE functionSignature;
-        ULONG size;
+        PCCOR_SIGNATURE functionSignature = NULL;
+        ULONG size = 0;
         DWORD methodAttr = 0;
         uint32_t argCount;
 

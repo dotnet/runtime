@@ -158,7 +158,7 @@ namespace System.IO.Internal
             SafeDelete();
         }
 
-        internal void Delete(string fileName)
+        private static void Delete(string fileName)
         {
             try
             {

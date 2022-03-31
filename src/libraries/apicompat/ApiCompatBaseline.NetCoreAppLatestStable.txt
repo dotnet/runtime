@@ -89,6 +89,8 @@ CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatfo
 Compat issues with assembly System.Diagnostics.Process:
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatformAttribute' on 'System.Diagnostics.Process.MaxWorkingSet.set(System.IntPtr)' changed from '[SupportedOSPlatformAttribute("freebsd")]' in the contract to '[SupportedOSPlatformAttribute("freebsd")]' in the implementation.
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatformAttribute' on 'System.Diagnostics.Process.MinWorkingSet.set(System.IntPtr)' changed from '[SupportedOSPlatformAttribute("freebsd")]' in the contract to '[SupportedOSPlatformAttribute("freebsd")]' in the implementation.
+Compat issues with assembly System.Net.Security:
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Net.Security.SslCertificateTrust.CreateForX509Collection(System.Security.Cryptography.X509Certificates.X509Certificate2Collection, System.Boolean)' in the contract but not the implementation.
 Compat issues with assembly System.Numerics.Vectors:
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.CopyTo(System.Span<System.Byte>)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.CopyTo(System.Span<T>)' in the contract but not the implementation.
@@ -142,4 +144,4 @@ CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatfo
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.TripleDES' in the contract but not the implementation.
 Compat issues with assembly System.Security.Cryptography.X509Certificates:
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.Security.Cryptography.X509Certificates.PublicKey.GetDSAPublicKey()' changed from '[UnsupportedOSPlatformAttribute("ios")]' in the contract to '[UnsupportedOSPlatformAttribute("browser")]' in the implementation.
-Total Issues: 135
+Total Issues: 136

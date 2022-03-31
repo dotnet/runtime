@@ -894,7 +894,7 @@ namespace System.Reflection.Runtime.TypeInfos
                         if (baseType == valueType && this != enumType)
                         {
                             classification |= TypeClassification.IsValueType;
-                            foreach (Type primitiveType in ReflectionCoreExecution.ExecutionDomain.PrimitiveTypes)
+                            foreach (Type primitiveType in ExecutionDomain.PrimitiveTypes)
                             {
                                 if (this.Equals(primitiveType))
                                 {

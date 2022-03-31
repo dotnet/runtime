@@ -116,7 +116,7 @@ namespace System.Drawing
             return ThumbNail;
         }
 
-        internal ImageCodecInfo? FindEncoderForFormat(ImageFormat format)
+        internal static ImageCodecInfo? FindEncoderForFormat(ImageFormat format)
         {
             ImageCodecInfo[] encoders = ImageCodecInfo.GetImageEncoders();
             ImageCodecInfo? encoder = null;

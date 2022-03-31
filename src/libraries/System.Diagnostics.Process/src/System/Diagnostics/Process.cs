@@ -826,6 +826,39 @@ namespace System.Diagnostics
             return WaitForInputIdleCore(milliseconds);
         }
 
+        /// <summary>
+        /// Causes the <see cref="Process"/> component to wait the specified <paramref name="timeout"/> for the associated process to enter an idle state.
+        /// This overload applies only to processes with a user interface and, therefore, a message loop.
+        /// </summary>
+        /// <param name="timeout">The amount of time, in milliseconds, to wait for the associated process to become idle.</param>
+        /// <returns><see langword="true"/> if the associated process has reached an idle state; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="InvalidOperationException">
+        /// The process does not have a graphical interface.
+        ///
+        /// -or-
+        ///
+        /// An unknown error occurred. The process failed to enter an idle state.
+        ///
+        /// -or-
+        ///
+        /// The process has already exited.
+        ///
+        /// -or-
+        ///
+        /// No process is associated with this <see cref="Process"/> object.
+        /// </exception>
+        /// <remarks>
+        /// Use <see cref="WaitForInputIdle(TimeSpan)"/> to force the processing of your application
+        /// to wait until the message loop has returned to the idle state.
+        /// When a process with a user interface is executing, its message loop executes every time
+        /// a Windows message is sent to the process by the operating system.
+        /// The process then returns to the message loop. A process is said to be in an idle state
+        /// when it is waiting for messages inside of a message loop.
+        /// This state is useful, for example, when your application needs to wait for a starting process
+        /// to finish creating its main window before the application communicates with that window.
+        /// </remarks>
+        public bool WaitForInputIdle(TimeSpan timeout) => WaitForInputIdle(ToTimeoutMilliseconds(timeout));
+
         public ISynchronizeInvoke? SynchronizingObject { get; set; }
 
         /// <devdoc>
@@ -1412,6 +1445,22 @@ namespace System.Diagnostics
                 RaiseOnExited();
             }
             return exited;
+        }
+
+        /// <summary>
+        /// Instructs the Process component to wait the specified number of milliseconds for
+        /// the associated process to exit.
+        /// </summary>
+        public bool WaitForExit(TimeSpan timeout) => WaitForExit(ToTimeoutMilliseconds(timeout));
+
+        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            }
+            return (int)totalMilliseconds;
         }
 
         /// <summary>

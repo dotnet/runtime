@@ -332,7 +332,7 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
 
 #ifdef FEATURE_SIMD
 #if defined(TARGET_XARCH)
-    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD) &&
+    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) &&
         jitFlags.GetInstructionSetFlags().HasInstructionSet(InstructionSet_AVX2))
     {
         if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
@@ -1370,6 +1370,8 @@ struct FilterSuperPMIExceptionsParam_ee_il
     CORINFO_CLASS_HANDLE  clazz;
     const char**          classNamePtr;
     const char*           fieldOrMethodOrClassNamePtr;
+    char16_t*             classNameWidePtr;
+    unsigned              classSize;
     EXCEPTION_POINTERS    exceptionPointers;
 };
 
@@ -1479,6 +1481,93 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
 #endif // DEBUG || FEATURE_JIT_METHOD_PERF
 
 #ifdef DEBUG
+
+//------------------------------------------------------------------------
+// eeTryGetClassSize: wraps getClassSize but if doing SuperPMI replay
+// and the value isn't found, use a bogus size.
+//
+// NOTE: This is only allowed for JitDump output.
+//
+// Return value:
+//      Either the actual class size, or (unsigned)-1 if SuperPMI didn't have it.
+//
+unsigned Compiler::eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd)
+{
+    FilterSuperPMIExceptionsParam_ee_il param;
+
+    param.pThis    = this;
+    param.pJitInfo = &info;
+    param.clazz    = clsHnd;
+
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
+            pParam->classSize = pParam->pJitInfo->compCompHnd->getClassSize(pParam->clazz);
+        },
+        &param);
+
+    if (!success)
+    {
+        param.classSize = (unsigned)-1; // Use the maximum unsigned value as the size
+    }
+    return param.classSize;
+}
+
+//------------------------------------------------------------------------
+// eeGetShortClassName: wraps appendClassName to provide functionality
+// similar to getClassName(), but returns a class name that is shortened,
+// not using full assembly info.
+//
+// Arguments:
+//   clsHnd - the class handle to get the type name of
+//
+// Return value:
+//   string class name. Note: unlike eeGetClassName/getClassName, this string is
+//   allocated from the JIT heap, so care should possibly be taken to avoid leaking it.
+//   It returns a char16_t string, since that's what appendClassName returns.
+//
+const char16_t* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
+{
+    FilterSuperPMIExceptionsParam_ee_il param;
+
+    param.pThis    = this;
+    param.pJitInfo = &info;
+    param.clazz    = clsHnd;
+
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
+            int            len        = 0;
+            constexpr bool fNamespace = true;
+            constexpr bool fFullInst  = false;
+            constexpr bool fAssembly  = false;
+
+            // Warning: crossgen2 doesn't fully implement the `appendClassName` API.
+            // We need to pass size zero, get back the actual buffer size required, allocate that space,
+            // and call the API again to get the full string.
+            int cchStrLen = pParam->pJitInfo->compCompHnd->appendClassName(nullptr, &len, pParam->clazz, fNamespace,
+                                                                           fFullInst, fAssembly);
+
+            size_t cchBufLen         = (size_t)cchStrLen + /* null terminator */ 1;
+            pParam->classNameWidePtr = pParam->pThis->getAllocator(CMK_DebugOnly).allocate<char16_t>(cchBufLen);
+            char16_t* pbuf           = pParam->classNameWidePtr;
+            len                      = (int)cchBufLen;
+
+            int cchResultStrLen = pParam->pJitInfo->compCompHnd->appendClassName(&pbuf, &len, pParam->clazz, fNamespace,
+                                                                                 fFullInst, fAssembly);
+            noway_assert(cchStrLen == cchResultStrLen);
+            noway_assert(pParam->classNameWidePtr[cchResultStrLen] == 0);
+        },
+        &param);
+
+    if (!success)
+    {
+        const char16_t substituteClassName[] = u"hackishClassName";
+        size_t         cchLen                = ArrLen(substituteClassName);
+        param.classNameWidePtr               = getAllocator(CMK_DebugOnly).allocate<char16_t>(cchLen);
+        memcpy(param.classNameWidePtr, substituteClassName, cchLen * sizeof(char16_t));
+    }
+
+    return param.classNameWidePtr;
+}
 
 const WCHAR* Compiler::eeGetCPString(size_t strHandle)
 {

@@ -672,7 +672,7 @@ namespace System.Security.Cryptography.X509Certificates
             return ret;
         }
 
-        private ArraySegment<byte> NormalizeSerialNumber(ReadOnlySpan<byte> serialNumber)
+        private static ArraySegment<byte> NormalizeSerialNumber(ReadOnlySpan<byte> serialNumber)
         {
             byte[] newSerialNumber;
 

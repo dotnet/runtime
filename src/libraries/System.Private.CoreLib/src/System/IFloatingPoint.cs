@@ -1,17 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Versioning;
-
-#if !FEATURE_GENERIC_MATH
-#error FEATURE_GENERIC_MATH is not defined
-#endif
-
 namespace System
 {
     /// <summary>Defines a floating-point type.</summary>
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
-    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface IFloatingPoint<TSelf>
         : ISignedNumber<TSelf>
         where TSelf : IFloatingPoint<TSelf>
@@ -222,6 +215,16 @@ namespace System
         /// <returns><see cref="E" /> raised to the power of <paramref name="x" />.</returns>
         static abstract TSelf Pow(TSelf x, TSelf y);
 
+        /// <summary>Computes an estimate of the reciprocal of a value.</summary>
+        /// <param name="x">The value whose estimate of the reciprocal is to be computed.</param>
+        /// <returns>An estimate of the reciprocal of <paramref name="x" />.</returns>
+        static abstract TSelf ReciprocalEstimate(TSelf x);
+
+        /// <summary>Computes an estimate of the reciprocal square root of a value.</summary>
+        /// <param name="x">The value whose estimate of the reciprocal square root is to be computed.</param>
+        /// <returns>An estimate of the reciprocal square root of <paramref name="x" />.</returns>
+        static abstract TSelf ReciprocalSqrtEstimate(TSelf x);
+
         /// <summary>Rounds a value to the nearest integer using the default rounding mode (<see cref="MidpointRounding.ToEven" />).</summary>
         /// <param name="x">The value to round.</param>
         /// <returns>The result of rounding <paramref name="x" /> to the nearest integer using the default rounding mode.</returns>
@@ -259,6 +262,11 @@ namespace System
         /// <param name="x">The value, in radians, whose sine is to be computed.</param>
         /// <returns>The sine of <paramref name="x" />.</returns>
         static abstract TSelf Sin(TSelf x);
+
+        /// <summary>Computes the sine and cosine of a value.</summary>
+        /// <param name="x">The value, in radians, whose sine and cosine are to be computed.</param>
+        /// <returns>The sine and cosine of <paramref name="x" />.</returns>
+        static abstract (TSelf Sin, TSelf Cos) SinCos(TSelf x);
 
         /// <summary>Computes the hyperbolic sine of a value.</summary>
         /// <param name="x">The value, in radians, whose hyperbolic sine is to be computed.</param>
@@ -332,7 +340,6 @@ namespace System
 
     /// <summary>Defines a floating-point type that is represented in a base-2 format.</summary>
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
-    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface IBinaryFloatingPoint<TSelf>
         : IBinaryNumber<TSelf>,
           IFloatingPoint<TSelf>

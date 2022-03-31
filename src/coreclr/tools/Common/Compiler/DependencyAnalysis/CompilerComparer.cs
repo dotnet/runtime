@@ -11,6 +11,8 @@ namespace ILCompiler.DependencyAnalysis
 {
     public class CompilerComparer : TypeSystemComparer, IComparer<ISortableNode>
     {
+        public static new CompilerComparer Instance { get; } = new CompilerComparer();
+
         public int Compare(ISortableNode x, ISortableNode y)
         {
             if (x == y)

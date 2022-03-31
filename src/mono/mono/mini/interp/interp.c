@@ -6390,7 +6390,15 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_CKFINITE) {
+		MINT_IN_CASE(MINT_CKFINITE_R4) {
+			float val = LOCAL_VAR (ip [2], float);
+			if (!mono_isfinite (val))
+				THROW_EX (interp_get_exception_arithmetic (frame, ip), ip);
+			LOCAL_VAR (ip [1], float) = val;
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_CKFINITE_R8) {
 			double val = LOCAL_VAR (ip [2], double);
 			if (!mono_isfinite (val))
 				THROW_EX (interp_get_exception_arithmetic (frame, ip), ip);

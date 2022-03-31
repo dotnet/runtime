@@ -570,13 +570,7 @@ namespace System.Text.RegularExpressions
                     return null;
                 }
 
-                match.Tidy(runner.runtextpos);
-
-                // If the passed in beginning was not 0 then we need to adjust the offsets on the match object.
-                if (beginning != 0)
-                {
-                    match.AddBeginningToIndex(beginning);
-                }
+                match.Tidy(runner.runtextpos, beginning);
 
                 return match;
             }

@@ -689,7 +689,7 @@ namespace System.Collections.Concurrent
         /// Returns an array containing a snapshot of the list's contents starting at the specified node.
         /// </summary>
         /// <returns>A list of the stack's contents starting at the specified node.</returns>
-        private List<T> ToList(Node? curr)
+        private static List<T> ToList(Node? curr)
         {
             List<T> list = new List<T>();
 
@@ -725,7 +725,7 @@ namespace System.Collections.Concurrent
             return GetEnumerator(_head);
         }
 
-        private IEnumerator<T> GetEnumerator(Node? head)
+        private static IEnumerator<T> GetEnumerator(Node? head)
         {
             Node? current = head;
             while (current != null)

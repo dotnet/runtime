@@ -72,6 +72,9 @@ CONFIG_INTEGER(JitHideAlignBehindJmp,
                1) // If set, try to hide align instruction (if any) behind an unconditional jump instruction (if any)
                   // that is present before the loop start.
 
+CONFIG_INTEGER(JitOptimizeStructHiddenBuffer, W("JitOptimizeStructHiddenBuffer"), 1) // Track assignments to locals done
+                                                                                     // through return buffers.
+
 // Print the alignment boundaries in disassembly.
 CONFIG_INTEGER(JitDasmWithAlignmentBoundaries, W("JitDasmWithAlignmentBoundaries"), 0)
 
@@ -458,8 +461,12 @@ CONFIG_STRING(JitGuardedDevirtualizationRange, W("JitGuardedDevirtualizationRang
 CONFIG_INTEGER(JitRandomGuardedDevirtualization, W("JitRandomGuardedDevirtualization"), 0)
 #endif // DEBUG
 
-// Enable insertion of patchpoints into Tier0 methods with loops.
+// Enable insertion of patchpoints into Tier0 methods, switching to optimized where needed.
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 1)
+#else
 CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 // Initial patchpoint counter value used by jitted code
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
 // Enable partial compilation for Tier0 methods

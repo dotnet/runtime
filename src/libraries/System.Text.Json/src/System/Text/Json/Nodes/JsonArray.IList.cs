@@ -153,7 +153,7 @@ namespace System.Text.Json.Nodes
 
         #endregion
 
-        private void DetachParent(JsonNode? item)
+        private static void DetachParent(JsonNode? item)
         {
             if (item != null)
             {

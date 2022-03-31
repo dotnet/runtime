@@ -1082,7 +1082,7 @@ namespace System.Xml
             return BufferReader.ReadUInt31();
         }
 
-        private bool IsValidArrayType(XmlBinaryNodeType nodeType)
+        private static bool IsValidArrayType(XmlBinaryNodeType nodeType)
         {
             switch (nodeType)
             {
@@ -1209,7 +1209,7 @@ namespace System.Xml
             return IsStartElement(localName, namespaceUri) && _arrayState == ArrayState.Element && _arrayNodeType == nodeType && !Signing;
         }
 
-        private void CheckArray(Array array!!, int offset, int count)
+        private static void CheckArray(Array array!!, int offset, int count)
         {
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));

@@ -4041,11 +4041,13 @@ GetSetFrameHelper::Init(MethodDesc *pMD)
     mdSignature mdLocalSig = (decoderOldIL.GetLocalVarSigTok()) ? (decoderOldIL.GetLocalVarSigTok()):
                                                                   (mdSignatureNil);
 
+    PCCOR_SIGNATURE pLocalSig = NULL;
+    ULONG cbLocalSigSize = 0;
+
     PCCOR_SIGNATURE pCallSig;
     DWORD cbCallSigSize;
 
     pMD->GetSig(&pCallSig, &cbCallSigSize);
-
     if (pCallSig != NULL)
     {
         // Yes, we do need to pass in the text because this might be generic function!
@@ -4079,18 +4081,15 @@ GetSetFrameHelper::Init(MethodDesc *pMD)
     }
 
     // allocation of pArgSig succeeded
-    ULONG cbSig;
-    PCCOR_SIGNATURE pLocalSig;
-    pLocalSig = NULL;
     if (mdLocalSig != mdSignatureNil)
     {
-        IfFailGo(pMD->GetModule()->GetMDImport()->GetSigFromToken(mdLocalSig, &cbSig, &pLocalSig));
+        IfFailGo(pMD->GetModule()->GetMDImport()->GetSigFromToken(mdLocalSig, &cbLocalSigSize, &pLocalSig));
     }
     if (pLocalSig != NULL)
     {
         SigTypeContext tmpContext(pMD);
         pLocSig = new (interopsafe, nothrow) MetaSig(pLocalSig,
-                                                     cbSig,
+                                                     cbLocalSigSize,
                                                      pMD->GetModule(),
                                                      &tmpContext,
                                                      MetaSig::sigLocalVars);
@@ -6946,6 +6945,18 @@ BOOL Debugger::PreJitAttach(BOOL willSendManagedEvent, BOOL willLaunchDebugger, 
     CONTRACTL_END;
 
     LOG( (LF_CORDB, LL_INFO10000, "D::PreJA: Entering\n") );
+
+    if (m_fShutdownMode)
+    {
+        // Trying to JitAttach because of some failure at shutdown is likely to block because we
+        // would suspend any thread that isn't the finalizer or debugger helper thread when it tries to
+        // take the debugger lock below. By bailing out here we won't do the JitAttach as we normally
+        // would, but at least the app should exit with an unhandled exception or FailFast rather
+        // entering a hung state. We believe this is very rare scenario so mitigating the problem in
+        // this way is sufficient.
+        LOG( (LF_CORDB, LL_INFO10000, "D::PreJA: Leaving - shutdown case\n") );
+        return FALSE;
+    }
 
     // Multiple threads may be calling this, so need to take the lock.
     if(!m_jitAttachInProgress)
@@ -10510,7 +10521,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                 // If we haven't been either JITted or EnC'd yet, then
                 // we'll put a patch in by offset, implicitly relative
                 // to the first version of the code.
-
+                fSuccess = FALSE;
                 pDebuggerBP = new (interopsafe, nothrow) DebuggerBreakpoint(pModule,
                                                                             pEvent->BreakpointData.funcMetadataToken,
                                                                             pEvent->vmAppDomain.GetRawPtr(),
@@ -11111,12 +11122,14 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                         objectHandle = pAppDomain->CreatePinningHandle(objref);
                         break;
                     default:
+                        objectHandle = NULL;
                         pEvent->hr = E_INVALIDARG;
                     }
-                 }
-                 if (SUCCEEDED(pEvent->hr))
-                 {
-                    pEvent->CreateHandleResult.vmObjectHandle.SetRawPtr(objectHandle);
+
+                    if (SUCCEEDED(pEvent->hr))
+                    {
+                        pEvent->CreateHandleResult.vmObjectHandle.SetRawPtr(objectHandle);
+                    }
                  }
              }
 
