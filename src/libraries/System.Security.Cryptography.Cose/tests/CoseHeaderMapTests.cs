@@ -147,7 +147,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void DecodedProtectedMapShouldBeReadOnly()
         {
-            ReadOnlySpan<byte> encodedMessage = CoseSign1Message.Sign(s_sampleContent, DefaultKey, HashAlgorithmName.SHA256);
+            byte[] encodedMessage = CoseSign1Message.Sign(s_sampleContent, DefaultKey, HashAlgorithmName.SHA256);
             CoseSign1Message message = CoseMessage.DecodeSign1(encodedMessage);
             Assert.True(message.ProtectedHeaders.IsReadOnly, "message.ProtectedHeaders.IsReadOnly");
         }
@@ -155,7 +155,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void GetValueFromReadOnlyProtectedMap()
         {
-            ReadOnlySpan<byte> encodedMessage = CoseSign1Message.Sign(s_sampleContent, DefaultKey, HashAlgorithmName.SHA256);
+            byte[] encodedMessage = CoseSign1Message.Sign(s_sampleContent, DefaultKey, HashAlgorithmName.SHA256);
             CoseSign1Message message = CoseMessage.DecodeSign1(encodedMessage);
             Assert.True(message.ProtectedHeaders.IsReadOnly, "message.ProtectedHeaders.IsReadOnly");
 
@@ -174,7 +174,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void SetValueAndRemoveThrowIfProtectedMapIsReadOnly()
         {
-            ReadOnlySpan<byte> encodedMessage = CoseSign1Message.Sign(s_sampleContent, DefaultKey, HashAlgorithmName.SHA256);
+            byte[] encodedMessage = CoseSign1Message.Sign(s_sampleContent, DefaultKey, HashAlgorithmName.SHA256);
             CoseSign1Message message = CoseMessage.DecodeSign1(encodedMessage);
             Assert.True(message.ProtectedHeaders.IsReadOnly, "message.ProtectedHeaders.IsReadOnly");
 
