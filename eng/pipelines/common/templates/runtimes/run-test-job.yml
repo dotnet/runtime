@@ -21,7 +21,6 @@ parameters:
   variables: {}
   pool: ''
   runtimeFlavor: 'coreclr'
-  runtimeFlavor: 'CoreCLR'
   shouldContinueOnError: false
   dependsOn: []
   dependOnEvaluatePaths: false
