@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
         /// </summary>
         /// <returns><c>True</c> if the current process is hosted as a systemd Service, otherwise <c>false</c>.</returns>
         public static bool IsSystemdService()
-            => _isSystemdService ?? (bool)(_isSystemdService = GetIsSystemdService());
+            => _isSystemdService ??= GetIsSystemdService();
 
         private static bool GetIsSystemdService()
         {
@@ -33,7 +33,13 @@ namespace Microsoft.Extensions.Hosting.Systemd
             // To support containerized systemd services, check if we're the main process (PID 1)
             // and if there are systemd environment variables defined for notifying the service
             // manager, or passing listen handles.
-            if (Environment.ProcessId == 1)
+#if NET5_0_OR_GREATER
+            int processId = Environment.ProcessId;
+#else
+            int processId = Process.GetCurrentProcess().Id;
+#endif
+
+            if (processId == 1)
             {
                 return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("NOTIFY_SOCKET")) ||
                     !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LISTEN_PID"));
