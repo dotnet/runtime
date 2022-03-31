@@ -182,5 +182,12 @@ namespace System.Globalization.Tests
         {
             IsSuffix(s_invariantCompare, "Hello", "", (CompareOptions)(-1), true, 0);
         }
+
+        [Fact]
+        public void IsSuffixWithAsciiAndIgnoredCharacters()
+        {
+            Assert.EndsWith("A", "A\0");
+            Assert.EndsWith("A\0", "A");
+        }
     }
 }

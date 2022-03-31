@@ -181,5 +181,12 @@ namespace System.Globalization.Tests
         {
             IsPrefix(s_invariantCompare, "Hello", "", (CompareOptions)(-1), true, 0);
         }
+
+        [Fact]
+        public void IsPrefixWithAsciiAndIgnoredCharacters()
+        {
+            Assert.StartsWith("A", "A\0");
+            Assert.StartsWith("A\0", "A");
+        }
     }
 }
