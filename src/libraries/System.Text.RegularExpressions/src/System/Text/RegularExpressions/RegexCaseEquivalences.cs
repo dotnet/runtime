@@ -49,9 +49,9 @@ namespace System.Text.RegularExpressions
                     'i' or '\u0130' when mappingBehavior is RegexCaseBehavior.Turkish => s_specialCasingSetBehaviors.AsSpan(1, 2), // 'i' and '\u0130'
 
                     // Default
-                    _ => null
+                    _ => default
                 };
-                return equivalences != null;
+                return equivalences != default;
             }
             else
             {
@@ -109,7 +109,7 @@ namespace System.Text.RegularExpressions
         ///   EquivalenceFirstLevelLookup => This is a ushort array which contains an index to be used for searching on the next lookup table 'EquivalenceCasingMap'.
         ///                                  We first grab the passed in <paramref name="c"/>, and divide it by 1024 and save it to index. We then use this index to
         ///                                  perform a lookup in 'EquivalenceFirstLevelLookup' table. If the value at index is 0xFFFF, then <paramref name="c"/>
-        ///                                  isn't involved in case conversion so we keep equivalences as null, and return false. If the value at index is not 0xFFFF
+        ///                                  isn't involved in case conversion so we keep equivalences as default, and return false. If the value at index is not 0xFFFF
         ///                                  then we use that value to search in 'EquivalenceCasingMap'.
         ///          EquivalenceCasingMap => This is a ushort array which contains a ushort for each character in a given range. The 3 highest bits of the ushort represent
         ///                                  the number of characters that are considered equivalent to <paramref name="c"/>. The rest of the 13 bits of the ushort represent
@@ -133,8 +133,6 @@ namespace System.Text.RegularExpressions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryFindCaseEquivalencesForChar(char c, out ReadOnlySpan<char> equivalences)
         {
-            equivalences = null;
-
             // Right shifting by 10 in order to divide by 1024 (CharactersPerRange)
             Debug.Assert((c >> 10) < 0xFF);
             byte index = (byte)(c >> 10);
@@ -143,11 +141,12 @@ namespace System.Text.RegularExpressions
             // If character belongs to a range that doesn't participate in casing, then just return false
             if (FirstLevelLookupValue == 0xFFFF)
             {
+                equivalences = default;
                 return false;
             }
 
             equivalences = PerformSecondLevelLookup();
-            return equivalences != null;
+            return equivalences != default;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             ReadOnlySpan<char> PerformSecondLevelLookup()

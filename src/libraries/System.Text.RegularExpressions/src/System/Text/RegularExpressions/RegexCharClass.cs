@@ -1312,13 +1312,7 @@ namespace System.Text.RegularExpressions
         /// <param name="c">The character for which to create the set.</param>
         /// <returns>The create set string.</returns>
         public static string OneToStringClass(char c)
-        {
-            var vsb = new ValueStringBuilder(stackalloc char[1]);
-            vsb.Append(c);
-            string result = CharsToStringClass(vsb.AsSpan());
-            vsb.Dispose();
-            return result;
-        }
+            => CharsToStringClass(stackalloc char[1] { c });
 
         internal static unsafe string CharsToStringClass(ReadOnlySpan<char> chars)
         {

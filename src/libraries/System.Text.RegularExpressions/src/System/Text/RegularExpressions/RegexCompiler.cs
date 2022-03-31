@@ -416,28 +416,28 @@ namespace System.Text.RegularExpressions
             // Either anchors weren't specified, or they don't completely root all matches to a specific location.
             switch (_regexTree.FindOptimizations.FindMode)
             {
-                case FindNextStartingPositionMode.LeadingPrefix_LeftToRight_CaseSensitive:
-                    Debug.Assert(!string.IsNullOrEmpty(_regexTree.FindOptimizations.LeadingCaseSensitivePrefix));
-                    EmitIndexOf_LeftToRight(_regexTree.FindOptimizations.LeadingCaseSensitivePrefix);
+                case FindNextStartingPositionMode.LeadingPrefix_LeftToRight:
+                    Debug.Assert(!string.IsNullOrEmpty(_regexTree.FindOptimizations.LeadingPrefix));
+                    EmitIndexOf_LeftToRight(_regexTree.FindOptimizations.LeadingPrefix);
                     break;
 
-                case FindNextStartingPositionMode.LeadingPrefix_RightToLeft_CaseSensitive:
-                    Debug.Assert(!string.IsNullOrEmpty(_regexTree.FindOptimizations.LeadingCaseSensitivePrefix));
-                    EmitIndexOf_RightToLeft(_regexTree.FindOptimizations.LeadingCaseSensitivePrefix);
+                case FindNextStartingPositionMode.LeadingPrefix_RightToLeft:
+                    Debug.Assert(!string.IsNullOrEmpty(_regexTree.FindOptimizations.LeadingPrefix));
+                    EmitIndexOf_RightToLeft(_regexTree.FindOptimizations.LeadingPrefix);
                     break;
 
-                case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseSensitive:
-                case FindNextStartingPositionMode.FixedSets_LeftToRight_CaseSensitive:
+                case FindNextStartingPositionMode.LeadingSet_LeftToRight:
+                case FindNextStartingPositionMode.FixedSets_LeftToRight:
                     Debug.Assert(_regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
                     EmitFixedSet_LeftToRight();
                     break;
 
-                case FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseSensitive:
+                case FindNextStartingPositionMode.LeadingSet_RightToLeft:
                     Debug.Assert(_regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
                     EmitFixedSet_RightToLeft();
                     break;
 
-                case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight_CaseSensitive:
+                case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight:
                     Debug.Assert(_regexTree.FindOptimizations.LiteralAfterLoop is not null);
                     EmitLiteralAfterAtomicLoop();
                     break;
@@ -2289,7 +2289,7 @@ namespace System.Text.RegularExpressions
             {
                 // Before we handle general-purpose matching logic for nodes, handle any special-casing.
                 // -
-                if (_regexTree!.FindOptimizations.FindMode == FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight_CaseSensitive &&
+                if (_regexTree!.FindOptimizations.FindMode == FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight &&
                     _regexTree!.FindOptimizations.LiteralAfterLoop?.LoopNode == node)
                 {
                     Debug.Assert(sliceStaticPos == 0, "This should be the first node and thus static position shouldn't have advanced.");

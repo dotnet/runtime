@@ -438,28 +438,28 @@ namespace System.Text.RegularExpressions.Generator
                     // Emit the code for whatever find mode has been determined.
                     switch (regexTree.FindOptimizations.FindMode)
                     {
-                        case FindNextStartingPositionMode.LeadingPrefix_LeftToRight_CaseSensitive:
-                            Debug.Assert(!string.IsNullOrEmpty(regexTree.FindOptimizations.LeadingCaseSensitivePrefix));
-                            EmitIndexOf_LeftToRight(regexTree.FindOptimizations.LeadingCaseSensitivePrefix);
+                        case FindNextStartingPositionMode.LeadingPrefix_LeftToRight:
+                            Debug.Assert(!string.IsNullOrEmpty(regexTree.FindOptimizations.LeadingPrefix));
+                            EmitIndexOf_LeftToRight(regexTree.FindOptimizations.LeadingPrefix);
                             break;
 
-                        case FindNextStartingPositionMode.LeadingPrefix_RightToLeft_CaseSensitive:
-                            Debug.Assert(!string.IsNullOrEmpty(regexTree.FindOptimizations.LeadingCaseSensitivePrefix));
-                            EmitIndexOf_RightToLeft(regexTree.FindOptimizations.LeadingCaseSensitivePrefix);
+                        case FindNextStartingPositionMode.LeadingPrefix_RightToLeft:
+                            Debug.Assert(!string.IsNullOrEmpty(regexTree.FindOptimizations.LeadingPrefix));
+                            EmitIndexOf_RightToLeft(regexTree.FindOptimizations.LeadingPrefix);
                             break;
 
-                        case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseSensitive:
-                        case FindNextStartingPositionMode.FixedSets_LeftToRight_CaseSensitive:
+                        case FindNextStartingPositionMode.LeadingSet_LeftToRight:
+                        case FindNextStartingPositionMode.FixedSets_LeftToRight:
                             Debug.Assert(regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
                             EmitFixedSet_LeftToRight();
                             break;
 
-                        case FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseSensitive:
+                        case FindNextStartingPositionMode.LeadingSet_RightToLeft:
                             Debug.Assert(regexTree.FindOptimizations.FixedDistanceSets is { Count: > 0 });
                             EmitFixedSet_RightToLeft();
                             break;
 
-                        case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight_CaseSensitive:
+                        case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight:
                             Debug.Assert(regexTree.FindOptimizations.LiteralAfterLoop is not null);
                             EmitLiteralAfterAtomicLoop();
                             break;
@@ -2095,7 +2095,7 @@ namespace System.Text.RegularExpressions.Generator
             {
                 // Before we handle general-purpose matching logic for nodes, handle any special-casing.
                 // -
-                if (rm.Tree.FindOptimizations.FindMode == FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight_CaseSensitive &&
+                if (rm.Tree.FindOptimizations.FindMode == FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight &&
                     rm.Tree.FindOptimizations.LiteralAfterLoop?.LoopNode == node)
                 {
                     Debug.Assert(sliceStaticPos == 0, "This should be the first node and thus static position shouldn't have advanced.");
