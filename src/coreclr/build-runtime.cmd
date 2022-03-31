@@ -10,7 +10,7 @@ echo %__MsgPrefix%Starting Build at %TIME%
 set __ThisScriptFull="%~f0"
 
 :: Note that the msbuild project files (specifically, dir.proj) will use the following variables, if set:
-::      __TargetArch         -- default: x64
+::      __TargetArch        -- default: x64
 ::      __BuildType         -- default: Debug
 ::      __TargetOS          -- default: windows
 ::      __ProjectDir        -- default: directory of the dir.props file
@@ -546,7 +546,6 @@ echo -cmakeargs: user-settable additional arguments passed to CMake.
 echo -configureonly: skip all builds; only run CMake ^(default: CMake and builds are run^)
 echo -skipconfigure: skip CMake ^(default: CMake is run^)
 echo -skipnative: skip building native components ^(default: native components are built^).
-echo -SkipCrossTargetBuildNative: skip building cross-architecture native components ^(default: components are built^).
 echo.
 echo Examples:
 echo     build-runtime
