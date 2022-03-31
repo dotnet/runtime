@@ -22,7 +22,9 @@ The following instructions are already set up to support this feature since thei
 - `throw` &ndash; Requires an object reference to be on stack, which can never be a ByRefLike type.
 - `unbox` / `unbox.any` &ndash; Requires an object reference to be on stack, which can never be a ByRefLike type.
 - `isinst` &ndash; Will always place `null` on stack.
-- `castclass` &ndash; Will always throw `System.InvalidCastException`.
+- `castclass` &ndash; Will always throw `InvalidCastException`.
+
+The expansion of ByRefLike types as Generic parameters does not relax restrictions on where ByRefLike types can be used. When `T` is ByRefLike, the use of `T` as a field will require the enclosing type to be ByRefLike.
 
 ## API Proposal
 
@@ -51,12 +53,13 @@ namespace System.Runtime.CompilerServices
     /// and will instead be enforced at run-time.
     /// </summary>
     [AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property)]
-    public sealed class SuppressConstraintChecksAttribute : Attribute
+    internal sealed class SuppressConstraintChecksAttribute : Attribute
     { }
 }
 ```
 
 Troublesome APIs:
+
 - [`Span<T>`](https://docs.microsoft.com/dotnet/api/system.span-1)
     - `public Span(T[]? array);`
     - `public Span(T[]? array, int start, int length);`
@@ -92,7 +95,7 @@ typedef enum CorGenericParamAttr
 
 The expansion of metadata will impact at least the following:
 
-- ILDasm/ILAsm &ndash; https://github.com/dotnet/runtime
+- ILDasm/ILAsm/`System.Reflection.Metadata`/`System.Reflection.Emit` &ndash; https://github.com/dotnet/runtime
 - Cecil &ndash; https://github.com/jbevain/cecil
 - IL Trimmer &ndash; https://github.com/dotnet/linker
 - F# &ndash; https://github.com/fsharp/fsharp
@@ -109,16 +112,18 @@ newobj instance void System.InvalidProgramException::.ctor()
 throw
 ```
 
-The `Reflection.Emit` API will be updated to respect ByRefLike support in Generics. The current Reflection API requires boxing of all types which makes usage of ByRefLike types impossible. Until the Reflection API can fully support ByRefLike types, this feature must be blocked when using Reflection. For example, API calls such as `MakeGenericType` / `MakeGenericMethod` will be invalid when `T` is ByRefLike.
+Adding `gpAcceptByRefLike` to the metadata of a Generic parameter will be considered a non-breaking binary change.
+
+Enumerating of constructors/methods on `Span<T>` and `ReadOnlySpan<T>` may throw `TypeLoadException` if `T` is a ByRefLike type. See "Troublesome APIs" above for the list of APIs that cause this condition.
 
 ## Special IL Sequences
 
-The following are IL sequences involving the `box` instruction. They are used in scenario optimizations and shall continue to be valid, even with ByRefLike types, in cases where the result can be computed at JIT time and elided safely. They will be added to the ECMA-335 addendum.
+The following are IL sequences involving the `box` instruction. They are used for common C# language constructs and shall continue to be valid, even with ByRefLike types, in cases where the result can be computed at JIT time and elided safely. The conditions where each sequence is elided are described below and each condition will be added to the ECMA-335 addendum.
 
-`box` ; `unbox.any`
+`box` ; `unbox.any` &ndash; The box target type is equal to the unboxed target type.
 
-`box` ; `br_true/false`
+`box` ; `br_true/false` &ndash; The box target type is non-`Nullable<T>`.
 
-`box` ; `isinst` ; `unbox.any`
+`box` ; `isinst` ; `unbox.any` &ndash; The box, `isint`, and unbox target types are all equal.
 
-`box` ; `isinst` ; `br_true/false`
+`box` ; `isinst` ; `br_true/false` &ndash; The box target type is equal to the unboxed target type or the box target type is `Nullable<T>` and target type equalities can be computed.
