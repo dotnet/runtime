@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void SignVerifyWithCustomCoseHeaderMaps()
         {
-            foreach ((AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseAlgorithm algorithm) in GetKeyHashAlgorithmTierce())
+            foreach ((AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseAlgorithm algorithm) in GetKeyHashAlgorithmTriplet())
             {
                 var protectedHeaders = new CoseHeaderMap();
                 protectedHeaders.SetValue(CoseHeaderLabel.Algorithm, (int)algorithm);

@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.Cose.Tests
         internal abstract bool Verify(CoseSign1Message msg, T key);
         internal abstract bool Verify(CoseSign1Message msg, T key, ReadOnlySpan<byte> content);
 
-        internal IEnumerable<(T Key, HashAlgorithmName Hash, CoseAlgorithm Algorithm)> GetKeyHashAlgorithmTierce(bool useNonPrivateKey = false)
+        internal IEnumerable<(T Key, HashAlgorithmName Hash, CoseAlgorithm Algorithm)> GetKeyHashAlgorithmTriplet(bool useNonPrivateKey = false)
         {
             foreach (var algorithm in CoseAlgorithms)
             {
@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void SignVerify()
         {
-            foreach ((T key, HashAlgorithmName hashAlgorithm, CoseAlgorithm algorithm) in GetKeyHashAlgorithmTierce())
+            foreach ((T key, HashAlgorithmName hashAlgorithm, CoseAlgorithm algorithm) in GetKeyHashAlgorithmTriplet())
             {
                 ReadOnlySpan<byte> encodedMsg = Sign(s_sampleContent, key, hashAlgorithm);
                 AssertSign1Message(encodedMsg, s_sampleContent, key, algorithm);
@@ -69,7 +69,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void SignWithNonPrivateKey()
         {
-            foreach ((T nonPrivateKey, HashAlgorithmName hashAlgorithm, _) in GetKeyHashAlgorithmTierce(useNonPrivateKey: true))
+            foreach ((T nonPrivateKey, HashAlgorithmName hashAlgorithm, _) in GetKeyHashAlgorithmTriplet(useNonPrivateKey: true))
             {
                 Assert.ThrowsAny<CryptographicException>(() => Sign(s_sampleContent, nonPrivateKey, hashAlgorithm));
             }

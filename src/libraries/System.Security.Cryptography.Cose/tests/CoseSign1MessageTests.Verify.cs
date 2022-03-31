@@ -89,7 +89,7 @@ namespace System.Security.Cryptography.Cose.Tests
         }
 
         [Fact]
-        public void VerifyReturnsTrueAfterAttempWithWrongContent()
+        public void VerifyReturnsTrueAfterAttemptWithWrongContent()
         {
             ReadOnlySpan<byte> correctContent = s_sampleContent;
             Span<byte> wrongContent = new byte[s_sampleContent.Length];
@@ -98,12 +98,12 @@ namespace System.Security.Cryptography.Cose.Tests
             ReadOnlySpan<byte> encodedMsg = CoseSign1Message.Sign(correctContent, DefaultKey, DefaultHash, isDetached: true);
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
 
-            Assert.False(msg.Verify(DefaultKey, wrongContent));
-            Assert.True(msg.Verify(DefaultKey, s_sampleContent));
+            Assert.False(msg.Verify(DefaultKey, wrongContent), "Calling Verify with the wrong content");
+            Assert.True(msg.Verify(DefaultKey, s_sampleContent), "Calling Verify with the correct content");
         }
 
         [Fact]
-        public void VerifyReturnsFalseAfterAttempWithCorrectContent()
+        public void VerifyReturnsFalseAfterAttemptWithCorrectContent()
         {
             ReadOnlySpan<byte> correctContent = s_sampleContent;
             Span<byte> wrongContent = new byte[s_sampleContent.Length];
@@ -112,8 +112,8 @@ namespace System.Security.Cryptography.Cose.Tests
             ReadOnlySpan<byte> encodedMsg = CoseSign1Message.Sign(correctContent, DefaultKey, DefaultHash, isDetached: true);
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
 
-            Assert.True(msg.Verify(DefaultKey, s_sampleContent));
-            Assert.False(msg.Verify(DefaultKey, wrongContent));
+            Assert.True(msg.Verify(DefaultKey, s_sampleContent), "Calling Verify with the correct content");
+            Assert.False(msg.Verify(DefaultKey, wrongContent), "Calling Verify with the wrong content");
         }
 
         [Theory]
@@ -156,7 +156,7 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             var protectedHeaders = GetHeaderMapWithAlgorithm();
             protectedHeaders.SetValue(CoseHeaderLabel.Critical, ReadOnlySpan<byte>.Empty);
-            ReadOnlySpan<byte> encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders, GetEmptyHeaderMap());
+            byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders, GetEmptyHeaderMap());
 
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
             Assert.Throws<NotSupportedException>(() => msg.Verify(DefaultKey));
@@ -175,7 +175,7 @@ namespace System.Security.Cryptography.Cose.Tests
             var protectedHeaders = GetHeaderMapWithAlgorithm();
             protectedHeaders.SetValue(CoseHeaderLabel.CounterSignature, ReadOnlySpan<byte>.Empty);
 
-            ReadOnlySpan<byte> encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders, GetEmptyHeaderMap());
+            byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders, GetEmptyHeaderMap());
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
 
             Assert.Throws<NotSupportedException>(() => msg.Verify(DefaultKey));
