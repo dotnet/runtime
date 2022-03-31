@@ -1109,22 +1109,6 @@ namespace System
         // static decimal IDivisionOperators<decimal, decimal, decimal>.operator checked /(decimal left, decimal right) => checked(left / right);
 
         //
-        // IFloatingPoint
-        //
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round{TInteger}(TSelf, TInteger)" />
-        static decimal IFloatingPoint<decimal>.Round<TInteger>(decimal x, TInteger digits)
-        {
-            return Round(x, int.CreateSaturating(digits));
-        }
-
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round{TInteger}(TSelf, TInteger, MidpointRounding)" />
-        static decimal IFloatingPoint<decimal>.Round<TInteger>(decimal x, TInteger digits, MidpointRounding mode)
-        {
-            return Round(x, int.CreateSaturating(digits), mode);
-        }
-
-        //
         // IIncrementOperators
         //
 

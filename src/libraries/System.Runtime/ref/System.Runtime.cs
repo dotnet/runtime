@@ -1896,8 +1896,6 @@ namespace System
         ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
         uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
         ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
-        static System.Decimal System.Numerics.IFloatingPoint<System.Decimal>.Round<TInteger>(System.Decimal x, TInteger digits) { throw null; }
-        static System.Decimal System.Numerics.IFloatingPoint<System.Decimal>.Round<TInteger>(System.Decimal x, TInteger digits, System.MidpointRounding mode) { throw null; }
         static System.Decimal System.Numerics.INumber<System.Decimal>.Sign(System.Decimal value) { throw null; }
         void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -2039,7 +2037,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         public static System.Double Ieee754Remainder(System.Double left, System.Double right) { throw null; }
-        public static TInteger ILogB<TInteger>(System.Double x) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        public static int ILogB(System.Double x) { throw null; }
         public static bool IsFinite(System.Double d) { throw null; }
         public static bool IsInfinity(System.Double d) { throw null; }
         public static bool IsNaN(System.Double d) { throw null; }
@@ -2072,9 +2070,9 @@ namespace System
         public static System.Double Pow(System.Double x, System.Double y) { throw null; }
         public static System.Double Round(System.Double x) { throw null; }
         public static System.Double Round(System.Double x, System.MidpointRounding mode) { throw null; }
-        public static System.Double Round<TInteger>(System.Double x, TInteger digits) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
-        public static System.Double Round<TInteger>(System.Double x, TInteger digits, System.MidpointRounding mode) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
-        public static System.Double ScaleB<TInteger>(System.Double x, TInteger n) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        public static System.Double Round(System.Double x, int digits) { throw null; }
+        public static System.Double Round(System.Double x, int digits, System.MidpointRounding mode) { throw null; }
+        public static System.Double ScaleB(System.Double x, int n) { throw null; }
         public static System.Double Sign(System.Double value) { throw null; }
         public static System.Double Sin(System.Double x) { throw null; }
         public static System.Double Sinh(System.Double x) { throw null; }
@@ -2604,7 +2602,7 @@ namespace System
         public static System.Half FusedMultiplyAdd(System.Half left, System.Half right, System.Half addend) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Half Ieee754Remainder(System.Half left, System.Half right) { throw null; }
-        public static TInteger ILogB<TInteger>(System.Half x) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        public static int ILogB(System.Half x) { throw null; }
         public static bool IsFinite(System.Half value) { throw null; }
         public static bool IsInfinity(System.Half value) { throw null; }
         public static bool IsNaN(System.Half value) { throw null; }
@@ -2650,9 +2648,9 @@ namespace System
         public static System.Half Pow(System.Half x, System.Half y) { throw null; }
         public static System.Half Round(System.Half x) { throw null; }
         public static System.Half Round(System.Half x, System.MidpointRounding mode) { throw null; }
-        public static System.Half Round<TInteger>(System.Half x, TInteger digits) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
-        public static System.Half Round<TInteger>(System.Half x, TInteger digits, System.MidpointRounding mode) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
-        public static System.Half ScaleB<TInteger>(System.Half x, TInteger n) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        public static System.Half Round(System.Half x, int digits) { throw null; }
+        public static System.Half Round(System.Half x, int digits, System.MidpointRounding mode) { throw null; }
+        public static System.Half ScaleB(System.Half x, int n) { throw null; }
         public static System.Half Sign(System.Half value) { throw null; }
         public static System.Half Sin(System.Half x) { throw null; }
         public static System.Half Sinh(System.Half x) { throw null; }
@@ -4142,7 +4140,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         public static System.Single Ieee754Remainder(System.Single left, System.Single right) { throw null; }
-        public static TInteger ILogB<TInteger>(System.Single x) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        public static int ILogB(System.Single x) { throw null; }
         public static bool IsFinite(System.Single f) { throw null; }
         public static bool IsInfinity(System.Single f) { throw null; }
         public static bool IsNaN(System.Single f) { throw null; }
@@ -4175,9 +4173,9 @@ namespace System
         public static System.Single Pow(System.Single x, System.Single y) { throw null; }
         public static System.Single Round(System.Single x) { throw null; }
         public static System.Single Round(System.Single x, System.MidpointRounding mode) { throw null; }
-        public static System.Single Round<TInteger>(System.Single x, TInteger digits) where TInteger : System.Numerics.IBinaryInteger<TInteger>  { throw null; }
-        public static System.Single Round<TInteger>(System.Single x, TInteger digits, System.MidpointRounding mode) where TInteger : System.Numerics.IBinaryInteger<TInteger>  { throw null; }
-        public static System.Single ScaleB<TInteger>(System.Single x, TInteger n) where TInteger : System.Numerics.IBinaryInteger<TInteger>  { throw null; }
+        public static System.Single Round(System.Single x, int digits) { throw null; }
+        public static System.Single Round(System.Single x, int digits, System.MidpointRounding mode) { throw null; }
+        public static System.Single ScaleB(System.Single x, int n) { throw null; }
         public static System.Single Sign(System.Single value) { throw null; }
         public static System.Single Sin(System.Single x) { throw null; }
         public static System.Single Sinh(System.Single x) { throw null; }
@@ -9392,7 +9390,7 @@ namespace System.Numerics
         where TSelf : System.Numerics.IExponentialFunctions<TSelf>
     {
         static abstract TSelf Exp(TSelf x);
-        static abstract TSelf ScaleB<TInteger>(TSelf x, TInteger n) where TInteger : System.Numerics.IBinaryInteger<TInteger>;
+        static abstract TSelf ScaleB(TSelf x, int n);
     }
     public partial interface IFloatingPoint<TSelf> : System.Numerics.INumber<TSelf>, System.Numerics.ISignedNumber<TSelf>
         where TSelf : System.Numerics.IFloatingPoint<TSelf>
@@ -9400,9 +9398,9 @@ namespace System.Numerics
         static abstract TSelf Ceiling(TSelf x);
         static abstract TSelf Floor(TSelf x);
         static abstract TSelf Round(TSelf x);
-        static abstract TSelf Round<TInteger>(TSelf x, TInteger digits) where TInteger : System.Numerics.IBinaryInteger<TInteger>;
+        static abstract TSelf Round(TSelf x, int digits);
         static abstract TSelf Round(TSelf x, MidpointRounding mode);
-        static abstract TSelf Round<TInteger>(TSelf x, TInteger digits, MidpointRounding mode) where TInteger : System.Numerics.IBinaryInteger<TInteger>;
+        static abstract TSelf Round(TSelf x, int digits, MidpointRounding mode);
         static abstract TSelf Truncate(TSelf x);
     }
     public partial interface IFloatingPointIeee754<TSelf> : System.Numerics.IExponentialFunctions<TSelf>, System.Numerics.IFloatingPoint<TSelf>, System.Numerics.IHyperbolicFunctions<TSelf>, System.Numerics.ILogarithmicFunctions<TSelf>, System.Numerics.IPowerFunctions<TSelf>, System.Numerics.IRootFunctions<TSelf>, System.Numerics.ITrigonometricFunctions<TSelf>
@@ -9450,7 +9448,7 @@ namespace System.Numerics
     public partial interface ILogarithmicFunctions<TSelf>
         where TSelf : System.Numerics.ILogarithmicFunctions<TSelf>
     {
-        static abstract TInteger ILogB<TInteger>(TSelf x) where TInteger : System.Numerics.IBinaryInteger<TInteger>;
+        static abstract int ILogB(TSelf x);
         static abstract TSelf Log(TSelf x);
         static abstract TSelf Log(TSelf x, TSelf newBase);
         static abstract TSelf Log2(TSelf x);

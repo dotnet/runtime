@@ -17,8 +17,7 @@ namespace System.Numerics
         /// <param name="x">The value which base-radix raised to the power of <paramref name="n" /> multiplies.</param>
         /// <param name="n">The value to which base-radix is raised before multipliying <paramref name="x" />.</param>
         /// <returns>The product of <paramref name="x" /> and base-radix raised to the power of <paramref name="n" />.</returns>
-        static abstract TSelf ScaleB<TInteger>(TSelf x, TInteger n)
-            where TInteger : IBinaryInteger<TInteger>;
+        static abstract TSelf ScaleB(TSelf x, int n);
 
         // The following methods are approved but not yet implemented in the libraries
         // * static abstract TSelf ExpM1(TSelf x);

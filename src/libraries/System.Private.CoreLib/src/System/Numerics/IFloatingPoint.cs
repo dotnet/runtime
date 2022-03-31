@@ -29,8 +29,7 @@ namespace System.Numerics
         /// <param name="x">The value to round.</param>
         /// <param name="digits">The number of fractional digits to which <paramref name="x" /> should be rounded.</param>
         /// <returns>The result of rounding <paramref name="x" /> to <paramref name="digits" /> fractional-digits using the default rounding mode.</returns>
-        static abstract TSelf Round<TInteger>(TSelf x, TInteger digits)
-            where TInteger : IBinaryInteger<TInteger>;
+        static abstract TSelf Round(TSelf x, int digits);
 
         /// <summary>Rounds a value to the nearest integer using the specified rounding mode.</summary>
         /// <param name="x">The value to round.</param>
@@ -43,8 +42,7 @@ namespace System.Numerics
         /// <param name="digits">The number of fractional digits to which <paramref name="x" /> should be rounded.</param>
         /// <param name="mode">The mode under which <paramref name="x" /> should be rounded.</param>
         /// <returns>The result of rounding <paramref name="x" /> to <paramref name="digits" /> fractional-digits using <paramref name="mode" />.</returns>
-        static abstract TSelf Round<TInteger>(TSelf x, TInteger digits, MidpointRounding mode)
-            where TInteger : IBinaryInteger<TInteger>;
+        static abstract TSelf Round(TSelf x, int digits, MidpointRounding mode);
 
         /// <summary>Truncates a value.</summary>
         /// <param name="x">The value to truncate.</param>

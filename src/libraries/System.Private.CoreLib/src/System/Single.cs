@@ -575,9 +575,8 @@ namespace System
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
         public static float Exp(float x) => MathF.Exp(x);
 
-        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ScaleB{TInteger}(TSelf, TInteger)" />
-        public static float ScaleB<TInteger>(float x, TInteger n)
-            where TInteger : IBinaryInteger<TInteger> => MathF.ScaleB(x, int.Create(n));
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ScaleB(TSelf, int)" />
+        public static float ScaleB(float x, int n) => MathF.ScaleB(x, n);
 
         // /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
         // public static float ExpM1(float x) => MathF.ExpM1(x);
@@ -607,16 +606,14 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
         public static float Round(float x) => MathF.Round(x);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round{TInteger}(TSelf, TInteger)" />
-        public static float Round<TInteger>(float x, TInteger digits)
-            where TInteger : IBinaryInteger<TInteger> => MathF.Round(x, int.Create(digits));
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int)" />
+        public static float Round(float x, int digits) => MathF.Round(x, digits);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, MidpointRounding)" />
         public static float Round(float x, MidpointRounding mode) => MathF.Round(x, mode);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round{TInteger}(TSelf, TInteger, MidpointRounding)" />
-        public static float Round<TInteger>(float x, TInteger digits, MidpointRounding mode)
-            where TInteger : IBinaryInteger<TInteger> => MathF.Round(x, int.Create(digits), mode);
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int, MidpointRounding)" />
+        public static float Round(float x, int digits, MidpointRounding mode) => MathF.Round(x, digits, mode);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
         public static float Truncate(float x) => MathF.Truncate(x);
@@ -724,9 +721,8 @@ namespace System
         // ILogarithmicFunctions
         //
 
-        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.ILogB{TInteger}(TSelf)" />
-        public static TInteger ILogB<TInteger>(float x)
-            where TInteger : IBinaryInteger<TInteger> => TInteger.Create(MathF.ILogB(x));
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.ILogB(TSelf)" />
+        public static int ILogB(float x) => MathF.ILogB(x);
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
         public static float Log(float x) => MathF.Log(x);

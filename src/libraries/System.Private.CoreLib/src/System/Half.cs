@@ -814,9 +814,8 @@ namespace System
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
         public static Half Exp(Half x) => (Half)MathF.Exp((float)x);
 
-        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ScaleB{TInteger}(TSelf, TInteger)" />
-        public static Half ScaleB<TInteger>(Half x, TInteger n)
-            where TInteger : IBinaryInteger<TInteger> => (Half)MathF.ScaleB((float)x, int.Create(n));
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ScaleB(TSelf, int)" />
+        public static Half ScaleB(Half x, int n) => (Half)MathF.ScaleB((float)x, n);
 
         // /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
         // public static Half ExpM1(Half x) => (Half)MathF.ExpM1((float)x);
@@ -846,16 +845,14 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
         public static Half Round(Half x) => (Half)MathF.Round((float)x);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round{TInteger}(TSelf, TInteger)" />
-        public static Half Round<TInteger>(Half x, TInteger digits)
-            where TInteger : IBinaryInteger<TInteger> => (Half)MathF.Round((float)x, int.Create(digits));
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int)" />
+        public static Half Round(Half x, int digits) => (Half)MathF.Round((float)x, digits);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, MidpointRounding)" />
         public static Half Round(Half x, MidpointRounding mode) => (Half)MathF.Round((float)x, mode);
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round{TInteger}(TSelf, TInteger, MidpointRounding)" />
-        public static Half Round<TInteger>(Half x, TInteger digits, MidpointRounding mode)
-            where TInteger : IBinaryInteger<TInteger> => (Half)MathF.Round((float)x, int.Create(digits), mode);
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int, MidpointRounding)" />
+        public static Half Round(Half x, int digits, MidpointRounding mode) => (Half)MathF.Round((float)x, digits, mode);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
         public static Half Truncate(Half x) => (Half)MathF.Truncate((float)x);
@@ -961,9 +958,8 @@ namespace System
         // ILogarithmicFunctions
         //
 
-        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.ILogB{TInteger}(TSelf)" />
-        public static TInteger ILogB<TInteger>(Half x)
-            where TInteger : IBinaryInteger<TInteger> => TInteger.Create(MathF.ILogB((float)x));
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.ILogB(TSelf)" />
+        public static int ILogB(Half x) => MathF.ILogB((float)x);
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
         public static Half Log(Half x) => (Half)MathF.Log((float)x);
