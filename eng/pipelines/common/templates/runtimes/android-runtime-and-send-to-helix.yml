@@ -13,7 +13,7 @@ parameters:
   runtimeVariant: ''
   variables: {}
   pool: ''
-  runtimeFlavorDisplayName: 'Mono'
+  runtimeFlavor: 'Mono'
   dependsOn: []
   #arcade-specific parameters
   condition: always()
@@ -38,7 +38,7 @@ steps:
       osGroup: ${{ parameters.osGroup }}
       osSubgroup: ${{ parameters.osSubgroup}}
       coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
-      runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       runtimeVariant: ${{ parameters.runtimeVariant }}
 

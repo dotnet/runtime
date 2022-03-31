@@ -15,10 +15,16 @@
     <MergedPayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(MergedPayloadsRootDirectory)))</MergedPayloadsRootDirectory>
   </PropertyGroup>
 
+  <UsingTask TaskName="EncodeUnicodeBase64" AssemblyFile="$(Base64TasksAssemblyPath)" />
+
+  <!-- We need to get a Base64 representation of the test exclusion list for mobile platforms -->
+  <Target Name="GetTestExclusionListAsBase64" Returns="$(Base64TestExclusionList)" Condition="'$(TargetsMobile)' == 'true'">
+  </Target>
+
   <!-- This target runs once and creates several instances of this project (one for each scenario)
        that will run in parallel. -->
 
-  <Target Name="RunInParallelForEachScenario">
+  <Target Name="RunInParallelForEachScenario" DependsOnTargets="GetTestExclusionListAsBase64">
     <PropertyGroup>
       <!-- This specifies what properties are needed to be passed down as global properties to a child project. -->
 
@@ -54,6 +60,27 @@
         DotNetCliRuntime=$(DotNetCliRuntime);
         DotNetCliPackageType=$(DotNetCliPackageType);
         DotNetCliVersion=$(DotNetCliVersion)
+      </_PropertiesToPass>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
+      <_ExcludeListProject Include="$(RepoRoot)src/tests/issues.targets">
+        <AdditionalProperties>XunitTestBinBase=$(TestBinDir);$(_PropertiesToPass)</AdditionalProperties>
+      </_ExcludeListProject>
+    </ItemGroup>
+    <MSBuild Projects="@(_ExcludeListProject)"
+             Targets="GetFilteredExcludeList"
+             Condition="'$(TargetsMobile)' == 'true'">
+      <Output TaskParameter="TargetOutputs" ItemName="FilteredTestExclusionList" />
+    </MSBuild>
+    <EncodeUnicodeBase64  
+      Condition="'$(TargetsMobile)' == 'true'"
+      Input="@(FilteredTestExclusionList)">
+      <Output TaskParameter="Base64" PropertyName="Base64TestExclusionList" />
+    </EncodeUnicodeBase64>
+    <PropertyGroup>
+      <_PropertiesToPass Condition="'$(TargetsMobile)' == 'true'">
+        $(_PropertiesToPass);
+        Base64TestExclusionList=$(Base64TestExclusionList)
       </_PropertiesToPass>
     </PropertyGroup>
     <Message Text="DotNetCliVersion: $(DotNetCliVersion)" Importance="High" />
@@ -371,8 +398,15 @@
       </_MergedPayloadFiles>
     </ItemGroup>
 
+    <ItemGroup>
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="export WasmTestAppArgs=&quot;$WasmTestAppArgs --exclusion-list=$(Base64TestExclusionList)&quot;" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set WasmTestAppArgs=%WasmTestAppArgs% --exclusion-list=$(Base64TestExclusionList)" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="chmod +x $(_MergedWrapperRunScriptRelative)" />
+      <HelixCommandLines Include="$(_MergedWrapperRunScriptRelative)" />
+    </ItemGroup>
+
     <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
-    <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="$(_MergedWrapperRunScriptRelative)" />
+    <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="@(HelixCommandLines)" />
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectoryForAppleMobile"
@@ -418,7 +452,10 @@
       </LegacyPayloads>
     </ItemGroup>
 
-    <ZipDirectory SourceDirectory="@(LegacyPayloads->Metadata('PayloadDirectory'))" DestinationFile="$(LegacyPayloadsRootDirectory)\%(LegacyPayloads.PayloadGroup).zip" />
+    <ZipDirectory
+      Condition="'@(LegacyPayloads)' != ''"
+      SourceDirectory="@(LegacyPayloads->Metadata('PayloadDirectory'))"
+      DestinationFile="$(LegacyPayloadsRootDirectory)\%(LegacyPayloads.PayloadGroup).zip" />
   </Target>
 
   <Target Name="ZipMergedPayloadDirectory" AfterTargets="PrepareMergedTestPayloadDirectories" Condition="'$(TargetsBrowser)' == 'true'">
@@ -430,7 +467,10 @@
       </MergedPayloads>
     </ItemGroup>
 
-    <ZipDirectory SourceDirectory="@(MergedPayloads->Metadata('PayloadDirectory'))" DestinationFile="$(MergedPayloadsRootDirectory)\%(MergedPayloads.PayloadGroup).zip" />
+    <ZipDirectory
+      Condition="'@(MergedPayloads)' != ''"
+      SourceDirectory="@(MergedPayloads->Metadata('PayloadDirectory'))"
+      DestinationFile="$(MergedPayloadsRootDirectory)\%(MergedPayloads.PayloadGroup).zip" />
   </Target>
 
   <PropertyGroup>
@@ -445,7 +485,7 @@
     <RunCrossGen2 Condition=" '$(RunCrossGen2)' != 'true' ">false</RunCrossGen2>
     <LongRunningGCTests Condition=" '$(LongRunningGCTests)' != 'true' ">false</LongRunningGCTests>
     <GcSimulatorTests Condition=" '$(GcSimulatorTests)' != 'true' ">false</GcSimulatorTests>
-    <TestRunNamePrefix Condition="'$(RuntimeFlavorDisplayName)' != ''">$(RuntimeFlavorDisplayName) </TestRunNamePrefix>
+    <TestRunNamePrefix Condition="'$(RuntimeFlavor)' != ''">$(RuntimeFlavor) </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(RunCrossGen)' == 'true' ">R2R </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(RunCrossGen2)' == 'true' ">R2R-CG2 </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(TestRunNamePrefix)$(TargetOS) $(TargetArchitecture) $(Configuration) @ </TestRunNamePrefix>
@@ -562,7 +602,8 @@
     </MergedPayloads>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
+  <!-- When targeting Mobile platforms, we ensure that the script has the right permissions beforehand. -->
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
     <MergedPayloads Update="@(MergedPayloads)" Condition="'$(TestWrapperTargetsWindows)' != 'true'">
       <MergedTestHelixCommand>chmod +x %(MergedPayloads.MergedTestHelixCommand)%0A%(MergedPayloads.MergedTestHelixCommand)</MergedTestHelixCommand>
     </MergedPayloads>
@@ -597,6 +638,7 @@
     </XHarnessApkToTest>
     
     <XHarnessApkToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAndroid)' == 'true'">
+      <Arguments>--arg=env:TestExclusionList=$(Base64TestExclusionList)</Arguments>
       <AndroidPackageName>net.dot.%(PayloadGroup)</AndroidPackageName>
       <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
@@ -611,6 +653,7 @@
     </XHarnessAppBundleToTest>
 
     <XHarnessAppBundleToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAppleMobile)' == 'true'">
+      <Arguments>--set-env=TestExclusionList=$(Base64TestExclusionList)</Arguments>
       <TestTarget Condition="'$(TargetArchitecture)' == 'arm64'">ios-simulator-64</TestTarget>
       <TestTarget Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</TestTarget>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
