@@ -139,7 +139,10 @@ namespace System.Net.Quic.Tests
             {
                 await t;
             }
-            catch { };
+            catch (Exception ex)
+            {
+                _output.WriteLine(ex.ToString());
+            }
         }
 
         [Fact]

@@ -1340,7 +1340,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (status == MsQuicStatusCodes.Aborted)
                 {
-                    return _state.SendResettableCompletionSource.GetTypelessValueTask();
+                    throw ThrowHelper.GetConnectionAbortedException(_state.ConnectionState.AbortErrorCode);
                 }
                 QuicExceptionHelpers.ThrowIfFailed(status,
                     "Could not send data to peer.");
@@ -1407,7 +1407,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (status == MsQuicStatusCodes.Aborted)
                 {
-                    return _state.SendResettableCompletionSource.GetTypelessValueTask();
+                    throw ThrowHelper.GetConnectionAbortedException(_state.ConnectionState.AbortErrorCode);
                 }
                 QuicExceptionHelpers.ThrowIfFailed(status,
                     "Could not send data to peer.");
@@ -1471,7 +1471,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (status == MsQuicStatusCodes.Aborted)
                 {
-                    return _state.SendResettableCompletionSource.GetTypelessValueTask();
+                    throw ThrowHelper.GetConnectionAbortedException(_state.ConnectionState.AbortErrorCode);
                 }
                 QuicExceptionHelpers.ThrowIfFailed(status,
                     "Could not send data to peer.");

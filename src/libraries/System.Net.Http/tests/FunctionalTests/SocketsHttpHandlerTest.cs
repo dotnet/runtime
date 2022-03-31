@@ -3207,7 +3207,10 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine(ex.ToString());
+                    }
                 }, options: options);
         }
 
@@ -3242,7 +3245,10 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine(ex.ToString());
+                    }
                 }, options: options);
         }
     }
@@ -3642,7 +3648,10 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.HandleRequestAsync();
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _output.WriteLine(ex.ToString());
+                }
 
                 // On HTTP/1.x, an exception being thrown while sending the request content will result in the connection being closed.
                 // This test is ensuring that a subsequent request can succeed on a new connection.
