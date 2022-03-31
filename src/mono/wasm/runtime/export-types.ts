@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { BINDINGType, DotnetPublicAPI, MONOType } from "./exports";
+import { BINDINGType, DotnetPublicAPI, MarshallerFactory, MONOType } from "./exports";
 import { DotnetModuleConfig, MonoArray, MonoObject, MonoString } from "./types";
 import { EmscriptenModule, VoidPtr } from "./types/emscripten";
 
@@ -24,6 +24,7 @@ export {
     VoidPtr,
     MonoObject, MonoString, MonoArray,
     BINDINGType, MONOType, EmscriptenModule,
-    DotnetPublicAPI, DotnetModuleConfig, CreateDotnetRuntimeType
+    DotnetPublicAPI, DotnetModuleConfig, CreateDotnetRuntimeType,
+    MarshallerFactory
 };
 

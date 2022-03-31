@@ -4,13 +4,42 @@
     <Nullable>enable</Nullable>
     <TargetFramework>$(NetCoreAppCurrent)-Browser</TargetFramework>
     <NoWarn>$(NoWarn);CA1419</NoWarn> <!-- // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke -->
+    <!-- Use following lines to write the generated files to disk. -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.cs" Link="Common\Interop\Browser\Interop.Runtime.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Private\JavaScriptMarshalImpl.CustomMarshalers.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Private\JavaScriptMarshalImpl.icalls.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Private\Marshalers\DateTimeMarshaler.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Private\Marshalers\ExceptionMarshaler.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Private\Marshalers\JSObjectMarshaler.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Private\Marshalers\StringMarshaler.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Private\Marshalers\SystemObjectMarshaler.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Private\Marshalers\TaskMarshaler.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Private\Structures\JavaScriptMarshalerSig.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Private\Structures\JavaScriptMarshalerSignature.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Public\JavaScriptMarshal.Primitive.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Public\Structures\JavaScriptMarshalerArg.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Public\JavaScriptMarshalerBase.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Private\Structures\JavaScriptMarshalerArg.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Public\JavaScriptMarshal.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Public\Structures\JavaScriptMarshalerArguments.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Public\Structures\JavaScriptMarshalerSignature.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Public\JSExportAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Public\JSImportAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Public\IJSObject.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Public\Marshalers\UriMarshaler.cs" />
+
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Private\JavaScriptMarshalImpl.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Public\Marshalers\NullableMarshaler.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Private\JavaScriptMarshalImpl.Signature.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Private\Structures\JavaScriptMarshalerArguments.cs" />
+
     <Compile Include="System\Runtime\InteropServices\JavaScript\Runtime.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Runtime.CS.Owned.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Runtime.JS.Owned.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\JSException.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Public\JSException.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSObject.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\DataView.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Uint8Array.cs" />
@@ -18,6 +47,10 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\ArrayBuffer.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Function.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSObject.References.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\gen\MarshalerGenerator\JavaScript.MarshalerGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <None Include="$(CompilerGeneratedFilesOutputPath)\JavaScript.MarshalerGenerator\System.Runtime.InteropServices.JavaScript.JsImportGenerator\JsImport.g.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

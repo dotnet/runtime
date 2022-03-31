@@ -3,11 +3,16 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)-Browser</TargetFramework>
     <TestRuntime>true</TestRuntime>
-    <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
+    <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop --no-headless</WasmXHarnessArgs>
+    <!-- Use following lines to write the generated files to disk. -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSImportExportTest.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\DataViewTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Vector3Marshaler.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\TypedArrayTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\ArrayTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\MarshalTests.cs" />
@@ -16,13 +21,22 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\Http\HttpRequestMessageTest.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\ParallelTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
+    <None Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.js" />
+    <None Include="timers.js" />
   </ItemGroup>
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="timers.js" />
+    <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.js" />
   </ItemGroup>
   <ItemGroup>
     <!-- Part of the shared framework but not exposed. -->
     <ProjectReference Include="..\src\System.Private.Runtime.InteropServices.JavaScript.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\gen\MarshalerGenerator\JavaScript.MarshalerGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <None Include="$(CompilerGeneratedFilesOutputPath)\JavaScript.MarshalerGenerator\System.Runtime.InteropServices.JavaScript.JsImportGenerator\JsImport.g.cs" />
+    <None Include="$(CompilerGeneratedFilesOutputPath)\JavaScript.MarshalerGenerator\System.Runtime.InteropServices.JavaScript.JsExportGenerator\JsExport.g.cs" />
+  </ItemGroup>
+
 </Project>

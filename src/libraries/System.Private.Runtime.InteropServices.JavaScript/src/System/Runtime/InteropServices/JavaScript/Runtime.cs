@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.InteropServices.JavaScript.Private;
 using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
@@ -285,7 +286,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </remarks>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Task<T>.Result is preserved by the ILLinker because _taskGetResultMethodInfo was initialized with it.")]
-        private static MethodInfo? GetTaskResultMethodInfo(Type taskType)
+        internal static MethodInfo? GetTaskResultMethodInfo(Type taskType)
         {
             MethodInfo? result = taskType.GetMethod(TaskGetResultName);
             if (result != null && result.HasSameMetadataDefinitionAs(_taskGetResultMethodInfo))
@@ -301,7 +302,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return o.ToString() ?? string.Empty;
         }
 
-        public static double GetDateValue(object dtv!!)
+        public static double GetDateValue(object dtv)
         {
             if (!(dtv is DateTime dt))
                 throw new InvalidCastException(SR.Format(SR.UnableCastObjectToType, dtv.GetType(), typeof(DateTime)));

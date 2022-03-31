@@ -3,12 +3,14 @@
 
 import {
     assert,
+    GCHandle,
     MonoArray, MonoAssembly, MonoClass,
     MonoMethod, MonoObject, MonoString,
     MonoType
 } from "./types";
 import { Module } from "./imports";
 import { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr } from "./types/emscripten";
+import { JavaScriptMarshalerArguments } from "./marshal";
 
 const fn_signatures: [ident: string, returnType: string | null, argTypes?: string[], opts?: any][] = [
     // MONO
@@ -70,6 +72,8 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_enable_on_demand_gc", "void", ["number"]],
     ["mono_profiler_init_aot", "void", ["number"]],
     ["mono_wasm_exec_regression", "number", ["number", "string"]],
+    ["mono_wasm_invoke_method_dynamic", "number", ["number", "number", "number"]],
+    ["mono_wasm_invoke_method_bound", "number", ["number", "number"]],
 ];
 
 export interface t_Cwraps {
@@ -131,6 +135,9 @@ export interface t_Cwraps {
     mono_wasm_set_main_args(argc: number, argv: VoidPtr): void;
     mono_profiler_init_aot(desc: string): void;
     mono_wasm_exec_regression(verbose_level: number, image: string): number;
+    mono_wasm_invoke_method_dynamic(method: MonoMethod, bound_function_gc_handle: GCHandle, args: JavaScriptMarshalerArguments): MonoString;
+    mono_wasm_invoke_method_bound(method: MonoMethod, args: JavaScriptMarshalerArguments): MonoString;
+
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};

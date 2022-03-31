@@ -48,7 +48,7 @@ export function setU16(offset: _MemOffset, value: number): void {
     Module.HEAPU16[<any>offset >>> 1] = value;
 }
 
-export function setU32 (offset: _MemOffset, value: _NumberOrPointer) : void {
+export function setU32(offset: _MemOffset, value: _NumberOrPointer): void {
     Module.HEAPU32[<any>offset >>> 2] = <number><any>value;
 }
 
@@ -60,13 +60,15 @@ export function setI16(offset: _MemOffset, value: number): void {
     Module.HEAP16[<any>offset >>> 1] = value;
 }
 
-export function setI32 (offset: _MemOffset, value: _NumberOrPointer) : void {
+export function setI32(offset: _MemOffset, value: _NumberOrPointer): void {
     Module.HEAP32[<any>offset >>> 2] = <number><any>value;
 }
 
 // NOTE: Accepts a number, not a BigInt, so values over Number.MAX_SAFE_INTEGER will be corrupted
 export function setI64(offset: _MemOffset, value: number): void {
-    Module.setValue(<VoidPtr><any>offset, value, "i64");
+    // TODO patch it into Module in updateGlobalBufferAndViews
+    const HEAPI64 = new BigInt64Array(Module.HEAP8.buffer);
+    HEAPI64[<any>offset >>> 3] = BigInt(value);
 }
 
 export function setF32(offset: _MemOffset, value: number): void {
@@ -76,7 +78,6 @@ export function setF32(offset: _MemOffset, value: number): void {
 export function setF64(offset: _MemOffset, value: number): void {
     Module.HEAPF64[<any>offset >>> 3] = value;
 }
-
 
 export function getU8(offset: _MemOffset): number {
     return Module.HEAPU8[<any>offset];
@@ -104,7 +105,10 @@ export function getI32(offset: _MemOffset): number {
 
 // NOTE: Returns a number, not a BigInt. This means values over Number.MAX_SAFE_INTEGER will be corrupted
 export function getI64(offset: _MemOffset): number {
-    return Module.getValue(<number><any>offset, "i64");
+    // TODO patch it into Module in updateGlobalBufferAndViews
+    const HEAPI64 = new BigInt64Array(Module.HEAP8.buffer);
+    const bigval = HEAPI64[<any>offset >>> 3];
+    return Number(BigInt.asIntN(62, bigval));
 }
 
 export function getF32(offset: _MemOffset): number {

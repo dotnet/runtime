@@ -126,10 +126,23 @@ export type RuntimeHelpers = {
 
     _box_buffer: VoidPtr;
     _unbox_buffer: VoidPtr;
-    _class_int32: MonoClass;
-    _class_uint32: MonoClass;
-    _class_double: MonoClass;
     _class_boolean: MonoClass;
+    _class_byte: MonoClass;
+    _class_int16: MonoClass;
+    _class_int32: MonoClass;
+    _class_int64: MonoClass;
+    _class_uint32: MonoClass;
+    _class_float: MonoClass;
+    _class_double: MonoClass;
+    _class_intptr: MonoClass;
+    _class_string: MonoClass;
+    _class_object: MonoClass;
+    _class_ijs_object: MonoClass;
+    _class_exception: MonoClass;
+    _class_date_time: MonoClass;
+    _class_date_time_offset: MonoClass;
+    _class_js_exception: MonoClass;
+    _class_task: MonoClass;
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
 

@@ -14,6 +14,9 @@ import { find_corlib_class } from "./class-loader";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 import { DotnetPublicAPI } from "./exports";
 import { mono_on_abort } from "./run";
+import { initialize_marshalers_to_cs } from "./marshal-to-cs";
+import { KnownTypes } from "./marshal";
+import { initialize_marshalers_to_js } from "./marshal-to-js";
 
 export let runtime_is_initialized_resolve: Function;
 export let runtime_is_initialized_reject: Function;
@@ -359,6 +362,8 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
     }
 }
 
+export let knownTypes: KnownTypes = <any>null;
+
 export function bindings_lazy_init(): void {
     if (runtimeHelpers.mono_wasm_bindings_is_ready)
         return;
@@ -376,10 +381,21 @@ export function bindings_lazy_init(): void {
     runtimeHelpers._unbox_buffer_size = 65536;
     runtimeHelpers._box_buffer = Module._malloc(runtimeHelpers._box_buffer_size);
     runtimeHelpers._unbox_buffer = Module._malloc(runtimeHelpers._unbox_buffer_size);
-    runtimeHelpers._class_int32 = find_corlib_class("System", "Int32");
-    runtimeHelpers._class_uint32 = find_corlib_class("System", "UInt32");
-    runtimeHelpers._class_double = find_corlib_class("System", "Double");
     runtimeHelpers._class_boolean = find_corlib_class("System", "Boolean");
+    runtimeHelpers._class_byte = find_corlib_class("System", "Byte");
+    runtimeHelpers._class_int16 = find_corlib_class("System", "Int16");
+    runtimeHelpers._class_int32 = find_corlib_class("System", "Int32");
+    runtimeHelpers._class_int64 = find_corlib_class("System", "Int64");
+    runtimeHelpers._class_uint32 = find_corlib_class("System", "UInt32");
+    runtimeHelpers._class_float = find_corlib_class("System", "Single");
+    runtimeHelpers._class_double = find_corlib_class("System", "Double");
+    runtimeHelpers._class_string = find_corlib_class("System", "String");
+    runtimeHelpers._class_object = find_corlib_class("System", "Object");
+    runtimeHelpers._class_intptr = find_corlib_class("System", "IntPtr");
+    runtimeHelpers._class_exception = find_corlib_class("System", "Exception");
+    runtimeHelpers._class_date_time = find_corlib_class("System", "DateTime");
+    runtimeHelpers._class_date_time_offset = find_corlib_class("System", "DateTimeOffset");
+    runtimeHelpers._class_task = find_corlib_class("System.Threading.Tasks", "Task");
     runtimeHelpers.bind_runtime_method = bind_runtime_method;
 
     const bindingAssembly = INTERNAL.BINDING_ASM;
@@ -406,6 +422,31 @@ export function bindings_lazy_init(): void {
     runtimeHelpers.get_call_sig = get_method("GetCallSignature");
     if (!runtimeHelpers.get_call_sig)
         throw "Can't find GetCallSignature method";
+
+    runtimeHelpers._class_ijs_object = cwraps.mono_wasm_assembly_find_class(binding_module, runtimeHelpers.runtime_namespace, "IJSObject");
+    runtimeHelpers._class_js_exception = cwraps.mono_wasm_assembly_find_class(binding_module, runtimeHelpers.runtime_namespace, "JSException");
+
+    knownTypes = {
+        bool: cwraps.mono_wasm_class_get_type(runtimeHelpers._class_boolean),
+        byte: cwraps.mono_wasm_class_get_type(runtimeHelpers._class_byte),
+        int16: cwraps.mono_wasm_class_get_type(runtimeHelpers._class_int16),
+        int32: cwraps.mono_wasm_class_get_type(runtimeHelpers._class_int32),
+        int64: cwraps.mono_wasm_class_get_type(runtimeHelpers._class_int64),
+        float: cwraps.mono_wasm_class_get_type(runtimeHelpers._class_float),
+        double: cwraps.mono_wasm_class_get_type(runtimeHelpers._class_double),
+        intptr: cwraps.mono_wasm_class_get_type(runtimeHelpers._class_intptr),
+        date_time: cwraps.mono_wasm_class_get_type(runtimeHelpers._class_date_time),
+        date_time_offset: cwraps.mono_wasm_class_get_type(runtimeHelpers._class_date_time_offset),
+        string: cwraps.mono_wasm_class_get_type(runtimeHelpers._class_string),
+        cs_object: cwraps.mono_wasm_class_get_type(runtimeHelpers._class_object),
+        exception: cwraps.mono_wasm_class_get_type(runtimeHelpers._class_exception),
+        ijs_object: cwraps.mono_wasm_class_get_type(runtimeHelpers._class_ijs_object),
+        jsexception: cwraps.mono_wasm_class_get_type(runtimeHelpers._class_js_exception),
+        task: cwraps.mono_wasm_class_get_type(runtimeHelpers._class_task),
+    };
+
+    initialize_marshalers_to_js();
+    initialize_marshalers_to_cs();
 
     _create_primitive_converters();
 }

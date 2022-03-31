@@ -13,7 +13,7 @@ const _cs_owned_objects_by_js_handle: any[] = [];
 const _js_handle_free_list: JSHandle[] = [];
 let _next_js_handle = 1;
 
-const _js_owned_object_table = new Map();
+export const _js_owned_object_table = new Map();
 
 // NOTE: FinalizationRegistry and WeakRef are missing on Safari below 14.1
 if (_use_finalization_registry) {

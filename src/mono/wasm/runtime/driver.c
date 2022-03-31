@@ -650,6 +650,45 @@ mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[
 	return res;
 }
 
+// specialization for calling static void methods with two arguments
+EMSCRIPTEN_KEEPALIVE MonoObject*
+mono_wasm_invoke_method_dynamic (MonoMethod *method, int bound_function_gc_handle, void* args)// JavaScriptMarshalerArguments
+{
+	MonoObject *exc = NULL;
+	MonoObject *res;
+
+	void *invoke_args[2] = {&bound_function_gc_handle, &args };
+
+	mono_runtime_invoke (method, NULL, invoke_args, &exc);
+	if (exc) {
+		MonoObject *exc2 = NULL;
+		res = (MonoObject*)mono_object_to_string (exc, &exc2);
+		if (exc2)
+			res = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
+		return res;
+	}
+	return NULL;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoObject*
+mono_wasm_invoke_method_bound (MonoMethod *method, void* args)// JavaScriptMarshalerArguments
+{
+	MonoObject *exc = NULL;
+	MonoObject *res;
+
+	void *invoke_args[1] = { args };
+
+	mono_runtime_invoke (method, NULL, invoke_args, &exc);
+	if (exc) {
+		MonoObject *exc2 = NULL;
+		res = (MonoObject*)mono_object_to_string (exc, &exc2);
+		if (exc2)
+			res = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
+		return res;
+	}
+	return NULL;
+}
+
 EMSCRIPTEN_KEEPALIVE MonoMethod*
 mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 {

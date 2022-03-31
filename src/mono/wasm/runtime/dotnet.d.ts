@@ -114,11 +114,20 @@ interface WasmRoot<T extends ManagedPointer | NativePointer> {
     toString(): string;
 }
 
+declare type GCHandle = {
+    __brand: "GCHandle";
+};
+declare type JSHandle = {
+    __brand: "JSHandle";
+};
 interface MonoObject extends ManagedPointer {
     __brandMonoObject: "MonoObject";
 }
 interface MonoString extends MonoObject {
     __brand: "MonoString";
+}
+interface MonoType extends ManagedPointer {
+    __brand: "MonoType";
 }
 interface MonoArray extends MonoObject {
     __brand: "MonoArray";
@@ -222,6 +231,41 @@ declare type DotnetModuleConfigImports = {
 };
 
 declare function mono_wasm_runtime_ready(): void;
+
+interface JavaScriptMarshalerArguments extends NativePointer {
+    __brand: "JavaScriptMarshalerArgs";
+}
+interface JavaScriptMarshalerSignature extends NativePointer {
+    __brand: "JavaScriptMarshalerSignatures";
+}
+interface JavaScriptMarshalerArg extends NativePointer {
+    __brand: "JavaScriptMarshalerArg";
+}
+declare function get_arg(args: JavaScriptMarshalerArguments, index: number): JavaScriptMarshalerArg;
+declare function get_signature_type(signature: JavaScriptMarshalerSignature, index: number): MonoType;
+declare function get_arg_type(arg: JavaScriptMarshalerArg): MonoType;
+declare function set_arg_type(arg: JavaScriptMarshalerArg, type: MonoType): void;
+declare function get_root_ref(arg: JavaScriptMarshalerArg): MonoObject;
+declare function get_extra_buffer(arg: JavaScriptMarshalerArg): NativePointer;
+declare function set_root_ref(arg: JavaScriptMarshalerArg, reference: MonoObject): void;
+declare function get_arg_b8(arg: JavaScriptMarshalerArg): boolean;
+declare function get_arg_u8(arg: JavaScriptMarshalerArg): number;
+declare function get_arg_i16(arg: JavaScriptMarshalerArg): number;
+declare function get_arg_i32(arg: JavaScriptMarshalerArg): number;
+declare function get_arg_i64(arg: JavaScriptMarshalerArg): number;
+declare function get_arg_date(arg: JavaScriptMarshalerArg): Date;
+declare function get_arg_f64(arg: JavaScriptMarshalerArg): number;
+declare function set_arg_b8(arg: JavaScriptMarshalerArg, value: boolean): void;
+declare function set_arg_u8(arg: JavaScriptMarshalerArg, value: number): void;
+declare function set_arg_i16(arg: JavaScriptMarshalerArg, value: number): void;
+declare function set_arg_i32(arg: JavaScriptMarshalerArg, value: number): void;
+declare function set_arg_i64(arg: JavaScriptMarshalerArg, value: number): void;
+declare function set_arg_date(arg: JavaScriptMarshalerArg, value: Date): void;
+declare function set_arg_f64(arg: JavaScriptMarshalerArg, value: number): void;
+declare function get_js_handle(arg: JavaScriptMarshalerArg): JSHandle;
+declare function set_js_handle(arg: JavaScriptMarshalerArg, jsHandle: JSHandle): void;
+declare function get_gc_handle(arg: JavaScriptMarshalerArg): GCHandle;
+declare function set_gc_handle(arg: JavaScriptMarshalerArg, gcHandle: GCHandle): void;
 
 declare function mono_wasm_setenv(name: string, value: string): void;
 declare function mono_load_runtime_and_bcl_args(config: MonoConfig | MonoConfigError | undefined): Promise<void>;
@@ -336,6 +380,40 @@ interface DotnetPublicAPI {
         Configuration: string;
     };
 }
+declare type MarshalerHelpers = {
+    mono_type: MonoType;
+    MONO: typeof MONO;
+    BINDING: typeof BINDING;
+    get_arg: typeof get_arg;
+    get_gc_handle: typeof get_gc_handle;
+    get_js_handle: typeof get_js_handle;
+    get_signature_type: typeof get_signature_type;
+    get_root_ref: typeof get_root_ref;
+    get_arg_type: typeof get_arg_type;
+    get_arg_b8: typeof get_arg_b8;
+    get_arg_u8: typeof get_arg_u8;
+    get_arg_i16: typeof get_arg_i16;
+    get_arg_i32: typeof get_arg_i32;
+    get_arg_f64: typeof get_arg_f64;
+    get_arg_i64: typeof get_arg_i64;
+    get_arg_date: typeof get_arg_date;
+    set_gc_handle: typeof set_gc_handle;
+    set_js_handle: typeof set_js_handle;
+    set_root_ref: typeof set_root_ref;
+    set_arg_type: typeof set_arg_type;
+    set_arg_b8: typeof set_arg_b8;
+    set_arg_u8: typeof set_arg_u8;
+    set_arg_i16: typeof set_arg_i16;
+    set_arg_i32: typeof set_arg_i32;
+    set_arg_f64: typeof set_arg_f64;
+    set_arg_i64: typeof set_arg_i64;
+    set_arg_date: typeof set_arg_date;
+    get_extra_buffer: typeof get_extra_buffer;
+};
+declare type MarshallerFactory = (helpers: MarshalerHelpers) => {
+    toManaged: (arg: JavaScriptMarshalerArg, value: any) => void;
+    toJavaScript: (arg: JavaScriptMarshalerArg) => any;
+};
 
 declare function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: DotnetPublicAPI) => DotnetModuleConfig)): Promise<DotnetPublicAPI>;
 declare type CreateDotnetRuntimeType = typeof createDotnetRuntime;
@@ -343,4 +421,4 @@ declare global {
     function getDotnetRuntime(runtimeId: number): DotnetPublicAPI | undefined;
 }
 
-export { BINDINGType, CreateDotnetRuntimeType, DotnetModuleConfig, DotnetPublicAPI, EmscriptenModule, MONOType, MonoArray, MonoObject, MonoString, VoidPtr, createDotnetRuntime as default };
+export { BINDINGType, CreateDotnetRuntimeType, DotnetModuleConfig, DotnetPublicAPI, EmscriptenModule, MONOType, MarshallerFactory, MonoArray, MonoObject, MonoString, VoidPtr, createDotnetRuntime as default };

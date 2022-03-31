@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <RunAnalyzers>true</RunAnalyzers>
+    <CLSCompliant>false</CLSCompliant>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CommonJSMethodGenerator.cs" />
+    <Compile Include="Constants.cs" />
+    <Compile Include="JSExportGenerator.cs" />
+    <Compile Include="JSExportMethodGenerator.cs" />
+    <Compile Include="JSImportMethodGenerator.cs" />
+    <Compile Include="JSImportGenerator.cs" />
+    <Compile Include="JSMarshalerMetadata.cs" />
+    <Compile Include="JSMarshalerSig.cs" />
+    <Compile Include="MarshalerSelector.cs" />
+    <Compile Include="TypeSymbolExtensions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="$(MicrosoftCodeAnalysisAnalyzersVersion)" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+  <!-- 
+    <ProjectReference Include="..\..\..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" Pack="true" PackagePath="analyzers/dotnet/cs" />
+  -->
+  </ItemGroup>
+</Project>

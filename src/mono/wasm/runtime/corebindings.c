@@ -34,6 +34,12 @@ extern MonoObject* mono_wasm_web_socket_close (int webSocket_js_handle, int code
 extern MonoString* mono_wasm_web_socket_abort (int webSocket_js_handle, int *is_exception);
 extern MonoObject* mono_wasm_compile_function (MonoString *str, int *is_exception);
 
+extern MonoString* mono_wasm_bind_js_function(MonoString *function_name, void *signature, int* function_js_handle, int *is_exception);
+extern void mono_wasm_invoke_bound_function(int function_js_handle, void *data);
+extern MonoString* mono_wasm_bind_cs_function(MonoString *fully_qualified_name, int signature_hash, MonoString *export_as_name, void* signatures, int *is_exception);
+extern MonoString* mono_wasm_register_custom_marshaller(MonoString *factory_code, MonoType* type_handle, int* js_handle_out, int *is_exception);
+
+
 void core_initialize_internals ()
 {
 	mono_add_internal_call ("Interop/Runtime::InvokeJSWithArgs", mono_wasm_invoke_js_with_args);
@@ -55,6 +61,12 @@ void core_initialize_internals ()
 	mono_add_internal_call ("Interop/Runtime::WebSocketClose", mono_wasm_web_socket_close);
 	mono_add_internal_call ("Interop/Runtime::WebSocketAbort", mono_wasm_web_socket_abort);
 	mono_add_internal_call ("Interop/Runtime::CancelPromise", mono_wasm_cancel_promise);
+
+	mono_add_internal_call ("System.Runtime.InteropServices.JavaScript.Private.JavaScriptMarshalImpl::_BindJSFunction", mono_wasm_bind_js_function);
+	mono_add_internal_call ("System.Runtime.InteropServices.JavaScript.Private.JavaScriptMarshalImpl::_InvokeBoundJSFunction", mono_wasm_invoke_bound_function);
+	mono_add_internal_call ("System.Runtime.InteropServices.JavaScript.Private.JavaScriptMarshalImpl::_BindCSFunction", mono_wasm_bind_cs_function);
+	mono_add_internal_call ("System.Runtime.InteropServices.JavaScript.Private.JavaScriptMarshalImpl::_RegisterCustomMarshaller", mono_wasm_register_custom_marshaller);
+	
 }
 
 // Int8Array 		| int8_t	| byte or SByte (signed byte)

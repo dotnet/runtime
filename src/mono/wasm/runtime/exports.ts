@@ -29,7 +29,7 @@ import {
     mono_wasm_stringify_as_error_with_stack,
 } from "./debug";
 import { ENVIRONMENT_IS_WEB, ExitStatusError, runtimeHelpers, setImportsAndExports } from "./imports";
-import { DotnetModuleConfigImports, DotnetModule } from "./types";
+import { DotnetModuleConfigImports, DotnetModule, MonoType } from "./types";
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
     mono_wasm_setenv, mono_wasm_set_runtime_options,
@@ -67,6 +67,10 @@ import { create_weak_ref } from "./weak-ref";
 import { fetch_like, readAsync_like } from "./polyfills";
 import { EmscriptenModule } from "./types/emscripten";
 import { mono_run_main, mono_run_main_and_exit } from "./run";
+import { mono_wasm_bind_js_function, mono_wasm_invoke_bound_function } from "./invoke-js";
+import { mono_wasm_bind_cs_function } from "./invoke-cs";
+import { get_arg, get_arg_b8, get_arg_date, get_arg_f64, get_arg_i16, get_arg_i32, get_arg_i64, get_arg_type, get_arg_u8, get_extra_buffer, get_gc_handle, get_js_handle, get_root_ref, get_signature_type, JavaScriptMarshalerArg, mono_wasm_register_custom_marshaller, set_arg_b8, set_arg_date, set_arg_f64, set_arg_i16, set_arg_i32, set_arg_i64, set_arg_type, set_arg_u8, set_gc_handle, set_js_handle, set_root_ref } from "./marshal";
+import { mono_wasm_reject_task, mono_wasm_resolve_task } from "./marshal-to-js";
 
 const MONO = {
     // current "public" MONO API
@@ -112,8 +116,9 @@ const MONO = {
 };
 export type MONOType = typeof MONO;
 
+//current "public" BINDING API
 const BINDING = {
-    //current "public" BINDING API
+    // TODO eager wrap it as the assignment captures the lazy factory
     mono_obj_array_new: cwraps.mono_wasm_obj_array_new,
     mono_obj_array_set: cwraps.mono_wasm_obj_array_set,
     js_string_to_mono_string,
@@ -299,6 +304,10 @@ export const __linker_exports: any = {
     mono_wasm_web_socket_close,
     mono_wasm_web_socket_abort,
     mono_wasm_compile_function,
+    mono_wasm_bind_js_function,
+    mono_wasm_invoke_bound_function,
+    mono_wasm_bind_cs_function,
+    mono_wasm_register_custom_marshaller,
 
     //  also keep in sync with pal_icushim_static.c
     mono_wasm_load_icu_data,
@@ -340,6 +349,9 @@ const INTERNAL: any = {
     mono_wasm_raise_debug_event,
     mono_wasm_change_debugger_log_level,
     mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
+
+    mono_wasm_resolve_task,
+    mono_wasm_reject_task
 };
 
 
@@ -370,4 +382,41 @@ class RuntimeList {
         const wr = this.list[runtimeId];
         return wr ? wr.deref() : undefined;
     }
+}
+
+// TODO this is new API surface, review
+export type MarshalerHelpers = {
+    mono_type: MonoType,
+    MONO: typeof MONO,
+    BINDING: typeof BINDING,
+    get_arg: typeof get_arg,
+    get_gc_handle: typeof get_gc_handle,
+    get_js_handle: typeof get_js_handle,
+    get_signature_type: typeof get_signature_type,
+    get_root_ref: typeof get_root_ref,
+    get_arg_type: typeof get_arg_type,
+    get_arg_b8: typeof get_arg_b8,
+    get_arg_u8: typeof get_arg_u8,
+    get_arg_i16: typeof get_arg_i16,
+    get_arg_i32: typeof get_arg_i32,
+    get_arg_f64: typeof get_arg_f64,
+    get_arg_i64: typeof get_arg_i64,
+    get_arg_date: typeof get_arg_date,
+    set_gc_handle: typeof set_gc_handle,
+    set_js_handle: typeof set_js_handle,
+    set_root_ref: typeof set_root_ref,
+    set_arg_type: typeof set_arg_type,
+    set_arg_b8: typeof set_arg_b8,
+    set_arg_u8: typeof set_arg_u8,
+    set_arg_i16: typeof set_arg_i16,
+    set_arg_i32: typeof set_arg_i32,
+    set_arg_f64: typeof set_arg_f64,
+    set_arg_i64: typeof set_arg_i64,
+    set_arg_date: typeof set_arg_date,
+    get_extra_buffer: typeof get_extra_buffer,
+}
+
+export type MarshallerFactory = (helpers: MarshalerHelpers) => {
+    toManaged: (arg: JavaScriptMarshalerArg, value: any) => void,
+    toJavaScript: (arg: JavaScriptMarshalerArg) => any,
 }

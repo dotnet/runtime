@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { WasmRoot, WasmRootBuffer, mono_wasm_new_root } from "./roots";
-import { MonoClass, MonoMethod, MonoObject, coerceNull, VoidPtrNull, MonoType, MarshalType } from "./types";
+import { MonoClass, MonoMethod, MonoObject, coerceNull, VoidPtrNull, MonoType, MarshalType, GCHandle } from "./types";
 import { BINDING, Module, runtimeHelpers } from "./imports";
 import { js_to_mono_enum, _js_to_mono_obj, _js_to_mono_uri } from "./js-to-cs";
 import { js_string_to_mono_string, js_string_to_mono_string_interned } from "./strings";
@@ -18,6 +18,7 @@ import {
 } from "./method-calls";
 import cwraps, { wrap_c_function } from "./cwraps";
 import { VoidPtr } from "./types/emscripten";
+import { JavaScriptMarshalerArguments } from "./marshal";
 
 const primitiveConverters = new Map<string, Converter>();
 const _signature_converters = new Map<string, Converter>();
@@ -54,6 +55,11 @@ export function get_method(method_name: string): MonoMethod {
 
 export function bind_runtime_method(method_name: string, signature: string): Function {
     const method = get_method(method_name);
+    if (signature === "#!") {
+        return function mono_wasm_invoke_method_dynamic(bound_function_gc_handle: GCHandle, args: JavaScriptMarshalerArguments) {
+            return cwraps.mono_wasm_invoke_method_dynamic(method, bound_function_gc_handle, args);
+        };
+    }
     return mono_bind_method(method, null, signature, "BINDINGS_" + method_name);
 }
 

@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { JSHandle, GCHandle, MonoObject } from "./types";
+import { JSHandle, GCHandle, MonoObject, MonoString } from "./types";
 import { PromiseControl } from "./cancelable-promise";
 import { runtimeHelpers } from "./imports";
+import { JavaScriptMarshalerArguments } from "./marshal";
 
 const fn_signatures: [jsname: string, csname: string, signature: string/*ArgsMarshalString*/][] = [
     ["_get_cs_owned_object_by_js_handle", "GetCSOwnedObjectByJSHandle", "ii!"],
@@ -27,6 +28,7 @@ const fn_signatures: [jsname: string, csname: string, signature: string/*ArgsMar
     ["_create_date_time", "CreateDateTime", "d!"],
     ["_create_uri", "CreateUri", "s!"],
     ["_is_simple_array", "IsSimpleArray", "m"],
+    ["_invoke_bound_cs_function", "InvokeBoundCsFunction", "#!"],
 ];
 
 export interface t_CSwraps {
@@ -52,6 +54,7 @@ export interface t_CSwraps {
     _create_date_time(ticks: number): MonoObject;
     _create_uri(uri: string): MonoObject;
     _is_simple_array(obj: MonoObject): boolean;
+    _invoke_bound_cs_function(bound_function_gc_handle: GCHandle, args: JavaScriptMarshalerArguments): MonoString;
 }
 
 const wrapped_cs_functions: t_CSwraps = <any>{};
