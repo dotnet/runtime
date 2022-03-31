@@ -159,7 +159,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
-            Stop().GetAwaiter().GetResult();
+            // TODO: solve listener stopping in better way now that it receives STOP_COMPLETED event.
+            StopAsync().GetAwaiter().GetResult();
             _state?.Handle?.Dispose();
 
             // Note that it's safe to free the state GCHandle here, because:
@@ -212,7 +213,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return MsQuicParameterHelpers.GetIPEndPointParam(MsQuicApi.Api, _state.Handle, (uint)QUIC_PARAM_LISTENER.LOCAL_ADDRESS);
         }
 
-        private Task Stop()
+        private Task StopAsync()
         {
             // TODO finalizers are called even if the object construction fails.
             if (_state == null)
