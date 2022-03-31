@@ -1991,7 +1991,7 @@ namespace System
         public const double NegativeOne = -1;
         public const double NegativeZero = -0;
         public const double One = 1;
-        public const double PI = 3.141592653589793;
+        public const double Pi = 3.141592653589793;
         public const double PositiveInfinity = 1.0 / 0.0;
         public const double Tau = 6.283185307179586;
         public const double Zero = 0;
@@ -2001,7 +2001,7 @@ namespace System
         static double System.Numerics.IFloatingPointIeee754<System.Double>.NaN { get { throw null; } }
         static double System.Numerics.IFloatingPointIeee754<System.Double>.NegativeInfinity { get { throw null; } }
         static double System.Numerics.IFloatingPointIeee754<System.Double>.NegativeZero { get { throw null; } }
-        static double System.Numerics.IFloatingPointIeee754<System.Double>.PI { get { throw null; } }
+        static double System.Numerics.IFloatingPointIeee754<System.Double>.Pi { get { throw null; } }
         static double System.Numerics.IFloatingPointIeee754<System.Double>.PositiveInfinity { get { throw null; } }
         static double System.Numerics.IFloatingPointIeee754<System.Double>.Tau { get { throw null; } }
         static double System.Numerics.IMinMaxValue<System.Double>.MaxValue { get { throw null; } }
@@ -2038,7 +2038,7 @@ namespace System
         public static System.Double FusedMultiplyAdd(System.Double left, System.Double right, System.Double addend) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
-        public static System.Double IEEERemainder(System.Double left, System.Double right) { throw null; }
+        public static System.Double Ieee754Remainder(System.Double left, System.Double right) { throw null; }
         public static TInteger ILogB<TInteger>(System.Double x) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static bool IsFinite(System.Double d) { throw null; }
         public static bool IsInfinity(System.Double d) { throw null; }
@@ -2572,7 +2572,7 @@ namespace System
         public static System.Half NegativeOne { get { throw null; } }
         public static System.Half NegativeZero { get { throw null; } }
         public static System.Half One { get { throw null; } }
-        public static System.Half PI { get { throw null; } }
+        public static System.Half Pi { get { throw null; } }
         public static System.Half PositiveInfinity { get { throw null; } }
         public static System.Half Tau { get { throw null; } }
         public static System.Half Zero { get { throw null; } }
@@ -2603,7 +2603,7 @@ namespace System
         public static System.Half Floor(System.Half x) { throw null; }
         public static System.Half FusedMultiplyAdd(System.Half left, System.Half right, System.Half addend) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static System.Half IEEERemainder(System.Half left, System.Half right) { throw null; }
+        public static System.Half Ieee754Remainder(System.Half left, System.Half right) { throw null; }
         public static TInteger ILogB<TInteger>(System.Half x) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static bool IsFinite(System.Half value) { throw null; }
         public static bool IsInfinity(System.Half value) { throw null; }
@@ -4094,7 +4094,7 @@ namespace System
         public const float NegativeOne = -1f;
         public const float NegativeZero = -0f;
         public const float One = 1f;
-        public const float PI = 3.1415927f;
+        public const float Pi = 3.1415927f;
         public const float PositiveInfinity = 1.0f / 0.0f;
         public const float Tau = 6.2831855f;
         public const float Zero = 0f;
@@ -4104,7 +4104,7 @@ namespace System
         static float System.Numerics.IFloatingPointIeee754<System.Single>.NaN { get { throw null; } }
         static float System.Numerics.IFloatingPointIeee754<System.Single>.NegativeInfinity { get { throw null; } }
         static float System.Numerics.IFloatingPointIeee754<System.Single>.NegativeZero { get { throw null; } }
-        static float System.Numerics.IFloatingPointIeee754<System.Single>.PI { get { throw null; } }
+        static float System.Numerics.IFloatingPointIeee754<System.Single>.Pi { get { throw null; } }
         static float System.Numerics.IFloatingPointIeee754<System.Single>.PositiveInfinity { get { throw null; } }
         static float System.Numerics.IFloatingPointIeee754<System.Single>.Tau { get { throw null; } }
         static float System.Numerics.IMinMaxValue<System.Single>.MaxValue { get { throw null; } }
@@ -4141,7 +4141,7 @@ namespace System
         public static System.Single FusedMultiplyAdd(System.Single left, System.Single right, System.Single addend) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
-        public static System.Single IEEERemainder(System.Single left, System.Single right) { throw null; }
+        public static System.Single Ieee754Remainder(System.Single left, System.Single right) { throw null; }
         public static TInteger ILogB<TInteger>(System.Single x) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static bool IsFinite(System.Single f) { throw null; }
         public static bool IsInfinity(System.Single f) { throw null; }
@@ -9413,14 +9413,14 @@ namespace System.Numerics
         static abstract TSelf NaN { get; }
         static abstract TSelf NegativeInfinity { get; }
         static abstract TSelf NegativeZero { get; }
-        static abstract TSelf PI { get; }
+        static abstract TSelf Pi { get; }
         static abstract TSelf PositiveInfinity { get; }
         static abstract TSelf Tau { get; }
         static abstract TSelf BitDecrement(TSelf x);
         static abstract TSelf BitIncrement(TSelf x);
         static abstract TSelf CopySign(TSelf x, TSelf y);
         static abstract TSelf FusedMultiplyAdd(TSelf left, TSelf right, TSelf addend);
-        static abstract TSelf IEEERemainder(TSelf left, TSelf right);
+        static abstract TSelf Ieee754Remainder(TSelf left, TSelf right);
         static abstract bool IsFinite(TSelf value);
         static abstract bool IsInfinity(TSelf value);
         static abstract bool IsNaN(TSelf value);

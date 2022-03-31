@@ -71,7 +71,7 @@ namespace System
 
         /// <summary>Represents the ratio of the circumference of a circle to its diameter, specified by the constant, π.</summary>
         /// <remarks>Pi is approximately 3.1415926535897932385.</remarks>
-        public const double PI = Math.PI;
+        public const double Pi = Math.PI;
 
         /// <summary>Represents the number of radians in one turn, specified by the constant, τ.</summary>
         /// <remarks>Tau is approximately 6.2831853071795864769.</remarks>
@@ -645,8 +645,8 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.NegativeZero" />
         static double IFloatingPointIeee754<double>.NegativeZero => NegativeZero;
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.PI" />
-        static double IFloatingPointIeee754<double>.PI => PI;
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Pi" />
+        static double IFloatingPointIeee754<double>.Pi => Pi;
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.PositiveInfinity" />
         static double IFloatingPointIeee754<double>.PositiveInfinity => PositiveInfinity;
@@ -666,8 +666,8 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
         public static double FusedMultiplyAdd(double left, double right, double addend) => Math.FusedMultiplyAdd(left, right, addend);
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.IEEERemainder(TSelf, TSelf)" />
-        public static double IEEERemainder(double left, double right) => Math.IEEERemainder(left, right);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
+        public static double Ieee754Remainder(double left, double right) => Math.IEEERemainder(left, right);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static double MaxMagnitude(double x, double y) => Math.MaxMagnitude(x, y);

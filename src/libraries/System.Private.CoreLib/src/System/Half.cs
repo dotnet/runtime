@@ -870,8 +870,8 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.NegativeZero" />
         public static Half NegativeZero => new Half(NegativeZeroBits);
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.PI" />
-        public static Half PI => new Half(PiBits);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Pi" />
+        public static Half Pi => new Half(PiBits);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Tau" />
         public static Half Tau => new Half(TauBits);
@@ -888,8 +888,8 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
         public static Half FusedMultiplyAdd(Half left, Half right, Half addend) => (Half)MathF.FusedMultiplyAdd((float)left, (float)right, (float)addend);
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.IEEERemainder(TSelf, TSelf)" />
-        public static Half IEEERemainder(Half left, Half right) => (Half)MathF.IEEERemainder((float)left, (float)right);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
+        public static Half Ieee754Remainder(Half left, Half right) => (Half)MathF.IEEERemainder((float)left, (float)right);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static Half MaxMagnitude(Half x, Half y) => (Half)MathF.MaxMagnitude((float)x, (float)y);

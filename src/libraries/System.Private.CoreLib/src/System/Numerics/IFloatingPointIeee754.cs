@@ -30,11 +30,11 @@ namespace System.Numerics
         /// <summary>Gets a value that represents negative <c>zero</c>.</summary>
         static abstract TSelf NegativeZero { get; }
 
+        /// <summary>Gets the mathematical constant <c>pi</c>.</summary>
+        static abstract TSelf Pi { get; }
+
         /// <summary>Gets a value that represents positive <c>infinity</c>.</summary>
         static abstract TSelf PositiveInfinity { get; }
-
-        /// <summary>Gets the mathematical constant <c>pi</c>.</summary>
-        static abstract TSelf PI { get; }
 
         /// <summary>Gets the mathematical constant <c>tau</c>.</summary>
         static abstract TSelf Tau { get; }
@@ -66,7 +66,7 @@ namespace System.Numerics
         /// <param name="left">The value which <paramref name="right" /> divides.</param>
         /// <param name="right">The value which divides <paramref name="left" />.</param>
         /// <returns>The remainder of <paramref name="left" /> divided-by <paramref name="right" /> as specified by IEEE 754.</returns>
-        static abstract TSelf IEEERemainder(TSelf left, TSelf right);
+        static abstract TSelf Ieee754Remainder(TSelf left, TSelf right);
 
         /// <summary>Determines if a value is finite.</summary>
         /// <param name="value">The value to be checked.</param>
