@@ -5291,7 +5291,9 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDOBJ_VT) {
 			guint16 size = ip [3];
-			memcpy (locals + ip [1], LOCAL_VAR (ip [2], gpointer), size);
+			gpointer srcAddr = LOCAL_VAR (ip [2], gpointer);
+			NULL_CHECK (srcAddr);
+			memcpy (locals + ip [1], srcAddr, size);
 			ip += 4;
 			MINT_IN_BREAK;
 		}
