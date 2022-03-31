@@ -1,4 +1,7 @@
-﻿//
+﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+//
 // ConsoleDependencyGraph.cs: text output related code for dependency graph
 //
 // Author:
@@ -6,6 +9,7 @@
 //
 // Copyright 2015 Xamarin Inc (http://www.xamarin.com).
 //
+
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
