@@ -306,6 +306,19 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 				break;
 			case SN_Multiply:
 			case SN_op_Multiply:
+				if (fsig->params [1]->data.array == NULL) {
+					MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [1]->dreg, -1);
+					ins->inst_c1 = arg_type;
+					ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, args [0]->dreg, ins->dreg);
+					ins->inst_c0 = OP_FMUL;
+					return ins;
+				} else if (fsig->params [0]->data.array == NULL) {
+					MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [0]->dreg, -1);
+					ins->inst_c1 = arg_type;
+					ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, ins->dreg, args [0]->dreg);
+					ins->inst_c0 = OP_FMUL;
+					return ins;
+				}
 				instc0 = OP_FMUL;
 				break;
 			case SN_Subtract:
@@ -332,6 +345,19 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 				break;
 			case SN_Multiply:
 			case SN_op_Multiply:
+				if (fsig->params [1]->data.array == NULL) {
+					MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [1]->dreg, -1);
+					ins->inst_c1 = arg_type;
+					ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, args [0]->dreg, ins->dreg);
+					ins->inst_c0 = OP_IMUL;
+					return ins;
+				} else if (fsig->params [0]->data.array == NULL) {
+					MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [0]->dreg, -1);
+					ins->inst_c1 = arg_type;
+					ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, ins->dreg, args [0]->dreg);
+					ins->inst_c0 = OP_IMUL;
+					return ins;
+				}
 				instc0 = OP_IMUL;
 				break;
 			case SN_Subtract:
