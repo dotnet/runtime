@@ -1,4 +1,7 @@
-﻿using System.Text;
+﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Text;
 using Mono.Cecil;
 using Mono.Linker.Tests.Extensions;
 

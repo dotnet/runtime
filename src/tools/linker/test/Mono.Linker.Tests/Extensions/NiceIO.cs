@@ -1,4 +1,7 @@
-﻿// The MIT License(MIT)
+﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+// The MIT License(MIT)
 // =====================
 //
 // Copyright © `2015-2017` `Lucas Meijer`
