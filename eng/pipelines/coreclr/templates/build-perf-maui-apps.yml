@@ -186,6 +186,22 @@ steps:
       echo sed -i'' -e 's/\([>;]\)net[0-9]\+\.[0-9]-maccatalyst\([;<]\)/\1\2/g' MauiTesting.csproj
       sed -i'' -e 's/\([>;]\)net[0-9]\+\.[0-9]-maccatalyst\([;<]\)/\1\2/g' MauiTesting.csproj
       cat MauiTesting.csproj
+
+      echo sed -i'' -e 's/\\([>;]\\)net[0-9]\\+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g' MauiTesting.csproj
+      sed -i'' -e 's/\\([>;]\\)net[0-9]\\+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g' MauiTesting.csproj
+      cat MauiTesting.csproj
+
+      echo echo '<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -i'' -e 's/\([>;]\)net[0-9]\+\.[0-9]-maccatalyst\([;<]\)/\1\2/g'
+      echo 	'<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -i'' -e 's/\([>;]\)net[0-9]\+\.[0-9]-maccatalyst\([;<]\)/\1\2/g'
+      cat MauiTesting.csproj
+
+      echo echo '<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -i'' -e 's/\\([>;]\\)net[0-9]\\+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g'
+      echo 	'<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -i'' -e 's/\\([>;]\\)net[0-9]\\+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g'
+      cat MauiTesting.csproj
+
+
+
+      ls -aR
       ../dotnet publish -bl:MauiiOS.binlog -f net6.0-ios --self-contained -r ios-arm64 -c Release /p:_RequireCodeSigning=false
       mv ./bin/Release/net6.0-ios/ios-arm64/publish/MauiTesting.ipa ./MauiiOSDefault.ipa
 
@@ -193,26 +209,26 @@ steps:
     displayName: Build MAUI iOS
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
-  - script: |
-      chmod -R a+r .
-      # remove net6.0-maccatalyst to work around https://github.com/dotnet/sdk/issues/21877
-      cp Microsoft.NetConf2021.Maui.csproj Microsoft.NetConf2021.Maui.csproj.bak
-      sed -i'' -e 's/net6.0-ios;net6.0-maccatalyst/net6.0-ios/g' Microsoft.NetConf2021.Maui.csproj
+  #- script: |
+  #    chmod -R a+r .
+  #    # remove net6.0-maccatalyst to work around https://github.com/dotnet/sdk/issues/21877
+  #    cp Microsoft.NetConf2021.Maui.csproj Microsoft.NetConf2021.Maui.csproj.bak
+  #    sed -i'' -e 's/net6.0-ios;net6.0-maccatalyst/net6.0-ios/g' Microsoft.NetConf2021.Maui.csproj
 
-      ../../../dotnet build ../Web/Components/Podcast.Components.Maui.csproj
-      ../../../dotnet publish Microsoft.NetConf2021.Maui.csproj -bl:MauiiOSPodcast.binlog -f net6.0-ios --self-contained -r ios-arm64 -c Release /p:_RequireCodeSigning=false
-      mv ./bin/Release/net6.0-ios/ios-arm64/publish/Microsoft.NetConf2021.Maui.ipa ./MauiiOSPodcast.ipa
+  #    ../../../dotnet build ../Web/Components/Podcast.Components.Maui.csproj
+  #    ../../../dotnet publish Microsoft.NetConf2021.Maui.csproj -bl:MauiiOSPodcast.binlog -f net6.0-ios --self-contained -r ios-arm64 -c Release /p:_RequireCodeSigning=false
+  #    mv ./bin/Release/net6.0-ios/ios-arm64/publish/Microsoft.NetConf2021.Maui.ipa ./MauiiOSPodcast.ipa
 
-      cp Microsoft.NetConf2021.Maui.csproj.bak Microsoft.NetConf2021.Maui.csproj
-    displayName: Build MAUI Podcast iOS
-    workingDirectory: $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile
+  #    cp Microsoft.NetConf2021.Maui.csproj.bak Microsoft.NetConf2021.Maui.csproj
+  #  displayName: Build MAUI Podcast iOS
+  #  workingDirectory: $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile
 
-  - script: |
-      chmod -R a+r .
-      ../dotnet publish -bl:MauiMacCatalyst.binlog -f net6.0-maccatalyst -c Release
-      mv ./bin/Release/net6.0-maccatalyst/maccatalyst-x64/MauiTesting.app ./MauiMacCatalystDefault.app
-    displayName: Build MAUI MacCatalyst
-    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+  #- script: |
+  #    chmod -R a+r .
+  #    ../dotnet publish -bl:MauiMacCatalyst.binlog -f net6.0-maccatalyst -c Release
+  #    mv ./bin/Release/net6.0-maccatalyst/maccatalyst-x64/MauiTesting.app ./MauiMacCatalystDefault.app
+  #  displayName: Build MAUI MacCatalyst
+  #  workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish MauiAndroid binlog'
