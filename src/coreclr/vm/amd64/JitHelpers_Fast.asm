@@ -25,6 +25,8 @@ EXTERN  g_ephemeral_high:QWORD
 EXTERN  g_lowest_address:QWORD
 EXTERN  g_highest_address:QWORD
 EXTERN  g_card_table:QWORD
+EXTERN  g_region_shr:BYTE
+EXTERN  g_region_to_generation_table:QWORD
 
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
 EXTERN g_card_bundle_table:QWORD
@@ -335,6 +337,55 @@ endif
         cmp     rcx, [g_ephemeral_high]
         jnb     Exit
 
+        ; do the following checks only if we are allowed to trash rax
+        ; otherwise we don't have enough registers
+ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        mov     rax, rcx
+
+        mov     cl, [g_region_shr]
+        test    cl, cl
+        je      SkipCheck
+
+        ; check if the source is in gen 2 - then it's not an ephemeral pointer
+        shr     rax, cl
+        add     rax, [g_region_to_generation_table]
+        cmp     byte ptr [rax], 22h
+        je      Exit
+
+        ; check if the destination happens to be in gen 0
+        mov     rax, rdi
+        shr     rax, cl
+        add     rax, [g_region_to_generation_table]
+        cmp     byte ptr [rax], 0
+        je      Exit
+    SkipCheck:
+
+        ; compute card table bit
+        mov     rcx, rdi
+        mov     al, 1
+        shr     rcx, 8
+        and     cl, 7
+        shl     al, cl
+
+        ; move current rdi value into rcx and then increment the pointers
+        mov     rcx, rdi
+        add     rsi, 8h
+        add     rdi, 8h
+
+        ; Check if we need to update the card table
+        ; Calc pCardByte
+        shr     rcx, 0Bh
+        add     rcx, [g_card_table]
+
+        ; Check if this card table bit is already set
+        test    byte ptr [rcx], al
+        je      SetCardTableBit
+        REPRET
+
+    SetCardTableBit:
+        lock or byte ptr [rcx], al
+else
+
         ; move current rdi value into rcx and then increment the pointers
         mov     rcx, rdi
         add     rsi, 8h
@@ -352,6 +403,7 @@ endif
 
     UpdateCardTable:
         mov     byte ptr [rcx], 0FFh
+endif
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         ; check if we need to update the card bundle table
         ; restore destination address from rdi - rdi has been incremented by 8 already

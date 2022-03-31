@@ -11345,7 +11345,7 @@ void gc_heap::set_region_plan_gen_num (heap_segment* region, int plan_gen_num)
         gen_num, plan_gen_num,
         supposed_plan_gen_num,
         ((plan_gen_num < supposed_plan_gen_num) ? "DEMOTED" : "ND")));
-    if (plan_gen_num < supposed_plan_gen_num)
+    if ((plan_gen_num < supposed_plan_gen_num) && (heap_segment_pinned_survived (region) != 0))
     {
         if (!settings.demotion)
         {
@@ -14052,7 +14052,7 @@ gc_heap::init_gc_heap (int  h_number)
     {
         stomp_write_barrier_initialize(
 #if defined(USE_REGIONS)
-            g_gc_lowest_address, g_gc_highest_address,
+            ephemeral_low, ephemeral_high,
             map_region_to_generation_skewed, (uint8_t)min_segment_size_shr
 #elif defined(MULTIPLE_HEAPS)
             reinterpret_cast<uint8_t*>(1), reinterpret_cast<uint8_t*>(~0)
@@ -36675,11 +36675,21 @@ BOOL gc_heap::find_card_dword (size_t& cardw, size_t cardw_end)
         while (1)
         {
             // Find a non-zero bundle
-            while ((cardb < end_cardb) && (card_bundle_set_p (cardb) == 0))
+            while (cardb < end_cardb)
             {
-                cardb++;
+                uint32_t cbw = card_bundle_table[card_bundle_word(cardb)] >> card_bundle_bit (cardb);
+                DWORD bit_index;
+                if (BitScanForward (&bit_index, cbw))
+                {
+                    cardb += bit_index;
+                    break;
+                }
+                else
+                {
+                    cardb += sizeof(cbw)*8 - card_bundle_bit (cardb);
+                }
             }
-            if (cardb == end_cardb)
+            if (cardb >= end_cardb)
                 return FALSE;
 
             uint32_t* card_word = &card_table[max(card_bundle_cardw (cardb),cardw)];
@@ -36762,14 +36772,23 @@ BOOL gc_heap::find_card(uint32_t* card_table,
     // Find the first card which is set
     last_card_word = &card_table [card_word (card)];
     bit_position = card_bit (card);
-    card_word_value = (*last_card_word) >> bit_position;
+#ifdef CARD_BUNDLE
+    // if we have card bundles, consult them before fetching a new card word
+    if (bit_position == 0)
+    {
+        card_word_value = 0;
+    }
+    else
+#endif
+    {
+        card_word_value = (*last_card_word) >> bit_position;
+    }
     if (!card_word_value)
     {
-        bit_position = 0;
 #ifdef CARD_BUNDLE
         // Using the card bundle, go through the remaining card words between here and
         // card_word_end until we find one that is non-zero.
-        size_t lcw = card_word(card) + 1;
+        size_t lcw = card_word(card) + (bit_position != 0);
         if (gc_heap::find_card_dword (lcw, card_word_end) == FALSE)
         {
             return FALSE;
@@ -36779,6 +36798,7 @@ BOOL gc_heap::find_card(uint32_t* card_table,
             last_card_word = &card_table [lcw];
             card_word_value = *last_card_word;
         }
+        bit_position = 0;
 #else //CARD_BUNDLE
         // Go through the remaining card words between here and card_word_end until we find
         // one that is non-zero.
@@ -36803,11 +36823,11 @@ BOOL gc_heap::find_card(uint32_t* card_table,
     // Look for the lowest bit set
     if (card_word_value)
     {
-        while (!(card_word_value & 1))
-        {
-            bit_position++;
-            card_word_value = card_word_value / 2;
-        }
+        DWORD bit_index;
+        uint8_t res = BitScanForward (&bit_index, card_word_value);
+        assert (res != 0);
+        card_word_value >>= bit_index;
+        bit_position += bit_index;
     }
 
     // card is the card word index * card size + the bit index within the card
