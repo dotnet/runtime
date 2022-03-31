@@ -87,13 +87,13 @@ namespace System.Reflection.Emit
         private static extern void set_wrappers_type(ModuleBuilder mb, Type? ab);
 
         [DynamicDependency(nameof(table_indexes))]  // Automatically keeps all previous fields too due to StructLayout
-        internal ModuleBuilder(AssemblyBuilder assb, string name, bool emitSymbolInfo)
+        internal ModuleBuilder(AssemblyBuilder assb, string name)
         {
             this.name = this.scopename = name;
             this.fqname = name;
             this.assembly = this.assemblyb = assb;
             guid = Guid.NewGuid().ToByteArray();
-            table_idx = get_next_table_index(this, 0x00, 1);
+            table_idx = get_next_table_index(0x00, 1);
             name_cache = new Dictionary<ITypeName, TypeBuilder>();
             us_string_cache = new Dictionary<string, int>(512);
 
@@ -466,7 +466,7 @@ namespace System.Reflection.Emit
                 return result;
         }
 
-        internal int get_next_table_index(object obj, int table, int count)
+        internal int get_next_table_index(int table, int count)
         {
             if (table_indexes == null)
             {
@@ -532,7 +532,7 @@ namespace System.Reflection.Emit
             return copy;
         }
 
-        internal int GetMethodToken(MethodInfo method)
+        internal static int GetMethodToken(MethodInfo method)
         {
             if (method == null)
                 throw new ArgumentNullException(nameof(method));
@@ -546,7 +546,7 @@ namespace System.Reflection.Emit
         }
 
         [ComVisible(true)]
-        internal int GetConstructorToken(ConstructorInfo con)
+        internal static int GetConstructorToken(ConstructorInfo con)
         {
             if (con == null)
                 throw new ArgumentNullException(nameof(con));
@@ -554,7 +554,7 @@ namespace System.Reflection.Emit
             return con.MetadataToken;
         }
 
-        internal int GetFieldToken(FieldInfo field)
+        internal static int GetFieldToken(FieldInfo field)
         {
             if (field == null)
                 throw new ArgumentNullException(nameof(field));
@@ -582,7 +582,7 @@ namespace System.Reflection.Emit
             return GetToken(str);
         }
 
-        internal int GetTypeToken(Type type)
+        internal static int GetTypeToken(Type type)
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));

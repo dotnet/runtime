@@ -27,8 +27,8 @@ MONO_PRAGMA_WARNING_DISABLE (4115) // warning C4115: 'IRpcStubBuffer': named typ
 MONO_PRAGMA_WARNING_POP()
 #endif
 
-#include "object.h"
-#include "loader.h"
+#include <mono/metadata/object.h>
+#include <mono/metadata/loader.h>
 #include "cil-coff.h"
 #include "metadata/marshal.h"
 #include "metadata/marshal-internals.h"
@@ -36,8 +36,8 @@ MONO_PRAGMA_WARNING_POP()
 #include "metadata/method-builder.h"
 #include "metadata/method-builder-internals.h"
 #include "metadata/tabledefs.h"
-#include "metadata/exception.h"
-#include "metadata/appdomain.h"
+#include <mono/metadata/exception.h>
+#include <mono/metadata/appdomain.h>
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/class-abi-details.h"
 #include "mono/metadata/debug-helpers.h"
@@ -597,9 +597,9 @@ mono_string_from_byvalwstr_impl (const gunichar2 *data, int max_len, MonoError *
 		return NULL_HANDLE_STRING;
 
 	// FIXME Check max_len while scanning data? mono_string_from_byvalstr does.
-	const int len = g_utf16_len (data);
+	const size_t len = g_utf16_len (data);
 
-	return mono_string_new_utf16_handle (data, MIN (len, max_len), error);
+	return mono_string_new_utf16_handle (data, (gint32)MIN (len, max_len), error);
 }
 
 gpointer
@@ -789,7 +789,7 @@ mono_string_utf16_to_builder_copy (MonoStringBuilderHandle sb, const gunichar2 *
 		g_assert (chunkOffset >= 0);
 		if (maxLength > 0 && chunkOffset < string_len) {
 			// Check that we will not overrun our boundaries.
-			int charsToCopy = MIN (string_len - chunkOffset, maxLength);
+			int charsToCopy = (int)MIN (string_len - chunkOffset, maxLength);
 			memcpy (MONO_HANDLE_RAW (chunkChars)->vector, text + chunkOffset, charsToCopy * sizeof (gunichar2));
 			MONO_HANDLE_SETVAL (chunk, chunkLength, int, charsToCopy);
 		} else {
@@ -809,7 +809,7 @@ mono_string_utf16_to_builder2_impl (const gunichar2 *text, MonoError *error)
 
 	const gsize len = g_utf16_len (text);
 
-	MonoStringBuilderHandle sb = mono_string_builder_new (len, error);
+	MonoStringBuilderHandle sb = mono_string_builder_new ((int)len, error);
 	return_val_if_nok (error, NULL_HANDLE_STRING_BUILDER);
 
 	mono_string_utf16len_to_builder (sb, text, len, error);
@@ -826,7 +826,7 @@ mono_string_utf8len_to_builder (MonoStringBuilderHandle sb, const char *text, gs
 
 	GError *gerror = NULL;
 	glong copied;
-	gunichar2* ut = g_utf8_to_utf16 (text, len, NULL, &copied, &gerror);
+	gunichar2* ut = g_utf8_to_utf16 (text, (glong)len, NULL, &copied, &gerror);
 	int capacity = mono_string_builder_capacity (sb);
 
 	if (copied > capacity)
@@ -857,7 +857,7 @@ mono_string_utf8_to_builder2_impl (const char *text, MonoError *error)
 
 	const gsize len = strlen (text);
 
-	MonoStringBuilderHandle sb = mono_string_builder_new (len, error);
+	MonoStringBuilderHandle sb = mono_string_builder_new ((int)len, error);
 	return_val_if_nok (error, NULL_HANDLE_STRING_BUILDER);
 
 	mono_string_utf8len_to_builder (sb, text, len, error);
@@ -1110,7 +1110,7 @@ mono_string_to_byvalstr_impl (char *dst, MonoStringHandle src, int size, MonoErr
 
 	char *s = mono_string_handle_to_utf8 (src, error);
 	return_if_nok (error);
-	int len = MIN (size, strlen (s));
+	size_t len = MIN (size, strlen (s));
 	len -= (len >= size);
 	memcpy (dst, s, len);
 	dst [len] = 0;
@@ -3837,9 +3837,9 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
  * THIS_LOC is the memory location where the target of the delegate is stored.
  */
 void
-mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle)
+mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, MonoError *error)
 {
-	get_marshal_cb ()->emit_managed_wrapper (mb, invoke_sig, mspecs, m, method, target_handle);
+	get_marshal_cb ()->emit_managed_wrapper (mb, invoke_sig, mspecs, m, method, target_handle, error);
 }
 
 static gboolean
@@ -4003,11 +4003,18 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 			mono_error_set_invalid_program (error, "method %s with UnmanagedCallersOnlyAttribute has types not usable when marshalling is disabled", mono_method_full_name (method, TRUE));
 			return NULL;
 		}
-		mspecs = g_new0 (MonoMarshalSpec*, invoke_sig->param_count + 1);
 	} else {
 		invoke = mono_get_delegate_invoke_internal (delegate_klass);
 		invoke_sig = mono_method_signature_internal (invoke);
-		mspecs = g_new0 (MonoMarshalSpec*, invoke_sig->param_count + 1);
+	}
+
+	if (invoke_sig->ret->type == MONO_TYPE_GENERICINST) {
+		mono_error_set_generic_error (error, "System.Runtime.InteropServices", "MarshalDirectiveException", "%s", "Cannot marshal 'return value': Non-blittable generic types cannot be marshaled.");
+		return NULL;
+	}
+
+	mspecs = g_new0 (MonoMarshalSpec*, invoke_sig->param_count + 1);
+	if (invoke) {
 		mono_method_get_marshal_info (invoke, mspecs);
 		marshalling_enabled = runtime_marshalling_enabled(m_class_get_image (delegate_klass));
 	}
@@ -4114,23 +4121,27 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 			mono_custom_attrs_free (cinfo);
 	}
 
-	mono_marshal_emit_managed_wrapper (mb, invoke_sig, mspecs, &m, method, target_handle);
+	mono_marshal_emit_managed_wrapper (mb, invoke_sig, mspecs, &m, method, target_handle, error);
 
-	if (!target_handle) {
-		WrapperInfo *info;
+	res = NULL;
+	if (is_ok (error)) {
+		if (!target_handle) {
+			WrapperInfo *info;
 
-		// FIXME: Associate it with the method+delegate_klass pair
-		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
-		info->d.native_to_managed.method = method;
-		info->d.native_to_managed.klass = delegate_klass;
+			// FIXME: Associate it with the method+delegate_klass pair
+			info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+			info->d.native_to_managed.method = method;
+			info->d.native_to_managed.klass = delegate_klass;
 
-		res = mono_mb_create_and_cache_full (cache, method,
-											 mb, csig, sig->param_count + 16,
-											 info, NULL);
-	} else {
-		get_marshal_cb ()->mb_set_dynamic (mb);
-		res = mono_mb_create (mb, csig, sig->param_count + 16, NULL);
+			res = mono_mb_create_and_cache_full (cache, method,
+												 mb, csig, sig->param_count + 16,
+												 info, NULL);
+		} else {
+			get_marshal_cb ()->mb_set_dynamic (mb);
+			res = mono_mb_create (mb, csig, sig->param_count + 16, NULL);
+		}
 	}
+
 	mono_mb_free (mb);
 
 	for (i = invoke_sig->param_count; i >= 0; i--)
@@ -4191,7 +4202,8 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 
 		/* FIXME: Implement VTFIXUP_TYPE_FROM_UNMANAGED_RETAIN_APPDOMAIN. */
 
-		mono_marshal_emit_managed_wrapper (mb, sig, mspecs, &m, method, 0);
+		mono_marshal_emit_managed_wrapper (mb, sig, mspecs, &m, method, 0, error);
+		mono_error_assert_ok (error);
 
 		get_marshal_cb ()->mb_set_dynamic (mb);
 		method = mono_mb_create (mb, csig, sig->param_count + 16, NULL);
@@ -5326,6 +5338,12 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 
 	info = mono_marshal_load_type_info (klass);
 
+	if (info->native_size == 0)
+		return;
+
+	if (m_class_is_blittable (klass))
+		return;
+
 	for (i = 0; i < info->num_fields; i++) {
 		MonoMarshalConv conv;
 		MonoType *ftype = info->fields [i].field->type;
@@ -5342,7 +5360,7 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 		switch (conv) {
 		case MONO_MARSHAL_CONV_NONE:
 			if (MONO_TYPE_ISSTRUCT (ftype)) {
-				mono_struct_delete_old (ftype->data.klass, cpos);
+				mono_struct_delete_old (mono_class_from_mono_type_internal (ftype), cpos);
 				continue;
 			}
 			break;
@@ -5545,7 +5563,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 			size = mono_marshal_type_size (field->type, info->fields [j].mspec,
 						       &align, TRUE, m_class_is_unicode (klass));
 			min_align = MAX (align, min_align);
-			info->fields [j].offset = field->offset - MONO_ABI_SIZEOF (MonoObject);
+			info->fields [j].offset = m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject);
 			info->native_size = MAX (info->native_size, info->fields [j].offset + size);
 			break;
 		}

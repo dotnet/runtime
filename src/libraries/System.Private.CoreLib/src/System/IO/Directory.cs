@@ -152,16 +152,11 @@ namespace System.IO
             => new List<string>(InternalEnumeratePaths(path, searchPattern, SearchTarget.Both, enumerationOptions)).ToArray();
 
         internal static IEnumerable<string> InternalEnumeratePaths(
-            string path,
-            string searchPattern,
+            string path!!,
+            string searchPattern!!,
             SearchTarget searchTarget,
             EnumerationOptions options)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (searchPattern == null)
-                throw new ArgumentNullException(nameof(searchPattern));
-
             FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, options.MatchType);
 
             return searchTarget switch
@@ -206,11 +201,8 @@ namespace System.IO
         public static IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, EnumerationOptions enumerationOptions)
             => InternalEnumeratePaths(path, searchPattern, SearchTarget.Both, enumerationOptions);
 
-        public static string GetDirectoryRoot(string path)
+        public static string GetDirectoryRoot(string path!!)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             string fullPath = Path.GetFullPath(path);
             string root = Path.GetPathRoot(fullPath)!;
 
@@ -231,48 +223,7 @@ namespace System.IO
             ArgumentException.ThrowIfNullOrEmpty(sourceDirName);
             ArgumentException.ThrowIfNullOrEmpty(destDirName);
 
-            string fullsourceDirName = Path.GetFullPath(sourceDirName);
-            string sourcePath = PathInternal.EnsureTrailingSeparator(fullsourceDirName);
-
-            string fulldestDirName = Path.GetFullPath(destDirName);
-            string destPath = PathInternal.EnsureTrailingSeparator(fulldestDirName);
-
-            ReadOnlySpan<char> sourceDirNameFromFullPath = Path.GetFileName(fullsourceDirName.AsSpan());
-            ReadOnlySpan<char> destDirNameFromFullPath = Path.GetFileName(fulldestDirName.AsSpan());
-
-            StringComparison fileSystemSensitivity = PathInternal.StringComparison;
-            bool directoriesAreCaseVariants =
-                !sourceDirNameFromFullPath.SequenceEqual(destDirNameFromFullPath) &&
-                sourceDirNameFromFullPath.Equals(destDirNameFromFullPath, StringComparison.OrdinalIgnoreCase);
-            bool sameDirectoryDifferentCase =
-                directoriesAreCaseVariants &&
-                destDirNameFromFullPath.Equals(sourceDirNameFromFullPath, fileSystemSensitivity);
-
-            // If the destination directories are the exact same name
-            if (!sameDirectoryDifferentCase && string.Equals(sourcePath, destPath, fileSystemSensitivity))
-                throw new IOException(SR.IO_SourceDestMustBeDifferent);
-
-            ReadOnlySpan<char> sourceRoot = Path.GetPathRoot(sourcePath.AsSpan());
-            ReadOnlySpan<char> destinationRoot = Path.GetPathRoot(destPath.AsSpan());
-
-            // Compare paths for the same, skip this step if we already know the paths are identical.
-            if (!sourceRoot.Equals(destinationRoot, StringComparison.OrdinalIgnoreCase))
-                throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
-
-            // Windows will throw if the source file/directory doesn't exist, we preemptively check
-            // to make sure our cross platform behavior matches .NET Framework behavior.
-            if (!FileSystem.DirectoryExists(fullsourceDirName) && !FileSystem.FileExists(fullsourceDirName))
-                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, fullsourceDirName));
-
-            if (!sameDirectoryDifferentCase // This check is to allow renaming of directories
-                && FileSystem.DirectoryExists(fulldestDirName))
-                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, fulldestDirName));
-
-            // If the directories aren't the same and the OS says the directory exists already, fail.
-            if (!sameDirectoryDifferentCase && Directory.Exists(fulldestDirName))
-                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, fulldestDirName));
-
-            FileSystem.MoveDirectory(fullsourceDirName, fulldestDirName);
+            FileSystem.MoveDirectory(Path.GetFullPath(sourceDirName), Path.GetFullPath(destDirName));
         }
 
         public static void Delete(string path)

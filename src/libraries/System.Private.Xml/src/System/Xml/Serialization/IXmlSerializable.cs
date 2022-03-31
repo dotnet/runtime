@@ -3,6 +3,7 @@
 
 namespace System.Xml.Serialization
 {
+    using System.ComponentModel;
     using System.Xml;
     using System.Xml.Schema;
 
@@ -12,6 +13,7 @@ namespace System.Xml.Serialization
     /// </devdoc>
     public interface IXmlSerializable
     {
+        [EditorBrowsable(EditorBrowsableState.Never)]
         XmlSchema? GetSchema();
         void ReadXml(XmlReader reader);
         void WriteXml(XmlWriter writer);

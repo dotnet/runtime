@@ -429,6 +429,18 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Round(float x, MidpointRounding mode)
         {
+            // Inline single-instruction modes
+            if (RuntimeHelpers.IsKnownConstant((int)mode))
+            {
+                if (mode == MidpointRounding.ToEven)
+                    return Round(x);
+
+                // For ARM/ARM64 we can lower it down to a single instruction FRINTA
+                // For XARCH we have to use the common path
+                if (AdvSimd.IsSupported && mode == MidpointRounding.AwayFromZero)
+                    return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalarUnsafe(x)).ToScalar();
+            }
+
             return Round(x, 0, mode);
         }
 
@@ -508,6 +520,7 @@ namespace System
             return Math.Sign(x);
         }
 
+        [Intrinsic]
         public static unsafe float Truncate(float x)
         {
             ModF(x, &x);

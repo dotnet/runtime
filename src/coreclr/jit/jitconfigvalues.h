@@ -72,6 +72,9 @@ CONFIG_INTEGER(JitHideAlignBehindJmp,
                1) // If set, try to hide align instruction (if any) behind an unconditional jump instruction (if any)
                   // that is present before the loop start.
 
+CONFIG_INTEGER(JitOptimizeStructHiddenBuffer, W("JitOptimizeStructHiddenBuffer"), 1) // Track assignments to locals done
+                                                                                     // through return buffers.
+
 // Print the alignment boundaries in disassembly.
 CONFIG_INTEGER(JitDasmWithAlignmentBoundaries, W("JitDasmWithAlignmentBoundaries"), 0)
 
@@ -118,6 +121,7 @@ CONFIG_INTEGER(JitNoCSE2, W("JitNoCSE2"), 0)
 CONFIG_INTEGER(JitNoForceFallback, W("JitNoForceFallback"), 0) // Set to non-zero to prevent NOWAY assert testing.
                                                                // Overrides COMPlus_JitForceFallback and JIT stress
                                                                // flags.
+CONFIG_INTEGER(JitNoForwardSub, W("JitNoForwardSub"), 0)       // Disables forward sub
 CONFIG_INTEGER(JitNoHoist, W("JitNoHoist"), 0)
 CONFIG_INTEGER(JitNoInline, W("JitNoInline"), 0)                 // Disables inlining of all methods
 CONFIG_INTEGER(JitNoMemoryBarriers, W("JitNoMemoryBarriers"), 0) // If 1, don't generate memory barriers
@@ -457,12 +461,21 @@ CONFIG_STRING(JitGuardedDevirtualizationRange, W("JitGuardedDevirtualizationRang
 CONFIG_INTEGER(JitRandomGuardedDevirtualization, W("JitRandomGuardedDevirtualization"), 0)
 #endif // DEBUG
 
-// Enable insertion of patchpoints into Tier0 methods with loops.
+// Enable insertion of patchpoints into Tier0 methods, switching to optimized where needed.
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 1)
+#else
 CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 // Initial patchpoint counter value used by jitted code
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
 // Enable partial compilation for Tier0 methods
 CONFIG_INTEGER(TC_PartialCompilation, W("TC_PartialCompilation"), 0)
+// Patchpoint strategy:
+// 0 - backedge sources
+// 1 - backedge targets
+// 2 - adaptive (default)
+CONFIG_INTEGER(TC_PatchpointStrategy, W("TC_PatchpointStrategy"), 2)
 #if defined(DEBUG)
 // Randomly sprinkle patchpoints. Value is the likelyhood any given stack-empty point becomes a patchpoint.
 CONFIG_INTEGER(JitRandomOnStackReplacement, W("JitRandomOnStackReplacement"), 0)
@@ -485,8 +498,9 @@ CONFIG_STRING(JitEnablePatchpointRange, W("JitEnablePatchpointRange"))
 // Profile instrumentation options
 CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
 CONFIG_INTEGER(JitMinimalPrejitProfiling, W("JitMinimalPrejitProfiling"), 0)
-CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 1)
-CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 1)
+CONFIG_INTEGER(JitCastProfiling, W("JitCastProfiling"), 0)           // Profile castclass and isinst
+CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 1)         // Profile virtual and interface calls
+CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 1)           // Profile edges instead of blocks
 CONFIG_INTEGER(JitCollect64BitCounts, W("JitCollect64BitCounts"), 0) // Collect counts as 64-bit values.
 
 // Profile consumption options
@@ -501,6 +515,14 @@ CONFIG_INTEGER(JitNoteFailedExactDevirtualization, W("JitNoteFailedExactDevirtua
 // Control when Virtual Calls are expanded
 CONFIG_INTEGER(JitExpandCallsEarly, W("JitExpandCallsEarly"), 1) // Expand Call targets early (in the global morph
                                                                  // phase)
+
+// Force the generation of CFG checks
+CONFIG_INTEGER(JitForceControlFlowGuard, W("JitForceControlFlowGuard"), 0);
+// JitCFGUseDispatcher values:
+// 0: Never use dispatcher
+// 1: Use dispatcher on all platforms that support it
+// 2: Default behavior, depends on platform (yes on x64, no on arm64)
+CONFIG_INTEGER(JitCFGUseDispatcher, W("JitCFGUseDispatcher"), 2)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the

@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Text
 {
@@ -181,13 +180,8 @@ namespace System.Text
             m_ChunkChars = GC.AllocateUninitializedArray<char>(capacity);
         }
 
-        private StringBuilder(SerializationInfo info, StreamingContext context)
+        private StringBuilder(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
             int persistedCapacity = 0;
             string? persistedString = null;
             int persistedMaxCapacity = int.MaxValue;
@@ -244,13 +238,8 @@ namespace System.Text
             AssertInvariants();
         }
 
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
             AssertInvariants();
             info.AddValue(MaxCapacityField, m_MaxCapacity);
             info.AddValue(CapacityField, Capacity);
@@ -758,7 +747,7 @@ namespace System.Text
                     return this;
                 }
 
-                throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.Throw(nameof(value));
             }
             if (charCount > value.Length - startIndex)
             {
@@ -810,7 +799,7 @@ namespace System.Text
                 {
                     return this;
                 }
-                throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.Throw(nameof(value));
             }
 
             if (count != 0)
@@ -853,7 +842,7 @@ namespace System.Text
                 {
                     return this;
                 }
-                throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.Throw(nameof(value));
             }
 
             if (count == 0)
@@ -909,13 +898,8 @@ namespace System.Text
             return Append(Environment.NewLine);
         }
 
-        public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
+        public void CopyTo(int sourceIndex, char[] destination!!, int destinationIndex, int count)
         {
-            if (destination == null)
-            {
-                throw new ArgumentNullException(nameof(destination));
-            }
-
             if (destinationIndex < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.Format(SR.ArgumentOutOfRange_MustBeNonNegNum, nameof(destinationIndex)));
@@ -981,7 +965,9 @@ namespace System.Text
         /// <param name="index">The index to insert in this builder.</param>
         /// <param name="value">The string to insert.</param>
         /// <param name="count">The number of times to insert the string.</param>
-        public StringBuilder Insert(int index, string? value, int count)
+        public StringBuilder Insert(int index, string? value, int count) => Insert(index, value.AsSpan(), count);
+
+        private StringBuilder Insert(int index, ReadOnlySpan<char> value, int count)
         {
             if (count < 0)
             {
@@ -994,7 +980,7 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
 
-            if (string.IsNullOrEmpty(value) || count == 0)
+            if (value.IsEmpty || count == 0)
             {
                 return this;
             }
@@ -1012,7 +998,7 @@ namespace System.Text
 
             while (count > 0)
             {
-                ReplaceInPlaceAtChunk(ref chunk!, ref indexInChunk, ref value.GetRawStringData(), value.Length);
+                ReplaceInPlaceAtChunk(ref chunk!, ref indexInChunk, ref MemoryMarshal.GetReference(value), value.Length);
                 --count;
             }
 
@@ -1290,17 +1276,25 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder Insert(int index, bool value) => Insert(index, value.ToString(), 1);
+#pragma warning disable CA1830 // Prefer strongly-typed Append and Insert method overloads on StringBuilder. No need to fix for the builder itself
+        // bool does not implement ISpanFormattable but its ToString override returns cached strings.
+        public StringBuilder Insert(int index, bool value) => Insert(index, value.ToString().AsSpan(), 1);
+#pragma warning restore CA1830
 
         [CLSCompliant(false)]
-        public StringBuilder Insert(int index, sbyte value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, sbyte value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, byte value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, byte value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, short value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, short value) => InsertSpanFormattable(index, value);
 
         public StringBuilder Insert(int index, char value)
         {
+            if ((uint)index > (uint)Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+            }
+
             Insert(index, ref value, 1);
             return this;
         }
@@ -1314,7 +1308,7 @@ namespace System.Text
 
             if (value != null)
             {
-                Insert(index, value, 0, value.Length);
+                Insert(index, ref MemoryMarshal.GetArrayDataReference(value), value.Length);
             }
             return this;
         }
@@ -1333,7 +1327,7 @@ namespace System.Text
                 {
                     return this;
                 }
-                throw new ArgumentNullException(nameof(value), SR.ArgumentNull_String);
+                ArgumentNullException.Throw(nameof(value));
             }
 
             if (startIndex < 0)
@@ -1359,24 +1353,24 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder Insert(int index, int value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, int value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, long value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, long value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, float value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, float value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, double value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, double value) => InsertSpanFormattable(index, value);
 
-        public StringBuilder Insert(int index, decimal value) => Insert(index, value.ToString(), 1);
-
-        [CLSCompliant(false)]
-        public StringBuilder Insert(int index, ushort value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, decimal value) => InsertSpanFormattable(index, value);
 
         [CLSCompliant(false)]
-        public StringBuilder Insert(int index, uint value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, ushort value) => InsertSpanFormattable(index, value);
 
         [CLSCompliant(false)]
-        public StringBuilder Insert(int index, ulong value) => Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, uint value) => InsertSpanFormattable(index, value);
+
+        [CLSCompliant(false)]
+        public StringBuilder Insert(int index, ulong value) => InsertSpanFormattable(index, value);
 
         public StringBuilder Insert(int index, object? value) => (value == null) ? this : Insert(index, value.ToString(), 1);
 
@@ -1395,6 +1389,21 @@ namespace System.Text
             return this;
         }
 
+        private StringBuilder InsertSpanFormattable<T>(int index, T value) where T : ISpanFormattable
+        {
+            Debug.Assert(typeof(T).Assembly.Equals(typeof(object).Assembly), "Implementation trusts the results of TryFormat because T is expected to be something known");
+
+            Span<char> buffer = stackalloc char[256];
+            if (value.TryFormat(buffer, out int charsWritten, format: default, provider: null))
+            {
+                // We don't use Insert(int, ReadOnlySpan<char>) for exception compatibility;
+                // we want exceeding the maximum capacity to throw an OutOfMemoryException.
+                return Insert(index, buffer.Slice(0, charsWritten), 1);
+            }
+
+            return Insert(index, value.ToString(), 1);
+        }
+
         public StringBuilder AppendFormat(string format, object? arg0) => AppendFormatHelper(null, format, new ParamsArray(arg0));
 
         public StringBuilder AppendFormat(string format, object? arg0, object? arg1) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1));
@@ -1403,12 +1412,11 @@ namespace System.Text
 
         public StringBuilder AppendFormat(string format, params object?[] args)
         {
-            if (args == null)
+            if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in AppendFormatHelper.
-                string paramName = (format == null) ? nameof(format) : nameof(args);
-                throw new ArgumentNullException(paramName);
+                ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
             return AppendFormatHelper(null, format, new ParamsArray(args));
@@ -1422,12 +1430,11 @@ namespace System.Text
 
         public StringBuilder AppendFormat(IFormatProvider? provider, string format, params object?[] args)
         {
-            if (args == null)
+            if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in AppendFormatHelper.
-                string paramName = (format == null) ? nameof(format) : nameof(args);
-                throw new ArgumentNullException(paramName);
+                ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
             return AppendFormatHelper(provider, format, new ParamsArray(args));
@@ -1442,13 +1449,8 @@ namespace System.Text
         private const int IndexLimit = 1000000; // Note:            0 <= ArgIndex < IndexLimit
         private const int WidthLimit = 1000000; // Note:  -WidthLimit <  ArgAlign < WidthLimit
 
-        internal StringBuilder AppendFormatHelper(IFormatProvider? provider, string format, ParamsArray args)
+        internal StringBuilder AppendFormatHelper(IFormatProvider? provider, string format!!, ParamsArray args)
         {
-            if (format == null)
-            {
-                throw new ArgumentNullException(nameof(format));
-            }
-
             int pos = 0;
             int len = format.Length;
             char ch = '\x0';
@@ -2066,10 +2068,7 @@ namespace System.Text
         /// <param name="valueCount">The number of characters in the buffer.</param>
         private void Insert(int index, ref char value, int valueCount)
         {
-            if ((uint)index > (uint)Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
-            }
+            Debug.Assert((uint)index <= (uint)Length, "Callers should check that index is a legal value.");
 
             if (valueCount > 0)
             {

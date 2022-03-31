@@ -16,6 +16,8 @@
 .class public auto ansi Test_switch2
        extends ['mscorlib']System.Object
 {
+  .field private static int32 s_exitCode;
+
   .method private hidebysig static void  DoSwitch(int32 'value') il managed
   {
     .maxstack  2
@@ -46,7 +48,7 @@
     IL_001e:  bne.un.s   IL_0031
 
     IL_0020:  ldc.i4.s   100
-    IL_0022:  call       void ['System.Runtime.Extensions']System.Environment::set_ExitCode(int32)
+    IL_0022:  stsfld     int32 Test_switch2::s_exitCode
     IL_0027:  ldstr      "Test passed"
     IL_002c:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
     IL_0031:  br.s       IL_005f
@@ -60,13 +62,13 @@
     IL_0039:  bne.un.s   IL_004b
 
     IL_003b:  ldc.i4.1
-    IL_003c:  call       void ['System.Runtime.Extensions']System.Environment::set_ExitCode(int32)
+    IL_003c:  stsfld     int32 Test_switch2::s_exitCode
     IL_0041:  ldstr      "Test failed"
     IL_0046:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
     IL_004b:  br.s       IL_005f
 
     IL_004d:  ldc.i4.1
-    IL_004e:  call       void ['System.Runtime.Extensions']System.Environment::set_ExitCode(int32)
+    IL_004e:  stsfld     int32 Test_switch2::s_exitCode
     IL_0053:  ldstr      "Test failed"
     IL_0058:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
     IL_005d:  br.s       IL_005f
@@ -74,7 +76,7 @@
     IL_005f:  ret
   }
 
-  .method public hidebysig static void Main() il managed
+  .method public hidebysig static int32 Main() il managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
@@ -83,8 +85,7 @@
     .maxstack  8
     IL_0000:  ldc.i4.1
     IL_0001:  call       void Test_switch2::DoSwitch(int32)
-    IL_0006:  call       int32 ['System.Runtime.Extensions']System.Environment::get_ExitCode()
-              call       void ['System.Runtime.Extensions']System.Environment::Exit(int32)
+              ldsfld     int32 Test_switch2::s_exitCode
               ret
   }
 

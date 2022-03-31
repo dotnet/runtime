@@ -29,6 +29,7 @@
 #define MINT_STACK_SLOT_SIZE (sizeof (stackval))
 
 #define INTERP_STACK_SIZE (1024*1024)
+#define INTERP_REDZONE_SIZE (8*1024)
 
 enum {
 	VAL_I32     = 0,
@@ -209,6 +210,7 @@ typedef struct {
 	/* Lets interpreter know it has to resume execution after EH */
 	gboolean has_resume_state;
 	/* Frame to resume execution at */
+	/* Can be NULL if the exception is caught in an AOTed frame */
 	InterpFrame *handler_frame;
 	/* IP to resume execution at */
 	const guint16 *handler_ip;
@@ -218,6 +220,9 @@ typedef struct {
 	MonoGCHandle exc_gchandle;
 	/* This is a contiguous space allocated for interp execution stack */
 	guchar *stack_start;
+	/* End of the stack space excluding the redzone used to handle stack overflows */
+	guchar *stack_end;
+	guchar *stack_real_end;
 	/*
 	 * This stack pointer is the highest stack memory that can be used by the current frame. This does not
 	 * change throughout the execution of a frame and it is essentially the upper limit of the execution
@@ -272,9 +277,8 @@ void
 mono_interp_error_cleanup (MonoError *error);
 
 static inline int
-mint_type(MonoType *type_)
+mint_type(MonoType *type)
 {
-	MonoType *type = mini_native_type_replace_type (type_);
 	if (m_type_is_byref (type))
 		return MINT_TYPE_I;
 enum_type:

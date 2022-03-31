@@ -31,13 +31,8 @@ namespace System.Xml
     ///    Encodes and decodes XML names according to
     ///    the "Encoding of arbitrary Unicode Characters in XML Names" specification.
     /// </devdoc>
-    public class XmlConvert
+    public partial class XmlConvert
     {
-        //
-        // Static fields with implicit initialization
-        //
-        private static readonly CultureInfo s_invariantCultureInfo = CultureInfo.InvariantCulture;
-
         internal static char[] crt = new char[] { '\n', '\r', '\t' };
 
         /// <devdoc>
@@ -93,12 +88,7 @@ namespace System.Xml
             IEnumerator? en;
             if (underscorePos >= 0)
             {
-                if (s_decodeCharPattern == null)
-                {
-                    s_decodeCharPattern = new Regex("_[Xx]([0-9a-fA-F]{4}|[0-9a-fA-F]{8})_");
-                }
-
-                mc = s_decodeCharPattern.Matches(name, underscorePos);
+                mc = DecodeCharRegex().Matches(name, underscorePos);
                 en = mc.GetEnumerator();
             }
             else
@@ -205,12 +195,7 @@ namespace System.Xml
             IEnumerator? en = null;
             if (underscorePos >= 0)
             {
-                if (s_encodeCharPattern == null)
-                {
-                    s_encodeCharPattern = new Regex("(?<=_)[Xx]([0-9a-fA-F]{4}|[0-9a-fA-F]{8})_");
-                }
-
-                mc = s_encodeCharPattern.Matches(name, underscorePos);
+                mc = EncodeCharRegex().Matches(name, underscorePos);
                 en = mc.GetEnumerator();
             }
 
@@ -310,8 +295,13 @@ namespace System.Xml
         }
 
         private const int EncodedCharLength = 7; // ("_xFFFF_".Length);
-        private static volatile Regex? s_encodeCharPattern;
-        private static volatile Regex? s_decodeCharPattern;
+
+        [RegexGenerator("_[Xx][0-9a-fA-F]{4}(?:_|[0-9a-fA-F]{4}_)")]
+        private static partial Regex DecodeCharRegex();
+
+        [RegexGenerator("(?<=_)[Xx][0-9a-fA-F]{4}(?:_|[0-9a-fA-F]{4}_)")]
+        private static partial Regex EncodeCharRegex();
+
         private static int FromHex(char digit)
         {
             return HexConverter.FromChar(digit);
@@ -322,23 +312,13 @@ namespace System.Xml
             return FromBinHexString(s, true);
         }
 
-        internal static byte[] FromBinHexString(string s, bool allowOddCount)
+        internal static byte[] FromBinHexString(string s!!, bool allowOddCount)
         {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
-
             return BinHexDecoder.Decode(s.ToCharArray(), allowOddCount);
         }
 
-        internal static string ToBinHexString(byte[] inArray)
+        internal static string ToBinHexString(byte[] inArray!!)
         {
-            if (inArray == null)
-            {
-                throw new ArgumentNullException(nameof(inArray));
-            }
-
             return BinHexEncoder.Encode(inArray, 0, inArray.Length);
         }
 
@@ -348,13 +328,8 @@ namespace System.Xml
         ///    <para>
         ///    </para>
         /// </devdoc>
-        public static string VerifyName(string name)
+        public static string VerifyName(string name!!)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             if (name.Length == 0)
             {
                 throw new ArgumentNullException(nameof(name), SR.Xml_EmptyName);
@@ -414,13 +389,8 @@ namespace System.Xml
             return VerifyNCName(name, ExceptionType.XmlException);
         }
 
-        internal static string VerifyNCName(string name, ExceptionType exceptionType)
+        internal static string VerifyNCName(string name!!, ExceptionType exceptionType)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             if (name.Length == 0)
             {
                 throw new ArgumentNullException(nameof(name), SR.Xml_EmptyLocalName);
@@ -492,13 +462,8 @@ namespace System.Xml
             return VerifyNMTOKEN(name, ExceptionType.XmlException);
         }
 
-        internal static string VerifyNMTOKEN(string name, ExceptionType exceptionType)
+        internal static string VerifyNMTOKEN(string name!!, ExceptionType exceptionType)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             if (name.Length == 0)
             {
                 throw CreateException(SR.Xml_InvalidNmToken, name, exceptionType);
@@ -542,25 +507,16 @@ namespace System.Xml
 
         // Verification method for XML characters as defined in XML spec production [2] Char.
         // Throws XmlException if invalid character is found, otherwise returns the input string.
-        public static string VerifyXmlChars(string content)
+        public static string VerifyXmlChars(string content!!)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
-
             VerifyCharData(content, ExceptionType.XmlException);
             return content;
         }
 
         // Verification method for XML public ID characters as defined in XML spec production [13] PubidChar.
         // Throws XmlException if invalid character is found, otherwise returns the input string.
-        public static string VerifyPublicId(string publicId)
+        public static string VerifyPublicId(string publicId!!)
         {
-            if (publicId == null)
-            {
-                throw new ArgumentNullException(nameof(publicId));
-            }
 
             // returns the position of invalid character or -1
             int pos = XmlCharType.IsPublicId(publicId);
@@ -574,12 +530,8 @@ namespace System.Xml
 
         // Verification method for XML whitespace characters as defined in XML spec production [3] S.
         // Throws XmlException if invalid character is found, otherwise returns the input string.
-        public static string VerifyWhitespace(string content)
+        public static string VerifyWhitespace(string content!!)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
 
             // returns the position of invalid character or -1
             int pos = XmlCharType.IsOnlyWhitespaceWithPos(content);
@@ -680,45 +632,45 @@ namespace System.Xml
         [CLSCompliant(false)]
         public static string ToString(sbyte value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         public static string ToString(short value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         public static string ToString(int value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         public static string ToString(long value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         public static string ToString(byte value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         [CLSCompliant(false)]
         public static string ToString(ushort value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         [CLSCompliant(false)]
         public static string ToString(uint value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         [CLSCompliant(false)]
         public static string ToString(ulong value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         public static string ToString(float value)
@@ -829,13 +781,8 @@ namespace System.Xml
             return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Boolean"));
         }
 
-        public static char ToChar(string s)
+        public static char ToChar(string s!!)
         {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
-
             if (s.Length != 1)
             {
                 throw new FormatException(SR.XmlConvert_NotOneCharString);
@@ -1288,32 +1235,20 @@ namespace System.Xml
             return dt;
         }
 
-        public static DateTimeOffset ToDateTimeOffset(string s)
+        public static DateTimeOffset ToDateTimeOffset(string s!!)
         {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
             XsdDateTime xsdDateTime = new XsdDateTime(s, XsdDateTimeFlags.AllXsd);
             DateTimeOffset dateTimeOffset = (DateTimeOffset)xsdDateTime;
             return dateTimeOffset;
         }
 
-        public static DateTimeOffset ToDateTimeOffset(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format)
+        public static DateTimeOffset ToDateTimeOffset(string s!!, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format)
         {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
             return DateTimeOffset.ParseExact(s, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
-        public static DateTimeOffset ToDateTimeOffset(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string[] formats)
+        public static DateTimeOffset ToDateTimeOffset(string s!!, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string[] formats)
         {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
             return DateTimeOffset.ParseExact(s, formats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
@@ -1715,11 +1650,6 @@ namespace System.Xml
         internal static Exception CreateInvalidNameCharException(string name, int index, ExceptionType exceptionType)
         {
             return CreateException(index == 0 ? SR.Xml_BadStartNameChar : SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(name, index), exceptionType, 0, index + 1);
-        }
-
-        internal static ArgumentException CreateInvalidNameArgumentException(string? name, string? argumentName)
-        {
-            return (name == null) ? new ArgumentNullException(argumentName) : new ArgumentException(SR.Xml_EmptyName, argumentName);
         }
     }
 }

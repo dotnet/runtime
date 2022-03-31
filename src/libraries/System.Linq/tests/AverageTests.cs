@@ -85,10 +85,17 @@ namespace System.Linq.Tests
         [Fact]
         public void Int_EmptySource_ThrowsInvalidOperationException()
         {
-            int[] source = new int[0];
-
-            Assert.Throws<InvalidOperationException>(() => source.Average());
-            Assert.Throws<InvalidOperationException>(() => source.Average(i => i));
+            foreach (IEnumerable<int> source in new IEnumerable<int>[]
+            {
+                Array.Empty<int>(),
+                new List<int>(),
+                Enumerable.Empty<int>(),
+                new TestEnumerable<int>(Array.Empty<int>())
+            })
+            {
+                Assert.Throws<InvalidOperationException>(() => source.Average());
+                Assert.Throws<InvalidOperationException>(() => source.Average(i => i));
+            }
         }
 
         [Fact]
@@ -110,18 +117,28 @@ namespace System.Linq.Tests
             yield return new object[] { new int[] { 5 }, 5 };
             yield return new object[] { new int[] { 0, 0, 0, 0, 0 }, 0 };
             yield return new object[] { new int[] { 5, -10, 15, 40, 28 }, 15.6 };
+
+            for (int i = 1; i <= 33; i++)
+            {
+                int sum = 0;
+                for (int c = 1; c <= i; c++) sum += c;
+                double expected = (double)sum / i;
+
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(1, i)), expected };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(1, i).ToArray()), expected };
+            }
         }
 
         [Theory]
         [MemberData(nameof(Int_TestData))]
-        public void Int(int[] source, double expected)
+        public void Int(IEnumerable<int> source, double expected)
         {
             Assert.Equal(expected, source.Average());
             Assert.Equal(expected, source.Average(x => x));
         }
 
         [Theory, MemberData(nameof(Int_TestData))]
-        public void IntRunOnce(int[] source, double expected)
+        public void IntRunOnce(IEnumerable<int> source, double expected)
         {
             Assert.Equal(expected, source.RunOnce().Average());
             Assert.Equal(expected, source.RunOnce().Average(x => x));
@@ -190,10 +207,17 @@ namespace System.Linq.Tests
         [Fact]
         public void Long_EmptySource_ThrowsInvalidOperationException()
         {
-            long[] source = new long[0];
-
-            Assert.Throws<InvalidOperationException>(() => source.Average());
-            Assert.Throws<InvalidOperationException>(() => source.Average(i => i));
+            foreach (IEnumerable<long> source in new IEnumerable<long>[]
+            {
+                Array.Empty<long>(),
+                new List<long>(),
+                Enumerable.Empty<long>(),
+                new TestEnumerable<long>(Array.Empty<long>())
+            })
+            {
+                Assert.Throws<InvalidOperationException>(() => source.Average());
+                Assert.Throws<InvalidOperationException>(() => source.Average(i => i));
+            }
         }
 
         [Fact]
@@ -215,11 +239,21 @@ namespace System.Linq.Tests
             yield return new object[] { new long[] { long.MaxValue }, long.MaxValue };
             yield return new object[] { new long[] { 0, 0, 0, 0, 0 }, 0 };
             yield return new object[] { new long[] { 5, -10, 15, 40, 28 }, 15.6 };
+
+            for (int i = 1; i <= 33; i++)
+            {
+                int sum = 0;
+                for (int c = 1; c <= i; c++) sum += c;
+                double expected = (double)sum / i;
+
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(1, i).Select(i => (long)i)), expected };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(1, i).Select(i => (long)i).ToArray()), expected };
+            }
         }
 
         [Theory]
         [MemberData(nameof(Long_TestData))]
-        public void Long(long[] source, double expected)
+        public void Long(IEnumerable<long> source, double expected)
         {
             Assert.Equal(expected, source.Average());
             Assert.Equal(expected, source.Average(x => x));
@@ -296,10 +330,17 @@ namespace System.Linq.Tests
         [Fact]
         public void Double_EmptySource_ThrowsInvalidOperationException()
         {
-            double[] source = new double[0];
-
-            Assert.Throws<InvalidOperationException>(() => source.Average());
-            Assert.Throws<InvalidOperationException>(() => source.Average(i => i));
+            foreach (IEnumerable<double> source in new IEnumerable<double>[]
+            {
+                Array.Empty<double>(),
+                new List<double>(),
+                Enumerable.Empty<double>(),
+                new TestEnumerable<double>(Array.Empty<double>())
+            })
+            {
+                Assert.Throws<InvalidOperationException>(() => source.Average());
+                Assert.Throws<InvalidOperationException>(() => source.Average(i => i));
+            }
         }
 
         [Fact]
@@ -322,11 +363,21 @@ namespace System.Linq.Tests
             yield return new object[] { new double[] { 0.0, 0.0, 0.0, 0.0, 0.0 }, 0 };
             yield return new object[] { new double[] { 5.5, -10, 15.5, 40.5, 28.5 }, 16 };
             yield return new object[] { new double[] { 5.58, double.NaN, 30, 4.55, 19.38 }, double.NaN };
+
+            for (int i = 1; i <= 33; i++)
+            {
+                int sum = 0;
+                for (int c = 1; c <= i; c++) sum += c;
+                double expected = (double)sum / i;
+
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(1, i).Select(i => (double)i)), expected };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(1, i).Select(i => (double)i).ToArray()), expected };
+            }
         }
 
         [Theory]
         [MemberData(nameof(Double_TestData))]
-        public void Average_Double(double[] source, double expected)
+        public void Average_Double(IEnumerable<double> source, double expected)
         {
             Assert.Equal(expected, source.Average());
             Assert.Equal(expected, source.Average(x => x));
@@ -396,10 +447,17 @@ namespace System.Linq.Tests
         [Fact]
         public void Decimal_EmptySource_ThrowsInvalidOperationException()
         {
-            decimal[] source = new decimal[0];
-
-            Assert.Throws<InvalidOperationException>(() => source.Average());
-            Assert.Throws<InvalidOperationException>(() => source.Average(i => i));
+            foreach (IEnumerable<decimal> source in new IEnumerable<decimal>[]
+            {
+                Array.Empty<decimal>(),
+                new List<decimal>(),
+                Enumerable.Empty<decimal>(),
+                new TestEnumerable<decimal>(Array.Empty<decimal>())
+            })
+            {
+                Assert.Throws<InvalidOperationException>(() => source.Average());
+                Assert.Throws<InvalidOperationException>(() => source.Average(i => i));
+            }
         }
 
         [Fact]
@@ -421,11 +479,21 @@ namespace System.Linq.Tests
             yield return new object[] { new decimal[] { decimal.MaxValue }, decimal.MaxValue };
             yield return new object[] { new decimal[] { 0.0m, 0.0m, 0.0m, 0.0m, 0.0m }, 0 };
             yield return new object[] { new decimal[] { 5.5m, -10m, 15.5m, 40.5m, 28.5m }, 16 };
+
+            for (int i = 1; i <= 33; i++)
+            {
+                int sum = 0;
+                for (int c = 1; c <= i; c++) sum += c;
+                decimal expected = (decimal)sum / i;
+
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(1, i).Select(i => (decimal)i)), expected };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(1, i).Select(i => (decimal)i).ToArray()), expected };
+            }
         }
 
         [Theory]
         [MemberData(nameof(Decimal_TestData))]
-        public void Decimal(decimal[] source, decimal expected)
+        public void Decimal(IEnumerable<decimal> source, decimal expected)
         {
             Assert.Equal(expected, source.Average());
             Assert.Equal(expected, source.Average(x => x));
@@ -502,10 +570,17 @@ namespace System.Linq.Tests
         [Fact]
         public void Float_EmptySource_ThrowsInvalidOperationException()
         {
-            float[] source = new float[0];
-
-            Assert.Throws<InvalidOperationException>(() => source.Average());
-            Assert.Throws<InvalidOperationException>(() => source.Average(i => i));
+            foreach (IEnumerable<float> source in new IEnumerable<float>[]
+            {
+                Array.Empty<float>(),
+                new List<float>(),
+                Enumerable.Empty<float>(),
+                new TestEnumerable<float>(Array.Empty<float>())
+            })
+            {
+                Assert.Throws<InvalidOperationException>(() => source.Average());
+                Assert.Throws<InvalidOperationException>(() => source.Average(i => i));
+            }
         }
 
         [Fact]
@@ -527,11 +602,21 @@ namespace System.Linq.Tests
             yield return new object[] { new float[] { float.MaxValue }, float.MaxValue };
             yield return new object[] { new float[] { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }, 0f };
             yield return new object[] { new float[] { 5.5f, -10f, 15.5f, 40.5f, 28.5f }, 16f };
+
+            for (int i = 1; i <= 33; i++)
+            {
+                int sum = 0;
+                for (int c = 1; c <= i; c++) sum += c;
+                float expected = (float)sum / i;
+
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(1, i).Select(i => (float)i)), expected };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(1, i).Select(i => (float)i).ToArray()), expected };
+            }
         }
 
         [Theory]
         [MemberData(nameof(Float_TestData))]
-        public void Float(float[] source, float expected)
+        public void Float(IEnumerable<float> source, float expected)
         {
             Assert.Equal(expected, source.Average());
             Assert.Equal(expected, source.Average(x => x));

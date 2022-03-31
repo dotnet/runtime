@@ -252,14 +252,9 @@ namespace System.Net
             _clientCertificateError = clientCertificateError;
         }
 
-        public X509Certificate2? EndGetClientCertificate(IAsyncResult asyncResult)
+        public X509Certificate2? EndGetClientCertificate(IAsyncResult asyncResult!!)
         {
             X509Certificate2? clientCertificate = null;
-
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
             ListenerClientCertAsyncResult? clientCertAsyncResult = asyncResult as ListenerClientCertAsyncResult;
             if (clientCertAsyncResult == null || clientCertAsyncResult.AsyncObject != this)
             {
@@ -552,6 +547,6 @@ namespace System.Net
             ObjectDisposedException.ThrowIf(_isDisposed, this);
         }
 
-        private bool SupportsWebSockets => WebSocketProtocolComponent.IsSupported;
+        private static bool SupportsWebSockets => WebSocketProtocolComponent.IsSupported;
     }
 }

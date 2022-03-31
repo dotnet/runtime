@@ -628,7 +628,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     // Check if this type might be ManagedSequential. Only valuetypes marked Sequential can be
     // ManagedSequential. Other issues checked below might also disqualify the type.
     if ( (!fExplicitOffsets) &&    // Is it marked sequential?
-         (pParentMT && (pParentMT->IsValueTypeClass() || pParentMT->IsManagedSequential()))  // Is it a valuetype or derived from a qualifying valuetype?
+         (pParentMT && (pParentMT->IsObjectClass() || pParentMT->IsValueTypeClass() || pParentMT->IsManagedSequential()))  // Is it a valuetype or derived from a qualifying valuetype?
        )
     {
         fDisqualifyFromManagedSequential = FALSE;

@@ -88,13 +88,8 @@ namespace System.ComponentModel.Composition
             return transparentProxyModuleBuilder;
         }
 
-        public static MetadataViewFactory GetMetadataViewFactory(Type viewType)
+        public static MetadataViewFactory GetMetadataViewFactory(Type viewType!!)
         {
-            if (viewType == null)
-            {
-                throw new ArgumentNullException(nameof(viewType));
-            }
-
             if (!viewType.IsInterface)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
@@ -137,12 +132,8 @@ namespace System.ComponentModel.Composition
             return metadataViewFactory!;
         }
 
-        public static TMetadataView CreateMetadataView<TMetadataView>(MetadataViewFactory metadataViewFactory, IDictionary<string, object?> metadata)
+        public static TMetadataView CreateMetadataView<TMetadataView>(MetadataViewFactory metadataViewFactory!!, IDictionary<string, object?> metadata)
         {
-            if (metadataViewFactory == null)
-            {
-                throw new ArgumentNullException(nameof(metadataViewFactory));
-            }
             // we are simulating the Activator.CreateInstance behavior by wrapping everything in a TargetInvocationException
             try
             {

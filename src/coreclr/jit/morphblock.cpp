@@ -57,6 +57,7 @@ protected:
         OneAsgBlock,
         StructBlock,
         SkipCallSrc,
+        SkipMultiRegIntrinsicSrc,
         Nop
     };
 
@@ -466,7 +467,7 @@ GenTree* MorphInitBlockHelper::MorphCommaBlock(Compiler* comp, GenTreeOp* firstC
 {
     assert(firstComma->OperIs(GT_COMMA));
 
-    Compiler::GenTreePtrStack commas(comp->getAllocator(CMK_ArrayStack));
+    ArrayStack<GenTree*> commas(comp->getAllocator(CMK_ArrayStack));
     for (GenTree* currComma = firstComma; currComma != nullptr && currComma->OperIs(GT_COMMA);
          currComma          = currComma->gtGetOp2())
     {
@@ -635,6 +636,16 @@ void MorphCopyBlockHelper::PrepareSrc()
 //
 void MorphCopyBlockHelper::TrySpecialCases()
 {
+#ifdef FEATURE_HW_INTRINSICS
+    if (m_src->OperIsHWIntrinsic() && HWIntrinsicInfo::IsMultiReg(m_src->AsHWIntrinsic()->GetHWIntrinsicId()))
+    {
+        assert(m_src->IsMultiRegNode());
+        JITDUMP("Not morphing a multireg intrinsic\n");
+        m_transformationDecision = BlockTransformation::SkipMultiRegIntrinsicSrc;
+        m_result                 = m_asg;
+    }
+#endif // FEATURE_HW_INTRINSICS
+
 #if FEATURE_MULTIREG_RET
     // If this is a multi-reg return, we will not do any morphing of this node.
     if (m_src->IsMultiRegCall())
@@ -1271,12 +1282,10 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         GenTree* srcFld = nullptr;
         if (m_srcDoFldAsg)
         {
-            noway_assert(m_srcLclNum != BAD_VAR_NUM);
+            noway_assert((m_srcLclNum != BAD_VAR_NUM) && (m_srcLclNode != nullptr));
             unsigned srcFieldLclNum = m_comp->lvaGetDesc(m_srcLclNum)->lvFieldLclStart + i;
-            srcFld = m_comp->gtNewLclvNode(srcFieldLclNum, m_comp->lvaGetDesc(srcFieldLclNum)->TypeGet());
 
-            noway_assert(m_srcLclNode != nullptr);
-            srcFld->gtFlags |= m_srcLclNode->gtFlags & ~GTF_NODE_MASK;
+            srcFld = m_comp->gtNewLclvNode(srcFieldLclNum, m_comp->lvaGetDesc(srcFieldLclNum)->TypeGet());
         }
         else
         {

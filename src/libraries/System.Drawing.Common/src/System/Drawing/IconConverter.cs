@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 
@@ -14,7 +15,7 @@ namespace System.Drawing
             return (sourceType == typeof(byte[]));
         }
 
-        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             return destinationType == typeof(byte[]) || destinationType == typeof(string)
                 || destinationType == typeof(Image) || destinationType == typeof(Bitmap);

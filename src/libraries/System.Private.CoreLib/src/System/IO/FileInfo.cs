@@ -18,10 +18,10 @@ namespace System.IO
         {
         }
 
-        internal FileInfo(string originalPath, string? fullPath = null, string? fileName = null, bool isNormalized = false)
+        internal FileInfo(string originalPath!!, string? fullPath = null, string? fileName = null, bool isNormalized = false)
         {
             // Want to throw the original argument name
-            OriginalPath = originalPath ?? throw new ArgumentNullException(nameof(fileName));
+            OriginalPath = originalPath;
 
             fullPath = fullPath ?? originalPath;
             Debug.Assert(!isNormalized || !PathInternal.IsPartiallyQualified(fullPath.AsSpan()), "should be fully qualified if normalized");
@@ -163,11 +163,8 @@ namespace System.IO
         public FileInfo Replace(string destinationFileName, string? destinationBackupFileName)
             => Replace(destinationFileName, destinationBackupFileName, ignoreMetadataErrors: false);
 
-        public FileInfo Replace(string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors)
+        public FileInfo Replace(string destinationFileName!!, string? destinationBackupFileName, bool ignoreMetadataErrors)
         {
-            if (destinationFileName == null)
-                throw new ArgumentNullException(nameof(destinationFileName));
-
             FileSystem.ReplaceFile(
                 FullPath,
                 Path.GetFullPath(destinationFileName),

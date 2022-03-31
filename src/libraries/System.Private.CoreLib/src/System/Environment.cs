@@ -21,11 +21,8 @@ namespace System
         // Unconditionally return false since .NET Core does not support object finalization during shutdown.
         public static bool HasShutdownStarted => false;
 
-        public static string? GetEnvironmentVariable(string variable)
+        public static string? GetEnvironmentVariable(string variable!!)
         {
-            if (variable == null)
-                throw new ArgumentNullException(nameof(variable));
-
             return GetEnvironmentVariableCore(variable);
         }
 
@@ -34,8 +31,7 @@ namespace System
             if (target == EnvironmentVariableTarget.Process)
                 return GetEnvironmentVariable(variable);
 
-            if (variable == null)
-                throw new ArgumentNullException(nameof(variable));
+            ArgumentNullException.ThrowIfNull(variable);
 
             bool fromMachine = ValidateAndConvertRegistryTarget(target);
             return GetEnvironmentVariableFromRegistry(variable, fromMachine);
@@ -82,11 +78,8 @@ namespace System
             }
         }
 
-        public static string ExpandEnvironmentVariables(string name)
+        public static string ExpandEnvironmentVariables(string name!!)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             if (name.Length == 0)
                 return name;
 

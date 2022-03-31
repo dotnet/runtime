@@ -180,7 +180,7 @@ namespace System.Reflection
             StringBuilder sbName = new StringBuilder(Name);
 
             if (IsGenericMethod)
-                sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this, TypeNameFormatFlags.FormatBasic));
+                sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this));
 
             sbName.Append('(');
             RuntimeParameterInfo.FormatParameters(sbName, GetParametersNoCopy(), CallingConvention);
@@ -211,7 +211,7 @@ namespace System.Reflection
                 sbName.Append(Name);
 
                 if (IsGenericMethod)
-                    sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this, TypeNameFormatFlags.FormatBasic));
+                    sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this));
 
                 sbName.Append('(');
                 AppendParameters(ref sbName, GetParameterTypes(), CallingConvention);
@@ -854,7 +854,7 @@ namespace System.Reflection
             }
         }
 
-        private void InvokeClassConstructor()
+        private static void InvokeClassConstructor()
         {
             // [TODO] Mechanism for invoking class constructor
             // See https://github.com/dotnet/runtime/issues/40351

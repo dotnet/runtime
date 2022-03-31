@@ -12,13 +12,8 @@ namespace System
             return IsNormalized(strInput, NormalizationForm.FormC);
         }
 
-        public static bool IsNormalized(this string strInput, NormalizationForm normalizationForm)
+        public static bool IsNormalized(this string strInput!!, NormalizationForm normalizationForm)
         {
-            if (strInput == null)
-            {
-                throw new ArgumentNullException(nameof(strInput));
-            }
-
             return strInput.IsNormalized(normalizationForm);
         }
 
@@ -28,13 +23,8 @@ namespace System
             return Normalize(strInput, NormalizationForm.FormC);
         }
 
-        public static string Normalize(this string strInput, NormalizationForm normalizationForm)
+        public static string Normalize(this string strInput!!, NormalizationForm normalizationForm)
         {
-            if (strInput == null)
-            {
-                throw new ArgumentNullException(nameof(strInput));
-            }
-
             return strInput.Normalize(normalizationForm);
         }
     }

@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
             if (hashAlgorithm != HashAlgorithmName.SHA1)
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
 
-            return AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
+            return HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
         }
 
         protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
@@ -112,7 +112,7 @@ namespace System.Security.Cryptography
             if (hashAlgorithm != HashAlgorithmName.SHA1)
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
 
-            return AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
+            return HashOneShotHelpers.HashData(hashAlgorithm, data);
         }
 
         protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
@@ -120,7 +120,7 @@ namespace System.Security.Cryptography
             if (hashAlgorithm != HashAlgorithmName.SHA1)
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
 
-            return AsymmetricAlgorithmHelpers.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
+            return HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
         }
 
         public void ImportCspBlob(byte[] keyBlob)
@@ -226,10 +226,8 @@ namespace System.Security.Cryptography
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "This is the implementation of DSACryptoServiceProvider")]
-        public byte[] SignHash(byte[] rgbHash, string str)
+        public byte[] SignHash(byte[] rgbHash!!, string str)
         {
-            if (rgbHash == null)
-                throw new ArgumentNullException(nameof(rgbHash));
             if (PublicOnly)
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
             if (rgbHash.Length != SHA1_HASHSIZE)
@@ -245,13 +243,8 @@ namespace System.Security.Cryptography
         public bool VerifyData(byte[] rgbData, byte[] rgbSignature) =>
             _impl.VerifyData(rgbData, rgbSignature, HashAlgorithmName.SHA1);
 
-        public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature)
+        public bool VerifyHash(byte[] rgbHash!!, string str, byte[] rgbSignature!!)
         {
-            if (rgbHash == null)
-                throw new ArgumentNullException(nameof(rgbHash));
-            if (rgbSignature == null)
-                throw new ArgumentNullException(nameof(rgbSignature));
-
             // For compat with Windows, no check for rgbHash.Length != SHA1_HASHSIZE
 
             // Only SHA1 allowed; the default value is SHA1
@@ -297,11 +290,8 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Find whether a DSS key blob is public.
         /// </summary>
-        private static bool IsPublic(byte[] keyBlob)
+        private static bool IsPublic(byte[] keyBlob!!)
         {
-            if (keyBlob == null)
-                throw new ArgumentNullException(nameof(keyBlob));
-
             // The CAPI DSS public key representation consists of the following sequence:
             //  - BLOBHEADER (the first byte is bType)
             //  - DSSPUBKEY or DSSPUBKEY_VER3 (the first field is the magic field)

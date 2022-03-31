@@ -227,14 +227,28 @@ public:
     static void StaticInitialize()
     {
         WRAPPER_NO_CONTRACT;
+
         s_usePortableThreadPool = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_UsePortableThreadPool) != 0;
+#ifdef TARGET_WINDOWS
+        s_usePortableThreadPoolForIO =
+            s_usePortableThreadPool &&
+            CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_UsePortableThreadPoolForIO) != 0;
+#else // !TARGET_WINDOWS
+        s_usePortableThreadPoolForIO = s_usePortableThreadPool;
+#endif // TARGET_WINDOWS
     }
-#endif
+#endif // !DACCESS_COMPILE
 
     static bool UsePortableThreadPool()
     {
         LIMITED_METHOD_CONTRACT;
         return s_usePortableThreadPool;
+    }
+
+    static bool UsePortableThreadPoolForIO()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return s_usePortableThreadPoolForIO;
     }
 
     static BOOL Initialize();
@@ -295,13 +309,6 @@ public:
                                             DWORD numBytesTransferred,
                                             LPOVERLAPPED lpOverlapped);
 
-#ifdef TARGET_WINDOWS // the IO completion thread pool is currently only available on Windows
-    static void WINAPI ManagedWaitIOCompletionCallback(DWORD dwErrorCode,
-                                                       DWORD dwNumberOfBytesTransfered,
-                                                       LPOVERLAPPED lpOverlapped);
-#endif
-
-
     static BOOL SetAppDomainRequestsActive(BOOL UnmanagedTP = FALSE);
     static void ClearAppDomainRequestsActive(BOOL UnmanagedTP = FALSE,  LONG index = -1);
 
@@ -347,11 +354,7 @@ public:
     static FORCEINLINE BOOL AreEtwIOQueueEventsSpeciallyHandled(LPOVERLAPPED_COMPLETION_ROUTINE Function)
     {
         // We handle registered waits at a higher abstraction level
-        return (Function == ThreadpoolMgr::WaitIOCompletionCallback
-#ifdef TARGET_WINDOWS // the IO completion thread pool is currently only available on Windows
-                || Function == ThreadpoolMgr::ManagedWaitIOCompletionCallback
-#endif
-            );
+        return Function == ThreadpoolMgr::WaitIOCompletionCallback;
     }
 #endif
 
@@ -906,10 +909,6 @@ public:
                                 unsigned index,      // array index
                                 BOOL waitTimedOut);
 
-#ifdef TARGET_WINDOWS // the IO completion thread pool is currently only available on Windows
-    static void ManagedWaitIOCompletionCallback_Worker(LPVOID state);
-#endif
-
     static DWORD WINAPI WaitThreadStart(LPVOID lpArgs);
 
     static DWORD WINAPI AsyncCallbackCompletion(PVOID pArgs);
@@ -1026,6 +1025,7 @@ private:
     static Volatile<LONG> Initialization;                         // indicator of whether the threadpool is initialized.
 
     static bool s_usePortableThreadPool;
+    static bool s_usePortableThreadPoolForIO;
 
     SVAL_DECL(LONG,MinLimitTotalWorkerThreads);         // same as MinLimitTotalCPThreads
     SVAL_DECL(LONG,MaxLimitTotalWorkerThreads);         // same as MaxLimitTotalCPThreads

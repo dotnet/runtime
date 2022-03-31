@@ -23,13 +23,8 @@ namespace System.Reflection.PortableExecutable
             public readonly string Name;
             public readonly SectionCharacteristics Characteristics;
 
-            public Section(string name, SectionCharacteristics characteristics)
+            public Section(string name!!, SectionCharacteristics characteristics)
             {
-                if (name == null)
-                {
-                    Throw.ArgumentNull(nameof(name));
-                }
-
                 Name = name;
                 Characteristics = characteristics;
             }
@@ -58,13 +53,8 @@ namespace System.Reflection.PortableExecutable
             public int VirtualSize => Builder.Count;
         }
 
-        protected PEBuilder(PEHeaderBuilder header, Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider)
+        protected PEBuilder(PEHeaderBuilder header!!, Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider)
         {
-            if (header == null)
-            {
-                Throw.ArgumentNull(nameof(header));
-            }
-
             IdProvider = deterministicIdProvider ?? BlobContentId.GetTimeBasedProvider();
             IsDeterministic = deterministicIdProvider != null;
             Header = header;
@@ -150,7 +140,7 @@ namespace System.Reflection.PortableExecutable
             return result.MoveToImmutable();
         }
 
-        private void WritePESignature(BlobBuilder builder)
+        private static void WritePESignature(BlobBuilder builder)
         {
             // MS-DOS stub (128 bytes)
             builder.WriteBytes(s_dosHeader);
@@ -337,7 +327,7 @@ namespace System.Reflection.PortableExecutable
             builder.WriteUInt64(0);
         }
 
-        private void WriteSectionHeaders(BlobBuilder builder, ImmutableArray<SerializedSection> serializedSections)
+        private static void WriteSectionHeaders(BlobBuilder builder, ImmutableArray<SerializedSection> serializedSections)
         {
             foreach (var serializedSection in serializedSections)
             {

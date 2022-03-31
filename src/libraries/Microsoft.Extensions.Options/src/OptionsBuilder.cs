@@ -29,13 +29,8 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/> for the options being configured.</param>
         /// <param name="name">The default name of the <typeparamref name="TOptions"/> instance, if null <see cref="Options.DefaultName"/> is used.</param>
-        public OptionsBuilder(IServiceCollection services, string name)
+        public OptionsBuilder(IServiceCollection services!!, string? name)
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
             Services = services;
             Name = name ?? Options.DefaultName;
         }
@@ -46,13 +41,8 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="configureOptions">The action used to configure the options.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> Configure(Action<TOptions> configureOptions)
+        public virtual OptionsBuilder<TOptions> Configure(Action<TOptions> configureOptions!!)
         {
-            if (configureOptions == null)
-            {
-                throw new ArgumentNullException(nameof(configureOptions));
-            }
-
             Services.AddSingleton<IConfigureOptions<TOptions>>(new ConfigureNamedOptions<TOptions>(Name, configureOptions));
             return this;
         }
@@ -64,14 +54,9 @@ namespace Microsoft.Extensions.Options
         /// <typeparam name="TDep">A dependency used by the action.</typeparam>
         /// <param name="configureOptions">The action used to configure the options.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> Configure<TDep>(Action<TOptions, TDep> configureOptions)
+        public virtual OptionsBuilder<TOptions> Configure<TDep>(Action<TOptions, TDep> configureOptions!!)
             where TDep : class
         {
-            if (configureOptions == null)
-            {
-                throw new ArgumentNullException(nameof(configureOptions));
-            }
-
             Services.AddTransient<IConfigureOptions<TOptions>>(sp =>
                 new ConfigureNamedOptions<TOptions, TDep>(Name, sp.GetRequiredService<TDep>(), configureOptions));
             return this;
@@ -85,15 +70,10 @@ namespace Microsoft.Extensions.Options
         /// <typeparam name="TDep2">The second dependency used by the action.</typeparam>
         /// <param name="configureOptions">The action used to configure the options.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> Configure<TDep1, TDep2>(Action<TOptions, TDep1, TDep2> configureOptions)
+        public virtual OptionsBuilder<TOptions> Configure<TDep1, TDep2>(Action<TOptions, TDep1, TDep2> configureOptions!!)
             where TDep1 : class
             where TDep2 : class
         {
-            if (configureOptions == null)
-            {
-                throw new ArgumentNullException(nameof(configureOptions));
-            }
-
             Services.AddTransient<IConfigureOptions<TOptions>>(sp =>
                 new ConfigureNamedOptions<TOptions, TDep1, TDep2>(Name, sp.GetRequiredService<TDep1>(), sp.GetRequiredService<TDep2>(), configureOptions));
             return this;
@@ -108,16 +88,11 @@ namespace Microsoft.Extensions.Options
         /// <typeparam name="TDep3">The third dependency used by the action.</typeparam>
         /// <param name="configureOptions">The action used to configure the options.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> Configure<TDep1, TDep2, TDep3>(Action<TOptions, TDep1, TDep2, TDep3> configureOptions)
+        public virtual OptionsBuilder<TOptions> Configure<TDep1, TDep2, TDep3>(Action<TOptions, TDep1, TDep2, TDep3> configureOptions!!)
             where TDep1 : class
             where TDep2 : class
             where TDep3 : class
         {
-            if (configureOptions == null)
-            {
-                throw new ArgumentNullException(nameof(configureOptions));
-            }
-
             Services.AddTransient<IConfigureOptions<TOptions>>(
                 sp => new ConfigureNamedOptions<TOptions, TDep1, TDep2, TDep3>(
                     Name,
@@ -138,17 +113,12 @@ namespace Microsoft.Extensions.Options
         /// <typeparam name="TDep4">The fourth dependency used by the action.</typeparam>
         /// <param name="configureOptions">The action used to configure the options.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> Configure<TDep1, TDep2, TDep3, TDep4>(Action<TOptions, TDep1, TDep2, TDep3, TDep4> configureOptions)
+        public virtual OptionsBuilder<TOptions> Configure<TDep1, TDep2, TDep3, TDep4>(Action<TOptions, TDep1, TDep2, TDep3, TDep4> configureOptions!!)
             where TDep1 : class
             where TDep2 : class
             where TDep3 : class
             where TDep4 : class
         {
-            if (configureOptions == null)
-            {
-                throw new ArgumentNullException(nameof(configureOptions));
-            }
-
             Services.AddTransient<IConfigureOptions<TOptions>>(
                 sp => new ConfigureNamedOptions<TOptions, TDep1, TDep2, TDep3, TDep4>(
                     Name,
@@ -171,18 +141,13 @@ namespace Microsoft.Extensions.Options
         /// <typeparam name="TDep5">The fifth dependency used by the action.</typeparam>
         /// <param name="configureOptions">The action used to configure the options.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> Configure<TDep1, TDep2, TDep3, TDep4, TDep5>(Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> configureOptions)
+        public virtual OptionsBuilder<TOptions> Configure<TDep1, TDep2, TDep3, TDep4, TDep5>(Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> configureOptions!!)
             where TDep1 : class
             where TDep2 : class
             where TDep3 : class
             where TDep4 : class
             where TDep5 : class
         {
-            if (configureOptions == null)
-            {
-                throw new ArgumentNullException(nameof(configureOptions));
-            }
-
             Services.AddTransient<IConfigureOptions<TOptions>>(
                 sp => new ConfigureNamedOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5>(
                     Name,
@@ -200,13 +165,8 @@ namespace Microsoft.Extensions.Options
         /// Note: These are run after all <seealso cref="Configure(Action{TOptions})"/>.
         /// </summary>
         /// <param name="configureOptions">The action used to configure the options.</param>
-        public virtual OptionsBuilder<TOptions> PostConfigure(Action<TOptions> configureOptions)
+        public virtual OptionsBuilder<TOptions> PostConfigure(Action<TOptions> configureOptions!!)
         {
-            if (configureOptions == null)
-            {
-                throw new ArgumentNullException(nameof(configureOptions));
-            }
-
             Services.AddSingleton<IPostConfigureOptions<TOptions>>(new PostConfigureOptions<TOptions>(Name, configureOptions));
             return this;
         }
@@ -218,14 +178,9 @@ namespace Microsoft.Extensions.Options
         /// <typeparam name="TDep">The dependency used by the action.</typeparam>
         /// <param name="configureOptions">The action used to configure the options.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> PostConfigure<TDep>(Action<TOptions, TDep> configureOptions)
+        public virtual OptionsBuilder<TOptions> PostConfigure<TDep>(Action<TOptions, TDep> configureOptions!!)
             where TDep : class
         {
-            if (configureOptions == null)
-            {
-                throw new ArgumentNullException(nameof(configureOptions));
-            }
-
             Services.AddTransient<IPostConfigureOptions<TOptions>>(sp =>
                 new PostConfigureOptions<TOptions, TDep>(Name, sp.GetRequiredService<TDep>(), configureOptions));
             return this;
@@ -239,15 +194,10 @@ namespace Microsoft.Extensions.Options
         /// <typeparam name="TDep2">The second dependency used by the action.</typeparam>
         /// <param name="configureOptions">The action used to configure the options.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> PostConfigure<TDep1, TDep2>(Action<TOptions, TDep1, TDep2> configureOptions)
+        public virtual OptionsBuilder<TOptions> PostConfigure<TDep1, TDep2>(Action<TOptions, TDep1, TDep2> configureOptions!!)
             where TDep1 : class
             where TDep2 : class
         {
-            if (configureOptions == null)
-            {
-                throw new ArgumentNullException(nameof(configureOptions));
-            }
-
             Services.AddTransient<IPostConfigureOptions<TOptions>>(sp =>
                 new PostConfigureOptions<TOptions, TDep1, TDep2>(Name, sp.GetRequiredService<TDep1>(), sp.GetRequiredService<TDep2>(), configureOptions));
             return this;
@@ -262,16 +212,11 @@ namespace Microsoft.Extensions.Options
         /// <typeparam name="TDep3">The third dependency used by the action.</typeparam>
         /// <param name="configureOptions">The action used to configure the options.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> PostConfigure<TDep1, TDep2, TDep3>(Action<TOptions, TDep1, TDep2, TDep3> configureOptions)
+        public virtual OptionsBuilder<TOptions> PostConfigure<TDep1, TDep2, TDep3>(Action<TOptions, TDep1, TDep2, TDep3> configureOptions!!)
             where TDep1 : class
             where TDep2 : class
             where TDep3 : class
         {
-            if (configureOptions == null)
-            {
-                throw new ArgumentNullException(nameof(configureOptions));
-            }
-
             Services.AddTransient<IPostConfigureOptions<TOptions>>(
                 sp => new PostConfigureOptions<TOptions, TDep1, TDep2, TDep3>(
                     Name,
@@ -292,17 +237,12 @@ namespace Microsoft.Extensions.Options
         /// <typeparam name="TDep4">The fourth dependency used by the action.</typeparam>
         /// <param name="configureOptions">The action used to configure the options.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> PostConfigure<TDep1, TDep2, TDep3, TDep4>(Action<TOptions, TDep1, TDep2, TDep3, TDep4> configureOptions)
+        public virtual OptionsBuilder<TOptions> PostConfigure<TDep1, TDep2, TDep3, TDep4>(Action<TOptions, TDep1, TDep2, TDep3, TDep4> configureOptions!!)
             where TDep1 : class
             where TDep2 : class
             where TDep3 : class
             where TDep4 : class
         {
-            if (configureOptions == null)
-            {
-                throw new ArgumentNullException(nameof(configureOptions));
-            }
-
             Services.AddTransient<IPostConfigureOptions<TOptions>>(
                 sp => new PostConfigureOptions<TOptions, TDep1, TDep2, TDep3, TDep4>(
                     Name,
@@ -325,18 +265,13 @@ namespace Microsoft.Extensions.Options
         /// <typeparam name="TDep5">The fifth dependency used by the action.</typeparam>
         /// <param name="configureOptions">The action used to configure the options.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> PostConfigure<TDep1, TDep2, TDep3, TDep4, TDep5>(Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> configureOptions)
+        public virtual OptionsBuilder<TOptions> PostConfigure<TDep1, TDep2, TDep3, TDep4, TDep5>(Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> configureOptions!!)
             where TDep1 : class
             where TDep2 : class
             where TDep3 : class
             where TDep4 : class
             where TDep5 : class
         {
-            if (configureOptions == null)
-            {
-                throw new ArgumentNullException(nameof(configureOptions));
-            }
-
             Services.AddTransient<IPostConfigureOptions<TOptions>>(
                 sp => new PostConfigureOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5>(
                     Name,
@@ -363,13 +298,8 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The validation function.</param>
         /// <param name="failureMessage">The failure message to use when validation fails.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> Validate(Func<TOptions, bool> validation, string failureMessage)
+        public virtual OptionsBuilder<TOptions> Validate(Func<TOptions, bool> validation!!, string failureMessage)
         {
-            if (validation == null)
-            {
-                throw new ArgumentNullException(nameof(validation));
-            }
-
             Services.AddSingleton<IValidateOptions<TOptions>>(new ValidateOptions<TOptions>(Name, validation, failureMessage));
             return this;
         }
@@ -380,7 +310,7 @@ namespace Microsoft.Extensions.Options
         /// <typeparam name="TDep">The dependency used by the validation function.</typeparam>
         /// <param name="validation">The validation function.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> Validate<TDep>(Func<TOptions, TDep, bool> validation)
+        public virtual OptionsBuilder<TOptions> Validate<TDep>(Func<TOptions, TDep, bool> validation) where TDep : notnull
             => Validate(validation: validation, failureMessage: DefaultValidationFailureMessage);
 
         /// <summary>
@@ -390,13 +320,8 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The validation function.</param>
         /// <param name="failureMessage">The failure message to use when validation fails.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> Validate<TDep>(Func<TOptions, TDep, bool> validation, string failureMessage)
+        public virtual OptionsBuilder<TOptions> Validate<TDep>(Func<TOptions, TDep, bool> validation!!, string failureMessage) where TDep : notnull
         {
-            if (validation == null)
-            {
-                throw new ArgumentNullException(nameof(validation));
-            }
-
             Services.AddTransient<IValidateOptions<TOptions>>(sp =>
                 new ValidateOptions<TOptions, TDep>(Name, sp.GetRequiredService<TDep>(), validation, failureMessage));
             return this;
@@ -410,6 +335,8 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The validation function.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
         public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2>(Func<TOptions, TDep1, TDep2, bool> validation)
+            where TDep1 : notnull
+            where TDep2 : notnull
             => Validate(validation: validation, failureMessage: DefaultValidationFailureMessage);
 
         /// <summary>
@@ -420,13 +347,10 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The validation function.</param>
         /// <param name="failureMessage">The failure message to use when validation fails.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2>(Func<TOptions, TDep1, TDep2, bool> validation, string failureMessage)
+        public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2>(Func<TOptions, TDep1, TDep2, bool> validation!!, string failureMessage)
+            where TDep1 : notnull
+            where TDep2 : notnull
         {
-            if (validation == null)
-            {
-                throw new ArgumentNullException(nameof(validation));
-            }
-
             Services.AddTransient<IValidateOptions<TOptions>>(sp =>
                 new ValidateOptions<TOptions, TDep1, TDep2>(Name,
                     sp.GetRequiredService<TDep1>(),
@@ -445,6 +369,9 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The validation function.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
         public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3>(Func<TOptions, TDep1, TDep2, TDep3, bool> validation)
+            where TDep1 : notnull
+            where TDep2 : notnull
+            where TDep3 : notnull
             => Validate(validation: validation, failureMessage: DefaultValidationFailureMessage);
 
         /// <summary>
@@ -456,13 +383,11 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The validation function.</param>
         /// <param name="failureMessage">The failure message to use when validation fails.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3>(Func<TOptions, TDep1, TDep2, TDep3, bool> validation, string failureMessage)
+        public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3>(Func<TOptions, TDep1, TDep2, TDep3, bool> validation!!, string failureMessage)
+            where TDep1 : notnull
+            where TDep2 : notnull
+            where TDep3 : notnull
         {
-            if (validation == null)
-            {
-                throw new ArgumentNullException(nameof(validation));
-            }
-
             Services.AddTransient<IValidateOptions<TOptions>>(sp =>
                 new ValidateOptions<TOptions, TDep1, TDep2, TDep3>(Name,
                     sp.GetRequiredService<TDep1>(),
@@ -483,6 +408,10 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The validation function.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
         public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4>(Func<TOptions, TDep1, TDep2, TDep3, TDep4, bool> validation)
+            where TDep1 : notnull
+            where TDep2 : notnull
+            where TDep3 : notnull
+            where TDep4 : notnull
             => Validate(validation: validation, failureMessage: DefaultValidationFailureMessage);
 
         /// <summary>
@@ -495,13 +424,12 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The validation function.</param>
         /// <param name="failureMessage">The failure message to use when validation fails.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4>(Func<TOptions, TDep1, TDep2, TDep3, TDep4, bool> validation, string failureMessage)
+        public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4>(Func<TOptions, TDep1, TDep2, TDep3, TDep4, bool> validation!!, string failureMessage)
+            where TDep1 : notnull
+            where TDep2 : notnull
+            where TDep3 : notnull
+            where TDep4 : notnull
         {
-            if (validation == null)
-            {
-                throw new ArgumentNullException(nameof(validation));
-            }
-
             Services.AddTransient<IValidateOptions<TOptions>>(sp =>
                 new ValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4>(Name,
                     sp.GetRequiredService<TDep1>(),
@@ -524,6 +452,11 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The validation function.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
         public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4, TDep5>(Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, bool> validation)
+            where TDep1 : notnull
+            where TDep2 : notnull
+            where TDep3 : notnull
+            where TDep4 : notnull
+            where TDep5 : notnull
             => Validate(validation: validation, failureMessage: DefaultValidationFailureMessage);
 
         /// <summary>
@@ -537,13 +470,13 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The validation function.</param>
         /// <param name="failureMessage">The failure message to use when validation fails.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4, TDep5>(Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, bool> validation, string failureMessage)
+        public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4, TDep5>(Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, bool> validation!!, string failureMessage)
+            where TDep1 : notnull
+            where TDep2 : notnull
+            where TDep3 : notnull
+            where TDep4 : notnull
+            where TDep5 : notnull
         {
-            if (validation == null)
-            {
-                throw new ArgumentNullException(nameof(validation));
-            }
-
             Services.AddTransient<IValidateOptions<TOptions>>(sp =>
                 new ValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5>(Name,
                     sp.GetRequiredService<TDep1>(),

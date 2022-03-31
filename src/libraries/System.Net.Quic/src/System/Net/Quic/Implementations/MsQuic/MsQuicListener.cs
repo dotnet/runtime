@@ -13,12 +13,13 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
+using System.Net.Sockets;
 
 namespace System.Net.Quic.Implementations.MsQuic
 {
     internal sealed class MsQuicListener : QuicListenerProvider, IDisposable
     {
-        private static readonly ListenerCallbackDelegate s_listenerDelegate = new ListenerCallbackDelegate(NativeCallbackHandler);
+        private static unsafe readonly ListenerCallbackDelegate s_listenerDelegate = new ListenerCallbackDelegate(NativeCallbackHandler);
 
         private readonly State _state;
         private GCHandle _stateHandle;
@@ -81,15 +82,13 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal MsQuicListener(QuicListenerOptions options)
         {
-            if (options.ListenEndPoint == null)
-            {
-                throw new ArgumentNullException(nameof(options.ListenEndPoint));
-            }
+            ArgumentNullException.ThrowIfNull(options.ListenEndPoint, nameof(options.ListenEndPoint));
 
             _state = new State(options);
             _stateHandle = GCHandle.Alloc(_state);
             try
             {
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 uint status = MsQuicApi.Api.ListenerOpenDelegate(
                     MsQuicApi.Api.Registration,
                     s_listenerDelegate,
@@ -178,7 +177,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             List<SslApplicationProtocol> applicationProtocols = options.ServerAuthenticationOptions!.ApplicationProtocols!;
             IPEndPoint listenEndPoint = options.ListenEndPoint!;
 
-            SOCKADDR_INET address = MsQuicAddressHelpers.IPEndPointToINet(listenEndPoint);
+            Internals.SocketAddress address = IPEndPointExtensions.Serialize(listenEndPoint);
 
             uint status;
 
@@ -188,8 +187,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             QuicBuffer[]? buffers = null;
             try
             {
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 MsQuicAlpnHelper.Prepare(applicationProtocols, out handles, out buffers);
-                status = MsQuicApi.Api.ListenerStartDelegate(_state.Handle, (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(buffers, 0), (uint)applicationProtocols.Count, ref address);
+                fixed (byte* paddress = address.Buffer)
+                {
+                    status = MsQuicApi.Api.ListenerStartDelegate(_state.Handle, (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(buffers, 0), (uint)applicationProtocols.Count, paddress);
+                }
             }
             catch
             {
@@ -203,8 +206,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             QuicExceptionHelpers.ThrowIfFailed(status, "ListenerStart failed.");
 
-            SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.LISTENER, (uint)QUIC_PARAM_LISTENER.LOCAL_ADDRESS);
-            return MsQuicAddressHelpers.INetToIPEndPoint(ref inetAddress);
+            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
+            return MsQuicParameterHelpers.GetIPEndPointParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.LISTENER, (uint)QUIC_PARAM_LISTENER.LOCAL_ADDRESS);
         }
 
         private void Stop()
@@ -219,6 +222,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_state.Handle != null)
             {
+                Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 MsQuicApi.Api.ListenerStopDelegate(_state.Handle);
             }
         }
@@ -226,13 +230,13 @@ namespace System.Net.Quic.Implementations.MsQuic
         private static unsafe uint NativeCallbackHandler(
             IntPtr listener,
             IntPtr context,
-            ref ListenerEvent evt)
+            ListenerEvent* evt)
         {
             GCHandle gcHandle = GCHandle.FromIntPtr(context);
             Debug.Assert(gcHandle.IsAllocated);
             Debug.Assert(gcHandle.Target is not null);
             var state = (State)gcHandle.Target;
-            if (evt.Type != QUIC_LISTENER_EVENT.NEW_CONNECTION)
+            if (evt->Type != QUIC_LISTENER_EVENT.NEW_CONNECTION)
             {
                 return MsQuicStatusCodes.InternalError;
             }
@@ -241,10 +245,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             MsQuicConnection? msQuicConnection = null;
             try
             {
-                ref NewConnectionInfo connectionInfo = ref *evt.Data.NewConnection.Info;
+                ref NewConnectionInfo connectionInfo = ref *evt->Data.NewConnection.Info;
 
-                IPEndPoint localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref *(SOCKADDR_INET*)connectionInfo.LocalAddress);
-                IPEndPoint remoteEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref *(SOCKADDR_INET*)connectionInfo.RemoteAddress);
+                IPEndPoint localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(connectionInfo.LocalAddress);
+                IPEndPoint remoteEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(connectionInfo.RemoteAddress);
+
                 string targetHost = string.Empty;   // compat with SslStream
                 if (connectionInfo.ServerNameLength > 0 && connectionInfo.ServerName != IntPtr.Zero)
                 {
@@ -277,8 +282,9 @@ namespace System.Net.Quic.Implementations.MsQuic
                     }
                 }
 
-                connectionHandle = new SafeMsQuicConnectionHandle(evt.Data.NewConnection.Connection);
+                connectionHandle = new SafeMsQuicConnectionHandle(evt->Data.NewConnection.Connection);
 
+                Debug.Assert(!Monitor.IsEntered(state), "!Monitor.IsEntered(state)");
                 uint status = MsQuicApi.Api.ConnectionSetConfigurationDelegate(connectionHandle, connectionConfiguration);
                 if (MsQuicStatusHelper.SuccessfulStatusCode(status))
                 {
@@ -299,7 +305,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Error(state, $"[Listener#{state.GetHashCode()}] Exception occurred during handling {(QUIC_LISTENER_EVENT)evt.Type} connection callback: {ex}");
+                    NetEventSource.Error(state, $"[Listener#{state.GetHashCode()}] Exception occurred during handling {(QUIC_LISTENER_EVENT)evt->Type} connection callback: {ex}");
                 }
             }
 

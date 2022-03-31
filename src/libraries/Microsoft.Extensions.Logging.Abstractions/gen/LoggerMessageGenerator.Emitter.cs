@@ -86,7 +86,7 @@ namespace {lc.Namespace}
                 // loop until you find top level nested class
                 while (parent != null)
                 {
-                    parentClasses.Add($"partial {parent.Keyword} {parent.Name} ");
+                    parentClasses.Add($"partial {parent.Keyword} {parent.Name}");
                     parent = parent.ParentClass;
                 }
 
@@ -100,7 +100,7 @@ namespace {lc.Namespace}
                 }
 
                 _builder.Append($@"
-    {nestedIndentation}partial {lc.Keyword} {lc.Name} 
+    {nestedIndentation}partial {lc.Keyword} {lc.Name}
     {nestedIndentation}{{");
 
                 foreach (LoggerMethod lm in lc.Methods)
@@ -206,7 +206,7 @@ namespace {lc.Namespace}
             {
                 foreach (LoggerParameter p in lm.TemplateParameters)
                 {
-                    _builder.AppendLine($"                {nestedIndentation}this._{p.Name} = {p.Name};");
+                    _builder.AppendLine($"                {nestedIndentation}this._{p.Name} = {p.CodeName};");
                 }
             }
 
@@ -265,7 +265,7 @@ namespace {lc.Namespace}
             {
                 foreach (LoggerParameter p in lm.TemplateParameters)
                 {
-                    _builder.Append($"{p.Name}, ");
+                    _builder.Append($"{p.CodeName}, ");
                 }
             }
 
@@ -323,7 +323,7 @@ namespace {lc.Namespace}
                     {
                         _builder.Append($"{p.Qualifier} ");
                     }
-                    _builder.Append($"{p.Type} {p.Name}");
+                    _builder.Append($"{p.Type} {p.CodeName}");
                 }
             }
 
@@ -341,7 +341,7 @@ namespace {lc.Namespace}
                         _builder.Append(", ");
                     }
 
-                    _builder.Append($"{p.Type} {p.Name}");
+                    _builder.Append($"{p.Type} {p.CodeName}");
                 }
             }
 
@@ -357,7 +357,7 @@ namespace {lc.Namespace}
                         _builder.Append(", ");
                     }
 
-                    _builder.Append(p.Name);
+                    _builder.Append(p.CodeName);
                 }
 
                 _builder.Append(')');

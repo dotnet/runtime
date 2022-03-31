@@ -62,6 +62,7 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/bsearch.h>
 #include <mono/utils/mono-tls-inline.h>
+#include <mono/utils/options.h>
 
 #include "mini.h"
 #include "seq-points.h"
@@ -69,7 +70,7 @@
 #include "aot-runtime.h"
 #include "jit-icalls.h"
 #include "mini-runtime.h"
-#include "mono-private-unstable.h"
+#include <mono/jit/mono-private-unstable.h>
 #include "llvmonly-runtime.h"
 
 #include <mono/metadata/components.h>
@@ -223,7 +224,7 @@ static gsize aot_code_high_addr = 0;
 /* Stats */
 static gint32 async_jit_info_size;
 
-#ifdef MONOTOUCH
+#ifdef TARGET_APPLE_MOBILE
 #define USE_PAGE_TRAMPOLINES (mscorlib_aot_module->use_page_trampolines)
 #else
 #define USE_PAGE_TRAMPOLINES 0
@@ -1505,10 +1506,9 @@ find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *valu
 		if (symbol != name)
 			g_free (symbol);
 	} else {
-		char *err = mono_dl_symbol (module, name, value);
-
-		if (err)
-			g_free (err);
+		ERROR_DECL (symbol_error);
+		*value = mono_dl_symbol (module, name, symbol_error);
+		mono_error_cleanup (symbol_error);
 	}
 }
 
@@ -1792,7 +1792,7 @@ init_amodule_got (MonoAotModule *amodule, gboolean preinit)
 	mono_loader_unlock ();
 }
 
-#ifdef MONOTOUCH
+#ifdef TARGET_APPLE_MOBILE
 // Follow branch islands on ARM iOS machines.
 static inline guint8 *
 method_address_resolve (guint8 *code_addr)
@@ -1905,7 +1905,6 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	gpointer *globals = NULL;
 	MonoAotFileInfo *info = NULL;
 	int i, version;
-	gboolean do_load_image = TRUE;
 	int align_double, align_int64;
 	guint8 *aot_data = NULL;
 
@@ -1963,17 +1962,18 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		}
 		found_aot_name = g_strdup (aot_name);
 	} else {
-		char *err;
-
 		aot_name = g_strdup_printf ("%s%s", assembly->image->name, MONO_SOLIB_EXT);
 
-		sofile = mono_dl_open (aot_name, MONO_DL_LAZY, &err);
-		if (sofile) {
-			found_aot_name = g_strdup (aot_name);
-		} else {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, err);
-			g_free (err);
+		{
+			ERROR_DECL (load_error);
+			sofile = mono_dl_open (aot_name, MONO_DL_LAZY, load_error);
+			if (sofile)
+				found_aot_name = g_strdup (aot_name);
+			else
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, mono_error_get_message_without_fields (load_error));
+			mono_error_cleanup (load_error);
 		}
+
 		g_free (aot_name);
 		if (!sofile) {
 			GList *l;
@@ -1983,19 +1983,22 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 
 				char *basename = g_path_get_basename (assembly->image->name);
 				aot_name = g_strdup_printf ("%s/%s%s", path, basename, MONO_SOLIB_EXT);
-				sofile = mono_dl_open (aot_name, MONO_DL_LAZY, &err);
-				if (sofile) {
+
+				ERROR_DECL (load_error);
+				sofile = mono_dl_open (aot_name, MONO_DL_LAZY, load_error);
+				if (sofile)
 					found_aot_name = g_strdup (aot_name);
-				} else {
-					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, err);
-					g_free (err);
-				}
+				else
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, mono_error_get_message_without_fields (load_error));
+				mono_error_cleanup (load_error);
+
 				g_free (basename);
 				g_free (aot_name);
 				if (sofile)
 					break;
 			}
 		}
+
 		if (!sofile) {
 			// Maybe do these on more platforms ?
 #ifndef HOST_WASM
@@ -2051,8 +2054,11 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		}
 		g_free (msg);
 		g_free (found_aot_name);
-		if (sofile)
-			mono_dl_close (sofile);
+		if (sofile) {
+			ERROR_DECL (close_error);
+			mono_dl_close (sofile, close_error);
+			mono_error_cleanup (close_error);
+		}
 		assembly->image->aot_module = NULL;
 		return;
 	}
@@ -2299,7 +2305,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	 * non-lazily, since we can't handle out-of-date errors later.
 	 * The cached class info also depends on the exact assemblies.
 	 */
-	if (do_load_image) {
+	if (!mono_opt_aot_lazy_assembly_load) {
 		for (i = 0; i < amodule->image_table_len; ++i) {
 			ERROR_DECL (error);
 			load_image (amodule, i, error);
@@ -2309,7 +2315,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 
 	if (amodule->out_of_date) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: Module %s is unusable because a dependency is out-of-date.", assembly->image->name);
-		if (mono_aot_only)
+		if (mono_aot_only && (mono_aot_mode != MONO_AOT_MODE_LLVMONLY_INTERP))
 			g_error ("Failed to load AOT module '%s' while running in aot-only mode because a dependency cannot be found or it is out of date.\n", found_aot_name);
 	} else {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' found.", found_aot_name);
@@ -2646,6 +2652,7 @@ mono_aot_get_weak_field_indexes (MonoImage *image)
 	if (!amodule)
 		return NULL;
 
+#if ENABLE_WEAK_ATTR
 	/* Initialize weak field indexes from the cached copy */
 	guint32 *indexes = (guint32*)amodule->weak_field_indexes;
 	int len  = indexes [0];
@@ -2653,6 +2660,9 @@ mono_aot_get_weak_field_indexes (MonoImage *image)
 	for (int i = 0; i < len; ++i)
 		g_hash_table_insert (indexes_hash, GUINT_TO_POINTER (indexes [i + 1]), GUINT_TO_POINTER (1));
 	return indexes_hash;
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 /* Compute the boundaries of the LLVM code for AMODULE. */
@@ -2668,7 +2678,7 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 
 #ifdef HOST_WASM
 		gsize min = 1 << 30, max = 0;
-		gsize prev = 0;
+		//gsize prev = 0;
 
 		// FIXME: This depends on emscripten allocating ftnptr ids sequentially
 		for (int i = 0; i < amodule->info.nmethods; ++i) {
@@ -2682,7 +2692,7 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 					min = val;
 				else if (val > max)
 					max = val;
-				prev = val;
+				//prev = val;
 			}
 		}
 		if (max) {
@@ -3918,6 +3928,58 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 				if (!template_->data)
 					goto cleanup;
 				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+		}
+		ji->data.target = info;
+		break;
+	}
+	case MONO_PATCH_INFO_GSHARED_METHOD_INFO: {
+		MonoGSharedMethodInfo *info = (MonoGSharedMethodInfo *)mono_mempool_alloc0 (mp, sizeof (MonoGSharedMethodInfo));
+
+		info->method = decode_resolve_method_ref (aot_module, p, &p, error);
+		mono_error_assert_ok (error);
+
+		info->num_entries = decode_value (p, &p);
+		info->count_entries = info->num_entries;
+		info->entries = (MonoRuntimeGenericContextInfoTemplate *)mono_mempool_alloc0 (mp, sizeof (MonoRuntimeGenericContextInfoTemplate) * info->num_entries);
+		for (int i = 0; i < info->num_entries; ++i) {
+			MonoRuntimeGenericContextInfoTemplate *entry = &info->entries [i];
+			MonoJumpInfoType patch_type;
+
+			entry->info_type = (MonoRgctxInfoType)decode_value (p, &p);
+			patch_type = mini_rgctx_info_type_to_patch_info_type (entry->info_type);
+			switch (patch_type) {
+			case MONO_PATCH_INFO_CLASS: {
+				MonoClass *klass = decode_klass_ref (aot_module, p, &p, error);
+				mono_error_cleanup (error); /* FIXME don't swallow the error */
+				if (!klass)
+					goto cleanup;
+				entry->data = m_class_get_byval_arg (klass);
+				break;
+			}
+			case MONO_PATCH_INFO_FIELD:
+				entry->data = decode_field_info (aot_module, p, &p);
+				if (!entry->data)
+					goto cleanup;
+				break;
+			case MONO_PATCH_INFO_METHOD:
+				entry->data = decode_resolve_method_ref (aot_module, p, &p, error);
+				mono_error_assert_ok (error);
+				break;
+			case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+			case MONO_PATCH_INFO_VIRT_METHOD:
+			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
+			case MONO_PATCH_INFO_GSHAREDVT_CALL: {
+				MonoJumpInfo tmp;
+				tmp.type = patch_type;
+				if (!decode_patch (aot_module, mp, &tmp, p, &p))
+					goto cleanup;
+				entry->data = (gpointer)tmp.data.target;
+				break;
+			}
 			default:
 				g_assert_not_reached ();
 				break;
@@ -5169,7 +5231,7 @@ mono_aot_get_plt_entry (host_mgreg_t *regs, guint8 *code)
 	g_assert_not_reached ();
 #endif
 
-#ifdef MONOTOUCH
+#ifdef TARGET_APPLE_MOBILE
 	while (target != NULL) {
 		if ((target >= (guint8*)(amodule->plt)) && (target < (guint8*)(amodule->plt_end)))
 			return target;
@@ -5459,7 +5521,7 @@ read_unwind_info (MonoAotModule *amodule, MonoTrampInfo *info, const char *symbo
 	return (guint32*)symbol_addr + 1;
 }
 
-#ifdef MONOTOUCH
+#ifdef TARGET_APPLE_MOBILE
 #include <mach/mach.h>
 
 static TrampolinePage* trampoline_pages [MONO_AOT_TRAMP_NUM];
@@ -5689,25 +5751,24 @@ get_new_unbox_arbitrary_trampoline_frome_page (gpointer addr)
 static gpointer
 get_numerous_trampoline (MonoAotTrampoline tramp_type, int n_got_slots, MonoAotModule **out_amodule, guint32 *got_offset, guint32 *out_tramp_size)
 {
+#ifndef DISABLE_ASSERT_MESSAGES
 	MonoImage *image;
+#endif
 	MonoAotModule *amodule = get_mscorlib_aot_module ();
 	int index, tramp_size;
 
+#ifndef DISABLE_ASSERT_MESSAGES
 	/* Currently, we keep all trampolines in the mscorlib AOT image */
 	image = mono_defaults.corlib;
+#endif
 
 	*out_amodule = amodule;
 
 	mono_aot_lock ();
 
-#ifdef MONOTOUCH
-#define	MONOTOUCH_TRAMPOLINES_ERROR ". See http://docs.xamarin.com/ios/troubleshooting for instructions on how to fix this condition."
-#else
-#define	MONOTOUCH_TRAMPOLINES_ERROR ""
-#endif
 	if (amodule->trampoline_index [tramp_type] == amodule->info.num_trampolines [tramp_type]) {
-		g_error ("Ran out of trampolines of type %d in '%s' (limit %d)%s\n",
-				 tramp_type, image ? image->name : MONO_ASSEMBLY_CORLIB_NAME, amodule->info.num_trampolines [tramp_type], MONOTOUCH_TRAMPOLINES_ERROR);
+		g_error ("Ran out of trampolines of type %d in '%s' (limit %d)\n",
+				 tramp_type, image ? image->name : MONO_ASSEMBLY_CORLIB_NAME, amodule->info.num_trampolines [tramp_type]);
 	}
 	index = amodule->trampoline_index [tramp_type] ++;
 

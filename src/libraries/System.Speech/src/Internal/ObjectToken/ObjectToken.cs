@@ -15,14 +15,9 @@ namespace System.Speech.Internal.ObjectTokens
     {
         #region Constructors
 
-        protected ObjectToken(ISpObjectToken sapiObjectToken, bool disposeSapiToken)
+        protected ObjectToken(ISpObjectToken sapiObjectToken!!, bool disposeSapiToken)
             : base(sapiObjectToken)
         {
-            if (sapiObjectToken == null)
-            {
-                throw new ArgumentNullException(nameof(sapiObjectToken));
-            }
-
             _sapiObjectToken = sapiObjectToken;
             _disposeSapiObjectToken = disposeSapiToken;
         }

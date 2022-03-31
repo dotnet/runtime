@@ -27,13 +27,8 @@ namespace System.Diagnostics
 
         public Guid ActivityId { get { return _activityId.Value; } set { _activityId.Value = value; } }
 
-        public void StartLogicalOperation(object operationId)
+        public void StartLogicalOperation(object operationId!!)
         {
-            if (operationId == null)
-            {
-                throw new ArgumentNullException(nameof(operationId));
-            }
-
             _stackWrapper.Push(operationId);
         }
 
@@ -95,7 +90,7 @@ namespace System.Diagnostics
                 }
             }
 
-            private IEnumerator GetEnumerator(StackNode? n)
+            private static IEnumerator GetEnumerator(StackNode? n)
             {
                 while (n != null)
                 {

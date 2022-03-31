@@ -11,24 +11,16 @@ namespace System.Security.Principal
         private readonly string m_name;
         private readonly string m_type;
 
-        public GenericIdentity(string name)
+        public GenericIdentity(string name!!)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             m_name = name;
             m_type = "";
 
             AddNameClaim();
         }
 
-        public GenericIdentity(string name, string type)
+        public GenericIdentity(string name!!, string type!!)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
             m_name = name;
             m_type = type;
 

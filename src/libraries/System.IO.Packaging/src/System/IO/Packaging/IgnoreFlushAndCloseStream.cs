@@ -17,11 +17,8 @@ namespace System.IO.Packaging
         /// Constructor
         /// </summary>
         /// <param name="stream"></param>
-        internal IgnoreFlushAndCloseStream(Stream stream)
+        internal IgnoreFlushAndCloseStream(Stream stream!!)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
             _stream = stream;
         }
 

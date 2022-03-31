@@ -14,15 +14,10 @@ namespace System.Xml.Resolvers
     //
     public partial class XmlPreloadedResolver : XmlResolver
     {
-        public override Task<object> GetEntityAsync(Uri absoluteUri,
+        public override Task<object> GetEntityAsync(Uri absoluteUri!!,
                                              string? role,
                                              Type? ofObjectToReturn)
         {
-            if (absoluteUri == null)
-            {
-                throw new ArgumentNullException(nameof(absoluteUri));
-            }
-
             PreloadedData? data;
             if (!_mappings.TryGetValue(absoluteUri, out data))
             {

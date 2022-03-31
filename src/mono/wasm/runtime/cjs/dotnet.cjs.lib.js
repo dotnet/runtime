@@ -12,12 +12,13 @@ const DotnetSupportLib = {
     $DOTNET__postset: `
 let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require};
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-    { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, requirePromise:Promise.resolve(require)}, 
+    { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:Promise.resolve(require)}, 
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
     __dotnet_replacements);
 readAsync = __dotnet_replacements.readAsync;
 var fetch = __dotnet_replacements.fetch;
 require = __dotnet_replacements.requireOut;
+var noExitRuntime = __dotnet_replacements.noExitRuntime;
 `,
 };
 
@@ -54,8 +55,6 @@ const linked_functions = [
     "mono_wasm_typed_array_copy_to",
     "mono_wasm_typed_array_from",
     "mono_wasm_typed_array_copy_from",
-    "mono_wasm_add_event_listener",
-    "mono_wasm_remove_event_listener",
     "mono_wasm_cancel_promise",
     "mono_wasm_web_socket_open",
     "mono_wasm_web_socket_send",

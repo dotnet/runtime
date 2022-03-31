@@ -16,6 +16,11 @@ namespace System.Security.Cryptography
     {
         private static readonly CngKeyBlobFormat s_cipherKeyBlobFormat = new CngKeyBlobFormat(Interop.NCrypt.NCRYPT_CIPHER_KEY_BLOB);
 
+        internal static CryptographicException ToCryptographicException(this Interop.NCrypt.ErrorCode errorCode)
+        {
+            return ((int)errorCode).ToCryptographicException();
+        }
+
         internal static SafeNCryptProviderHandle OpenStorageProvider(this CngProvider provider)
         {
             string providerName = provider.Provider;

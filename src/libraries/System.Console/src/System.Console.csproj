@@ -21,11 +21,13 @@
     <Compile Include="System\IO\CachedConsoleStream.cs" />
     <Compile Include="System\IO\SyncTextReader.cs" />
     <Compile Include="System\IO\Error.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\Text\ConsoleEncoding.cs"
              Link="Common\System\Text\ConsoleEncoding.cs" />
   </ItemGroup>
   <!-- iOS/tvOS -->
-  <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">
     <Compile Include="System\ConsolePal.iOS.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Log.cs"
              Link="Common\Interop\Unix\Interop.Log.cs" />
@@ -33,7 +35,7 @@
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>
   <!-- Android -->
-  <ItemGroup Condition="'$(TargetsAndroid)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Android'">
     <Compile Include="System\ConsolePal.Android.cs" />
     <Compile Include="$(CommonPath)Interop\Android\Interop.Logcat.cs">
       <Link>Common\Interop\Android\Interop.Logcat.cs</Link>
@@ -43,7 +45,7 @@
     </Compile>
   </ItemGroup>
   <!-- WebAssembly -->
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="System\ConsolePal.WebAssembly.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Dup.cs"
              Link="Common\Interop\Unix\Interop.Dup.cs" />
@@ -59,7 +61,7 @@
              Link="Common\Interop\Unix\Interop.IOErrors.cs" />
   </ItemGroup>
   <!-- Windows -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\ConsolePal.Windows.cs" />
     <Compile Include="$(CommonPath)System\Text\OSEncoding.Windows.cs"
              Link="Common\System\Text\OSEncoding.Windows.cs" />
@@ -153,7 +155,7 @@
              Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
   <!-- Unix -->
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsAndroid)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
     <Compile Include="System\ConsolePal.Unix.cs" />
     <Compile Include="System\TermInfo.cs" />
     <Compile Include="System\IO\StdInReader.cs" />
@@ -230,7 +232,7 @@
     <Reference Include="System.Threading" />
     <Reference Include="Microsoft.Win32.Primitives" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\src\System.Private.Runtime.InteropServices.JavaScript.csproj" />
   </ItemGroup>
 </Project>

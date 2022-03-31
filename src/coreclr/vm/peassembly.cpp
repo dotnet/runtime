@@ -658,7 +658,6 @@ ULONG PEAssembly::GetPEImageTimeDateStamp()
 PEAssembly::PEAssembly(
                 BINDER_SPACE::Assembly* pBindResultInfo,
                 IMetaDataEmit* pEmit,
-                PEAssembly *creator,
                 BOOL isSystem,
                 PEImage * pPEImage /*= NULL*/,
                 BINDER_SPACE::Assembly * pHostAssembly /*= NULL*/)
@@ -667,13 +666,11 @@ PEAssembly::PEAssembly(
     {
         CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(pEmit, NULL_OK));
-        PRECONDITION(CheckPointer(creator, NULL_OK));
         PRECONDITION(pBindResultInfo == NULL || pPEImage == NULL);
         STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
 
-    m_creator = clr::SafeAddRef(creator);
 #if _DEBUG
     m_pDebugName = NULL;
 #endif
@@ -747,7 +744,6 @@ PEAssembly::PEAssembly(
 
 
 PEAssembly *PEAssembly::Open(
-    PEAssembly *       pParent,
     PEImage *          pPEImageIL,
     BINDER_SPACE::Assembly * pHostAssembly)
 {
@@ -756,7 +752,6 @@ PEAssembly *PEAssembly::Open(
     PEAssembly * pPEAssembly = new PEAssembly(
         nullptr,        // BindResult
         nullptr,        // IMetaDataEmit
-        pParent,        // PEAssembly creator
         FALSE,          // isSystem
         pPEImageIL,
         pHostAssembly);
@@ -777,8 +772,6 @@ PEAssembly::~PEAssembly()
     CONTRACTL_END;
 
     GCX_PREEMP();
-    if (m_creator != NULL)
-        m_creator->Release();
 
     if (m_pImporter != NULL)
     {
@@ -844,21 +837,19 @@ PEAssembly *PEAssembly::DoOpenSystem()
     ReleaseHolder<BINDER_SPACE::Assembly> pBoundAssembly;
     IfFailThrow(GetAppDomain()->GetDefaultBinder()->BindToSystem(&pBoundAssembly));
 
-    RETURN new PEAssembly(pBoundAssembly, NULL, NULL, TRUE);
+    RETURN new PEAssembly(pBoundAssembly, NULL, TRUE);
 }
 
 PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBindResult)
 {
-    return new PEAssembly(pBindResult,NULL,NULL, /*isSystem*/ false);
+    return new PEAssembly(pBindResult,NULL,/*isSystem*/ false);
 };
 
 /* static */
-PEAssembly *PEAssembly::Create(PEAssembly *pParentAssembly,
-                               IMetaDataAssemblyEmit *pAssemblyEmit)
+PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit)
 {
     CONTRACT(PEAssembly *)
     {
-        PRECONDITION(CheckPointer(pParentAssembly));
         PRECONDITION(CheckPointer(pAssemblyEmit));
         STANDARD_VM_CHECK;
         POSTCONDITION(CheckPointer(RETVAL));
@@ -869,7 +860,7 @@ PEAssembly *PEAssembly::Create(PEAssembly *pParentAssembly,
     // we have.)
     SafeComHolder<IMetaDataEmit> pEmit;
     pAssemblyEmit->QueryInterface(IID_IMetaDataEmit, (void **)&pEmit);
-    RETURN new PEAssembly(NULL, pEmit, pParentAssembly, FALSE);
+    RETURN new PEAssembly(NULL, pEmit, FALSE);
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -877,41 +868,7 @@ PEAssembly *PEAssembly::Create(PEAssembly *pParentAssembly,
 
 #ifndef DACCESS_COMPILE
 
-// ------------------------------------------------------------
-// Descriptive strings
-// ------------------------------------------------------------
-
-// Effective path is the path of nearest parent (creator) assembly which has a nonempty path.
-
-const SString &PEAssembly::GetEffectivePath()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    PEAssembly* pPEAssembly = this;
-
-    while (pPEAssembly->m_PEImage == NULL
-        || pPEAssembly->m_PEImage->GetPath().IsEmpty())
-    {
-        if (pPEAssembly->m_creator)
-            pPEAssembly = pPEAssembly->m_creator;
-        else // Unmanaged exe which loads byte[]/IStream assemblies
-            return SString::Empty();
-    }
-
-    return pPEAssembly->m_PEImage->GetPath();
-}
-
-
-// Codebase is the fusion codebase or path for the assembly.  It is in URL format.
-// Note this may be obtained from the parent PEAssembly if we don't have a path or fusion
-// assembly.
+// Supports implementation of the legacy Assembly.CodeBase property.
 // Returns false if the assembly was loaded from a bundle, true otherwise
 BOOL PEAssembly::GetCodeBase(SString &result)
 {
@@ -926,10 +883,10 @@ BOOL PEAssembly::GetCodeBase(SString &result)
     CONTRACTL_END;
 
     PEImage* ilImage = GetPEImage();
-    if (ilImage == NULL || !ilImage->IsInBundle())
+    if (ilImage != NULL && !ilImage->IsInBundle())
     {
         // All other cases use the file path.
-        result.Set(GetEffectivePath());
+        result.Set(ilImage->GetPath());
         if (!result.IsEmpty())
             PathToUrl(result);
 
@@ -1091,11 +1048,6 @@ void PEAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     if (m_PEImage.IsValid())
     {
         m_PEImage->EnumMemoryRegions(flags);
-    }
-
-    if (m_creator.IsValid())
-    {
-        m_creator->EnumMemoryRegions(flags);
     }
 }
 

@@ -29,11 +29,11 @@ namespace System.Text.Json.Serialization.Converters
             _optionValueGetter = FSharpCoreReflectionProxy.Instance.CreateFSharpOptionValueGetter<TOption, TElement>();
             _optionConstructor = FSharpCoreReflectionProxy.Instance.CreateFSharpOptionSomeConstructor<TOption, TElement>();
 
-            // temporary workaround for JsonConverter base constructor needing to access
-            // ConverterStrategy when calculating `CanUseDirectReadOrWrite`.
-            // TODO move `CanUseDirectReadOrWrite` from JsonConverter to JsonTypeInfo.
-            _converterStrategy = _elementConverter.ConverterStrategy;
-            CanUseDirectReadOrWrite = _converterStrategy == ConverterStrategy.Value;
+            // Workaround for the base constructor depending on the (still unset) ConverterStrategy
+            // to derive the CanUseDirectReadOrWrite and RequiresReadAhead values.
+            _converterStrategy = elementConverter.ConverterStrategy;
+            CanUseDirectReadOrWrite = elementConverter.CanUseDirectReadOrWrite;
+            RequiresReadAhead = elementConverter.RequiresReadAhead;
         }
 
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out TOption? value)
@@ -66,7 +66,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             TElement element = _optionValueGetter(value);
-            state.Current.DeclaredJsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
+            state.Current.JsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
             return _elementConverter.TryWrite(writer, element, options, ref state);
         }
 

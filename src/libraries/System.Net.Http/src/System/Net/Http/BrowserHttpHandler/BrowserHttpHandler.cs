@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 
 using JSObject = System.Runtime.InteropServices.JavaScript.JSObject;
 using JSException = System.Runtime.InteropServices.JavaScript.JSException;
-using HostObject = System.Runtime.InteropServices.JavaScript.HostObject;
 using Uint8Array = System.Runtime.InteropServices.JavaScript.Uint8Array;
 using Function = System.Runtime.InteropServices.JavaScript.Function;
 
@@ -48,6 +47,7 @@ namespace System.Net.Http
                 return (bool)streamingSupported.Call();
         }
 
+#pragma warning disable CA1822
         public bool UseCookies
         {
             get => throw new PlatformNotSupportedException();
@@ -96,16 +96,6 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
-        public bool AllowAutoRedirect
-        {
-            get => _allowAutoRedirect;
-            set
-            {
-                _allowAutoRedirect = value;
-                _isAllowAutoRedirectTouched = true;
-            }
-        }
-
         public int MaxAutomaticRedirections
         {
             get => throw new PlatformNotSupportedException();
@@ -129,6 +119,17 @@ namespace System.Net.Http
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
+#pragma warning restore CA1822
+
+        public bool AllowAutoRedirect
+        {
+            get => _allowAutoRedirect;
+            set
+            {
+                _allowAutoRedirect = value;
+                _isAllowAutoRedirectTouched = true;
+            }
+        }
 
         public const bool SupportsAutomaticDecompression = false;
         public const bool SupportsProxy = false;
@@ -142,12 +143,8 @@ namespace System.Net.Http
             throw new PlatformNotSupportedException();
         }
 
-        protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request!!, CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
-            }
             CancellationTokenRegistration? abortRegistration = null;
             try
             {
@@ -198,7 +195,7 @@ namespace System.Net.Http
                 // Process headers
                 // Cors has its own restrictions on headers.
                 // https://developer.mozilla.org/en-US/docs/Web/API/Headers
-                using (HostObject jsHeaders = new HostObject("Headers"))
+                using (JSObject jsHeaders = new JSObject("Headers"))
                 {
                     foreach (KeyValuePair<string, IEnumerable<string>> header in request.Headers)
                     {
@@ -221,7 +218,7 @@ namespace System.Net.Http
                 }
 
 
-                JSObject abortController = new HostObject("AbortController");
+                JSObject abortController = new JSObject("AbortController");
                 using JSObject signal = (JSObject)abortController.GetObjectProperty("signal");
                 requestObject.SetObjectProperty("signal", signal);
 
@@ -352,10 +349,10 @@ namespace System.Net.Http
             private readonly CancellationTokenRegistration _abortRegistration;
             private bool _isDisposed;
 
-            public WasmFetchResponse(JSObject fetchResponse, JSObject abortController, CancellationTokenRegistration abortRegistration)
+            public WasmFetchResponse(JSObject fetchResponse!!, JSObject abortController!!, CancellationTokenRegistration abortRegistration)
             {
-                _fetchResponse = fetchResponse ?? throw new ArgumentNullException(nameof(fetchResponse));
-                _abortController = abortController ?? throw new ArgumentNullException(nameof(abortController));
+                _fetchResponse = fetchResponse;
+                _abortController = abortController;
                 _abortRegistration = abortRegistration;
             }
 
@@ -396,9 +393,9 @@ namespace System.Net.Http
             private byte[]? _data;
             private readonly WasmFetchResponse _status;
 
-            public BrowserHttpContent(WasmFetchResponse status)
+            public BrowserHttpContent(WasmFetchResponse status!!)
             {
-                _status = status ?? throw new ArgumentNullException(nameof(status));
+                _status = status;
             }
 
             private async Task<byte[]> GetResponseData(CancellationToken cancellationToken)

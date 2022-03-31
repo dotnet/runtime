@@ -84,13 +84,8 @@ namespace System.ComponentModel.DataAnnotations
         /// </param>
         /// <exception cref="ArgumentNullException">When <paramref name="instance" /> is <c>null</c></exception>
         [RequiresUnreferencedCode(InstanceTypeNotStaticallyDiscovered)]
-        public ValidationContext(object instance, IServiceProvider? serviceProvider, IDictionary<object, object?>? items)
+        public ValidationContext(object instance!!, IServiceProvider? serviceProvider, IDictionary<object, object?>? items)
         {
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
-
             if (serviceProvider != null)
             {
                 IServiceProvider localServiceProvider = serviceProvider;

@@ -602,7 +602,7 @@ inline bool isRegParamType(var_types type)
 #endif // !TARGET_X86
 }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH)
 /*****************************************************************************/
 // Returns true if 'type' is a struct that can be enregistered for call args
 //                         or can be returned by value in multiple registers.
@@ -660,7 +660,7 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                typ
 
     return result;
 }
-#endif // TARGET_AMD64 || TARGET_ARM64
+#endif // TARGET_AMD64 || TARGET_ARMARCH
 
 /*****************************************************************************/
 
@@ -1093,7 +1093,7 @@ inline GenTree* Compiler::gtNewRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfo
 // Return Value:
 //    The created node.
 //
-inline GenTree* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj, DWORD offset)
+inline GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj, DWORD offset)
 {
     // GT_FIELD nodes are transformed into GT_IND nodes.
     assert(GenTree::s_gtNodeSizes[GT_IND] <= GenTree::s_gtNodeSizes[GT_FIELD]);
@@ -1105,7 +1105,7 @@ inline GenTree* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fld
         type = impNormStructType(structHnd);
     }
 
-    GenTree* fieldNode = new (this, GT_FIELD) GenTreeField(type, obj, fldHnd, offset);
+    GenTreeField* fieldNode = new (this, GT_FIELD) GenTreeField(type, obj, fldHnd, offset);
 
     // If "obj" is the address of a local, note that a field of that struct local has been accessed.
     if ((obj != nullptr) && obj->OperIs(GT_ADDR) && varTypeIsStruct(obj->AsUnOp()->gtOp1) &&
@@ -1115,8 +1115,13 @@ inline GenTree* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fld
 
         varDsc->lvFieldAccessed = 1;
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-        // These structs are passed by reference; we should probably be able to treat these
-        // as non-global refs, but downstream logic expects these to be marked this way.
+        // These structs are passed by reference and can easily become global
+        // references if those references are exposed. We clear out
+        // address-exposure information for these parameters when they are
+        // converted into references in fgRetypeImplicitByRefArgs() so we do
+        // not have the necessary information in morph to know if these
+        // indirections are actually global references, so we have to be
+        // conservative here.
         if (varDsc->lvIsParam)
         {
             fieldNode->gtFlags |= GTF_GLOB_REF;
@@ -1321,24 +1326,33 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     SetVtableForOper(oper);
 #endif // DEBUGGABLE_GENTREE
 
-    if (oper == GT_CNS_INT)
-    {
-        AsIntCon()->gtFieldSeq = nullptr;
-    }
-
-#if defined(TARGET_ARM)
-    if (oper == GT_MUL_LONG)
-    {
-        // We sometimes bash GT_MUL to GT_MUL_LONG, which converts it from GenTreeOp to GenTreeMultiRegOp.
-        AsMultiRegOp()->gtOtherReg = REG_NA;
-        AsMultiRegOp()->ClearOtherRegFlags();
-    }
-#endif
-
     if (vnUpdate == CLEAR_VN)
     {
         // Clear the ValueNum field as well.
         gtVNPair.SetBoth(ValueNumStore::NoVN);
+    }
+
+    // Do "oper"-specific initializations. TODO-Cleanup: these are too ad-hoc to be reliable.
+    // The bashing code should decide itself what to initialize and what to leave as it was.
+    switch (oper)
+    {
+        case GT_CNS_INT:
+            AsIntCon()->gtFieldSeq = FieldSeqStore::NotAField();
+            break;
+#if defined(TARGET_ARM)
+        case GT_MUL_LONG:
+            // We sometimes bash GT_MUL to GT_MUL_LONG, which converts it from GenTreeOp to GenTreeMultiRegOp.
+            AsMultiRegOp()->gtOtherReg = REG_NA;
+            AsMultiRegOp()->ClearOtherRegFlags();
+            break;
+#endif
+        case GT_LCL_FLD:
+            AsLclFld()->SetLclOffs(0);
+            AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
+            break;
+
+        default:
+            break;
     }
 }
 
@@ -1418,32 +1432,6 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     }
     SetOper(oper, vnUpdate);
     gtFlags &= mask;
-
-    // Do "oper"-specific initializations...
-    switch (oper)
-    {
-        case GT_LCL_FLD:
-        {
-            // The original GT_LCL_VAR might be annotated with a zeroOffset field.
-            FieldSeqNode* zeroFieldSeq = nullptr;
-            Compiler*     compiler     = JitTls::GetCompiler();
-            bool          isZeroOffset = compiler->GetZeroOffsetFieldMap()->Lookup(this, &zeroFieldSeq);
-
-            AsLclFld()->SetLclOffs(0);
-            AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
-
-            if (zeroFieldSeq != nullptr)
-            {
-                // Set the zeroFieldSeq in the GT_LCL_FLD node
-                AsLclFld()->SetFieldSeq(zeroFieldSeq);
-                // and remove the annotation from the ZeroOffsetFieldMap
-                compiler->GetZeroOffsetFieldMap()->Remove(this);
-            }
-            break;
-        }
-        default:
-            break;
-    }
 }
 
 inline void GenTree::ChangeOperUnchecked(genTreeOps oper)
@@ -1498,6 +1486,8 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
         type = typeOfValue;
     }
 
+    assert(type == genActualType(type));
+
     genTreeOps oper = GT_NONE;
     if (varTypeIsFloating(type))
     {
@@ -1509,7 +1499,6 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
     }
 
     SetOperResetFlags(oper);
-
     gtType = type;
 
     switch (oper)

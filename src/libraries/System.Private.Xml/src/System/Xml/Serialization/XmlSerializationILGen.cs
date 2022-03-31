@@ -66,21 +66,6 @@ namespace System.Xml.Serialization
         }
         internal TypeAttributes TypeAttributes { get { return _typeAttributes; } }
 
-        private static readonly Dictionary<string, Regex> s_regexs = new Dictionary<string, Regex>();
-        internal static Regex NewRegex(string pattern)
-        {
-            Regex? regex;
-            lock (s_regexs)
-            {
-                if (!s_regexs.TryGetValue(pattern, out regex))
-                {
-                    regex = new Regex(pattern);
-                    s_regexs.Add(pattern, regex);
-                }
-            }
-            return regex;
-        }
-
         internal MethodBuilder EnsureMethodBuilder(TypeBuilder typeBuilder, string methodName,
             MethodAttributes attributes, Type? returnType, Type[] parameterTypes)
         {
@@ -135,7 +120,7 @@ namespace System.Xml.Serialization
             return methodName;
         }
 
-        private TypeMapping[] EnsureArrayIndex(TypeMapping[]? a, int index)
+        private static TypeMapping[] EnsureArrayIndex(TypeMapping[]? a, int index)
         {
             if (a == null) return new TypeMapping[32];
             if (index < a.Length) return a;
@@ -145,7 +130,7 @@ namespace System.Xml.Serialization
         }
 
         [return: NotNullIfNotNull("value")]
-        internal string? GetCSharpString(string? value)
+        internal static string? GetCSharpString(string? value)
         {
             return ReflectionAwareILGen.GetCSharpString(value);
         }

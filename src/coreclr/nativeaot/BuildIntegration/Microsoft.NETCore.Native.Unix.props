@@ -36,6 +36,9 @@ The .NET Foundation licenses this file to you under the MIT license.
       <TargetTriple />
       <TargetTriple Condition="'$(CrossCompileArch)' != ''">$(CrossCompileArch)-linux-gnu</TargetTriple>
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('linux-musl')) or $(CrossCompileRid.StartsWith('alpine')))">$(CrossCompileArch)-alpine-linux-musl</TargetTriple>
+
+      <IlcRPath Condition="'$(IlcRPath)' == '' and '$(TargetOS)' != 'OSX'">$ORIGIN</IlcRPath>
+      <IlcRPath Condition="'$(IlcRPath)' == '' and '$(TargetOS)' == 'OSX'">@executable_path</IlcRPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -57,7 +60,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ItemGroup>
       <DirectPInvoke Include="@(NetCoreAppNativeLibrary->'lib%(Identity)')" />
       <NetCoreAppNativeLibrary Include="@(NetCoreAppNativeLibrary->'%(Identity)')">
-        <EscapedPath>$(IlcFrameworkPath)lib%(Identity).a</EscapedPath>
+        <EscapedPath>$(IlcFrameworkNativePath)lib%(Identity).a</EscapedPath>
       </NetCoreAppNativeLibrary>
       <NativeLibrary Include="@(NetCoreAppNativeLibrary->'%(EscapedPath)')" />
     </ItemGroup>
@@ -75,8 +78,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="--target=$(TargetTriple)" Condition="'$(TargetTriple)' != ''" />
       <LinkerArg Include="-g" Condition="$(NativeDebugSymbols) == 'true'" />
       <LinkerArg Include="-Wl,--strip-debug" Condition="$(NativeDebugSymbols) != 'true' and '$(TargetOS)' != 'OSX'" />
-      <LinkerArg Include="-Wl,-rpath,'$ORIGIN'" Condition="'$(TargetOS)' != 'OSX'" />
-      <LinkerArg Include="-Wl,-rpath,'@executable_path'" Condition="'$(TargetOS)' == 'OSX'" />
+      <LinkerArg Include="-Wl,-rpath,'$(IlcRPath)'" />
       <LinkerArg Include="-Wl,--as-needed" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-pthread" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-lstdc++" />

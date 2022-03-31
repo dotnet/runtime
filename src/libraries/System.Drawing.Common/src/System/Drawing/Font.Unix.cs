@@ -70,7 +70,7 @@ namespace System.Drawing
             Gdip.CheckStatus(status);
         }
 
-        internal void unitConversion(GraphicsUnit fromUnit, GraphicsUnit toUnit, float nSrc, out float nTrg)
+        internal static void unitConversion(GraphicsUnit fromUnit, GraphicsUnit toUnit, float nSrc, out float nTrg)
         {
             float inchs;
             nTrg = 0;
@@ -262,12 +262,9 @@ namespace System.Drawing
         {
         }
 
-        public Font(FontFamily family, float emSize, FontStyle style,
+        public Font(FontFamily family!!, float emSize, FontStyle style,
                 GraphicsUnit unit, byte gdiCharSet, bool gdiVerticalFont)
         {
-            if (family == null)
-                throw new ArgumentNullException(nameof(family));
-
             int status;
             Initialize(family, emSize, style, unit, gdiCharSet, gdiVerticalFont);
             status = Gdip.GdipCreateFont(new HandleRef(this, family.NativeFamily), emSize, style, unit, out _nativeFont);

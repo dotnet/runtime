@@ -33,11 +33,12 @@ namespace System.Text.RegularExpressions.Symbolic
         private readonly BDD _nonAscii;
 
         /// <summary>Create a classifier that maps a character to the ID of its associated minterm.</summary>
-        /// <param name="solver">Character algebra</param>
         /// <param name="minterms">A BDD for classifying all characters (ASCII and non-ASCII) to their corresponding minterm IDs.</param>
-        public MintermClassifier(CharSetSolver solver, BDD[] minterms)
+        public MintermClassifier(BDD[] minterms)
         {
             Debug.Assert(minterms.Length > 0, "Requires at least");
+
+            CharSetSolver solver = CharSetSolver.Instance;
 
             if (minterms.Length == 1)
             {
@@ -94,7 +95,7 @@ namespace System.Text.RegularExpressions.Symbolic
         public int GetMintermID(int c)
         {
             int[] ascii = _ascii;
-            return (uint)c < ascii.Length ? ascii[c] : _nonAscii.Find(c);
+            return (uint)c < (uint)ascii.Length ? ascii[c] : _nonAscii.Find(c);
         }
     }
 }

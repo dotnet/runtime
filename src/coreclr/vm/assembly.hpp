@@ -53,7 +53,6 @@ struct CreateDynamicAssemblyArgsGC
 struct CreateDynamicAssemblyArgs : CreateDynamicAssemblyArgsGC
 {
     INT32           access;
-    StackCrawlMark* stackMark;
 };
 
 // An assembly is the unit of deployment for managed code.

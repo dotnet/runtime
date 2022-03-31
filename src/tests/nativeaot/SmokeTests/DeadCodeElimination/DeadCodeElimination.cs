@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -12,8 +13,9 @@ class Program
     {
         SanityTest.Run();
         TestInstanceMethodOptimization.Run();
-        TestAbstractTypeVirtualsOptimization.Run();
         TestAbstractTypeNeverDerivedVirtualsOptimization.Run();
+        TestAbstractNeverDerivedWithDevirtualizedCall.Run();
+        TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall.Run();
 
         return 100;
     }
@@ -67,42 +69,6 @@ class Program
         }
     }
 
-    class TestAbstractTypeVirtualsOptimization
-    {
-        class UnreferencedType1 { }
-        class UnreferencedType2 { }
-        class ReferencedType1 { }
-
-        abstract class Base
-        {
-            public virtual Type GetTheType() => typeof(UnreferencedType1);
-            public virtual Type GetOtherType() => typeof(ReferencedType1);
-        }
-
-        abstract class Mid : Base
-        {
-            public override Type GetTheType() => typeof(UnreferencedType2);
-        }
-
-        class Derived : Mid
-        {
-            public override Type GetTheType() => null;
-        }
-
-        static Base s_instance = Activator.CreateInstance<Derived>();
-
-        public static void Run()
-        {
-            Console.WriteLine("Testing virtual methods on abstract types");
-
-            s_instance.GetTheType();
-            s_instance.GetOtherType();
-
-            ThrowIfPresent(typeof(TestAbstractTypeVirtualsOptimization), nameof(UnreferencedType1));
-            ThrowIfPresent(typeof(TestAbstractTypeVirtualsOptimization), nameof(UnreferencedType2));
-        }
-    }
-
     class TestAbstractTypeNeverDerivedVirtualsOptimization
     {
         class UnreferencedType1
@@ -146,10 +112,83 @@ class Program
                 s_d.TrySomething();
             }
 
-            ThrowIfPresent(typeof(TestAbstractTypeNeverDerivedVirtualsOptimization), nameof(UnreferencedType1));
+            // This optimization got disabled, but if it ever gets re-enabled, this test
+            // will ensure we don't reintroduce the old bugs (this was a compiler crash).
+            //ThrowIfPresent(typeof(TestAbstractTypeNeverDerivedVirtualsOptimization), nameof(UnreferencedType1));
         }
     }
 
+    class TestAbstractNeverDerivedWithDevirtualizedCall
+    {
+        static void DoIt(Derived d) => d?.DoSomething();
+
+        abstract class Base
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public virtual void DoSomething() => new UnreferencedType1().ToString();
+        }
+
+        sealed class Derived : Base { }
+
+        class UnreferencedType1 { }
+
+        public static void Run()
+        {
+            Console.WriteLine("Testing abstract classes that might have methods reachable through devirtualization");
+
+            // Force a vtable for Base
+            typeof(Base).ToString();
+
+            // Do a devirtualizable virtual call to something that was never allocated
+            // and uses a virtual method implementation from Base.
+            DoIt(null);
+
+            // This optimization got disabled, but if it ever gets re-enabled, this test
+            // will ensure we don't reintroduce the old bugs (this was a compiler crash).
+            //ThrowIfPresent(typeof(TestAbstractNeverDerivedWithDevirtualizedCall), nameof(UnreferencedType1));
+        }
+    }
+
+    class TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall
+    {
+        static void DoIt(Derived1 d) => d?.DoSomething();
+
+        abstract class Base
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public virtual void DoSomething() => new UnreferencedType1().ToString();
+        }
+
+        sealed class Derived1 : Base { }
+
+        sealed class Derived2 : Base
+        {
+            public override void DoSomething() { }
+        }
+
+        class UnreferencedType1 { }
+
+        public static void Run()
+        {
+            Console.WriteLine("Testing more abstract classes that might have methods reachable through devirtualization");
+
+            // Force a vtable for Base
+            typeof(Base).ToString();
+
+            // Do a devirtualizable virtual call to something that was never allocated
+            // and uses a virtual method implementation from Base.
+            DoIt(null);
+
+            new Derived2().DoSomething();
+
+            // This optimization got disabled, but if it ever gets re-enabled, this test
+            // will ensure we don't reintroduce the old bugs (this was a compiler crash).
+            //ThrowIfPresent(typeof(TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall), nameof(UnreferencedType1));
+        }
+    }
+
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+        Justification = "That's the point")]
     private static bool IsTypePresent(Type testType, string typeName) => testType.GetNestedType(typeName, BindingFlags.NonPublic | BindingFlags.Public) != null;
 
     private static void ThrowIfPresent(Type testType, string typeName)

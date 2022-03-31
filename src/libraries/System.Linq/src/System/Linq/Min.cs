@@ -10,14 +10,9 @@ namespace System.Linq
     {
         public static int Min(this IEnumerable<int> source)
         {
-            if (source == null)
+            if (source.TryGetSpan(out ReadOnlySpan<int> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            if (source.GetType() == typeof(int[]))
-            {
-                return Min((int[])source);
+                return Min(span);
             }
 
             int value;
@@ -42,29 +37,29 @@ namespace System.Linq
             return value;
         }
 
-        private static int Min(int[] array)
+        private static int Min(ReadOnlySpan<int> span)
         {
-            if (array.Length == 0)
+            if (span.IsEmpty)
             {
                 ThrowHelper.ThrowNoElementsException();
             }
 
             // Vectorize the search if possible.
             int index, value;
-            if (Vector.IsHardwareAccelerated && array.Length >= Vector<int>.Count * 2)
+            if (Vector.IsHardwareAccelerated && span.Length >= Vector<int>.Count * 2)
             {
-                // The array is at least two vectors long. Create a vector from the first N elements,
-                // and then repeatedly compare that against the next vector from the array.  At the end,
+                // The span is at least two vectors long. Create a vector from the first N elements,
+                // and then repeatedly compare that against the next vector from the span.  At the end,
                 // the resulting vector will contain the minimum values found, and we then need only
                 // to find the min of those.
-                var mins = new Vector<int>(array);
+                var mins = new Vector<int>(span);
                 index = Vector<int>.Count;
                 do
                 {
-                    mins = Vector.Min(mins, new Vector<int>(array, index));
+                    mins = Vector.Min(mins, new Vector<int>(span.Slice(index)));
                     index += Vector<int>.Count;
                 }
-                while (index + Vector<int>.Count <= array.Length);
+                while (index + Vector<int>.Count <= span.Length);
 
                 value = mins[0];
                 for (int i = 1; i < Vector<int>.Count; i++)
@@ -77,16 +72,16 @@ namespace System.Linq
             }
             else
             {
-                value = array[0];
+                value = span[0];
                 index = 1;
             }
 
             // Iterate through the remaining elements, comparing against the min.
-            for (int i = index; (uint)i < (uint)array.Length; i++)
+            for (int i = index; (uint)i < (uint)span.Length; i++)
             {
-                if (array[i] < value)
+                if (span[i] < value)
                 {
-                    value = array[i];
+                    value = span[i];
                 }
             }
 
@@ -139,14 +134,9 @@ namespace System.Linq
 
         public static long Min(this IEnumerable<long> source)
         {
-            if (source == null)
+            if (source.TryGetSpan(out ReadOnlySpan<long> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            if (source.GetType() == typeof(long[]))
-            {
-                return Min((long[])source);
+                return Min(span);
             }
 
             long value;
@@ -171,9 +161,9 @@ namespace System.Linq
             return value;
         }
 
-        private static long Min(long[] array)
+        private static long Min(ReadOnlySpan<long> span)
         {
-            if (array.Length == 0)
+            if (span.IsEmpty)
             {
                 ThrowHelper.ThrowNoElementsException();
             }
@@ -181,20 +171,20 @@ namespace System.Linq
             // Vectorize the search if possible.
             int index;
             long value;
-            if (Vector.IsHardwareAccelerated && array.Length >= Vector<long>.Count * 2)
+            if (Vector.IsHardwareAccelerated && span.Length >= Vector<long>.Count * 2)
             {
-                // The array is at least two vectors long. Create a vector from the first N elements,
-                // and then repeatedly compare that against the next vector from the array.  At the end,
+                // The span is at least two vectors long. Create a vector from the first N elements,
+                // and then repeatedly compare that against the next vector from the span.  At the end,
                 // the resulting vector will contain the minimum values found, and we then need only
                 // to find the min of those.
-                var mins = new Vector<long>(array);
+                var mins = new Vector<long>(span);
                 index = Vector<long>.Count;
                 do
                 {
-                    mins = Vector.Min(mins, new Vector<long>(array, index));
+                    mins = Vector.Min(mins, new Vector<long>(span.Slice(index)));
                     index += Vector<long>.Count;
                 }
-                while (index + Vector<long>.Count <= array.Length);
+                while (index + Vector<long>.Count <= span.Length);
 
                 value = mins[0];
                 for (int i = 1; i < Vector<long>.Count; i++)
@@ -207,16 +197,16 @@ namespace System.Linq
             }
             else
             {
-                value = array[0];
+                value = span[0];
                 index = 1;
             }
 
             // Iterate through the remaining elements, comparing against the min.
-            for (int i = index; (uint)i < (uint)array.Length; i++)
+            for (int i = index; (uint)i < (uint)span.Length; i++)
             {
-                if (array[i] < value)
+                if (span[i] < value)
                 {
-                    value = array[i];
+                    value = span[i];
                 }
             }
 
@@ -265,9 +255,9 @@ namespace System.Linq
 
         public static float Min(this IEnumerable<float> source)
         {
-            if (source == null)
+            if (source.TryGetSpan(out ReadOnlySpan<float> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                return Min(span);
             }
 
             float value;
@@ -304,6 +294,30 @@ namespace System.Linq
                     {
                         return x;
                     }
+                }
+            }
+
+            return value;
+        }
+
+        private static float Min(ReadOnlySpan<float> span)
+        {
+            if (span.IsEmpty)
+            {
+                ThrowHelper.ThrowNoElementsException();
+            }
+
+            float value = span[0];
+            for (int i = 1; (uint)i < (uint)span.Length; i++)
+            {
+                float f = span[i];
+                if (f < value)
+                {
+                    value = f;
+                }
+                else if (float.IsNaN(f))
+                {
+                    return f;
                 }
             }
 
@@ -361,9 +375,9 @@ namespace System.Linq
 
         public static double Min(this IEnumerable<double> source)
         {
-            if (source == null)
+            if (source.TryGetSpan(out ReadOnlySpan<double> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                return Min(span);
             }
 
             double value;
@@ -391,6 +405,30 @@ namespace System.Linq
                     {
                         return x;
                     }
+                }
+            }
+
+            return value;
+        }
+
+        private static double Min(ReadOnlySpan<double> span)
+        {
+            if (span.IsEmpty)
+            {
+                ThrowHelper.ThrowNoElementsException();
+            }
+
+            double value = span[0];
+            for (int i = 1; (uint)i < (uint)span.Length; i++)
+            {
+                double d = span[i];
+                if (d < value)
+                {
+                    value = d;
+                }
+                else if (double.IsNaN(d))
+                {
+                    return d;
                 }
             }
 
@@ -448,9 +486,9 @@ namespace System.Linq
 
         public static decimal Min(this IEnumerable<decimal> source)
         {
-            if (source == null)
+            if (source.TryGetSpan(out ReadOnlySpan<decimal> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                return Min(span);
             }
 
             decimal value;
@@ -469,6 +507,25 @@ namespace System.Linq
                     {
                         value = x;
                     }
+                }
+            }
+
+            return value;
+        }
+
+        private static decimal Min(ReadOnlySpan<decimal> span)
+        {
+            if (span.IsEmpty)
+            {
+                ThrowHelper.ThrowNoElementsException();
+            }
+
+            decimal value = span[0];
+            for (int i = 1; (uint)i < (uint)span.Length; i++)
+            {
+                if (span[i] < value)
+                {
+                    value = span[i];
                 }
             }
 

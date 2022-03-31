@@ -4,7 +4,6 @@
 using System.Threading;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Tracing
 {
@@ -271,6 +270,19 @@ namespace System.Diagnostics.Tracing
             WriteEventCore(63, 4, data);
         }
 
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public unsafe void ThreadPoolIOEnqueue(NativeOverlapped* nativeOverlapped)
+        {
+            if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
+            {
+                ThreadPoolIOEnqueue(
+                    (IntPtr)nativeOverlapped,
+                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode(),
+                    false);
+            }
+        }
+
         // TODO: This event is fired for minor compat with CoreCLR in this case. Consider removing this method and use
         // FrameworkEventSource's thread transfer send/receive events instead at callers.
         [NonEvent]
@@ -304,6 +316,18 @@ namespace System.Diagnostics.Tracing
             data[2].Size = sizeof(ushort);
             data[2].Reserved = 0;
             WriteEventCore(64, 3, data);
+        }
+
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public unsafe void ThreadPoolIODequeue(NativeOverlapped* nativeOverlapped)
+        {
+            if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
+            {
+                ThreadPoolIODequeue(
+                    (IntPtr)nativeOverlapped,
+                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
+            }
         }
 
         // TODO: This event is fired for minor compat with CoreCLR in this case. Consider removing this method and use

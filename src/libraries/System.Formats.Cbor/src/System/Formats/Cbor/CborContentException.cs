@@ -10,7 +10,7 @@ namespace System.Formats.Cbor
     public class CborContentException : Exception
     {
         /// <summary>
-        ///  Initializes a new instance of the <see cref="CborContentException" /> class, using the provided message.
+        /// Initializes a new instance of the <see cref="CborContentException" /> class using the provided message.
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
         public CborContentException(string? message)
@@ -20,8 +20,8 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///  Initializes a new instance of the <see cref="CborContentException" /> class,
-        ///  using the provided message and exception that is the cause of this exception.
+        /// Initializes a new instance of the <see cref="CborContentException" /> class,
+        /// using the provided message and exception that is the cause of this exception.
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
         /// <param name="inner">The exception that is the cause of the current exception.</param>
@@ -32,7 +32,7 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Initializes a new instance of the <see cref="CborContentException" /> class with serialized data.
+        /// Initializes a new instance of the <see cref="CborContentException" /> class with serialized data.
         /// </summary>
         /// <param name="info">The object that holds the serialized object data.</param>
         /// <param name="context">The contextual information about the source or destination.</param>

@@ -690,64 +690,6 @@ INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCO
     _ASSERTE(FitsInI4(offset));
     return static_cast<INT32>(offset);
 }
-
-BOOL DoesSlotCallPrestub(PCODE pCode)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(pCode != GetPreStubEntryPoint());
-    } CONTRACTL_END;
-
-    // AMD64 has the following possible sequences for prestub logic:
-    // 1. slot -> temporary entrypoint -> prestub
-    // 2. slot -> precode -> prestub
-    // 3. slot -> precode -> jumprel64 (jump stub) -> prestub
-    // 4. slot -> precode -> jumprel64 (NGEN case) -> prestub
-
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    if (MethodDescChunk::GetMethodDescFromCompactEntryPoint(pCode, TRUE) != NULL)
-    {
-        return TRUE;
-    }
-#endif
-
-    if (!IS_ALIGNED(pCode, PRECODE_ALIGNMENT))
-    {
-        return FALSE;
-    }
-
-#ifdef HAS_FIXUP_PRECODE
-    if (*PTR_BYTE(pCode) == X86_INSTR_CALL_REL32)
-    {
-        // Note that call could have been patched to jmp in the meantime
-        pCode = rel32Decode(pCode+1);
-
-        // JumpStub
-        if (isJumpRel64(pCode)) {
-            pCode = decodeJump64(pCode);
-        }
-
-        return pCode == (TADDR)PrecodeFixupThunk;
-    }
-#endif
-
-    if (*PTR_USHORT(pCode) != X86_INSTR_MOV_R10_IMM64 || // mov rax,XXXX
-        *PTR_BYTE(pCode+10) != X86_INSTR_NOP || // nop
-        *PTR_BYTE(pCode+11) != X86_INSTR_JMP_REL32) // jmp rel32
-    {
-        return FALSE;
-    }
-    pCode = rel32Decode(pCode+12);
-
-    // JumpStub
-    if (isJumpRel64(pCode)) {
-        pCode = decodeJump64(pCode);
-    }
-
-    return pCode == GetPreStubEntryPoint();
-}
-
 //
 // Some AMD64 assembly functions have one or more DWORDS at the end of the function
 //  that specify the offsets where significant instructions are

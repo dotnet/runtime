@@ -24,8 +24,7 @@ namespace System.Xml
         {
             if (id < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(id), SR.XmlInvalidID));
-            if (value == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
             XmlDictionaryString? xmlString;
             if (TryLookup(id, out _))
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIDDefined));
@@ -71,11 +70,8 @@ namespace System.Xml
             return false;
         }
 
-        public bool TryLookup(string value, [NotNullWhen(true)] out XmlDictionaryString? result)
+        public bool TryLookup(string value!!, [NotNullWhen(true)] out XmlDictionaryString? result)
         {
-            if (value == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
-
             if (_strings != null)
             {
                 for (int i = 0; i < _strings.Length; i++)
@@ -105,10 +101,8 @@ namespace System.Xml
             return false;
         }
 
-        public bool TryLookup(XmlDictionaryString value, [NotNullWhen(true)] out XmlDictionaryString? result)
+        public bool TryLookup(XmlDictionaryString value!!, [NotNullWhen(true)] out XmlDictionaryString? result)
         {
-            if (value == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(value)));
             if (value.Dictionary != this)
             {
                 result = null;

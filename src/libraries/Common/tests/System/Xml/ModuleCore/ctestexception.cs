@@ -58,24 +58,24 @@ namespace OLEDB.Test.ModuleCore
         public object Expected;
 
         //Constructor
-        public CTestException(string message)
+        public CTestException(string message!!)
             : this(CTestBase.TEST_FAIL, message)
         {
         }
 
-        public CTestException(int result, string message)
+        public CTestException(int result, string message!!)
             : this(result, message, false, true, null)
         {
         }
 
-        public CTestException(int result, string message, object actual, object expected, Exception inner)
+        public CTestException(int result, string message!!, object actual, object expected, Exception inner)
             : base(message, inner)
         {
             //Note: iResult is the variation result (i.e.: TEST_PASS, TEST_FAIL, etc...)
             //Setup the exception
             Result = result;
-            Actual = actual;
-            Expected = expected;
+            Actual = actual ?? "";
+            Expected = expected ?? "";
         }
 
         public override string Message

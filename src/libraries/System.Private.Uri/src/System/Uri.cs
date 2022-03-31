@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
@@ -362,11 +362,8 @@ namespace System
         //  a user, or that was copied & pasted from a document. That is, we do not
         //  expect already encoded URI to be supplied.
         //
-        public Uri(string uriString)
+        public Uri(string uriString!!)
         {
-            if (uriString is null)
-                throw new ArgumentNullException(nameof(uriString));
-
             CreateThis(uriString, false, UriKind.Absolute);
             DebugSetLeftCtor();
         }
@@ -377,11 +374,8 @@ namespace System
         //  Uri constructor. Assumes that input string is canonically escaped
         //
         [Obsolete("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(string) instead.")]
-        public Uri(string uriString, bool dontEscape)
+        public Uri(string uriString!!, bool dontEscape)
         {
-            if (uriString == null)
-                throw new ArgumentNullException(nameof(uriString));
-
             CreateThis(uriString, dontEscape, UriKind.Absolute);
             DebugSetLeftCtor();
         }
@@ -393,11 +387,8 @@ namespace System
         //  DontEscape is true
         //
         [Obsolete("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(Uri, string) instead.")]
-        public Uri(Uri baseUri, string? relativeUri, bool dontEscape)
+        public Uri(Uri baseUri!!, string? relativeUri, bool dontEscape)
         {
-            if (baseUri is null)
-                throw new ArgumentNullException(nameof(baseUri));
-
             if (!baseUri.IsAbsoluteUri)
                 throw new ArgumentOutOfRangeException(nameof(baseUri));
 
@@ -408,11 +399,8 @@ namespace System
         //
         // Uri(string, UriKind);
         //
-        public Uri(string uriString, UriKind uriKind)
+        public Uri(string uriString!!, UriKind uriKind)
         {
-            if (uriString is null)
-                throw new ArgumentNullException(nameof(uriString));
-
             CreateThis(uriString, false, uriKind);
             DebugSetLeftCtor();
         }
@@ -422,11 +410,8 @@ namespace System
         /// </summary>
         /// <param name="uriString">A string that identifies the resource to be represented by the <see cref="Uri"/> instance.</param>
         /// <param name="creationOptions">Options that control how the <seealso cref="Uri"/> is created and behaves.</param>
-        public Uri(string uriString, in UriCreationOptions creationOptions)
+        public Uri(string uriString!!, in UriCreationOptions creationOptions)
         {
-            if (uriString is null)
-                throw new ArgumentNullException(nameof(uriString));
-
             CreateThis(uriString, false, UriKind.Absolute, in creationOptions);
             DebugSetLeftCtor();
         }
@@ -438,11 +423,8 @@ namespace System
         //  also be an absolute URI, in which case the resultant URI is constructed
         //  entirely from it
         //
-        public Uri(Uri baseUri, string? relativeUri)
+        public Uri(Uri baseUri!!, string? relativeUri)
         {
-            if (baseUri is null)
-                throw new ArgumentNullException(nameof(baseUri));
-
             if (!baseUri.IsAbsoluteUri)
                 throw new ArgumentOutOfRangeException(nameof(baseUri));
 
@@ -540,11 +522,8 @@ namespace System
         // Uri(Uri , Uri )
         // Note: a static Create() method should be used by users, not this .ctor
         //
-        public Uri(Uri baseUri, Uri relativeUri)
+        public Uri(Uri baseUri!!, Uri relativeUri)
         {
-            if (baseUri is null)
-                throw new ArgumentNullException(nameof(baseUri));
-
             if (!baseUri.IsAbsoluteUri)
                 throw new ArgumentOutOfRangeException(nameof(baseUri));
 
@@ -1774,11 +1753,8 @@ namespace System
             return string.Equals(selfUrl, otherUrl, IsUncOrDosPath ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
         }
 
-        public Uri MakeRelativeUri(Uri uri)
+        public Uri MakeRelativeUri(Uri uri!!)
         {
-            if (uri is null)
-                throw new ArgumentNullException(nameof(uri));
-
             if (IsNotAbsoluteUri || uri.IsNotAbsoluteUri)
                 throw new InvalidOperationException(SR.net_uri_NotAbsolute);
 
@@ -3079,7 +3055,7 @@ namespace System
         }
 
         // Cut trailing spaces
-        private void GetLengthWithoutTrailingSpaces(string str, ref int length, int idx)
+        private static void GetLengthWithoutTrailingSpaces(string str, ref int length, int idx)
         {
             // to avoid dereferencing ref length parameter for every update
             int local = length;
@@ -4231,7 +4207,7 @@ namespace System
             return end;
         }
 
-        private unsafe void CheckAuthorityHelperHandleDnsIri(char* pString, int start, int end,
+        private static unsafe void CheckAuthorityHelperHandleDnsIri(char* pString, int start, int end,
             bool hasUnicode, ref Flags flags,
             ref bool justNormalized, ref string? newHost, ref ParsingError err)
         {
@@ -5128,11 +5104,8 @@ namespace System
         //  ArgumentNullException, InvalidOperationException
         //
         [Obsolete("Uri.MakeRelative has been deprecated. Use MakeRelativeUri(Uri uri) instead.")]
-        public string MakeRelative(Uri toUri)
+        public string MakeRelative(Uri toUri!!)
         {
-            if (toUri == null)
-                throw new ArgumentNullException(nameof(toUri));
-
             if (IsNotAbsoluteUri || toUri.IsNotAbsoluteUri)
                 throw new InvalidOperationException(SR.net_uri_NotAbsolute);
 
@@ -5180,7 +5153,7 @@ namespace System
         //  UTF-8 sequences (e.g. %C4%D2 == 'Latin capital Ligature Ij')
         //
         /// <internalonly/>
-        [Obsolete("Uri.Unescape has been deprecated. Use GetComponents() or static UnescapeDataString() to unescape a Uri component or a string.")]
+        [Obsolete("Uri.Unescape has been deprecated. Use GetComponents() or Uri.UnescapeDataString() to unescape a Uri component or a string.")]
         protected virtual string Unescape(string path)
         {
             // This method is dangerous since it gives path unescaping control

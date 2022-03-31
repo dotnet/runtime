@@ -26,9 +26,9 @@ namespace System
             }
         }
 
-        private IDictionary CreateDataContainer() => new ListDictionaryInternal();
+        private static IDictionary CreateDataContainer() => new ListDictionaryInternal();
 
-        private string? SerializationWatsonBuckets => null;
+        private static string? SerializationWatsonBuckets => null;
 
         private string? CreateSourceName() => HasBeenThrown ? "<unknown>" : null;
 
@@ -180,7 +180,7 @@ namespace System
 
         internal void RestoreDispatchState(DispatchState DispatchState)
         {
-            IntPtr[] stackTrace = DispatchState.StackTrace;
+            IntPtr[]? stackTrace = DispatchState.StackTrace;
             int idxFirstFreeStackTraceEntry = 0;
             if (stackTrace != null)
             {

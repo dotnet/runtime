@@ -15,29 +15,14 @@ namespace Microsoft.Extensions.Http
         private readonly Cache _cache;
         private readonly IServiceProvider _services;
 
-        public DefaultTypedHttpClientFactory(Cache cache, IServiceProvider services)
+        public DefaultTypedHttpClientFactory(Cache cache!!, IServiceProvider services)
         {
-            if (cache == null)
-            {
-                throw new ArgumentNullException(nameof(cache));
-            }
-
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
             _cache = cache;
             _services = services;
         }
 
-        public TClient CreateClient(HttpClient httpClient)
+        public TClient CreateClient(HttpClient httpClient!!)
         {
-            if (httpClient == null)
-            {
-                throw new ArgumentNullException(nameof(httpClient));
-            }
-
             return (TClient)_cache.Activator(_services, new object[] { httpClient });
         }
 
@@ -48,15 +33,15 @@ namespace Microsoft.Extensions.Http
         {
             private static readonly Func<ObjectFactory> _createActivator = () => ActivatorUtilities.CreateFactory(typeof(TClient), new Type[] { typeof(HttpClient), });
 
-            private ObjectFactory _activator;
+            private ObjectFactory? _activator;
             private bool _initialized;
-            private object _lock;
+            private object? _lock;
 
             public ObjectFactory Activator => LazyInitializer.EnsureInitialized(
                 ref _activator,
                 ref _initialized,
                 ref _lock,
-                _createActivator);
+                _createActivator)!;
         }
     }
 }

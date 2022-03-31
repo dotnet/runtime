@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Http;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography;
@@ -22,8 +21,10 @@ namespace System.Net
         private const int InitialBufferSize = 2048;
         private static readonly SslProtocols[] s_orderedSslProtocols = new SslProtocols[]
         {
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             SslProtocols.Tls,
             SslProtocols.Tls11,
+#pragma warning restore SYSLIB0039
             SslProtocols.Tls12,
             SslProtocols.Tls13,
         };
@@ -207,8 +208,10 @@ namespace System.Net
             switch (credential.Policy)
             {
                 case EncryptionPolicy.RequireEncryption:
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 case EncryptionPolicy.AllowNoEncryption:
                     break;
+#pragma warning restore SYSLIB0040
                 default:
                     throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, credential.Policy));
             }
@@ -224,7 +227,7 @@ namespace System.Net
             Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, readCallback, writeCallback, InitialBufferSize);
 
             if (credential.Protocols != SslProtocols.None)
-            {;
+            {
                 SslProtocols protocolsToEnable = credential.Protocols & s_supportedSslProtocols.Value;
                 if (protocolsToEnable == 0)
                 {

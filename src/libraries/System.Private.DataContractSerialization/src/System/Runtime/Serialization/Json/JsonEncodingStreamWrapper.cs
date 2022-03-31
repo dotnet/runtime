@@ -44,10 +44,7 @@ namespace System.Runtime.Serialization.Json
             }
             else
             {
-                if (encoding == null)
-                {
-                    throw new ArgumentNullException(nameof(encoding));
-                }
+                ArgumentNullException.ThrowIfNull(encoding);
 
                 InitForWriting(stream, encoding);
             }

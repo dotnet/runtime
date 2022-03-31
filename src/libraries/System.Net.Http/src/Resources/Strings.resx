@@ -136,7 +136,7 @@
     <value>Cannot add value because header '{0}' does not support multiple values.</value>
   </data>
   <data name="net_http_headers_invalid_header_name" xml:space="preserve">
-    <value>The header name format is invalid.</value>
+    <value>The header name '{0}' has an invalid format.</value>
   </data>
   <data name="net_http_headers_invalid_value" xml:space="preserve">
     <value>The format of value '{0}' is invalid.</value>

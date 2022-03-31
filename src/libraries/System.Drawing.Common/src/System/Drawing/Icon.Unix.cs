@@ -144,11 +144,8 @@ namespace System.Drawing
         {
         }
 
-        public Icon(Icon original, Size size)
+        public Icon(Icon original!!, Size size)
         {
-            if (original == null)
-                throw new ArgumentNullException(nameof(original));
-
             iconSize = size;
             iconDir = original.iconDir;
 
@@ -238,11 +235,8 @@ namespace System.Drawing
             }
         }
 
-        public Icon(Type type, string resource)
+        public Icon(Type type, string resource!!)
         {
-            if (resource == null)
-                throw new ArgumentNullException(nameof(resource));
-
             // For compatibility with the .NET Framework
             if (type == null)
                 throw new NullReferenceException();
@@ -309,10 +303,8 @@ namespace System.Drawing
             si.AddValue("IconData", ms.ToArray()); // Do not rename (binary serialization)
         }
 
-        public static Icon ExtractAssociatedIcon(string filePath)
+        public static Icon ExtractAssociatedIcon(string filePath!!)
         {
-            if (filePath == null)
-                throw new ArgumentNullException(nameof(filePath));
             if (string.IsNullOrEmpty(filePath))
                 throw new ArgumentException(SR.NullOrEmptyPath, nameof(filePath));
             if (!File.Exists(filePath))
@@ -352,7 +344,7 @@ namespace System.Drawing
             return new Icon(handle);
         }
 
-        private void SaveIconImage(BinaryWriter writer, IconImage ii)
+        private static void SaveIconImage(BinaryWriter writer, IconImage ii)
         {
             BitmapInfoHeader bih = ii.iconHeader;
             writer.Write(bih.biSize);
@@ -379,12 +371,12 @@ namespace System.Drawing
             writer.Write(ii.iconAND!);
         }
 
-        private void SaveIconDump(BinaryWriter writer, IconDump id)
+        private static void SaveIconDump(BinaryWriter writer, IconDump id)
         {
             writer.Write(id.data!);
         }
 
-        private void SaveIconDirEntry(BinaryWriter writer, IconDirEntry ide, uint offset)
+        private static void SaveIconDirEntry(BinaryWriter writer, IconDirEntry ide, uint offset)
         {
             writer.Write(ide.width);
             writer.Write(ide.height);
@@ -712,11 +704,8 @@ namespace System.Drawing
             Dispose();
         }
 
-        private void InitFromStreamWithSize(Stream stream, int width, int height)
+        private void InitFromStreamWithSize(Stream stream!!, int width, int height)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
             if (stream.Length == 0)
                 throw new ArgumentException(SR.Format(SR.InvalidPictureType, "picture", nameof(stream)));
 

@@ -28,14 +28,8 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If PackageRelationshipSelectorType.Type and selection criteria is not valid relationship type</exception>
         /// <exception cref="ArgumentException">If sourceUri is not "/" to indicate the PackageRoot, then it must conform to the
         /// valid PartUri syntax</exception>
-        public PackageRelationshipSelector(Uri sourceUri, PackageRelationshipSelectorType selectorType, string selectionCriteria)
+        public PackageRelationshipSelector(Uri sourceUri!!, PackageRelationshipSelectorType selectorType, string selectionCriteria!!)
         {
-            if (sourceUri == null)
-                throw new ArgumentNullException(nameof(sourceUri));
-
-            if (selectionCriteria == null)
-                throw new ArgumentNullException(nameof(selectionCriteria));
-
             //If the sourceUri is not equal to "/", it must be a valid part name.
             if (Uri.Compare(sourceUri, PackUriHelper.PackageRootUri, UriComponents.SerializationInfoString, UriFormat.UriEscaped, StringComparison.Ordinal) != 0)
                 sourceUri = PackUriHelper.ValidatePartUri(sourceUri);
@@ -109,13 +103,8 @@ namespace System.IO.Packaging
         /// <param name="package">Package object from which we get the relationships</param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException">If package parameter is null</exception>
-        public List<PackageRelationship> Select(Package package)
+        public List<PackageRelationship> Select(Package package!!)
         {
-            if (package == null)
-            {
-                throw new ArgumentNullException(nameof(package));
-            }
-
             List<PackageRelationship> relationships = new List<PackageRelationship>(0);
 
             switch (SelectorType)

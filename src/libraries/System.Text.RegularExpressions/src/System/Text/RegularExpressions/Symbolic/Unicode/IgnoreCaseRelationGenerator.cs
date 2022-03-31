@@ -42,7 +42,7 @@ namespace {namespacename}
         {
             sw.WriteLine("        /// <summary>Serialized BDD for mapping characters to their case-ignoring equivalence classes in the default (en-US) culture.</summary>");
 
-            var solver = new CharSetSolver();
+            CharSetSolver solver = CharSetSolver.Instance;
             List<EquivalenceClass> ignoreCaseEquivalenceClasses = ComputeIgnoreCaseEquivalenceClasses(solver, new CultureInfo(DefaultCultureName));
             BDD ignorecase = solver.False;
             foreach (EquivalenceClass ec in ignoreCaseEquivalenceClasses)
@@ -85,7 +85,7 @@ namespace {namespacename}
             return sets;
         }
 
-        private class EquivalenceClass
+        private sealed class EquivalenceClass
         {
             public BDD _set;
             public EquivalenceClass(BDD set)

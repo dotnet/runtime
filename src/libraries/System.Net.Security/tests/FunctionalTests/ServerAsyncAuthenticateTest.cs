@@ -46,8 +46,8 @@ namespace System.Net.Security.Tests
         [Theory]
         [MemberData(nameof(ProtocolMismatchData))]
         public async Task ServerAsyncAuthenticate_MismatchProtocols_Fails(
-            SslProtocols serverProtocol,
             SslProtocols clientProtocol,
+            SslProtocols serverProtocol,
             Type expectedException)
         {
             Exception e = await Record.ExceptionAsync(
@@ -103,7 +103,9 @@ namespace System.Net.Security.Tests
         public async Task ServerAsyncAuthenticate_SniSetVersion_Success(SslProtocols version)
         {
             var serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = _serverCertificate, EnabledSslProtocols = version };
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             var clientOptions = new SslClientAuthenticationOptions() { TargetHost = _serverCertificate.GetNameInfo(X509NameType.SimpleName, forIssuer: false), EnabledSslProtocols = SslProtocols.Tls11 | SslProtocols.Tls12 };
+#pragma warning restore SYSLIB0039
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
 
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
@@ -236,7 +238,7 @@ namespace System.Net.Security.Tests
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             var client = new SslStream(clientStream);
-            var server = new SslStream(serverStream, false, (sender, certificate, chain, sslPolicyErrors) => { validationCallbackCalled = true; return true;});
+            var server = new SslStream(serverStream, false, (sender, certificate, chain, sslPolicyErrors) => { validationCallbackCalled = true; return true; });
 
             using (client)
             using (server)
@@ -323,37 +325,20 @@ namespace System.Net.Security.Tests
 
         public static IEnumerable<object[]> ProtocolMismatchData()
         {
-            if (PlatformDetection.SupportsSsl3)
+            var supportedProtocols = new SslProtocolSupport.SupportedSslProtocolsTestData();
+
+            foreach (var serverProtocols in supportedProtocols)
             {
-#pragma warning disable 0618
-                yield return new object[] { SslProtocols.Ssl3, SslProtocols.Tls12, typeof(Exception) };
-                if (PlatformDetection.SupportsSsl2)
+                foreach (var clientProtocols in supportedProtocols)
                 {
-                    yield return new object[] { SslProtocols.Ssl2, SslProtocols.Ssl3, typeof(Exception) };
-                    yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls12, typeof(Exception) };
+                    SslProtocols serverProtocol = (SslProtocols)serverProtocols[0];
+                    SslProtocols clientProtocol = (SslProtocols)clientProtocols[0];
+
+                    if (clientProtocol != serverProtocol)
+                    {
+                        yield return new object[] { clientProtocol, serverProtocol, typeof(AuthenticationException) };
+                    }
                 }
-#pragma warning restore 0618
-            }
-
-            // It is OK if server does not support given protocol. It should still fail.
-            // But if client does not support it, it will simply fail without sending out any data.
-
-            if (PlatformDetection.SupportsTls10)
-            {
-                yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, typeof(AuthenticationException) };
-                yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, typeof(AuthenticationException) };
-            }
-
-            if (PlatformDetection.SupportsTls11)
-            {
-                yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, typeof(AuthenticationException) };
-                yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, typeof(AuthenticationException) };
-            }
-
-            if (PlatformDetection.SupportsTls12)
-            {
-                yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, typeof(AuthenticationException) };
-                yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, typeof(AuthenticationException) };
             }
         }
 
@@ -361,7 +346,9 @@ namespace System.Net.Security.Tests
         {
             if (PlatformDetection.SupportsTls11)
             {
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                 yield return new object[] { SslProtocols.Tls11 };
+#pragma warning restore SYSLIB0039
             }
 
             if (PlatformDetection.SupportsTls12)
@@ -389,7 +376,8 @@ namespace System.Net.Security.Tests
             using (SslStream sslClientStream = new SslStream(
                 clientStream,
                 false,
-                delegate {
+                delegate
+                {
                     // Allow any certificate from the server.
                     // Note that simply ignoring exceptions from AuthenticateAsClientAsync() is not enough
                     // because in Mono, certificate validation is performed during the handshake and a failure
@@ -402,7 +390,7 @@ namespace System.Net.Security.Tests
                 string serverName = TestHelper.GetTestSNIName(nameof(ServerAsyncSslHelper), clientSslProtocols, serverSslProtocols);
 
                 _log.WriteLine("Connected on {0} {1} ({2} {3})", clientStream.Socket.LocalEndPoint, clientStream.Socket.RemoteEndPoint, clientStream.Socket.Handle, serverStream.Socket.Handle);
-                _log.WriteLine("client SslStream#{0} server SslStream#{1}", sslClientStream.GetHashCode(),  sslServerStream.GetHashCode());
+                _log.WriteLine("client SslStream#{0} server SslStream#{1}", sslClientStream.GetHashCode(), sslServerStream.GetHashCode());
 
                 _logVerbose.WriteLine("ServerAsyncAuthenticateTest.AuthenticateAsClientAsync start.");
                 Task clientAuthentication = sslClientStream.AuthenticateAsClientAsync(
@@ -423,7 +411,7 @@ namespace System.Net.Security.Tests
                     await clientAuthentication.WaitAsync(TestConfiguration.PassingTestTimeout);
                     _logVerbose.WriteLine("ServerAsyncAuthenticateTest.clientAuthentication complete.");
                 }
-                catch (Exception ex)
+                catch (AuthenticationException ex)
                 {
                     // Ignore client-side errors: we're only interested in server-side behavior.
                     _log.WriteLine("Client exception : " + ex);

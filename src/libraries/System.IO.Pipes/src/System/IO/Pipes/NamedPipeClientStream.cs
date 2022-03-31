@@ -87,13 +87,9 @@ namespace System.IO.Pipes
         }
 
         // Create a NamedPipeClientStream from an existing server pipe handle.
-        public NamedPipeClientStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle)
+        public NamedPipeClientStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle!!)
             : base(direction, 0)
         {
-            if (safePipeHandle == null)
-            {
-                throw new ArgumentNullException(nameof(safePipeHandle));
-            }
             if (safePipeHandle.IsInvalid)
             {
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(safePipeHandle));
@@ -128,6 +124,8 @@ namespace System.IO.Pipes
 
             ConnectInternal(timeout, CancellationToken.None, Environment.TickCount);
         }
+
+        public void Connect(TimeSpan timeout) => Connect(ToTimeoutMilliseconds(timeout));
 
         private void ConnectInternal(int timeout, CancellationToken cancellationToken, int startTime)
         {
@@ -195,6 +193,19 @@ namespace System.IO.Pipes
 
             int startTime = Environment.TickCount; // We need to measure time here, not in the lambda
             return Task.Run(() => ConnectInternal(timeout, cancellationToken, startTime), cancellationToken);
+        }
+
+        public Task ConnectAsync(TimeSpan timeout, CancellationToken cancellationToken = default) =>
+            ConnectAsync(ToTimeoutMilliseconds(timeout), cancellationToken);
+
+        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            }
+            return (int)totalMilliseconds;
         }
 
         // override because named pipe clients can't get/set properties when waiting to connect

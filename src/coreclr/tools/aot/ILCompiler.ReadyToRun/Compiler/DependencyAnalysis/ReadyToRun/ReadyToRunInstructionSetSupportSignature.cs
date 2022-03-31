@@ -67,9 +67,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _instructionSetsSupport = instructionSetsSupport;
         }
 
-        private ReadyToRunInstructionSet? InstructionSetFromString(string instructionSetString)
+        private ReadyToRunInstructionSet InstructionSetFromString(string instructionSetString)
         {
-            return (ReadyToRunInstructionSet)Enum.Parse(typeof(ReadyToRunInstructionSet), instructionSetString);
+            return Enum.Parse<ReadyToRunInstructionSet>(instructionSetString);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)

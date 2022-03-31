@@ -18,9 +18,9 @@ namespace Microsoft.Extensions.Configuration.CommandLine
         /// </summary>
         /// <param name="args">The command line args.</param>
         /// <param name="switchMappings">The switch mappings.</param>
-        public CommandLineConfigurationProvider(IEnumerable<string> args, IDictionary<string, string>? switchMappings = null)
+        public CommandLineConfigurationProvider(IEnumerable<string> args!!, IDictionary<string, string>? switchMappings = null)
         {
-            Args = args ?? throw new ArgumentNullException(nameof(args));
+            Args = args;
 
             if (switchMappings != null)
             {
@@ -131,7 +131,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
             Data = data;
         }
 
-        private Dictionary<string, string> GetValidatedSwitchMappingsCopy(IDictionary<string, string> switchMappings)
+        private static Dictionary<string, string> GetValidatedSwitchMappingsCopy(IDictionary<string, string> switchMappings)
         {
             // The dictionary passed in might be constructed with a case-sensitive comparer
             // However, the keys in configuration providers are all case-insensitive

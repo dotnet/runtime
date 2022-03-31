@@ -50,17 +50,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         [RequiresUnreferencedCode(ObjectWriterUnreferencedCodeMessage)]
-        internal void Serialize(object graph, BinaryFormatterWriter serWriter)
+        internal void Serialize(object graph!!, BinaryFormatterWriter serWriter!!)
         {
-            if (graph == null)
-            {
-                throw new ArgumentNullException(nameof(graph));
-            }
-            if (serWriter == null)
-            {
-                throw new ArgumentNullException(nameof(serWriter));
-            }
-
             _serWriter = serWriter;
 
             serWriter.WriteBegin();

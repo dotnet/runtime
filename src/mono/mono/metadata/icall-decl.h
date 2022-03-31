@@ -7,22 +7,20 @@
 #define __MONO_METADATA_ICALL_DECL_H__
 
 #include "appdomain-icalls.h"
-#include "class.h"
-#include "environment.h"
+#include <mono/metadata/class.h>
+#include <mono/metadata/environment.h>
 #include "gc-internals.h"
 #include "handle-decl.h"
 #include "handle.h"
 #include "marshal.h"
 #include "monitor.h"
-#include "mono-perfcounters.h"
-#include "object-forward.h"
+#include <mono/metadata/object-forward.h>
 #include "object-internals.h"
-#include "reflection.h"
+#include <mono/metadata/reflection.h>
 #include "string-icalls.h"
 #include "mono/utils/mono-digest.h"
 #include "mono/utils/mono-forward-internal.h"
 #include "w32event.h"
-#include "w32file.h"
 #include "mono/utils/mono-proclib.h"
 
 /* From MonoProperty.cs */

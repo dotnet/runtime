@@ -59,6 +59,7 @@ namespace TestLibrary
         }
 
         public static bool IsX86 => (RuntimeInformation.ProcessArchitecture == Architecture.X86);
+        public static bool IsNotX86 => !IsX86;
         public static bool IsX64 => (RuntimeInformation.ProcessArchitecture == Architecture.X64);
         public static bool IsArm => (RuntimeInformation.ProcessArchitecture == Architecture.Arm);
         public static bool IsArm64 => (RuntimeInformation.ProcessArchitecture == Architecture.Arm64);
@@ -101,6 +102,7 @@ namespace TestLibrary
         public static bool IsReflectionEmitSupported => true;
 #endif
         public static bool SupportsExceptionInterop => IsWindows && IsNotMonoRuntime && !IsNativeAot; // matches definitions in clr.featuredefines.props
+        public static bool IsGCStress => (Environment.GetEnvironmentVariable("COMPlus_GCStress") != null) || (Environment.GetEnvironmentVariable("DOTNET_GCStress") != null);
 
         public static string ByteArrayToString(byte[] bytes)
         {

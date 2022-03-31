@@ -42,13 +42,8 @@ namespace System.Runtime.Serialization
             ArrayElementType = null;
         }
 
-        public CodeTypeReference(Type type)
+        public CodeTypeReference(Type type!!)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
             if (type.IsArray)
             {
                 ArrayRank = type.GetArrayRank();
@@ -367,7 +362,7 @@ namespace System.Runtime.Serialization
         // " [System.Collections.Generic.List[[System.string, mscorlib, Version=2.0.0.0, Culture=neutral,
         //   PublicKeyToken=b77a5c561934e089]], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]"
         //
-        private string RipOffAssemblyInformationFromTypeName(string typeName)
+        private static string RipOffAssemblyInformationFromTypeName(string typeName)
         {
             int start = 0;
             int end = typeName.Length - 1;

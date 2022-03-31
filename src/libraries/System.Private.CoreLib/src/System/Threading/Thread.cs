@@ -107,24 +107,15 @@ namespace System.Threading
             }
         }
 
-        public Thread(ThreadStart start)
+        public Thread(ThreadStart start!!)
         {
-            if (start == null)
-            {
-                throw new ArgumentNullException(nameof(start));
-            }
-
             _startHelper = new StartHelper(start);
 
             Initialize();
         }
 
-        public Thread(ThreadStart start, int maxStackSize)
+        public Thread(ThreadStart start!!, int maxStackSize)
         {
-            if (start == null)
-            {
-                throw new ArgumentNullException(nameof(start));
-            }
             if (maxStackSize < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -135,24 +126,15 @@ namespace System.Threading
             Initialize();
         }
 
-        public Thread(ParameterizedThreadStart start)
+        public Thread(ParameterizedThreadStart start!!)
         {
-            if (start == null)
-            {
-                throw new ArgumentNullException(nameof(start));
-            }
-
             _startHelper = new StartHelper(start);
 
             Initialize();
         }
 
-        public Thread(ParameterizedThreadStart start, int maxStackSize)
+        public Thread(ParameterizedThreadStart start!!, int maxStackSize)
         {
-            if (start == null)
-            {
-                throw new ArgumentNullException(nameof(start));
-            }
             if (maxStackSize < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -248,13 +230,8 @@ namespace System.Threading
             }
         }
 
-        private void SetCultureOnUnstartedThread(CultureInfo value, bool uiCulture)
+        private void SetCultureOnUnstartedThread(CultureInfo value!!, bool uiCulture)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             StartHelper? startHelper = _startHelper;
 
             // This check is best effort to catch common user errors only. It won't catch all posssible race
@@ -443,7 +420,7 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
         }
 
-        [Obsolete(Obsoletions.ThreadAbortMessage, DiagnosticId = Obsoletions.ThreadAbortDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [Obsolete(Obsoletions.ThreadResetAbortMessage, DiagnosticId = Obsoletions.ThreadAbortDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void ResetAbort()
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
@@ -493,6 +470,7 @@ namespace System.Threading
             return SetApartmentState(state, throwOnError:false);
         }
 
+#pragma warning disable CA1822 // SetApartmentStateUnchecked should pass `this`
         private bool SetApartmentState(ApartmentState state, bool throwOnError)
         {
             switch (state)
@@ -508,6 +486,7 @@ namespace System.Threading
 
             return SetApartmentStateUnchecked(state, throwOnError);
         }
+#pragma warning disable CA1822
 
         [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public CompressedStack GetCompressedStack()
@@ -625,13 +604,8 @@ namespace System.Threading
                 }
             }
 
-            private static ThreadLocal<object?> GetThreadLocal(LocalDataStoreSlot slot)
+            private static ThreadLocal<object?> GetThreadLocal(LocalDataStoreSlot slot!!)
             {
-                if (slot == null)
-                {
-                    throw new ArgumentNullException(nameof(slot));
-                }
-
                 Debug.Assert(slot.Data != null);
                 return slot.Data;
             }

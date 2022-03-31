@@ -2496,8 +2496,8 @@ void ETW::TypeSystemLog::SendObjectAllocatedEvent(Object* pObject)
         // over 10K in size.
         if (size < 10000 && typeLoggingInfo.dwAllocsSkippedForSample < typeLoggingInfo.dwAllocsToSkipPerSample)
         {
-            // Update hash table's copy of type logging info with these values.  Sucks that
-            // we're doing another hash table lookup here.  Could instead have used LookupPtr()
+            // Update hash table's copy of type logging info with these values. Unfortunate that
+            // we're doing another hash table lookup here. Could instead have used LookupPtr()
             // if it gave us back a non-const pointer, and then we could have updated in-place
             AddOrReplaceTypeLoggingInfo(pLoggedTypesFromModule, &typeLoggingInfo);
             if (fCreatedNew)

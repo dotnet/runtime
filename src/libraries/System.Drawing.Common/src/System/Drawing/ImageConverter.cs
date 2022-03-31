@@ -24,7 +24,7 @@ namespace System.Drawing
             return sourceType == typeof(byte[]) || sourceType == typeof(Icon);
         }
 
-        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             return destinationType == typeof(byte[]) || destinationType == typeof(string);
         }
@@ -111,7 +111,7 @@ namespace System.Drawing
 
         public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
 
-        private unsafe Stream? GetBitmapStream(ReadOnlySpan<byte> rawData)
+        private static unsafe Stream? GetBitmapStream(ReadOnlySpan<byte> rawData)
         {
             try
             {

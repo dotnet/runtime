@@ -114,9 +114,10 @@ namespace System
         }
 
         [DoesNotReturn]
-        private static void ThrowNullOrEmptyException(string? argument, string? paramName) =>
-            throw (argument is null ?
-                new ArgumentNullException(paramName) :
-                new ArgumentException(SR.Argument_EmptyString, paramName));
+        private static void ThrowNullOrEmptyException(string? argument, string? paramName)
+        {
+            ArgumentNullException.ThrowIfNull(argument, paramName);
+            throw new ArgumentException(SR.Argument_EmptyString, paramName);
+        }
     }
 }

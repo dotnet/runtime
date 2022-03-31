@@ -10,12 +10,8 @@ namespace Microsoft.Extensions.Logging.Console
     internal sealed class AnsiParser
     {
         private readonly Action<string, int, int, ConsoleColor?, ConsoleColor?> _onParseWrite;
-        public AnsiParser(Action<string, int, int, ConsoleColor?, ConsoleColor?> onParseWrite)
+        public AnsiParser(Action<string, int, int, ConsoleColor?, ConsoleColor?> onParseWrite!!)
         {
-            if (onParseWrite == null)
-            {
-                throw new ArgumentNullException(nameof(onParseWrite));
-            }
             _onParseWrite = onParseWrite;
         }
 

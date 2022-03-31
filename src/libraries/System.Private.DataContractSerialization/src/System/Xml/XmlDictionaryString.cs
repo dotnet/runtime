@@ -21,12 +21,8 @@ namespace System.Xml
         private byte[]? _buffer;
         private static readonly EmptyStringDictionary s_emptyStringDictionary = new EmptyStringDictionary();
 
-        public XmlDictionaryString(IXmlDictionary dictionary, string value, int key)
+        public XmlDictionaryString(IXmlDictionary dictionary!!, string value!!, int key)
         {
-            if (dictionary == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(dictionary)));
-            if (value == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(value)));
             if (key < MinKey || key > MaxKey)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(key), SR.Format(SR.ValueMustBeInRange, MinKey, MaxKey)));
             _dictionary = dictionary;
@@ -103,10 +99,8 @@ namespace System.Xml
                 }
             }
 
-            public bool TryLookup(string value, [NotNullWhen(true)] out XmlDictionaryString? result)
+            public bool TryLookup(string value!!, [NotNullWhen(true)] out XmlDictionaryString? result)
             {
-                if (value == null)
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
                 if (value.Length == 0)
                 {
                     result = _empty;
@@ -127,10 +121,8 @@ namespace System.Xml
                 return false;
             }
 
-            public bool TryLookup(XmlDictionaryString value, [NotNullWhen(true)] out XmlDictionaryString? result)
+            public bool TryLookup(XmlDictionaryString value!!, [NotNullWhen(true)] out XmlDictionaryString? result)
             {
-                if (value == null)
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(value)));
                 if (value.Dictionary != this)
                 {
                     result = null;

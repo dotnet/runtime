@@ -71,13 +71,8 @@ namespace System.Xml
             set { }
         }
 
-        public virtual bool SupportsType(Uri absoluteUri, Type? type)
+        public virtual bool SupportsType(Uri absoluteUri!!, Type? type)
         {
-            if (absoluteUri == null)
-            {
-                throw new ArgumentNullException(nameof(absoluteUri));
-            }
-
             if (type == null || type == typeof(Stream))
             {
                 return true;

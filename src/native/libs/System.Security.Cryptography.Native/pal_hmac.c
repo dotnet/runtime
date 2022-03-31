@@ -13,10 +13,16 @@ HMAC_CTX* CryptoNative_HmacCreate(const uint8_t* key, int32_t keyLen, const EVP_
     assert(keyLen >= 0);
     assert(md != NULL);
 
+    ERR_clear_error();
+
     HMAC_CTX* ctx = HMAC_CTX_new();
+
     if (ctx == NULL)
     {
         // Allocation failed
+        // This is one of the few places that don't report the error to the queue, so
+        // we'll do it here.
+        ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
         return NULL;
     }
 
@@ -49,6 +55,8 @@ int32_t CryptoNative_HmacReset(HMAC_CTX* ctx)
 {
     assert(ctx != NULL);
 
+    ERR_clear_error();
+
     return HMAC_Init_ex(ctx, NULL, 0, NULL, NULL);
 }
 
@@ -57,6 +65,8 @@ int32_t CryptoNative_HmacUpdate(HMAC_CTX* ctx, const uint8_t* data, int32_t len)
     assert(ctx != NULL);
     assert(data != NULL || len == 0);
     assert(len >= 0);
+
+    ERR_clear_error();
 
     if (len < 0)
     {
@@ -73,6 +83,8 @@ int32_t CryptoNative_HmacFinal(HMAC_CTX* ctx, uint8_t* md, int32_t* len)
     assert(md != NULL || *len == 0);
     assert(*len >= 0);
 
+    ERR_clear_error();
+
     if (len == NULL || *len < 0)
     {
         return 0;
@@ -88,10 +100,15 @@ static HMAC_CTX* HmacDup(const HMAC_CTX* ctx)
 {
     assert(ctx != NULL);
 
+    ERR_clear_error();
+
     HMAC_CTX* dup = HMAC_CTX_new();
 
     if (dup == NULL)
     {
+        // This is one of the few places that don't report the error to the queue, so
+        // we'll do it here.
+        ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
         return NULL;
     }
 
@@ -113,6 +130,8 @@ int32_t CryptoNative_HmacCurrent(const HMAC_CTX* ctx, uint8_t* md, int32_t* len)
     assert(len != NULL);
     assert(md != NULL || *len == 0);
     assert(*len >= 0);
+
+    ERR_clear_error();
 
     if (len == NULL || *len < 0)
     {
@@ -143,6 +162,8 @@ int32_t CryptoNative_HmacOneShot(const EVP_MD* type,
     assert(keySize >= 0 && *mdSize >= 0);
     assert(key != NULL || keySize == 0);
     assert(source != NULL || sourceSize == 0);
+
+    ERR_clear_error();
 
     uint8_t empty = 0;
 

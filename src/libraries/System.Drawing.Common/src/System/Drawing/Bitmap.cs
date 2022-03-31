@@ -57,17 +57,8 @@ namespace System.Drawing
         {
         }
 
-        private static Stream GetResourceStream(Type type, string resource)
+        private static Stream GetResourceStream(Type type!!, string resource!!)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-            if (resource == null)
-            {
-                throw new ArgumentNullException(nameof(resource));
-            }
-
             Stream? stream = type.Module.Assembly.GetManifestResourceStream(type, resource);
             if (stream == null)
             {
@@ -81,13 +72,8 @@ namespace System.Drawing
         {
         }
 
-        public Bitmap(int width, int height, Graphics g)
+        public Bitmap(int width, int height, Graphics g!!)
         {
-            if (g == null)
-            {
-                throw new ArgumentNullException(nameof(g));
-            }
-
             IntPtr bitmap;
             int status = Gdip.GdipCreateBitmapFromGraphics(width, height, new HandleRef(g, g.NativeGraphics), out bitmap);
             Gdip.CheckStatus(status);
@@ -121,11 +107,8 @@ namespace System.Drawing
         {
         }
 
-        public Bitmap(Image original, int width, int height) : this(width, height, PixelFormat.Format32bppArgb)
+        public Bitmap(Image original!!, int width, int height) : this(width, height, PixelFormat.Format32bppArgb)
         {
-            if (original == null)
-                throw new ArgumentNullException(nameof(original));
-
             using (Graphics g = Graphics.FromImage(this))
             {
                 g.Clear(Color.Transparent);

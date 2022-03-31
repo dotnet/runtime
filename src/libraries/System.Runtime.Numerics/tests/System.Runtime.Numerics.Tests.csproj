@@ -1,13 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <!-- disabled due to https://github.com/dotnet/runtime/issues/65671 -->
+    <XUnitUseRandomizedTestOrderer>false</XUnitUseRandomizedTestOrderer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BigInteger\absolutevalue.cs" />
     <Compile Include="BigInteger\BigIntegerToStringTests.cs" />
     <Compile Include="BigInteger\BigInteger.AddTests.cs" />
     <Compile Include="BigInteger\BigInteger.SubtractTests.cs" />
+    <Compile Include="BigInteger\BigNumberTools.cs" />
     <Compile Include="BigInteger\BigIntTools.cs" />
     <Compile Include="BigInteger\cast_from.cs" />
     <Compile Include="BigInteger\cast_to.cs" />

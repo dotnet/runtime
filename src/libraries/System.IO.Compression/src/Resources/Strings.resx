@@ -212,8 +212,8 @@
   <data name="EntriesInCreateMode" xml:space="preserve">
     <value>Cannot access entries in Create mode.</value>
   </data>
-  <data name="EntryNameEncodingNotSupported" xml:space="preserve">
-    <value>The specified entry name encoding is not supported.</value>
+  <data name="EntryNameAndCommentEncodingNotSupported" xml:space="preserve">
+    <value>The specified encoding is not supported for entry names and comments.</value>
   </data>
   <data name="EntryNamesTooLong" xml:space="preserve">
     <value>Entry names cannot require more than 2^16 bits.</value>

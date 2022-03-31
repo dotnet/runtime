@@ -27,9 +27,9 @@ namespace Microsoft.Extensions.Primitives
         /// Creates a new instance of <see cref="CompositeChangeToken"/>.
         /// </summary>
         /// <param name="changeTokens">The list of <see cref="IChangeToken"/> to compose.</param>
-        public CompositeChangeToken(IReadOnlyList<IChangeToken> changeTokens)
+        public CompositeChangeToken(IReadOnlyList<IChangeToken> changeTokens!!)
         {
-            ChangeTokens = changeTokens ?? throw new ArgumentNullException(nameof(changeTokens));
+            ChangeTokens = changeTokens;
             for (int i = 0; i < ChangeTokens.Count; i++)
             {
                 if (ChangeTokens[i].ActiveChangeCallbacks)
@@ -101,6 +101,11 @@ namespace Microsoft.Extensions.Primitives
                     if (ChangeTokens[i].ActiveChangeCallbacks)
                     {
                         IDisposable disposable = ChangeTokens[i].RegisterChangeCallback(_onChangeDelegate, this);
+                        if (_cancellationTokenSource.IsCancellationRequested)
+                        {
+                            disposable.Dispose();
+                            break;
+                        }
                         _disposables.Add(disposable);
                     }
                 }

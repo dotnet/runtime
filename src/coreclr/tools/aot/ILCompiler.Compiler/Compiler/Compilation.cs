@@ -112,7 +112,7 @@ namespace ILCompiler
             return _devirtualizationManager.CanConstructType(type);
         }
 
-        public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, bool followVirtualDispatch)
+        public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, TypeDesc constrainedType, bool followVirtualDispatch)
         {
             // If we're creating a delegate to a virtual method that cannot be overriden, devirtualize.
             // This is not just an optimization - it's required for correctness in the presence of sealed
@@ -123,7 +123,7 @@ namespace ILCompiler
             if (followVirtualDispatch)
                 target = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(target);
 
-            return DelegateCreationInfo.Create(delegateType, target, NodeFactory, followVirtualDispatch);
+            return DelegateCreationInfo.Create(delegateType, target, constrainedType, NodeFactory, followVirtualDispatch);
         }
 
         /// <summary>
@@ -251,6 +251,10 @@ namespace ILCompiler
 
                 case ReadyToRunHelperId.FieldHandle:
                     return ((FieldDesc)targetOfLookup).OwningType.IsRuntimeDeterminedSubtype;
+
+                case ReadyToRunHelperId.ConstrainedDirectCall:
+                    return ((ConstrainedCallInfo)targetOfLookup).Method.IsRuntimeDeterminedExactMethod
+                        || ((ConstrainedCallInfo)targetOfLookup).ConstrainedType.IsRuntimeDeterminedSubtype;
 
                 default:
                     throw new NotImplementedException();
@@ -642,5 +646,13 @@ namespace ILCompiler
                 }
             }
         }
+    }
+
+    public sealed class ConstrainedCallInfo
+    {
+        public readonly TypeDesc ConstrainedType;
+        public readonly MethodDesc Method;
+        public ConstrainedCallInfo(TypeDesc constrainedType, MethodDesc method)
+            => (ConstrainedType, Method) = (constrainedType, method);
     }
 }

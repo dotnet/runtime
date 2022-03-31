@@ -46,15 +46,9 @@ namespace System.IO.Pipelines
             }
         }
 
-        public StreamPipeWriter(Stream writingStream, StreamPipeWriterOptions options)
+        public StreamPipeWriter(Stream writingStream!!, StreamPipeWriterOptions options!!)
         {
-            InnerStream = writingStream ?? throw new ArgumentNullException(nameof(writingStream));
-
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
+            InnerStream = writingStream;
             _minimumBufferSize = options.MinimumBufferSize;
             _pool = options.Pool == MemoryPool<byte>.Shared ? null : options.Pool;
             _maxPooledBufferSize = _pool?.MaxBufferSize ?? -1;
@@ -218,13 +212,18 @@ namespace System.IO.Pipelines
 
             _isCompleted = true;
 
-            FlushInternal(writeToStream: exception == null);
-
-            _internalTokenSource?.Dispose();
-
-            if (!_leaveOpen)
+            try
             {
-                InnerStream.Dispose();
+                FlushInternal(writeToStream: exception == null);
+            }
+            finally
+            {
+                _internalTokenSource?.Dispose();
+
+                if (!_leaveOpen)
+                {
+                    InnerStream.Dispose();
+                }
             }
         }
 
@@ -237,17 +236,22 @@ namespace System.IO.Pipelines
 
             _isCompleted = true;
 
-            await FlushAsyncInternal(writeToStream: exception == null, data: Memory<byte>.Empty).ConfigureAwait(false);
-
-            _internalTokenSource?.Dispose();
-
-            if (!_leaveOpen)
+            try
             {
+                await FlushAsyncInternal(writeToStream: exception == null, data: Memory<byte>.Empty).ConfigureAwait(false);
+            }
+            finally
+            {
+                _internalTokenSource?.Dispose();
+
+                if (!_leaveOpen)
+                {
 #if (!NETSTANDARD2_0 && !NETFRAMEWORK)
-                await InnerStream.DisposeAsync().ConfigureAwait(false);
+                    await InnerStream.DisposeAsync().ConfigureAwait(false);
 #else
-                InnerStream.Dispose();
+                    InnerStream.Dispose();
 #endif
+                }
             }
         }
 

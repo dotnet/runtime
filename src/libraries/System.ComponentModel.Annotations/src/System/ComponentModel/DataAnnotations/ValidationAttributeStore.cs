@@ -135,12 +135,8 @@ namespace System.ComponentModel.DataAnnotations
         ///     Throws an ArgumentException of the validation context is null
         /// </summary>
         /// <param name="validationContext">The context to check</param>
-        private static void EnsureValidationContext(ValidationContext validationContext)
+        private static void EnsureValidationContext(ValidationContext validationContext!!)
         {
-            if (validationContext == null)
-            {
-                throw new ArgumentNullException(nameof(validationContext));
-            }
         }
 
         internal static bool IsPublic(PropertyInfo p) =>
@@ -239,7 +235,7 @@ namespace System.ComponentModel.DataAnnotations
             /// <param name="propertyDescriptor">The property descriptor whose attributes are needed.</param>
             /// <returns>A new <see cref="AttributeCollection"/> stripped of any attributes from the property's type.</returns>
             [RequiresUnreferencedCode("The Type of propertyDescriptor.PropertyType cannot be statically discovered.")]
-            private AttributeCollection GetExplicitAttributes(PropertyDescriptor propertyDescriptor)
+            private static AttributeCollection GetExplicitAttributes(PropertyDescriptor propertyDescriptor)
             {
                 AttributeCollection propertyDescriptorAttributes = propertyDescriptor.Attributes;
                 List<Attribute> attributes = new List<Attribute>(propertyDescriptorAttributes.Count);

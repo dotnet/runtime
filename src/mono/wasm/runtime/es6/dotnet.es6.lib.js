@@ -49,12 +49,13 @@ if (ENVIRONMENT_IS_NODE) {
     }
 }
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-    { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, requirePromise:__dotnet_replacements.requirePromise }, 
+    { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise }, 
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
     __dotnet_replacements);
 readAsync = __dotnet_replacements.readAsync;
 var fetch = __dotnet_replacements.fetch;
 require = __dotnet_replacements.requireOut;
+var noExitRuntime = __dotnet_replacements.noExitRuntime;
 `,
 };
 
@@ -91,8 +92,6 @@ const linked_functions = [
     "mono_wasm_typed_array_copy_to",
     "mono_wasm_typed_array_from",
     "mono_wasm_typed_array_copy_from",
-    "mono_wasm_add_event_listener",
-    "mono_wasm_remove_event_listener",
     "mono_wasm_cancel_promise",
     "mono_wasm_web_socket_open",
     "mono_wasm_web_socket_send",

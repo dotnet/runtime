@@ -389,10 +389,8 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public IList<object> GetPropertyValues(EventLogPropertySelector propertySelector)
+        public IList<object> GetPropertyValues(EventLogPropertySelector propertySelector!!)
         {
-            if (propertySelector == null)
-                throw new ArgumentNullException(nameof(propertySelector));
             return NativeWrapper.EvtRenderBufferWithContextUserOrValues(propertySelector.Handle, Handle);
         }
 

@@ -109,25 +109,15 @@ namespace System.Text.Json
         /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes(object?, Type, JsonSerializerContext)"/>
         /// and <see cref="SerializeAsync(IO.Stream, object?, Type, JsonSerializerContext, Threading.CancellationToken)"/>.
         /// </remarks>
-        public static string Serialize(object? value, Type inputType, JsonSerializerContext context)
+        public static string Serialize(object? value, Type inputType, JsonSerializerContext context!!)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
             Type type = GetRuntimeTypeAndValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, type);
             return WriteStringUsingGeneratedSerializer(value, jsonTypeInfo);
         }
 
-        private static string WriteStringUsingGeneratedSerializer<TValue>(in TValue value, JsonTypeInfo? jsonTypeInfo)
+        private static string WriteStringUsingGeneratedSerializer<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo!!)
         {
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
             JsonSerializerOptions options = jsonTypeInfo.Options;
 
             using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
@@ -141,13 +131,8 @@ namespace System.Text.Json
             }
         }
 
-        private static string WriteStringUsingSerializer<TValue>(in TValue value, JsonTypeInfo? jsonTypeInfo)
+        private static string WriteStringUsingSerializer<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo!!)
         {
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
             JsonSerializerOptions options = jsonTypeInfo.Options;
 
             using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))

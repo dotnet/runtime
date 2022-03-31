@@ -138,5 +138,12 @@ namespace System.IO.Tests.Enumeration
                 Assert.Throws<IOException>(() => Directory.GetFiles(testDirectory.FullName, "*", options).Count());
             }
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
+        public void PropertiesArePopulatedLazily()
+        {
+            Assert.True(Directory.EnumerateFileSystemEntries("/dev/fd").Count() >= 0);
+        }
     }
 }
