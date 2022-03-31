@@ -15,7 +15,7 @@
   <Import Project="crossgen2.props" />
 
   <PropertyGroup Condition="'$(NativeAotSupported)' != 'true'">
-    <PublishSingleFile>true</PublishSingleFile>
+    <PublishSingleFile Condition="'$(TargetOS)' != 'osx'">true</PublishSingleFile>
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Disable crossgen on NetBSD, illumos and Solaris for now. This can be revisited when we have full support. -->
     <PublishReadyToRun Condition="'$(TargetOS)'=='NetBSD' Or '$(TargetOS)'=='illumos' Or '$(TargetOS)'=='Solaris'">false</PublishReadyToRun>
