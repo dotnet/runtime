@@ -51,6 +51,25 @@ namespace System.Net.Http.Tests
             Assert.Equal(new[] { "text/bar", "invalid", "text/baz" }, accept);
         }
 
+        [Fact]
+        public void MixedAddAndTryAddWithoutValidation_ParsedAndRawValues_InsertionOrderIsPreserved()
+        {
+            HttpHeaders headers = new HttpRequestMessage().Headers;
+
+            headers.Add("Accept", "text/foo");
+            headers.TryAddWithoutValidation("Accept", "text/bar");
+            headers.TryAddWithoutValidation("Accept", "invalid");
+
+            var expectedValues = new string[] { "text/foo", "text/bar", "invalid" };
+
+            Assert.Equal(expectedValues, headers.NonValidated["Accept"]);
+
+            Assert.True(headers.TryGetValues("Accept", out IEnumerable<string>? values));
+            Assert.Equal(expectedValues, values);
+
+            Assert.Equal(expectedValues, headers.NonValidated["Accept"]);
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("")]
@@ -1431,7 +1450,7 @@ namespace System.Net.Http.Tests
             headers.TryAddWithoutValidation(headers.Descriptor, "value2,value3");
             headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue);
 
-            string expectedValue = "value2,value3---" + invalidHeaderValue + "---" + parsedPrefix + "1";
+            string expectedValue = $"{parsedPrefix}1---value2,value3---{invalidHeaderValue}";
 
             Assert.Equal(1, headers.NonValidated.Count);
 

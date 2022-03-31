@@ -10480,7 +10480,7 @@ void Compiler::gtDispFieldSeq(FieldSeqNode* pfsn)
     while (pfsn != nullptr)
     {
         assert(pfsn != FieldSeqStore::NotAField()); // Can't exist in a field sequence list except alone
-        CORINFO_FIELD_HANDLE fldHnd = pfsn->m_fieldHnd;
+        CORINFO_FIELD_HANDLE fldHnd = pfsn->GetFieldHandleValue();
         // First check the "pseudo" field handles...
         if (fldHnd == FieldSeqStore::FirstElemPseudoField)
         {
@@ -10494,7 +10494,7 @@ void Compiler::gtDispFieldSeq(FieldSeqNode* pfsn)
         {
             printf("%s", eeGetFieldName(fldHnd));
         }
-        pfsn = pfsn->m_next;
+        pfsn = pfsn->GetNext();
         if (pfsn != nullptr)
         {
             printf(", ");
@@ -16247,17 +16247,18 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
             fldSeq   = AsOp()->gtOp2->AsIntCon()->gtFieldSeq;
             baseAddr = AsOp()->gtOp1;
         }
-
-        if (baseAddr != nullptr)
+        else
         {
-            assert(!baseAddr->TypeIs(TYP_REF) || !comp->GetZeroOffsetFieldMap()->Lookup(baseAddr));
+            return false;
         }
+
+        assert(!baseAddr->TypeIs(TYP_REF) || !comp->GetZeroOffsetFieldMap()->Lookup(baseAddr));
     }
     else if (IsCnsIntOrI() && IsIconHandle(GTF_ICON_STATIC_HDL))
     {
         assert(!comp->GetZeroOffsetFieldMap()->Lookup(this) && (AsIntCon()->gtFieldSeq != nullptr));
         fldSeq   = AsIntCon()->gtFieldSeq;
-        baseAddr = nullptr;
+        baseAddr = this;
     }
     else if (comp->GetZeroOffsetFieldMap()->Lookup(this, &fldSeq))
     {
@@ -16268,7 +16269,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
         return false;
     }
 
-    assert(fldSeq != nullptr);
+    assert((fldSeq != nullptr) && (baseAddr != nullptr));
 
     if ((fldSeq == FieldSeqStore::NotAField()) || fldSeq->IsPseudoField())
     {
@@ -16280,16 +16281,15 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
     // or a static field. To avoid the expense of calling "getFieldClass" here, we will instead
     // rely on the invariant that TYP_REF base addresses can never appear for struct fields - we
     // will effectively treat such cases ("possible" in unsafe code) as undefined behavior.
-    if (comp->eeIsFieldStatic(fldSeq->GetFieldHandle()))
+    if (fldSeq->IsStaticField())
     {
-        // TODO-VNTypes: this code is out of sync w.r.t. boxed statics that are numbered with
-        // VNF_PtrToStatic and treated as "simple" while here we treat them as "complex".
+        // For shared statics, we must encode the logical instantiation argument.
+        if (fldSeq->IsSharedStaticField())
+        {
+            *pBaseAddr = baseAddr;
+        }
 
-        // TODO-VNTypes: we will always return the "baseAddr" here for now, but strictly speaking,
-        // we only need to do that if we have a shared field, to encode the logical "instantiation"
-        // argument. In all other cases, this serves no purpose and just leads to redundant maps.
-        *pBaseAddr = baseAddr;
-        *pFldSeq   = fldSeq;
+        *pFldSeq = fldSeq;
         return true;
     }
 
@@ -16657,17 +16657,12 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                         }
                         if (fieldSeq != nullptr)
                         {
-                            while (fieldSeq->m_next != nullptr)
-                            {
-                                fieldSeq = fieldSeq->m_next;
-                            }
+                            fieldSeq = fieldSeq->GetTail();
+
                             if (fieldSeq != FieldSeqStore::NotAField() && !fieldSeq->IsPseudoField())
                             {
-                                CORINFO_FIELD_HANDLE fieldHnd = fieldSeq->m_fieldHnd;
-                                CorInfoType fieldCorType      = info.compCompHnd->getFieldType(fieldHnd, &structHnd);
-                                // With unsafe code and type casts
-                                // this can return a primitive type and have nullptr for structHnd
-                                // see runtime/issues/38541
+                                // Note we may have a primitive here (and correctly fail to obtain the handle)
+                                eeGetFieldType(fieldSeq->GetFieldHandle(), &structHnd);
                             }
                         }
                     }
@@ -16939,6 +16934,8 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 }
                 else if (base->OperGet() == GT_ADD)
                 {
+                    // TODO-VNTypes: use "IsFieldAddr" here instead.
+
                     // This could be a static field access.
                     //
                     // See if op1 is a static field base helper call
@@ -16954,20 +16951,15 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
 
                         if (fieldSeq != nullptr)
                         {
-                            while (fieldSeq->m_next != nullptr)
-                            {
-                                fieldSeq = fieldSeq->m_next;
-                            }
-
-                            assert(!fieldSeq->IsPseudoField());
+                            fieldSeq = fieldSeq->GetTail();
 
                             // No benefit to calling gtGetFieldClassHandle here, as
                             // the exact field being accessed can vary.
-                            CORINFO_FIELD_HANDLE fieldHnd     = fieldSeq->m_fieldHnd;
-                            CORINFO_CLASS_HANDLE fieldClass   = nullptr;
-                            CorInfoType          fieldCorType = info.compCompHnd->getFieldType(fieldHnd, &fieldClass);
+                            CORINFO_FIELD_HANDLE fieldHnd   = fieldSeq->GetFieldHandle();
+                            CORINFO_CLASS_HANDLE fieldClass = NO_CLASS_HANDLE;
+                            var_types            fieldType  = eeGetFieldType(fieldHnd, &fieldClass);
 
-                            assert(fieldCorType == CORINFO_TYPE_CLASS);
+                            assert(fieldType == TYP_REF);
                             objClass = fieldClass;
                         }
                     }
@@ -17321,18 +17313,18 @@ void GenTree::ParseArrayAddress(
             noway_assert(!"fldSeqIter is NotAField() in ParseArrayAddress");
         }
 
-        if (!FieldSeqStore::IsPseudoField(fldSeqIter->m_fieldHnd))
+        if (!FieldSeqStore::IsPseudoField(fldSeqIter->GetFieldHandleValue()))
         {
             if (*pFldSeq == nullptr)
             {
                 *pFldSeq = fldSeqIter;
             }
             CORINFO_CLASS_HANDLE fldCls = nullptr;
-            noway_assert(fldSeqIter->m_fieldHnd != nullptr);
-            CorInfoType cit = comp->info.compCompHnd->getFieldType(fldSeqIter->m_fieldHnd, &fldCls);
+            noway_assert(fldSeqIter->GetFieldHandle() != NO_FIELD_HANDLE);
+            CorInfoType cit = comp->info.compCompHnd->getFieldType(fldSeqIter->GetFieldHandle(), &fldCls);
             fieldOffsets += comp->compGetTypeSize(cit, fldCls);
         }
-        fldSeqIter = fldSeqIter->m_next;
+        fldSeqIter = fldSeqIter->GetNext();
     }
 
     // Is there some portion of the "offset" beyond the first-elem offset and the struct field suffix we just computed?
@@ -17694,16 +17686,16 @@ void GenTree::LabelIndex(Compiler* comp, bool isConst)
 // Note that the value of the below field doesn't matter; it exists only to provide a distinguished address.
 //
 // static
-FieldSeqNode FieldSeqStore::s_notAField(nullptr, nullptr);
+FieldSeqNode FieldSeqStore::s_notAField(nullptr, nullptr, FieldSeqNode::FieldKind::Instance);
 
 // FieldSeqStore methods.
 FieldSeqStore::FieldSeqStore(CompAllocator alloc) : m_alloc(alloc), m_canonMap(new (alloc) FieldSeqNodeCanonMap(alloc))
 {
 }
 
-FieldSeqNode* FieldSeqStore::CreateSingleton(CORINFO_FIELD_HANDLE fieldHnd)
+FieldSeqNode* FieldSeqStore::CreateSingleton(CORINFO_FIELD_HANDLE fieldHnd, FieldSeqNode::FieldKind fieldKind)
 {
-    FieldSeqNode  fsn(fieldHnd, nullptr);
+    FieldSeqNode  fsn(fieldHnd, nullptr, fieldKind);
     FieldSeqNode* res = nullptr;
     if (m_canonMap->Lookup(fsn, &res))
     {
@@ -17738,8 +17730,8 @@ FieldSeqNode* FieldSeqStore::Append(FieldSeqNode* a, FieldSeqNode* b)
         // Extremely special case for ConstantIndex pseudo-fields -- appending consecutive such
         // together collapse to one.
     }
-    else if (a->m_next == nullptr && a->m_fieldHnd == ConstantIndexPseudoField &&
-             b->m_fieldHnd == ConstantIndexPseudoField)
+    else if (a->GetNext() == nullptr && a->GetFieldHandleValue() == ConstantIndexPseudoField &&
+             b->GetFieldHandleValue() == ConstantIndexPseudoField)
     {
         return b;
     }
@@ -17748,8 +17740,8 @@ FieldSeqNode* FieldSeqStore::Append(FieldSeqNode* a, FieldSeqNode* b)
         // We should never add a duplicate FieldSeqNode
         assert(a != b);
 
-        FieldSeqNode* tmp = Append(a->m_next, b);
-        FieldSeqNode  fsn(a->m_fieldHnd, tmp);
+        FieldSeqNode* tmp = Append(a->GetNext(), b);
+        FieldSeqNode  fsn(a->GetFieldHandleValue(), tmp, a->GetKind());
         FieldSeqNode* res = nullptr;
         if (m_canonMap->Lookup(fsn, &res))
         {
@@ -17774,19 +17766,38 @@ CORINFO_FIELD_HANDLE FieldSeqStore::FirstElemPseudoField =
 CORINFO_FIELD_HANDLE FieldSeqStore::ConstantIndexPseudoField =
     (CORINFO_FIELD_HANDLE)&FieldSeqStore::ConstantIndexPseudoFieldStruct;
 
-bool FieldSeqNode::IsFirstElemFieldSeq()
+FieldSeqNode::FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, FieldSeqNode* next, FieldKind fieldKind) : m_next(next)
 {
-    return m_fieldHnd == FieldSeqStore::FirstElemPseudoField;
+    uintptr_t handleValue = reinterpret_cast<uintptr_t>(fieldHnd);
+
+    assert((handleValue & FIELD_KIND_MASK) == 0);
+    m_fieldHandleAndKind = handleValue | static_cast<uintptr_t>(fieldKind);
+
+    if (!FieldSeqStore::IsPseudoField(fieldHnd) && (fieldHnd != NO_FIELD_HANDLE))
+    {
+        assert(JitTls::GetCompiler()->eeIsFieldStatic(fieldHnd) == IsStaticField());
+    }
+    else
+    {
+        // Use the default for pseudo-fields.
+        assert(fieldKind == FieldKind::Instance);
+    }
 }
 
-bool FieldSeqNode::IsConstantIndexFieldSeq()
+bool FieldSeqNode::IsFirstElemFieldSeq() const
 {
-    return m_fieldHnd == FieldSeqStore::ConstantIndexPseudoField;
+    return GetFieldHandleValue() == FieldSeqStore::FirstElemPseudoField;
+}
+
+bool FieldSeqNode::IsConstantIndexFieldSeq() const
+{
+    return GetFieldHandleValue() == FieldSeqStore::ConstantIndexPseudoField;
 }
 
 bool FieldSeqNode::IsPseudoField() const
 {
-    return m_fieldHnd == FieldSeqStore::FirstElemPseudoField || m_fieldHnd == FieldSeqStore::ConstantIndexPseudoField;
+    return (GetFieldHandleValue() == FieldSeqStore::FirstElemPseudoField) ||
+           (GetFieldHandleValue() == FieldSeqStore::ConstantIndexPseudoField);
 }
 
 #ifdef FEATURE_SIMD

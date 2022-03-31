@@ -422,7 +422,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             SafeMsQuicListenerHandle listener,
             QuicBuffer* alpnBuffers,
             uint alpnBufferCount,
-            ref SOCKADDR_INET localAddress);
+            byte* localAddress);
 
         internal delegate void ListenerStopDelegate(
             SafeMsQuicListenerHandle listener);
@@ -647,48 +647,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         {
             internal QUIC_STREAM_EVENT_TYPE Type;
             internal StreamEventDataUnion Data;
-        }
-
-        // TODO: rename to C#-like
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct SOCKADDR_IN
-        {
-#if SOCKADDR_HAS_LENGTH
-            internal byte sin_len;
-#endif
-            internal QUIC_ADDRESS_FAMILY sin_family;
-            internal ushort sin_port;
-            internal fixed byte sin_addr[4];
-        }
-
-        // TODO: rename to C#-like
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct SOCKADDR_IN6
-        {
-#if SOCKADDR_HAS_LENGTH
-            internal byte sin6_len;
-#endif
-            internal QUIC_ADDRESS_FAMILY sin6_family;
-            internal ushort sin6_port;
-            internal uint sin6_flowinfo;
-            internal fixed byte sin6_addr[16];
-            internal uint sin6_scope_id;
-        }
-
-        // TODO: rename to C#-like
-        [StructLayout(LayoutKind.Explicit)]
-        internal struct SOCKADDR_INET
-        {
-            [FieldOffset(0)]
-            internal SOCKADDR_IN Ipv4;
-            [FieldOffset(0)]
-            internal SOCKADDR_IN6 Ipv6;
-#if SOCKADDR_HAS_LENGTH
-            [FieldOffset(1)]
-#else
-            [FieldOffset(0)]
-#endif
-            internal QUIC_ADDRESS_FAMILY si_family;
         }
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -1061,9 +1019,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
                 return __retVal;
             }
-            internal uint ListenerStart(SafeMsQuicListenerHandle listener, QuicBuffer* alpnBuffers, uint alpnBufferCount, ref SOCKADDR_INET localAddress)
+            internal uint ListenerStart(SafeMsQuicListenerHandle listener, QuicBuffer* alpnBuffers, uint alpnBufferCount, byte* localAddress)
             {
-                IntPtr __listener_gen_native = default;
+                IntPtr __listener_gen_native;
                 uint __retVal;
                 //
                 // Setup
@@ -1076,10 +1034,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     //
                     listener.DangerousAddRef(ref listener__addRefd);
                     __listener_gen_native = listener.DangerousGetHandle();
-                    fixed (SOCKADDR_INET* __localAddress_gen_native = &localAddress)
-                    {
-                        __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, QuicBuffer*, uint, SOCKADDR_INET*, uint>)_functionPointer)(__listener_gen_native, alpnBuffers, alpnBufferCount, __localAddress_gen_native);
-                    }
+                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, QuicBuffer*, uint, byte*, uint>)_functionPointer)(__listener_gen_native, alpnBuffers, alpnBufferCount, localAddress);
                 }
                 finally
                 {

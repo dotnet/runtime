@@ -486,23 +486,46 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeInstantiationArgument(CORINFO_CLAS
     return temp;
 }
 
-// Append a (possibly truncated) representation of the type cls to the preallocated buffer ppBuf of length pnBufLen
-// If fNamespace=TRUE, include the namespace/enclosing classes
-// If fFullInst=TRUE (regardless of fNamespace and fAssembly), include namespace and assembly for any type parameters
-// If fAssembly=TRUE, suffix with a comma and the full assembly qualification
-// return size of representation
-int interceptor_ICJI::appendClassName(_Outptr_result_buffer_(*pnBufLen) char16_t** ppBuf,
-                                      int*                                       pnBufLen,
-                                      CORINFO_CLASS_HANDLE                       cls,
-                                      bool                                       fNamespace,
-                                      bool                                       fFullInst,
-                                      bool                                       fAssembly)
+// Append a (possibly truncated) textual representation of the type `cls` to a preallocated buffer.
+//
+// Arguments:
+//    ppBuf      - Pointer to buffer pointer. See below for details.
+//    pnBufLen   - Pointer to buffer length. Must not be nullptr. See below for details.
+//    fNamespace - If true, include the namespace/enclosing classes.
+//    fFullInst  - If true (regardless of fNamespace and fAssembly), include namespace and assembly for any type parameters.
+//    fAssembly  - If true, suffix with a comma and the full assembly qualification.
+//
+// Returns the length of the representation, as a count of characters (but not including a terminating null character).
+// Note that this will always be the actual number of characters required by the representation, even if the string
+// was truncated when copied to the buffer.
+//
+// Operation:
+// 
+// On entry, `*pnBufLen` specifies the size of the buffer pointed to by `*ppBuf` as a count of characters.
+// There are two cases:
+// 1. If the size is zero, the function computes the length of the representation and returns that.
+//    `ppBuf` is ignored (and may be nullptr) and `*ppBuf` and `*pnBufLen` are not updated.
+// 2. If the size is non-zero, the buffer pointed to by `*ppBuf` is (at least) that size. The class name
+//    representation is copied to the buffer pointed to by `*ppBuf`. As many characters of the name as will fit in the
+//    buffer are copied. Thus, if the name is larger than the size of the buffer, the name will be truncated in the buffer.
+//    The buffer is guaranteed to be null terminated. Thus, the size must be large enough to include a terminating null
+//    character, or the string will be truncated to include one. On exit, `*pnBufLen` is updated by subtracting the
+//    number of characters that were actually copied to the buffer. Also, `*ppBuf` is updated to point at the null
+//    character that was added to the end of the name.
+//
+int interceptor_ICJI::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char16_t**  ppBuf,
+                                      int*                                              pnBufLen,
+                                      CORINFO_CLASS_HANDLE                              cls,
+                                      bool                                              fNamespace,
+                                      bool                                              fFullInst,
+                                      bool                                              fAssembly)
 {
     mc->cr->AddCall("appendClassName");
-    char16_t* pBuf = *ppBuf;
-    int    nLen = original_ICorJitInfo->appendClassName(ppBuf, pnBufLen, cls, fNamespace, fFullInst, fAssembly);
-    mc->recAppendClassName(cls, fNamespace, fFullInst, fAssembly, pBuf);
-    return nLen;
+    char16_t* pBufIn    = (ppBuf == nullptr) ? nullptr : *ppBuf;
+    int       nBufLenIn = (pnBufLen == nullptr) ? 0 : *pnBufLen; // pnBufLen should never be nullptr, but don't crash if it is.
+    int       nLenOut   = original_ICorJitInfo->appendClassName(ppBuf, pnBufLen, cls, fNamespace, fFullInst, fAssembly);
+    mc->recAppendClassName(nBufLenIn, cls, fNamespace, fFullInst, fAssembly, nLenOut, pBufIn);
+    return nLenOut;
 }
 
 // Quick check whether the type is a value class. Returns the same value as getClassAttribs(cls) &

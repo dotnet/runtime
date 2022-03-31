@@ -114,7 +114,7 @@
 
     <PropertyGroup>
       <_DefaultExportedFunctions Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_EmccVersion)', '3.1.7'))"
-                                >_malloc,_memalign,_memset,_htons,_ntohs</_DefaultExportedFunctions>
+                                >_malloc,stackSave,stackRestore,stackAlloc,_memalign,_memset,_htons,_ntohs</_DefaultExportedFunctions>
 
       <!-- _htons,_ntohs,__get_daylight,__get_timezone,__get_tzname are exported temporarily, until the issue is fixed in emscripten, https://github.com/dotnet/runtime/issues/64724  -->
       <_DefaultExportedFunctions Condition="'$(_DefaultExportedFunctions)' == '' and $([MSBuild]::VersionGreaterThan('$(_EmccVersion)', '3.0'))"

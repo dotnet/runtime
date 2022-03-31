@@ -220,36 +220,71 @@ public:
     }
 };
 
-/*****************************************************************************/
-
 // GT_FIELD nodes will be lowered into more "code-gen-able" representations, like
 // GT_IND's of addresses, or GT_LCL_FLD nodes.  We'd like to preserve the more abstract
 // information, and will therefore annotate such lowered nodes with FieldSeq's.  A FieldSeq
 // represents a (possibly) empty sequence of fields.  The fields are in the order
 // in which they are dereferenced.  The first field may be an object field or a struct field;
 // all subsequent fields must be struct fields.
-struct FieldSeqNode
+class FieldSeqNode
 {
-    CORINFO_FIELD_HANDLE m_fieldHnd;
-    FieldSeqNode*        m_next;
-
-    FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, FieldSeqNode* next) : m_fieldHnd(fieldHnd), m_next(next)
+public:
+    enum class FieldKind : uintptr_t
     {
+        Instance     = 0, // An instance field, object or struct.
+        SimpleStatic = 1, // Simple static field - the handle represents a unique location.
+        SharedStatic = 2, // Static field on a shared generic type: "Class<__Canon>.StaticField".
+    };
+
+private:
+    static const uintptr_t FIELD_KIND_MASK = 0b11;
+
+    static_assert_no_msg(sizeof(CORINFO_FIELD_HANDLE) == sizeof(uintptr_t));
+
+    uintptr_t     m_fieldHandleAndKind;
+    FieldSeqNode* m_next;
+
+public:
+    FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, FieldSeqNode* next, FieldKind fieldKind);
+
+    FieldKind GetKind() const
+    {
+        return static_cast<FieldKind>(m_fieldHandleAndKind & FIELD_KIND_MASK);
+    }
+
+    CORINFO_FIELD_HANDLE GetFieldHandle() const
+    {
+        assert(!IsPseudoField() && (GetFieldHandleValue() != NO_FIELD_HANDLE));
+        return GetFieldHandleValue();
+    }
+
+    CORINFO_FIELD_HANDLE GetFieldHandleValue() const
+    {
+        return CORINFO_FIELD_HANDLE(m_fieldHandleAndKind & ~FIELD_KIND_MASK);
     }
 
     // returns true when this is the pseudo #FirstElem field sequence
-    bool IsFirstElemFieldSeq();
+    bool IsFirstElemFieldSeq() const;
 
     // returns true when this is the pseudo #ConstantIndex field sequence
-    bool IsConstantIndexFieldSeq();
+    bool IsConstantIndexFieldSeq() const;
 
     // returns true when this is the the pseudo #FirstElem field sequence or the pseudo #ConstantIndex field sequence
     bool IsPseudoField() const;
 
-    CORINFO_FIELD_HANDLE GetFieldHandle() const
+    bool IsStaticField() const
     {
-        assert(!IsPseudoField() && (m_fieldHnd != nullptr));
-        return m_fieldHnd;
+        return (GetKind() == FieldKind::SimpleStatic) || (GetKind() == FieldKind::SharedStatic);
+    }
+
+    bool IsSharedStaticField() const
+    {
+        return GetKind() == FieldKind::SharedStatic;
+    }
+
+    FieldSeqNode* GetNext() const
+    {
+        return m_next;
     }
 
     FieldSeqNode* GetTail()
@@ -262,16 +297,17 @@ struct FieldSeqNode
         return tail;
     }
 
-    // Make sure this provides methods that allow it to be used as a KeyFuncs type in SimplerHash.
+    // Make sure this provides methods that allow it to be used as a KeyFuncs type in JitHashTable.
+    // Note that there is a one-to-one relationship between the field handle and the field kind, so
+    // we do not need to mask away the latter for comparison purposes.
     static int GetHashCode(FieldSeqNode fsn)
     {
-        return static_cast<int>(reinterpret_cast<intptr_t>(fsn.m_fieldHnd)) ^
-               static_cast<int>(reinterpret_cast<intptr_t>(fsn.m_next));
+        return static_cast<int>(fsn.m_fieldHandleAndKind) ^ static_cast<int>(reinterpret_cast<intptr_t>(fsn.m_next));
     }
 
     static bool Equals(const FieldSeqNode& fsn1, const FieldSeqNode& fsn2)
     {
-        return fsn1.m_fieldHnd == fsn2.m_fieldHnd && fsn1.m_next == fsn2.m_next;
+        return fsn1.m_fieldHandleAndKind == fsn2.m_fieldHandleAndKind && fsn1.m_next == fsn2.m_next;
     }
 };
 
@@ -293,7 +329,8 @@ public:
     FieldSeqStore(CompAllocator alloc);
 
     // Returns the (canonical in the store) singleton field sequence for the given handle.
-    FieldSeqNode* CreateSingleton(CORINFO_FIELD_HANDLE fieldHnd);
+    FieldSeqNode* CreateSingleton(CORINFO_FIELD_HANDLE    fieldHnd,
+                                  FieldSeqNode::FieldKind fieldKind = FieldSeqNode::FieldKind::Instance);
 
     // This is a special distinguished FieldSeqNode indicating that a constant does *not*
     // represent a valid field sequence.  This is "infectious", in the sense that appending it
@@ -556,6 +593,7 @@ enum GenTreeFlags : unsigned int
     GTF_ICON_CIDMID_HDL         = 0x0E000000, // GT_CNS_INT -- constant is a class ID or a module ID
     GTF_ICON_BBC_PTR            = 0x0F000000, // GT_CNS_INT -- constant is a basic block count pointer
     GTF_ICON_STATIC_BOX_PTR     = 0x10000000, // GT_CNS_INT -- constant is an address of the box for a STATIC_IN_HEAP field
+    GTF_ICON_FIELD_SEQ          = 0x11000000, // <--------> -- constant is a FieldSeqNode* (used only as VNHandle)
 
  // GTF_ICON_REUSE_REG_VAL      = 0x00800000  // GT_CNS_INT -- GTF_REUSE_REG_VAL, defined above
     GTF_ICON_FIELD_OFF          = 0x00400000, // GT_CNS_INT -- constant is a field offset

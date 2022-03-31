@@ -1174,7 +1174,7 @@ namespace System.Security.Cryptography.X509Certificates
                 case Interop.Crypto.X509VerifyStatusCode30.X509_V_ERR_INVALID_CA:
                     return X509ChainStatusFlags.InvalidBasicConstraints;
                 default:
-                    Debug.Fail("Unrecognized X509VerifyStatusCode:" + code);
+                    Debug.Fail("Unrecognized X509VerifyStatusCode:" + code.Code30);
                     throw new CryptographicException();
             }
         }
@@ -1186,7 +1186,7 @@ namespace System.Security.Cryptography.X509Certificates
                 case Interop.Crypto.X509VerifyStatusCode102.X509_V_ERR_INVALID_CA:
                     return X509ChainStatusFlags.InvalidBasicConstraints;
                 default:
-                    Debug.Fail("Unrecognized X509VerifyStatusCode:" + code);
+                    Debug.Fail("Unrecognized X509VerifyStatusCode:" + code.Code102);
                     throw new CryptographicException();
             }
         }
@@ -1198,7 +1198,7 @@ namespace System.Security.Cryptography.X509Certificates
                 case Interop.Crypto.X509VerifyStatusCode111.X509_V_ERR_INVALID_CA:
                     return X509ChainStatusFlags.InvalidBasicConstraints;
                 default:
-                    Debug.Fail("Unrecognized X509VerifyStatusCode:" + code);
+                    Debug.Fail("Unrecognized X509VerifyStatusCode:" + code.Code111);
                     throw new CryptographicException();
             }
         }
