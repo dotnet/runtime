@@ -4,6 +4,7 @@
 using System.IO;
 using System.Net;
 using System.Xml;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography.Xml
 {
@@ -125,6 +126,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
+        [MemberNotNullWhen(true, nameof(_cachedXml))]
         internal bool CacheValid
         {
             get
@@ -153,7 +155,7 @@ namespace System.Security.Cryptography.Xml
 
         public XmlElement GetXml()
         {
-            if (CacheValid) return (_cachedXml!);
+            if (CacheValid) return _cachedXml;
 
             XmlDocument document = new XmlDocument();
             document.PreserveWhitespace = true;

@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.Xml
 
         public override XmlElement GetXml()
         {
-            if (CacheValid) return (_cachedXml!);
+            if (CacheValid) return _cachedXml;
 
             XmlDocument document = new XmlDocument();
             document.PreserveWhitespace = true;

@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Xml
             _nodeArray = new ArrayList();
         }
 
-        public override XmlNode? Item(int index)
+        public override XmlNode Item(int index)
         {
             return (XmlNode)_nodeArray[index]!;
         }
