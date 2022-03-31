@@ -253,17 +253,6 @@ namespace System.Net.Test.Common
                 // So nothing to do.
                 return;
             }
-            catch (OperationCanceledException)
-            {
-                // If the client is closing the connection at the same time we are trying to send the GOAWAY above,
-                // this can result in OperationCanceledException from QuicStream.WriteAsync.
-                // See https://github.com/dotnet/runtime/issues/58078
-                // I saw this consistently with GetAsync_EmptyResponseHeader_Success.
-                // To work around this, just eat the exception for now.
-                // Also, be aware of this issue as it will do weird things with OperationCanceledException and can
-                // make debugging this very confusing: https://github.com/dotnet/runtime/issues/58081
-                return;
-            }
 
             await WaitForClientDisconnectAsync();
         }

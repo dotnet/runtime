@@ -1338,7 +1338,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                 HandleWriteFailedState();
                 CleanupSendState(_state);
 
-                // TODO this may need to be an aborted exception.
+                if (status == MsQuicStatusCodes.Aborted)
+                {
+                    return _state.SendResettableCompletionSource.GetTypelessValueTask();
+                }
                 QuicExceptionHelpers.ThrowIfFailed(status,
                     "Could not send data to peer.");
             }
@@ -1402,7 +1405,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                 HandleWriteFailedState();
                 CleanupSendState(_state);
 
-                // TODO this may need to be an aborted exception.
+                if (status == MsQuicStatusCodes.Aborted)
+                {
+                    return _state.SendResettableCompletionSource.GetTypelessValueTask();
+                }
                 QuicExceptionHelpers.ThrowIfFailed(status,
                     "Could not send data to peer.");
             }
@@ -1463,7 +1469,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                 HandleWriteFailedState();
                 CleanupSendState(_state);
 
-                // TODO this may need to be an aborted exception.
+                if (status == MsQuicStatusCodes.Aborted)
+                {
+                    return _state.SendResettableCompletionSource.GetTypelessValueTask();
+                }
                 QuicExceptionHelpers.ThrowIfFailed(status,
                     "Could not send data to peer.");
             }
