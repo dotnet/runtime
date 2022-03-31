@@ -660,14 +660,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         bool      isHfaArg = false;
         var_types hfaType  = TYP_UNDEF;
 
-#if defined(TARGET_LOONGARCH64)
-        uint32_t floatFlags = STRUCT_NO_FLOAT_FIELD;
-        if ((strip(corInfoType) == CORINFO_TYPE_VALUECLASS) && (argSize <= MAX_PASS_MULTIREG_BYTES))
-        {
-            floatFlags = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(typeHnd);
-        }
-#endif
-
         // Methods that use VarArg or SoftFP cannot have HFA arguments except
         // Native varargs on arm64 unix use the regular calling convention.
         if (((TargetOS::IsUnix && TargetArchitecture::IsArm64) || !info.compIsVarArgs) && !opts.compUseSoftFP)
@@ -808,23 +800,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         }
 #else // !TARGET_ARM
 
-#if defined(TARGET_LOONGARCH64)
-
-        if (compFeatureArgSplit())
-        {
-            // This does not affect the normal calling convention for LoongArch64!!
-            if (this->info.compIsVarArgs && (argType == TYP_STRUCT))
-            {
-                if (varDscInfo->canEnreg(TYP_INT, 1) &&     // The beginning of the struct can go in a register
-                    !varDscInfo->canEnreg(TYP_INT, cSlots)) // The end of the struct can't fit in a register
-                {
-                    cSlotsToEnregister = 1; // Force the split
-                }
-            }
-        }
-
-#endif // defined(TARGET_LOONGARCH64)
-
 #if defined(UNIX_AMD64_ABI)
         SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
         if (varTypeIsStruct(argType))
@@ -886,9 +861,16 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         }
         else
 #elif defined(TARGET_LOONGARCH64)
-        var_types arg1Type = TYP_UNKNOWN;
-        var_types arg2Type = TYP_UNKNOWN;
-        if (floatFlags & STRUCT_HAS_FLOAT_FIELDS_MASK)
+        uint32_t  floatFlags          = STRUCT_NO_FLOAT_FIELD;
+        var_types argRegTypeInStruct1 = TYP_UNKNOWN;
+        var_types argRegTypeInStruct2 = TYP_UNKNOWN;
+
+        if ((strip(corInfoType) == CORINFO_TYPE_VALUECLASS) && (argSize <= MAX_PASS_MULTIREG_BYTES))
+        {
+            floatFlags = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(typeHnd);
+        }
+
+        if ((floatFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) != 0)
         {
             assert(varTypeIsStruct(argType));
             int floatNum = 0;
@@ -896,50 +878,56 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             {
                 assert(argSize <= 8);
                 assert(varDsc->lvExactSize <= argSize);
-                floatNum = 1;
 
-                arg1Type              = (varDsc->lvExactSize == 8) ? TYP_DOUBLE : TYP_FLOAT;
-                canPassArgInRegisters = varDscInfo->canEnreg(arg1Type, 1);
+                floatNum              = 1;
+                canPassArgInRegisters = varDscInfo->canEnreg(argRegTypeInStruct1, 1);
+
+                argRegTypeInStruct1 = (varDsc->lvExactSize == 8) ? TYP_DOUBLE : TYP_FLOAT;
             }
-            else if (floatFlags & STRUCT_FLOAT_FIELD_ONLY_TWO)
+            else if ((floatFlags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
             {
-                arg1Type              = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                arg2Type              = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
                 floatNum              = 2;
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 2);
+
+                argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                argRegTypeInStruct2 = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
             }
-            else if (floatFlags & STRUCT_FLOAT_FIELD_FIRST)
+            else if ((floatFlags & STRUCT_FLOAT_FIELD_FIRST) != 0)
             {
                 floatNum              = 1;
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
                 canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
 
-                arg1Type = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                arg2Type = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
+                argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                argRegTypeInStruct2 = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
             }
-            else if (floatFlags & STRUCT_FLOAT_FIELD_SECOND)
+            else if ((floatFlags & STRUCT_FLOAT_FIELD_SECOND) != 0)
             {
                 floatNum              = 1;
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
                 canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
 
-                arg1Type = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
-                arg2Type = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
+                argRegTypeInStruct2 = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
             }
 
             if (!canPassArgInRegisters)
             {
-                assert(floatNum > 0);
+                assert((floatNum == 1) || (floatNum == 2)); // `if ((floatFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) != 0)`
                 canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
-                arg1Type              = TYP_UNKNOWN;
-                arg2Type              = TYP_UNKNOWN;
+
+                // On LoongArch64, there aren't even any remaining integer registers to pass the arguments.
+                argRegTypeInStruct1 = TYP_UNKNOWN;
+                argRegTypeInStruct2 = TYP_UNKNOWN;
             }
         }
         else
-#endif // defined(UNIX_AMD64_ABI)
+#endif // defined(TARGET_LOONGARCH64)
         {
             canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
 #if defined(TARGET_LOONGARCH64)
+            // On LoongArch64, if there aren't any remaining floating-point registers to pass the argument,
+            // integer registers (if any) are used instead.
             if (!canPassArgInRegisters && varTypeIsFloating(argType))
             {
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_I_IMPL, cSlotsToEnregister);
@@ -947,8 +935,10 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             }
             if (!canPassArgInRegisters && (cSlots > 1))
             {
+                // If a struct-arg which needs two registers but only one integer register available,
+                // it has to be split.
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_I_IMPL, 1);
-                arg1Type              = canPassArgInRegisters ? TYP_I_IMPL : TYP_UNKNOWN;
+                argRegTypeInStruct1   = canPassArgInRegisters ? TYP_I_IMPL : TYP_UNKNOWN;
             }
 #endif
         }
@@ -981,9 +971,9 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             }
             else
 #elif defined(TARGET_LOONGARCH64)
-            if (arg1Type != TYP_UNKNOWN)
+            if (argRegTypeInStruct1 != TYP_UNKNOWN)
             {
-                firstAllocatedRegArgNum = varDscInfo->allocRegArg(arg1Type, 1);
+                firstAllocatedRegArgNum = varDscInfo->allocRegArg(argRegTypeInStruct1, 1);
             }
             else
 #endif // defined(TARGET_LOONGARCH64)
@@ -1037,18 +1027,20 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #elif defined(TARGET_LOONGARCH64)
             if (argType == TYP_STRUCT)
             {
-                if (arg1Type != TYP_UNKNOWN)
+                if (argRegTypeInStruct1 != TYP_UNKNOWN)
                 {
-                    varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, arg1Type));
-                    varDsc->lvIs4Field1 = (int)emitActualTypeSize(arg1Type) == 4 ? 1 : 0;
-                    if (arg2Type != TYP_UNKNOWN)
+                    varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, argRegTypeInStruct1));
+                    varDsc->lvIs4Field1 = (genTypeSize(argRegTypeInStruct1) == 4) ? 1 : 0;
+                    if (argRegTypeInStruct2 != TYP_UNKNOWN)
                     {
-                        firstAllocatedRegArgNum = varDscInfo->allocRegArg(arg2Type, 1);
-                        varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, arg2Type));
-                        varDsc->lvIs4Field2 = (int)emitActualTypeSize(arg2Type) == 4 ? 1 : 0;
+                        unsigned secondAllocatedRegArgNum = varDscInfo->allocRegArg(argRegTypeInStruct2, 1);
+                        varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2));
+                        varDsc->lvIs4Field2 = (genTypeSize(argRegTypeInStruct2) == 4) ? 1 : 0;
                     }
                     else if (cSlots > 1)
                     {
+                        // Here a struct-arg which needs two registers but only one integer register available,
+                        // it has to be split. But we reserved extra 8-bytes for the whole struct.
                         varDsc->lvIsSplit = 1;
                         varDsc->SetOtherArgReg(REG_STK);
                         varDscInfo->setAllRegArgUsed(arg1Type);
@@ -1190,16 +1182,12 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 varDscInfo->setAnyFloatStackArgs();
             }
 
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
             // If we needed to use the stack in order to pass this argument then
             // record the fact that we have used up any remaining registers of this 'type'
-            // This prevents any 'backfilling' from occuring on ARM64
+            // This prevents any 'backfilling' from occuring on ARM64/LoongArch64.
             //
-            varDscInfo->setAllRegArgUsed(argType);
-
-#elif defined(TARGET_LOONGARCH64)
-
             varDscInfo->setAllRegArgUsed(argType);
 
 #endif // TARGET_XXX
@@ -5433,11 +5421,6 @@ void Compiler::lvaFixVirtualFrameOffsets()
             JITDUMP("-- V%02u was %d, now %d\n", lclNum, varDsc->GetStackOffset(), varDsc->GetStackOffset() + delta);
             varDsc->SetStackOffset(varDsc->GetStackOffset() + delta);
 
-#if defined(TARGET_LOONGARCH64)
-            if (varDsc->GetStackOffset() >= delta)
-                varDsc->SetStackOffset(varDsc->GetStackOffset() + (varDsc->lvIsSplit ? 8 : 0));
-#endif
-
 #if DOUBLE_ALIGN
             if (genDoubleAlign() && !codeGen->isFramePointerUsed())
             {
@@ -6001,7 +5984,14 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         }
 
 #elif defined(TARGET_LOONGARCH64)
-// empty for LoongArch64.
+
+        if (varDsc->lvIsSplit)
+        {
+            assert((varDsc->lvType == TYP_STRUCT) && (varDsc->GetOtherArgReg() == REG_STK));
+            // This is a split struct. It will account for an extra (8 bytes) for the whole struct.
+            varDsc->SetStackOffset(varDsc->GetStackOffset() + TARGET_POINTER_SIZE);
+            argOffs += TARGET_POINTER_SIZE;
+        }
 
 #else // TARGET*
 #error Unsupported or unset target architecture

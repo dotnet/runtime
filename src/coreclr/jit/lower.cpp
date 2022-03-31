@@ -3232,12 +3232,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     GenTree* relopOp1 = relop->AsOp()->gtGetOp1();
     GenTree* relopOp2 = relop->AsOp()->gtGetOp2();
 
-    if (relopOp1->IsCnsIntOrI() && relopOp2->IsCnsIntOrI())
-    {
-        relopOp1->SetContained();
-        relopOp2->SetContained();
-    }
-    else if (relop->gtNext == jtrue)
+    if (relop->gtNext == jtrue)
     {
         if (relopOp2->IsCnsIntOrI())
         {

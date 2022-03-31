@@ -61,8 +61,6 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 
         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t type.
         target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->gtIconVal;
-        emitAttr       attr   = emitActualTypeSize(childNode->TypeGet());
-        emitAttr       size   = EA_SIZE(attr);
 
         switch (parentNode->OperGet())
         {
@@ -84,7 +82,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_AND:
             case GT_OR:
             case GT_XOR:
-                return emitter::isValidUimm11(immVal);
+                return emitter::isValidUimm12(immVal);
             case GT_JCMP:
                 assert(((parentNode->gtFlags & GTF_JCMP_TST) == 0) ? (immVal == 0) : isPow2(immVal));
                 return true;
@@ -106,8 +104,10 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 //------------------------------------------------------------------------
 // LowerMul: Lower a GT_MUL/GT_MULHI/GT_MUL_LONG node.
 //
-// TODO: For LoongArch64 recognized GT_MULs that can be turned into GT_MUL_LONGs, as
-// those are cheaper. Performs contaiment checks.
+// Performs contaiment checks.
+//
+// TODO-LoongArch64-CQ: recognize GT_MULs that can be turned into MUL_LONGs,
+// as those are cheaper.
 //
 // Arguments:
 //    mul - The node to lower
@@ -370,26 +370,13 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 }
 
 //------------------------------------------------------------------------
-// LowerCast: Lower GT_CAST(srcType, DstType) nodes.
+// ContainBlockStoreAddress: Attempt to contain an address used by an unrolled block store.
 //
 // Arguments:
-//    tree - GT_CAST node to be lowered
+//    blkNode - the block store node
+//    size - the block size
+//    addr - the address node to try to contain
 //
-// Return Value:
-//    None.
-//
-// Notes:
-//    Casts from float/double to a smaller int type are transformed as follows:
-//    GT_CAST(float/double, byte)     =   GT_CAST(GT_CAST(float/double, int32), byte)
-//    GT_CAST(float/double, sbyte)    =   GT_CAST(GT_CAST(float/double, int32), sbyte)
-//    GT_CAST(float/double, int16)    =   GT_CAST(GT_CAST(double/double, int32), int16)
-//    GT_CAST(float/double, uint16)   =   GT_CAST(GT_CAST(double/double, int32), uint16)
-//
-//    Note that for the overflow conversions we still depend on helper calls and
-//    don't expect to see them here.
-//    i) GT_CAST(float/double, int type with overflow detection)
-//
-
 void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr)
 {
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
@@ -429,6 +416,27 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     addr->SetContained();
 }
 
+//------------------------------------------------------------------------
+// LowerCast: Lower GT_CAST(srcType, DstType) nodes.
+//
+// Arguments:
+//    tree - GT_CAST node to be lowered
+//
+// Return Value:
+//    None.
+//
+// Notes:
+//    Casts from float/double to a smaller int type are transformed as follows:
+//    GT_CAST(float/double, byte)     =   GT_CAST(GT_CAST(float/double, int32), byte)
+//    GT_CAST(float/double, sbyte)    =   GT_CAST(GT_CAST(float/double, int32), sbyte)
+//    GT_CAST(float/double, int16)    =   GT_CAST(GT_CAST(double/double, int32), int16)
+//    GT_CAST(float/double, uint16)   =   GT_CAST(GT_CAST(double/double, int32), uint16)
+//
+//    Note that for the overflow conversions we still depend on helper calls and
+//    don't expect to see them here.
+//    i) GT_CAST(float/double, int type with overflow detection)
+//
+
 void Lowering::LowerCast(GenTree* tree)
 {
     assert(tree->OperGet() == GT_CAST);
@@ -440,7 +448,6 @@ void Lowering::LowerCast(GenTree* tree)
     GenTree*  op1     = tree->AsOp()->gtOp1;
     var_types dstType = tree->CastToType();
     var_types srcType = genActualType(op1->TypeGet());
-    var_types tmpType = TYP_UNDEF;
 
     if (varTypeIsFloating(srcType))
     {
@@ -450,16 +457,6 @@ void Lowering::LowerCast(GenTree* tree)
     }
 
     assert(!varTypeIsSmall(srcType));
-
-    if (tmpType != TYP_UNDEF)
-    {
-        GenTree* tmp = comp->gtNewCastNode(tmpType, op1, tree->IsUnsigned(), tmpType);
-        tmp->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-
-        tree->gtFlags &= ~GTF_UNSIGNED;
-        tree->AsOp()->gtOp1 = tmp;
-        BlockRange().InsertAfter(op1, tmp);
-    }
 
     // Now determine if we have operands that should be contained.
     ContainCheckCast(tree->AsCast());

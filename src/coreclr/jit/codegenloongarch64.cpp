@@ -1876,7 +1876,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     genProduceReg(treeNode);
 }
 
-// Generate code for ADD, SUB, MUL, AND, OR and XOR
+// Generate code for ADD, SUB, MUL, AND, AND_NOT, OR and XOR
 // This method is expected to have called genConsumeOperands() before calling it.
 void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 {
@@ -1884,7 +1884,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     regNumber        targetReg = treeNode->GetRegNum();
     emitter*         emit      = GetEmitter();
 
-    assert(oper == GT_ADD || oper == GT_SUB || oper == GT_MUL || oper == GT_AND || oper == GT_OR || oper == GT_XOR);
+    assert(treeNode->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_AND_NOT, GT_OR, GT_XOR));
 
     GenTree*    op1 = treeNode->gtGetOp1();
     GenTree*    op2 = treeNode->gtGetOp2();
@@ -2548,19 +2548,18 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 //
 void CodeGen::genCodeForBswap(GenTree* tree)
 {
-    assert(!"unimpleement on LOONGARCH64 yet");
+    NYI_LOONGARCH64("genCodeForBswap unimpleement yet");
 }
 
 //------------------------------------------------------------------------
-// genCodeForDivMod: Produce code for a GT_DIV/GT_UDIV node. We don't see MOD:
-// (1) integer MOD is morphed into a sequence of sub, mul, div in fgMorph;
-// (2) float/double MOD is morphed into a helper call by front-end.
+// genCodeForDivMod: Produce code for a GT_DIV/GT_UDIV node.
+// (1) float/double MOD is morphed into a helper call by front-end.
 //
 // Arguments:
 //    tree - the node
 //
 void CodeGen::genCodeForDivMod(GenTreeOp* tree)
-{ // can amend further.
+{
     assert(tree->OperIs(GT_MOD, GT_UMOD, GT_DIV, GT_UDIV));
 
     var_types targetType = tree->TypeGet();
@@ -3353,6 +3352,11 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 {
                     ins = INS_and;
                 }
+                break;
+
+            case GT_AND_NOT:
+                assert(!isImmed(treeNode));
+                ins = INS_andn;
                 break;
 
             case GT_OR:

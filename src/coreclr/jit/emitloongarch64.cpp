@@ -6395,13 +6395,16 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     }
 
     if (intConst != nullptr)
-    { // should re-design this case!!! ---2020.04.11.
+    {
         ssize_t imm = intConst->IconValue();
         if (ins == INS_andi || ins == INS_ori || ins == INS_xori)
-            // assert((0 <= imm) && (imm <= 0xfff));
-            assert((-2048 <= imm) && (imm <= 0xfff));
+        {
+            assert(isValidUimm12(imm));
+        }
         else
-            assert((-2049 < imm) && (imm < 2048));
+        {
+            assert(isValidSimm12(imm));
+        }
 
         if (ins == INS_sub_d)
         {
@@ -6419,35 +6422,6 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         }
 
         assert(ins == INS_addi_d || ins == INS_addi_w || ins == INS_andi || ins == INS_ori || ins == INS_xori);
-
-        if ((imm < 0) && (ins == INS_andi || ins == INS_ori || ins == INS_xori))
-        {
-            assert(attr == EA_8BYTE || attr == EA_4BYTE);
-            assert(nonIntReg->GetRegNum() != REG_R21);
-
-            emitIns_R_R_I(INS_addi_d, EA_8BYTE, REG_R21, REG_R0, imm);
-
-            if (ins == INS_andi)
-            {
-                ins = INS_and;
-            }
-            else if (ins == INS_ori)
-            {
-                ins = INS_or;
-            }
-            else if (ins == INS_xori)
-            {
-                ins = INS_xor;
-            }
-            else
-            {
-                unreached();
-            }
-
-            emitIns_R_R_R(ins, attr, dst->GetRegNum(), REG_R21, nonIntReg->GetRegNum());
-
-            goto L_Done;
-        }
 
         if (needCheckOv)
         {
@@ -6567,11 +6541,11 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             }
         }
     }
-    else if (dst->OperGet() == GT_AND || dst->OperGet() == GT_OR || dst->OperGet() == GT_XOR)
+    else if (dst->OperIs(GT_AND, GT_AND_NOT, GT_OR, GT_XOR))
     {
         emitIns_R_R_R(ins, attr, dst->GetRegNum(), src1->GetRegNum(), src2->GetRegNum());
 
-        // NOTE: can/should amend: LOONGARCH needs to sign-extend dst when deal with 32bit data.
+        // TODO-LOONGARCH64-CQ: here sign-extend dst when deal with 32bit data is too conservative.
         if (EA_SIZE(attr) == EA_4BYTE)
             emitIns_R_R_I(INS_slli_w, attr, dst->GetRegNum(), dst->GetRegNum(), 0);
     }
@@ -6712,8 +6686,6 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             }
         }
     }
-
-L_Done:
 
     return dst->GetRegNum();
 }
