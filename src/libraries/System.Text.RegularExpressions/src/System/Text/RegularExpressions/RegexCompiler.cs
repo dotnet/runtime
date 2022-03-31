@@ -4854,8 +4854,7 @@ namespace System.Text.RegularExpressions
                 for (int i = 0; i < 128; i++)
                 {
                     char c = (char)i;
-                    bool isSet = RegexCharClass.CharInClass(c, charClass);
-                    if (isSet)
+                    if (RegexCharClass.CharInClass(c, charClass))
                     {
                         dest[i >> 4] |= (char)(1 << (i & 0xF));
                     }

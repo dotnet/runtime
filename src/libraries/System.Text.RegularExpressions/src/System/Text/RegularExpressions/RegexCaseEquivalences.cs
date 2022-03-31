@@ -15,7 +15,7 @@ namespace System.Text.RegularExpressions
     internal static partial class RegexCaseEquivalences
     {
 
-        private static char[] s_specialCasingSetBehaviors { get; } = new char[5]
+        private static readonly char[] s_specialCasingSetBehaviors = new char[5]
         {
             'I', 'i', '\u0130', 'I', '\u0131'
         };
@@ -77,7 +77,9 @@ namespace System.Text.RegularExpressions
             static bool IsTurkishOrAzeri(ReadOnlySpan<char> cultureName)
             {
                 if (cultureName.Length < 2)
+                {
                     return false;
+                }
                 else
                 {
                     // Assert that the first two characters in culture name are between a-z lowercase
@@ -156,7 +158,7 @@ namespace System.Text.RegularExpressions
                 ushort mappingValue = EquivalenceCasingMap[index2];
                 if (mappingValue == 0xFFFF)
                 {
-                    return null;
+                    return default;
                 }
                 byte count = (byte)((mappingValue >> 13) & 0b111);
                 ushort index3 = (ushort)(mappingValue & 0x1FFF);

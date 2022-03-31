@@ -165,7 +165,7 @@ namespace System.Text.RegularExpressions.Generator
             {
                 // If the RegexTree has Culture set, then we need to emit the textInfo field that should be used at match time for casing operations.
                 writer.WriteLine($"        /// <summary>TextInfo that will be used for Backreference case comparisons.</summary>");
-                writer.WriteLine($"        public readonly global::System.Globalization.TextInfo textInfo = global::System.Globalization.CultureInfo.GetCultureInfo(\"{rm.Tree.Culture.Name}\").TextInfo;");
+                writer.WriteLine($"        private readonly TextInfo textInfo = CultureInfo.GetCultureInfo({Literal(rm.Tree.Culture.Name)}).TextInfo;");
                 writer.WriteLine();
             }
             writer.WriteLine($"        /// <summary>Scan the <paramref name=\"inputSpan\"/> starting from base.runtextstart for the next match.</summary>");
@@ -3923,8 +3923,9 @@ namespace System.Text.RegularExpressions.Generator
             // We know that the whole class wasn't ASCII, and we don't know anything about the non-ASCII
             // characters other than that some might be included, for example if the character class
             // were [\w\d], so since ch >= 128, we need to fall back to calling CharInClass.
-            return negate ? $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) == 0 : !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))"
-                : $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0 : RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
+            return negate ?
+                $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) == 0 : !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
+                $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0 : RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
         }
 
         /// <summary>
