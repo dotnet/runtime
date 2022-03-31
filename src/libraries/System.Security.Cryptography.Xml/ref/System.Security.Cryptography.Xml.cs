@@ -80,6 +80,7 @@ namespace System.Security.Cryptography.Xml
         protected EncryptedReference() { }
         protected EncryptedReference(string? uri) { }
         protected EncryptedReference(string? uri, System.Security.Cryptography.Xml.TransformChain transformChain) { }
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute(true, (string)null!)]
         protected internal bool CacheValid { get { throw null; } }
         protected string? ReferenceType { get { throw null; } set { } }
         public System.Security.Cryptography.Xml.TransformChain TransformChain { get { throw null; } set { } }
@@ -356,7 +357,7 @@ namespace System.Security.Cryptography.Xml
     }
     public partial class SignedXml
     {
-        protected System.Security.Cryptography.Xml.Signature? m_signature;
+        protected System.Security.Cryptography.Xml.Signature m_signature;
         protected string? m_strSigningKeyName;
         public const string XmlDecryptionTransformUrl = "http://www.w3.org/2002/07/decrypt#XML";
         public const string XmlDsigBase64TransformUrl = "http://www.w3.org/2000/09/xmldsig#base64";
@@ -388,8 +389,8 @@ namespace System.Security.Cryptography.Xml
         public System.Security.Cryptography.Xml.EncryptedXml EncryptedXml { get { throw null; } set { } }
         public System.Security.Cryptography.Xml.KeyInfo KeyInfo { get { throw null; } set { } }
         public System.Xml.XmlResolver Resolver { set { } }
-        public System.Collections.ObjectModel.Collection<string>? SafeCanonicalizationMethods { get { throw null; } }
-        public System.Security.Cryptography.Xml.Signature? Signature { get { throw null; } }
+        public System.Collections.ObjectModel.Collection<string> SafeCanonicalizationMethods { get { throw null; } }
+        public System.Security.Cryptography.Xml.Signature Signature { get { throw null; } }
         public System.Func<System.Security.Cryptography.Xml.SignedXml, bool> SignatureFormatValidator { get { throw null; } set { } }
         public string? SignatureLength { get { throw null; } }
         public string? SignatureMethod { get { throw null; } }
