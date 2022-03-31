@@ -1282,25 +1282,8 @@ ResolveCacheElem *VirtualCallStubManager::GetResolveCacheElem(void *pMT,
     CONTRACTL_END
 
     //get an cache entry elem, or make one if necessary
-    ResolveCacheElem* elem = NULL;
-    ResolveCacheEntry entryRC;
-    Prober probeRC(&entryRC);
-    if (cache_entries->SetUpProber(token, (size_t) pMT, &probeRC))
-    {
-        elem = (ResolveCacheElem*) (cache_entries->Find(&probeRC));
-        if (elem  == CALL_STUB_EMPTY_ENTRY)
-        {
-            bool reenteredCooperativeGCMode = false;
-            elem = GenerateResolveCacheElem(target, pMT, token, &reenteredCooperativeGCMode);
-            if (reenteredCooperativeGCMode)
-            {
-                // The prober may have been invalidated by reentering cooperative GC mode, reset it
-                BOOL success = cache_entries->SetUpProber(token, (size_t)pMT, &probeRC);
-                _ASSERTE(success);
-            }
-            elem = (ResolveCacheElem*) (cache_entries->Add((size_t) elem, &probeRC));
-        }
-    }
+    ResolveCacheElem* elem = cache_entries->FindOrAdd(Entry::Key_t(token, (size_t) pMT), [=](){ return (size_t) GenerateResolveCacheElem(target, pMT, token); });
+
     _ASSERTE(elem && (elem != CALL_STUB_EMPTY_ENTRY));
     return elem;
 }
@@ -1656,16 +1639,11 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         // First see if we can find a dispatcher stub for this token and type. If a
         // match is found, use the target stored in the entry.
         {
-            DispatchEntry entryD;
-            Prober probeD(&entryD);
-            if (dispatchers->SetUpProber(token.To_SIZE_T(), (size_t) objectType, &probeD))
+            stub = (PCODE)dispatchers->Find(token.To_SIZE_T(), (size_t) objectType);
+            if (stub != CALL_STUB_EMPTY_ENTRY)
             {
-                stub = (PCODE) dispatchers->Find(&probeD);
-                if (stub != CALL_STUB_EMPTY_ENTRY)
-                {
-                    target = (PCODE)entryD.Target();
-                    patch = TRUE;
-                }
+                target = (PCODE)entryD.Target();
+                patch = TRUE;
             }
         }
 
@@ -1675,16 +1653,11 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         if (target == NULL)
         {
             ResolveCacheElem * elem = NULL;
-            ResolveCacheEntry entryRC;
-            Prober probeRC(&entryRC);
-            if (cache_entries->SetUpProber(token.To_SIZE_T(), (size_t) objectType, &probeRC))
+            elem = (ResolveCacheElem *)cache_entries->Find(token.To_SIZE_T(), (size_t) objectType);
+            if (elem  != CALL_STUB_EMPTY_ENTRY)
             {
-                elem = (ResolveCacheElem *)(cache_entries->Find(&probeRC));
-                if (elem  != CALL_STUB_EMPTY_ENTRY)
-                {
-                    target = (PCODE)entryRC.Target();
-                    patch  = TRUE;
-                }
+                target = (PCODE)entryRC.Target();
+                patch  = TRUE;
             }
         }
     }
@@ -1774,6 +1747,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 #endif
 
                     // First see if we've already created a resolve stub for this token
+                    
                     if (resolvers->SetUpProber(token.To_SIZE_T(), 0, &probeR))
                     {
                         // Find the right resolver, make it if necessary
@@ -2858,16 +2832,13 @@ LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, s
 */
 ResolveCacheElem *VirtualCallStubManager::GenerateResolveCacheElem(void *addrOfCode,
                                                                    void *pMTExpected,
-                                                                   size_t token,
-                                                                   bool *pMayHaveReenteredCooperativeGCMode)
+                                                                   size_t token)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(pMayHaveReenteredCooperativeGCMode != nullptr);
-        PRECONDITION(!*pMayHaveReenteredCooperativeGCMode);
     }
     CONTRACTL_END
 
@@ -2891,9 +2862,6 @@ ResolveCacheElem *VirtualCallStubManager::GenerateResolveCacheElem(void *addrOfC
             m_loaderAllocator,
             (TADDR)&e->target,
             EntryPointSlots::SlotType_Normal);
-
-        // RecordAndBackpatchEntryPointSlot() may exit and reenter cooperative GC mode
-        *pMayHaveReenteredCooperativeGCMode = true;
     }
 #endif
 

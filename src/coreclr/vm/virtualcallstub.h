@@ -14,6 +14,7 @@
 #ifndef _VIRTUAL_CALL_STUB_H
 #define _VIRTUAL_CALL_STUB_H
 #include "typehashingalgorithms.h"
+#include "shash.h"
 
 #define CHAIN_LOOKUP
 
@@ -27,7 +28,9 @@
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Forward class declarations
+template <class EntryType>
 class FastTable;
+template <class EntryType>
 class BucketTable;
 class Entry;
 class Prober;
@@ -526,8 +529,7 @@ private:
     // The resolve cache is static across all AppDomains
     ResolveCacheElem *GenerateResolveCacheElem(void *addrOfCode,
                                                void *pMTExpected,
-                                               size_t token,
-                                               bool *pMayHaveReenteredCooperativeGCMode);
+                                               size_t token);
 
     ResolveCacheElem *GetResolveCacheElem(void *pMT,
                                           size_t token,
@@ -744,11 +746,11 @@ private:
     BOOL            m_fShouldAllocateLongJumpDispatchStubs; // Defaults to FALSE.
 #endif
 
-    BucketTable *   lookups;            // hash table of lookups keyed by tokens
-    BucketTable *   cache_entries;      // hash table of dispatch token/target structs for dispatch cache
-    BucketTable *   dispatchers;        // hash table of dispatching stubs keyed by tokens/actualtype
-    BucketTable *   resolvers;          // hash table of resolvers keyed by tokens/resolverstub
-    BucketTable *   vtableCallers;      // hash table of vtable call stubs keyed by slot values
+    BucketTable<LookupEntry> *   lookups;            // hash table of lookups keyed by tokens
+    BucketTable<ResolveCacheEntry> *   cache_entries;      // hash table of dispatch token/target structs for dispatch cache
+    BucketTable<DispatchEntry> *   dispatchers;        // hash table of dispatching stubs keyed by tokens/actualtype
+    BucketTable<ResolveEntry> *   resolvers;          // hash table of resolvers keyed by tokens/resolverstub
+    BucketTable<VTableCallEntry> *   vtableCallers;      // hash table of vtable call stubs keyed by slot values
 
     // This structure is used to keep track of the fail counters.
     // We only need one fail counter per ResolveStub,
@@ -1082,10 +1084,17 @@ They provide the specific implementations of the virtual functions declared in E
 class Entry
 {
 public:
+    struct Key_t
+    {
+        public:
+        Key_t(size_t a, size_t b) : keyA(a), keyB(b) {}
+        size_t keyA;
+        size_t keyB;
+    };
+
     //access and compare the keys of the entry
-    virtual BOOL Equals(size_t keyA, size_t keyB)=0;
-    virtual size_t KeyA()=0;
-    virtual size_t KeyB()=0;
+    virtual BOOL Equals(Key_t key)=0;
+    virtual Key_t Key() = 0;
 
     //contents is the struct or token that the entry exposes
     virtual void SetContents(size_t contents)=0;
@@ -1118,8 +1127,10 @@ public:
     LookupEntry() {LIMITED_METHOD_CONTRACT; stub = NULL;}
 
     //implementations of abstract class Entry
-    BOOL Equals(size_t keyA, size_t keyB)
-         { WRAPPER_NO_CONTRACT; return stub && (keyA == KeyA()) && (keyB == KeyB()); }
+    BOOL Equals(Key_t key)
+         { WRAPPER_NO_CONTRACT; return stub && (key.keyA == KeyA()) && (key.keyB == KeyB()); }
+
+    Key_t Key() { WRAPPER_NO_CONTRACT; return Key_t(KeyA(), KeyB()); }
 
     size_t KeyA() { WRAPPER_NO_CONTRACT; return Token(); }
     size_t KeyB() { WRAPPER_NO_CONTRACT; return (size_t)0; }
@@ -1155,10 +1166,10 @@ public:
     VTableCallEntry() { LIMITED_METHOD_CONTRACT; stub = NULL; }
 
     //implementations of abstract class Entry
-    BOOL Equals(size_t keyA, size_t keyB)
-    {
-        WRAPPER_NO_CONTRACT; return stub && (keyA == KeyA()) && (keyB == KeyB());
-    }
+    BOOL Equals(Key_t key)
+         { WRAPPER_NO_CONTRACT; return stub && (key.keyA == KeyA()) && (key.keyB == KeyB()); }
+
+    Key_t Key() { WRAPPER_NO_CONTRACT; return Key_t(KeyA(), KeyB()); }
 
     size_t KeyA() { WRAPPER_NO_CONTRACT; return Token(); }
     size_t KeyB() { WRAPPER_NO_CONTRACT; return (size_t)0; }
@@ -1196,8 +1207,9 @@ public:
     ResolveCacheEntry() { LIMITED_METHOD_CONTRACT; pElem = NULL; }
 
     //access and compare the keys of the entry
-    virtual BOOL Equals(size_t keyA, size_t keyB)
-        { WRAPPER_NO_CONTRACT; return pElem && (keyA == KeyA()) && (keyB == KeyB()); }
+    BOOL Equals(Key_t key)
+         { WRAPPER_NO_CONTRACT; return pElem && (key.keyA == KeyA()) && (key.keyB == KeyB()); }
+    Key_t Key() { WRAPPER_NO_CONTRACT; return Key_t(KeyA(), KeyB()); }
     virtual size_t KeyA()
         { LIMITED_METHOD_CONTRACT; return pElem != NULL ? pElem->token : 0; }
     virtual size_t KeyB()
@@ -1241,8 +1253,9 @@ public:
     ResolveEntry()  { LIMITED_METHOD_CONTRACT;    stub = CALL_STUB_EMPTY_ENTRY; }
 
     //implementations of abstract class Entry
-    inline BOOL Equals(size_t keyA, size_t keyB)
-         { WRAPPER_NO_CONTRACT; return stub && (keyA == KeyA()) && (keyB == KeyB()); }
+    BOOL Equals(Key_t key)
+         { WRAPPER_NO_CONTRACT; return stub && (key.keyA == KeyA()) && (key.keyB == KeyB()); }
+    Key_t Key() { WRAPPER_NO_CONTRACT; return Key_t(KeyA(), KeyB()); }
     inline size_t KeyA() { WRAPPER_NO_CONTRACT; return Token(); }
     inline size_t KeyB() { WRAPPER_NO_CONTRACT; return (size_t)0; }
 
@@ -1279,8 +1292,9 @@ public:
     DispatchEntry()                       { LIMITED_METHOD_CONTRACT;    stub = CALL_STUB_EMPTY_ENTRY; }
 
     //implementations of abstract class Entry
-    inline BOOL Equals(size_t keyA, size_t keyB)
-         { WRAPPER_NO_CONTRACT; return stub && (keyA == KeyA()) && (keyB == KeyB()); }
+    BOOL Equals(Key_t key)
+         { WRAPPER_NO_CONTRACT; return stub && (key.keyA == KeyA()) && (key.keyB == KeyB()); }
+    Key_t Key() { WRAPPER_NO_CONTRACT; return Key_t(KeyA(), KeyB()); }
     inline size_t KeyA() { WRAPPER_NO_CONTRACT; return Token(); }
     inline size_t KeyB() { WRAPPER_NO_CONTRACT; return ExpectedMT();}
 
@@ -1464,187 +1478,6 @@ public:
 #endif // STUB_LOGGING
 };
 
-/**************************************************************************************************
-The hash tables are accessed via instances of the Prober.  Prober is a probe into a bucket
-of the hash table, and therefore has an index which is the current probe position.
-It includes a count of the number of probes done in that bucket so far and a stride
-to step thru the bucket with.  To do comparisons, it has a reference to an entry with which
-it can do comparisons (Equals(...)) of the entries (stubs) inside the hash table.  It also has
-the key pair (keyA, keyB) that it is looking for.
-
-Typically, an entry of the appropriate type is created on the stack and then the prober is created passing
-in a reference to the entry.  The prober is used for a  complete operation, such as look for and find an
-entry (stub), creating and inserting it as necessary.
-
-The initial index and the stride are orthogonal hashes of the key pair, i.e. we are doing a varient of
-double hashing.  When we initialize the prober (see FormHash below) we set the initial probe based on
-one hash.  The stride (used as a modulo addition of the probe position) is based on a different hash and
-is such that it will vist every location in the bucket before repeating.  Hence it is imperative that
-the bucket size and the stride be relative prime wrt each other.  We have chosen to make bucket sizes
-a power of 2, so we force stride to be odd.
-
-Note -- it must be assumed that multiple probers are walking the same tables and buckets at the same time.
-Additionally, the counts may not be accurate, and there may be duplicates in the tables.  Since the tables
-do not allow concurrrent deletion, some of the concurrency issues are ameliorated.
-*/
-class Prober
-{
-    friend class FastTable;
-    friend class BucketTable;
-public:
-    Prober(Entry* e) {LIMITED_METHOD_CONTRACT; comparer = e;}
-    //find the requested entry, if not there return CALL_STUB_EMPTY_ENTRY
-    size_t Find();
-    //add the entry into the bucket, if it is not already in the bucket.
-    //return the entry actually in the bucket (existing or added)
-    size_t Add(size_t entry);
-private:
-    //return the bucket (FastTable*) that the prober is currently walking
-    inline size_t* items() {LIMITED_METHOD_CONTRACT; return &base[-CALL_STUB_FIRST_INDEX];}
-    //are there more probes possible, or have we probed everything in the bucket
-#ifdef ROBINHOOD_VSD_HASHING
-    inline BOOL NoMore() {LIMITED_METHOD_CONTRACT; return probesReal>size;} //both probes and mask are (-1)
-#else
-    inline BOOL NoMore() {LIMITED_METHOD_CONTRACT; return probes>mask;} //both probes and mask are (-1)
-#endif
-    //advance the probe to a new place in the bucket
-    inline BOOL Next()
-    {
-        WRAPPER_NO_CONTRACT;
-#ifdef PRIME_SIZE_VSD_FASTTABLE
-        index = (index + stride);
-        if (index >= size)
-            index -= size;
-#else
-        index = (index + stride) & mask;
-#endif
-        probes++;
-#ifdef ROBINHOOD_VSD_HASHING
-        probesReal++;
-#endif
-        return !NoMore();
-    }
-    inline size_t Read()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(base);
-        return VolatileLoad(&base[index]);
-    }
-    //initialize a prober across a bucket (table) for the specified keys.
-    void InitProber(size_t key1, size_t key2, size_t* table);
-    //set up the initial index and stride and probe count
-
-    size_t ComputeIndex(size_t key1, size_t key2)
-    {
-        //these two hash functions have not been formally measured for effectiveness
-        //but they are at least orthogonal
-#ifndef XXHASH_HASH_FUNCTION_FASTTABLE
-        size_t keyAAdjusted = keyA;
-        size_t keyBAdjusted = keyB;
-#ifdef _32BIT_SHIFT_APPROACH
-        keyAAdjusted ^= keyAAdjusted >> 32;
-        keyBAdjusted ^= keyBAdjusted >> 32;
-#endif
-        size_t a = ((keyAAdjusted>>CALL_STUB_BIT_SHIFT) + keyA);
-        size_t b = ((keyBAdjusted>>CALL_STUB_BIT_SHIFT) ^ keyB);
-        size_t localIndex = (((a*CALL_STUB_HASH_CONST1)>>4)+((b*CALL_STUB_HASH_CONST2)>>4)+CALL_STUB_HASH_CONST1);
-#else
-#ifdef TARGET_64BIT
-        int localIndex = CombineFourValuesIntoHash((UINT32)key1, (UINT32)(key1 >> 32), (UINT32)key2, (UINT32)(key2 >> 32));
-#else
-        int localIndex = CombineTwoValuesIntoHash(key1, key2);
-#endif
-#endif
-#ifdef PRIME_SIZE_VSD_FASTTABLE
-        return localIndex % size;
-#else
-        return localIndex & mask;
-#endif
-    }
-
-#ifndef ROBINHOOD_VSD_HASHING
-    size_t ComputeStride(size_t key1, size_t key2)
-    {
-        //these two hash functions have not been formally measured for effectiveness
-        //but they are at least orthogonal
-
-#ifndef XXHASH_HASH_FUNCTION_FASTTABLE
-        size_t a = ((keyA>>CALL_STUB_BIT_SHIFT) + keyA);
-        size_t b = ((keyB>>CALL_STUB_BIT_SHIFT) ^ keyB);
-        size_t localStride = ((a+(b*CALL_STUB_HASH_CONST1)+CALL_STUB_HASH_CONST2) | 1);
-#else
-#ifdef TARGET_64BIT
-        int localStride = CombineFourValuesIntoHash((UINT32)key2, (UINT32)(key2 >> 32), (UINT32)key1, (UINT32)(key1 >> 32));
-#else
-        int localStride = CombineTwoValuesIntoHash(key2, key1);
-#endif
-#endif
-#ifdef PRIME_SIZE_VSD_FASTTABLE
-        return localStride % size;
-#else
-        return localStride & mask;
-#endif
-    }
-#endif
-
-#ifdef ROBINHOOD_VSD_HASHING
-    size_t Size()
-    {
-#ifdef PRIME_SIZE_VSD_FASTTABLE
-        return size;
-#else
-        return mask+1;
-#endif
-    }
-
-    size_t PSL(size_t initialIndex)
-    {
-        size_t currentIndex = index;
-        if (currentIndex < initialIndex)
-        {
-            currentIndex += Size();
-        }
-        return currentIndex - initialIndex;
-    }
-#endif
-    inline void FormHash()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        probes = 0;
-#ifdef ROBINHOOD_VSD_HASHING
-        probesReal = 0;
-#endif
-        //these two hash functions have not been formally measured for effectiveness
-        //but they are at least orthogonal
-        index = ComputeIndex(keyA, keyB);
-#ifndef ROBINHOOD_VSD_HASHING
-        stride = ComputeStride(keyA, keyB);
-#endif
-    }
-
-
-    //atomically grab an empty slot so we can insert a new entry into the bucket
-    BOOL GrabEntry(size_t entryValue);
-    size_t keyA;        //key pair we are looking for
-    size_t keyB;
-    size_t* base;       //we have our own pointer to the bucket, so races don't matter.
-                        //  We won't care if we do the lookup in an
-                        //  outdated bucket (has grown out from under us).
-                        //  All that will happen is possibly dropping an entry
-                        //  on the floor or adding a duplicate.
-    size_t index;       //current probe point in the bucket
-#ifdef ROBINHOOD_VSD_HASHING
-    const size_t stride = 1;      //amount to step on each successive probe, must be relatively prime wrt the bucket size
-    size_t size;        //size of bucket
-#else
-    size_t stride;      //amount to step on each successive probe, must be relatively prime wrt the bucket size
-    size_t mask;        //size of bucket - 1
-#endif
-    size_t probes;      //number probes - 1 (Used for PSL calculation)
-    size_t probesReal;      //number probes - 1 (Actual Probe count)
-    Entry* comparer;//used to compare an entry against the sought after key pair
-};
 
 /********************************************************************************************************
 FastTable is used to implement the buckets of a BucketTable, a bucketized hash table.  A FastTable is
@@ -1657,101 +1490,84 @@ of concurrency.
 #pragma warning(push)
 #pragma warning(disable : 4200)     // disable zero-sized array warning
 #endif // _MSC_VER
+
+template<class EntryType>
+class EntryHashTraits : public DefaultSHashTraits<size_t>
+{
+public:
+    typedef typename DefaultSHashTraits<size_t>::element_t element_t;
+    typedef typename DefaultSHashTraits<size_t>::count_t count_t;
+
+    typedef const Entry::Key_t key_t;
+    static const bool s_supports_remove = false;
+
+    static key_t GetKey(element_t e)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return EntryType::GetKey(e);
+    }
+    static BOOL Equals(key_t k1, key_t k2)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return k1.keyA == k2.keyA && k1.keyB == k2.keyB;
+    }
+    static count_t Hash(key_t k)
+    {
+        LIMITED_METHOD_CONTRACT;
+#ifndef XXHASH_HASH_FUNCTION_FASTTABLE
+        size_t keyAAdjusted = k.keyA;
+        size_t keyBAdjusted = k.keyB;
+#ifdef _32BIT_SHIFT_APPROACH
+        keyAAdjusted ^= keyAAdjusted >> 32;
+        keyBAdjusted ^= keyBAdjusted >> 32;
+#endif
+        size_t a = ((keyAAdjusted>>CALL_STUB_BIT_SHIFT) + k.keyA);
+        size_t b = ((keyBAdjusted>>CALL_STUB_BIT_SHIFT) ^ k.keyB);
+        size_t localIndex = (((a*CALL_STUB_HASH_CONST1)>>4)+((b*CALL_STUB_HASH_CONST2)>>4)+CALL_STUB_HASH_CONST1);
+#else
+#ifdef TARGET_64BIT
+        int localIndex = CombineFourValuesIntoHash((UINT32)key1, (UINT32)(key1 >> 32), (UINT32)key2, (UINT32)(key2 >> 32));
+#else
+        int localIndex = CombineTwoValuesIntoHash(key1, key2);
+#endif
+#endif
+    }
+
+    static element_t Null() { LIMITED_METHOD_CONTRACT; return 0; }
+    static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e == 0; }
+};
+
+template<class EntryType>
 class FastTable
 {
     friend class BucketTable;
+
+
+    SHash< EntryHashTraits<EntryType> > _shash;
+    Crst _hashLock;
 public:
 private:
-    FastTable() { LIMITED_METHOD_CONTRACT; }
+    FastTable() : _hashLock(CrstLeafLock) { LIMITED_METHOD_CONTRACT; }
     ~FastTable() { LIMITED_METHOD_CONTRACT; }
 
-    //initialize a prober for the specified keys.
-    inline BOOL SetUpProber(size_t keyA, size_t keyB, Prober* probe)
-    {
-        CONTRACTL {
-            NOTHROW;
-            GC_NOTRIGGER;
-            FORBID_FAULT;
-        } CONTRACTL_END;
-
-        _ASSERTE(probe);
-        _ASSERTE(contents);
-        probe->InitProber(keyA, keyB, &contents[0]);
-        return TRUE;
-    }
     //find the requested entry (keys of prober), if not there return CALL_STUB_EMPTY_ENTRY
-    size_t Find(Prober* probe);
+    size_t Find(Entry::Key_t key)
+    {
+        static_assert(0 == CALL_STUB_EMPTY_ENTRY);
+        return _shash.Lookup(key);
+    }
     //add the entry, if it is not already there.  Probe is used to search.
     //Return the entry actually containted (existing or added)
-    size_t Add(size_t entry, Prober* probe);
-    void IncrementCount();
-
-#ifdef PRIME_SIZE_VSD_FASTTABLE
-    static size_t NextPrime(size_t number);
-#endif
-
-    // Create a FastTable with space for numberOfEntries. Please note that this method
-    // does not throw on OOM. **YOU MUST CHECK FOR NULL RETURN**
-    static FastTable* MakeTable(size_t numberOfEntries)
+    size_t Add(size_t entry, Entry::Key_t key)
     {
-        CONTRACTL {
-            THROWS;
-            GC_TRIGGERS;
-            INJECT_FAULT(COMPlusThrowOM(););
-        } CONTRACTL_END;
+        CrstHolder ch(_hashLock);
+        _ASSERTE(key.keyA == EntryHashTraits<EntryType>::GetKey(entry).keyA);
+        _ASSERTE(key.keyB == EntryHashTraits<EntryType>::GetKey(entry).keyB);
+        size_t lookupResult1 = _shash.Lookup(key);
+        if (lookupResult1 != 0)
+            return lookupResult1;
 
-#ifdef PRIME_SIZE_VSD_FASTTABLE
-        size_t size = NextPrime(numberOfEntries);
-#else
-        size_t size = CALL_STUB_MIN_ENTRIES;
-        while (size < numberOfEntries) {size = size<<1;}
-//        if (size == CALL_STUB_MIN_ENTRIES)
-//            size += 3;
-#endif
-        FastTable* table = new (NumCallStubs, size) FastTable();
-        table->InitializeContents(size);
-        return table;
-    }
-    //Initialize as empty
-    void InitializeContents(size_t size)
-    {
-        LIMITED_METHOD_CONTRACT;
-        memset(&contents[0], CALL_STUB_EMPTY_ENTRY, (size+CALL_STUB_FIRST_INDEX)*sizeof(BYTE*));
-#ifdef PRIME_SIZE_VSD_FASTTABLE
-        contents[CALL_STUB_TABLESIZE_INDEX] = size;
-#else
-        contents[CALL_STUB_MASK_INDEX] = size-1;
-#endif
-    }
-#ifdef PRIME_SIZE_VSD_FASTTABLE
-    inline size_t tableSize() {LIMITED_METHOD_CONTRACT; return (size_t) (contents[CALL_STUB_TABLESIZE_INDEX]);}
-#else
-    inline size_t tableMask() {LIMITED_METHOD_CONTRACT; return (size_t) (contents[CALL_STUB_MASK_INDEX]);}
-    inline size_t tableSize() {LIMITED_METHOD_CONTRACT; return tableMask()+1;}
-#endif
-    inline size_t tableCount() {LIMITED_METHOD_CONTRACT; return (size_t) (contents[CALL_STUB_COUNT_INDEX]);}
-    inline BOOL isFull()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (tableCount()+1) * 100 / CALL_STUB_LOAD_FACTOR >= tableSize();
-    }
-#ifdef PRIME_SIZE_VSD_FASTTABLE
-    //we store size in bucket[CALL_STUB_TABLESIZE_INDEX==0],
-#else
-    //we store (size-1) in bucket[CALL_STUB_MASK_INDEX==0],
-#endif
-    //we store the used count in bucket[CALL_STUB_COUNT_INDEX==1],
-    //we have an unused cell to use as a temp at bucket[CALL_STUB_DEAD_LINK==2],
-    //and the table starts at bucket[CALL_STUB_FIRST_INDEX==3],
-    size_t contents[0];
-
-    void* operator new(size_t) = delete;
-
-    static struct NumCallStubs_t {} NumCallStubs;
-
-    void* operator new(size_t baseSize, NumCallStubs_t, size_t numCallStubs)
-    {
-        return ::operator new(baseSize + (numCallStubs + CALL_STUB_FIRST_INDEX) * sizeof(size_t));
+        _shash.Add(entry);
     }
 };
 #ifdef _MSC_VER
@@ -1768,6 +1584,7 @@ controls growth is quite high (90%).  Since we use hashing to pick the bucket, a
 lookup inside the bucket, it is important that the hashing function used here is orthogonal to the ones
 used in the buckets themselves (see FastTable::FormHash).
 */
+template<class EntryType>
 class BucketTable
 {
 public:
@@ -1775,112 +1592,76 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 #ifdef PRIME_SIZE_VSD_BUCKET_TABLE
-        buckets = AllocateBuckets(numberOfBuckets);
+        size_t size = numberOfBuckets;
+        bucketCount = numberOfBuckets;
 #else
         size_t size = CALL_STUB_MIN_BUCKETS;
-        while (size < numberOfBuckets) {size = size<<1;}
-        buckets = AllocateBuckets(size);
+        while (size < numberOfBuckets) {size = size<<1;};
+        bucketMask = size - 1;
 #endif
-        // Initialize statistics counters
-        memset(&stats, 0, sizeof(stats));
+        buckets = new FastTable<EntryType>[size];
     }
 
     ~BucketTable()
     {
         LIMITED_METHOD_CONTRACT;
-        if(buckets != NULL)
-        {
-            size_t size = bucketCount()+CALL_STUB_FIRST_INDEX;
-            for(size_t ix = CALL_STUB_FIRST_INDEX; ix < size; ix++) delete (FastTable*)(buckets[ix]);
-            delete buckets;
-        }
+        delete [] buckets;
     }
 
-    //initialize a prober for the specified keys.
-    BOOL SetUpProber(size_t keyA, size_t keyB, Prober *prober);
     //find the requested entry (keys of prober), if not there return CALL_STUB_EMPTY_ENTRY
-    inline size_t Find(Prober* probe) {WRAPPER_NO_CONTRACT; return probe->Find();}
-    //add the entry, if it is not already there.  Probe is used to search.
-    size_t Add(size_t entry, Prober* probe);
-    //reclaim abandoned buckets.  Buckets are abaondoned when they need to grow.
-    //needs to be called inside a gc sync point.
-    static void Reclaim();
-
-    struct
+    inline size_t Find(Entry::Key_t key)
     {
-        UINT32 bucket_space;                    //# of bytes in caches and tables, not including the stubs themselves
-        UINT32 bucket_space_dead;               //# of bytes of abandoned buckets not yet recycled.
-    } stats;
-
-    void LogStats();
+        WRAPPER_NO_CONTRACT;
+        return buckets[ComputeBucketIndex(key)].Find(key);
+    }
+    //add the entry, if it is not already there.  Probe is used to search.
+    template<class Generator>
+    size_t FindOrAdd(Entry::Key_t key, Generator &gen)
+    {
+        WRAPPER_NO_CONTRACT;
+        FastTable* bucket = &buckets[ComputeBucketIndex(key)];
+        size_t result = bucket->Find(key);
+        if (result == CALL_STUB_EMPTY_ENTRY)
+        {
+            size_t newValue = gen();
+            _ASSERTE(newValue != CALL_STUB_EMPTY_ENTRY);
+            result = bucket->Add(newValue, key);
+        }
+        return result;
+    }
 
 private:
 #ifdef PRIME_SIZE_VSD_BUCKET_TABLE
-    inline size_t bucketCount() {LIMITED_METHOD_CONTRACT; return (size_t) (buckets[CALL_STUB_TABLESIZE_INDEX]); }
+    inline size_t bucketCount() {LIMITED_METHOD_CONTRACT; return _bucketCount; }
 #else
-    inline size_t bucketMask() {LIMITED_METHOD_CONTRACT; return (size_t) (buckets[CALL_STUB_MASK_INDEX]);}
+    inline size_t bucketMask() {LIMITED_METHOD_CONTRACT; return _bucketMask; }
     inline size_t bucketCount() {LIMITED_METHOD_CONTRACT; return bucketMask()+1;}
 #endif
-    inline size_t ComputeBucketIndex(size_t keyA, size_t keyB)
+    inline size_t ComputeBucketIndex(Entry::Key_t key)
     {
         LIMITED_METHOD_CONTRACT;
 
-        size_t keyAAdjusted = keyA;
-        size_t keyBAdjusted = keyB;
+        size_t keyAAdjusted = key.keyA;
+        size_t keyBAdjusted = key.keyB;
 #ifdef _32BIT_SHIFT_APPROACH
         keyAAdjusted ^= keyAAdjusted >> 32;
         keyBAdjusted ^= keyBAdjusted >> 32;
 #endif
-        size_t a = ((keyAAdjusted>>CALL_STUB_BIT_SHIFT) + keyA);
-        size_t b = ((keyBAdjusted>>CALL_STUB_BIT_SHIFT) ^ keyB);
+        size_t a = ((keyAAdjusted>>CALL_STUB_BIT_SHIFT) + key.keyA);
+        size_t b = ((keyBAdjusted>>CALL_STUB_BIT_SHIFT) ^ key.keyB);
 #ifdef PRIME_SIZE_VSD_BUCKET_TABLE
         return CALL_STUB_FIRST_INDEX+(((((a*CALL_STUB_HASH_CONST2)>>5)^((b*CALL_STUB_HASH_CONST1)>>5))+CALL_STUB_HASH_CONST2) % bucketCount());
 #else
         return CALL_STUB_FIRST_INDEX+(((((a*CALL_STUB_HASH_CONST2)>>5)^((b*CALL_STUB_HASH_CONST1)>>5))+CALL_STUB_HASH_CONST2) & bucketMask());
 #endif
     }
-    //grows the bucket referenced by probe.
-    BOOL GetMoreSpace(const Prober* probe);
-    //creates storage in which to store references to the buckets
-    static size_t* AllocateBuckets(size_t size)
-    {
-        LIMITED_METHOD_CONTRACT;
-        size_t* buckets = new size_t[size+CALL_STUB_FIRST_INDEX];
-        if (buckets != NULL)
-        {
-            memset(&buckets[0], CALL_STUB_EMPTY_ENTRY, (size+CALL_STUB_FIRST_INDEX)*sizeof(void*));
-#ifdef PRIME_SIZE_VSD_BUCKET_TABLE
-            buckets[CALL_STUB_TABLESIZE_INDEX] = size;
-#else
-            buckets[CALL_STUB_MASK_INDEX] =  size - 1;
-#endif
-        }
-        return buckets;
-    }
-    inline size_t Read(size_t index)
-    {
-        LIMITED_METHOD_CONTRACT;
-        CONSISTENCY_CHECK(index <= bucketMask()+CALL_STUB_FIRST_INDEX);
-        return VolatileLoad(&buckets[index]);
-    }
-    inline void Write(size_t index, size_t value)
-    {
-        LIMITED_METHOD_CONTRACT;
-        CONSISTENCY_CHECK(index <= bucketMask()+CALL_STUB_FIRST_INDEX);
-        VolatileStore(&buckets[index], value);
-    }
 
+    FastTable *buckets;
 #ifdef PRIME_SIZE_VSD_BUCKET_TABLE
-    // We store (#buckets) in    bucket[CALL_STUB_TABLESIZE_INDEX  ==0]
+    size_t _bucketCount;
 #else
-    // We store (#buckets-1) in    bucket[CALL_STUB_MASK_INDEX  ==0]
+    size_t _bucketMask;
 #endif
-    // We have two unused cells at bucket[CALL_STUB_COUNT_INDEX ==1]
-    //                         and bucket[CALL_STUB_DEAD_LINK   ==2]
-    // and the table starts at     bucket[CALL_STUB_FIRST_INDEX ==3]
-    // the number of elements is   bucket[CALL_STUB_MASK_INDEX]+CALL_STUB_FIRST_INDEX
-    size_t* buckets;
-    static FastTable* dead;             //linked list head of to be deleted (abandoned) buckets
 };
 
 
