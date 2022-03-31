@@ -4001,4 +4001,12 @@
             <Issue>mobile and wasm don't support tests with native libraries.  wasm also needs static linking</Issue>
         </ExcludeList>
     </ItemGroup>
+
+    <Target Name="GetFilteredExcludeList" Returns="@(FilteredExcludeList)">
+        <ItemGroup>
+            <FilteredExcludeList
+                Include="$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.FullPath)'))"
+                Condition="'%(ExcludeList.Extension)' == '.dll'" />
+      </ItemGroup>
+    </Target>
 </Project>

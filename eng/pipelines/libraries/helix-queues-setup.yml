@@ -7,7 +7,7 @@ parameters:
   container: ''
   pool: ''
   platform: ''
-  runtimeFlavorDisplayName: ''
+  runtimeFlavor: ''
   shouldContinueOnError: false
   dependOnEvaluatePaths: false
   jobParameters: {}
@@ -24,7 +24,7 @@ jobs:
     platform: ${{ parameters.platform }}
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths}}
-    runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+    runtimeFlavor: ${{ parameters.runtimeFlavor }}
     helixQueues:
 
     # Linux arm
