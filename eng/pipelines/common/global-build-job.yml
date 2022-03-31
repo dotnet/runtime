@@ -130,7 +130,7 @@ jobs:
         inputs:
           artifact: Mono_Offsets_${{monoCrossAOTTargetOS}}
           path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
-
+    
     - ${{ if eq(parameters.buildingOnSourceBuildImage, true) }}:
       - template: /eng/common/templates/steps/source-build.yml
         parameters:

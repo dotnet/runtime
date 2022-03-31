@@ -23,6 +23,7 @@ enum
     ARCH_ARM64,
     ARCH_WASM,
     ARCH_S390X,
+    ARCH_POWERPC,
     ARCH_LOONGARCH64,
     ARCH_ARMV6,
 };

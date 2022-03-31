@@ -138,6 +138,15 @@ while :; do
             __UbuntuPackages=$(echo ${__UbuntuPackages} | sed 's/ libomp5//')
             unset __LLDB_Package
             ;;
+	ppc64le)
+            __BuildArch=ppc64le
+            __UbuntuArch=ppc64el
+            __UbuntuRepo="http://ports.ubuntu.com/ubuntu-ports/"
+            __UbuntuPackages=$(echo ${__UbuntuPackages} | sed 's/ libunwind8-dev//')
+            __UbuntuPackages=$(echo ${__UbuntuPackages} | sed 's/ libomp-dev//')
+            __UbuntuPackages=$(echo ${__UbuntuPackages} | sed 's/ libomp5//')
+            unset __LLDB_Package
+            ;;
         x86)
             __BuildArch=x86
             __UbuntuArch=i386

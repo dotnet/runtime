@@ -4010,6 +4010,16 @@
     "any",
     "base"
   ],
+   "linux-musl-ppc64le": [
+    "linux-musl-ppc64le",
+    "linux-musl",
+    "linux-ppc64le",
+    "linux",
+    "unix-ppc64le",
+    "unix",
+    "any",
+    "base"
+  ],
   "linux-musl-x64": [
     "linux-musl-x64",
     "linux-musl",
@@ -4034,6 +4044,14 @@
     "linux-s390x",
     "linux",
     "unix-s390x",
+    "unix",
+    "any",
+    "base"
+  ],
+  "linux-ppc64le": [
+    "linux-ppc64le",
+    "linux",
+    "unix-ppc64le",
     "unix",
     "any",
     "base"
@@ -8594,6 +8612,12 @@
   ],
   "unix-s390x": [
     "unix-s390x",
+    "unix",
+    "any",
+    "base"
+  ],
+  "unix-ppc64le": [
+    "unix-ppc64le",
     "unix",
     "any",
     "base"

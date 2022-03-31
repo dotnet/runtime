@@ -129,6 +129,7 @@ enum {
 #define ppc_is_imm16(val) ((((val)>> 15) == 0) || (((val)>> 15) == -1))
 #define ppc_is_uimm16(val) ((glong)(val) >= 0L && (glong)(val) <= 65535L)
 #define ppc_ha(val) (((val >> 16) + ((val & 0x8000) ? 1 : 0)) & 0xffff)
+#define ppc_is_dsoffset_valid(offset) (((offset)& 3) == 0)
 
 #define ppc_load32(c,D,v) G_STMT_START {	\
 		ppc_lis ((c), (D),      (guint32)(v) >> 16);	\

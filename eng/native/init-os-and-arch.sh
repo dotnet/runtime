@@ -65,6 +65,9 @@ case "$CPUName" in
     s390x)
         arch=s390x
 	;;
+    ppc64le)
+	arch=ppc64le
+	;;
 
     *)
         echo "Unknown CPU $CPUName detected, configuring as if for x64"
