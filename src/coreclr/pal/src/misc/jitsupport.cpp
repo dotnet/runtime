@@ -211,7 +211,7 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 #endif
 #ifdef HWCAP_LRCPC
       if (hwCap & HWCAP_LRCPC)
-          flags->Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_LRCPC);
+          flags->Set(InstructionSet_Rcpc);
 #endif
 #ifdef HWCAP_PMULL
 //    if (hwCap & HWCAP_PMULL)
