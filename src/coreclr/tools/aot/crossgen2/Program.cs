@@ -343,7 +343,7 @@ namespace ILCompiler
             {
                 string version = GetCompilerVersion();
                 Console.WriteLine(version);
-                return 1;
+                return 0;
             }
 
             if (_commandLineOptions.OutputFilePath == null && !_commandLineOptions.OutNearInput)
