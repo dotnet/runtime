@@ -1157,8 +1157,6 @@ get_call_info (MonoMethodSignature *sig)
 				if (is_all_floats) {
 					rest = PPC_LAST_FPARG_REG - fr + 1;
 				}
-
-				
 				// Pass small (<= 8 member) structures entirely made up of either float or double members
 				// in FR registers.  There have to be at least mbr_cnt registers left.
 				if (is_all_floats &&
