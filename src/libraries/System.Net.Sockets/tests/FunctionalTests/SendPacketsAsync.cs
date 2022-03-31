@@ -541,8 +541,8 @@ namespace System.Net.Sockets.Tests
                     0);
             }
         }
-	
-	[Fact]
+
+        [Fact]
         public void SendPacketsElement_FileStreamWithOptions_Success() {
             using (var stream = new FileStream(TestFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, FileOptions.Asynchronous | FileOptions.SequentialScan)) {
                 var element = new SendPacketsElement(stream, 0, s_testFileSize);
@@ -573,7 +573,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-	[Fact]
+        [Fact]
         public void SendPacketsElement_FileStreamMultiPartMixed_MultipleFileStreams_Success() {
             using (var stream = new FileStream(TestFileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous))
             using (var stream2 = new FileStream(TestFileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous)) {

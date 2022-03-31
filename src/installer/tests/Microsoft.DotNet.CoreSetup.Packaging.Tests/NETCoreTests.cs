@@ -19,7 +19,7 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
             {
                 // Allow no targeting pack in case this is a servicing build.
                 // This condition should be tightened: https://github.com/dotnet/core-setup/issues/8830
-		if (tester == null)
+                if (tester == null)
                 {
                     return;
                 }
