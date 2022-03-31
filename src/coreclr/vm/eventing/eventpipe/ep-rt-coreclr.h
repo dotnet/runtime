@@ -2667,19 +2667,26 @@ ep_rt_diagnostics_command_line_get (void)
 	STATIC_CONTRACT_NOTHROW;
 
 	// In coreclr, this value can change over time, specifically before vs after suspension in diagnostics server.
-	// The host initalizes the runtime in two phases, init and exec assembly. On non-Windows platforms the commandline returned by the runtime
+	// The host initializes the runtime in two phases, init and exec assembly. On non-Windows platforms the commandline returned by the runtime
 	// is different during each phase. We suspend during init where the runtime has populated the commandline with a
 	// mock value (the full path of the executing assembly) and the actual value isn't populated till the exec assembly phase.
 	// On Windows this does not apply as the value is retrieved directly from the OS any time it is requested. 
 	// As a result, we cannot actually cache this value. We need to return the _current_ value.
 	// This function needs to handle freeing the string in order to make it consistent with Mono's version.
-	// To that end, we'll "cache" it here so we free the previous string when we get it again.
+	// There is a rare chance this may be called on multiple threads, so we attempt to always return the newest value.
+	// This means we will leak an old copy if it is in use when the transition happens. This is extremely rate
+	// and should only leak on the order of 1 string.
 	extern ep_char8_t *_ep_rt_coreclr_diagnostics_cmd_line;
 
-	if (_ep_rt_coreclr_diagnostics_cmd_line)
-		ep_rt_utf8_string_free(_ep_rt_coreclr_diagnostics_cmd_line);
-
-	_ep_rt_coreclr_diagnostics_cmd_line = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(GetCommandLineForDiagnostics ()), -1);
+	ep_char8_t *new_cmd_line = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(GetCommandLineForDiagnostics ()), -1);
+	if (_ep_rt_coreclr_diagnostics_cmd_line && ep_rt_utf8_string_compare (_ep_rt_coreclr_diagnostics_cmd_line, new_cmd_line) == 0) {
+		// same as old, so free the new one
+		ep_rt_utf8_string_free (new_cmd_line);
+	} else {
+		_ep_rt_coreclr_diagnostics_cmd_line = new_cmd_line;
+		// NOTE: If there was a value we purposefully leak it since it may still be in use
+		// This leak is *small* (length of the command line) and bounded (should only happen once)
+	}
 
 	return _ep_rt_coreclr_diagnostics_cmd_line;
 }
