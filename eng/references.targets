@@ -29,21 +29,6 @@
                       Condition="'$(IsSourceProject)' == 'true' and '@(_coreLibProjectReference)' != ''" />
   </ItemGroup>
 
-  <ItemGroup Condition="'@(PackageReference)' != ''">
-    <!-- Whenever a package with a transitive reference to System.Runtime.CompilerServices.Unsafe is referenced and there is no
-         direct package reference to System.Runtime.CompilerServices.Unsafe, reference the Unsafe package so that libraries build
-         against the latest available version (6.0.* instead of the old transitive reference which has a 4.5.* version). -->
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe"
-                      Version="$(SystemRuntimeCompilerServicesUnsafeVersion)"
-                      PrivateAssets="all"
-                      Condition="!@(PackageReference->AnyHaveMetadataValue('Identity', 'System.Runtime.CompilerServices.Unsafe')) and
-                                 (
-                                  @(PackageReference->AnyHaveMetadataValue('Identity', 'System.Memory')) or
-                                  @(PackageReference->AnyHaveMetadataValue('Identity', 'System.Threading.Tasks.Extensions')) or
-                                  @(PackageReference->AnyHaveMetadataValue('Identity', 'Microsoft.Bcl.AsyncInterfaces'))
-                                 )" />
-  </ItemGroup>
-
   <!-- Disable TargetArchitectureMismatch warning when we reference CoreLib as it is platform specific. -->
   <Target Name="DisableProjectReferenceArchitectureMismatchWarningForCoreLib"
           Condition="'@(_coreLibProjectReference)' != ''"
