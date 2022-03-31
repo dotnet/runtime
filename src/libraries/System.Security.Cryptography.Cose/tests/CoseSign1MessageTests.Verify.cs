@@ -27,20 +27,19 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData((int)ECDsaAlgorithm.ES256, "8443A10126A10442313154546869732069732074686520636F6E74656E742E58408EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36")]
         public void Verify(int algorithm, string hexCborMessage)
         {
-            foreach (bool usePublicOnlyKey in new[] { false, true })
+            foreach (bool useNonPrivateKey in new[] { false, true })
             {
                 CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(hexCborMessage));
 
                 bool verified;
                 if (Enum.IsDefined(typeof(ECDsaAlgorithm), algorithm))
                 {
-                    var ecdsaAlgorithm = (ECDsaAlgorithm)algorithm;
-                    ECDsa key = usePublicOnlyKey ? ECDsaKeysWithoutPrivateKey[ecdsaAlgorithm] : ECDsaKeys[ecdsaAlgorithm];
+                    ECDsa key = GetKeyHashPair<ECDsa>((CoseAlgorithm)algorithm, useNonPrivateKey).Key;
                     verified = msg.Verify(key);
                 }
                 else
                 {
-                    RSA key = usePublicOnlyKey ? RSAKeyWithoutPrivateKey : RSAKey;
+                    RSA key = GetKeyHashPair<RSA>((CoseAlgorithm)algorithm, useNonPrivateKey).Key;
                     verified = msg.Verify(key);
                 }
 

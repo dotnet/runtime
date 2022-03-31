@@ -115,6 +115,7 @@ namespace Microsoft.Win32.SafeHandles
 #if DEBUG
                 Debug.Assert(value.IsValidOpenState);
 #endif
+                Debug.Assert(_ownershipState != OwnershipState.Duplicate);
                 Debug.Assert(value._ownershipState == OwnershipState.Holder);
 
 
@@ -257,6 +258,7 @@ namespace Microsoft.Win32.SafeHandles
 #if DEBUG
             Debug.Assert(IsValidOpenState);
 #endif
+            Debug.Assert(_ownershipState == OwnershipState.Owner);
             Debug.Assert(typeof(T) == this.GetType());
 
             bool addRef = false;
