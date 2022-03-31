@@ -19,6 +19,7 @@ namespace System.Numerics
         static abstract TSelf Sqrt(TSelf x);
 
         // The following methods are approved but not yet implemented in the libraries
+        // * static abstract TSelf Hypot(TSelf x, TSelf y);
         // * static abstract TSelf Root(TSelf x, TSelf n);
     }
 }

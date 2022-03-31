@@ -124,7 +124,6 @@ namespace System.Numerics
 
         // The following methods are approved but not yet implemented in the libraries
         // * static abstract TSelf Compound(TSelf x, TSelf n);
-        // * static abstract TSelf Hypot(TSelf x, TSelf y);
         // * static abstract TSelf MaxMagnitudeNumber(TSelf x, TSelf y);
         // * static abstract TSelf MaxNumber(TSelf x, TSelf y);
         // * static abstract TSelf MinMagnitudeNumber(TSelf x, TSelf y);

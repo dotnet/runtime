@@ -9,10 +9,12 @@ namespace System.Numerics
         : IAdditionOperators<TSelf, TSelf, TSelf>,
           IAdditiveIdentity<TSelf, TSelf>,
           IDecrementOperators<TSelf>,
+          IDivisionOperators<TSelf, TSelf, TSelf>,
           IEqualityOperators<TSelf, TSelf>,     // implies IEquatable<TSelf>
           IIncrementOperators<TSelf>,
           IMultiplicativeIdentity<TSelf, TSelf>,
           IMultiplyOperators<TSelf, TSelf, TSelf>,
+          ISpanFormattable,                     // implies IFormattable
           ISubtractionOperators<TSelf, TSelf, TSelf>,
           IUnaryPlusOperators<TSelf, TSelf>,
           IUnaryNegationOperators<TSelf, TSelf>

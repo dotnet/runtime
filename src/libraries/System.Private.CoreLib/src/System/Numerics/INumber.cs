@@ -10,11 +10,9 @@ namespace System.Numerics
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
     public interface INumber<TSelf>
         : IComparisonOperators<TSelf, TSelf>,   // implies IEqualityOperators<TSelf, TSelf>
-          IDivisionOperators<TSelf, TSelf, TSelf>,
           IModulusOperators<TSelf, TSelf, TSelf>,
           INumberBase<TSelf>,
-          ISpanFormattable,                     // implies IFormattable
-          ISpanParsable<TSelf>                 // implies IParseable<TSelf>
+          ISpanParsable<TSelf>                  // implies IParseable<TSelf>
         where TSelf : INumber<TSelf>
     {
         /// <summary>Computes the absolute of a value.</summary>
