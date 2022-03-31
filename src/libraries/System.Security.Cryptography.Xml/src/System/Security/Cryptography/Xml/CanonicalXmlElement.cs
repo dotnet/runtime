@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.Xml
             if (!Utils.IsCommittedNamespace(this, Prefix, NamespaceURI))
             {
                 string name = ((Prefix.Length > 0) ? "xmlns" + ":" + Prefix : "xmlns");
-                XmlAttribute nsattrib = (XmlAttribute)OwnerDocument.CreateAttribute(name)!;
+                XmlAttribute nsattrib = (XmlAttribute)OwnerDocument.CreateAttribute(name);
                 nsattrib.Value = NamespaceURI;
                 anc.TrackNamespaceNode(nsattrib, nsListToRender, nsLocallyDeclared);
             }

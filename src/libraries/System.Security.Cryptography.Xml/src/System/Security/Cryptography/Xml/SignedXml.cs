@@ -819,7 +819,7 @@ namespace System.Security.Cryptography.Xml
                 // If this is pointing to another reference
                 for (int j = 0; j < references.Count; ++j)
                 {
-                    if ((((Reference)references[j]!)!).Id == idref)
+                    if (((Reference)references[j]!).Id == idref)
                     {
                         _refLevelCache![index] = GetReferenceLevel(j, references) + 1;
                         return (_refLevelCache[index]);

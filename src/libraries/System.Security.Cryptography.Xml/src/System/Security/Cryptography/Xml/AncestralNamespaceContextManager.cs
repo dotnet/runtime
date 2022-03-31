@@ -84,12 +84,12 @@ namespace System.Security.Cryptography.Xml
 
         internal void AddRendered(XmlAttribute attr)
         {
-            GetCurrentScope()!.AddRendered(attr);
+            GetCurrentScope().AddRendered(attr);
         }
 
         internal void AddUnrendered(XmlAttribute attr)
         {
-            GetCurrentScope()!.AddUnrendered(attr);
+            GetCurrentScope().AddUnrendered(attr);
         }
     }
 }

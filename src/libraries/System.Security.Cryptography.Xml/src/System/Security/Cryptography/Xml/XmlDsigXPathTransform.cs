@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.Xml
                     {
                         _xpathexpr = elem.InnerXml.Trim(null);
                         XmlNodeReader nr = new XmlNodeReader(elem);
-                        XmlNameTable nt = nr.NameTable!;
+                        XmlNameTable nt = nr.NameTable;
                         _nsm = new XmlNamespaceManager(nt);
                         if (!Utils.VerifyAttributes(elem, (string?)null))
                         {
@@ -169,7 +169,7 @@ namespace System.Security.Cryptography.Xml
 
                 while (it.MoveNext())
                 {
-                    XmlNode node = (((IHasXmlNode)it.Current!)!).GetNode();
+                    XmlNode node = ((IHasXmlNode)it.Current!).GetNode();
 
                     bool include = (bool)it.Current.Evaluate(xpathExpr);
                     if (include)
@@ -180,7 +180,7 @@ namespace System.Security.Cryptography.Xml
                 it = navigator.Select("//namespace::*");
                 while (it.MoveNext())
                 {
-                    XmlNode node = (((IHasXmlNode)it.Current!)!).GetNode();
+                    XmlNode node = ((IHasXmlNode)it.Current!).GetNode();
                     resultNodeList.Add(node);
                 }
             }

@@ -194,7 +194,7 @@ namespace System.Security.Cryptography.Xml
             {
                 for (int index = 0; index < ExceptUris.Count; index++)
                 {
-                    if (IsTargetElement(encryptedDataElement, ((string)ExceptUris[index]!)!))
+                    if (IsTargetElement(encryptedDataElement, (string)ExceptUris[index]!))
                         return false;
                 }
             }
