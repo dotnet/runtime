@@ -236,18 +236,18 @@ namespace System.Reflection
 
             CheckConsistency(obj);
 
-            bool _b = false;
+            bool _ref = false;
             RuntimeType fieldType = (RuntimeType)FieldType;
             if (value is null)
             {
                 if (RuntimeTypeHandle.IsValueType(fieldType))
                 {
-                    fieldType.CheckValue(ref value, ref _b, paramInfo: null, binder, culture, invokeAttr);
+                    fieldType.CheckValue(ref value, copyBack: ref _ref, paramInfo: null, binder, culture, invokeAttr);
                 }
             }
             else if (!ReferenceEquals(value.GetType(), fieldType))
             {
-                fieldType.CheckValue(ref value, ref _b, paramInfo: null, binder, culture, invokeAttr);
+                fieldType.CheckValue(ref value, copyBack: ref _ref, paramInfo: null, binder, culture, invokeAttr);
             }
 
             Invoker.SetValue(obj, value);
