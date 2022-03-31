@@ -1443,11 +1443,10 @@ public:
     heap_segment* relocate_advance_to_non_sip (heap_segment* region);
 
     PER_HEAP_ISOLATED
-    int generation_of_addr (uint8_t* addr);
+    void verify_region_to_generation_map();
 
     PER_HEAP_ISOLATED
-    int plan_generation_of_addr (uint8_t* addr);
-
+    void compute_ephemeral_range();
 #ifdef STRESS_REGIONS
     PER_HEAP
     void pin_by_gc (uint8_t* object);

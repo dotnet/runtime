@@ -3528,6 +3528,24 @@ size_t get_basic_region_index_for_address (uint8_t* address)
     return (basic_region_index - ((size_t)g_gc_lowest_address >> gc_heap::min_segment_size_shr));
 }
 
+inline int get_gen_num_for_address (uint8_t *address)
+{
+    assert ((g_gc_lowest_address <= address) && (address < g_gc_highest_address));
+    size_t region_index = (size_t)address >> gc_heap::min_segment_size_shr;
+    int gen_num = gc_heap::map_region_to_generation_skewed[region_index] & 0x0f;
+    assert ((0 <= gen_num) && (gen_num <= 2));
+    return gen_num;
+}
+
+inline int get_plan_gen_num_for_address (uint8_t *address)
+{
+    assert ((g_gc_lowest_address <= address) && (address < g_gc_highest_address));
+    size_t region_index = (size_t)address >> gc_heap::min_segment_size_shr;
+    int plan_gen_num = gc_heap::map_region_to_generation_skewed[region_index] >> 4;
+    assert ((0 <= plan_gen_num) && (plan_gen_num <= 2));
+    return plan_gen_num;
+}
+
 // Go from a random address to its region info. The random address could be
 // in one of the basic regions of a larger region so we need to check for that.
 inline
@@ -11291,13 +11309,13 @@ void gc_heap::set_region_gen_num (heap_segment* region, int gen_num)
     uint8_t* region_start = get_region_start (region);
     uint8_t* region_end = heap_segment_reserved (region);
 
-    size_t region_index_start = ((size_t)region_start) >> min_segment_size_shr;
-    size_t region_index_end = ((size_t)region_end) >> min_segment_size_shr;
+    size_t region_index_start = get_basic_region_index_for_address (region_start);
+    size_t region_index_end = get_basic_region_index_for_address (region_end);
     uint8_t entry = (uint8_t)((gen_num << 4) | gen_num);
     for (size_t region_index = region_index_start; region_index < region_index_end; region_index++)
     {
         assert (gen_num <= max_generation);
-        map_region_to_generation_skewed[region_index] = entry;
+        map_region_to_generation[region_index] = entry;
     }
     if (gen_num <= soh_gen1)
     {
@@ -11364,12 +11382,12 @@ void gc_heap::set_region_plan_gen_num (heap_segment* region, int plan_gen_num)
     uint8_t* region_start = get_region_start (region);
     uint8_t* region_end = heap_segment_reserved (region);
 
-    size_t region_index_start = ((size_t)region_start) >> min_segment_size_shr;
-    size_t region_index_end = ((size_t)region_end) >> min_segment_size_shr;
+    size_t region_index_start = get_basic_region_index_for_address (region_start);
+    size_t region_index_end = get_basic_region_index_for_address (region_end);
     for (size_t region_index = region_index_start; region_index < region_index_end; region_index++)
     {
-        assert (gen_num <= max_generation);
-        map_region_to_generation_skewed[region_index] = (map_region_to_generation_skewed[region_index] & 0x0f) | (plan_gen_num & 0xf0);
+        assert (plan_gen_num <= max_generation);
+        map_region_to_generation[region_index] = (plan_gen_num << 4) | (map_region_to_generation[region_index] & 0x0f);
     }
 }
 
@@ -25518,6 +25536,68 @@ void gc_heap::record_mark_time (uint64_t& mark_time,
 }
 #endif // FEATURE_EVENT_TRACE
 
+#ifdef USE_REGIONS
+void gc_heap::verify_region_to_generation_map()
+{
+#ifdef _DEBUG
+    uint8_t* local_ephemeral_low = MAX_PTR;
+    uint8_t* local_ephemeral_high = nullptr;
+    for (int gen_number = soh_gen0; gen_number < total_generation_count; gen_number++)
+    {
+#ifdef MULTIPLE_HEAPS
+        for (int i = 0; i < n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+#else //MULTIPLE_HEAPS
+        {
+            gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+            generation *gen = hp->generation_of (gen_number);
+            for (heap_segment *region = generation_start_segment (gen); region != nullptr; region = heap_segment_next (region))
+            {
+                size_t region_index_start = get_basic_region_index_for_address (get_region_start (region));
+                size_t region_index_end = get_basic_region_index_for_address (heap_segment_reserved (region));
+                int gen_num = min (gen_number, soh_gen2);
+                assert (gen_num == heap_segment_gen_num (region));
+                int plan_gen_num = heap_segment_plan_gen_num (region);
+                for (size_t region_index = region_index_start; region_index < region_index_end; region_index++)
+                {
+                    assert ((map_region_to_generation[region_index] & 0x0f) == gen_num);
+                    assert ((map_region_to_generation[region_index] >> 4) == plan_gen_num);
+                }
+            }
+        }
+    }
+#endif //_DEBUG
+}
+
+// recompute ephemeral range - it may have become too large because of temporary allocation
+// and deallocation of regions
+void gc_heap::compute_ephemeral_range()
+{
+    ephemeral_low = MAX_PTR;
+    ephemeral_high = nullptr;
+    for (int gen_number = soh_gen0; gen_number <= soh_gen1; gen_number++)
+    {
+#ifdef MULTIPLE_HEAPS
+        for (int i = 0; i < n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+#else //MULTIPLE_HEAPS
+        {
+            gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+            generation *gen = hp->generation_of (gen_number);
+            for (heap_segment *region = generation_start_segment (gen); region != nullptr; region = heap_segment_next (region))
+            {
+                ephemeral_low = min (ephemeral_low, get_region_start (region));
+                ephemeral_high = max (ephemeral_high, heap_segment_reserved (region));
+            }
+        }
+    }
+}
+#endif
+
 void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 {
     assert (settings.concurrent == FALSE);
@@ -25651,31 +25731,8 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
         special_sweep_p = false;
         region_count = global_region_allocator.get_used_region_count();
         grow_mark_list_piece();
-
-        memset (map_region_to_generation, 0x22, region_count*sizeof(map_region_to_generation[0]));
-        ephemeral_low = MAX_PTR;
-        ephemeral_high = nullptr;
-        for (int gen_number = soh_gen0; gen_number <= soh_gen1; gen_number++)
-        {
-#ifdef MULTIPLE_HEAPS
-            for (int i = 0; i < n_heaps; i++)
-            {
-                gc_heap* hp = g_heaps[i];
-#else //MULTIPLE_HEAPS
-            {
-                gc_heap* hp = pGenGCHeap;
-#endif //MULTIPLE_HEAPS
-                generation *gen = hp->generation_of (gen_number);
-                for (heap_segment *region = generation_start_segment (gen); region != nullptr; region = heap_segment_next (region))
-                {
-                    uint8_t* addr = heap_segment_mem (region);
-                    size_t index = (size_t)addr >> gc_heap::min_segment_size_shr;
-                    map_region_to_generation_skewed[index] = 0xf0 | (uint8_t)gen_number;
-                    ephemeral_low = min (ephemeral_low, addr);
-                    ephemeral_high = max (ephemeral_high, heap_segment_reserved (region));
-                }
-            }
-        }
+        verify_region_to_generation_map();
+        compute_ephemeral_range();
 #endif //USE_REGIONS
 
         GCToEEInterface::BeforeGcScanRoots(condemned_gen_number, /* is_bgc */ false, /* is_concurrent */ false);
@@ -30061,33 +30118,8 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #endif //!USE_REGIONS
 
 #ifdef USE_REGIONS
-        memset (map_region_to_generation, 0x22, region_count*sizeof(map_region_to_generation[0]));
-        ephemeral_low = MAX_PTR;
-        ephemeral_high = nullptr;
-        for (int gen_number = soh_gen0; gen_number <= soh_gen1; gen_number++)
-        {
-            uint8_t table_entry = (uint8_t)((gen_number << 4) | gen_number);
-#ifdef MULTIPLE_HEAPS
-            for (int i = 0; i < n_heaps; i++)
-            {
-                gc_heap* hp = g_heaps[i];
-#else //MULTIPLE_HEAPS
-            {
-                gc_heap* hp = pGenGCHeap;
-#endif //MULTIPLE_HEAPS
-                generation *gen = hp->generation_of (gen_number);
-                for (heap_segment *region = generation_start_segment (gen); region != nullptr; region = heap_segment_next (region))
-                {
-                    uint8_t* addr = heap_segment_mem (region);
-                    size_t index = (size_t)addr >> gc_heap::min_segment_size_shr;
-                    map_region_to_generation_skewed[index] = table_entry;
-                    ephemeral_low = min (ephemeral_low, addr);
-                    ephemeral_high = max (ephemeral_high, heap_segment_reserved (region));
-                }
-            }
-        }
-        stomp_write_barrier_ephemeral (ephemeral_low, ephemeral_high,
-                                       map_region_to_generation_skewed, (uint8_t)min_segment_size_shr);
+            verify_region_to_generation_map ();
+            compute_ephemeral_range();
 #endif //USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
@@ -32405,26 +32437,8 @@ void gc_heap::relocate_phase (int condemned_gen_number,
 #endif //FEATURE_EVENT_TRACE
 
 #ifdef USE_REGIONS
-        for (int gen_number = soh_gen0; gen_number <= soh_gen2; gen_number++)
-        {
-#ifdef MULTIPLE_HEAPS
-            for (int i = 0; i < n_heaps; i++)
-            {
-                gc_heap* hp = g_heaps[i];
-#else //MULTIPLE_HEAPS
-            {
-                gc_heap* hp = pGenGCHeap;
-#endif //MULTIPLE_HEAPS
-                generation *gen = hp->generation_of (gen_number);
-                for (heap_segment *region = generation_start_segment (gen); region != nullptr; region = heap_segment_next (region))
-                {
-                    uint8_t* addr = heap_segment_mem (region);
-                    size_t index = (size_t)addr >> gc_heap::min_segment_size_shr;
-                    int plan_gen = heap_segment_plan_gen_num (region);
-                    map_region_to_generation_skewed[index] = (uint8_t)((plan_gen<<4) | (map_region_to_generation_skewed[index] & 0x0f));
-                }
-            }
-        }
+        verify_region_to_generation_map();
+        compute_ephemeral_range();
 #endif //USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
@@ -36925,8 +36939,7 @@ gc_heap::mark_through_cards_helper (uint8_t** poo, size_t& n_gen,
     if ((child_object < ephemeral_low) || (ephemeral_high <= child_object))
         return;
 
-    size_t child_region_index = (size_t)child_object >> gc_heap::min_segment_size_shr;
-    int child_object_gen = map_region_to_generation_skewed[child_region_index] & 0x0f;
+    int child_object_gen = get_gen_num_for_address (child_object);
     assert (child_object_gen == get_region_gen_num (child_object));
     int saved_child_object_gen = child_object_gen;
     uint8_t* saved_child_object = child_object;
@@ -36939,8 +36952,7 @@ gc_heap::mark_through_cards_helper (uint8_t** poo, size_t& n_gen,
 
     if (fn == &gc_heap::relocate_address)
     {
-        size_t new_child_region_index = (size_t)*poo >> gc_heap::min_segment_size_shr;
-        child_object_gen = map_region_to_generation_skewed[new_child_region_index] >> 4;
+        child_object_gen = get_plan_gen_num_for_address (*poo);
         assert (child_object_gen == get_region_plan_gen_num (*poo));
     }
 
