@@ -188,6 +188,8 @@ namespace System.Globalization.Tests
         {
             Assert.EndsWith("A", "A\0");
             Assert.EndsWith("A\0", "A");
+            Assert.EndsWith("a", "A\0", StringComparison.CurrentCultureIgnoreCase);
+            Assert.EndsWith("a\0", "A", StringComparison.CurrentCultureIgnoreCase);
         }
     }
 }

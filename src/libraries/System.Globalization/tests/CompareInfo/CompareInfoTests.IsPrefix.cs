@@ -187,6 +187,8 @@ namespace System.Globalization.Tests
         {
             Assert.StartsWith("A", "A\0");
             Assert.StartsWith("A\0", "A");
+            Assert.StartsWith("a", "A\0", StringComparison.CurrentCultureIgnoreCase);
+            Assert.StartsWith("a\0", "A", StringComparison.CurrentCultureIgnoreCase);
         }
     }
 }
