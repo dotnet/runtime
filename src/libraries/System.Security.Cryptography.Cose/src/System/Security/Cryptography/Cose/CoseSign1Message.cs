@@ -238,23 +238,34 @@ namespace System.Security.Cryptography.Cose
 
             alg = nullableAlg.Value;
 
-            byte[] rentedbuffer = ArrayPool<byte>.Shared.Rent(ComputeToBeSignedEncodedSize(SigStructureCoxtextSign1, _protectedHeaderAsBstr, content));
-
-            if (_toBeSigned == null)
+            if (_content == null)
             {
+                // Never cache toBeSigned if the message has detached content since the passed-in content can be different in each call.
+                toBeSigned = CreateToBeSignedForVerify(content);
+            }
+            else if (_toBeSigned == null)
+            {
+                toBeSigned = _toBeSigned = CreateToBeSignedForVerify(content);
+            }
+            else
+            {
+                toBeSigned = _toBeSigned;
+            }
+
+            byte[] CreateToBeSignedForVerify(ReadOnlySpan<byte> content)
+            {
+                byte[] rentedbuffer = ArrayPool<byte>.Shared.Rent(ComputeToBeSignedEncodedSize(SigStructureCoxtextSign1, _protectedHeaderAsBstr, content));
                 try
                 {
                     Span<byte> buffer = rentedbuffer;
                     int bytesWritten = CreateToBeSigned(SigStructureCoxtextSign1, _protectedHeaderAsBstr, content, buffer);
-                    _toBeSigned = buffer.Slice(0, bytesWritten).ToArray();
+                    return buffer.Slice(0, bytesWritten).ToArray();
                 }
                 finally
                 {
                     ArrayPool<byte>.Shared.Return(rentedbuffer, clearArray: true);
                 }
             }
-
-            toBeSigned = _toBeSigned;
         }
 
         private static ReadOnlyMemory<byte> GetCoseAlgorithmFromProtectedHeaders(CoseHeaderMap protectedHeaders)

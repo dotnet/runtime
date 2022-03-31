@@ -88,6 +88,34 @@ namespace System.Security.Cryptography.Cose.Tests
             }
         }
 
+        [Fact]
+        public void VerifyReturnsTrueAfterAttempWithWrongContent()
+        {
+            ReadOnlySpan<byte> correctContent = s_sampleContent;
+            Span<byte> wrongContent = new byte[s_sampleContent.Length];
+            wrongContent.Fill(42);
+
+            ReadOnlySpan<byte> encodedMsg = CoseSign1Message.Sign(correctContent, DefaultKey, DefaultHash, isDetached: true);
+            CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
+
+            Assert.False(msg.Verify(DefaultKey, wrongContent));
+            Assert.True(msg.Verify(DefaultKey, s_sampleContent));
+        }
+
+        [Fact]
+        public void VerifyReturnsFalseAfterAttempWithCorrectContent()
+        {
+            ReadOnlySpan<byte> correctContent = s_sampleContent;
+            Span<byte> wrongContent = new byte[s_sampleContent.Length];
+            wrongContent.Fill(42);
+
+            ReadOnlySpan<byte> encodedMsg = CoseSign1Message.Sign(correctContent, DefaultKey, DefaultHash, isDetached: true);
+            CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
+
+            Assert.True(msg.Verify(DefaultKey, s_sampleContent));
+            Assert.False(msg.Verify(DefaultKey, wrongContent));
+        }
+
         [Theory]
         // https://github.com/cose-wg/Examples/blob/master/sign1-tests/sign-fail-03.json
         [InlineData("D28445A1013903E6A10442313154546869732069732074686520636F6E74656E742E58408EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36")]
