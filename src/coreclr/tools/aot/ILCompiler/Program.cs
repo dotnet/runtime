@@ -444,6 +444,7 @@ namespace ILCompiler
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha1");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha2");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lse");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rcpc");
             }
 
             optimisticInstructionSetSupportBuilder.ComputeInstructionSetFlags(out var optimisticInstructionSet, out _,
