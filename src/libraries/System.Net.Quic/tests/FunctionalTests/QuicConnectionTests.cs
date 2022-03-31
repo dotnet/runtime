@@ -86,7 +86,7 @@ namespace System.Net.Quic.Tests
                     else
                     {
                         await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await serverConnection.AcceptStreamAsync());
-                        await Assert.ThrowsAsync<QuicOperationAbortedException>(() => OpenAndUseStreamAsync(serverConnection));
+                        await Assert.ThrowsAsync<QuicException>(() => OpenAndUseStreamAsync(serverConnection));
                     }
                 });
         }

@@ -173,7 +173,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     GCHandle.ToIntPtr(_state.StateGCHandle),
                     out _state.Handle);
 
-                if (status == MsQuicStatusCodes.Aborted || status == MsQuicStatusCodes.InvalidState)
+                if (status == MsQuicStatusCodes.Aborted)
                 {
                     // connection already aborted (from either direction), throw relevant exception
                     throw ThrowHelper.GetConnectionAbortedException(connectionState.AbortErrorCode);
