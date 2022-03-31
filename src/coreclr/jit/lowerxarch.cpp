@@ -646,6 +646,14 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
     {
         MakeSrcContained(putArgStk, src);
     }
+#ifdef TARGET_X86
+    else if ((genTypeSize(src) == TARGET_POINTER_SIZE) && IsContainableMemoryOp(src) &&
+             IsSafeToContainMem(putArgStk, src))
+    {
+        // Contain for "push [mem]".
+        MakeSrcContained(putArgStk, src);
+    }
+#endif // TARGET_X86
 }
 
 /* Lower GT_CAST(srcType, DstType) nodes.
