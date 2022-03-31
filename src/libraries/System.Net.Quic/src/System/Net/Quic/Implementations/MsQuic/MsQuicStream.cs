@@ -175,7 +175,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (status == MsQuicStatusCodes.Aborted)
                 {
-                    // connection already aborted (from either direction), throw relevant exception
+                    // connection already aborted by peer, throw relevant exception
                     throw ThrowHelper.GetConnectionAbortedException(connectionState.AbortErrorCode);
                 }
 
