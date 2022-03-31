@@ -54,9 +54,9 @@ static const CpuCapability CpuCapabilities[] = {
 #endif
     //{ "jscvt", HWCAP_JSCVT },
     //{ "fcma", HWCAP_FCMA },
-#ifdef HWCAP_ASIMDRDM
+#ifdef HWCAP_LRCPC
     { "lrcpc", HWCAP_LRCPC },
-#endi
+#endif
     //{ "dcpop", HWCAP_DCPOP },
     //{ "sha3", HWCAP_SHA3 },
     //{ "sm3", HWCAP_SM3 },
