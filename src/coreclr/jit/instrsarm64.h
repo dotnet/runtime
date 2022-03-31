@@ -1054,14 +1054,14 @@ INST1(ldarh,       "ldarh",        LD,     IF_LS_2A,  0x48DFFC00)
                                    //  ldarh   Rt,[Xn]              LS_2A  0100100011011111 111111nnnnnttttt   48DF FC00
 
 
-INST1(ldapr,        "ldapr",       LD,     IF_LS_2A,  0x88DFFC00)
-                                   //  ldapr   Rt,[Xn]              LS_2A  1X00100011011111 111111nnnnnttttt   88DF FC00   Rm Rt Rn ARMv8.3 RCPC
+INST1(ldapr,        "ldapr",       LD,     IF_LS_2A,  0xB8BFC000)
+                                   //  ldapr   Rt,[Xn]              LS_2A  1X11100010111111 110000nnnnnttttt   B8BF C000   Rm Rt Rn ARMv8.3 LRCPC
 
-INST1(ldaprb,       "ldaprb",      LD,     IF_LS_2A,  0x08DFFC00)
-                                   //  ldaprb  Rt,[Xn]              LS_2A  0000100011011111 111111nnnnnttttt   08DF FC00   Rm Rt Rn ARMv8.3 RCPC
+INST1(ldaprb,       "ldaprb",      LD,     IF_LS_2A,  0x38BFC000)
+                                   //  ldaprb  Rt,[Xn]              LS_2A  0011100010111111 110000nnnnnttttt   38BF C000   Rm Rt Rn ARMv8.3 LRCPC
 
-INST1(ldaprh,       "ldaprh",      LD,     IF_LS_2A,  0x48DFFC00)
-                                   //  ldaprh  Rt,[Xn]              LS_2A  0100100011011111 111111nnnnnttttt   48DF FC00   Rm Rt Rn ARMv8.3 RCPC
+INST1(ldaprh,       "ldaprh",      LD,     IF_LS_2A,  0x78BFC000)
+                                   //  ldaprh  Rt,[Xn]              LS_2A  0111100010111111 110000nnnnnttttt   78BF C000   Rm Rt Rn ARMv8.3 LRCPC
 
 
 INST1(ldxr,        "ldxr",         LD,     IF_LS_2A,  0x885F7C00)
