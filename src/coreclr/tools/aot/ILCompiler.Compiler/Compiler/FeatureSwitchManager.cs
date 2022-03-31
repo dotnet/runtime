@@ -739,7 +739,7 @@ namespace ILCompiler
                             ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
                         }
 
-                        (BodySubstitutions, FieldSubstitutions) = SubstitutionsParser.GetSubstitutions(module.Context, ms, resource, module, "name", featureSwitchValues);
+                        (BodySubstitutions, FieldSubstitutions) = BodySubstitutionsParser.GetSubstitutions(module.Context, ms, resource, module, "name", featureSwitchValues);
                     }
                 }
             }
