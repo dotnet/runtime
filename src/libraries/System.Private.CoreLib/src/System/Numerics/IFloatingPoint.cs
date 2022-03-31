@@ -6,7 +6,8 @@ namespace System.Numerics
     /// <summary>Defines a floating-point type.</summary>
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
     public interface IFloatingPoint<TSelf>
-        : ISignedNumber<TSelf>
+        : INumber<TSelf>,
+          ISignedNumber<TSelf>
         where TSelf : IFloatingPoint<TSelf>
     {
         /// <summary>Computes the ceiling of a value.</summary>

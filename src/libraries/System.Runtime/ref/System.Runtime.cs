@@ -9394,7 +9394,7 @@ namespace System.Numerics
         static abstract TSelf Exp(TSelf x);
         static abstract TSelf ScaleB<TInteger>(TSelf x, TInteger n) where TInteger : System.Numerics.IBinaryInteger<TInteger>;
     }
-    public partial interface IFloatingPoint<TSelf> : System.Numerics.ISignedNumber<TSelf>
+    public partial interface IFloatingPoint<TSelf> : System.Numerics.INumber<TSelf>, System.Numerics.ISignedNumber<TSelf>
         where TSelf : System.Numerics.IFloatingPoint<TSelf>
     {
         static abstract TSelf Ceiling(TSelf x);
@@ -9517,8 +9517,8 @@ namespace System.Numerics
         static abstract TResult operator <<(TSelf value, int shiftAmount);
         static abstract TResult operator >>(TSelf value, int shiftAmount);
     }
-    public partial interface ISignedNumber<TSelf> : System.Numerics.INumber<TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>
-        where TSelf : System.Numerics.ISignedNumber<TSelf>
+    public partial interface ISignedNumber<TSelf>
+        where TSelf : System.Numerics.INumberBase<TSelf>, System.Numerics.ISignedNumber<TSelf>
     {
         static abstract TSelf NegativeOne { get; }
     }
@@ -9548,8 +9548,8 @@ namespace System.Numerics
     {
         static abstract TResult operator +(TSelf value);
     }
-    public partial interface IUnsignedNumber<TSelf> : System.Numerics.INumber<TSelf>
-        where TSelf : System.Numerics.IUnsignedNumber<TSelf>
+    public partial interface IUnsignedNumber<TSelf>
+        where TSelf : System.Numerics.INumberBase<TSelf>, System.Numerics.IUnsignedNumber<TSelf>
     {
     }
 }
