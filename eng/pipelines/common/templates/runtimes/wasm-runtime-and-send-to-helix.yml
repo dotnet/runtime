@@ -19,7 +19,6 @@ parameters:
   variables: {}
   pool: ''
   runtimeFlavor: 'mono'
-  runtimeFlavor: 'Mono'
   dependsOn: []
   #arcade-specific parameters
   condition: always()
@@ -44,7 +43,6 @@ steps:
       osGroup: ${{ parameters.osGroup }}
       osSubgroup: ${{ parameters.osSubgroup}}
       coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
-      runtimeFlavor: ${{ parameters.runtimeFlavor }}
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
