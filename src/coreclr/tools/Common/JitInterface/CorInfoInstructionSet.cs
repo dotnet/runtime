@@ -742,7 +742,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("Vector64", "", InstructionSet.ARM64_Vector64, false);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.ARM64_Vector128, false);
                     yield return new InstructionSetInfo("Dczva", "", InstructionSet.ARM64_Dczva, false);
-                    yield return new InstructionSetInfo("rcpc", "", InstructionSet.ARM64_Rcpc, true);
+                    yield return new InstructionSetInfo("rcpc", "Rcpc", InstructionSet.ARM64_Rcpc, true);
                     break;
 
                 case TargetArchitecture.X64:
