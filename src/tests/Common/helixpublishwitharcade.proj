@@ -326,8 +326,6 @@
       <_MergedWrapperParentDirectory>$([System.IO.Path]::GetDirectoryName('$(_MergedWrapperDirectory)'))</_MergedWrapperParentDirectory>
       <_MergedWrapperName>%(_MergedWrapperRunScript.FileName)</_MergedWrapperName>
       <_MergedWrapperRunScriptRelative Condition="'%(_MergedWrapperRunScript.Identity)' != ''">$([System.IO.Path]::GetRelativePath($(TestBinDir), %(_MergedWrapperRunScript.FullPath)))</_MergedWrapperRunScriptRelative>
-      <!-- Force assemblies to lazy-load for LLVM AOT test runs to enable using tests that fail at AOT time (and as a result can't be AOTd) -->
-      <_MergedWrapperRunScriptRelative Condition="'$(RuntimeVariant)' == 'llvmfullaot'">$(_MergedWrapperRunScriptRelative) --aot-lazy-assembly-load</_MergedWrapperRunScriptRelative>
     </PropertyGroup>
     <ItemGroup>
       <_MergedWrapperOutOfProcessTestMarkers Include="$(_MergedWrapperParentDirectory)/**/*.OutOfProcessTest" />
@@ -353,8 +351,16 @@
       <ReducedMergedPayloadFilesFinal Include="@(_MergedPayloadFiles)" Condition=" '%(Extension)' != '.pdb' and '%(Extension)' != '.OutOfProcessTest' " />
     </ItemGroup>
 
+    <ItemGroup>
+      <!-- We need to ensure that the test run script is marked as executable. -->
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="chmod +x $(_MergedWrapperRunScriptRelative)" />
+      <!-- Force assemblies to lazy-load for LLVM AOT test runs to enable using tests that fail at AOT time (and as a result can't be AOTd) -->
+      <HelixCommandLines Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="$(_MergedWrapperRunScriptRelative) --aot-lazy-assembly-load" />
+      <HelixCommandLines Condition="'$(RuntimeVariant)' != 'llvmfullaot'" Include="$(_MergedWrapperRunScriptRelative)" />
+    </ItemGroup>
+
     <Copy SourceFiles="@(ReducedMergedPayloadFilesFinal)" DestinationFiles="@(ReducedMergedPayloadFilesFinal->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
-    <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="$(_MergedWrapperRunScriptRelative)" />
+    <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="@(HelixCommandLines)" />
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectoryForAndroid"
@@ -599,13 +605,6 @@
       <MergedTestHelixCommand>$([System.IO.File]::ReadAllText('%(PayloadHelixCommandFile)'))</MergedTestHelixCommand>
       <PayloadGroup>%(FileName)%(Extension)</PayloadGroup>
       <PayloadZipFile>$(MergedPayloadsRootDirectory)%(PayloadGroup).zip</PayloadZipFile>
-    </MergedPayloads>
-  </ItemGroup>
-
-  <!-- When targeting Mobile platforms, we ensure that the script has the right permissions beforehand. -->
-  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
-    <MergedPayloads Update="@(MergedPayloads)" Condition="'$(TestWrapperTargetsWindows)' != 'true'">
-      <MergedTestHelixCommand>chmod +x %(MergedPayloads.MergedTestHelixCommand)%0A%(MergedPayloads.MergedTestHelixCommand)</MergedTestHelixCommand>
     </MergedPayloads>
   </ItemGroup>
 
