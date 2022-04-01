@@ -2081,16 +2081,21 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowOverflowOrFormatException(ParsingStatus status, ReadOnlySpan<char> value, TypeCode type = 0) => throw GetException(status, type, value);
+        internal static void ThrowOverflowOrFormatException(ParsingStatus status, ReadOnlySpan<char> value, TypeCode type = 0) => throw GetException(status, value, type);
 
         [DoesNotReturn]
-        internal static void ThrowOverflowException(TypeCode type) => throw GetException(ParsingStatus.Overflow, type);
+        internal static void ThrowOverflowException(TypeCode type) => throw GetOverflowException(type);
 
-        private static Exception GetException(ParsingStatus status, TypeCode type, ReadOnlySpan<char> value = default)
+        private static Exception GetException(ParsingStatus status, ReadOnlySpan<char> value, TypeCode type)
         {
             if (status == ParsingStatus.Failed)
                 return new FormatException(SR.Format(SR.Format_InvalidStringWithValue, value.ToString()));
 
+            return GetOverflowException(type);
+        }
+
+        private static Exception GetOverflowException(TypeCode type)
+        {
             string s;
             switch (type)
             {
