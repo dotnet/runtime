@@ -43,7 +43,7 @@ namespace Internal.Reflection.Execution
     //==========================================================================================================
     internal sealed partial class ExecutionEnvironmentImplementation : ExecutionEnvironment
     {
-        private RuntimeTypeHandle GetOpenTypeDefinition(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle[] typeArgumentsHandles)
+        private static RuntimeTypeHandle GetOpenTypeDefinition(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle[] typeArgumentsHandles)
         {
             if (RuntimeAugments.IsGenericType(typeHandle))
             {
@@ -54,7 +54,7 @@ namespace Internal.Reflection.Execution
             return typeHandle;
         }
 
-        private RuntimeTypeHandle GetTypeDefinition(RuntimeTypeHandle typeHandle)
+        private static RuntimeTypeHandle GetTypeDefinition(RuntimeTypeHandle typeHandle)
         {
             if (RuntimeAugments.IsGenericType(typeHandle))
                 return RuntimeAugments.GetGenericDefinition(typeHandle);
@@ -475,7 +475,7 @@ namespace Internal.Reflection.Execution
             }
         }
 
-        private IntPtr GetDynamicMethodInvokerThunk(MethodBase methodInfo)
+        private static IntPtr GetDynamicMethodInvokerThunk(MethodBase methodInfo)
         {
             MethodParametersInfo methodParamsInfo = new MethodParametersInfo(methodInfo);
             return CallConverterThunk.MakeThunk(
@@ -488,7 +488,7 @@ namespace Internal.Reflection.Execution
                 null);
         }
 
-        private RuntimeTypeHandle[] GetDynamicInvokeInstantiationArguments(MethodBase reflectionMethodBase)
+        private static RuntimeTypeHandle[] GetDynamicInvokeInstantiationArguments(MethodBase reflectionMethodBase)
         {
             // The DynamicInvoke method is a generic method with arguments that match the arguments of the target method.
             // Prepare the list of arguments so that we can use it to instantiate the method.
@@ -528,7 +528,7 @@ namespace Internal.Reflection.Execution
             return result;
         }
 
-        private IntPtr TryGetVirtualResolveData(NativeFormatModuleInfo module,
+        private static IntPtr TryGetVirtualResolveData(NativeFormatModuleInfo module,
             RuntimeTypeHandle methodHandleDeclaringType, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericArgs,
             ref MethodSignatureComparer methodSignatureComparer)
         {
@@ -696,7 +696,7 @@ namespace Internal.Reflection.Execution
             }
         }
 
-        private RuntimeTypeHandle GetExactDeclaringType(RuntimeTypeHandle dstType, RuntimeTypeHandle srcType)
+        private static RuntimeTypeHandle GetExactDeclaringType(RuntimeTypeHandle dstType, RuntimeTypeHandle srcType)
         {
             // The fact that for generic types we rely solely on the template type in the mapping table causes
             // trouble for lookups from method pointer to the declaring type and method metadata handle.
@@ -1224,7 +1224,7 @@ namespace Internal.Reflection.Execution
             return functionPointerToOffsetInInvokeMap;
         }
 
-        private unsafe bool TryGetMethodForOriginalLdFtnResult_ExactInstantiation_Inner(NativeFormatModuleInfo mappingTableModule, bool forStartAddress, IntPtr canonOriginalLdFtnResult, uint parserOffset, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
+        private static unsafe bool TryGetMethodForOriginalLdFtnResult_ExactInstantiation_Inner(NativeFormatModuleInfo mappingTableModule, bool forStartAddress, IntPtr canonOriginalLdFtnResult, uint parserOffset, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
             methodHandle = default(QMethodDefinition);
             genericMethodTypeArgumentHandles = null;
@@ -1281,7 +1281,7 @@ namespace Internal.Reflection.Execution
             return false;
         }
 
-        private unsafe bool TryGetMethodForOriginalLdFtnResult_GenericMethodWithInstantiationArgument(IntPtr instantiationArgument, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
+        private static unsafe bool TryGetMethodForOriginalLdFtnResult_GenericMethodWithInstantiationArgument(IntPtr instantiationArgument, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
             MethodNameAndSignature nameAndSig;
             bool success = TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(instantiationArgument, out declaringTypeHandle, out nameAndSig, out genericMethodTypeArgumentHandles);
@@ -1451,7 +1451,7 @@ namespace Internal.Reflection.Execution
         /// Locate the static constructor context given the runtime type handle (MethodTable) for the type in question.
         /// </summary>
         /// <param name="typeHandle">MethodTable of the type to look up</param>
-        internal unsafe IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle typeHandle)
+        internal static unsafe IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle typeHandle)
         {
             return TypeLoaderEnvironment.TryGetStaticClassConstructionContext(typeHandle);
         }

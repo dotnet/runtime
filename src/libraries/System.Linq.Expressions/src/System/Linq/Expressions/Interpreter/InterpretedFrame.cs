@@ -177,7 +177,7 @@ namespace System.Linq.Expressions.Interpreter
             return _parent = currentFrame;
         }
 
-        internal void Leave(InterpretedFrame? prevFrame)
+        internal static void Leave(InterpretedFrame? prevFrame)
         {
             s_currentFrame = prevFrame;
         }

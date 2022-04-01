@@ -323,16 +323,16 @@ namespace System.Runtime.InteropServices.JavaScript
             return new Uri(uri);
         }
 
-        public static void CancelPromise(int promiseJSHandle)
+        public static void CancelPromise(IntPtr promiseJSHandle)
         {
             var res = Interop.Runtime.CancelPromise(promiseJSHandle, out int exception);
             if (exception != 0)
                 throw new JSException(res);
         }
 
-        public static Task<object> WebSocketOpen(string uri, object[]? subProtocols, Delegate onClosed, out JSObject webSocket, out int promiseJSHandle)
+        public static Task<object> WebSocketOpen(string uri, object[]? subProtocols, Delegate onClosed, out JSObject webSocket, out IntPtr promiseJSHandle)
         {
-            var res = Interop.Runtime.WebSocketOpen(uri, subProtocols, onClosed, out int webSocketJSHandle, out promiseJSHandle, out int exception);
+            var res = Interop.Runtime.WebSocketOpen(uri, subProtocols, onClosed, out IntPtr webSocketJSHandle, out promiseJSHandle, out int exception);
             if (exception != 0)
                 throw new JSException((string)res);
             webSocket = new JSObject((IntPtr)webSocketJSHandle);
@@ -340,7 +340,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return (Task<object>)res;
         }
 
-        public static unsafe Task<object>? WebSocketSend(JSObject webSocket, ArraySegment<byte> buffer, int messageType, bool endOfMessage, out int promiseJSHandle)
+        public static unsafe Task<object>? WebSocketSend(JSObject webSocket, ArraySegment<byte> buffer, int messageType, bool endOfMessage, out IntPtr promiseJSHandle)
         {
             fixed (byte* messagePtr = buffer.Array)
             {
@@ -357,7 +357,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static unsafe Task<object>? WebSocketReceive(JSObject webSocket, ArraySegment<byte> buffer, ReadOnlySpan<int> response, out int promiseJSHandle)
+        public static unsafe Task<object>? WebSocketReceive(JSObject webSocket, ArraySegment<byte> buffer, ReadOnlySpan<int> response, out IntPtr promiseJSHandle)
         {
             fixed (int* responsePtr = response)
             fixed (byte* bufferPtr = buffer.Array)
@@ -373,7 +373,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static Task<object>? WebSocketClose(JSObject webSocket, int code, string? reason, bool waitForCloseReceived, out int promiseJSHandle)
+        public static Task<object>? WebSocketClose(JSObject webSocket, int code, string? reason, bool waitForCloseReceived, out IntPtr promiseJSHandle)
         {
             var res = Interop.Runtime.WebSocketClose(webSocket.JSHandle, code, reason, waitForCloseReceived, out promiseJSHandle, out int exception);
             if (exception != 0)

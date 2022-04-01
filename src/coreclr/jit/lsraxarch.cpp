@@ -1519,21 +1519,28 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
 #endif // defined(FEATURE_SIMD)
 
 #ifdef TARGET_X86
-            if (putArgStk->gtPutArgStkKind == GenTreePutArgStk::Kind::Push)
+            // In lowering, we have marked all integral fields as usable from memory
+            // (either contained or reg optional), however, we will not always be able
+            // to use "push [mem]" in codegen, and so may have to reserve an internal
+            // register here (for explicit "mov"s).
+            if (varTypeIsIntegralOrI(fieldNode))
             {
+                assert(genTypeSize(fieldNode) <= TARGET_POINTER_SIZE);
+
                 // We can treat as a slot any field that is stored at a slot boundary, where the previous
                 // field is not in the same slot. (Note that we store the fields in reverse order.)
-                const bool fieldIsSlot = ((fieldOffset % 4) == 0) && ((prevOffset - fieldOffset) >= 4);
-                if (intTemp == nullptr)
+                const bool fieldIsSlot      = ((fieldOffset % 4) == 0) && ((prevOffset - fieldOffset) >= 4);
+                const bool canStoreWithPush = fieldIsSlot;
+                const bool canLoadWithPush  = varTypeIsI(fieldNode);
+
+                if ((!canStoreWithPush || !canLoadWithPush) && (intTemp == nullptr))
                 {
                     intTemp = buildInternalIntRegisterDefForNode(putArgStk);
                 }
-                if (!fieldIsSlot && varTypeIsByte(fieldType))
+
+                // We can only store bytes using byteable registers.
+                if (!canStoreWithPush && varTypeIsByte(fieldType))
                 {
-                    // If this field is a slot--i.e. it is an integer field that is 4-byte aligned and takes up 4 bytes
-                    // (including padding)--we can store the whole value rather than just the byte. Otherwise, we will
-                    // need a byte-addressable register for the store. We will enforce this requirement on an internal
-                    // register, which we can use to copy multiple byte values.
                     intTemp->registerAssignment &= allByteRegs();
                 }
             }
@@ -1544,12 +1551,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
 
         for (GenTreeFieldList::Use& use : putArgStk->gtOp1->AsFieldList()->Uses())
         {
-            GenTree* const fieldNode = use.GetNode();
-            if (!fieldNode->isContained())
-            {
-                BuildUse(fieldNode);
-                srcCount++;
-            }
+            srcCount += BuildOperandUses(use.GetNode());
         }
         buildInternalRegisterUses();
 

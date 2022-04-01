@@ -3023,12 +3023,23 @@ bool Compiler::optLoopContains(unsigned l1, unsigned l2) const
     }
 }
 
+//-----------------------------------------------------------------------------
+// optUpdateLoopHead: Replace the `head` block of a loop in the loop table.
+// Considers all child loops that might share the same head (recursively).
+//
+// Arguments:
+//    loopInd -- loop num of loop
+//    from    -- current loop head block
+//    to      -- replacement loop head block
+//
 void Compiler::optUpdateLoopHead(unsigned loopInd, BasicBlock* from, BasicBlock* to)
 {
     assert(optLoopTable[loopInd].lpHead == from);
+    JITDUMP("Replace " FMT_LP " head " FMT_BB " with " FMT_BB "\n", loopInd, from->bbNum, to->bbNum);
     optLoopTable[loopInd].lpHead = to;
-    for (unsigned char childLoop = optLoopTable[loopInd].lpChild; childLoop != BasicBlock::NOT_IN_LOOP;
-         childLoop               = optLoopTable[childLoop].lpSibling)
+    for (unsigned char childLoop = optLoopTable[loopInd].lpChild; //
+         childLoop != BasicBlock::NOT_IN_LOOP;                    //
+         childLoop = optLoopTable[childLoop].lpSibling)
     {
         if (optLoopTable[childLoop].lpHead == from)
         {
@@ -6889,22 +6900,26 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                         }
                     }
                 }
-                else if (tree->OperIs(GT_ASG))
+                else if (tree->OperRequiresAsgFlag())
                 {
-                    // If the LHS of the assignment has a global reference, then assume it's a global side effect.
-                    GenTree* lhs = tree->AsOp()->gtOp1;
-                    if (lhs->gtFlags & GTF_GLOB_REF)
+                    // Assume all stores except "ASG(non-addr-exposed LCL, ...)" are globally visible.
+                    GenTreeLclVarCommon* lclNode;
+                    bool                 isGloballyVisibleStore;
+                    if (tree->OperIs(GT_ASG) && tree->DefinesLocal(m_compiler, &lclNode))
                     {
+                        isGloballyVisibleStore = m_compiler->lvaGetDesc(lclNode)->IsAddressExposed();
+                    }
+                    else
+                    {
+                        isGloballyVisibleStore = true;
+                    }
+
+                    if (isGloballyVisibleStore)
+                    {
+                        INDEBUG(failReason = "store to globally visible memory");
+                        treeIsHoistable    = false;
                         m_beforeSideEffect = false;
                     }
-                }
-                else if (tree->OperIs(GT_XADD, GT_XORR, GT_XAND, GT_XCHG, GT_LOCKADD, GT_CMPXCHG, GT_MEMORYBARRIER))
-                {
-                    // If this node is a MEMORYBARRIER or an Atomic operation
-                    // then don't hoist and stop any further hoisting after this node
-                    INDEBUG(failReason = "atomic op or memory barrier";)
-                    treeIsHoistable    = false;
-                    m_beforeSideEffect = false;
                 }
             }
 
@@ -7789,16 +7804,13 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 
                 if (lhs->OperGet() == GT_IND)
                 {
-                    GenTree*      arg           = lhs->AsOp()->gtOp1->gtEffectiveVal(/*commaOnly*/ true);
-                    FieldSeqNode* fldSeqArrElem = nullptr;
+                    GenTree* arg = lhs->AsOp()->gtOp1->gtEffectiveVal(/*commaOnly*/ true);
 
                     if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
                     {
                         memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                         continue;
                     }
-
-                    ArrayInfo arrInfo;
 
                     if (arg->TypeGet() == TYP_BYREF && arg->OperGet() == GT_LCL_VAR)
                     {
@@ -7825,24 +7837,25 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         // Otherwise...
                         memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                     }
-                    // Is the LHS an array index expression?
-                    else if (lhs->ParseArrayElemForm(this, &arrInfo, &fldSeqArrElem))
-                    {
-                        // We actually ignore "fldSeq" -- any modification to an S[], at any
-                        // field of "S", will lose all information about the array type.
-                        CORINFO_CLASS_HANDLE elemTypeEq = EncodeElemType(arrInfo.m_elemType, arrInfo.m_elemStructType);
-                        AddModifiedElemTypeAllContainingLoops(mostNestedLoop, elemTypeEq);
-                        // Conservatively assume byrefs may alias this array element
-                        memoryHavoc |= memoryKindSet(ByrefExposed);
-                    }
                     else
                     {
-                        GenTree*      baseAddr = nullptr;
-                        FieldSeqNode* fldSeq   = nullptr;
-                        if (arg->IsFieldAddr(this, &baseAddr, &fldSeq))
+                        GenTreeArrAddr* arrAddr  = nullptr;
+                        GenTree*        baseAddr = nullptr;
+                        FieldSeqNode*   fldSeq   = nullptr;
+
+                        if (arg->IsArrayAddr(&arrAddr))
                         {
-                            assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()) &&
-                                   !fldSeq->IsPseudoField());
+                            // We will not collect "fldSeq" -- any modification to an S[], at
+                            // any field of "S", will lose all information about the array type.
+                            CORINFO_CLASS_HANDLE elemTypeEq =
+                                EncodeElemType(arrAddr->GetElemType(), arrAddr->GetElemClassHandle());
+                            AddModifiedElemTypeAllContainingLoops(mostNestedLoop, elemTypeEq);
+                            // Conservatively assume byrefs may alias this array element
+                            memoryHavoc |= memoryKindSet(ByrefExposed);
+                        }
+                        else if (arg->IsFieldAddr(this, &baseAddr, &fldSeq))
+                        {
+                            assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()));
 
                             FieldKindForVN fieldKind =
                                 (baseAddr != nullptr) ? FieldKindForVN::WithBaseAddr : FieldKindForVN::SimpleStatic;
@@ -7909,32 +7922,20 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         tree->gtVNPair = tree->AsOp()->gtOp2->gtVNPair;
                         break;
 
-                    case GT_ADDR:
-                        // Is it an addr of a array index expression?
-                        {
-                            GenTree* addrArg = tree->AsOp()->gtOp1;
-                            if (addrArg->OperGet() == GT_IND)
-                            {
-                                // Is the LHS an array index expression?
-                                if (addrArg->gtFlags & GTF_IND_ARR_INDEX)
-                                {
-                                    ArrayInfo arrInfo;
-                                    bool      b = GetArrayInfoMap()->Lookup(addrArg, &arrInfo);
-                                    assert(b);
-                                    CORINFO_CLASS_HANDLE elemTypeEq =
-                                        EncodeElemType(arrInfo.m_elemType, arrInfo.m_elemStructType);
-                                    ValueNum elemTypeEqVN =
-                                        vnStore->VNForHandle(ssize_t(elemTypeEq), GTF_ICON_CLASS_HDL);
-                                    ValueNum ptrToArrElemVN =
-                                        vnStore->VNForFunc(TYP_BYREF, VNF_PtrToArrElem, elemTypeEqVN,
-                                                           // The rest are dummy arguments.
-                                                           vnStore->VNForNull(), vnStore->VNForNull(),
-                                                           vnStore->VNForNull());
-                                    tree->gtVNPair.SetBoth(ptrToArrElemVN);
-                                }
-                            }
-                        }
-                        break;
+                    // Is it an addr of an array index expression?
+                    case GT_ARR_ADDR:
+                    {
+                        CORINFO_CLASS_HANDLE elemTypeEq =
+                            EncodeElemType(tree->AsArrAddr()->GetElemType(), tree->AsArrAddr()->GetElemClassHandle());
+                        ValueNum elemTypeEqVN = vnStore->VNForHandle(ssize_t(elemTypeEq), GTF_ICON_CLASS_HDL);
+
+                        // Label this with a "dummy" PtrToArrElem so that we pick it up when looking at the ASG.
+                        ValueNum ptrToArrElemVN =
+                            vnStore->VNForFunc(TYP_BYREF, VNF_PtrToArrElem, elemTypeEqVN, vnStore->VNForNull(),
+                                               vnStore->VNForNull(), vnStore->VNForNull());
+                        tree->gtVNPair.SetBoth(ptrToArrElemVN);
+                    }
+                    break;
 
 #ifdef FEATURE_HW_INTRINSICS
                     case GT_HWINTRINSIC:

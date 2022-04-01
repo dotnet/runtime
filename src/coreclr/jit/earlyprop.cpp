@@ -344,16 +344,6 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
             actualValClone->gtType = tree->gtType;
         }
 
-        // Propagating a constant into an array index expression requires calling
-        // LabelIndex to update the FieldSeq annotations.  EarlyProp may replace
-        // array length expressions with constants, so check if this is an array
-        // length operator that is part of an array index expression.
-        bool isIndexExpr = (tree->OperGet() == GT_ARR_LENGTH && ((tree->gtFlags & GTF_ARRLEN_ARR_IDX) != 0));
-        if (isIndexExpr)
-        {
-            actualValClone->LabelIndex(this);
-        }
-
         // actualValClone has small tree node size, it is safe to use CopyFrom here.
         tree->ReplaceWith(actualValClone, this);
 

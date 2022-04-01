@@ -701,6 +701,12 @@ int LinearScan::BuildNode(GenTree* tree)
                     assert(cast->isContained() && (cns == 0));
                     BuildUse(cast->CastOp());
                 }
+                else if (index->OperIs(GT_CAST) && index->isContained())
+                {
+                    GenTreeCast* cast = index->AsCast();
+                    assert(cast->isContained() && (cns == 0));
+                    BuildUse(cast->CastOp());
+                }
                 else
                 {
                     BuildUse(index);

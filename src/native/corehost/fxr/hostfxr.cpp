@@ -425,7 +425,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
     }
 
     std::vector<framework_info> framework_infos;
-    framework_info::get_all_framework_infos(dotnet_dir, _X(""), &framework_infos);
+    framework_info::get_all_framework_infos(dotnet_dir, _X(""), /*disable_multilevel_lookup*/ true, &framework_infos);
 
     std::vector<hostfxr_dotnet_environment_framework_info> environment_framework_infos;
     std::vector<pal::string_t> framework_versions;

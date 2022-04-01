@@ -39,6 +39,11 @@ namespace System.Numerics
         /// <returns>The sine of <paramref name="x" />.</returns>
         static abstract TSelf Sin(TSelf x);
 
+        /// <summary>Computes the sine and cosine of a value.</summary>
+        /// <param name="x">The value, in radians, whose sine and cosine are to be computed.</param>
+        /// <returns>The sine and cosine of <paramref name="x" />.</returns>
+        static abstract (TSelf Sin, TSelf Cos) SinCos(TSelf x);
+
         /// <summary>Computes the tangent of a value.</summary>
         /// <param name="x">The value, in radians, whose tangent is to be computed.</param>
         /// <returns>The tangent of <paramref name="x" />.</returns>

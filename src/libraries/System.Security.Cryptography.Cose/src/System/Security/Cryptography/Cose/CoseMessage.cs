@@ -1,15 +1,19 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Diagnostics;
 using System.Formats.Cbor;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography.Cose
 {
     public abstract class CoseMessage
     {
-        internal const string PreviewFeatureMessage = "COSE is in preview.";
         private const byte EmptyStringByte = 0xa0;
+        internal const int SizeOfArrayOfFour = 1;
+
         // COSE tags https://datatracker.ietf.org/doc/html/rfc8152#page-8 Table 1.
         internal const CborTag Sign1Tag = (CborTag)18;
 
@@ -46,19 +50,58 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        public static CoseSign1Message DecodeSign1(byte[] cborPayload)
+        public static CoseSign1Message DecodeSign1(byte[] cborPayload!!)
+            => DecodeCoseSign1Core(new CborReader(cborPayload));
+
+        public static CoseSign1Message DecodeSign1(ReadOnlySpan<byte> cborPayload)
+        {
+            unsafe
+            {
+                fixed (byte* ptr = &MemoryMarshal.GetReference(cborPayload))
+                {
+                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, cborPayload.Length))
+                    {
+                        return DecodeCoseSign1Core(new CborReader(manager.Memory));
+                    }
+                }
+            }
+        }
+
+        private static CoseSign1Message DecodeCoseSign1Core(CborReader reader)
         {
             try
             {
-                var reader = new CborReader(cborPayload);
                 CborTag? tag = DecodeTag(reader);
                 if (tag != null && tag != Sign1Tag)
                 {
                     throw new CryptographicException(SR.Format(SR.DecodeSign1IncorrectTag, tag));
                 }
 
-                CoseSign1Message message = DecodeCoseSign1Core(reader);
-                return reader.BytesRemaining == 0 ? message : throw new CryptographicException(SR.Format(SR.DecodeSign1ErrorWhileDecoding, SR.DecodeSign1MesageContainedTrailingData));
+                int? arrayLength = reader.ReadStartArray();
+                if (arrayLength != 4)
+                {
+                    throw new CryptographicException(SR.Format(SR.DecodeSign1ErrorWhileDecoding, SR.DecodeSign1ArrayLengthMustBeFour));
+                }
+
+                var protectedHeader = new CoseHeaderMap();
+                DecodeProtectedBucket(reader, protectedHeader, out byte[] protectedHeaderAsBstr);
+                protectedHeader.IsReadOnly = true;
+
+                var unprotectedHeader = new CoseHeaderMap();
+                DecodeUnprotectedBucket(reader, unprotectedHeader);
+
+                ThrowIfDuplicateLabels(protectedHeader, unprotectedHeader);
+
+                byte[]? payload = DecodePayload(reader);
+                byte[] signature = DecodeSignature(reader);
+                reader.ReadEndArray();
+
+                if (reader.BytesRemaining != 0)
+                {
+                    throw new CryptographicException(SR.Format(SR.DecodeSign1ErrorWhileDecoding, SR.DecodeSign1MesageContainedTrailingData));
+                }
+
+                return new CoseSign1Message(protectedHeader, unprotectedHeader, payload, signature, protectedHeaderAsBstr);
             }
             catch (Exception ex) when (ex is CborContentException or InvalidOperationException)
             {
@@ -73,30 +116,6 @@ namespace System.Security.Cryptography.Cose
                 CborReaderState.Tag => reader.ReadTag(),
                 _ => null
             };
-        }
-
-        private static CoseSign1Message DecodeCoseSign1Core(CborReader reader)
-        {
-            int? arrayLength = reader.ReadStartArray();
-            if (arrayLength != 4)
-            {
-                throw new CryptographicException(SR.Format(SR.DecodeSign1ErrorWhileDecoding, SR.DecodeSign1ArrayLengthMustBeFour));
-            }
-
-            var protectedHeader = new CoseHeaderMap();
-            DecodeProtectedBucket(reader, protectedHeader, out byte[] protectedHeaderAsBstr);
-            protectedHeader.IsReadOnly = true;
-
-            var unprotectedHeader = new CoseHeaderMap();
-            DecodeUnprotectedBucket(reader, unprotectedHeader);
-
-            ThrowIfDuplicateLabels(protectedHeader, unprotectedHeader);
-
-            byte[]? payload = DecodePayload(reader);
-            byte[] signature = DecodeSignature(reader);
-            reader.ReadEndArray();
-
-            return new CoseSign1Message(protectedHeader, unprotectedHeader, payload, signature, protectedHeaderAsBstr);
         }
 
         private static void DecodeProtectedBucket(CborReader reader, CoseHeaderMap headerParameters, out byte[] protectedHeaderAsBstr)
@@ -162,7 +181,7 @@ namespace System.Security.Cryptography.Cose
             return reader.ReadByteString();
         }
 
-        internal static byte[] CreateToBeSigned(string context, ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> content)
+        internal static int CreateToBeSigned(string context, ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> content, Span<byte> destination)
         {
             var writer = new CborWriter();
             writer.WriteStartArray(4);
@@ -171,8 +190,18 @@ namespace System.Security.Cryptography.Cose
             writer.WriteByteString(Span<byte>.Empty); // external_aad
             writer.WriteByteString(content); //payload or content
             writer.WriteEndArray();
-            return writer.Encode();
+            int bytesWritten = writer.Encode(destination);
+
+            Debug.Assert(bytesWritten == writer.BytesWritten && bytesWritten == ComputeToBeSignedEncodedSize(context, encodedProtectedHeader, content));
+            return bytesWritten;
         }
+
+        internal static int ComputeToBeSignedEncodedSize(string context, ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> content)
+            => SizeOfArrayOfFour +
+            CoseHelpers.GetTextStringEncodedSize(context) +
+            CoseHelpers.GetByteStringEncodedSize(encodedProtectedHeader.Length) +
+            CoseHelpers.GetByteStringEncodedSize(Span<byte>.Empty.Length) +
+            CoseHelpers.GetByteStringEncodedSize(content.Length);
 
         // Validate duplicate labels https://datatracker.ietf.org/doc/html/rfc8152#section-3.
         internal static void ThrowIfDuplicateLabels(CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders)

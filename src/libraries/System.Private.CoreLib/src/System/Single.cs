@@ -658,6 +658,12 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(float x) => MathF.ILogB(x);
 
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
+        public static float ReciprocalEstimate(float x) => MathF.ReciprocalEstimate(x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
+        public static float ReciprocalSqrtEstimate(float x) => MathF.ReciprocalSqrtEstimate(x);
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
         public static float ScaleB(float x, int n) => MathF.ScaleB(x, n);
 
@@ -1168,6 +1174,9 @@ namespace System
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         public static float Sin(float x) => MathF.Sin(x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        public static (float Sin, float Cos) SinCos(float x) => MathF.SinCos(x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
         public static float Tan(float x) => MathF.Tan(x);

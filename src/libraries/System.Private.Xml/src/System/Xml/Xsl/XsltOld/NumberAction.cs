@@ -471,7 +471,7 @@ namespace System.Xml.Xsl.XsltOld
             return false;
         }
 
-        private XPathNodeType BasicNodeType(XPathNodeType type)
+        private static XPathNodeType BasicNodeType(XPathNodeType type)
         {
             if (type == XPathNodeType.SignificantWhitespace || type == XPathNodeType.Whitespace)
             {

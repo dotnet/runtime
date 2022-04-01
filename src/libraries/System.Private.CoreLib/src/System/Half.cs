@@ -885,6 +885,12 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(Half x) => MathF.ILogB((float)x);
 
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
+        public static Half ReciprocalEstimate(Half x) => (Half)MathF.ReciprocalEstimate((float)x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
+        public static Half ReciprocalSqrtEstimate(Half x) => (Half)MathF.ReciprocalSqrtEstimate((float)x);
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
         public static Half ScaleB(Half x, int n) => (Half)MathF.ScaleB((float)x, n);
 
@@ -1393,6 +1399,13 @@ namespace System
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         public static Half Sin(Half x) => (Half)MathF.Sin((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        public static (Half Sin, Half Cos) SinCos(Half x)
+        {
+            var (sin, cos) = MathF.SinCos((float)x);
+            return ((Half)sin, (Half)cos);
+        }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
         public static Half Tan(Half x) => (Half)MathF.Tan((float)x);

@@ -38,8 +38,8 @@
     <Compile Include="..\Common\ConstructorTests\ConstructorTests.ParameterMatching.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\ConstructorTests\ConstructorTests.ParameterMatching.cs" />
     <Compile Include="..\Common\ConstructorTests\ConstructorTests.Stream.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\ConstructorTests\ConstructorTests.Stream.cs" />
     <Compile Include="..\Common\ExtensionDataTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\ExtensionDataTests.cs" />
-    <Compile Include="..\Common\JsonSerializerWrapperForStream.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSerializerWrapperForStream.cs" />
-    <Compile Include="..\Common\JsonSerializerWrapperForString.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSerializerWrapperForString.cs" />
+    <Compile Include="..\Common\StreamingJsonSerializerWrapper.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\StreamingJsonSerializerWrapper.cs" />
+    <Compile Include="..\Common\JsonSerializerWrapper.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSerializerWrapper.cs" />
     <Compile Include="..\Common\JsonTestHelper.cs" Link="CommonTest\System\Text\Json\JsonTestHelper.cs" />
     <Compile Include="..\Common\NodeInteropTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\NodeInteropTests.cs" />
     <Compile Include="..\Common\PropertyNameTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyNameTests.cs" />
@@ -70,12 +70,13 @@
     <Compile Include="..\Common\TestClasses\TestClasses.ValueTypedMember.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.ValueTypedMember.cs" />
     <Compile Include="..\Common\TestClasses\TestData.cs"  Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestData.cs" />
     <Compile Include="..\Common\UnsupportedTypesTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\UnsupportedTypesTests.cs" />
+    <Compile Include="..\Common\Utf8MemoryStream.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\Utf8MemoryStream.cs" />
     <Compile Include="ContextClasses.cs" />
     <Compile Include="JsonSerializerContextTests.cs" />
     <Compile Include="Serialization\CollectionTests.cs" />
     <Compile Include="Serialization\ConstructorTests.cs" />
     <Compile Include="Serialization\ExtensionDataTests.cs" />
-    <Compile Include="Serialization\JsonSerializerWrapper.cs" />
+    <Compile Include="Serialization\JsonSerializerWrapper.SourceGen.cs" />
     <Compile Include="Serialization\ReferenceHandlerTests.cs" />
     <Compile Include="Serialization\ReferenceHandlerTests.IgnoreCycles.cs" />
     <Compile Include="JsonTestHelper.cs" />

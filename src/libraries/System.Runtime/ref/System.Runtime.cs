@@ -2065,6 +2065,8 @@ namespace System
         public static System.Double Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.Double Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.Double Pow(System.Double x, System.Double y) { throw null; }
+        public static System.Double ReciprocalEstimate(System.Double x) { throw null; }
+        public static System.Double ReciprocalSqrtEstimate(System.Double x) { throw null; }
         public static System.Double Round(System.Double x) { throw null; }
         public static System.Double Round(System.Double x, int digits) { throw null; }
         public static System.Double Round(System.Double x, int digits, System.MidpointRounding mode) { throw null; }
@@ -2072,6 +2074,7 @@ namespace System
         public static System.Double ScaleB(System.Double x, int n) { throw null; }
         public static int Sign(System.Double value) { throw null; }
         public static System.Double Sin(System.Double x) { throw null; }
+        public static (System.Double Sin, System.Double Cos) SinCos(System.Double x) { throw null; }
         public static System.Double Sinh(System.Double x) { throw null; }
         public static System.Double Sqrt(System.Double x) { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
@@ -2432,8 +2435,10 @@ namespace System
         public static bool TryStartNoGCRegion(long totalSize, long lohSize, bool disallowFullBlockingGC) { throw null; }
         public static System.GCNotificationStatus WaitForFullGCApproach() { throw null; }
         public static System.GCNotificationStatus WaitForFullGCApproach(int millisecondsTimeout) { throw null; }
+        public static System.GCNotificationStatus WaitForFullGCApproach(System.TimeSpan timeout) { throw null; }
         public static System.GCNotificationStatus WaitForFullGCComplete() { throw null; }
         public static System.GCNotificationStatus WaitForFullGCComplete(int millisecondsTimeout) { throw null; }
+        public static System.GCNotificationStatus WaitForFullGCComplete(System.TimeSpan timeout) { throw null; }
         public static void WaitForPendingFinalizers() { }
     }
     public enum GCCollectionMode
@@ -2643,6 +2648,8 @@ namespace System
         public static System.Half Parse(string s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
         public static System.Half Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.Half Pow(System.Half x, System.Half y) { throw null; }
+        public static System.Half ReciprocalEstimate(System.Half x) { throw null; }
+        public static System.Half ReciprocalSqrtEstimate(System.Half x) { throw null; }
         public static System.Half Round(System.Half x) { throw null; }
         public static System.Half Round(System.Half x, int digits) { throw null; }
         public static System.Half Round(System.Half x, int digits, System.MidpointRounding mode) { throw null; }
@@ -2650,6 +2657,7 @@ namespace System
         public static System.Half ScaleB(System.Half x, int n) { throw null; }
         public static int Sign(System.Half value) { throw null; }
         public static System.Half Sin(System.Half x) { throw null; }
+        public static (System.Half Sin, System.Half Cos) SinCos(System.Half x) { throw null; }
         public static System.Half Sinh(System.Half x) { throw null; }
         public static System.Half Sqrt(System.Half x) { throw null; }
         static System.Half System.Numerics.IBitwiseOperators<System.Half,System.Half,System.Half>.operator &(System.Half left, System.Half right) { throw null; }
@@ -4161,6 +4169,8 @@ namespace System
         public static System.Single Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.Single Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.Single Pow(System.Single x, System.Single y) { throw null; }
+        public static System.Single ReciprocalEstimate(System.Single x) { throw null; }
+        public static System.Single ReciprocalSqrtEstimate(System.Single x) { throw null; }
         public static System.Single Round(System.Single x) { throw null; }
         public static System.Single Round(System.Single x, int digits) { throw null; }
         public static System.Single Round(System.Single x, int digits, System.MidpointRounding mode) { throw null; }
@@ -4168,6 +4178,7 @@ namespace System
         public static System.Single ScaleB(System.Single x, int n) { throw null; }
         public static int Sign(System.Single value) { throw null; }
         public static System.Single Sin(System.Single x) { throw null; }
+        public static (System.Single Sin, System.Single Cos) SinCos(System.Single x) { throw null; }
         public static System.Single Sinh(System.Single x) { throw null; }
         public static System.Single Sqrt(System.Single x) { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
@@ -9394,6 +9405,8 @@ namespace System.Numerics
         static abstract bool IsNormal(TSelf value);
         static abstract bool IsPositiveInfinity(TSelf value);
         static abstract bool IsSubnormal(TSelf value);
+        static abstract TSelf ReciprocalEstimate(TSelf x);
+        static abstract TSelf ReciprocalSqrtEstimate(TSelf x);
         static abstract TSelf ScaleB(TSelf x, int n);
     }
     public partial interface IFloatingPoint<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISignedNumber<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IFloatingPoint<TSelf>
@@ -9498,6 +9511,7 @@ namespace System.Numerics
         static abstract TSelf Atan2(TSelf y, TSelf x);
         static abstract TSelf Cos(TSelf x);
         static abstract TSelf Sin(TSelf x);
+        static abstract (TSelf Sin, TSelf Cos) SinCos(TSelf x);
         static abstract TSelf Tan(TSelf x);
     }
     public partial interface IUnaryNegationOperators<TSelf, TResult> where TSelf : System.Numerics.IUnaryNegationOperators<TSelf, TResult>
@@ -13345,6 +13359,7 @@ namespace System.Threading.Tasks
         public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
         public void Wait(System.Threading.CancellationToken cancellationToken) { }
         public bool Wait(System.TimeSpan timeout) { throw null; }
+        public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static void WaitAll(params System.Threading.Tasks.Task[] tasks) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]

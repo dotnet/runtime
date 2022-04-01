@@ -85,7 +85,7 @@ namespace System.Drawing.Text
             // Register private font with GDI as well so pure GDI-based controls (TextBox, Button for instance) can access it.
             // This is a no-op on Unix which has GDI+ (libgdiplus), not GDI; and we don't have System.Windows.Forms
             // on Unix.
-            this.GdiAddFontFile(filename);
+            GdiAddFontFile(filename);
         }
 
         /// <summary>

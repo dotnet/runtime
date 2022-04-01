@@ -10,6 +10,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="assemname.cs" />
-    <ProjectReference Include="testlib.csproj" />
+    <ProjectReference Include="testlib_misc.csproj" />
   </ItemGroup>
 </Project>

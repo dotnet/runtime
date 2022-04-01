@@ -191,10 +191,8 @@ namespace System.Drawing
 
         ~Graphics() => Dispose(false);
 
-        private void FlushCore()
-        {
-            // Libgdiplus needs to synchronize a macOS context. Windows does not do anything.
-        }
+        // Libgdiplus needs to synchronize a macOS context. Windows does not do anything.
+        partial void FlushCore();
 
         /// <summary>
         /// Represents an object used in connection with the printing API, it is used to hold a reference to a
@@ -936,7 +934,7 @@ namespace System.Drawing
         /// the desktop switch message and absorbing all the exceptions that get thrown while
         /// it's the secure desktop.
         /// </summary>
-        private void CheckErrorStatus(int status)
+        private static void CheckErrorStatus(int status)
         {
             if (status == Gdip.Ok)
                 return;
