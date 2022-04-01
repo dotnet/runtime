@@ -30,7 +30,6 @@
     <Compile Include="Regex.UnicodeChar.Tests.cs" />
     <Compile Include="RegexCharacterSetTests.cs" />
     <Compile Include="RegexCultureTests.cs" />
-    <Compile Include="RegexIgnoreCaseTests.cs" />
     <Compile Include="RegexMatchTimeoutExceptionTests.cs" />
     <Compile Include="RegexParserTests.cs" />
   </ItemGroup>
@@ -48,6 +47,7 @@
     <Compile Include="Regex.Count.Tests.cs" />
     <Compile Include="RegexAssert.netcoreapp.cs" />
     <Compile Include="RegexParserTests.netcoreapp.cs" />
+    <Compile Include="RegexIgnoreCaseTests.cs" />
     <Compile Include="GroupCollectionReadOnlyDictionaryTests.cs" />
     <Compile Include="CaptureCollectionTests2.cs" />
     <Compile Include="GroupCollectionTests2.cs" />

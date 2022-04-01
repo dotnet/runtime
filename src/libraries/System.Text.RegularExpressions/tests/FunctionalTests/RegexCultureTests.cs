@@ -117,7 +117,17 @@ namespace System.Text.RegularExpressions.Tests
 
             // same input and regex does match so far so good
             Assert.All(cultInvariantRegex, rex => Assert.True(rex.IsMatch(input)));
-            Assert.All(turkishRegex, rex => Assert.True(rex.IsMatch(input)));
+            if (PlatformDetection.IsNetFramework)
+            {
+                // If running in .NET Framework, when the Regex was created with a turkish locale the lower cased turkish version will
+                // no longer match the input string which contains upper and lower case iiiis hence even the input string
+                // will no longer match. For more info, check https://github.com/dotnet/runtime/issues/58958
+                Assert.All(turkishRegex, rex => Assert.False(rex.IsMatch(input)));
+            }
+            else
+            {
+                Assert.All(turkishRegex, rex => Assert.True(rex.IsMatch(input)));
+            }
 
             // Now comes the tricky part depending on the use locale in ToUpper the results differ
             // Hence the regular expression will not match if different locales were used
