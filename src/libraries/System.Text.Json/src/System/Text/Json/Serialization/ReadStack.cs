@@ -62,9 +62,19 @@ namespace System.Text.Json
         public bool SupportContinuation;
 
         /// <summary>
+        /// Holds the value of $id or $ref of the currently read object
+        /// </summary>
+        public string? ReferenceId;
+
+        /// <summary>
         /// Whether we can read without the need of saving state for stream and preserve references cases.
         /// </summary>
         public bool UseFastPath;
+
+        /// <summary>
+        /// Global flag indicating whether the current deserializer supports metadata.
+        /// </summary>
+        public bool CanContainMetadata;
 
         /// <summary>
         /// Ensures that the stack buffer has sufficient capacity to hold an additional frame.
@@ -89,22 +99,18 @@ namespace System.Text.Json
 
         internal void Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation = false)
         {
-            Current.JsonTypeInfo = jsonTypeInfo;
-
-            // The initial JsonPropertyInfo will be used to obtain the converter.
-            Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
-
-            Current.NumberHandling = Current.JsonPropertyInfo.NumberHandling;
-
             JsonSerializerOptions options = jsonTypeInfo.Options;
-            bool preserveReferences = options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve;
-            if (preserveReferences)
+            if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
             {
                 ReferenceResolver = options.ReferenceHandler!.CreateResolver(writing: false);
+                CanContainMetadata = true;
             }
 
             SupportContinuation = supportContinuation;
-            UseFastPath = !supportContinuation && !preserveReferences;
+            Current.JsonTypeInfo = jsonTypeInfo;
+            Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
+            Current.NumberHandling = Current.JsonPropertyInfo.NumberHandling;
+            UseFastPath = !supportContinuation && !CanContainMetadata;
         }
 
         public void Push()
@@ -140,6 +146,7 @@ namespace System.Text.Json
                 // We are re-entering a continuation, adjust indices accordingly
                 if (_count++ > 0)
                 {
+                    _stack[_count - 2] = Current;
                     Current = _stack[_count - 1];
                 }
 
@@ -316,6 +323,24 @@ namespace System.Text.Json
 
                 return propertyName;
             }
+        }
+
+        // Traverses the stack for the outermost object being deserialized using constructor parameters
+        // Only called when calculating exception information.
+        public JsonTypeInfo GetTopJsonTypeInfoWithParameterizedConstructor()
+        {
+            Debug.Assert(!IsContinuation);
+
+            for (int i = 0; i < _count - 1; i++)
+            {
+                if (_stack[i].JsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase.ConstructorIsParameterized)
+                {
+                    return _stack[i].JsonTypeInfo;
+                }
+            }
+
+            Debug.Assert(Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase.ConstructorIsParameterized);
+            return Current.JsonTypeInfo;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
