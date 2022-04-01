@@ -13,6 +13,6 @@ namespace System.Runtime.InteropServices
         S390x,
         LoongArch64,
         Armv6,
-        PPC64le,
+        POWERPC64,
     }
 }
