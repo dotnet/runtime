@@ -590,16 +590,7 @@
     </MergedPayloads>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
-    <MergedPayloads Update="@(MergedPayloads)">
-      <PayloadHelixCommandFile>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)\HelixCommand.txt</PayloadHelixCommandFile>
-      <MergedTestHelixCommand>$([System.IO.File]::ReadAllText('%(PayloadHelixCommandFile)'))</MergedTestHelixCommand>
-      <PayloadGroup>$([System.IO.Path]::GetDirectoryName('%(MergedTestHelixCommand)').Replace('/', '-').Replace('\', '-'))</PayloadGroup>
-      <PayloadZipFile>$(MergedPayloadsRootDirectory)%(PayloadGroup).zip</PayloadZipFile>
-    </MergedPayloads>
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
     <MergedPayloads Update="@(MergedPayloads)">
       <PayloadHelixCommandFile>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)\HelixCommand.txt</PayloadHelixCommandFile>
       <MergedTestHelixCommand>$([System.IO.File]::ReadAllText('%(PayloadHelixCommandFile)'))</MergedTestHelixCommand>
