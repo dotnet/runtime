@@ -365,7 +365,7 @@ namespace System
         {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
-            if (unchecked((uint)startIndex) >= unchecked((uint)value.Length))
+            if (unchecked((uint)startIndex) >= unchecked(value.Length))
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
             if (startIndex > value.Length - sizeof(short))
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall, ExceptionArgument.value);
@@ -403,7 +403,7 @@ namespace System
         {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
-            if (unchecked((uint)startIndex) >= unchecked((uint)value.Length))
+            if (unchecked((uint)startIndex) >= unchecked(value.Length))
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
             if (startIndex > value.Length - sizeof(int))
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall, ExceptionArgument.value);
@@ -441,7 +441,7 @@ namespace System
         {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
-            if (unchecked((uint)startIndex) >= unchecked((uint)value.Length))
+            if (unchecked((uint)startIndex) >= unchecked(value.Length))
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
             if (startIndex > value.Length - sizeof(long))
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall, ExceptionArgument.value);

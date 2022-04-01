@@ -1119,6 +1119,7 @@ namespace System.Collections.Generic
                     keys[left] = keys[i];
                     keys[i] = temp;
 
+                    // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     if ((uint)i < (uint)values.Length) // check to see if we have values
                     {
                         TValue tempValue = values[left];

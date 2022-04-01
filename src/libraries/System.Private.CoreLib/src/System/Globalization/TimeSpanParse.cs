@@ -170,14 +170,15 @@ namespace System.Globalization
                 // Get the position of the next character to be processed.  If there is no
                 // next character, we're at the end.
                 int pos = _pos;
+                ReadOnlySpan<char> value = _value;
                 Debug.Assert(pos > -1);
-                if (pos >= _value.Length)
+                if ((uint)pos >= (uint)value.Length)    // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                 {
                     return new TimeSpanToken(TTT.End);
                 }
 
                 // Now retrieve that character. If it's a digit, we're processing a number.
-                int num = _value[pos] - '0';
+                int num = value[pos] - '0';
                 if ((uint)num <= 9)
                 {
                     int zeroes = 0;
@@ -188,8 +189,10 @@ namespace System.Globalization
                         while (true)
                         {
                             int digit;
-                            if (++_pos >= _value.Length || (uint)(digit = _value[_pos] - '0') > 9)
+                            // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+                            if ((uint)(++pos) >= (uint)value.Length || (uint)(digit = value[pos] - '0') > 9)
                             {
+                                _pos = pos;
                                 return new TimeSpanToken(TTT.Num, 0, zeroes, default);
                             }
 
@@ -200,26 +203,30 @@ namespace System.Globalization
                             }
 
                             num = digit;
+                            _pos = pos;
                             break;
                         }
                     }
 
                     // Continue to read as long as we're reading digits.
-                    while (++_pos < _value.Length)
+                    while ((uint)(++pos) < (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     {
-                        int digit = _value[_pos] - '0';
+                        int digit = value[pos] - '0';
                         if ((uint)digit > 9)
                         {
+                            _pos = pos;
                             break;
                         }
 
                         num = num * 10 + digit;
                         if ((num & 0xF0000000) != 0) // Max limit we can support 268435455 which is FFFFFFF
                         {
+                            _pos = pos;
                             return new TimeSpanToken(TTT.NumOverflow);
                         }
                     }
 
+                    _pos = pos;
                     return new TimeSpanToken(TTT.Num, num, zeroes, default);
                 }
 
@@ -228,12 +235,14 @@ namespace System.Globalization
                 int length = 1;
                 while (true)
                 {
-                    if (++_pos >= _value.Length || (uint)(_value[_pos] - '0') <= 9)
+                    // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+                    if ((uint)(++pos) >= (uint)value.Length || (uint)(value[pos] - '0') <= 9)
                     {
                         break;
                     }
                     length++;
                 }
+                _pos = pos;
 
                 // Return the separator.
                 return new TimeSpanToken(TTT.Sep, 0, 0, _value.Slice(pos, length));
@@ -249,7 +258,7 @@ namespace System.Globalization
             internal char NextChar()
             {
                 int pos = ++_pos;
-                return (uint)pos < (uint)_value.Length?
+                return (uint)pos < (uint)_value.Length ? // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     _value[pos] :
                     (char)0;
             }
@@ -1258,7 +1267,7 @@ namespace System.Globalization
 
             var tokenizer = new TimeSpanTokenizer(input, -1);
 
-            while ((uint)i < (uint)format.Length)
+            while ((uint)i < (uint)format.Length)   // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
             {
                 char ch = format[i];
                 int nextFormatChar;
@@ -1421,7 +1430,7 @@ namespace System.Globalization
             while (tokenLength < maxDigitLength)
             {
                 char ch = tokenizer.NextChar();
-                if (ch < '0' || ch > '9')
+                if ((uint)(ch - '0') > '9' - '0')
                 {
                     tokenizer.BackOne();
                     break;

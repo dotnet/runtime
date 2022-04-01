@@ -554,7 +554,7 @@ namespace System
                 do
                 {
                     index++;
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto FalseExit;
                     num = value[index];
                 }
@@ -571,14 +571,14 @@ namespace System
                     {
                         sign = -1;
                         index++;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto FalseExit;
                         num = value[index];
                     }
                     else if (num == '+')
                     {
                         index++;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto FalseExit;
                         num = value[index];
                     }
@@ -587,7 +587,7 @@ namespace System
                 {
                     sign = -1;
                     index++;
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto FalseExit;
                     num = value[index];
                 }
@@ -599,7 +599,7 @@ namespace System
                     if (!string.IsNullOrEmpty(positiveSign) && value.StartsWith(positiveSign))
                     {
                         index += positiveSign.Length;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto FalseExit;
                         num = value[index];
                     }
@@ -607,7 +607,7 @@ namespace System
                     {
                         sign = -1;
                         index += negativeSign.Length;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto FalseExit;
                         num = value[index];
                     }
@@ -625,7 +625,7 @@ namespace System
                     do
                     {
                         index++;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto DoneAtEnd;
                         num = value[index];
                     } while (num == '0');
@@ -638,7 +638,7 @@ namespace System
                 index++;
                 for (int i = 0; i < 8; i++) // next 8 digits can't overflow
                 {
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto DoneAtEnd;
                     num = value[index];
                     if (!IsDigit(num))
@@ -647,7 +647,7 @@ namespace System
                     answer = 10 * answer + num - '0';
                 }
 
-                if ((uint)index >= (uint)value.Length)
+                if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     goto DoneAtEnd;
                 num = value[index];
                 if (!IsDigit(num))
@@ -657,7 +657,7 @@ namespace System
                 overflow = answer > int.MaxValue / 10;
                 answer = answer * 10 + num - '0';
                 overflow |= (uint)answer > int.MaxValue + (((uint)sign) >> 31);
-                if ((uint)index >= (uint)value.Length)
+                if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     goto DoneAtEndButPotentialOverflow;
 
                 // At this point, we're either overflowing or hitting a formatting error.
@@ -667,7 +667,7 @@ namespace System
                 {
                     overflow = true;
                     index++;
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto OverflowExit;
                     num = value[index];
                 }
@@ -706,7 +706,7 @@ namespace System
                     if (!IsWhite(value[index]))
                         break;
                 }
-                if ((uint)index >= (uint)value.Length)
+                if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     goto DoneAtEndButPotentialOverflow;
             }
 
@@ -733,7 +733,7 @@ namespace System
                 do
                 {
                     index++;
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto FalseExit;
                     num = value[index];
                 }
@@ -750,14 +750,14 @@ namespace System
                     {
                         sign = -1;
                         index++;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto FalseExit;
                         num = value[index];
                     }
                     else if (num == '+')
                     {
                         index++;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto FalseExit;
                         num = value[index];
                     }
@@ -766,7 +766,7 @@ namespace System
                 {
                     sign = -1;
                     index++;
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto FalseExit;
                     num = value[index];
                 }
@@ -778,7 +778,7 @@ namespace System
                     if (!string.IsNullOrEmpty(positiveSign) && value.StartsWith(positiveSign))
                     {
                         index += positiveSign.Length;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto FalseExit;
                         num = value[index];
                     }
@@ -786,7 +786,7 @@ namespace System
                     {
                         sign = -1;
                         index += negativeSign.Length;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto FalseExit;
                         num = value[index];
                     }
@@ -804,7 +804,7 @@ namespace System
                     do
                     {
                         index++;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto DoneAtEnd;
                         num = value[index];
                     } while (num == '0');
@@ -817,7 +817,7 @@ namespace System
                 index++;
                 for (int i = 0; i < 17; i++) // next 17 digits can't overflow
                 {
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto DoneAtEnd;
                     num = value[index];
                     if (!IsDigit(num))
@@ -826,7 +826,7 @@ namespace System
                     answer = 10 * answer + num - '0';
                 }
 
-                if ((uint)index >= (uint)value.Length)
+                if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     goto DoneAtEnd;
                 num = value[index];
                 if (!IsDigit(num))
@@ -836,7 +836,7 @@ namespace System
                 overflow = answer > long.MaxValue / 10;
                 answer = answer * 10 + num - '0';
                 overflow |= (ulong)answer > (ulong)long.MaxValue + (((uint)sign) >> 31);
-                if ((uint)index >= (uint)value.Length)
+                if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     goto DoneAtEndButPotentialOverflow;
 
                 // At this point, we're either overflowing or hitting a formatting error.
@@ -846,7 +846,7 @@ namespace System
                 {
                     overflow = true;
                     index++;
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto OverflowExit;
                     num = value[index];
                 }
@@ -885,7 +885,7 @@ namespace System
                     if (!IsWhite(value[index]))
                         break;
                 }
-                if ((uint)index >= (uint)value.Length)
+                if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     goto DoneAtEndButPotentialOverflow;
             }
 
@@ -985,7 +985,7 @@ namespace System
                 do
                 {
                     index++;
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto FalseExit;
                     num = value[index];
                 }
@@ -1001,7 +1001,7 @@ namespace System
                     if (num == '+')
                     {
                         index++;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto FalseExit;
                         num = value[index];
                     }
@@ -1009,7 +1009,7 @@ namespace System
                     {
                         overflow = true;
                         index++;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto FalseExit;
                         num = value[index];
                     }
@@ -1018,7 +1018,7 @@ namespace System
                 {
                     overflow = true;
                     index++;
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto FalseExit;
                     num = value[index];
                 }
@@ -1030,7 +1030,7 @@ namespace System
                     if (!string.IsNullOrEmpty(positiveSign) && value.StartsWith(positiveSign))
                     {
                         index += positiveSign.Length;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto FalseExit;
                         num = value[index];
                     }
@@ -1038,7 +1038,7 @@ namespace System
                     {
                         overflow = true;
                         index += negativeSign.Length;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto FalseExit;
                         num = value[index];
                     }
@@ -1055,7 +1055,7 @@ namespace System
                     do
                     {
                         index++;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto DoneAtEnd;
                         num = value[index];
                     } while (num == '0');
@@ -1068,7 +1068,7 @@ namespace System
                 index++;
                 for (int i = 0; i < 8; i++) // next 8 digits can't overflow
                 {
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto DoneAtEndButPotentialOverflow;
                     num = value[index];
                     if (!IsDigit(num))
@@ -1077,7 +1077,7 @@ namespace System
                     answer = 10 * answer + num - '0';
                 }
 
-                if ((uint)index >= (uint)value.Length)
+                if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     goto DoneAtEndButPotentialOverflow;
                 num = value[index];
                 if (!IsDigit(num))
@@ -1086,7 +1086,7 @@ namespace System
                 // Potential overflow now processing the 10th digit.
                 overflow |= (uint)answer > uint.MaxValue / 10 || ((uint)answer == uint.MaxValue / 10 && num > '5');
                 answer = answer * 10 + num - '0';
-                if ((uint)index >= (uint)value.Length)
+                if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     goto DoneAtEndButPotentialOverflow;
 
                 // At this point, we're either overflowing or hitting a formatting error.
@@ -1096,7 +1096,7 @@ namespace System
                 {
                     overflow = true;
                     index++;
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto OverflowExit;
                     num = value[index];
                 }
@@ -1137,7 +1137,7 @@ namespace System
                     if (!IsWhite(value[index]))
                         break;
                 }
-                if ((uint)index >= (uint)value.Length)
+                if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     goto DoneAtEndButPotentialOverflow;
             }
 
@@ -1164,7 +1164,7 @@ namespace System
                 do
                 {
                     index++;
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto FalseExit;
                     num = value[index];
                 }
@@ -1182,7 +1182,7 @@ namespace System
                     do
                     {
                         index++;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto DoneAtEnd;
                         num = value[index];
                     } while (num == '0');
@@ -1195,7 +1195,7 @@ namespace System
                 index++;
                 for (int i = 0; i < 7; i++) // next 7 digits can't overflow
                 {
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto DoneAtEnd;
                     num = value[index];
 
@@ -1207,7 +1207,7 @@ namespace System
                 }
 
                 // If there's another digit, it's an overflow.
-                if ((uint)index >= (uint)value.Length)
+                if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     goto DoneAtEnd;
                 num = value[index];
                 if (!HexConverter.IsHexChar(num))
@@ -1218,7 +1218,7 @@ namespace System
                 do
                 {
                     index++;
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto OverflowExit;
                     num = value[index];
                 } while (HexConverter.IsHexChar(num));
@@ -1258,7 +1258,7 @@ namespace System
                     if (!IsWhite(value[index]))
                         break;
                 }
-                if ((uint)index >= (uint)value.Length)
+                if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     goto DoneAtEndButPotentialOverflow;
             }
 
@@ -1321,7 +1321,7 @@ namespace System
                 do
                 {
                     index++;
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto FalseExit;
                     num = value[index];
                 }
@@ -1337,7 +1337,7 @@ namespace System
                     if (num == '+')
                     {
                         index++;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto FalseExit;
                         num = value[index];
                     }
@@ -1345,7 +1345,7 @@ namespace System
                     {
                         overflow = true;
                         index++;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto FalseExit;
                         num = value[index];
                     }
@@ -1354,7 +1354,7 @@ namespace System
                 {
                     overflow = true;
                     index++;
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto FalseExit;
                     num = value[index];
                 }
@@ -1366,7 +1366,7 @@ namespace System
                     if (!string.IsNullOrEmpty(positiveSign) && value.StartsWith(positiveSign))
                     {
                         index += positiveSign.Length;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto FalseExit;
                         num = value[index];
                     }
@@ -1374,7 +1374,7 @@ namespace System
                     {
                         overflow = true;
                         index += negativeSign.Length;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto FalseExit;
                         num = value[index];
                     }
@@ -1391,7 +1391,7 @@ namespace System
                     do
                     {
                         index++;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto DoneAtEnd;
                         num = value[index];
                     } while (num == '0');
@@ -1404,7 +1404,7 @@ namespace System
                 index++;
                 for (int i = 0; i < 18; i++) // next 18 digits can't overflow
                 {
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto DoneAtEndButPotentialOverflow;
                     num = value[index];
                     if (!IsDigit(num))
@@ -1413,7 +1413,7 @@ namespace System
                     answer = 10 * answer + num - '0';
                 }
 
-                if ((uint)index >= (uint)value.Length)
+                if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     goto DoneAtEndButPotentialOverflow;
                 num = value[index];
                 if (!IsDigit(num))
@@ -1422,7 +1422,7 @@ namespace System
                 // Potential overflow now processing the 20th digit.
                 overflow |= (ulong)answer > ulong.MaxValue / 10 || ((ulong)answer == ulong.MaxValue / 10 && num > '5');
                 answer = answer * 10 + num - '0';
-                if ((uint)index >= (uint)value.Length)
+                if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     goto DoneAtEndButPotentialOverflow;
 
                 // At this point, we're either overflowing or hitting a formatting error.
@@ -1432,7 +1432,7 @@ namespace System
                 {
                     overflow = true;
                     index++;
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto OverflowExit;
                     num = value[index];
                 }
@@ -1473,7 +1473,7 @@ namespace System
                     if (!IsWhite(value[index]))
                         break;
                 }
-                if ((uint)index >= (uint)value.Length)
+                if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     goto DoneAtEndButPotentialOverflow;
             }
 
@@ -1500,7 +1500,7 @@ namespace System
                 do
                 {
                     index++;
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto FalseExit;
                     num = value[index];
                 }
@@ -1518,7 +1518,7 @@ namespace System
                     do
                     {
                         index++;
-                        if ((uint)index >= (uint)value.Length)
+                        if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             goto DoneAtEnd;
                         num = value[index];
                     } while (num == '0');
@@ -1531,7 +1531,7 @@ namespace System
                 index++;
                 for (int i = 0; i < 15; i++) // next 15 digits can't overflow
                 {
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto DoneAtEnd;
                     num = value[index];
 
@@ -1543,7 +1543,7 @@ namespace System
                 }
 
                 // If there's another digit, it's an overflow.
-                if ((uint)index >= (uint)value.Length)
+                if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     goto DoneAtEnd;
                 num = value[index];
                 if (!HexConverter.IsHexChar(num))
@@ -1554,7 +1554,7 @@ namespace System
                 do
                 {
                     index++;
-                    if ((uint)index >= (uint)value.Length)
+                    if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                         goto OverflowExit;
                     num = value[index];
                 } while (HexConverter.IsHexChar(num));
@@ -1594,7 +1594,7 @@ namespace System
                     if (!IsWhite(value[index]))
                         break;
                 }
-                if ((uint)index >= (uint)value.Length)
+                if ((uint)index >= (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     goto DoneAtEndButPotentialOverflow;
             }
 
@@ -2014,6 +2014,7 @@ namespace System
         private static bool TrailingZeros(ReadOnlySpan<char> value, int index)
         {
             // For compatibility, we need to allow trailing zeros at the end of a number string
+            // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
             for (int i = index; (uint)i < (uint)value.Length; i++)
             {
                 if (value[i] != '\0')

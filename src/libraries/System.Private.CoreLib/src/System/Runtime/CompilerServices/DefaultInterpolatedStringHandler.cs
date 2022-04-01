@@ -154,9 +154,9 @@ namespace System.Runtime.CompilerServices
 
             if (value.Length == 1)
             {
-                Span<char> chars = _chars;
                 int pos = _pos;
-                if ((uint)pos < (uint)chars.Length)
+                Span<char> chars = _chars;
+                if ((uint)pos < (uint)chars.Length) // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                 {
                     chars[pos] = value[0];
                     _pos = pos + 1;
@@ -170,12 +170,11 @@ namespace System.Runtime.CompilerServices
 
             if (value.Length == 2)
             {
-                Span<char> chars = _chars;
                 int pos = _pos;
-                if ((uint)pos < chars.Length - 1)
+                if ((uint)pos < _chars.Length - 1)
                 {
                     Unsafe.WriteUnaligned(
-                        ref Unsafe.As<char, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(chars), pos)),
+                        ref Unsafe.As<char, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(_chars), pos)),
                         Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref value.GetRawStringData())));
                     _pos = pos + 2;
                 }

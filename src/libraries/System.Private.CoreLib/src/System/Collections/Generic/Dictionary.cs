@@ -305,7 +305,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if ((uint)index > (uint)array.Length)
+            if ((uint)index > array.Length)
             {
                 ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             }
@@ -377,7 +377,7 @@ namespace System.Collections.Generic
                         {
                             // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                             // Test in if to drop range check for following array access
-                            if ((uint)i >= (uint)entries.Length)
+                            if ((uint)i >= entries.Length)
                             {
                                 goto ReturnNotFound;
                             }
@@ -391,7 +391,7 @@ namespace System.Collections.Generic
                             i = entry.next;
 
                             collisionCount++;
-                        } while (collisionCount <= (uint)entries.Length);
+                        } while (collisionCount <= entries.Length);
 
                         // The chain of entries forms a loop; which means a concurrent update has happened.
                         // Break out of the loop and throw, rather than looping forever.
@@ -409,7 +409,7 @@ namespace System.Collections.Generic
                         {
                             // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                             // Test in if to drop range check for following array access
-                            if ((uint)i >= (uint)entries.Length)
+                            if ((uint)i >= entries.Length)
                             {
                                 goto ReturnNotFound;
                             }
@@ -423,7 +423,7 @@ namespace System.Collections.Generic
                             i = entry.next;
 
                             collisionCount++;
-                        } while (collisionCount <= (uint)entries.Length);
+                        } while (collisionCount <= entries.Length);
 
                         // The chain of entries forms a loop; which means a concurrent update has happened.
                         // Break out of the loop and throw, rather than looping forever.
@@ -441,7 +441,7 @@ namespace System.Collections.Generic
                     {
                         // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                         // Test in if to drop range check for following array access
-                        if ((uint)i >= (uint)entries.Length)
+                        if ((uint)i >= entries.Length)
                         {
                             goto ReturnNotFound;
                         }
@@ -455,7 +455,7 @@ namespace System.Collections.Generic
                         i = entry.next;
 
                         collisionCount++;
-                    } while (collisionCount <= (uint)entries.Length);
+                    } while (collisionCount <= entries.Length);
 
                     // The chain of entries forms a loop; which means a concurrent update has happened.
                     // Break out of the loop and throw, rather than looping forever.
@@ -528,7 +528,7 @@ namespace System.Collections.Generic
                     {
                         // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                         // Test uint in if rather than loop condition to drop range check for following array access
-                        if ((uint)i >= (uint)entries.Length)
+                        if ((uint)i >= entries.Length)
                         {
                             break;
                         }
@@ -552,7 +552,7 @@ namespace System.Collections.Generic
                         i = entries[i].next;
 
                         collisionCount++;
-                        if (collisionCount > (uint)entries.Length)
+                        if (collisionCount > entries.Length)
                         {
                             // The chain of entries forms a loop; which means a concurrent update has happened.
                             // Break out of the loop and throw, rather than looping forever.
@@ -570,7 +570,7 @@ namespace System.Collections.Generic
                     {
                         // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                         // Test uint in if rather than loop condition to drop range check for following array access
-                        if ((uint)i >= (uint)entries.Length)
+                        if ((uint)i >= entries.Length)
                         {
                             break;
                         }
@@ -594,7 +594,7 @@ namespace System.Collections.Generic
                         i = entries[i].next;
 
                         collisionCount++;
-                        if (collisionCount > (uint)entries.Length)
+                        if (collisionCount > entries.Length)
                         {
                             // The chain of entries forms a loop; which means a concurrent update has happened.
                             // Break out of the loop and throw, rather than looping forever.
@@ -609,7 +609,7 @@ namespace System.Collections.Generic
                 {
                     // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                     // Test uint in if rather than loop condition to drop range check for following array access
-                    if ((uint)i >= (uint)entries.Length)
+                    if ((uint)i >= entries.Length)
                     {
                         break;
                     }
@@ -633,7 +633,7 @@ namespace System.Collections.Generic
                     i = entries[i].next;
 
                     collisionCount++;
-                    if (collisionCount > (uint)entries.Length)
+                    if (collisionCount > entries.Length)
                     {
                         // The chain of entries forms a loop; which means a concurrent update has happened.
                         // Break out of the loop and throw, rather than looping forever.
@@ -725,7 +725,7 @@ namespace System.Collections.Generic
                         {
                             // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                             // Test uint in if rather than loop condition to drop range check for following array access
-                            if ((uint)i >= (uint)entries.Length)
+                            if ((uint)i >= entries.Length)
                             {
                                 break;
                             }
@@ -740,7 +740,7 @@ namespace System.Collections.Generic
                             i = entries[i].next;
 
                             collisionCount++;
-                            if (collisionCount > (uint)entries.Length)
+                            if (collisionCount > entries.Length)
                             {
                                 // The chain of entries forms a loop; which means a concurrent update has happened.
                                 // Break out of the loop and throw, rather than looping forever.
@@ -758,7 +758,7 @@ namespace System.Collections.Generic
                         {
                             // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                             // Test uint in if rather than loop condition to drop range check for following array access
-                            if ((uint)i >= (uint)entries.Length)
+                            if ((uint)i >= entries.Length)
                             {
                                 break;
                             }
@@ -773,7 +773,7 @@ namespace System.Collections.Generic
                             i = entries[i].next;
 
                             collisionCount++;
-                            if (collisionCount > (uint)entries.Length)
+                            if (collisionCount > entries.Length)
                             {
                                 // The chain of entries forms a loop; which means a concurrent update has happened.
                                 // Break out of the loop and throw, rather than looping forever.
@@ -788,7 +788,7 @@ namespace System.Collections.Generic
                     {
                         // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                         // Test uint in if rather than loop condition to drop range check for following array access
-                        if ((uint)i >= (uint)entries.Length)
+                        if ((uint)i >= entries.Length)
                         {
                             break;
                         }
@@ -803,7 +803,7 @@ namespace System.Collections.Generic
                         i = entries[i].next;
 
                         collisionCount++;
-                        if (collisionCount > (uint)entries.Length)
+                        if (collisionCount > entries.Length)
                         {
                             // The chain of entries forms a loop; which means a concurrent update has happened.
                             // Break out of the loop and throw, rather than looping forever.
@@ -1020,7 +1020,7 @@ namespace System.Collections.Generic
                     i = entry.next;
 
                     collisionCount++;
-                    if (collisionCount > (uint)entries.Length)
+                    if (collisionCount > entries.Length)
                     {
                         // The chain of entries forms a loop; which means a concurrent update has happened.
                         // Break out of the loop and throw, rather than looping forever.
@@ -1090,7 +1090,7 @@ namespace System.Collections.Generic
                     i = entry.next;
 
                     collisionCount++;
-                    if (collisionCount > (uint)entries.Length)
+                    if (collisionCount > entries.Length)
                     {
                         // The chain of entries forms a loop; which means a concurrent update has happened.
                         // Break out of the loop and throw, rather than looping forever.

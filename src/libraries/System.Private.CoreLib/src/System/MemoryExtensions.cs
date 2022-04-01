@@ -2110,7 +2110,7 @@ namespace System
                 {
                     Span<char> destination = _destination;
                     int pos = _pos;
-                    if ((uint)pos < (uint)destination.Length)
+                    if ((uint)pos < (uint)destination.Length)   // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     {
                         destination[pos] = value[0];
                         _pos = pos + 1;

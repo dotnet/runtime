@@ -104,7 +104,7 @@ namespace System.IO
             try
             {
                 int numRead = Read(array, 0, buffer.Length);
-                if ((uint)numRead > (uint)buffer.Length)
+                if ((uint)numRead > (uint)buffer.Length)    // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                 {
                     throw new IOException(SR.IO_InvalidReadLength);
                 }
@@ -154,7 +154,7 @@ namespace System.IO
             try
             {
                 int numRead = ReadBlock(array, 0, buffer.Length);
-                if ((uint)numRead > (uint)buffer.Length)
+                if ((uint)numRead > (uint)buffer.Length)    // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                 {
                     throw new IOException(SR.IO_InvalidReadLength);
                 }

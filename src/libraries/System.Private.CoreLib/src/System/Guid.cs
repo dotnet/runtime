@@ -48,7 +48,7 @@ namespace System
         // Creates a new guid from a read-only span.
         public Guid(ReadOnlySpan<byte> b)
         {
-            if ((uint)b.Length != 16)
+            if (b.Length != 16)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), nameof(b));
             }
@@ -366,7 +366,7 @@ namespace System
         {
             // e.g. "{d85b1407-351d-4694-9392-03acc5870eb1}"
 
-            if ((uint)guidString.Length != 38 || guidString[0] != '{' || guidString[37] != '}')
+            if (guidString.Length != 38 || guidString[0] != '{' || guidString[37] != '}')
             {
                 result.SetFailure(overflow: false, nameof(SR.Format_GuidInvLen));
                 return false;
@@ -379,7 +379,7 @@ namespace System
         {
             // e.g. "d85b1407-351d-4694-9392-03acc5870eb1"
 
-            if ((uint)guidString.Length != 36 || guidString[8] != '-' || guidString[13] != '-' || guidString[18] != '-' || guidString[23] != '-')
+            if (guidString.Length != 36 || guidString[8] != '-' || guidString[13] != '-' || guidString[18] != '-' || guidString[23] != '-')
             {
                 result.SetFailure(overflow: false, guidString.Length != 36 ? nameof(SR.Format_GuidInvLen) : nameof(SR.Format_GuidDashes));
                 return false;
@@ -465,7 +465,7 @@ namespace System
         {
             // e.g. "d85b1407351d4694939203acc5870eb1"
 
-            if ((uint)guidString.Length != 32)
+            if (guidString.Length != 32)
             {
                 result.SetFailure(overflow: false, nameof(SR.Format_GuidInvLen));
                 return false;
@@ -508,7 +508,7 @@ namespace System
         {
             // e.g. "(d85b1407-351d-4694-9392-03acc5870eb1)"
 
-            if ((uint)guidString.Length != 38 || guidString[0] != '(' || guidString[37] != ')')
+            if (guidString.Length != 38 || guidString[0] != '(' || guidString[37] != ')')
             {
                 result.SetFailure(overflow: false, nameof(SR.Format_GuidInvLen));
                 return false;
@@ -535,7 +535,7 @@ namespace System
             guidString = EatAllWhitespace(guidString);
 
             // Check for leading '{'
-            if ((uint)guidString.Length == 0 || guidString[0] != '{')
+            if (guidString.Length == 0 || guidString[0] != '{')
             {
                 result.SetFailure(overflow: false, nameof(SR.Format_GuidBrace));
                 return false;
@@ -609,6 +609,7 @@ namespace System
             }
 
             // Check for '{'
+            // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
             if ((uint)guidString.Length <= (uint)(numStart + numLen + 1) || guidString[numStart + numLen + 1] != '{')
             {
                 result.SetFailure(overflow: false, nameof(SR.Format_GuidBrace));
@@ -723,14 +724,14 @@ namespace System
 
         private static bool TryParseHex(ReadOnlySpan<char> guidString, out uint result, ref bool overflow)
         {
-            if ((uint)guidString.Length > 0)
+            if (guidString.Length > 0)
             {
                 if (guidString[0] == '+')
                 {
                     guidString = guidString.Slice(1);
                 }
 
-                if ((uint)guidString.Length > 1 && guidString[0] == '0' && (guidString[1] | 0x20) == 'x')
+                if (guidString.Length > 1 && guidString[0] == '0' && (guidString[1] | 0x20) == 'x')
                 {
                     guidString = guidString.Slice(2);
                 }

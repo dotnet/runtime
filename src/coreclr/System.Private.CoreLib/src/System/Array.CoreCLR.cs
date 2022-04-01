@@ -392,7 +392,7 @@ namespace System
             // ! Warning: "this" is an array, not an SZArrayHelper. See comments above
             // ! or you may introduce a security hole!
             T[] _this = Unsafe.As<T[]>(this);
-            if ((uint)index >= (uint)_this.Length)
+            if ((uint)index >= _this.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }
@@ -405,7 +405,7 @@ namespace System
             // ! Warning: "this" is an array, not an SZArrayHelper. See comments above
             // ! or you may introduce a security hole!
             T[] _this = Unsafe.As<T[]>(this);
-            if ((uint)index >= (uint)_this.Length)
+            if ((uint)index >= _this.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }

@@ -198,7 +198,7 @@ namespace System.Collections.Generic
             _version++;
             T[] array = _items;
             int size = _size;
-            if ((uint)size < (uint)array.Length)
+            if ((uint)size < array.Length)
             {
                 _size = size + 1;
                 array[size] = item;
