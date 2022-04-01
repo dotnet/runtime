@@ -47,19 +47,19 @@ namespace System
         public const float NaN = (float)0.0 / (float)0.0;
 
         /// <summary>Represents the additive identity (0).</summary>
-        public const float AdditiveIdentity = 0.0f;
+        private const float AdditiveIdentity = 0.0f;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        public const float MultiplicativeIdentity = 1.0f;
+        private const float MultiplicativeIdentity = 1.0f;
 
         /// <summary>Represents the number one (1).</summary>
-        public const float One = 1.0f;
+        private const float One = 1.0f;
 
         /// <summary>Represents the number zero (0).</summary>
-        public const float Zero = 0.0f;
+        private const float Zero = 0.0f;
 
         /// <summary>Represents the number negative one (-1).</summary>
-        public const float NegativeOne = -1.0f;
+        private const float NegativeOne = -1.0f;
 
         /// <summary>Represents the number negative zero (-0).</summary>
         public const float NegativeZero = -0.0f;
@@ -575,9 +575,6 @@ namespace System
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
         public static float Exp(float x) => MathF.Exp(x);
 
-        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ScaleB(TSelf, int)" />
-        public static float ScaleB(float x, int n) => MathF.ScaleB(x, n);
-
         // /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
         // public static float ExpM1(float x) => MathF.ExpM1(x);
 
@@ -652,26 +649,20 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
         public static float BitIncrement(float x) => MathF.BitIncrement(x);
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.CopySign(TSelf, TSelf)" />
-        public static float CopySign(float x, float y) => MathF.CopySign(x, y);
-
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
         public static float FusedMultiplyAdd(float left, float right, float addend) => MathF.FusedMultiplyAdd(left, right, addend);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
         public static float Ieee754Remainder(float left, float right) => MathF.IEEERemainder(left, right);
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        public static float MaxMagnitude(float x, float y) => MathF.MaxMagnitude(x, y);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
+        public static int ILogB(float x) => MathF.ILogB(x);
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        public static float MinMagnitude(float x, float y) => MathF.MinMagnitude(x, y);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
+        public static float ScaleB(float x, int n) => MathF.ScaleB(x, n);
 
         // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Compound(TSelf, TSelf)" />
         // public static float Compound(float x, float n) => MathF.Compound(x, n);
-
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Hypot(TSelf, TSelf)" />
-        // public static float Hypot(float x, float y) => MathF.Hypot(x, y);
 
         // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
         // public static float MaxMagnitudeNumber(float x, float y) => MathF.MaxMagnitudeNumber(x, y);
@@ -720,9 +711,6 @@ namespace System
         //
         // ILogarithmicFunctions
         //
-
-        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.ILogB(TSelf)" />
-        public static int ILogB(float x) => MathF.ILogB(x);
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
         public static float Log(float x) => MathF.Log(x);
@@ -779,16 +767,6 @@ namespace System
         // static float IMultiplyOperators<float, float, float>.operator checked *(float left, float right) => checked((float)(left * right));
 
         //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static float INumberBase<float>.One => One;
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static float INumberBase<float>.Zero => Zero;
-
-        //
         // INumber
         //
 
@@ -797,6 +775,9 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static float Clamp(float value, float min, float max) => Math.Clamp(value, min, max);
+
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        public static float CopySign(float x, float y) => MathF.CopySign(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1005,11 +986,17 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static float Max(float x, float y) => MathF.Max(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static float MaxMagnitude(float x, float y) => MathF.MaxMagnitude(x, y);
+
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static float Min(float x, float y) => MathF.Min(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static float MinMagnitude(float x, float y) => MathF.MinMagnitude(x, y);
+
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static float Sign(float value) => MathF.Sign(value);
+        public static int Sign(float value) => MathF.Sign(value);
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1095,6 +1082,16 @@ namespace System
         }
 
         //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static float INumberBase<float>.One => One;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static float INumberBase<float>.Zero => Zero;
+
+        //
         // IParsable
         //
 
@@ -1113,6 +1110,9 @@ namespace System
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
         public static float Cbrt(float x) => MathF.Cbrt(x);
+
+        // /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        // public static float Hypot(float x, float y) => MathF.Hypot(x, y);
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static float Sqrt(float x) => MathF.Sqrt(x);

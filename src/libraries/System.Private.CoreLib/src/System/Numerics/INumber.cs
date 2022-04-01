@@ -29,6 +29,12 @@ namespace System.Numerics
         /// <exception cref="ArgumentException"><paramref name="min" /> is greater than <paramref name="max" />.</exception>
         static abstract TSelf Clamp(TSelf value, TSelf min, TSelf max);
 
+        /// <summary>Copies the sign of a value to the sign of another value..</summary>
+        /// <param name="value">The value whose magnitude is used in the result.</param>
+        /// <param name="sign">The value whose sign is used in the result.</param>
+        /// <returns>A value with the magnitude of <paramref name="value" /> and the sign of <paramref name="sign" />.</returns>
+        static abstract TSelf CopySign(TSelf value, TSelf sign);
+
         /// <summary>Creates an instance of the current type from a value.</summary>
         /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
         /// <param name="value">The value which is used to create the instance of <typeparamref name="TSelf" />.</param>
@@ -54,6 +60,11 @@ namespace System.Numerics
         static abstract TSelf CreateTruncating<TOther>(TOther value)
             where TOther : INumber<TOther>;
 
+        /// <summary>Determines if a value is negative.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is negative; otherwise, <c>false</c>.</returns>
+        static abstract bool IsNegative(TSelf value);
+
         /// <summary>Compares two values to compute which is greater.</summary>
         /// <param name="x">The value to compare with <paramref name="y" />.</param>
         /// <param name="y">The value to compare with <paramref name="x" />.</param>
@@ -61,12 +72,26 @@ namespace System.Numerics
         /// <remarks>For <see cref="IFloatingPoint{TSelf}" /> this method matches the IEEE 754:2019 <c>maximum</c> function. This requires NaN inputs to be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
         static abstract TSelf Max(TSelf x, TSelf y);
 
+        /// <summary>Compares two values to compute which is greater.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        /// <remarks>For <see cref="IFloatingPointIeee754{TSelf}" /> this method matches the IEEE 754:2019 <c>maximumMagnitude</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        static abstract TSelf MaxMagnitude(TSelf x, TSelf y);
+
         /// <summary>Compares two values to compute which is lesser.</summary>
         /// <param name="x">The value to compare with <paramref name="y" />.</param>
         /// <param name="y">The value to compare with <paramref name="x" />.</param>
         /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
         /// <remarks>For <see cref="IFloatingPoint{TSelf}" /> this method matches the IEEE 754:2019 <c>minimum</c> function. This requires NaN inputs to be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
         static abstract TSelf Min(TSelf x, TSelf y);
+
+        /// <summary>Compares two values to compute which is lesser.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        /// <remarks>For <see cref="IFloatingPointIeee754{TSelf}" /> this method matches the IEEE 754:2019 <c>minimumMagnitude</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        static abstract TSelf MinMagnitude(TSelf x, TSelf y);
 
         /// <summary>Parses a string into a value.</summary>
         /// <param name="s">The string to parse.</param>
@@ -93,7 +118,7 @@ namespace System.Numerics
         /// <param name="value">The value whose sign is to be computed.</param>
         /// <returns>A positive value if <paramref name="value" /> is positive, <see cref="INumberBase{TSelf}.Zero" /> if <paramref name="value" /> is zero, and a negative value if <paramref name="value" /> is negative.</returns>
         /// <remarks>It is recommended that a function return <c>1</c>, <c>0</c>, and <c>-1</c>, respectively.</remarks>
-        static abstract TSelf Sign(TSelf value);
+        static abstract int Sign(TSelf value);
 
         /// <summary>Tries to create an instance of the current type from a value.</summary>
         /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>

@@ -48,19 +48,19 @@ namespace System
         public const double NaN = (double)0.0 / (double)0.0;
 
         /// <summary>Represents the additive identity (0).</summary>
-        public const double AdditiveIdentity = 0.0;
+        private const double AdditiveIdentity = 0.0;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        public const double MultiplicativeIdentity = 1.0;
+        private const double MultiplicativeIdentity = 1.0;
 
         /// <summary>Represents the number one (1).</summary>
-        public const double One = 1.0;
+        private const double One = 1.0;
 
         /// <summary>Represents the number zero (0).</summary>
-        public const double Zero = 0.0;
+        private const double Zero = 0.0;
 
         /// <summary>Represents the number negative one (-1).</summary>
-        public const double NegativeOne = -1.0;
+        private const double NegativeOne = -1.0;
 
         /// <summary>Represents the number negative zero (-0).</summary>
         public const double NegativeZero = -0.0;
@@ -580,9 +580,6 @@ namespace System
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
         public static double Exp(double x) => Math.Exp(x);
 
-        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ScaleB(TSelf, int)" />
-        public static double ScaleB(double x, int n) => Math.ScaleB(x, n);
-
         // /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
         // public static double ExpM1(double x) => Math.ExpM1(x);
 
@@ -657,26 +654,20 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
         public static double BitIncrement(double x) => Math.BitIncrement(x);
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.CopySign(TSelf, TSelf)" />
-        public static double CopySign(double x, double y) => Math.CopySign(x, y);
-
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
         public static double FusedMultiplyAdd(double left, double right, double addend) => Math.FusedMultiplyAdd(left, right, addend);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
         public static double Ieee754Remainder(double left, double right) => Math.IEEERemainder(left, right);
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        public static double MaxMagnitude(double x, double y) => Math.MaxMagnitude(x, y);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
+        public static int ILogB(double x) => Math.ILogB(x);
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        public static double MinMagnitude(double x, double y) => Math.MinMagnitude(x, y);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
+        public static double ScaleB(double x, int n) => Math.ScaleB(x, n);
 
         // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Compound(TSelf, TSelf)" />
         // public static double Compound(double x, double n) => Math.Compound(x, n);
-
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Hypot(TSelf, TSelf)" />
-        // public static double Hypot(double x, double y) => Math.Hypot(x, y);
 
         // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
         // public static double MaxMagnitudeNumber(double x, double y) => Math.MaxMagnitudeNumber(x, y);
@@ -725,9 +716,6 @@ namespace System
         //
         // ILogarithmicFunctions
         //
-
-        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.ILogB(TSelf)" />
-        public static int ILogB(double x) => Math.ILogB(x);
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
         public static double Log(double x) => Math.Log(x);
@@ -784,16 +772,6 @@ namespace System
         // static double IMultiplyOperators<double, double, double>.operator checked *(double left, double right) => checked((double)(left * right));
 
         //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static double INumberBase<double>.One => One;
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static double INumberBase<double>.Zero => Zero;
-
-        //
         // INumber
         //
 
@@ -802,6 +780,9 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static double Clamp(double value, double min, double max) => Math.Clamp(value, min, max);
+
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        public static double CopySign(double x, double y) => Math.CopySign(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1010,11 +991,17 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static double Max(double x, double y) => Math.Max(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static double MaxMagnitude(double x, double y) => Math.MaxMagnitude(x, y);
+
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static double Min(double x, double y) => Math.Min(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static double MinMagnitude(double x, double y) => Math.MinMagnitude(x, y);
+
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static double Sign(double value) => Math.Sign(value);
+        public static int Sign(double value) => Math.Sign(value);
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1100,6 +1087,16 @@ namespace System
         }
 
         //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static double INumberBase<double>.One => One;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static double INumberBase<double>.Zero => Zero;
+
+        //
         // IParsable
         //
 
@@ -1118,6 +1115,9 @@ namespace System
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
         public static double Cbrt(double x) => Math.Cbrt(x);
+
+        // /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        // public static double Hypot(double x, double y) => Math.Hypot(x, y);
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static double Sqrt(double x) => Math.Sqrt(x);

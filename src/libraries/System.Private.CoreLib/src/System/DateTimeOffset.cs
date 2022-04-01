@@ -875,7 +875,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
-        public static TimeSpan AdditiveIdentity => default;
+        static TimeSpan IAdditiveIdentity<DateTimeOffset, TimeSpan>.AdditiveIdentity => default;
 
         //
         // IMinMaxValue

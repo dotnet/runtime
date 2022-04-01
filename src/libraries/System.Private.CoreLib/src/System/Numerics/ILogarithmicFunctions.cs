@@ -8,11 +8,6 @@ namespace System.Numerics
     public interface ILogarithmicFunctions<TSelf>
         where TSelf : ILogarithmicFunctions<TSelf>
     {
-        /// <summary>Computes the integer logarithm of a value.</summary>
-        /// <param name="x">The value whose integer logarithm is to be computed.</param>
-        /// <returns>The integer logarithm of <paramref name="x" />.</returns>
-        static abstract int ILogB(TSelf x);
-
         /// <summary>Computes the natural (<c>base-E</c> logarithm of a value.</summary>
         /// <param name="x">The value whose natural logarithm is to be computed.</param>
         /// <returns>The natural logarithm of <paramref name="x" />.</returns>

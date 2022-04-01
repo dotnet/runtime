@@ -1519,7 +1519,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
-        public static TimeSpan AdditiveIdentity => default;
+        static TimeSpan IAdditiveIdentity<DateTime, TimeSpan>.AdditiveIdentity => default;
 
         //
         // IMinMaxValue

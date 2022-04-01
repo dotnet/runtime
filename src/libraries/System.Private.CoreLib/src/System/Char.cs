@@ -1217,24 +1217,17 @@ namespace System
         // static char IMultiplyOperators<char, char, char>.operator checked *(char left, char right) => checked((char)(left * right));
 
         //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static char INumberBase<char>.One => (char)1;
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static char INumberBase<char>.Zero => (char)0;
-
-        //
         // INumber
         //
 
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        public static char Abs(char value) => value;
+        static char INumber<char>.Abs(char value) => value;
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static char Clamp(char value, char min, char max) => (char)Math.Clamp(value, min, max);
+
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        static char INumber<char>.CopySign(char value, char sign) => value;
 
         /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1457,14 +1450,23 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        static bool INumber<char>.IsNegative(char value) => false;
+
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static char Max(char x, char y) => (char)Math.Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        static char INumber<char>.MaxMagnitude(char x, char y) => Max(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static char Min(char x, char y) => (char)Math.Min(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        static char INumber<char>.MinMagnitude(char x, char y) => Min(x, y);
+
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static char Sign(char value) => (char)((value == 0) ? 0 : 1);
+        public static int Sign(char value) => (value == 0) ? 0 : 1;
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1668,6 +1670,16 @@ namespace System
             result = s[0];
             return true;
         }
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static char INumberBase<char>.One => (char)1;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static char INumberBase<char>.Zero => (char)0;
 
         //
         // IParsable

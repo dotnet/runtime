@@ -916,14 +916,6 @@ namespace System
         }
 
         //
-        // IMinMaxValue
-        //
-
-        static TimeOnly IMinMaxValue<TimeOnly>.MinValue => MinValue;
-
-        static TimeOnly IMinMaxValue<TimeOnly>.MaxValue => MaxValue;
-
-        //
         // IParsable
         //
 

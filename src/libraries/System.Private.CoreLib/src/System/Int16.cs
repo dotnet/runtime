@@ -29,19 +29,19 @@ namespace System
         public const short MinValue = unchecked((short)0x8000);
 
         /// <summary>Represents the additive identity (0).</summary>
-        public const short AdditiveIdentity = 0;
+        private const short AdditiveIdentity = 0;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        public const short MultiplicativeIdentity = 1;
+        private const short MultiplicativeIdentity = 1;
 
         /// <summary>Represents the number one (1).</summary>
-        public const short One = 1;
+        private const short One = 1;
 
         /// <summary>Represents the number zero (0).</summary>
-        public const short Zero = 0;
+        private const short Zero = 0;
 
         /// <summary>Represents the number negative one (-1).</summary>
-        public const short NegativeOne = -1;
+        private const short NegativeOne = -1;
 
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
@@ -462,16 +462,6 @@ namespace System
         // static short IMultiplyOperators<short, short, short>.operator checked *(short left, short right) => checked((short)(left * right));
 
         //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static short INumberBase<short>.One => One;
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static short INumberBase<short>.Zero => Zero;
-
-        //
         // INumber
         //
 
@@ -480,6 +470,29 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static short Clamp(short value, short min, short max) => Math.Clamp(value, min, max);
+
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        public static short CopySign(short value, short sign)
+        {
+            short absValue = value;
+
+            if (absValue < 0)
+            {
+                absValue = (short)(-absValue);
+            }
+
+            if (sign >= 0)
+            {
+                if (absValue < 0)
+                {
+                    Math.ThrowNegateTwosCompOverflow();
+                }
+
+                return absValue;
+            }
+
+            return (short)(-absValue);
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -702,14 +715,77 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        public static bool IsNegative(short value) => value < 0;
+
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static short Max(short x, short y) => Math.Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static short MaxMagnitude(short x, short y)
+        {
+            short absX = x;
+
+            if (absX < 0)
+            {
+                absX = (short)(-absX);
+
+                if (absX < 0)
+                {
+                    return x;
+                }
+            }
+
+            short absY = y;
+
+            if (absY < 0)
+            {
+                absY = (short)(-absY);
+
+                if (absY < 0)
+                {
+                    return y;
+                }
+            }
+
+            return (absX >= absY) ? x : y;
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static short Min(short x, short y) => Math.Min(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static short MinMagnitude(short x, short y)
+        {
+            short absX = x;
+
+            if (absX < 0)
+            {
+                absX = (short)(-absX);
+
+                if (absX < 0)
+                {
+                    return y;
+                }
+            }
+
+            short absY = y;
+
+            if (absY < 0)
+            {
+                absY = (short)(-absY);
+
+                if (absY < 0)
+                {
+                    return x;
+                }
+            }
+
+            return (absX <= absY) ? x : y;
+        }
+
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static short Sign(short value) => (short)Math.Sign(value);
+        public static int Sign(short value) => Math.Sign(value);
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -881,6 +957,16 @@ namespace System
                 return false;
             }
         }
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static short INumberBase<short>.One => One;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static short INumberBase<short>.Zero => Zero;
 
         //
         // IParsable

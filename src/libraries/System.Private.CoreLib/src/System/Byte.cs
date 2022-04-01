@@ -32,16 +32,16 @@ namespace System
         public const byte MinValue = 0;
 
         /// <summary>Represents the additive identity (0).</summary>
-        public const byte AdditiveIdentity = 0;
+        private const byte AdditiveIdentity = 0;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        public const byte MultiplicativeIdentity = 1;
+        private const byte MultiplicativeIdentity = 1;
 
         /// <summary>Represents the number one (1).</summary>
-        public const byte One = 1;
+        private const byte One = 1;
 
         /// <summary>Represents the number zero (0).</summary>
-        public const byte Zero = 0;
+        private const byte Zero = 0;
 
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
@@ -449,24 +449,17 @@ namespace System
         // static byte IMultiplyOperators<byte, byte, byte>.operator checked *(byte left, byte right) => checked((byte)(left * right));
 
         //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static byte INumberBase<byte>.One => One;
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static byte INumberBase<byte>.Zero => Zero;
-
-        //
         // INumber
         //
 
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        public static byte Abs(byte value) => value;
+        static byte INumber<byte>.Abs(byte value) => value;
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static byte Clamp(byte value, byte min, byte max) => Math.Clamp(value, min, max);
+
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        static byte INumber<byte>.CopySign(byte value, byte sign) => value;
 
         /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -692,14 +685,23 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        static bool INumber<byte>.IsNegative(byte value) => false;
+
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static byte Max(byte x, byte y) => Math.Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        static byte INumber<byte>.MaxMagnitude(byte x, byte y) => Max(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static byte Min(byte x, byte y) => Math.Min(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        static byte INumber<byte>.MinMagnitude(byte x, byte y) => Min(x, y);
+
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static byte Sign(byte value) => (byte)((value == 0) ? 0 : 1);
+        public static int Sign(byte value) => (value == 0) ? 0 : 1;
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -887,6 +889,16 @@ namespace System
                 return false;
             }
         }
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static byte INumberBase<byte>.One => One;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static byte INumberBase<byte>.Zero => Zero;
 
         //
         // IParsable

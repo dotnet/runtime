@@ -49,12 +49,6 @@ namespace System.Numerics
         /// <returns>The smallest value that compares greater than <paramref name="x" />.</returns>
         static abstract TSelf BitIncrement(TSelf x);
 
-        /// <summary>Copies the sign of a value to the sign of another value..</summary>
-        /// <param name="x">The value whose magnitude is used in the result.</param>
-        /// <param name="y">The value whose sign is used in the result.</param>
-        /// <returns>A value with the magnitude of <paramref name="x" /> and the sign of <paramref name="y" />.</returns>
-        static abstract TSelf CopySign(TSelf x, TSelf y);
-
         /// <summary>Computes the fused multiply-add of three values.</summary>
         /// <param name="left">The value which <paramref name="right" /> multiplies.</param>
         /// <param name="right">The value which multiplies <paramref name="left" />.</param>
@@ -67,6 +61,11 @@ namespace System.Numerics
         /// <param name="right">The value which divides <paramref name="left" />.</param>
         /// <returns>The remainder of <paramref name="left" /> divided-by <paramref name="right" /> as specified by IEEE 754.</returns>
         static abstract TSelf Ieee754Remainder(TSelf left, TSelf right);
+
+        /// <summary>Computes the integer logarithm of a value.</summary>
+        /// <param name="x">The value whose integer logarithm is to be computed.</param>
+        /// <returns>The integer logarithm of <paramref name="x" />.</returns>
+        static abstract int ILogB(TSelf x);
 
         /// <summary>Determines if a value is finite.</summary>
         /// <param name="value">The value to be checked.</param>
@@ -82,11 +81,6 @@ namespace System.Numerics
         /// <param name="value">The value to be checked.</param>
         /// <returns><c>true</c> if <paramref name="value" /> is NaN; otherwise, <c>false</c>.</returns>
         static abstract bool IsNaN(TSelf value);
-
-        /// <summary>Determines if a value is negative.</summary>
-        /// <param name="value">The value to be checked.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> is negative; otherwise, <c>false</c>.</returns>
-        static abstract bool IsNegative(TSelf value);
 
         /// <summary>Determines if a value is negative infinity.</summary>
         /// <param name="value">The value to be checked.</param>
@@ -108,19 +102,11 @@ namespace System.Numerics
         /// <returns><c>true</c> if <paramref name="value" /> is subnormal; otherwise, <c>false</c>.</returns>
         static abstract bool IsSubnormal(TSelf value);
 
-        /// <summary>Compares two values to compute which is greater.</summary>
-        /// <param name="x">The value to compare with <paramref name="y" />.</param>
-        /// <param name="y">The value to compare with <paramref name="x" />.</param>
-        /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
-        /// <remarks>For <see cref="IFloatingPointIeee754{TSelf}" /> this method matches the IEEE 754:2019 <c>maximumMagnitude</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
-        static abstract TSelf MaxMagnitude(TSelf x, TSelf y);
-
-        /// <summary>Compares two values to compute which is lesser.</summary>
-        /// <param name="x">The value to compare with <paramref name="y" />.</param>
-        /// <param name="y">The value to compare with <paramref name="x" />.</param>
-        /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
-        /// <remarks>For <see cref="IFloatingPointIeee754{TSelf}" /> this method matches the IEEE 754:2019 <c>minimumMagnitude</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
-        static abstract TSelf MinMagnitude(TSelf x, TSelf y);
+        /// <summary>Computes the product of a value and its base-radix raised to the specified power.</summary>
+        /// <param name="x">The value which base-radix raised to the power of <paramref name="n" /> multiplies.</param>
+        /// <param name="n">The value to which base-radix is raised before multipliying <paramref name="x" />.</param>
+        /// <returns>The product of <paramref name="x" /> and base-radix raised to the power of <paramref name="n" />.</returns>
+        static abstract TSelf ScaleB(TSelf x, int n);
 
         // The following methods are approved but not yet implemented in the libraries
         // * static abstract TSelf Compound(TSelf x, TSelf n);

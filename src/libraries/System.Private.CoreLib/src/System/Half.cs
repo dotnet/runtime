@@ -723,7 +723,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
-        public static Half AdditiveIdentity => new Half(PositiveZeroBits);
+        static Half IAdditiveIdentity<Half, Half>.AdditiveIdentity => new Half(PositiveZeroBits);
 
         //
         // IBinaryNumber
@@ -737,7 +737,7 @@ namespace System
             uint exponent = (bits >> ExponentShift) & ShiftedExponentMask;
             uint significand = bits & SignificandMask;
 
-            return (value > Zero)
+            return (value > default(Half))
                 && (exponent != MinExponent) && (exponent != MaxExponent)
                 && (significand == MinSignificand);
         }
@@ -814,9 +814,6 @@ namespace System
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
         public static Half Exp(Half x) => (Half)MathF.Exp((float)x);
 
-        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ScaleB(TSelf, int)" />
-        public static Half ScaleB(Half x, int n) => (Half)MathF.ScaleB((float)x, n);
-
         // /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
         // public static Half ExpM1(Half x) => (Half)MathF.ExpM1((float)x);
 
@@ -879,26 +876,20 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
         public static Half BitIncrement(Half x) => (Half)MathF.BitIncrement((float)x);
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.CopySign(TSelf, TSelf)" />
-        public static Half CopySign(Half x, Half y) => (Half)MathF.CopySign((float)x, (float)y);
-
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
         public static Half FusedMultiplyAdd(Half left, Half right, Half addend) => (Half)MathF.FusedMultiplyAdd((float)left, (float)right, (float)addend);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
         public static Half Ieee754Remainder(Half left, Half right) => (Half)MathF.IEEERemainder((float)left, (float)right);
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        public static Half MaxMagnitude(Half x, Half y) => (Half)MathF.MaxMagnitude((float)x, (float)y);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
+        public static int ILogB(Half x) => MathF.ILogB((float)x);
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        public static Half MinMagnitude(Half x, Half y) => (Half)MathF.MinMagnitude((float)x, (float)y);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
+        public static Half ScaleB(Half x, int n) => (Half)MathF.ScaleB((float)x, n);
 
         // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Compound(TSelf, TSelf)" />
         // public static Half Compound(Half x, Half n) => (Half)MathF.Compound((float)x, (float)n);
-
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Hypot(TSelf, TSelf)" />
-        // public static Half Hypot(Half x, Half y) => (Half)MathF.Hypot((float)x, (float)y);
 
         // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
         // public static Half MaxMagnitudeNumber(Half x, Half y) => (Half)MathF.MaxMagnitudeNumber((float)x, (float)y);
@@ -958,9 +949,6 @@ namespace System
         // ILogarithmicFunctions
         //
 
-        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.ILogB(TSelf)" />
-        public static int ILogB(Half x) => MathF.ILogB((float)x);
-
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
         public static Half Log(Half x) => (Half)MathF.Log((float)x);
 
@@ -1007,17 +995,14 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        public static Half One => new Half(PositiveOneBits);
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        public static Half Zero => new Half(PositiveZeroBits);
-
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
         public static Half Abs(Half value) => (Half)MathF.Abs((float)value);
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static Half Clamp(Half value, Half min, Half max) => (Half)Math.Clamp((float)value, (float)min, (float)max);
+
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        public static Half CopySign(Half x, Half y) => (Half)MathF.CopySign((float)x, (float)y);
 
         /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1226,11 +1211,17 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static Half Max(Half x, Half y) => (Half)MathF.Max((float)x, (float)y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static Half MaxMagnitude(Half x, Half y) => (Half)MathF.MaxMagnitude((float)x, (float)y);
+
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static Half Min(Half x, Half y) => (Half)MathF.Min((float)x, (float)y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static Half MinMagnitude(Half x, Half y) => (Half)MathF.MinMagnitude((float)x, (float)y);
+
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static Half Sign(Half value) => (Half)MathF.Sign((float)value);
+        public static int Sign(Half value) => MathF.Sign((float)value);
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1316,6 +1307,16 @@ namespace System
         }
 
         //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static Half INumberBase<Half>.One => new Half(PositiveOneBits);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static Half INumberBase<Half>.Zero => new Half(PositiveZeroBits);
+
+        //
         // IParsable
         //
 
@@ -1335,6 +1336,9 @@ namespace System
         /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
         public static Half Cbrt(Half x) => (Half)MathF.Cbrt((float)x);
 
+        // /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        // public static Half Hypot(Half x, Half y) => (Half)MathF.Hypot((float)x, (float)y);
+
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static Half Sqrt(Half x) => (Half)MathF.Sqrt((float)x);
 
@@ -1346,7 +1350,7 @@ namespace System
         //
 
         /// <inheritdoc cref="ISignedNumber{TSelf}.NegativeOne" />
-        public static Half NegativeOne => new Half(NegativeOneBits);
+        static Half ISignedNumber<Half>.NegativeOne => new Half(NegativeOneBits);
 
         //
         // ISpanParsable

@@ -30,16 +30,16 @@ namespace System
         public const uint MinValue = 0U;
 
         /// <summary>Represents the additive identity (0).</summary>
-        public const uint AdditiveIdentity = 0;
+        private const uint AdditiveIdentity = 0;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        public const uint MultiplicativeIdentity = 1;
+        private const uint MultiplicativeIdentity = 1;
 
         /// <summary>Represents the number one (1).</summary>
-        public const uint One = 1;
+        private const uint One = 1;
 
         /// <summary>Represents the number zero (0).</summary>
-        public const uint Zero = 0;
+        private const uint Zero = 0;
 
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
@@ -429,24 +429,17 @@ namespace System
         // static uint IMultiplyOperators<uint, uint, uint>.operator checked *(uint left, uint right) => checked(left * right);
 
         //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static uint INumberBase<uint>.One => One;
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static uint INumberBase<uint>.Zero => Zero;
-
-        //
         // INumber
         //
 
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        public static uint Abs(uint value) => value;
+        static uint INumber<uint>.Abs(uint value) => value;
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static uint Clamp(uint value, uint min, uint max) => Math.Clamp(value, min, max);
+
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        static uint INumber<uint>.CopySign(uint value, uint sign) => value;
 
         /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -667,14 +660,23 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        static bool INumber<uint>.IsNegative(uint value) => false;
+
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static uint Max(uint x, uint y) => Math.Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        static uint INumber<uint>.MaxMagnitude(uint x, uint y) => Max(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static uint Min(uint x, uint y) => Math.Min(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        static uint INumber<uint>.MinMagnitude(uint x, uint y) => Min(x, y);
+
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static uint Sign(uint value) => (uint)((value == 0) ? 0 : 1);
+        public static int Sign(uint value) => (value == 0) ? 0 : 1;
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -838,6 +840,16 @@ namespace System
                 return false;
             }
         }
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static uint INumberBase<uint>.One => One;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static uint INumberBase<uint>.Zero => Zero;
 
         //
         // IParsable

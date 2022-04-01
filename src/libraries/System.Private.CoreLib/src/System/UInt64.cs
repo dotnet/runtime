@@ -30,16 +30,16 @@ namespace System
         public const ulong MinValue = 0x0;
 
         /// <summary>Represents the additive identity (0).</summary>
-        public const ulong AdditiveIdentity = 0;
+        private const ulong AdditiveIdentity = 0;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        public const ulong MultiplicativeIdentity = 1;
+        private const ulong MultiplicativeIdentity = 1;
 
         /// <summary>Represents the number one (1).</summary>
-        public const ulong One = 1;
+        private const ulong One = 1;
 
         /// <summary>Represents the number zero (0).</summary>
-        public const ulong Zero = 0;
+        private const ulong Zero = 0;
 
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
@@ -428,24 +428,17 @@ namespace System
         // static ulong IMultiplyOperators<ulong, ulong, ulong>.operator checked *(ulong left, ulong right) => checked(left * right);
 
         //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static ulong INumberBase<ulong>.One => One;
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static ulong INumberBase<ulong>.Zero => Zero;
-
-        //
         // INumber
         //
 
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        public static ulong Abs(ulong value) => value;
+        static ulong INumber<ulong>.Abs(ulong value) => value;
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static ulong Clamp(ulong value, ulong min, ulong max) => Math.Clamp(value, min, max);
+
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        static ulong INumber<ulong>.CopySign(ulong value, ulong sign) => value;
 
         /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -662,14 +655,23 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        static bool INumber<ulong>.IsNegative(ulong value) => false;
+
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static ulong Max(ulong x, ulong y) => Math.Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        static ulong INumber<ulong>.MaxMagnitude(ulong x, ulong y) => Max(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static ulong Min(ulong x, ulong y) => Math.Min(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        static ulong INumber<ulong>.MinMagnitude(ulong x, ulong y) => Min(x, y);
+
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static ulong Sign(ulong value) => (ulong)((value == 0) ? 0 : 1);
+        public static int Sign(ulong value) => (value == 0) ? 0 : 1;
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -817,6 +819,16 @@ namespace System
                 return false;
             }
         }
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static ulong INumberBase<ulong>.One => One;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static ulong INumberBase<ulong>.Zero => Zero;
 
         //
         // IParsable

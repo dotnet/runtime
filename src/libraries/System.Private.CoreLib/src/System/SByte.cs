@@ -33,19 +33,19 @@ namespace System
         public const sbyte MinValue = unchecked((sbyte)0x80);
 
         /// <summary>Represents the additive identity (0).</summary>
-        public const sbyte AdditiveIdentity = 0;
+        private const sbyte AdditiveIdentity = 0;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        public const sbyte MultiplicativeIdentity = 1;
+        private const sbyte MultiplicativeIdentity = 1;
 
         /// <summary>Represents the number one (1).</summary>
-        public const sbyte One = 1;
+        private const sbyte One = 1;
 
         /// <summary>Represents the number zero (0).</summary>
-        public const sbyte Zero = 0;
+        private const sbyte Zero = 0;
 
         /// <summary>Represents the number negative one (-1).</summary>
-        public const sbyte NegativeOne = -1;
+        private const sbyte NegativeOne = -1;
 
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
@@ -470,16 +470,6 @@ namespace System
         // static sbyte IMultiplyOperators<sbyte, sbyte, sbyte>.operator checked *(sbyte left, sbyte right) => checked((sbyte)(left * right));
 
         //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static sbyte INumberBase<sbyte>.One => One;
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static sbyte INumberBase<sbyte>.Zero => Zero;
-
-        //
         // INumber
         //
 
@@ -488,6 +478,29 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static sbyte Clamp(sbyte value, sbyte min, sbyte max) => Math.Clamp(value, min, max);
+
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        public static sbyte CopySign(sbyte value, sbyte sign)
+        {
+            sbyte absValue = value;
+
+            if (absValue < 0)
+            {
+                absValue = (sbyte)(-absValue);
+            }
+
+            if (sign >= 0)
+            {
+                if (absValue < 0)
+                {
+                    Math.ThrowNegateTwosCompOverflow();
+                }
+
+                return absValue;
+            }
+
+            return (sbyte)(-absValue);
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -713,14 +726,77 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        public static bool IsNegative(sbyte value) => value < 0;
+
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static sbyte Max(sbyte x, sbyte y) => Math.Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static sbyte MaxMagnitude(sbyte x, sbyte y)
+        {
+            sbyte absX = x;
+
+            if (absX < 0)
+            {
+                absX = (sbyte)(-absX);
+
+                if (absX < 0)
+                {
+                    return x;
+                }
+            }
+
+            sbyte absY = y;
+
+            if (absY < 0)
+            {
+                absY = (sbyte)(-absY);
+
+                if (absY < 0)
+                {
+                    return y;
+                }
+            }
+
+            return (absX >= absY) ? x : y;
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static sbyte Min(sbyte x, sbyte y) => Math.Min(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static sbyte MinMagnitude(sbyte x, sbyte y)
+        {
+            sbyte absX = x;
+
+            if (absX < 0)
+            {
+                absX = (sbyte)(-absX);
+
+                if (absX < 0)
+                {
+                    return y;
+                }
+            }
+
+            sbyte absY = y;
+
+            if (absY < 0)
+            {
+                absY = (sbyte)(-absY);
+
+                if (absY < 0)
+                {
+                    return x;
+                }
+            }
+
+            return (absX <= absY) ? x : y;
+        }
+
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static sbyte Sign(sbyte value) => (sbyte)Math.Sign(value);
+        public static int Sign(sbyte value) => Math.Sign(value);
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -908,6 +984,16 @@ namespace System
                 return false;
             }
         }
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static sbyte INumberBase<sbyte>.One => One;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static sbyte INumberBase<sbyte>.Zero => Zero;
 
         //
         // IParsable
