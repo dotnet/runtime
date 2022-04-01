@@ -183,10 +183,6 @@
 
     <PackageRID>$(_packageOS)-$(TargetArchitecture)</PackageRID>
 
-    <!-- Crossgen2 does not support armel, so we will use arm instead. -->
-    <Crossgen2PackageRID Condition="'$(TargetArchitecture)' == 'armel'">$(_packageOS)-arm</Crossgen2PackageRID>
-    <Crossgen2PackageRID Condition="'$(TargetArchitecture)' != 'armel'">$(PackageRID)</Crossgen2PackageRID>
-
     <OutputRid Condition="'$(OutputRid)' == ''">$(PackageRID)</OutputRid>
     <OutputRid Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
