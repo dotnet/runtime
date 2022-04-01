@@ -1330,6 +1330,37 @@ namespace System.Text.RegularExpressions
                 return EmptyClass;
             }
 
+            if (chars.Length == 2)
+            {
+                switch (chars[0], chars[1])
+                {
+                    case ('A', 'a'): case ('a', 'A'): return "\0\x0004\0ABab";
+                    case ('B', 'b'): case ('b', 'B'): return "\0\x0004\0BCbc";
+                    case ('C', 'c'): case ('c', 'C'): return "\0\x0004\0CDcd";
+                    case ('D', 'd'): case ('d', 'D'): return "\0\x0004\0DEde";
+                    case ('E', 'e'): case ('e', 'E'): return "\0\x0004\0EFef";
+                    case ('F', 'f'): case ('f', 'F'): return "\0\x0004\0FGfg";
+                    case ('G', 'g'): case ('g', 'G'): return "\0\x0004\0GHgh";
+                    case ('H', 'h'): case ('h', 'H'): return "\0\x0004\0HIhi";
+                    case ('J', 'j'): case ('j', 'J'): return "\0\x0004\0JKjk";
+                    case ('L', 'l'): case ('l', 'L'): return "\0\x0004\0LMlm";
+                    case ('M', 'm'): case ('m', 'M'): return "\0\x0004\0MNmn";
+                    case ('N', 'n'): case ('n', 'N'): return "\0\x0004\0NOno";
+                    case ('O', 'o'): case ('o', 'O'): return "\0\x0004\0OPop";
+                    case ('P', 'p'): case ('p', 'P'): return "\0\x0004\0PQpq";
+                    case ('Q', 'q'): case ('q', 'Q'): return "\0\x0004\0QRqr";
+                    case ('R', 'r'): case ('r', 'R'): return "\0\x0004\0RSrs";
+                    case ('S', 's'): case ('s', 'S'): return "\0\x0004\0STst";
+                    case ('T', 't'): case ('t', 'T'): return "\0\x0004\0TUtu";
+                    case ('U', 'u'): case ('u', 'U'): return "\0\x0004\0UVuv";
+                    case ('V', 'v'): case ('v', 'V'): return "\0\x0004\0VWvw";
+                    case ('W', 'w'): case ('w', 'W'): return "\0\x0004\0WXwx";
+                    case ('X', 'x'): case ('x', 'X'): return "\0\x0004\0XYxy";
+                    case ('Y', 'y'): case ('y', 'Y'): return "\0\x0004\0YZyz";
+                    case ('Z', 'z'): case ('z', 'Z'): return "\0\x0004\0Z[z{";
+                }
+            }
+
             // Count how many characters there actually are.  All but the very last possible
             // char value will have two characters, one for the inclusive beginning of range
             // and one for the exclusive end of range.
