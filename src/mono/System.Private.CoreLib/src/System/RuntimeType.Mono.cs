@@ -1694,11 +1694,21 @@ namespace System
                 value = paramInfo.DefaultValue;
             }
 
-            if (TryConvertToType(ref value))
+            CheckValueStatus status = TryConvertToType(ref value);
+            if (status == CheckValueStatus.Success)
+            {
                 return true;
+            }
+
+            if (status == CheckValueStatus.NotSupported_ByRefLike)
+            {
+                throw new ArgumentException(SR.Format(SR.NotSupported_ByRefLike, value!.GetType(), this));
+            }
 
             if ((invokeAttr & BindingFlags.ExactBinding) == BindingFlags.ExactBinding)
+            {
                 throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value!.GetType(), this));
+            }
 
             if (binder != null && binder != DefaultBinder)
             {
@@ -1709,36 +1719,53 @@ namespace System
             throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value!.GetType(), this));
         }
 
-        private bool TryConvertToType(ref object? value)
+        private enum CheckValueStatus
+        {
+            Success = 0,
+            ArgumentException,
+            NotSupported_ByRefLike
+        }
+
+        private CheckValueStatus TryConvertToType(ref object? value)
         {
             if (IsInstanceOfType(value))
-                return true;
+                return CheckValueStatus.Success;
 
             if (IsByRef)
             {
                 Type? elementType = GetElementType();
+                if (elementType.IsByRefLike)
+                {
+                    return CheckValueStatus.NotSupported_ByRefLike;
+                }
+
                 if (value == null || elementType.IsInstanceOfType(value))
                 {
-                    return true;
+                    return CheckValueStatus.Success;
                 }
             }
 
             if (value == null)
             {
-                return true;
+                if (IsByRefLike)
+                {
+                    return CheckValueStatus.NotSupported_ByRefLike;
+                }
+
+                return CheckValueStatus.Success;
             }
 
             if (IsEnum)
             {
                 Type? type = Enum.GetUnderlyingType(this);
                 if (type == value.GetType())
-                    return true;
+                    return CheckValueStatus.Success;
 
                 object? res = IsConvertibleToPrimitiveType(value, type);
                 if (res != null)
                 {
                     value = res;
-                    return true;
+                    return CheckValueStatus.Success;
                 }
             }
             else if (IsPrimitive)
@@ -1747,26 +1774,26 @@ namespace System
                 if (res != null)
                 {
                     value = res;
-                    return true;
+                    return CheckValueStatus.Success;
                 }
             }
             else if (IsPointer)
             {
                 Type? vtype = value.GetType();
                 if (vtype == typeof(IntPtr) || vtype == typeof(UIntPtr))
-                    return true;
+                    return CheckValueStatus.Success;
                 if (value is Pointer pointer)
                 {
                     Type pointerType = pointer.GetPointerType();
                     if (pointerType == this)
                     {
                         value = pointer.GetPointerValue();
-                        return true;
+                        return CheckValueStatus.Success;
                     }
                 }
             }
 
-            return false;
+            return CheckValueStatus.ArgumentException;
         }
 
         // Binder uses some incompatible conversion rules. For example
