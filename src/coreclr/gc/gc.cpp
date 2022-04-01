@@ -17799,9 +17799,7 @@ void gc_heap::balance_heaps (alloc_context* acontext)
 
 ptrdiff_t gc_heap::get_balance_heaps_uoh_effective_budget (int generation_num)
 {
-#ifdef USE_REGIONS
-    return dd_new_allocation (dynamic_data_of (generation_num));
-#else
+#ifndef USE_REGIONS
     if (heap_hard_limit)
     {
         const ptrdiff_t free_list_space = generation_free_list_space (generation_of (generation_num));
@@ -17813,10 +17811,10 @@ ptrdiff_t gc_heap::get_balance_heaps_uoh_effective_budget (int generation_num)
         return free_list_space - allocated;
     }
     else
+#endif // !USE_REGIONS
     {
         return dd_new_allocation (dynamic_data_of (generation_num));
     }
-#endif // USE_REGIONS
 }
 
 gc_heap* gc_heap::balance_heaps_uoh (alloc_context* acontext, size_t alloc_size, int generation_num)
