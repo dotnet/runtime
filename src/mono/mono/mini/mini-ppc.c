@@ -1179,8 +1179,7 @@ get_call_info (MonoMethodSignature *sig)
 				} else
 #endif
 				{
-					if (is_all_floats && mbr_cnt > 0)
-					{
+					if (is_all_floats && (mbr_cnt > 0)) {
 						rest = PPC_LAST_ARG_REG - gr + 1;
 						nregs = mbr_cnt;
 						n_in_regs = (rest >= mbr_cnt) ? MIN (rest, nregs) : 0;
@@ -1190,9 +1189,7 @@ get_call_info (MonoMethodSignature *sig)
 						cinfo->args [n].vtsize = nregs - n_in_regs;
 						cinfo->args [n].reg = gr;
 						gr += n_in_regs;
-					}
-					else
-					{
+					} else {
 						align_size += (sizeof (target_mgreg_t) - 1);
 						align_size &= ~(sizeof (target_mgreg_t) - 1);
 						nregs = (align_size + sizeof (target_mgreg_t) -1 ) / sizeof (target_mgreg_t);
