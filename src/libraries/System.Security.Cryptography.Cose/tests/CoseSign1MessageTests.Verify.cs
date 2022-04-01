@@ -5,7 +5,7 @@ using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 
 namespace System.Security.Cryptography.Cose.Tests
 {
-    public partial class CoseSign1MessageTests
+    public class CoseSign1MessageTests_Verify
     {
         [Theory]
         // https://github.com/cose-wg/Examples/blob/master/RFC8152/Appendix_C_2_1.json
@@ -27,20 +27,19 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData((int)ECDsaAlgorithm.ES256, "8443A10126A10442313154546869732069732074686520636F6E74656E742E58408EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36")]
         public void Verify(int algorithm, string hexCborMessage)
         {
-            foreach (bool usePublicOnlyKey in new[] { false, true })
+            foreach (bool useNonPrivateKey in new[] { false, true })
             {
                 CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(hexCborMessage));
 
                 bool verified;
                 if (Enum.IsDefined(typeof(ECDsaAlgorithm), algorithm))
                 {
-                    var ecdsaAlgorithm = (ECDsaAlgorithm)algorithm;
-                    ECDsa key = usePublicOnlyKey ? ECDsaKeysWithoutPrivateKey[ecdsaAlgorithm] : ECDsaKeys[ecdsaAlgorithm];
+                    ECDsa key = GetKeyHashPair<ECDsa>((CoseAlgorithm)algorithm, useNonPrivateKey).Key;
                     verified = msg.Verify(key);
                 }
                 else
                 {
-                    RSA key = usePublicOnlyKey ? RSAKeyWithoutPrivateKey : RSAKey;
+                    RSA key = GetKeyHashPair<RSA>((CoseAlgorithm)algorithm, useNonPrivateKey).Key;
                     verified = msg.Verify(key);
                 }
 
@@ -87,6 +86,34 @@ namespace System.Security.Cryptography.Cose.Tests
                 int pos = text.IndexOf(search);
                 return text.Substring(0, pos) + replace + text.Substring(pos + search.Length);
             }
+        }
+
+        [Fact]
+        public void VerifyReturnsTrueAfterAttemptWithWrongContent()
+        {
+            ReadOnlySpan<byte> correctContent = s_sampleContent;
+            Span<byte> wrongContent = new byte[s_sampleContent.Length];
+            wrongContent.Fill(42);
+
+            ReadOnlySpan<byte> encodedMsg = CoseSign1Message.Sign(correctContent, DefaultKey, DefaultHash, isDetached: true);
+            CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
+
+            Assert.False(msg.Verify(DefaultKey, wrongContent), "Calling Verify with the wrong content");
+            Assert.True(msg.Verify(DefaultKey, s_sampleContent), "Calling Verify with the correct content");
+        }
+
+        [Fact]
+        public void VerifyReturnsFalseAfterAttemptWithCorrectContent()
+        {
+            ReadOnlySpan<byte> correctContent = s_sampleContent;
+            Span<byte> wrongContent = new byte[s_sampleContent.Length];
+            wrongContent.Fill(42);
+
+            ReadOnlySpan<byte> encodedMsg = CoseSign1Message.Sign(correctContent, DefaultKey, DefaultHash, isDetached: true);
+            CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
+
+            Assert.True(msg.Verify(DefaultKey, s_sampleContent), "Calling Verify with the correct content");
+            Assert.False(msg.Verify(DefaultKey, wrongContent), "Calling Verify with the wrong content");
         }
 
         [Theory]

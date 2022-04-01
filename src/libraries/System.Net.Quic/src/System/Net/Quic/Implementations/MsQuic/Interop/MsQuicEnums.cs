@@ -69,10 +69,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     internal enum QUIC_STREAM_START_FLAGS : uint
     {
         NONE = 0x0000,
-        FAIL_BLOCKED = 0x0001, // Only opens the stream if flow control allows.
-        IMMEDIATE = 0x0002, // Immediately informs peer that stream is open.
-        ASYNC = 0x0004, // Don't block the API call to wait for completion.
-        SHUTDOWN_ON_FAIL = 0x0008, // Shutdown the stream immediately after start failure.
+        IMMEDIATE = 0x0001, // Immediately informs peer that stream is open.
+        FAIL_BLOCKED = 0x0002, // Only opens the stream if flow control allows.
+        SHUTDOWN_ON_FAIL = 0x0004, // Shutdown the stream immediately after start failure.
+        INDICATE_PEER_ACCEPT = 0x0008, // PEER_ACCEPTED event to be delivered if the stream isn't initially accepted.
     }
 
     [Flags]
@@ -105,69 +105,71 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         DELAY_SEND = 0x0010, // Indicates the send should be delayed because more will be queued soon.
     }
 
-    internal enum QUIC_PARAM_LEVEL : uint
+    internal enum QUIC_PARAM_PREFIX : uint
     {
-        GLOBAL,
-        REGISTRATION,
-        CONFIGURATION,
-        LISTENER,
-        CONNECTION,
-        TLS,
-        STREAM,
+        GLOBAL = 0x01000000,
+        REGISTRATION = 0x02000000,
+        CONFIGURATION = 0x03000000,
+        LISTENER = 0x04000000,
+        CONNECTION = 0x05000000,
+        TLS = 0x06000000,
+        TLS_SCHANNEL = 0x07000000,
+        STREAM = 0x08000000,
     }
 
     internal enum QUIC_PARAM_GLOBAL : uint
     {
-        RETRY_MEMORY_PERCENT = 0, // uint16_t
-        SUPPORTED_VERSIONS = 1, // uint32_t[] - network byte order
-        LOAD_BALANCING_MODE = 2, // uint16_t - QUIC_LOAD_BALANCING_MODE
-        PERF_COUNTERS = 3, // uint64_t[] - Array size is QUIC_PERF_COUNTER_MAX
-        SETTINGS = 4, // QUIC_SETTINGS
+        RETRY_MEMORY_PERCENT = 0 | QUIC_PARAM_PREFIX.GLOBAL, // uint16_t
+        SUPPORTED_VERSIONS = 1 | QUIC_PARAM_PREFIX.GLOBAL, // uint32_t[] - network byte order
+        LOAD_BALANCING_MODE = 2 | QUIC_PARAM_PREFIX.GLOBAL, // uint16_t - QUIC_LOAD_BALANCING_MODE
+        PERF_COUNTERS = 3 | QUIC_PARAM_PREFIX.GLOBAL, // uint64_t[] - Array size is QUIC_PERF_COUNTER_MAX
+        SETTINGS = 4 | QUIC_PARAM_PREFIX.GLOBAL, // QUIC_SETTINGS
     }
 
     internal enum QUIC_PARAM_REGISTRATION : uint
     {
-        CID_PREFIX = 0, // uint8_t[]
+        CID_PREFIX = 0 | QUIC_PARAM_PREFIX.REGISTRATION, // uint8_t[]
     }
 
     internal enum QUIC_PARAM_LISTENER : uint
     {
-        LOCAL_ADDRESS = 0, // QUIC_ADDR
-        STATS = 1, // QUIC_LISTENER_STATISTICS
+        LOCAL_ADDRESS = 0 | QUIC_PARAM_PREFIX.LISTENER, // QUIC_ADDR
+        STATS = 1 | QUIC_PARAM_PREFIX.LISTENER, // QUIC_LISTENER_STATISTICS
     }
 
     internal enum QUIC_PARAM_CONN : uint
     {
-        QUIC_VERSION = 0, // uint32_t
-        LOCAL_ADDRESS = 1, // QUIC_ADDR
-        REMOTE_ADDRESS = 2, // QUIC_ADDR
-        IDEAL_PROCESSOR = 3, // uint16_t
-        SETTINGS = 4, // QUIC_SETTINGS
-        STATISTICS = 5, // QUIC_STATISTICS
-        STATISTICS_PLAT = 6, // QUIC_STATISTICS
-        SHARE_UDP_BINDING = 7, // uint8_t (BOOLEAN)
-        LOCAL_BIDI_STREAM_COUNT = 8, // uint16_t
-        LOCAL_UNIDI_STREAM_COUNT = 9, // uint16_t
-        MAX_STREAM_IDS = 10, // uint64_t[4]
-        CLOSE_REASON_PHRASE = 11, // char[]
-        STREAM_SCHEDULING_SCHEME = 12, // QUIC_STREAM_SCHEDULING_SCHEME
-        DATAGRAM_RECEIVE_ENABLED = 13, // uint8_t (BOOLEAN)
-        DATAGRAM_SEND_ENABLED = 14, // uint8_t (BOOLEAN)
-        DISABLE_1RTT_ENCRYPTION = 15, // uint8_t (BOOLEAN)
-        RESUMPTION_TICKET = 16, // uint8_t[]
-        PEER_CERTIFICATE_VALID = 17, // uint8_t (BOOLEAN)
+        QUIC_VERSION = 0 | QUIC_PARAM_PREFIX.CONNECTION, // uint32_t
+        LOCAL_ADDRESS = 1 | QUIC_PARAM_PREFIX.CONNECTION, // QUIC_ADDR
+        REMOTE_ADDRESS = 2 | QUIC_PARAM_PREFIX.CONNECTION, // QUIC_ADDR
+        IDEAL_PROCESSOR = 3 | QUIC_PARAM_PREFIX.CONNECTION, // uint16_t
+        SETTINGS = 4 | QUIC_PARAM_PREFIX.CONNECTION, // QUIC_SETTINGS
+        STATISTICS = 5 | QUIC_PARAM_PREFIX.CONNECTION, // QUIC_STATISTICS
+        STATISTICS_PLAT = 6 | QUIC_PARAM_PREFIX.CONNECTION, // QUIC_STATISTICS
+        SHARE_UDP_BINDING = 7 | QUIC_PARAM_PREFIX.CONNECTION, // uint8_t (BOOLEAN)
+        LOCAL_BIDI_STREAM_COUNT = 8 | QUIC_PARAM_PREFIX.CONNECTION, // uint16_t
+        LOCAL_UNIDI_STREAM_COUNT = 9 | QUIC_PARAM_PREFIX.CONNECTION, // uint16_t
+        MAX_STREAM_IDS = 10 | QUIC_PARAM_PREFIX.CONNECTION, // uint64_t[4]
+        CLOSE_REASON_PHRASE = 11 | QUIC_PARAM_PREFIX.CONNECTION, // char[]
+        STREAM_SCHEDULING_SCHEME = 12 | QUIC_PARAM_PREFIX.CONNECTION, // QUIC_STREAM_SCHEDULING_SCHEME
+        DATAGRAM_RECEIVE_ENABLED = 13 | QUIC_PARAM_PREFIX.CONNECTION, // uint8_t (BOOLEAN)
+        DATAGRAM_SEND_ENABLED = 14 | QUIC_PARAM_PREFIX.CONNECTION, // uint8_t (BOOLEAN)
+        DISABLE_1RTT_ENCRYPTION = 15 | QUIC_PARAM_PREFIX.CONNECTION, // uint8_t (BOOLEAN)
+        RESUMPTION_TICKET = 16 | QUIC_PARAM_PREFIX.CONNECTION, // uint8_t[]
+        PEER_CERTIFICATE_VALID = 17 | QUIC_PARAM_PREFIX.CONNECTION, // uint8_t (BOOLEAN)
     }
 
     internal enum QUIC_PARAM_STREAM : uint
     {
-        ID = 0, // QUIC_UINT62
-        ZERRTT_LENGTH = 1, // uint64_t
-        IDEAL_SEND_BUFFER_SIZE = 2, // uint64_t - bytes
+        ID = 0 | QUIC_PARAM_PREFIX.STREAM, // QUIC_UINT62
+        ZERRTT_LENGTH = 1 | QUIC_PARAM_PREFIX.STREAM, // uint64_t
+        IDEAL_SEND_BUFFER_SIZE = 2 | QUIC_PARAM_PREFIX.STREAM, // uint64_t - bytes
     }
 
     internal enum QUIC_LISTENER_EVENT : uint
     {
         NEW_CONNECTION = 0,
+        STOP_COMPLETE = 1,
     }
 
     internal enum QUIC_CONNECTION_EVENT_TYPE : uint

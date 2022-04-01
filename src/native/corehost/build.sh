@@ -11,7 +11,7 @@ set -e
 __scriptpath="$(cd "$(dirname "$0")"; pwd -P)"
 __RepoRootDir="$(cd "$__scriptpath"/../../..; pwd -P)"
 
-__BuildArch=x64
+__TargetArch=x64
 __TargetOS=Linux
 __BuildType=Debug
 __CMakeArgs=""
@@ -97,4 +97,4 @@ setup_dirs
 check_prereqs
 
 # Build the installer native components.
-build_native "$__TargetOS" "$__BuildArch" "$__scriptpath" "$__IntermediatesDir" "install" "$__CMakeArgs" "installer component"
+build_native "$__TargetOS" "$__TargetArch" "$__scriptpath" "$__IntermediatesDir" "install" "$__CMakeArgs" "installer component"

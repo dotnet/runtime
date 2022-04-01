@@ -814,7 +814,7 @@ namespace System.ComponentModel.Composition.Hosting
 
                     foreach (var import in definition.ImportDefinitions.Where(ImportEngine.IsRequiredImportForPreview))
                     {
-                        if (changedExports.Any(export => import.IsConstraintSatisfiedBy(export)))
+                        if (changedExports.Any(import.IsConstraintSatisfiedBy))
                         {
                             affectedRejections.Add(definition);
                             break;

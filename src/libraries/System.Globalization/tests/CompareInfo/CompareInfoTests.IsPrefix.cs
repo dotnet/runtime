@@ -181,5 +181,14 @@ namespace System.Globalization.Tests
         {
             IsPrefix(s_invariantCompare, "Hello", "", (CompareOptions)(-1), true, 0);
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        public void IsPrefixWithAsciiAndIgnoredCharacters()
+        {
+            Assert.StartsWith("A", "A\0");
+            Assert.StartsWith("A\0", "A");
+            Assert.StartsWith("a", "A\0", StringComparison.CurrentCultureIgnoreCase);
+            Assert.StartsWith("a\0", "A", StringComparison.CurrentCultureIgnoreCase);
+        }
     }
 }

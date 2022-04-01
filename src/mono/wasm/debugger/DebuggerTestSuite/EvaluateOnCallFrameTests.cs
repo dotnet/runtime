@@ -494,8 +494,6 @@ namespace DebuggerTests
 
 
         [Fact]
-        [Trait("Category", "windows-failing")] // https://github.com/dotnet/runtime/issues/65744
-        [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/65744
         public async Task EvaluateSimpleMethodCallsError() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
@@ -504,19 +502,19 @@ namespace DebuggerTests
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                 var (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethodWrong()", expect_ok: false );
-                AssertEqual("Unable to evaluate method 'MyMethodWrong'", res.Error["message"]?.Value<string>(), "wrong error message");
+                Assert.Contains($"Method 'MyMethodWrong' not found", res.Error["message"]?.Value<string>());
 
-                (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethod(1)", expect_ok: false );
-                AssertEqual("Unable to evaluate method 'MyMethod'. Too many arguments passed.", res.Error["result"]["description"]?.Value<string>(), "wrong error message");
+                (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethod(1)", expect_ok: false);
+                Assert.Contains("Cannot invoke method 'this.objToTest.MyMethod(1)' - too many arguments passed", res.Error["message"]?.Value<string>());
 
                 (_, res) = await EvaluateOnCallFrame(id, "this.CallMethodWithParm(\"1\")", expect_ok: false );
-                AssertEqual("Unable to evaluate method 'CallMethodWithParm'", res.Error["message"]?.Value<string>(), "wrong error message");
+                Assert.Contains("Unable to evaluate method 'this.CallMethodWithParm(\"1\")'", res.Error["message"]?.Value<string>());
 
                 (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjNull.MyMethod()", expect_ok: false );
-                AssertEqual("Unable to evaluate method 'MyMethod'", res.Error["message"]?.Value<string>(), "wrong error message");
+                Assert.Contains("Expression 'this.ParmToTestObjNull.MyMethod' evaluated to null", res.Error["message"]?.Value<string>());
 
                 (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjException.MyMethod()", expect_ok: false );
-                AssertEqual("Unable to evaluate method 'MyMethod'", res.Error["message"]?.Value<string>(), "wrong error message");
+                Assert.Contains("Cannot invoke method 'MyMethod'", res.Error["message"]?.Value<string>());
            });
 
         [Fact]
@@ -607,7 +605,7 @@ namespace DebuggerTests
                    ("f.textList[j]", TString("2")),
                    ("f.numArray[j]", TNumber(2)),
                    ("f.textArray[i]", TString("1")));
-                
+
            });
 
         [Fact]
@@ -625,7 +623,7 @@ namespace DebuggerTests
                    ("f.textList[f.idx1]", TString("2")),
                    ("f.numArray[f.idx1]", TNumber(2)),
                    ("f.textArray[f.idx0]", TString("1")));
-                
+
            });
 
         [Fact]
@@ -642,7 +640,7 @@ namespace DebuggerTests
                    ("f.textList[f.numList[f.idx0]]", TString("2")),
                    ("f.numArray[f.numArray[f.idx0]]", TNumber(2)),
                    ("f.textArray[f.numArray[f.idx0]]", TString("2")));
-                
+
            });
 
         [Fact]
@@ -668,7 +666,7 @@ namespace DebuggerTests
                    ("f.textListOfLists[1][1]", TString("2")),
                    ("f.textListOfLists[j][j]", TString("2")),
                    ("f.textListOfLists[f.idx1][f.idx1]", TString("2")));
-                
+
            });
 
         [Fact]
@@ -843,7 +841,7 @@ namespace DebuggerTests
                     ("  str", "ReferenceError")
                 );
             });
-        
+
         [Fact]
         public async Task EvaluateConstantValueUsingRuntimeEvaluate() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateTestsClass", "EvaluateLocals", 9, "EvaluateLocals",
@@ -857,7 +855,7 @@ namespace DebuggerTests
                    ("\"15\"\n//comment as vs does\n", TString("15")),
                    ("\"15\"", TString("15")));
            });
-        
+
         [Theory]
         [InlineData("EvaluateBrowsableProperties", "TestEvaluateFieldsNone", "testFieldsNone", 10)]
         [InlineData("EvaluateBrowsableProperties", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]
@@ -872,7 +870,7 @@ namespace DebuggerTests
                 var (testNone, _) = await EvaluateOnCallFrame(id, localVarName);
                 await CheckValue(testNone, TObject($"DebuggerTests.{outerClassName}.{className}"), nameof(testNone));
                 var testNoneProps = await GetProperties(testNone["objectId"]?.Value<string>());
-                
+
                 if (isCustomGetter)
                     await CheckProps(testNoneProps, new
                     {
@@ -941,7 +939,7 @@ namespace DebuggerTests
                         textCollapsed = TString("textCollapsed")
                     }, "testCollapsedProps#1");
            });
-        
+
         [Theory]
         [InlineData("EvaluateBrowsableProperties", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
         [InlineData("EvaluateBrowsableProperties", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
@@ -1001,25 +999,44 @@ namespace DebuggerTests
 
         [Fact]
         public async Task EvaluateProtectionLevels() =>  await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateProtectionLevels", "Evaluate", 2, "Evaluate",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateProtectionLevels:Evaluate'); })",
+            "DebuggerTests.GetPropertiesTests.DerivedClass", "InstanceMethod", 1, "InstanceMethod",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.GetPropertiesTests.DerivedClass:run'); })",
             wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-               var (obj, _) = await EvaluateOnCallFrame(id, "testClass");
-               var (pub, internalAndProtected, priv) = await GetPropertiesSortedByProtectionLevels(obj["objectId"]?.Value<string>());
-            
-               Assert.True(pub[0] != null);
-               Assert.True(internalAndProtected[0] != null);
-               Assert.True(internalAndProtected[1] != null);
-               Assert.True(priv[0] != null);
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                var (obj, _) = await EvaluateOnCallFrame(id, "this");
+                var (pub, internalAndProtected, priv) = await GetPropertiesSortedByProtectionLevels(obj["objectId"]?.Value<string>());
 
-               Assert.Equal(pub[0]["value"]["value"], "public");
-               Assert.Equal(internalAndProtected[0]["value"]["value"], "internal");
-               Assert.Equal(internalAndProtected[1]["value"]["value"], "protected");
-               Assert.Equal(priv[0]["value"]["value"], "private");
+                await CheckProps(pub, new
+                {
+                    a = TNumber(4),
+                    Base_AutoStringPropertyForOverrideWithField = TString("DerivedClass#Base_AutoStringPropertyForOverrideWithField"),
+                    Base_GetterForOverrideWithField = TString("DerivedClass#Base_GetterForOverrideWithField"),
+                    BaseBase_MemberForOverride = TString("DerivedClass#BaseBase_MemberForOverride"),
+                    DateTime = TGetter("DateTime", TDateTime(new DateTime(2200, 5, 6, 7, 18, 9))),
+                    _DTProp = TGetter("_DTProp", TDateTime(new DateTime(2200, 5, 6, 7, 8, 9))),
+                    FirstName = TGetter("FirstName", TString("DerivedClass#FirstName")),
+                    _base_dateTime = TGetter("_base_dateTime", TDateTime(new DateTime(2134, 5, 7, 1, 9, 2))),
+                    LastName = TGetter("LastName", TString("BaseClass#LastName"))
+                }, "public");
+
+                await CheckProps(internalAndProtected, new
+                {
+                    base_num = TNumber(5)
+                }, "internalAndProtected");
+
+                await CheckProps(priv, new
+                {
+                    _stringField = TString("DerivedClass#_stringField"),
+                    _dateTime = TDateTime(new DateTime(2020, 7, 6, 5, 4, 3)),
+                    AutoStringProperty = TString("DerivedClass#AutoStringProperty"),
+                    StringPropertyForOverrideWithAutoProperty = TString("DerivedClass#StringPropertyForOverrideWithAutoProperty"),
+                    _base_name = TString("private_name"),
+                    Base_AutoStringProperty = TString("base#Base_AutoStringProperty"),
+                    DateTimeForOverride = TGetter("DateTimeForOverride", TDateTime(new DateTime(2190, 9, 7, 5, 3, 2)))
+                }, "private");
            });
-        
+
         [Fact]
         public async Task StructureGetters() =>  await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.StructureGetters", "Evaluate", 2, "Evaluate",
@@ -1027,19 +1044,12 @@ namespace DebuggerTests
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                var (obj, _) = await EvaluateOnCallFrame(id, "s"); 
+                var (obj, _) = await EvaluateOnCallFrame(id, "s");
                 var props = await GetProperties(obj["objectId"]?.Value<string>());
-               
                 await CheckProps(props, new
                 {
                     Id = TGetter("Id", TNumber(123))
                 }, "s#1");
-                
-                var getter = props.FirstOrDefault(p => p["name"]?.Value<string>() == "Id");
-                Assert.NotNull(getter);
-                var getterId = getter["get"]["objectId"]?.Value<string>();
-                var getterProps = await GetProperties(getterId);
-                Assert.Equal(getterProps[0]?["value"]?["value"]?.Value<int>(), 123);
             });
 
         [Fact]
@@ -1083,22 +1093,22 @@ namespace DebuggerTests
                    ("test.GetDouble()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
                    ("test.GetSingleNullable()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
                    ("test.GetDoubleNullable()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
-                   
+
                    ("test.GetBool()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),
                    ("test.GetBoolNullable()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),
                    ("test.GetNull()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),
-                   
+
                    ("test.GetDefaultAndRequiredParam(2)", TNumber(5)),
                    ("test.GetDefaultAndRequiredParam(3, 2)", TNumber(5)),
                    ("test.GetDefaultAndRequiredParamMixedTypes(\"a\")", TString("a; -1; False")),
                    ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23)", TString("a; 23; False")),
                    ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true)", TString("a; 23; True"))
                    );
-                
-                var (_, res) = await EvaluateOnCallFrame(id, "test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true, 1.23f)", expect_ok: false );
-                AssertEqual("Unable to evaluate method 'GetDefaultAndRequiredParamMixedTypes'. Too many arguments passed.", res.Error["result"]["description"]?.Value<string>(), "wrong error message");
+
+                var (_, res) = await EvaluateOnCallFrame(id, "test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true, 1.23f)", expect_ok: false);
+                Assert.Contains("method 'test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true, 1.23f)' - too many arguments passed", res.Error["message"]?.Value<string>());
            });
-        
+
         [Fact]
         public async Task EvaluateMethodWithLinq() => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.DefaultParamMethods", "Evaluate", 2, "Evaluate",

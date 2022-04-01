@@ -199,7 +199,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 (retObject, string remaining) = await ResolveStaticMembersInStaticTypes(varName, token);
                 if (!string.IsNullOrEmpty(remaining))
                 {
-                    if (retObject?["subtype"]?.Value<string>() == "null")
+                    if (retObject.IsNullValuedObject())
                     {
                         // NRE on null.$remaining
                         retObject = null;
@@ -221,7 +221,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     Result scope_res = await proxy.GetScopeProperties(sessionId, scopeId, token);
                     if (!scope_res.IsOk)
-                        throw new Exception($"BUG: Unable to get properties for scope: {scopeId}. {scope_res}");
+                        throw new ExpressionEvaluationFailedException($"BUG: Unable to get properties for scope: {scopeId}. {scope_res}");
                     localsFetched = true;
                 }
 
@@ -234,8 +234,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (!DotnetObjectId.TryParse(objThis?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                     return null;
 
-                var rootResObj = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
-                var objRet = rootResObj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == nameTrimmed);
+                ValueOrError<JToken> valueOrError = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
+                if (valueOrError.IsError)
+                {
+                    logger.LogDebug($"ResolveAsLocalOrThisMember failed with : {valueOrError.Error}");
+                    return null;
+                }
+
+                JToken objRet = valueOrError.Value.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == nameTrimmed);
                 if (objRet != null)
                     return await GetValueFromObject(objRet, token);
 
@@ -255,8 +261,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (!DotnetObjectId.TryParse(resolvedObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                         return null;
 
-                    var resolvedResObj = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
-                    var objRet = resolvedResObj.FirstOrDefault(objPropAttr => objPropAttr["name"]?.Value<string>() == partTrimmed);
+                    ValueOrError<JToken> valueOrError = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
+                    if (valueOrError.IsError)
+                    {
+                        logger.LogDebug($"ResolveAsInstanceMember failed with : {valueOrError.Error}");
+                        return null;
+                    }
+
+                    JToken objRet = valueOrError.Value.FirstOrDefault(objPropAttr => objPropAttr["name"]?.Value<string>() == partTrimmed);
                     if (objRet == null)
                         return null;
 
@@ -264,7 +276,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (resolvedObject == null)
                         return null;
 
-                    if (resolvedObject["subtype"]?.Value<string>() == "null")
+                    if (resolvedObject.IsNullValuedObject())
                     {
                         if (i < parts.Length - 1)
                         {
@@ -348,7 +360,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             case "object":
                                 var typeIds = await context.SdbAgent.GetTypeIdFromObject(objectId.Value, true, token);
                                 int methodId = await context.SdbAgent.GetMethodIdByName(typeIds[0], "ToArray", token);
-                                var toArrayRetMethod = await context.SdbAgent.InvokeMethodInObject(objectId.Value, methodId, elementAccess.Expression.ToString(), token);
+                                var toArrayRetMethod = await context.SdbAgent.InvokeMethodInObject(objectId, methodId, elementAccess.Expression.ToString(), token);
                                 rootObject = await GetValueFromObject(toArrayRetMethod, token);
                                 DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId arrayObjectId);
                                 rootObject["value"] = await context.SdbAgent.GetArrayValues(arrayObjectId.Value, token);
@@ -360,9 +372,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 return null;
             }
-            catch (Exception)
+            catch (Exception ex) when (ex is not ExpressionEvaluationFailedException)
             {
-                throw new Exception($"Unable to evaluate method '{elementAccess}'");
+                throw new ExpressionEvaluationFailedException($"Unable to evaluate element access '{elementAccess}': {ex.Message}", ex);
             }
         }
 
@@ -379,41 +391,33 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var memberAccessExpressionSyntax = expr as MemberAccessExpressionSyntax;
                     rootObject = await Resolve(memberAccessExpressionSyntax.Expression.ToString(), token);
                     methodName = memberAccessExpressionSyntax.Name.ToString();
+
+                    if (rootObject.IsNullValuedObject())
+                        throw new ExpressionEvaluationFailedException($"Expression '{memberAccessExpressionSyntax}' evaluated to null");
                 }
                 else if (expr is IdentifierNameSyntax)
-                    if (scopeCache.ObjectFields.TryGetValue("this", out JObject valueRet)) {
+                {
+                    if (scopeCache.ObjectFields.TryGetValue("this", out JObject valueRet))
+                    {
                         rootObject = await GetValueFromObject(valueRet, token);
-                    methodName = expr.ToString();
+                        methodName = expr.ToString();
+                    }
                 }
 
                 if (rootObject != null)
                 {
-                    DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
+                    if (!DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
+                        throw new ExpressionEvaluationFailedException($"Cannot invoke method '{methodName}' on invalid object id: {rootObject}");
+
                     var typeIds = await context.SdbAgent.GetTypeIdFromObject(objectId.Value, true, token);
                     int methodId = await context.SdbAgent.GetMethodIdByName(typeIds[0], methodName, token);
                     var className = await context.SdbAgent.GetTypeNameOriginal(typeIds[0], token);
                     if (methodId == 0) //try to search on System.Linq.Enumerable
-                    {
-                        if (linqTypeId == -1)
-                            linqTypeId = await context.SdbAgent.GetTypeByName("System.Linq.Enumerable", token);
-                        methodId = await context.SdbAgent.GetMethodIdByName(linqTypeId, methodName, token);
-                        if (methodId != 0)
-                        {
-                            foreach (var typeId in typeIds)
-                            {
-                                var genericTypeArgs = await context.SdbAgent.GetTypeParamsOrArgsForGenericType(typeId, token);
-                                if (genericTypeArgs.Count > 0)
-                                {
-                                    isExtensionMethod = true;
-                                    methodId = await context.SdbAgent.MakeGenericMethod(methodId, genericTypeArgs, token);
-                                    break;
-                                }
-                            }
-                        }
-                    }
+                        methodId = await FindMethodIdOnLinqEnumerable(typeIds, methodName);
+
                     if (methodId == 0) {
                         var typeName = await context.SdbAgent.GetTypeName(typeIds[0], token);
-                        throw new ReturnAsErrorException($"Method '{methodName}' not found in type '{typeName}'", "ArgumentError");
+                        throw new ExpressionEvaluationFailedException($"Method '{methodName}' not found in type '{typeName}'");
                     }
                     using var commandParamsObjWriter = new MonoBinaryWriter();
                     if (!isExtensionMethod)
@@ -427,20 +431,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                         int passedArgsCnt = method.ArgumentList.Arguments.Count;
                         int methodParamsCnt = passedArgsCnt;
                         ParameterInfo[] methodParamsInfo = null;
-                        logger.LogInformation($"passed: {passedArgsCnt}, isExtensionMethod: {isExtensionMethod}");
                         var methodInfo = await context.SdbAgent.GetMethodInfo(methodId, token);
                         if (methodInfo != null) //FIXME: #65670
                         {
                             methodParamsInfo = methodInfo.Info.GetParametersInfo();
                             methodParamsCnt = methodParamsInfo.Length;
-                            logger.LogInformation($"got method info with {methodParamsCnt} params");
                             if (isExtensionMethod)
                             {
                                 // implicit *this* parameter
                                 methodParamsCnt--;
                             }
                             if (passedArgsCnt > methodParamsCnt)
-                                throw new ReturnAsErrorException($"Unable to evaluate method '{methodName}'. Too many arguments passed.", "ArgumentError");
+                                throw new ExpressionEvaluationFailedException($"Cannot invoke method '{method}' - too many arguments passed");
                         }
 
                         if (isExtensionMethod)
@@ -461,23 +463,23 @@ namespace Microsoft.WebAssembly.Diagnostics
                             if (arg.Expression is LiteralExpressionSyntax literal)
                             {
                                 if (!await commandParamsObjWriter.WriteConst(literal, context.SdbAgent, token))
-                                    throw new ReturnAsErrorException($"Unable to evaluate method '{methodName}'. Unable to write LiteralExpressionSyntax into binary writer.", "ArgumentError");
+                                    throw new InternalErrorException($"Unable to write LiteralExpressionSyntax ({literal}) into binary writer.");
                             }
                             else if (arg.Expression is IdentifierNameSyntax identifierName)
                             {
                                 if (!await commandParamsObjWriter.WriteJsonValue(memberAccessValues[identifierName.Identifier.Text], context.SdbAgent, token))
-                                    throw new ReturnAsErrorException($"Unable to evaluate method '{methodName}'. Unable to write IdentifierNameSyntax into binary writer.", "ArgumentError");
+                                    throw new InternalErrorException($"Unable to write IdentifierNameSyntax ({identifierName}) into binary writer.");
                             }
                             else
                             {
-                                throw new ReturnAsErrorException($"Unable to evaluate method '{methodName}'. Unable to write into binary writer, not recognized expression type: {arg.Expression.GetType().Name}", "ArgumentError");
+                                throw new InternalErrorException($"Unable to write into binary writer, not recognized expression type: {arg.Expression.GetType().Name}");
                             }
                         }
                         // optional arguments that were not overwritten
                         for (; argIndex < methodParamsCnt; argIndex++)
                         {
                             if (!await commandParamsObjWriter.WriteConst(methodParamsInfo[argIndex].TypeCode, methodParamsInfo[argIndex].Value, context.SdbAgent, token))
-                                throw new ReturnAsErrorException($"Unable to write optional parameter {methodParamsInfo[argIndex].Name} value in method '{methodName}' to the mono buffer.", "ArgumentError");
+                                throw new InternalErrorException($"Unable to write optional parameter {methodParamsInfo[argIndex].Name} value in method '{methodName}' to the mono buffer.");
                         }
                         var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, "methodRet", token);
                         return await GetValueFromObject(retMethod, token);
@@ -485,9 +487,38 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 return null;
             }
-            catch (Exception ex) when (ex is not ReturnAsErrorException)
+            catch (Exception ex) when (ex is not (ExpressionEvaluationFailedException or ReturnAsErrorException))
             {
-                throw new Exception($"Unable to evaluate method '{methodName}'", ex);
+                throw new ExpressionEvaluationFailedException($"Unable to evaluate method '{method}': {ex.Message}", ex);
+            }
+
+            async Task<int> FindMethodIdOnLinqEnumerable(IList<int> typeIds, string methodName)
+            {
+                if (linqTypeId == -1)
+                {
+                    linqTypeId = await context.SdbAgent.GetTypeByName("System.Linq.Enumerable", token);
+                    if (linqTypeId == 0)
+                    {
+                        logger.LogDebug($"Cannot find type 'System.Linq.Enumerable'");
+                        return 0;
+                    }
+                }
+
+                int newMethodId = await context.SdbAgent.GetMethodIdByName(linqTypeId, methodName, token);
+                if (newMethodId == 0)
+                    return 0;
+
+                foreach (int typeId in typeIds)
+                {
+                    List<int> genericTypeArgs = await context.SdbAgent.GetTypeParamsOrArgsForGenericType(typeId, token);
+                    if (genericTypeArgs.Count > 0)
+                    {
+                        isExtensionMethod = true;
+                        return await context.SdbAgent.MakeGenericMethod(newMethodId, genericTypeArgs, token);
+                    }
+                }
+
+                return 0;
             }
         }
     }

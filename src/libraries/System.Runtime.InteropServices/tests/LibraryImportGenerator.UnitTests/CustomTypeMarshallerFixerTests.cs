@@ -984,6 +984,53 @@ struct Native
         }
 
         [Fact]
+        public async Task NativeTypeWithIncorrectStackallocConstructor_ReportsDiagnostic()
+        {
+            string source = @"
+using System;
+using System.Runtime.InteropServices;
+
+[NativeMarshalling(typeof(Native))]
+class S
+{
+    public byte c;
+}
+
+[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 0x100)]
+struct {|#0:Native|}
+{
+    public Native(S managed) {}
+    public Native(S s, int i) {}
+    public Native(S s, Span<object> buffer) {}
+}";
+            string fixedSource = @"
+using System;
+using System.Runtime.InteropServices;
+
+[NativeMarshalling(typeof(Native))]
+class S
+{
+    public byte c;
+}
+
+[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 0x100)]
+struct Native
+{
+    public Native(S managed) {}
+    public Native(S s, int i) {}
+    public Native(S s, Span<object> buffer) {}
+
+    public Native(S managed, Span<byte> buffer)
+    {
+        throw new NotImplementedException();
+    }
+}";
+            await VerifyCS.VerifyCodeFixAsync(source,
+                fixedSource,
+                VerifyCS.Diagnostic(ValueInCallerAllocatedBufferRequiresSpanConstructorRule).WithLocation(0).WithArguments("Native", "S"));
+        }
+
+        [Fact]
         public async Task NativeTypeWithOnlyStackallocConstructor_ReportsDiagnostic()
         {
             string source = @"

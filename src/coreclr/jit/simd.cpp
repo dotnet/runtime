@@ -297,8 +297,9 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
             WCHAR  className[256] = {0};
             WCHAR* pbuf           = &className[0];
             int    len            = ArrLen(className);
-            info.compCompHnd->appendClassName((char16_t**)&pbuf, &len, typeHnd, true, false, false);
-            noway_assert(pbuf < &className[256]);
+            int    outlen = info.compCompHnd->appendClassName((char16_t**)&pbuf, &len, typeHnd, true, false, false);
+            noway_assert(outlen >= 0);
+            noway_assert((size_t)(outlen + 1) <= ArrLen(className));
             JITDUMP("SIMD Candidate Type %S\n", className);
 
             if (wcsncmp(className, W("System.Numerics."), 16) == 0)

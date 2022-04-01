@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <!-- Disabling baseline validation since this is a brand new package.
@@ -13,8 +14,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs" Link="Common\System\Memory\PointerMemoryManager.cs" />
     <Compile Include="System\Security\Cryptography\Cose\CoseHeaderLabel.cs" />
     <Compile Include="System\Security\Cryptography\Cose\CoseHeaderMap.cs" />
+    <Compile Include="System\Security\Cryptography\Cose\CoseHelpers.cs" />
     <Compile Include="System\Security\Cryptography\Cose\CoseMessage.cs" />
     <Compile Include="System\Security\Cryptography\Cose\CoseSign1Message.cs" />
     <Compile Include="System\Security\Cryptography\Cose\KnownCoseAlgorithms.cs" />
@@ -31,10 +34,12 @@
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Collections" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Numerics" />
+    <Reference Include="System.Text.Encoding.Extensions" />
   </ItemGroup>
   
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
