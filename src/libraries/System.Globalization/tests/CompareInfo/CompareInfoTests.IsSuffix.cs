@@ -183,7 +183,7 @@ namespace System.Globalization.Tests
             IsSuffix(s_invariantCompare, "Hello", "", (CompareOptions)(-1), true, 0);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         public void IsSuffixWithAsciiAndIgnoredCharacters()
         {
             Assert.EndsWith("A", "A\0");

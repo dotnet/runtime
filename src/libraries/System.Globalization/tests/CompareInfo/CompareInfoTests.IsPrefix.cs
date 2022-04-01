@@ -182,7 +182,7 @@ namespace System.Globalization.Tests
             IsPrefix(s_invariantCompare, "Hello", "", (CompareOptions)(-1), true, 0);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         public void IsPrefixWithAsciiAndIgnoredCharacters()
         {
             Assert.StartsWith("A", "A\0");
