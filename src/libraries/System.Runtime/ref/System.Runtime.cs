@@ -727,9 +727,9 @@ namespace System
         public static System.Byte Clamp(System.Byte value, System.Byte min, System.Byte max) { throw null; }
         public int CompareTo(System.Byte value) { throw null; }
         public int CompareTo(object? value) { throw null; }
+        public static System.Byte CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Byte CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Byte CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static System.Byte Create<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static (byte Quotient, byte Remainder) DivRem(System.Byte left, System.Byte right) { throw null; }
         public bool Equals(System.Byte obj) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
@@ -829,9 +829,9 @@ namespace System
         public static string ConvertFromUtf32(int utf32) { throw null; }
         public static int ConvertToUtf32(System.Char highSurrogate, System.Char lowSurrogate) { throw null; }
         public static int ConvertToUtf32(string s, int index) { throw null; }
+        public static System.Char CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Char CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Char CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static System.Char Create<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static (char Quotient, char Remainder) DivRem(System.Char left, System.Char right) { throw null; }
         public bool Equals(System.Char obj) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
@@ -1806,9 +1806,9 @@ namespace System
         public int CompareTo(System.Decimal value) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public static System.Decimal CopySign(System.Decimal value, System.Decimal sign) { throw null; }
+        public static System.Decimal CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Decimal CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Decimal CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static System.Decimal Create<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Decimal Divide(System.Decimal d1, System.Decimal d2) { throw null; }
         public bool Equals(System.Decimal value) { throw null; }
         public static bool Equals(System.Decimal d1, System.Decimal d2) { throw null; }
@@ -2023,9 +2023,9 @@ namespace System
         public static System.Double CopySign(System.Double x, System.Double y) { throw null; }
         public static System.Double Cos(System.Double x) { throw null; }
         public static System.Double Cosh(System.Double x) { throw null; }
+        public static System.Double CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Double CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Double CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static System.Double Create<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public bool Equals(System.Double obj) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Double Exp(System.Double x) { throw null; }
@@ -2589,9 +2589,9 @@ namespace System
         public static System.Half CopySign(System.Half x, System.Half y) { throw null; }
         public static System.Half Cos(System.Half x) { throw null; }
         public static System.Half Cosh(System.Half x) { throw null; }
+        public static System.Half CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Half CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Half CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static System.Half Create<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public bool Equals(System.Half other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Half Exp(System.Half x) { throw null; }
@@ -2814,9 +2814,9 @@ namespace System
         public int CompareTo(System.Int16 value) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public static System.Int16 CopySign(System.Int16 value, System.Int16 sign) { throw null; }
+        public static System.Int16 CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Int16 CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Int16 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static System.Int16 Create<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static (short Quotient, short Remainder) DivRem(System.Int16 left, System.Int16 right) { throw null; }
         public bool Equals(System.Int16 obj) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
@@ -2907,9 +2907,9 @@ namespace System
         public System.Int32 CompareTo(System.Int32 value) { throw null; }
         public System.Int32 CompareTo(object? value) { throw null; }
         public static System.Int32 CopySign(System.Int32 value, System.Int32 sign) { throw null; }
+        public static System.Int32 CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Int32 CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Int32 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static System.Int32 Create<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static (int Quotient, int Remainder) DivRem(System.Int32 left, System.Int32 right) { throw null; }
         public bool Equals(System.Int32 obj) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
@@ -3000,9 +3000,9 @@ namespace System
         public int CompareTo(System.Int64 value) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public static System.Int64 CopySign(System.Int64 value, System.Int64 sign) { throw null; }
+        public static System.Int64 CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Int64 CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Int64 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static System.Int64 Create<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static (long Quotient, long Remainder) DivRem(System.Int64 left, System.Int64 right) { throw null; }
         public bool Equals(System.Int64 obj) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
@@ -3144,9 +3144,9 @@ namespace System
         static nint System.Numerics.INumber<nint>.Abs(nint value) { throw null; }
         static nint System.Numerics.INumber<nint>.Clamp(nint value, nint min, nint max) { throw null; }
         static nint System.Numerics.INumber<nint>.CopySign(nint value, nint sign) { throw null; }
+        static nint System.Numerics.INumber<nint>.CreateChecked<TOther>(TOther value) { throw null; }
         static nint System.Numerics.INumber<nint>.CreateSaturating<TOther>(TOther value) { throw null; }
         static nint System.Numerics.INumber<nint>.CreateTruncating<TOther>(TOther value) { throw null; }
-        static nint System.Numerics.INumber<nint>.Create<TOther>(TOther value) { throw null; }
         static bool System.Numerics.INumber<nint>.IsNegative(nint value) { throw null; }
         static nint System.Numerics.INumber<nint>.Max(nint x, nint y) { throw null; }
         static nint System.Numerics.INumber<nint>.MaxMagnitude(nint x, nint y) { throw null; }
@@ -3992,9 +3992,9 @@ namespace System
         public int CompareTo(object? obj) { throw null; }
         public int CompareTo(System.SByte value) { throw null; }
         public static System.SByte CopySign(System.SByte value, System.SByte sign) { throw null; }
+        public static System.SByte CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.SByte CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.SByte CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static System.SByte Create<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static (sbyte Quotient, sbyte Remainder) DivRem(System.SByte left, System.SByte right) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.SByte obj) { throw null; }
@@ -4119,9 +4119,9 @@ namespace System
         public static System.Single CopySign(System.Single x, System.Single y) { throw null; }
         public static System.Single Cos(System.Single x) { throw null; }
         public static System.Single Cosh(System.Single x) { throw null; }
+        public static System.Single CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Single CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Single CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static System.Single Create<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Single obj) { throw null; }
         public static System.Single Exp(System.Single x) { throw null; }
@@ -5389,9 +5389,9 @@ namespace System
         public static System.UInt16 Clamp(System.UInt16 value, System.UInt16 min, System.UInt16 max) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(System.UInt16 value) { throw null; }
+        public static System.UInt16 CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.UInt16 CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.UInt16 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static System.UInt16 Create<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static (ushort Quotient, ushort Remainder) DivRem(System.UInt16 left, System.UInt16 right) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.UInt16 obj) { throw null; }
@@ -5482,9 +5482,9 @@ namespace System
         public static System.UInt32 Clamp(System.UInt32 value, System.UInt32 min, System.UInt32 max) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(System.UInt32 value) { throw null; }
+        public static System.UInt32 CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.UInt32 CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.UInt32 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static System.UInt32 Create<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static (uint Quotient, uint Remainder) DivRem(System.UInt32 left, System.UInt32 right) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.UInt32 obj) { throw null; }
@@ -5575,9 +5575,9 @@ namespace System
         public static System.UInt64 Clamp(System.UInt64 value, System.UInt64 min, System.UInt64 max) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(System.UInt64 value) { throw null; }
+        public static System.UInt64 CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.UInt64 CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.UInt64 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static System.UInt64 Create<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static (ulong Quotient, ulong Remainder) DivRem(System.UInt64 left, System.UInt64 right) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.UInt64 obj) { throw null; }
@@ -5718,9 +5718,9 @@ namespace System
         static nuint System.Numerics.INumber<nuint>.Abs(nuint value) { throw null; }
         static nuint System.Numerics.INumber<nuint>.Clamp(nuint value, nuint min, nuint max) { throw null; }
         static nuint System.Numerics.INumber<nuint>.CopySign(nuint value, nuint sign) { throw null; }
+        static nuint System.Numerics.INumber<nuint>.CreateChecked<TOther>(TOther value) { throw null; }
         static nuint System.Numerics.INumber<nuint>.CreateSaturating<TOther>(TOther value) { throw null; }
         static nuint System.Numerics.INumber<nuint>.CreateTruncating<TOther>(TOther value) { throw null; }
-        static nuint System.Numerics.INumber<nuint>.Create<TOther>(TOther value) { throw null; }
         static bool System.Numerics.INumber<nuint>.IsNegative(nuint value) { throw null; }
         static nuint System.Numerics.INumber<nuint>.Max(nuint x, nuint y) { throw null; }
         static nuint System.Numerics.INumber<nuint>.MaxMagnitude(nuint x, nuint y) { throw null; }
@@ -9453,9 +9453,9 @@ namespace System.Numerics
         static abstract TSelf Abs(TSelf value);
         static abstract TSelf Clamp(TSelf value, TSelf min, TSelf max);
         static abstract TSelf CopySign(TSelf value, TSelf sign);
+        static abstract TSelf CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther>;
         static abstract TSelf CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther>;
         static abstract TSelf CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther>;
-        static abstract TSelf Create<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther>;
         static abstract bool IsNegative(TSelf value);
         static abstract TSelf Max(TSelf x, TSelf y);
         static abstract TSelf MaxMagnitude(TSelf x, TSelf y);

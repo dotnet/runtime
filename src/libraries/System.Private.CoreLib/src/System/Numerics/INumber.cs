@@ -35,13 +35,13 @@ namespace System.Numerics
         /// <returns>A value with the magnitude of <paramref name="value" /> and the sign of <paramref name="sign" />.</returns>
         static abstract TSelf CopySign(TSelf value, TSelf sign);
 
-        /// <summary>Creates an instance of the current type from a value.</summary>
+        /// <summary>Creates an instance of the current type from a value, throwing an overflow exception for any values that fall outside the representable range of the current type.</summary>
         /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
         /// <param name="value">The value which is used to create the instance of <typeparamref name="TSelf" />.</param>
         /// <returns>An instance of <typeparamref name="TSelf" /> created from <paramref name="value" />.</returns>
         /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <typeparamref name="TSelf" />.</exception>
-        static abstract TSelf Create<TOther>(TOther value)
+        static abstract TSelf CreateChecked<TOther>(TOther value)
             where TOther : INumber<TOther>;
 
         /// <summary>Creates an instance of the current type from a value, saturating any values that fall outside the representable range of the current type.</summary>

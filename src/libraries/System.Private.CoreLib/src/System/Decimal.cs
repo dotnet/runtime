@@ -1156,9 +1156,9 @@ namespace System
             return new decimal(in value, (value._flags & ~SignMask) | (sign._flags & SignMask));
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static decimal Create<TOther>(TOther value)
+        public static decimal CreateChecked<TOther>(TOther value)
             where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
