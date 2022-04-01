@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -20,9 +21,11 @@ namespace Microsoft.Extensions.Logging.Console
             _queueProcessor = loggerProcessor;
         }
 
+        [DisallowNull]
         internal ConsoleFormatter? Formatter { get; set; }
         internal IExternalScopeProvider? ScopeProvider { get; set; }
 
+        [DisallowNull]
         internal ConsoleLoggerOptions? Options { get; set; }
 
         [ThreadStatic]
