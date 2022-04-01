@@ -11,9 +11,17 @@ namespace System.IO.Compression
         {
             get
             {
-				// TODO: Add Sanitization
-                return FullName;
-				
+                StringBuilder builder = new StringBuilder(this.FullName);
+                for (int i = 0; i < FullName.lenght; i++)
+                {
+                    if ((int)builder[i] >= 0 || (int)builder[i] < 32 ||
+                       builder[i] == '?'|| builder[i] == ':' ||
+                       builder[i] == '*')
+                    {
+                        builder[i] = '_';
+                    }
+                }
+                return builder.ToString();
             }
         }
     }
