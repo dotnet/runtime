@@ -1219,6 +1219,15 @@ ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, 
 	return static_cast<size_t>(InterlockedCompareExchangeT<size_t> (target, value, expected));
 }
 
+static
+inline
+ep_char8_t *
+ep_rt_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return static_cast<ep_char8_t *>(InterlockedCompareExchangeT<ep_char8_t *> (target, value, expected));
+}
+
 /*
  * EventPipe.
  */
@@ -2673,18 +2682,21 @@ ep_rt_diagnostics_command_line_get (void)
 	// On Windows this does not apply as the value is retrieved directly from the OS any time it is requested. 
 	// As a result, we cannot actually cache this value. We need to return the _current_ value.
 	// This function needs to handle freeing the string in order to make it consistent with Mono's version.
-	// There is a rare chance this may be called on multiple threads, so we attempt to always return the newest value.
-	// This means we will leak an old copy if it is in use when the transition happens. This is extremely rate
-	// and should only leak on the order of 1 string.
-	extern ep_char8_t *_ep_rt_coreclr_diagnostics_cmd_line;
+	// There is a rare chance this may be called on multiple threads, so we attempt to always return the newest value
+	// and conservatively leak the old value if it changed. This is extremely rare and should only leak 1 string.
+	extern ep_char8_t *volatile _ep_rt_coreclr_diagnostics_cmd_line;
 
+	ep_char8_t *old_cmd_line = _ep_rt_coreclr_diagnostics_cmd_line;
 	ep_char8_t *new_cmd_line = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(GetCommandLineForDiagnostics ()), -1);
-	if (_ep_rt_coreclr_diagnostics_cmd_line && ep_rt_utf8_string_compare (_ep_rt_coreclr_diagnostics_cmd_line, new_cmd_line) == 0) {
+	if (old_cmd_line && ep_rt_utf8_string_compare (old_cmd_line, new_cmd_line) == 0) {
 		// same as old, so free the new one
 		ep_rt_utf8_string_free (new_cmd_line);
 	} else {
-		_ep_rt_coreclr_diagnostics_cmd_line = new_cmd_line;
-		// NOTE: If there was a value we purposefully leak it since it may still be in use
+		// attempt an update, and give up if you lose the race
+		if (ep_rt_atomic_compare_exchange_utf8_string (&_ep_rt_coreclr_diagnostics_cmd_line, old_cmd_line, new_cmd_line) != old_cmd_line) {
+			ep_rt_utf8_string_free (new_cmd_line);
+		}
+		// NOTE: If there was a value we purposefully leak it since it may still be in use.
 		// This leak is *small* (length of the command line) and bounded (should only happen once)
 	}
 
