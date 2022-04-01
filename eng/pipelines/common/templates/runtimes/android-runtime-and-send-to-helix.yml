@@ -38,6 +38,7 @@ steps:
       osSubgroup: ${{ parameters.osSubgroup}}
       coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
       runtimeVariant: ${{ parameters.runtimeVariant }}
 
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
