@@ -21,7 +21,7 @@ namespace System
 
         private TypedReference(object target, int offset, RuntimeTypeHandle typeHandle)
         {
-            _value = new ByReference<byte>(ref Unsafe.Add<byte>(ref target.GetRawData(), offset));
+            _value = new ByReference<byte>(in Unsafe.Add<byte>(ref target.GetRawData(), offset));
             _typeHandle = typeHandle;
         }
 

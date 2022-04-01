@@ -43,7 +43,7 @@ namespace System
             if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
-            _pointer = new ByReference<T>(ref MemoryMarshal.GetArrayDataReference(array));
+            _pointer = new ByReference<T>(in MemoryMarshal.GetArrayDataReference(array));
             _length = array.Length;
         }
 
@@ -80,7 +80,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 #endif
 
-            _pointer = new ByReference<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)start /* force zero-extension */));
+            _pointer = new ByReference<T>(in Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)start /* force zero-extension */));
             _length = length;
         }
 
@@ -107,17 +107,27 @@ namespace System
             if (length < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            _pointer = new ByReference<T>(ref Unsafe.As<byte, T>(ref *(byte*)pointer));
+            _pointer = new ByReference<T>(in Unsafe.As<byte, T>(ref *(byte*)pointer));
             _length = length;
+        }
+
+        // TODO https://github.com/dotnet/runtime/issues/67445: Make this public.
+        /// <summary>Creates a new <see cref="Span{T}"/> of length 1 around the specified reference.</summary>
+        /// <param name="reference">A reference to data.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal Span(ref T reference)
+        {
+            _pointer = new ByReference<T>(in reference);
+            _length = 1;
         }
 
         // Constructor for internal use only.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal Span(ref T ptr, int length)
+        internal Span(ref T reference, int length)
         {
             Debug.Assert(length >= 0);
 
-            _pointer = new ByReference<T>(ref ptr);
+            _pointer = new ByReference<T>(in reference);
             _length = length;
         }
 

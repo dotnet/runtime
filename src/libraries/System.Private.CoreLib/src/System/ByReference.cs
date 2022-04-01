@@ -18,7 +18,7 @@ namespace System
 
 #pragma warning disable IDE0060
         [Intrinsic]
-        public ByReference(ref T value)
+        public ByReference(in T value)
         {
             // Implemented as a JIT intrinsic - This default implementation is for
             // completeness and to provide a concrete error if called via reflection
