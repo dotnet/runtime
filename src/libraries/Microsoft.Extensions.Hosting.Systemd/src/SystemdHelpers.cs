@@ -5,7 +5,7 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Text;
-#if !NET5_0_OR_GREATER
+#if !NETCOREAPP
 using System.Diagnostics;
 #endif
 
@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
             // To support containerized systemd services, check if we're the main process (PID 1)
             // and if there are systemd environment variables defined for notifying the service
             // manager, or passing listen handles.
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
             int processId = Environment.ProcessId;
 #else
             int processId = Process.GetCurrentProcess().Id;
