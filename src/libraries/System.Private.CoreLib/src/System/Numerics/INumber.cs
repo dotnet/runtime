@@ -12,7 +12,7 @@ namespace System.Numerics
         : IComparisonOperators<TSelf, TSelf>,   // implies IEqualityOperators<TSelf, TSelf>
           IModulusOperators<TSelf, TSelf, TSelf>,
           INumberBase<TSelf>,
-          ISpanParsable<TSelf>                  // implies IParseable<TSelf>
+          ISpanParsable<TSelf>                  // implies IParsable<TSelf>
         where TSelf : INumber<TSelf>
     {
         /// <summary>Computes the absolute of a value.</summary>
