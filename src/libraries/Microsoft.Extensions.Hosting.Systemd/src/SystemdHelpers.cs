@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
             if (processId == 1)
             {
                 return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("NOTIFY_SOCKET")) ||
-                    !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LISTEN_PID"));
+                       !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LISTEN_PID"));
             }
 
             try
