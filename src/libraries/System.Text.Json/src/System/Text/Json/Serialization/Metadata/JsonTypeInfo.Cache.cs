@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -571,8 +572,15 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void InitializePropCache()
         {
-            Debug.Assert(PropertyCache == null);
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
+
+            // Delayed JsonTypeInfo initialization can be invoked by
+            // multiple threads, add a temporary check to avoid contention.
+            // TODO refactor so that metadata initialization is single threaded.
+            if (Volatile.Read(ref PropertyCache) is not null)
+            {
+                return;
+            }
 
             JsonSerializerContext? context = Options.JsonSerializerContext;
             Debug.Assert(context != null);
@@ -620,15 +628,22 @@ namespace System.Text.Json.Serialization.Metadata
                 CacheMember(jsonPropertyInfo, propertyCache, ref ignoredMembers);
             }
 
-            // Avoid threading issues by populating a local cache and assigning it to the global cache after completion.
-            PropertyCache = propertyCache;
+            // Populate a local cache and assign it to the global cache after completion.
+            Volatile.Write(ref PropertyCache, propertyCache);
         }
 
         internal void InitializeParameterCache()
         {
-            Debug.Assert(ParameterCache == null);
             Debug.Assert(PropertyCache != null);
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
+
+            // Delayed JsonTypeInfo initialization can be invoked by
+            // multiple threads, add a temporary check to avoid contention.
+            // TODO refactor so that metadata initialization is single threaded.
+            if (Volatile.Read(ref ParameterCache) is not null)
+            {
+                return;
+            }
 
             JsonSerializerContext? context = Options.JsonSerializerContext;
             Debug.Assert(context != null);

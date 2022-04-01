@@ -84,7 +84,7 @@ namespace System.Net
             else
             {
 #pragma warning disable CA5359
-                _sslStream = epl.Listener.CreateSslStream(new NetworkStream(sock, false), false, (t, c, ch, e) =>
+                _sslStream = HttpListener.CreateSslStream(new NetworkStream(sock, false), false, (t, c, ch, e) =>
                 {
                     if (c == null)
                     {
@@ -472,7 +472,7 @@ namespace System.Net
         {
             if (_contextBound)
             {
-                _epl.UnbindContext(_context);
+                HttpEndPointListener.UnbindContext(_context);
                 _contextBound = false;
             }
         }

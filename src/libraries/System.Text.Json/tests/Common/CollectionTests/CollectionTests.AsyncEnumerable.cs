@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Tests
         [MemberData(nameof(GetAsyncEnumerableSources))]
         public async Task WriteRootLevelAsyncEnumerable<TElement>(IEnumerable<TElement> source, int delayInterval, int bufferSize)
         {
-            if (StreamingSerializer is null)
+            if (StreamingSerializer?.IsAsyncSerializer != true)
             {
                 return;
             }
@@ -43,7 +43,7 @@ namespace System.Text.Json.Serialization.Tests
         [MemberData(nameof(GetAsyncEnumerableSources))]
         public async Task WriteNestedAsyncEnumerable<TElement>(IEnumerable<TElement> source, int delayInterval, int bufferSize)
         {
-            if (StreamingSerializer is null)
+            if (StreamingSerializer?.IsAsyncSerializer != true)
             {
                 return;
             }
@@ -68,7 +68,7 @@ namespace System.Text.Json.Serialization.Tests
         [MemberData(nameof(GetAsyncEnumerableSources))]
         public async Task WriteNestedAsyncEnumerable_DTO<TElement>(IEnumerable<TElement> source, int delayInterval, int bufferSize)
         {
-            if (StreamingSerializer is null)
+            if (StreamingSerializer?.IsAsyncSerializer != true)
             {
                 return;
             }
@@ -93,7 +93,7 @@ namespace System.Text.Json.Serialization.Tests
         [MemberData(nameof(GetAsyncEnumerableSources))]
         public async Task WriteNestedAsyncEnumerable_Nullable<TElement>(IEnumerable<TElement> source, int delayInterval, int bufferSize)
         {
-            if (StreamingSerializer is null)
+            if (StreamingSerializer?.IsAsyncSerializer != true)
             {
                 return;
             }
@@ -151,7 +151,7 @@ namespace System.Text.Json.Serialization.Tests
         [MemberData(nameof(GetAsyncEnumerableSources))]
         public async Task WriteSequentialNestedAsyncEnumerables<TElement>(IEnumerable<TElement> source, int delayInterval, int bufferSize)
         {
-            if (StreamingSerializer is null)
+            if (StreamingSerializer?.IsAsyncSerializer != true)
             {
                 return;
             }
@@ -176,7 +176,7 @@ namespace System.Text.Json.Serialization.Tests
         [MemberData(nameof(GetAsyncEnumerableSources))]
         public async Task WriteAsyncEnumerableOfAsyncEnumerables<TElement>(IEnumerable<TElement> source, int delayInterval, int bufferSize)
         {
-            if (StreamingSerializer is null)
+            if (StreamingSerializer?.IsAsyncSerializer != true)
             {
                 return;
             }
@@ -209,6 +209,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             IAsyncEnumerable<int> asyncEnumerable = new MockedAsyncEnumerable<int>(Enumerable.Range(1, 10));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(asyncEnumerable));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new MemoryStream(), asyncEnumerable));
         }
 
         [Fact]
@@ -216,12 +217,13 @@ namespace System.Text.Json.Serialization.Tests
         {
             IAsyncEnumerable<int> asyncEnumerable = new MockedAsyncEnumerable<int>(Enumerable.Range(1, 10));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new { Data = asyncEnumerable }));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new MemoryStream(), new { Data = asyncEnumerable }));
         }
 
         [Fact]
         public async Task WriteAsyncEnumerable_ElementSerializationThrows_ShouldDisposeEnumerator()
         {
-            if (StreamingSerializer is null)
+            if (StreamingSerializer?.IsAsyncSerializer != true)
             {
                 return;
             }
@@ -243,7 +245,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadRootLevelAsyncEnumerable()
         {
-            if (StreamingSerializer is null)
+            if (StreamingSerializer?.IsAsyncSerializer != true)
             {
                 return;
             }
@@ -257,7 +259,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadNestedAsyncEnumerable()
         {
-            if (StreamingSerializer is null)
+            if (StreamingSerializer?.IsAsyncSerializer != true)
             {
                 return;
             }
@@ -271,7 +273,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadAsyncEnumerableOfAsyncEnumerables()
         {
-            if (StreamingSerializer is null)
+            if (StreamingSerializer?.IsAsyncSerializer != true)
             {
                 return;
             }
@@ -289,7 +291,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadRootLevelAsyncEnumerableDerivative_ThrowsNotSupportedException()
         {
-            if (StreamingSerializer is null)
+            if (StreamingSerializer?.IsAsyncSerializer != true)
             {
                 return;
             }
@@ -314,7 +316,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task RegressionTest_DisposingEnumeratorOnPendingMoveNextAsyncOperation()
         {
-            if (StreamingSerializer is null)
+            if (StreamingSerializer?.IsAsyncSerializer != true)
             {
                 return;
             }
@@ -338,7 +340,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task RegressionTest_ExceptionOnFirstMoveNextShouldNotFlushBuffer()
         {
-            if (StreamingSerializer is null)
+            if (StreamingSerializer?.IsAsyncSerializer != true)
             {
                 return;
             }

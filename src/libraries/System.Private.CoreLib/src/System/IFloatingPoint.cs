@@ -215,6 +215,16 @@ namespace System
         /// <returns><see cref="E" /> raised to the power of <paramref name="x" />.</returns>
         static abstract TSelf Pow(TSelf x, TSelf y);
 
+        /// <summary>Computes an estimate of the reciprocal of a value.</summary>
+        /// <param name="x">The value whose estimate of the reciprocal is to be computed.</param>
+        /// <returns>An estimate of the reciprocal of <paramref name="x" />.</returns>
+        static abstract TSelf ReciprocalEstimate(TSelf x);
+
+        /// <summary>Computes an estimate of the reciprocal square root of a value.</summary>
+        /// <param name="x">The value whose estimate of the reciprocal square root is to be computed.</param>
+        /// <returns>An estimate of the reciprocal square root of <paramref name="x" />.</returns>
+        static abstract TSelf ReciprocalSqrtEstimate(TSelf x);
+
         /// <summary>Rounds a value to the nearest integer using the default rounding mode (<see cref="MidpointRounding.ToEven" />).</summary>
         /// <param name="x">The value to round.</param>
         /// <returns>The result of rounding <paramref name="x" /> to the nearest integer using the default rounding mode.</returns>
@@ -252,6 +262,11 @@ namespace System
         /// <param name="x">The value, in radians, whose sine is to be computed.</param>
         /// <returns>The sine of <paramref name="x" />.</returns>
         static abstract TSelf Sin(TSelf x);
+
+        /// <summary>Computes the sine and cosine of a value.</summary>
+        /// <param name="x">The value, in radians, whose sine and cosine are to be computed.</param>
+        /// <returns>The sine and cosine of <paramref name="x" />.</returns>
+        static abstract (TSelf Sin, TSelf Cos) SinCos(TSelf x);
 
         /// <summary>Computes the hyperbolic sine of a value.</summary>
         /// <param name="x">The value, in radians, whose hyperbolic sine is to be computed.</param>

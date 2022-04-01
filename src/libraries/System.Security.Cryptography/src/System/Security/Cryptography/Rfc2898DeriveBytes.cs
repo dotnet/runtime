@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
@@ -29,6 +30,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public HashAlgorithmName HashAlgorithm { get; }
 
+        [Obsolete(Obsoletions.Rfc2898OutdatedCtorMessage, DiagnosticId = Obsoletions.Rfc2898OutdatedCtorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations)
             : this(password, salt, iterations, HashAlgorithmName.SHA1)
         {
@@ -39,11 +41,13 @@ namespace System.Security.Cryptography
         {
         }
 
+        [Obsolete(Obsoletions.Rfc2898OutdatedCtorMessage, DiagnosticId = Obsoletions.Rfc2898OutdatedCtorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public Rfc2898DeriveBytes(string password, byte[] salt)
              : this(password, salt, 1000)
         {
         }
 
+        [Obsolete(Obsoletions.Rfc2898OutdatedCtorMessage, DiagnosticId = Obsoletions.Rfc2898OutdatedCtorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public Rfc2898DeriveBytes(string password, byte[] salt, int iterations)
             : this(password, salt, iterations, HashAlgorithmName.SHA1)
         {
@@ -54,11 +58,13 @@ namespace System.Security.Cryptography
         {
         }
 
+        [Obsolete(Obsoletions.Rfc2898OutdatedCtorMessage, DiagnosticId = Obsoletions.Rfc2898OutdatedCtorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public Rfc2898DeriveBytes(string password, int saltSize)
             : this(password, saltSize, 1000)
         {
         }
 
+        [Obsolete(Obsoletions.Rfc2898OutdatedCtorMessage, DiagnosticId = Obsoletions.Rfc2898OutdatedCtorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public Rfc2898DeriveBytes(string password, int saltSize, int iterations)
             : this(password, saltSize, iterations, HashAlgorithmName.SHA1)
         {

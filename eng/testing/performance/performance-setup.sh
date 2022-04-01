@@ -298,6 +298,8 @@ if [[ "$monoaot" == "true" ]]; then
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --runtimes monoaotllvm --aotcompilerpath \$HELIX_CORRELATION_PAYLOAD/monoaot/sgen/mini/mono-sgen --customruntimepack \$HELIX_CORRELATION_PAYLOAD/monoaot/pack --aotcompilermode llvm"
 fi
 
+extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --logBuildOutput"
+
 if [[ "$use_core_run" == true ]]; then
     new_core_root=$payload_directory/Core_Root
     mv $core_root_directory $new_core_root

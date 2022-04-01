@@ -82,7 +82,7 @@ namespace System.Xml.Xsl.Runtime
             Debug.Assert(1 <= val && val <= MaxAlphabeticValue);
             Debug.Assert(Math.Pow(totalChars, MaxAlphabeticLength) >= MaxAlphabeticValue);
 
-            char[] letters = new char[MaxAlphabeticLength];
+            Span<char> letters = stackalloc char[MaxAlphabeticLength];
             int idx = MaxAlphabeticLength;
             int number = (int)val;
 
@@ -93,7 +93,7 @@ namespace System.Xml.Xsl.Runtime
                 number = quot;
             }
             letters[--idx] = (char)(firstChar + --number);
-            sb.Append(letters, idx, MaxAlphabeticLength - idx);
+            sb.Append(letters.Slice(idx, MaxAlphabeticLength - idx));
         }
 
         protected const int MaxRomanValue = 32767;

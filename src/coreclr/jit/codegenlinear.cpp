@@ -1600,6 +1600,13 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             assert(cast->isContained());
             genConsumeAddress(cast->CastOp());
         }
+        else if (tree->OperIs(GT_CAST))
+        {
+            // Can be contained as part of LEA on ARM64
+            GenTreeCast* cast = tree->AsCast();
+            assert(cast->isContained());
+            genConsumeAddress(cast->CastOp());
+        }
 #endif
         else if (tree->OperIsLocalRead())
         {
@@ -1969,7 +1976,9 @@ void CodeGen::genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg)
         {
             // This must be a local struct.
             // Load its address into srcReg.
-            inst_RV_TT(INS_lea, srcReg, src, 0, EA_BYREF);
+            unsigned varNum = src->AsLclVarCommon()->GetLclNum();
+            unsigned offset = src->AsLclVarCommon()->GetLclOffs();
+            GetEmitter()->emitIns_R_S(INS_lea, EA_BYREF, srcReg, varNum, offset);
             return;
         }
     }

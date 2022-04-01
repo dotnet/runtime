@@ -157,7 +157,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        private IEnumerable<SymbolicRegexNode<S>> Step(List<SymbolicRegexNode<S>> states, S pred, uint context)
+        private static IEnumerable<SymbolicRegexNode<S>> Step(List<SymbolicRegexNode<S>> states, S pred, uint context)
         {
             HashSet<SymbolicRegexNode<S>> seen = new();
             foreach (SymbolicRegexNode<S> state in states)
@@ -188,13 +188,13 @@ namespace System.Text.RegularExpressions.Symbolic
             Debug.Assert(!bdd.IsEmpty);
             // Select characters from the visible ASCII range whenever possible
             BDD bdd1 = CharSetSolver.Instance.And(bdd, _ascii);
-            return ChooseChar(Choose(CharSetSolver.Instance.ToRanges(bdd1.IsEmpty ? bdd : bdd1)));
+            return ChooseChar(Choose(CharSetSolver.ToRanges(bdd1.IsEmpty ? bdd : bdd1)));
         }
 
         private bool ChooseRandomlyTrueOrFalse() => _random.Next(100) < 50;
         /// <summary>Returns true if some state is unconditionally final</summary>
 
-        private bool IsFinal(List<SymbolicRegexNode<S>> states)
+        private static bool IsFinal(List<SymbolicRegexNode<S>> states)
         {
             foreach (SymbolicRegexNode<S> state in states)
             {
@@ -207,7 +207,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Returns true if some state is final in the given context</summary>
-        private bool IsFinal(List<SymbolicRegexNode<S>> states, uint context)
+        private static bool IsFinal(List<SymbolicRegexNode<S>> states, uint context)
         {
             foreach (SymbolicRegexNode<S> state in states)
             {
@@ -220,7 +220,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Returns true if some state can be final</summary>
-        private bool CanBeFinal(List<SymbolicRegexNode<S>> states)
+        private static bool CanBeFinal(List<SymbolicRegexNode<S>> states)
         {
             foreach (SymbolicRegexNode<S> state in states)
             {

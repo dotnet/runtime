@@ -23,31 +23,13 @@ namespace System.Reflection.Emit
 
         #region Internal Data Members
 
-        // This is only valid in the "external" AssemblyBuilder
-        internal AssemblyBuilderData _assemblyData;
+        internal readonly AssemblyBuilderAccess _access;
         private readonly RuntimeAssembly _internalAssembly;
-        private ModuleBuilder _manifestModuleBuilder;
+        private readonly ModuleBuilder _manifestModuleBuilder;
         // Set to true if the manifest module was returned by code:DefineDynamicModule to the user
         private bool _isManifestModuleUsedAsDefinedModule;
 
-        private const string ManifestModuleName = "RefEmit_InMemoryManifestModule";
-
-        internal ModuleBuilder GetModuleBuilder(RuntimeModule module)
-        {
-            Debug.Assert(module != null);
-            Debug.Assert(InternalAssembly == module.Assembly);
-
-            lock (SyncRoot)
-            {
-                // in CoreCLR there is only one module in each dynamic assembly, the manifest module
-                if (_manifestModuleBuilder.InternalModule == module)
-                {
-                    return _manifestModuleBuilder;
-                }
-
-                throw new ArgumentException(null, nameof(module));
-            }
-        }
+        private const int AssemblyDefToken = 0x20000001;
 
         internal object SyncRoot => InternalAssembly.SyncRoot;
 
@@ -99,11 +81,16 @@ namespace System.Reflection.Emit
                                   ObjectHandleOnStack.Create(ref retAssembly));
             _internalAssembly = retAssembly!;
 
-            _assemblyData = new AssemblyBuilderData(access);
+            _access = access;
 
             // Make sure that ManifestModule is properly initialized
             // We need to do this before setting any CustomAttribute
-            InitManifestModule();
+            RuntimeModule internalModule = (RuntimeModule)GetInMemoryAssemblyModule(InternalAssembly);
+
+            // Note that this ModuleBuilder cannot be used for RefEmit yet
+            // because it hasn't been initialized.
+            // However, it can be used to set the custom attribute on the Assembly
+            _manifestModuleBuilder = new ModuleBuilder(this, internalModule);
 
             if (assemblyAttributes != null)
             {
@@ -112,27 +99,6 @@ namespace System.Reflection.Emit
                     SetCustomAttribute(assemblyAttribute);
                 }
             }
-        }
-
-        [MemberNotNull(nameof(_manifestModuleBuilder))]
-        private void InitManifestModule()
-        {
-            RuntimeModule modBuilder = (RuntimeModule)GetInMemoryAssemblyModule(InternalAssembly);
-
-            // Note that this ModuleBuilder cannot be used for RefEmit yet
-            // because it hasn't been initialized.
-            // However, it can be used to set the custom attribute on the Assembly
-            _manifestModuleBuilder = new ModuleBuilder(this, modBuilder);
-
-            // We are only setting the name in the managed ModuleBuilderData here.
-            // The name in the underlying metadata will be set when the
-            // manifest module is created during CreateDynamicAssembly.
-
-            // This name needs to stay in sync with that used in
-            // Assembly::Init to call ReflectionModule::Create (in VM)
-            _manifestModuleBuilder.Init(ManifestModuleName);
-
-            _isManifestModuleUsedAsDefinedModule = false;
         }
 
         #endregion
@@ -220,23 +186,21 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_NoMultiModuleAssembly);
             }
 
-            Debug.Assert(_assemblyData != null, "_assemblyData is null in DefineDynamicModuleInternal");
+            // We are reusing manifest module as user-defined dynamic module
+            _isManifestModuleUsedAsDefinedModule = true;
 
-            // Init(...) has already been called on _manifestModuleBuilder in InitManifestModule()
-            ModuleBuilder dynModule = _manifestModuleBuilder;
-
-            _assemblyData._moduleBuilderList.Add(dynModule);
-
-            if (dynModule == _manifestModuleBuilder)
-            {
-                // We are reusing manifest module as user-defined dynamic module
-                _isManifestModuleUsedAsDefinedModule = true;
-            }
-
-            return dynModule;
+            return _manifestModuleBuilder;
         }
 
         #endregion
+
+        /// <summary>
+        /// Helper to ensure the type name is unique underneath assemblyBuilder.
+        /// </summary>
+        internal void CheckTypeNameConflict(string strTypeName, TypeBuilder? enclosingType)
+        {
+            _manifestModuleBuilder.CheckTypeNameConflict(strTypeName, enclosingType);
+        }
 
         internal static void CheckContext(params Type[]?[]? typess)
         {
@@ -355,12 +319,11 @@ namespace System.Reflection.Emit
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            for (int i = 0; i < _assemblyData._moduleBuilderList.Count; i++)
+            if (_isManifestModuleUsedAsDefinedModule)
             {
-                ModuleBuilder moduleBuilder = _assemblyData._moduleBuilderList[i];
-                if (moduleBuilder._moduleData._moduleName.Equals(name))
+                if (ModuleBuilder.ManifestModuleName == name)
                 {
-                    return moduleBuilder;
+                    return _manifestModuleBuilder;
                 }
             }
             return null;
@@ -375,7 +338,7 @@ namespace System.Reflection.Emit
             {
                 TypeBuilder.DefineCustomAttribute(
                     _manifestModuleBuilder,     // pass in the in-memory assembly module
-                    AssemblyBuilderData.AssemblyDefToken,
+                    AssemblyDefToken,
                     _manifestModuleBuilder.GetConstructorToken(con),
                     binaryAttribute);
             }
@@ -388,7 +351,7 @@ namespace System.Reflection.Emit
         {
             lock (SyncRoot)
             {
-                customBuilder.CreateCustomAttribute(_manifestModuleBuilder, AssemblyBuilderData.AssemblyDefToken);
+                customBuilder.CreateCustomAttribute(_manifestModuleBuilder, AssemblyDefToken);
             }
         }
     }

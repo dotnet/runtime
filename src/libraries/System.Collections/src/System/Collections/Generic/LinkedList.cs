@@ -413,7 +413,7 @@ namespace System.Collections.Generic
             version++;
         }
 
-        internal void ValidateNewNode(LinkedListNode<T> node!!)
+        internal static void ValidateNewNode(LinkedListNode<T> node!!)
         {
             if (node.list != null)
             {

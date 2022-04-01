@@ -508,7 +508,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
-            builder.AddTypedClientCore<TClient>(validateSingleType: false); // name was explictly provided
+            builder.AddTypedClientCore<TClient>(validateSingleType: false); // name was explicitly provided
             return builder;
         }
 

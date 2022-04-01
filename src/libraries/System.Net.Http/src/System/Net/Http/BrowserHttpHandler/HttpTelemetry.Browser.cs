@@ -7,6 +7,7 @@ namespace System.Net.Http
 {
     internal sealed partial class HttpTelemetry
     {
+#pragma warning disable CA1822
         public void Http11RequestLeftQueue(double timeOnQueueMilliseconds)
         {
         }
@@ -14,6 +15,7 @@ namespace System.Net.Http
         public void Http20RequestLeftQueue(double timeOnQueueMilliseconds)
         {
         }
+#pragma warning restore CA1822
 
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
