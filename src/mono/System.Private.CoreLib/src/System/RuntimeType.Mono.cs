@@ -1673,26 +1673,15 @@ namespace System
         internal bool CheckValue(
             ref object? value,
             ref bool copyBack,
-            ParameterInfo? paramInfo,
             Binder? binder,
             CultureInfo? culture,
             BindingFlags invokeAttr)
         {
             // These are already fast-pathed by the caller.
-            Debug.Assert(!ReferenceEquals(value?.GetType(), this));
-            Debug.Assert(value != null || RuntimeTypeHandle.IsValueType(this));
+            Debug.Assert(!(value == null && (RuntimeTypeHandle.IsValueType(this) || RuntimeTypeHandle.IsByRef(this))) ||
+                !ReferenceEquals(value?.GetType(), this));
 
             copyBack = true;
-
-            if (value == Type.Missing && paramInfo != null)
-            {
-                if (paramInfo.DefaultValue == DBNull.Value)
-                {
-                    throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
-                }
-
-                value = paramInfo.DefaultValue;
-            }
 
             CheckValueStatus status = TryConvertToType(ref value);
             if (status == CheckValueStatus.Success)
@@ -1702,12 +1691,12 @@ namespace System
 
             if (status == CheckValueStatus.NotSupported_ByRefLike)
             {
-                throw new ArgumentException(SR.Format(SR.NotSupported_ByRefLike, value!.GetType(), this));
+                throw new ArgumentException(SR.Format(SR.NotSupported_ByRefLike, value?.GetType(), this));
             }
 
             if ((invokeAttr & BindingFlags.ExactBinding) == BindingFlags.ExactBinding)
             {
-                throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value!.GetType(), this));
+                throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value?.GetType(), this));
             }
 
             if (binder != null && binder != DefaultBinder)
@@ -1716,7 +1705,7 @@ namespace System
                 return true;
             }
 
-            throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value!.GetType(), this));
+            throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value?.GetType(), this));
         }
 
         private enum CheckValueStatus

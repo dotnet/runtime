@@ -102,24 +102,22 @@ namespace System.Reflection
         {
             if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
-                bool rethrow = false;
-
                 try
                 {
-                    return RuntimeMethodHandle.InvokeMethod(obj, (void**)args, Signature, isConstructor: obj is null, out rethrow)!;
+                    return RuntimeMethodHandle.InvokeMethod(obj, (void**)args, Signature, isConstructor: obj is null)!;
                 }
                 catch (OutOfMemoryException)
                 {
                     throw; // Re-throw for backward compatibility.
                 }
-                catch (Exception ex) when (!rethrow)
+                catch (Exception ex)
                 {
                     throw new TargetInvocationException(ex);
                 }
             }
             else
             {
-                return RuntimeMethodHandle.InvokeMethod(obj, (void**)args, Signature, isConstructor: obj is null, out _)!;
+                return RuntimeMethodHandle.InvokeMethod(obj, (void**)args, Signature, isConstructor: obj is null)!;
             }
         }
         #endregion

@@ -242,12 +242,12 @@ namespace System.Reflection
             {
                 if (RuntimeTypeHandle.IsValueType(fieldType))
                 {
-                    fieldType.CheckValue(ref value, copyBack: ref _ref, paramInfo: null, binder, culture, invokeAttr);
+                    fieldType.CheckValue(ref value, copyBack: ref _ref, binder, culture, invokeAttr);
                 }
             }
             else if (!ReferenceEquals(value.GetType(), fieldType))
             {
-                fieldType.CheckValue(ref value, copyBack: ref _ref, paramInfo: null, binder, culture, invokeAttr);
+                fieldType.CheckValue(ref value, copyBack: ref _ref, binder, culture, invokeAttr);
             }
 
             Invoker.SetValue(obj, value);

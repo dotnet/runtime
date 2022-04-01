@@ -279,7 +279,7 @@ namespace System.Reflection
             {
                 RuntimeType fieldType = (RuntimeType)FieldType;
                 bool _ = false;
-                fieldType.CheckValue(ref val, ref _, paramInfo: default, binder, culture, invokeAttr);
+                fieldType.CheckValue(ref val, ref _, binder, culture, invokeAttr);
             }
 
             Invoker.SetValue(obj, val);

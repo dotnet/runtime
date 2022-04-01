@@ -167,8 +167,7 @@ namespace System.Reflection
                     isValueType = RuntimeTypeHandle.IsValueType(sigType);
                     if (isValueType || RuntimeTypeHandle.IsByRef(sigType))
                     {
-                        paramInfos ??= GetParametersNoCopy();
-                        isValueType = sigType.CheckValue(ref arg, ref copyBackArg, paramInfos[i], binder, culture, invokeAttr);
+                        isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
                     }
                 }
                 else if (ReferenceEquals(arg.GetType(), sigType))
@@ -179,7 +178,18 @@ namespace System.Reflection
                 else
                 {
                     paramInfos ??= GetParametersNoCopy();
-                    isValueType = sigType.CheckValue(ref arg, ref copyBackArg, paramInfos[i], binder, culture, invokeAttr);
+                    ParameterInfo paramInfo = paramInfos[i];
+                    if (ReferenceEquals(arg, Type.Missing))
+                    {
+                        if (paramInfo.DefaultValue == DBNull.Value)
+                        {
+                            throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
+                        }
+
+                        arg = paramInfo.DefaultValue;
+                    }
+
+                    isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
                 }
 
                 // We need to perform type safety validation against the incoming arguments, but we also need

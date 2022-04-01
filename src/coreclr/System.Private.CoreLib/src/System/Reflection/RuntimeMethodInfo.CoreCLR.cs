@@ -350,10 +350,11 @@ namespace System.Reflection
                 Span<bool> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
 
                 StackAllocatedByRefs byrefStorage = default;
+                IntPtr* pByRefStorage = (IntPtr*)&byrefStorage;
 
                 CheckArguments(
                     copyOfParameters,
-                    (IntPtr*)&byrefStorage,
+                    pByRefStorage,
                     shouldCopyBackParameters,
                     parameters,
                     ArgumentTypes,
@@ -361,7 +362,7 @@ namespace System.Reflection
                     culture,
                     invokeAttr);
 
-                retValue = Invoker.InvokeUnsafe(obj, (IntPtr*)(void**)&byrefStorage, copyOfParameters, invokeAttr);
+                retValue = Invoker.InvokeUnsafe(obj, pByRefStorage, copyOfParameters, invokeAttr);
             }
 
             return retValue;
@@ -373,20 +374,18 @@ namespace System.Reflection
         {
             if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
-                bool rethrow = false;
-
                 try
                 {
-                    return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false, out rethrow);
+                    return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
                 }
-                catch (Exception e) when (!rethrow)
+                catch (Exception e)
                 {
                     throw new TargetInvocationException(e);
                 }
             }
             else
             {
-                return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false, out _);
+                return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
             }
         }
 

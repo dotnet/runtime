@@ -393,11 +393,12 @@ static OBJECTREF InvokeArrayConstructor(TypeHandle th, PVOID* args, int argCnt)
 
     for (DWORD i=0; i<(DWORD)argCnt; i++)
     {
-        if (!args[i])
-            COMPlusThrowArgumentException(W("parameters"), W("Arg_NullIndex"));
+        _ASSERTE(args[i] != NULL);
 
-        ARG_SLOT value;
-        InvokeUtil::CreatePrimitiveValue(ELEMENT_TYPE_I4, ELEMENT_TYPE_I4, args[i], pMT, &value);
+        INT32 size = *(INT32*)args[i];
+        _ASSERTE(size >= 0);
+
+        ARG_SLOT value = size;
         memcpyNoGCRefs(indexes + i, ArgSlotEndianessFixup(&value, sizeof(INT32)), sizeof(INT32));
     }
 
@@ -531,12 +532,11 @@ public:
     }
 };
 
-FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
+FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
     Object *target,
     PVOID* args, // An array of byrefs
     SignatureNative* pSigUNSAFE,
-    CLR_BOOL fConstructor,
-    CLR_BOOL* pRethrow)
+    CLR_BOOL fConstructor)
 {
     FCALL_CONTRACT;
 
@@ -550,7 +550,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     gc.pSig = (SIGNATURENATIVEREF)pSigUNSAFE;
     gc.retVal = NULL;
 
-    *pRethrow = TRUE;
     MethodDesc* pMeth = gc.pSig->GetMethod();
     TypeHandle ownerType = gc.pSig->GetDeclaringType();
 
@@ -818,9 +817,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     }
 
     // Call the method
-    *pRethrow = FALSE;
     CallDescrWorkerWithHandler(&callDescrData);
-    *pRethrow = TRUE;
 
     // It is still illegal to do a GC here.  The return type might have/contain GC pointers.
     if (fConstructor)
