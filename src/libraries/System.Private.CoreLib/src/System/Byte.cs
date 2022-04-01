@@ -130,7 +130,7 @@ namespace System
             Number.ParsingStatus status = Number.TryParseUInt32(s, style, info, out uint i);
             if (status != Number.ParsingStatus.OK)
             {
-                Number.ThrowOverflowOrFormatException(status, TypeCode.Byte);
+                Number.ThrowOverflowOrFormatException(status, s, TypeCode.Byte);
             }
 
             if (i > MaxValue) Number.ThrowOverflowException(TypeCode.Byte);

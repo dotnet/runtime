@@ -202,7 +202,7 @@ namespace System
             ParsingStatus status = TryParseInt32(value, styles, info, out int result);
             if (status != ParsingStatus.OK)
             {
-                ThrowOverflowOrFormatException(status, TypeCode.Int32);
+                ThrowOverflowOrFormatException(status, value, TypeCode.Int32);
             }
 
             return result;
@@ -213,7 +213,7 @@ namespace System
             ParsingStatus status = TryParseInt64(value, styles, info, out long result);
             if (status != ParsingStatus.OK)
             {
-                ThrowOverflowOrFormatException(status, TypeCode.Int64);
+                ThrowOverflowOrFormatException(status, value, TypeCode.Int64);
             }
 
             return result;
@@ -224,7 +224,7 @@ namespace System
             ParsingStatus status = TryParseUInt32(value, styles, info, out uint result);
             if (status != ParsingStatus.OK)
             {
-                ThrowOverflowOrFormatException(status, TypeCode.UInt32);
+                ThrowOverflowOrFormatException(status, value, TypeCode.UInt32);
             }
 
             return result;
@@ -235,7 +235,7 @@ namespace System
             ParsingStatus status = TryParseUInt64(value, styles, info, out ulong result);
             if (status != ParsingStatus.OK)
             {
-                ThrowOverflowOrFormatException(status, TypeCode.UInt64);
+                ThrowOverflowOrFormatException(status, value, TypeCode.UInt64);
             }
 
             return result;
@@ -1609,7 +1609,7 @@ namespace System
             ParsingStatus status = TryParseDecimal(value, styles, info, out decimal result);
             if (status != ParsingStatus.OK)
             {
-                ThrowOverflowOrFormatException(status, TypeCode.Decimal);
+                ThrowOverflowOrFormatException(status, value, TypeCode.Decimal);
             }
 
             return result;
@@ -1739,7 +1739,7 @@ namespace System
         {
             if (!TryParseDouble(value, styles, info, out double result))
             {
-                ThrowOverflowOrFormatException(ParsingStatus.Failed);
+                ThrowOverflowOrFormatException(ParsingStatus.Failed, value);
             }
 
             return result;
@@ -1749,7 +1749,7 @@ namespace System
         {
             if (!TryParseSingle(value, styles, info, out float result))
             {
-                ThrowOverflowOrFormatException(ParsingStatus.Failed);
+                ThrowOverflowOrFormatException(ParsingStatus.Failed, value);
             }
 
             return result;
@@ -1759,7 +1759,7 @@ namespace System
         {
             if (!TryParseHalf(value, styles, info, out Half result))
             {
-                ThrowOverflowOrFormatException(ParsingStatus.Failed);
+                ThrowOverflowOrFormatException(ParsingStatus.Failed, value);
             }
 
             return result;
@@ -2081,15 +2081,15 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowOverflowOrFormatException(ParsingStatus status, TypeCode type = 0) => throw GetException(status, type);
+        internal static void ThrowOverflowOrFormatException(ParsingStatus status, ReadOnlySpan<char> value, TypeCode type = 0) => throw GetException(status, type, value);
 
         [DoesNotReturn]
         internal static void ThrowOverflowException(TypeCode type) => throw GetException(ParsingStatus.Overflow, type);
 
-        private static Exception GetException(ParsingStatus status, TypeCode type)
+        private static Exception GetException(ParsingStatus status, TypeCode type, ReadOnlySpan<char> value = default)
         {
             if (status == ParsingStatus.Failed)
-                return new FormatException(SR.Format_InvalidString);
+                return new FormatException(SR.Format(SR.Format_InvalidStringWithValue, value.ToString()));
 
             string s;
             switch (type)
