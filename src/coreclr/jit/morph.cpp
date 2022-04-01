@@ -2024,7 +2024,12 @@ void fgArgInfo::EvalArgsToTemps()
                         setupArg = compiler->fgMorphCopyBlock(setupArg);
 #if defined(TARGET_ARMARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
 #if defined(TARGET_LOONGARCH64)
-                        // For LoongArch64, the struct {float a; float b;} passed by float-registers.
+                        // On LoongArch64, "getPrimitiveTypeForStruct" will incorrectly return "TYP_LONG"
+                        // for "struct { float, float }", and retyping to a primitive here will cause the
+                        // multi-reg morphing to not kick in (the struct in question needs to be passed in
+                        // two FP registers).
+                        // TODO-LoongArch64: fix "getPrimitiveTypeForStruct" or use the ABI information in
+                        // the arg entry instead of calling it here.
                         if ((lclVarType == TYP_STRUCT) && (curArgTabEntry->numRegs == 1))
 #else
                         if (lclVarType == TYP_STRUCT)
@@ -3087,6 +3092,17 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                 passUsingFloatRegs = (floatFieldFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) ? true : false;
                 compFloatingPointUsed |= passUsingFloatRegs;
 
+                if ((floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE)) != 0)
+                {
+                    // On LoongArch64, "getPrimitiveTypeForStruct" will incorrectly return "TYP_LONG"
+                    // for "struct { float, float }", and retyping to a primitive here will cause the
+                    // multi-reg morphing to not kick in (the struct in question needs to be passed in
+                    // two FP registers). Here is just keep "structBaseType" as "TYP_STRUCT".
+                    // TODO-LoongArch64: fix "getPrimitiveTypeForStruct" or use the ABI information in
+                    // the arg entry instead of calling it here.
+                    structBaseType = TYP_STRUCT;
+                }
+
                 if ((floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_TWO)) != 0)
                 {
                     size = 1;
@@ -3615,14 +3631,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         if (newArgEntry->isStruct)
         {
             newArgEntry->passedByRef = passStructByRef;
-#if defined(TARGET_LOONGARCH64)
-            newArgEntry->argType = ((floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE)) ||
-                                    (structBaseType == TYP_UNKNOWN))
-                                       ? argx->TypeGet()
-                                       : structBaseType;
-#else
-            newArgEntry->argType = (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
-#endif
+            newArgEntry->argType     = (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
         }
         else
         {
@@ -4607,10 +4616,11 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
         if ((argValue->OperGet() == GT_LCL_FLD) || (argValue->OperGet() == GT_LCL_VAR))
         {
             elemSize = TARGET_POINTER_SIZE;
-// We can safely widen this to aligned bytes since we are loading from
-// a GT_LCL_VAR or a GT_LCL_FLD which is properly padded and
-// lives in the stack frame or will be a promoted field.
-//
+            // We can safely widen this to aligned bytes since we are loading from
+            // a GT_LCL_VAR or a GT_LCL_FLD which is properly padded and
+            // lives in the stack frame or will be a promoted field.
+            CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifndef TARGET_LOONGARCH64
             // For LoongArch64's ABI, the struct which size is TARGET_POINTER_SIZE
             // may be passed by two registers.
