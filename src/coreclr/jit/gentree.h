@@ -254,7 +254,7 @@ public:
 
     CORINFO_FIELD_HANDLE GetFieldHandle() const
     {
-        assert(!IsPseudoField() && (GetFieldHandleValue() != NO_FIELD_HANDLE));
+        assert(GetFieldHandleValue() != NO_FIELD_HANDLE);
         return GetFieldHandleValue();
     }
 
@@ -263,14 +263,10 @@ public:
         return CORINFO_FIELD_HANDLE(m_fieldHandleAndKind & ~FIELD_KIND_MASK);
     }
 
-    // returns true when this is the pseudo #FirstElem field sequence
-    bool IsFirstElemFieldSeq() const;
-
-    // returns true when this is the pseudo #ConstantIndex field sequence
-    bool IsConstantIndexFieldSeq() const;
-
-    // returns true when this is the the pseudo #FirstElem field sequence or the pseudo #ConstantIndex field sequence
-    bool IsPseudoField() const;
+    FieldSeqNode* GetNext() const
+    {
+        return m_next;
+    }
 
     bool IsStaticField() const
     {
@@ -280,11 +276,6 @@ public:
     bool IsSharedStaticField() const
     {
         return GetKind() == FieldKind::SharedStatic;
-    }
-
-    FieldSeqNode* GetNext() const
-    {
-        return m_next;
     }
 
     FieldSeqNode* GetTail()
@@ -321,10 +312,6 @@ class FieldSeqStore
 
     static FieldSeqNode s_notAField; // No value, just exists to provide an address.
 
-    // Dummy variables to provide the addresses for the "pseudo field handle" statics below.
-    static int FirstElemPseudoFieldStruct;
-    static int ConstantIndexPseudoFieldStruct;
-
 public:
     FieldSeqStore(CompAllocator alloc);
 
@@ -345,22 +332,6 @@ public:
     // they are the results of CreateSingleton, NotAField, or Append calls.  If either of the arguments
     // are the "NotAField" value, so is the result.
     FieldSeqNode* Append(FieldSeqNode* a, FieldSeqNode* b);
-
-    // We have a few "pseudo" field handles:
-
-    // This treats the constant offset of the first element of something as if it were a field.
-    // Works for method table offsets of boxed structs, or first elem offset of arrays/strings.
-    static CORINFO_FIELD_HANDLE FirstElemPseudoField;
-
-    // If there is a constant index, we make a psuedo field to correspond to the constant added to
-    // offset of the indexed field.  This keeps the field sequence structure "normalized", especially in the
-    // case where the element type is a struct, so we might add a further struct field offset.
-    static CORINFO_FIELD_HANDLE ConstantIndexPseudoField;
-
-    static bool IsPseudoField(CORINFO_FIELD_HANDLE hnd)
-    {
-        return hnd == FirstElemPseudoField || hnd == ConstantIndexPseudoField;
-    }
 };
 
 class GenTreeUseEdgeIterator;
@@ -500,9 +471,6 @@ enum GenTreeFlags : unsigned int
                                       // on their parents in post-order morph.
                                       // Relevant for inlining optimizations (see fgInlinePrependStatements)
 
-    GTF_VAR_ARR_INDEX   = 0x00000020, // The variable is part of (the index portion of) an array index expression.
-                                      // Shares a value with GTF_REVERSE_OPS, which is meaningless for local var.
-
     // For additional flags for GT_CALL node see GTF_CALL_M_*
 
     GTF_CALL_UNMANAGED          = 0x80000000, // GT_CALL -- direct call to unmanaged code
@@ -543,11 +511,10 @@ enum GenTreeFlags : unsigned int
     GTF_IND_UNALIGNED           = 0x02000000, // GT_IND   -- the load or store is unaligned (we assume worst case
                                               //             alignment of 1 byte)
     GTF_IND_INVARIANT           = 0x01000000, // GT_IND   -- the target is invariant (a prejit indirection)
-    GTF_IND_ARR_INDEX           = 0x00800000, // GT_IND   -- the indirection represents an (SZ) array index
     GTF_IND_NONNULL             = 0x00400000, // GT_IND   -- the indirection never returns null (zero)
 
-    GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_TGTANYWHERE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF | \
-                    GTF_IND_UNALIGNED | GTF_IND_INVARIANT | GTF_IND_NONNULL | GTF_IND_ARR_INDEX | GTF_IND_TGT_NOT_HEAP,
+    GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_TGTANYWHERE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF |
+                    GTF_IND_UNALIGNED | GTF_IND_INVARIANT | GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP,
 
     GTF_CLS_VAR_VOLATILE        = 0x40000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
     GTF_CLS_VAR_INITCLASS       = 0x20000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_FLD_INITCLASS
@@ -575,6 +542,8 @@ enum GenTreeFlags : unsigned int
                                               //             castclass or instanceof?
 
     GTF_BOX_VALUE               = 0x80000000, // GT_BOX -- "box" is on a value type
+
+    GTF_ARR_ADDR_NONNULL        = 0x80000000, // GT_ARR_ADDR -- this array's address is not null
 
     GTF_ICON_HDL_MASK           = 0xFF000000, // Bits used by handle types below
     GTF_ICON_SCOPE_HDL          = 0x01000000, // GT_CNS_INT -- constant is a scope handle
@@ -614,9 +583,8 @@ enum GenTreeFlags : unsigned int
 
     GTF_DIV_BY_CNS_OPT          = 0x80000000, // GT_DIV -- Uses the division by constant optimization to compute this division
 
-    GTF_CHK_INDEX_INBND         = 0x80000000, // GT_BOUNDS_CHECK -- have proved this check is always in-bounds
+    GTF_CHK_INDEX_INBND         = 0x80000000, // GT_BOUNDS_CHECK -- have proven this check is always in-bounds
 
-    GTF_ARRLEN_ARR_IDX          = 0x80000000, // GT_ARR_LENGTH -- Length which feeds into an array index expression
     GTF_ARRLEN_NONFAULTING      = 0x20000000, // GT_ARR_LENGTH  -- An array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
     GTF_SIMDASHW_OP             = 0x80000000, // GT_HWINTRINSIC -- Indicates that the structHandle should be gotten from gtGetStructHandleForSIMD
@@ -1962,41 +1930,7 @@ public:
 
     bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq);
 
-    // Requires "this" to be the address of an array (the child of a GT_IND labeled with GTF_IND_ARR_INDEX).
-    // Sets "pArr" to the node representing the array (either an array object pointer, or perhaps a byref to the some
-    // element).
-    // Sets "*pArrayType" to the class handle for the array type.
-    // Sets "*inxVN" to the value number inferred for the array index.
-    // Sets "*pFldSeq" to the sequence, if any, of struct fields used to index into the array element.
-    void ParseArrayAddress(
-        Compiler* comp, struct ArrayInfo* arrayInfo, GenTree** pArr, ValueNum* pInxVN, FieldSeqNode** pFldSeq);
-
-    // Helper method for the above.
-    void ParseArrayAddressWork(Compiler*       comp,
-                               target_ssize_t  inputMul,
-                               GenTree**       pArr,
-                               ValueNum*       pInxVN,
-                               target_ssize_t* pOffset,
-                               FieldSeqNode**  pFldSeq);
-
-    // Requires "this" to be a GT_IND.  Requires the outermost caller to set "*pFldSeq" to nullptr.
-    // Returns true if it is an array index expression, or access to a (sequence of) struct field(s)
-    // within a struct array element.  If it returns true, sets *arrayInfo to the array information, and sets *pFldSeq
-    // to the sequence of struct field accesses.
-    bool ParseArrayElemForm(Compiler* comp, ArrayInfo* arrayInfo, FieldSeqNode** pFldSeq);
-
-    // Requires "this" to be the address of a (possible) array element (or struct field within that).
-    // If it is, sets "*arrayInfo" to the array access info, "*pFldSeq" to the sequence of struct fields
-    // accessed within the array element, and returns true.  If not, returns "false".
-    bool ParseArrayElemAddrForm(Compiler* comp, ArrayInfo* arrayInfo, FieldSeqNode** pFldSeq);
-
-    // Requires "this" to be an int expression.  If it is a sequence of one or more integer constants added together,
-    // returns true and sets "*pFldSeq" to the sequence of fields with which those constants are annotated.
-    bool ParseOffsetForm(Compiler* comp, FieldSeqNode** pFldSeq);
-
-    // Labels "*this" as an array index expression: label all constants and variables that could contribute, as part of
-    // an affine expression, to the value of the of the index.
-    void LabelIndex(Compiler* comp, bool isConst = true);
+    bool IsArrayAddr(GenTreeArrAddr** pArrAddr);
 
     // Assumes that "this" occurs in a context where it is being dereferenced as the LHS of an assignment-like
     // statement (assignment, initblk, or copyblk).  The "width" should be the number of bytes copied by the
@@ -5834,6 +5768,70 @@ struct GenTreeIndexAddr : public GenTreeOp
     {
     }
 #endif
+};
+
+// GenTreeArrAddr - GT_ARR_ADDR, carries information about the array type from morph to VN.
+//                  This node is just a wrapper (similar to GenTreeBox), the real address
+//                  expression is contained in its first operand.
+//
+struct GenTreeArrAddr : GenTreeUnOp
+{
+private:
+    CORINFO_CLASS_HANDLE m_elemClassHandle; // The array element class. Currently only used for arrays of TYP_STRUCT.
+    var_types            m_elemType;        // The normalized (TYP_SIMD != TYP_STRUCT) array element type.
+    uint8_t              m_firstElemOffset; // Offset to the first element of the array.
+
+public:
+    GenTreeArrAddr(GenTree* addr, var_types elemType, CORINFO_CLASS_HANDLE elemClassHandle, uint8_t firstElemOffset)
+        : GenTreeUnOp(GT_ARR_ADDR, TYP_BYREF, addr DEBUGARG(/* largeNode */ false))
+        , m_elemClassHandle(elemClassHandle)
+        , m_elemType(elemType)
+        , m_firstElemOffset(firstElemOffset)
+    {
+        assert(addr->TypeIs(TYP_BYREF));
+        assert(((elemType == TYP_STRUCT) && (elemClassHandle != NO_CLASS_HANDLE)) ||
+               (elemClassHandle == NO_CLASS_HANDLE));
+
+        // We will only consider "addr" for CSE. This is more profitable and precise
+        // because ARR_ADDR can get its VN "polluted" by zero-offset field sequences.
+        SetDoNotCSE();
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeArrAddr() : GenTreeUnOp()
+    {
+    }
+#endif
+
+    GenTree*& Addr()
+    {
+        return gtOp1;
+    }
+
+    CORINFO_CLASS_HANDLE GetElemClassHandle() const
+    {
+        return m_elemClassHandle;
+    }
+
+    var_types GetElemType() const
+    {
+        return m_elemType;
+    }
+
+    uint8_t GetFirstElemOffset() const
+    {
+        return m_firstElemOffset;
+    }
+
+    void ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum* pInxVN);
+
+private:
+    static void ParseArrayAddressWork(GenTree*        tree,
+                                      Compiler*       comp,
+                                      target_ssize_t  inputMul,
+                                      GenTree**       pArr,
+                                      ValueNum*       pInxVN,
+                                      target_ssize_t* pOffset);
 };
 
 /* gtArrLen -- array length (GT_ARR_LENGTH)
