@@ -720,17 +720,6 @@ inline GenTreeDebugFlags& operator &=(GenTreeDebugFlags& a, GenTreeDebugFlags b)
 
 // clang-format on
 
-constexpr bool OpersAreContiguous(genTreeOps firstOper, genTreeOps secondOper)
-{
-    return (firstOper + 1) == secondOper;
-}
-
-template <typename... Opers>
-constexpr bool OpersAreContiguous(genTreeOps firstOper, genTreeOps secondOper, Opers... otherOpers)
-{
-    return OpersAreContiguous(firstOper, secondOper) && OpersAreContiguous(secondOper, otherOpers...);
-}
-
 #ifndef HOST_64BIT
 #include <pshpack4.h>
 #endif
@@ -1181,7 +1170,7 @@ public:
 
     static bool OperIsConst(genTreeOps gtOper)
     {
-        static_assert_no_msg(OpersAreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR));
+        static_assert_no_msg(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR));
         return (GT_CNS_INT <= gtOper) && (gtOper <= GT_CNS_STR);
     }
 
@@ -1202,8 +1191,7 @@ public:
 
     static bool OperIsLocal(genTreeOps gtOper)
     {
-        static_assert_no_msg(
-            OpersAreContiguous(GT_PHI_ARG, GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD));
+        static_assert_no_msg(AreContiguous(GT_PHI_ARG, GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD));
         return (GT_PHI_ARG <= gtOper) && (gtOper <= GT_STORE_LCL_FLD);
     }
 
@@ -1375,7 +1363,7 @@ public:
 
     static bool OperIsCompare(genTreeOps gtOper)
     {
-        static_assert_no_msg(OpersAreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE));
+        static_assert_no_msg(AreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE));
         return (GT_EQ <= gtOper) && (gtOper <= GT_TEST_NE);
     }
 
