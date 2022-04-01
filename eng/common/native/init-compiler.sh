@@ -142,4 +142,3 @@ fi
 SCAN_BUILD_COMMAND="$(command -v "scan-build$desired_version")"
 
 export CC CXX LDFLAGS SCAN_BUILD_COMMAND
-
