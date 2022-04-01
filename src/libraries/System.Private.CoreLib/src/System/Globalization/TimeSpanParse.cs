@@ -169,7 +169,8 @@ namespace System.Globalization
             {
                 // Get the position of the next character to be processed.  If there is no
                 // next character, we're at the end.
-                int pos = _pos;
+                int startPos = _pos;
+                int pos = startPos;
                 ReadOnlySpan<char> value = _value;
                 Debug.Assert(pos > -1);
                 if ((uint)pos >= (uint)value.Length)    // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
@@ -190,7 +191,7 @@ namespace System.Globalization
                         {
                             int digit;
                             // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
-                            if ((uint)(++pos) >= (uint)value.Length || (uint)(digit = value[pos] - '0') > 9)
+                            if ((uint)++pos >= (uint)value.Length || (uint)(digit = value[pos] - '0') > 9)
                             {
                                 _pos = pos;
                                 return new TimeSpanToken(TTT.Num, 0, zeroes, default);
@@ -203,18 +204,18 @@ namespace System.Globalization
                             }
 
                             num = digit;
-                            _pos = pos;
                             break;
                         }
+
+                        _pos = pos;
                     }
 
                     // Continue to read as long as we're reading digits.
-                    while ((uint)(++pos) < (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+                    while ((uint)++pos < (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     {
                         int digit = value[pos] - '0';
                         if ((uint)digit > 9)
                         {
-                            _pos = pos;
                             break;
                         }
 
@@ -233,19 +234,15 @@ namespace System.Globalization
                 // Otherwise, we're processing a separator, and we've already processed the first
                 // character of it.  Continue processing characters as long as they're not digits.
                 int length = 1;
-                while (true)
+                // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+                while ((uint)++pos < (uint)value.Length && (uint)(value[pos] - '0') > 9)
                 {
-                    // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
-                    if ((uint)(++pos) >= (uint)value.Length || (uint)(value[pos] - '0') <= 9)
-                    {
-                        break;
-                    }
                     length++;
                 }
                 _pos = pos;
 
                 // Return the separator.
-                return new TimeSpanToken(TTT.Sep, 0, 0, _value.Slice(pos, length));
+                return new TimeSpanToken(TTT.Sep, 0, 0, _value.Slice(startPos, length));
             }
 
             internal bool EOL => _pos >= (_value.Length - 1);
