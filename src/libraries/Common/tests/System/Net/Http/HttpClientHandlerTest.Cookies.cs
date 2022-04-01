@@ -172,7 +172,12 @@ namespace System.Net.Http.Functional.Tests
 
                     string cookieHeaderValue = requestData.GetSingleHeaderValue("Cookie");
 
-                    var cookieValues = cookieHeaderValue.Split(new string[] { "; " }, StringSplitOptions.None);
+#if NETFRAMEWORK
+                    var separator = ", ";
+#else
+                    var separator = "; ";
+#endif
+                    var cookieValues = cookieHeaderValue.Split(new string[] { separator }, StringSplitOptions.None);
                     Assert.Contains("A=1", cookieValues);
                     Assert.Contains("B=2", cookieValues);
                     Assert.Contains("C=3", cookieValues);
@@ -261,14 +266,40 @@ namespace System.Net.Http.Functional.Tests
                     HttpRequestData requestData = await serverTask;
                     string cookieHeaderValue = GetCookieValue(requestData);
 
+#if NETFRAMEWORK
+                    // Multiple Cookie header values are treated as any other header values and are
+                    // concatenated using ", " as the separator.  The container cookie is concatenated to
+                    // one of these values using the "; " cookie separator.
+
+                    var cookieValues = cookieHeaderValue.Split(new string[] { ", " }, StringSplitOptions.None);
+                    Assert.Equal(2, cookieValues.Count());
+
+                    // Find container cookie and remove it so we can validate the rest of the cookie header values
+                    bool sawContainerCookie = false;
+                    for (int i = 0; i < cookieValues.Length; i++)
+                    {
+                        if (cookieValues[i].Contains(';'))
+                        {
+                            Assert.False(sawContainerCookie);
+
+                            var cookies = cookieValues[i].Split(new string[] { "; " }, StringSplitOptions.None);
+                            Assert.Equal(2, cookies.Count());
+                            Assert.Contains(s_expectedCookieHeaderValue, cookies);
+
+                            sawContainerCookie = true;
+                            cookieValues[i] = cookies.Where(c => c != s_expectedCookieHeaderValue).Single();
+                        }
+                    }
+#else
                     // Multiple Cookie header values as well as container cookies are
                     // concatenated using "; " as the separator.
 
                     var cookieValues = cookieHeaderValue.Split(new string[] { "; " }, StringSplitOptions.None);
-                    Assert.Contains("A=1", cookieValues);
-                    Assert.Contains("B=2", cookieValues);
                     Assert.Contains(s_expectedCookieHeaderValue, cookieValues);
                     Assert.Equal(3, cookieValues.Count());
+#endif
+                    Assert.Contains("A=1", cookieValues);
+                    Assert.Contains("B=2", cookieValues);
                 }
             });
         }
