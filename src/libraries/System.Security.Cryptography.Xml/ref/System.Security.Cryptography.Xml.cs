@@ -80,8 +80,7 @@ namespace System.Security.Cryptography.Xml
         protected EncryptedReference() { }
         protected EncryptedReference(string? uri) { }
         protected EncryptedReference(string? uri, System.Security.Cryptography.Xml.TransformChain transformChain) { }
-        [System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute(true, (string)null!)]
-        protected internal bool CacheValid { get { throw null; } }
+        protected internal bool CacheValid { [System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute(true, (string)null!)] get { throw null; } }
         protected string? ReferenceType { get { throw null; } set { } }
         public System.Security.Cryptography.Xml.TransformChain TransformChain { get { throw null; } set { } }
         public string? Uri { get { throw null; } set { } }
