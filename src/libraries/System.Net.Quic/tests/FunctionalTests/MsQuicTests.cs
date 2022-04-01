@@ -141,7 +141,7 @@ namespace System.Net.Quic.Tests
             }
             catch (Exception ex)
             {
-                _output.WriteLine(ex.ToString());
+                _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
             }
         }
 

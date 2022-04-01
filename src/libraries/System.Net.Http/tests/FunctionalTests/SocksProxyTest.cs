@@ -115,7 +115,7 @@ namespace System.Net.Http.Functional.Tests
             }
             catch (Exception ex)
             {
-                _output.WriteLine(ex.ToString());
+                _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
             }
         }
     }

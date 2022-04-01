@@ -254,7 +254,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                     catch (Exception ex)
                     {
-                        _output.WriteLine(ex.ToString());
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
                     }
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
@@ -305,7 +305,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                     catch (Exception ex)
                     {
-                        _output.WriteLine(ex.ToString());
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
                     }
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
@@ -908,7 +908,7 @@ namespace System.Net.Http.Functional.Tests
                         }
                         catch (Exception ex)
                         {
-                            _output.WriteLine(ex.ToString());
+                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
                         }
                     });
 
@@ -1679,7 +1679,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                     catch (Exception ex)
                     {
-                        _output.WriteLine(ex.ToString());
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
                     }
                     await clientFinished.Task.WaitAsync(TimeSpan.FromMinutes(2));
                 });
