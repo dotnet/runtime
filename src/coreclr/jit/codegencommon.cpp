@@ -4341,9 +4341,9 @@ void CodeGen::genEnregisterIncomingStackArgs()
                 }
             }
         }
-#else
+#else // !TARGET_LOONGARCH64
         GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);
-#endif // TARGET_LOONGARCH64
+#endif // !TARGET_LOONGARCH64
 
         regSet.verifyRegUsed(regNum);
 #ifdef USING_SCOPE_INFO
@@ -8142,6 +8142,8 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
         assert(varDsc->lvIsMultiRegRet);
 #ifdef TARGET_LOONGARCH64
+        // On LoongArch64, for a struct like "{ int, double }", "retTypeDesc" will be "{ TYP_INT, TYP_DOUBLE }",
+        // i. e. not include the padding for the first field, and so the general loop below won't work.
         var_types type  = retTypeDesc.GetReturnRegType(0);
         regNumber toReg = retTypeDesc.GetABIReturnReg(0);
         GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), 0);
@@ -8154,7 +8156,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
             toReg      = retTypeDesc.GetABIReturnReg(1);
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
         }
-#else
+#else  // !TARGET_LOONGARCH64
         int offset = 0;
         for (unsigned i = 0; i < regCount; ++i)
         {
@@ -8163,7 +8165,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
             offset += genTypeSize(type);
         }
-#endif
+#endif // !TARGET_LOONGARCH64
     }
     else
     {

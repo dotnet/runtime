@@ -43,16 +43,7 @@ unsigned InitVarDscInfo::allocRegArg(var_types type, unsigned numRegs /* = 1 */)
         nextReg(TYP_INT, numRegs);
         nextReg(TYP_FLOAT, numRegs);
 #elif defined(TARGET_LOONGARCH64)
-        // LA-ABI64.
-        if (numRegs > MAX_PASS_MULTIREG_BYTES / TARGET_POINTER_SIZE)
-        {
-            assert(varTypeIsStruct(type));
-            nextReg(TYP_INT, 1); // TYP_BYREF
-        }
-        else
-        {
-            nextReg(type, numRegs);
-        }
+        nextReg(type, numRegs);
 #else
         // We didn't back-fill a register (on ARM), so skip the number of registers that we allocated.
         nextReg(type, numRegs);

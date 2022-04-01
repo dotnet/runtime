@@ -163,6 +163,8 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_COMMA:
         case GT_QMARK:
         case GT_COLON:
+        case GT_CLS_VAR:
+        case GT_ADDR:
             srcCount = 0;
             assert(dstCount == 0);
             unreached();
@@ -404,18 +406,6 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             break;
 
-        case GT_ADDR:
-        {
-            // For a GT_ADDR, the child node should not be evaluated into a register
-            GenTree* child = tree->gtGetOp1();
-            assert(!isCandidateLocalRef(child));
-            assert(child->isContained());
-            assert(dstCount == 1);
-            srcCount = 0;
-            BuildDef(tree);
-        }
-        break;
-
         case GT_BLK:
             // These should all be eliminated prior to Lowering.
             assert(!"Non-store block node in Lowering");
@@ -626,20 +616,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             assert(dstCount == 1);
             BuildDef(tree, RBM_EXCEPTION_OBJECT);
-            break;
-
-        case GT_CLS_VAR:
-            srcCount = 0;
-            // GT_CLS_VAR, by the time we reach the backend, must always
-            // be a pure use.
-            // It will produce a result of the type of the
-            // node, and use an internal register for the address.
-
-            assert(dstCount == 1);
-            assert((tree->gtFlags & (GTF_VAR_DEF | GTF_VAR_USEASG)) == 0);
-            buildInternalIntRegisterDefForNode(tree);
-            buildInternalRegisterUses();
-            BuildDef(tree);
             break;
 
         case GT_INDEX_ADDR:
@@ -1338,13 +1314,6 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 
     const var_types srcType  = genActualType(src->TypeGet());
     const var_types castType = cast->gtCastType;
-
-    // Overflow checking cast from TYP_LONG to TYP_INT requires a temporary register to
-    // store the min and max immediate values that cannot be encoded in the CMP instruction.
-    if (cast->gtOverflow() && varTypeIsLong(srcType) && !cast->IsUnsigned() && (castType == TYP_INT))
-    {
-        buildInternalIntRegisterDefForNode(cast);
-    }
 
     int srcCount = BuildOperandUses(src);
     buildInternalRegisterUses();

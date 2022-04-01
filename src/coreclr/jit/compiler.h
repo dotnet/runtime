@@ -1696,6 +1696,12 @@ public:
     unsigned numRegs; // Count of number of registers that this argument uses.
                       // Note that on ARM, if we have a double hfa, this reflects the number
                       // of DOUBLE registers.
+#ifdef TARGET_LOONGARCH64
+    // For LoongArch64's ABI, the struct which has float field(s) and no more than two fields
+    // may be passed by float register(s).
+    // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
+    var_types structFloatFieldType[2];
+#endif
 
 #if defined(UNIX_AMD64_ABI)
     // Unix amd64 will split floating point types and integer types in structs

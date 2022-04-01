@@ -925,12 +925,14 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 argRegTypeInStruct2 = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
             }
 
+            assert((floatNum == 1) || (floatNum == 2));
+
             if (!canPassArgInRegisters)
             {
-                assert((floatNum == 1) || (floatNum == 2)); // `if ((floatFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) != 0)`
+                // On LoongArch64, if there aren't any remaining floating-point registers to pass the argument,
+                // integer registers (if any) are used instead.
                 canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
 
-                // On LoongArch64, there aren't even any remaining integer registers to pass the arguments.
                 argRegTypeInStruct1 = TYP_UNKNOWN;
                 argRegTypeInStruct2 = TYP_UNKNOWN;
             }
@@ -1057,8 +1059,10 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                         // it has to be split. But we reserved extra 8-bytes for the whole struct.
                         varDsc->lvIsSplit = 1;
                         varDsc->SetOtherArgReg(REG_STK);
-                        varDscInfo->setAllRegArgUsed(arg1Type);
+                        varDscInfo->setAllRegArgUsed(argRegTypeInStruct1);
+#if FEATURE_FASTTAILCALL
                         varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
+#endif
                     }
                 }
                 else
@@ -6314,13 +6318,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #elif defined(TARGET_LOONGARCH64)
 
     int initialStkOffs = 0;
-    if (info.compIsVarArgs)
-    {
-        // For varargs we always save all of the integer register arguments
-        // so that they are contiguous with the incoming stack arguments.
-        initialStkOffs = MAX_REG_ARG * REGSIZE_BYTES;
-        stkOffs -= initialStkOffs;
-    }
 
     // Subtract off FP and RA.
     assert(compCalleeRegsPushed >= 2);
@@ -6827,7 +6824,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                     continue;
                 }
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64)
                 if (info.compIsVarArgs && varDsc->GetArgReg() != theFixedRetBuffArgNum())
                 {
                     // Stack offset to varargs (parameters) should point to home area which will be preallocated.
@@ -7087,7 +7084,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     // and the pushed frame pointer register which for some strange reason isn't part of 'compCalleeRegsPushed'.
     int pushedCount = compCalleeRegsPushed;
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64)
     if (info.compIsVarArgs)
     {
         pushedCount += MAX_REG_ARG;

@@ -1259,12 +1259,6 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     unsigned saveRegsPlusPSPSize =
         roundUp((UINT)genTotalFrameSize(), STACK_ALIGN) - compiler->compLclFrameSize + PSPSize;
 
-    if (compiler->info.compIsVarArgs)
-    {
-        // For varargs we always save all of the integer register arguments
-        // so that they are contiguous with the incoming stack arguments.
-        saveRegsPlusPSPSize += MAX_REG_ARG * REGSIZE_BYTES;
-    }
     unsigned saveRegsPlusPSPSizeAligned = roundUp(saveRegsPlusPSPSize, STACK_ALIGN);
 
     assert(compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
@@ -4853,8 +4847,7 @@ int CodeGenInterface::genTotalFrameSize() const
 
     assert(!IsUninitialized(compiler->compCalleeRegsPushed));
 
-    int totalFrameSize = (compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) +
-                         compiler->compCalleeRegsPushed * REGSIZE_BYTES + compiler->compLclFrameSize;
+    int totalFrameSize = compiler->compCalleeRegsPushed * REGSIZE_BYTES + compiler->compLclFrameSize;
 
     assert(totalFrameSize > 0);
     return totalFrameSize;
@@ -5502,7 +5495,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_LCL_FLD_ADDR:
         case GT_LCL_VAR_ADDR:
-            genCodeForLclAddr(treeNode);
+            genCodeForLclAddr(treeNode->AsLclVarCommon());
             break;
 
         case GT_LCL_FLD:
@@ -6852,20 +6845,20 @@ void CodeGen::genCodeForShift(GenTree* tree)
 // Arguments:
 //    tree - the node.
 //
-void CodeGen::genCodeForLclAddr(GenTree* tree)
+void CodeGen::genCodeForLclAddr(GenTreeLclVarCommon* lclAddrNode)
 {
-    assert(tree->OperIs(GT_LCL_FLD_ADDR, GT_LCL_VAR_ADDR));
+    assert(lclAddrNode->OperIs(GT_LCL_FLD_ADDR, GT_LCL_VAR_ADDR));
 
-    var_types targetType = tree->TypeGet();
-    regNumber targetReg  = tree->GetRegNum();
+    var_types targetType = lclAddrNode->TypeGet();
+    emitAttr  size       = emitTypeSize(targetType);
+    regNumber targetReg  = lclAddrNode->GetRegNum();
 
     // Address of a local var.
     noway_assert((targetType == TYP_BYREF) || (targetType == TYP_I_IMPL));
 
-    emitAttr size = emitTypeSize(targetType);
+    GetEmitter()->emitIns_R_S(INS_lea, size, targetReg, lclAddrNode->GetLclNum(), lclAddrNode->GetLclOffs());
 
-    inst_RV_TT(INS_lea, targetReg, tree, 0, size);
-    genProduceReg(tree);
+    genProduceReg(lclAddrNode);
 }
 
 //------------------------------------------------------------------------
@@ -7758,8 +7751,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 #endif
 
     // Next move any un-enregistered register arguments back to their register.
-    regMaskTP fixedIntArgMask = RBM_NONE;    // tracks the int arg regs occupying fixed args in case of a vararg method.
-    unsigned  firstArgVarNum  = BAD_VAR_NUM; // varNum of the first argument in case of a vararg method.
+    unsigned firstArgVarNum = BAD_VAR_NUM; // varNum of the first argument in case of a vararg method.
     for (varNum = 0; (varNum < compiler->info.compArgsCount); varNum++)
     {
         varDsc = compiler->lvaTable + varNum;
@@ -7821,7 +7813,6 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                 regSet.AddMaskVars(genRegMask(argReg));
                 gcInfo.gcMarkRegPtrVal(argReg, loadType);
 
-                // if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
                 if (varDsc->GetOtherArgReg() < REG_STK)
                 {
                     // Restore the second register.
@@ -7851,59 +7842,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 
         if (compiler->info.compIsVarArgs)
         {
-            NYI("unimplemented on LOONGARCH64 yet");
-            // In case of a jmp call to a vararg method ensure only integer registers are passed.
-            assert((genRegMask(argReg) & (RBM_ARG_REGS)) != RBM_NONE);
-            assert(!varDsc->lvIsHfaRegArg());
-
-            fixedIntArgMask |= genRegMask(argReg);
-
-            if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
-            {
-                assert(argRegNext != REG_NA);
-                fixedIntArgMask |= genRegMask(argRegNext);
-            }
-
-            if (argReg == REG_ARG_0)
-            {
-                assert(firstArgVarNum == BAD_VAR_NUM);
-                firstArgVarNum = varNum;
-            }
-        }
-    }
-
-    // Jmp call to a vararg method - if the method has fewer than fixed arguments that can be max size of reg,
-    // load the remaining integer arg registers from the corresponding
-    // shadow stack slots.  This is for the reason that we don't know the number and type
-    // of non-fixed params passed by the caller, therefore we have to assume the worst case
-    // of caller passing all integer arg regs that can be max size of reg.
-    //
-    // The caller could have passed gc-ref/byref type var args.  Since these are var args
-    // the callee no way of knowing their gc-ness.  Therefore, mark the region that loads
-    // remaining arg registers from shadow stack slots as non-gc interruptible.
-    if (fixedIntArgMask != RBM_NONE)
-    {
-        assert(compiler->info.compIsVarArgs);
-        assert(firstArgVarNum != BAD_VAR_NUM);
-
-        regMaskTP remainingIntArgMask = RBM_ARG_REGS & ~fixedIntArgMask;
-        if (remainingIntArgMask != RBM_NONE)
-        {
-            GetEmitter()->emitDisableGC();
-            for (int argNum = 0, argOffset = 0; argNum < MAX_REG_ARG; ++argNum)
-            {
-                regNumber argReg     = intArgRegs[argNum];
-                regMaskTP argRegMask = genRegMask(argReg);
-
-                if ((remainingIntArgMask & argRegMask) != 0)
-                {
-                    remainingIntArgMask &= ~argRegMask;
-                    GetEmitter()->emitIns_R_S(INS_ld_d, EA_PTRSIZE, argReg, firstArgVarNum, argOffset);
-                }
-
-                argOffset += REGSIZE_BYTES;
-            }
-            GetEmitter()->emitEnableGC();
+            NYI_LOONGARCH64("genJmpMethod unsupports compIsVarArgs");
         }
     }
 }
@@ -9000,7 +8939,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     if (compiler->info.compIsVarArgs)
     {
         JITDUMP("    compIsVarArgs=true\n");
-        NYI_LOONGARCH64("genPushCalleeSavedRegisters - compIsVarArgs");
+        NYI_LOONGARCH64("genPushCalleeSavedRegisters unsupports compIsVarArgs");
     }
 
 #ifdef DEBUG

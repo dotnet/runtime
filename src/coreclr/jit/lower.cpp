@@ -2833,7 +2833,6 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
     assert(cmp->gtGetOp2()->IsIntegralConst());
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-    // TODO-LoongArch64: add optimize for LoongArch64.
     GenTree*       op1      = cmp->gtGetOp1();
     GenTreeIntCon* op2      = cmp->gtGetOp2()->AsIntCon();
     ssize_t        op2Value = op2->IconValue();
@@ -3190,7 +3189,7 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
 //
 GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 {
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     GenTree* relop    = jtrue->gtGetOp1();
     GenTree* relopOp2 = relop->AsOp()->gtGetOp2();
 
@@ -3199,6 +3198,14 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         bool         useJCMP = false;
         GenTreeFlags flags   = GTF_EMPTY;
 
+#if defined(TARGET_LOONGARCH64)
+        if (relop->OperIs(GT_EQ, GT_NE))
+        {
+            // Codegen will use beq or bne.
+            flags   = relop->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
+            useJCMP = true;
+        }
+#else  // TARGET_ARM64
         if (relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0))
         {
             // Codegen will use cbz or cbnz in codegen which do not affect the flag register
@@ -3211,6 +3218,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
             flags   = GTF_JCMP_TST | (relop->OperIs(GT_TEST_EQ) ? GTF_JCMP_EQ : GTF_EMPTY);
             useJCMP = true;
         }
+#endif // TARGET_ARM64
 
         if (useJCMP)
         {
@@ -3227,48 +3235,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
             return nullptr;
         }
     }
-#elif defined(TARGET_LOONGARCH64)
-    GenTree* relop    = jtrue->gtGetOp1();
-    GenTree* relopOp1 = relop->AsOp()->gtGetOp1();
-    GenTree* relopOp2 = relop->AsOp()->gtGetOp2();
-
-    if (relop->gtNext == jtrue)
-    {
-        if (relopOp2->IsCnsIntOrI())
-        {
-            if (relop->OperIs(GT_EQ, GT_NE))
-            {
-
-                // Codegen will use beq or bne in codegen.
-                GenTreeFlags flags = relop->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
-
-                relop->SetOper(GT_JCMP);
-                relop->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ);
-                relop->gtFlags |= flags;
-                relop->gtType = TYP_VOID;
-
-                relopOp2->SetContained();
-
-                BlockRange().Remove(jtrue);
-
-                assert(relop->gtNext == nullptr);
-                return nullptr;
-            }
-        }
-        else if (relopOp1->IsCnsIntOrI())
-        {
-            relopOp1->SetContained();
-        }
-    }
-    else if (relopOp1->IsCnsIntOrI())
-    {
-        relopOp1->SetContained();
-    }
-    else if (relopOp2->IsCnsIntOrI())
-    {
-        relopOp2->SetContained();
-    }
-#endif // TARGET_LOONGARCH64
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64
 
     ContainCheckJTrue(jtrue);
 
@@ -3981,9 +3948,9 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
     {
 #if defined(TARGET_LOONGARCH64)
         if (varTypeIsFloating(call->TypeGet()))
+        {
             regType = call->TypeGet();
-        assert(regType != TYP_UNDEF);
-        assert(regType != TYP_STRUCT);
+        }
 #endif
         store->ChangeType(regType);
         store->SetOper(GT_STOREIND);
@@ -5735,7 +5702,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         GenTree* firstNode        = nullptr;
         GenTree* adjustedDividend = dividend;
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64)
         // On ARM64 we will use a 32x32->64 bit multiply instead of a 64x64->64 one.
         bool widenToNativeIntForMul = (type != TYP_I_IMPL) && !simpleMul;
 #else
@@ -5789,7 +5756,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         }
         else
         {
-#if defined(TARGET_ARM64)
+#ifdef TARGET_ARM64
             // 64-bit MUL is more expensive than UMULL on ARM64.
             genTreeOps mulOper = simpleMul ? GT_MUL_LONG : GT_MULHI;
 #else

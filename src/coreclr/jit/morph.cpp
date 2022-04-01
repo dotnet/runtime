@@ -932,8 +932,6 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
         AddRegArg(argNum, node, use, regNum, numRegs, byteSize, byteAlignment, isStruct, false, isVararg);
     assert(curArgTabEntry != nullptr);
 
-    curArgTabEntry->isStruct = isStruct; // is this a struct arg
-
     INDEBUG(curArgTabEntry->checkIsStruct();)
     assert(numRegs <= 2);
     if (numRegs == 2)
@@ -2932,7 +2930,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #endif
         }
 
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64)
 
         assert(!callIsVararg || !isHfaArg);
         passUsingFloatRegs = !callIsVararg && (isHfaArg || varTypeUsesFloatReg(argx));
@@ -2945,13 +2943,16 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 
         passUsingFloatRegs = false;
 
+#elif defined(TARGET_LOONGARCH64)
+
+        assert(!callIsVararg && !isHfaArg);
+        passUsingFloatRegs    = varTypeUsesFloatReg(argx);
+        DWORD floatFieldFlags = STRUCT_NO_FLOAT_FIELD;
+
 #else
 #error Unsupported or unset target architecture
 #endif // TARGET*
 
-#if defined(TARGET_LOONGARCH64)
-        DWORD floatFieldFlags = 0;
-#endif
         bool      isBackFilled     = false;
         unsigned  nextFltArgRegNum = fltArgRegNum; // This is the next floating-point argument register number to use
         var_types structBaseType   = TYP_STRUCT;
@@ -3086,11 +3087,11 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                 passUsingFloatRegs = (floatFieldFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) ? true : false;
                 compFloatingPointUsed |= passUsingFloatRegs;
 
-                if (floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_TWO))
+                if ((floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_TWO)) != 0)
                 {
                     size = 1;
                 }
-                else if (floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO)
+                else if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
                 {
                     size = 2;
                 }
@@ -3269,18 +3270,18 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                     }
                     else if (passUsingFloatRegs)
                     {
-                        if (floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO)
+                        if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
                         {
                             nextOtherRegNum = genMapFloatRegArgNumToRegNum(nextFltArgRegNum + 1);
                         }
-                        else if (floatFieldFlags & STRUCT_FLOAT_FIELD_SECOND)
+                        else if ((floatFieldFlags & STRUCT_FLOAT_FIELD_SECOND) != 0)
                         {
                             assert(size == 1);
                             size               = 2;
                             passUsingFloatRegs = false;
                             nextOtherRegNum    = genMapFloatRegArgNumToRegNum(nextFltArgRegNum);
                         }
-                        else if (floatFieldFlags & STRUCT_FLOAT_FIELD_FIRST)
+                        else if ((floatFieldFlags & STRUCT_FLOAT_FIELD_FIRST) != 0)
                         {
                             assert(size == 1);
                             size            = 2;
@@ -3501,15 +3502,34 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                     {
                         structBaseType = structSize == 8 ? TYP_DOUBLE : TYP_FLOAT;
                         fltArgRegNum += 1;
+                        newArgEntry->structFloatFieldType[0] = structBaseType;
                     }
-                    else if (floatFieldFlags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND))
+                    else if ((floatFieldFlags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND)) != 0)
                     {
                         fltArgRegNum += 1;
                         intArgRegNum += 1;
+                        if ((floatFieldFlags & STRUCT_FLOAT_FIELD_FIRST) != 0)
+                        {
+                            newArgEntry->structFloatFieldType[0] =
+                                (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                            newArgEntry->structFloatFieldType[1] =
+                                (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
+                        }
+                        else
+                        {
+                            newArgEntry->structFloatFieldType[0] =
+                                (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
+                            newArgEntry->structFloatFieldType[1] =
+                                (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                        }
                     }
-                    else if (floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO)
+                    else if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
                     {
                         fltArgRegNum += 2;
+                        newArgEntry->structFloatFieldType[0] =
+                            (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                        newArgEntry->structFloatFieldType[1] =
+                            (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
                     }
                 }
 #else
@@ -4549,19 +4569,34 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
     {
         assert(structSize <= MAX_ARG_REG_COUNT * TARGET_POINTER_SIZE);
         BYTE gcPtrs[MAX_ARG_REG_COUNT];
-        elemCount = roundUp(structSize, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
         info.compCompHnd->getClassGClayout(objClass, &gcPtrs[0]);
+        elemCount = roundUp(structSize, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
+#ifdef TARGET_LOONGARCH64
+        // For LoongArch64's ABI, the struct which size is TARGET_POINTER_SIZE
+        // may be passed by two registers.
+        // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
+        if (fgEntryPtr->numRegs == 2)
+        {
+            elemCount = 2;
+        }
+#endif
 
         for (unsigned inx = 0; inx < elemCount; inx++)
         {
-#ifdef UNIX_AMD64_ABI
+#if defined(UNIX_AMD64_ABI)
             if (gcPtrs[inx] == TYPE_GC_NONE)
             {
                 type[inx] = GetTypeFromClassificationAndSizes(fgEntryPtr->structDesc.eightByteClassifications[inx],
                                                               fgEntryPtr->structDesc.eightByteSizes[inx]);
             }
             else
-#endif // UNIX_AMD64_ABI
+#elif defined(TARGET_LOONGARCH64)
+            if (fgEntryPtr->structFloatFieldType[inx] != TYP_UNDEF)
+            {
+                type[inx] = fgEntryPtr->structFloatFieldType[inx];
+            }
+            else
+#endif // TARGET_LOONGARCH64
             {
                 type[inx] = getJitGCType(gcPtrs[inx]);
             }
@@ -4575,7 +4610,12 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             // a GT_LCL_VAR or a GT_LCL_FLD which is properly padded and
             // lives in the stack frame or will be a promoted field.
             //
+#ifndef TARGET_LOONGARCH64
+            // For LoongArch64's ABI, the struct which size is TARGET_POINTER_SIZE
+            // may be passed by two registers.
+            // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
             structSize = elemCount * TARGET_POINTER_SIZE;
+#endif
         }
         else // we must have a GT_OBJ
         {
@@ -4879,65 +4919,23 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             //
             unsigned offset = baseOffset;
             newArg          = new (this, GT_FIELD_LIST) GenTreeFieldList();
-#if defined(TARGET_LOONGARCH64)
-            uint32_t floatFieldFlags = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(objClass);
-            if (floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE))
-            {
-                assert((floatFieldFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) > 1);
-                var_types tmp_type_1;
-                var_types tmp_type_2;
-
-                compFloatingPointUsed = true;
-                if (floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO)
-                {
-                    tmp_type_1 = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                    tmp_type_2 = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                }
-                else if (floatFieldFlags & STRUCT_FLOAT_FIELD_FIRST)
-                {
-                    tmp_type_1 = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                    tmp_type_2 = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? type[1] : TYP_INT;
-                }
-                else if (floatFieldFlags & STRUCT_FLOAT_FIELD_SECOND)
-                {
-                    tmp_type_1 = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? type[0] : TYP_INT;
-                    tmp_type_2 = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                }
-                else
-                {
-                    NYI_LOONGARCH64("fgMorphMultiregStructArg -- GT_LCL_FLD,GT_LCL_VAR");
-                    tmp_type_1 = TYP_UNDEF;
-                    tmp_type_2 = TYP_UNDEF;
-                }
-                elemSize = (floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) ? 8 : 4;
-
-                GenTree* nextLclFld = gtNewLclFldNode(varNum, tmp_type_1, offset);
-                newArg->AddField(this, nextLclFld, offset, tmp_type_1);
-                offset += elemSize;
-                nextLclFld = gtNewLclFldNode(varNum, tmp_type_2, offset);
-                newArg->AddField(this, nextLclFld, offset, tmp_type_2);
-            }
-            else
-            {
-                GenTree* nextLclFld = gtNewLclFldNode(varNum, type[0], offset);
-                newArg->AddField(this, nextLclFld, offset, type[0]);
-
-                if (elemCount > 1)
-                {
-                    assert(elemCount == 2);
-                    elemSize   = genTypeSize(type[1]);
-                    nextLclFld = gtNewLclFldNode(varNum, type[1], offset + elemSize);
-                    newArg->AddField(this, nextLclFld, offset + elemSize, type[1]);
-                }
-            }
-#else
             for (unsigned inx = 0; inx < elemCount; inx++)
             {
                 GenTree* nextLclFld = gtNewLclFldNode(varNum, type[inx], offset);
                 newArg->AddField(this, nextLclFld, offset, type[inx]);
-                offset += genTypeSize(type[inx]);
-            }
+#ifdef TARGET_LOONGARCH64
+                if (structSize > TARGET_POINTER_SIZE)
+                {
+                    // For LoongArch64's ABI, maybe there is a padding.
+                    // e.g. `struct {float a; long b;}`
+                    offset += TARGET_POINTER_SIZE;
+                }
+                else
 #endif
+                {
+                    offset += genTypeSize(type[inx]);
+                }
+            }
         }
         // Are we passing a GT_OBJ struct?
         //
@@ -4967,78 +4965,35 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
 
             newArg          = new (this, GT_FIELD_LIST) GenTreeFieldList();
             unsigned offset = 0;
-#if defined(TARGET_LOONGARCH64)
-            uint32_t floatFieldFlags = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(objClass);
-            if (floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE))
+            for (unsigned inx = 0; inx < elemCount; inx++)
             {
-                assert((floatFieldFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) > 1);
-                var_types tmp_type_1;
-                var_types tmp_type_2;
-
-                compFloatingPointUsed = true;
-                if (floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO)
+                GenTree* curAddr = baseAddr;
+                if (offset != 0)
                 {
-                    tmp_type_1 = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                    tmp_type_2 = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                }
-                else if (floatFieldFlags & STRUCT_FLOAT_FIELD_SECOND)
-                {
-                    tmp_type_1 = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                    tmp_type_2 = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? type[1] : TYP_INT;
-                }
-                else if (floatFieldFlags & STRUCT_FLOAT_FIELD_SECOND)
-                {
-                    tmp_type_1 = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? type[0] : TYP_INT;
-                    tmp_type_2 = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                    GenTree* baseAddrDup = gtCloneExpr(baseAddr);
+                    noway_assert(baseAddrDup != nullptr);
+                    curAddr = gtNewOperNode(GT_ADD, addrType, baseAddrDup, gtNewIconNode(offset, TYP_I_IMPL));
                 }
                 else
                 {
-                    NYI_LOONGARCH64("fgMorphMultiregStructArg -- GT_OBJ struct");
-                    tmp_type_1 = TYP_UNDEF;
-                    tmp_type_2 = TYP_UNDEF;
+                    curAddr = baseAddr;
                 }
-                elemSize = (floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) ? 8 : 4;
+                GenTree* curItem = gtNewIndir(type[inx], curAddr);
 
-                GenTree* curItem = gtNewIndir(tmp_type_1, baseAddr);
                 // For safety all GT_IND should have at least GT_GLOB_REF set.
                 curItem->gtFlags |= GTF_GLOB_REF;
 
-                newArg = new (this, GT_FIELD_LIST) GenTreeFieldList();
-                newArg->AddField(this, curItem, 0, tmp_type_1);
-
-                // GenTree* curAddr = baseAddr;
-                baseAddr = gtCloneExpr(baseAddr);
-                noway_assert(baseAddr != nullptr);
-                baseAddr = gtNewOperNode(GT_ADD, addrType, baseAddr, gtNewIconNode(elemSize, TYP_I_IMPL));
-
-                curItem = gtNewIndir(tmp_type_2, baseAddr);
-                // For safety all GT_IND should have at least GT_GLOB_REF set.
-                curItem->gtFlags |= GTF_GLOB_REF;
-
-                newArg->AddField(this, curItem, elemSize, tmp_type_2);
-            }
-            else
-#endif
-            {
-                for (unsigned inx = 0; inx < elemCount; inx++)
+                newArg->AddField(this, curItem, offset, type[inx]);
+#ifdef TARGET_LOONGARCH64
+                if (structSize > TARGET_POINTER_SIZE)
                 {
-                    GenTree* curAddr = baseAddr;
-                    if (offset != 0)
-                    {
-                        GenTree* baseAddrDup = gtCloneExpr(baseAddr);
-                        noway_assert(baseAddrDup != nullptr);
-                        curAddr = gtNewOperNode(GT_ADD, addrType, baseAddrDup, gtNewIconNode(offset, TYP_I_IMPL));
-                    }
-                    else
-                    {
-                        curAddr = baseAddr;
-                    }
-                    GenTree* curItem = gtNewIndir(type[inx], curAddr);
-
-                    // For safety all GT_IND should have at least GT_GLOB_REF set.
-                    curItem->gtFlags |= GTF_GLOB_REF;
-
-                    newArg->AddField(this, curItem, offset, type[inx]);
+                    // For LoongArch64's ABI, maybe there is a padding.
+                    // e.g. `struct {float a; long b;}`
+                    offset += TARGET_POINTER_SIZE;
+                }
+                else
+#endif
+                {
                     offset += genTypeSize(type[inx]);
                 }
             }
