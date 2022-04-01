@@ -10,9 +10,6 @@ ValueNumFuncDef(MemOpaque, 1, false, false, false)  // Args: 0: loop num
 ValueNumFuncDef(MapStore, 4, false, false, false)   // Args: 0: map, 1: index (e. g. field handle), 2: value being stored, 3: loop num.
 ValueNumFuncDef(MapSelect, 2, false, false, false)  // Args: 0: map, 1: key.
 
-ValueNumFuncDef(FieldSeq, 2, false, false, false)   // Sequence (VN of null == empty) of (VN's of) field handles.
-ValueNumFuncDef(NotAField, 0, false, false, false)  // Value number function for FieldSeqStore::NotAField.
-
 ValueNumFuncDef(PtrToLoc, 2, false, true, false)            // Pointer (byref) to a local variable.  Args: VN's of: 0: var num, 1: FieldSeq.
 ValueNumFuncDef(PtrToArrElem, 4, false, false, false)       // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: FieldSeq.
 ValueNumFuncDef(PtrToStatic, 2, false, true, false)         // Pointer (byref) to a static variable (or possibly a field thereof, if the static variable is a struct).

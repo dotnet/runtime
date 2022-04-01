@@ -3023,12 +3023,23 @@ bool Compiler::optLoopContains(unsigned l1, unsigned l2) const
     }
 }
 
+//-----------------------------------------------------------------------------
+// optUpdateLoopHead: Replace the `head` block of a loop in the loop table.
+// Considers all child loops that might share the same head (recursively).
+//
+// Arguments:
+//    loopInd -- loop num of loop
+//    from    -- current loop head block
+//    to      -- replacement loop head block
+//
 void Compiler::optUpdateLoopHead(unsigned loopInd, BasicBlock* from, BasicBlock* to)
 {
     assert(optLoopTable[loopInd].lpHead == from);
+    JITDUMP("Replace " FMT_LP " head " FMT_BB " with " FMT_BB "\n", loopInd, from->bbNum, to->bbNum);
     optLoopTable[loopInd].lpHead = to;
-    for (unsigned char childLoop = optLoopTable[loopInd].lpChild; childLoop != BasicBlock::NOT_IN_LOOP;
-         childLoop               = optLoopTable[childLoop].lpSibling)
+    for (unsigned char childLoop = optLoopTable[loopInd].lpChild; //
+         childLoop != BasicBlock::NOT_IN_LOOP;                    //
+         childLoop = optLoopTable[childLoop].lpSibling)
     {
         if (optLoopTable[childLoop].lpHead == from)
         {
@@ -6889,22 +6900,26 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                         }
                     }
                 }
-                else if (tree->OperIs(GT_ASG))
+                else if (tree->OperRequiresAsgFlag())
                 {
-                    // If the LHS of the assignment has a global reference, then assume it's a global side effect.
-                    GenTree* lhs = tree->AsOp()->gtOp1;
-                    if (lhs->gtFlags & GTF_GLOB_REF)
+                    // Assume all stores except "ASG(non-addr-exposed LCL, ...)" are globally visible.
+                    GenTreeLclVarCommon* lclNode;
+                    bool                 isGloballyVisibleStore;
+                    if (tree->OperIs(GT_ASG) && tree->DefinesLocal(m_compiler, &lclNode))
                     {
+                        isGloballyVisibleStore = m_compiler->lvaGetDesc(lclNode)->IsAddressExposed();
+                    }
+                    else
+                    {
+                        isGloballyVisibleStore = true;
+                    }
+
+                    if (isGloballyVisibleStore)
+                    {
+                        INDEBUG(failReason = "store to globally visible memory");
+                        treeIsHoistable    = false;
                         m_beforeSideEffect = false;
                     }
-                }
-                else if (tree->OperIs(GT_XADD, GT_XORR, GT_XAND, GT_XCHG, GT_LOCKADD, GT_CMPXCHG, GT_MEMORYBARRIER))
-                {
-                    // If this node is a MEMORYBARRIER or an Atomic operation
-                    // then don't hoist and stop any further hoisting after this node
-                    INDEBUG(failReason = "atomic op or memory barrier";)
-                    treeIsHoistable    = false;
-                    m_beforeSideEffect = false;
                 }
             }
 

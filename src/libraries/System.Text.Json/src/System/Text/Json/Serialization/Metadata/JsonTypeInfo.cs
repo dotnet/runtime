@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Reflection;
+using System.Threading;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -487,8 +488,8 @@ namespace System.Text.Json.Serialization.Metadata
                 }
             }
 
-            ParameterCache = parameterCache;
             ParameterCount = jsonParameters.Length;
+            Volatile.Write(ref ParameterCache, parameterCache);
         }
 
         private static JsonParameterInfoValues[] GetParameterInfoArray(ParameterInfo[] parameters)

@@ -83,6 +83,7 @@ namespace System.Text.Json.Serialization
             ref ReadStack state,
             [MaybeNullWhen(false)] out TDictionary value)
         {
+            JsonTypeInfo keyTypeInfo = state.Current.JsonTypeInfo.KeyTypeInfo!;
             JsonTypeInfo elementTypeInfo = state.Current.JsonTypeInfo.ElementTypeInfo!;
 
             if (state.UseFastPath)
@@ -96,8 +97,9 @@ namespace System.Text.Json.Serialization
 
                 CreateCollection(ref reader, ref state);
 
-                state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
+                _keyConverter ??= GetConverter<TKey>(keyTypeInfo);
                 _valueConverter ??= GetConverter<TValue>(elementTypeInfo);
+
                 if (_valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
                 {
                     // Process all elements.
@@ -114,10 +116,12 @@ namespace System.Text.Json.Serialization
                         // Read method would have thrown if otherwise.
                         Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
 
-                        TKey key = ReadDictionaryKey(ref reader, ref state);
+                        state.Current.JsonPropertyInfo = keyTypeInfo.PropertyInfoForTypeInfo;
+                        TKey key = ReadDictionaryKey(_keyConverter, ref reader, ref state, options);
 
                         // Read the value and add.
                         reader.ReadWithVerify();
+                        state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
                         TValue? element = _valueConverter.Read(ref reader, ElementType, options);
                         Add(key, element!, options, ref state);
                     }
@@ -137,12 +141,13 @@ namespace System.Text.Json.Serialization
 
                         // Read method would have thrown if otherwise.
                         Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
-
-                        TKey key = ReadDictionaryKey(ref reader, ref state);
+                        state.Current.JsonPropertyInfo = keyTypeInfo.PropertyInfoForTypeInfo;
+                        TKey key = ReadDictionaryKey(_keyConverter, ref reader, ref state, options);
 
                         reader.ReadWithVerify();
 
                         // Get the value from the converter and add it.
+                        state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
                         _valueConverter.TryRead(ref reader, ElementType, options, ref state, out TValue? element);
                         Add(key, element!, options, ref state);
                     }
@@ -160,7 +165,6 @@ namespace System.Text.Json.Serialization
                     }
 
                     state.Current.ObjectState = StackFrameObjectState.StartToken;
-                    state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
                 }
 
                 // Handle the metadata properties.
@@ -191,6 +195,7 @@ namespace System.Text.Json.Serialization
                 }
 
                 // Process all elements.
+                _keyConverter ??= GetConverter<TKey>(keyTypeInfo);
                 _valueConverter ??= GetConverter<TValue>(elementTypeInfo);
                 while (true)
                 {
@@ -229,7 +234,8 @@ namespace System.Text.Json.Serialization
                             }
                         }
 
-                        key = ReadDictionaryKey(ref reader, ref state);
+                        state.Current.JsonPropertyInfo = keyTypeInfo.PropertyInfoForTypeInfo;
+                        key = ReadDictionaryKey(_keyConverter, ref reader, ref state, options);
                     }
                     else
                     {
@@ -252,6 +258,7 @@ namespace System.Text.Json.Serialization
                     if (state.Current.PropertyState < StackFramePropertyState.TryRead)
                     {
                         // Get the value from the converter and add it.
+                        state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
                         bool success = _valueConverter.TryRead(ref reader, typeof(TValue), options, ref state, out TValue? element);
                         if (!success)
                         {
@@ -270,27 +277,22 @@ namespace System.Text.Json.Serialization
             value = (TDictionary)state.Current.ReturnValue!;
             return true;
 
-            TKey ReadDictionaryKey(ref Utf8JsonReader reader, ref ReadStack state)
+            static TKey ReadDictionaryKey(JsonConverter<TKey> keyConverter, ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
             {
                 TKey key;
-                string unescapedPropertyNameAsString;
-
-                _keyConverter ??= GetConverter<TKey>(state.Current.JsonTypeInfo.KeyTypeInfo!);
+                string unescapedPropertyNameAsString = reader.GetString()!;
+                state.Current.JsonPropertyNameAsString = unescapedPropertyNameAsString; // Copy key name for JSON Path support in case of error.
 
                 // Special case string to avoid calling GetString twice and save one allocation.
-                if (_keyConverter.IsInternalConverter && KeyType == typeof(string))
+                if (keyConverter.IsInternalConverter && keyConverter.TypeToConvert == typeof(string))
                 {
-                    unescapedPropertyNameAsString = reader.GetString()!;
                     key = (TKey)(object)unescapedPropertyNameAsString;
                 }
                 else
                 {
-                    key = _keyConverter.ReadAsPropertyNameCore(ref reader, KeyType, options);
-                    unescapedPropertyNameAsString = reader.GetString()!;
+                    key = keyConverter.ReadAsPropertyNameCore(ref reader, keyConverter.TypeToConvert, options);
                 }
 
-                // Copy key name for JSON Path support in case of error.
-                state.Current.JsonPropertyNameAsString = unescapedPropertyNameAsString;
                 return key;
             }
         }

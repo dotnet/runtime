@@ -3660,10 +3660,6 @@ emit_method_init (EmitContext *ctx)
 			subtype = AOT_INIT_METHOD_GSHARED_THIS;
 		}
 		break;
-	case MONO_RGCTX_ACCESS_VTABLE:
-		args [nargs ++] = convert (ctx, ctx->rgctx_arg, IntPtrType ());
-		subtype = AOT_INIT_METHOD_GSHARED_VTABLE;
-		break;
 	case MONO_RGCTX_ACCESS_THIS:
 		args [nargs ++] = convert (ctx, ctx->this_arg, ObjRefType ());
 		subtype = AOT_INIT_METHOD_GSHARED_THIS;

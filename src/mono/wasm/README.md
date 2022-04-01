@@ -215,10 +215,12 @@ Bumping Emscripten version involves these steps:
 | libtests          | linux: all,   only-pc | windows: all,   only-pc | linux+windows: all, only-pc          | linux+windows: all, always |
 | libtests eat      | linux: smoke, only-pc | -                       | linux:         all, only-pc          | linux:         all, always |
 | libtests aot      | linux: smoke, only-pc | windows: smoke, only-pc | linux+windows: all, only-pc          | linux+windows: all, always |
-|                   |                       |                         |                                      |                            |
+| high resource aot | none                  | none                    | linux+windows: all, only-pc          | linux+windows: all, always |
 | Wasm.Build.Tests  | linux:        only-pc | windows:        only-pc | linux+windows: only-pc               | linux+windows              |
 | Debugger tests    | -                     | linux+windows:  only-pc | linux+windows: only-pc               | linux+windows              |
 | Runtime tests     | linux:        only-pc | -                       | linux: only-pc                       | linux                      |
+
+* `high resource aot` runs a few specific library tests with AOT, that require more memory to AOT.
 
 ## Rolling build (twice a day):
 
@@ -232,7 +234,10 @@ Bumping Emscripten version involves these steps:
 | libtests          | linux: all(v8/chr)        | windows: all          | none                                 | N/A                        |
 | libtests eat      | linux: smoke              | -                     | linux: all                           |                            |
 | libtests aot      | linux: smoke              | windows: smoke        | linux+windows: all                   |                            |
+| high resource aot | none                      | none                  | linux+windows: all                   |                            |
 |                   |                           |                       |                                      |                            |
 | Wasm.Build.Tests  | linux: always             | windows: always       | none                                 |                            |
 | Debugger tests    | -                         | linux+windows: always | none                                 |                            |
 | Runtime tests     | linux: always             | -                     | none                                 |                            |
+
+* `high resource aot` runs a few specific library tests with AOT, that require more memory to AOT.

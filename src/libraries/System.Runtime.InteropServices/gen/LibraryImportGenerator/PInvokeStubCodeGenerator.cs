@@ -145,7 +145,7 @@ namespace Microsoft.Interop
             //
             // [LibraryImport(NativeExportsNE_Binary, EntryPoint = "transpose_matrix")]
             // [return: MarshalUsing(CountElementName = "numColumns")]
-            // [return: MarshalUsing(CountElementName = "numRows", ElementIndirectionLevel = 1)]
+            // [return: MarshalUsing(CountElementName = "numRows", ElementIndirectionDepth = 1)]
             // public static partial int[][] TransposeMatrix(
             //  int[][] matrix,
             //  [MarshalUsing(CountElementName="numColumns")] ref int[] numRows,

@@ -14,7 +14,6 @@
 #include "handle.h"
 #include "marshal.h"
 #include "monitor.h"
-#include "mono-perfcounters.h"
 #include <mono/metadata/object-forward.h>
 #include "object-internals.h"
 #include <mono/metadata/reflection.h>

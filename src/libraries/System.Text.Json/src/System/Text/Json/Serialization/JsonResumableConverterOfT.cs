@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization
             // Bridge from resumable to value converters.
 
             WriteStack state = default;
-            state.Initialize(typeof(T), options, supportContinuation: false);
+            state.Initialize(typeof(T), options, supportContinuation: false, supportAsync: false);
             try
             {
                 TryWrite(writer, value, options, ref state);

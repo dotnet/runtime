@@ -656,11 +656,12 @@ bool WrapICorJitInfo::getReadyToRunHelper(
 
 void WrapICorJitInfo::getReadyToRunDelegateCtorHelper(
           CORINFO_RESOLVED_TOKEN* pTargetMethod,
+          mdToken targetConstraint,
           CORINFO_CLASS_HANDLE delegateType,
           CORINFO_LOOKUP* pLookup)
 {
     API_ENTER(getReadyToRunDelegateCtorHelper);
-    wrapHnd->getReadyToRunDelegateCtorHelper(pTargetMethod, delegateType, pLookup);
+    wrapHnd->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
     API_LEAVE(getReadyToRunDelegateCtorHelper);
 }
 
