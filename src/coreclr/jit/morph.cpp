@@ -4591,7 +4591,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             }
             else
 #elif defined(TARGET_LOONGARCH64)
-            if (fgEntryPtr->structFloatFieldType[inx] != TYP_UNDEF)
+            if (varTypeIsFloating(fgEntryPtr->structFloatFieldType[inx]) ||
+                (genTypeSize(fgEntryPtr->structFloatFieldType[inx]) == 4))
             {
                 type[inx] = fgEntryPtr->structFloatFieldType[inx];
             }
@@ -4606,10 +4607,10 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
         if ((argValue->OperGet() == GT_LCL_FLD) || (argValue->OperGet() == GT_LCL_VAR))
         {
             elemSize = TARGET_POINTER_SIZE;
-            // We can safely widen this to aligned bytes since we are loading from
-            // a GT_LCL_VAR or a GT_LCL_FLD which is properly padded and
-            // lives in the stack frame or will be a promoted field.
-            //
+// We can safely widen this to aligned bytes since we are loading from
+// a GT_LCL_VAR or a GT_LCL_FLD which is properly padded and
+// lives in the stack frame or will be a promoted field.
+//
 #ifndef TARGET_LOONGARCH64
             // For LoongArch64's ABI, the struct which size is TARGET_POINTER_SIZE
             // may be passed by two registers.

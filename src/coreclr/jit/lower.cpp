@@ -5494,7 +5494,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             return next;
         }
 
-#if !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64)
+#ifdef TARGET_XARCH
         if (BlockRange().TryGetUse(node, &use))
         {
             // If this is a child of an indir, let the parent handle it.
@@ -5505,7 +5505,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
                 TryCreateAddrMode(node, false, parent);
             }
         }
-#endif // !TARGET_ARMARCH && !TARGET_LOONGARCH64
+#endif // TARGET_XARCH
     }
 
     if (node->OperIs(GT_ADD))

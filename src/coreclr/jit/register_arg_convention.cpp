@@ -42,8 +42,6 @@ unsigned InitVarDscInfo::allocRegArg(var_types type, unsigned numRegs /* = 1 */)
         // For System V the reg type counters should be independent.
         nextReg(TYP_INT, numRegs);
         nextReg(TYP_FLOAT, numRegs);
-#elif defined(TARGET_LOONGARCH64)
-        nextReg(type, numRegs);
 #else
         // We didn't back-fill a register (on ARM), so skip the number of registers that we allocated.
         nextReg(type, numRegs);

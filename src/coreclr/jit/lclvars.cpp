@@ -931,10 +931,22 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             {
                 // On LoongArch64, if there aren't any remaining floating-point registers to pass the argument,
                 // integer registers (if any) are used instead.
+                varDscInfo->setAllRegArgUsed(TYP_DOUBLE);
                 canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
 
                 argRegTypeInStruct1 = TYP_UNKNOWN;
                 argRegTypeInStruct2 = TYP_UNKNOWN;
+
+                if (cSlotsToEnregister == 2)
+                {
+                    if (!canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1))
+                    {
+                        // Here a struct-arg which needs two registers but only one integer register available,
+                        // it has to be split.
+                        argRegTypeInStruct1   = TYP_I_IMPL;
+                        canPassArgInRegisters = true;
+                    }
+                }
             }
         }
         else
@@ -6317,8 +6329,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
 #elif defined(TARGET_LOONGARCH64)
 
-    int initialStkOffs = 0;
-
     // Subtract off FP and RA.
     assert(compCalleeRegsPushed >= 2);
     stkOffs -= (compCalleeRegsPushed - 2) * REGSIZE_BYTES;
@@ -6824,7 +6834,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                     continue;
                 }
 
-#if defined(TARGET_ARM64)
+#ifdef TARGET_ARM64
                 if (info.compIsVarArgs && varDsc->GetArgReg() != theFixedRetBuffArgNum())
                 {
                     // Stack offset to varargs (parameters) should point to home area which will be preallocated.
@@ -7084,7 +7094,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     // and the pushed frame pointer register which for some strange reason isn't part of 'compCalleeRegsPushed'.
     int pushedCount = compCalleeRegsPushed;
 
-#if defined(TARGET_ARM64)
+#ifdef TARGET_ARM64
     if (info.compIsVarArgs)
     {
         pushedCount += MAX_REG_ARG;

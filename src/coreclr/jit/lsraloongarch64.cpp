@@ -1310,14 +1310,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 //
 int LinearScan::BuildCast(GenTreeCast* cast)
 {
-    GenTree* src = cast->gtGetOp1();
-
-    const var_types srcType  = genActualType(src->TypeGet());
-    const var_types castType = cast->gtCastType;
-
-    int srcCount = BuildOperandUses(src);
-    buildInternalRegisterUses();
+    int srcCount = BuildOperandUses(cast->CastOp());
     BuildDef(cast);
+
     return srcCount;
 }
 
