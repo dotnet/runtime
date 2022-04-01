@@ -1565,7 +1565,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_LCL_FLD_ADDR:
         case GT_LCL_VAR_ADDR:
-            genCodeForLclAddr(treeNode);
+            genCodeForLclAddr(treeNode->AsLclVarCommon());
             break;
 
         case GT_LCL_FLD:
@@ -4583,22 +4583,22 @@ void CodeGen::genCodeForShiftRMW(GenTreeStoreInd* storeInd)
 // genCodeForLclAddr: Generates the code for GT_LCL_FLD_ADDR/GT_LCL_VAR_ADDR.
 //
 // Arguments:
-//    tree - the node.
+//    lclAddrNode - the node.
 //
-void CodeGen::genCodeForLclAddr(GenTree* tree)
+void CodeGen::genCodeForLclAddr(GenTreeLclVarCommon* lclAddrNode)
 {
-    assert(tree->OperIs(GT_LCL_FLD_ADDR, GT_LCL_VAR_ADDR));
+    assert(lclAddrNode->OperIs(GT_LCL_FLD_ADDR, GT_LCL_VAR_ADDR));
 
-    var_types targetType = tree->TypeGet();
-    regNumber targetReg  = tree->GetRegNum();
+    var_types targetType = lclAddrNode->TypeGet();
+    emitAttr  size       = emitTypeSize(targetType);
+    regNumber targetReg  = lclAddrNode->GetRegNum();
 
     // Address of a local var.
     noway_assert((targetType == TYP_BYREF) || (targetType == TYP_I_IMPL));
 
-    emitAttr size = emitTypeSize(targetType);
+    GetEmitter()->emitIns_R_S(INS_lea, size, targetReg, lclAddrNode->GetLclNum(), lclAddrNode->GetLclOffs());
 
-    inst_RV_TT(INS_lea, targetReg, tree, 0, size);
-    genProduceReg(tree);
+    genProduceReg(lclAddrNode);
 }
 
 //------------------------------------------------------------------------
@@ -7661,7 +7661,6 @@ bool CodeGen::genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk)
             break;
 
         case GenTreePutArgStk::Kind::Push:
-        case GenTreePutArgStk::Kind::PushAllSlots:
             assert(source->OperIs(GT_FIELD_LIST) || source->AsObj()->GetLayout()->HasGCPtr() ||
                    (argSize < XMM_REGSIZE_BYTES));
             break;
@@ -7775,8 +7774,6 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
         // The GC encoder requires that the stack remain 4-byte aligned at all times. Round the adjustment up
         // to the next multiple of 4. If we are going to generate a `push` instruction, the adjustment must
         // not require rounding.
-        // NOTE: if the field is of GC type, we must use a push instruction, since the emitter is not otherwise
-        // able to detect stores into the outgoing argument area of the stack on x86.
         const bool fieldIsSlot = ((fieldOffset % 4) == 0) && ((prevFieldOffset - fieldOffset) >= 4);
         int        adjustment  = roundUp(currentOffset - fieldOffset, 4);
         if (fieldIsSlot && !varTypeIsSIMD(fieldType))
@@ -7792,6 +7789,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
                 AddStackLevel(pushSize);
                 adjustment -= pushSize;
             }
+
             m_pushStkArg = true;
         }
         else
@@ -7829,63 +7827,43 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
             }
         }
 
-        if (argReg == REG_NA)
+        bool canStoreWithPush = fieldIsSlot;
+        bool canLoadWithPush  = varTypeIsI(fieldNode) || genIsValidIntReg(argReg);
+
+        if (canStoreWithPush && canLoadWithPush)
         {
-            if (m_pushStkArg)
-            {
-                if (fieldNode->isUsedFromSpillTemp())
-                {
-                    assert(!varTypeIsSIMD(fieldType)); // Q: can we get here with SIMD?
-                    assert(fieldNode->IsRegOptional());
-                    TempDsc* tmp = getSpillTempDsc(fieldNode);
-                    GetEmitter()->emitIns_S(INS_push, emitActualTypeSize(fieldNode->TypeGet()), tmp->tdTempNum(), 0);
-                    regSet.tmpRlsTemp(tmp);
-                }
-                else
-                {
-                    assert(varTypeIsIntegralOrI(fieldNode));
-                    switch (fieldNode->OperGet())
-                    {
-                        case GT_LCL_VAR:
-                            inst_TT(INS_push, fieldNode, 0, 0, emitActualTypeSize(fieldNode->TypeGet()));
-                            break;
-                        case GT_CNS_INT:
-                            if (fieldNode->IsIconHandle())
-                            {
-                                inst_IV_handle(INS_push, fieldNode->AsIntCon()->gtIconVal);
-                            }
-                            else
-                            {
-                                inst_IV(INS_push, fieldNode->AsIntCon()->gtIconVal);
-                            }
-                            break;
-                        default:
-                            unreached();
-                    }
-                }
-                currentOffset -= TARGET_POINTER_SIZE;
-                AddStackLevel(TARGET_POINTER_SIZE);
-            }
-            else
-            {
-                // The stack has been adjusted and we will load the field to intTmpReg and then store it on the stack.
-                assert(varTypeIsIntegralOrI(fieldNode));
-                switch (fieldNode->OperGet())
-                {
-                    case GT_LCL_VAR:
-                        inst_RV_TT(INS_mov, intTmpReg, fieldNode);
-                        break;
-                    case GT_CNS_INT:
-                        genSetRegToConst(intTmpReg, fieldNode->TypeGet(), fieldNode);
-                        break;
-                    default:
-                        unreached();
-                }
-                genStoreRegToStackArg(fieldType, intTmpReg, fieldOffset - currentOffset);
-            }
+            assert(m_pushStkArg);
+            assert(genTypeSize(fieldNode) == TARGET_POINTER_SIZE);
+            inst_TT(INS_push, emitActualTypeSize(fieldNode), fieldNode);
+
+            currentOffset -= TARGET_POINTER_SIZE;
+            AddStackLevel(TARGET_POINTER_SIZE);
         }
         else
         {
+            // If the field is of GC type, we must use a push instruction, since the emitter is not
+            // otherwise able to detect stores into the outgoing argument area of the stack on x86.
+            assert(!varTypeIsGC(fieldNode));
+
+            // First, if needed, load the field into the temporary register.
+            if (argReg == REG_NA)
+            {
+                assert(varTypeIsIntegralOrI(fieldNode) && genIsValidIntReg(intTmpReg));
+
+                if (fieldNode->isContainedIntOrIImmed())
+                {
+                    genSetRegToConst(intTmpReg, fieldNode->TypeGet(), fieldNode);
+                }
+                else
+                {
+                    // TODO-XArch-CQ: using "ins_Load" here is conservative, as it will always
+                    // extend, which we can avoid if the field type is smaller than the node type.
+                    inst_RV_TT(ins_Load(fieldNode->TypeGet()), emitTypeSize(fieldNode), intTmpReg, fieldNode);
+                }
+
+                argReg = intTmpReg;
+            }
+
 #if defined(FEATURE_SIMD)
             if (fieldType == TYP_SIMD12)
             {
@@ -7897,6 +7875,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
             {
                 genStoreRegToStackArg(fieldType, argReg, fieldOffset - currentOffset);
             }
+
             if (m_pushStkArg)
             {
                 // We always push a slot-rounded size
@@ -7906,6 +7885,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
 
         prevFieldOffset = fieldOffset;
     }
+
     if (currentOffset != 0)
     {
         // We don't expect padding at the beginning of a struct, but it could happen with explicit layout.

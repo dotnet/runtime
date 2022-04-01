@@ -2041,14 +2041,48 @@ MAPmmapAndRecord(
         // Mojave hardened runtime doesn't allow executable mappings of a file. So we have to create an
         // anonymous mapping and read the file contents into it instead.
 
+#if defined(HOST_ARM64)
+        // Set the requested mapping with forced PROT_WRITE, mmap the file, and copy its contents there.
+        // Once PROT_WRITE and PROT_EXEC are set together, Apple Silicon will require the use of
+        // PAL_JitWriteProtect to switch between executable and writable.
+        LPVOID pvMappedFile = mmap(NULL, len + adjust, PROT_READ, MAP_PRIVATE, fd, offset - adjust);
+        if (MAP_FAILED == pvMappedFile)
+        {
+            ERROR_(LOADER)("mmap failed with code %d: %s.\n", errno, strerror(errno));
+            palError = FILEGetLastErrorFromErrno();
+        }
+        else
+        {
+            if (-1 == mprotect(pvBaseAddress, len + adjust, prot | PROT_WRITE))
+            {
+                ERROR_(LOADER)("mprotect failed with code %d: %s.\n", errno, strerror(errno));
+                palError = FILEGetLastErrorFromErrno();
+            }
+            else
+            {
+                PAL_JitWriteProtect(true);
+                memcpy(pvBaseAddress, pvMappedFile, len + adjust);
+                PAL_JitWriteProtect(false);
+            }
+            if (-1 == munmap(pvMappedFile, len + adjust))
+            {
+                ERROR_(LOADER)("Unable to unmap the file. Expect trouble.\n");
+                if (NO_ERROR == palError)
+                    palError = FILEGetLastErrorFromErrno();
+            }
+        }
+#else
         // Set the requested mapping with forced PROT_WRITE to ensure data from the file can be read there,
-        // read the data in and finally remove the forced PROT_WRITE
+        // read the data in and finally remove the forced PROT_WRITE. On Intel we can still switch the
+        // protection later with mprotect.
         if ((mprotect(pvBaseAddress, len + adjust, PROT_WRITE) == -1) ||
             (pread(fd, pvBaseAddress, len + adjust, offset - adjust) == -1) ||
             (mprotect(pvBaseAddress, len + adjust, prot) == -1))
         {
             palError = FILEGetLastErrorFromErrno();
         }
+#endif
+
     }
     else
 #endif

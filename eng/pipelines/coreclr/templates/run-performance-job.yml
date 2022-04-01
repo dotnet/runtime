@@ -24,6 +24,7 @@ parameters:
   logicalMachine: ''              # required -- Used to specify a which pool of machines the test should run against
   javascriptEngine: 'NoJS'
   helixTypeSuffix: ''             # optional -- appends to HelixType
+  collectHelixLogsScript: ''      # optional -- script to collect the logs, and artifacts helpful for debugging failures
 
 jobs:
 - template: xplat-pipeline-job.yml
@@ -77,7 +78,7 @@ jobs:
           - IsInternal: --internal
         - ${{ if ne(parameters.osSubGroup, '_musl') }}:
           - HelixPreCommand: $(HelixPreCommandStemLinux);$(ExtraMSBuildLogsLinux)
-          - HelixPostCommand: 'export PYTHONPATH=$ORIGPYPATH'
+          - HelixPostCommand: 'export PYTHONPATH=$ORIGPYPATH;${{ parameters.collectHelixLogsScript }}'
           - IsInternal: --internal
       - group: DotNet-HelixApi-Access
       - group: dotnet-benchview

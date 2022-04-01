@@ -20,6 +20,7 @@ parameters:
   javascriptEngine: 'NoJS'
   iOSLlvmBuild: 'False'
   skipLiveLibrariesDownload: false
+  collectHelixLogsScript: ''
 
 ### Perf job
 
@@ -54,6 +55,8 @@ jobs:
       helixTypeSuffix: '/wasm/aot'
     ${{ if and(eq(parameters.runtimeType, 'wasm'), ne(parameters.codeGenType, 'aot')) }}:
       helixTypeSuffix: '/wasm'
+
+    collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
 
     # Test job depends on the corresponding build job
     dependsOn:

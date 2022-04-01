@@ -76,6 +76,29 @@ namespace Microsoft.Interop
         }
 
         /// <summary>
+        /// Get the supported <see cref="CustomTypeMarshallerPinning"/> for a marshaller type
+        /// </summary>
+        /// <param name="marshallerType">The marshaller type.</param>
+        /// <param name="managedType">The mananged type that would be marshalled.</param>
+        /// <returns>Supported <see cref="CustomTypeMarshallerPinning"/></returns>
+        public static CustomTypeMarshallerPinning GetMarshallerPinningFeatures(ITypeSymbol marshallerType, ITypeSymbol? managedType)
+        {
+            CustomTypeMarshallerPinning pinning = CustomTypeMarshallerPinning.None;
+
+            if (FindGetPinnableReference(marshallerType) is not null)
+            {
+                pinning |= CustomTypeMarshallerPinning.NativeType;
+            }
+
+            if (managedType is not null && FindGetPinnableReference(managedType) is not null)
+            {
+                pinning |= CustomTypeMarshallerPinning.ManagedType;
+            }
+
+            return pinning;
+        }
+
+        /// <summary>
         /// Resolve a non-<see cref="INamedTypeSymbol"/> <paramref name="managedType"/> to the correct managed type if <paramref name="marshallerType"/> is generic and <paramref name="managedType"/> is using any placeholder types.
         /// </summary>
         /// <param name="managedType">The non-named managed type.</param>
