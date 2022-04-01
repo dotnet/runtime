@@ -33,6 +33,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             public SafeMsQuicListenerHandle Handle = null!;
             public string TraceId = null!; // set in ctor.
 
+            public TaskCompletionSource StopCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
             public readonly SafeMsQuicConfigurationHandle? ConnectionConfiguration;
             public readonly Channel<MsQuicConnection> AcceptConnectionQueue;
             // Pending connections are held back until they're ready to be used, which includes TLS negotiation.
@@ -157,7 +159,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
-            Stop();
+            // TODO: solve listener stopping in better way now that it receives STOP_COMPLETED event.
+            StopAsync().GetAwaiter().GetResult();
             _state?.Handle?.Dispose();
 
             // Note that it's safe to free the state GCHandle here, because:
@@ -207,15 +210,15 @@ namespace System.Net.Quic.Implementations.MsQuic
             QuicExceptionHelpers.ThrowIfFailed(status, "ListenerStart failed.");
 
             Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-            return MsQuicParameterHelpers.GetIPEndPointParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.LISTENER, (uint)QUIC_PARAM_LISTENER.LOCAL_ADDRESS);
+            return MsQuicParameterHelpers.GetIPEndPointParam(MsQuicApi.Api, _state.Handle, (uint)QUIC_PARAM_LISTENER.LOCAL_ADDRESS);
         }
 
-        private void Stop()
+        private Task StopAsync()
         {
             // TODO finalizers are called even if the object construction fails.
             if (_state == null)
             {
-                return;
+                return Task.CompletedTask;
             }
 
             _state.AcceptConnectionQueue?.Writer.TryComplete();
@@ -225,18 +228,27 @@ namespace System.Net.Quic.Implementations.MsQuic
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 MsQuicApi.Api.ListenerStopDelegate(_state.Handle);
             }
+            return _state.StopCompletion.Task;
         }
 
         private static unsafe uint NativeCallbackHandler(
             IntPtr listener,
             IntPtr context,
-            ListenerEvent* evt)
+            ListenerEvent* listenerEvent)
         {
             GCHandle gcHandle = GCHandle.FromIntPtr(context);
             Debug.Assert(gcHandle.IsAllocated);
             Debug.Assert(gcHandle.Target is not null);
             var state = (State)gcHandle.Target;
-            if (evt->Type != QUIC_LISTENER_EVENT.NEW_CONNECTION)
+
+
+            if (listenerEvent->Type == QUIC_LISTENER_EVENT.STOP_COMPLETE)
+            {
+                state.StopCompletion.TrySetResult();
+                return MsQuicStatusCodes.Success;
+            }
+
+            if (listenerEvent->Type != QUIC_LISTENER_EVENT.NEW_CONNECTION)
             {
                 return MsQuicStatusCodes.InternalError;
             }
@@ -245,7 +257,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             MsQuicConnection? msQuicConnection = null;
             try
             {
-                ref NewConnectionInfo connectionInfo = ref *evt->Data.NewConnection.Info;
+                ref NewConnectionInfo connectionInfo = ref *listenerEvent->Data.NewConnection.Info;
 
                 IPEndPoint localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(connectionInfo.LocalAddress);
                 IPEndPoint remoteEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(connectionInfo.RemoteAddress);
@@ -282,7 +294,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     }
                 }
 
-                connectionHandle = new SafeMsQuicConnectionHandle(evt->Data.NewConnection.Connection);
+                connectionHandle = new SafeMsQuicConnectionHandle(listenerEvent->Data.NewConnection.Connection);
 
                 Debug.Assert(!Monitor.IsEntered(state), "!Monitor.IsEntered(state)");
                 uint status = MsQuicApi.Api.ConnectionSetConfigurationDelegate(connectionHandle, connectionConfiguration);
@@ -305,7 +317,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Error(state, $"[Listener#{state.GetHashCode()}] Exception occurred during handling {(QUIC_LISTENER_EVENT)evt->Type} connection callback: {ex}");
+                    NetEventSource.Error(state, $"[Listener#{state.GetHashCode()}] Exception occurred during handling {(QUIC_LISTENER_EVENT)listenerEvent->Type} connection callback: {ex}");
                 }
             }
 
