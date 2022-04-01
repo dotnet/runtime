@@ -8476,6 +8476,7 @@ public:
 
 #if defined(DEBUG)
     const WCHAR* eeGetCPString(size_t stringHandle);
+    unsigned eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd);
     const char16_t* eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd);
 #endif
 

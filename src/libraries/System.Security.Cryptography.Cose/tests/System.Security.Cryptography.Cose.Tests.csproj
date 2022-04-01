@@ -14,6 +14,7 @@
     <Compile Include="CoseHeaderLabelTests.cs" />
     <Compile Include="CoseHeaderMapTests.cs" />
     <Compile Include="CoseMessageTests.DecoseSign1.cs" />
+    <Compile Include="CoseSign1MessageTests.Sign.CustomHeaderMaps.cs" />
     <Compile Include="CoseSign1MessageTests.Verify.cs" />
     <Compile Include="CoseSign1MessageTests.Sign.cs" />
     <Compile Include="CoseTestHelpers.cs" />
