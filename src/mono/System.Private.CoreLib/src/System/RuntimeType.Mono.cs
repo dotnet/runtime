@@ -1691,7 +1691,7 @@ namespace System
 
             if (status == CheckValueStatus.NotSupported_ByRefLike)
             {
-                throw new ArgumentException(SR.Format(SR.NotSupported_ByRefLike, value?.GetType(), this));
+                throw new NotSupportedException(SR.Format(SR.NotSupported_ByRefLike, value?.GetType(), this));
             }
 
             if ((invokeAttr & BindingFlags.ExactBinding) == BindingFlags.ExactBinding)
@@ -1722,7 +1722,7 @@ namespace System
 
             if (IsByRef)
             {
-                Type? elementType = GetElementType();
+                Type elementType = GetElementType();
                 if (elementType.IsByRefLike)
                 {
                     return CheckValueStatus.NotSupported_ByRefLike;

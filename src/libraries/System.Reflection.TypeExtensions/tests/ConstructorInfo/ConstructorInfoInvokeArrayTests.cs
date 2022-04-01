@@ -8,6 +8,7 @@ namespace System.Reflection.Tests
     public class ConstructorInfoInvokeArrayTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67457", TestRuntimes.Mono)]
         public void Invoke_SZArrayConstructor()
         {
             Type type = Type.GetType("System.Object[]");
@@ -108,6 +109,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67457", TestRuntimes.Mono)]
         public void Invoke_2DArrayConstructor()
         {
             Type type = Type.GetType("System.Int32[,]", false);
@@ -245,6 +247,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67457", TestRuntimes.Mono)]
         public void Invoke_JaggedArrayConstructor()
         {
             Type type = Type.GetType("System.String[][]");

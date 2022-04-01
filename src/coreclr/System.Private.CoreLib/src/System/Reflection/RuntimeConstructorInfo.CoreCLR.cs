@@ -106,10 +106,6 @@ namespace System.Reflection
                 {
                     return RuntimeMethodHandle.InvokeMethod(obj, (void**)args, Signature, isConstructor: obj is null)!;
                 }
-                catch (OutOfMemoryException)
-                {
-                    throw; // Re-throw for backward compatibility.
-                }
                 catch (Exception ex)
                 {
                     throw new TargetInvocationException(ex);

@@ -480,8 +480,7 @@ namespace System.Reflection.Emit
                 }
                 else if (argCount > MaxStackAllocArgCount)
                 {
-                    Debug.Assert(parameters != null);
-                    CheckManyArguments();
+                    retValue = CheckManyArguments(this, argCount, obj, invokeAttr, binder, parameters, culture);
                 }
                 else
                 {
@@ -518,52 +517,65 @@ namespace System.Reflection.Emit
 
             GC.KeepAlive(this);
             return retValue;
+        }
 
-            // Slower path that does a heap alloc for copyOfParameters and registers byrefs to those objects.
-            unsafe void CheckManyArguments()
+        // Slower path that does a heap alloc for copyOfParameters and registers byrefs to those objects.
+        // This is a separate method to support better performance for the faster paths.
+        private static unsafe object? CheckManyArguments(
+            DynamicMethod mi,
+            int argCount,
+            object? obj,
+            BindingFlags invokeAttr,
+            Binder? binder,
+            object?[]? parameters,
+            CultureInfo? culture)
+        {
+            Debug.Assert(parameters != null);
+
+            object[] objHolder = new object[argCount];
+            Span<object?> copyOfParameters = new Span<object?>(objHolder, 0, argCount);
+
+            // We don't check a max stack size since we are invoking a method which
+            // naturally requires a stack size that is dependent on the arg count\size.
+            IntPtr* pByRefStorage = stackalloc IntPtr[argCount];
+            Buffer.ZeroMemory((byte*)pByRefStorage, (uint)(argCount * sizeof(IntPtr)));
+
+            bool* boolHolder = stackalloc bool[argCount];
+            Span<bool> shouldCopyBackParameters = new Span<bool>(boolHolder, argCount);
+
+            GCFrameRegistration reg = new(pByRefStorage, (uint)argCount, areByRefs: true);
+
+            object? retValue;
+            try
             {
-                object[] objHolder = new object[argCount];
-                Span<object?> copyOfParameters = new Span<object?>(objHolder, 0, argCount);
+                RegisterForGCReporting(&reg);
+                mi.CheckArguments(
+                    copyOfParameters,
+                    pByRefStorage,
+                    shouldCopyBackParameters,
+                    parameters,
+                    mi.Signature.Arguments,
+                    binder,
+                    culture,
+                    invokeAttr);
 
-                // We don't check a max stack size since we are invoking a method which
-                // naturally requires a stack size that is dependent on the arg count\size.
-                IntPtr* pByRefStorage = stackalloc IntPtr[argCount];
-                Buffer.ZeroMemory((byte*)pByRefStorage, (uint)(argCount * sizeof(IntPtr)));
+                retValue = mi.Invoker.InvokeUnsafe(obj, pByRefStorage, invokeAttr);
+            }
+            finally
+            {
+                UnregisterForGCReporting(&reg);
+            }
 
-                bool* boolHolder = stackalloc bool[argCount];
-                Span<bool> shouldCopyBackParameters = new Span<bool>(boolHolder, argCount);
-
-                GCFrameRegistration reg = new(pByRefStorage, (uint)argCount, areByRefs: true);
-
-                try
+            // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
+            for (int i = 0; i < argCount; i++)
+            {
+                if (shouldCopyBackParameters[i])
                 {
-                    RegisterForGCReporting(&reg);
-                    CheckArguments(
-                        copyOfParameters,
-                        pByRefStorage,
-                        shouldCopyBackParameters,
-                        parameters,
-                        Signature.Arguments,
-                        binder,
-                        culture,
-                        invokeAttr);
-
-                    retValue = Invoker.InvokeUnsafe(obj, pByRefStorage, invokeAttr);
-                }
-                finally
-                {
-                    UnregisterForGCReporting(&reg);
-                }
-
-                // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
-                for (int i = 0; i < argCount; i++)
-                {
-                    if (shouldCopyBackParameters[i])
-                    {
-                        parameters[i] = copyOfParameters[i];
-                    }
+                    parameters[i] = copyOfParameters[i];
                 }
             }
+
+            return retValue;
         }
 
         [DebuggerHidden]

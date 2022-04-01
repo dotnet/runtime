@@ -396,8 +396,6 @@ static OBJECTREF InvokeArrayConstructor(TypeHandle th, PVOID* args, int argCnt)
         _ASSERTE(args[i] != NULL);
 
         INT32 size = *(INT32*)args[i];
-        _ASSERTE(size >= 0);
-
         ARG_SLOT value = size;
         memcpyNoGCRefs(indexes + i, ArgSlotEndianessFixup(&value, sizeof(INT32)), sizeof(INT32));
     }
