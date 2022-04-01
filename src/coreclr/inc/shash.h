@@ -76,10 +76,9 @@
 //
 // static void OnDestructPerEntryCleanupAction(ELEMENT& e) Called on every element when in hashtable destructor.
 //                                              s_DestructPerEntryCleanupAction must be set to true if implemented.
-// static void OnRemovePerEntryCleanupAction(ELEMENT& e) Called when an element is removed from the hashtable.
-//                                              s_RemovePerEntryCleanupAction must be set to true if implemented. When elements
-//                                              are removed in the destructor, OnDestructPerEntryCleanupAction() is called
-//                                              instead if s_DestructPerEntryCleanupAction is true.
+// static void OnRemovePerEntryCleanupAction(ELEMENT& e) Called when an element is removed from the hashtable, including when
+//                                              the hashtable is destructed. s_RemovePerEntryCleanupAction must be set to true
+//                                              if implemented.
 //
 // s_growth_factor_numerator
 // s_growth_factor_denominator                  Factor to grow allocation (numerator/denominator).
@@ -109,6 +108,8 @@
 //
 // s_DestructPerEntryCleanupAction              Set to true if OnDestructPerEntryCleanupAction has non-empty implementation.
 // s_RemovePerEntryCleanupAction                Set to true if OnRemovePerEntryCleanupAction has non-empty implementation.
+//                                              Only one of s_DestructPerEntryCleanupAction and s_RemovePerEntryCleanupAction
+//                                              may be set to true.
 //
 // DefaultHashTraits provides defaults for seldomly customized values in traits classes.
 
@@ -323,7 +324,7 @@ class EMPTY_BASES_DECL SHash : public TRAITS
     // it is perfectly fine for the element to be a duplicate - if so it
     // is added an additional time. Returns TRUE if a new empty spot was used;
     // FALSE if an existing deleted slot.
-    BOOL Add(element_t *table, count_t tableSize, const element_t &element) const;
+    BOOL Add(element_t *table, count_t tableSize, const element_t &element);
 
     // Utility function to add a new element to the hash table, if no element with the same key
     // is already there. Otherwise, it will replace the existing element. This has the effect of

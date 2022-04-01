@@ -26,6 +26,7 @@ SHash<TRAITS>::SHash()
 #endif
 
     static_assert_no_msg(TRAITS::s_supports_remove || !TRAITS::s_supports_autoremove);
+    static_assert_no_msg(!TRAITS::s_DestructPerEntryCleanupAction || !TRAITS::s_RemovePerEntryCleanupAction);
 }
 
 template <typename TRAITS>
@@ -712,7 +713,7 @@ const typename SHash<TRAITS>::element_t * SHash<TRAITS>::Lookup(PTR_element_t ta
 }
 
 template <typename TRAITS>
-BOOL SHash<TRAITS>::Add(element_t * table, count_t tableSize, const element_t & element) const
+BOOL SHash<TRAITS>::Add(element_t * table, count_t tableSize, const element_t & element)
 {
     CONTRACT(BOOL)
     {
@@ -746,7 +747,7 @@ BOOL SHash<TRAITS>::Add(element_t * table, count_t tableSize, const element_t & 
 
         if (TRAITS::s_supports_autoremove && TRAITS::ShouldDelete(current))
         {
-            const_cast<SHash<TRAITS> *>(this)->RemoveElement(table, tableSize, &current);
+            RemoveElement(table, tableSize, &current);
             table[index] = element;
             RETURN FALSE;
         }
@@ -835,20 +836,10 @@ void SHash<TRAITS>::Remove(element_t *table, count_t tableSize, key_t key)
 
         if (!TRAITS::IsDeleted(current))
         {
-            if (TRAITS::s_supports_autoremove && TRAITS::ShouldDelete(current))
+            if ((TRAITS::s_supports_autoremove && TRAITS::ShouldDelete(current)) ||
+                TRAITS::Equals(key, TRAITS::GetKey(current)))
             {
                 RemoveElement(table, tableSize, &current);
-            }
-            else if (TRAITS::Equals(key, TRAITS::GetKey(current)))
-            {
-                if (TRAITS::s_RemovePerEntryCleanupAction)
-                {
-                    TRAITS::OnRemovePerEntryCleanupAction(current);
-                }
-
-                table[index] = TRAITS::Deleted();
-                m_tableCount--;
-                RETURN;
             }
         }
 

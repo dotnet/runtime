@@ -1932,8 +1932,8 @@ void AssemblyLoaderAllocator::CleanupDependentHandlesToNativeObjects()
     CONTRACTL_END;
 
     // Locks under which dependent handles may be used must all be taken here to ensure that a thread using a dependent handle
-    // would either it cleared, or that the dependent object remains valid under those locks. In particular, any locks used to
-    // synchronize uses of CrossLoaderAllocatorHash instances must also be taken here.
+    // would either observe it cleared, or that the dependent object remains valid under those locks. In particular, any locks
+    // used to synchronize uses of CrossLoaderAllocatorHash instances must also be taken here.
     CrstHolder jitInlineTrackingMapLockHolder(JITInlineTrackingMap::GetMapCrst());
     MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
 
