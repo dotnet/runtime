@@ -34,7 +34,7 @@ namespace Mono.Linker
 				return false;
 
 			// Ignore the method ordinal/generation and lambda ordinal/generation.
-			return methodName[i + 1] == 'b';
+			return (methodName.Length > i + 1) && methodName[i + 1] == 'b';
 		}
 
 		// Local functions have generated names like "<UserMethod>g__LocalFunction|0_1" where "UserMethod" is the name
@@ -50,7 +50,7 @@ namespace Mono.Linker
 				return false;
 
 			// Ignore the method ordinal/generation and local function ordinal/generation.
-			return methodName[i + 1] == 'g';
+			return (methodName.Length > i + 1) && methodName[i + 1] == 'g';
 		}
 	}
 }
