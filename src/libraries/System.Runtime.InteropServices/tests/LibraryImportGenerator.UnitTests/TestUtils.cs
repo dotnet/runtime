@@ -132,7 +132,7 @@ namespace LibraryImportGenerator.UnitTests
             var referenceAssemblies = await GetReferenceAssemblies(targetFramework);
 
             // [TODO] Can remove once ancillary logic is removed.
-            if (targetFramework is TestTargetFramework.Net6 or TestTargetFramework.Net)
+            if (targetFramework is TestTargetFramework.Net)
             {
                 referenceAssemblies = referenceAssemblies.Add(GetAncillaryReference());
             }
@@ -181,9 +181,9 @@ namespace LibraryImportGenerator.UnitTests
         /// <returns></returns>
         internal static MetadataReference GetAncillaryReference()
         {
-            // Include the assembly containing the new attribute and all of its references.
-            // [TODO] Remove once the attribute has been added to the BCL
-            var attrAssem = typeof(MarshalUsingAttribute).GetTypeInfo().Assembly;
+            // Include the assembly containing the new types we are considering exposing publicly
+            // but haven't put through API review.
+            var attrAssem = typeof(MarshalEx).GetTypeInfo().Assembly;
             return MetadataReference.CreateFromFile(attrAssem.Location);
         }
 

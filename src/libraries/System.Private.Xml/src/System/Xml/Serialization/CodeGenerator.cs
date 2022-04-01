@@ -167,7 +167,7 @@ namespace System.Xml.Serialization
             return localTmp;
         }
 
-        internal Type GetVariableType(object var)
+        internal static Type GetVariableType(object var)
         {
             if (var is ArgBuilder)
                 return ((ArgBuilder)var).ArgType;
@@ -339,7 +339,7 @@ namespace System.Xml.Serialization
             OpCodes.Blt,
         };
 
-        private OpCode GetBranchCode(Cmp cmp)
+        private static OpCode GetBranchCode(Cmp cmp)
         {
             return s_branchCodes[(int)cmp];
         }
@@ -721,7 +721,7 @@ namespace System.Xml.Serialization
         };
 
 
-        private OpCode GetLdindOpCode(TypeCode typeCode)
+        private static OpCode GetLdindOpCode(TypeCode typeCode)
         {
             return s_ldindOpCodes[(int)typeCode];
         }
@@ -1043,7 +1043,7 @@ namespace System.Xml.Serialization
             OpCodes.Ldelem_Ref, //String = 18,
         };
 
-        private OpCode GetLdelemOpCode(TypeCode typeCode)
+        private static OpCode GetLdelemOpCode(TypeCode typeCode)
         {
             return s_ldelemOpCodes[(int)typeCode];
         }
@@ -1091,7 +1091,7 @@ namespace System.Xml.Serialization
             OpCodes.Stelem_Ref, //String = 18,
         };
 
-        private OpCode GetStelemOpCode(TypeCode typeCode)
+        private static OpCode GetStelemOpCode(TypeCode typeCode)
         {
             return s_stelemOpCodes[(int)typeCode];
         }
@@ -1203,7 +1203,7 @@ namespace System.Xml.Serialization
             OpCodes.Nop, //String = 18,
         };
 
-        private OpCode GetConvOpCode(TypeCode typeCode)
+        private static OpCode GetConvOpCode(TypeCode typeCode)
         {
             return s_convOpCodes[(int)typeCode];
         }
@@ -1629,9 +1629,9 @@ namespace System.Xml.Serialization
             this.ParameterTypes = parameterTypes;
         }
 
+        [Conditional("DEBUG")]
         public void Validate(Type? returnType, Type[] parameterTypes, MethodAttributes attributes)
         {
-#if DEBUG
             Debug.Assert(this.MethodBuilder.ReturnType == returnType);
             Debug.Assert(this.MethodBuilder.Attributes == attributes);
             Debug.Assert(this.ParameterTypes.Length == parameterTypes.Length);
@@ -1639,7 +1639,6 @@ namespace System.Xml.Serialization
             {
                 Debug.Assert(this.ParameterTypes[i] == parameterTypes[i]);
             }
-#endif
         }
     }
 

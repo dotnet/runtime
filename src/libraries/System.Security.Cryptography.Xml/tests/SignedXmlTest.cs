@@ -1637,5 +1637,212 @@ namespace System.Security.Cryptography.Xml.Tests
                     xp.SelectSingleNode("/ds:SignedInfo/ds:Reference/ds:DigestMethod/@Algorithm", nsMgr)?.Value);
             }
         }
+
+        // To reduce running time, the test data is a pre-calculated string. For anyone that want to
+        // make adjustments to it, this is the small program that was used to generate the data.
+
+        //void Main()
+        //{
+        //    var xml = "<root><x ID=\"a\"/><x ID=\"b\"><x ID=\"c\"><x ID=\"y\"/></x></x></root>";
+
+        //    var xd = new XmlDocument();
+        //    xd.LoadXml(xml);
+
+        //    Sign(xd, "c", "y");
+        //    Sign(xd, "b", "b");
+        //    Sign(xd, "a", "a");
+        //    Sign(xd, "", "");
+
+        //    Console.WriteLine(xd);
+        //}
+
+        //void Sign(XmlDocument xd, string id, string signaturePlacement)
+        //{
+        //    var sx = new SignedXml(xd);
+        //    var key = RSA.Create();
+        //    sx.SigningKey = key;
+
+        //    if (!string.IsNullOrEmpty(id)) id = "#" + id;
+        //    var reference = new Reference(id);
+        //    reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
+        //    reference.AddTransform(new XmlDsigExcC14NTransform());
+        //    sx.AddReference(reference);
+
+        //    sx.ComputeSignature();
+        //    sx.KeyInfo.AddClause(new RSAKeyValue(key));
+
+        //    var node = string.IsNullOrEmpty(signaturePlacement) ? xd.DocumentElement :
+        //        xd.SelectSingleNode("//x[@ID=\'" + signaturePlacement + "']");
+
+        //    var signatureElement = sx.GetXml();
+
+        //    node.AppendChild(sx.GetXml());
+        //}
+
+        // Note that signatures were created/added in an order so that all should validate.
+        private const string multipleSignaturesXml =
+            @"<root>
+               <x ID=""a"">
+                  <Signature xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                     <SignedInfo>
+                        <CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" />
+                        <SignatureMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#rsa-sha1"" />
+                        <Reference URI=""#a"">
+                           <Transforms>
+                              <Transform Algorithm=""http://www.w3.org/2000/09/xmldsig#enveloped-signature"" />
+                              <Transform Algorithm=""http://www.w3.org/2001/10/xml-exc-c14n#"" />
+                           </Transforms>
+                           <DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1"" />
+                           <DigestValue>2US57VqBEH0lqyIYKTxbq2deDTA=</DigestValue>
+                        </Reference>
+                     </SignedInfo>
+                     <SignatureValue>VMdecll8TJ89oLmTOpkA12NgzZeO5AZCei+7649C9tB4ca8kJd0J3VAcRKtYeu+5A1oGmgDRS1icGf3TxuRKqHH2kTwGLZbmIEKf75n7lpz1ReBYqFMc/DW45x42MlerhGkPEdnO7Ucwykdd38gSqZJcfYENtwq7xUcTZIedKi4=</SignatureValue>
+                     <KeyInfo>
+                        <KeyValue>
+                           <RSAKeyValue>
+                              <Modulus>muFUHuh9LsUbbz8awq3p/RPlltaZFV0DxhofwqBS5zWhqJ/I5/0F2UVi+8XXQ37TFkBh5wpm/HwJC+Uh9t17l7CpdgiasGiN9G1i1gaSwaNsj2SnwCmBl/AICuFVp6i/UC+v77dXaBhTnH0lhD2a/+fbUomJAxSyQhqfpH3SLgk=</Modulus>
+                              <Exponent>AQAB</Exponent>
+                           </RSAKeyValue>
+                        </KeyValue>
+                     </KeyInfo>
+                  </Signature>
+               </x>
+               <x ID=""b"">
+                  <x ID=""c"">
+                     <x ID=""y"">
+                        <Signature xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                           <SignedInfo>
+                              <CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" />
+                              <SignatureMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#rsa-sha1"" />
+                              <Reference URI=""#c"">
+                                 <Transforms>
+                                    <Transform Algorithm=""http://www.w3.org/2000/09/xmldsig#enveloped-signature"" />
+                                    <Transform Algorithm=""http://www.w3.org/2001/10/xml-exc-c14n#"" />
+                                 </Transforms>
+                                 <DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1"" />
+                                 <DigestValue>NGqdYOU+AMF8pwX09mfN7GfG9lA=</DigestValue>
+                              </Reference>
+                           </SignedInfo>
+                           <SignatureValue>YypMN7Cu6cDdMilxDV78dgTUtyNjY1iZn4rtzGQzCTPBFJHGNr75oZMg9vRX9nnpnNc3xHWbJyxTZ8uuXfVvPSjCTVjYeuMpe+11lz3qkQCmw+B9nypQTgXWz3zNrN0wNSTm1TzowWrte0vaJSWA9bgOFvmn9YG2GEfS69DSzOY=</SignatureValue>
+                           <KeyInfo>
+                              <KeyValue>
+                                 <RSAKeyValue>
+                                    <Modulus>xhqQCNyUSmaKKAhR+YhZjmrtK/vaG+S4AUwotC7u2B5f4e9OIye7PcN74k1G4K0cY5hzqeZUTKHCRBuxgDPT6IifA4MIeiKfyql20GlLNkEO/xAR9wrFgIBRWk9sgU7Nfhe8+W/AjY9+RlPPZXBdOVyAacse4KY4XY5z2GgYQHU=</Modulus>
+                                    <Exponent>AQAB</Exponent>
+                                 </RSAKeyValue>
+                              </KeyValue>
+                           </KeyInfo>
+                        </Signature>
+                     </x>
+                  </x>
+                  <Signature xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                     <SignedInfo>
+                        <CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" />
+                        <SignatureMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#rsa-sha1"" />
+                        <Reference URI=""#b"">
+                           <Transforms>
+                              <Transform Algorithm=""http://www.w3.org/2000/09/xmldsig#enveloped-signature"" />
+                              <Transform Algorithm=""http://www.w3.org/2001/10/xml-exc-c14n#"" />
+                           </Transforms>
+                           <DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1"" />
+                           <DigestValue>A9fDiGJkjH9TuFkydEBjIJMkMzU=</DigestValue>
+                        </Reference>
+                     </SignedInfo>
+                     <SignatureValue>bdZtoQ2jqEVB3ifJ+lpVkKhtJYw8/WXhua3+O3ubRueYmmHVE26hFrg5y+Hz/D/YFVXtzU2dc6YypOYBLsdcRdI1JDqBN7UevmFe1NsW5YaBj4whmm3bTswMcqL6dQCXur0iq4LljVB8mhQP6nl27IajnIV+VOmkNNha+qzJfuE=</SignatureValue>
+                     <KeyInfo>
+                        <KeyValue>
+                           <RSAKeyValue>
+                              <Modulus>y1a1hMeJ7nkLr5SS5lkRvFV5dnejBnu7hjiXKYdN/YZKbaxVpmuPguJVqqrrXE52RigIcM//EYvfYvV0rhIr6PN+mwm2m4ZuZjAvCrxvYU3G/ZGHtF5LYt0RaZVMOLG4xqFXlQpwlEXw39UN1PreZi6XEV7Jjszd/VLdtIykW5U=</Modulus>
+                              <Exponent>AQAB</Exponent>
+                           </RSAKeyValue>
+                        </KeyValue>
+                     </KeyInfo>
+                  </Signature>
+               </x>
+               <Signature xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                  <SignedInfo>
+                     <CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" />
+                     <SignatureMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#rsa-sha1"" />
+                     <Reference URI="""">
+                        <Transforms>
+                           <Transform Algorithm=""http://www.w3.org/2000/09/xmldsig#enveloped-signature"" />
+                           <Transform Algorithm=""http://www.w3.org/2001/10/xml-exc-c14n#"" />
+                        </Transforms>
+                        <DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1"" />
+                        <DigestValue>knyXmtlEae1LcoEEx52tq9yYr50=</DigestValue>
+                     </Reference>
+                  </SignedInfo>
+                  <SignatureValue>Bk4BUVLgQ47zZ1mUrnzeRZfQor0C9GhrtF03AXF5Z7Iq4KfpAgD+R9BJhR6+5Fodr5O2v1v1OhzYxL8aBgM1bdrtTZZI02JmaWSUv5/Af2ZybXCec2hKReJ94omO/8vaq3kBdovfT9G0WfXBzlD0URy+7WZBi+YJ5FPtx1vroLM=</SignatureValue>
+                  <KeyInfo>
+                     <KeyValue>
+                        <RSAKeyValue>
+                           <Modulus>sa9jTiNt9nsavccQO9gZjUKRF1qgKGOY4tojYjv+C7VLYBDfrpXDWdYcsBQV0DJCD+CH4IJ069lMTJBQ5sHoc1pHxCqywgoMpMTbHrXt0PHvz6P7Bd77KgNfbsCnV62g098r/y8n8APRdp1G5zZFPAltOah8kj485cp2BRpQTmE=</Modulus>
+                           <Exponent>AQAB</Exponent>
+                        </RSAKeyValue>
+                     </KeyValue>
+                  </KeyInfo>
+               </Signature>
+            </root>";
+
+        private SignedXml CreateSubjectForMultipleEnvelopedSignatures(string xml, string signatureParent)
+        {
+            var doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            var subject = new SignedXml(doc);
+
+            XmlNode parentNode = string.IsNullOrEmpty(signatureParent) ? doc.DocumentElement : doc.SelectSingleNode("//x[@ID='" + signatureParent + "']");
+            XmlElement signatureElement = parentNode["Signature"];
+
+            subject.LoadXml(signatureElement);
+
+            return subject;
+        }
+
+        [Theory]
+        [InlineData("a"/*, 1*/)]
+        [InlineData("b"/*, 2*/)]
+        [InlineData("y"/*, 1*/)]
+        [InlineData(""/* , 4*/)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "SignedXml has been failing validation on nested signatures all the time with .NET Framework and .NET (Core) up to .NET 6. This test was added together with a fix for .NET 7.")]
+        public void CheckSignatureMultipleEnvelopedSignatures(string signatureParent/*, int expectedPosition*/)
+        {
+            SignedXml subject = CreateSubjectForMultipleEnvelopedSignatures(multipleSignaturesXml, signatureParent);
+
+            // When debugging this test, it might make sense to validate the actual signature
+            // position rather than the external-visible behaviour. The test relies on private
+            // reflection so I don't think it belongs in the normal test run. Uncomment these
+            // lines  and the expectedPosition parameter to enable the validation
+
+            //var transform = (XmlDsigEnvelopedSignatureTransform)((Reference)subject.Signature.SignedInfo.References[0]).TransformChain[0];
+            //var signaturePositionField = typeof(XmlDsigEnvelopedSignatureTransform).GetField("_signaturePosition", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+            //var actualPosition = (int)signaturePositionField.GetValue(transform);
+            //Assert.Equal(expectedPosition, actualPosition);
+
+            Assert.True(subject.CheckSignature(), "Multiple signatures, validating " + signatureParent);
+        }
+
+        [Theory]
+        [InlineData("a", "a", false)]
+        [InlineData("a", "b", true)]
+        [InlineData("b", "b", false)]
+        [InlineData("b", "c", false)]
+        [InlineData("y", "b", true)]
+        [InlineData("y", "c", false)]
+        [InlineData("y", "y", false)]
+        [InlineData("", "a", false)]
+        [InlineData("", "b", false)]
+        [InlineData("", "c", false)]
+        [InlineData("", "y", false)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "SignedXml has been failing validation on nested signatures all the time with .NET Framework and .NET (Core) up to .NET 6. This test was added together with a fix for .NET 7.")]
+        public void CheckSignatureDetectsTamperedDataOnMultipleEnvelopedSignatures(
+            string signatureParent, string tamperNode, bool expected)
+        {
+            var tampered = multipleSignaturesXml.Replace($"ID=\"{tamperNode}\"", $"ID=\"{tamperNode}\" Hackerz=\"true\"");
+
+            SignedXml subject = CreateSubjectForMultipleEnvelopedSignatures(tampered, signatureParent);
+
+            Assert.Equal(expected, subject.CheckSignature());
+        }
     }
 }

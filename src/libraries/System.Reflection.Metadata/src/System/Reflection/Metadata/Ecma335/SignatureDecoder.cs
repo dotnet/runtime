@@ -323,7 +323,7 @@ namespace System.Reflection.Metadata.Ecma335
             throw new BadImageFormatException(SR.NotTypeDefOrRefOrSpecHandle);
         }
 
-        private void CheckHeader(SignatureHeader header, SignatureKind expectedKind)
+        private static void CheckHeader(SignatureHeader header, SignatureKind expectedKind)
         {
             if (header.Kind != expectedKind)
             {
@@ -331,7 +331,7 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        private void CheckMethodOrPropertyHeader(SignatureHeader header)
+        private static void CheckMethodOrPropertyHeader(SignatureHeader header)
         {
             SignatureKind kind = header.Kind;
             if (kind != SignatureKind.Method && kind != SignatureKind.Property)

@@ -4363,6 +4363,32 @@ void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fld
 }
 
 //------------------------------------------------------------------------
+// emitIns_A: Emit an instruction with one memory ("[address mode]") operand.
+//
+// Arguments:
+//    ins   - The instruction to emit
+//    attr  - The corresponding emit attribute
+//    indir - The memory operand, represented as an indirection tree
+//
+void emitter::emitIns_A(instruction ins, emitAttr attr, GenTreeIndir* indir)
+{
+    ssize_t    offs = indir->Offset();
+    instrDesc* id   = emitNewInstrAmd(attr, offs);
+    insFormat  fmt  = emitInsModeFormat(ins, IF_ARD);
+
+    id->idIns(ins);
+    emitHandleMemOp(indir, id, fmt, ins);
+
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins));
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+
+    emitAdjustStackDepthPushPop(ins);
+}
+
+//------------------------------------------------------------------------
 // IsMovInstruction: Determines whether a give instruction is a move instruction
 //
 // Arguments:
@@ -13102,20 +13128,15 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
                     emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)val, IMAGE_REL_BASED_HIGHLOW);
                 }
             }
-
-            // Did we push a GC ref value?
-            if (id->idGCref())
-            {
-#ifdef DEBUG
-                printf("UNDONE: record GCref push [cns]\n");
-#endif
-            }
-
             break;
 
         default:
             assert(!"unexpected instruction");
     }
+
+    // GC tracking for "push"es is done by "emitStackPush", for all other instructions
+    // that can reach here we do not expect (and do not handle) GC refs.
+    assert((ins == INS_push) || !id->idGCref());
 
     return dst;
 }

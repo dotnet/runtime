@@ -28,6 +28,7 @@
     <Compile Include="System\ComponentModel\DataAnnotations\PhoneAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\RangeAttributeTests.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
     <Compile Include="System\ComponentModel\DataAnnotations\RegularExpressionAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\RegularExpressionAttributeTests.Core.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
     <Compile Include="System\ComponentModel\DataAnnotations\RequiredAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\ScaffoldColumnAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\Schema\ColumnAttributeTests.cs" />

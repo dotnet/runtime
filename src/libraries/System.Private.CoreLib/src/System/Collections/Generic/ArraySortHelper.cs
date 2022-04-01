@@ -6,6 +6,8 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+#pragma warning disable CA1822
+
 namespace System.Collections.Generic
 {
     #region ArraySortHelper for single arrays

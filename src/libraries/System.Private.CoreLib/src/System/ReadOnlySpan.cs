@@ -147,12 +147,13 @@ namespace System
         }
 
         /// <summary>
-        /// Returns true if Length is 0.
+        /// Gets a value indicating whether this <see cref="ReadOnlySpan{T}"/> is empty.
         /// </summary>
+        /// <value><see langword="true"/> if this span is empty; otherwise, <see langword="false"/>.</value>
         public bool IsEmpty
         {
             [NonVersionable]
-            get => 0 >= (uint)_length; // Workaround for https://github.com/dotnet/runtime/issues/10950
+            get => _length == 0;
         }
 
         /// <summary>

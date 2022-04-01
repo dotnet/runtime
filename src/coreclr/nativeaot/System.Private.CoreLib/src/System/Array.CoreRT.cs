@@ -1146,14 +1146,16 @@ namespace System
             return false;
         }
 
-        public void Dispose()
-        {
-        }
-
         public object Clone()
         {
             return MemberwiseClone();
         }
+
+#pragma warning disable CA1822 // https://github.com/dotnet/roslyn-analyzers/issues/5911
+        public void Dispose()
+        {
+        }
+#pragma warning restore CA1822
     }
 
     //

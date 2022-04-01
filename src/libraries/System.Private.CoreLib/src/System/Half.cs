@@ -899,6 +899,12 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Pow(TSelf, TSelf)" />
         public static Half Pow(Half x, Half y) => (Half)MathF.Pow((float)x, (float)y);
 
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ReciprocalEstimate(TSelf)" />
+        public static Half ReciprocalEstimate(Half x) => (Half)MathF.ReciprocalEstimate((float)x);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
+        public static Half ReciprocalSqrtEstimate(Half x) => (Half)MathF.ReciprocalSqrtEstimate((float)x);
+
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
         public static Half Round(Half x) => (Half)MathF.Round((float)x);
 
@@ -919,6 +925,13 @@ namespace System
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Sin(TSelf)" />
         public static Half Sin(Half x) => (Half)MathF.Sin((float)x);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.SinCos(TSelf)" />
+        public static (Half Sin, Half Cos) SinCos(Half x)
+        {
+            var (sin, cos) = MathF.SinCos((float)x);
+            return ((Half)sin, (Half)cos);
+        }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Sinh(TSelf)" />
         public static Half Sinh(Half x) => (Half)MathF.Sinh((float)x);

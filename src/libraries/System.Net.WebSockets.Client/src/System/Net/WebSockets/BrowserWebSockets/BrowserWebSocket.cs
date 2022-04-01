@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices.JavaScript;
 
 using JavaScript = System.Runtime.InteropServices.JavaScript;
+using JSObject = System.Runtime.InteropServices.JavaScript.JSObject;
 
 namespace System.Net.WebSockets
 {
@@ -183,7 +184,7 @@ namespace System.Net.WebSockets
                     }
                 };
 
-                var openTask = JavaScript.Runtime.WebSocketOpen(uri.ToString(), subProtocols, onClose, out _innerWebSocket, out int promiseJSHandle);
+                var openTask = JavaScript.Runtime.WebSocketOpen(uri.ToString(), subProtocols, onClose, out _innerWebSocket, out IntPtr promiseJSHandle);
                 var wrappedTask = CancelationHelper(openTask, promiseJSHandle, cancellationToken, _state);
 
                 await wrappedTask.ConfigureAwait(true);
@@ -212,7 +213,7 @@ namespace System.Net.WebSockets
         {
             try
             {
-                var sendTask = JavaScript.Runtime.WebSocketSend(_innerWebSocket!, buffer, (int)messageType, endOfMessage, out int promiseJSHandle);
+                var sendTask = JavaScript.Runtime.WebSocketSend(_innerWebSocket!, buffer, (int)messageType, endOfMessage, out IntPtr promiseJSHandle);
                 if (sendTask == null)
                 {
                     // return synchronously
@@ -241,7 +242,7 @@ namespace System.Net.WebSockets
             try
             {
                 ArraySegment<int> response = new ArraySegment<int>(new int[3]);
-                var receiveTask = JavaScript.Runtime.WebSocketReceive(_innerWebSocket!, buffer, response, out int promiseJSHandle);
+                var receiveTask = JavaScript.Runtime.WebSocketReceive(_innerWebSocket!, buffer, response, out IntPtr promiseJSHandle);
                 if (receiveTask == null)
                 {
                     // return synchronously
@@ -286,7 +287,7 @@ namespace System.Net.WebSockets
             _closeStatus = closeStatus;
             _closeStatusDescription = statusDescription;
 
-            var closeTask = JavaScript.Runtime.WebSocketClose(_innerWebSocket!, (int)closeStatus, statusDescription, waitForCloseReceived, out int promiseJSHandle);
+            var closeTask = JavaScript.Runtime.WebSocketClose(_innerWebSocket!, (int)closeStatus, statusDescription, waitForCloseReceived, out IntPtr promiseJSHandle);
             if (closeTask != null)
             {
                 var wrappedTask = CancelationHelper(closeTask, promiseJSHandle, cancellationToken, _state);
@@ -300,7 +301,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private async ValueTask<object> CancelationHelper(Task<object> jsTask, int promiseJSHandle, CancellationToken cancellationToken, WebSocketState previousState)
+        private async ValueTask<object> CancelationHelper(Task<object> jsTask, IntPtr promiseJSHandle, CancellationToken cancellationToken, WebSocketState previousState)
         {
             if (jsTask.IsCompletedSuccessfully)
             {

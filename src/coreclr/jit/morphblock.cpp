@@ -263,9 +263,6 @@ void MorphInitBlockHelper::PrepareDst()
         noway_assert(dstAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
         if (dstAddr->IsLocalAddrExpr(m_comp, &m_dstLclNode, &m_dstFldSeq, &m_dstAddOff))
         {
-            // Don't expect `IsLocalAddrExpr` to pass `INDEX_ADDR`.
-            assert((m_dst->gtFlags & GTF_IND_ARR_INDEX) == 0);
-
             // Note that lclNode can be a field, like `BLK<4> struct(ADD(ADDR(LCL_FLD int), CNST_INT))`.
             m_dstVarDsc = m_comp->lvaGetDesc(m_dstLclNode);
         }

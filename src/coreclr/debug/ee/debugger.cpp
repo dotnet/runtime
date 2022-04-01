@@ -6946,6 +6946,18 @@ BOOL Debugger::PreJitAttach(BOOL willSendManagedEvent, BOOL willLaunchDebugger, 
 
     LOG( (LF_CORDB, LL_INFO10000, "D::PreJA: Entering\n") );
 
+    if (m_fShutdownMode)
+    {
+        // Trying to JitAttach because of some failure at shutdown is likely to block because we
+        // would suspend any thread that isn't the finalizer or debugger helper thread when it tries to
+        // take the debugger lock below. By bailing out here we won't do the JitAttach as we normally
+        // would, but at least the app should exit with an unhandled exception or FailFast rather
+        // entering a hung state. We believe this is very rare scenario so mitigating the problem in
+        // this way is sufficient.
+        LOG( (LF_CORDB, LL_INFO10000, "D::PreJA: Leaving - shutdown case\n") );
+        return FALSE;
+    }
+
     // Multiple threads may be calling this, so need to take the lock.
     if(!m_jitAttachInProgress)
     {

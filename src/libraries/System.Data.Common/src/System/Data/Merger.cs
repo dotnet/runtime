@@ -632,7 +632,7 @@ namespace System.Data
             }
         }
 
-        private DataKey GetSrcKey(DataTable src, DataTable dst)
+        private static DataKey GetSrcKey(DataTable src, DataTable dst)
         {
             if (src._primaryKey != null)
             {

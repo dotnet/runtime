@@ -449,7 +449,8 @@
             "area-System.Text.Json"
           ],
           "mentionees": [
-            "dotnet/area-system-text-json"
+            "dotnet/area-system-text-json",
+            "gregsdennis"
           ]
         },
         {

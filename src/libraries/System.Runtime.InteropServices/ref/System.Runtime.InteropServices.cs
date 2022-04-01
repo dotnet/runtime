@@ -327,6 +327,41 @@ namespace System.Runtime.InteropServices
         NotHandled = 1,
         Failed = 2,
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
+    public sealed partial class CustomTypeMarshallerAttribute : System.Attribute
+    {
+        public CustomTypeMarshallerAttribute(System.Type managedType, System.Runtime.InteropServices.CustomTypeMarshallerKind marshallerKind = System.Runtime.InteropServices.CustomTypeMarshallerKind.Value) { }
+        public System.Type ManagedType { get { throw null; } }
+        public System.Runtime.InteropServices.CustomTypeMarshallerKind MarshallerKind { get { throw null; } }
+        public int BufferSize { get { throw null; } set { } }
+        public System.Runtime.InteropServices.CustomTypeMarshallerDirection Direction { get { throw null; } set { } }
+        public System.Runtime.InteropServices.CustomTypeMarshallerFeatures Features { get { throw null; } set { } }
+        public struct GenericPlaceholder
+        {
+        }
+    }
+    [System.FlagsAttribute]
+    public enum CustomTypeMarshallerDirection
+    {
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        None = 0,
+        In = 0x1,
+        Out = 0x2,
+        Ref = In | Out,
+    }
+    [System.FlagsAttribute]
+    public enum CustomTypeMarshallerFeatures
+    {
+        None = 0,
+        UnmanagedResources = 0x1,
+        CallerAllocatedBuffer = 0x2,
+        TwoStageMarshalling = 0x4
+    }
+    public enum CustomTypeMarshallerKind
+    {
+        Value,
+        LinearCollection
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Module, Inherited=false)]
     public sealed partial class DefaultCharSetAttribute : System.Attribute
     {
@@ -781,6 +816,17 @@ namespace System.Runtime.InteropServices
         public MarshalDirectiveException(string? message) { }
         public MarshalDirectiveException(string? message, System.Exception? inner) { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
+    public sealed partial class MarshalUsingAttribute : System.Attribute
+    {
+        public MarshalUsingAttribute() { }
+        public MarshalUsingAttribute(System.Type nativeType) { }
+        public System.Type? NativeType { get { throw null; } }
+        public string CountElementName { get { throw null; } set { } }
+        public int ConstantElementCount { get { throw null; } set { } }
+        public int ElementIndirectionDepth { get { throw null; } set { } }
+        public const string ReturnsCountValue = "return-value";
+    }
     public static partial class NativeLibrary
     {
         public static void Free(System.IntPtr handle) { }
@@ -792,6 +838,12 @@ namespace System.Runtime.InteropServices
         public static bool TryGetExport(System.IntPtr handle, string name, out System.IntPtr address) { throw null; }
         public static bool TryLoad(string libraryPath, out System.IntPtr handle) { throw null; }
         public static bool TryLoad(string libraryName, System.Reflection.Assembly assembly, System.Runtime.InteropServices.DllImportSearchPath? searchPath, out System.IntPtr handle) { throw null; }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Delegate)]
+    public sealed partial class NativeMarshallingAttribute : System.Attribute
+    {
+        public NativeMarshallingAttribute(System.Type nativeType) { }
+        public System.Type NativeType { get { throw null; } }
     }
     public static unsafe partial class NativeMemory
     {
