@@ -3538,16 +3538,16 @@ namespace System
             }
 
             bool isValueType;
-            CheckValueStatus result = TryChangeType(ref value, out copyBack, out isValueType, paramInfo);
+            CheckValueStatus result = TryChangeType(ref value, out copyBack, out isValueType);
             if (result == CheckValueStatus.Success)
             {
                 return isValueType;
             }
 
-            Debug.Assert(value != null);
-
-            if ((invokeAttr & BindingFlags.ExactBinding) == 0)
+            if (result == CheckValueStatus.ArgumentException && (invokeAttr & BindingFlags.ExactBinding) == 0)
             {
+                Debug.Assert(value != null);
+
                 // Use the binder
                 if (binder != null && binder != DefaultBinder)
                 {
@@ -3558,7 +3558,7 @@ namespace System
                         return IsValueType;
                     }
 
-                    result = TryChangeType(ref value, out copyBack, out isValueType, paramInfo);
+                    result = TryChangeType(ref value, out copyBack, out isValueType);
                     if (result == CheckValueStatus.Success)
                     {
                         return isValueType;
@@ -3566,11 +3566,10 @@ namespace System
                 }
             }
 
-            Debug.Assert(value != null);
             switch (result)
             {
                 case CheckValueStatus.ArgumentException:
-                    throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value.GetType(), this));
+                    throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value?.GetType(), this));
                 case CheckValueStatus.NotSupported_ByRefLike:
                     throw new NotSupportedException(SR.NotSupported_ByRefLike);
             }
@@ -3582,8 +3581,7 @@ namespace System
         private CheckValueStatus TryChangeType(
             ref object? value,
             out bool copyBack,
-            out bool isValueType,
-            ParameterInfo? paramInfo)
+            out bool isValueType)
         {
             // If this is a ByRef get the element type and check if it's compatible
             if (IsByRef)
@@ -3607,9 +3605,10 @@ namespace System
                     copyBack = true;
                     return CheckValueStatus.Success;
                 }
-                else if (value == null)
+
+                if (value == null)
                 {
-                    if (IsByRefLike && paramInfo?.IsOut == true)
+                    if (IsByRefLike)
                     {
                         isValueType = copyBack = default;
                         return CheckValueStatus.NotSupported_ByRefLike;
@@ -3620,7 +3619,8 @@ namespace System
                     copyBack = true;
                     return CheckValueStatus.Success;
                 }
-                else if (NeedsSpecialCast())
+
+                if (NeedsSpecialCast())
                 {
                     if (SpecialCast(sigElementType, ref value) == CheckValueStatus.Success)
                     {
@@ -3636,36 +3636,31 @@ namespace System
 
             if (value == null)
             {
-                if (RuntimeTypeHandle.IsValueType(this))
-                {
-                    if (IsNullableOfT)
-                    {
-                        // Treat as a boxed value.
-                        isValueType = false;
-                        copyBack = false;
-                    }
-                    else
-                    {
-                        isValueType = true;
-                        if (RuntimeTypeHandle.IsByRefLike(this))
-                        {
-                            // For a byref-like parameter pass null to the runtime which will create a default value.
-                            copyBack = true; // copy the null back to replace a possible Type.Missing value
-                        }
-                        else
-                        {
-                            // Need to create an instance of the value type if null was provided.
-                            value = AllocateValueType(this, value: null, fForceTypeChange: false);
-                            copyBack = false;
-                        }
-                    }
-                }
-                else
+                if (!RuntimeTypeHandle.IsValueType(this))
                 {
                     isValueType = false;
                     copyBack = false;
+                    return CheckValueStatus.Success;
                 }
 
+                if (IsNullableOfT)
+                {
+                    // Treat as a boxed value.
+                    isValueType = false;
+                    copyBack = false;
+                    return CheckValueStatus.Success;
+                }
+
+                if (RuntimeTypeHandle.IsByRefLike(this))
+                {
+                    isValueType = copyBack = default;
+                    return CheckValueStatus.NotSupported_ByRefLike;
+                }
+
+                // Need to create a default instance of the value type.
+                value = AllocateValueType(this, value: null, fForceTypeChange: false);
+                isValueType = true;
+                copyBack = false;
                 return CheckValueStatus.Success;
             }
 

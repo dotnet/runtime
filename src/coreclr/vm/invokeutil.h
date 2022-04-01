@@ -51,7 +51,7 @@ class InvokeUtil
 {
 
 public:
-    static void CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest);
+    static void CopyArg(TypeHandle th, PVOID argRef, ArgDestination *argDest);
 
     // Given a type, this routine will convert an return value representing that
     //  type into an ObjectReference.  If the type is a primitive, the

@@ -124,7 +124,7 @@ void *InvokeUtil::GetIntPtrValue(OBJECTREF pObj) {
     RETURN *(void **)((pObj)->UnBox());
 }
 
-void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest) {
+void InvokeUtil::CopyArg(TypeHandle th, PVOID argRef, ArgDestination *argDest) {
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER; // Caller does not protect object references
@@ -135,7 +135,6 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest
     CONTRACTL_END;
 
     void *pArgDst = argDest->GetDestinationAddress();
-    PVOID *rArg = *pArgRef;
     CorElementType type = th.GetVerifierCorElementType();
 
     switch (type) {
@@ -143,8 +142,8 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest
     case ELEMENT_TYPE_U1:
     case ELEMENT_TYPE_I1:
     {
-        _ASSERTE(rArg != NULL);
-        *(INT8 *)pArgDst = *(INT8 *)rArg;
+        _ASSERTE(argRef != NULL);
+        *(INT8 *)pArgDst = *(INT8 *)argRef;
         break;
     }
 
@@ -152,8 +151,8 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest
     case ELEMENT_TYPE_U2:
     case ELEMENT_TYPE_CHAR:
     {
-        _ASSERTE(rArg != NULL);
-        *(INT16 *)pArgDst = *(INT16 *)rArg;
+        _ASSERTE(argRef != NULL);
+        *(INT16 *)pArgDst = *(INT16 *)argRef;
         break;
     }
 
@@ -163,8 +162,8 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest
     IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
     IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
     {
-        _ASSERTE(rArg != NULL);
-        *(INT32 *)pArgDst = *(INT32 *)rArg;
+        _ASSERTE(argRef != NULL);
+        *(INT32 *)pArgDst = *(INT32 *)argRef;
         break;
     }
 
@@ -174,8 +173,8 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest
     IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
     IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
     {
-        _ASSERTE(rArg != NULL);
-        *(INT64 *)pArgDst = *(INT64 *)rArg;
+        _ASSERTE(argRef != NULL);
+        *(INT64 *)pArgDst = *(INT64 *)argRef;
         break;
     }
 
@@ -186,23 +185,14 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest
             // ASSUMPTION: we only receive T or NULL values, not Nullable<T> values
             // and the values are boxed, unlike other value types.
             MethodTable* pMT = th.AsMethodTable();
-            OBJECTREF src = (OBJECTREF)(Object*)*rArg;
+            OBJECTREF src = (OBJECTREF)(Object*)*(PVOID*)argRef;
             if (!pMT->UnBoxIntoArg(argDest, src))
-                COMPlusThrow(kArgumentException, W("Arg_ObjObj"));
-        }
-        else if (rArg == NULL) {
-            // A byref-like type can't be boxed but the Invoke() arg value can be passed as a null object where that is
-            // marshalled as a null reference to indicate we need to initialize the byref-like type here.
-            MethodTable* pMT = th.GetMethodTable();
-            if (pMT->IsByRefLike())
-                InitValueClassArg(argDest, pMT);
-            else
                 COMPlusThrow(kArgumentException, W("Arg_ObjObj"));
         }
         else
         {
             MethodTable* pMT = th.GetMethodTable();
-            CopyValueClassArg(argDest, rArg, pMT, 0);
+            CopyValueClassArg(argDest, argRef, pMT, 0);
         }
         break;
     }
@@ -214,10 +204,10 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest
     case ELEMENT_TYPE_ARRAY:            // General Array
     case ELEMENT_TYPE_VAR:
     {
-        if (rArg == NULL)
+        if (argRef == NULL)
             *(PVOID *)pArgDst = 0;
         else
-            *(PVOID *)pArgDst = OBJECTREFToObject((OBJECTREF)(Object*)*rArg);
+            *(PVOID *)pArgDst = OBJECTREFToObject((OBJECTREF)(Object*)*(PVOID*)argRef);
         break;
     }
 
@@ -227,16 +217,16 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID **pArgRef, ArgDestination *argDest
         // heads these off and morphs the type handle to not be byref anymore
         _ASSERTE(!Nullable::IsNullableType(th.AsTypeDesc()->GetTypeParam()));
 
-        *(PVOID *)pArgDst = rArg;
+        *(PVOID *)pArgDst = argRef;
         break;
     }
 
     case ELEMENT_TYPE_PTR:
     case ELEMENT_TYPE_FNPTR:
     {
-        _ASSERTE(rArg != NULL);
+        _ASSERTE(argRef != NULL);
         MethodTable* pMT = th.GetMethodTable();
-        CopyValueClassArg(argDest, rArg, pMT, 0);
+        CopyValueClassArg(argDest, argRef, pMT, 0);
         break;
     }
 

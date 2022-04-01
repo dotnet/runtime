@@ -805,7 +805,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
             argDest = ArgDestination(pStackCopy, 0, NULL);
         }
 
-        InvokeUtil::CopyArg(th, (PVOID **)&(args[i]), &argDest);
+        InvokeUtil::CopyArg(th, args[i], &argDest);
     }
 
     ENDFORBIDGC();

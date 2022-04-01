@@ -191,27 +191,16 @@ namespace System.Reflection
                 // This separate array is also used to hold default values when 'null' is specified for value
                 // types which should not be applied to the incoming array.
                 shouldCopyBack[i] = copyBackArg;
+                copyOfParameters[i] = arg;
 
                 if (isValueType)
                 {
-                    if (arg == null)
-                    {
-                        // Special case when passing a null to signal the native runtime to create a default ref struct
-                        Debug.Assert(copyOfParameters[i] == null);
-                        byrefParameters[i] = IntPtr.Zero;
-                    }
-                    else
-                    {
-                        copyOfParameters[i] = arg;
-
-                        ByReference<byte> valueTypeRef = new(ref copyOfParameters[i]!.GetRawData());
-                        *(ByReference<byte>*)(byrefParameters + i) = valueTypeRef;
-                    }
+                    Debug.Assert(arg != null);
+                    ByReference<byte> valueTypeRef = new(ref copyOfParameters[i]!.GetRawData());
+                    *(ByReference<byte>*)(byrefParameters + i) = valueTypeRef;
                 }
                 else
                 {
-                    copyOfParameters[i] = arg;
-
                     ByReference<object?> objRef = new(ref copyOfParameters[i]);
                     *(ByReference<object?>*)(byrefParameters + i) = objRef;
                 }
