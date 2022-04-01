@@ -142,6 +142,7 @@ namespace System.Linq.Tests
             Assert.Equal(new[] {new[] {9999, 0, 888}, new[] {-1, 66, -777}, new[] {1, 2, -12345}, new[] {10}}, chunks);
         }
 
+        // reproduces https://github.com/dotnet/runtime/issues/67132
         [Fact]
         public void DoesNotPrematurelyAllocateHugeArray()
         {
