@@ -1015,6 +1015,78 @@ bool GenTreeCall::IsPure(Compiler* compiler) const
            compiler->s_helperCallProperties.IsPure(compiler->eeGetHelperNum(gtCallMethHnd));
 }
 
+//------------------------------------------------------------------------------
+// getArrayLengthFromAllocation: Return the array length for an array allocation
+//                               helper call.
+//
+// Arguments:
+//    tree           - The array allocation helper call.
+//    block          - tree's basic block.
+//
+// Return Value:
+//    Return the array length node.
+
+GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block))
+{
+    assert(tree != nullptr);
+
+    GenTree* arrayLength = nullptr;
+
+    if (tree->OperGet() == GT_CALL)
+    {
+        GenTreeCall* call = tree->AsCall();
+        if (call->gtCallLateArgs == nullptr)
+        {
+            // Currently this function is only profitable during the late stages
+            // so we do not bother handling non-late args here
+            return nullptr;
+        }
+
+        if (call->gtCallType == CT_HELPER)
+        {
+            switch (eeGetHelperNum(call->gtCallMethHnd))
+            {
+                case CORINFO_HELP_NEWARR_1_DIRECT:
+                case CORINFO_HELP_NEWARR_1_OBJ:
+                case CORINFO_HELP_NEWARR_1_VC:
+                case CORINFO_HELP_NEWARR_1_ALIGN8:
+                {
+                    // This is an array allocation site. Grab the array length node.
+                    arrayLength = gtArgEntryByArgNum(call, 1)->GetNode();
+                    break;
+                }
+
+                case CORINFO_HELP_READYTORUN_NEWARR_1:
+                {
+                    // On arm when compiling on certain platforms for ready to run, a handle will be
+                    // inserted before the length. To handle this case, we will grab the last argument
+                    // as that's always the length. See fgInitArgInfo for where the handle is inserted.
+                    int arrLenArgNum = call->fgArgInfo->ArgCount() - 1;
+                    arrayLength      = gtArgEntryByArgNum(call, arrLenArgNum)->GetNode();
+                    break;
+                }
+
+                default:
+                    break;
+            }
+#ifdef DEBUG
+            if ((arrayLength != nullptr) && (block != nullptr))
+            {
+                optCheckFlagsAreSet(OMF_HAS_NEWARRAY, "OMF_HAS_NEWARRAY", BBF_HAS_NEWARRAY, "BBF_HAS_NEWARRAY", tree,
+                                    block);
+            }
+#endif
+        }
+    }
+
+    if (arrayLength != nullptr)
+    {
+        arrayLength = arrayLength->OperIsPutArg() ? arrayLength->gtGetOp1() : arrayLength;
+    }
+
+    return arrayLength;
+}
+
 //-------------------------------------------------------------------------
 // HasSideEffects:
 //    Returns true if this call has any side effects. All non-helpers are considered to have side-effects. Only helpers
@@ -1057,19 +1129,12 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
     {
         GenTree* arrLen = compiler->getArrayLengthFromAllocation((GenTree*)this DEBUGARG(nullptr));
         // if arrLen is nullptr it means it wasn't an array allocator
-        if ((arrLen != nullptr))
+        if ((arrLen != nullptr) && arrLen->IsIntCnsFitsInI32())
         {
-            arrLen = arrLen->OperIsPutArg() ? arrLen->gtGetOp1() : arrLen;
-            if (arrLen->IsIntCnsFitsInI32())
+            ssize_t cns = arrLen->AsIntConCommon()->IconValue();
+            if ((cns >= 0) && (cns <= CORINFO_Array_MaxLength))
             {
-                // Array.MaxLength
-                const ssize_t MaxArraySize = 0x7FFFFFC7;
-
-                ssize_t cns = arrLen->AsIntConCommon()->IconValue();
-                if ((cns >= 0) && (cns <= MaxArraySize))
-                {
-                    return false;
-                }
+                return false;
             }
         }
     }
