@@ -1632,7 +1632,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return -1;
         }
 
-        public async Task<JArray> CreateJArrayForProperties(int typeId, ArraySegment<byte> object_buffer, bool isAutoExpandable, string objectIdStr, bool isOwn, CancellationToken token, params JToken[] attributesCollections)
+        public async Task<JArray> CreateJArrayForProperties(int typeId, ElementType elementType, ArraySegment<byte> object_buffer, bool isAutoExpandable, string objectIdStr, bool isOwn, CancellationToken token, params JToken[] attributesCollections)
         {
             JArray ret = new JArray();
             using var retDebuggerCmdReader =  await GetTypePropertiesReader(typeId, token);
@@ -1673,7 +1673,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         get = new
                         {
                             type = "function",
-                            objectId = $"dotnet:methodId:{objectId.Value}:{getMethodId}",
+                            objectId = $"dotnet:methodId:{objectId.Value}:{getMethodId}:{elementType}",
                             className = "Function",
                             description = "get " + propertyNameStr + " ()",
                             methodId = getMethodId,
@@ -1718,6 +1718,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 var props = await CreateJArrayForProperties(
                     typesToGetProperties[i],
+                    ElementType.ValueType,
                     valueType.valueTypeBuffer,
                     valueType.valueTypeAutoExpand,
                     valueType.Id,
@@ -2506,6 +2507,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 commandParamsObjWriter.WriteObj(new DotnetObjectId("object", objectId), this);
                 var props = await CreateJArrayForProperties(
                     typeId,
+                    ElementType.Class,
                     commandParamsObjWriter.GetParameterBuffer(),
                     getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute),
                     $"dotnet:object:{objectId}",
