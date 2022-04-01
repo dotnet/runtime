@@ -47,10 +47,9 @@
     <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.22180.6</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <MicrosoftCodeAnalysisVersion>4.2.0-2.final</MicrosoftCodeAnalysisVersion>
     <!--
-      TODO: Remove pinned compiler version once arcade supplies runtime with a compiler capable of handling !!
-      and has https://github.com/dotnet/roslyn/pull/59776
+      TODO: Remove pinned version once arcade supplies a 4.3 compiler.
     -->
-    <MicrosoftNetCompilersToolsetVersion>4.2.0-2.final</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftNetCompilersToolsetVersion>4.3.0-1.22206.2</MicrosoftNetCompilersToolsetVersion>
     <!-- SDK dependencies -->
     <MicrosoftDotNetCompatibilityVersion>2.0.0-alpha.1.21525.11</MicrosoftDotNetCompatibilityVersion>
     <!-- Arcade dependencies -->
