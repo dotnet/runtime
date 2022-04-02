@@ -45,6 +45,7 @@ class Generics
         TestRecursionInGenericVirtualMethods.Run();
         TestRecursionThroughGenericLookups.Run();
         TestGvmLookupDependency.Run();
+        TestInvokeMemberCornerCaseInGenerics.Run();
 #if !CODEGEN_CPP
         TestNullableCasting.Run();
         TestVariantCasting.Run();
@@ -3166,6 +3167,28 @@ class Generics
         {
             CatConcepts<Technique, int>();
             CatConcepts<Technique, object>();
+        }
+    }
+
+    class TestInvokeMemberCornerCaseInGenerics
+    {
+        class Generic<T>
+        {
+            public void Method(params T[] ts) { }
+        }
+
+        class Atom { }
+
+        static Generic<Atom> s_instance = new Generic<Atom>();
+        static Type s_atomType = typeof(Atom);
+
+        public static void Run()
+        {
+            s_instance.Method(null);
+
+            // Regression test for https://github.com/dotnet/runtime/issues/65612
+            // This requires MethodTable for "Atom[]" - just make sure the compiler didn't crash and we can invoke
+            typeof(Generic<>).MakeGenericType(s_atomType).InvokeMember("Method", BindingFlags.Public | BindingFlags.InvokeMethod | BindingFlags.Instance, null, s_instance, new object[] { new Atom() });
         }
     }
 }
