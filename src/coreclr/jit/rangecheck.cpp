@@ -1032,6 +1032,33 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     return r;
 }
 
+//------------------------------------------------------------------------
+// GetRangeFromType: Compute the range from the given type
+//
+// Arguments:
+//   type - input type
+//
+// Return value:
+//   range that represents the values given type allows
+//
+static Range GetRangeFromType(var_types type)
+{
+    switch (type)
+    {
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, BYTE_MAX));
+        case TYP_BYTE:
+            return Range(Limit(Limit::keConstant, INT8_MIN), Limit(Limit::keConstant, INT8_MAX));
+        case TYP_USHORT:
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, UINT16_MAX));
+        case TYP_SHORT:
+            return Range(Limit(Limit::keConstant, INT16_MIN), Limit(Limit::keConstant, INT16_MAX));
+        default:
+            return Range(Limit(Limit::keUnknown));
+    }
+}
+
 // Compute the range for a local var definition.
 Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
                                           GenTreeLclVarCommon* lcl,
@@ -1040,6 +1067,11 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
     LclSsaVarDsc* ssaDef = GetSsaDefAsg(lcl);
     if (ssaDef == nullptr)
     {
+        LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lcl->GetLclNum());
+        if (varDsc->lvIsParam && (lcl->GetSsaNum() == SsaConfig::FIRST_SSA_NUM))
+        {
+            return GetRangeFromType(varDsc->TypeGet());
+        }
         return Range(Limit(Limit::keUnknown));
     }
 #ifdef DEBUG
@@ -1239,11 +1271,11 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
     {
         overflows = false;
     }
-    else if (expr->OperGet() == GT_IND)
+    else if (expr->OperIs(GT_IND))
     {
         overflows = false;
     }
-    else if (expr->OperGet() == GT_COMMA)
+    else if (expr->OperIs(GT_COMMA))
     {
         overflows = ComputeDoesOverflow(block, expr->gtEffectiveVal());
     }
@@ -1253,7 +1285,7 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
         overflows = DoesVarDefOverflow(expr->AsLclVarCommon());
     }
     // Check if add overflows.
-    else if (expr->OperGet() == GT_ADD || expr->OperGet() == GT_MUL)
+    else if (expr->OperIs(GT_ADD, GT_MUL))
     {
         overflows = DoesBinOpOverflow(block, expr->AsOp());
     }
@@ -1264,59 +1296,18 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
         overflows = false;
     }
     // Walk through phi arguments to check if phi arguments involve arithmetic that overflows.
-    else if (expr->OperGet() == GT_PHI)
+    else if (expr->OperIs(GT_PHI))
     {
         overflows = DoesPhiOverflow(block, expr);
     }
-    else if (expr->OperIs(GT_CAST) && expr->AsCast()->CastOp()->OperIs(GT_LCL_VAR))
+    else if (expr->OperIs(GT_CAST))
     {
-        // See if this is a cast on top of an argument - in this case we won't ever overflow
-        var_types      castType = expr->AsCast()->CastToType();
-        GenTreeLclVar* lcl      = expr->gtGetOp1()->AsLclVar();
-        if ((lcl->GetSsaNum() == SsaConfig::FIRST_SSA_NUM)) // make sure it's the first def of the arg
-        {
-            LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lcl->GetLclNum());
-            if (varDsc->lvIsParam && (varDsc->TypeGet() == castType) && varTypeIsSmall(castType))
-            {
-                overflows = false;
-            }
-        }
+        overflows = ComputeDoesOverflow(block, expr->gtGetOp1());
     }
     GetOverflowMap()->Set(expr, overflows, OverflowMap::Overwrite);
     m_pSearchPath->Remove(expr);
     JITDUMP("[%06d] %s\n", Compiler::dspTreeID(expr), ((overflows) ? "overflows" : "does not overflow"));
     return overflows;
-}
-
-//------------------------------------------------------------------------
-// GetRangeFromType: Compute the range from the given type
-//
-// Arguments:
-//   type - input type
-//
-// Return value:
-//   range that represents the values given type allows
-//
-static Range GetRangeFromType(var_types type)
-{
-    switch (type)
-    {
-        case TYP_BOOL:
-        case TYP_UBYTE:
-            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, BYTE_MAX));
-        case TYP_BYTE:
-            return Range(Limit(Limit::keConstant, INT8_MIN), Limit(Limit::keConstant, INT8_MAX));
-        case TYP_USHORT:
-            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, UINT16_MAX));
-        case TYP_SHORT:
-            return Range(Limit(Limit::keConstant, INT16_MIN), Limit(Limit::keConstant, INT16_MAX));
-        case TYP_UINT:
-            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, UINT32_MAX));
-        case TYP_INT:
-            return Range(Limit(Limit::keConstant, INT32_MIN), Limit(Limit::keConstant, INT32_MAX));
-        default:
-            return Range(Limit(Limit::keUnknown));
-    }
 }
 
 //------------------------------------------------------------------------
@@ -1399,7 +1390,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         range = ComputeRangeForBinOp(block, expr->AsOp(), monIncreasing DEBUGARG(indent + 1));
     }
     // If phi, then compute the range for arguments, calling the result "dependent" when looping begins.
-    else if (expr->OperGet() == GT_PHI)
+    else if (expr->OperIs(GT_PHI))
     {
         for (GenTreePhi::Use& use : expr->AsPhi()->Uses())
         {
@@ -1427,28 +1418,16 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         range = GetRangeFromType(expr->TypeGet());
         JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
     }
-    else if (expr->OperGet() == GT_COMMA)
+    else if (expr->OperIs(GT_COMMA))
     {
         range = GetRange(block, expr->gtEffectiveVal(), monIncreasing DEBUGARG(indent + 1));
     }
-    else if (expr->OperIs(GT_CAST) && expr->AsCast()->CastOp()->OperIs(GT_LCL_VAR))
+    else if (expr->OperIs(GT_CAST))
     {
-        range = Range(Limit(Limit::keUnknown));
-
-        // See if this is a cast on top of an argument - in this case we won't ever overflow
-        // and can, at least, use castType's range
-        var_types      castType = expr->AsCast()->CastToType();
-        GenTreeLclVar* lcl      = expr->gtGetOp1()->AsLclVar();
-        if ((lcl->GetSsaNum() == SsaConfig::FIRST_SSA_NUM) &&
-            varTypeIsSmall(castType)) // make sure it's the first def of the arg
-        {
-            LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lcl->GetLclNum());
-            if (varDsc->lvIsParam && (varDsc->TypeGet() == castType))
-            {
-                range = GetRangeFromType(castType);
-                JITDUMP("CAST(arg) is %s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()))
-            }
-        }
+        GenTreeCast* castTree = expr->AsCast();
+        // TODO: consider computing range for CastOp and intersect it
+        // with this
+        range = GetRangeFromType(castTree->CastToType());
     }
     else
     {
