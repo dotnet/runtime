@@ -179,7 +179,11 @@ namespace System.Reflection
                 {
                     paramInfos ??= GetParametersNoCopy();
                     ParameterInfo paramInfo = paramInfos[i];
-                    if (ReferenceEquals(arg, Type.Missing))
+                    if (!ReferenceEquals(arg, Type.Missing))
+                    {
+                        isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
+                    }
+                    else
                     {
                         if (paramInfo.DefaultValue == DBNull.Value)
                         {
@@ -187,9 +191,15 @@ namespace System.Reflection
                         }
 
                         arg = paramInfo.DefaultValue;
+                        if (ReferenceEquals(arg?.GetType(), sigType))
+                        {
+                            isValueType = RuntimeTypeHandle.IsValueType(sigType);
+                        }
+                        else
+                        {
+                            isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
+                        }
                     }
-
-                    isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
                 }
 
                 // We need to perform type safety validation against the incoming arguments, but we also need
@@ -205,7 +215,11 @@ namespace System.Reflection
 
                 if (isValueType)
                 {
-                    Debug.Assert(arg != null);
+#if DEBUG
+                    // Once Mono has managed conversion logic, VerifyValueType() can be lifted here as Asserts.
+                    sigType.VerifyValueType(arg);
+#endif
+
                     ByReference<byte> valueTypeRef = new(ref copyOfParameters[i]!.GetRawData());
                     *(ByReference<byte>*)(byrefParameters + i) = valueTypeRef;
                 }

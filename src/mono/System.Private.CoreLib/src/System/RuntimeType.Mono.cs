@@ -1666,6 +1666,12 @@ namespace System
             }
         }
 
+        // Once Mono has managed conversion logic, this method can be removed and the Core
+        // implementation of this method moved to RuntimeMethod.Invoke().
+#if DEBUG
+        internal void VerifyValueType(object? value) { }
+#endif
+
         /// <summary>
         /// Verify <paramref name="value"/> and optionally convert the value for special cases.
         /// </summary>
@@ -1677,9 +1683,8 @@ namespace System
             CultureInfo? culture,
             BindingFlags invokeAttr)
         {
-            // These are already fast-pathed by the caller.
-            Debug.Assert(!(value == null && (RuntimeTypeHandle.IsValueType(this) || RuntimeTypeHandle.IsByRef(this))) ||
-                !ReferenceEquals(value?.GetType(), this));
+            // Already fast-pathed by the caller.
+            Debug.Assert(!ReferenceEquals(value?.GetType(), this));
 
             copyBack = true;
 

@@ -3484,6 +3484,19 @@ namespace System
             NotSupported_ByRefLike
         }
 
+#if DEBUG
+        internal void VerifyValueType(object? value)
+        {
+            Debug.Assert(value != null);
+            Debug.Assert(
+                value.GetType() == this ||
+                (IsPointer && value.GetType() == typeof(IntPtr)) ||
+                (IsByRef && value.GetType() == RuntimeTypeHandle.GetElementType(this)) ||
+                (value.GetType().IsEnum && GetUnderlyingType((RuntimeType)value.GetType()) == GetUnderlyingType(this)) ||
+                (IsEnum && GetUnderlyingType((RuntimeType)value.GetType()) == GetUnderlyingType(this)));
+        }
+#endif
+
         /// <summary>
         /// Verify <paramref name="value"/> and optionally convert the value for special cases.
         /// </summary>
@@ -3495,11 +3508,10 @@ namespace System
             CultureInfo? culture,
             BindingFlags invokeAttr)
         {
-            // These are already fast-pathed by the caller.
-            Debug.Assert(!(value == null && (RuntimeTypeHandle.IsValueType(this) || RuntimeTypeHandle.IsByRef(this))) ||
-                !ReferenceEquals(value?.GetType(), this));
+            // Already fast-pathed by the caller.
+            Debug.Assert(!ReferenceEquals(value?.GetType(), this));
 
-            // Fast path to whether a value can be assigned to type.
+            // Fast path to whether a value can be assigned without conversion.
             if (IsInstanceOfType(value))
             {
                 // Since this cannot be a generic parameter, we use RuntimeTypeHandle.IsValueType here
@@ -3508,19 +3520,10 @@ namespace System
 
                 if (RuntimeTypeHandle.IsValueType(this))
                 {
-                    // If a nullable, pass the object even though it's a value type.
-                    if (IsNullableOfT)
-                    {
-                        // Treat as a reference type.
-                        copyBack = false;
-                        return false;
-                    }
+                    // Nullable is the only value type that will get here.
+                    Debug.Assert(IsNullableOfT);
 
-                    // Must be an equivalent type, re-box to the target type
-                    object newValue = AllocateValueType(this, value, fForceTypeChange: true);
-                    value = newValue;
-                    copyBack = true;
-                    return true;
+                    // Fall through and treat as a reference type.
                 }
 
                 return false;

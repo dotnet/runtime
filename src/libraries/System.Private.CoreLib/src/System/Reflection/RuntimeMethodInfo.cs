@@ -170,6 +170,8 @@ namespace System.Reflection
 
         // Slower path that does a heap alloc for copyOfParameters and registers byrefs to those objects.
         // This is a separate method to support better performance for the faster paths.
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         private static unsafe object? CheckManyArguments(
             RuntimeMethodInfo mi,
             int argCount,
