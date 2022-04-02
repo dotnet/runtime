@@ -120,7 +120,7 @@ namespace System.IO.Compression.Tests
         {
             var testDirectory = GetTestFilePath();
             ZipFile.ExtractToDirectory(compat("InvalidWindowsFileNameChars.zip"), testDirectory);
-            Assert.True(File.Exists(Path.Combine(testDirectory, "Test______________________________________.txt")));
+            Assert.True(File.Exists(Path.Combine(testDirectory, "TestText______________________________________.txt")));
             Assert.True(File.Exists(Path.Combine(testDirectory, "Test______________________________________/TestText1______________________________________.txt")));
             Assert.True(File.Exists(Path.Combine(testDirectory, "Test/normalText.txt")));
         }
