@@ -66,6 +66,11 @@ declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Arra
  */
 declare function mono_wasm_new_root_buffer(capacity: number, name?: string): WasmRootBuffer;
 /**
+ * Allocates a WasmRoot pointing to a root provided and controlled by external code. Typicaly on managed stack.
+ * Releasing this root will not de-allocate the root space. You still need to call .release().
+ */
+declare function mono_wasm_new_external_root<T extends MonoObject>(address: VoidPtr | MonoObjectRef): WasmRoot<T>;
+/**
  * Allocates temporary storage for a pointer into the managed heap.
  * Pointers stored here will be visible to the GC, ensuring that the object they point to aren't moved or collected.
  * If you already have a managed pointer you can pass it as an argument to initialize the temporary storage.
@@ -261,7 +266,7 @@ declare function js_string_to_mono_string(string: string): MonoString;
  * @deprecated Not GC or thread safe. For blazor use only
  */
 declare function js_to_mono_obj(js_obj: any): MonoObject;
-declare function js_to_mono_obj_root(should_add_in_flight: boolean, js_obj: any, result: WasmRoot<MonoObject>): void;
+declare function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, should_add_in_flight: boolean): void;
 declare function js_typed_array_to_array_root(js_obj: any, result: WasmRoot<MonoArray>): void;
 /**
  * @deprecated Not GC or thread safe
@@ -312,6 +317,7 @@ declare const MONO: {
     mono_load_runtime_and_bcl_args: typeof mono_load_runtime_and_bcl_args;
     mono_wasm_new_root_buffer: typeof mono_wasm_new_root_buffer;
     mono_wasm_new_root: typeof mono_wasm_new_root;
+    mono_wasm_new_external_root: typeof mono_wasm_new_external_root;
     mono_wasm_release_roots: typeof mono_wasm_release_roots;
     mono_run_main: typeof mono_run_main;
     mono_run_main_and_exit: typeof mono_run_main_and_exit;

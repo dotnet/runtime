@@ -44,7 +44,7 @@ export function _js_to_mono_uri_root(should_add_in_flight: boolean, js_obj: any,
 export function js_to_mono_obj(js_obj: any): MonoObject {
     const temp = mono_wasm_new_root<MonoObject>();
     try {
-        js_to_mono_obj_root(false, js_obj, temp);
+        js_to_mono_obj_root(js_obj, temp, false);
         return temp.value;
     } finally {
         temp.release();
@@ -58,7 +58,7 @@ export function js_to_mono_obj(js_obj: any): MonoObject {
 export function _js_to_mono_obj_unsafe(should_add_in_flight: boolean, js_obj: any): MonoObject {
     const temp = mono_wasm_new_root<MonoObject>();
     try {
-        js_to_mono_obj_root(should_add_in_flight, js_obj, temp);
+        js_to_mono_obj_root(js_obj, temp, should_add_in_flight);
         return temp.value;
     } finally {
         temp.release();
@@ -66,7 +66,7 @@ export function _js_to_mono_obj_unsafe(should_add_in_flight: boolean, js_obj: an
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function js_to_mono_obj_root(should_add_in_flight: boolean, js_obj: any, result: WasmRoot<MonoObject>): void {
+export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, should_add_in_flight: boolean): void {
     switch (true) {
         case js_obj === null:
         case typeof js_obj === "undefined":
@@ -216,7 +216,7 @@ export function js_array_to_mono_array(js_array: any[], asString: boolean, shoul
             if (asString)
                 obj = obj.toString();
 
-            js_to_mono_obj_root(should_add_in_flight, obj, elemRoot);
+            js_to_mono_obj_root(obj, elemRoot, should_add_in_flight);
             cwraps.mono_wasm_obj_array_set_ref(arrayAddress, i, elemAddress);
         }
 

@@ -275,7 +275,7 @@ export function mono_wasm_create_cs_owned_object_ref(core_name: MonoStringRef, a
             const js_handle = mono_wasm_get_js_handle(js_obj);
             // returns boxed js_handle int, because on exception we need to return String on same method signature
             // here we don't have anything to in-flight reference, as the JSObject doesn't exist yet
-            js_to_mono_obj_root(false, js_handle, resultRoot);
+            js_to_mono_obj_root(js_handle, resultRoot, false);
         } catch (ex) {
             wrap_error_root(is_exception, ex, resultRoot);
             return;
