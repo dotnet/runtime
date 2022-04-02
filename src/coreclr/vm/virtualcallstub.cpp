@@ -103,10 +103,6 @@ UINT32 STUB_COLLIDE_WRITE_PCT = 100;
 UINT32 STUB_COLLIDE_MONO_PCT  =   0;
 #endif // STUB_LOGGING
 
-FastTable::NumCallStubs_t FastTable::NumCallStubs;
-
-FastTable* BucketTable::dead = NULL;    //linked list of the abandoned buckets
-
 DispatchCache *g_resolveCache = NULL;    //cache of dispatch stubs for in line lookup by resolve stubs.
 
 size_t g_dispatch_cache_chain_success_counter = CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT;
@@ -501,15 +497,15 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     // Now allocate all BucketTables
     //
 
-    NewHolder<BucketTable> resolvers_holder(new BucketTable(CALL_STUB_MIN_BUCKETS));
+    NewHolder<BucketTable<ResolveEntry>> resolvers_holder(new BucketTable<ResolveEntry>(CALL_STUB_MIN_BUCKETS));
 #ifdef PRIME_SIZE_VSD_BUCKET_TABLE
-    NewHolder<BucketTable> dispatchers_holder(new BucketTable(CALL_STUB_MORE_BUCKETS));
+    NewHolder<BucketTable<DispatchEntry>> dispatchers_holder(new BucketTable<DispatchEntry>(CALL_STUB_MORE_BUCKETS));
 #else
-    NewHolder<BucketTable> dispatchers_holder(new BucketTable(CALL_STUB_MIN_BUCKETS*2));
+    NewHolder<BucketTable<DispatchEntry>> dispatchers_holder(new BucketTable<DispatchEntry>(CALL_STUB_MIN_BUCKETS*2));
 #endif
-    NewHolder<BucketTable> lookups_holder(new BucketTable(CALL_STUB_MIN_BUCKETS));
-    NewHolder<BucketTable> vtableCallers_holder(new BucketTable(CALL_STUB_MIN_BUCKETS));
-    NewHolder<BucketTable> cache_entries_holder(new BucketTable(CALL_STUB_MIN_BUCKETS));
+    NewHolder<BucketTable<LookupEntry>> lookups_holder(new BucketTable<LookupEntry>(CALL_STUB_MIN_BUCKETS));
+    NewHolder<BucketTable<VTableCallEntry>> vtableCallers_holder(new BucketTable<VTableCallEntry>(CALL_STUB_MIN_BUCKETS));
+    NewHolder<BucketTable<ResolveCacheEntry>> cache_entries_holder(new BucketTable<ResolveCacheEntry>(CALL_STUB_MIN_BUCKETS));
 
     //
     // Now allocate our LoaderHeaps
@@ -917,9 +913,6 @@ void VirtualCallStubManager::ReclaimAll()
     not being unload so that they nolonger refer to any of the unloaded app domains code or types
     */
 
-    //reclaim space of abandoned buckets
-    BucketTable::Reclaim();
-
     VirtualCallStubManagerIterator it =
         VirtualCallStubManagerManager::GlobalManager()->IterateVirtualCallStubManagers();
     while (it.Next())
@@ -1126,16 +1119,11 @@ PCODE VirtualCallStubManager::GetCallStub(TypeHandle ownerType, DWORD slot)
     PCODE stub = CALL_STUB_EMPTY_ENTRY;
     PCODE addrOfResolver = GetEEFuncEntryPoint(ResolveWorkerAsmStub);
 
-    LookupEntry entryL;
-    Prober probeL(&entryL);
-    if (lookups->SetUpProber(token.To_SIZE_T(), 0, &probeL))
+    stub = (PCODE)lookups->FindOrAdd(Entry::Key_t(token.To_SIZE_T(), 0), [=]()
     {
-        if ((stub = (PCODE)(lookups->Find(&probeL))) == CALL_STUB_EMPTY_ENTRY)
-        {
-            LookupHolder *pLookupHolder = GenerateLookupStub(addrOfResolver, token.To_SIZE_T());
-            stub = (PCODE) (lookups->Add((size_t)(pLookupHolder->stub()->entryPoint()), &probeL));
-        }
-    }
+        LookupHolder *pLookupHolder = GenerateLookupStub(addrOfResolver, token.To_SIZE_T());
+        return (size_t)(pLookupHolder->stub()->entryPoint());
+    });
 
     _ASSERTE(stub != CALL_STUB_EMPTY_ENTRY);
     stats.site_counter++;
@@ -1155,18 +1143,11 @@ PCODE VirtualCallStubManager::GetVTableCallStub(DWORD slot)
 
     GCX_COOP(); // This is necessary for BucketTable synchronization
 
-    PCODE stub = CALL_STUB_EMPTY_ENTRY;
-
-    VTableCallEntry entry;
-    Prober probe(&entry);
-    if (vtableCallers->SetUpProber(DispatchToken::CreateDispatchToken(slot).To_SIZE_T(), 0, &probe))
+    PCODE stub = vtableCallers->FindOrAdd(Entry::Key_t(DispatchToken::CreateDispatchToken(slot).To_SIZE_T(), 0), [=]
     {
-        if ((stub = (PCODE)(vtableCallers->Find(&probe))) == CALL_STUB_EMPTY_ENTRY)
-        {
-            VTableCallHolder *pHolder = GenerateVTableCallStub(slot);
-            stub = (PCODE)(vtableCallers->Add((size_t)(pHolder->stub()->entryPoint()), &probe));
-        }
-    }
+        VTableCallHolder *pHolder = GenerateVTableCallStub(slot);
+        return (size_t)pHolder->stub()->entryPoint();
+    });
 
     _ASSERTE(stub != CALL_STUB_EMPTY_ENTRY);
     RETURN(stub);
@@ -1282,7 +1263,10 @@ ResolveCacheElem *VirtualCallStubManager::GetResolveCacheElem(void *pMT,
     CONTRACTL_END
 
     //get an cache entry elem, or make one if necessary
-    ResolveCacheElem* elem = cache_entries->FindOrAdd(Entry::Key_t(token, (size_t) pMT), [=](){ return (size_t) GenerateResolveCacheElem(target, pMT, token); });
+    ResolveCacheElem* elem = (ResolveCacheElem*)cache_entries->FindOrAdd(Entry::Key_t(token, (size_t) pMT), [=]()
+    {
+        return (size_t) GenerateResolveCacheElem(target, pMT, token);
+    });
 
     _ASSERTE(elem && (elem != CALL_STUB_EMPTY_ENTRY));
     return elem;
@@ -1639,10 +1623,10 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         // First see if we can find a dispatcher stub for this token and type. If a
         // match is found, use the target stored in the entry.
         {
-            stub = (PCODE)dispatchers->Find(token.To_SIZE_T(), (size_t) objectType);
+            stub = (PCODE)dispatchers->Find(Entry::Key_t(token.To_SIZE_T(), (size_t) objectType));
             if (stub != CALL_STUB_EMPTY_ENTRY)
             {
-                target = (PCODE)entryD.Target();
+                target = (PCODE)DispatchEntry::Target(stub);
                 patch = TRUE;
             }
         }
@@ -1653,10 +1637,10 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         if (target == NULL)
         {
             ResolveCacheElem * elem = NULL;
-            elem = (ResolveCacheElem *)cache_entries->Find(token.To_SIZE_T(), (size_t) objectType);
+            elem = (ResolveCacheElem *)cache_entries->Find(Entry::Key_t(token.To_SIZE_T(), (size_t) objectType));
             if (elem  != CALL_STUB_EMPTY_ENTRY)
             {
-                target = (PCODE)entryRC.Target();
+                target = (PCODE)ResolveCacheEntry::Target((size_t)elem);
                 patch  = TRUE;
             }
         }
@@ -1704,6 +1688,29 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
     // never remove the elements anyway.
     EX_TRY
     {
+        ResolveWorkerInternal(pCallSite, token, stubKind, objectType, patch, target, bCallToShorterLivedTarget, stub, pCalleeMgr);
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH (SwallowAllExceptions);
+
+    // Target can be NULL only if we can't resolve to an address
+    _ASSERTE(target != NULL);
+
+    return target;
+}
+
+void VirtualCallStubManager::ResolveWorkerInternal(StubCallSite* pCallSite,
+                                            DispatchToken token,
+                                            StubKind stubKind,
+                                            MethodTable* objectType,
+                                            BOOL patch,
+                                            PCODE target,
+                                            BOOL bCallToShorterLivedTarget,
+                                            PCODE stub,
+                                            VirtualCallStubManager *pCalleeMgr)
+{
         // If we're the shared domain, we can't burn a dispatch stub to the target
         // if that target is outside the shared domain (through virtuals
         // originating in the shared domain but overridden by a non-shared type and
@@ -1726,9 +1733,6 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                 {
                     //we have a target but not the dispatcher stub, lets build it
                     //First we need a failure target (the resolver stub)
-                    ResolveHolder *pResolveHolder = NULL;
-                    ResolveEntry entryR;
-                    Prober probeR(&entryR);
                     PCODE pBackPatchFcn;
                     PCODE pResolverFcn;
 
@@ -1748,41 +1752,31 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 
                     // First see if we've already created a resolve stub for this token
                     
-                    if (resolvers->SetUpProber(token.To_SIZE_T(), 0, &probeR))
+                    // Find the right resolver, make it if necessary
+                    PCODE addrOfResolver = (PCODE)resolvers->FindOrAdd(Entry::Key_t(token.To_SIZE_T(), 0), [=]()
                     {
-                        // Find the right resolver, make it if necessary
-                        PCODE addrOfResolver = (PCODE)(resolvers->Find(&probeR));
-                        if (addrOfResolver == CALL_STUB_EMPTY_ENTRY)
-                        {
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
-                            MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, objectType);
-                            size_t stackArgumentsSize;
-                            {
-                                ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-                                stackArgumentsSize = pMD->SizeOfArgStack();
-                            }
+                        MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, objectType);
+                        size_t stackArgumentsSize;
+                        {
+                            ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
+                            stackArgumentsSize = pMD->SizeOfArgStack();
+                        }
 #endif // TARGET_X86 && !UNIX_X86_ABI
 
-                            pResolveHolder = GenerateResolveStub(pResolverFcn,
-                                                             pBackPatchFcn,
-                                                             token.To_SIZE_T()
+                        ResolveHolder *pNewResolveHolder = GenerateResolveStub(pResolverFcn,
+                                                            pBackPatchFcn,
+                                                            token.To_SIZE_T()
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
-                                                             , stackArgumentsSize
+                                                            , stackArgumentsSize
 #endif
-                                                             );
-
-                            // Add the resolve entrypoint into the cache.
-                            //@TODO: Can we store a pointer to the holder rather than the entrypoint?
-                            resolvers->Add((size_t)(pResolveHolder->stub()->resolveEntryPoint()), &probeR);
-                        }
-                        else
-                        {
-                            pResolveHolder = ResolveHolder::FromResolveEntry(addrOfResolver);
-                        }
-                        CONSISTENCY_CHECK(CheckPointer(pResolveHolder));
-                        stub = pResolveHolder->stub()->resolveEntryPoint();
-                        CONSISTENCY_CHECK(stub != NULL);
-                    }
+                                                            );
+                        return (size_t)(pNewResolveHolder->stub()->resolveEntryPoint());
+                    });
+                    ResolveHolder *pResolveHolder = ResolveHolder::FromResolveEntry(addrOfResolver);
+                    CONSISTENCY_CHECK(CheckPointer(pResolveHolder));
+                    stub = pResolveHolder->stub()->resolveEntryPoint();
+                    CONSISTENCY_CHECK(stub != NULL);
 
                     // Only create a dispatch stub if:
                     //  1. We successfully created or found a resolve stub.
@@ -1792,33 +1786,18 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                     //     no use in creating it.
                     if (pResolveHolder != NULL && stubKind == SK_LOOKUP)
                     {
-                        DispatchEntry entryD;
-                        Prober probeD(&entryD);
-                        if (bCreateDispatchStub &&
-                            dispatchers->SetUpProber(token.To_SIZE_T(), (size_t) objectType, &probeD))
+                        if (bCreateDispatchStub)
                         {
                             // We are allowed to create a reusable dispatch stub for all assemblies
                             // this allows us to optimize the call interception case the same way
-                            DispatchHolder *pDispatchHolder = NULL;
-                            PCODE addrOfDispatch = (PCODE)(dispatchers->Find(&probeD));
-                            if (addrOfDispatch == CALL_STUB_EMPTY_ENTRY)
+                            PCODE addrOfDispatch = (PCODE)dispatchers->FindOrAdd(Entry::Key_t(token.To_SIZE_T(), (size_t) objectType), [=]
                             {
                                 PCODE addrOfFail = pResolveHolder->stub()->failEntryPoint();
-                                bool reenteredCooperativeGCMode = false;
-                                pDispatchHolder = GenerateDispatchStub(
-                                    target, addrOfFail, objectType, token.To_SIZE_T(), &reenteredCooperativeGCMode);
-                                if (reenteredCooperativeGCMode)
-                                {
-                                    // The prober may have been invalidated by reentering cooperative GC mode, reset it
-                                    BOOL success = dispatchers->SetUpProber(token.To_SIZE_T(), (size_t)objectType, &probeD);
-                                    _ASSERTE(success);
-                                }
-                                dispatchers->Add((size_t)(pDispatchHolder->stub()->entryPoint()), &probeD);
-                            }
-                            else
-                            {
-                                pDispatchHolder = DispatchHolder::FromDispatchEntry(addrOfDispatch);
-                            }
+                                DispatchHolder *pDispatchHolderNew = GenerateDispatchStub(
+                                    target, addrOfFail, objectType, token.To_SIZE_T());
+                                return (size_t)(pDispatchHolderNew->stub()->entryPoint());
+                            });
+                            DispatchHolder *pDispatchHolder = DispatchHolder::FromDispatchEntry(addrOfDispatch);
 
                             // Now assign the entrypoint to stub
                             CONSISTENCY_CHECK(CheckPointer(pDispatchHolder));
@@ -1916,42 +1895,22 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 
                         if (coin < STUB_COLLIDE_MONO_PCT)
                         {
-                            DispatchEntry entryD;
-                            Prober probeD(&entryD);
-                            if (dispatchers->SetUpProber(token.To_SIZE_T(), (size_t) objectType, &probeD))
+                            PCODE addrOfDispatch = (PCODE)dispatchers->FindOrAdd(new Entry::Key_t(token.To_SIZE_T(), (size_t) objectType), [=]
                             {
-                                DispatchHolder *pDispatchHolder = NULL;
-                                PCODE addrOfDispatch = (PCODE)(dispatchers->Find(&probeD));
-                                if (addrOfDispatch == CALL_STUB_EMPTY_ENTRY)
-                                {
-                                    // It is possible that we never created this monomorphic dispatch stub
-                                    // so we may have to create it now
-                                    ResolveHolder* pResolveHolder = ResolveHolder::FromResolveEntry(pCallSite->GetSiteTarget());
-                                    PCODE addrOfFail = pResolveHolder->stub()->failEntryPoint();
-                                    bool reenteredCooperativeGCMode = false;
-                                    pDispatchHolder = GenerateDispatchStub(
-                                        target, addrOfFail, objectType, token.To_SIZE_T(), &reenteredCooperativeGCMode);
-                                    if (reenteredCooperativeGCMode)
-                                    {
-                                        // The prober may have been invalidated by reentering cooperative GC mode, reset it
-                                        BOOL success = dispatchers->SetUpProber(token.To_SIZE_T(), (size_t)objectType, &probeD);
-                                        _ASSERTE(success);
-                                    }
-                                    dispatchers->Add((size_t)(pDispatchHolder->stub()->entryPoint()), &probeD);
-                                }
-                                else
-                                {
-                                    pDispatchHolder = DispatchHolder::FromDispatchEntry(addrOfDispatch);
-                                }
+                                PCODE addrOfFail = pResolveHolder->stub()->failEntryPoint();
+                                DispatchHolder *pDispatchHolderNew = GenerateDispatchStub(
+                                    target, addrOfFail, objectType, token.To_SIZE_T());
+                                return (size_t)(pDispatchHolderNew->stub()->entryPoint());
+                            });
+                            DispatchHolder *pDispatchHolder = DispatchHolder::FromDispatchEntry(addrOfDispatch);
 
-                                // increment the of times we changed a cache collision into a mono stub
-                                stats.worker_collide_to_mono++;
+                            // increment the of times we changed a cache collision into a mono stub
+                            stats.worker_collide_to_mono++;
 
-                                // Now assign the entrypoint to stub
-                                CONSISTENCY_CHECK(pDispatchHolder != NULL);
-                                stub = pDispatchHolder->stub()->entryPoint();
-                                CONSISTENCY_CHECK(stub != NULL);
-                            }
+                            // Now assign the entrypoint to stub
+                            CONSISTENCY_CHECK(pDispatchHolder != NULL);
+                            stub = pDispatchHolder->stub()->entryPoint();
+                            CONSISTENCY_CHECK(stub != NULL);
                         }
                     }
                 }
@@ -1963,16 +1922,6 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                 BackPatchSite(pCallSite, (PCODE)stub);
             }
         }
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH (SwallowAllExceptions);
-
-    // Target can be NULL only if we can't resolve to an address
-    _ASSERTE(target != NULL);
-
-    return target;
 }
 
 /*
@@ -2546,8 +2495,7 @@ are the addresses the stub is to transfer to depending on the test with pMTExpec
 DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            addrOfCode,
                                                              PCODE            addrOfFail,
                                                              void *           pMTExpected,
-                                                             size_t           dispatchToken,
-                                                             bool *           pMayHaveReenteredCooperativeGCMode)
+                                                             size_t           dispatchToken)
 {
     CONTRACT (DispatchHolder*) {
         THROWS;
@@ -2556,8 +2504,6 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
         PRECONDITION(addrOfCode != NULL);
         PRECONDITION(addrOfFail != NULL);
         PRECONDITION(CheckPointer(pMTExpected));
-        PRECONDITION(pMayHaveReenteredCooperativeGCMode != nullptr);
-        PRECONDITION(!*pMayHaveReenteredCooperativeGCMode);
         POSTCONDITION(CheckPointer(RETVAL));
     } CONTRACT_END;
 
@@ -2571,8 +2517,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
         RETURN GenerateDispatchStubLong(addrOfCode,
                                         addrOfFail,
                                         pMTExpected,
-                                        dispatchToken,
-                                        pMayHaveReenteredCooperativeGCMode);
+                                        dispatchToken);
     }
 
     dispatchHolderSize = DispatchHolder::GetHolderSize(DispatchStub::e_TYPE_SHORT);
@@ -2586,7 +2531,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
     if (!DispatchHolder::CanShortJumpDispatchStubReachFailTarget(addrOfFail, (LPCBYTE)holder))
     {
         m_fShouldAllocateLongJumpDispatchStubs = TRUE;
-        RETURN GenerateDispatchStub(addrOfCode, addrOfFail, pMTExpected, dispatchToken, pMayHaveReenteredCooperativeGCMode);
+        RETURN GenerateDispatchStub(addrOfCode, addrOfFail, pMTExpected, dispatchToken);
     }
 #endif
 
@@ -2606,9 +2551,6 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
         EntryPointSlots::SlotType slotType;
         TADDR slot = holder->stub()->implTargetSlot(&slotType);
         pMD->RecordAndBackpatchEntryPointSlot(m_loaderAllocator, slot, slotType);
-
-        // RecordAndBackpatchEntryPointSlot() may exit and reenter cooperative GC mode
-        *pMayHaveReenteredCooperativeGCMode = true;
     }
 #endif
 
@@ -2637,8 +2579,7 @@ are the addresses the stub is to transfer to depending on the test with pMTExpec
 DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE            addrOfCode,
                                                                  PCODE            addrOfFail,
                                                                  void *           pMTExpected,
-                                                                 size_t           dispatchToken,
-                                                                 bool *           pMayHaveReenteredCooperativeGCMode)
+                                                                 size_t           dispatchToken)
 {
     CONTRACT (DispatchHolder*) {
         THROWS;
@@ -2647,8 +2588,6 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
         PRECONDITION(addrOfCode != NULL);
         PRECONDITION(addrOfFail != NULL);
         PRECONDITION(CheckPointer(pMTExpected));
-        PRECONDITION(pMayHaveReenteredCooperativeGCMode != nullptr);
-        PRECONDITION(!*pMayHaveReenteredCooperativeGCMode);
         POSTCONDITION(CheckPointer(RETVAL));
     } CONTRACT_END;
 
@@ -2669,9 +2608,6 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
         EntryPointSlots::SlotType slotType;
         TADDR slot = holder->stub()->implTargetSlot(&slotType);
         pMD->RecordAndBackpatchEntryPointSlot(m_loaderAllocator, slot, slotType);
-
-        // RecordAndBackpatchEntryPointSlot() may exit and reenter cooperative GC mode
-        *pMayHaveReenteredCooperativeGCMode = true;
     }
 #endif
 
@@ -2982,12 +2918,6 @@ void VirtualCallStubManager::LogStats()
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
     }
 
-    resolvers->LogStats();
-    dispatchers->LogStats();
-    lookups->LogStats();
-    vtableCallers->LogStats();
-    cache_entries->LogStats();
-
     g_site_counter += stats.site_counter;
     g_stub_lookup_counter += stats.stub_lookup_counter;
     g_stub_poly_counter += stats.stub_poly_counter;
@@ -3017,610 +2947,6 @@ void VirtualCallStubManager::LogStats()
     stats.stub_space = 0;
     stats.cache_entry_counter = 0;
     stats.cache_entry_space = 0;
-}
-
-#ifdef TERRIBLE_VSD_LOGGING
-int reports = 0;
-FILE* reportFile = NULL;
-
-void ReportProbeDepth(int readCount, size_t keyA, size_t keyB)
-{
-    reports++;
-    if (reportFile == NULL)
-    {
-        reportFile = fopen("vsdreport.txt", "w");
-    }
-
-    if ((reports % 1000) == 0)
-    {
-        printf("report: %d\n", reports);
-        fflush(reportFile);
-    }
-    fprintf(reportFile, "%d, %d, %p %p\n", reports, readCount, (void*)keyA, (void*)keyB);
-}
-
-void ReportAddProbeDepth(int readCount, size_t keyA, size_t keyB)
-{
-    reports++;
-    if (reportFile == NULL)
-    {
-        reportFile = fopen("vsdreport.txt", "w");
-    }
-
-    if ((reports % 1000) == 0)
-    {
-        printf("report: %d\n", reports);
-        fflush(reportFile);
-    }
-    fprintf(reportFile, "A %d, %d, %p %p\n", reports, readCount, (void*)keyA, (void*)keyB);
-}
-
-FILE* reportIndexInBucketFile = NULL;
-int hashInBucketReports = 0;
-void ReportBucketInUseInBucket(int index, size_t keyA, size_t keyB)
-{
-    hashInBucketReports++;
-    if (reportIndexInBucketFile == NULL)
-    {
-        reportIndexInBucketFile = fopen("hashInBucketreport.txt", "w");
-    }
-
-    if ((hashInBucketReports % 1000) == 0)
-    {
-        printf("hashInBucketReports: %d\n", hashInBucketReports);
-        fflush(reportIndexInBucketFile);
-    }
-    fprintf(reportIndexInBucketFile, "%d, %d, %p %p\n", hashInBucketReports, index, (void*)keyA, (void*)keyB);
-}
-#endif // TERRIBLE_VSD_LOGGING
-
-void Prober::InitProber(size_t key1, size_t key2, size_t* table)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    } CONTRACTL_END
-
-    _ASSERTE(table);
-
-    keyA = key1;
-    keyB = key2;
-    base = &table[CALL_STUB_FIRST_INDEX];
-#ifdef PRIME_SIZE_VSD_FASTTABLE
-    size = table[CALL_STUB_TABLESIZE_INDEX];
-#else
-    mask = table[CALL_STUB_MASK_INDEX];
-#endif
-    FormHash();
-#ifdef TERRIBLE_VSD_LOGGING
-    ReportBucketInUseInBucket((int)this->index, keyA, keyB);
-#endif
-}
-
-size_t Prober::Find()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    } CONTRACTL_END
-
-    size_t entry;
-#ifdef TERRIBLE_VSD_LOGGING
-    int readCount = 0;
-#endif
-    //if this prober has already visited every slot, there is nothing more to look at.
-    //note, this means that if a prober is going to be reused, the FormHash() function
-    //needs to be called to reset it.
-    if (NoMore())
-    {
-#ifdef TERRIBLE_VSD_LOGGING
-        ReportProbeDepth(readCount, keyA, keyB);
-#endif
-        return CALL_STUB_EMPTY_ENTRY;
-    }
-    do
-    {
-        entry = Read();
-#ifdef TERRIBLE_VSD_LOGGING
-        readCount++;
-#endif
-
-        //if we hit an empty entry, it means it cannot be in the table
-        if(entry==CALL_STUB_EMPTY_ENTRY)
-        {
-#ifdef TERRIBLE_VSD_LOGGING
-            ReportProbeDepth(readCount, keyA, keyB);
-#endif
-            return CALL_STUB_EMPTY_ENTRY;
-        }
-
-        //we have a real entry, see if it is the one we want using our comparer
-        comparer->SetContents(entry);
-        if (comparer->Equals(keyA, keyB))
-        {
-#ifdef TERRIBLE_VSD_LOGGING
-            ReportProbeDepth(-readCount, keyA, keyB);
-#endif
-            return entry;
-        }
-    } while(Next()); //Next() returns false when we have visited every slot
-#ifdef TERRIBLE_VSD_LOGGING
-    ReportProbeDepth(readCount, keyA, keyB);
-#endif
-    return CALL_STUB_EMPTY_ENTRY;
-}
-
-size_t Prober::Add(size_t newEntry)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    } CONTRACTL_END
-
-    size_t entry;
-#ifdef ROBINHOOD_VSD_HASHING
-    size_t returnEntry = newEntry;
-#endif
-    //if we have visited every slot then there is no room in the table to add this new entry
-    if (NoMore())
-        return CALL_STUB_EMPTY_ENTRY;
-
-    do
-    {
-#ifdef ROBINHOOD_VSD_HASHING
-retryCurrentBucket:
-#endif
-        entry = Read();
-        if (entry==CALL_STUB_EMPTY_ENTRY)
-        {
-            //it's not in the table and we have the correct empty slot in hand
-            //in which to add it.
-            //try and grab it, if we succeed we break out to add the entry
-            //if we fail, it means a racer swoped in a wrote in
-            //this slot, so we will just keep looking
-            if (GrabEntry(newEntry))
-            {
-#ifdef TERRIBLE_VSD_LOGGING
-                ReportAddProbeDepth((int)probes + 1, keyA, keyB);
-#endif
-                break;
-            }
-
-            // We didn't grab this entry, so keep trying.
-#ifdef ROBINHOOD_VSD_HASHING
-            goto retryCurrentBucket;
-#else
-            continue;
-#endif
-        }
-        //check if this entry is already in the table, if so we are done
-        comparer->SetContents(entry);
-        if (comparer->Equals(keyA, keyB))
-        {
-#ifdef ROBINHOOD_VSD_HASHING
-            return returnEntry;
-#else
-            return entry;
-#endif
-        }
-#ifdef ROBINHOOD_VSD_HASHING
-        size_t keyACurrentEntry = comparer->KeyA();
-        size_t keyBCurrentEntry = comparer->KeyB();
-        size_t pslCurrentEntry = PSL(ComputeIndex(keyACurrentEntry, keyBCurrentEntry));
-
-        if (pslCurrentEntry < probes)
-        {
-            if (FastInterlockCompareExchangePointer(&base[index],
-                newEntry, entry) == entry)
-            {
-#ifdef TERRIBLE_VSD_LOGGING
-                ReportAddProbeDepth(-(int)(probes + 1), keyA, keyB);
-#endif
-                // Successfully swapped out old entry. Update prober to new data and continue
-                keyA = keyACurrentEntry;
-                keyB = keyBCurrentEntry;
-                probes = pslCurrentEntry;
-                newEntry = entry;
-            }
-            else
-            {
-                // Failed to swap old entry out. Retry current bucket.
-                goto retryCurrentBucket;
-            }
-        }
-#endif
-    } while(Next()); //Next() returns false when we have visited every slot
-
-    //if we have visited every slot then there is no room in the table to add this new entry
-    if (NoMore())
-        return CALL_STUB_EMPTY_ENTRY;
-
-    CONSISTENCY_CHECK(Read() == newEntry);
-#ifdef ROBINHOOD_VSD_HASHING
-    return returnEntry;
-#else
-    return newEntry;
-#endif
-}
-
-/*Atomically grab an entry, if it is empty, so we can write in it.
-@TODO: It is not clear if this routine is actually necessary and/or if the
-interlocked compare exchange is necessary as opposed to just a read write with racing allowed.
-If we didn't have it, all that would happen is potentially more duplicates or
-dropped entries, and we are supposed to run correctly even if they
-happen.  So in a sense this is a perf optimization, whose value has
-not been measured, i.e. it might be faster without it.
-*/
-BOOL Prober::GrabEntry(size_t entryValue)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return FastInterlockCompareExchangePointer(&base[index],
-        entryValue, static_cast<size_t>(CALL_STUB_EMPTY_ENTRY)) == CALL_STUB_EMPTY_ENTRY;
-}
-
-inline void FastTable::IncrementCount()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // This MUST be an interlocked increment, since BucketTable::GetMoreSpace relies on
-    // the return value of FastTable::isFull to tell it whether or not to continue with
-    // trying to allocate a new FastTable. If two threads race and try to increment this
-    // at the same time and one increment is lost, then the size will be inaccurate and
-    // BucketTable::GetMoreSpace will never succeed, resulting in an infinite loop trying
-    // to add a new entry.
-    FastInterlockIncrement((LONG *)&contents[CALL_STUB_COUNT_INDEX]);
-}
-
-size_t FastTable::Add(size_t entry, Prober* probe)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    } CONTRACTL_END
-
-#ifdef ACTUALLY_CHECK_ISFULL
-    if (isFull())
-        return CALL_STUB_EMPTY_ENTRY;
-#endif
-    size_t result = probe->Add(entry);
-    if (result == entry) IncrementCount();
-    return result;
-}
-
-size_t FastTable::Find(Prober* probe)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return probe->Find();
-}
-
-#ifdef PRIME_SIZE_VSD_FASTTABLE
-static BOOL IsPrime(size_t number)
-{
-    // This is a very low-tech check for primality, which doesn't scale very well.
-    // There are more efficient tests if this proves to be burdensome for larger
-    // tables.
-
-    if ((number & 1) == 0)
-        return FALSE;
-
-    size_t factor = 3;
-    while (factor * factor <= number)
-    {
-        if ((number % factor) == 0)
-            return FALSE;
-        factor += 2;
-    }
-
-    return TRUE;
-}
-
-size_t FastTable::NextPrime(size_t number)
-{
-    for (int i = 0; i < (int) (sizeof(g_shash_primes) / sizeof(g_shash_primes[0])); i++) {
-        if (g_shash_primes[i] >= number)
-            return g_shash_primes[i];
-    }
-
-    if ((number&1) == 0)
-        number++;
-
-    while (number != 1) {
-        if (IsPrime(number))
-            return number;
-        number +=2;
-    }
-
-    return number;
-}
-#endif // #ifdef PRIME_SIZE_VSD_FASTTABLE
-/*Increase the size of the bucket referenced by the prober p and copy the existing members into it.
-Since duplicates and lost entries are okay, we can build the larger table
-and then try to swap it in.  If it turns out that somebody else is racing us,
-the worst that will happen is we drop a few entries on the floor, which is okay.
-If by chance we swap out a table that somebody else is inserting an entry into, that
-is okay too, just another dropped entry.  If we detect dups, we just drop them on
-the floor. */
-BOOL BucketTable::GetMoreSpace(const Prober* p)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE; // This is necessary for synchronization with BucketTable::Reclaim
-        INJECT_FAULT(COMPlusThrowOM(););
-    } CONTRACTL_END;
-
-    //get ahold of the current bucket
-    Prober probe(p->comparer);
-    size_t index = ComputeBucketIndex(p->keyA, p->keyB);
-
-    FastTable* oldBucket = (FastTable*) Read(index);
-
-    if (!oldBucket->isFull())
-    {
-        return TRUE;
-    }
-    //make a larger bucket
-    size_t numEntries;
-    if (oldBucket->tableSize() == CALL_STUB_MIN_ENTRIES)
-    {
-        numEntries = CALL_STUB_SECONDARY_ENTRIES;
-    }
-    else
-    {
-        numEntries = oldBucket->tableSize()*CALL_STUB_GROWTH_FACTOR;
-    }
-
-    FastTable* newBucket = FastTable::MakeTable(numEntries);
-
-    //copy via insertion from the old to the new bucket
-    size_t* limit = &oldBucket->contents[(oldBucket->tableSize())+CALL_STUB_FIRST_INDEX];
-    size_t* e;
-    for (e = &oldBucket->contents[CALL_STUB_FIRST_INDEX]; e<limit; e++)
-    {
-        size_t moved = *e;
-        if (moved == CALL_STUB_EMPTY_ENTRY)
-        {
-            continue;
-        }
-        probe.comparer->SetContents(moved);
-        probe.InitProber(probe.comparer->KeyA(), probe.comparer->KeyB(), &newBucket->contents[0]);
-        //if the new bucket fills up, give up (this should never happen I think)
-        if (newBucket->Add(moved, &probe) == CALL_STUB_EMPTY_ENTRY)
-        {
-            _ASSERTE(!"This should never happen");
-            return FALSE;
-        }
-    }
-
-    // Doing an interlocked exchange here ensures that if someone has raced and beaten us to
-    // replacing the entry, then we will just put the new bucket we just created in the
-    // dead list instead of risking a race condition which would put a duplicate of the old
-    // bucket in the dead list (and even possibly cause a cyclic list).
-    if (FastInterlockCompareExchangePointer(reinterpret_cast<FastTable * volatile *>(&buckets[index]), newBucket, oldBucket) != oldBucket)
-        oldBucket = newBucket;
-
-    // Link the old onto the "to be reclaimed" list.
-    // Use the dead link field of the abandoned buckets to form the list
-    FastTable* list;
-    do {
-        list = VolatileLoad(&dead);
-        oldBucket->contents[CALL_STUB_DEAD_LINK] = (size_t) list;
-    } while (FastInterlockCompareExchangePointer(&dead, oldBucket, list) != list);
-
-#ifdef _DEBUG
-    {
-        // Validate correctness of the list
-        FastTable *curr = oldBucket;
-        while (curr)
-        {
-            FastTable *next = (FastTable *) curr->contents[CALL_STUB_DEAD_LINK];
-            size_t i = 0;
-            while (next)
-            {
-                next = (FastTable *) next->contents[CALL_STUB_DEAD_LINK];
-                _ASSERTE(curr != next); // Make sure we don't have duplicates
-                _ASSERTE(i++ < SIZE_T_MAX/4); // This just makes sure we don't have a cycle
-            }
-            curr = next;
-        }
-    }
-#endif // _DEBUG
-
-    //update our counters
-    stats.bucket_space_dead += UINT32((oldBucket->tableSize()+CALL_STUB_FIRST_INDEX)*sizeof(void*));
-    stats.bucket_space      -= UINT32((oldBucket->tableSize()+CALL_STUB_FIRST_INDEX)*sizeof(void*));
-    stats.bucket_space      += UINT32((newBucket->tableSize()+CALL_STUB_FIRST_INDEX)*sizeof(void*));
-    return TRUE;
-}
-
-void BucketTable::Reclaim()
-{
-
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    //reclaim the dead (abandoned) buckets on the dead list
-    //       The key issue is to not reclaim the list if any thread is in a stub or
-    //       if any thread is accessing (read or write) the cache tables.  So we will declare
-    //       those points to be non-gc safe points, and reclaim when the gc syncs the threads
-    //@TODO: add an assert to ensure we are at a gc safe point
-    FastTable* list = dead;
-
-    //see if there is anything to do.
-    //We ignore the race, since we will just pick them up on the next go around
-    if (list == NULL) return;
-
-    //Try and grab the list exclusively, if we fail, it means that either somebody
-    //else grabbed it, or something go added.  In either case we just give up and assume
-    //we will catch it on the next go around.
-    //we use an interlock here in case we are called during shutdown not at a gc safe point
-    //in which case the race is between several threads wanting to reclaim.
-    //We are assuming that we are assuming the actually having to do anything is rare
-    //so that the interlocked overhead is acceptable.  If this is not true, then
-    //we need to examine exactly how and when we may be called during shutdown.
-    if (FastInterlockCompareExchangePointer(&dead, NULL, list) != list)
-        return;
-
-#ifdef _DEBUG
-    // Validate correctness of the list
-    FastTable *curr = list;
-    while (curr)
-    {
-        FastTable *next = (FastTable *) curr->contents[CALL_STUB_DEAD_LINK];
-        size_t i = 0;
-        while (next)
-        {
-            next = (FastTable *) next->contents[CALL_STUB_DEAD_LINK];
-            _ASSERTE(curr != next); // Make sure we don't have duplicates
-            _ASSERTE(i++ < SIZE_T_MAX/4); // This just makes sure we don't have a cycle
-        }
-        curr = next;
-    }
-#endif // _DEBUG
-
-    //we now have the list off by ourself, so we can just walk and cleanup
-    while (list)
-    {
-        size_t next = list->contents[CALL_STUB_DEAD_LINK];
-        delete list;
-        list = (FastTable*) next;
-    }
-}
-
-#ifdef TERRIBLE_VSD_LOGGING
-FILE* reportBucketIndexFile = NULL;
-int bucketIndexReports = 0;
-void ReportBucketIndex(int index)
-{
-    bucketIndexReports++;
-    if (reportBucketIndexFile == NULL)
-    {
-        reportBucketIndexFile = fopen("bucketIndexReport.txt", "w");
-    }
-
-    if ((bucketIndexReports % 1000) == 0)
-    {
-        printf("bucketIndexReports: %d\n", bucketIndexReports);
-        fflush(reportBucketIndexFile);
-    }
-    fprintf(reportBucketIndexFile, "%d, %d\n", bucketIndexReports, index);
-}
-#endif
-
-//
-// When using SetUpProber the proper values to use for keyA, keyB are:
-//
-//                 KeyA              KeyB
-//-------------------------------------------------------
-// lookups         token     the stub calling convention
-// dispatchers     token     the expected MT
-// resolver        token     the stub calling convention
-// cache_entries   token     the expected method table
-// vtableCallers   token     unused (zero)
-//
-BOOL BucketTable::SetUpProber(size_t keyA, size_t keyB, Prober *prober)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE; // This is necessary for synchronization with BucketTable::Reclaim
-        INJECT_FAULT(COMPlusThrowOM(););
-    } CONTRACTL_END;
-
-    // The buckets[index] table starts off initialized to all CALL_STUB_EMPTY_ENTRY
-    // and we should write each buckets[index] exactly once. However in a multi-proc
-    // scenario each processor could see old memory values that would cause us to
-    // leak memory.
-    //
-    // Since this a a fairly hot code path and it is very rare for buckets[index]
-    // to be CALL_STUB_EMPTY_ENTRY, we can first try a non-volatile read and then
-    // if it looks like we need to create a new FastTable we double check by doing
-    // a volatile read.
-    //
-    // Note that BucketTable::GetMoreSpace also updates buckets[index] when the FastTable
-    // grows to 90% full.  (CALL_STUB_LOAD_FACTOR is 90%)
-
-    size_t index = ComputeBucketIndex(keyA, keyB);
-    size_t bucket = buckets[index];  // non-volatile read
-    if (bucket==CALL_STUB_EMPTY_ENTRY)
-    {
-        bucket = Read(index);        // volatile read
-    }
-
-    if (bucket==CALL_STUB_EMPTY_ENTRY)
-    {
-        FastTable* newBucket = FastTable::MakeTable(CALL_STUB_MIN_ENTRIES);
-
-        // Doing an interlocked exchange here ensures that if someone has raced and beaten us to
-        // replacing the entry, then we will free the new bucket we just created.
-        bucket = FastInterlockCompareExchangePointer(&buckets[index], reinterpret_cast<size_t>(newBucket), static_cast<size_t>(CALL_STUB_EMPTY_ENTRY));
-        if (bucket == CALL_STUB_EMPTY_ENTRY)
-        {
-            // We successfully wrote newBucket into buckets[index], overwritting the CALL_STUB_EMPTY_ENTRY value
-            stats.bucket_space += UINT32((newBucket->tableSize()+CALL_STUB_FIRST_INDEX)*sizeof(void*));
-            bucket = (size_t) newBucket;
-        }
-        else
-        {
-            // Someone else wrote buckets[index] before us
-            // and bucket contains the value that they wrote
-            // We must free the memory that we allocated
-            // and we will use the value that someone else wrote
-            delete newBucket;
-            newBucket = (FastTable*) bucket;
-        }
-    }
-
-    return ((FastTable*)(bucket))->SetUpProber(keyA, keyB, prober);
-}
-
-size_t BucketTable::Add(size_t entry, Prober* probe)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE; // This is necessary for synchronization with BucketTable::Reclaim
-        INJECT_FAULT(COMPlusThrowOM(););
-    } CONTRACTL_END
-
-    FastTable* table = (FastTable*)(probe->items());
-#ifdef TERRIBLE_VSD_LOGGING
-    size_t index = ComputeBucketIndex(probe->keyA, probe->keyB);
-    ReportBucketIndex((int)index);
-#endif
-    size_t result = table->Add(entry,probe);
-    if (result != CALL_STUB_EMPTY_ENTRY)
-    {
-        return result;
-    }
-    //we must have missed count(s) and the table is now full, so lets
-    //grow and retry (this should be rare)
-    if (!GetMoreSpace(probe)) return CALL_STUB_EMPTY_ENTRY;
-    if (!SetUpProber(probe->keyA, probe->keyB, probe)) return CALL_STUB_EMPTY_ENTRY;
-    return Add(entry, probe);  //recurse in for the retry to write the entry
-}
-
-void BucketTable::LogStats()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Update stats
-    g_bucket_space += stats.bucket_space;
-    g_bucket_space_dead += stats.bucket_space_dead;
-
-    stats.bucket_space      = 0;
-    stats.bucket_space_dead = 0;
 }
 
 DispatchCache::DispatchCache()

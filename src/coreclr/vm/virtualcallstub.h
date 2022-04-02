@@ -33,13 +33,17 @@ class FastTable;
 template <class EntryType>
 class BucketTable;
 class Entry;
-class Prober;
 class VirtualCallStubManager;
 class VirtualCallStubManagerManager;
 struct LookupHolder;
 struct DispatchHolder;
 struct ResolveHolder;
 struct VTableCallHolder;
+class LookupEntry;
+class ResolveCacheEntry;
+class DispatchEntry;
+class ResolveEntry;
+class VTableCallEntry;
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Forward function declarations
@@ -489,8 +493,7 @@ private:
     DispatchHolder *GenerateDispatchStub(PCODE addrOfCode,
                                          PCODE addrOfFail,
                                          void *pMTExpected,
-                                         size_t dispatchToken,
-                                         bool *pMayHaveReenteredCooperativeGCMode);
+                                         size_t dispatchToken);
 
 #ifdef TARGET_AMD64
     // Used to allocate a long jump dispatch stub. See comment around
@@ -498,8 +501,7 @@ private:
     DispatchHolder *GenerateDispatchStubLong(PCODE addrOfCode,
                                              PCODE addrOfFail,
                                              void *pMTExpected,
-                                             size_t dispatchToken,
-                                             bool *pMayHaveReenteredCooperativeGCMode);
+                                             size_t dispatchToken);
 #endif
 
     ResolveHolder *GenerateResolveStub(PCODE addrOfResolver,
@@ -600,6 +602,15 @@ private:
     // xxxAsmStub methods above
     static void STDCALL BackPatchWorkerStatic(PCODE returnAddr, TADDR siteAddrForRegisterIndirect);
 
+    void ResolveWorkerInternal(StubCallSite* pCallSite,
+                                DispatchToken token,
+                                StubKind stubKind,
+                                MethodTable* objectType,
+                                BOOL patch,
+                                PCODE target,
+                                BOOL bCallToShorterLivedTarget,
+                                PCODE stub,
+                                VirtualCallStubManager *pCalleeMgr);
 public:
     PCODE ResolveWorker(StubCallSite* pCallSite, OBJECTREF *protectedObj, DispatchToken token, StubKind stubKind);
     void BackPatchWorker(StubCallSite* pCallSite);
@@ -1087,17 +1098,11 @@ public:
     struct Key_t
     {
         public:
+        Key_t() : keyA(0), keyB(0) {}
         Key_t(size_t a, size_t b) : keyA(a), keyB(b) {}
-        size_t keyA;
-        size_t keyB;
+        const size_t keyA;
+        const size_t keyB;
     };
-
-    //access and compare the keys of the entry
-    virtual BOOL Equals(Key_t key)=0;
-    virtual Key_t Key() = 0;
-
-    //contents is the struct or token that the entry exposes
-    virtual void SetContents(size_t contents)=0;
 };
 
 /* define the platform specific Stubs and stub holders */
@@ -1115,78 +1120,30 @@ the fields from within the tokens, for perf reasons. */
 class LookupEntry : public Entry
 {
 public:
-    //Creates an entry that wraps lookup stub s
-    LookupEntry(size_t s)
+    static Key_t GetKey(size_t hashtableContents)
     {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(VirtualCallStubManager::isLookupStubStatic((PCODE)s));
-        stub = (LookupStub*) s;
+        _ASSERTE(VirtualCallStubManager::isLookupStubStatic((PCODE)hashtableContents));
+        LookupStub* stub = LookupHolder::FromLookupEntry((PCODE)hashtableContents)->stub();
+        if (stub != NULL)
+            return Key_t(stub->token(), 0);
+        else
+            return Key_t{};
     }
-
-    //default contructor to allow stack and inline allocation of lookup entries
-    LookupEntry() {LIMITED_METHOD_CONTRACT; stub = NULL;}
-
-    //implementations of abstract class Entry
-    BOOL Equals(Key_t key)
-         { WRAPPER_NO_CONTRACT; return stub && (key.keyA == KeyA()) && (key.keyB == KeyB()); }
-
-    Key_t Key() { WRAPPER_NO_CONTRACT; return Key_t(KeyA(), KeyB()); }
-
-    size_t KeyA() { WRAPPER_NO_CONTRACT; return Token(); }
-    size_t KeyB() { WRAPPER_NO_CONTRACT; return (size_t)0; }
-
-    void SetContents(size_t contents)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(VirtualCallStubManager::isLookupStubStatic((PCODE)contents));
-        stub = LookupHolder::FromLookupEntry((PCODE)contents)->stub();
-    }
-
-    //extract the token of the underlying lookup stub
-
-    inline size_t Token()                 { LIMITED_METHOD_CONTRACT; return stub ? stub->token() : 0; }
-
-private:
-    LookupStub* stub;   //the stub the entry wrapping
 };
 #endif // USES_LOOKUP_STUBS
 
 class VTableCallEntry : public Entry
 {
 public:
-    //Creates an entry that wraps vtable call stub
-    VTableCallEntry(size_t s)
+    static Key_t GetKey(size_t hashtableContents)
     {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(VirtualCallStubManager::isVtableCallStubStatic((PCODE)s));
-        stub = (VTableCallStub*)s;
+        _ASSERTE(VirtualCallStubManager::isVtableCallStubStatic((PCODE)hashtableContents));
+        VTableCallStub* stub = VTableCallHolder::FromVTableCallEntry((PCODE)hashtableContents)->stub();
+        if (stub != NULL)
+            return Key_t(stub->token(), 0);
+        else
+            return Key_t{};
     }
-
-    //default contructor to allow stack and inline allocation of vtable call entries
-    VTableCallEntry() { LIMITED_METHOD_CONTRACT; stub = NULL; }
-
-    //implementations of abstract class Entry
-    BOOL Equals(Key_t key)
-         { WRAPPER_NO_CONTRACT; return stub && (key.keyA == KeyA()) && (key.keyB == KeyB()); }
-
-    Key_t Key() { WRAPPER_NO_CONTRACT; return Key_t(KeyA(), KeyB()); }
-
-    size_t KeyA() { WRAPPER_NO_CONTRACT; return Token(); }
-    size_t KeyB() { WRAPPER_NO_CONTRACT; return (size_t)0; }
-
-    void SetContents(size_t contents)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(VirtualCallStubManager::isVtableCallStubStatic((PCODE)contents));
-        stub = VTableCallHolder::FromVTableCallEntry((PCODE)contents)->stub();
-    }
-
-    //extract the token of the underlying lookup stub
-
-    inline size_t Token() { LIMITED_METHOD_CONTRACT; return stub ? stub->token() : 0; }
-
-private:
-    VTableCallStub* stub;   //the stub the entry wrapping
 };
 
 /**********************************************************************************************
@@ -1196,40 +1153,23 @@ were created that may be added to the ResolveCache
 class ResolveCacheEntry : public Entry
 {
 public:
-    ResolveCacheEntry(size_t elem)
+    static Key_t GetKey(size_t hashtableContents)
     {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(elem != 0);
-        pElem = (ResolveCacheElem*) elem;
+        ResolveCacheElem *pElem = (ResolveCacheElem*) hashtableContents;
+        if (pElem != NULL)
+            return Key_t(pElem->token, (size_t)pElem->pMT);
+        else
+            return Key_t{};
     }
 
-    //default contructor to allow stack and inline allocation of lookup entries
-    ResolveCacheEntry() { LIMITED_METHOD_CONTRACT; pElem = NULL; }
-
-    //access and compare the keys of the entry
-    BOOL Equals(Key_t key)
-         { WRAPPER_NO_CONTRACT; return pElem && (key.keyA == KeyA()) && (key.keyB == KeyB()); }
-    Key_t Key() { WRAPPER_NO_CONTRACT; return Key_t(KeyA(), KeyB()); }
-    virtual size_t KeyA()
-        { LIMITED_METHOD_CONTRACT; return pElem != NULL ? pElem->token : 0; }
-    virtual size_t KeyB()
-        { LIMITED_METHOD_CONTRACT; return pElem != NULL ? (size_t) pElem->pMT : 0; }
-
-    //contents is the struct or token that the entry exposes
-    virtual void SetContents(size_t contents)
+    static const BYTE* Target(size_t hashtableContents)
     {
-        LIMITED_METHOD_CONTRACT;
-        pElem = (ResolveCacheElem*) contents;
+        ResolveCacheElem *pElem = (ResolveCacheElem*) hashtableContents;
+        if (pElem != NULL)
+            return (const BYTE *)pElem->target;
+        else
+            return NULL;
     }
-
-    inline const BYTE *Target()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return pElem != NULL ? (const BYTE *)pElem->target : NULL;
-    }
-
-private:
-    ResolveCacheElem *pElem;
 };
 
 /**********************************************************************************************
@@ -1242,33 +1182,16 @@ the fields from within the tokens, for perf reasons. */
 class ResolveEntry : public Entry
 {
 public:
-    //Creates an entry that wraps resolve stub s
-    ResolveEntry (size_t s)
+    static Key_t GetKey(size_t hashtableContents)
     {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(VirtualCallStubManager::isResolvingStubStatic((PCODE)s));
-        stub = (ResolveStub*) s;
-    }
-    //default contructor to allow stack and inline allocation of resovler entries
-    ResolveEntry()  { LIMITED_METHOD_CONTRACT;    stub = CALL_STUB_EMPTY_ENTRY; }
+        _ASSERTE(VirtualCallStubManager::isResolvingStubStatic((PCODE)hashtableContents));
+        ResolveStub* stub = ResolveHolder::FromResolveEntry((PCODE)hashtableContents)->stub();
 
-    //implementations of abstract class Entry
-    BOOL Equals(Key_t key)
-         { WRAPPER_NO_CONTRACT; return stub && (key.keyA == KeyA()) && (key.keyB == KeyB()); }
-    Key_t Key() { WRAPPER_NO_CONTRACT; return Key_t(KeyA(), KeyB()); }
-    inline size_t KeyA() { WRAPPER_NO_CONTRACT; return Token(); }
-    inline size_t KeyB() { WRAPPER_NO_CONTRACT; return (size_t)0; }
-
-    void SetContents(size_t contents)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(VirtualCallStubManager::isResolvingStubStatic((PCODE)contents));
-        stub = ResolveHolder::FromResolveEntry((PCODE)contents)->stub();
+        if (stub != NULL)
+            return Key_t(stub->token(), 0);
+        else
+            return Key_t{};
     }
-    //extract the token of the underlying resolve stub
-    inline size_t Token()  { WRAPPER_NO_CONTRACT; return stub ? (size_t)(stub->token()) : 0; }
-private:
-    ResolveStub* stub;          //the stub the entry is wrapping
 };
 
 /**********************************************************************************************
@@ -1281,55 +1204,30 @@ for perf reasons.*/
 class DispatchEntry : public Entry
 {
 public:
-    //Creates an entry that wraps dispatch stub s
-    DispatchEntry (size_t s)
+    static Key_t GetKey(size_t hashtableContents)
     {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(VirtualCallStubManager::isDispatchingStubStatic((PCODE)s));
-        stub = (DispatchStub*) s;
-    }
-    //default contructor to allow stack and inline allocation of resovler entries
-    DispatchEntry()                       { LIMITED_METHOD_CONTRACT;    stub = CALL_STUB_EMPTY_ENTRY; }
-
-    //implementations of abstract class Entry
-    BOOL Equals(Key_t key)
-         { WRAPPER_NO_CONTRACT; return stub && (key.keyA == KeyA()) && (key.keyB == KeyB()); }
-    Key_t Key() { WRAPPER_NO_CONTRACT; return Key_t(KeyA(), KeyB()); }
-    inline size_t KeyA() { WRAPPER_NO_CONTRACT; return Token(); }
-    inline size_t KeyB() { WRAPPER_NO_CONTRACT; return ExpectedMT();}
-
-    void SetContents(size_t contents)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(VirtualCallStubManager::isDispatchingStubStatic((PCODE)contents));
-        stub = DispatchHolder::FromDispatchEntry((PCODE)contents)->stub();
-    }
-
-    //extract the fields of the underlying dispatch stub
-    inline size_t ExpectedMT()
-          { WRAPPER_NO_CONTRACT; return stub ? (size_t)(stub->expectedMT()) : 0; }
-
-    size_t Token()
-    {
-        WRAPPER_NO_CONTRACT;
+        _ASSERTE(VirtualCallStubManager::isDispatchingStubStatic((PCODE)hashtableContents));
+        auto stub = DispatchHolder::FromDispatchEntry((PCODE)hashtableContents)->stub();
         if (stub)
         {
             ResolveHolder * resolveHolder = ResolveHolder::FromFailEntry(stub->failTarget());
             size_t token = resolveHolder->stub()->token();
             _ASSERTE(token == VirtualCallStubManager::GetTokenFromStub((PCODE)stub));
-            return token;
+
+            return Key_t(token, (size_t)(stub->expectedMT()));
         }
         else
         {
-            return 0;
+            return Key_t{};
         }
     }
 
-    inline PCODE Target()
-          { WRAPPER_NO_CONTRACT; return stub ? stub->implTarget()  : 0; }
-
-private:
-    DispatchStub* stub;
+    static PCODE Target(size_t hashtableContents)
+    {
+        _ASSERTE(VirtualCallStubManager::isDispatchingStubStatic((PCODE)hashtableContents));
+        auto stub = DispatchHolder::FromDispatchEntry((PCODE)hashtableContents)->stub();
+        return stub ? stub->implTarget()  : 0;
+    }
 };
 
 /*************************************************************************************************
@@ -1531,6 +1429,7 @@ public:
         int localIndex = CombineTwoValuesIntoHash(key1, key2);
 #endif
 #endif
+        return (count_t)localIndex;
     }
 
     static element_t Null() { LIMITED_METHOD_CONTRACT; return 0; }
@@ -1540,27 +1439,24 @@ public:
 template<class EntryType>
 class FastTable
 {
-    friend class BucketTable;
-
-
     SHash< EntryHashTraits<EntryType> > _shash;
     Crst _hashLock;
 public:
-private:
-    FastTable() : _hashLock(CrstLeafLock) { LIMITED_METHOD_CONTRACT; }
+    FastTable() : _hashLock(CrstLeafLock, CRST_UNSAFE_COOPGC) { LIMITED_METHOD_CONTRACT; }
     ~FastTable() { LIMITED_METHOD_CONTRACT; }
 
     //find the requested entry (keys of prober), if not there return CALL_STUB_EMPTY_ENTRY
     size_t Find(Entry::Key_t key)
     {
-        static_assert(0 == CALL_STUB_EMPTY_ENTRY);
+        static_assert_no_msg(0 == CALL_STUB_EMPTY_ENTRY);
         return _shash.Lookup(key);
     }
     //add the entry, if it is not already there.  Probe is used to search.
     //Return the entry actually containted (existing or added)
-    size_t Add(size_t entry, Entry::Key_t key)
+    size_t FindOrAdd(size_t entry, Entry::Key_t key)
     {
-        CrstHolder ch(_hashLock);
+        ForbidSuspendThreadHolder suspend;
+        CrstHolder ch(&_hashLock);
         _ASSERTE(key.keyA == EntryHashTraits<EntryType>::GetKey(entry).keyA);
         _ASSERTE(key.keyB == EntryHashTraits<EntryType>::GetKey(entry).keyB);
         size_t lookupResult1 = _shash.Lookup(key);
@@ -1568,6 +1464,7 @@ private:
             return lookupResult1;
 
         _shash.Add(entry);
+        return entry;
     }
 };
 #ifdef _MSC_VER
@@ -1593,11 +1490,11 @@ public:
         WRAPPER_NO_CONTRACT;
 #ifdef PRIME_SIZE_VSD_BUCKET_TABLE
         size_t size = numberOfBuckets;
-        bucketCount = numberOfBuckets;
+        _bucketCount = numberOfBuckets;
 #else
         size_t size = CALL_STUB_MIN_BUCKETS;
         while (size < numberOfBuckets) {size = size<<1;};
-        bucketMask = size - 1;
+        _bucketMask = size - 1;
 #endif
         buckets = new FastTable<EntryType>[size];
     }
@@ -1619,13 +1516,13 @@ public:
     size_t FindOrAdd(Entry::Key_t key, Generator &gen)
     {
         WRAPPER_NO_CONTRACT;
-        FastTable* bucket = &buckets[ComputeBucketIndex(key)];
+        FastTable<EntryType>* bucket = &buckets[ComputeBucketIndex(key)];
         size_t result = bucket->Find(key);
         if (result == CALL_STUB_EMPTY_ENTRY)
         {
             size_t newValue = gen();
             _ASSERTE(newValue != CALL_STUB_EMPTY_ENTRY);
-            result = bucket->Add(newValue, key);
+            result = bucket->FindOrAdd(newValue, key);
         }
         return result;
     }
@@ -1650,13 +1547,13 @@ private:
         size_t a = ((keyAAdjusted>>CALL_STUB_BIT_SHIFT) + key.keyA);
         size_t b = ((keyBAdjusted>>CALL_STUB_BIT_SHIFT) ^ key.keyB);
 #ifdef PRIME_SIZE_VSD_BUCKET_TABLE
-        return CALL_STUB_FIRST_INDEX+(((((a*CALL_STUB_HASH_CONST2)>>5)^((b*CALL_STUB_HASH_CONST1)>>5))+CALL_STUB_HASH_CONST2) % bucketCount());
+        return (((((a*CALL_STUB_HASH_CONST2)>>5)^((b*CALL_STUB_HASH_CONST1)>>5))+CALL_STUB_HASH_CONST2) % bucketCount());
 #else
-        return CALL_STUB_FIRST_INDEX+(((((a*CALL_STUB_HASH_CONST2)>>5)^((b*CALL_STUB_HASH_CONST1)>>5))+CALL_STUB_HASH_CONST2) & bucketMask());
+        return (((((a*CALL_STUB_HASH_CONST2)>>5)^((b*CALL_STUB_HASH_CONST1)>>5))+CALL_STUB_HASH_CONST2) & bucketMask());
 #endif
     }
 
-    FastTable *buckets;
+    FastTable<EntryType> *buckets;
 #ifdef PRIME_SIZE_VSD_BUCKET_TABLE
     size_t _bucketCount;
 #else
