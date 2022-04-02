@@ -1035,10 +1035,10 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
     if (tree->OperGet() == GT_CALL)
     {
         GenTreeCall* call = tree->AsCall();
-        if (call->gtCallLateArgs == nullptr)
+        if (call->fgArgInfo == nullptr)
         {
             // Currently this function is only profitable during the late stages
-            // so we do not bother handling non-late args here
+            // so we avoid complicating below code to access the early args.
             return nullptr;
         }
 
