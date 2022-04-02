@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -x
+
 source_directory=$BUILD_SOURCESDIRECTORY
 core_root_directory=
 baseline_core_root_directory=
