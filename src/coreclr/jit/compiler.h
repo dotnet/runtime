@@ -4639,7 +4639,7 @@ public:
                                            CORINFO_LOOKUP_KIND*    pGenericLookupKind = nullptr);
 
     bool impIsCastHelperEligibleForClassProbe(GenTree* tree);
-    bool impIsCastHelperMayHaveProfileData(GenTree* tree);
+    bool impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper);
 
     GenTree* impCastClassOrIsInstToTree(
         GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, IL_OFFSET ilOffset);

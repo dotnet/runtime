@@ -306,8 +306,6 @@ $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreApp
     <![CDATA[
 $(BashLinkerTestLaunchCmds)
 
-export TestExclusionListPath=$CORE_ROOT/TestExclusionList.txt
-
 _DebuggerArgsSeparator=
 if [[ "$_DebuggerFullPath" == *lldb* ]];
 then
@@ -549,6 +547,7 @@ $(BashCLRTestExitCodePrep)
 $(IlasmRoundTripBashScript)
 # Allow precommands to override the ExePath
 ExePath=$(InputAssemblyName)
+export TestExclusionListPath=$CORE_ROOT/TestExclusionList.txt
 # PreCommands
 $(BashCLRTestPreCommands)
 # Launch
@@ -561,15 +560,23 @@ $(BashCLRTestExitCodeCheck)
 
     </PropertyGroup>
 
+    <PropertyGroup>
+      <ExecutionBashScriptPath>$(OutputPath)/$(MSBuildProjectName).sh</ExecutionBashScriptPath>
+    </PropertyGroup>
+
     <!-- Write the file.
          Note: under the hood, this will rely on Environment.NewLine for line
          endings. This means that if the scripts are being generated on Windows,
          the line endings will need to be changed from CR-LF to Unix (LF) line
-         endings before running the scripts on Unix platforms. -->
+         endings before running the scripts on Unix platforms. In our current lab
+         infra it shouldn't really matter as the execution scripts are regenerated
+         in the 'test run' phase before sending the items to Helix i.o.w. at
+         the point where we already know the exact targeting platform. -->
     <WriteLinesToFile
-      File="$(OutputPath)\$(MSBuildProjectName).sh"
+      File="$(ExecutionBashScriptPath)"
       Lines="$(_CLRTestExecutionScriptText)"
       Overwrite="true" />
+    <Exec Command="chmod +x $(ExecutionBashScriptPath)" EchoOff="true" />
   </Target>
 
 </Project>

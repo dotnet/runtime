@@ -7908,43 +7908,36 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
 
 #ifdef TARGET_X86
 
+    // On a 32-bit target, all of the long arguments are handled with GT_FIELD_LISTs of TYP_INT.
+    assert(targetType != TYP_LONG);
+    assert((putArgStk->GetStackByteSize() % TARGET_POINTER_SIZE) == 0);
+
     genAlignStackBeforeCall(putArgStk);
 
-    if ((data->OperGet() != GT_FIELD_LIST) && varTypeIsStruct(targetType))
+    if (data->OperIs(GT_FIELD_LIST))
     {
-        (void)genAdjustStackForPutArgStk(putArgStk);
+        genPutArgStkFieldList(putArgStk);
+        return;
+    }
+
+    if (varTypeIsStruct(targetType))
+    {
+        genAdjustStackForPutArgStk(putArgStk);
         genPutStructArgStk(putArgStk);
         return;
     }
 
-    // On a 32-bit target, all of the long arguments are handled with GT_FIELD_LISTs of TYP_INT.
-    assert(targetType != TYP_LONG);
+    genConsumeRegs(data);
 
-    const unsigned argSize = putArgStk->GetStackByteSize();
-    assert((argSize % TARGET_POINTER_SIZE) == 0);
-
-    if (data->isContainedIntOrIImmed())
+    if (data->isUsedFromReg())
     {
-        if (data->IsIconHandle())
-        {
-            inst_IV_handle(INS_push, data->AsIntCon()->gtIconVal);
-        }
-        else
-        {
-            inst_IV(INS_push, data->AsIntCon()->gtIconVal);
-        }
-        AddStackLevel(argSize);
-    }
-    else if (data->OperGet() == GT_FIELD_LIST)
-    {
-        genPutArgStkFieldList(putArgStk);
+        genPushReg(targetType, data->GetRegNum());
     }
     else
     {
-        // We should not see any contained nodes that are not immediates.
-        assert(data->isUsedFromReg());
-        genConsumeReg(data);
-        genPushReg(targetType, data->GetRegNum());
+        assert(genTypeSize(data) == TARGET_POINTER_SIZE);
+        inst_TT(INS_push, emitTypeSize(data), data);
+        AddStackLevel(TARGET_POINTER_SIZE);
     }
 #else // !TARGET_X86
     {

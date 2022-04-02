@@ -171,7 +171,7 @@ struct _MonoArray {
 /* match the layout of the managed definition of Span<T> */
 #define MONO_DEFINE_SPAN_OF_T(name, type)	\
 	typedef struct {	\
-		type* _pointer;	\
+		type* _reference;	\
 		uint32_t _length;	\
 	} name;
 
@@ -280,9 +280,9 @@ mono_handle_array_get_bounds_dim (MonoArrayHandle arr, gint32 dim, MonoArrayBoun
 
 #define mono_span_length(span) (span->_length)
 
-#define mono_span_get(span,type,idx) (type)(!span->_pointer ? (type)0 : span->_pointer[idx])
+#define mono_span_get(span,type,idx) (type)(!span->_reference ? (type)0 : span->_reference[idx])
 
-#define mono_span_addr(span,type,idx) (type*)(span->_pointer + idx)
+#define mono_span_addr(span,type,idx) (type*)(span->_reference + idx)
 
 #define mono_span_setref(span,index,value)	\
 	do {	\
@@ -296,10 +296,10 @@ mono_span_create_from_object_array (MonoArray *arr) {
 	MonoSpanOfObjects span;
 	if (arr != NULL) {
 		span._length = (int32_t)mono_array_length_internal (arr);
-		span._pointer = mono_array_addr_fast (arr, MonoObject*, 0);
+		span._reference = mono_array_addr_fast (arr, MonoObject*, 0);
 	} else {
 		span._length = 0;
-		span._pointer = NULL;
+		span._reference = NULL;
 	}
 	return span;
 }

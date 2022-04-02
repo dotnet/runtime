@@ -518,7 +518,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
 
-            return JoinCore(MemoryMarshal.CreateReadOnlySpan(ref separator, 1), new ReadOnlySpan<string?>(value));
+            return JoinCore(new ReadOnlySpan<char>(in separator), new ReadOnlySpan<string?>(value));
         }
 
         public static string Join(string? separator, params string?[] value)
@@ -532,7 +532,7 @@ namespace System
         }
 
         public static string Join(char separator, string?[] value, int startIndex, int count) =>
-            JoinCore(MemoryMarshal.CreateReadOnlySpan(ref separator, 1), value, startIndex, count);
+            JoinCore(new ReadOnlySpan<char>(in separator), value, startIndex, count);
 
         public static string Join(string? separator, string?[] value, int startIndex, int count) =>
             JoinCore(separator.AsSpan(), value, startIndex, count);
@@ -604,7 +604,7 @@ namespace System
         }
 
         public static string Join(char separator, params object?[] values) =>
-            JoinCore(MemoryMarshal.CreateReadOnlySpan(ref separator, 1), values);
+            JoinCore(new ReadOnlySpan<char>(in separator), values);
 
         public static string Join(string? separator, params object?[] values) =>
             JoinCore(separator.AsSpan(), values);
@@ -646,7 +646,7 @@ namespace System
         }
 
         public static string Join<T>(char separator, IEnumerable<T> values) =>
-            JoinCore(MemoryMarshal.CreateReadOnlySpan(ref separator, 1), values);
+            JoinCore(new ReadOnlySpan<char>(in separator), values);
 
         public static string Join<T>(string? separator, IEnumerable<T> values) =>
             JoinCore(separator.AsSpan(), values);
@@ -1257,12 +1257,12 @@ namespace System
 
         public string[] Split(char separator, StringSplitOptions options = StringSplitOptions.None)
         {
-            return SplitInternal(new ReadOnlySpan<char>(ref separator, 1), int.MaxValue, options);
+            return SplitInternal(new ReadOnlySpan<char>(in separator), int.MaxValue, options);
         }
 
         public string[] Split(char separator, int count, StringSplitOptions options = StringSplitOptions.None)
         {
-            return SplitInternal(new ReadOnlySpan<char>(ref separator, 1), count, options);
+            return SplitInternal(new ReadOnlySpan<char>(in separator), count, options);
         }
 
         // Creates an array of strings by splitting this string at each

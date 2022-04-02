@@ -895,7 +895,7 @@ void MorphCopyBlockHelper::MorphStructCases()
         }
         else if (m_srcDoFldAsg && srcFldIsProfitable)
         {
-            // Check for the symmetric case (which happens for the _pointer field of promoted spans):
+            // Check for the symmetric case (which happens for the _reference field of promoted spans):
             //
             //               [000240] -----+------             /--*  lclVar    struct(P) V18 tmp9
             //                                                  /--*    byref  V18._value (offs=0x00) -> V30
