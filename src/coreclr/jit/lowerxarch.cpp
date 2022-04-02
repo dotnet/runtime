@@ -462,7 +462,8 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 //
 void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 {
-    GenTree* src = putArgStk->gtGetOp1();
+    GenTree* src        = putArgStk->gtGetOp1();
+    bool     srcIsLocal = src->OperIsLocalRead();
 
     if (src->OperIs(GT_FIELD_LIST))
     {
@@ -530,109 +531,129 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
     }
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-    if (src->TypeGet() != TYP_STRUCT)
-#endif // FEATURE_PUT_STRUCT_ARG_STK
+    if (src->TypeIs(TYP_STRUCT))
     {
-        // If the child of GT_PUTARG_STK is a constant, we don't need a register to
-        // move it to memory (stack location).
-        //
-        // On AMD64, we don't want to make 0 contained, because we can generate smaller code
-        // by zeroing a register and then storing it. E.g.:
-        //      xor rdx, rdx
-        //      mov gword ptr [rsp+28H], rdx
-        // is 2 bytes smaller than:
-        //      mov gword ptr [rsp+28H], 0
-        //
-        // On x86, we push stack arguments; we don't use 'mov'. So:
-        //      push 0
-        // is 1 byte smaller than:
-        //      xor rdx, rdx
-        //      push rdx
+        ClassLayout* layout  = src->AsObj()->GetLayout();
+        var_types    regType = layout->GetRegisterType();
+        srcIsLocal |= src->AsObj()->Addr()->OperIsLocalAddr();
 
-        if (IsContainableImmed(putArgStk, src)
-#if defined(TARGET_AMD64)
-            && !src->IsIntegralConst(0)
-#endif // TARGET_AMD64
-                )
+        if (regType == TYP_UNDEF)
         {
+            // In case of a CpBlk we could use a helper call. In case of putarg_stk we
+            // can't do that since the helper call could kill some already set up outgoing args.
+            // TODO-Amd64-Unix: converge the code for putarg_stk with cpyblk/cpyobj.
+            // The cpyXXXX code is rather complex and this could cause it to be more complex, but
+            // it might be the right thing to do.
+
+            unsigned size     = putArgStk->GetStackByteSize();
+            unsigned loadSize = layout->GetSize();
+
+            assert(loadSize <= size);
+
+            // TODO-X86-CQ: The helper call either is not supported on x86 or required more work
+            // (I don't know which).
+
+            if (!layout->HasGCPtr())
+            {
+#ifdef TARGET_X86
+                // Codegen for "Kind::Push" will always load bytes in TARGET_POINTER_SIZE
+                // chunks. As such, the correctness of this code depends on the fact that
+                // morph will copy any "mis-sized" (too small) non-local OBJs into a temp,
+                // thus preventing any possible out-of-bounds memory reads.
+                assert(((layout->GetSize() % TARGET_POINTER_SIZE) == 0) || src->OperIsLocalRead() ||
+                       (src->OperIsIndir() && src->AsIndir()->Addr()->IsLocalAddrExpr()));
+                if (size < XMM_REGSIZE_BYTES)
+                {
+                    putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
+                }
+                else
+#endif // TARGET_X86
+                    if (size <= CPBLK_UNROLL_LIMIT)
+                {
+                    putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Unroll;
+                }
+                else
+                {
+                    putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::RepInstr;
+                }
+            }
+            else // There are GC pointers.
+            {
+#ifdef TARGET_X86
+                // On x86, we must use `push` to store GC references to the stack in order for the emitter to
+                // properly update the function's GC info. These `putargstk` nodes will generate a sequence of
+                // `push` instructions.
+                putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
+#else  // !TARGET_X86
+                putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::PartialRepInstr;
+#endif // !TARGET_X86
+            }
+
+            // Always mark the OBJ and ADDR as contained trees by the putarg_stk. The codegen will deal with this tree.
             MakeSrcContained(putArgStk, src);
+            if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr())
+            {
+                // If the source address is the address of a lclVar, make the source address contained to avoid
+                // unnecessary copies.
+                MakeSrcContained(putArgStk, src->AsObj()->Addr());
+            }
         }
+        else
+        {
+            // The ABI allows upper bits of small struct args to remain undefined,
+            // so if possible, widen the load to avoid the sign/zero-extension.
+            if (varTypeIsSmall(regType) && srcIsLocal)
+            {
+                assert(putArgStk->GetStackByteSize() <= genTypeSize(TYP_INT));
+                regType = TYP_INT;
+            }
+
+            src->SetOper(GT_IND);
+            src->ChangeType(regType);
+            LowerIndir(src->AsIndir());
+        }
+    }
+
+    if (src->TypeIs(TYP_STRUCT))
+    {
         return;
     }
-
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
-    GenTree* srcAddr = nullptr;
-
-    bool haveLocalAddr = false;
-    if ((src->OperGet() == GT_OBJ) || (src->OperGet() == GT_IND))
-    {
-        srcAddr = src->AsOp()->gtOp1;
-        assert(srcAddr != nullptr);
-        haveLocalAddr = srcAddr->OperIsLocalAddr();
-    }
-    else
-    {
-        assert(varTypeIsSIMD(putArgStk));
-    }
-
-    ClassLayout* layout = src->AsObj()->GetLayout();
-
-    // In case of a CpBlk we could use a helper call. In case of putarg_stk we
-    // can't do that since the helper call could kill some already set up outgoing args.
-    // TODO-Amd64-Unix: converge the code for putarg_stk with cpyblk/cpyobj.
-    // The cpyXXXX code is rather complex and this could cause it to be more complex, but
-    // it might be the right thing to do.
-
-    unsigned size = putArgStk->GetStackByteSize();
-
-    // TODO-X86-CQ: The helper call either is not supported on x86 or required more work
-    // (I don't know which).
-
-    if (!layout->HasGCPtr())
-    {
-#ifdef TARGET_X86
-        if (size < XMM_REGSIZE_BYTES)
-        {
-            // Codegen for "Kind::Push" will always load bytes in TARGET_POINTER_SIZE
-            // chunks. As such, the correctness of this code depends on the fact that
-            // morph will copy any "mis-sized" (too small) non-local OBJs into a temp,
-            // thus preventing any possible out-of-bounds memory reads.
-            assert(((layout->GetSize() % TARGET_POINTER_SIZE) == 0) || src->OperIsLocalRead() ||
-                   (src->OperIsIndir() && src->AsIndir()->Addr()->IsLocalAddrExpr()));
-            putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
-        }
-        else
-#endif // TARGET_X86
-            if (size <= CPBLK_UNROLL_LIMIT)
-        {
-            putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Unroll;
-        }
-        else
-        {
-            putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::RepInstr;
-        }
-    }
-    else // There are GC pointers.
-    {
-#ifdef TARGET_X86
-        // On x86, we must use `push` to store GC references to the stack in order for the emitter to properly update
-        // the function's GC info. These `putargstk` nodes will generate a sequence of `push` instructions.
-        putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
-#else  // !TARGET_X86
-        putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::PartialRepInstr;
-#endif // !TARGET_X86
-    }
-
-    // Always mark the OBJ and ADDR as contained trees by the putarg_stk. The codegen will deal with this tree.
-    MakeSrcContained(putArgStk, src);
-    if (haveLocalAddr)
-    {
-        // If the source address is the address of a lclVar, make the source address contained to avoid unnecessary
-        // copies.
-        //
-        MakeSrcContained(putArgStk, srcAddr);
-    }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
+
+    assert(!src->TypeIs(TYP_STRUCT));
+
+    // If the child of GT_PUTARG_STK is a constant, we don't need a register to
+    // move it to memory (stack location).
+    //
+    // On AMD64, we don't want to make 0 contained, because we can generate smaller code
+    // by zeroing a register and then storing it. E.g.:
+    //      xor rdx, rdx
+    //      mov gword ptr [rsp+28H], rdx
+    // is 2 bytes smaller than:
+    //      mov gword ptr [rsp+28H], 0
+    //
+    // On x86, we push stack arguments; we don't use 'mov'. So:
+    //      push 0
+    // is 1 byte smaller than:
+    //      xor rdx, rdx
+    //      push rdx
+
+    if (IsContainableImmed(putArgStk, src)
+#if defined(TARGET_AMD64)
+        && !src->IsIntegralConst(0)
+#endif // TARGET_AMD64
+            )
+    {
+        MakeSrcContained(putArgStk, src);
+    }
+#ifdef TARGET_X86
+    else if ((genTypeSize(src) == TARGET_POINTER_SIZE) && IsContainableMemoryOp(src) &&
+             IsSafeToContainMem(putArgStk, src))
+    {
+        // Contain for "push [mem]".
+        MakeSrcContained(putArgStk, src);
+    }
+#endif // TARGET_X86
 }
 
 /* Lower GT_CAST(srcType, DstType) nodes.
