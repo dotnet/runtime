@@ -55,20 +55,22 @@ namespace System.Linq
             if (e.MoveNext())
             {
                 List<TSource> chunkBuilder = new();
-                do
+                while (true)
                 {
-                    chunkBuilder.Clear();
                     do
                     {
                         chunkBuilder.Add(e.Current);
                     }
                     while (chunkBuilder.Count < size && e.MoveNext());
 
-                    TSource[] chunk = new TSource[chunkBuilder.Count];
-                    chunkBuilder.CopyTo(chunk, 0);
-                    yield return chunk;
+                    yield return chunkBuilder.ToArray();
+
+                    if (chunkBuilder.Count < size || !e.MoveNext())
+                    {
+                        yield break;
+                    }
+                    chunkBuilder.Clear();
                 }
-                while (chunkBuilder.Count == size && e.MoveNext());
             }
         }
     }
