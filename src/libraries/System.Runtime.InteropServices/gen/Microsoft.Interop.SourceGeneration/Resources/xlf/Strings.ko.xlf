@@ -24,12 +24,12 @@
       </trans-unit>
       <trans-unit id="CollectionNativeTypeMustHaveRequiredShapeDescription">
         <source>A native type with the 'GenericContiguousCollectionMarshallerAttribute' must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</source>
-        <target state="new">A native type with the 'GenericContiguousCollectionMarshallerAttribute' must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</target>
+        <target state="translated">관리되는 형식을 마샬링하려면 'GenericContiguousCollectionMarshallerAttribute'가 있는 네이티브 형식에는 두 마샬링 메서드 중 하나 이상과 일부 'T'의 'Span&lt;T&gt;' 형식의 'ManagedValues' 속성과 'Span&lt;byte&gt;' 형식의 'NativeValueStorage' 속성이 있어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CollectionNativeTypeMustHaveRequiredShapeMessage">
         <source>The native type '{0}' must be a value type and have a constructor that takes two parameters, one of type '{1}' and an 'int', or have a parameterless instance method named 'ToManaged' that returns '{1}' as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;'</source>
-        <target state="new">The native type '{0}' must be a value type and have a constructor that takes two parameters, one of type '{1}' and an 'int', or have a parameterless instance method named 'ToManaged' that returns '{1}' as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;'</target>
+        <target state="translated">네이티브 형식 '{0}'은(는) 값 형식이어야 하며 형식 '{1}' 중 하나와 'int' 중 하나를 사용하는 생성자가 있거나, 일부 'T'의 경우 형식 'Span&lt;T&gt;'의 'ManagedValues' 속성 및 형식 'Span&lt;byte&gt;'의 'ManagedValues' 속성뿐만 아니라 '{1}'을(를) 반환하는 'ToManaged'라는 이름의 매개 변수가 없는 인스턴스 메서드가 있어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CollectionSizeParamTypeMustBeIntegral">
