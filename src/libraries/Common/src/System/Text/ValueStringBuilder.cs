@@ -171,7 +171,7 @@ namespace System.Text
         {
             int pos = _pos;
             Span<char> chars = _chars;
-            if ((uint)pos < (uint)chars.Length)    // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+            if ((uint)pos < (uint)chars.Length)
             {
                 chars[pos] = c;
                 _pos = pos + 1;
@@ -192,7 +192,6 @@ namespace System.Text
 
             int pos = _pos;
             Span<char> chars = _chars;
-            // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
             if (s.Length == 1 && (uint)pos < (uint)chars.Length) // very common case, e.g. appending strings from NumberFormatInfo like separators, percent symbols, etc.
             {
                 chars[pos] = s[0];

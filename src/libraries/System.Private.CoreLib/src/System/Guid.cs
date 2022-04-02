@@ -609,7 +609,6 @@ namespace System
             }
 
             // Check for '{'
-            // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
             if ((uint)guidString.Length <= (uint)(numStart + numLen + 1) || guidString[numStart + numLen + 1] != '{')
             {
                 result.SetFailure(overflow: false, nameof(SR.Format_GuidBrace));

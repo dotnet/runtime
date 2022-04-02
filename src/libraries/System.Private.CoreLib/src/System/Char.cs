@@ -508,7 +508,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if ((uint)index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -523,7 +523,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if ((uint)index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -543,7 +543,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if ((uint)index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -564,7 +564,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if ((uint)index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -584,7 +584,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if ((uint)index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -626,7 +626,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if ((uint)index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -659,7 +659,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if ((uint)index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -704,7 +704,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if ((uint)index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -729,7 +729,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if ((uint)index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -761,7 +761,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if ((uint)index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -781,7 +781,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if ((uint)index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -801,7 +801,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if ((uint)index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -827,7 +827,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if ((uint)index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -851,7 +851,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if ((uint)index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -873,7 +873,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if ((uint)index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -895,7 +895,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if ((uint)index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -912,7 +912,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if ((uint)index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }

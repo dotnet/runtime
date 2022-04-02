@@ -156,7 +156,7 @@ namespace System.Runtime.CompilerServices
             {
                 int pos = _pos;
                 Span<char> chars = _chars;
-                if ((uint)pos < (uint)chars.Length) // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+                if ((uint)pos < (uint)chars.Length)
                 {
                     chars[pos] = value[0];
                     _pos = pos + 1;

@@ -75,7 +75,7 @@ namespace System.Globalization
         {
             int[] indexes = Indexes ?? Array.Empty<int>();
 
-            if ((uint)startingTextElement >= indexes.Length)
+            if ((uint)startingTextElement >= (uint)indexes.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(startingTextElement), startingTextElement, SR.Arg_ArgumentOutOfRangeException);
             }
@@ -87,7 +87,7 @@ namespace System.Globalization
             int start = indexes[startingTextElement];
             Index end = ^0; // assume reading to end of the string unless the caller told us to stop early
 
-            if ((uint)(startingTextElement + lengthInTextElements) < indexes.Length)
+            if ((uint)(startingTextElement + lengthInTextElements) < (uint)indexes.Length)
             {
                 end = indexes[startingTextElement + lengthInTextElements];
             }

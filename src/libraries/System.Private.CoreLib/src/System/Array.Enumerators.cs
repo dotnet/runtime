@@ -86,7 +86,7 @@ namespace System
         public bool MoveNext()
         {
             int index = _index + 1;
-            if ((uint)index >= _array.Length)
+            if ((uint)index >= (uint)_array.Length)
             {
                 _index = _array.Length;
                 return false;
@@ -102,7 +102,7 @@ namespace System
                 int index = _index;
                 T[] array = _array;
 
-                if ((uint)index >= array.Length)
+                if ((uint)index >= (uint)array.Length)
                 {
                     ThrowHelper.ThrowInvalidOperationException_EnumCurrent(index);
                 }

@@ -399,7 +399,7 @@ namespace System.Text
 
             // Try reading input[0].
 
-            if ((uint)index >= (uint)source.Length) // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+            if ((uint)index >= (uint)source.Length)
             {
                 goto NeedsMoreData;
             }
@@ -434,7 +434,7 @@ namespace System.Text
             // Try reading input[1].
 
             index++;
-            if ((uint)index >= (uint)source.Length) // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+            if ((uint)index >= (uint)source.Length)
             {
                 goto NeedsMoreData;
             }
@@ -488,7 +488,7 @@ namespace System.Text
             // Try reading input[2].
 
             index++;
-            if ((uint)index >= (uint)source.Length) // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+            if ((uint)index >= (uint)source.Length)
             {
                 goto NeedsMoreData;
             }
@@ -513,7 +513,7 @@ namespace System.Text
             // Try reading input[3].
 
             index++;
-            if ((uint)index >= (uint)source.Length) // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+            if ((uint)index >= (uint)source.Length)
             {
                 goto NeedsMoreData;
             }
@@ -563,7 +563,7 @@ namespace System.Text
         public static OperationStatus DecodeLastFromUtf16(ReadOnlySpan<char> source, out Rune result, out int charsConsumed)
         {
             int index = source.Length - 1;
-            if ((uint)index < (uint)source.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+            if ((uint)index < (uint)source.Length)
             {
                 // First, check for the common case of a BMP scalar value.
                 // If this is correct, return immediately.
@@ -582,7 +582,7 @@ namespace System.Text
                     // we have a standalone low surrogate, which is always invalid.
 
                     index--;
-                    if ((uint)index < (uint)source.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+                    if ((uint)index < (uint)source.Length)
                     {
                         char penultimateChar = source[index];
                         if (TryCreate(penultimateChar, finalChar, out result))
@@ -623,7 +623,7 @@ namespace System.Text
         public static OperationStatus DecodeLastFromUtf8(ReadOnlySpan<byte> source, out Rune value, out int bytesConsumed)
         {
             int index = source.Length - 1;
-            if ((uint)index < (uint)source.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+            if ((uint)index < (uint)source.Length)
             {
                 // The buffer contains at least one byte. Let's check the fast case where the
                 // buffer ends with an ASCII byte.
@@ -657,7 +657,7 @@ namespace System.Text
                 for (int i = 3; i > 0; i--)
                 {
                     index--;
-                    if ((uint)index >= (uint)source.Length) // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+                    if ((uint)index >= (uint)source.Length)
                     {
                         goto Invalid; // out of data
                     }
@@ -847,7 +847,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            if ((uint)index >= input.Length)
+            if ((uint)index >= (uint)input.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }
@@ -870,7 +870,7 @@ namespace System.Text
                 // the string terminates unexpectedly.
 
                 index++;
-                if ((uint)index >= input.Length)
+                if ((uint)index >= (uint)input.Length)
                 {
                     return -1; // not an argument exception - just a "bad data" failure
                 }

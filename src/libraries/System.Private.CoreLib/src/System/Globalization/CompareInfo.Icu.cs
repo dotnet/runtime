@@ -659,7 +659,7 @@ namespace System.Globalization
 
             // The check below also handles errors due to negative values / overflow being returned.
 
-            if ((uint)actualSortKeyLength > (uint)destination.Length)    // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+            if ((uint)actualSortKeyLength > (uint)destination.Length)
             {
                 if (actualSortKeyLength > destination.Length)
                 {

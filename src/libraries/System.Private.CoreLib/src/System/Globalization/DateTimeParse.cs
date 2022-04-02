@@ -4392,7 +4392,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             char quoteChar = format[pos++]; // Get the character used to quote the following string.
 
             bool foundQuote = false;
-            while ((uint)pos < (uint)format.Length)     // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+            while ((uint)pos < (uint)format.Length)
             {
                 char ch = format[pos++];
                 if (ch == quoteChar)
@@ -4407,7 +4407,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     // Therefore, someone can use a format like "'minute:' mm\"" to display:
                     //  minute: 45"
                     // because the second double quote is escaped.
-                    if ((uint)pos < (uint)format.Length)    // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+                    if ((uint)pos < (uint)format.Length)
                     {
                         result.Append(format[pos++]);
                     }

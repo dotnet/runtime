@@ -1051,7 +1051,7 @@ namespace System.Text
             int nextCharIndex = m_ChunkLength;
             char[] chars = m_ChunkChars;
 
-            if ((uint)nextCharIndex < chars.Length)
+            if ((uint)nextCharIndex < (uint)chars.Length)
             {
                 chars[nextCharIndex] = value;
                 m_ChunkLength = nextCharIndex + 1;

@@ -680,7 +680,7 @@ namespace System.IO
             try
             {
                 int numRead = Read(sharedBuffer, 0, buffer.Length);
-                if ((uint)numRead > (uint)buffer.Length)    // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+                if ((uint)numRead > (uint)buffer.Length)
                 {
                     throw new IOException(SR.IO_StreamTooLong);
                 }

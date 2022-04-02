@@ -381,7 +381,7 @@ namespace System.Text
 
             for (int i = 0; i < srcLeft.Length; i++)
             {
-                if ((uint)total >= (uint)dest.Length)   // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+                if ((uint)total >= (uint)dest.Length)
                 {
                     goto Finish;
                 }
@@ -393,7 +393,7 @@ namespace System.Text
 
             for (int i = 0; i < srcRight.Length; i++)
             {
-                if ((uint)total >= (uint)dest.Length)   // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+                if ((uint)total >= (uint)dest.Length)
                 {
                     goto Finish;
                 }

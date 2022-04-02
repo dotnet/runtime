@@ -173,7 +173,7 @@ namespace System.Globalization
                 int pos = startPos;
                 ReadOnlySpan<char> value = _value;
                 Debug.Assert(pos > -1);
-                if ((uint)pos >= (uint)value.Length)    // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+                if ((uint)pos >= (uint)value.Length)
                 {
                     return new TimeSpanToken(TTT.End);
                 }
@@ -190,7 +190,6 @@ namespace System.Globalization
                         while (true)
                         {
                             int digit;
-                            // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                             if ((uint)++pos >= (uint)value.Length || (uint)(digit = value[pos] - '0') > 9)
                             {
                                 _pos = pos;
@@ -211,7 +210,7 @@ namespace System.Globalization
                     }
 
                     // Continue to read as long as we're reading digits.
-                    while ((uint)++pos < (uint)value.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+                    while ((uint)++pos < (uint)value.Length)
                     {
                         int digit = value[pos] - '0';
                         if ((uint)digit > 9)
@@ -234,7 +233,6 @@ namespace System.Globalization
                 // Otherwise, we're processing a separator, and we've already processed the first
                 // character of it.  Continue processing characters as long as they're not digits.
                 int length = 1;
-                // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                 while ((uint)++pos < (uint)value.Length && (uint)(value[pos] - '0') > 9)
                 {
                     length++;
@@ -255,7 +253,7 @@ namespace System.Globalization
             internal char NextChar()
             {
                 int pos = ++_pos;
-                return (uint)pos < (uint)_value.Length ? // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+                return (uint)pos < (uint)_value.Length ?
                     _value[pos] :
                     (char)0;
             }
@@ -1264,7 +1262,7 @@ namespace System.Globalization
 
             var tokenizer = new TimeSpanTokenizer(input, -1);
 
-            while ((uint)i < (uint)format.Length)   // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+            while ((uint)i < (uint)format.Length)
             {
                 char ch = format[i];
                 int nextFormatChar;

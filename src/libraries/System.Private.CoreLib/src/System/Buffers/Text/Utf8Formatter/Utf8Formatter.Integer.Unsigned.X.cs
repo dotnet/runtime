@@ -35,7 +35,6 @@ namespace System.Buffers.Text
 
             if (useLower)
             {
-                // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                 while ((uint)(--computedOutputLength) < (uint)destination.Length)
                 {
                     destination[computedOutputLength] = (byte)HexConverter.ToCharLower((int)value);
@@ -44,7 +43,6 @@ namespace System.Buffers.Text
             }
             else
             {
-                // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                 while ((uint)(--computedOutputLength) < (uint)destination.Length)
                 {
                     destination[computedOutputLength] = (byte)HexConverter.ToCharUpper((int)value);

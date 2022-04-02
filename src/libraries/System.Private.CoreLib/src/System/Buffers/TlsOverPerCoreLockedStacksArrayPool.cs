@@ -61,7 +61,7 @@ namespace System.Buffers
 
             // First, try to get an array from TLS if possible.
             ThreadLocalArray[]? tlsBuckets = t_tlsBuckets;
-            if (tlsBuckets is not null && (uint)bucketIndex < tlsBuckets.Length)
+            if (tlsBuckets is not null && (uint)bucketIndex < (uint)tlsBuckets.Length)
             {
                 buffer = tlsBuckets[bucketIndex].Array;
                 if (buffer is not null)
@@ -77,7 +77,7 @@ namespace System.Buffers
 
             // Next, try to get an array from one of the per-core stacks.
             PerCoreLockedStacks?[] perCoreBuckets = _buckets;
-            if ((uint)bucketIndex < perCoreBuckets.Length)
+            if ((uint)bucketIndex < (uint)perCoreBuckets.Length)
             {
                 PerCoreLockedStacks? b = perCoreBuckets[bucketIndex];
                 if (b is not null)
@@ -140,7 +140,7 @@ namespace System.Buffers
 
             bool haveBucket = false;
             bool returned = true;
-            if ((uint)bucketIndex < tlsBuckets.Length)
+            if ((uint)bucketIndex < (uint)tlsBuckets.Length)
             {
                 haveBucket = true;
 
@@ -374,7 +374,7 @@ namespace System.Buffers
                 Monitor.Enter(this);
                 T[]?[] arrays = _arrays;
                 int count = _count;
-                if ((uint)count < arrays.Length)
+                if ((uint)count < (uint)arrays.Length)
                 {
                     if (count == 0)
                     {
@@ -398,7 +398,7 @@ namespace System.Buffers
                 Monitor.Enter(this);
                 T[]?[] arrays = _arrays;
                 int count = _count - 1;
-                if ((uint)count < arrays.Length)
+                if ((uint)count < (uint)arrays.Length)
                 {
                     arr = arrays[count];
                     arrays[count] = null;

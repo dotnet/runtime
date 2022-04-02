@@ -1235,7 +1235,7 @@ namespace System
 
             stride = default;
             int idx = text.IndexOfAny(needles);
-            if ((uint)idx < (uint)text.Length)  // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
+            if ((uint)idx < (uint)text.Length)
             {
                 stride = 1; // needle found
 
@@ -1245,7 +1245,6 @@ namespace System
                 if (text[idx] == '\r')
                 {
                     int nextCharIdx = idx + 1;
-                    // TODO: https://github.com/dotnet/runtime/issues/67044#issuecomment-1085012303
                     if ((uint)nextCharIdx < (uint)text.Length && text[nextCharIdx] == '\n')
                     {
                         stride = 2;
