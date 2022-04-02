@@ -70,7 +70,7 @@ typedef struct {
 	LLVMModuleRef lmodule;
 	LLVMValueRef throw_icall, rethrow, throw_corlib_exception;
 	GHashTable *llvm_types;
-	LLVMValueRef dummy_got_var;
+	Address *dummy_got_var;
 	const char *get_method_symbol;
 	const char *get_unbox_tramp_symbol;
 	const char *init_aotconst_symbol;
@@ -2062,9 +2062,8 @@ get_dummy_aotconst (EmitContext *ctx, LLVMTypeRef llvm_type)
 	LLVMBuilderRef builder = ctx->builder;
 	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 	indexes [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-	got_entry_addr = LLVMBuildGEP (builder, ctx->module->dummy_got_var, indexes, 2, "");
-
-	load = LLVMBuildLoad (builder, got_entry_addr, "");
+	got_entry_addr = LLVMBuildGEP2 (builder, ctx->module->dummy_got_var->type, ctx->module->dummy_got_var->value, indexes, 2, "");
+	load = LLVMBuildLoad2 (builder, ctx->module->ptr_type, got_entry_addr, "");
 	load = convert (ctx, load, llvm_type);
 	return load;
 }
@@ -12724,11 +12723,13 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	{
 		LLVMTypeRef got_type = LLVMArrayType (module->ptr_type, 16);
 
-		module->dummy_got_var = LLVMAddGlobal (module->lmodule, got_type, "dummy_got");
+		LLVMValueRef dummy_got_var = LLVMAddGlobal (module->lmodule, got_type, "dummy_got");
 		module->got_idx_to_type = g_hash_table_new (NULL, NULL);
-		LLVMSetInitializer (module->dummy_got_var, LLVMConstNull (got_type));
-		LLVMSetVisibility (module->dummy_got_var, LLVMHiddenVisibility);
-		LLVMSetLinkage (module->dummy_got_var, LLVMInternalLinkage);
+		LLVMSetInitializer (dummy_got_var, LLVMConstNull (got_type));
+		LLVMSetVisibility (dummy_got_var, LLVMHiddenVisibility);
+		LLVMSetLinkage (dummy_got_var, LLVMInternalLinkage);
+
+		module->dummy_got_var = create_address (module, dummy_got_var, got_type);
 	}
 
 	/* Add initialization array */
