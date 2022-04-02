@@ -696,7 +696,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             QUIC_SEND_FLAGS flags,
             IntPtr clientSendContext);
 
-        internal delegate uint StreamReceiveCompleteDelegate(
+        internal delegate void StreamReceiveCompleteDelegate(
             SafeMsQuicStreamHandle stream,
             ulong bufferLength);
 
@@ -1376,9 +1376,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
                 return __retVal;
             }
-            internal uint StreamReceiveComplete(SafeMsQuicStreamHandle stream, ulong bufferLength)
+            internal void StreamReceiveComplete(SafeMsQuicStreamHandle stream, ulong bufferLength)
             {
-                uint __retVal;
                 //
                 // Setup
                 //
@@ -1390,7 +1389,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     //
                     stream.DangerousAddRef(ref stream__addRefd);
                     IntPtr __stream_gen_native = stream.DangerousGetHandle();
-                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, ulong, uint>)_functionPointer)(__stream_gen_native, bufferLength);
+                    ((delegate* unmanaged[Cdecl]<IntPtr, ulong, void>)_functionPointer)(__stream_gen_native, bufferLength);
                 }
                 finally
                 {
@@ -1400,8 +1399,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     if (stream__addRefd)
                         stream.DangerousRelease();
                 }
-
-                return __retVal;
             }
             internal uint StreamReceiveSetEnabled(SafeMsQuicStreamHandle stream, bool enabled)
             {

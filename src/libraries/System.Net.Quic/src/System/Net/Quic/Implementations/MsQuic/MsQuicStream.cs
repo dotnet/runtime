@@ -431,6 +431,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             long abortError;
             bool preCanceled = false;
 
+            int bytesRead = -1;
+            bool reenableReceive = false;
             lock (_state)
             {
                 initialReadState = _state.ReadState;
@@ -493,22 +495,32 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     _state.ReadState = ReadState.None;
 
-                    int taken = CopyMsQuicBuffersToUserBuffer(_state.ReceiveQuicBuffers.AsSpan(0, _state.ReceiveQuicBuffersCount), destination.Span);
-                    ReceiveComplete(taken);
+                    bytesRead = CopyMsQuicBuffersToUserBuffer(_state.ReceiveQuicBuffers.AsSpan(0, _state.ReceiveQuicBuffersCount), destination.Span);
 
-                    if (taken != _state.ReceiveQuicBuffersTotalBytes)
+                    if (bytesRead != _state.ReceiveQuicBuffersTotalBytes)
                     {
                         // Need to re-enable receives because MsQuic will pause them when we don't consume the entire buffer.
-                        EnableReceive();
+                        reenableReceive = true;
                     }
                     else if (_state.ReceiveIsFinal)
                     {
                         // This was a final message and we've consumed everything. We can complete the state without waiting for PEER_SEND_SHUTDOWN
                         _state.ReadState = ReadState.ReadsCompleted;
                     }
-
-                    return new ValueTask<int>(taken);
                 }
+            }
+
+            // methods below need to be called outside of the lock
+            if (bytesRead > -1)
+            {
+                ReceiveComplete(bytesRead);
+
+                if (reenableReceive)
+                {
+                    EnableReceive();
+                }
+
+                return new ValueTask<int>(bytesRead);
             }
 
             // All success scenarios returned at this point. Failure scenarios below:
@@ -859,6 +871,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void EnableReceive()
         {
+            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
             uint status = MsQuicApi.Api.StreamReceiveSetEnabledDelegate(_state.Handle, enabled: true);
             QuicExceptionHelpers.ThrowIfFailed(status, "StreamReceiveSetEnabled failed.");
         }
@@ -1475,8 +1488,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void ReceiveComplete(int bufferLength)
         {
-            uint status = MsQuicApi.Api.StreamReceiveCompleteDelegate(_state.Handle, (ulong)bufferLength);
-            QuicExceptionHelpers.ThrowIfFailed(status, "Could not complete receive call.");
+            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
+            MsQuicApi.Api.StreamReceiveCompleteDelegate(_state.Handle, (ulong)bufferLength);
         }
 
         // This can fail if the stream isn't started.
