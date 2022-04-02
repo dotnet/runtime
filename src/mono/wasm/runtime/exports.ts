@@ -5,7 +5,7 @@ import ProductVersion from "consts:productVersion";
 import Configuration from "consts:configuration";
 
 import {
-    mono_wasm_new_root, mono_wasm_release_roots,
+    mono_wasm_new_root, mono_wasm_release_roots, mono_wasm_new_external_root,
     mono_wasm_new_root_buffer
 } from "./roots";
 import {
@@ -79,6 +79,7 @@ const MONO = {
     mono_load_runtime_and_bcl_args,
     mono_wasm_new_root_buffer,
     mono_wasm_new_root,
+    mono_wasm_new_external_root,
     mono_wasm_release_roots,
     mono_run_main,
     mono_run_main_and_exit,
