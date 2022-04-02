@@ -740,38 +740,24 @@ namespace Microsoft.Extensions.Configuration
         // todo: steve - we might not need this; currently, these attributes are only applicable to properties and
         // not parameters. We might be able to get rid of this method once confirm whether it's needed or not.
 
-        private static string GetParameterName(ParameterInfo parameter)
+        private static string GetParameterName(ParameterInfo parameter!!)
         {
-            // Check for a custom property name used for configuration key binding
-            foreach (var attributeData in parameter.GetCustomAttributesData())
-            {
-                if (attributeData.AttributeType != typeof(ConfigurationKeyNameAttribute))
-                {
-                    continue;
-                }
+            var customAttributesData = parameter.GetCustomAttributesData();
 
-                // Ensure ConfigurationKeyName constructor signature matches expectations
-                if (attributeData.ConstructorArguments.Count != 1)
-                {
-                    break;
-                }
-
-                // Assumes ConfigurationKeyName constructor first arg is the string key name
-                string? name = attributeData
-                    .ConstructorArguments[0]
-                    .Value?
-                    .ToString();
-
-                return !string.IsNullOrWhiteSpace(name) ? name : parameter.Name!;
-            }
-
-            return parameter.Name!;
+            return TryGetNameFromAttributes(customAttributesData) ?? parameter.Name!;
         }
 
         private static string GetPropertyName(MemberInfo property)
         {
+            var customAttributesData = property.GetCustomAttributesData();
+
+            return TryGetNameFromAttributes(customAttributesData) ?? property.Name;
+        }
+
+        private static string? TryGetNameFromAttributes(IList<CustomAttributeData> customAttributesData)
+        {
             // Check for a custom property name used for configuration key binding
-            foreach (var attributeData in property.GetCustomAttributesData())
+            foreach (var attributeData in customAttributesData)
             {
                 if (attributeData.AttributeType != typeof(ConfigurationKeyNameAttribute))
                 {
@@ -790,10 +776,10 @@ namespace Microsoft.Extensions.Configuration
                     .Value?
                     .ToString();
 
-                return !string.IsNullOrWhiteSpace(name) ? name : property.Name;
+                return !string.IsNullOrWhiteSpace(name) ? name : null;
             }
 
-            return property.Name;
+            return null;
         }
     }
 }
