@@ -499,8 +499,8 @@ CONFIG_STRING(JitEnablePatchpointRange, W("JitEnablePatchpointRange"))
 CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
 CONFIG_INTEGER(JitMinimalPrejitProfiling, W("JitMinimalPrejitProfiling"), 0)
 
-CONFIG_INTEGER(JitProfileCasts, W("JitProfileCasts"), 1)                     // Profile castclass/isinst
-CONFIG_INTEGER(JitConsumeProfileForCasts, W("JitConsumeProfileForCasts"), 1) // Consume profile data (if any) for
+CONFIG_INTEGER(JitProfileCasts, W("JitProfileCasts"), 0)                     // Profile castclass/isinst
+CONFIG_INTEGER(JitConsumeProfileForCasts, W("JitConsumeProfileForCasts"), 0) // Consume profile data (if any) for
                                                                              // castclass/isinst
 
 CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 1)         // Profile virtual and interface calls
