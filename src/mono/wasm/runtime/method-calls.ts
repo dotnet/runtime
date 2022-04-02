@@ -9,11 +9,11 @@ import {
     MonoStringRef
 } from "./types";
 import { BINDING, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
-import { _mono_array_root_to_js_array, _unbox_mono_obj_root } from "./cs-to-js";
+import { mono_array_root_to_js_array, unbox_mono_obj_root } from "./cs-to-js";
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore used by unsafe export
-import { js_array_to_mono_array, _js_to_mono_obj_unsafe, _js_to_mono_obj_root } from "./js-to-cs";
+import { js_array_to_mono_array, _js_to_mono_obj_unsafe, js_to_mono_obj_root } from "./js-to-cs";
 import {
     mono_bind_method,
     Converter, _compile_converter_for_marshal_string,
@@ -208,7 +208,7 @@ function _handle_exception_and_produce_result_for_call(
     let result: any;
 
     if (is_result_marshaled)
-        result = _unbox_mono_obj_root(resultRoot);
+        result = unbox_mono_obj_root(resultRoot);
     else
         result = resultRoot.value;
 
@@ -314,7 +314,7 @@ export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: 
             return wrap_error(is_exception, "ERR13: Invalid JS object handle '" + js_handle + "' while invoking '" + js_name + "'");
         }
 
-        const js_args = _mono_array_root_to_js_array(argsRoot);
+        const js_args = mono_array_root_to_js_array(argsRoot);
 
         try {
             const m = obj[js_name];
@@ -351,7 +351,7 @@ export function mono_wasm_get_object_property_ref(js_handle: JSHandle, property_
         }
 
         const m = obj[js_name];
-        _js_to_mono_obj_root(true, m, resultRoot);
+        js_to_mono_obj_root(true, m, resultRoot);
     } catch (ex) {
         wrap_error_root(is_exception, ex, resultRoot);
     } finally {
@@ -380,7 +380,7 @@ export function mono_wasm_set_object_property_ref(js_handle: JSHandle, property_
 
         let result = false;
 
-        const js_value = _unbox_mono_obj_root(valueRoot);
+        const js_value = unbox_mono_obj_root(valueRoot);
 
         if (createIfNotExist) {
             js_obj[property] = js_value;
@@ -390,7 +390,7 @@ export function mono_wasm_set_object_property_ref(js_handle: JSHandle, property_
             result = false;
             if (!createIfNotExist) {
                 if (!Object.prototype.hasOwnProperty.call(js_obj, property)) {
-                    _js_to_mono_obj_root(false, false, resultRoot);
+                    js_to_mono_obj_root(false, false, resultRoot);
                     return;
                 }
             }
@@ -405,7 +405,7 @@ export function mono_wasm_set_object_property_ref(js_handle: JSHandle, property_
                 result = true;
             }
         }
-        _js_to_mono_obj_root(false, result, resultRoot);
+        js_to_mono_obj_root(false, result, resultRoot);
     } catch (ex) {
         wrap_error_root(is_exception, ex, resultRoot);
     } finally {
@@ -425,7 +425,7 @@ export function mono_wasm_get_by_index_ref(js_handle: JSHandle, property_index: 
         }
 
         const m = obj[property_index];
-        _js_to_mono_obj_root(true, m, resultRoot);
+        js_to_mono_obj_root(true, m, resultRoot);
     } catch (ex) {
         wrap_error_root(is_exception, ex, resultRoot);
     } finally {
@@ -443,7 +443,7 @@ export function mono_wasm_set_by_index_ref(js_handle: JSHandle, property_index: 
             return;
         }
 
-        const js_value = _unbox_mono_obj_root(valueRoot);
+        const js_value = unbox_mono_obj_root(valueRoot);
         obj[property_index] = js_value;
         resultRoot.clear();
     } catch (ex) {
@@ -475,7 +475,7 @@ export function mono_wasm_get_global_object_ref(global_name: MonoStringRef, is_e
             return;
         }
 
-        _js_to_mono_obj_root(true, globalObj, resultRoot);
+        js_to_mono_obj_root(true, globalObj, resultRoot);
     } catch (ex) {
         wrap_error_root(is_exception, ex, resultRoot);
     } finally {

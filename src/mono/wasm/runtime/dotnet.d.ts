@@ -251,6 +251,7 @@ declare function mono_wasm_load_icu_data(offset: VoidPtr): boolean;
  */
 declare function conv_string(mono_obj: MonoString): string | null;
 declare function conv_string_root(root: WasmRoot<MonoString>): string | null;
+declare function js_string_to_mono_string_root(string: string, result: WasmRoot<MonoString>): void;
 /**
  * @deprecated Not GC or thread safe
  */
@@ -260,13 +261,17 @@ declare function js_string_to_mono_string(string: string): MonoString;
  * @deprecated Not GC or thread safe. For blazor use only
  */
 declare function js_to_mono_obj(js_obj: any): MonoObject;
+declare function js_to_mono_obj_root(should_add_in_flight: boolean, js_obj: any, result: WasmRoot<MonoObject>): void;
+declare function js_typed_array_to_array_root(js_obj: any, result: WasmRoot<MonoArray>): void;
 /**
  * @deprecated Not GC or thread safe
  */
 declare function js_typed_array_to_array(js_obj: any): MonoArray;
 
 declare function unbox_mono_obj(mono_obj: MonoObject): any;
+declare function unbox_mono_obj_root(root: WasmRoot<any>): any;
 declare function mono_array_to_js_array(mono_array: MonoArray): any[] | null;
+declare function mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>): any[] | null;
 
 declare function mono_bind_static_method(fqn: string, signature?: string): Function;
 declare function mono_call_assembly_entry_point(assembly: string, args?: any[], signature?: string): number;
@@ -347,18 +352,38 @@ declare const BINDING: {
      * @deprecated Not GC or thread safe
      */
     js_string_to_mono_string: typeof js_string_to_mono_string;
+    /**
+     * @deprecated Not GC or thread safe
+     */
     js_typed_array_to_array: typeof js_typed_array_to_array;
-    js_to_mono_obj: typeof js_to_mono_obj;
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_array_to_js_array: typeof mono_array_to_js_array;
+    /**
+     * @deprecated Not GC or thread safe
+     */
+    js_to_mono_obj: typeof js_to_mono_obj;
+    /**
+     * @deprecated Not GC or thread safe
+     */
     conv_string: typeof conv_string;
+    /**
+     * @deprecated Not GC or thread safe
+     */
+    unbox_mono_obj: typeof unbox_mono_obj;
     /**
      * @deprecated Renamed to conv_string_root
      */
     conv_string_rooted: typeof conv_string_root;
+    js_string_to_mono_string_root: typeof js_string_to_mono_string_root;
+    js_typed_array_to_array_root: typeof js_typed_array_to_array_root;
+    js_to_mono_obj_root: typeof js_to_mono_obj_root;
     conv_string_root: typeof conv_string_root;
+    unbox_mono_obj_root: typeof unbox_mono_obj_root;
+    mono_array_root_to_js_array: typeof mono_array_root_to_js_array;
     bind_static_method: typeof mono_bind_static_method;
     call_assembly_entry_point: typeof mono_call_assembly_entry_point;
-    unbox_mono_obj: typeof unbox_mono_obj;
 };
 declare type BINDINGType = typeof BINDING;
 interface DotnetPublicAPI {

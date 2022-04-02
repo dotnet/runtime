@@ -4,7 +4,7 @@
 import { WasmRoot, WasmRootBuffer, mono_wasm_new_root } from "./roots";
 import { MonoClass, MonoMethod, MonoObject, VoidPtrNull, MonoType, MarshalType } from "./types";
 import { BINDING, Module, runtimeHelpers } from "./imports";
-import { js_to_mono_enum, _js_to_mono_obj_root, _js_to_mono_uri_root } from "./js-to-cs";
+import { js_to_mono_enum, js_to_mono_obj_root, _js_to_mono_uri_root } from "./js-to-cs";
 import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "./strings";
 import { _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
 import {
@@ -122,10 +122,10 @@ export function _create_primitive_converters(): void {
     // note we also bind first argument to false for both _js_to_mono_obj and _js_to_mono_uri,
     // because we will root the reference, so we don't need in-flight reference
     // also as those are callback arguments and we don't have platform code which would release the in-flight reference on C# end
-    result.set("o", { steps: [{ convert_root: _js_to_mono_obj_root.bind(BINDING, false) }], size: 0, needs_root: true });
+    result.set("o", { steps: [{ convert_root: js_to_mono_obj_root.bind(BINDING, false) }], size: 0, needs_root: true });
     result.set("u", { steps: [{ convert_root: _js_to_mono_uri_root.bind(BINDING, false) }], size: 0, needs_root: true });
     // ref object aka T&&
-    result.set("R", { steps: [{ convert_root: _js_to_mono_obj_root.bind(BINDING, false), byref: true }], size: 0, needs_root: true });
+    result.set("R", { steps: [{ convert_root: js_to_mono_obj_root.bind(BINDING, false), byref: true }], size: 0, needs_root: true });
 
     // result.set ('k', { steps: [{ convert: js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
     result.set("j", { steps: [{ convert: js_to_mono_enum.bind(BINDING), indirect: "i32" }], size: 8 });
