@@ -114,9 +114,6 @@ set(metadata_common_sources
     mono-hash.h
     mono-conc-hash.c
     mono-conc-hash.h
-    mono-perfcounters.c
-    mono-perfcounters.h
-    mono-perfcounters-def.h
     mono-ptr-array.h
     monitor.h
     object.c

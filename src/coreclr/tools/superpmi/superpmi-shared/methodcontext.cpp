@@ -2233,6 +2233,7 @@ bool MethodContext::repGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToke
 }
 
 void MethodContext::recGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
+                                                       mdToken                 targetConstraint,
                                                        CORINFO_CLASS_HANDLE    delegateType,
                                                        CORINFO_LOOKUP*         pLookup)
 {
@@ -2244,6 +2245,7 @@ void MethodContext::recGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* p
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.TargetMethod =
         SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(pTargetMethod, GetReadyToRunDelegateCtorHelper);
+    key.targetConstraint          = targetConstraint;
     key.delegateType              = CastHandle(delegateType);
     Agnostic_CORINFO_LOOKUP value = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(pLookup);
     GetReadyToRunDelegateCtorHelper->Add(key, value);
@@ -2253,12 +2255,13 @@ void MethodContext::recGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* p
 void MethodContext::dmpGetReadyToRunDelegateCtorHelper(GetReadyToRunDelegateCtorHelper_TOKENIn key,
                                                        Agnostic_CORINFO_LOOKUP                 value)
 {
-    printf("GetReadyToRunDelegateCtorHelper key: method tk{%s} type-%016llX",
-           SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.TargetMethod).c_str(), key.delegateType);
+    printf("GetReadyToRunDelegateCtorHelper key: method tk{%s} type-%016llX constraint-%08X",
+           SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.TargetMethod).c_str(), key.delegateType, key.targetConstraint);
     printf(", value: %s", SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value).c_str());
 }
 
 void MethodContext::repGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
+                                                       mdToken                 targetConstraint,
                                                        CORINFO_CLASS_HANDLE    delegateType,
                                                        CORINFO_LOOKUP*         pLookup)
 {
@@ -2268,7 +2271,8 @@ void MethodContext::repGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* p
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.TargetMethod =
         SpmiRecordsHelper::RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pTargetMethod, GetReadyToRunDelegateCtorHelper);
-    key.delegateType = CastHandle(delegateType);
+    key.targetConstraint = targetConstraint;
+    key.delegateType     = CastHandle(delegateType);
 
     AssertKeyExistsNoMessage(GetReadyToRunDelegateCtorHelper, key);
 
@@ -6446,58 +6450,116 @@ CORINFO_CLASS_HANDLE MethodContext::repGetTypeInstantiationArgument(CORINFO_CLAS
 }
 
 void MethodContext::recAppendClassName(
-    CORINFO_CLASS_HANDLE cls, bool fNamespace, bool fFullInst, bool fAssembly, const char16_t* result)
+    int nBufLenIn,
+    CORINFO_CLASS_HANDLE cls,
+    bool fNamespace,
+    bool fFullInst,
+    bool fAssembly,
+    int nLenOut,
+    const char16_t* result)
 {
     if (AppendClassName == nullptr)
-        AppendClassName = new LightWeightMap<Agnostic_AppendClassName, DWORD>();
+        AppendClassName = new LightWeightMap<Agnostic_AppendClassNameIn, Agnostic_AppendClassNameOut>();
 
-    Agnostic_AppendClassName key;
+    // The API has two different behaviors depending on whether the input specified length is zero or non-zero:
+    // (1) zero: returns the length of the string (which the caller can use to allocate a buffer)
+    // (2) non-zero: fill as much of the buffer with the name as there is space available.
+    // We don't want the input length to be part of the key, since the caller could potentially pass in a smaller
+    // or larger buffer, and we'll fill in as much of the buffer as possible. We do need to handle both the zero
+    // and non-zero cases, though, so we'll get one record for first call using zero (with the correct buffer size result),
+    // and another for the second call with a big-enough buffer. We could presumably just store the second case
+    // (and overwrite the first record), since it contains the same output length, but it is useful to store
+    // (and see) all the JIT-EE interface calls.
+
+    Agnostic_AppendClassNameIn key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.classHandle = CastHandle(cls);
-    key.fNamespace  = fNamespace;
-    key.fFullInst   = fFullInst;
-    key.fAssembly   = fAssembly;
+    key.nBufLenIsZero = (nBufLenIn == 0) ? 1 : 0;
+    key.classHandle   = CastHandle(cls);
+    key.fNamespace    = fNamespace;
+    key.fFullInst     = fFullInst;
+    key.fAssembly     = fAssembly;
 
-    DWORD value = (DWORD)-1;
-    if (result != nullptr)
-        value = (DWORD)AppendClassName->AddBuffer((unsigned char*)result, (unsigned int)((wcslen((LPCWSTR)result) * 2) + 2));
+    Agnostic_AppendClassNameOut value;
+    value.nLen       = nLenOut;
+    value.name_index = (DWORD)-1;
+
+    // Don't save the string buffer if the incoming buffer length is zero, even if the string buffer is non-null.
+    // In that case, the EE/crossgen2 don't zero-terminate the buffer (since they assume it is zero sized).
+    if ((result != nullptr) && (nBufLenIn > 0))
+    {
+        value.name_index = (DWORD)AppendClassName->AddBuffer(
+            (unsigned char*)result,
+            (unsigned int)((wcslen((LPCWSTR)result) + 1) * sizeof(char16_t)));
+    }
 
     AppendClassName->Add(key, value);
     DEBUG_REC(dmpAppendClassName(key, value));
 }
 
-void MethodContext::dmpAppendClassName(const Agnostic_AppendClassName& key, DWORD value)
+void MethodContext::dmpAppendClassName(const Agnostic_AppendClassNameIn& key, const Agnostic_AppendClassNameOut& value)
 {
-    printf("AppendClassName key cls-%016llX ns-%u fi-%u as-%u, value %s", key.classHandle, key.fNamespace,
-           key.fFullInst, key.fAssembly, AppendClassName->GetBuffer(value));
+    const char16_t* name = (const char16_t*)AppendClassName->GetBuffer(value.name_index);
+    printf("AppendClassName key lenzero-%s cls-%016llX ns-%u fi-%u as-%u, value len-%u ni-%u name-%S",
+        key.nBufLenIsZero ? "true" : "false", key.classHandle, key.fNamespace, key.fFullInst, key.fAssembly,
+        value.nLen, value.name_index, (const WCHAR*)name);
     AppendClassName->Unlock();
 }
 
-const WCHAR* MethodContext::repAppendClassName(CORINFO_CLASS_HANDLE cls,
-                                               bool                 fNamespace,
-                                               bool                 fFullInst,
-                                               bool                 fAssembly)
+int MethodContext::repAppendClassName(char16_t**           ppBuf,
+                                      int*                 pnBufLen,
+                                      CORINFO_CLASS_HANDLE cls,
+                                      bool                 fNamespace,
+                                      bool                 fFullInst,
+                                      bool                 fAssembly)
 {
-    if (AppendClassName == nullptr)
-        return W("hackishClassName");
+    static const char16_t unknownClass[]     = u"hackishClassName";
+    static const int      unknownClassLength = (int)(ArrLen(unknownClass) - 1); // Don't include null terminator in length.
 
-    Agnostic_AppendClassName key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.classHandle = CastHandle(cls);
-    key.fNamespace  = fNamespace;
-    key.fFullInst   = fFullInst;
-    key.fAssembly   = fAssembly;
+    // By default, at least return something.
+    const char16_t* name = unknownClass;
+    int             nLen = unknownClassLength;
 
-    int index = AppendClassName->GetIndex(key);
-    if (index == -1)
-        return W("hackishClassName");
+    if (AppendClassName != nullptr)
+    {
+        Agnostic_AppendClassNameIn key;
+        ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+        key.nBufLenIsZero = (*pnBufLen == 0) ? 1 : 0;
+        key.classHandle   = CastHandle(cls);
+        key.fNamespace    = fNamespace;
+        key.fFullInst     = fFullInst;
+        key.fAssembly     = fAssembly;
 
-    DWORD value = AppendClassName->Get(key);
-    DEBUG_REP(dmpAppendClassName(key, value));
+        // First, see if we have an entry for this query.
+        int index = AppendClassName->GetIndex(key);
+        if (index != -1)
+        {
+            // Then, actually get the value.
+            Agnostic_AppendClassNameOut value = AppendClassName->Get(key);
+            DEBUG_REP(dmpAppendClassName(key, value));
 
-    int offset = (int)value;
-    const WCHAR* name = (const WCHAR*)AppendClassName->GetBuffer(offset);
-    return name;
+            nLen = value.nLen;
+            name = (const char16_t*)AppendClassName->GetBuffer(value.name_index);
+        }
+    }
+
+    if ((ppBuf != nullptr) && (*ppBuf != nullptr) && (*pnBufLen > 0) && (name != nullptr))
+    {
+        // Copy as much as will fit.
+        char16_t* pBuf = *ppBuf;
+        int nLenToCopy = min(*pnBufLen, nLen + /* null terminator */ 1);
+        for (int i = 0; i < nLenToCopy - 1; i++)
+        {
+            pBuf[i] = name[i];
+        }
+        pBuf[nLenToCopy - 1] = 0; // null terminate the string if it wasn't already
+
+        // Update the buffer pointer and buffer size pointer based on the amount actually copied.
+        // Don't include the null terminator. `*ppBuf` will point at the added null terminator.
+        (*ppBuf) += nLenToCopy - 1;
+        (*pnBufLen) -= nLenToCopy - 1;
+    }
+
+    return nLen;
 }
 
 void MethodContext::recGetTailCallHelpers(

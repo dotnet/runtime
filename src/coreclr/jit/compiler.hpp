@@ -844,19 +844,14 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
 
     if (doSimplifications)
     {
-        // We do some simplifications here.
-        // If this gets to be too many, try a switch...
-        // TODO-Cleanup: With the factoring out of array bounds checks, it should not be the
-        // case that we need to check for the array index case here, but without this check
-        // we get failures (see for example jit\Directed\Languages\Python\test_methods_d.exe)
+        // We do some simplifications here. If this gets to be too many, try a switch...
         if (oper == GT_IND)
         {
             // IND(ADDR(IND(x)) == IND(x)
-            if (op1->gtOper == GT_ADDR)
+            if (op1->OperIs(GT_ADDR))
             {
-                GenTreeUnOp* addr  = op1->AsUnOp();
-                GenTree*     indir = addr->gtGetOp1();
-                if (indir->OperIs(GT_IND) && ((indir->gtFlags & GTF_IND_ARR_INDEX) == 0))
+                GenTree* indir = op1->AsUnOp()->gtGetOp1();
+                if (indir->OperIs(GT_IND))
                 {
                     op1 = indir->AsIndir()->Addr();
                 }
@@ -864,8 +859,7 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
         }
         else if (oper == GT_ADDR)
         {
-            // if "x" is not an array index, ADDR(IND(x)) == x
-            if (op1->gtOper == GT_IND && (op1->gtFlags & GTF_IND_ARR_INDEX) == 0)
+            if (op1->OperIs(GT_IND))
             {
                 return op1->AsOp()->gtOp1;
             }
@@ -4231,6 +4225,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_ALLOCOBJ:
         case GT_INIT_VAL:
         case GT_RUNTIMELOOKUP:
+        case GT_ARR_ADDR:
         case GT_JTRUE:
         case GT_SWITCH:
         case GT_NULLCHECK:

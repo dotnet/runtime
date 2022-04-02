@@ -49,9 +49,6 @@ System.Security.Cryptography.ProtectedData</PackageDescription>
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
-    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Security" />
   </ItemGroup>

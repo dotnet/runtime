@@ -588,7 +588,7 @@ namespace Microsoft.Interop.Analyzers
                         inConstructor = ctor;
                     }
 
-                    if (callerAllocatedSpanConstructor is null && ManualTypeMarshallingHelper.IsCallerAllocatedSpanConstructor(ctor, type, _spanOfByte, marshallerData.Kind))
+                    if (callerAllocatedSpanConstructor is null && ManualTypeMarshallingHelper.IsCallerAllocatedSpanConstructor(ctor, type, _spanOfT, marshallerData.Kind, out _))
                     {
                         callerAllocatedSpanConstructor = ctor;
                     }

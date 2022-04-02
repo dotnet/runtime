@@ -748,7 +748,7 @@ class Span
 {
 private:
     /* Keep fields below in sync with managed Span / ReadOnlySpan layout. */
-    KIND* _pointer;
+    KIND* _reference;
     unsigned int _length;
 
 public:
@@ -762,7 +762,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
         _ASSERTE(index < GetLength());
-        return _pointer[index];
+        return _reference[index];
     }
 
     // Gets the length (in elements) of this span.

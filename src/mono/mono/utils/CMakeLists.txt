@@ -65,8 +65,6 @@ set(utils_common_sources
     mono-coop-mutex.h
     mono-once.h
     mono-lazy-init.h
-    mono-networkinterfaces.c
-    mono-networkinterfaces.h
     mono-proclib.c
     mono-proclib-windows.c
     mono-proclib.h

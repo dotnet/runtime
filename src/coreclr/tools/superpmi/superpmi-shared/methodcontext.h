@@ -315,11 +315,13 @@ public:
                                 CORINFO_CONST_LOOKUP*   pLookup);
 
     void recGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
+                                            mdToken                 targetConstraint,
                                             CORINFO_CLASS_HANDLE    delegateType,
                                             CORINFO_LOOKUP*         pLookup);
     void dmpGetReadyToRunDelegateCtorHelper(GetReadyToRunDelegateCtorHelper_TOKENIn key,
                                             Agnostic_CORINFO_LOOKUP                 pLookup);
     void repGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
+                                            mdToken                 targetConstraint,
                                             CORINFO_CLASS_HANDLE    delegateType,
                                             CORINFO_LOOKUP*         pLookup);
 
@@ -783,10 +785,20 @@ public:
     void dmpGetTypeInstantiationArgument(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index);
 
-    void recAppendClassName(
-        CORINFO_CLASS_HANDLE cls, bool fNamespace, bool fFullInst, bool fAssembly, const char16_t* result);
-    void dmpAppendClassName(const Agnostic_AppendClassName& key, DWORD value);
-    const WCHAR* repAppendClassName(CORINFO_CLASS_HANDLE cls, bool fNamespace, bool fFullInst, bool fAssembly);
+    void recAppendClassName(int                  nBufLenIn,
+                            CORINFO_CLASS_HANDLE cls,
+                            bool                 fNamespace,
+                            bool                 fFullInst,
+                            bool                 fAssembly,
+                            int                  nLenOut,
+                            const char16_t*      result);
+    void dmpAppendClassName(const Agnostic_AppendClassNameIn& key, const Agnostic_AppendClassNameOut& value);
+    int repAppendClassName(char16_t**           ppBuf,
+                           int*                 pnBufLen,
+                           CORINFO_CLASS_HANDLE cls,
+                           bool                 fNamespace,
+                           bool                 fFullInst,
+                           bool                 fAssembly);
 
     void recGetTailCallHelpers(
         CORINFO_RESOLVED_TOKEN* callToken,
