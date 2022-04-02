@@ -17,18 +17,13 @@
              Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="$(CommonPath)System\IO\Compression\ZipFileValidName_Windows.cs"
-             Link="Common\System\IO\Compression\ZipFileValidName_Windows.cs"/>
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
-             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' or '$(TargetPlatformIdentifier)' == ''">
+    <Compile Include="System\IO\Compression\ZipFileValidName_Windows.cs" />
   </ItemGroup>
     <!-- Unix specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Create.Unix.cs" />
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchiveEntry.Extract.Unix.cs" />
-    <Compile Include="$(CommonPath)System\IO\Compression\ZipFileValidName_Unix.cs"
-             Link="Common\System\IO\Compression\ZipFileValidName_Unix.cs"/>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
              Link="Common\Interop\Unix\Interop.IOErrors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
@@ -39,6 +34,7 @@
              Link="Common\Interop\Unix\System.Native\Interop.FChMod.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Stat.cs" />
+    <Compile Include="System\IO\Compression\ZipFileValidFullName_Unix.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.IO.Compression" />
