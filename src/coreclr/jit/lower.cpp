@@ -5304,6 +5304,12 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     {
         return false;
     }
+    if (((scale | offset) > 0) && varTypeIsSIMD(parent->TypeGet()))
+    {
+        // For now we only support unscaled index without the offset
+        // for SIMD loads
+        return false;
+    }
 #endif
 
     if (scale == 0)

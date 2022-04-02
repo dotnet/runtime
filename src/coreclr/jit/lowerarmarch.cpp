@@ -2070,6 +2070,18 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 unreached();
         }
     }
+    else if (intrin.id == NI_AdvSimd_LoadVector128)
+    {
+        assert(intrin.numOperands == 1);
+
+        GenTree* addr = node->Op(1);
+        if (TryCreateAddrMode(addr, true, node) && IsSafeToContainMem(node, addr))
+        {
+            assert(addr->OperIs(GT_LEA));
+            assert(IsSafeToContainMem(node, addr));
+            MakeSrcContained(node, addr);
+        }
+    }
 }
 #endif // FEATURE_HW_INTRINSICS
 
