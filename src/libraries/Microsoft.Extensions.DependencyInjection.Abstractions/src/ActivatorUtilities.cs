@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -32,38 +33,40 @@ namespace Microsoft.Extensions.DependencyInjection
             params object[] parameters)
         {
             int bestLength = -1;
-            bool seenPreferred = false;
-
             ConstructorMatcher bestMatcher = default;
 
             if (!instanceType.IsAbstract)
             {
-                foreach (ConstructorInfo? constructor in instanceType.GetConstructors())
+                ConstructorInfo[] ctors = instanceType.GetConstructors();
+                ConstructorInfo[] preferredCtors = ctors
+                    .Where(x => x.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute))).ToArray();
+                if (preferredCtors.Length > 1)
                 {
-                    var matcher = new ConstructorMatcher(constructor);
-                    bool isPreferred = constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
-                    int length = matcher.Match(parameters);
+                    ThrowMultipleCtorsMarkedWithAttributeException();
+                }
 
-                    if (isPreferred)
+                if (preferredCtors.Length == 1)
+                {
+                    bestMatcher = new ConstructorMatcher(preferredCtors[0]);
+                    bestLength = bestMatcher.Match(parameters);
+                    if (bestLength == -1)
                     {
-                        if (seenPreferred)
+                        ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
+                    }
+                }
+                else
+                {
+                    foreach (ConstructorInfo? ctor in ctors)
+                    {
+                        var matcher = new ConstructorMatcher(ctor);
+                        bool isPreferred = ctor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
+                        int length = matcher.Match(parameters);
+                        if (bestLength < length)
                         {
-                            ThrowMultipleCtorsMarkedWithAttributeException();
-                        }
-
-                        if (length == -1)
-                        {
-                            ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
+                            bestLength = length;
+                            bestMatcher = matcher;
                         }
                     }
-
-                    if (isPreferred || bestLength < length)
-                    {
-                        bestLength = length;
-                        bestMatcher = matcher;
-                    }
-
-                    seenPreferred |= isPreferred;
                 }
             }
 
