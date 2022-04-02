@@ -158,6 +158,7 @@
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
       <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
       <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == ''">false</WasmEmitSymbolMap>
+      <WasmRetrySequentiallyIfNeeded Condition="$(WasmRetrySequentiallyIfNeeded) == ''">true</WasmRetrySequentiallyIfNeeded>
 
       <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
       <_WasmRuntimeICallTablePath>$(_WasmIntermediateOutputPath)runtime-icall-table.h</_WasmRuntimeICallTablePath>
@@ -325,11 +326,13 @@
       <_WasmSourceFileToCompile Remove="@(_WasmSourceFileToCompile)" />
       <_WasmSourceFileToCompile Include="@(_WasmRuntimePackSrcFile)" Dependencies="%(_WasmRuntimePackSrcFile.Dependencies);$(_EmccDefaultFlagsRsp);$(_EmccCompileRsp)" />
     </ItemGroup>
+
     <EmccCompile
           SourceFiles="@(_WasmSourceFileToCompile)"
           Arguments='"@$(_EmccDefaultFlagsRsp)" "@$(_EmccCompileRsp)"'
           EnvironmentVariables="@(EmscriptenEnvVars)"
           DisableParallelCompile="$(DisableParallelEmccCompile)"
+          RetrySequentiallyIfNeeded="$(WasmRetryCompileIfNeeded)"
           OutputMessageImportance="$(_EmccCompileOutputMessageImportance)">
       <Output TaskParameter="OutputFiles" ItemName="FileWrites" />
     </EmccCompile>
@@ -344,6 +347,7 @@
 
     <ItemGroup>
       <_BitCodeFile Dependencies="%(_BitCodeFile.Dependencies);$(_EmccDefaultFlagsRsp);$(_EmccCompileBitcodeRsp)" />
+      <_WasmSourceFileToCompileSequentially Include="@(WasmAssemblyToAOTSequentially -> '%(Identity).bc')" />
     </ItemGroup>
 
     <Message Text="Compiling assembly bitcode files with $(EmccLinkOptimizationFlag) ..." Importance="High" Condition="@(_BitCodeFile->Count()) > 0" />
@@ -352,6 +356,7 @@
           Arguments="&quot;@$(_EmccDefaultFlagsRsp)&quot; &quot;@$(_EmccCompileBitcodeRsp)&quot;"
           EnvironmentVariables="@(EmscriptenEnvVars)"
           DisableParallelCompile="$(DisableParallelEmccCompile)"
+          SourceFileNamesToCompileSequentially="@(_WasmSourceFileToCompileSequentially)"
           OutputMessageImportance="$(_EmccCompileOutputMessageImportance)">
       <Output TaskParameter="OutputFiles" ItemName="FileWrites" />
     </EmccCompile>

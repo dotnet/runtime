@@ -35,6 +35,8 @@ namespace Microsoft.WebAssembly.Build.Tasks
         public string       Arguments              { get; set; } = string.Empty;
         public string?      WorkingDirectory       { get; set; }
         public string       OutputMessageImportance{ get; set; } = "Low";
+        public bool         RetrySequentiallyIfNeeded { get; set; } = true;
+        public string[]     SourceFileNamesToCompileSequentially { get; set; } = Array.Empty<string>();
 
         [Output]
         public ITaskItem[]? OutputFiles            { get; private set; }
@@ -80,6 +82,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             _totalFiles = SourceFiles.Length;
             IDictionary<string, string> envVarsDict = GetEnvironmentVariablesDict();
             ConcurrentBag<ITaskItem> outputItems = new();
+            ConcurrentBag<(string srcFile, string objFile, bool retryAllowed, string? firstOutput)> filesToCompileSequentially = new();
             try
             {
                 List<(string, string)> filesToCompile = new();
@@ -96,15 +99,21 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     {
                         Log.LogMessage(MessageImportance.Low, $"Skipping {srcFile} because {reason}.");
                         outputItems.Add(CreateOutputItemFor(srcFile, objFile));
+                        continue;
                     }
-                    else
+
+                    if (SourceFileNamesToCompileSequentially.Contains(Path.GetFileName(srcFile)))
                     {
-                        Log.LogMessage(MessageImportance.Low, $"Compiling {srcFile} because {reason}.");
-                        filesToCompile.Add((srcFile, objFile));
+                        Log.LogMessage(MessageImportance.Low, $"Compiling {srcFile} because {reason}. It will be compiled at the end, sequentially.");
+                        filesToCompileSequentially.Add((srcFile, objFile, retryAllowed: false, null));
+                        continue;
                     }
+
+                    Log.LogMessage(MessageImportance.Low, $"Compiling {srcFile} because {reason}.");
+                    filesToCompile.Add((srcFile, objFile));
                 }
 
-                _numCompiled = SourceFiles.Length - filesToCompile.Count;
+                _numCompiled = SourceFiles.Length - (filesToCompile.Count + filesToCompileSequentially.Count);
                 if (_numCompiled == _totalFiles)
                 {
                     // nothing to do!
@@ -160,12 +169,23 @@ namespace Microsoft.WebAssembly.Build.Tasks
                                                 new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
                                                 (toCompile, state) =>
                 {
-                    if (!ProcessSourceFile(toCompile.Item1, toCompile.Item2))
+                    if (!ProcessSourceFile(toCompile.Item1, toCompile.Item2, retryAllowed: allowedParallelism > 1))
                         state.Stop();
                 });
 
                 if (!result.IsCompleted && !Log.HasLoggedErrors)
+                {
                     Log.LogError("Unknown failure occured while compiling. Check logs to get more details.");
+                }
+                else if (!Log.HasLoggedErrors && !filesToCompileSequentially.IsEmpty)
+                {
+                    Log.LogMessage(MessageImportance.High, "Compiling sequentially ...");
+                    foreach ((string srcFile, string objFile, bool retryAllowed, string? firstOutput) in filesToCompileSequentially)
+                    {
+                        if (!ProcessSourceFile(srcFile, objFile, retryAllowed, firstOutput))
+                            break;
+                    }
+                }
 
                 if (!Log.HasLoggedErrors)
                 {
@@ -183,7 +203,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             OutputFiles = outputItems.ToArray();
             return !Log.HasLoggedErrors;
 
-            bool ProcessSourceFile(string srcFile, string objFile)
+            bool ProcessSourceFile(string srcFile, string objFile, bool retryAllowed, string? firstAttemptOutput = null)
             {
                 string tmpObjFile = Path.GetTempFileName();
                 try
@@ -209,6 +229,21 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     var elapsedSecs = (endTime - startTime).TotalSeconds;
                     if (exitCode != 0)
                     {
+                        if (firstAttemptOutput is not null)
+                        {
+                            Log.LogError($"Failed to compile {srcFile} -> {objFile} again. [took {elapsedSecs:F}s]");
+                            Log.LogError($"Output from the first attempt: {Environment.NewLine}{firstAttemptOutput}");
+                            Log.LogError($"Output from second first attempt: {Environment.NewLine}{output}");
+
+                            return false;
+                        }
+                        else if (retryAllowed && ShouldRetrySequentially(output, out string? reason))
+                        {
+                            Log.LogMessage(MessageImportance.High, $"Failed to compile {srcFile} due {reason}. It will be retried sequentially, at the end. ouptut: {output}");
+                            filesToCompileSequentially.Add((srcFile, objFile, retryAllowed: false, output ?? string.Empty));
+                            return true;
+                        }
+
                         Log.LogError($"Failed to compile {srcFile} -> {objFile}{Environment.NewLine}{output} [took {elapsedSecs:F}s]");
                         return false;
                     }
@@ -290,6 +325,18 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     return false;
                 }
             }
+        }
+
+        private static bool ShouldRetrySequentially(string output, [NotNullWhen(true)] out string? reason)
+        {
+            reason = null;
+            if (output.Contains("(received SIGKILL (-9))"))
+            {
+                reason = "to possibly running out of memory";
+                return true;
+            }
+
+            return false;
         }
 
         private IDictionary<string, string> GetEnvironmentVariablesDict()

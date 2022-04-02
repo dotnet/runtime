@@ -66,8 +66,12 @@
                                               Defaults to false.
       - $(WasmAotProfilePath)               - Path to an AOT profile file.
       - $(WasmExceptionHandling)            - Enable support for the WASM Exception Handling feature.
+      - $(WasmRetrySequentiallyIfNeeded)    - Retry assembly compilation to .o files sequentially, if needed.
+                                              One such case could be if the compiler got killed due to OOM.
+                                              Defaults to true.
 
       Public items:
+      - @(WasmAssemblyToAOTSequentially) - Filenames of assemblies to always compile (to .o) sequentially
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
                                     (relative path can be set via %(TargetPath) metadata)
       - @(WasmFilesToIncludeInFileSystem) - Files to include in the vfs
