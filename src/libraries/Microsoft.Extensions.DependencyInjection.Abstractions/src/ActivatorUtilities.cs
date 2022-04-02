@@ -341,6 +341,10 @@ namespace Microsoft.Extensions.DependencyInjection
 
             public int Match(object[] givenParameters)
             {
+                if (givenParameters.Length > _parameters.Length)
+                {
+                    return -1;
+                }
                 int applyIndexStart = 0;
                 int applyExactLength = 0;
                 for (int givenIndex = 0; givenIndex != givenParameters.Length; givenIndex++)
