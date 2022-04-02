@@ -66,6 +66,7 @@ namespace Microsoft.Extensions.DependencyInjection
                             bestLength = length;
                             bestMatcher = matcher;
                         }
+                        if (bestLength == parameters.Length - 1) break;
                     }
                 }
             }
