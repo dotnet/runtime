@@ -73,6 +73,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         public string Description { get; }
         public IReadOnlyDictionary<string, object> Data { get; }
     }
+
     internal class FakeValidationResultOps : IFakeValidationResult
     {
         public FakeValidationResultOps(string description, IReadOnlyDictionary<string, object> data)
