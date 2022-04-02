@@ -447,15 +447,25 @@ void CodeGen::inst_Mov(var_types dstType,
     if (isFloatRegType(dstType) != genIsValidFloatReg(dstReg))
     {
         if (dstType == TYP_FLOAT)
+        {
             dstType = TYP_INT;
+        }
         else if (dstType == TYP_DOUBLE)
+        {
             dstType = TYP_LONG;
+        }
         else if (dstType == TYP_INT)
+        {
             dstType = TYP_FLOAT;
+        }
         else if (dstType == TYP_LONG)
+        {
             dstType = TYP_DOUBLE;
+        }
         else
-            assert(!"unimplemented on LOONGARCH yet");
+        {
+            NYI_LOONGARCH64("CodeGen::inst_Mov dstType");
+        }
     }
 #endif
     instruction ins = ins_Copy(srcReg, dstType);
@@ -1640,7 +1650,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
         return INS_vmov_f2i;
     }
 #elif defined(TARGET_LOONGARCH64)
-    // No SIMD support yet.
+    // TODO-LoongArch64-CQ: supporting SIMD.
     assert(!varTypeIsSIMD(dstType));
     if (dstIsFloatReg)
     {

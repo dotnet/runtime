@@ -4100,23 +4100,21 @@ void CodeGen::genCodeForCompare(GenTreeOp* jtree)
         {
             ssize_t imm = op2->AsIntCon()->gtIconVal;
 
+            switch (cmpSize)
             {
-                switch (cmpSize)
-                {
-                    case EA_4BYTE:
-                        imm = static_cast<int32_t>(imm);
-                        break;
-                    case EA_8BYTE:
-                        break;
-                    case EA_1BYTE:
-                        imm = static_cast<int8_t>(imm);
-                        break;
-                    // case EA_2BYTE:
-                    //    imm = static_cast<uint16_t>(imm);
-                    //    break;
-                    default:
-                        assert(!"Unexpected type in jumpTrue(imm).");
-                }
+                case EA_4BYTE:
+                    imm = static_cast<int32_t>(imm);
+                    break;
+                case EA_8BYTE:
+                    break;
+                case EA_1BYTE:
+                    imm = static_cast<int8_t>(imm);
+                    break;
+                // case EA_2BYTE:
+                //    imm = static_cast<uint16_t>(imm);
+                //    break;
+                default:
+                    assert(!"Unexpected type in jumpTrue(imm).");
             }
 
             if (tree->OperIs(GT_LT))
@@ -4222,8 +4220,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* jtree)
                     emit->emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, targetReg, 1);
                 }
             }
-
-            genProduceReg(tree);
         }
         else
         {
@@ -4274,9 +4270,8 @@ void CodeGen::genCodeForCompare(GenTreeOp* jtree)
                 emit->emitIns_R_R_R(INS_xor, EA_PTRSIZE, targetReg, regOp1, regOp2);
                 emit->emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, targetReg, 1);
             }
-
-            genProduceReg(tree);
         }
+        genProduceReg(tree);
     }
 }
 
@@ -4396,87 +4391,6 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
             else
             {
                 jtrue->gtOp2 = (GenTree*)(1 /*cc*/);
-                jtrue->SetRegNum((regNumber)ins);
-            }
-        }
-        else if (op1->isContainedIntOrIImmed() && op2->isContainedIntOrIImmed())
-        {
-            ssize_t imm1 = op1->AsIntCon()->gtIconVal;
-            ssize_t imm2 = op2->AsIntCon()->gtIconVal;
-
-            assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
-
-            bool IsUnsigned = (tree->gtFlags & GTF_UNSIGNED) != 0;
-
-            switch (cmpSize)
-            {
-                case EA_4BYTE:
-                {
-                    imm1 = static_cast<int32_t>(imm1);
-                    imm2 = static_cast<int32_t>(imm2);
-                }
-                break;
-                case EA_8BYTE:
-                    break;
-                case EA_1BYTE:
-                {
-                    imm1 = static_cast<int8_t>(imm1);
-                    imm2 = static_cast<int8_t>(imm2);
-                }
-                break;
-
-                default:
-                    assert(!"Unexpected type in jumpTrue.");
-            }
-            switch (tree->OperGet())
-            {
-                case GT_LT:
-                    if (((!IsUnsigned) && (imm1 < imm2)) || ((IsUnsigned) && ((unsigned)imm1 < (unsigned)imm2)))
-                    {
-                        ins = INS_b;
-                    }
-                    break;
-                case GT_LE:
-                    if (((!IsUnsigned) && (imm1 <= imm2)) || ((IsUnsigned) && ((unsigned)imm1 <= (unsigned)imm2)))
-                    {
-                        ins = INS_b;
-                    }
-                    break;
-                case GT_EQ:
-                    if (imm1 == imm2)
-                    {
-                        ins = INS_b;
-                    }
-                    break;
-                case GT_NE:
-                    if (imm1 != imm2)
-                    {
-                        ins = INS_b;
-                    }
-                    break;
-                case GT_GT:
-                    if (((!IsUnsigned) && (imm1 > imm2)) || ((IsUnsigned) && ((unsigned)imm1 > (unsigned)imm2)))
-                    {
-                        ins = INS_b;
-                    }
-                    break;
-                case GT_GE:
-                    if (((!IsUnsigned) && (imm1 >= imm2)) || ((IsUnsigned) && ((unsigned)imm1 >= (unsigned)imm2)))
-                    {
-                        ins = INS_b;
-                    }
-                    break;
-                default:
-                    break;
-            }
-
-            if (IsEq && (ins != INS_invalid))
-            {
-                emit->emitIns_J(ins, compiler->compCurBB->bbJumpDest, 0); // 5-bits;
-            }
-            else if (ins != INS_invalid)
-            {
-                jtrue->gtOp2 = (GenTree*)(uint64_t)SaveCcResultReg;
                 jtrue->SetRegNum((regNumber)ins);
             }
         }
@@ -7229,8 +7143,8 @@ void CodeGen::genCall(GenTreeCall* call)
                 assert(putArgRegNode->gtOper == GT_PUTARG_REG);
 
                 genConsumeReg(putArgRegNode);
-                inst_Mov_Extend(putArgRegNode->TypeGet(), /* srcInReg */ true, argReg, putArgRegNode->GetRegNum(),
-                                /* canSkip */ true, emitActualTypeSize(TYP_I_IMPL));
+                var_types dstType = emitter::isFloatReg(argReg) ? TYP_DOUBLE : TYP_I_IMPL;
+                inst_Mov(dstType, argReg, putArgRegNode->GetRegNum(), /* canSkip */ true);
 
                 argReg = genRegArgNext(argReg);
             }
@@ -7243,8 +7157,8 @@ void CodeGen::genCall(GenTreeCall* call)
         {
             regNumber argReg = curArgTabEntry->GetRegNum();
             genConsumeReg(argNode);
-            inst_Mov_Extend(argNode->TypeGet(), /* srcInReg */ true, argReg, argNode->GetRegNum(), /* canSkip */ true,
-                            emitActualTypeSize(TYP_I_IMPL));
+            var_types dstType = emitter::isFloatReg(argReg) ? TYP_DOUBLE : TYP_I_IMPL;
+            inst_Mov(dstType, argReg, argNode->GetRegNum(), /* canSkip */ true);
         }
     }
 

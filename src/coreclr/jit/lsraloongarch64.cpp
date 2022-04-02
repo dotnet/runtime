@@ -355,6 +355,12 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_GE:
         case GT_GT:
         case GT_JCMP:
+            if (!varTypeIsFloating(tree))
+            {
+                buildInternalIntRegisterDefForNode(tree);
+                buildInternalIntRegisterDefForNode(tree);
+                buildInternalRegisterUses();
+            }
             srcCount = BuildCmp(tree);
             break;
 

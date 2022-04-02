@@ -2534,6 +2534,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         code |= (code_t)id->idReg4();
         code |= (code_t)id->idReg3() << 5;
         // the offset default is 0;
+        *(code_t*)dst = code;
     }
     else if (id->idIsReloc())
     {
@@ -2602,6 +2603,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         code |= (code_t)reg2;
         code |= (code_t)REG_T2 << 5;
         // the offset default is 0;
+        *(code_t*)dst = code;
     }
 
     dst += 4;
@@ -3290,7 +3292,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                     code = emitInsCode(INS_lu32i_d);
                     code |= (code_t)reg1;
-                    code |= (code_t)(imm >> 32) << 5;
+                    code |= (code_t)((imm >> 32) & 0xfffff) << 5;
 
                     *(code_t*)dst = code;
                     dst += 4;
@@ -3751,7 +3753,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         // case INS_OPTS_NONE:
         default:
-            // assert(id->idGCref() == GCT_NONE);
             *(code_t*)dst = id->idAddr()->iiaGetInstrEncode();
             dst += 4;
             dst2 = dst;
