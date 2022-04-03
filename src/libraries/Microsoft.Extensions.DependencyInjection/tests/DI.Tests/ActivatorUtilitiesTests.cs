@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     {
         [Theory]
         [MemberData(nameof(ActivatorUtilitiesData))]
-        public void ActivatorUtilitiesShouldBeOrderAgnostic(Type instanceType)
+        public void CreateInstanceShouldNotDependOnConstructorsDefinitionOrder(Type instanceType)
         {
             var data = new Dictionary<string, object>();
             var serviceProvider = new FakeServiceProvider(t =>
@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             get => new TheoryData<Type>
             {
                 typeof(FakeValidationResult),
-                 typeof(FakeValidationResultOps)
+                typeof(FakeValidationResultOps)
             };
         }
     }
