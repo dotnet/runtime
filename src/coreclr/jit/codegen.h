@@ -1224,7 +1224,7 @@ protected:
 #endif // TARGET_XARCH
 
     void genCodeForCast(GenTreeOp* tree);
-    void genCodeForLclAddr(GenTree* tree);
+    void genCodeForLclAddr(GenTreeLclVarCommon* lclAddrNode);
     void genCodeForIndexAddr(GenTreeIndexAddr* tree);
     void genCodeForIndir(GenTreeIndir* tree);
     void genCodeForNegNot(GenTree* tree);
@@ -1474,16 +1474,7 @@ public:
 
     void inst_FS_ST(instruction ins, emitAttr size, TempDsc* tmp, unsigned ofs);
 
-    void inst_TT(instruction ins, GenTree* tree, unsigned offs = 0, int shfv = 0, emitAttr size = EA_UNKNOWN);
-
     void inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumber reg);
-
-    void inst_RV_TT(instruction ins,
-                    regNumber   reg,
-                    GenTree*    tree,
-                    unsigned    offs  = 0,
-                    emitAttr    size  = EA_UNKNOWN,
-                    insFlags    flags = INS_FLAGS_DONT_CARE);
 
     void inst_RV_SH(instruction ins, emitAttr size, regNumber reg, unsigned val, insFlags flags = INS_FLAGS_DONT_CARE);
 
@@ -1602,10 +1593,10 @@ public:
             return m_immediate;
         }
 
-        bool ImmediateNeedsReloc() const
+        emitAttr GetEmitAttrForImmediate(emitAttr baseAttr) const
         {
             assert(m_kind == OperandKind::Imm);
-            return m_immediateNeedsReloc;
+            return m_immediateNeedsReloc ? EA_SET_FLG(baseAttr, EA_CNS_RELOC_FLG) : baseAttr;
         }
 
         regNumber GetReg() const
@@ -1621,6 +1612,8 @@ public:
 
     OperandDesc genOperandDesc(GenTree* op);
 
+    void inst_TT(instruction ins, emitAttr size, GenTree* op1);
+    void inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTree* op2);
     void inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival);
     void inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenTree* rmOp, int ival);
     void inst_RV_RV_TT(instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW);

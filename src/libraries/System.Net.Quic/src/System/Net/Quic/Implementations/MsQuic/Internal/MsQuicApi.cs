@@ -3,6 +3,11 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+
+#if TARGET_WINDOWS
+using Microsoft.Win32;
+#endif
+
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
@@ -102,22 +107,30 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal static bool IsQuicSupported { get; }
 
-        private const int MsQuicVersion = 1;
+        private const int MsQuicVersion = 2;
+
+        internal static bool Tls13MayBeDisabled { get; }
 
         static MsQuicApi()
         {
-            if (OperatingSystem.IsWindows() && !IsWindowsVersionSupported())
+            if (OperatingSystem.IsWindows())
             {
-                if (NetEventSource.Log.IsEnabled())
+                if (!IsWindowsVersionSupported())
                 {
-                    NetEventSource.Info(null, $"Current Windows version ({Environment.OSVersion}) is not supported by QUIC. Minimal supported version is {MinWindowsVersion}");
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Info(null, $"Current Windows version ({Environment.OSVersion}) is not supported by QUIC. Minimal supported version is {MinWindowsVersion}");
+                    }
+
+                    return;
                 }
 
-                return;
+                Tls13MayBeDisabled = IsTls13Disabled();
             }
 
-            if (NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out IntPtr msQuicHandle) ||
-                NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MsQuicVersion}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle))
+            IntPtr msQuicHandle;
+            if (NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MsQuicVersion}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle) ||
+                NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle))
             {
                 try
                 {
@@ -146,6 +159,29 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         private static bool IsWindowsVersionSupported() => OperatingSystem.IsWindowsVersionAtLeast(MinWindowsVersion.Major,
             MinWindowsVersion.Minor, MinWindowsVersion.Build, MinWindowsVersion.Revision);
+
+        private static bool IsTls13Disabled()
+        {
+#if TARGET_WINDOWS
+            string[] SChannelTLS13RegKeys = {
+                @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client",
+                @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server"
+            };
+
+            foreach (var key in SChannelTLS13RegKeys)
+            {
+                using var regKey = Registry.LocalMachine.OpenSubKey(key);
+
+                if (regKey is null) return false;
+
+                if (regKey.GetValue("Enabled") is int enabled && enabled == 0)
+                {
+                    return true;
+                }
+            }
+#endif
+            return false;
+        }
 
         // TODO: Consider updating all of these delegates to instead use function pointers.
         internal RegistrationOpenDelegate RegistrationOpenDelegate { get; }

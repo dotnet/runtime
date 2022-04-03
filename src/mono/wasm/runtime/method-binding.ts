@@ -16,12 +16,11 @@ import {
     _get_args_root_buffer_for_method_call, _get_buffer_for_method_call,
     _handle_exception_for_call, _teardown_after_call
 } from "./method-calls";
-import cwraps from "./cwraps";
+import cwraps, { wrap_c_function } from "./cwraps";
 import { VoidPtr } from "./types/emscripten";
 
 const primitiveConverters = new Map<string, Converter>();
 const _signature_converters = new Map<string, Converter>();
-const _method_descriptions = new Map<MonoMethod, string>();
 
 
 export function _get_type_name(typePtr: MonoType): string {
@@ -43,11 +42,7 @@ export function _get_class_name(classPtr: MonoClass): string {
 }
 
 export function find_method(klass: MonoClass, name: string, n: number): MonoMethod {
-    const result = cwraps.mono_wasm_assembly_find_method(klass, name, n);
-    if (result) {
-        _method_descriptions.set(result, name);
-    }
-    return result;
+    return cwraps.mono_wasm_assembly_find_method(klass, name, n);
 }
 
 export function get_method(method_name: string): MonoMethod {
@@ -217,7 +212,7 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
     const closure: any = {
         Module,
         _malloc: Module._malloc,
-        mono_wasm_unbox_rooted: cwraps.mono_wasm_unbox_rooted,
+        mono_wasm_unbox_rooted: wrap_c_function("mono_wasm_unbox_rooted"),
         setI32,
         setU32,
         setF32,
@@ -403,9 +398,9 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
         _get_buffer_for_method_call,
         _handle_exception_for_call,
         _teardown_after_call,
-        mono_wasm_try_unbox_primitive_and_get_type: cwraps.mono_wasm_try_unbox_primitive_and_get_type,
+        mono_wasm_try_unbox_primitive_and_get_type: wrap_c_function("mono_wasm_try_unbox_primitive_and_get_type"),
         _unbox_mono_obj_root_with_known_nonprimitive_type,
-        invoke_method: cwraps.mono_wasm_invoke_method,
+        invoke_method: wrap_c_function("mono_wasm_invoke_method"),
         method,
         this_arg,
         token,

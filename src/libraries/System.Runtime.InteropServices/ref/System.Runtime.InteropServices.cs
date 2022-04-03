@@ -149,11 +149,7 @@ namespace System.Runtime.InteropServices
     public enum ClassInterfaceType
     {
         None = 0,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Support for IDispatch may be unavailable in future releases.")]
         AutoDispatch = 1,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Support for IDispatch may be unavailable in future releases.")]
         AutoDual = 2,
     }
     [System.CLSCompliantAttribute(false)]

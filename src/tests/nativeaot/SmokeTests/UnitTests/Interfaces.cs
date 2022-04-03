@@ -495,6 +495,13 @@ public class Interfaces
 
         class Foo<T> : IFoo<T> { }
 
+        class Base : IFoo
+        {
+            int IFoo.GetNumber() => 100;
+        }
+
+        class Derived : Base, IBar { }
+
         public static void Run()
         {
             Console.WriteLine("Testing default interface methods...");
@@ -506,6 +513,9 @@ public class Interfaces
                 throw new Exception();
 
             if (((IFoo)new Baz()).GetNumber() != 100)
+                throw new Exception();
+
+            if (((IFoo)new Derived()).GetNumber() != 100)
                 throw new Exception();
 
             if (((IFoo<object>)new Foo<object>()).GetInterfaceType() != typeof(IFoo<object>))
@@ -930,6 +940,16 @@ public class Interfaces
             {
                 throw new Exception($"{actual} != {expected}");
             }
+
+            // Uncomment after we pick up fix for https://github.com/dotnet/roslyn/issues/60069
+#if false
+            Func<string> del = T.GetCookie;
+            actual = del();
+            if (actual != expected)
+            {
+                throw new Exception($"{actual} != {expected}");
+            }
+#endif
         }
 
         static void TestSimpleInterfaceWithGenericMethod<T, U>(string expected) where T : ISimple
@@ -939,11 +959,25 @@ public class Interfaces
             {
                 throw new Exception($"{actual} != {expected}");
             }
+
+            Func<string> del = T.GetCookieGeneric<U>;
+            actual = del();
+            if (actual != expected)
+            {
+                throw new Exception($"{actual} != {expected}");
+            }
         }
 
         static void TestVariantInterface<T, U>(string expected) where T : IVariant<U>
         {
             string actual = T.WhichMethod(default);
+            if (actual != expected)
+            {
+                throw new Exception($"{actual} != {expected}");
+            }
+
+            Func<U, string> del = T.WhichMethod;
+            actual = del(default);
             if (actual != expected)
             {
                 throw new Exception($"{actual} != {expected}");

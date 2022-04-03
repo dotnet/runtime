@@ -79,7 +79,7 @@ ac_check_funcs (
   getrusage dladdr sysconf getrlimit prctl nl_langinfo
   sched_getaffinity sched_setaffinity getpwuid_r chmod lstat getdtablesize ftruncate msync
   getpeername utime utimes openlog closelog atexit popen strerror_r inet_pton inet_aton
-  shm_open poll getfsstat mremap posix_fadvise vsnprintf sendfile statfs statvfs setpgid system
+  poll getfsstat mremap posix_fadvise vsnprintf sendfile statfs statvfs setpgid system
   fork execv execve waitpid localtime_r mkdtemp getrandom execvp strlcpy stpcpy strtok_r rewinddir
   vasprintf strndup getpwuid_r getprotobyname getprotobyname_r getaddrinfo mach_absolute_time
   gethrtime read_real_time gethostbyname gethostbyname2 getnameinfo getifaddrs

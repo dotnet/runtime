@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         private static object JSOwnedObjectLock = new object();
         // we use this to maintain identity of GCHandle for a managed object
-        private static Dictionary<object, int> GCHandleFromJSOwnedObject = new Dictionary<object, int>();
+        private static Dictionary<object, IntPtr> GCHandleFromJSOwnedObject = new Dictionary<object, IntPtr>(ReferenceEqualityComparer.Instance);
 
 
         public static object GetJSOwnedObjectByGCHandle(int gcHandle)
@@ -26,18 +26,18 @@ namespace System.Runtime.InteropServices.JavaScript
         //  strong references, allowing the managed object to be collected.
         // This ensures that things like delegates and promises will never 'go away' while JS
         //  is expecting to be able to invoke or await them.
-        public static int GetJSOwnedObjectGCHandle(object obj)
+        public static IntPtr GetJSOwnedObjectGCHandle(object obj)
         {
             if (obj == null)
-                return 0;
+                return IntPtr.Zero;
 
-            int result;
+            IntPtr result;
             lock (JSOwnedObjectLock)
             {
                 if (GCHandleFromJSOwnedObject.TryGetValue(obj, out result))
                     return result;
 
-                result = (int)(IntPtr)GCHandle.Alloc(obj, GCHandleType.Normal);
+                result = (IntPtr)GCHandle.Alloc(obj, GCHandleType.Normal);
                 GCHandleFromJSOwnedObject[obj] = result;
                 return result;
             }
@@ -55,7 +55,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static int CreateTaskSource()
+        public static IntPtr CreateTaskSource()
         {
             var tcs = new TaskCompletionSource<object>();
             return GetJSOwnedObjectGCHandle(tcs);

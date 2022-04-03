@@ -632,13 +632,13 @@ namespace System.Data.OleDb
                             string[] values = svalue.Split(new char[] { ',' });
                             foreach (string v in values)
                             {
-                                convertedValue |= (int)(OleDbServiceValues)Enum.Parse(typeof(OleDbServiceValues), v, true);
+                                convertedValue |= (int)Enum.Parse<OleDbServiceValues>(v, true);
                             }
-                            return (int)convertedValue;
+                            return convertedValue;
                         }
                         else
                         {
-                            return (int)(OleDbServiceValues)Enum.Parse(typeof(OleDbServiceValues), svalue, true);
+                            return (int)Enum.Parse<OleDbServiceValues>(svalue, true);
                         }
                     }
                 }
@@ -651,11 +651,11 @@ namespace System.Data.OleDb
                 return ((typeof(string) == destinationType) || base.CanConvertTo(context, destinationType));
             }
 
-            public override object? ConvertTo(ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, Type destinationType)
+            public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
             {
                 if ((typeof(string) == destinationType) && (null != value) && (typeof(int) == value.GetType()))
                 {
-                    return Enum.Format(typeof(OleDbServiceValues), ((OleDbServiceValues)(int)value), "G");
+                    return ((OleDbServiceValues)(int)(value)).ToString("G");
                 }
                 return base.ConvertTo(context, culture, value, destinationType);
             }
@@ -675,7 +675,7 @@ namespace System.Data.OleDb
                 StandardValuesCollection? standardValues = _standardValues;
                 if (null == standardValues)
                 {
-                    Array objValues = Enum.GetValues(typeof(OleDbServiceValues));
+                    OleDbServiceValues[] objValues = Enum.GetValues<OleDbServiceValues>();
                     Array.Sort(objValues, 0, objValues.Length);
                     standardValues = new StandardValuesCollection(objValues);
                     _standardValues = standardValues;
