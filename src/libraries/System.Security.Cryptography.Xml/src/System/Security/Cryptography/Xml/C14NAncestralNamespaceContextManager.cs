@@ -89,9 +89,9 @@ namespace System.Security.Cryptography.Xml
             nsLocallyDeclared.Add(Utils.GetNamespacePrefix(attr), attr);
         }
 
-        internal override void TrackXmlNamespaceNode(XmlAttribute? attr, SortedList nsListToRender, SortedList attrListToRender, Hashtable nsLocallyDeclared)
+        internal override void TrackXmlNamespaceNode(XmlAttribute attr, SortedList nsListToRender, SortedList attrListToRender, Hashtable nsLocallyDeclared)
         {
-            nsLocallyDeclared.Add(Utils.GetNamespacePrefix(attr!), attr);
+            nsLocallyDeclared.Add(Utils.GetNamespacePrefix(attr), attr);
         }
     }
 }
