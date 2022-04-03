@@ -13,6 +13,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <RequiresProjectIsolation>true</RequiresProjectIsolation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="hijacking.il" />
