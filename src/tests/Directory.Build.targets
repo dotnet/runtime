@@ -217,12 +217,17 @@
   </Target>
 
   <Target Name="CopyAllNativeProjectReferenceBinaries"
-          DependsOnTargets="ResolveCMakeNativeProjectReference;ConsolidateNativeProjectReference">
+          DependsOnTargets="ResolveCMakeNativeProjectReference;ConsolidateNativeProjectReference"
+          BeforeTargets="Build">
 
     <ItemGroup Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
-      <MergedWrapperReferenceFolders Include="@(ProjectReference->'$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)/..', '$(OutDir)/..'))/%(ProjectReference.FileName)')" />
+      <OutOfProcessTestMarkers Include="$(OutDir)/../**/*.OutOfProcessTest" />
+      <OutOfProcessTestFolders Include="$([MSBuild]::NormalizePath('$([System.IO.Path]::GetDirectoryName('%(OutOfProcessTestMarkers.FullPath)'))'))" Condition="'@(OutOfProcessTestMarkers)' != ''" />
+      <MergedWrapperReferenceFolders Include="@(ProjectReference->'$([MSBuild]::NormalizePath('$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)/..', '$(OutDir)/..'))/%(ProjectReference.FileName)'))')" />
+      <!-- Don't copy out-of-process test components to the merged wrapper output folder -->
+      <MergedWrapperReferenceFolders Remove="@(OutOfProcessTestFolders)" />
       <!-- For merged project wrappers, include native libraries in all project references -->
-      <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(LibSuffix)" />
+      <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(LibSuffix)" Condition="'@(MergedWrapperReferenceFolders)' != ''" />
     </ItemGroup>
     <Copy SourceFiles="@(MergedWrapperReferenceFiles)"
         DestinationFiles="@(MergedWrapperReferenceFiles->'$(OutDir)/%(FileName)%(Extension)')"
