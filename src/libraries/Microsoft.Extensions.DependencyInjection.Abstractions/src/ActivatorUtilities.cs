@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
@@ -31,57 +32,59 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             params object[] parameters)
         {
-            int bestLength = -1;
-            ConstructorMatcher bestMatcher = default;
-
-            if (!instanceType.IsAbstract)
+            string? message = $"A suitable constructor for type '{instanceType}' could not be located. Ensure the type is concrete and all parameters of a public constructor are either registered as services or passed as arguments. Also ensure no extraneous arguments are provided.";
+            if (instanceType.IsAbstract)
             {
-                ConstructorInfo[] constructors = instanceType.GetConstructors();
-                ConstructorInfo? pereferredConstructor = null;
-                foreach (ConstructorInfo constructor in constructors)
-                {
-                    if (constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute)))
-                    {
-                        if (pereferredConstructor is not null)
-                        {
-                            ThrowMultipleCtorsMarkedWithAttributeException();
-                        }
-                        pereferredConstructor = constructor;
-                    }
-                }
-                if (pereferredConstructor is not null)
-                {
-                    bestMatcher = new ConstructorMatcher(pereferredConstructor);
-                    bestLength = bestMatcher.Match(parameters);
-                    if (bestLength == -1)
-                    {
-                        ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
-                    }
-                }
-                else
-                {
-                    foreach (ConstructorInfo constructor in constructors)
-                    {
-                        var matcher = new ConstructorMatcher(constructor);
-                        bool isPreferred = constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
-                        int length = matcher.Match(parameters);
-                        if (bestLength < length)
-                        {
-                            bestLength = length;
-                            bestMatcher = matcher;
-                        }
-                        if (bestLength == parameters.Length - 1) break;
-                    }
-                }
-            }
-
-            if (bestLength == -1)
-            {
-                string? message = $"A suitable constructor for type '{instanceType}' could not be located. Ensure the type is concrete and all parameters of a public constructor are either registered as services or passed as arguments. Also ensure no extraneous arguments are provided.";
                 throw new InvalidOperationException(message);
             }
 
-            return bestMatcher.CreateInstance(provider);
+            ConstructorInfo[] constructors = instanceType.GetConstructors();
+            if (constructors.Length == 0)
+            {
+                throw new InvalidOperationException(message);
+            }
+
+            ConstructorInfo? pereferredConstructor = null;
+            foreach (ConstructorInfo constructor in constructors)
+            {
+                if (constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute)))
+                {
+                    if (pereferredConstructor is not null)
+                    {
+                        ThrowMultipleCtorsMarkedWithAttributeException();
+                    }
+                    pereferredConstructor = constructor;
+                }
+            }
+            if (pereferredConstructor is not null)
+            {
+                var matcher = new ConstructorMatcher(pereferredConstructor);
+                if (matcher.Match(parameters) == -1)
+                {
+                    ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
+                }
+                return matcher.CreateInstance(provider, throwIfFailed: true)!;
+            }
+            var priorityQueue = new PrioritizedConstructorMatcher[constructors.Length];
+            for (int i = 0; i < constructors.Length; i++)
+            {
+                ConstructorInfo constructor = constructors[i];
+                var matcher = new ConstructorMatcher(constructor);
+                int length = matcher.Match(parameters);
+                priorityQueue[i] = new PrioritizedConstructorMatcher(length, matcher);
+            }
+            Array.Sort(priorityQueue, (a, b) => a.Priority - b.Priority);
+            object? instance = null;
+            for (int i = 0; i < priorityQueue.Length; i++)
+            {
+                PrioritizedConstructorMatcher prioritizedMatcher = priorityQueue[i];
+                if (prioritizedMatcher.Priority == -1) continue;
+                ConstructorMatcher matcher = priorityQueue[i].Matcher;
+                bool lastChance = i == priorityQueue.Length - 1;
+                instance = matcher.CreateInstance(provider, throwIfFailed: lastChance);
+                if (instance is not null) return instance;
+            }
+            throw new InvalidOperationException(message);
         }
 
         /// <summary>
@@ -331,6 +334,19 @@ namespace Microsoft.Extensions.DependencyInjection
             return true;
         }
 
+        private struct PrioritizedConstructorMatcher
+        {
+            public PrioritizedConstructorMatcher(int priority, ConstructorMatcher matcher)
+            {
+                Priority = priority;
+                Matcher = matcher;
+            }
+
+            public int Priority { get; }
+
+            public ConstructorMatcher Matcher { get; }
+        }
+
         private struct ConstructorMatcher
         {
             private readonly ConstructorInfo _constructor;
@@ -383,7 +399,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 return applyExactLength;
             }
 
-            public object CreateInstance(IServiceProvider provider)
+            public object? CreateInstance(IServiceProvider provider, bool throwIfFailed = false)
             {
                 for (int index = 0; index != _parameters.Length; index++)
                 {
@@ -394,7 +410,11 @@ namespace Microsoft.Extensions.DependencyInjection
                         {
                             if (!ParameterDefaultValue.TryGetDefaultValue(_parameters[index], out object? defaultValue))
                             {
-                                throw new InvalidOperationException($"Unable to resolve service for type '{_parameters[index].ParameterType}' while attempting to activate '{_constructor.DeclaringType}'.");
+                                if (throwIfFailed)
+                                {
+                                    throw new InvalidOperationException($"Unable to resolve service for type '{_parameters[index].ParameterType}' while attempting to activate '{_constructor.DeclaringType}'.");
+                                }
+                                return null;
                             }
                             else
                             {
