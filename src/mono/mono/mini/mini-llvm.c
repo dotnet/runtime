@@ -2286,10 +2286,11 @@ get_jit_callee (EmitContext *ctx, const char *name, LLVMTypeRef llvm_sig, MonoJu
 		target = resolve_patch (ctx->cfg, type, data);
 	}
 
-	LLVMValueRef tramp_var = LLVMAddGlobal (ctx->lmodule, LLVMPointerType (llvm_sig, 0), name);
-	LLVMSetInitializer (tramp_var, LLVMConstIntToPtr (LLVMConstInt (LLVMInt64Type (), (guint64)(size_t)target, FALSE), LLVMPointerType (llvm_sig, 0)));
+	LLVMTypeRef var_t = LLVMPointerType (llvm_sig, 0);
+	LLVMValueRef tramp_var = LLVMAddGlobal (ctx->lmodule, var_t, name);
+	LLVMSetInitializer (tramp_var, LLVMConstIntToPtr (LLVMConstInt (LLVMInt64Type (), (guint64)(size_t)target, FALSE), var_t));
 	LLVMSetLinkage (tramp_var, LLVMExternalLinkage);
-	LLVMValueRef callee = LLVMBuildLoad (ctx->builder, tramp_var, "");
+	LLVMValueRef callee = LLVMBuildLoad2 (ctx->builder, var_t, tramp_var, "");
 	return callee;
 }
 
@@ -2744,13 +2745,14 @@ emit_vtype_to_args (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMV
 		case LLVMArgInIReg:
 			if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (t))) {
 				index [0] = LLVMConstInt (LLVMInt32Type (), j * TARGET_SIZEOF_VOID_P, FALSE);
-				addr = LLVMBuildGEP (builder, address, index, 1, "");
+				addr = LLVMBuildGEP2 (builder, i1_t, address, index, 1, "");
 			} else {
 				daddr = LLVMBuildBitCast (ctx->builder, address, LLVMPointerType (IntPtrType (), 0), "");
 				index [0] = LLVMConstInt (LLVMInt32Type (), j, FALSE);
-				addr = LLVMBuildGEP (builder, daddr, index, 1, "");
+				addr = LLVMBuildGEP2 (builder, IntPtrType (), daddr, index, 1, "");
 			}
-			args [pindex ++] = convert (ctx, LLVMBuildLoad (builder, LLVMBuildBitCast (ctx->builder, addr, LLVMPointerType (LLVMIntType (partsize * 8), 0), ""), ""), IntPtrType ());
+			LLVMTypeRef el_t = LLVMIntType (partsize * 8);
+			args [pindex ++] = convert (ctx, LLVMBuildLoad2 (builder, el_t, LLVMBuildBitCast (ctx->builder, addr, LLVMPointerType (el_t, 0), ""), ""), IntPtrType ());
 			break;
 		case LLVMArgInFPReg:
 			if (ainfo->esize == 8)
@@ -2759,8 +2761,8 @@ emit_vtype_to_args (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMV
 				arg_type = LLVMFloatType ();
 			daddr = LLVMBuildBitCast (ctx->builder, address, LLVMPointerType (arg_type, 0), "");
 			index [0] = LLVMConstInt (LLVMInt32Type (), j, FALSE);
-			addr = LLVMBuildGEP (builder, daddr, index, 1, "");
-			args [pindex ++] = LLVMBuildLoad (builder, addr, "");
+			addr = LLVMBuildGEP2 (builder, arg_type, daddr, index, 1, "");
+			args [pindex ++] = LLVMBuildLoad2 (builder, arg_type, addr, "");
 			break;
 		case LLVMArgNone:
 			break;
