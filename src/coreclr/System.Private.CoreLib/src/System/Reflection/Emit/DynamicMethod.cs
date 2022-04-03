@@ -480,7 +480,7 @@ namespace System.Reflection.Emit
                 }
                 else if (argCount > MaxStackAllocArgCount)
                 {
-                    retValue = CheckManyArguments(this, argCount, obj, invokeAttr, binder, parameters, culture);
+                    retValue = InvokeWithManyArguments(this, argCount, obj, invokeAttr, binder, parameters, culture);
                 }
                 else
                 {
@@ -521,7 +521,7 @@ namespace System.Reflection.Emit
 
         // Slower path that does a heap alloc for copyOfParameters and registers byrefs to those objects.
         // This is a separate method to support better performance for the faster paths.
-        private static unsafe object? CheckManyArguments(
+        private static unsafe object? InvokeWithManyArguments(
             DynamicMethod mi,
             int argCount,
             object? obj,
@@ -587,6 +587,11 @@ namespace System.Reflection.Emit
                 try
                 {
                     return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
+                }
+                catch (EntryPointNotFoundException)
+                {
+                    // Don't wrap since the exception did not originate from within the method.
+                    throw;
                 }
                 catch (Exception e)
                 {

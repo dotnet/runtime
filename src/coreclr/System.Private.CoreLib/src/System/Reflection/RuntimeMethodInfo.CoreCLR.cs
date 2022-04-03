@@ -346,7 +346,7 @@ namespace System.Reflection
             {
                 StackAllocedArguments argStorage = default;
                 Span<object?> copyOfParameters = new(ref argStorage._arg0, 1);
-                Span<object?> parameters = new(ref parameter, 1);
+                ReadOnlySpan<object?> parameters = new(in parameter);
                 Span<bool> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
 
                 StackAllocatedByRefs byrefStorage = default;
@@ -377,6 +377,11 @@ namespace System.Reflection
                 try
                 {
                     return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
+                }
+                catch (EntryPointNotFoundException)
+                {
+                    // Don't wrap since the exception did not originate from within the method.
+                    throw;
                 }
                 catch (Exception e)
                 {

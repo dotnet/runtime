@@ -130,7 +130,7 @@ namespace System.Reflection
                 }
                 else if (argCount > MaxStackAllocArgCount)
                 {
-                    retValue = CheckManyArguments(this, argCount, obj, invokeAttr, binder, parameters, culture);
+                    retValue = InvokeWithManyArguments(this, argCount, obj, invokeAttr, binder, parameters, culture);
                 }
                 else
                 {
@@ -172,7 +172,7 @@ namespace System.Reflection
         // This is a separate method to support better performance for the faster paths.
         [DebuggerStepThrough]
         [DebuggerHidden]
-        private static unsafe object? CheckManyArguments(
+        private static unsafe object? InvokeWithManyArguments(
             RuntimeMethodInfo mi,
             int argCount,
             object? obj,
