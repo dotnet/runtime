@@ -4,7 +4,6 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -37,17 +36,22 @@ namespace Microsoft.Extensions.DependencyInjection
 
             if (!instanceType.IsAbstract)
             {
-                ConstructorInfo[] ctors = instanceType.GetConstructors();
-                ConstructorInfo[] preferredCtors = ctors
-                    .Where(x => x.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute))).ToArray();
-                if (preferredCtors.Length > 1)
+                ConstructorInfo[] constructors = instanceType.GetConstructors();
+                ConstructorInfo? pereferredConstructor = null;
+                foreach (ConstructorInfo? constructor in constructors)
                 {
-                    ThrowMultipleCtorsMarkedWithAttributeException();
+                    if (constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute)))
+                    {
+                        if (pereferredConstructor is not null)
+                        {
+                            ThrowMultipleCtorsMarkedWithAttributeException();
+                        }
+                        pereferredConstructor = constructor;
+                    }
                 }
-
-                if (preferredCtors.Length == 1)
+                if (pereferredConstructor is not null)
                 {
-                    bestMatcher = new ConstructorMatcher(preferredCtors[0]);
+                    bestMatcher = new ConstructorMatcher(pereferredConstructor);
                     bestLength = bestMatcher.Match(parameters);
                     if (bestLength == -1)
                     {
@@ -56,7 +60,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
                 else
                 {
-                    foreach (ConstructorInfo? ctor in ctors)
+                    foreach (ConstructorInfo? ctor in constructors)
                     {
                         var matcher = new ConstructorMatcher(ctor);
                         bool isPreferred = ctor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
