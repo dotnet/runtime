@@ -398,14 +398,13 @@ namespace System
             {
                 lengthToExamine = ((uint)length - offset) & (nuint)~(Vector<byte>.Count - 1);
 
-                Vector<byte> zero = Vector<byte>.Zero;  // JIT won't hoist that vector outside the loop
                 Vector<byte> values = new(value);
                 Vector<byte> matches;
 
                 while (offset < lengthToExamine)
                 {
                     matches = Vector.Equals(values, LoadVector(ref searchSpace, offset));
-                    if (zero.Equals(matches))
+                    if (matches == Vector<byte>.Zero)
                     {
                         offset += (nuint)Vector<byte>.Count;
                         continue;
@@ -421,7 +420,7 @@ namespace System
                 {
                     offset = (uint)(length - Vector<byte>.Count);
                     matches = Vector.Equals(values, LoadVector(ref searchSpace, offset));
-                    if (!zero.Equals(matches))
+                    if (matches != Vector<byte>.Zero)
                     {
                         goto Found;
                     }

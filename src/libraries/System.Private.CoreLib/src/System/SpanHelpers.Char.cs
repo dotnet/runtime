@@ -477,7 +477,6 @@ namespace System
                     // This is equivalent to: lengthToExamine = Vector<ushort>.Count + ((uint)length - offset) / Vector<ushort>.Count)
                     lengthToExamine = ((uint)length - offset) & (nuint)~(Vector<ushort>.Count - 1);
 
-                    Vector<ushort> zero = Vector<ushort>.Zero;  // JIT won't hoist that vector outside the loop
                     Vector<ushort> values = new(value);
                     Vector<ushort> matches;
 
@@ -486,7 +485,7 @@ namespace System
                         // Using Unsafe.Read instead of ReadUnaligned since the search space is pinned and pCh is always vector aligned
                         Debug.Assert(((int)(pChars + offset) % Unsafe.SizeOf<Vector<ushort>>()) == 0);
                         matches = Vector.Equals(values, Unsafe.Read<Vector<ushort>>(pChars + offset));
-                        if (zero.Equals(matches))
+                        if (matches == Vector<ushort>.Zero)
                         {
                             offset += (nuint)Vector<ushort>.Count;
                             continue;
@@ -501,7 +500,7 @@ namespace System
                     if (offset < (uint)length)
                     {
                         matches = Vector.Equals(values, Unsafe.ReadUnaligned<Vector<ushort>>(pChars + (uint)length - (uint)Vector<ushort>.Count));
-                        if (!zero.Equals(matches))
+                        if (matches != Vector<ushort>.Zero)
                         {
                             goto Found;
                         }
