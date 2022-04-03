@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [Theory]
         [MemberData(nameof(ActivatorUtilitiesData))]
-        public void CreateInstanceShouldNotDependOnConstructorsDefinitionOrder(Type instanceType)
+        public void ShouldFixIssue_42339(Type instanceType)
         {
             var data = new Dictionary<string, object>();
             var serviceProvider = new FakeServiceProvider(t =>
