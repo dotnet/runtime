@@ -46,7 +46,7 @@ GenTree* Compiler::fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* ope
         noway_assert(tree->AsCast()->CastOp() == oper);
         noway_assert(tree->gtOper == GT_CAST);
     }
-    result = fgMorphIntoHelperCall(tree, helper, oper);
+    result = fgMorphIntoHelperCall(tree, helper, true, oper);
     assert(result == tree);
     return result;
 }
@@ -57,12 +57,13 @@ GenTree* Compiler::fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* ope
  *  the given argument list.
  */
 
-GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTree* arg1, GenTree* arg2, bool morphArgs)
+GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphArgs, GenTree* arg1, GenTree* arg2)
 {
     // The helper call ought to be semantically equivalent to the original node, so preserve its VN.
     tree->ChangeOper(GT_CALL, GenTree::PRESERVE_VN);
 
     GenTreeCall* call           = tree->AsCall();
+    // Args are cleared by ChangeOper above
     call->gtCallType            = CT_HELPER;
     call->gtReturnType          = tree->TypeGet();
     call->gtCallMethHnd         = eeFindHelper(helper);
@@ -99,28 +100,26 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTree* arg
 #endif // !TARGET_64BIT
 #endif // FEATURE_MULTIREG_RET
 
-    if (tree->OperMayThrow(this))
+    if (call->OperMayThrow(this))
     {
-        tree->gtFlags |= GTF_EXCEPT;
+        call->gtFlags |= GTF_EXCEPT;
     }
     else
     {
-        tree->gtFlags &= ~GTF_EXCEPT;
+        call->gtFlags &= ~GTF_EXCEPT;
     }
-    tree->gtFlags |= GTF_CALL;
+    call->gtFlags |= GTF_CALL;
+
+    if (arg2 != nullptr)
+    {
+        call->gtArgs.PushFront(this, arg2);
+        call->gtFlags |= arg2->gtFlags & GTF_ALL_EFFECT;
+    }
 
     if (arg1 != nullptr)
     {
-        CallArg* carg1 = tree->AsCall()->gtArgs.PushFront(this, arg1);
-        if (arg2 != nullptr)
-        {
-            tree->AsCall()->gtArgs.InsertAfter(this, carg1, arg2);
-        }
-    }
-
-    for (CallArg& arg : tree->AsCall()->gtArgs.Args())
-    {
-        tree->gtFlags |= (arg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT);
+        call->gtArgs.PushFront(this, arg1);
+        call->gtFlags |= arg1->gtFlags & GTF_ALL_EFFECT;
     }
 
     // Perform the morphing
@@ -571,6 +570,10 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 }
 
 #ifdef DEBUG
+
+//------------------------------------------------------------------------
+// getWellKnownArgName: Get a string representation of a WellKnownArg.
+//
 const char* getWellKnownArgName(WellKnownArg arg)
 {
     switch (arg)
@@ -612,6 +615,9 @@ const char* getWellKnownArgName(WellKnownArg arg)
     }
 }
 
+//------------------------------------------------------------------------
+// Dump: Dump information about a CallArg to jitstdout.
+//
 void CallArg::Dump(Compiler* comp)
 {
     printf("CallArg[arg %u", AbiInfo.ArgNum);
@@ -681,6 +687,17 @@ void CallArg::Dump(Compiler* comp)
 }
 #endif
 
+//------------------------------------------------------------------------
+// SplitArg:
+//   Record that the arg will be split over registers and stack, increasing the
+//   current stack usage.
+//
+// Parameters:
+//   arg         - The argument.
+//   numRegs     - The number of registers that will be used.
+//   numSlots    - The number of stack slots that will be used.
+//   nextSlotNum - Pointer to current stack slot, used for debugging purposes.
+//
 void CallArgs::SplitArg(CallArg* arg, unsigned numRegs, unsigned numSlots, unsigned* nextSlotNum)
 {
     assert(numRegs > 0);
@@ -706,12 +723,18 @@ void CallArgs::SplitArg(CallArg* arg, unsigned numRegs, unsigned numSlots, unsig
     m_nextStackByteOffset += numSlots * TARGET_POINTER_SIZE;
 }
 
+//------------------------------------------------------------------------
+// SetTemp: Set that the specified argument was evaluated into a temp.
+//
 void CallArgs::SetTemp(CallArg* arg, unsigned tmpNum)
 {
     arg->m_tmpNum = tmpNum;
     arg->m_isTmp  = true;
 }
 
+//------------------------------------------------------------------------
+// ArgsComplete: Make final decisions on which arguments to evaluate into temporaries.
+//
 void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 {
     bool hasStructRegArg = false;
@@ -1071,6 +1094,9 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
     m_argsComplete = true;
 }
 
+//------------------------------------------------------------------------
+// SortArgs: Sort arguments into a better passing order.
+//
 void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
 {
     assert(m_argsComplete);
@@ -1374,17 +1400,13 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------------
-// fgMakeTmpArgNode : This function creates a tmp var only if needed.
-//                    We need this to be done in order to enforce ordering
-//                    of the evaluation of arguments.
-//
-// Arguments:
-//    comp
-//    arg
+// MakeTmpArgNode:
+//   Create a temp for an argument if needed.  We usually need this to be done
+//   in order to enforce ordering of the evaluation of arguments.
 //
 // Return Value:
 //    the newly created temp var tree.
-
+//
 GenTree* CallArgs::MakeTmpArgNode(Compiler* comp, CallArg* arg)
 {
     unsigned   tmpVarNum = arg->m_tmpNum;
@@ -1496,6 +1518,32 @@ GenTree* CallArgs::MakeTmpArgNode(Compiler* comp, CallArg* arg)
     return argNode;
 }
 
+//------------------------------------------------------------------------------
+// EvalArgsToTemps: Handle arguments that were marked as requiring temps.
+//
+// Remarks:
+//   This is the main function responsible for assigning late nodes in arguments.
+//   After this function we may have the following shapes of early and late
+//   nodes in arguments:
+//   1. Early: GT_ASG, Late: GT_LCL_VAR.
+//        When the argument needs to be evaluated early because it has side
+//        effects it will be assigned to a temp in the early node and passed as
+//        the local in the late node. This can happen for both register and
+//        stack args.
+//
+//   2. Early: GT_ARGPLACE, Late: <any node>
+//        All arguments that are placed in registers need to appear as a late
+//        node. Some stack arguments may also require this pattern, for example
+//        if a later argument trashes the outgoing arg area by requiring a
+//        call.
+//        If the argument does not otherwise need to be evaluated into a temp
+//        (because it does not have side effects), we create just a placeholder
+//        GT_ARGPLACE for the early list and move it into the late list.
+//
+//   3. Early: <any node>, Late: no node
+//        Arguments that are passed on stack and that do not need early
+//        evaluation do not require any late node.
+//
 void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
 {
     assert(m_argsSorted);
@@ -1769,6 +1817,9 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
 #endif
 }
 
+//------------------------------------------------------------------------------
+// SetNeedsTemp: Set the specified argument as requiring evaluation into a temp.
+//
 void CallArgs::SetNeedsTemp(CallArg* arg)
 {
     arg->m_needTmp = true;
@@ -1853,6 +1904,9 @@ GenTree* Compiler::fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE 
     return new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, subTree->TypeGet(), lclNum);
 }
 
+// Determine argument ABI information.
+// TODO-ARGS: This is equivalent to old fgInitArgInfo and thus may add arguments.
+// Refactor this to be idempotent.
 void CallArgs::DetermineArgABIInformation(Compiler* comp, GenTreeCall* call)
 {
     assert(&call->gtArgs == this);
@@ -2875,28 +2929,28 @@ unsigned CallArgs::CountArgs()
 //    information for the call. If it has already been determined, that method
 //    will simply return.
 //
-//    This method changes the state of the call node. It uses the existence
-//    of gtCallLateArgs (the late arguments list) to determine if it has
-//    already done the first round of morphing.
+//    This method changes the state of the call node. It may be called even
+//    after it has already done the first round of morphing.
 //
 //    The first time it is called (i.e. during global morphing), this method
 //    computes the "late arguments". This is when it determines which arguments
 //    need to be evaluated to temps prior to the main argument setup, and which
 //    can be directly evaluated into the argument location. It also creates a
-//    second argument list (gtCallLateArgs) that does the final placement of the
+//    second argument list (the late args) that does the final placement of the
 //    arguments, e.g. into registers or onto the stack.
 //
-//    The "non-late arguments", aka the gtCallArgs, are doing the in-order
-//    evaluation of the arguments that might have side-effects, such as embedded
-//    assignments, calls or possible throws. In these cases, it and earlier
-//    arguments must be evaluated to temps.
+//    The "non-late arguments", are doing the in-order evaluation of the
+//    arguments that might have side-effects, such as embedded assignments,
+//    calls or possible throws. In these cases, it and earlier arguments must
+//    be evaluated to temps.
 //
 //    On targets with a fixed outgoing argument area (FEATURE_FIXED_OUT_ARGS),
 //    if we have any nested calls, we need to defer the copying of the argument
-//    into the fixed argument area until after the call. If the argument did not
-//    otherwise need to be computed into a temp, it is moved to gtCallLateArgs and
-//    replaced in the "early" arg list (gtCallArgs) with a placeholder node.
-
+//    into the fixed argument area until after the call. If the argument did
+//    not otherwise need to be computed into a temp, it is moved to late
+//    argument and replaced in the "early" arg list with a placeholder node.
+//    Also see `CallArgs::EvalArgsToTemps`.
+//   
 #ifdef _PREFAST_
 #pragma warning(push)
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
@@ -3533,11 +3587,11 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 //     morph the argument as needed to be passed correctly.
 //
 // Arguments:
-//     arg        - The argument
+//     arg        - The argument containing a struct node.
 //
 // Notes:
-//    The arg must be a GT_OBJ or GT_LCL_VAR or GT_LCL_FLD of TYP_STRUCT.
-//    If 'arg' is a lclVar passed on the stack, we will ensure that any lclVars that must be on the
+//    The arg node must be a GT_OBJ or GT_LCL_VAR or GT_LCL_FLD of TYP_STRUCT.
+//    If arg node is a lclVar passed on the stack, we will ensure that any lclVars that must be on the
 //    stack are marked as doNotEnregister, and then we return.
 //
 //    If it is passed by register, we mutate the argument into the GT_FIELD_LIST form
@@ -10692,7 +10746,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             }
         }
 
-            return fgMorphIntoHelperCall(tree, helper, op1, op2);
+            return fgMorphIntoHelperCall(tree, helper, true, op1, op2);
 
         case GT_RETURN:
             if (!tree->TypeIs(TYP_VOID))
@@ -15801,8 +15855,8 @@ GenTree* Compiler::fgInitThisClass()
             // CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE with a zeroed out resolvedToken means "get the static
             // base of the class that owns the method being compiled". If we're in this method, it means we're not
             // inlining and there's no ambiguity.
-            return impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE, TYP_BYREF,
-                                             ctxTree, &kind);
+            return impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE, TYP_BYREF, &kind,
+                                             ctxTree);
         }
 #endif
 

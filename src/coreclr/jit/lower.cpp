@@ -1804,7 +1804,7 @@ void Lowering::InsertProfTailCallHook(GenTreeCall* call, GenTree* insertionPoint
     {
         for (CallArg& arg : call->gtArgs.Args())
         {
-            assert(!arg.GetEarlyNode()->OperIs(GT_PUTARG_REG)); // We don't expect to see these in gtCallArgs
+            assert(!arg.GetEarlyNode()->OperIs(GT_PUTARG_REG)); // We don't expect to see these in early args
 
             if (arg.GetEarlyNode()->OperIs(GT_PUTARG_STK))
             {
@@ -4354,11 +4354,10 @@ void Lowering::InsertPInvokeMethodProlog()
 
     // Call runtime helper to fill in our InlinedCallFrame and push it on the Frame list:
     //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart, secretArg);
-    // for x86, don't pass the secretArg.
-    CLANG_FORMAT_COMMENT_ANCHOR;
     GenTreeCall* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL);
 
     call->gtArgs.PushBack(comp, frameAddr, WellKnownArg::PInvokeFrame);
+    // for x86/arm32 don't pass the secretArg.
 #if !defined(TARGET_X86) && !defined(TARGET_ARM)
     call->gtArgs.PushBack(comp, PhysReg(REG_SECRET_STUB_PARAM), WellKnownArg::SecretStubParam);
 #endif

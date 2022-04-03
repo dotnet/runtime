@@ -1264,6 +1264,10 @@ unsigned CallArgABIInformation::GetStackByteSize() const
 //   reclassified by calling `DetermineArgABIInformation` as otherwise they
 //   will be readded. See `CallArgs::ResetArgABIInformation`.
 //
+//   Note that the 'late' here is separate from CallArg::GetLateNode and
+//   friends. Late here refers to this being an argument that is added by morph
+//   instead of the importer.
+//
 bool CallArg::IsArgAddedLate() const
 {
     switch (m_wellKnownArg)
@@ -2180,6 +2184,15 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
     return true;
 }
 
+//--------------------------------------------------------------------------
+// ResetArgABIInformation: Reset ABI information classified for arguments,
+//                         removing late-added arguments.
+//
+// Remarks:
+//   This function can be called between `CallArgs::DetermineArgABIInformation`
+//   and actually finishing the morphing of arguments. It cannot be called once
+//   the arguments have finished morphing.
+//
 void CallArgs::ResetArgABIInformation()
 {
     if (!IsAbiInformationDetermined())
@@ -8554,8 +8567,15 @@ DONE:
     return copy;
 }
 
-// Copy all information from the specified CallArgs, making these argument lists equivalent.
-// Nodes are cloned using the specified function.
+//------------------------------------------------------------------------
+// InternalCopyFrom:
+//   Copy all information from the specified `CallArgs`, making these argument
+//   lists equivalent. Nodes are cloned using the specified function.
+//
+// Remarks:
+//   This function should not be used directly. Instead, use `gtCloneExpr` on
+//   the call node.
+//
 template <typename CopyNodeFunc>
 void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc copyNode)
 {
@@ -8572,8 +8592,8 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
     m_argsSorted               = other->m_argsSorted;
     m_needsTemps               = other->m_needsTemps;
 
-    // Unix x86 flags related to stack alignment intentionally not copied as it
-    // depends on where the call will be inserted.
+    // Unix x86 flags related to stack alignment intentionally not copied as
+    // they depend on where the call will be inserted.
 
     CallArg** tail = &m_head;
     for (CallArg& arg : other->Args())
@@ -11891,6 +11911,9 @@ void Compiler::gtDispTree(GenTree*     tree,
     }
 }
 
+//------------------------------------------------------------------------
+// gtGetWellKnownArgNameForArgMsg: Get a short descriptor of a well-known arg kind.
+//
 const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
 {
     switch (arg)
@@ -11929,6 +11952,13 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
     }
 }
 
+//------------------------------------------------------------------------
+// gtPrintArgPrefix: Print a description of an argument into the specified buffer.
+//
+// Remarks:
+//   For well-known arguments this prints a human-readable description.
+//   Otherwise it prints e.g. "arg3".
+//
 void Compiler::gtPrintArgPrefix(GenTreeCall* call, CallArg* arg, char** bufp, unsigned* bufLength)
 {
     int         prefLen;
@@ -12011,10 +12041,10 @@ void Compiler::gtGetArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsigned
 // gtGetLateArgMsg: Construct a message about the given argument
 //
 // Arguments:
-//    call         - The call for which 'arg' is an argument
-//    arg         - The argument for which a message should be constructed
-//    bufp         - A pointer to the buffer into which the message is written
-//    bufLength    - The length of the buffer pointed to by bufp
+//    call      - The call for which 'arg' is an argument
+//    arg       - The argument for which a message should be constructed
+//    bufp      - A pointer to the buffer into which the message is written
+//    bufLength - The length of the buffer pointed to by bufp
 //
 // Return Value:
 //    No return value, but bufp is written.

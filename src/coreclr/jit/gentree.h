@@ -4269,7 +4269,6 @@ public:
     CallArg* GetLateNext() { return m_lateNext; }
     void SetLateNext(CallArg* lateNext) { m_lateNext = lateNext; }
     WellKnownArg GetWellKnownArg() { return m_wellKnownArg; }
-    // TODO-ARGS: Remove
     bool IsTemp() { return m_isTmp; }
     // clang-format on
 
@@ -4353,7 +4352,6 @@ public:
     // Reverse the args from [index..index + count) in place.
     void Reverse(unsigned index, unsigned count);
 
-    // Create a new call argument at the beginning of the list.
     CallArg* PushFront(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
     CallArg* PushBack(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
     CallArg* InsertAfter(Compiler* comp, CallArg* after, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
@@ -4373,9 +4371,6 @@ public:
     }
 
     void ResetArgABIInformation();
-    // Determine argument ABI information.
-    // TODO-ARGS: This is equivalent to old fgInitArgInfo and thus may add arguments.
-    // Refactor this to be idempotent.
     void DetermineArgABIInformation(Compiler* comp, GenTreeCall* call);
 
     void ArgsComplete(Compiler* comp, GenTreeCall* call);

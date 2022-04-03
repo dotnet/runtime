@@ -799,10 +799,20 @@ void Compiler::impAssignTempGen(unsigned             tmpNum,
 
 /*****************************************************************************
  *
- *  Pop the given number of values from the stack and return a list node with
- *  their values.
  */
-
+//------------------------------------------------------------------------
+// impPopCallArgs:
+//   Pop the given number of values from the stack and return a list node with
+//   their values.
+//
+// Parameters:
+//   count   - The number of arguments to pop
+//   sig     - Signature used to figure out classes the runtime must load, and
+//             also to record exact receiving argument types that may be needed for ABI
+//             purposes later.
+//             Can be nullptr for certain helpers.
+//   argList - The `CallArgs` to pop argument into.
+//
 void Compiler::impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig, CallArgs* argList)
 {
     assert(sig == nullptr || count == sig->numArgs);
@@ -852,7 +862,7 @@ void Compiler::impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig, CallArgs* a
 #endif
         }
 
-        /* NOTE: we defer bashing the type for I_IMPL to fgMorphArgs */
+        // NOTE: we defer bashing the type for I_IMPL to fgMorphArg
         argList->PushFront(this, temp);
     }
 
@@ -1223,10 +1233,10 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                 if (callConvIsInstanceMethodCallConv(srcCall->GetUnmanagedCallConv()))
                 {
 #ifdef TARGET_X86
-                    // The argument list has already been reversed making it
-                    // complicated to figure out where the retbuffer should be
-                    // inserted. There are several cases.
-
+                    // The argument list has already been reversed. Insert the
+                    // return buffer as the second-to-last node  so it will be
+                    // pushed on to the stack after the user args but before
+                    // the native this arg as required by the native ABI.
                     if (srcCall->gtArgs.Args().begin() == srcCall->gtArgs.Args().end())
                     {
                         // Empty arg list
@@ -1360,7 +1370,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 
         if (call->ShouldGetRetBufArg())
         {
-            // insert the return value buffer into the argument list as first byref parameter
+            // insert the return value buffer into the argument list as first byref parameter after 'this'
             call->gtArgs.InsertAfterThisOrFirst(this, destAddr, WellKnownArg::RetBuffer);
 
             // now returns void, not a struct
@@ -2097,8 +2107,8 @@ GenTreeCall* Compiler::impReadyToRunHelperToTree(
     CORINFO_RESOLVED_TOKEN* pResolvedToken,
     CorInfoHelpFunc         helper,
     var_types               type,
-    GenTree*                arg1,
-    CORINFO_LOOKUP_KIND*    pGenericLookupKind /* =NULL. Only used with generics */)
+    CORINFO_LOOKUP_KIND*    pGenericLookupKind,
+    GenTree*                arg1)
 {
     CORINFO_CONST_LOOKUP lookup;
     if (!info.compCompHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, helper, &lookup))
@@ -2218,7 +2228,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         if (opts.IsReadyToRun())
         {
             return impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
-                                             ctxTree, &pLookup->lookupKind);
+                                             &pLookup->lookupKind, ctxTree);
         }
 #endif
         return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, ctxTree, compileTimeHandle);
@@ -6827,7 +6837,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
             GenTree* ctxTree = getRuntimeContextTree(pCallInfo->codePointerLookup.lookupKind.runtimeLookupKind);
 
             return impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
-                                             ctxTree, &pCallInfo->codePointerLookup.lookupKind);
+                                             &pCallInfo->codePointerLookup.lookupKind, ctxTree);
         }
     }
 #endif
@@ -7477,11 +7487,6 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
     node =
         gtNewHelperCallNode(CORINFO_HELP_NEW_MDARR, TYP_REF, classHandle, gtNewIconNode(pCallInfo->sig.numArgs), node);
 
-    for (CallArg& arg : node->AsCall()->gtArgs.Args())
-    {
-        node->gtFlags |= arg.GetEarlyNode()->gtFlags & GTF_GLOB_EFFECT;
-    }
-
     node->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)pResolvedToken->hClass;
 
     // Remember that this basic block contains 'new' of a md array
@@ -7916,7 +7921,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
 
     if (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL)
     {
-        GenTree* thisPtr = call->gtArgs.Args().begin()->GetEarlyNode();
+        GenTree* thisPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
         impBashVarAddrsToI(thisPtr);
         assert(thisPtr->TypeGet() == TYP_I_IMPL || thisPtr->TypeGet() == TYP_BYREF);
     }
@@ -8980,8 +8985,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert(fptr != nullptr);
 
                 call->AsCall()->gtArgs.PushFront(this, thisPtrCopy, WellKnownArg::ThisPointer);
-                thisPtr     = nullptr; // can't reuse it
-                thisPtrCopy = nullptr;
 
                 // Now make an indirect call through the function pointer
 
@@ -15784,7 +15787,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifdef FEATURE_READYTORUN
                 if (opts.IsReadyToRun())
                 {
-                    op1 = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_NEWARR_1, TYP_REF, op2);
+                    op1 = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_NEWARR_1, TYP_REF, nullptr, op2);
                     usingReadyToRunHelper = (op1 != nullptr);
 
                     if (!usingReadyToRunHelper)
@@ -15977,7 +15980,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         GenTreeCall* opLookup =
                             impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_ISINSTANCEOF, TYP_REF,
-                                                      op1);
+                                                      nullptr, op1);
                         usingReadyToRunHelper = (opLookup != nullptr);
                         op1                   = (usingReadyToRunHelper ? opLookup : op1);
 
@@ -16496,7 +16499,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (opts.IsReadyToRun())
                     {
                         GenTreeCall* opLookup =
-                            impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_CHKCAST, TYP_REF, op1);
+                            impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_CHKCAST, TYP_REF, nullptr, op1);
                         usingReadyToRunHelper = (opLookup != nullptr);
                         op1                   = (usingReadyToRunHelper ? opLookup : op1);
 
@@ -21613,8 +21616,6 @@ public:
         {
             comp->fgWalkTreePre(&arg.EarlyNodeRef(), SpillRetExprVisitor, this);
         }
-
-        // TODO-ARGS-REVIEW: Different order of this and rest of args
     }
 
 private:

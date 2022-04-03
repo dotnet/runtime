@@ -3828,8 +3828,8 @@ public:
     GenTreeCall* impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                            CorInfoHelpFunc         helper,
                                            var_types               type,
-                                           GenTree*                arg1               = nullptr,
-                                           CORINFO_LOOKUP_KIND*    pGenericLookupKind = nullptr);
+                                           CORINFO_LOOKUP_KIND*    pGenericLookupKind = nullptr,
+                                           GenTree*                arg1               = nullptr);
 
     bool impIsCastHelperEligibleForClassProbe(GenTree* tree);
     bool impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper);
@@ -5557,7 +5557,7 @@ private:
     GenTree* fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* oper);
 
     GenTree* fgMorphIntoHelperCall(
-        GenTree* tree, int helper, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, bool morphArgs = true);
+        GenTree* tree, int helper, bool morphArgs, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr);
 
     GenTree* fgMorphStackArgForVarArgs(unsigned lclNum, var_types varType, unsigned lclOffs);
 

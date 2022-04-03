@@ -209,13 +209,16 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     // Create the call node
     GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->gtType);
 
+    if (arg2 != nullptr)
+    {
+        call->gtArgs.PushFront(comp, arg2);
+        call->gtFlags |= arg2->gtFlags & GTF_ALL_EFFECT;
+    }
+
     if (arg1 != nullptr)
     {
-        CallArg* carg1 = call->gtArgs.PushFront(comp, arg1);
-        if (arg2 != nullptr)
-        {
-            call->gtArgs.InsertAfter(comp, carg1, arg2);
-        }
+        call->gtArgs.PushFront(comp, arg1);
+        call->gtFlags |= arg1->gtFlags & GTF_ALL_EFFECT;
     }
 
 #if DEBUG
