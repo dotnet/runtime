@@ -9,6 +9,21 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 {
     public class ActivatorUtilitiesTests
     {
+        [Fact]
+        public void ShouldFixIssue_46132()
+        {
+            var services = new ServiceCollection();
+            services.AddScoped<S>();
+            using var provider = services.BuildServiceProvider();
+            var a = new A();
+            var c = new C();
+
+            var instance = ActivatorUtilities.CreateInstance<Creatable>(
+                provider, new C(), new A());;
+
+            Assert.NotNull(instance);
+        }
+
         [Theory]
         [MemberData(nameof(ActivatorUtilitiesData))]
         public void CreateInstanceShouldNotDependOnConstructorsDefinitionOrder(Type instanceType)
@@ -34,6 +49,18 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 typeof(FakeValidationResultOps)
             };
         }
+    }
+
+    internal class A { }
+    internal class B { }
+    internal class C { }
+    internal class S { }
+
+    internal class Creatable
+    {
+        public Creatable(A a, B b, C c, S s) { }
+
+        public Creatable(A a, C c, S s) {  }
     }
 
     internal class FakeServiceProvider : IServiceProvider
