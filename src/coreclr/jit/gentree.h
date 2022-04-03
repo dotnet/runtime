@@ -5876,8 +5876,16 @@ struct GenTreeBoundsChk : public GenTreeOp
     BasicBlock*     gtIndRngFailBB; // Basic block to jump to for index-out-of-range
     SpecialCodeKind gtThrowKind;    // Kind of throw block to branch to on failure
 
+    // Store some information about the array element type that was in the GT_INDEX node before morphing.
+    // Note that this information is also stored in the m_arrayInfoMap of the morphed IND node (that
+    // is marked with GTF_IND_ARR_INDEX), but that can be hard to find.
+    var_types gtInxType; // Save the GT_INDEX type
+
     GenTreeBoundsChk(GenTree* index, GenTree* length, SpecialCodeKind kind)
-        : GenTreeOp(GT_BOUNDS_CHECK, TYP_VOID, index, length), gtIndRngFailBB(nullptr), gtThrowKind(kind)
+        : GenTreeOp(GT_BOUNDS_CHECK, TYP_VOID, index, length)
+        , gtIndRngFailBB(nullptr)
+        , gtThrowKind(kind)
+        , gtInxType(TYP_UNKNOWN)
     {
         gtFlags |= GTF_EXCEPT;
     }

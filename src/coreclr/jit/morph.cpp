@@ -5436,6 +5436,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         }
 
         GenTreeBoundsChk* arrBndsChk = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(index, arrLen, SCK_RNGCHK_FAIL);
+        arrBndsChk->gtInxType        = elemTyp;
 
         bndsChk = arrBndsChk;
 
