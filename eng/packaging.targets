@@ -1,12 +1,6 @@
 <Project>
 
   <PropertyGroup>
-    <!--
-      Disable PackageValidation for non-CSProj since those will load only one roslyn assembly of the wrong
-      version causing the task to be in torn-state.  See https://github.com/dotnet/runtime/pull/61697.
-      https://github.com/dotnet/runtime/issues/60883 tracks fixing this in 6.0 and removing this condition.
-    -->
-    <EnablePackageValidation Condition="'$(MSBuildProjectExtension)' == '.csproj'">true</EnablePackageValidation>
     <!-- Don't restore prebuilt packages during sourcebuild. -->
     <DisablePackageBaselineValidation Condition="'$(DotNetBuildFromSource)' == 'true'">true</DisablePackageBaselineValidation>
     <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">6.0.0</PackageValidationBaselineVersion>
