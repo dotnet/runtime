@@ -388,15 +388,25 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     for (int i = 0; i < revocationSize; i++)
                     {
-                        using (SafeX509Handle cert =
-                            Interop.Crypto.X509UpRef(Interop.Crypto.GetX509StackField(chainStack, i)))
+                        if (i == 0 && Interop.Crypto.X509ChainHasStapledOcsp(_storeCtx))
                         {
-                            OpenSslCrlCache.AddCrlForCertificate(
-                                cert,
-                                _store,
-                                revocationMode,
-                                _verificationTime,
-                                _downloadTimeout);
+                            if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                            {
+                                OpenSslX509ChainEventSource.Log.StapledOcspPresent();
+                            }
+                        }
+                        else
+                        {
+                            using (SafeX509Handle cert =
+                                Interop.Crypto.X509UpRef(Interop.Crypto.GetX509StackField(chainStack, i)))
+                            {
+                                OpenSslCrlCache.AddCrlForCertificate(
+                                    cert,
+                                    _store,
+                                    revocationMode,
+                                    _verificationTime,
+                                    _downloadTimeout);
+                            }
                         }
                     }
                 }

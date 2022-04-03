@@ -1561,21 +1561,21 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
     GenTree*  src  = putArgStk->gtOp1;
     var_types type = src->TypeGet();
 
-#if defined(FEATURE_SIMD) && defined(TARGET_X86)
-    // For PutArgStk of a TYP_SIMD12, we need an extra register.
-    if (putArgStk->isSIMD12())
-    {
-        buildInternalFloatRegisterDefForNode(putArgStk, internalFloatRegCandidates());
-        BuildUse(putArgStk->gtOp1);
-        srcCount = 1;
-        buildInternalRegisterUses();
-        return srcCount;
-    }
-#endif // defined(FEATURE_SIMD) && defined(TARGET_X86)
-
     if (type != TYP_STRUCT)
     {
-        return BuildSimple(putArgStk);
+#if defined(FEATURE_SIMD) && defined(TARGET_X86)
+        // For PutArgStk of a TYP_SIMD12, we need an extra register.
+        if (putArgStk->isSIMD12())
+        {
+            buildInternalFloatRegisterDefForNode(putArgStk, internalFloatRegCandidates());
+            BuildUse(src);
+            srcCount = 1;
+            buildInternalRegisterUses();
+            return srcCount;
+        }
+#endif // defined(FEATURE_SIMD) && defined(TARGET_X86)
+
+        return BuildOperandUses(src);
     }
 
     ssize_t size = putArgStk->GetStackByteSize();

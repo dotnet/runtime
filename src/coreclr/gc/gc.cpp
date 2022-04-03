@@ -6803,7 +6803,7 @@ bool gc_heap::virtual_alloc_commit_for_heap (void* addr, size_t size, int h_numb
     return GCToOSInterface::VirtualCommit(addr, size);
 }
 
-bool gc_heap::virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number, bool* hard_limit_exceeded_p)
+bool gc_heap::virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number)
 {
 #ifndef HOST_64BIT
     assert (heap_hard_limit == 0);
@@ -6840,9 +6840,6 @@ bool gc_heap::virtual_commit (void* address, size_t size, gc_oh_num oh, int h_nu
         }
 
         check_commit_cs.Leave();
-
-        if (hard_limit_exceeded_p)
-            *hard_limit_exceeded_p = exceeded_p;
 
         if (exceeded_p)
         {
@@ -14220,12 +14217,9 @@ BOOL gc_heap::a_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* alloc_
 }
 
 // Grow by committing more pages
-BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool* hard_limit_exceeded_p)
+BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address)
 {
     assert (high_address <= heap_segment_reserved (seg));
-
-    if (hard_limit_exceeded_p)
-        *hard_limit_exceeded_p = false;
 
     //return 0 if we are at the end of the segment.
     if (align_on_page (high_address) > heap_segment_reserved (seg))
@@ -14245,7 +14239,7 @@ BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool*
                 "Growing heap_segment: %Ix high address: %Ix\n",
                 (size_t)seg, (size_t)high_address);
 
-    bool ret = virtual_commit (heap_segment_committed (seg), c_size, heap_segment_oh (seg), heap_number, hard_limit_exceeded_p);
+    bool ret = virtual_commit (heap_segment_committed (seg), c_size, heap_segment_oh (seg), heap_number);
     if (ret)
     {
         heap_segment_committed (seg) += c_size;
@@ -16130,7 +16124,6 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
 {
     *commit_failed_p = FALSE;
     size_t limit = 0;
-    bool hard_limit_short_seg_end_p = false;
 #ifdef BACKGROUND_GC
     int cookie = -1;
 #endif //BACKGROUND_GC
@@ -16169,21 +16162,13 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
                                  (end - allocated),
                                  gen_number, align_const);
 
-        if (grow_heap_segment (seg, (allocated + limit), &hard_limit_short_seg_end_p))
+        if (grow_heap_segment (seg, (allocated + limit)))
         {
             goto found_fit;
         }
         else
         {
-            if (!hard_limit_short_seg_end_p)
-            {
-                dprintf (2, ("can't grow segment, doing a full gc"));
-                *commit_failed_p = TRUE;
-            }
-            else
-            {
-                assert (heap_hard_limit);
-            }
+            *commit_failed_p = TRUE;
         }
     }
 
@@ -17796,6 +17781,7 @@ void gc_heap::balance_heaps (alloc_context* acontext)
 
 ptrdiff_t gc_heap::get_balance_heaps_uoh_effective_budget (int generation_num)
 {
+#ifndef USE_REGIONS
     if (heap_hard_limit)
     {
         const ptrdiff_t free_list_space = generation_free_list_space (generation_of (generation_num));
@@ -17807,6 +17793,7 @@ ptrdiff_t gc_heap::get_balance_heaps_uoh_effective_budget (int generation_num)
         return free_list_space - allocated;
     }
     else
+#endif // !USE_REGIONS
     {
         return dd_new_allocation (dynamic_data_of (generation_num));
     }

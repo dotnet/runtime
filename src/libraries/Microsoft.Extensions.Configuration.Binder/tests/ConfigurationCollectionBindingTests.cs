@@ -932,6 +932,25 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void ReadOnlyArrayIsIgnored()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ReadOnlyArray:0", "10"},
+                {"ReadOnlyArray:1", "20"},
+                {"ReadOnlyArray:2", "30"},
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+            var options = new OptionsWithArrays();
+            config.Bind(options);
+
+            Assert.Equal(new OptionsWithArrays().ReadOnlyArray, options.ReadOnlyArray);
+        }
+
+        [Fact]
         public void CanBindUninitializedIEnumerable()
         {
             var input = new Dictionary<string, string>
@@ -1186,6 +1205,51 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val_3", options.IReadOnlyDictionary["ghi"]);
         }
 
+        /// <summary>
+        /// Replicates scenario from https://github.com/dotnet/runtime/issues/65710
+        /// </summary>
+        [Fact]
+        public void CanBindWithInterdependentProperties()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ConfigValues:0", "5"},
+                {"ConfigValues:1", "50"},
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithInterdependentProperties();
+            config.Bind(options);
+
+            Assert.Equal(new[] { 5, 50 }, options.ConfigValues);
+            Assert.Equal(new[] { 50 }, options.FilteredConfigValues);
+        }
+
+        /// <summary>
+        /// Replicates scenario from https://github.com/dotnet/runtime/issues/63479
+        /// </summary>
+        [Fact]
+        public void TestCanBindListPropertyWithoutSetter()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ListPropertyWithoutSetter:0", "a"},
+                {"ListPropertyWithoutSetter:1", "b"},
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithLists();
+            config.Bind(options);
+
+            Assert.Equal(new[] { "a", "b" }, options.ListPropertyWithoutSetter);
+        }
+
         private class UnintializedCollectionsOptions
         {
             public IEnumerable<string> IEnumerable { get; set; }
@@ -1293,12 +1357,14 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             public string[] StringArray { get; set; }
 
-            // this should throw becase we do not support multidimensional arrays
+            // this should throw because we do not support multidimensional arrays
             public string[,] DimensionalArray { get; set; }
 
             public string[][] JaggedArray { get; set; }
 
             public NestedOptions[] ObjectArray { get; set; }
+
+            public int[] ReadOnlyArray { get; } = new[] { 1, 2 };
         }
 
         private class OptionsWithLists
@@ -1332,6 +1398,8 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public List<NestedOptions> ObjectList { get; set; }
 
             public IList<string> AlreadyInitializedListInterface { get; set; }
+
+            public List<string> ListPropertyWithoutSetter { get; } = new();
         }
 
         private class OptionsWithDictionary
@@ -1359,6 +1427,12 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public IDictionary<string, string> StringDictionaryInterface { get; set; }
 
             public IDictionary<string, string> AlreadyInitializedStringDictionaryInterface { get; set; }
+        }
+
+        private class OptionsWithInterdependentProperties
+        {
+            public IEnumerable<int> FilteredConfigValues => ConfigValues.Where(p => p > 10);
+            public IEnumerable<int> ConfigValues { get; set; }
         }
     }
 }

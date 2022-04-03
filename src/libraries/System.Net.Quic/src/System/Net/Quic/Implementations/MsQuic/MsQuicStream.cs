@@ -40,6 +40,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             public MsQuicConnection.State ConnectionState = null!; // set in ctor.
             public string TraceId = null!; // set in ctor.
 
+            public uint StartStatus = MsQuicStatusCodes.Success;
+
             public ReadState ReadState;
 
             // set when ReadState.Aborted:
@@ -182,7 +184,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 QuicExceptionHelpers.ThrowIfFailed(status, "Failed to open stream to peer.");
 
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, QUIC_STREAM_START_FLAGS.FAIL_BLOCKED);
+                status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, QUIC_STREAM_START_FLAGS.FAIL_BLOCKED | QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL);
                 QuicExceptionHelpers.ThrowIfFailed(status, "Could not start stream.");
             }
             catch
@@ -1095,9 +1097,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEventStartComplete(State state, ref StreamEvent evt)
         {
-            // TODO: We should probably check for a failure as indicated by the event data (or at least assert no failure if we aren't expecting it).
-            // However, since there is no definition for START_COMPLETE event data currently, we can't do this right now.
-
+            // Store the start status code and check it when propagating shutdown event, which we'll get since we set SHUTDOWN_ON_FAIL in StreamStart.
+            state.StartStatus = evt.Data.StartComplete.Status;
             return MsQuicStatusCodes.Success;
         }
 
@@ -1171,12 +1172,28 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (shouldReadComplete)
             {
-                state.ReceiveResettableCompletionSource.Complete(0);
+                if (state.StartStatus == MsQuicStatusCodes.Success)
+                {
+                    state.ReceiveResettableCompletionSource.Complete(0);
+                }
+                else
+                {
+                    state.ReceiveResettableCompletionSource.CompleteException(
+                        ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException($"Stream start failed with {MsQuicStatusCodes.GetError(state.StartStatus)}")));
+                }
             }
 
             if (shouldShutdownWriteComplete)
             {
-                state.ShutdownWriteCompletionSource.SetResult();
+                if (state.StartStatus == MsQuicStatusCodes.Success)
+                {
+                    state.ShutdownWriteCompletionSource.SetResult();
+                }
+                else
+                {
+                    state.ShutdownWriteCompletionSource.SetException(
+                        ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException($"Stream start failed with {MsQuicStatusCodes.GetError(state.StartStatus)}")));
+                }
             }
 
             if (shouldShutdownComplete)
@@ -1327,7 +1344,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                 HandleWriteFailedState();
                 CleanupSendState(_state);
 
-                // TODO this may need to be an aborted exception.
+                if (status == MsQuicStatusCodes.Aborted)
+                {
+                    throw ThrowHelper.GetConnectionAbortedException(_state.ConnectionState.AbortErrorCode);
+                }
                 QuicExceptionHelpers.ThrowIfFailed(status,
                     "Could not send data to peer.");
             }
@@ -1391,7 +1411,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                 HandleWriteFailedState();
                 CleanupSendState(_state);
 
-                // TODO this may need to be an aborted exception.
+                if (status == MsQuicStatusCodes.Aborted)
+                {
+                    throw ThrowHelper.GetConnectionAbortedException(_state.ConnectionState.AbortErrorCode);
+                }
                 QuicExceptionHelpers.ThrowIfFailed(status,
                     "Could not send data to peer.");
             }
@@ -1452,7 +1475,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                 HandleWriteFailedState();
                 CleanupSendState(_state);
 
-                // TODO this may need to be an aborted exception.
+                if (status == MsQuicStatusCodes.Aborted)
+                {
+                    throw ThrowHelper.GetConnectionAbortedException(_state.ConnectionState.AbortErrorCode);
+                }
                 QuicExceptionHelpers.ThrowIfFailed(status,
                     "Could not send data to peer.");
             }
@@ -1463,14 +1489,13 @@ namespace System.Net.Quic.Implementations.MsQuic
         private void ReceiveComplete(int bufferLength)
         {
             Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-            uint status = MsQuicApi.Api.StreamReceiveCompleteDelegate(_state.Handle, (ulong)bufferLength);
-            QuicExceptionHelpers.ThrowIfFailed(status, "Could not complete receive call.");
+            MsQuicApi.Api.StreamReceiveCompleteDelegate(_state.Handle, (ulong)bufferLength);
         }
 
         // This can fail if the stream isn't started.
         private long GetStreamId()
         {
-            return (long)MsQuicParameterHelpers.GetULongParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.STREAM, (uint)QUIC_PARAM_STREAM.ID);
+            return (long)MsQuicParameterHelpers.GetULongParam(MsQuicApi.Api, _state.Handle, (uint)QUIC_PARAM_STREAM.ID);
         }
 
         private void ThrowIfDisposed()
