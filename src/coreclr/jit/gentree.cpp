@@ -1107,8 +1107,8 @@ void CallArgABIInformation::SetByteSize(unsigned byteSize, unsigned byteAlignmen
 #if !defined(TARGET_ARM)
     // Arm32 could have a struct with 8 byte alignment
     // which rounded size % 8 is not 0.
-    assert(ByteAlignment != 0);
-    assert(roundedByteSize % ByteAlignment == 0);
+    assert(byteAlignment != 0);
+    assert(roundedByteSize % byteAlignment == 0);
 #endif // TARGET_ARM
 
 #if defined(DEBUG_ARG_SLOTS)
