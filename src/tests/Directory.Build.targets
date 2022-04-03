@@ -114,7 +114,39 @@
     <SkipImportILTargets Condition="'$(CLRTestBuildAllTargets)' != '' And '$(CLRTestNeedTarget)' != '$(CLRTestBuildAllTargets)'">true</SkipImportILTargets>
   </PropertyGroup>
 
-  <Target Name="CopyNativeProjectBinaries" Condition="'$(_CopyNativeProjectBinaries)' == 'true'">
+  <Target Name="CopyMergedWrapperReferences"
+      Condition="'$(IsMergedTestRunnerAssembly)' == 'true'"
+      AfterTargets="Build"
+      BeforeTargets="CopyNativeProjectBinaries">
+    <ItemGroup>
+      <MergedWrapperReferenceFolders Include="@(ProjectReference->'$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)/..', '$(OutDir)/..'))/%(ProjectReference.FileName)')" />
+      <!-- For merged project wrappers, include native libraries in all project references -->
+      <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(LibSuffix)" />
+    </ItemGroup>
+    <Copy SourceFiles="@(MergedWrapperReferenceFiles)"
+        DestinationFiles="@(MergedWrapperReferenceFiles->'$(OutDir)/%(FileName)%(Extension)')"
+        SkipUnchangedFiles="true"
+        />
+  </Target>
+
+  <Target Name="CopyNativeProjectBinaries"
+    Condition="'$(_CopyNativeProjectBinaries)' == 'true' and '@(NativeProjectOutputFoldersToCopy)' != ''"
+    Outputs="%(NativeProjectOutputFoldersToCopy.Identity)">
+
+    <PropertyGroup>
+      <NativeProjectOutputFolder>%(NativeProjectOutputFoldersToCopy.Identity)</NativeProjectOutputFolder>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <NativeProjectBinaries Remove="@(NativeProjectBinaries)" />
+      <NativeProjectBinariesMatched Remove="@(NativeProjectBinariesMatched)" />
+      <NativeProjectBinariesExeFilterRemovedMakeFile Remove="@(NativeProjectBinariesExeFilterRemovedMakeFile)" />
+      <NativeProjectBinariesDyLibFilter Remove="@(NativeProjectBinariesDyLibFilter)" />
+      <NativeProjectBinariesStaticLibFilter Remove="@(NativeProjectBinariesStaticLibFilter)" />
+      <NativeProjectsBinariesSymbolsFilter Remove="@(NativeProjectsBinariesSymbolsFilter)" />
+      <NativeProjectBinariesManifestFilter Remove="@(NativeProjectBinariesManifestFilter)" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(UseVisualStudioNativeBinariesLayout)' == 'true'">
       <NativeProjectBinaries Include="$(NativeProjectOutputFolder)\*.*" />
     </ItemGroup>
@@ -200,15 +232,15 @@
   <Target Name="ConsolidateNativeProjectReference"
           Condition="'$(_CopyNativeProjectBinaries)' == 'true'"
           BeforeTargets="Build" >
-     <ItemGroup Condition="'@(NativeProjectReferenceNormalized)' != ''">
-        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(TestSourceDir),$(__NativeTestIntermediatesDir)\))" Condition="'$(UseVisualStudioNativeBinariesLayout)' != 'true'" />
-        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(TestSourceDir),$(__NativeTestIntermediatesDir)\))$(Configuration)\" Condition="'$(UseVisualStudioNativeBinariesLayout)' == 'true'" />
-     </ItemGroup>
 
-    <Message Text= "Full native project references are :%(NativeProjectReferenceNormalized.Identity)" />
-    <Message Text= "Native binaries will be copied from :%(NativeProjectOutputFoldersToCopy.Identity)" />
+    <PropertyGroup>
+      <NativeArtifactsRoot>$(__NativeTestIntermediatesDir)</NativeArtifactsRoot>
+      <NativeArtifactsRoot Condition="'$(UseVisualStudioNativeBinariesLayout)' == 'true'">$(__NativeTestIntermediatesDir)/$(Configuration)</NativeArtifactsRoot>
+    </PropertyGroup>
 
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyNativeProjectBinaries" Properties="NativeProjectOutputFolder=%(NativeProjectOutputFoldersToCopy.Identity)" Condition="'@(NativeProjectReference)' != ''" />
+    <ItemGroup Condition="'@(NativeProjectReferenceNormalized)' != ''">
+      <NativeProjectOutputFoldersToCopy Include="$(NativeArtifactsRoot)/$([System.IO.Path]::GetRelativePath('$(TestSourceDir)', '%(NativeProjectReferenceNormalized.RootDir)%(NativeProjectReferenceNormalized.Directory)'))" />
+    </ItemGroup>
 
     <MSBuild Projects="@(ProjectReference)"
         Targets="CopyAllNativeProjectReferenceBinaries"
@@ -217,7 +249,7 @@
   </Target>
 
   <Target Name="CopyAllNativeProjectReferenceBinaries"
-          DependsOnTargets="ResolveCMakeNativeProjectReference;ConsolidateNativeProjectReference">
+          DependsOnTargets="ResolveCMakeNativeProjectReference;ConsolidateNativeProjectReference;CopyNativeProjectBinaries">
 
     <ItemGroup Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
       <MergedWrapperReferenceFolders Include="@(ProjectReference->'$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)/..', '$(OutDir)/..'))/%(ProjectReference.FileName)')" />
