@@ -1262,7 +1262,14 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                     }
 
 #else
-                    srcCall->gtArgs.InsertAfter(this, &*srcCall->gtArgs.Args().begin(), destAddr, wellKnownArgType);
+                    if (srcCall->gtArgs.Args().begin() == srcCall->gtArgs.Args().end())
+                    {
+                        srcCall->gtArgs.PushFront(this, destAddr, wellKnownArgType);
+                    }
+                    else
+                    {
+                        srcCall->gtArgs.InsertAfter(this, &*srcCall->gtArgs.Args().begin(), destAddr, wellKnownArgType);
+                    }
 #endif
                 }
                 else
