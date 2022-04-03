@@ -2584,8 +2584,6 @@ public:
     var_types gtTypeForNullCheck(GenTree* tree);
     void gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block);
 
-    void gtChangeCallToHelperCall(GenTreeCall* call, CorInfoHelpFunc func);
-
     GenTreeOp* gtNewAssignNode(GenTree* dst, GenTree* src);
 
     GenTree* gtNewTempAssign(unsigned         tmp,

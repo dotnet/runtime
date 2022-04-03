@@ -1356,9 +1356,9 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
         }
 
         GenTreeCall* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG);
-        call->gtArgs.PushBack(m_compiler, loOp1, WellKnownArg::ShiftLow);
-        call->gtArgs.PushBack(m_compiler, hiOp1, WellKnownArg::ShiftHigh);
-        call->gtArgs.PushBack(m_compiler, shiftByOp);
+        call->gtArgs.PushFront(m_compiler, shiftByOp);
+        call->gtArgs.PushFront(m_compiler, hiOp1, WellKnownArg::ShiftHigh);
+        call->gtArgs.PushFront(m_compiler, loOp1, WellKnownArg::ShiftLow);
         call->gtFlags |= shift->gtFlags & GTF_ALL_EFFECT;
 
         if (shift->IsUnusedValue())

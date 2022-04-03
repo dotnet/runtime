@@ -1144,14 +1144,13 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                 GenTree*             thisPointer       = call->gtArgs.GetArgByIndex(0)->GetEarlyNode();
                 GenTree*             targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetEarlyNode();
                 CORINFO_LOOKUP       pLookup;
-                CORINFO_CONST_LOOKUP entryPoint;
                 info.compCompHnd->getReadyToRunDelegateCtorHelper(&ldftnToken->m_token, ldftnToken->m_tokenConstraint,
                                                                   clsHnd, &pLookup);
                 if (!pLookup.lookupKind.needsRuntimeLookup)
                 {
-                    entryPoint = pLookup.constLookup;
                     call       = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
                                                targetObjPointers);
+                    call->setEntryPoint(pLookup.constLookup);
                 }
                 else
                 {
@@ -1162,10 +1161,9 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                     GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
                     call             = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
                                                targetObjPointers, ctxTree);
-                    entryPoint = genericLookup;
+                    call->setEntryPoint(genericLookup);
                 }
 
-                call->setEntryPoint(entryPoint);
             }
             else
             {
@@ -1560,12 +1558,11 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
             case CORINFO_LOOKUP_METHODPARAM:
             {
                 // In this case, the hidden param is the method handle.
-                GenTree* arg = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
-                arg->gtFlags |= GTF_VAR_CONTEXT;
+                tree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
+                tree->gtFlags |= GTF_VAR_CONTEXT;
                 // Call helper CORINFO_HELP_GETCLASSFROMMETHODPARAM to get the class handle
                 // from the method handle.
-                tree = gtNewHelperCallNode(CORINFO_HELP_GETCLASSFROMMETHODPARAM, TYP_I_IMPL);
-                tree->AsCall()->gtArgs.PushFront(this, arg);
+                tree = gtNewHelperCallNode(CORINFO_HELP_GETCLASSFROMMETHODPARAM, TYP_I_IMPL, tree);
                 break;
             }
 
