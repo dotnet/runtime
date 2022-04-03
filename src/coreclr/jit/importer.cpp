@@ -862,7 +862,7 @@ void Compiler::impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig, CallArgs* a
 #endif
         }
 
-        // NOTE: we defer bashing the type for I_IMPL to fgMorphArg
+        // NOTE: we defer bashing the type for I_IMPL to fgMorphArgs
         argList->PushFront(this, temp);
     }
 
