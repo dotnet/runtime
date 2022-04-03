@@ -273,7 +273,7 @@ namespace System.Security.Cryptography.Xml
                                 ? transformElement.OwnerDocument
                                 : SignedXml.GetIdElement(transformElement.OwnerDocument, Utils.GetIdFromLocalUri(_uri, out bool _));
 
-                            XmlNodeList signatureList = referenceTarget.SelectNodes(".//ds:Signature", nsm);
+                            XmlNodeList signatureList = referenceTarget?.SelectNodes(".//ds:Signature", nsm);
                             if (signatureList != null)
                             {
                                 int position = 0;
