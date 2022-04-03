@@ -103,7 +103,7 @@ typedef struct {
 	LLVMValueRef get_method, get_unbox_tramp, init_aotconst_func;
 	LLVMValueRef init_methods [AOT_INIT_METHOD_NUM];
 	LLVMValueRef code_start, code_end;
-	LLVMValueRef inited_var;
+	Address *inited_var;
 	LLVMValueRef unbox_tramp_indexes;
 	LLVMValueRef unbox_trampolines;
 	LLVMValueRef gc_poll_cold_wrapper;
@@ -2845,7 +2845,7 @@ emit_gsharedvt_ldaddr (EmitContext *ctx, int vreg)
 	ptr = LLVMBuildAdd (builder, convert (ctx, info_var, IntPtrType ()), convert (ctx, offset, IntPtrType ()), "");
 
 	name = g_strdup_printf ("gsharedvt_local_%d_offset", vreg);
-	offset_var = LLVMBuildLoad (builder, convert (ctx, ptr, LLVMPointerType (LLVMInt32Type (), 0)), name);
+	offset_var = LLVMBuildLoad2 (builder, i4_t, convert (ctx, ptr, LLVMPointerType (LLVMInt32Type (), 0)), name);
 
 	return LLVMBuildAdd (builder, convert (ctx, locals_var, IntPtrType ()), convert (ctx, offset_var, IntPtrType ()), "");
 }
@@ -3335,14 +3335,13 @@ emit_init_func (MonoLLVMModule *module, MonoAotInitSubtype subtype)
 
 	/* Load method_index which is emitted at the start of the method info */
 	indexes [0] = const_int32 (0);
-	indexes [1] = const_int32 (0);
 	// FIXME: Make sure its aligned
-	index_var = LLVMBuildLoad (builder, LLVMBuildGEP (builder, LLVMBuildBitCast (builder, info_var, LLVMPointerType (LLVMInt32Type (), 0), ""), indexes, 1, ""), "method_index");
+	index_var = LLVMBuildLoad2 (builder, i4_t, LLVMBuildGEP2 (builder, i4_t, LLVMBuildBitCast (builder, info_var, LLVMPointerType (LLVMInt32Type (), 0), ""), indexes, 1, ""), "method_index");
 
 	/* Check for is_inited here as well, since this can be called from JITted code which might not check it */
 	indexes [0] = const_int32 (0);
 	indexes [1] = index_var;
-	inited_var = LLVMBuildLoad (builder, LLVMBuildGEP (builder, module->inited_var, indexes, 2, ""), "is_inited");
+	inited_var = LLVMBuildLoad2 (builder, i1_t, LLVMBuildGEP2 (builder, module->inited_var->type, module->inited_var->value, indexes, 2, ""), "is_inited");
 
 	cmp = LLVMBuildICmp (builder, LLVMIntEQ, inited_var, LLVMConstInt (LLVMTypeOf (inited_var), 0, FALSE), "");
 
@@ -3394,7 +3393,7 @@ emit_init_func (MonoLLVMModule *module, MonoAotInitSubtype subtype)
 	 */
 	indexes [0] = const_int32 (0);
 	indexes [1] = index_var;
-	LLVMBuildStore (builder, LLVMConstInt (LLVMInt8Type (), 1, FALSE), LLVMBuildGEP (builder, module->inited_var, indexes, 2, ""));
+	LLVMBuildStore (builder, LLVMConstInt (LLVMInt8Type (), 1, FALSE), LLVMBuildGEP2 (builder, module->inited_var->type, module->inited_var->value, indexes, 2, ""));
 
 	LLVMBuildBr (builder, inited_bb);
 
@@ -3644,7 +3643,7 @@ emit_method_init (EmitContext *ctx)
 
 	indexes [0] = const_int32 (0);
 	indexes [1] = const_int32 (cfg->method_index);
-	inited_var = LLVMBuildLoad (builder, LLVMBuildGEP (builder, ctx->module->inited_var, indexes, 2, ""), "is_inited");
+	inited_var = LLVMBuildLoad2 (builder, i1_t, LLVMBuildGEP2 (builder, ctx->module->inited_var->type, ctx->module->inited_var->value, indexes, 2, ""), "is_inited");
 
 	args [0] = inited_var;
 	args [1] = LLVMConstInt (LLVMInt8Type (), 1, FALSE);
@@ -3701,7 +3700,7 @@ emit_method_init (EmitContext *ctx)
 	// Set the inited flag
 	indexes [0] = const_int32 (0);
 	indexes [1] = const_int32 (cfg->method_index);
-	LLVMBuildStore (builder, LLVMConstInt (LLVMInt8Type (), 1, FALSE), LLVMBuildGEP (builder, ctx->module->inited_var, indexes, 2, ""));
+	LLVMBuildStore (builder, LLVMConstInt (LLVMInt8Type (), 1, FALSE), LLVMBuildGEP2 (builder, ctx->module->inited_var->type, ctx->module->inited_var->value, indexes, 2, ""));
 
 	LLVMBuildBr (builder, inited_bb);
 	ctx->bblocks [cfg->bb_entry->block_num].end_bblock = inited_bb;
@@ -12737,8 +12736,9 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	/* Add initialization array */
 	LLVMTypeRef inited_type = LLVMArrayType (LLVMInt8Type (), 0);
 
-	module->inited_var = LLVMAddGlobal (aot_module.lmodule, inited_type, "mono_inited_tmp");
-	LLVMSetInitializer (module->inited_var, LLVMConstNull (inited_type));
+	LLVMValueRef inited_var = LLVMAddGlobal (aot_module.lmodule, inited_type, "mono_inited_tmp");
+	LLVMSetInitializer (inited_var, LLVMConstNull (inited_type));
+	module->inited_var = create_address (module, inited_var, inited_type);
 
 	create_aot_info_var (module);
 
@@ -13366,8 +13366,8 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 	real_inited = LLVMAddGlobal (module->lmodule, inited_type, "mono_inited");
 	LLVMSetInitializer (real_inited, LLVMConstNull (inited_type));
 	LLVMSetLinkage (real_inited, LLVMInternalLinkage);
-	mono_llvm_replace_uses_of (module->inited_var, real_inited);
-	LLVMDeleteGlobal (module->inited_var);
+	mono_llvm_replace_uses_of (module->inited_var->value, real_inited);
+	LLVMDeleteGlobal (module->inited_var->value);
 
 	/* Replace the dummy info_ variables with the real ones */
 	for (int i = 0; i < module->cfgs->len; ++i) {
