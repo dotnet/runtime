@@ -378,11 +378,6 @@ namespace System.Reflection
                 {
                     return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
                 }
-                catch (EntryPointNotFoundException)
-                {
-                    // Don't wrap since the exception did not originate from within the method.
-                    throw;
-                }
                 catch (Exception e)
                 {
                     throw new TargetInvocationException(e);
