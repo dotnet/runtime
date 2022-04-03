@@ -65,21 +65,20 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
                 return matcher.CreateInstance(provider, throwIfFailed: true)!;
             }
-            var priorityQueue = new PrioritizedConstructorMatcher[constructors.Length];
+            var priorityQueue = new ConstructorMatcher[constructors.Length];
             for (int i = 0; i < constructors.Length; i++)
             {
                 ConstructorInfo constructor = constructors[i];
                 var matcher = new ConstructorMatcher(constructor);
                 int length = matcher.Match(parameters);
-                priorityQueue[i] = new PrioritizedConstructorMatcher(length, matcher);
+                priorityQueue[i] = matcher;
             }
-            Array.Sort(priorityQueue, (a, b) => a.Priority - b.Priority);
+            Array.Sort(priorityQueue, (a, b) => a.ApplyExectLength - b.ApplyExectLength);
             object? instance = null;
             for (int i = 0; i < priorityQueue.Length; i++)
             {
-                PrioritizedConstructorMatcher prioritizedMatcher = priorityQueue[i];
-                if (prioritizedMatcher.Priority == -1) continue;
-                ConstructorMatcher matcher = priorityQueue[i].Matcher;
+                ConstructorMatcher matcher = priorityQueue[i];
+                if (matcher.ApplyExectLength == -1) continue;
                 bool lastChance = i == priorityQueue.Length - 1;
                 instance = matcher.CreateInstance(provider, throwIfFailed: lastChance);
                 if (instance is not null) return instance;
@@ -334,19 +333,6 @@ namespace Microsoft.Extensions.DependencyInjection
             return true;
         }
 
-        private struct PrioritizedConstructorMatcher
-        {
-            public PrioritizedConstructorMatcher(int priority, ConstructorMatcher matcher)
-            {
-                Priority = priority;
-                Matcher = matcher;
-            }
-
-            public int Priority { get; }
-
-            public ConstructorMatcher Matcher { get; }
-        }
-
         private struct ConstructorMatcher
         {
             private readonly ConstructorInfo _constructor;
@@ -360,14 +346,16 @@ namespace Microsoft.Extensions.DependencyInjection
                 _parameterValues = new object?[_parameters.Length];
             }
 
+            public int ApplyExectLength { get; private set; } = -1;
+
             public int Match(object[] givenParameters)
             {
                 if (givenParameters.Length > _parameters.Length)
                 {
-                    return -1;
+                    return ApplyExectLength;
                 }
                 int applyIndexStart = 0;
-                int applyExactLength = 0;
+                ApplyExectLength = 0;
                 for (int givenIndex = 0; givenIndex != givenParameters.Length; givenIndex++)
                 {
                     Type? givenType = givenParameters[givenIndex]?.GetType();
@@ -385,7 +373,7 @@ namespace Microsoft.Extensions.DependencyInjection
                                 applyIndexStart++;
                                 if (applyIndex == givenIndex)
                                 {
-                                    applyExactLength = applyIndex;
+                                    ApplyExectLength = applyIndex;
                                 }
                             }
                         }
@@ -393,10 +381,11 @@ namespace Microsoft.Extensions.DependencyInjection
 
                     if (givenMatched == false)
                     {
-                        return -1;
+                        ApplyExectLength = -1;
+                        return ApplyExectLength;
                     }
                 }
-                return applyExactLength;
+                return ApplyExectLength;
             }
 
             public object? CreateInstance(IServiceProvider provider, bool throwIfFailed = false)
