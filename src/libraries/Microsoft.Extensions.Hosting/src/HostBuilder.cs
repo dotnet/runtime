@@ -125,12 +125,6 @@ namespace Microsoft.Extensions.Hosting
         /// </summary>
         /// <returns>An initialized <see cref="IHost"/></returns>
         /// <remarks>Adds basic services to the host such as application lifetime, host environment, and logging.</remarks>
-        [MemberNotNull(nameof(_hostConfiguration))]
-        [MemberNotNull(nameof(_defaultProvider))]
-        [MemberNotNull(nameof(_hostingEnvironment))]
-        [MemberNotNull(nameof(_hostBuilderContext))]
-        [MemberNotNull(nameof(_appConfiguration))]
-        [MemberNotNull(nameof(_appServices))]
         public IHost Build()
         {
             if (_hostBuilt)
