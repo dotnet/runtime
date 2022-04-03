@@ -217,7 +217,8 @@
   </Target>
 
   <Target Name="CopyAllNativeProjectReferenceBinaries"
-          DependsOnTargets="ResolveCMakeNativeProjectReference;ConsolidateNativeProjectReference">
+          DependsOnTargets="ResolveCMakeNativeProjectReference;ConsolidateNativeProjectReference"
+          BeforeTargets="Build">
 
     <ItemGroup Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
       <MergedWrapperReferenceFolders Include="@(ProjectReference->'$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)/..', '$(OutDir)/..'))/%(ProjectReference.FileName)')" />
