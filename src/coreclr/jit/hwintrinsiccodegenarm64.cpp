@@ -367,8 +367,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             switch (intrin.numOperands)
             {
                 case 1:
-                    if (intrin.op1->isContained() && (ins == INS_ld1))
+                    if (intrin.op1->isContained())
                     {
+                        assert(ins == INS_ld1);
+
                         // Emit 'ldr target, [base, index]'
                         GenTreeAddrMode* lea = intrin.op1->AsAddrMode();
                         assert(lea->GetScale() == 1);
