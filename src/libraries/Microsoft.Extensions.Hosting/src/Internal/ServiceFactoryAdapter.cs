@@ -6,11 +6,11 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.Hosting.Internal
 {
-    internal sealed class ServiceFactoryAdapter<TContainerBuilder> : IServiceFactoryAdapter
+    internal sealed class ServiceFactoryAdapter<TContainerBuilder> : IServiceFactoryAdapter where TContainerBuilder : notnull
     {
-        private IServiceProviderFactory<TContainerBuilder> _serviceProviderFactory;
-        private readonly Func<HostBuilderContext> _contextResolver;
-        private Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> _factoryResolver;
+        private IServiceProviderFactory<TContainerBuilder>? _serviceProviderFactory;
+        private readonly Func<HostBuilderContext>? _contextResolver;
+        private Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>>? _factoryResolver;
 
         public ServiceFactoryAdapter(IServiceProviderFactory<TContainerBuilder> serviceProviderFactory!!)
         {
@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         {
             if (_serviceProviderFactory == null)
             {
-                _serviceProviderFactory = _factoryResolver(_contextResolver());
+                _serviceProviderFactory = _factoryResolver!(_contextResolver!());
 
                 if (_serviceProviderFactory == null)
                 {

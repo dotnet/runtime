@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Hosting
         /// </remarks>
         /// <param name="args">The command line args.</param>
         /// <returns>The initialized <see cref="IHostBuilder"/>.</returns>
-        public static IHostBuilder CreateDefaultBuilder(string[] args)
+        public static IHostBuilder CreateDefaultBuilder(string[]? args)
         {
             HostBuilder builder = new();
             return builder.ConfigureDefaults(args);

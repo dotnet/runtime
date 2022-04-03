@@ -130,7 +130,7 @@ namespace Microsoft.Extensions.Hosting
                 hostingEnvironment,
                 physicalFileProvider,
                 Configuration,
-                () => _appServices);
+                () => _appServices!);
 
             Logging = new LoggingBuilder(Services);
 
