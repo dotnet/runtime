@@ -414,7 +414,7 @@ namespace System
                     goto Found;
                 }
 
-                // The total length is at least Vector<byte>.Count, so instead of falling back to a 
+                // The total length is at least Vector<byte>.Count, so instead of falling back to a
                 // sequential scan for the remainder, we check the vector read from the end -- note: unaligned read necessary.
                 // We do this only if at least one element is left.
                 if (offset < (uint)length)

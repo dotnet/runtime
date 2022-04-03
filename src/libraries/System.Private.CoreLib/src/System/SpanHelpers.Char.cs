@@ -388,7 +388,7 @@ namespace System
 
                 while (minLength >= (i + (nuint)(sizeof(nuint) / sizeof(char))))
                 {
-                    if (Unsafe.ReadUnaligned<nuint> (ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, (nint)i))) !=
+                    if (Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, (nint)i))) !=
                         Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, (nint)i))))
                     {
                         break;
@@ -495,7 +495,7 @@ namespace System
                         goto Found;
                     }
 
-                    // The total length is at least Vector<ushort>.Count, so instead of falling back to a 
+                    // The total length is at least Vector<ushort>.Count, so instead of falling back to a
                     // sequential scan for the remainder, we check the vector read from the end -- note: unaligned read necessary.
                     // We do this only if at least one element is left.
                     if (offset < (uint)length)
