@@ -14534,6 +14534,38 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
     if (opts.OptimizationEnabled() && multiOp->OperIs(GT_HWINTRINSIC))
     {
         GenTreeHWIntrinsic* hw = multiOp->AsHWIntrinsic();
+
+        // Move constant vectors from op1 to op2 for commutative and compare operations
+        // For now we only do it for zero vector
+        if (fgGlobalMorph && (HWIntrinsicInfo::lookupNumArgs(hw->GetHWIntrinsicId()) == 2) && hw->Op(1)->IsVectorZero())
+        {
+            bool swap = HWIntrinsicInfo::IsCommutative(hw->GetHWIntrinsicId());
+            if (!swap)
+            {
+                switch (hw->GetHWIntrinsicId())
+                {
+                    case NI_Vector128_op_Equality:
+                    case NI_Vector128_op_Inequality:
+#if defined(TARGET_XARCH)
+                    case NI_Vector256_op_Equality:
+                    case NI_Vector256_op_Inequality:
+#elif defined(TARGET_ARMARCH)
+                    case NI_Vector64_op_Equality:
+                    case NI_Vector64_op_Inequality:
+#endif
+                        swap = true;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            if (swap)
+            {
+                std::swap(hw->Op(1), hw->Op(2));
+            }
+        }
+
         switch (hw->GetHWIntrinsicId())
         {
 #if defined(TARGET_XARCH)
@@ -14547,12 +14579,6 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
                 GenTree* op2 = hw->Op(2);
                 if (!gtIsActiveCSE_Candidate(hw))
                 {
-                    if (op1->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op1))
-                    {
-                        DEBUG_DESTROY_NODE(hw);
-                        DEBUG_DESTROY_NODE(op1);
-                        return op2;
-                    }
                     if (op2->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op2))
                     {
                         DEBUG_DESTROY_NODE(hw);
