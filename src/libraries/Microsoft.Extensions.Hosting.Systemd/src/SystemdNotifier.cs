@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Runtime.Versioning;
 
@@ -12,19 +13,20 @@ namespace Microsoft.Extensions.Hosting.Systemd
     {
         private const string NOTIFY_SOCKET = "NOTIFY_SOCKET";
 
-        private readonly string _socketPath;
+        private readonly string? _socketPath;
 
         public SystemdNotifier() :
             this(GetNotifySocketPath())
         { }
 
         // For testing
-        internal SystemdNotifier(string socketPath)
+        internal SystemdNotifier(string? socketPath)
         {
             _socketPath = socketPath;
         }
 
         /// <inheritdoc />
+        [MemberNotNullWhen(true, nameof(_socketPath))]
         public bool IsEnabled => _socketPath != null;
 
         /// <inheritdoc />
@@ -46,9 +48,9 @@ namespace Microsoft.Extensions.Hosting.Systemd
             }
         }
 
-        private static string GetNotifySocketPath()
+        private static string? GetNotifySocketPath()
         {
-            string socketPath = Environment.GetEnvironmentVariable(NOTIFY_SOCKET);
+            string? socketPath = Environment.GetEnvironmentVariable(NOTIFY_SOCKET);
 
             if (string.IsNullOrEmpty(socketPath))
             {
