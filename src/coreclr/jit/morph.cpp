@@ -14537,33 +14537,10 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 
         // Move constant vectors from op1 to op2 for commutative and compare operations
         // For now we only do it for zero vector
-        if (fgGlobalMorph && (HWIntrinsicInfo::lookupNumArgs(hw->GetHWIntrinsicId()) == 2) && hw->Op(1)->IsVectorZero())
+        if ((hw->GetOperandCount() == 2) && hw->Op(1)->IsVectorZero() &&
+            HWIntrinsicInfo::IsCommutative(hw->GetHWIntrinsicId()))
         {
-            bool swap = HWIntrinsicInfo::IsCommutative(hw->GetHWIntrinsicId());
-            if (!swap)
-            {
-                switch (hw->GetHWIntrinsicId())
-                {
-                    case NI_Vector128_op_Equality:
-                    case NI_Vector128_op_Inequality:
-#if defined(TARGET_XARCH)
-                    case NI_Vector256_op_Equality:
-                    case NI_Vector256_op_Inequality:
-#elif defined(TARGET_ARMARCH)
-                    case NI_Vector64_op_Equality:
-                    case NI_Vector64_op_Inequality:
-#endif
-                        swap = true;
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            if (swap)
-            {
-                std::swap(hw->Op(1), hw->Op(2));
-            }
+            std::swap(hw->Op(1), hw->Op(2));
         }
 
         switch (hw->GetHWIntrinsicId())
