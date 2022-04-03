@@ -963,6 +963,9 @@ void GenTreeFieldList::InsertFieldLIR(
     m_uses.InsertUse(insertAfter, new (compiler, CMK_ASTNode) Use(node, offset, type));
 }
 
+//---------------------------------------------------------------
+// IsHfaArg: Is this arg considered a homogeneous floating-point aggregate?
+//
 bool CallArgABIInformation::IsHfaArg() const
 {
     if (GlobalJitOptions::compFeatureHfa)
@@ -975,6 +978,9 @@ bool CallArgABIInformation::IsHfaArg() const
     }
 }
 
+//---------------------------------------------------------------
+// IsHfaRegArg: Is this an HFA argument passed in registers?
+//
 bool CallArgABIInformation::IsHfaRegArg() const
 {
     if (GlobalJitOptions::compFeatureHfa)
@@ -987,6 +993,9 @@ bool CallArgABIInformation::IsHfaRegArg() const
     }
 }
 
+//---------------------------------------------------------------
+// GetHfaType: Get the type of each element of the HFA arg.
+//
 var_types CallArgABIInformation::GetHfaType() const
 {
     if (GlobalJitOptions::compFeatureHfa)
@@ -999,6 +1008,20 @@ var_types CallArgABIInformation::GetHfaType() const
     }
 }
 
+//---------------------------------------------------------------
+// SetHfaType: Set the type of each element of the HFA arg.
+//
+// Arguments:
+//   type     - The new type for each element
+//   hfaSlots - How many registers are used by the HFA.
+//
+// Remarks:
+//   This can only be called after the passing mode of the argument (registers
+//   or stack) has been determined. When passing HFAs of doubles on ARM it is
+//   expected that `hfaSlots` refers to the number of float registers used,
+//   i.e. twice the number of doubles being passed. This function will convert
+//   that into double registers and set `NumRegs` appropriately.
+//
 void CallArgABIInformation::SetHfaType(var_types type, unsigned hfaSlots)
 {
     if (GlobalJitOptions::compFeatureHfa)
@@ -1046,9 +1069,23 @@ void CallArgABIInformation::SetHfaType(var_types type, unsigned hfaSlots)
     }
 }
 
+//---------------------------------------------------------------
+// SetByteSize: Set information related to this argument's size and alignment.
+//
+// Arguments:
+//   byteSize      - The size in bytes of the argument.
+//   byteAlignment - The alignment in bytes of the argument.
+//   isStruct      - Whether this arg is a struct.
+//   isFloatHfa    - Whether this is a float HFA.
+//
+// Remarks:
+//   This function will determine how the argument size needs to be rounded. On
+//   most ABIs all arguments are rounded to stack pointer size, but macOS arm64
+//   ABI is an exception as it allows packing some small arguments into the
+//   same stack slot.
+//
 void CallArgABIInformation::SetByteSize(unsigned byteSize, unsigned byteAlignment, bool isStruct, bool isFloatHfa)
 {
-    ByteAlignment = byteAlignment;
     unsigned roundedByteSize;
     if (compMacOsArm64Abi())
     {
@@ -1081,9 +1118,20 @@ void CallArgABIInformation::SetByteSize(unsigned byteSize, unsigned byteAlignmen
     }
 #endif
     ByteSize = roundedByteSize;
+    ByteAlignment = byteAlignment;
 }
 
 #ifdef DEBUG_ARG_SLOTS
+//---------------------------------------------------------------
+// GetSlotCount: Get the number of slots used by this argument.
+//
+// Returns:
+//   The number of slots, in terms of registers and whole stack slots.
+//
+// Remarks:
+//   Note that a slot may not necessarily be TARGET_POINTER_SIZE in size.
+//   For example, a SIMD16 may be passed in a single register where this
+//   function will return 1.
 unsigned CallArgABIInformation::GetSlotCount() const
 {
     if (IsBackFilled)
@@ -1103,6 +1151,18 @@ unsigned CallArgABIInformation::GetSlotCount() const
     return NumSlots + NumRegs;
 }
 
+//---------------------------------------------------------------
+// GetSize: Get the size of the argument normalized to TARGET_POINTER_SIZE
+// stack slots.
+//
+// Returns:
+//   The size of the argument, normalized to TARGET_POINTER_SIZE stack slots.
+//  
+// Remarks:
+//   Unlike GetSlotCount() this function applies normalization and returns the
+//   answer in terms of TARGET_POINTER_SIZE slots.
+//   For example, a SIMD16 argument passed in a single register will return 2
+//   on ARM64.
 unsigned CallArgABIInformation::GetSize() const
 {
     unsigned size = GetSlotCount();
@@ -1138,6 +1198,15 @@ unsigned CallArgABIInformation::GetSize() const
 }
 #endif
 
+//---------------------------------------------------------------
+// SetMultiRegsNumw: Set the registers for a multi-reg arg using 'sequential' registers.
+//
+// Remarks:
+//   This assumes that `NumRegs` and the first reg num has already been set and
+//   determines how many sequential registers are necessary to pass the
+//   argument.
+//   Note that on ARM the registers set may skip odd float registers if the arg
+//   is a HFA of doubles, since double and float registers overlap.
 void CallArgABIInformation::SetMultiRegNums()
 {
 #if FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI)
@@ -1164,6 +1233,14 @@ void CallArgABIInformation::SetMultiRegNums()
 #endif // FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI)
 }
 
+//---------------------------------------------------------------
+// GetStackByteSize: Get the number of stack bytes used to pass this argument.
+//
+// Returns:
+//   For pure register arguments, this returns 0.
+//   For pure stack arguments, this returns ByteSize.
+//   For split arguments the return value is between 0 and ByteSize.
+//
 unsigned CallArgABIInformation::GetStackByteSize() const
 {
     if (!IsSplit() && NumRegs > 0)
@@ -1178,6 +1255,15 @@ unsigned CallArgABIInformation::GetStackByteSize() const
     return stackByteSize;
 }
 
+//---------------------------------------------------------------
+// IsArgAddedLate: Check if this is an argument that is added late, by
+//                 `DetermineArgABIInformation`.
+//
+// Remarks:
+//   These arguments must be removed if ABI information needs to be
+//   reclassified by calling `DetermineArgABIInformation` as otherwise they
+//   will be readded. See `CallArgs::ResetArgABIInformation`.
+//
 bool CallArg::IsArgAddedLate() const
 {
     switch (m_wellKnownArg)
@@ -1194,6 +1280,9 @@ bool CallArg::IsArgAddedLate() const
 }
 
 #ifdef DEBUG
+//---------------------------------------------------------------
+// CheckIsStruct: Verify that the struct ABI information is consistent with the IR node.
+//
 void CallArg::CheckIsStruct()
 {
     GenTree* node = GetNode();
@@ -1248,6 +1337,9 @@ CallArgs::CallArgs()
 {
 }
 
+//---------------------------------------------------------------
+// FindByNode: Find the argument containing the specified early or late node.
+//
 CallArg* CallArgs::FindByNode(GenTree* node)
 {
     assert(node != nullptr);
@@ -1262,6 +1354,13 @@ CallArg* CallArgs::FindByNode(GenTree* node)
     return nullptr;
 }
 
+//---------------------------------------------------------------
+// FindWellKnownArg: Find a specific well-known argument.
+//
+// Remarks:
+//   For the 'this' arg or the return buffer arg there are more efficient
+//   alternatives available in `GetThisArg` and `GetRetBufferArg`.
+//
 CallArg* CallArgs::FindWellKnownArg(WellKnownArg arg)
 {
     assert(arg != WellKnownArg::None);
@@ -1276,6 +1375,13 @@ CallArg* CallArgs::FindWellKnownArg(WellKnownArg arg)
     return nullptr;
 }
 
+//---------------------------------------------------------------
+// GetThisArg: Get the this-pointer argument.
+//
+// Remarks:
+//   This is only the managed 'this' arg. We consider the 'this' pointer for
+//   unmanaged instance calling conventions as normal (non-this) arguments.
+//
 CallArg* CallArgs::GetThisArg()
 {
     if (!HasThisPointer())
@@ -1290,6 +1396,20 @@ CallArg* CallArgs::GetThisArg()
     return result;
 }
 
+//---------------------------------------------------------------
+// GetRetBufferArg: Get the return buffer arg.
+//
+// Remarks:
+//   This is the actual (per-ABI) return buffer argument. On some ABIs this
+//   argument has special treatment. Notably on standard ARM64 calling
+//   convention it is passed in x8 (see `CallArgs::GetCustomRegister` for the
+//   exact conditions).
+//
+//   Some jit helpers may have "out buffers" that are _not_ classified as the
+//   ret buffer. These are normal arguments that function similarly to ret
+//   buffers, but they do not have the special ABI treatment of ret buffers.
+//   See `GenTreeCall::TreatAsShouldGetRetBufArg` for more details.
+//
 CallArg* CallArgs::GetRetBufferArg()
 {
     if (!HasRetBuffer())
@@ -1302,17 +1422,24 @@ CallArg* CallArgs::GetRetBufferArg()
     return result;
 }
 
+//---------------------------------------------------------------
+// GetArgByIndex: Get an argument with the specified index.
+//
 CallArg* CallArgs::GetArgByIndex(unsigned index)
 {
     CallArg* cur = m_head;
-    for (unsigned i = 0; i < index && cur != nullptr; i++)
+    for (unsigned i = 0; i < index; i++)
     {
+        assert(cur != nullptr);
         cur = cur->GetNext();
     }
 
     return cur;
 }
 
+//---------------------------------------------------------------
+// GetIndex: Get the index for the specified argument.
+//
 unsigned CallArgs::GetIndex(CallArg* arg)
 {
     unsigned i = 0;
@@ -1330,6 +1457,17 @@ unsigned CallArgs::GetIndex(CallArg* arg)
     return (unsigned)-1;
 }
 
+//---------------------------------------------------------------
+// Reverse: Reverse the specified subrange of arguments.
+//
+// Parameters:
+//   index - The index of the sublist to reverse.
+//   count - The length of the sublist to reverse.
+//
+// Remarks:
+//   This function is used for x86 stdcall/cdecl that passes arguments in the
+//   opposite order of the managed calling convention.
+//
 void CallArgs::Reverse(unsigned index, unsigned count)
 {
     CallArg** headSlot = &m_head;
@@ -1355,6 +1493,12 @@ void CallArgs::Reverse(unsigned index, unsigned count)
     }
 }
 
+//---------------------------------------------------------------
+// AddedWellKnownArg: Record details when a well known arg was added.
+//
+// Remarks:
+//   This is used to improve performance of some common argument lookups.
+//
 void CallArgs::AddedWellKnownArg(WellKnownArg arg)
 {
     switch (arg)
@@ -1370,6 +1514,9 @@ void CallArgs::AddedWellKnownArg(WellKnownArg arg)
     }
 }
 
+//---------------------------------------------------------------
+// RemovedWellKnownArg: Record details when a well known arg was removed.
+//
 void CallArgs::RemovedWellKnownArg(WellKnownArg arg)
 {
     switch (arg)
@@ -1387,6 +1534,25 @@ void CallArgs::RemovedWellKnownArg(WellKnownArg arg)
     }
 }
 
+//---------------------------------------------------------------
+// GetCustomRegister: Get the custom, non-standard register assignment for an argument.
+//
+// Parameters:
+//   comp - The compiler.
+//   cc   - The calling convention.
+//   arg  - The kind of argument.
+//
+// Returns:
+//   The custom register assignment, or REG_NA if this is a normally treated
+//   argument.
+//
+// Remarks:
+//   Many JIT helpers have custom calling conventions in order to improve
+//   performance. The pattern in those cases is to add a WellKnownArg for the
+//   arguments that are passed specially and teach this function how to pass
+//   them. Note that we only support passing such arguments in custom registers
+//   and generally never on stack.
+//
 regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, WellKnownArg arg)
 {
     switch (arg)
@@ -1411,8 +1577,7 @@ regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension c
 #endif
 #if defined(TARGET_X86)
         // The x86 shift helpers have custom calling conventions and expect the lo
-        // part of the long to be in EAX and the hi part to be in EDX. This sets
-        // the argument registers up correctly.
+        // part of the long to be in EAX and the hi part to be in EDX.
         case WellKnownArg::ShiftLow:
             return REG_LNGARG_LO;
         case WellKnownArg::ShiftHigh:
@@ -1461,11 +1626,26 @@ regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension c
     return REG_NA;
 }
 
+//---------------------------------------------------------------
+// IsNonStandard: Check if an argument is passed with a non-standard calling
+// convention.
+//
 bool CallArgs::IsNonStandard(Compiler* comp, GenTreeCall* call, CallArg* arg)
 {
     return GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg->GetWellKnownArg()) != REG_NA;
 }
 
+//---------------------------------------------------------------
+// PushFront: Create a new argument at the front of the argument list.
+//
+// Parameters:
+//   comp         - The compiler.
+//   node         - The IR node for the argument.
+//   wellKnownArg - The kind of argument, if special.
+//
+// Returns:
+//   The created representative for the argument.
+//
 CallArg* CallArgs::PushFront(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg)
 {
     CallArg* arg = new (comp, CMK_CallArgs) CallArg(wellKnownArg);
@@ -1476,6 +1656,17 @@ CallArg* CallArgs::PushFront(Compiler* comp, GenTree* node, WellKnownArg wellKno
     return arg;
 }
 
+//---------------------------------------------------------------
+// PushBack: Create a new argument at the back of the argument list.
+//
+// Parameters:
+//   comp         - The compiler.
+//   node         - The IR node for the argument.
+//   wellKnownArg - The kind of argument, if special.
+//
+// Returns:
+//   The created representative for the argument.
+//
 CallArg* CallArgs::PushBack(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg)
 {
     CallArg** slot = &m_head;
@@ -1490,7 +1681,19 @@ CallArg* CallArgs::PushBack(Compiler* comp, GenTree* node, WellKnownArg wellKnow
     return *slot;
 }
 
-CallArg* CallArgs::InsertAfter(Compiler* comp, CallArg* after, GenTree* arg, WellKnownArg wellKnownArg)
+//---------------------------------------------------------------
+// InsertAfter: Create a new argument after another argument.
+//
+// Parameters:
+//   comp         - The compiler.
+//   after        - The existing argument to insert the new argument after.
+//   node         - The IR node for the argument.
+//   wellKnownArg - The kind of argument, if special.
+//
+// Returns:
+//   The created representative for the argument.
+//
+CallArg* CallArgs::InsertAfter(Compiler* comp, CallArg* after, GenTree* node, WellKnownArg wellKnownArg)
 {
 #ifdef DEBUG
     bool found = false;
@@ -1507,33 +1710,61 @@ CallArg* CallArgs::InsertAfter(Compiler* comp, CallArg* after, GenTree* arg, Wel
 #endif
 
     CallArg* newArg = new (comp, CMK_CallArgs) CallArg(wellKnownArg);
-    newArg->SetEarlyNode(arg);
+    newArg->SetEarlyNode(node);
     newArg->SetNext(after->GetNext());
     after->SetNext(newArg);
     AddedWellKnownArg(wellKnownArg);
     return newArg;
 }
 
-CallArg* CallArgs::InsertInstParam(Compiler* comp, GenTree* arg)
+//---------------------------------------------------------------
+// InsertInstParam: Insert an instantiation parameter/generic context argument.
+//
+// Parameters:
+//   comp         - The compiler.
+//   node         - The IR node for the instantiation parameter.
+//
+// Returns:
+//   The created representative for the argument.
+//
+// Remarks:
+//   The instantiation parameter is a normal parameter, but its position in the
+//   arg list depends on a few factors. It is inserted at the end on x86 and on
+//   other platforms must always come after the ret-buffer and the 'this'
+//   argument.
+//
+CallArg* CallArgs::InsertInstParam(Compiler* comp, GenTree* node)
 {
     if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
     {
         CallArg* retBufferArg = GetRetBufferArg();
         if (retBufferArg != nullptr)
         {
-            return InsertAfter(comp, retBufferArg, arg, WellKnownArg::InstParam);
+            return InsertAfter(comp, retBufferArg, node, WellKnownArg::InstParam);
         }
         else
         {
-            return InsertAfterThisOrFirst(comp, arg, WellKnownArg::InstParam);
+            return InsertAfterThisOrFirst(comp, node, WellKnownArg::InstParam);
         }
     }
     else
     {
-        return PushBack(comp, arg, WellKnownArg::InstParam);
+        return PushBack(comp, node, WellKnownArg::InstParam);
     }
 }
 
+//---------------------------------------------------------------
+// InsertAfterThisOrFirst: Insert an argument after 'this' if the call has a
+//                         'this' argument, or otherwise first.
+//
+// Parameters:
+//   comp         - The compiler.
+//   node         - The IR node for the argument.
+//   wellKnownArg - The kind of argument, if special.
+//
+// Returns:
+//   The created representative for the argument.
+//
 CallArg* CallArgs::InsertAfterThisOrFirst(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg)
 {
     CallArg* thisArg = GetThisArg();
@@ -1547,6 +1778,12 @@ CallArg* CallArgs::InsertAfterThisOrFirst(Compiler* comp, GenTree* node, WellKno
     }
 }
 
+//---------------------------------------------------------------
+// PushLateBack: Insert an argument at the end of the 'late' argument list.
+//
+// Remarks:
+//   This function should only be used if adding arguments after the call has
+//   already been morphed.
 void CallArgs::PushLateBack(CallArg* arg)
 {
     CallArg** slot = &m_lateHead;
@@ -1558,8 +1795,19 @@ void CallArgs::PushLateBack(CallArg* arg)
     *slot = arg;
 }
 
+//---------------------------------------------------------------
+// Remove: Remove an argument from the argument list.
+//
+// Remarks:
+//   This function cannot be used after morph. It will also invalidate ABI
+//   information, so it is expected that `CallArgs::DetermineArgABIInformation`
+//   was not called yet or that `CallArgs::ResetArgABIInformation` has been
+//   called prior to this.
+//
 bool CallArgs::Remove(CallArg* arg)
 {
+    assert(!m_abiInformationDetermined && !m_argsComplete);
+
     CallArg** slot = &m_head;
     while (*slot != nullptr)
     {
@@ -1944,9 +2192,9 @@ void CallArgs::ResetArgABIInformation()
     // IR so it doesn't get added again.
     CallArg** link = &m_head;
 
-    // We cannot handle this being called after fgMorphArgs, only
-    // CallArgs::DetermineArgABIInformation.
-    assert(m_lateHead == nullptr);
+    // We cannot handle this being called after fgMorphArgs, only between
+    // CallArgs::DetermineArgABIInformation and finishing args.
+    assert(!m_argsComplete);
 
     while ((*link) != nullptr)
     {

@@ -4356,10 +4356,10 @@ public:
     // Create a new call argument at the beginning of the list.
     CallArg* PushFront(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
     CallArg* PushBack(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
-    CallArg* InsertAfter(Compiler* comp, CallArg* after, GenTree* arg, WellKnownArg wellKnownArg = WellKnownArg::None);
-    CallArg* InsertInstParam(Compiler* comp, GenTree* value);
+    CallArg* InsertAfter(Compiler* comp, CallArg* after, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
+    CallArg* InsertInstParam(Compiler* comp, GenTree* node);
     CallArg* InsertAfterThisOrFirst(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
-    void PushLateBack(CallArg* node);
+    void PushLateBack(CallArg* arg);
     bool Remove(CallArg* arg);
 
     template <typename CopyNodeFunc>
