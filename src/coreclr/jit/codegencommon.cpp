@@ -6452,18 +6452,8 @@ regNumber CodeGen::getCallIndirectionCellReg(GenTreeCall* call)
     }
 
 #ifdef DEBUG
-    regNumber foundReg = REG_NA;
-    for (CallArg& arg : call->gtArgs.Args())
-    {
-        WellKnownArg kind = arg.GetWellKnownArg();
-        if ((kind == WellKnownArg::R2RIndirectionCell) || (kind == WellKnownArg::VirtualStubCell))
-        {
-            foundReg = arg.AbiInfo.GetRegNum();
-            break;
-        }
-    }
-
-    assert(foundReg == result);
+    CallArg* indirCellArg = call->gtArgs.FindWellKnownArg(call->GetIndirectionCellArgKind());
+    assert((indirCellArg != nullptr) && (indirCellArg->AbiInfo.GetRegNum() == result));
 #endif
 
     return result;
