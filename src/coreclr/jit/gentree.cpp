@@ -1117,7 +1117,7 @@ void CallArgABIInformation::SetByteSize(unsigned byteSize, unsigned byteAlignmen
         assert(roundedByteSize == GetSlotCount() * TARGET_POINTER_SIZE);
     }
 #endif
-    ByteSize = roundedByteSize;
+    ByteSize      = roundedByteSize;
     ByteAlignment = byteAlignment;
 }
 
@@ -1157,7 +1157,7 @@ unsigned CallArgABIInformation::GetSlotCount() const
 //
 // Returns:
 //   The size of the argument, normalized to TARGET_POINTER_SIZE stack slots.
-//  
+//
 // Remarks:
 //   Unlike GetSlotCount() this function applies normalization and returns the
 //   answer in terms of TARGET_POINTER_SIZE slots.

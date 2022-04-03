@@ -2103,12 +2103,11 @@ bool Compiler::impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper)
     return false;
 }
 
-GenTreeCall* Compiler::impReadyToRunHelperToTree(
-    CORINFO_RESOLVED_TOKEN* pResolvedToken,
-    CorInfoHelpFunc         helper,
-    var_types               type,
-    CORINFO_LOOKUP_KIND*    pGenericLookupKind,
-    GenTree*                arg1)
+GenTreeCall* Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                                 CorInfoHelpFunc         helper,
+                                                 var_types               type,
+                                                 CORINFO_LOOKUP_KIND*    pGenericLookupKind,
+                                                 GenTree*                arg1)
 {
     CORINFO_CONST_LOOKUP lookup;
     if (!info.compCompHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, helper, &lookup))
@@ -11705,8 +11704,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         //
         const CorInfoHelpFunc specialHelper = CORINFO_HELP_CHKCASTCLASS_SPECIAL;
 
-        condTrue =
-            gtNewHelperCallNode(specialHelper, TYP_REF, partialExpand ? op2 : op2Var, gtClone(op1));
+        condTrue = gtNewHelperCallNode(specialHelper, TYP_REF, partialExpand ? op2 : op2Var, gtClone(op1));
     }
     else if (partialExpand)
     {
@@ -15787,7 +15785,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifdef FEATURE_READYTORUN
                 if (opts.IsReadyToRun())
                 {
-                    op1 = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_NEWARR_1, TYP_REF, nullptr, op2);
+                    op1 = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_NEWARR_1, TYP_REF, nullptr,
+                                                    op2);
                     usingReadyToRunHelper = (op1 != nullptr);
 
                     if (!usingReadyToRunHelper)
@@ -16499,7 +16498,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (opts.IsReadyToRun())
                     {
                         GenTreeCall* opLookup =
-                            impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_CHKCAST, TYP_REF, nullptr, op1);
+                            impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_CHKCAST, TYP_REF, nullptr,
+                                                      op1);
                         usingReadyToRunHelper = (opLookup != nullptr);
                         op1                   = (usingReadyToRunHelper ? opLookup : op1);
 

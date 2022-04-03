@@ -4357,7 +4357,7 @@ void Lowering::InsertPInvokeMethodProlog()
     GenTreeCall* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL);
 
     call->gtArgs.PushBack(comp, frameAddr, WellKnownArg::PInvokeFrame);
-    // for x86/arm32 don't pass the secretArg.
+// for x86/arm32 don't pass the secretArg.
 #if !defined(TARGET_X86) && !defined(TARGET_ARM)
     call->gtArgs.PushBack(comp, PhysReg(REG_SECRET_STUB_PARAM), WellKnownArg::SecretStubParam);
 #endif

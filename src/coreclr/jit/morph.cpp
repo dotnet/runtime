@@ -62,7 +62,7 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphAr
     // The helper call ought to be semantically equivalent to the original node, so preserve its VN.
     tree->ChangeOper(GT_CALL, GenTree::PRESERVE_VN);
 
-    GenTreeCall* call           = tree->AsCall();
+    GenTreeCall* call = tree->AsCall();
     // Args are cleared by ChangeOper above
     call->gtCallType            = CT_HELPER;
     call->gtReturnType          = tree->TypeGet();
@@ -2950,7 +2950,7 @@ unsigned CallArgs::CountArgs()
 //    not otherwise need to be computed into a temp, it is moved to late
 //    argument and replaced in the "early" arg list with a placeholder node.
 //    Also see `CallArgs::EvalArgsToTemps`.
-//   
+//
 #ifdef _PREFAST_
 #pragma warning(push)
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
@@ -15855,8 +15855,8 @@ GenTree* Compiler::fgInitThisClass()
             // CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE with a zeroed out resolvedToken means "get the static
             // base of the class that owns the method being compiled". If we're in this method, it means we're not
             // inlining and there's no ambiguity.
-            return impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE, TYP_BYREF, &kind,
-                                             ctxTree);
+            return impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE, TYP_BYREF,
+                                             &kind, ctxTree);
         }
 #endif
 
