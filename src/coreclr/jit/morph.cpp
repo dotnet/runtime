@@ -6232,7 +6232,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             // should be unified to always use the IND(<address>) form.
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_X86)
             bool preferIndir = true;
 #else  // !TARGET_64BIT
             bool preferIndir = isBoxedStatic;
