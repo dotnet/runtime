@@ -247,7 +247,7 @@ namespace Microsoft.Extensions.Hosting
                         // build to throw
                         _hostTcs.TrySetException(new InvalidOperationException("The entry point exited without ever building an IHost."));
                     }
-                    catch (TargetInvocationException tie) when (tie.InnerException is StopTheHostException)
+                    catch (TargetInvocationException tie) when (tie.InnerException is HostAbortedException)
                     {
                         // The host was stopped by our own logic
                     }
@@ -341,14 +341,9 @@ namespace Microsoft.Extensions.Hosting
                     if (_stopApplication)
                     {
                         // Stop the host from running further
-                        throw new StopTheHostException();
+                        throw new HostAbortedException();
                     }
                 }
-            }
-
-            private sealed class StopTheHostException : Exception
-            {
-
             }
         }
     }
