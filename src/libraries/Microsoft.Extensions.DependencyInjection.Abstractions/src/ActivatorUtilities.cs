@@ -60,10 +60,10 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
                 else
                 {
-                    foreach (ConstructorInfo? ctor in constructors)
+                    foreach (ConstructorInfo? constructor in constructors)
                     {
-                        var matcher = new ConstructorMatcher(ctor);
-                        bool isPreferred = ctor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
+                        var matcher = new ConstructorMatcher(constructor);
+                        bool isPreferred = constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
                         int length = matcher.Match(parameters);
                         if (bestLength < length)
                         {
