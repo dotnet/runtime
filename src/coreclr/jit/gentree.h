@@ -5788,7 +5788,7 @@ public:
         , m_elemType(elemType)
         , m_firstElemOffset(firstElemOffset)
     {
-        assert(addr->TypeIs(TYP_BYREF));
+        assert(addr->TypeIs(TYP_BYREF) || addr->IsIntegralConst(0));
         assert(((elemType == TYP_STRUCT) && (elemClassHandle != NO_CLASS_HANDLE)) ||
                (elemClassHandle == NO_CLASS_HANDLE));
 
