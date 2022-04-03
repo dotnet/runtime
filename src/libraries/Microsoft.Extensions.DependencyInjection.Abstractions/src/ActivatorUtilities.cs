@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 ConstructorInfo[] constructors = instanceType.GetConstructors();
                 ConstructorInfo? pereferredConstructor = null;
-                foreach (ConstructorInfo? constructor in constructors)
+                foreach (ConstructorInfo constructor in constructors)
                 {
                     if (constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute)))
                     {
@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
                 else
                 {
-                    foreach (ConstructorInfo? constructor in constructors)
+                    foreach (ConstructorInfo constructor in constructors)
                     {
                         var matcher = new ConstructorMatcher(constructor);
                         bool isPreferred = constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
