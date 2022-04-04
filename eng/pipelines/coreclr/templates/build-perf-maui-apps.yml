@@ -110,6 +110,21 @@ steps:
   #      overwriteExistingFiles: true
   #      cleanDestinationFolder: false
 
+
+  - script: |
+      echo echo '<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\([>;]\)net[0-9]\+\.[0-9]-maccatalyst\([;<]\)/\1\2/g'
+      echo 	'<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\([>;]\)net[0-9]\+\.[0-9]-maccatalyst\([;<]\)/\1\2/g'
+
+      echo echo '<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\\([>;]\\)net[0-9]\\+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g'
+      echo 	'<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\\([>;]\\)net[0-9]\\+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g'
+
+      echo echo '<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\([>;]\)net[0-9]+\.[0-9]-maccatalyst\([;<]\)/\1\2/g'
+      echo 	'<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\([>;]\)net[0-9]+\.[0-9]-maccatalyst\([;<]\)/\1\2/g'
+
+      echo echo '<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\\([>;]\\)net[0-9]+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g'
+      echo 	'<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\\([>;]\\)net[0-9]+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g'
+    displayname: SEDTesting
+
   # Get the current maui nuget config so all things can be found and darc based package sources are kept up to date.
   - script: |
       curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/main/NuGet.config'
