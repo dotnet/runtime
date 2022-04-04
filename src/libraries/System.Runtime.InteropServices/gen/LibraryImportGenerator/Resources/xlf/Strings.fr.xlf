@@ -14,12 +14,12 @@
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeDescription">
         <source>When a constructor taking a 'Span&lt;byte&gt;' is specified on the native type, the type must set the BufferSize field on the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to provide the size of the caller-allocated buffer.</source>
-        <target state="new">When a constructor taking a 'Span&lt;byte&gt;' is specified on the native type, the type must set the BufferSize field on the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to provide the size of the caller-allocated buffer.</target>
+        <target state="translated">Quand un constructeur prenant un «Span&lt;byte&gt;» est spécifié sur le type natif, le type doit définir le champ BufferSize sur «System.Runtime.InteropServices.CustomTypeMarshallerAttribute» pour fournir la taille de la mémoire tampon allouée par l’appelant.</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeMessage">
         <source>The native type '{0}' must set the 'BufferSize' field on the applied 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to specify the size of the caller-allocated buffer because it has a constructor that takes a caller-allocated 'Span&lt;byte&gt;'</source>
-        <target state="new">The native type '{0}' must set the 'BufferSize' field on the applied 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to specify the size of the caller-allocated buffer because it has a constructor that takes a caller-allocated 'Span&lt;byte&gt;'</target>
+        <target state="translated">Le type natif «{0}» doit définir le champ «BufferSize» sur le «System.Runtime.InteropServices.CustomTypeMarshallerAttribute» appliqué pour spécifier la taille de la mémoire tampon allouée par l’appelant, car il a un constructeur qui accepte un «Span&lt;byte&gt;» alloué par l’appelant</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackDescription">
@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureDescription">
         <source>A marshaller type that provides a constructor taking a caller-allocated 'Span&lt;byte&gt;' should specify that it supports the 'CallerAllocatedBuffer' feature.</source>
-        <target state="new">A marshaller type that provides a constructor taking a caller-allocated 'Span&lt;byte&gt;' should specify that it supports the 'CallerAllocatedBuffer' feature.</target>
+        <target state="translated">Un type de marshaleur qui fournit un constructeur prenant un «Span&lt;byte&gt;» alloué par l’appelant doit spécifier qu’il prend en charge la fonctionnalité «CallerAllocatedBuffer».</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureMessage">
         <source>The type '{0}' provides a constructor taking a caller-allocated 'Span&lt;byte&gt;' but does not specify that it supports the 'CallerAllocatedBuffer' feature. The constructor will not be used unless the feature is specified.</source>
-        <target state="new">The type '{0}' provides a constructor taking a caller-allocated 'Span&lt;byte&gt;' but does not specify that it supports the 'CallerAllocatedBuffer' feature. The constructor will not be used unless the feature is specified.</target>
+        <target state="translated">Le type «{0}» fournit un constructeur qui accepte un «Span&lt;byte&gt;» alloué par l’appelant, mais ne spécifie pas qu’il prend en charge la fonctionnalité «CallerAllocatedBuffer». Le constructeur ne sera pas utilisé tant que la fonctionnalité n’est pas spécifiée.</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportDescription">
@@ -249,7 +249,7 @@
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationNotCustom">
         <source>'StringMarshalling' should be set to 'StringMarshalling.Custom' when 'StringMarshallingCustomType' is specified.</source>
-        <target state="translated">« StringMarsimaing » doit être défini sur « StringMarslocationing.Custom » quand « StringMarsraleingCustomType » est spécifié.</target>
+        <target state="translated">« StringMarshalling » doit être défini sur « StringMarshalling.Custom » quand « StringMarshallingCustomType » est spécifié.</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionElementTypesMustMatchDescription">
@@ -264,22 +264,22 @@
       </trans-unit>
       <trans-unit id="LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorDescription">
         <source>A 'LinearCollection'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a three-parameter constructor taking the managed type as the first parameter, a 'Span&lt;byte&gt;' as the second parameter, and the native size of the element as the third parameter</source>
-        <target state="new">A 'LinearCollection'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a three-parameter constructor taking the managed type as the first parameter, a 'Span&lt;byte&gt;' as the second parameter, and the native size of the element as the third parameter</target>
+        <target state="translated">Un type natif de type «LinearCollection» qui prend en charge la fonctionnalité «CallerAllocatedBuffer» doit fournir un constructeur à trois paramètres prenant le type managé comme premier paramètre, un «Span&lt;byte&gt;» comme deuxième paramètre et la taille native de l’élément comme troisième paramètre</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorMessage">
         <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a three-parameter constructor that takes a '{1}' , a 'Span&lt;byte&gt;', and an 'int'</source>
-        <target state="new">The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a three-parameter constructor that takes a '{1}' , a 'Span&lt;byte&gt;', and an 'int'</target>
+        <target state="translated">Le type «{0}» spécifie qu’il prend en charge le marshaling «In» avec la fonctionnalité «CallerAllocatedBuffer» pour «{1}» mais ne fournit pas de constructeur à trois paramètres qui accepte un «{1}», un «Span&lt;byte&gt;» et un «int»</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionInRequiresCollectionMethodsDescription">
         <source>A 'LinearCollection'-kind native type that supports marshalling in the 'In' direction must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetNativeValuesDestination' method that returns a 'Span&lt;byte&gt;'.</source>
-        <target state="new">A 'LinearCollection'-kind native type that supports marshalling in the 'In' direction must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetNativeValuesDestination' method that returns a 'Span&lt;byte&gt;'.</target>
+        <target state="translated">Un type natif de type «LinearCollection» qui prend en charge le marshaling dans la direction «In» doit fournir un «GetManagedValuesSource» qui retourne un «ReadOnlySpan&lt;&gt;» et une méthode «GetNativeValuesDestination» qui retourne un «Span&lt;byte&gt;».</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionInRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that is supports marshalling in the 'In' direction, but it does not provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetNativeValuesDestination' method that returns a 'Span&lt;byte&gt;'</source>
-        <target state="new">The type '{0}' specifies that is supports marshalling in the 'In' direction, but it does not provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetNativeValuesDestination' method that returns a 'Span&lt;byte&gt;'</target>
+        <target state="translated">Le type «{0}» spécifie qui prend en charge le marshaling dans le sens «In», mais il ne fournit pas de «GetManagedValuesSource» qui retourne un «ReadOnlySpan&lt;&gt;» et une méthode «GetNativeValuesDestination» qui retourne un «Span&lt;byte&gt;»</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionInRequiresTwoParameterConstructorDescription">
@@ -294,12 +294,12 @@
       </trans-unit>
       <trans-unit id="LinearCollectionOutRequiresCollectionMethodsDescription">
         <source>A 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetNativeValuesSource' method that takes an 'int' and rreturns a 'ReadOnlySpan&lt;byte&gt;'.</source>
-        <target state="new">A 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetNativeValuesSource' method that takes an 'int' and rreturns a 'ReadOnlySpan&lt;byte&gt;'.</target>
+        <target state="translated">Un type natif de type «LinearCollection» qui prend en charge le marshaling dans la direction «Out» doit fournir un «GetManagedValuesDestination» qui prend un «int» et retourne «Span&lt;&gt;» et une méthode «GetNativeValuesSource» qui prend un «int» et retourne un «ReadOnlySpan&lt;byte&gt;».</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionOutRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that it supports marshalling in the 'Out' direction, but it does not provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetNativeValuesSource' method that takes an 'int' and rreturns a 'ReadOnlySpan&lt;byte&gt;'</source>
-        <target state="new">The type '{0}' specifies that it supports marshalling in the 'Out' direction, but it does not provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetNativeValuesSource' method that takes an 'int' and rreturns a 'ReadOnlySpan&lt;byte&gt;'</target>
+        <target state="translated">Le type «{0}» spécifie qu’il prend en charge le marshaling dans la direction «Out», mais il ne fournit pas de «GetManagedValuesDestination» qui accepte «int» et retourne un «Span&lt;&gt;» et une méthode «GetNativeValuesSource» qui accepte «int» et renvoie un «ReadOnlySpan&lt;byte&gt;»</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionOutRequiresIntConstructorDescription">

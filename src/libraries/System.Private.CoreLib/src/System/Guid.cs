@@ -385,7 +385,7 @@ namespace System
                 return false;
             }
 
-            Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result, 1));
+            Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result));
             int invalidIfNegative = 0;
             bytes[0] = DecodeByte(guidString[6],   guidString[7],  ref invalidIfNegative);
             bytes[1] = DecodeByte(guidString[4],   guidString[5],  ref invalidIfNegative);
@@ -471,7 +471,7 @@ namespace System
                 return false;
             }
 
-            Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result, 1));
+            Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result));
             int invalidIfNegative = 0;
             bytes[0] = DecodeByte(guidString[6], guidString[7], ref invalidIfNegative);
             bytes[1] = DecodeByte(guidString[4], guidString[5], ref invalidIfNegative);

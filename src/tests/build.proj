@@ -109,7 +109,9 @@
 
   <Target Name="MonoAotCompileTests" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
     <ItemGroup>
-      <AllTestScripts Include="%(TestDirectories.Identity)\**\*.sh" />
+      <AllTestScripts Condition="'@(TestDirectories)' != ''" Include="%(TestDirectories.Identity)\**\*.sh" />
+      <AllTestScripts Condition="'@(MergedRunnableTestPaths)' != ''" Include="%(MergedRunnableTestPaths.RootDir)%(MergedRunnableTestPaths.Directory)*.dll" />
+      <AllTestScripts Condition="'@(OutOfProcessTestPaths)' != ''" Include="%(OutOfProcessTestPaths.RootDir)%(OutOfProcessTestPaths.Directory)*.sh" />
       <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
       <TestScripts Include="@(AllTestScripts)" Exclude="@(TestExclusions)" />
 
@@ -121,7 +123,7 @@
       <Output TaskParameter="Filtered" ItemName="TestDirs" />
     </RemoveDuplicates>
     <ItemGroup>
-      <TestsAndAssociatedAssemblies Include="%(TestDirs.Identity)/*.dll" />
+      <TestsAndAssociatedAssemblies Include="%(TestDirs.Identity)/*.dll" Exclude="@(NoMonoAotAssemblyPaths)" />
       <CoreRootDlls Include="$(CORE_ROOT)/*.dll" Exclude="$(CORE_ROOT)/xunit.performance.api.dll" />
       <AllDlls Condition="'$(MonoFullAot)' == 'true'" Include="@(TestsAndAssociatedAssemblies);@(CoreRootDlls)" />
       <AllDlls Condition="'$(MonoFullAot)' != 'true'" Include="@(TestsAndAssociatedAssemblies)" />
@@ -396,6 +398,8 @@
       <MergedRunnableTestPaths Include="$([System.IO.Path]::ChangeExtension('%(MergedAssemblyMarkerPaths.Identity)', '.$(TestScriptExtension)'))" />
       <OutOfProcessTestMarkerPaths Include="$(XunitTestBinBase)\**\*.OutOfProcessTest"/>
       <OutOfProcessTestPaths Include="$([System.IO.Path]::ChangeExtension('%(OutOfProcessTestMarkerPaths.Identity)', '.$(TestScriptExtension)'))" />
+      <NoMonoAotMarkerPaths Include="$(XunitTestBinBase)\**\*.NoMonoAot" />
+      <NoMonoAotAssemblyPaths Include="$([System.IO.Path]::ChangeExtension('%(NoMonoAotMarkerPaths.Identity)', '.dll'))" />
     </ItemGroup>
     <!-- Remove the cmd/sh scripts for merged test runner app bundles from our list. -->
     <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
