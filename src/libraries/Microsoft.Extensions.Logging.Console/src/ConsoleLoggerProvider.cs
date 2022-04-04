@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// </summary>
         /// <param name="options">The options to create <see cref="ConsoleLogger"/> instances with.</param>
         /// <param name="formatters">Log formatters added for <see cref="ConsoleLogger"/> insteaces.</param>
-        public ConsoleLoggerProvider(IOptionsMonitor<ConsoleLoggerOptions> options, IEnumerable<ConsoleFormatter> formatters)
+        public ConsoleLoggerProvider(IOptionsMonitor<ConsoleLoggerOptions> options, IEnumerable<ConsoleFormatter>? formatters)
         {
             _options = options;
             _loggers = new ConcurrentDictionary<string, ConsoleLogger>();
