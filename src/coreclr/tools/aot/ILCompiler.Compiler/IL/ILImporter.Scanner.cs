@@ -263,6 +263,8 @@ namespace Internal.IL
             var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
+            _compilation.TypeSystemContext.EnsureLoadableMethod(method);
+
             _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, method);
 
             if (method.IsRawPInvoke())
