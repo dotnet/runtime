@@ -164,13 +164,13 @@ steps:
 
     # This step pulls the product version from the used Microsoft.Maui.dll file properties and saves it for upload with the maui test counter.
     # We pull from this file as we did not find another place to reliably get the version information pre or post build.
-  - powershell: |
-      $RetrievedMauiVersion = Get-ChildItem .\obj\Release\net6.0-android\android-arm64\linked\Microsoft.Maui.dll | Select-Object -ExpandProperty VersionInfo | Select-Object ProductVersion | Select-Object -ExpandProperty ProductVersion
-      $RetrievedMauiVersion
-      Write-Host "##vso[task.setvariable variable=mauiVersion;isOutput=true]$RetrievedMauiVersion"
-    name: getMauiVersion
-    displayName: Get and Save MAUI Version
-    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+  #- powershell: |
+  #    $RetrievedMauiVersion = Get-ChildItem .\obj\Release\net6.0-android\android-arm64\linked\Microsoft.Maui.dll | Select-Object -ExpandProperty VersionInfo | Select-Object ProductVersion | Select-Object -ExpandProperty ProductVersion
+  #    $RetrievedMauiVersion
+  #    Write-Host "##vso[task.setvariable variable=mauiVersion;isOutput=true]$RetrievedMauiVersion"
+  #  name: getMauiVersion
+  #  displayName: Get and Save MAUI Version
+  #  workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
   - powershell: |
       Format-Hex MauiTesting.csproj
