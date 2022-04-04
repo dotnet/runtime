@@ -4,33 +4,17 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
-namespace System
+namespace System.Numerics
 {
     /// <summary>Defines a number type.</summary>
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
     public interface INumber<TSelf>
-        : IAdditionOperators<TSelf, TSelf, TSelf>,
-          IAdditiveIdentity<TSelf, TSelf>,
-          IComparisonOperators<TSelf, TSelf>,   // implies IEquatableOperators<TSelf, TSelf>
-          IDecrementOperators<TSelf>,
-          IDivisionOperators<TSelf, TSelf, TSelf>,
-          IIncrementOperators<TSelf>,
+        : IComparisonOperators<TSelf, TSelf>,   // implies IEqualityOperators<TSelf, TSelf>
           IModulusOperators<TSelf, TSelf, TSelf>,
-          IMultiplicativeIdentity<TSelf, TSelf>,
-          IMultiplyOperators<TSelf, TSelf, TSelf>,
-          ISpanFormattable,                     // implies IFormattable
-          ISpanParseable<TSelf>,                // implies IParseable<TSelf>
-          ISubtractionOperators<TSelf, TSelf, TSelf>,
-          IUnaryNegationOperators<TSelf, TSelf>,
-          IUnaryPlusOperators<TSelf, TSelf>
+          INumberBase<TSelf>,
+          ISpanParsable<TSelf>                  // implies IParsable<TSelf>
         where TSelf : INumber<TSelf>
     {
-        /// <summary>Gets the value <c>1</c> for the type.</summary>
-        static abstract TSelf One { get; }
-
-        /// <summary>Gets the value <c>0</c> for the type.</summary>
-        static abstract TSelf Zero { get; }
-
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>
         /// <returns>The absolute of <paramref name="value" />.</returns>
@@ -45,13 +29,19 @@ namespace System
         /// <exception cref="ArgumentException"><paramref name="min" /> is greater than <paramref name="max" />.</exception>
         static abstract TSelf Clamp(TSelf value, TSelf min, TSelf max);
 
-        /// <summary>Creates an instance of the current type from a value.</summary>
+        /// <summary>Copies the sign of a value to the sign of another value..</summary>
+        /// <param name="value">The value whose magnitude is used in the result.</param>
+        /// <param name="sign">The value whose sign is used in the result.</param>
+        /// <returns>A value with the magnitude of <paramref name="value" /> and the sign of <paramref name="sign" />.</returns>
+        static abstract TSelf CopySign(TSelf value, TSelf sign);
+
+        /// <summary>Creates an instance of the current type from a value, throwing an overflow exception for any values that fall outside the representable range of the current type.</summary>
         /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
         /// <param name="value">The value which is used to create the instance of <typeparamref name="TSelf" />.</param>
         /// <returns>An instance of <typeparamref name="TSelf" /> created from <paramref name="value" />.</returns>
         /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <typeparamref name="TSelf" />.</exception>
-        static abstract TSelf Create<TOther>(TOther value)
+        static abstract TSelf CreateChecked<TOther>(TOther value)
             where TOther : INumber<TOther>;
 
         /// <summary>Creates an instance of the current type from a value, saturating any values that fall outside the representable range of the current type.</summary>
@@ -70,11 +60,10 @@ namespace System
         static abstract TSelf CreateTruncating<TOther>(TOther value)
             where TOther : INumber<TOther>;
 
-        /// <summary>Computes the quotient and remainder of two values.</summary>
-        /// <param name="left">The value which <paramref name="right" /> divides.</param>
-        /// <param name="right">The value which divides <paramref name="left" />.</param>
-        /// <returns>The quotient and remainder of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
-        static abstract (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right);
+        /// <summary>Determines if a value is negative.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is negative; otherwise, <c>false</c>.</returns>
+        static abstract bool IsNegative(TSelf value);
 
         /// <summary>Compares two values to compute which is greater.</summary>
         /// <param name="x">The value to compare with <paramref name="y" />.</param>
@@ -83,12 +72,26 @@ namespace System
         /// <remarks>For <see cref="IFloatingPoint{TSelf}" /> this method matches the IEEE 754:2019 <c>maximum</c> function. This requires NaN inputs to be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
         static abstract TSelf Max(TSelf x, TSelf y);
 
+        /// <summary>Compares two values to compute which is greater.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        /// <remarks>For <see cref="IFloatingPointIeee754{TSelf}" /> this method matches the IEEE 754:2019 <c>maximumMagnitude</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        static abstract TSelf MaxMagnitude(TSelf x, TSelf y);
+
         /// <summary>Compares two values to compute which is lesser.</summary>
         /// <param name="x">The value to compare with <paramref name="y" />.</param>
         /// <param name="y">The value to compare with <paramref name="x" />.</param>
         /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
         /// <remarks>For <see cref="IFloatingPoint{TSelf}" /> this method matches the IEEE 754:2019 <c>minimum</c> function. This requires NaN inputs to be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
         static abstract TSelf Min(TSelf x, TSelf y);
+
+        /// <summary>Compares two values to compute which is lesser.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        /// <remarks>For <see cref="IFloatingPointIeee754{TSelf}" /> this method matches the IEEE 754:2019 <c>minimumMagnitude</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        static abstract TSelf MinMagnitude(TSelf x, TSelf y);
 
         /// <summary>Parses a string into a value.</summary>
         /// <param name="s">The string to parse.</param>
@@ -113,9 +116,9 @@ namespace System
 
         /// <summary>Computes the sign of a value.</summary>
         /// <param name="value">The value whose sign is to be computed.</param>
-        /// <returns>A positive value if <paramref name="value" /> is positive, <see cref="Zero" /> if <paramref name="value" /> is zero, and a negative value if <paramref name="value" /> is negative.</returns>
+        /// <returns>A positive value if <paramref name="value" /> is positive, <see cref="INumberBase{TSelf}.Zero" /> if <paramref name="value" /> is zero, and a negative value if <paramref name="value" /> is negative.</returns>
         /// <remarks>It is recommended that a function return <c>1</c>, <c>0</c>, and <c>-1</c>, respectively.</remarks>
-        static abstract TSelf Sign(TSelf value);
+        static abstract int Sign(TSelf value);
 
         /// <summary>Tries to create an instance of the current type from a value.</summary>
         /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
@@ -143,41 +146,5 @@ namespace System
         /// <returns><c>true</c> if <paramref name="s" /> was successfully parsed; otherwise, <c>false</c>.</returns>
         /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
         static abstract bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out TSelf result);
-    }
-
-    /// <summary>Defines a number that is represented in a base-2 format.</summary>
-    /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
-    public interface IBinaryNumber<TSelf>
-        : IBitwiseOperators<TSelf, TSelf, TSelf>,
-          INumber<TSelf>
-        where TSelf : IBinaryNumber<TSelf>
-    {
-        /// <summary>Determines if a value is a power of two.</summary>
-        /// <param name="value">The value to be checked.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> is a power of two; otherwise, <c>false</c>.</returns>
-        static abstract bool IsPow2(TSelf value);
-
-        /// <summary>Computes the log2 of a value.</summary>
-        /// <param name="value">The value whose log2 is to be computed.</param>
-        /// <returns>The log2 of <paramref name="value" />.</returns>
-        static abstract TSelf Log2(TSelf value);
-    }
-
-    /// <summary>Defines a number type which can represent both positive and negative values.</summary>
-    /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
-    public interface ISignedNumber<TSelf>
-        : INumber<TSelf>
-        where TSelf : ISignedNumber<TSelf>
-    {
-        /// <summary>Gets the value <c>-1</c> for the type.</summary>
-        static abstract TSelf NegativeOne { get; }
-    }
-
-    /// <summary>Defines a number type which can only represent positive values, that is it cannot represent negative values.</summary>
-    /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
-    public interface IUnsignedNumber<TSelf>
-        : INumber<TSelf>
-        where TSelf : IUnsignedNumber<TSelf>
-    {
     }
 }
