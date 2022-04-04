@@ -53,6 +53,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser uses Invariant mode which causes invariant mappings to be used and will fail to match '\u0130' and 'I'")]
         [MemberData(nameof(Characters_With_Common_Lowercase_Match_Data))]
         public async Task Characters_With_Common_Lowercase_Match(RegexEngine engine, string pattern, string input)
         {
