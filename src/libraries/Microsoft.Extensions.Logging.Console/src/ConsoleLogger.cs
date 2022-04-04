@@ -15,18 +15,23 @@ namespace Microsoft.Extensions.Logging.Console
         private readonly string _name;
         private readonly ConsoleLoggerProcessor _queueProcessor;
 
-        internal ConsoleLogger(string name!!, ConsoleLoggerProcessor loggerProcessor)
+        internal ConsoleLogger(
+            string name!!,
+            ConsoleLoggerProcessor loggerProcessor,
+            ConsoleFormatter formatter,
+            IExternalScopeProvider scopeProvider,
+            ConsoleLoggerOptions options)
         {
             _name = name;
             _queueProcessor = loggerProcessor;
+            Formatter = formatter;
+            ScopeProvider = scopeProvider;
+            Options = options;
         }
 
-        [DisallowNull]
-        internal ConsoleFormatter? Formatter { get; set; }
-        internal IExternalScopeProvider? ScopeProvider { get; set; }
-
-        [DisallowNull]
-        internal ConsoleLoggerOptions? Options { get; set; }
+        internal ConsoleFormatter Formatter { get; set; }
+        internal IExternalScopeProvider ScopeProvider { get; set; }
+        internal ConsoleLoggerOptions Options { get; set; }
 
         [ThreadStatic]
         private static StringWriter? t_stringWriter;
@@ -43,7 +48,7 @@ namespace Microsoft.Extensions.Logging.Console
             }
             t_stringWriter ??= new StringWriter();
             LogEntry<TState> logEntry = new LogEntry<TState>(logLevel, _name, eventId, state, exception, formatter);
-            Formatter!.Write(in logEntry, ScopeProvider, t_stringWriter);
+            Formatter.Write(in logEntry, ScopeProvider, t_stringWriter);
 
             var sb = t_stringWriter.GetStringBuilder();
             if (sb.Length == 0)
@@ -56,7 +61,7 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 sb.Capacity = 1024;
             }
-            _queueProcessor.EnqueueMessage(new LogMessageEntry(computedAnsiString, logAsError: logLevel >= Options!.LogToStandardErrorThreshold));
+            _queueProcessor.EnqueueMessage(new LogMessageEntry(computedAnsiString, logAsError: logLevel >= Options.LogToStandardErrorThreshold));
         }
 
         public bool IsEnabled(LogLevel logLevel)
