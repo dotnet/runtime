@@ -4,7 +4,7 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <!--  CilStrip.Sources doesn't play nicely with nullability -->
     <Nullable>disable</Nullable>
-    <!-- SYSLIB0003: Mono.Cecil uses Code Access Security types
+    <!-- SYSLIB0003,SYSLIB0037: Mono.Cecil uses Code Access Security types
          CS0618: Mono.Cecil uses a number of other obsolete types
          CS0649: Mono.Cecil.Binary.ExportTable has some unused fields
     -->
