@@ -16,7 +16,7 @@ Breaking Change Rules
 
 ## Behavioral Changes
 
-### Property, Field, Parameter and Return Values
+### Method, Property, Field, Parameter and Return Values
 &#10003; **Allowed**
 * Increasing the range of accepted values for a property or parameter if the member _is not_ `virtual`
 
@@ -45,10 +45,9 @@ Breaking Change Rules
 
 * Changing the precision of a numerical return value
 
-* Removing a finalizer from an unsealed public type once it has one
+* Removing a call to a `virtual`/`abstract` member 
 
-    Removing the finalizer once a type has taken that dependency causes the finalizer to not run on that type, which can lead to difficult-to-diagnose resource leaks.
-    Since sealed types cannot have inheritors, removing a finalizer can’t have such drastic consequences. For internal types, you are empowered to check on any derived types and move the finalizer as appropriate.
+    Note that this includes removing any finalizer whose body was to call a `virtual Dispose(false)`.
 
 
 ### Exceptions
