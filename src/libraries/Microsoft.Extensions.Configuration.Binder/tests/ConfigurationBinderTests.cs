@@ -112,9 +112,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public IConfigurationSection DerivedSection { get; set; }
         }
 
-#if NETCOREAPP        
         public record RecordTypeOptions(string Color, int Length);
-#endif
 
         public class ContainerWithNestedImmutableObject
         {
@@ -1145,7 +1143,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(1.23m, options.Thickness);
         }
 
-#if NETCOREAPP
         [Fact]
         public void CanBindRecordOptions()
         {
@@ -1162,7 +1159,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(42, options.Length);
             Assert.Equal("Green", options.Color);
         }
-#endif
 
         [Fact]
         public void CanBindByteArray()
