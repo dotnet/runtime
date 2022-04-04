@@ -21,22 +21,22 @@ namespace System.Collections.Generic
 
         internal void MarkBit(int bitPosition)
         {
-            (int bitArrayIndex, int position) = Math.DivRem(bitPosition, IntSize);
+            (uint bitArrayIndex, uint position) = Math.DivRem((uint)bitPosition, IntSize);
             Span<int> span = _span;
-            if ((uint)bitArrayIndex < (uint)span.Length)
+            if (bitArrayIndex < (uint)span.Length)
             {
-                span[bitArrayIndex] |= 1 << position;
+                span[(int)bitArrayIndex] |= 1 << (int)position;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsMarked(int bitPosition)
         {
-            (int bitArrayIndex, int position) = Math.DivRem(bitPosition, IntSize);
+            (uint bitArrayIndex, uint position) = Math.DivRem((uint)bitPosition, IntSize);
             Span<int> span = _span;
             return
-                (uint)bitArrayIndex < (uint)span.Length &&
-                (span[bitArrayIndex] & (1 << position)) != 0;
+                bitArrayIndex < (uint)span.Length &&
+                (span[(int)bitArrayIndex] & (1 << (int)position)) != 0;
         }
 
         /// <summary>How many ints must be allocated to represent n bits. Returns (n+31)/32, but avoids overflow.</summary>
