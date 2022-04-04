@@ -41,7 +41,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                     break;
 
 		case Architecture.POWERPC64:
-                    Assert.Equal(Architecture.POWERPC64, processArch);
+                    Assert.Equal(Architecture.PowerPC64, processArch);
                     break;
                     
                 case Architecture.LoongArch64:
