@@ -784,7 +784,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61920", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void CreateSaturatingFromInt16Test()
         {
             Assert.Equal((nint)0x00000000, NumberHelper<nint>.CreateSaturating<short>(0x0000));
@@ -847,7 +846,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61920", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void CreateSaturatingFromSByteTest()
         {
             Assert.Equal((nint)0x00000000, NumberHelper<nint>.CreateSaturating<sbyte>(0x00));
@@ -951,7 +949,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61920", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void CreateTruncatingFromInt16Test()
         {
             if (Environment.Is64BitProcess)
@@ -1025,7 +1022,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61920", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void CreateTruncatingFromSByteTest()
         {
             if (Environment.Is64BitProcess)
@@ -1235,7 +1231,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61920", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void TryCreateFromInt16Test()
         {
             nint result;
@@ -1360,7 +1355,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61920", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void TryCreateFromSByteTest()
         {
             nint result;
