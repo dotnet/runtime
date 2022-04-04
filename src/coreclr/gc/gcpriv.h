@@ -1202,6 +1202,9 @@ enum bookkeeping_element
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     software_write_watch_table_element,
 #endif
+#ifdef USE_REGIONS
+    region_to_generation_table_element,
+#endif //USE_REGIONS
     seg_mapping_table_element,
 #ifdef BACKGROUND_GC
     mark_array_element,

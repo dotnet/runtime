@@ -4045,6 +4045,13 @@ size_t size_seg_mapping_table_of (uint8_t* from, uint8_t* end)
     return sizeof (seg_mapping)*((size_t)(end - from) >> gc_heap::min_segment_size_shr);
 }
 
+size_t size_region_to_generation_table_of (uint8_t* from, uint8_t* end)
+{
+    dprintf (1, ("from: %Ix, end: %Ix, size: %Ix", from, end,
+        sizeof (uint8_t)*(((size_t)(end - from) >> gc_heap::min_segment_size_shr))));
+    return sizeof (uint8_t)*((size_t)(end - from) >> gc_heap::min_segment_size_shr);
+}
+
 inline
 size_t seg_mapping_word_of (uint8_t* add)
 {
@@ -8563,6 +8570,9 @@ void gc_heap::get_card_table_element_sizes (uint8_t* start, uint8_t* end, size_t
         sizes[software_write_watch_table_element] = SoftwareWriteWatch::GetTableByteSize(start, end);
     }
 #endif //FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP && BACKGROUND_GC
+#ifdef USE_REGIONS
+    sizes[region_to_generation_table_element] = size_region_to_generation_table_of (start, end);
+#endif //USE_REGIONS
     sizes[seg_mapping_table_element] = size_seg_mapping_table_of (start, end);
 #ifdef BACKGROUND_GC
     if (gc_can_use_concurrent)
@@ -8587,6 +8597,9 @@ void gc_heap::get_card_table_element_layout (uint8_t* start, uint8_t* end, size_
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         sizeof(size_t),    // software_write_watch_table_element
 #endif //FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+#ifdef USE_REGIONS
+        sizeof (uint8_t),  // region_to_generation_table_element
+#endif //USE_REGIONS
         sizeof (uint8_t*), // seg_mapping_table_element
 #ifdef BACKGROUND_GC
         // In order to avoid a dependency between commit_mark_array_by_range and this logic, it is easier to make sure
@@ -8864,6 +8877,11 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
         SoftwareWriteWatch::InitializeUntranslatedTable(mem + card_table_element_layout[software_write_watch_table_element], start);
     }
 #endif //FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP && BACKGROUND_GC
+
+#ifdef USE_REGIONS
+    map_region_to_generation = mem + card_table_element_layout[region_to_generation_table_element];
+    map_region_to_generation_skewed = map_region_to_generation - size_region_to_generation_table_of (0, g_gc_lowest_address);
+#endif //USE_REGIONS
 
     seg_mapping_table = (seg_mapping*)(mem + card_table_element_layout[seg_mapping_table_element]);
     seg_mapping_table = (seg_mapping*)((uint8_t*)seg_mapping_table -
@@ -13205,12 +13223,6 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 
         if (!allocate_initial_regions(number_of_heaps))
             return E_OUTOFMEMORY;
-
-        size_t num_region_units = (g_gc_highest_address - g_gc_lowest_address) >> min_segment_size_shr;
-        map_region_to_generation = new (nothrow) uint8_t[num_region_units];
-        if (map_region_to_generation == nullptr)
-            return E_OUTOFMEMORY;
-        map_region_to_generation_skewed = map_region_to_generation - ((size_t)g_gc_lowest_address >> min_segment_size_shr);
     }
     else
     {
