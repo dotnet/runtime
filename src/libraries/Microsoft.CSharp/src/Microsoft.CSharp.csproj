@@ -4,172 +4,27 @@
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <EnableComBinder Condition="'$(TargetPlatformIdentifier)' == 'windows'">true</EnableComBinder>
+    <DefaultItemExcludesInProjectFolder Condition="'$(EnableComBinder)' != 'true'">Microsoft\CSharp\RuntimeBinder\ComInterop\**\*</DefaultItemExcludesInProjectFolder>
     <DefineConstants Condition="'$(EnableComBinder)' == 'true'">$(DefineConstants);ENABLECOMBINDER</DefineConstants>
     <AllowUnsafeBlocks Condition="'$(EnableComBinder)' == 'true'">true</AllowUnsafeBlocks>
   </PropertyGroup>
+
   <ItemGroup>
     <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)ILLink.Descriptors.Shared.xml" />
     <ILLinkDescriptorsXmls Condition="'$(TargetPlatformIdentifier)' == 'windows'" Include="$(ILLinkDirectory)ILLink.Descriptors.Windows.xml" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ArgumentObject.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Binder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\BinderEquivalence.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\BinderHelper.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpArgumentInfo.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpArgumentInfoFlags.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpBinaryOperationBinder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpBinaryOperationFlags.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpBinderFlags.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpCallFlags.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpConversionKind.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpConvertBinder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpGetIndexBinder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpGetMemberBinder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpInvokeBinder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpInvokeConstructorBinder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpInvokeMemberBinder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpIsEventBinder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpSetIndexBinder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpSetMemberBinder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpUnaryOperationBinder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\DynamicDebuggerProxy.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Error.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Errors\ErrorCode.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Errors\ErrorFacts.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Errors\ErrorFmt.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Errors\ErrorHandling.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Errors\MessageID.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Errors\UserStringBuilder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ExpressionTreeCallRewriter.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ICSharpBinder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ICSharpInvokeOrInvokeMemberBinder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\RuntimeBinder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\RuntimeBinderException.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\RuntimeBinderExtensions.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\RuntimeBinderInternalCompilerException.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\BindingContext.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\BindingFlag.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Binding\Better.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\BinOpArgInfo.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\BinOpKind.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\BinOpSig.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\CandidateFunctionMember.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ConstVal.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Conversion.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Conversions.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\COperators.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ExplicitConversion.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ExpressionBinder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ExpressionKind.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\EXPRExtensions.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ExprFactory.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\EXPRFLAG.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\FundamentalTypes.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\GroupToArgsBinder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\GroupToArgsBinderResult.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ImplicitConversion.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MemberLookup.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MemberLookupResults.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MethodIterator.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MethodKind.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MethodTypeInferrer.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Nullable.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\NullableLift.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Operators.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\PredefinedMembers.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\SemanticChecker.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\SubstitutionContext.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\AggregateSymbol.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\EventSymbol.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\FieldSymbol.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\IndexerSymbol.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\LocalVariableSymbol.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\MethodOrPropertySymbol.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\MethodSymbol.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\NamespaceOrAggregateSymbol.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\NamespaceSymbol.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\ParentSymbol.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\PropertySymbol.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\Scope.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\Symbol.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\SymbolKind.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\SymbolLoader.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\SymbolMask.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\SymbolStore.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\SymFactory.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\TypeParameterSymbol.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\VariableSymbol.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\ArrayIndex.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\ArrayInitialization.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Assignment.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\BinaryOperator.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\BoundAnonymousFunction.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Call.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Cast.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Class.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\CompoundOperator.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Concatenate.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Constant.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\EXPR.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\ExpressionIterator.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\ExprOperator.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\ExprWithArgs.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\ExprWithType.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Field.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\FieldInfo.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\List.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\LocalVariable.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\MemberGroup.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\MethodInfo.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\NamedArgumentSpecification.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Property.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\PropertyInfo.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Temporary.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\TypeOf.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\UnaryOperator.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\UserDefinedConversion.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\UserDefinedLogicalOperator.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Visitors\ExpressionTreeRewriter.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Visitors\ExprVisitorBase.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\ZeroInitialize.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\TypeBind.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\AggregateType.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\ArgumentListType.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\ArrayType.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\MethodGroupType.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\NullableType.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\NullType.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\ParameterModifierType.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\PointerType.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\PredefinedTypes.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\Type.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\TypeArray.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\TypeKind.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\TypeManager.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\TypeParameterType.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\TypeTable.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\VoidType.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\UnaOpSig.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\WithType.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\SpecialNames.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\SymbolTable.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\NameManager.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\Names.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\NameTable.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\Operators.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\PredefinedName.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\PredefinedType.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\TokenFacts.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\TokenKind.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
              Link="Common\System\Collections\HashHelpers.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(EnableComBinder)'=='true'">
+
+  <ItemGroup Condition="'$(EnableComBinder)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs"
@@ -178,83 +33,21 @@
              Link="Common\System\Runtime\InteropServices\ComEventsSink.cs" />
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsMethod.cs"
              Link="Common\System\Runtime\InteropServices\ComEventsMethod.cs" />
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\IDispatch.cs">
-        <Link>Common\System\Runtime\InteropServices\IDispatch.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\Variant.cs">
-        <Link>Common\System\Runtime\InteropServices\Variant.cs</Link>
-    </Compile>
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ArgBuilder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\BoolArgBuilder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\BoundDispEvent.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\CollectionExtensions.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComBinder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComBinderHelpers.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComClassMetaObject.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComEventDesc.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComEventsSink.Extended.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComEventSinksContainer.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComFallbackMetaObject.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComHresults.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComInterop.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComInvokeAction.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComInvokeBinder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComMetaObject.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComMethodDesc.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComObject.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComRuntimeHelpers.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComTypeClassDesc.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComTypeDesc.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComTypeEnumDesc.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComTypeLibDesc.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ConversionArgBuilder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ConvertArgBuilder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ConvertibleArgBuilder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\CurrencyArgBuilder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\DateTimeArgBuilder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\DispatchArgBuilder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\DispCallable.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\DispCallableMetaObject.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ErrorArgBuilder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\Errors.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ExcepInfo.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\Helpers.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\IDispatchComObject.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\IDispatchMetaObject.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\IPseudoComObject.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\NullArgBuilder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\SimpleArgBuilder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\SplatCallSite.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\StringArgBuilder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\TypeEnumMetaObject.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\TypeLibMetaObject.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\TypeUtils.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\UnknownArgBuilder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VarEnumSelector.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\Variant.Extended.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VariantArgBuilder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VariantArray.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VariantBuilder.cs" />
-
-    <Reference Include="System.Reflection.Emit" />
-    <Reference Include="System.Reflection.Emit.ILGeneration" />
-    <Reference Include="System.Reflection.Emit.Lightweight" />
-    <Reference Include="System.Reflection.Primitives" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\IDispatch.cs"
+             Link="Common\System\Runtime\InteropServices\IDispatch.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\Variant.cs"
+             Link="Common\System\Runtime\InteropServices\Variant.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Linq.Expressions" />
     <Reference Include="System.Memory" />
     <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Reflection" />
-    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Reflection.Emit" Condition="'$(EnableComBinder)' == 'true'" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
   </ItemGroup>

@@ -3,40 +3,17 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <OptimizeForSize Condition="'$(TargetPlatformIdentifier)' == 'Browser' or '$(TargetPlatformIdentifier)' == 'Android' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">true</OptimizeForSize>
+    <!-- File globbing exclusion patterns. -->
+    <DefaultItemExcludesInProjectFolder Condition="'$(OptimizeForSize)' == 'true'">**\*.SpeedOpt.cs</DefaultItemExcludesInProjectFolder>
+    <DefaultItemExcludesInProjectFolder Condition="'$(OptimizeForSize)' != 'true'">**\*.SizeOpt.cs</DefaultItemExcludesInProjectFolder>
+
   </PropertyGroup>
-  <ItemGroup Condition="'$(OptimizeForSize)' == true">
-    <Compile Include="System\Linq\Enumerable.SizeOpt.cs" />
-    <Compile Include="System\Linq\Skip.SizeOpt.cs" />
-    <Compile Include="System\Linq\Take.SizeOpt.cs" />
-    <Compile Include="$(CommonPath)\System\Collections\Generic\LargeArrayBuilder.SizeOpt.cs"
-             Link="System\Collections\Generic\LargeArrayBuilder.SizeOpt.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(OptimizeForSize)' != true">
-    <Compile Include="System\Linq\AppendPrepend.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Concat.SpeedOpt.cs" />
-    <Compile Include="System\Linq\DefaultIfEmpty.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Distinct.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Enumerable.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Grouping.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Lookup.SpeedOpt.cs" />
-    <Compile Include="System\Linq\OrderedEnumerable.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Partition.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Range.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Repeat.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Reverse.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Select.SpeedOpt.cs" />
-    <Compile Include="System\Linq\SelectMany.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Skip.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Take.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Union.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Where.SpeedOpt.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs"
-             Link="System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs" />
-  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs"
              Link="System\Collections\Generic\ArrayBuilder.cs" />
@@ -48,64 +25,23 @@
              Link="System\Collections\Generic\LargeArrayBuilder.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\SparseArrayBuilder.cs"
              Link="System\Collections\Generic\SparseArrayBuilder.cs" />
-    <Compile Include="System\Linq\Aggregate.cs" />
-    <Compile Include="System\Linq\AnyAll.cs" />
-    <Compile Include="System\Linq\AppendPrepend.cs" />
-    <Compile Include="System\Linq\Average.cs" />
-    <Compile Include="System\Linq\Buffer.cs" />
-    <Compile Include="System\Linq\Cast.cs" />
-    <Compile Include="System\Linq\Chunk.cs" />
-    <Compile Include="System\Linq\Concat.cs" />
-    <Compile Include="System\Linq\Contains.cs" />
-    <Compile Include="System\Linq\Count.cs" />
-    <Compile Include="System\Linq\DebugView.cs" />
-    <Compile Include="System\Linq\DefaultIfEmpty.cs" />
-    <Compile Include="System\Linq\Distinct.cs" />
-    <Compile Include="System\Linq\ElementAt.cs" />
-    <Compile Include="System\Linq\Enumerable.cs" />
-    <Compile Include="System\Linq\Except.cs" />
-    <Compile Include="System\Linq\First.cs" />
-    <Compile Include="System\Linq\Grouping.cs" />
-    <Compile Include="System\Linq\GroupJoin.cs" />
-    <Compile Include="System\Linq\Intersect.cs" />
-    <Compile Include="System\Linq\Iterator.cs" />
-    <Compile Include="System\Linq\IIListProvider.cs" />
-    <Compile Include="System\Linq\IPartition.cs" />
-    <Compile Include="System\Linq\Join.cs" />
-    <Compile Include="System\Linq\Last.cs" />
-    <Compile Include="System\Linq\Lookup.cs" />
-    <Compile Include="System\Linq\Max.cs" />
-    <Compile Include="System\Linq\Min.cs" />
-    <Compile Include="System\Linq\OrderBy.cs" />
-    <Compile Include="System\Linq\OrderedEnumerable.cs" />
-    <Compile Include="System\Linq\Range.cs" />
-    <Compile Include="System\Linq\Repeat.cs" />
-    <Compile Include="System\Linq\Reverse.cs" />
-    <Compile Include="System\Linq\Select.cs" />
-    <Compile Include="System\Linq\SelectMany.cs" />
-    <Compile Include="System\Linq\SequenceEqual.cs" />
-    <Compile Include="System\Linq\Single.cs" />
-    <Compile Include="System\Linq\SingleLinkedNode.cs" />
-    <Compile Include="System\Linq\Skip.cs" />
-    <Compile Include="System\Linq\Sum.cs" />
-    <Compile Include="System\Linq\Take.cs" />
-    <Compile Include="System\Linq\ThrowHelper.cs" />
-    <Compile Include="System\Linq\ToCollection.cs" />
-    <Compile Include="System\Linq\Union.cs" />
-    <Compile Include="System\Linq\Utilities.cs" />
-    <Compile Include="System\Linq\Where.cs" />
-    <Compile Include="System\Linq\Zip.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Resources\" />
+
+  <ItemGroup Condition="'$(OptimizeForSize)' == true">
+    <Compile Include="$(CommonPath)\System\Collections\Generic\LargeArrayBuilder.SizeOpt.cs"
+             Link="System\Collections\Generic\LargeArrayBuilder.SizeOpt.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(OptimizeForSize)' != true">
+    <Compile Include="$(CommonPath)System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs"
+             Link="System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
 </Project>

@@ -10,57 +10,17 @@ System.IO.Pipelines.Pipe
 System.IO.Pipelines.PipeWriter
 System.IO.Pipelines.PipeReader</PackageDescription>
   </PropertyGroup>
+
   <ItemGroup>
+    <Compile Remove="System\IO\Pipelines\*.netstandard.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <Compile Remove="System\IO\Pipelines\*.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-         Link="Common\System\Threading\Tasks\TaskToApm.cs" />
-    <Compile Include="Properties\InternalsVisibleTo.cs" />
-    <Compile Include="System\IO\Pipelines\BufferSegment.cs" />
-    <Compile Include="System\IO\Pipelines\CompletionData.cs" />
-    <Compile Include="System\IO\Pipelines\FlushResult.cs" />
-    <Compile Include="System\IO\Pipelines\InlineScheduler.cs" />
-    <Compile Include="System\IO\Pipelines\IDuplexPipe.cs" />
-    <Compile Include="System\IO\Pipelines\BufferSegmentStack.cs" />
-    <Compile Include="System\IO\Pipelines\Pipe.DefaultPipeReader.cs" />
-    <Compile Include="System\IO\Pipelines\Pipe.DefaultPipeWriter.cs" />
-    <Compile Include="System\IO\Pipelines\Pipe.cs" />
-    <Compile Include="System\IO\Pipelines\PipeAwaitable.cs" />
-    <Compile Include="System\IO\Pipelines\PipeCompletion.cs" />
-    <Compile Include="System\IO\Pipelines\PipeCompletionCallback.cs" />
-    <Compile Include="System\IO\Pipelines\PipeCompletionCallbacks.cs" />
-    <Compile Include="System\IO\Pipelines\PipeOptions.cs" />
-    <Compile Include="System\IO\Pipelines\PipeReader.cs" />
-    <Compile Include="System\IO\Pipelines\PipeOperationState.cs" />
-    <Compile Include="System\IO\Pipelines\PipeReaderStream.cs" />
-    <Compile Include="System\IO\Pipelines\PipeScheduler.cs" />
-    <Compile Include="System\IO\Pipelines\PipeWriter.cs" />
-    <Compile Include="System\IO\Pipelines\PipeWriterStream.cs" />
-    <Compile Include="System\IO\Pipelines\ReadResult.cs" />
-    <Compile Include="System\IO\Pipelines\ResultFlags.cs" />
-    <Compile Include="System\IO\Pipelines\SequencePipeReader.cs" />
-    <Compile Include="System\IO\Pipelines\StreamPipeExtensions.cs" />
-    <Compile Include="System\IO\Pipelines\StreamPipeReader.cs" />
-    <Compile Include="System\IO\Pipelines\StreamPipeReaderOptions.cs" />
-    <Compile Include="System\IO\Pipelines\StreamPipeWriter.cs" />
-    <Compile Include="System\IO\Pipelines\StreamPipeWriterOptions.cs" />
-    <Compile Include="System\IO\Pipelines\ThrowHelper.cs" />
+             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs"
              Link="Common\System\IO\StreamHelpers.CopyValidation.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netcoreapp.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="System\IO\Pipelines\StreamExtensions.netstandard.cs" />
-    <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netstandard.cs" />
-    <Compile Include="System\IO\Pipelines\CancellationTokenExtensions.netstandard.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.ThreadPool" />
-  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />

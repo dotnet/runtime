@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IsTrimmable>false</IsTrimmable>
     <IsPackable>true</IsPackable>
-    <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <PackageDescription>Provides Managed Extensibility Framework types that are useful to developers of extensible applications, or hosts.
 
 Commonly Used Types:
@@ -11,45 +11,7 @@ System.Composition.Hosting.CompositionHost</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="System\Composition\Hosting\CompositionHost.cs" />
-    <Compile Include="System\Composition\Hosting\Core\CompositeActivator.cs" />
-    <Compile Include="System\Composition\Hosting\Core\CompositionDependency.cs" />
-    <Compile Include="System\Composition\Hosting\Core\CompositionOperation.cs" />
-    <Compile Include="System\Composition\Hosting\Core\CycleBreakingExportDescriptor.cs" />
-    <Compile Include="System\Composition\Hosting\Core\CycleBreakingMetadataDictionary.cs" />
-    <Compile Include="System\Composition\Hosting\Core\DependencyAccessor.cs" />
-    <Compile Include="System\Composition\Hosting\Core\DirectExportDescriptor.cs" />
-    <Compile Include="System\Composition\Hosting\Core\ExportDescriptor.cs" />
-    <Compile Include="System\Composition\Hosting\Core\ExportDescriptorPromise.cs" />
-    <Compile Include="System\Composition\Hosting\Core\ExportDescriptorProvider.cs" />
-    <Compile Include="System\Composition\Hosting\Core\ExportDescriptorRegistry.cs" />
-    <Compile Include="System\Composition\Hosting\Core\ExportDescriptorRegistryUpdate.cs" />
-    <Compile Include="System\Composition\Hosting\Core\LifetimeContext.cs" />
-    <Compile Include="System\Composition\Hosting\Core\UpdateResult.cs" />
-    <Compile Include="System\Composition\Hosting\Providers\Constants.cs" />
-    <Compile Include="System\Composition\Hosting\Providers\CurrentScope\CurrentScopeExportDescriptorProvider.cs" />
-    <Compile Include="System\Composition\Hosting\Providers\ExportFactory\ExportFactoryExportDescriptorProvider.cs" />
-    <Compile Include="System\Composition\Hosting\Providers\ExportFactory\ExportFactoryWithMetadataExportDescriptorProvider.cs" />
-    <Compile Include="System\Composition\Hosting\Providers\ImportMany\ImportManyExportDescriptorProvider.cs" />
-    <Compile Include="System\Composition\Hosting\Providers\Lazy\LazyExportDescriptorProvider.cs" />
-    <Compile Include="System\Composition\Hosting\Providers\Lazy\LazyWithMetadataExportDescriptorProvider.cs" />
-    <Compile Include="System\Composition\Hosting\Providers\Metadata\MetadataViewProvider.cs" />
-    <Compile Include="System\Composition\Hosting\Util\Formatters.cs" />
-    <Compile Include="System\Composition\Hosting\Util\MethodInfoExtensions.cs" />
-    <Compile Include="System\Composition\Hosting\Util\SmallSparseInitonlyArray.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Runtime\src\System.Composition.Runtime.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Linq.Expressions" />
-    <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

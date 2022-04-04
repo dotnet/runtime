@@ -2,9 +2,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Android</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <!-- ILLinker settings -->
-    <ILLinkDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkDirectory>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier Condition="$(TargetFramework.Contains('-'))">$(TargetFramework.SubString($([MSBuild]::Add($(TargetFramework.IndexOf('-')), 1))))</TargetPlatformIdentifier>
@@ -12,74 +11,30 @@
     <NoWarn Condition="'$(TargetPlatformIdentifier)' != ''">$(NoWarn);CS0649</NoWarn>
     <NoWarn>$(NoWarn);CA1822</NoWarn>
   </PropertyGroup>
+
   <ItemGroup>
-    <ILLinkSubstitutionsXmls Condition="'$(TargetPlatformIdentifier)' == ''" Include="$(ILLinkDirectory)ILLink.Substitutions.NonMobile.xml" />
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.NonMobile.xml" Condition="'$(TargetPlatformIdentifier)' == ''"  />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="System.Runtime.Serialization.Formatters.TypeForwards.cs" />
-    <Compile Include="System\Runtime\Serialization\DeserializationEventHandler.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatter.cs" />
-    <Compile Include="System\Runtime\Serialization\FormatterConverter.cs" />
-    <Compile Include="System\Runtime\Serialization\FormatterServices.cs" />
-    <Compile Include="System\Runtime\Serialization\IFormatter.cs" />
-    <Compile Include="System\Runtime\Serialization\ISerializationSurrogate.cs" />
-    <Compile Include="System\Runtime\Serialization\ISurrogateSelector.cs" />
-    <Compile Include="System\Runtime\Serialization\MemberHolder.cs" />
-    <Compile Include="System\Runtime\Serialization\ObjectIDGenerator.cs" />
-    <Compile Include="System\Runtime\Serialization\ObjectManager.cs" />
-    <Compile Include="System\Runtime\Serialization\SerializationBinder.cs" />
-    <Compile Include="System\Runtime\Serialization\SerializationEventsCache.cs" />
-    <Compile Include="System\Runtime\Serialization\SerializationFieldInfo.cs" />
-    <Compile Include="System\Runtime\Serialization\SerializationObjectManager.cs" />
-    <Compile Include="System\Runtime\Serialization\SurrogateSelector.cs" />
-    <Compile Include="System\Runtime\Serialization\ValueTypeFixupInfo.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\CommonEnums.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\IFieldInfo.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryArray.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryAssembly.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryAssemblyInfo.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryTypeConverter.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryCrossAppDomainAssembly.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryCrossAppDomainMap.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryCrossAppDomainString.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObject.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectString.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectWithMap.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectWithMapTyped.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\IStreamable.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\MemberPrimitiveTyped.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\MemberPrimitiveUntyped.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\MemberReference.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\MessageEnd.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\ObjectMap.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\ObjectNull.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\SerializationHeaderRecord.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\ObjectProgress.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\Converter.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryEnums.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatterEventSource.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatterWriter.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectInfo.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectReader.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectWriter.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryParser.cs" />
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryUtilClasses.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs"
              Link="Common\System\Collections\HashHelpers.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.Core.cs" />
-    <Compile Include="System\Runtime\Serialization\LocalAppContextSwitches.cs" />
-    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
-      <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
+             Link="Common\System\LocalAppContextSwitches.Common.cs" />
+
+    <Compile Remove="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.PlatformNotSupported.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.PlatformNotSupported.cs" />
+    <Compile Remove="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.Core.cs" />
+    <Compile Remove="System\Runtime\Serialization\LocalAppContextSwitches.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />

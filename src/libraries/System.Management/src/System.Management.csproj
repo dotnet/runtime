@@ -1,5 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);0618</NoWarn>
     <!-- Suppressins to avoid ifdefs:
@@ -7,7 +8,6 @@
     <NoWarn>$(NoWarn);CA1845;IDE0059;CA1822</NoWarn>
     <Nullable>annotations</Nullable>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
@@ -18,11 +18,14 @@ System.Management.ManagementClass
 System.Management.ManagementObject
 System.Management.SelectQuery</PackageDescription>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'windows'">SR.PlatformNotSupported_SystemManagement</GeneratePlatformNotSupportedAssemblyMessage>
+    <EnableDefaultCompileItems Condition="'$(TargetPlatformIdentifier)' != 'windows'">false</EnableDefaultCompileItems>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
@@ -38,52 +41,9 @@ System.Management.SelectQuery</PackageDescription>
              Link="Common\Interop\Windows\Ole32\Interop.CoGetObjectContext.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
-    <Compile Include="System\Management\ManagementBaseObject.cs" />
-    <Compile Include="System\Management\ManagementClass.cs" />
-    <Compile Include="System\Management\ManagementDateTime.cs" />
-    <Compile Include="System\Management\ManagementEventArgs.cs" />
-    <Compile Include="System\Management\ManagementEventWatcher.cs" />
-    <Compile Include="System\Management\ManagementException.cs" />
-    <Compile Include="System\Management\ManagementNamedValueCollection.cs" />
-    <Compile Include="System\Management\ManagementObject.cs" />
-    <Compile Include="System\Management\ManagementObjectCollection.cs" />
-    <Compile Include="System\Management\ManagementObjectSearcher.cs" />
-    <Compile Include="System\Management\ManagementOperationWatcher.cs" />
-    <Compile Include="System\Management\ManagementOptions.cs" />
-    <Compile Include="System\Management\ManagementPath.cs" />
-    <Compile Include="System\Management\ManagementQuery.cs" />
-    <Compile Include="System\Management\ManagementScope.cs" />
-    <Compile Include="System\Management\Method.cs" />
-    <Compile Include="System\Management\MethodSet.cs" />
-    <Compile Include="System\Management\Property.cs" />
-    <Compile Include="System\Management\PropertySet.cs" />
-    <Compile Include="System\Management\Qualifier.cs" />
-    <Compile Include="System\Management\QualifierSet.cs" />
-    <Compile Include="System\Management\WmiEventSink.cs" />
-    <Compile Include="System\Management\wmiutil.cs" />
-    <Compile Include="System\Management\WMIGenerator.cs" />
-    <Compile Include="System\Management\InteropClasses\WMIInterop.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\src\System.CodeDom.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="Microsoft.Win32.Registry" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.ComponentModel.TypeConverter" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Thread" />
-    <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
 </Project>

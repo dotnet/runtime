@@ -4,16 +4,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="System.ComponentModel.Composition.Registration.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Composition\ref\System.ComponentModel.Composition.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Context\ref\System.Reflection.Context.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <Reference Include="System.Linq.Expressions" />
-    <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

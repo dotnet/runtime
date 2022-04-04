@@ -1,54 +1,26 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ILLinkKeepDepAttributes>false</ILLinkKeepDepAttributes> <!-- See comments in Cookie.cs -->
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
     <!-- SYSTEM_NET_PRIMITIVES_DLL is required to allow source-level code sharing for types defined within the
          System.Net.Internals namespace. -->
     <DefineConstants>$(DefineConstants);SYSTEM_NET_PRIMITIVES_DLL</DefineConstants>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.PlatformNotSupported_NetPrimitives</GeneratePlatformNotSupportedAssemblyMessage>
+    <EnableDefaultCompileItems Condition="'$(TargetPlatformIdentifier)' == ''">false</EnableDefaultCompileItems>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
-    <Compile Include="System\Net\AuthenticationSchemes.cs" />
-    <Compile Include="System\Net\Cookie.cs" />
-    <Compile Include="System\Net\CookieContainer.cs" />
-    <Compile Include="System\Net\CookieCollection.cs" />
-    <Compile Include="System\Net\CookieException.cs" />
-    <Compile Include="System\Net\CredentialCache.cs" />
-    <Compile Include="System\Net\DecompressionMethods.cs" />
-    <Compile Include="System\Net\DnsEndPoint.cs" />
-    <Compile Include="System\Net\EndPoint.cs" />
-    <Compile Include="System\Net\HttpStatusCode.cs" />
-    <Compile Include="System\Net\HttpVersion.cs" />
-    <Compile Include="System\Net\ICredentials.cs" />
-    <Compile Include="System\Net\ICredentialsByHost.cs" />
-    <Compile Include="System\Net\IPAddress.cs" />
-    <Compile Include="System\Net\IPAddressParser.cs" />
-    <Compile Include="System\Net\IPEndPoint.cs" />
     <Compile Include="$(CommonPath)System\Net\IPv4AddressHelper.Common.cs"
              Link="System\Net\IPv4AddressHelper.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\IPv6AddressHelper.Common.cs"
              Link="System\Net\IPv6AddressHelper.Common.cs" />
-    <Compile Include="System\Net\IWebProxy.cs" />
-    <Compile Include="System\Net\NetEventSource.Primitives.cs" />
-    <Compile Include="System\Net\NetworkCredential.cs" />
-    <Compile Include="System\Net\TransportContext.cs" />
-    <Compile Include="System\Net\SocketException.cs" />
-    <Compile Include="System\Net\SecureProtocols\NegotiateEnumTypes.cs" />
-    <Compile Include="System\Net\SecureProtocols\SslEnumTypes.cs" />
-    <Compile Include="System\Net\Security\SslPolicyErrors.cs" />
-    <Compile Include="System\Net\Sockets\AddressFamily.cs" />
-    <Compile Include="System\Net\Sockets\SocketError.cs" />
-    <Compile Include="System\Net\NetworkInformation\IPAddressCollection.cs" />
-    <Compile Include="System\Net\Cache\RequestCacheLevel.cs" />
-    <Compile Include="System\Net\Cache\RequestCachePolicy.cs" />
-    <Compile Include="System\Security\Authentication\ExtendedProtection\ChannelBinding.cs" />
-    <Compile Include="System\Security\Authentication\ExtendedProtection\ChannelBindingKind.cs" />
     <Compile Include="$(CommonPath)System\StringExtensions.cs"
              Link="Common\System\StringExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\CookieComparer.cs"
@@ -90,8 +62,10 @@
     <Compile Include="$(CommonPath)System\Obsoletions.cs" 
              Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="System\Net\SocketException.Windows.cs" />
+    <Compile Remove="System\Net\*.Unix.cs" />
+
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Windows.cs"
              Link="Common\System\Net\SocketAddressPal.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs"
@@ -113,8 +87,10 @@
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.if_nametoindex.cs"
              Link="Common\Interop\Windows\IpHlpApi\Interop.if_nametoindex.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
-    <Compile Include="System\Net\SocketException.Unix.cs" />
+    <Compile Remove="System\Net\*.Windows.cs" />
+
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
              Link="Common\System\Net\SocketAddressPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketErrorPal.Unix.cs"
@@ -128,6 +104,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs"
              Link="Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Unix.cs"
              Link="Common\System\Net\NetworkInformation\HostInformationPal.Unix.cs" />
@@ -144,12 +121,14 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs"
              Link="Common\Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Browser.cs"
              Link="Common\System\Net\NetworkInformation\HostInformationPal.Browser.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Browser.cs"
              Link="Common\System\Net\NetworkInformation\InterfaceInfoPal.Browser.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
@@ -157,8 +136,6 @@
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Threading" />

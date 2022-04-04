@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CA1847</NoWarn>
     <!-- Suppressions to avoid ifdefs:
             CA1845: Use span-based 'string.Concat' and 'AsSpan' instead of 'Substring'
@@ -20,54 +20,14 @@ System.Diagnostics.EventLog</PackageDescription>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetPlatformIdentifier)' != 'windows'">SR.PlatformNotSupported_EventLog</GeneratePlatformNotSupportedAssemblyMessage>
+    <EnableDefaultCompileItems Condition="'$(TargetPlatformIdentifier)' != 'windows'">false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="System\Diagnostics\EntryWrittenEventArgs.cs" />
-    <Compile Include="System\Diagnostics\EntryWrittenEventHandler.cs" />
-    <Compile Include="System\Diagnostics\EventData.cs" />
-    <Compile Include="System\Diagnostics\EventLog.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="System\Diagnostics\EventLogEntry.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="System\Diagnostics\Reader\CoTaskMemSafeHandle.cs" />
-    <Compile Include="System\Diagnostics\Reader\CoTaskMemUnicodeSafeHandle.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventBookmark.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventKeyword.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventLevel.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventLogConfiguration.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventLogException.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventLogHandle.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventLogInformation.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventLogLink.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventLogPropertySelector.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventLogQuery.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventLogReader.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventLogRecord.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventLogSession.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventLogStatus.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventLogWatcher.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventMetadata.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventOpcode.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventProperty.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventRecord.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventRecordWrittenEventArgs.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventTask.cs" />
-    <Compile Include="System\Diagnostics\Reader\NativeWrapper.cs" />
-    <Compile Include="System\Diagnostics\Reader\ProviderMetadata.cs" />
-    <Compile Include="System\Diagnostics\Reader\ProviderMetadataCachedInformation.cs" />
-    <Compile Include="System\Diagnostics\Reader\Winmeta.cs" />
-    <Compile Include="System\Diagnostics\Reader\UnsafeNativeMethods.cs" />
-    <Compile Include="System\Diagnostics\EventLogEntryCollection.cs" />
-    <Compile Include="System\Diagnostics\EventLogEntryType.cs" />
-    <Compile Include="System\Diagnostics\EventLogInternal.cs" />
-    <Compile Include="System\Diagnostics\EventSourceCreationData.cs" />
-    <Compile Include="System\Diagnostics\EventLogTraceListener.cs" />
-    <Compile Include="System\Diagnostics\OverflowAction.cs" />
-    <Compile Include="System\Diagnostics\SafeEventLogReadHandle.cs" />
-    <Compile Include="System\Diagnostics\SafeEventLogWriteHandle.cs" />
+    <Compile Update="System\Diagnostics\EventLog.cs;
+                     System\Diagnostics\EventLogEntry.cs"
+             SubType="Component" />
+
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs"
@@ -110,42 +70,16 @@ System.Diagnostics.EventLog</PackageDescription>
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)System\Diagnostics\NetFrameworkUtils.cs"
              Link="Common\System\Diagnostics\NetFrameworkUtils.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
-             Link="Common\DisableRuntimeMarshalling.cs" />
+             Link="Common\DisableRuntimeMarshalling.cs"
+             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="Microsoft.Win32.Registry" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.ComponentModel" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.ComponentModel.TypeConverter" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Process" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Diagnostics.TraceSource" />
-    <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Security.Principal.Windows" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Tasks" />
-    <Reference Include="System.Threading.Thread" />
-    <Reference Include="System.Threading.ThreadPool" />
-    <Reference Include="System.Threading.Overlapped" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

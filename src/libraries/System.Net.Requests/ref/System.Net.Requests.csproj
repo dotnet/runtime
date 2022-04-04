@@ -5,10 +5,7 @@
     <NoWarn>$(NoWarn);CS0809;SYSLIB0014</NoWarn>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="System.Net.Requests.cs" />
-    <Compile Include="System.Net.Requests.Forwards.cs" />
-  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\System.Collections.Specialized\ref\System.Collections.Specialized.csproj" />
     <ProjectReference Include="..\..\System.Net.Primitives\ref\System.Net.Primitives.csproj" />

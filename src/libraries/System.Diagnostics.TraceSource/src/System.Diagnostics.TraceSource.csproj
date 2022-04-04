@@ -1,42 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="System\Diagnostics\BooleanSwitch.cs" />
-    <Compile Include="System\Diagnostics\CorrelationManager.cs" />
-    <Compile Include="System\Diagnostics\DefaultTraceListener.cs" />
-    <Compile Include="System\Diagnostics\DiagnosticsConfiguration.cs" />
-    <Compile Include="System\Diagnostics\SeverityFilter.cs" />
-    <Compile Include="System\Diagnostics\SourceFilter.cs" />
-    <Compile Include="System\Diagnostics\SourceLevels.cs" />
-    <Compile Include="System\Diagnostics\SourceSwitch.cs" />
-    <Compile Include="System\Diagnostics\Switch.cs" />
-    <Compile Include="System\Diagnostics\Trace.cs" />
-    <Compile Include="System\Diagnostics\TraceEventCache.cs" />
-    <Compile Include="System\Diagnostics\TraceEventType.cs" />
-    <Compile Include="System\Diagnostics\TraceFilter.cs" />
-    <Compile Include="System\Diagnostics\TraceInternal.cs" />
-    <Compile Include="System\Diagnostics\TraceLevel.cs" />
-    <Compile Include="System\Diagnostics\TraceListener.cs" />
-    <Compile Include="System\Diagnostics\TraceListeners.cs" />
-    <Compile Include="System\Diagnostics\TraceOptions.cs" />
-    <Compile Include="System\Diagnostics\TraceSource.cs" />
-    <Compile Include="System\Diagnostics\TraceSwitch.cs" />
-    <Compile Include="System\Diagnostics\SwitchAttribute.cs" />
-    <Compile Include="System\Diagnostics\SwitchLevelAttribute.cs" />
-  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Specialized\src\System.Collections.Specialized.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Primitives\src\System.ComponentModel.Primitives.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
     <Reference Include="System.IO.FileSystem" />
   </ItemGroup>
 </Project>

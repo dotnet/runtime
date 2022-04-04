@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
@@ -30,6 +29,7 @@ System.Data.OleDb.OleDbTransaction</PackageDescription>
     <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetPlatformIdentifier)' != 'windows'">SR.PlatformNotSupported_OleDb</GeneratePlatformNotSupportedAssemblyMessage>
     <NoWarn Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">$(NoWarn);CS0618</NoWarn>
+    <EnableDefaultCompileItems Condition="'$(TargetPlatformIdentifier)' != 'windows'">false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
@@ -55,85 +55,11 @@ System.Data.OleDb.OleDbTransaction</PackageDescription>
              Link="Common\Interop\Windows\Ole32\Interop.PropVariantClear.cs" />
     <Compile Include="$(CommonPath)System\Data\Common\MultipartIdentifier.cs"
              Link="Common\System\Data\Common\MultipartIdentifier.cs" />
-    <Compile Include="AdapterSwitches.cs" />
-    <Compile Include="ColumnBinding.cs" />
-    <Compile Include="DbBindings.cs" />
-    <Compile Include="DbConnectionOptions.cs" />
-    <Compile Include="DbConnectionStringCommon.cs" />
-    <Compile Include="DbParameterHelper.cs" />
-    <Compile Include="DbPropSet.cs" />
-    <Compile Include="NativeMethods.cs" />
-    <Compile Include="OleDb_Enum.cs" />
-    <Compile Include="OleDb_Util.cs" />
-    <Compile Include="OleDbCommand.cs" />
-    <Compile Include="OleDbCommandBuilder.cs" />
-    <Compile Include="OleDbConnection.cs" />
-    <Compile Include="OleDbConnectionFactory.cs" />
-    <Compile Include="OleDbConnectionInternal.cs" />
-    <Compile Include="OleDbConnectionPoolGroupProviderInfo.cs" />
-    <Compile Include="OleDbConnectionString.cs" />
-    <Compile Include="OleDbConnectionStringBuilder.cs" />
-    <Compile Include="OleDbDataAdapter.cs" />
-    <Compile Include="OleDbDataReader.cs" />
-    <Compile Include="OleDbEnumerator.cs" />
-    <Compile Include="OleDbError.cs" />
-    <Compile Include="OleDbErrorCollection.cs" />
-    <Compile Include="OleDbException.cs" />
-    <Compile Include="OleDbFactory.cs" />
-    <Compile Include="OleDbHResult.cs" />
-    <Compile Include="OleDbInfoMessageEvent.cs" />
-    <Compile Include="OleDbInfoMessageEventHandler.cs" />
-    <Compile Include="OleDbLiteral.cs" />
-    <Compile Include="OleDbMetadataCollectionNames.cs" />
-    <Compile Include="OleDbMetadataColumnNames.cs" />
-    <Compile Include="OleDbMetaDataFactory.cs" />
-    <Compile Include="OleDbParameter.cs" />
-    <Compile Include="OleDbParameterCollection.cs" />
-    <Compile Include="OleDbParameterCollectionHelper.cs" />
-    <Compile Include="OleDbPropertySetGuid.cs" />
-    <Compile Include="OleDbPropertyStatus.cs" />
-    <Compile Include="OleDbReferenceCollection.cs" />
-    <Compile Include="OleDbRowUpdatedEvent.cs" />
-    <Compile Include="OleDbRowUpdatedEventHandler.cs" />
-    <Compile Include="OleDbRowUpdatingEvent.cs" />
-    <Compile Include="OleDbRowUpdatingEventHandler.cs" />
-    <Compile Include="OleDbSchemaGuid.cs" />
-    <Compile Include="OleDbStruct.cs" />
-    <Compile Include="OleDbTransaction.cs" />
-    <Compile Include="OleDbType.cs" />
-    <Compile Include="OleDbWrapper.cs" />
-    <Compile Include="PropertyIDSet.cs" />
-    <Compile Include="PropertyInfoSet.cs" />
-    <Compile Include="RowBinding.cs" />
-    <Compile Include="SafeHandles.cs" />
-    <Compile Include="SafeNativeMethods.cs" />
-    <Compile Include="UnsafeNativeMethods.cs" />
-    <Compile Include="System\Data\Common\AdapterUtil.cs" />
-    <Compile Include="System\Data\Common\DataCommonEventSource.cs" />
-    <Compile Include="System\Data\Common\DbConnectionPoolKey.cs" />
-    <Compile Include="System\Data\Common\FieldNameLookup.cs" />
-    <Compile Include="System\Data\Common\NameValuePair.cs" />
-    <Compile Include="System\Data\Common\SR.cs" />
-    <Compile Include="System\Data\ProviderBase\DbBuffer.cs" />
-    <Compile Include="System\Data\ProviderBase\DbConnectionClosed.cs" />
-    <Compile Include="System\Data\ProviderBase\DbConnectionFactory.cs" />
-    <Compile Include="System\Data\ProviderBase\DbConnectionHelper.cs" />
-    <Compile Include="System\Data\ProviderBase\DbConnectionInternal.cs" />
-    <Compile Include="System\Data\ProviderBase\DbConnectionInternal.Shared.cs" />
-    <Compile Include="System\Data\ProviderBase\DbConnectionPool.cs" />
-    <Compile Include="System\Data\ProviderBase\DbConnectionPoolCounters.cs" />
-    <Compile Include="System\Data\ProviderBase\DbConnectionPoolGroup.cs" />
-    <Compile Include="System\Data\ProviderBase\DbConnectionPoolGroupProviderInfo.cs" />
-    <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.cs" />
-    <Compile Include="System\Data\ProviderBase\DbConnectionPoolOptions.cs" />
-    <Compile Include="System\Data\ProviderBase\DbMetaDataFactory.cs" />
-    <Compile Include="System\Data\ProviderBase\DbReferenceCollection.cs" />
-    <Compile Include="System\Data\ProviderBase\WrappedIUnknown.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="UnsafeNativeMethods.COMWrappers.cs" />
-    <Compile Include="OleDbComWrappers.cs" />
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
+    <Compile Remove="UnsafeNativeMethods.COMWrappers.cs" />
+    <Compile Remove="OleDbComWrappers.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -144,28 +70,5 @@ System.Data.OleDb.OleDbTransaction</PackageDescription>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Configuration.ConfigurationManager\src\System.Configuration.ConfigurationManager.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.PerformanceCounter\src\System.Diagnostics.PerformanceCounter.csproj" />
-    <Reference Include="Microsoft.Win32.Registry" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.ComponentModel.TypeConverter" />
-    <Reference Include="System.Data.Common" />
-    <Reference Include="System.Diagnostics.FileVersionInfo" />
-    <Reference Include="System.Diagnostics.TraceSource" />
-    <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
-    <Reference Include="System.Security.Principal.Windows" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Thread" />
-    <Reference Include="System.Threading.ThreadPool" />
-    <Reference Include="System.Transactions.Local" />
-    <Reference Include="System.Text.Encoding.Extensions" />
-    <Reference Include="System.Text.RegularExpressions" />
-    <Reference Include="System.Xml.ReaderWriter" />
   </ItemGroup>
 </Project>

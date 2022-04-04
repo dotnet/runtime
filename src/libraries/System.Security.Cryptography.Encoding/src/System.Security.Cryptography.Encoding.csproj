@@ -4,6 +4,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
   <ItemGroup>
     <Reference Include="System.Runtime" />
     <Reference Include="System.Security.Cryptography" />

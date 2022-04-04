@@ -5,65 +5,14 @@
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides classes related to service model syndication.</PackageDescription>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
-    <OmitResources Condition="'$(IsPartialFacadeAssembly)' == 'true'">true</OmitResources>
+    <!-- The partial facade assembly doesn't need source files or embedded resources. -->
+    <EnableDefaultItems Condition="'$(IsPartialFacadeAssembly)' == 'true'">false</EnableDefaultItems>
   </PropertyGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <Compile Include="System\ServiceModel\Channels\UriGenerator.cs" />
-    <Compile Include="System\ServiceModel\Syndication\App10Constants.cs" />
-    <Compile Include="System\ServiceModel\Syndication\Atom10Constants.cs" />
-    <Compile Include="System\ServiceModel\Syndication\Atom10FeedFormatter.cs" />
-    <Compile Include="System\ServiceModel\Syndication\Atom10ItemFormatter.cs" />
-    <Compile Include="System\ServiceModel\Syndication\AtomPub10CategoriesDocumentFormatter.cs" />
-    <Compile Include="System\ServiceModel\Syndication\AtomPub10ServiceDocumentFormatter.cs" />
-    <Compile Include="System\ServiceModel\Syndication\CategoriesDocument.cs" />
-    <Compile Include="System\ServiceModel\Syndication\CategoriesDocumentFormatter.cs" />
-    <Compile Include="System\ServiceModel\Syndication\DateTimeHelper.cs" />
-    <Compile Include="System\ServiceModel\Syndication\ExtensibleSyndicationObject.cs" />
-    <Compile Include="System\ServiceModel\Syndication\FeedUtils.cs" />
-    <Compile Include="System\ServiceModel\Syndication\IExtensibleSyndicationObject.cs" />
-    <Compile Include="System\ServiceModel\Syndication\InlineCategoriesDocument.cs" />
-    <Compile Include="System\ServiceModel\Syndication\NullNotAllowedCollection.cs" />
-    <Compile Include="System\ServiceModel\Syndication\ReferencedCategoriesDocument.cs" />
-    <Compile Include="System\ServiceModel\Syndication\ResourceCollectionInfo.cs" />
-    <Compile Include="System\ServiceModel\Syndication\Rss20Constants.cs" />
-    <Compile Include="System\ServiceModel\Syndication\Rss20FeedFormatter.cs" />
-    <Compile Include="System\ServiceModel\Syndication\Rss20ItemFormatter.cs" />
-    <Compile Include="System\ServiceModel\Syndication\ServiceDocument.cs" />
-    <Compile Include="System\ServiceModel\Syndication\ServiceDocumentFormatter.cs" />
-    <Compile Include="System\ServiceModel\Syndication\SyndicationCategory.cs" />
-    <Compile Include="System\ServiceModel\Syndication\SyndicationContent.cs" />
-    <Compile Include="System\ServiceModel\Syndication\SyndicationElementExtension.cs" />
-    <Compile Include="System\ServiceModel\Syndication\SyndicationElementExtensionCollection.cs" />
-    <Compile Include="System\ServiceModel\Syndication\SyndicationFeed.cs" />
-    <Compile Include="System\ServiceModel\Syndication\SyndicationFeedFormatter.cs" />
-    <Compile Include="System\ServiceModel\Syndication\SyndicationItem.cs" />
-    <Compile Include="System\ServiceModel\Syndication\SyndicationItemFormatter.cs" />
-    <Compile Include="System\ServiceModel\Syndication\SyndicationLink.cs" />
-    <Compile Include="System\ServiceModel\Syndication\SyndicationPerson.cs" />
-    <Compile Include="System\ServiceModel\Syndication\SyndicationTextInput.cs" />
-    <Compile Include="System\ServiceModel\Syndication\SyndicationVersions.cs" />
-    <Compile Include="System\ServiceModel\Syndication\TextSyndicationContent.cs" />
-    <Compile Include="System\ServiceModel\Syndication\TextSyndicationContentKind.cs" />
-    <Compile Include="System\ServiceModel\Syndication\UrlSyndicationContent.cs" />
-    <Compile Include="System\ServiceModel\Syndication\Workspace.cs" />
-    <Compile Include="System\ServiceModel\Syndication\XmlDateTimeData.cs" />
-    <Compile Include="System\ServiceModel\Syndication\XmlSyndicationContent.cs" />
-    <Compile Include="System\ServiceModel\Syndication\XmlUriData.cs" />
-    <Compile Include="System\ServiceModel\XmlBuffer.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Serialization.Primitives" />
-    <Reference Include="System.Runtime.Serialization.Xml" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Xml.ReaderWriter" />
-    <Reference Include="System.Xml.XmlSerializer" />
-  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.ServiceModel" />
   </ItemGroup>

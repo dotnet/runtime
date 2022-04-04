@@ -1,15 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
   <ItemGroup>
-    <Compile Include="System\Net\WebHeaderCollection.cs" />
-    <Compile Include="System\Net\HttpResponseHeader.cs" />
-    <Compile Include="System\Net\HttpRequestHeader.cs" />
-    <Compile Include="System\Net\HeaderInfo.cs" />
-    <Compile Include="System\Net\HeaderInfoTable.cs" />
     <Compile Include="$(CommonPath)System\Net\CaseInsensitiveAscii.cs"
              Link="Common\System\Net\CaseInsensitiveAscii.cs" />
     <Compile Include="$(CommonPath)System\StringExtensions.cs"
@@ -19,11 +15,10 @@
     <Compile Include="$(CommonPath)System\Net\HttpValidationHelpers.cs"
              Link="Common\System\Net\HttpValidationHelpers.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
 </Project>

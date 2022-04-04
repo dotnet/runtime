@@ -3,15 +3,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="System\ComponentModel\AsyncCompletedEvent.cs" />
-    <Compile Include="System\ComponentModel\AsyncOperation.cs" />
-    <Compile Include="System\ComponentModel\AsyncOperationManager.cs" />
-    <Compile Include="System\ComponentModel\ProgressChangedEvent.cs" />
-    <Compile Include="System\ComponentModel\BackgroundWorker.cs" />
-    <Compile Include="System\ComponentModel\DoWorkEvent.cs" />
-    <Compile Include="System\ComponentModel\RunWorkerCompletedEvent.cs" />
-  </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />

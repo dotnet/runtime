@@ -1,24 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RootNamespace>System.Numerics</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
+
   <ItemGroup>
-    <Compile Include="System\Numerics\BigIntegerCalculator.AddSub.cs" />
-    <Compile Include="System\Numerics\BigIntegerCalculator.DivRem.cs" />
-    <Compile Include="System\Numerics\BigIntegerCalculator.FastReducer.cs" />
-    <Compile Include="System\Numerics\BigIntegerCalculator.GcdInv.cs" />
-    <Compile Include="System\Numerics\BigIntegerCalculator.PowMod.cs" />
-    <Compile Include="System\Numerics\BigIntegerCalculator.SquMul.cs" />
-    <Compile Include="System\Numerics\BigIntegerCalculator.Utils.cs" />
-    <Compile Include="System\Numerics\BigInteger.cs" />
-    <Compile Include="System\Numerics\BigNumber.cs" />
-    <Compile Include="System\Numerics\NumericsHelpers.cs" />
-    <Compile Include="System\Numerics\Complex.cs" />
-    <Compile Include="System\Globalization\FormatProvider.BigInteger.cs" />
-    <Compile Include="System\Globalization\FormatProvider.NumberBuffer.cs" />
     <Compile Include="$(CommonPath)System\Globalization\FormatProvider.Number.cs"
              Link="System\Globalization\FormatProvider.Number.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
@@ -26,10 +14,9 @@
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
 </Project>

@@ -3,6 +3,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
   </PropertyGroup>
+
   <ItemGroup>
     <Reference Include="System.Runtime" />
     <Reference Include="System.Security.Cryptography" />

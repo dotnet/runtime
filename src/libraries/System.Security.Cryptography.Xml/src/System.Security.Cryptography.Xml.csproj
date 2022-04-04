@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
-    <NoWarn>$(NoWarn);CA1850</NoWarn> <!-- CA1850 suppressed due to multitargeting -->
+    <!-- CA1850 suppressed due to multitargeting -->
+    <NoWarn>$(NoWarn);CA1850</NoWarn>
     <PackageDescription>Provides classes to support the creation and validation of XML digital signatures. The classes in this namespace implement the World Wide Web Consortium Recommendation, "XML-Signature Syntax and Processing", described at http://www.w3.org/TR/xmldsig-core/.
 
 Commonly Used Types:
@@ -47,117 +48,27 @@ System.Security.Cryptography.Xml.XmlDsigXPathTransform
 System.Security.Cryptography.Xml.XmlDsigXsltTransform
 System.Security.Cryptography.Xml.XmlLicenseTransform</PackageDescription>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
+    <EnableDefaultCompileItems Condition="'$(IsPartialFacadeAssembly)' == 'true'">false</EnableDefaultCompileItems>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <Compile Include="System\Security\Cryptography\Xml\AncestralNamespaceContextManager.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\AttributeSortOrder.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\C14NAncestralNamespaceContextManager.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\CanonicalizationDispatcher.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\CanonicalXml.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\CanonicalXmlAttribute.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\CanonicalXmlCDataSection.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\CanonicalXmlComment.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\CanonicalXmlDocument.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\CanonicalXmlElement.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\CanonicalXmlEntityReference.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\CanonicalXmlNodeList.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\CanonicalXmlProcessingInstruction.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\CanonicalXmlSignificantWhitespace.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\CanonicalXmlText.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\CanonicalXmlWhitespace.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\CertUsageType.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\CipherData.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\CipherReference.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\CryptoSignedXmlRecursionException.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\DataObject.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\DataReference.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\DocPosition.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\DSAKeyValue.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\DSASignatureDescription.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\EncryptedData.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\EncryptedKey.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\EncryptedReference.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\EncryptedType.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\EncryptedXml.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\EncryptionMethod.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\EncryptionProperty.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\EncryptionPropertyCollection.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\ExcAncestralNamespaceContextManager.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\ExcCanonicalXml.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\ICanonicalizableNode.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\IRelDecryptor.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\KeyInfo.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\KeyInfoClause.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\KeyInfoEncryptedKey.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\KeyInfoName.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\KeyInfoNode.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\KeyInfoRetrievalMethod.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\KeyInfoX509Data.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\KeyReference.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\MyXmlDocument.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\NamespaceFrame.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\NamespaceSortOrder.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\Reference.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\ReferenceList.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\ReferenceTargetType.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\RSAKeyValue.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\Signature.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\SignedInfo.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\SignedXml.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\SignedXmlDebugLog.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\SymmetricKeyWrap.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\Transform.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\TransformChain.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\Utils.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\XmlDecryptionTransform.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\XmlDsigBase64Transform.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\XmlDsigC14NTransform.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\XmlDsigC14NWithCommentsTransform.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\XmlDsigEnvelopedSignatureTransform.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\XmlDsigExcC14NTransform.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\XmlDsigExcC14NWithCommentsTransform.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\XmlDsigXPathTransform.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\XmlDsigXsltTransform.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\XmlLicenseTransform.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\CryptoHelpers.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SignatureDescription.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SHA1SignatureDescription.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SHA256SignatureDescription.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SHA512SignatureDescription.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SHA384SignatureDescription.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Pkcs\src\System.Security.Cryptography.Pkcs.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Diagnostics.TraceSource" />
-    <Reference Include="System.Net.Requests" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Numerics" />
-    <Reference Include="System.Security.AccessControl" />
-    <Reference Include="System.Security.Cryptography.Algorithms" />
-    <Reference Include="System.Security.Cryptography.Csp" />
-    <Reference Include="System.Security.Cryptography.Encoding" />
-    <Reference Include="System.Security.Cryptography.Primitives" />
-    <Reference Include="System.Security.Cryptography.X509Certificates" />
-    <Reference Include="System.Text.Encoding.Extensions" />
-    <Reference Include="System.Xml.ReaderWriter" />
-    <Reference Include="System.Xml.XPath" />
-  </ItemGroup>
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
-    <Reference Include="System.Security.Cryptography" />
-  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <Reference Include="System.Security" />
   </ItemGroup>

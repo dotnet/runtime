@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum)-Unix;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);SERIAL_PORTS</DefineConstants>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <Nullable>annotations</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum)-Unix;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides classes for controlling serial ports.
 
@@ -16,34 +16,23 @@ System.IO.Ports.SerialPort</PackageDescription>
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
+    <!-- The partial facade assembly doesn't need source files or embedded resources. -->
+    <EnableDefaultItems Condition="'$(IsPartialFacadeAssembly)' == 'true'">false</EnableDefaultItems>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetPlatformIdentifier)' == ''">SR.PlatformNotSupported_IOPorts</GeneratePlatformNotSupportedAssemblyMessage>
+    <EnableDefaultCompileItems Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">false</EnableDefaultCompileItems>
+    
+    <!-- File globbing exclusion patterns. -->
+    <DefaultItemExcludesInProjectFolder Condition="'$(TargetPlatformIdentifier)' == 'windows'">**\*.Unix.cs</DefaultItemExcludesInProjectFolder>
+    <DefaultItemExcludesInProjectFolder Condition="'$(TargetPlatformIdentifier)' != 'windows'">**\*.Windows.cs</DefaultItemExcludesInProjectFolder>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
-    <Compile Include="System\IO\Ports\Handshake.cs" />
-    <Compile Include="System\IO\Ports\InternalResources.cs" />
-    <Compile Include="System\IO\Ports\Parity.cs" />
-    <Compile Include="System\IO\Ports\SerialData.cs" />
-    <Compile Include="System\IO\Ports\SerialDataReceivedEventArgs.cs" />
-    <Compile Include="System\IO\Ports\SerialDataReceivedEventHandler.cs" />
-    <Compile Include="System\IO\Ports\SerialError.cs" />
-    <Compile Include="System\IO\Ports\SerialErrorReceivedEventArgs.cs" />
-    <Compile Include="System\IO\Ports\SerialErrorReceivedEventHandler.cs" />
-    <Compile Include="System\IO\Ports\SerialPinChange.cs" />
-    <Compile Include="System\IO\Ports\SerialPinChangedEventArgs.cs" />
-    <Compile Include="System\IO\Ports\SerialPinChangedEventHandler.cs" />
-    <Compile Include="System\IO\Ports\SerialPort.cs" />
-    <Compile Include="System\IO\Ports\SerialStream.cs" />
-    <Compile Include="System\IO\Ports\StopBits.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0')) and '$(TargetPlatformIdentifier)' != ''">
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
-             Link="Common\DisableRuntimeMarshalling.cs" />
+             Link="Common\DisableRuntimeMarshalling.cs"
+             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="System\IO\Ports\SerialStream.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DCB.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.DCB.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.COMMPROP.cs"
@@ -114,8 +103,6 @@ System.IO.Ports.SerialPort</PackageDescription>
              Link="Common\System\IO\Win32Marshal.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
              Link="Common\Interop\Windows\Interop.FormatMessage.cs" />
-    <Compile Include="System\IO\Ports\SerialPort.Win32.cs" />
-    <Compile Include="System\IO\Ports\SerialStream.Win32.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.CreateFile.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs"
@@ -123,9 +110,6 @@ System.IO.Ports.SerialPort</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
-    <Compile Include="System\IO\Ports\SafeSerialDeviceHandle.Unix.cs" />
-    <Compile Include="System\IO\Ports\SerialPort.Unix.cs" />
-    <Compile Include="System\IO\Ports\SerialStream.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.IO.Ports.Native\Interop.Termios.cs"
              Link="Common\Interop\Unix\System.IO.Ports.Native\Interop.Termios.cs"/>
     <Compile Include="$(CommonPath)Interop\Unix\System.IO.Ports.Native\Interop.Serial.cs"
@@ -140,25 +124,6 @@ System.IO.Ports.SerialPort</PackageDescription>
              Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="Microsoft.Win32.Registry" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.Concurrent" Condition="'$(TargetPlatformIdentifier)' == 'Unix'" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Net.Sockets" Condition="'$(TargetPlatformIdentifier)' == 'Unix'" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" Condition="'$(TargetPlatformIdentifier)' == 'Unix'" />
-    <Reference Include="System.Text.Encoding.Extensions" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Overlapped" />
-    <Reference Include="System.Threading.Thread" />
-    <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">

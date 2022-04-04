@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CA2249</NoWarn>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
@@ -12,15 +12,18 @@ System.ServiceProcess.ServiceController
 System.ServiceProcess.ServiceControllerStatus
 System.ServiceProcess.ServiceType</PackageDescription>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
-    <OmitResources Condition="'$(IsPartialFacadeAssembly)' == 'true'">true</OmitResources>
+    <EnableDefaultEmbeddedResourceItems Condition="'$(IsPartialFacadeAssembly)' == 'true'">true</EnableDefaultEmbeddedResourceItems>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetPlatformIdentifier)' != 'windows'">SR.PlatformNotSupported_ServiceController</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- we cannot add API on .NETStandard since it would be absent on .NETFramework, suppress warnings that require API changes -->
     <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETStandard'">$(NoWarn);CA1066</NoWarn>
+    <EnableDefaultCompileItems Condition="'$(TargetPlatformIdentifier)' != 'windows'">false</EnableDefaultCompileItems>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
@@ -70,38 +73,12 @@ System.ServiceProcess.ServiceType</PackageDescription>
              Link="Common\Interop\Windows\Interop.RegisterServiceCtrlHandlerEx.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.StartServiceCtrlDispatcher.cs"
              Link="Common\Interop\Windows\Interop.StartServiceCtrlDispatcher.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeServiceHandle.cs" />
-    <Compile Include="System\ServiceProcess\PowerBroadcastStatus.cs" />
-    <Compile Include="System\ServiceProcess\ServiceBase.cs" />
-    <Compile Include="System\ServiceProcess\ServiceController.cs" />
-    <Compile Include="System\ServiceProcess\ServiceControllerStatus.cs" />
-    <Compile Include="System\ServiceProcess\ServiceStartMode.cs" />
-    <Compile Include="System\ServiceProcess\ServiceProcessDescriptionAttribute.cs" />
-    <Compile Include="System\ServiceProcess\ServiceType.cs" />
-    <Compile Include="System\ServiceProcess\SessionChangeDescription.cs" />
-    <Compile Include="System\ServiceProcess\SessionChangeReason.cs" />
-    <Compile Include="System\ServiceProcess\TimeoutException.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.EventLog\src\System.Diagnostics.EventLog.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="System.Buffers" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Console" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Thread" />
-    <Reference Include="System.Threading.ThreadPool" />
-  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.ServiceProcess" />
   </ItemGroup>

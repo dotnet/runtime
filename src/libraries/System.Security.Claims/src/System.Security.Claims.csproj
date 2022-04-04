@@ -3,20 +3,10 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="System\Security\Claims\Claim.cs" />
-    <Compile Include="System\Security\Claims\ClaimsIdentity.cs" />
-    <Compile Include="System\Security\Claims\ClaimsPrincipal.cs" />
-    <Compile Include="System\Security\Claims\ClaimTypes.cs" />
-    <Compile Include="System\Security\Claims\ClaimValueTypes.cs" />
-    <Compile Include="System\Security\Claims\GenericIdentity.cs" />
-    <Compile Include="System\Security\Claims\GenericPrincipal.cs" />
-  </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Security.Principal" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
 </Project>

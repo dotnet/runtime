@@ -1,21 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
   <ItemGroup>
-    <Compile Include="System\Net\IWebProxyScript.cs" />
-    <Compile Include="System\Net\WebProxy.cs" />
-    <Compile Condition="'$(TargetPlatformIdentifier)' == 'Browser'" Include="System\Net\WebProxy.Browser.cs" />
-    <Compile Condition="'$(TargetPlatformIdentifier)' != 'Browser'" Include="System\Net\WebProxy.NonBrowser.cs" />
+    <Compile Remove="System\Net\*.NonBrowser.cs" Condition="'$(TargetPlatformIdentifier)' == 'Browser'" />
+    <Compile Remove="System\Net\*.Browser.cs" Condition="'$(TargetPlatformIdentifier)' != 'Browser'"  />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.NetworkInformation" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
   </ItemGroup>

@@ -3,38 +3,29 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.IsolatedStorage_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <EnableDefaultCompileItems Condition="'$(TargetPlatformIdentifier)' == ''">false</EnableDefaultCompileItems>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
-    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageException.cs" />
-    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFile.cs" />
-    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFileStream.cs" />
-    <Compile Include="System\IO\IsolatedStorage\IsolatedStorage.cs" />
-    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageScope.cs" />
-    <Compile Include="System\IO\IsolatedStorage\Helper.cs" />
-    <Compile Include="System\IO\IsolatedStorage\Helper.Win32Unix.cs" />
-    <Compile Include="System\IO\IsolatedStorage\INormalizeForIsolatedStorage.cs" />
+    <Compile Remove="System\IO\IsolatedStorage\Helper.Win32.cs"
+             Condition="'$(TargetPlatformIdentifier)' != 'windows'" />
+    <Compile Remove="System\IO\IsolatedStorage\Helper.Unix.cs"
+             Condition="'$(TargetPlatformIdentifier)' != 'Unix'" />
     <Compile Include="$(CommonPath)System\Security\IdentityHelper.cs"
              Link="Common\System\Security\IdentityHelper.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="System\IO\IsolatedStorage\Helper.Win32.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
-    <Compile Include="System\IO\IsolatedStorage\Helper.Unix.cs" />
-  </ItemGroup>
+
   <ItemGroup>
-    <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.IO.FileSystem.AccessControl" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Cryptography" />
-    <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
   </ItemGroup>

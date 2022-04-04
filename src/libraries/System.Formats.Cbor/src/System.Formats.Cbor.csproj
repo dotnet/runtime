@@ -11,51 +11,15 @@ System.Formats.Cbor.CborReader
 System.Formats.Cbor.CborWriter</PackageDescription>
   </PropertyGroup>
 
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <TargetFrameworkIdentifier>$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)'))</TargetFrameworkIdentifier>
+    <DefaultItemExcludesInProjectFolder Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">**\*.netstandard.cs</DefaultItemExcludesInProjectFolder>
+    <DefaultItemExcludesInProjectFolder Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">**\*.netcoreapp.cs</DefaultItemExcludesInProjectFolder>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs" Link="Common\System\Memory\PointerMemoryManager.cs" />
-    <Compile Include="System\Formats\Cbor\Reader\CborReaderState.cs" />
-    <Compile Include="System\Formats\Cbor\Reader\CborReader.PeekState.cs" />
-    <Compile Include="System\Formats\Cbor\Reader\CborReader.SkipValue.cs" />
-    <Compile Include="System\Formats\Cbor\Reader\CborReader.Simple.cs" />
-    <Compile Include="System\Formats\Cbor\Reader\CborReader.Tag.cs" />
-    <Compile Include="System\Formats\Cbor\Reader\CborReader.Array.cs" />
-    <Compile Include="System\Formats\Cbor\Reader\CborReader.cs" />
-    <Compile Include="System\Formats\Cbor\Reader\CborReader.Integer.cs" />
-    <Compile Include="System\Formats\Cbor\Reader\CborReader.Map.cs" />
-    <Compile Include="System\Formats\Cbor\Reader\CborReader.String.cs" />
-    <Compile Include="System\Formats\Cbor\Writer\CborWriter.Array.cs" />
-    <Compile Include="System\Formats\Cbor\Writer\CborWriter.Map.cs" />
-    <Compile Include="System\Formats\Cbor\Writer\CborWriter.Simple.cs" />
-    <Compile Include="System\Formats\Cbor\Writer\CborWriter.String.cs" />
-    <Compile Include="System\Formats\Cbor\Writer\CborWriter.cs" />
-    <Compile Include="System\Formats\Cbor\Writer\CborWriter.Integer.cs" />
-    <Compile Include="System\Formats\Cbor\Writer\CborWriter.Tag.cs" />
-    <Compile Include="System\Formats\Cbor\CborConformanceLevel.cs" />
-    <Compile Include="System\Formats\Cbor\CborInitialByte.cs" />
-    <Compile Include="System\Formats\Cbor\CborTag.cs" />
-    <Compile Include="System\Formats\Cbor\CborContentException.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="System\Formats\Cbor\CborHelpers.netcoreapp.cs" />
-    <Compile Include="System\Formats\Cbor\HalfHelpers.netcoreapp.cs" />
-    <Compile Include="System\Formats\Cbor\Reader\CborReader.Simple.netcoreapp.cs" />
-    <Compile Include="System\Formats\Cbor\Writer\CborWriter.Simple.netcoreapp.cs" />
-  </ItemGroup>
-  
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="System\Formats\Cbor\CborHelpers.netstandard.cs" />
-    <Compile Include="System\Formats\Cbor\HalfHelpers.netstandard.cs" />
-    <Compile Include="System\Formats\Cbor\Writer\CborWriter.Simple.netstandard.cs" />
-  </ItemGroup>
-    
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Numerics" />
-    <Reference Include="System.Text.Encoding.Extensions" />
-    <Reference Include="System.Threading" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

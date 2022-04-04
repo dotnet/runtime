@@ -2,8 +2,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
-    <IsPackable>true</IsPackable>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IsPackable>true</IsPackable>
     <PackageDescription>Provides types that support using Managed Extensibility Framework with a convention-based configuration model.
 
 Commonly Used Types:
@@ -15,12 +15,6 @@ System.Composition.Convention.ParameterImportConventionBuilder</PackageDescripti
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="System\Composition\Convention\ConventionBuilder.cs" />
-    <Compile Include="System\Composition\Convention\ExportConventionBuilder.cs" />
-    <Compile Include="System\Composition\Convention\ImportConventionBuilder.cs" />
-    <Compile Include="System\Composition\Convention\ParameterImportConventionBuilder.cs" />
-    <Compile Include="System\Composition\Convention\PartConventionBuilder.cs" />
-    <Compile Include="System\Composition\Convention\PartConventionBuilderOfT.cs" />
     <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTrace.cs"
              Link="Common\System\Composition\Diagnostics\CompositionTrace.cs" />
     <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTraceId.cs"
@@ -35,13 +29,5 @@ System.Composition.Convention.ParameterImportConventionBuilder</PackageDescripti
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Linq.Expressions" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading" />
   </ItemGroup>
 </Project>

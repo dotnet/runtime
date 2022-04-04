@@ -1,22 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>System.Resources</RootNamespace>
     <Nullable>enable</Nullable>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
+
   <ItemGroup>
-    <Compile Include="System\Resources\__FastResourceComparer.cs" />
-    <Compile Include="System\Resources\IResourceWriter.cs" />
-    <Compile Include="System\Resources\ResourceWriter.core.cs" />
     <Compile Include="$(CommonPath)System\Resources\ResourceWriter.cs"
              Link="System\Resources\ResourceWriter.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Resources\ResourceTypeCode.cs"
              Link="System\Resources\ResourceTypeCode.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
 </Project>

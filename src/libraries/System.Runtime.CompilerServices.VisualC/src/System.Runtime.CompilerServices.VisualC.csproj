@@ -1,13 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
-  <!-- Shared CoreCLR -->
-  <ItemGroup>
-    <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
-  </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Runtime" />
   </ItemGroup>

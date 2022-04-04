@@ -4,9 +4,7 @@
     <NoWarn>$(NoWarn);CS0618</NoWarn>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="System.Runtime.Extensions.Forwards.cs" />
-  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>

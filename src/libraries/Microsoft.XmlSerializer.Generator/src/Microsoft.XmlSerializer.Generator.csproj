@@ -18,10 +18,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Sgen.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <!-- Set an empty PackagePath to place this file in the root of the package -->
     <None Include="build\prefercliruntime"
           PackagePath=""

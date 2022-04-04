@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
@@ -12,19 +12,10 @@
     <!-- Work around 'notsupported.cs' source generation of explicit interface implementations issue -->
     <!-- https://github.com/dotnet/arcade/issues/4722 -->
     <Nullable Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">annotations</Nullable>
+    <EnableDefaultCompileItems Condition="'$(TargetPlatformIdentifier)' != 'windows'">false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeAccessTokenHandle.cs" />
-    <Compile Include="System\Security\Principal\IdentityNotMappedException.cs" />
-    <Compile Include="System\Security\Principal\IdentityReference.cs" />
-    <Compile Include="System\Security\Principal\IRCollection.cs" />
-    <Compile Include="System\Security\Principal\NTAccount.cs" />
-    <Compile Include="System\Security\Principal\SID.cs" />
-    <Compile Include="System\Security\Principal\TokenAccessLevels.cs" />
-    <Compile Include="System\Security\Principal\Win32.cs" />
-    <Compile Include="System\Security\Principal\WindowsIdentity.cs" />
-    <Compile Include="System\Security\Principal\WindowsPrincipal.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
@@ -138,19 +129,14 @@
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CheckTokenMembership.cs"
              Link="Common\Interop\Interop.CheckTokenMembership.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Claims" />
-    <Reference Include="System.Security.Principal" />
     <Reference Include="System.Threading" />
   </ItemGroup>
 </Project>

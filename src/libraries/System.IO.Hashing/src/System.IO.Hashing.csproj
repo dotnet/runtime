@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides non-cryptographic hash algorithms, such as CRC-32.
 
@@ -12,22 +12,8 @@ System.IO.Hashing.XxHash32</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="System\IO\Hashing\Crc32.cs" />
-    <Compile Include="System\IO\Hashing\Crc32.Table.cs" />
-    <Compile Include="System\IO\Hashing\Crc64.cs" />
-    <Compile Include="System\IO\Hashing\Crc64.Table.cs" />
-    <Compile Include="System\IO\Hashing\XxHash32.cs" />
-    <Compile Include="System\IO\Hashing\XxHash32.State.cs" />
-    <Compile Include="System\IO\Hashing\XxHash64.cs" />
-    <Compile Include="System\IO\Hashing\XxHash64.State.cs" />
-    <Compile Include="System\IO\Hashing\NonCryptographicHashAlgorithm.cs" />
-    <Compile Include="System\IO\Hashing\BitOperations.cs"
-             Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
+    <Compile Remove="System\IO\Hashing\BitOperations.cs"
+             Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
