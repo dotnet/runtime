@@ -8,6 +8,7 @@
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' == 'true'">WasmRunnerAOTTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' != 'true'">WasmRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT'">WasmRunnerTemplate.cmd</RunScriptInputName>
+    <RunScriptInputName Condition="$(OutputRid.StartsWith('linux-bionic'))">BionicRunnerTemplate.sh</RunScriptInputName>
     <InnerRunScriptInputName>BionicRunOnDevice.sh</InnerRunScriptInputName>
   </PropertyGroup>
 
@@ -21,6 +22,7 @@
     <InnerRunScriptOutputName>$(AssemblyName).sh</InnerRunScriptOutputName>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
     <InnerRunScriptOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', '$(InnerRunScriptOutputName)'))</InnerRunScriptOutputPath>
+    <InnerRunEnvOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', 'TestEnv.txt'))</InnerRunEnvOutputPath>
 
     <RunScriptHostDir Condition="'$(TargetOS)' == 'windows'">%RUNTIME_PATH%\</RunScriptHostDir>
     <RunScriptHostDir Condition="'$(TargetOS)' != 'windows'">$RUNTIME_PATH/</RunScriptHostDir>
@@ -113,6 +115,7 @@
     <Exec Condition="'$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'" Command="chmod +x $(RunScriptOutputPath)" />
     <Copy Condition="$(OutputRid.StartsWith('linux-bionic'))" SourceFiles="$(InnerRunScriptInputPath)" DestinationFiles="$(InnerRunScriptOutputPath)" />
     <Exec Condition="$(OutputRid.StartsWith('linux-bionic'))" Command="chmod +x $(InnerRunScriptOutputPath)" />
+    <WriteLinesToFile Condition="$(OutputRid.StartsWith('linux-bionic'))" File="$(InnerRunEnvOutputPath)" Overwrite="true" Lines="ASSEMBLY_NAME=$(AssemblyName).dll" Encoding="ascii"/>
   </Target>
 
   <Target Name="RunTests">

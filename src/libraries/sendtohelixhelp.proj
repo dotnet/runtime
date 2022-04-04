@@ -138,6 +138,12 @@
     <HelixCommandPrefixItem Condition="'$(TestUsingWorkloads)' == 'true'" Include="TEST_USING_WORKLOADS=true" />
   </ItemGroup>
 
+  <PropertyGroup Condition="$(OutputRid.StartsWith('linux-bionic'))">
+    <IncludeXHarnessCli>true</IncludeXHarnessCli>
+    <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
+    <NeedsDotNetSdk>true</NeedsDotNetSdk>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(NeedsDotNetSdk)' == 'true'">
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
@@ -181,7 +187,7 @@
       <HelixCommand Condition="'$(WindowsShell)' == 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
 
       <HelixCommand Condition="'$(WindowsShell)' != 'true'">$(HelixCommand)./RunTests.sh</HelixCommand>
-      <HelixCommand Condition="'$(WindowsShell)' != 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
+      <HelixCommand Condition="'$(WindowsShell)' != 'true' and ($(OutputRid.StartsWith('linux-bionic')) or '$(IncludeHelixCorrelationPayload)' == 'true')">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
     </PropertyGroup>
 
     <!-- FIXME: is this used? -->
