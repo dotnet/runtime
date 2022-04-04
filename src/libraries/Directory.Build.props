@@ -84,7 +84,11 @@
     <StrongNameKeyId Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</StrongNameKeyId>
     <!-- We can't generate an apphost without restoring the targeting pack. -->
     <UseAppHost>false</UseAppHost>
-    <EnableDefaultItems>false</EnableDefaultItems>
+    <!-- TODO: Project that don't use default items yet. -->
+    <EnableDefaultItems Condition="'$(IsSourceProject)' == 'true' or
+                                   '$(IsTestProject)' == 'true' or
+                                   '$(IsTrimmingTestProject)' == 'true' or
+                                   '$(IsTestSupportProject)' == 'true'">false</EnableDefaultItems>
   </PropertyGroup>
 
   <!-- Language configuration -->
