@@ -165,7 +165,7 @@ namespace System.Numerics
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? value, out System.Numerics.BigInteger result) { throw null; }
         public bool TryWriteBytes(System.Span<byte> destination, out int bytesWritten, bool isUnsigned = false, bool isBigEndian = false) { throw null; }
     }
-    public readonly partial struct Complex : System.IEquatable<System.Numerics.Complex>, System.IFormattable, System.ISpanFormattable, System.Numerics.IAdditionOperators<System.Numerics.Complex, double, System.Numerics.Complex>, System.Numerics.IAdditionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IAdditiveIdentity<System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IDecrementOperators<System.Numerics.Complex>, System.Numerics.IDivisionOperators<System.Numerics.Complex, double, System.Numerics.Complex>, System.Numerics.IDivisionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IEqualityOperators<System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IIncrementOperators<System.Numerics.Complex>, System.Numerics.IMultiplicativeIdentity<System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IMultiplyOperators<System.Numerics.Complex, double, System.Numerics.Complex>, System.Numerics.IMultiplyOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.INumberBase<System.Numerics.Complex>, System.Numerics.ISubtractionOperators<System.Numerics.Complex, double, System.Numerics.Complex>, System.Numerics.ISubtractionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IUnaryNegationOperators<System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IUnaryPlusOperators<System.Numerics.Complex, System.Numerics.Complex>
+    public readonly partial struct Complex : System.IEquatable<System.Numerics.Complex>, System.IFormattable
     {
         private readonly int _dummyPrimitive;
         public static readonly System.Numerics.Complex ImaginaryOne;
@@ -178,10 +178,6 @@ namespace System.Numerics
         public double Magnitude { get { throw null; } }
         public double Phase { get { throw null; } }
         public double Real { get { throw null; } }
-        static System.Numerics.Complex System.Numerics.IAdditiveIdentity<System.Numerics.Complex, System.Numerics.Complex>.AdditiveIdentity { get { throw null; } }
-        static System.Numerics.Complex System.Numerics.IMultiplicativeIdentity<System.Numerics.Complex, System.Numerics.Complex>.MultiplicativeIdentity { get { throw null; } }
-        static System.Numerics.Complex System.Numerics.INumberBase<System.Numerics.Complex>.One { get { throw null; } }
-        static System.Numerics.Complex System.Numerics.INumberBase<System.Numerics.Complex>.Zero { get { throw null; } }
         public static double Abs(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Acos(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Add(double left, System.Numerics.Complex right) { throw null; }
@@ -241,7 +237,6 @@ namespace System.Numerics
         public static System.Numerics.Complex operator -(System.Numerics.Complex left, double right) { throw null; }
         public static System.Numerics.Complex operator -(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
         public static System.Numerics.Complex operator -(System.Numerics.Complex value) { throw null; }
-        public static System.Numerics.Complex operator +(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Pow(System.Numerics.Complex value, double power) { throw null; }
         public static System.Numerics.Complex Pow(System.Numerics.Complex value, System.Numerics.Complex power) { throw null; }
         public static System.Numerics.Complex Reciprocal(System.Numerics.Complex value) { throw null; }
@@ -251,14 +246,11 @@ namespace System.Numerics
         public static System.Numerics.Complex Subtract(double left, System.Numerics.Complex right) { throw null; }
         public static System.Numerics.Complex Subtract(System.Numerics.Complex left, double right) { throw null; }
         public static System.Numerics.Complex Subtract(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
-        static System.Numerics.Complex System.Numerics.IDecrementOperators<System.Numerics.Complex>.operator --(System.Numerics.Complex value) { throw null; }
-        static System.Numerics.Complex System.Numerics.IIncrementOperators<System.Numerics.Complex>.operator ++(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Tan(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Tanh(System.Numerics.Complex value) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public string ToString(string? format) { throw null; }
         public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
     }
 }

@@ -13,20 +13,7 @@ namespace System.Numerics
     /// </summary>
     [Serializable]
     [TypeForwardedFrom("System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct Complex
-        : IAdditionOperators<Complex, double, Complex>,
-          IDivisionOperators<Complex, Complex, Complex>,
-          IDivisionOperators<Complex, double, Complex>,
-          IFormattable,
-          // IExponentialFunctions<Complex>,
-          // IHyperbolicFunctions<Complex>,
-          // ILogarithmicFunctions<Complex>,
-          IMultiplyOperators<Complex, double, Complex>,
-          INumberBase<Complex>,
-          // IPowerFunctions<Complex>
-          // IRootFunctions<Complex>,
-          // ITrigonometricFunctions<Complex>,
-          ISubtractionOperators<Complex, double, Complex>
+    public readonly struct Complex : IEquatable<Complex>, IFormattable
     {
         public static readonly Complex Zero = new Complex(0.0, 0.0);
         public static readonly Complex One = new Complex(1.0, 0.0);
@@ -862,108 +849,5 @@ namespace System.Numerics
         {
             return new Complex((double)value, 0.0);
         }
-
-        //
-        // IAdditiveIdentity
-        //
-
-        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
-        static Complex IAdditiveIdentity<Complex, Complex>.AdditiveIdentity => new Complex(0.0, 0.0);
-
-        //
-        // IDecrementOperators
-        //
-
-        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
-        static Complex IDecrementOperators<Complex>.operator --(Complex value) => value - 1;
-
-        // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
-        // static Complex IDecrementOperators<Complex>.operator checked --(Complex value) => checked(--value);
-
-        //
-        // IIncrementOperators
-        //
-
-        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
-        static Complex IIncrementOperators<Complex>.operator ++(Complex value) => value + 1;
-
-        // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
-        // static Complex IIncrementOperators<Complex>.operator checked ++(Complex value) => checked(++value);
-
-        //
-        // IMultiplicativeIdentity
-        //
-
-        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
-        static Complex IMultiplicativeIdentity<Complex, Complex>.MultiplicativeIdentity => new Complex(1.0, 0.0);
-
-        //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static Complex INumberBase<Complex>.One => new Complex(1.0, 0.0);
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static Complex INumberBase<Complex>.Zero => new Complex(0.0, 0.0);
-
-        //
-        // ISpanFormattable
-        //
-
-        /// <inheritdoc cref="ISpanFormattable.TryFormat(Span{char}, out int, ReadOnlySpan{char}, IFormatProvider?)" />
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
-        {
-            if (destination.Length < 6)
-            {
-                // We need at least 6 characters for the shortest possible string: (0, 0)
-                charsWritten = 0;
-                return false;
-            }
-
-            int currentPosition = 0;
-
-            destination[currentPosition] = '(';
-            currentPosition++;
-
-            bool writeRealPartSucceeded = m_real.TryFormat(destination.Slice(currentPosition), out int charsWrittenForRealPart, format, provider);
-            currentPosition += charsWrittenForRealPart;
-
-            if (!writeRealPartSucceeded || (destination.Length < (currentPosition + 4)))
-            {
-                // We need to have succeeded in writing the real part or need at least 4 more characters
-                charsWritten = currentPosition;
-                return false;
-            }
-
-            destination[currentPosition] = ',';
-            currentPosition++;
-
-            destination[currentPosition] = ' ';
-            currentPosition++;
-
-            bool writeImaginaryPartSucceeded = m_imaginary.TryFormat(destination.Slice(currentPosition), out int charsWrittenForImaginaryPart, format, provider);
-            currentPosition += charsWrittenForImaginaryPart;
-
-            if (!writeImaginaryPartSucceeded || (destination.Length < (currentPosition + 1)))
-            {
-                // We need to have succeeded in writing the imaginary part or need at least 1 more character
-                charsWritten = currentPosition;
-                return false;
-            }
-
-            destination[currentPosition] = ')';
-            currentPosition++;
-
-            charsWritten = currentPosition;
-            return true;
-        }
-
-        //
-        // IUnaryPlusOperators
-        //
-
-        /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
-        public static Complex operator +(Complex value) => value;
     }
 }
