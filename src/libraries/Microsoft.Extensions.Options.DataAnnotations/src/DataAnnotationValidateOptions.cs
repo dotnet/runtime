@@ -3,8 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Reflection;
 
 namespace Microsoft.Extensions.Options
 {
@@ -55,16 +58,68 @@ namespace Microsoft.Extensions.Options
             }
 
             var validationResults = new List<ValidationResult>();
-            if (Validator.TryValidateObject(options, new ValidationContext(options), validationResults, validateAllProperties: true))
+
+            var errors = new List<string>();
+
+            bool success = Validator.TryValidateObject(options, new ValidationContext(options), validationResults, validateAllProperties: true);
+
+            if (!success)
             {
-                return ValidateOptionsResult.Success;
+                string typeName = options.GetType().Name;
+                foreach (ValidationResult result in validationResults)
+                {
+                    errors.Add(
+                        $"DataAnnotation validation failed for '{typeName}' members: '{string.Join(",", result.MemberNames)}' with the error: '{result.ErrorMessage}'.");
+                }
             }
 
-            string typeName = options.GetType().Name;
-            var errors = new List<string>();
-            foreach (ValidationResult result in validationResults)
+            PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(options);
+
+            foreach (PropertyDescriptor eachProperty in properties)
             {
-                errors.Add($"DataAnnotation validation failed for '{typeName}' members: '{string.Join(",", result.MemberNames)}' with the error: '{result.ErrorMessage}'.");
+                var childProperties = eachProperty.GetChildProperties();
+
+                bool shouldInclude = false;
+
+                foreach (PropertyDescriptor childProperty in childProperties)
+                {
+                    AttributeCollection attributes = childProperty.Attributes;
+
+                    foreach (Attribute attribute in attributes)
+                    {
+                        if (attribute is ValidationAttribute)
+                        {
+                            shouldInclude = true;
+                            break;
+                        }
+                    }
+                }
+
+                //if (eachProperty.Attributes.Count == 0)
+                if (shouldInclude)
+                {
+                    var value = eachProperty.GetValue(options);
+
+                    if (value == null) continue;
+
+                    Type validatorType = typeof(DataAnnotationValidateOptions<>).MakeGenericType(value.GetType());
+                    var validator = Activator.CreateInstance(validatorType, args: new[] { Options.DefaultName });
+
+                    ValidateOptionsResult result =
+                        (ValidateOptionsResult)validator!.GetType().GetMethod("Validate")!.Invoke(validator,
+                            new[] { Options.DefaultName, value })!;
+
+                    if (result.Failed)
+                    {
+                        success = false;
+                        errors.AddRange(result.Failures!.ToList());
+                    }
+                }
+            }
+
+            if (success)
+            {
+                return ValidateOptionsResult.Success;
             }
 
             return ValidateOptionsResult.Fail(errors);

@@ -3,13 +3,188 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Microsoft.Extensions.Options.Tests
 {
+    public class AnnotatedOptions
+    {
+        [Required]
+        public string Required { get; set; }
+
+        [StringLength(5, ErrorMessage = "Too long.")]
+        public string StringLength { get; set; }
+
+        [Range(-5, 5, ErrorMessage = "Out of range.")]
+        public int IntRange { get; set; }
+
+        public AnnotatedOptionsSubsection UnattributedAnnotatedOptionSubsection { get; set; }
+
+        [Required]
+        public AnnotatedOptionsSubsection AnnotatedOptionSubsection { get; set; }
+    }
+
+    public class AnnotatedOptionsSubsection
+    {
+        [Range(-5, 5, ErrorMessage = "Really out of range.")]
+        public int IntRange2 { get; set; }
+    }
+    
     public class OptionsValidationTest
     {
+        [Fact]
+        public void ValidationResultFailedIfPropertyInUnattributedNestedValueFails()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<AnnotatedOptions>().Configure(o => { }).ValidateDataAnnotations();
+
+            var sp = services.BuildServiceProvider();
+
+            var validations = sp.GetService<IEnumerable<IValidateOptions<AnnotatedOptions>>>();
+            var options = new AnnotatedOptions
+            {
+                IntRange = 4,
+                Required = "aaa",
+                StringLength = "222",
+                AnnotatedOptionSubsection = new AnnotatedOptionsSubsection
+                {
+                    IntRange2 = 3 // in range
+                },
+                UnattributedAnnotatedOptionSubsection = new AnnotatedOptionsSubsection
+                {
+                    IntRange2 = 100 // out of range
+                }
+            };
+
+            foreach (var v in validations)
+            {
+                ValidateOptionsResult result = v.Validate(Options.DefaultName, options);
+                Assert.True(result.Failed);
+                Assert.Equal(1, result.Failures.Count());
+                Assert.Equal("DataAnnotation validation failed for 'AnnotatedOptionsSubsection' members: 'IntRange2' with the error: 'Really out of range.'.", result.Failures.Single());
+            }
+        }
+
+        [Fact]
+        public void ValidationResultFailedIfPropertyInUnattributedNestedValueInNamedInstanceFails()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<AnnotatedOptions>("MyOptions!").Configure(o => { }).ValidateDataAnnotations();
+
+            var sp = services.BuildServiceProvider();
+
+            var validations = sp.GetService<IEnumerable<IValidateOptions<AnnotatedOptions>>>();
+            var options = new AnnotatedOptions
+            {
+                IntRange = 4,
+                Required = "aaa",
+                StringLength = "222",
+                AnnotatedOptionSubsection = new AnnotatedOptionsSubsection
+                {
+                    IntRange2 = 3 // in range
+                },
+                UnattributedAnnotatedOptionSubsection = new AnnotatedOptionsSubsection
+                {
+                    IntRange2 = 100 // out of range
+                }
+            };
+
+            foreach (var v in validations)
+            {
+                ValidateOptionsResult result = v.Validate("MyOptions!", options);
+                Assert.True(result.Failed);
+                Assert.Equal(1, result.Failures.Count());
+                Assert.Equal("DataAnnotation validation failed for 'AnnotatedOptionsSubsection' members: 'IntRange2' with the error: 'Really out of range.'.", result.Failures.Single());
+            }
+        }
+
+        [Fact]
+        public void ValidationResultFailedIfPropertyInNestedValueFails()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<AnnotatedOptions>().Configure(o => { }).ValidateDataAnnotations();
+
+            var sp = services.BuildServiceProvider();
+
+            var validations = sp.GetService<IEnumerable<IValidateOptions<AnnotatedOptions>>>();
+            var options = new AnnotatedOptions
+            {
+                IntRange = 4,
+                Required = "aaa",
+                StringLength = "222",
+                AnnotatedOptionSubsection = new AnnotatedOptionsSubsection
+                {
+                    IntRange2 = 100 // out of range
+                }
+            };
+
+            foreach (var v in validations)
+            {
+                ValidateOptionsResult result = v.Validate(Options.DefaultName, options);
+                Assert.True(result.Failed);
+                Assert.Equal(1, result.Failures.Count());
+                Assert.Equal("DataAnnotation validation failed for 'AnnotatedOptionsSubsection' members: 'IntRange2' with the error: 'Really out of range.'.", result.Failures.Single());
+            }
+        }
+
+        [Fact]
+        public void HandlesNullNestedValue()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<AnnotatedOptions>().Configure(o => { }).ValidateDataAnnotations();
+
+            var sp = services.BuildServiceProvider();
+
+            var validations = sp.GetService<IEnumerable<IValidateOptions<AnnotatedOptions>>>();
+            var options = new AnnotatedOptions
+            {
+                IntRange = 4,
+                Required = "aaa",
+                StringLength = "222",
+                AnnotatedOptionSubsection = new AnnotatedOptionsSubsection(),
+                UnattributedAnnotatedOptionSubsection = null!
+            };
+
+            foreach (var v in validations)
+            {
+                ValidateOptionsResult result = v.Validate(Options.DefaultName, options);
+                Assert.True(result.Succeeded);
+            }
+        }
+
+        [Fact]
+        public void ReportsValidationErrorsInTopLevelAndSubLevelOptions()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<AnnotatedOptions>().Configure(o => { }).ValidateDataAnnotations();
+
+            var sp = services.BuildServiceProvider();
+
+            var validations = sp.GetService<IEnumerable<IValidateOptions<AnnotatedOptions>>>();
+            var options = new AnnotatedOptions
+            {
+                IntRange = 200, // out of range
+                Required = "aaa",
+                StringLength = "222",
+                AnnotatedOptionSubsection = new AnnotatedOptionsSubsection
+                {
+                    IntRange2 = 100 // out of range
+                }
+            };
+
+            foreach (var v in validations)
+            {
+                ValidateOptionsResult result = v.Validate(Options.DefaultName, options);
+                Assert.True(result.Failed);
+                Assert.Equal(2, result.Failures.Count());
+                Assert.Equal("DataAnnotation validation failed for 'AnnotatedOptions' members: 'IntRange' with the error: 'Out of range.'.", result.Failures.ElementAt(0));
+                Assert.Equal("DataAnnotation validation failed for 'AnnotatedOptionsSubsection' members: 'IntRange2' with the error: 'Really out of range.'.", result.Failures.ElementAt(1));
+            }
+        }
+
         [Fact]
         public void ValidationResultSuccessIfNameMatched()
         {
