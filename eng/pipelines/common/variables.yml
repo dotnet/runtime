@@ -33,5 +33,3 @@ variables:
     value: Release
   ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
     value: Debug
-
-- template: /eng/pipelines/common/perf-variables.yml
