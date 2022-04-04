@@ -12,21 +12,20 @@ namespace System.Text.RegularExpressions
     internal sealed class RegexInterpreterFactory : RegexRunnerFactory
     {
         private readonly RegexInterpreterCode _code;
-        private readonly CultureInfo? _culture;
+        private readonly TextInfo? _textInfo;
 
-        public RegexInterpreterFactory(RegexTree tree, CultureInfo culture)
+        public RegexInterpreterFactory(RegexTree tree)
         {
-            // We use the culture field from the tree instead of the passed in culture because the field on the tree
-            // will only be set to an actual culture if the tree contains IgnoreCase backreferences. If the tree doesn't
-            // have IgnoreCase backreferences, then we keep _culture as null.
-            _culture = tree.Culture;
+            // We use the TextInfo field from the tree's culture which will only be set to an actual culture if the
+            // tree contains IgnoreCase backreferences. If the tree doesn't have IgnoreCase backreferences, then we keep _textInfo as null.
+            _textInfo = tree.Culture?.TextInfo;
             // Generate and store the RegexInterpretedCode for the RegexTree and the specified culture
-            _code = RegexWriter.Write(tree, culture);
+            _code = RegexWriter.Write(tree);
         }
 
         protected internal override RegexRunner CreateInstance() =>
             // Create a new interpreter instance.
-            new RegexInterpreter(_code, _culture);
+            new RegexInterpreter(_code, _textInfo);
     }
 
     /// <summary>Executes a block of regular expression codes while consuming input.</summary>
@@ -42,12 +41,12 @@ namespace System.Text.RegularExpressions
         private bool _rightToLeft;
         private bool _caseInsensitive;
 
-        public RegexInterpreter(RegexInterpreterCode code, CultureInfo? culture)
+        public RegexInterpreter(RegexInterpreterCode code, TextInfo? textInfo)
         {
             Debug.Assert(code != null, "code must not be null.");
 
             _code = code;
-            _textInfo = culture?.TextInfo;
+            _textInfo = textInfo;
         }
 
         protected override void InitTrackCount() => runtrackcount = _code.TrackCount;

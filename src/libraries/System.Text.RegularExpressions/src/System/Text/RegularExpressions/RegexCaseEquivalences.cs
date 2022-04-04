@@ -14,7 +14,6 @@ namespace System.Text.RegularExpressions
     /// </summary>
     internal static partial class RegexCaseEquivalences
     {
-
         private static readonly char[] s_specialCasingSetBehaviors = new char[5]
         {
             'I', 'i', '\u0130', 'I', '\u0131'
@@ -67,32 +66,27 @@ namespace System.Text.RegularExpressions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RegexCaseBehavior GetRegexBehavior(CultureInfo culture)
         {
-            if (culture.Name.Length == 0)
-                return RegexCaseBehavior.Invariant;
-            else if (IsTurkishOrAzeri(culture.Name.AsSpan()))
-                return RegexCaseBehavior.Turkish;
-            else
-                return RegexCaseBehavior.NonTurkish;
+            return
+                culture.Name.Length == 0 ? RegexCaseBehavior.Invariant :
+                IsTurkishOrAzeri(culture.Name) ? RegexCaseBehavior.Turkish :
+                RegexCaseBehavior.NonTurkish;
 
-            static bool IsTurkishOrAzeri(ReadOnlySpan<char> cultureName)
+            static bool IsTurkishOrAzeri(string cultureName)
             {
-                if (cultureName.Length < 2)
-                {
-                    return false;
-                }
-                else
+                if (cultureName.Length >= 2)
                 {
                     // Assert that the first two characters in culture name are between a-z lowercase
-                    Debug.Assert('a' <= cultureName[0] && cultureName[0] <= 'z');
-                    Debug.Assert('a' <= cultureName[1] && cultureName[1] <= 'z');
-
-                    if (cultureName[0] == 't' && cultureName[1] == 'r' && (cultureName.Length == 2 || cultureName[2] == '-'))
-                        return true;
-                    else if (cultureName[0] == 'a' && cultureName[1] == 'z' && (cultureName.Length == 2 || cultureName[2] == '-'))
-                        return true;
-                    else
-                        return false;
+                    Debug.Assert(cultureName[0] is >= 'a' and <= 'z');
+                    Debug.Assert(cultureName[1] is >= 'a' and <= 'z');
+                    switch (cultureName[0])
+                    {
+                        case 't':
+                            return cultureName[1] == 'r' && (cultureName.Length == 2 || cultureName[2] == '-');
+                        case 'a':
+                            return cultureName[1] == 'z' && (cultureName.Length == 2 || cultureName[2] == '-');
+                    }
                 }
+                return false;
             }
         }
 
@@ -131,34 +125,35 @@ namespace System.Text.RegularExpressions
         /// equivalent in a case comparison for 'A'.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryFindCaseEquivalencesForChar(char c, out ReadOnlySpan<char> equivalences)
+        private static bool TryFindCaseEquivalencesForChar(char c, out ReadOnlySpan<char> equivalences)
         {
-            // Right shifting by 10 in order to divide by 1024 (CharactersPerRange)
-            Debug.Assert((c >> 10) < 0xFF);
-            byte index = (byte)(c >> 10);
-            ushort FirstLevelLookupValue = EquivalenceFirstLevelLookup[index];
+            // Dividing by 1024 whih represent the number of characters per range, in order to get the range index for c
+            Debug.Assert((c / 1024) < 0xFF);
+            byte index = (byte)((uint)c / 1024);
+            ushort firstLevelLookupValue = EquivalenceFirstLevelLookup[index];
 
             // If character belongs to a range that doesn't participate in casing, then just return false
-            if (FirstLevelLookupValue == 0xFFFF)
+            if (firstLevelLookupValue == 0xFFFF)
             {
                 equivalences = default;
                 return false;
             }
 
-            equivalences = PerformSecondLevelLookup();
+            equivalences = PerformSecondLevelLookup(c, firstLevelLookupValue);
             return equivalences != default;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            ReadOnlySpan<char> PerformSecondLevelLookup()
+            static ReadOnlySpan<char> PerformSecondLevelLookup(char c, ushort firstLevelLookupValue)
             {
-                // Bitwise And to 0b11_1111_1111 to perform an optimal modulo 1024 (0b100_0000_0000) operation.
-                Debug.Assert(((c & 0b11_1111_1111) + FirstLevelLookupValue) < 0xFFFF);
-                ushort index2 = (ushort)((c & 0b11_1111_1111) + FirstLevelLookupValue);
+                // Using mod 1024 operator to get the offset of c in the range, and add the firstLevelLookupValue
+                Debug.Assert(((c % 1024) + firstLevelLookupValue) < 0xFFFF);
+                ushort index2 = (ushort)(((uint)c % 1024) + firstLevelLookupValue);
                 ushort mappingValue = EquivalenceCasingMap[index2];
                 if (mappingValue == 0xFFFF)
                 {
                     return default;
                 }
+
                 byte count = (byte)((mappingValue >> 13) & 0b111);
                 ushort index3 = (ushort)(mappingValue & 0x1FFF);
                 return EquivalenceCasingValues.AsSpan(index3, count);

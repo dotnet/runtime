@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Tests;
 using System.Threading.Tasks;
 using Xunit;
@@ -29,34 +31,52 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> Characters_With_Common_Lowercase_Match_Data()
         {
-            foreach ((string pattern, string input) in CharactersWithSameLowercase())
+            foreach (var culture in new[] { "", "en-us", "tr-TR" })
             {
-                foreach(RegexEngine engine in RegexHelpers.AvailableEngines)
+                if (PlatformDetection.IsBrowser && culture != "") // Browser runs in Invariant mode, so only test Invariant in that case.
+                    continue;
+
+                foreach ((string pattern, string input) in CharactersWithSameLowercase())
                 {
-                    yield return new object[] { engine, pattern, input };
+                    if (culture != "en-us" && pattern == "\u0130" && input == "\u0049") // This mapping doesn't exist in invariant or turkish cultures.
+                        continue;
+
+                    foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+                    {
+                        yield return new object[] { engine, pattern, input, culture };
+                    }
                 }
             }
         }
 
         public static IEnumerable<object[]> Characters_With_Common_Lowercase_Match_Backreference_Data()
         {
-            foreach ((string firstChar, string secondChar) in CharactersWithSameLowercase())
+            foreach (var culture in new[] { "", "en-us", "tr-TR" })
             {
-                foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+                if (PlatformDetection.IsBrowser && culture != "") // Browser runs in Invariant mode, so only test Invariant in that case.
+                    continue;
+
+                foreach ((string firstChar, string secondChar) in CharactersWithSameLowercase())
                 {
-                    if (engine == RegexEngine.NonBacktracking) // Backreferences are not yet supported by the NonBacktracking engine
+                    if (culture != "en-us" && firstChar == "\u0130" && secondChar == "\u0049") // This mapping doesn't exist in invariant or turkish cultures.
                         continue;
 
-                    yield return new object[] { engine, /*lang=regex*/@"(.)\1", firstChar, secondChar };
+                    foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+                    {
+                        if (engine == RegexEngine.NonBacktracking) // Backreferences are not yet supported by the NonBacktracking engine
+                            continue;
+
+                        yield return new object[] { engine, @"(.)\1", firstChar, secondChar, culture };
+                    }
                 }
             }
         }
 
         [Theory]
-        [SkipOnPlatform(TestPlatforms.Browser, "Browser uses Invariant mode which causes invariant mappings to be used and will fail to match '\u0130' and 'I'")]
         [MemberData(nameof(Characters_With_Common_Lowercase_Match_Data))]
-        public async Task Characters_With_Common_Lowercase_Match(RegexEngine engine, string pattern, string input)
+        public async Task Characters_With_Common_Lowercase_Match(RegexEngine engine, string pattern, string input, string culture)
         {
+            using var _ = new ThreadCultureChange(culture);
             Regex regex = await RegexHelpers.GetRegexAsync(engine, pattern, RegexOptions.IgnoreCase);
             Assert.True(regex.IsMatch(input));
         }
@@ -91,10 +111,10 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
-        [SkipOnPlatform(TestPlatforms.Browser, "Browser uses Invariant mode which causes invariant mappings to be used and will fail to match '\u0130' and 'I'")]
         [MemberData(nameof(Characters_With_Common_Lowercase_Match_Backreference_Data))]
-        public async Task Characters_With_Common_Lowercase_Match_Backreference(RegexEngine engine, string pattern, string firstChar, string secondChar)
+        public async Task Characters_With_Common_Lowercase_Match_Backreference(RegexEngine engine, string pattern, string firstChar, string secondChar, string culture)
         {
+            using var _ = new ThreadCultureChange(culture);
             Regex regex = await RegexHelpers.GetRegexAsync(engine, pattern, RegexOptions.IgnoreCase);
             Assert.True(regex.IsMatch($"{firstChar}{secondChar}"));
             Assert.True(regex.IsMatch($"{secondChar}{firstChar}"));
@@ -104,13 +124,11 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(EnginesThatSupportBackreferences))]
         public async Task Ensure_CultureInvariant_Option_Is_Used_For_Backreferences(RegexEngine engine)
         {
-            using (_ = new ThreadCultureChange("tr-TR"))
-            {
-                Regex regex = await RegexHelpers.GetRegexAsync(engine, @"(.)\1", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
-                // There is no mapping between 'i' and 'I' in tr-TR culture, so this test is validating that when passing CultureInvariant
-                // option, we will use InvariantCulture mappings for backreferences.
-                Assert.True(regex.IsMatch("iI"));
-            }
+            using var _ = new ThreadCultureChange("tr-TR");
+            Regex regex = await RegexHelpers.GetRegexAsync(engine, @"(.)\1", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+            // There is no mapping between 'i' and 'I' in tr-TR culture, so this test is validating that when passing CultureInvariant
+            // option, we will use InvariantCulture mappings for backreferences.
+            Assert.True(regex.IsMatch("iI"));
         }
 
         [Fact]

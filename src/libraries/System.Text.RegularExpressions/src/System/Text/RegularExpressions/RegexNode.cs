@@ -97,55 +97,17 @@ namespace System.Text.RegularExpressions
             {
                 Debug.Assert(culture is not null);
 
-                // The only characters which may have different case-mappings depending on culture are 'i' | 'I' | '\u0130' | '\u0131'
-                // If the character being converted is one in that set, then we need to check current culture in order to use the right
-                // mappings. This special casing logic is duplicated in RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior
-                // with the reason being that we want to optimize for this case and efficiently return the string class which includes
-                // equivalences for the special case mappings.
-                if ((ch | 0x20) == 'i' || (ch | 0x01) == '\u0131')
+                if (!RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(ch, culture, out ReadOnlySpan<char> equivalences))
                 {
-                    RegexCaseBehavior mappingBehavior = RegexCaseEquivalences.GetRegexBehavior((options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : culture);
-                    string? stringSet = ch switch
-                    {
-                        // Invariant mappings
-                        'i' or 'I' when mappingBehavior is RegexCaseBehavior.Invariant => "\0\u0004\0IJij",
-
-                        // Non-Turkish mappings
-                        'i' or 'I' or '\u0130' when mappingBehavior is RegexCaseBehavior.NonTurkish => "\0\u0006\0IJij\u0130\u0131",
-
-                        // Turkish mappings
-                        'I' or '\u0131' when mappingBehavior is RegexCaseBehavior.Turkish => "\0\u0004\0IJ\u0131\u0132",
-                        'i' or '\u0130' when mappingBehavior is RegexCaseBehavior.Turkish => "\0\u0004\0ij\u0130\u0131",
-
-                        // Default
-                        _ => null
-                    };
-
-                    if (string.IsNullOrEmpty(stringSet))
-                    {
-                        // If we reach here, then we know that ch does not participate in case conversion, so we just
-                        // create a One node with it and strip out the IgnoreCase option.
-                        return new RegexNode(RegexNodeKind.One, options & ~RegexOptions.IgnoreCase, ch);
-                    }
-
-                    // If it does participate in case conversion, then transform the Node into a set with
-                    // all possible valid values and remove the IgnoreCase option to make the node case-sensitive.
-                    return new RegexNode(RegexNodeKind.Set, options & ~RegexOptions.IgnoreCase, stringSet);
+                    // If we reach here, then we know that ch does not participate in case conversion, so we just
+                    // create a One node with it and strip out the IgnoreCase option.
+                    return new RegexNode(RegexNodeKind.One, options & ~RegexOptions.IgnoreCase, ch);
                 }
-                else
-                {
-                    if (!RegexCaseEquivalences.TryFindCaseEquivalencesForChar(ch, out ReadOnlySpan<char> equivalences))
-                    {
-                        // If we reach here, then we know that ch does not participate in case conversion, so we just
-                        // create a One node with it and strip out the IgnoreCase option.
-                        return new RegexNode(RegexNodeKind.One, options & ~RegexOptions.IgnoreCase, ch);
-                    }
 
-                    // If it does participate in case conversion, then transform the Node into a set with
-                    // all possible valid values and remove the IgnoreCase option to make the node case-sensitive.
-                    string stringSet = RegexCharClass.CharsToStringClass(equivalences);
-                    return new RegexNode(RegexNodeKind.Set, options & ~RegexOptions.IgnoreCase, stringSet);
-                }
+                // If it does participate in case conversion, then transform the Node into a set with
+                // all possible valid values and remove the IgnoreCase option to make the node case-sensitive.
+                string stringSet = RegexCharClass.CharsToStringClass(equivalences);
+                return new RegexNode(RegexNodeKind.Set, options & ~RegexOptions.IgnoreCase, stringSet);
             }
 
             // Create a One node for the character.

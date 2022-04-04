@@ -29,7 +29,7 @@ namespace System.Text.RegularExpressions
         private readonly string _pattern;
         private int _currentPos;
         private readonly CultureInfo _culture;
-        private bool _hasIgnoreCaseBackReferenceNodes;
+        private bool _hasIgnoreCaseBackreferenceNodes;
 
         private int _autocap;
         private int _capcount;
@@ -58,7 +58,7 @@ namespace System.Text.RegularExpressions
             _pattern = pattern;
             _options = options;
             _culture = culture;
-            _hasIgnoreCaseBackReferenceNodes = false;
+            _hasIgnoreCaseBackreferenceNodes = false;
             _caps = caps;
             _capsize = capsize;
             _capnames = capnames;
@@ -112,7 +112,7 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            return new RegexTree(root, captureCount, parser._capnamelist?.ToArray(), parser._capnames!, sparseMapping, options, parser._hasIgnoreCaseBackReferenceNodes ? culture : null);
+            return new RegexTree(root, captureCount, parser._capnamelist?.ToArray(), parser._capnames!, sparseMapping, options, parser._hasIgnoreCaseBackreferenceNodes ? culture : null);
         }
 
         /// <summary>
@@ -1219,7 +1219,7 @@ namespace System.Text.RegularExpressions
                     RegexNode? result = ScanBasicBackslash(scanOnly);
                     if (result != null && result.Kind == RegexNodeKind.Backreference && (result.Options & RegexOptions.IgnoreCase) != 0)
                     {
-                        _hasIgnoreCaseBackReferenceNodes = true;
+                        _hasIgnoreCaseBackreferenceNodes = true;
                     }
                     return result;
             }

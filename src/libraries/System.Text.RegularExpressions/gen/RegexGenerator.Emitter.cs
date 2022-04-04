@@ -163,9 +163,9 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine();
             if (rm.Tree.Culture != null)
             {
-                // If the RegexTree has Culture set, then we need to emit the textInfo field that should be used at match time for casing operations.
+                // If the RegexTree has Culture set, then we need to emit the _textInfo field that should be used at match time for casing operations.
                 writer.WriteLine($"        /// <summary>TextInfo that will be used for Backreference case comparisons.</summary>");
-                writer.WriteLine($"        private readonly TextInfo textInfo = CultureInfo.GetCultureInfo({Literal(rm.Tree.Culture.Name)}).TextInfo;");
+                writer.WriteLine($"        private readonly TextInfo _textInfo = CultureInfo.GetCultureInfo({Literal(rm.Tree.Culture.Name)}).TextInfo;");
                 writer.WriteLine();
             }
             writer.WriteLine($"        /// <summary>Scan the <paramref name=\"inputSpan\"/> starting from base.runtextstart for the next match.</summary>");
@@ -1562,7 +1562,7 @@ namespace System.Text.RegularExpressions.Generator
                             writer.WriteLine($"matchIndex = base.MatchIndex({capnum});");
                             using (EmitBlock(writer, $"for (int i = 0; i < matchLength; i++)"))
                             {
-                                using (EmitBlock(writer, $"if ({ToLower($"inputSpan[matchIndex + i]")} != {ToLower($"{sliceSpan}[i]")})"))
+                                using (EmitBlock(writer, $"if (_textInfo.ToLower(inputSpan[matchIndex + i]) != _textInfo.ToLower({sliceSpan}[i]))"))
                                 {
                                     Goto(doneLabel);
                                 }
@@ -1585,7 +1585,9 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine($"matchIndex = base.MatchIndex({capnum});");
                         using (EmitBlock(writer, $"for (int i = 0; i < matchLength; i++)"))
                         {
-                            using (EmitBlock(writer, $"if ({ToLowerIfNeeded($"inputSpan[matchIndex + i]", caseInsensitive)} != {ToLowerIfNeeded($"inputSpan[pos - matchLength + i]", caseInsensitive)})"))
+                            using (EmitBlock(writer, caseInsensitive ?
+                                $"if (_textInfo.ToLower(inputSpan[matchIndex + i]) != _textInfo.ToLower(inputSpan[pos - matchLength + i]))" :
+                                $"if (inputSpan[matchIndex + i] != inputSpan[pos - matchLength + i])"))
                             {
                                 Goto(doneLabel);
                             }
@@ -2445,7 +2447,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 if (node.IsSetFamily)
                 {
-                    expr = $"{MatchCharacterClass(options, expr, node.Str!, negate: true, additionalDeclarations, requiredHelpers)}";
+                    expr = MatchCharacterClass(options, expr, node.Str!, negate: true, additionalDeclarations, requiredHelpers);
                 }
                 else
                 {
@@ -3258,8 +3260,7 @@ namespace System.Text.RegularExpressions.Generator
                     }
                     writer.WriteLine();
                 }
-                else if (node.IsNotoneFamily &&
-                    maxIterations == int.MaxValue)
+                else if (node.IsNotoneFamily && maxIterations == int.MaxValue)
                 {
                     // For Notone, we're looking for a specific character, as everything until we find
                     // it is consumed by the loop.  If we're unbounded, such as with ".*" and if we're case-sensitive,
@@ -3755,10 +3756,6 @@ namespace System.Text.RegularExpressions.Generator
             }
         }
 
-        private static string ToLower(string expression) => $"textInfo.ToLower({expression})";
-
-        private static string ToLowerIfNeeded(string expression, bool toLower) => toLower ? ToLower(expression) : expression;
-
         private static string MatchCharacterClass(RegexOptions options, string chExpr, string charClass, bool negate, HashSet<string> additionalDeclarations, Dictionary<string, string[]> requiredHelpers)
         {
             // We need to perform the equivalent of calling RegexRunner.CharInClass(ch, charClass),
@@ -3889,8 +3886,7 @@ namespace System.Text.RegularExpressions.Generator
                 for (int i = 0; i < 128; i++)
                 {
                     char c = (char)i;
-                    bool isSet = RegexCharClass.CharInClass(c, charClass);
-                    if (isSet)
+                    if (RegexCharClass.CharInClass(c, charClass))
                     {
                         dest[i >> 4] |= (char)(1 << (i & 0xF));
                     }
