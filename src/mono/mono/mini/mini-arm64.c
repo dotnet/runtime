@@ -30,6 +30,10 @@
 
 #include "interp/interp.h"
 
+// Several of the 32-bit bit shifts must remain 32-bit, since they assume possible wrap around.
+// result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?)
+MONO_DISABLE_WARNING(4334)
+
 /*
  * Documentation:
  *
@@ -2240,7 +2244,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		/* Callee saved regs */
 		cfg->arch.saved_gregs_offset = offset;
 		for (i = 0; i < 32; ++i)
-			if ((MONO_ARCH_CALLEE_SAVED_REGS & (1 << i)) && (cfg->used_int_regs & ((regmask_t)1 << i)))
+			if ((MONO_ARCH_CALLEE_SAVED_REGS & (1 << i)) && (cfg->used_int_regs & (1 << i)))
 				offset += 8;
 	}
 
@@ -4885,8 +4889,8 @@ emit_store_regarray (guint8 *code, guint64 regs, int basereg, int offset)
 	int i;
 
 	for (i = 0; i < 32; ++i) {
-		if (regs & ((guint64)1 << i)) {
-			if (i + 1 < 32 && (regs & ((guint64)1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
+		if (regs & (1 << i)) {
+			if (i + 1 < 32 && (regs & (1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
 				arm_stpx (code, i, i + 1, basereg, offset + (i * 8));
 				i++;
 			} else if (i == ARMREG_SP) {
@@ -4912,8 +4916,8 @@ emit_load_regarray (guint8 *code, guint64 regs, int basereg, int offset)
 	int i;
 
 	for (i = 0; i < 32; ++i) {
-		if (regs & ((guint64)1 << i)) {
-			if ((regs & ((guint64)1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
+		if (regs & (1 << i)) {
+			if ((regs & (1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
 				if (offset + (i * 8) < 500)
 					arm_ldpx (code, i, i + 1, basereg, offset + (i * 8));
 				else {
@@ -4944,8 +4948,8 @@ emit_store_regset (guint8 *code, guint64 regs, int basereg, int offset)
 
 	pos = 0;
 	for (i = 0; i < 32; ++i) {
-		if (regs & ((guint64)1 << i)) {
-			if ((regs & ((guint64)1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
+		if (regs & (1 << i)) {
+			if ((regs & (1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
 				arm_stpx (code, i, i + 1, basereg, offset + (pos * 8));
 				i++;
 				pos++;
@@ -4974,8 +4978,8 @@ emit_load_regset (guint8 *code, guint64 regs, int basereg, int offset)
 
 	pos = 0;
 	for (i = 0; i < 32; ++i) {
-		if (regs & ((guint64)1 << i)) {
-			if ((regs & ((guint64)1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
+		if (regs & (1 << i)) {
+			if ((regs & (1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
 				arm_ldpx (code, i, i + 1, basereg, offset + (pos * 8));
 				i++;
 				pos++;
@@ -5019,8 +5023,8 @@ emit_store_regset_cfa (MonoCompile *cfg, guint8 *code, guint64 regs, int basereg
 	pos = 0;
 	for (i = 0; i < 32; ++i) {
 		nregs = 1;
-		if (regs & ((guint64)1 << i)) {
-			if ((regs & ((guint64)1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
+		if (regs & (1 << i)) {
+			if ((regs & (1 << (i + 1))) && (i + 1 != ARMREG_SP)) {
 				if (offset < 256) {
 					arm_stpx (code, i, i + 1, basereg, offset + (pos * 8));
 				} else {

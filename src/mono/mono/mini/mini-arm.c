@@ -37,6 +37,7 @@
 #include "mono/utils/mono-tls-inline.h"
 
 MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+MONO_DISABLE_WARNING(4334) /* result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?) */
 
 /* Sanity check: This makes no sense */
 #if defined(ARM_FPU_NONE) && (defined(ARM_FPU_VFP) || defined(ARM_FPU_VFP_HARD))
@@ -1940,7 +1941,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		cfg->uses_rgctx_reg = TRUE;
 
 	if (cfg->frame_reg != ARMREG_SP)
-		cfg->used_int_regs |= (regmask_t)1 << cfg->frame_reg;
+		cfg->used_int_regs |= 1 << cfg->frame_reg;
 
 	if (cfg->compile_aot || cfg->uses_rgctx_reg || COMPILE_LLVM (cfg))
 		/* V5 is reserved for passing the vtable/rgctx/IMT method */
@@ -2630,7 +2631,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				call->float_args = g_slist_append_mempool (cfg->mempool, call->float_args, fad);
 			}
 
-			call->used_iregs |= (regmask_t)1 << ainfo->reg;
+			call->used_iregs |= 1 << ainfo->reg;
 			cfg->flags |= MONO_CFG_HAS_FPOUT;
 			break;
 		}
@@ -5065,7 +5066,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				else
 					prev_sp_offset = 1 * 4;
 				for (i = 0; i < 16; ++i) {
-					if (cfg->used_int_regs & ((regmask_t)1 << i))
+					if (cfg->used_int_regs & (1 << i))
 						prev_sp_offset += 4;
 				}
 
@@ -6194,17 +6195,17 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			if (cfg->used_int_regs)
 				ARM_PUSH (code, cfg->used_int_regs);
 		} else {
-			ARM_PUSH (code, cfg->used_int_regs | ((regmask_t)1 << ARMREG_LR));
+			ARM_PUSH (code, cfg->used_int_regs | (1 << ARMREG_LR));
 			prev_sp_offset += 4;
 		}
 		for (i = 0; i < 16; ++i) {
-			if (cfg->used_int_regs & ((regmask_t)1 << i))
+			if (cfg->used_int_regs & (1 << i))
 				prev_sp_offset += 4;
 		}
 		mono_emit_unwind_op_def_cfa_offset (cfg, code, prev_sp_offset);
 		reg_offset = 0;
 		for (i = 0; i < 16; ++i) {
-			if ((cfg->used_int_regs & ((regmask_t)1 << i))) {
+			if ((cfg->used_int_regs & (1 << i))) {
 				mono_emit_unwind_op_offset (cfg, code, i, (- prev_sp_offset) + reg_offset);
 				mini_gc_set_slot_type_from_cfa (cfg, (- prev_sp_offset) + reg_offset, SLOT_NOREF);
 				reg_offset += 4;
@@ -6695,7 +6696,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		reg = ARMREG_R4;
 		regmask = 0x9ff0; /* restore lr to pc */
 		/* Skip caller saved registers not used by the method */
-		while (!(cfg->used_int_regs & ((regmask_t)1 << reg)) && reg < ARMREG_FP) {
+		while (!(cfg->used_int_regs & (1 << reg)) && reg < ARMREG_FP) {
 			regmask &= ~(1 << reg);
 			sp_adj += 4;
 			reg ++;
@@ -6728,7 +6729,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		int nused_int_regs = 0;
 
 		for (i = 0; i < 16; i++) {
-			if (cfg->used_int_regs & ((regmask_t)1 << i))
+			if (cfg->used_int_regs & (1 << i))
 				nused_int_regs ++;
 		}
 
@@ -6749,7 +6750,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 				mono_emit_unwind_op_def_cfa_offset (cfg, code, (2 + nused_int_regs) * 4);
 				ARM_POP (code, cfg->used_int_regs);
 				for (i = 0; i < 16; i++) {
-					if (cfg->used_int_regs & ((regmask_t)1 << i))
+					if (cfg->used_int_regs & (1 << i))
 						mono_emit_unwind_op_same_value (cfg, code, i);
 				}
 			}
