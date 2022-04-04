@@ -7442,12 +7442,18 @@ public:
     // TODO-Throughput: The following information should be obtained from the child
     // block node.
 
-    enum class Kind : __int8{
+    enum class Kind : int8_t{
         Invalid, RepInstr, PartialRepInstr, Unroll, Push,
     };
     Kind gtPutArgStkKind;
-#endif
 
+#ifdef TARGET_XARCH
+private:
+    uint8_t m_argLoadSizeDelta;
+#endif // TARGET_XARCH
+#endif // FEATURE_PUT_STRUCT_ARG_STK
+
+public:
     GenTreePutArgStk(genTreeOps oper,
                      var_types  type,
                      GenTree*   op1,
@@ -7473,7 +7479,10 @@ public:
 #endif // FEATURE_FASTTAILCALL
 #if defined(FEATURE_PUT_STRUCT_ARG_STK)
         , gtPutArgStkKind(Kind::Invalid)
+#if defined(TARGET_XARCH)
+        , m_argLoadSizeDelta(UINT8_MAX)
 #endif
+#endif // FEATURE_PUT_STRUCT_ARG_STK
     {
     }
 
@@ -7519,6 +7528,36 @@ public:
     {
         return m_byteSize;
     }
+
+#ifdef TARGET_XARCH
+    //------------------------------------------------------------------------
+    // SetArgLoadSize: Set the optimal number of bytes to load for this argument.
+    //
+    // On XARCH, it is profitable to use wider loads when our source is a local
+    // variable. To not duplicate the logic between lowering, LSRA and codegen,
+    // we do the legality check once, in lowering, and save the result here, as
+    // a negative delta relative to the size of the argument with padding.
+    //
+    // Arguments:
+    //    loadSize - The optimal number of bytes to load
+    //
+    void SetArgLoadSize(unsigned loadSize)
+    {
+        unsigned argSize = GetStackByteSize();
+        assert(roundUp(loadSize, TARGET_POINTER_SIZE) == argSize);
+
+        m_argLoadSizeDelta = static_cast<uint8_t>(argSize - loadSize);
+    }
+
+    //------------------------------------------------------------------------
+    // GetArgLoadSize: Get the optimal number of bytes to load for this argument.
+    //
+    unsigned GetArgLoadSize() const
+    {
+        assert(m_argLoadSizeDelta != UINT8_MAX);
+        return GetStackByteSize() - m_argLoadSizeDelta;
+    }
+#endif // TARGET_XARCH
 
     // Return true if this is a PutArgStk of a SIMD12 struct.
     // This is needed because such values are re-typed to SIMD16, and the type of PutArgStk is VOID.
