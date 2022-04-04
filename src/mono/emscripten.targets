@@ -1,0 +1,6 @@
+<Project>
+  <ItemGroup>
+    <PackageReference Condition="$([MSBuild]::IsOSPlatform('osx'))" Include="Microsoft.NET.Runtime.Emscripten.2.0.34.Transport.Internal.osx-x64" PrivateAssets="all" Version="$(MicrosoftNETRuntimeEmscriptenVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="$([MSBuild]::IsOSPlatform('windows'))" Include="Microsoft.NET.Runtime.Emscripten.2.0.34.Transport.Internal.win-x64" PrivateAssets="all" Version="$(MicrosoftNETRuntimeEmscriptenVersion)" GeneratePathProperty="true" />
+  </ItemGroup>
+</Project>
