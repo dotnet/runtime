@@ -45,7 +45,7 @@ Breaking Change Rules
 
 * Changing the precision of a numerical return value
 
-* Removing a call to a `virtual`/`abstract` member 
+* Removing a call to a `virtual`/`abstract` member
 
     Note that this includes removing any finalizer whose body was to call a `virtual Dispose(false)`.
 
