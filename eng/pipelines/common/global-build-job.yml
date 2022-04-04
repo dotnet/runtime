@@ -122,20 +122,17 @@ jobs:
     #  fetchDepth: $(checkoutFetchDepth)
 
     - script: |
-            echo echo '<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\([>;]\)net[0-9]\+\.[0-9]-maccatalyst\([;<]\)/\1\2/g'
-            echo 	'<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\([>;]\)net[0-9]\+\.[0-9]-maccatalyst\([;<]\)/\1\2/g'
-            cat MauiTesting.csproj
+        echo echo '<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\([>;]\)net[0-9]\+\.[0-9]-maccatalyst\([;<]\)/\1\2/g'
+        echo 	'<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\([>;]\)net[0-9]\+\.[0-9]-maccatalyst\([;<]\)/\1\2/g'
 
-            echo echo '<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\\([>;]\\)net[0-9]\\+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g'
-            echo 	'<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\\([>;]\\)net[0-9]\\+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g'
+        echo echo '<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\\([>;]\\)net[0-9]\\+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g'
+        echo 	'<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\\([>;]\\)net[0-9]\\+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g'
 
-            echo echo '<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\([>;]\)net[0-9]+\.[0-9]-maccatalyst\([;<]\)/\1\2/g'
-            echo 	'<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\([>;]\)net[0-9]+\.[0-9]-maccatalyst\([;<]\)/\1\2/g'
-            cat MauiTesting.csproj
+        echo echo '<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\([>;]\)net[0-9]+\.[0-9]-maccatalyst\([;<]\)/\1\2/g'
+        echo 	'<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\([>;]\)net[0-9]+\.[0-9]-maccatalyst\([;<]\)/\1\2/g'
 
-            echo echo '<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\\([>;]\\)net[0-9]+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g'
-            echo 	'<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\\([>;]\\)net[0-9]+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g'
-            cat MauiTesting.csproj
+        echo echo '<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\\([>;]\\)net[0-9]+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g'
+        echo 	'<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>' | sed -e 's/\\([>;]\\)net[0-9]+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g'
       displayname: SEDTesting
 
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
