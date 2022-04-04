@@ -70,15 +70,15 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 ConstructorInfo constructor = constructors[i];
                 var matcher = new ConstructorMatcher(constructor);
-                int length = matcher.Match(parameters);
+                _ = matcher.Match(parameters);
                 matchers[i] = matcher;
             }
-            Array.Sort(matchers, (a, b) => a.ApplyExectLength - b.ApplyExectLength);
+            Array.Sort(matchers, (a, b) => b.ApplyExectLength - a.ApplyExectLength);
             object? instance = null;
             for (int i = 0; i < matchers.Length; i++)
             {
                 ConstructorMatcher matcher = matchers[i];
-                if (matcher.ApplyExectLength == -1) continue;
+                if (matcher.ApplyExectLength == -1) break;
                 bool lastChance = i == matchers.Length - 1;
                 instance = matcher.CreateInstance(provider, throwIfFailed: lastChance);
                 if (instance is not null) return instance;
