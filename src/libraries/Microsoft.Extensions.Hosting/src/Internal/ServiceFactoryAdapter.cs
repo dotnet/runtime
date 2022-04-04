@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.Hosting.Internal
@@ -27,7 +28,8 @@ namespace Microsoft.Extensions.Hosting.Internal
         {
             if (_serviceProviderFactory == null)
             {
-                _serviceProviderFactory = _factoryResolver!(_contextResolver!());
+                Debug.Assert(_factoryResolver != null && _contextResolver != null);
+                _serviceProviderFactory = _factoryResolver(_contextResolver());
 
                 if (_serviceProviderFactory == null)
                 {
