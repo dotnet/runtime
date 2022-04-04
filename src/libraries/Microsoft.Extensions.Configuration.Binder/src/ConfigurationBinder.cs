@@ -329,9 +329,10 @@ namespace Microsoft.Extensions.Configuration
 
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         private static void BindInstance(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-            Type type,
-            BindingPoint bindingPoint, IConfiguration config, BinderOptions options)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+            BindingPoint bindingPoint,
+            IConfiguration config,
+            BinderOptions options)
         {
             // if binding IConfigurationSection, break early
             if (type == typeof(IConfigurationSection))
@@ -351,7 +352,6 @@ namespace Microsoft.Extensions.Configuration
 
                 // Leaf nodes are always reinitialized
                 bindingPoint.TrySetValue(convertedValue);
-                return;
             }
 
             if (config != null && config.GetChildren().Any())
@@ -408,8 +408,12 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
-        [RequiresUnreferencedCode("In case type is a Nullable<T>, cannot statically analyze what the underlying type is so its members may be trimmed.")]
-        private static object CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type,
+        [RequiresUnreferencedCode(
+            "In case type is a Nullable<T>, cannot statically analyze what the underlying type is so its members may be trimmed.")]
+        private static object CreateInstance(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors |
+                                        DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type type,
             IConfiguration config,
             BinderOptions options)
         {
@@ -420,11 +424,7 @@ namespace Microsoft.Extensions.Configuration
                 throw new InvalidOperationException(SR.Format(SR.Error_CannotActivateAbstractOrInterface, type));
             }
 
-            if (!type.IsValueType)
-            {
-                ConstructorInfo[] constructors = type.GetConstructors(DeclaredOnlyLookup);
-            {
-                ConstructorInfo[] constructors = type.GetConstructors(DeclaredOnlyLookup);
+            ConstructorInfo[] constructors = type.GetConstructors(DeclaredOnlyLookup);
 
             bool hasParameterlessPublicConstructor =
                 constructors.Any(ctor => ctor.IsPublic && ctor.GetParameters().Length == 0);
@@ -728,21 +728,24 @@ namespace Microsoft.Extensions.Configuration
         {
             string parameterName = GetParameterName(property);
 
-            BindingPoint bindingPoint = new BindingPoint();
+            var propertyBindingPoint = new BindingPoint(
+                initialValueProvider: () => config.GetSection(parameterName).Value,
+                isReadOnly: false);
 
             BindInstance(
                 property.ParameterType,
-                bindingPoint,
+                propertyBindingPoint,
                 config.GetSection(parameterName),
                 options);
 
-            return bindingPoint.Value;
+            return propertyBindingPoint.Value;
         }
+
 
         // todo: steve - we might not need this; currently, these attributes are only applicable to properties and
         // not parameters. We might be able to get rid of this method once confirm whether it's needed or not.
 
-        private static string GetParameterName(ParameterInfo parameter!!)
+        private static string GetParameterName(ParameterInfo parameter)
         {
             var customAttributesData = parameter.GetCustomAttributesData();
 
