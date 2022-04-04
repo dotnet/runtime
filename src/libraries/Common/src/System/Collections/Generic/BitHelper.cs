@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
-
 namespace System.Collections.Generic
 {
     internal ref struct BitHelper
@@ -21,22 +19,19 @@ namespace System.Collections.Generic
 
         internal void MarkBit(int bitPosition)
         {
-            (uint bitArrayIndex, uint position) = Math.DivRem((uint)bitPosition, IntSize);
-            Span<int> span = _span;
-            if (bitArrayIndex < (uint)span.Length)
+            uint bitArrayIndex = (uint)bitPosition / IntSize;
+            if (bitArrayIndex < (uint)_span.Length)
             {
-                span[(int)bitArrayIndex] |= 1 << (int)position;
+                _span[(int)bitArrayIndex] |= (1 << (int)((uint)bitPosition % IntSize));
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsMarked(int bitPosition)
         {
-            (uint bitArrayIndex, uint position) = Math.DivRem((uint)bitPosition, IntSize);
-            Span<int> span = _span;
+            uint bitArrayIndex = (uint)bitPosition / IntSize;
             return
-                bitArrayIndex < (uint)span.Length &&
-                (span[(int)bitArrayIndex] & (1 << (int)position)) != 0;
+                bitArrayIndex < (uint)_span.Length &&
+                (_span[(int)bitArrayIndex] & ((int)((uint)bitPosition % IntSize))) != 0;
         }
 
         /// <summary>How many ints must be allocated to represent n bits. Returns (n+31)/32, but avoids overflow.</summary>
