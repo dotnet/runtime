@@ -402,10 +402,9 @@ function(strip_symbols targetName outputFilename)
         OUTPUT_VARIABLE DSYMUTIL_HELP_OUTPUT
       )
 
+      set(DSYMUTIL_OPTS "--flat")
       if ("${DSYMUTIL_HELP_OUTPUT}" MATCHES "--minimize")
-        set(DSYMUTIL_OPTS "--flat --minimize")
-      else ()
-        set(DSYMUTIL_OPTS "--flat")
+        list(APPEND DSYMUTIL_OPTS "--minimize")
       endif ()
 
       add_custom_command(
