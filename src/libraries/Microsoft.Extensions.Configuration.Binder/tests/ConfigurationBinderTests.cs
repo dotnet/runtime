@@ -114,6 +114,20 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
         public record RecordTypeOptions(string Color, int Length);
 
+        public record struct RecordStructTypeOptions(string Color, int Length);
+
+        public struct StructTypeOptions
+        {
+            public StructTypeOptions(string color, int length)
+            {
+                Color = color;
+                Length = length;
+            }
+
+            public string Color { get; }
+            public int Length { get; }
+        }
+
         public class ContainerWithNestedImmutableObject
         {
             public string ContainerName { get; set; }
@@ -1156,6 +1170,40 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var config = configurationBuilder.Build();
 
             var options = config.Get<RecordTypeOptions>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+        }
+
+        [Fact]
+        public void CanBindStructOptions()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<StructTypeOptions>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+        }
+
+        [Fact]
+        public void CanBindRecordStructOptions()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<RecordStructTypeOptions>();
             Assert.Equal(42, options.Length);
             Assert.Equal("Green", options.Color);
         }

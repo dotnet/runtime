@@ -423,41 +423,43 @@ namespace Microsoft.Extensions.Configuration
             if (!type.IsValueType)
             {
                 ConstructorInfo[] constructors = type.GetConstructors(DeclaredOnlyLookup);
+            {
+                ConstructorInfo[] constructors = type.GetConstructors(DeclaredOnlyLookup);
 
-                bool hasParameterlessPublicConstructor = constructors.Any(ctor => ctor.IsPublic && ctor.GetParameters().Length == 0);
+            bool hasParameterlessPublicConstructor =
+                constructors.Any(ctor => ctor.IsPublic && ctor.GetParameters().Length == 0);
 
-                if (!hasParameterlessPublicConstructor)
+            if (constructors.Length > 0 && !hasParameterlessPublicConstructor)
+            {
+                // if the only constructor is private, then throw
+                if (constructors.Length == 1 && !constructors[0].IsPublic)
                 {
-                    // if the only constructor is private, then throw
-                    if (constructors.Length == 1 && !constructors[0].IsPublic)
-                    {
-                        throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
-                    }
-
-                    // find the biggest constructor so that we can bind to the most parameters
-                    ParameterInfo[] parameters = constructors[0].GetParameters();
-
-                    int indexOfChosenConstructor = 0;
-
-                    for (int index = 1; index < constructors.Length; index++)
-                    {
-                        ParameterInfo[] constructorParameters = constructors[index].GetParameters();
-                        if (constructorParameters.Length > parameters.Length)
-                        {
-                            parameters = constructorParameters;
-                            indexOfChosenConstructor = index;
-                        }
-                    }
-
-                    object?[] parameterValues = new object?[parameters.Length];
-
-                    for (int index = 0; index < parameters.Length; index++)
-                    {
-                        parameterValues[index] = GetParameterValue(parameters[index], config, options);
-                    }
-
-                    return constructors[indexOfChosenConstructor].Invoke(parameterValues);
+                    throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
                 }
+
+                // find the biggest constructor so that we can bind to the most parameters
+                ParameterInfo[] parameters = constructors[0].GetParameters();
+
+                int indexOfChosenConstructor = 0;
+
+                for (int index = 1; index < constructors.Length; index++)
+                {
+                    ParameterInfo[] constructorParameters = constructors[index].GetParameters();
+                    if (constructorParameters.Length > parameters.Length)
+                    {
+                        parameters = constructorParameters;
+                        indexOfChosenConstructor = index;
+                    }
+                }
+
+                object?[] parameterValues = new object?[parameters.Length];
+
+                for (int index = 0; index < parameters.Length; index++)
+                {
+                    parameterValues[index] = GetParameterValue(parameters[index], config, options);
+                }
+
+                return constructors[indexOfChosenConstructor].Invoke(parameterValues);
             }
 
             object? instance;
