@@ -315,11 +315,22 @@ function(strip_symbols targetName outputFilename)
         set(strip_command)
       endif ()
 
+      execute_process(
+        COMMAND ${DSYMUTIL} --help
+        OUTPUT_VARIABLE DSYMUTIL_HELP_OUTPUT
+      )
+
+      if ("${DSYMUTIL_HELP_OUTPUT}" MATCHES "--minimize")
+        set(DSYMUTIL_OPTS "--flat --minimize")
+      else ()
+        set(DSYMUTIL_OPTS "--flat")
+      endif ()
+
       add_custom_command(
         TARGET ${targetName}
         POST_BUILD
         VERBATIM
-        COMMAND ${DSYMUTIL} --flat --minimize ${strip_source_file}
+        COMMAND ${DSYMUTIL} ${DSYMUTIL_OPTS} ${strip_source_file}
         COMMAND ${strip_command}
         COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )
