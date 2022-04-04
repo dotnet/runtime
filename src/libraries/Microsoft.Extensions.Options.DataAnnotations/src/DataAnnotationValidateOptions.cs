@@ -77,9 +77,29 @@ namespace Microsoft.Extensions.Options
 
             foreach (PropertyDescriptor eachProperty in properties)
             {
-                var childProperties = eachProperty.GetChildProperties();
+                if (AnyChildPropertyHasValidationAttributes(eachProperty))
+                {
+                    object? value = eachProperty.GetValue(options);
 
-                bool shouldInclude = false;
+                    // if the user wanted this particular property to be null, then
+                    // they would annotate it with `Required`.
+                    if (value == null) continue;
+
+                    var result = CreateAndRunValidator(value);
+
+                    if (result.Failed)
+                    {
+                        success = false;
+                        errors.AddRange(result.Failures.ToList());
+                    }
+                }
+            }
+
+            return success ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(errors);
+
+            static bool AnyChildPropertyHasValidationAttributes(PropertyDescriptor eachProperty)
+            {
+                var childProperties = eachProperty.GetChildProperties();
 
                 foreach (PropertyDescriptor childProperty in childProperties)
                 {
@@ -89,40 +109,25 @@ namespace Microsoft.Extensions.Options
                     {
                         if (attribute is ValidationAttribute)
                         {
-                            shouldInclude = true;
-                            break;
+                            return true;
                         }
                     }
                 }
 
-                //if (eachProperty.Attributes.Count == 0)
-                if (shouldInclude)
-                {
-                    var value = eachProperty.GetValue(options);
-
-                    if (value == null) continue;
-
-                    Type validatorType = typeof(DataAnnotationValidateOptions<>).MakeGenericType(value.GetType());
-                    var validator = Activator.CreateInstance(validatorType, args: new[] { Options.DefaultName });
-
-                    ValidateOptionsResult result =
-                        (ValidateOptionsResult)validator!.GetType().GetMethod("Validate")!.Invoke(validator,
-                            new[] { Options.DefaultName, value })!;
-
-                    if (result.Failed)
-                    {
-                        success = false;
-                        errors.AddRange(result.Failures!.ToList());
-                    }
-                }
+                return false;
             }
 
-            if (success)
+            static ValidateOptionsResult CreateAndRunValidator(object value)
             {
-                return ValidateOptionsResult.Success;
-            }
+                Type validatorType = typeof(DataAnnotationValidateOptions<>).MakeGenericType(value.GetType());
+                object validator = Activator.CreateInstance(validatorType, args: Options.DefaultName)!;
 
-            return ValidateOptionsResult.Fail(errors);
+                MethodInfo validateMethod = validator.GetType().GetMethod("Validate")!;
+
+                ValidateOptionsResult result = (ValidateOptionsResult)validateMethod.Invoke(validator, new[] { Options.DefaultName, value })!;
+
+                return result;
+            }
         }
     }
 }
