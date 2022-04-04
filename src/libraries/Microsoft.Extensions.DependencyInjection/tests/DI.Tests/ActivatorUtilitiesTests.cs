@@ -19,9 +19,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var c = new C();
 
             var instance = ActivatorUtilities.CreateInstance<Creatable>(
-                provider, new C(), new A());;
+                provider, c, a);
 
             Assert.NotNull(instance);
+            Assert.Same(a, instance.A);
+            Assert.Same(c, instance.C);
+            Assert.NotNull(instance.S);
+            Assert.Null(instance.B);
         }
 
         [Theory]
@@ -58,9 +62,19 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
     internal class Creatable
     {
-        public Creatable(A a, B b, C c, S s) { }
+        public A A { get; }
+        public B? B { get; }
+        public C C { get; }
+        public S S { get; }
+        public Creatable(A a, B b, C c, S s)
+        {
+            A = a;
+            B = b;
+            C = c;
+            S = s;
+        }
 
-        public Creatable(A a, C c, S s) {  }
+        public Creatable(A a, C c, S s) : this (a, null, c, s) { }
     }
 
     internal class FakeServiceProvider : IServiceProvider
