@@ -686,7 +686,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetByteCore(out byte value, ReadOnlySpan<byte> span)
+        internal static bool TryGetByteCore(out byte value, ReadOnlySpan<byte> span)
         {
             if (Utf8Parser.TryParse(span, out byte tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -722,7 +722,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetSByteCore(out sbyte value, ReadOnlySpan<byte> span)
+        internal static bool TryGetSByteCore(out sbyte value, ReadOnlySpan<byte> span)
         {
             if (Utf8Parser.TryParse(span, out sbyte tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -757,7 +757,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetInt16Core(out short value, ReadOnlySpan<byte> span)
+        internal static bool TryGetInt16Core(out short value, ReadOnlySpan<byte> span)
         {
             if (Utf8Parser.TryParse(span, out short tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -792,7 +792,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetInt32Core(out int value, ReadOnlySpan<byte> span)
+        internal static bool TryGetInt32Core(out int value, ReadOnlySpan<byte> span)
         {
             if (Utf8Parser.TryParse(span, out int tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -827,7 +827,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetInt64Core(out long value, ReadOnlySpan<byte> span)
+        internal static bool TryGetInt64Core(out long value, ReadOnlySpan<byte> span)
         {
             if (Utf8Parser.TryParse(span, out long tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -863,7 +863,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetUInt16Core(out ushort value, ReadOnlySpan<byte> span)
+        internal static bool TryGetUInt16Core(out ushort value, ReadOnlySpan<byte> span)
         {
             if (Utf8Parser.TryParse(span, out ushort tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -899,7 +899,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetUInt32Core(out uint value, ReadOnlySpan<byte> span)
+        internal static bool TryGetUInt32Core(out uint value, ReadOnlySpan<byte> span)
         {
             if (Utf8Parser.TryParse(span, out uint tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -935,7 +935,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetUInt64Core(out ulong value, ReadOnlySpan<byte> span)
+        internal static bool TryGetUInt64Core(out ulong value, ReadOnlySpan<byte> span)
         {
             if (Utf8Parser.TryParse(span, out ulong tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -1030,7 +1030,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetDecimalCore(out decimal value, ReadOnlySpan<byte> span)
+        internal static bool TryGetDecimalCore(out decimal value, ReadOnlySpan<byte> span)
         {
             if (Utf8Parser.TryParse(span, out decimal tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)

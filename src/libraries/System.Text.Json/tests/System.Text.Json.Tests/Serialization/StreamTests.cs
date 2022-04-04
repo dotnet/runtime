@@ -5,22 +5,27 @@ namespace System.Text.Json.Serialization.Tests
 {
     public sealed class StreamTests_Async : StreamTests
     {
-        public StreamTests_Async() : base(JsonSerializerWrapperForStream.AsyncStreamSerializer) { }
+        public StreamTests_Async() : base(JsonSerializerWrapper.AsyncStreamSerializer) { }
+    }
+
+    public sealed class StreamTests_AsyncWithSmallBuffer : StreamTests
+    {
+        public StreamTests_AsyncWithSmallBuffer() : base(JsonSerializerWrapper.AsyncStreamSerializerWithSmallBuffer) { }
     }
 
     public sealed class StreamTests_Sync : StreamTests
     {
-        public StreamTests_Sync() : base(JsonSerializerWrapperForStream.SyncStreamSerializer) { }
+        public StreamTests_Sync() : base(JsonSerializerWrapper.SyncStreamSerializer) { }
     }
 
     public abstract partial class StreamTests
     {
         /// <summary>
-        /// Wrapper for JsonSerializer's Serialize() and Deserialize() methods.
+        /// The System Under Test for the test suite.
         /// </summary>
-        private JsonSerializerWrapperForStream Serializer { get; }
+        private StreamingJsonSerializerWrapper Serializer { get; }
 
-        public StreamTests(JsonSerializerWrapperForStream serializer)
+        public StreamTests(StreamingJsonSerializerWrapper serializer)
         {
             Serializer = serializer;
         }

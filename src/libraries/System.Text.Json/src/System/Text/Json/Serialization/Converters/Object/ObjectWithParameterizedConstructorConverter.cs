@@ -30,6 +30,11 @@ namespace System.Text.Json.Serialization.Converters
             {
                 // Fast path that avoids maintaining state variables.
 
+                if (reader.TokenType != JsonTokenType.StartObject)
+                {
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                }
+
                 ReadOnlySpan<byte> originalSpan = reader.OriginalSpan;
 
                 ReadConstructorArguments(ref state, ref reader, options);
@@ -85,12 +90,46 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                // Slower path that supports continuation.
+                // Slower path that supports continuation and metadata reads.
 
                 if (state.Current.ObjectState == StackFrameObjectState.None)
                 {
+                    if (reader.TokenType != JsonTokenType.StartObject)
+                    {
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                    }
+
                     state.Current.ObjectState = StackFrameObjectState.StartToken;
-                    BeginRead(ref state, ref reader,  options);
+                }
+
+                // Read any metadata properties.
+                if (state.CanContainMetadata && state.Current.ObjectState < StackFrameObjectState.ReadMetadata)
+                {
+                    if (!JsonSerializer.TryReadMetadata(this, ref reader, ref state))
+                    {
+                        value = default;
+                        return false;
+                    }
+
+                    state.Current.ObjectState = StackFrameObjectState.ReadMetadata;
+                }
+
+                if (state.Current.ObjectState < StackFrameObjectState.ConstructorArguments)
+                {
+                    if (state.CanContainMetadata)
+                    {
+                        JsonSerializer.ValidateMetadataForObjectConverter(this, ref reader, ref state);
+                    }
+
+                    if (state.Current.MetadataPropertyNames == MetadataPropertyName.Ref)
+                    {
+                        value = JsonSerializer.ResolveReferenceId<T>(ref state);
+                        return true;
+                    }
+
+                    BeginRead(ref state, ref reader, options);
+
+                    state.Current.ObjectState = StackFrameObjectState.ConstructorArguments;
                 }
 
                 if (!ReadConstructorArgumentsWithContinuation(ref state, ref reader, options))
@@ -100,6 +139,14 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 obj = (T)CreateObject(ref state.Current);
+
+                if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Id))
+                {
+                    Debug.Assert(state.ReferenceId != null);
+                    Debug.Assert(options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve);
+                    state.ReferenceResolver.AddReference(state.ReferenceId, obj);
+                    state.ReferenceId = null;
+                }
 
                 if (obj is IJsonOnDeserializing onDeserializing)
                 {
@@ -380,7 +427,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool HandlePropertyWithContinuation(
+        private static bool HandlePropertyWithContinuation(
             ref ReadStack state,
             ref Utf8JsonReader reader,
             JsonPropertyInfo jsonPropertyInfo)
@@ -458,11 +505,6 @@ namespace System.Text.Json.Serialization.Converters
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void BeginRead(ref ReadStack state, ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
-            if (reader.TokenType != JsonTokenType.StartObject)
-            {
-                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
-            }
-
             if (state.Current.JsonTypeInfo.ParameterCount != state.Current.JsonTypeInfo.ParameterCache!.Count)
             {
                 ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(TypeToConvert);

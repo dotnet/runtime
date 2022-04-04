@@ -32,12 +32,10 @@ else()
 endif()
 
 set(metadata_win32_sources
-    w32event-win32.c
-    w32error-win32.c)
+    w32event-win32.c)
 
 set(metadata_unix_sources
-    w32event-unix.c
-    w32error-unix.c)
+    w32event-unix.c)
 
 if(HOST_WIN32)
 set(metadata_platform_sources ${metadata_win32_sources})
@@ -116,9 +114,6 @@ set(metadata_common_sources
     mono-hash.h
     mono-conc-hash.c
     mono-conc-hash.h
-    mono-perfcounters.c
-    mono-perfcounters.h
-    mono-perfcounters-def.h
     mono-ptr-array.h
     monitor.h
     object.c
@@ -155,7 +150,6 @@ set(metadata_common_sources
     w32event.h
     w32handle.h
     w32handle.c
-    w32error.h
     reflection.c
     dynamic-image.c
     sre.c

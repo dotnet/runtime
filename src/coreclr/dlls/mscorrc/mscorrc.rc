@@ -187,7 +187,7 @@ BEGIN
     IDS_EE_NDIRECT_BADNATL_VARARGS_CALLCONV "Invalid PInvoke calling convention. Vararg functions must use the cdecl calling convention."
     IDS_EE_NDIRECT_BADNATL_THISCALL         "Invalid PInvoke calling convention. Thiscall requires that the first parameter is present and can be enregistered."
     IDS_EE_NDIRECT_LOADLIB_WIN              "Unable to load DLL '%1' or one of its dependencies: %2"
-    IDS_EE_NDIRECT_LOADLIB_LINUX            "Unable to load shared library '%1' or one of its dependencies. In order to help diagnose loading problems, consider setting the LD_DEBUG environment variable: %2"
+    IDS_EE_NDIRECT_LOADLIB_LINUX            "Unable to load shared library '%1' or one of its dependencies. In order to help diagnose loading problems, consider using a tool like strace. If you're using glibc, consider setting the LD_DEBUG environment variable: %2"
     IDS_EE_NDIRECT_LOADLIB_MAC              "Unable to load shared library '%1' or one of its dependencies. In order to help diagnose loading problems, consider setting the DYLD_PRINT_LIBRARIES environment variable: %2"
     IDS_EE_NDIRECT_GETPROCADDRESS_WIN       "Unable to find an entry point named '%2' in DLL '%1'."
     IDS_EE_NDIRECT_GETPROCADDRESS_UNIX      "Unable to find an entry point named '%2' in shared library '%1'."

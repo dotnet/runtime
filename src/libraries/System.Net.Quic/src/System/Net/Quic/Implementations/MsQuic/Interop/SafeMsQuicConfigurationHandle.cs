@@ -8,7 +8,6 @@ using System.Net.Security;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Threading;
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
 
@@ -248,6 +247,13 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     config.Type = QUIC_CREDENTIAL_TYPE.NONE;
                     status = MsQuicApi.Api.ConfigurationLoadCredentialDelegate(configurationHandle, ref config);
                 }
+
+#if TARGET_WINDOWS
+                if ((Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.AlgorithmMismatch && MsQuicApi.Tls13MayBeDisabled)
+                {
+                    throw new QuicException(SR.net_ssl_app_protocols_invalid, null, (int)status);
+                }
+#endif
 
                 QuicExceptionHelpers.ThrowIfFailed(status, "ConfigurationLoadCredential failed.");
             }

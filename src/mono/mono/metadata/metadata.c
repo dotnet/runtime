@@ -38,7 +38,6 @@
 #include <mono/utils/bsearch.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/unlocked.h>
-#include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-logger-internals.h>
 
 /* Auxiliary structure used for caching inflated signatures */
@@ -6805,6 +6804,8 @@ handle_enum:
 				else
 					*conv = MONO_MARSHAL_CONV_STR_BYVALSTR;
 				return MONO_NATIVE_BYVALTSTR;
+			case MONO_NATIVE_CUSTOM:
+				return MONO_NATIVE_CUSTOM;
 			default:
 				g_error ("Can not marshal string to native type '%02x': Invalid managed/unmanaged type combination (String fields must be paired with LPStr, LPWStr, BStr or ByValTStr).", mspec->native);
 			}
@@ -6819,6 +6820,9 @@ handle_enum:
 		}
 	case MONO_TYPE_PTR: return MONO_NATIVE_UINT;
 	case MONO_TYPE_VALUETYPE: /*FIXME*/
+		if (mspec && mspec->native == MONO_NATIVE_CUSTOM)
+			return MONO_NATIVE_CUSTOM;
+
 		if (m_class_is_enumtype (type->data.klass)) {
 			t = mono_class_enum_basetype_internal (type->data.klass)->type;
 			goto handle_enum;
@@ -6844,6 +6848,8 @@ handle_enum:
 			case MONO_NATIVE_LPARRAY:
 				*conv = MONO_MARSHAL_CONV_ARRAY_LPARRAY;
 				return MONO_NATIVE_LPARRAY;
+			case MONO_NATIVE_CUSTOM:
+				return MONO_NATIVE_CUSTOM;
 			default:
 				g_error ("cant marshal array as native type %02x", mspec->native);
 			}

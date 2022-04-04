@@ -131,6 +131,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             if (!regexMethodSymbol.IsPartialDefinition ||
+                regexMethodSymbol.IsAbstract ||
                 regexMethodSymbol.Parameters.Length != 0 ||
                 regexMethodSymbol.Arity != 0 ||
                 !regexMethodSymbol.ReturnType.Equals(regexSymbol))

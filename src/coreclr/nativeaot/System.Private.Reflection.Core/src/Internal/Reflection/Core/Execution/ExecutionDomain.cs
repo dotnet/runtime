@@ -357,7 +357,7 @@ namespace Internal.Reflection.Core.Execution
 
         internal ReflectionDomainSetup ReflectionDomainSetup { get; }
 
-        internal IEnumerable<Type> PrimitiveTypes => s_primitiveTypes;
+        internal static IEnumerable<Type> PrimitiveTypes => s_primitiveTypes;
 
         private static readonly Type[] s_primitiveTypes =
         {

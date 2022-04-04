@@ -205,6 +205,12 @@ dotnet_diagnostic.CA1418.severity = warning
 # CA1419: Provide a parameterless constructor that is as visible as the containing type for concrete types derived from 'System.Runtime.InteropServices.SafeHandle'
 dotnet_diagnostic.CA1419.severity = warning
 
+# CA1420: Property, type, or attribute requires runtime marshalling
+dotnet_diagnostic.CA1420.severity = warning
+
+# CA1421: This method uses runtime marshalling even when the 'DisableRuntimeMarshallingAttribute' is applied
+dotnet_diagnostic.CA1421.severity = suggestion
+
 # CA1501: Avoid excessive inheritance
 dotnet_diagnostic.CA1501.severity = none
 
@@ -306,7 +312,8 @@ dotnet_diagnostic.CA1820.severity = none
 dotnet_diagnostic.CA1821.severity = warning
 
 # CA1822: Mark members as static
-dotnet_diagnostic.CA1822.severity = none
+dotnet_diagnostic.CA1822.severity = warning
+dotnet_code_quality.CA1822.api_surface = private, internal
 
 # CA1823: Avoid unused private fields
 dotnet_diagnostic.CA1823.severity = warning
@@ -392,6 +399,9 @@ dotnet_diagnostic.CA1849.severity = suggestion
 # CA1850: Prefer static 'HashData' method over 'ComputeHash'
 dotnet_diagnostic.CA1850.severity = warning
 
+# CA1851: Possible multiple enumerations of 'IEnumerable' collection
+dotnet_diagnostic.CA1851.severity = suggestion
+
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
 
@@ -430,6 +440,9 @@ dotnet_diagnostic.CA2017.severity = warning
 
 # CA2018: 'Buffer.BlockCopy' expects the number of bytes to be copied for the 'count' argument
 dotnet_diagnostic.CA2018.severity = warning
+
+# CA2019: Improper 'ThreadStatic' field initialization
+dotnet_diagnostic.CA2019.severity = warning
 
 # CA2100: Review SQL queries for security vulnerabilities
 dotnet_diagnostic.CA2100.severity = none
@@ -563,6 +576,9 @@ dotnet_diagnostic.CA2257.severity = warning
 
 # CA2258: Providing a 'DynamicInterfaceCastableImplementation' interface in Visual Basic is unsupported
 dotnet_diagnostic.CA2258.severity = warning
+
+# CA2259: 'ThreadStatic' only affects static fields
+dotnet_diagnostic.CA2259.severity = warning
 
 # CA2300: Do not use insecure deserializer BinaryFormatter
 dotnet_diagnostic.CA2300.severity = none
@@ -825,7 +841,7 @@ dotnet_diagnostic.CA5400.severity = none
 # CA5401: Do not use CreateEncryptor with non-default IV
 dotnet_diagnostic.CA5401.severity = none
 
-# CA5402: Use CreateEncryptor with the default IV 
+# CA5402: Use CreateEncryptor with the default IV
 dotnet_diagnostic.CA5402.severity = none
 
 # CA5403: Do not hard-code certificate

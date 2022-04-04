@@ -462,7 +462,7 @@ method_should_be_regression_tested (MonoMethod *method, gboolean interp)
 			return FALSE;
 		}
 
-		if ((mono_aot_mode == MONO_AOT_MODE_INTERP_LLVMONLY || mono_aot_mode == MONO_AOT_MODE_LLVMONLY) && !strcmp (utf8_str, "!BITCODE")) {
+		if ((mono_aot_mode == MONO_AOT_MODE_INTERP_LLVMONLY || mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP) && !strcmp (utf8_str, "!BITCODE")) {
 			g_print ("skip %s...\n", method->name);
 			return FALSE;
 		}
@@ -679,7 +679,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 					continue;
 
 			//we running in AOT only, it makes no sense to try multiple flags
-			if ((mono_aot_mode == MONO_AOT_MODE_FULL || mono_aot_mode == MONO_AOT_MODE_LLVMONLY) && opt_sets [opt] != DEFAULT_OPTIMIZATIONS) {
+			if ((mono_aot_mode == MONO_AOT_MODE_FULL || mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP) && opt_sets [opt] != DEFAULT_OPTIMIZATIONS) {
 				continue;
 			}
 
@@ -1771,10 +1771,22 @@ parse_qualified_method_name (char *method_name)
 void
 mono_jit_parse_options (int argc, char * argv[])
 {
+	ERROR_DECL (error);
 	int i;
 	char *trace_options = NULL;
 	int mini_verbose_level = 0;
 	guint32 opt;
+
+	/* Make a copy since mono_options_parse_options () modifies argv */
+	char **copy_argv = g_new0 (char*, argc);
+	memcpy (copy_argv, argv, sizeof (char*) * argc);
+	argv = copy_argv;
+
+	mono_options_parse_options ((const char**)argv, argc, &argc, error);
+	if (!is_ok (error)) {
+		g_printerr ("%s", mono_error_get_message (error));
+		mono_error_cleanup (error);
+	}
 
 	/*
 	 * Some options have no effect here, since they influence the behavior of
@@ -1864,6 +1876,9 @@ mono_jit_parse_options (int argc, char * argv[])
 
 	if (mini_verbose_level)
 		mono_set_verbose_level (mini_verbose_level);
+
+	/* Free the copy */
+	g_free (argv);
 }
 
 static void
@@ -2244,12 +2259,13 @@ mono_main (int argc, char* argv[])
 			g_warning ("--verify-all is obsolete, ignoring");
 		} else if (strcmp (argv [i], "--full-aot") == 0) {
 			mono_jit_set_aot_mode (MONO_AOT_MODE_FULL);
-		} else if (strcmp (argv [i], "--llvmonly") == 0) {
-			mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY);
 		} else if (strcmp (argv [i], "--hybrid-aot") == 0) {
 			mono_jit_set_aot_mode (MONO_AOT_MODE_HYBRID);
 		} else if (strcmp (argv [i], "--full-aot-interp") == 0) {
 			mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP);
+		} else if (strcmp (argv [i], "--llvmonly") == 0) {
+			/* Same as llvmonly-interp */
+			mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY_INTERP);
 		} else if (strcmp (argv [i], "--llvmonly-interp") == 0) {
 			mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY_INTERP);
 		} else if (strcmp (argv [i], "--print-vtable") == 0) {
@@ -2868,13 +2884,6 @@ mono_runtime_set_execution_mode_full (int mode, gboolean override)
 	memset (&mono_ee_features, 0, sizeof (mono_ee_features));
 
 	switch (mode) {
-	case MONO_AOT_MODE_LLVMONLY:
-		mono_aot_only = TRUE;
-		mono_llvm_only = TRUE;
-
-		mono_ee_features.use_aot_trampolines = TRUE;
-		break;
-
 	case MONO_AOT_MODE_FULL:
 		mono_aot_only = TRUE;
 
@@ -2901,6 +2910,7 @@ mono_runtime_set_execution_mode_full (int mode, gboolean override)
 		mono_ee_features.force_use_interpreter = TRUE;
 		break;
 
+	case MONO_AOT_MODE_LLVMONLY:
 	case MONO_AOT_MODE_LLVMONLY_INTERP:
 		mono_aot_only = TRUE;
 		mono_use_interpreter = TRUE;

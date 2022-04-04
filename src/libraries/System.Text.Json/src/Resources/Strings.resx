@@ -476,8 +476,8 @@
   <data name="ConstructorMaxOf64Parameters" xml:space="preserve">
     <value>The deserialization constructor on type '{0}' may not have more than 64 parameters for deserialization.</value>
   </data>
-  <data name="ObjectWithParameterizedCtorRefMetadataNotHonored" xml:space="preserve">
-    <value>Reference metadata is not honored when deserializing types using parameterized constructors. See type '{0}'.</value>
+  <data name="ObjectWithParameterizedCtorRefMetadataNotSupported" xml:space="preserve">
+    <value>Reference metadata is not supported when deserializing constructor parameters. See type '{0}'.</value>
   </data>
   <data name="SerializerConverterFactoryReturnsNull" xml:space="preserve">
     <value>The converter '{0}' cannot return a null value.</value>

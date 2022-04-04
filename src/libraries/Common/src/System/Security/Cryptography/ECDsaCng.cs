@@ -5,7 +5,7 @@ using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
-    public sealed partial class ECDsaCng : ECDsa
+    public sealed partial class ECDsaCng : ECDsa, IRuntimeAlgorithm
     {
         /// <summary>
         /// Create an ECDsaCng algorithm with a named curve.
