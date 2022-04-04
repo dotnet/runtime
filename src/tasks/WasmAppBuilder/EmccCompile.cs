@@ -35,7 +35,6 @@ namespace Microsoft.WebAssembly.Build.Tasks
         public string       Arguments              { get; set; } = string.Empty;
         public string?      WorkingDirectory       { get; set; }
         public string       OutputMessageImportance{ get; set; } = "Low";
-        public bool         RetrySequentiallyIfNeeded { get; set; } = true;
         public string[]     SourceFileNamesToCompileSequentially { get; set; } = Array.Empty<string>();
 
         [Output]
@@ -82,7 +81,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             _totalFiles = SourceFiles.Length;
             IDictionary<string, string> envVarsDict = GetEnvironmentVariablesDict();
             ConcurrentBag<ITaskItem> outputItems = new();
-            ConcurrentBag<(string srcFile, string objFile, bool retryAllowed, string? firstOutput)> filesToCompileSequentially = new();
+            ConcurrentBag<(string srcFile, string objFile)> filesToCompileSequentially = new();
             try
             {
                 List<(string, string)> filesToCompile = new();
@@ -105,7 +104,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     if (SourceFileNamesToCompileSequentially.Contains(Path.GetFileName(srcFile)))
                     {
                         Log.LogMessage(MessageImportance.Low, $"Compiling {srcFile} because {reason}. It will be compiled at the end, sequentially.");
-                        filesToCompileSequentially.Add((srcFile, objFile, retryAllowed: false, null));
+                        filesToCompileSequentially.Add((srcFile, objFile));
                         continue;
                     }
 
@@ -169,7 +168,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                                                 new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
                                                 (toCompile, state) =>
                 {
-                    if (!ProcessSourceFile(toCompile.Item1, toCompile.Item2, retryAllowed: allowedParallelism > 1))
+                    if (!ProcessSourceFile(toCompile.Item1, toCompile.Item2))
                         state.Stop();
                 });
 
@@ -180,9 +179,9 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 else if (!Log.HasLoggedErrors && !filesToCompileSequentially.IsEmpty)
                 {
                     Log.LogMessage(MessageImportance.High, "Compiling sequentially ...");
-                    foreach ((string srcFile, string objFile, bool retryAllowed, string? firstOutput) in filesToCompileSequentially)
+                    foreach ((string srcFile, string objFile) in filesToCompileSequentially)
                     {
-                        if (!ProcessSourceFile(srcFile, objFile, retryAllowed, firstOutput))
+                        if (!ProcessSourceFile(srcFile, objFile))
                             break;
                     }
                 }
@@ -203,7 +202,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             OutputFiles = outputItems.ToArray();
             return !Log.HasLoggedErrors;
 
-            bool ProcessSourceFile(string srcFile, string objFile, bool retryAllowed, string? firstAttemptOutput = null)
+            bool ProcessSourceFile(string srcFile, string objFile)
             {
                 string tmpObjFile = Path.GetTempFileName();
                 try
@@ -229,21 +228,6 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     var elapsedSecs = (endTime - startTime).TotalSeconds;
                     if (exitCode != 0)
                     {
-                        if (firstAttemptOutput is not null)
-                        {
-                            Log.LogError($"Failed to compile {srcFile} -> {objFile} again. [took {elapsedSecs:F}s]");
-                            Log.LogError($"Output from the first attempt: {Environment.NewLine}{firstAttemptOutput}");
-                            Log.LogError($"Output from second first attempt: {Environment.NewLine}{output}");
-
-                            return false;
-                        }
-                        else if (retryAllowed && ShouldRetrySequentially(output, out string? reason))
-                        {
-                            Log.LogMessage(MessageImportance.High, $"Failed to compile {srcFile} due {reason}. It will be retried sequentially, at the end. ouptut: {output}");
-                            filesToCompileSequentially.Add((srcFile, objFile, retryAllowed: false, output ?? string.Empty));
-                            return true;
-                        }
-
                         Log.LogError($"Failed to compile {srcFile} -> {objFile}{Environment.NewLine}{output} [took {elapsedSecs:F}s]");
                         return false;
                     }
@@ -325,18 +309,6 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     return false;
                 }
             }
-        }
-
-        private static bool ShouldRetrySequentially(string output, [NotNullWhen(true)] out string? reason)
-        {
-            reason = null;
-            if (output.Contains("(received SIGKILL (-9))"))
-            {
-                reason = "to possibly running out of memory";
-                return true;
-            }
-
-            return false;
         }
 
         private IDictionary<string, string> GetEnvironmentVariablesDict()
