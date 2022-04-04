@@ -185,7 +185,7 @@ steps:
       cp MauiTesting.csproj MauiTesting.csproj.bak
       echo sed -i'' -e 's/\([>;]\)net[0-9]\+\.[0-9]-maccatalyst\([;<]\)/\1\2/g' MauiTesting.csproj
       sed -i'' -e 's/\([>;]\)net[0-9]\+\.[0-9]-maccatalyst\([;<]\)/\1\2/g' MauiTesting.csproj
-      cat -vA MauiTesting.csproj
+      cat -vET MauiTesting.csproj
 
       echo sed -i'' -e 's/\\([>;]\\)net[0-9]\\+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g' MauiTesting.csproj
       sed -i'' -e 's/\\([>;]\\)net[0-9]\\+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g' MauiTesting.csproj
