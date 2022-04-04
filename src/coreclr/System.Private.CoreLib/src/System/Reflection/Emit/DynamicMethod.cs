@@ -480,6 +480,7 @@ namespace System.Reflection.Emit
                 }
                 else if (argCount > MaxStackAllocArgCount)
                 {
+                    Debug.Assert(parameters != null);
                     retValue = InvokeWithManyArguments(this, argCount, obj, invokeAttr, binder, parameters, culture);
                 }
                 else
@@ -527,11 +528,9 @@ namespace System.Reflection.Emit
             object? obj,
             BindingFlags invokeAttr,
             Binder? binder,
-            object?[]? parameters,
+            object?[] parameters,
             CultureInfo? culture)
         {
-            Debug.Assert(parameters != null);
-
             object[] objHolder = new object[argCount];
             Span<object?> copyOfParameters = new Span<object?>(objHolder, 0, argCount);
 

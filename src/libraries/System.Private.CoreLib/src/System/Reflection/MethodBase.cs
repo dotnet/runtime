@@ -209,7 +209,8 @@ namespace System.Reflection
                 // as we validate them. n.b. This disallows use of ArrayPool, as ArrayPool-rented arrays are
                 // considered user-visible to threads which may still be holding on to returned instances.
                 // This separate array is also used to hold default values when 'null' is specified for value
-                // types which should not be applied to the incoming array.
+                // types, and also used to hold the results from conversions such as from Int16 to Int32; these
+                // default values and conversions should not be applied to the incoming arguments.
                 shouldCopyBack[i] = copyBackArg;
                 copyOfParameters[i] = arg;
 
@@ -219,7 +220,6 @@ namespace System.Reflection
                     // Once Mono has managed conversion logic, VerifyValueType() can be lifted here as Asserts.
                     sigType.VerifyValueType(arg);
 #endif
-
                     ByReference<byte> valueTypeRef = new(ref copyOfParameters[i]!.GetRawData());
                     *(ByReference<byte>*)(byrefParameters + i) = valueTypeRef;
                 }
