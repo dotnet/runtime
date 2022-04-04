@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.Hosting
 {
     public class UseWindowsServiceTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public void DefaultsToOffOutsideOfService()
         {
             var host = new HostBuilder()
