@@ -170,10 +170,9 @@ namespace System.Text
         public void Append(char c)
         {
             int pos = _pos;
-            Span<char> chars = _chars;
-            if ((uint)pos < (uint)chars.Length)
+            if ((uint)pos < (uint)_chars.Length)
             {
-                chars[pos] = c;
+                _chars[pos] = c;
                 _pos = pos + 1;
             }
             else
@@ -191,10 +190,9 @@ namespace System.Text
             }
 
             int pos = _pos;
-            Span<char> chars = _chars;
-            if (s.Length == 1 && (uint)pos < (uint)chars.Length) // very common case, e.g. appending strings from NumberFormatInfo like separators, percent symbols, etc.
+            if (s.Length == 1 && (uint)pos < (uint)_chars.Length) // very common case, e.g. appending strings from NumberFormatInfo like separators, percent symbols, etc.
             {
-                chars[pos] = s[0];
+                _chars[pos] = s[0];
                 _pos = pos + 1;
             }
             else
