@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
 
@@ -15,7 +16,8 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 foreach (Exception? ex in reflectionTypeLoadException.LoaderExceptions)
                 {
-                    message = message + Environment.NewLine + ex!.Message;
+                    Debug.Assert(ex != null);
+                    message = message + Environment.NewLine + ex.Message;
                 }
             }
 
