@@ -1,4 +1,6 @@
 <Project Sdk="Microsoft.Build.Traversal">
+  <Import Project="$(MonoProjectRoot)emscripten.targets" Condition="'$(TargetsBrowser)' == 'true'" />
+
   <PropertyGroup>
     <!-- Hardcode version paths in a global location. -->
     <NativeVersionFile Condition="'$(TargetOS)' == 'windows'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
@@ -6,6 +8,8 @@
     <AssemblyName>.NET Runtime</AssemblyName>
     <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) -os $(TargetOS)</_BuildNativeArgs>
     <_BuildNativeArgs Condition="'$(OfficialBuildId)' != ''">$(_BuildNativeArgs) /p:OfficialBuildId="$(OfficialBuildId)"</_BuildNativeArgs>
+    <_BuildNativeDependsOn Condition="'$(TargetsBrowser)' == 'true'">SetupEmscripten</_BuildNativeDependsOn>
+    <_BuildNativeDependsOn>$(_BuildNativeDependsOn);GenerateNativeVersionFile</_BuildNativeDependsOn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,7 +17,7 @@
   </ItemGroup>
 
   <Target Name="BuildNativeUnix"
-          DependsOnTargets="GenerateNativeVersionFile"
+          DependsOnTargets="$(_BuildNativeDependsOn)"
           BeforeTargets="Build"
           Condition="!$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
@@ -41,7 +45,7 @@
   </Target>
 
   <Target Name="BuildNativeWindows"
-          DependsOnTargets="GenerateNativeVersionFile"
+          DependsOnTargets="$(_BuildNativeDependsOn)"
           BeforeTargets="Build"
           Condition="$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
@@ -49,6 +53,6 @@
     </PropertyGroup>
     <!-- Run script that uses CMake to generate and build the native files. -->
     <Message Text="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>
-    <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" />
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" EnvironmentVariables="EMSDK_UPSTREAM_PATH=$(EmscriptenUpstreamEmscriptenPath);@(EmscriptenEnvVars)" />
   </Target>
 </Project>

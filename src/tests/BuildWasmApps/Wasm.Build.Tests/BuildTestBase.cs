@@ -147,6 +147,8 @@ namespace Wasm.Build.Tests
             }
 
             string bundleDir = Path.Combine(GetBinDir(baseDir: buildDir, config: buildArgs.Config, targetFramework: targetFramework), "AppBundle");
+            if (host != RunHost.V8)
+                throw new SkipException("Only running v8 tests");
             (string testCommand, string extraXHarnessArgs) = host switch
             {
                 RunHost.V8     => ("wasm test", "--js-file=test-main.js --engine=V8 -v trace"),

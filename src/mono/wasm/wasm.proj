@@ -2,6 +2,7 @@
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.RunWithEmSdkEnv" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
+  <!--<Import Project="/workspaces/l/packs/./Microsoft.NET.Runtime.Emscripten.2.0.34.Sdk.linux-x64/7.0.0-alpha.2.22111.1/Sdk/Sdk.props" />-->
   <PropertyGroup>
     <!-- FIXME: clean up the duplication with libraries Directory.Build.props -->
     <PackageRID>browser-wasm</PackageRID>
@@ -15,13 +16,16 @@
     <_EmccCompileRspPath>$(NativeBinDir)src\emcc-compile.rsp</_EmccCompileRspPath>
     <_EmccLinkRspPath>$(NativeBinDir)src\emcc-link.rsp</_EmccLinkRspPath>
     <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
+    <_NpmCommand Condition="$([MSBuild]::IsOSPlatform('windows'))">npm.cmd</_NpmCommand>
+    <_NpmCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))">npm</_NpmCommand>
   </PropertyGroup>
 
-  <Target Name="CheckEnv">
+  <Target Name="CheckEnv" DependsOnTargets="SetupEmscripten">
     <Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
     <Error Condition="'$(TargetOS)' != 'Browser'" Text="Expected TargetOS==Browser, got '$(TargetOS)'"/>
-    <Error Condition="'$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
   </Target>
+
+  <Import Project="$(MonoProjectRoot)emscripten.targets" />
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
@@ -64,16 +68,14 @@
       OutputFileName="$(TimeZonesDataPath)" />
   </Target>
 
-  <Target Name="GenerateEmccPropsAndRspFiles">
+  <Target Name="GenerateEmccPropsAndRspFiles" DependsOnTargets="CheckEnv">
+    <ItemGroup>
 
     <!-- Generate emcc-props.json -->
 
-    <RunWithEmSdkEnv Command="$(EmccCmd) --version"
-          ConsoleToMsBuild="true"
-          EmSdkPath="$(EMSDK_PATH)"
-          IgnoreStandardErrorWarningFormat="true">
+    <Exec Command="$(EmccCmd) --version" EnvironmentVariables="@(EmscriptenEnvVars)" IgnoreStandardErrorWarningFormat="true" ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" ItemName="_VersionLines" />
-    </RunWithEmSdkEnv>
+    </Exec>
 
     <!-- we want to get the first line from the output, which has the version.
          Rest of the lines are the license -->
@@ -164,7 +166,7 @@
   <!-- This is a documented target that is invoked by developers in their innerloop work. -->
   <Target Name="BuildWasmRuntimes"
           AfterTargets="Build"
-          DependsOnTargets="GenerateEmccPropsAndRspFiles;BuildPInvokeTable;BundleTimeZones;InstallNpmPackages;BuildWithRollup">
+          DependsOnTargets="CheckEnv;GenerateEmccPropsAndRspFiles;BuildPInvokeTable;BundleTimeZones;InstallNpmPackages;BuildWithRollup">
 
     <ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
@@ -180,7 +182,11 @@
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>
 
-      <CMakeConfigurationEmsdkPath Condition="'$(Configuration)' == 'Release'"> -DEMSDK_PATH=&quot;$(EMSDK_PATH.TrimEnd('\/'))&quot;</CMakeConfigurationEmsdkPath>
+      <!--<CMakeConfigurationEmsdkPath Condition="'$(Configuration)' == 'Release'"> -DEMSDK_PATH=&quot;$(EMSDK_PATH.TrimEnd('\/'))&quot;</CMakeConfigurationEmsdkPath>-->
+      <CMakeConfigurationEmsdkPath Condition="'$(Configuration)' == 'Release'"> -DEMSDK_UPSTREAM_BIN_PATH=&quot;$(EmscriptenUpstreamBinPath.TrimEnd('\/'))&quot;</CMakeConfigurationEmsdkPath>
+      <!--<CMakeBuildRuntimeConfigureCmd>emcmake cmake $(MSBuildThisFileDirectory)runtime -DCMAKE_BUILD_TYPE=$(Configuration) -DCONFIGURATION_EMCC_FLAGS=&quot;$(CMakeConfigurationEmccFlags)&quot; -DCONFIGURATION_LINK_FLAGS=&quot;$(CMakeConfigurationLinkFlags)&quot; -DMONO_INCLUDES=&quot;$(MonoArtifactsPath)include/mono-2.0&quot; -DMONO_OBJ_INCLUDES=&quot;$(MonoObjDir.TrimEnd('\/'))&quot; -DICU_LIB_DIR=&quot;$(ICULibDir.TrimEnd('\/'))&quot; -DMONO_ARTIFACTS_DIR=&quot;$(MonoArtifactsPath.TrimEnd('\/'))&quot; -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/'))&quot; $(CMakeConfigurationEmsdkPath)</CMakeBuildRuntimeConfigureCmd>-->
+      <!--<CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; $(CMakeBuildRuntimeConfigureCmd)</CMakeBuildRuntimeConfigureCmd>-->
+      <!--<CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' != 'Windows_NT'">bash -c '$(CMakeBuildRuntimeConfigureCmd)'</CMakeBuildRuntimeConfigureCmd>-->
 
       <CMakeBuildRuntimeConfigureCmd>emcmake cmake $(MSBuildThisFileDirectory)runtime</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCMAKE_BUILD_TYPE=$(Configuration)</CMakeBuildRuntimeConfigureCmd>
@@ -198,8 +204,8 @@
 
       <CMakeOptions Condition="'$(MonoVerboseBuild)' != ''">-v</CMakeOptions>
       <CMakeBuildRuntimeCmd>cmake --build . --config $(Configuration) $(CmakeOptions)</CMakeBuildRuntimeCmd>
-      <CMakeBuildRuntimeCmd Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; $(CMakeBuildRuntimeCmd)</CMakeBuildRuntimeCmd>
-      <CMakeBuildRuntimeCmd Condition="'$(OS)' != 'Windows_NT'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh 2>&amp;1 &amp;&amp;  $(CMakeBuildRuntimeCmd)'</CMakeBuildRuntimeCmd>
+      <CMakeBuildRuntimeCmd Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; $(CMakeBuildRuntimeCmd)</CMakeBuildRuntimeCmd>
+      <CMakeBuildRuntimeCmd Condition="'$(OS)' != 'Windows_NT'">bash -c '$(CMakeBuildRuntimeCmd)'</CMakeBuildRuntimeCmd>
     </PropertyGroup>
 
     <Copy SourceFiles="$(PInvokeTableFile)"
@@ -235,8 +241,8 @@
           DestinationFolder="$(NativeBinDir)"
           SkipUnchangedFiles="true" />
 
-    <Exec Command="$(CMakeBuildRuntimeConfigureCmd)" WorkingDirectory="$(NativeBinDir)" />
-    <Exec Command="$(CMakeBuildRuntimeCmd)"  WorkingDirectory="$(NativeBinDir)" />
+    <Exec Command="$(CMakeBuildRuntimeConfigureCmd)" WorkingDirectory="$(NativeBinDir)" EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <Exec Command="$(CMakeBuildRuntimeCmd)"  WorkingDirectory="$(NativeBinDir)" EnvironmentVariables="@(EmscriptenEnvVars)" />
 
     <ItemGroup>
       <IcuDataFiles Include="$(NativeBinDir)*.dat" />
@@ -287,12 +293,13 @@
   <Target Name="InstallNpmPackages"
           Inputs="$(MonoProjectRoot)wasm/runtime/package.json"
           Outputs="$(MonoProjectRoot)wasm/runtime/node_modules/.npm-stamp"
+          DependsOnTargets="CheckEnv"
           >
     <!-- install typescript and rollup -->
-    <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' == 'true'" Command="npm ci" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
-    <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' == 'true'" Command="npm audit" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
+    <Exec Condition="'$(ContinuousIntegrationBuild)' == 'true'" Command="$(_NpmCommand) ci" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/" EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <Exec Condition="'$(ContinuousIntegrationBuild)' == 'true'" Command="$(_NpmCommand) audit" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/" EnvironmentVariables="@(EmscriptenEnvVars)" />
     <!-- npm install is faster on dev machine as it doesn't wipe node_modules folder -->
-    <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' != 'true'" Command="npm install" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
+    <Exec Condition="'$(ContinuousIntegrationBuild)' != 'true'" Command="$(_NpmCommand) install" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/" EnvironmentVariables="@(EmscriptenEnvVars)" />
 
     <Touch Files="$(MonoProjectRoot)wasm/runtime/node_modules/.npm-stamp" AlwaysCreate="true" />
   </Target>
@@ -308,19 +315,20 @@
   <Target Name="BuildWithRollup"
           Inputs="@(_RollupInputs)"
           Outputs="$(NativeBinDir).rollup-stamp"
+          DependsOnTargets="CheckEnv"
           >
     <!-- code style check -->
-    <RunWithEmSdkEnv Command="npm run lint" StandardOutputImportance="High" EmSdkPath="$(EMSDK_PATH)" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
+    <Exec Command="$(_NpmCommand) run lint" StandardOutputImportance="High" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/" EnvironmentVariables="@(EmscriptenEnvVars)" />
 
     <!-- compile typescript -->
-    <RunWithEmSdkEnv Command="npm run rollup -- --environment Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion)" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
+    <Exec Command="$(_NpmCommand) run rollup -- --environment Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/" EnvironmentVariables="@(EmscriptenEnvVars)" />
 
     <Copy SourceFiles="runtime/package.json;"
           DestinationFolder="$(NativeBinDir)"
           SkipUnchangedFiles="true" />
 
     <!-- set version -->
-    <RunWithEmSdkEnv Command="npm version $(PackageVersion)" EmSdkPath="$(EMSDK_PATH)" WorkingDirectory="$(NativeBinDir)"/>
+    <Exec Command="$(_NpmCommand) version $(PackageVersion)" WorkingDirectory="$(NativeBinDir)" EnvironmentVariables="@(EmscriptenEnvVars)" />
 
     <Touch Files="$(NativeBinDir).rollup-stamp" AlwaysCreate="true" />
   </Target>

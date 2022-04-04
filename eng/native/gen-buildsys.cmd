@@ -43,17 +43,7 @@ if /i "%__Ninja%" == "1" (
 
 if /i "%__Arch%" == "wasm" (
 
-    if "%EMSDK_PATH%" == "" (
-        if not exist "%__repoRoot%src\mono\wasm\emsdk" (
-            echo Error: Should set EMSDK_PATH environment variable pointing to emsdk root.
-            exit /B 1
-        )
-
-        set EMSDK_PATH=%__repoRoot%src\mono\wasm\emsdk
-        set EMSDK_PATH=!EMSDK_PATH:\=/!
-    )
-
-    set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_TOOLCHAIN_FILE=!EMSDK_PATH!/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
+    set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_TOOLCHAIN_FILE=!EMSDK_UPSTREAM_PATH!/cmake/Modules/Platform/Emscripten.cmake"
     set __UseEmcmake=1
 ) else (
     set __ExtraCmakeParams=%__ExtraCmakeParams%  "-DCMAKE_SYSTEM_VERSION=10.0"
@@ -91,7 +81,7 @@ if not "%__ConfigureOnly%" == "1" (
 )
 
 if /i "%__UseEmcmake%" == "1" (
-    call "!EMSDK_PATH!/emsdk_env.bat" > nul 2>&1 && emcmake "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
+    emcmake "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
 ) else (
     "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
 )

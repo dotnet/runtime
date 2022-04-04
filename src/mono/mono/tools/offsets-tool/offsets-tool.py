@@ -293,7 +293,9 @@ class OffsetsTool:
 
 		clang.cindex.Config.set_library_file (args.libclang)
 
+		print("--- lets go --")
 		for srcfile in srcfiles:
+			print("-- #1")
 			src = args.mono_path + "/" + srcfile
 			file_args = clang_args[:]
 			if not 'mini' in src:

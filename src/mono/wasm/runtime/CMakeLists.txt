@@ -31,5 +31,5 @@ set_target_properties(dotnet PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${NATIVE_BIN_DIR}")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_custom_command(TARGET dotnet POST_BUILD COMMAND ${EMSDK_PATH}/upstream/bin/wasm-opt --enable-exception-handling --strip-dwarf ${NATIVE_BIN_DIR}/dotnet.wasm -o ${NATIVE_BIN_DIR}/dotnet.wasm)
+    add_custom_command(TARGET dotnet POST_BUILD COMMAND ${EMSDK_UPSTREAM_BIN_PATH}/upstream/bin/wasm-opt --enable-exception-handling --strip-dwarf ${NATIVE_BIN_DIR}/dotnet.wasm -o ${NATIVE_BIN_DIR}/dotnet.wasm)
 endif()

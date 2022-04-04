@@ -74,6 +74,8 @@
     <MonoComponentsStatic Condition="'$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
   </PropertyGroup>
 
+  <Import Project="$(MonoProjectRoot)emscripten.targets" Condition="'$(TargetsBrowser)' == 'true'" />
+
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
   </ItemGroup>
@@ -84,30 +86,29 @@
   </ItemGroup>
 
   <!-- Sanity checks -->
-  <Target Name="CheckEnv">
+  <Target Name="CheckEnv" DependsOnTargets="SetupEmscripten">
     <Error Condition="'$(TargetstvOSSimulator)' != 'true' and '$(TargetstvOS)' == 'true' and '$(Platform)' != 'arm64'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
     <Error Condition="'$(TargetstvOSSimulator)' == 'true' and '$(TargetstvOS)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'arm64'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
     <Error Condition="'$(TargetsiOSSimulator)' != 'true' and '$(TargetsiOS)' == 'true' and '$(Platform)' != 'arm64' and '$(Platform)' != 'arm'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
     <Error Condition="'$(TargetsiOSSimulator)' == 'true' and '$(TargetsiOS)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'x86' and '$(Platform)' != 'arm64'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
     <Error Condition="('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and !$([MSBuild]::IsOSPlatform('OSX'))" Text="Error: $(TargetOS) can only be built on macOS." />
     <Error Condition="'$(TargetsAndroid)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'x86' and '$(Platform)' != 'arm64' and '$(Platform)' != 'arm'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
-    <Error Condition="'$(TargetsBrowser)' == 'true' and '$(EMSDK_PATH)' == '' and '$(SkipMonoCrossJitConfigure)' != 'true'" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
     <Error Condition="'$(TargetsAndroid)' == 'true' and '$(ANDROID_NDK_ROOT)' == '' and '$(SkipMonoCrossJitConfigure)' != 'true'" Text="Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root." />
     <Error Condition="'$(HostOS)' == 'windows' and ('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Text="Error: Mono runtime for $(TargetOS) can't be built on Windows." />
 
     <!-- check if Ninja is available and default to it on Unix platforms -->
-    <Exec Condition="'$(HostOS)' != 'windows' and '$(Ninja)' == ''" Command="which ninja" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" >
+    <Exec Condition="'$(HostOS)' != 'windows' and '$(Ninja)' == ''" Command="which ninja" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" EnvironmentVariables="@(EmscriptenEnvVars)">
       <Output TaskParameter="ExitCode" PropertyName="_MonoFindNinjaExitCode"/>
     </Exec>
     <PropertyGroup>
       <_MonoUseNinja Condition="'$(Ninja)' == 'true' or '$(_MonoFindNinjaExitCode)' == '0' or ('$(HostOS)' == 'windows' and '$(Ninja)' == '')">true</_MonoUseNinja>
     </PropertyGroup>
 
-    <Exec Condition="'$(TargetArchitecture)' == 'wasm' and '$(HostOS)' == 'windows'" Command="call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; cmake --version" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" >
+    <Exec Condition="'$(TargetArchitecture)' == 'wasm' and '$(HostOS)' == 'windows'" Command="call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; cmake --version" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" EnvironmentVariables="@(EmscriptenEnvVars)">
       <Output TaskParameter="ExitCode" PropertyName="_MonoFindCmakeExitCode"/>
     </Exec>
     <Error Condition="'$(TargetArchitecture)' == 'wasm' and '$(HostOS)' == 'windows' and '$(_MonoFindCmakeExitCode)' != '0' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Text="cmake tool is required to build wasm on windows" />
-    <Exec Condition="'$(TargetArchitecture)' == 'wasm' and '$(HostOS)' == 'windows'" Command="call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; ninja --version" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" >
+    <Exec Condition="'$(TargetArchitecture)' == 'wasm' and '$(HostOS)' == 'windows'" Command="call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; ninja --version" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" EnvironmentVariables="@(EmscriptenEnvVars)">
       <Output TaskParameter="ExitCode" PropertyName="_MonoFindNinjaExitCode"/>
     </Exec>
     <Error Condition="'$(TargetArchitecture)' == 'wasm' and '$(HostOS)' == 'windows' and '$(_MonoFindNinjaExitCode)' != '0' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Text="ninja tool is required to build wasm on windows" />
@@ -128,31 +129,31 @@
   <!-- Sets up emscripten if you don't have the EMSDK_PATH env variable set -->
   <Target Name="ProvisionEmscripten"
           Condition="'$(ShouldProvisionEmscripten)' == 'true' and '$(SkipMonoCrossJitConfigure)' != 'true'">
-    <ReadLinesFromFile File="$(MSBuildThisFileDirectory)\wasm\emscripten-version.txt">
-      <Output TaskParameter="Lines" ItemName="_VersionLines" />
-    </ReadLinesFromFile>
+    <!--<ReadLinesFromFile File="$(MSBuildThisFileDirectory)\wasm\emscripten-version.txt">-->
+      <!--<Output TaskParameter="Lines" ItemName="_VersionLines" />-->
+    <!--</ReadLinesFromFile>-->
 
-    <PropertyGroup>
-      <EmsdkExt Condition="'$(HostOS)' != 'windows'">.sh</EmsdkExt>
-      <EmsdkExt Condition="'$(HostOS)' == 'windows'">.ps1</EmsdkExt>
-      <EMSDK_PATH>$(ProvisionEmscriptenDir)</EMSDK_PATH>
-      <WasmLocalPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wasm'))</WasmLocalPath>
-      <EmsdkLocalPath>emsdk</EmsdkLocalPath>
-      <EmscriptenVersion>%(_VersionLines.Identity)</EmscriptenVersion>
+    <!--<PropertyGroup>-->
+      <!--<EmsdkExt Condition="'$(HostOS)' != 'windows'">.sh</EmsdkExt>-->
+      <!--<EmsdkExt Condition="'$(HostOS)' == 'windows'">.ps1</EmsdkExt>-->
+      <!--<EMSDK_PATH>$(ProvisionEmscriptenDir)</EMSDK_PATH>-->
+      <!--<WasmLocalPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wasm'))</WasmLocalPath>-->
+      <!--<EmsdkLocalPath>emsdk</EmsdkLocalPath>-->
+      <!--<EmscriptenVersion>%(_VersionLines.Identity)</EmscriptenVersion>-->
 
-      <InstallCmd>./emsdk$(EmsdkExt) install $(EmscriptenVersion)</InstallCmd>
-      <ActivateCmd>./emsdk$(EmsdkExt) activate $(EmscriptenVersion)</ActivateCmd>
-      <InstallCmd Condition="'$(HostOS)' == 'windows'">powershell -NonInteractive -command &quot;&amp; $(InstallCmd); Exit $LastExitCode &quot;</InstallCmd>
-      <ActivateCmd Condition="'$(HostOS)' == 'windows'">powershell -NonInteractive -command &quot;&amp; $(ActivateCmd); Exit $LastExitCode &quot;</ActivateCmd>
-    </PropertyGroup>
+      <!--<InstallCmd>./emsdk$(EmsdkExt) install $(EmscriptenVersion)</InstallCmd>-->
+      <!--<ActivateCmd>./emsdk$(EmsdkExt) activate $(EmscriptenVersion)</ActivateCmd>-->
+      <!--<InstallCmd Condition="'$(HostOS)' == 'windows'">powershell -NonInteractive -command &quot;&amp; $(InstallCmd); Exit $LastExitCode &quot;</InstallCmd>-->
+      <!--<ActivateCmd Condition="'$(HostOS)' == 'windows'">powershell -NonInteractive -command &quot;&amp; $(ActivateCmd); Exit $LastExitCode &quot;</ActivateCmd>-->
+    <!--</PropertyGroup>-->
 
-    <RemoveDir Directories="$(EMSDK_PATH)" />
-    <Exec Command="git clone https://github.com/emscripten-core/emsdk.git emsdk"
-          WorkingDirectory="$(WasmLocalPath)"
-          IgnoreStandardErrorWarningFormat="true" />
-    <Exec Command="git checkout $(EmscriptenVersion) &amp;&amp; $(InstallCmd) &amp;&amp; $(ActivateCmd)"
-          WorkingDirectory="$(EMSDK_PATH)"
-          IgnoreStandardErrorWarningFormat="true" />
+    <!--<RemoveDir Directories="$(EMSDK_PATH)" />-->
+    <!--<Exec Command="git clone https://github.com/emscripten-core/emsdk.git emsdk"-->
+          <!--WorkingDirectory="$(WasmLocalPath)"-->
+          <!--IgnoreStandardErrorWarningFormat="true" />-->
+    <!--<Exec Command="git checkout $(EmscriptenVersion) &amp;&amp; $(InstallCmd) &amp;&amp; $(ActivateCmd)"-->
+          <!--WorkingDirectory="$(EMSDK_PATH)"-->
+          <!--IgnoreStandardErrorWarningFormat="true" />-->
   </Target>
 
   <!-- Copy Mono runtime bits to $(Destination) -->
@@ -475,13 +476,13 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <EMSDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(EMSDK_PATH)'))</EMSDK_PATH>
+      <EMSDK_PATH>--dont-emsdk-path--</EMSDK_PATH>
       <_MonoCMakeConfigureCommand>cmake @(_MonoCMakeArgs, ' ') $(MonoCMakeExtraArgs) &quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(HostOS)' != 'windows'">bash -c 'source $(RepositoryEngineeringCommonDir)native/init-compiler.sh &quot;$(RepositoryEngineeringCommonDir)native&quot; &quot;$(_CompilerTargetArch)&quot; &quot;$(MonoCCompiler)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' == 'false'">$(_MonoCCOption) $(_MonoCXXOption) @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
-      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' != 'windows'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh 2>&amp;1 &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
-      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' != 'windows'">bash -c 'emcmake $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
 
       <_MonoCMakeBuildCommand>cmake --build . --target install --config $(Configuration)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(MonoVerboseBuild)' == 'true'">$(_MonoCMakeBuildCommand) --verbose</_MonoCMakeBuildCommand>
@@ -501,7 +502,7 @@
     </PropertyGroup>
     <Message Condition="'$(_MonoSkipCMakeConfigure)' == 'true'" Text="The CMake command line is the same as the last run. Skipping running CMake configure." Importance="High"/>
     <Message Condition="'$(_MonoSkipCMakeConfigure)' != 'true'" Text="Running '$(_MonoCMakeConfigureCommand)' in '$(MonoObjDir)'" Importance="High"/>
-    <Exec Condition="'$(_MonoSkipCMakeConfigure)' != 'true'" Command="$(_MonoCMakeConfigureCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="'$(_MonoSkipCMakeConfigure)' != 'true'" Command="$(_MonoCMakeConfigureCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" EnvironmentVariables="@(EmscriptenEnvVars)" />
     <WriteLinesToFile
       Condition="'$(_MonoSkipCMakeConfigure)' != 'true'"
       File="$(MonoObjDir)cmake_cmd_line.txt"
@@ -510,7 +511,7 @@
 
     <!-- build -->
     <Message Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Text="Running '$(_MonoCMakeBuildCommand)' in '$(MonoObjDir)'" Importance="High"/>
-    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Command="$(_MonoCMakeBuildCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Command="$(_MonoCMakeBuildCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" EnvironmentVariables="@(EmscriptenEnvVars)" />
 
     <!-- strip -->
     <PropertyGroup>
@@ -603,6 +604,11 @@
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(MonoAOTLLVMDir)/lib/libclang.so</MonoLibClang>
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$([MSBuild]::NormalizePath('$(MonoAOTLLVMDir)', 'bin', 'libclang.dll'))</MonoLibClang>
       <PythonCmd Condition="'$(HostOS)' == 'windows'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
+      <!--<EMSDK_UPSTREAM_LIB_PATH>$(EmscriptenSdkToolsPath)/lib/</EMSDK_UPSTREAM_LIB_PATH>-->
+      <!--<MonoLibClang Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(EMSDK_UPSTREAM_LIB_PATH)libclang.dylib</MonoLibClang>-->
+      <!--<MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(EMSDK_UPSTREAM_LIB_PATH)libclang.so</MonoLibClang>-->
+      <!--<MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$([MSBuild]::NormalizePath('$(EmscriptenUpstreamBinPath)', 'libclang.dll'))</MonoLibClang>-->
+      <!--<PythonCmd Condition="'$(HostOS)' == 'windows'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>-->
       <_ForceRelease Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(TargetArchitecture)' == 'wasm' and '$(Configuration)' == 'Debug'">true</_ForceRelease>
     </PropertyGroup>
 
@@ -670,7 +676,7 @@
       <MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(MonoLibClang)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotOffsetsPrefix)' != ''" Include="--prefix=&quot;$(MonoAotOffsetsPrefix)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotCMakeSysroot)' != ''" Include="--sysroot=&quot;$(MonoAotCMakeSysroot)&quot;" />
-      <MonoAotCrossOffsetsToolParams Condition="'$(TargetsBrowser)' == 'true'" Include="--emscripten-sdk=&quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'upstream', 'emscripten'))&quot;" />
+      <MonoAotCrossOffsetsToolParams Condition="'$(TargetsBrowser)' == 'true'" Include="--emscripten-sdk=&quot;$(EmscriptenUpstreamEmscriptenPath.TrimEnd('\/'))&quot;" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -716,7 +722,7 @@
     <Message Condition="Exists('$(_MonoAotPrebuiltOffsetsFile)')" Text="Out-of-tree offset file found, moving into place" Importance="High" />
     <Copy Condition="Exists('$(_MonoAotPrebuiltOffsetsFile)')" SourceFiles="$(_MonoAotPrebuiltOffsetsFile)" DestinationFolder="$([System.IO.Path]::GetDirectoryName('$(MonoAotOffsetsFile)'))" />
     <Message Condition="'$(MonoUseCrossTool)' == 'true' and !Exists('$(MonoAotOffsetsFile)')" Text="Running '$(_MonoAotCrossOffsetsCommand)'" Importance="High" />
-    <Exec Condition="'$(MonoUseCrossTool)' == 'true' and !Exists('$(MonoAotOffsetsFile)')" Command="$(_MonoAotCrossOffsetsCommand)" IgnoreStandardErrorWarningFormat="true" />
+    <Exec Condition="'$(MonoUseCrossTool)' == 'true' and !Exists('$(MonoAotOffsetsFile)')" Command="$(_MonoAotCrossOffsetsCommand)" IgnoreStandardErrorWarningFormat="true" EnvironmentVariables="@(EmscriptenEnvVars)" />
 
     <!-- configure -->
     <PropertyGroup>
@@ -726,7 +732,7 @@
     </PropertyGroup>
     <Message Condition="'$(_MonoSkipAotCMakeConfigure)' == 'true'" Text="The AOT Cross CMake command line is the same as the last run. Skipping running CMake configure." Importance="High"/>
     <Message Condition="'$(_MonoSkipAotCMakeConfigure)' != 'true'" Text="Running '$(_MonoAotCMakeConfigureCommand)' in '$(MonoObjCrossDir)'" Importance="High"/>
-    <Exec Condition="'$(_MonoSkipAotCMakeConfigure)' != 'true'" Command="$(_MonoAotCMakeConfigureCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjCrossDir)"/>
+    <Exec Condition="'$(_MonoSkipAotCMakeConfigure)' != 'true'" Command="$(_MonoAotCMakeConfigureCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjCrossDir)" EnvironmentVariables="@(EmscriptenEnvVars)" />
     <WriteLinesToFile
       Condition="'$(_MonoSkipAotCMakeConfigure)' != 'true'"
       File="$(MonoObjCrossDir)cmake_cmd_line.txt"
@@ -735,7 +741,7 @@
 
     <!-- build -->
     <Message Text="Running '$(_MonoAotCMakeBuildCommand)' in '$(MonoObjCrossDir)'" Importance="High" />
-    <Exec Condition="'$(MonoGenerateOffsetsOSGroups)' == ''" Command="$(_MonoAotCMakeBuildCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjCrossDir)"/>
+    <Exec Condition="'$(MonoGenerateOffsetsOSGroups)' == ''" Command="$(_MonoAotCMakeBuildCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjCrossDir)" EnvironmentVariables="@(EmscriptenEnvVars)" />
   </Target>
 
   <PropertyGroup>
