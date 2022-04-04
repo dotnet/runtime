@@ -20,18 +20,20 @@ namespace System.Collections.Generic
         internal void MarkBit(int bitPosition)
         {
             uint bitArrayIndex = (uint)bitPosition / IntSize;
-            if (bitArrayIndex < (uint)_span.Length)
+            Span<int> span = _span;
+            if (bitArrayIndex < (uint)span.Length)
             {
-                _span[(int)bitArrayIndex] |= (1 << (int)((uint)bitPosition % IntSize));
+                span[(int)bitArrayIndex] |= (1 << (int)((uint)bitPosition % IntSize));
             }
         }
 
         internal bool IsMarked(int bitPosition)
         {
             uint bitArrayIndex = (uint)bitPosition / IntSize;
+            Span<int> span = _span;
             return
-                bitArrayIndex < (uint)_span.Length &&
-                (_span[(int)bitArrayIndex] & ((int)((uint)bitPosition % IntSize))) != 0;
+                bitArrayIndex < (uint)span.Length &&
+                (span[(int)bitArrayIndex] & ((int)((uint)bitPosition % IntSize))) != 0;
         }
 
         /// <summary>How many ints must be allocated to represent n bits. Returns (n+31)/32, but avoids overflow.</summary>
