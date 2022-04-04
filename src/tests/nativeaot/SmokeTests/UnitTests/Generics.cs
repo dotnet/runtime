@@ -3204,7 +3204,7 @@ class Generics
             return __refvalue(typedRef, T);
         }
 
-        public static void Main()
+        public static void Run()
         {
             string classValue = "Hello";
             int structValue = 123;
