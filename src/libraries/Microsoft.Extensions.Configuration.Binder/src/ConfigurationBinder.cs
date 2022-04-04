@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -726,7 +725,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static object? GetParameterValue(ParameterInfo property, IConfiguration config, BinderOptions options)
         {
-            string parameterName = GetParameterName(property);
+            string parameterName = property.Name!;
 
             var propertyBindingPoint = new BindingPoint(
                 initialValueProvider: () => config.GetSection(parameterName).Value,
