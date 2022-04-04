@@ -63,14 +63,36 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal Type PropertyType { get; set; } = null!;
 
-        internal virtual void GetPolicies(JsonIgnoreCondition? ignoreCondition, JsonNumberHandling? declaringTypeNumberHandling)
+        private bool _isConfigured;
+
+        internal void Configure()
         {
+            if (_isConfigured)
+            {
+                return;
+            }
+
+            if (IsIgnored)
+            {
+                _isConfigured = true;
+                return;
+            }
+
             if (IsForTypeInfo)
             {
-                Debug.Assert(MemberInfo == null);
-                DetermineNumberHandlingForTypeInfo(declaringTypeNumberHandling);
+                DetermineNumberHandlingForTypeInfo();
             }
             else
+            {
+                DetermineNumberHandlingForProperty();
+            }
+
+            _isConfigured = true;
+        }
+
+        internal virtual void GetPolicies(JsonIgnoreCondition? ignoreCondition)
+        {
+            if (!IsForTypeInfo)
             {
                 Debug.Assert(MemberInfo != null);
                 DetermineSerializationCapabilities(ignoreCondition);
@@ -84,7 +106,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 JsonNumberHandlingAttribute? attribute = GetAttribute<JsonNumberHandlingAttribute>(MemberInfo);
-                DetermineNumberHandlingForProperty(attribute?.Handling, declaringTypeNumberHandling);
+                NumberHandling = attribute?.Handling;
             }
         }
 
@@ -214,9 +236,9 @@ namespace System.Text.Json.Serialization.Metadata
 #pragma warning restore SYSLIB0020
         }
 
-        internal void DetermineNumberHandlingForTypeInfo(JsonNumberHandling? numberHandling)
+        internal void DetermineNumberHandlingForTypeInfo()
         {
-            if (numberHandling != null && numberHandling != JsonNumberHandling.Strict && !ConverterBase.IsInternalConverter)
+            if (DeclaringTypeNumberHandling != null && DeclaringTypeNumberHandling != JsonNumberHandling.Strict && !ConverterBase.IsInternalConverter)
             {
                 ThrowHelper.ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(this);
             }
@@ -227,26 +249,24 @@ namespace System.Text.Json.Serialization.Metadata
                 // custom collections e.g. public class MyNumberList : List<int>.
 
                 // Priority 1: Get handling from the type (parent type in this case is the type itself).
-                NumberHandling = numberHandling;
+                EffectiveNumberHandling = DeclaringTypeNumberHandling;
 
                 // Priority 2: Get handling from JsonSerializerOptions instance.
-                if (!NumberHandling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
+                if (!EffectiveNumberHandling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
                 {
-                    NumberHandling = Options.NumberHandling;
+                    EffectiveNumberHandling = Options.NumberHandling;
                 }
             }
         }
 
-        internal void DetermineNumberHandlingForProperty(
-            JsonNumberHandling? propertyNumberHandling,
-            JsonNumberHandling? declaringTypeNumberHandling)
+        internal void DetermineNumberHandlingForProperty()
         {
             bool numberHandlingIsApplicable = NumberHandingIsApplicable();
 
             if (numberHandlingIsApplicable)
             {
                 // Priority 1: Get handling from attribute on property/field, or its parent class type.
-                JsonNumberHandling? handling = propertyNumberHandling ?? declaringTypeNumberHandling;
+                JsonNumberHandling? handling = NumberHandling ?? DeclaringTypeNumberHandling;
 
                 // Priority 2: Get handling from JsonSerializerOptions instance.
                 if (!handling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
@@ -254,9 +274,9 @@ namespace System.Text.Json.Serialization.Metadata
                     handling = Options.NumberHandling;
                 }
 
-                NumberHandling = handling;
+                EffectiveNumberHandling = handling;
             }
-            else if (propertyNumberHandling.HasValue && propertyNumberHandling != JsonNumberHandling.Strict)
+            else if (NumberHandling.HasValue && NumberHandling != JsonNumberHandling.Strict)
             {
                 ThrowHelper.ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(this);
             }
@@ -469,7 +489,20 @@ namespace System.Text.Json.Serialization.Metadata
         {
             get
             {
-                return _jsonTypeInfo ??= Options.GetOrAddJsonTypeInfo(PropertyType);
+                if (_jsonTypeInfo != null)
+                {
+                    // We should not call it on set as it's usually called during initialization
+                    // which is too early to `lock` the JsonTypeInfo
+                    // If this property ever becomes public we should move this to callsites
+                    _jsonTypeInfo.EnsureConfigured();
+                }
+                else
+                {
+                    // GetOrAddJsonTypeInfo already ensures it's configured.
+                    _jsonTypeInfo = Options.GetOrAddJsonTypeInfo(PropertyType);
+                }
+
+                return _jsonTypeInfo;
             }
             set
             {
@@ -502,7 +535,20 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         internal bool SrcGen_IsPublic { get; set; }
 
+        /// <summary>
+        /// Number handling for declaring type
+        /// </summary>
+        internal JsonNumberHandling? DeclaringTypeNumberHandling { get; set; }
+
+        /// <summary>
+        /// Number handling specific to this property, i.e. set by attribute
+        /// </summary>
         internal JsonNumberHandling? NumberHandling { get; set; }
+
+        /// <summary>
+        /// Number handling after considering options and declaring type number handling
+        /// </summary>
+        internal JsonNumberHandling? EffectiveNumberHandling { get; set; }
 
         //  Whether the property type can be null.
         internal bool PropertyTypeCanBeNull { get; set; }

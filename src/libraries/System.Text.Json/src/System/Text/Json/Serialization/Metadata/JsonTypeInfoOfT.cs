@@ -19,6 +19,10 @@ namespace System.Text.Json.Serialization.Metadata
             base(type, options, dummy: false)
         { }
 
+        internal JsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
+            : base(typeof(T), converter, options)
+        { }
+
         internal JsonTypeInfo()
         {
             Debug.Assert(false, "This constructor should not be called.");

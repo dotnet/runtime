@@ -41,7 +41,31 @@ namespace System.Text.Json
             }
 
             [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-            static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options) => new JsonTypeInfo(type, options);
+            static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                JsonTypeInfo.ValidateType(type, null, null, options);
+
+                MethodInfo methodInfo = typeof(JsonSerializerOptions).GetMethod(nameof(CreateReflectionJsonTypeInfo), BindingFlags.NonPublic | BindingFlags.Instance)!;
+#if NETCOREAPP
+                return (JsonTypeInfo)methodInfo.MakeGenericMethod(type).Invoke(options, BindingFlags.NonPublic | BindingFlags.DoNotWrapExceptions, null, null, null)!;
+#else
+                try
+                {
+                    return (JsonTypeInfo)methodInfo.MakeGenericMethod(type).Invoke(options, null)!;
+                }
+                catch (TargetInvocationException ex)
+                {
+                    throw ex.InnerException!;
+                }
+#endif
+            }
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        private JsonTypeInfo<T> CreateReflectionJsonTypeInfo<T>()
+        {
+            // We do not use Activator.CreateInstance because it will wrap exception if constructor throws it
+            return new ReflectionJsonTypeInfo<T>(this);
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
