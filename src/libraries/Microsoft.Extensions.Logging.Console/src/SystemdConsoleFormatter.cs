@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Logging.Console
             string category = logEntry.Category;
             int eventId = logEntry.EventId.Id;
             Exception? exception = logEntry.Exception;
-            // system reads messages from standard out line-by-line in a '<pri>message' format.
+            // systemd reads messages from standard out line-by-line in a '<pri>message' format.
             // newline characters are treated as message delimiters, so we must replace them.
             // Messages longer than the journal LineMax setting (default: 48KB) are cropped.
             // Example:
