@@ -15,12 +15,9 @@ namespace Microsoft.Extensions.Configuration
         private static ConcurrentDictionary<string, ConfigurationKeyComparer> _comparers = new ConcurrentDictionary<string, ConfigurationKeyComparer>();
 
         public ConfigurationKeyComparer() : this(":") { }
-        public ConfigurationKeyComparer(string separator) => _keyDelimiterArray = new[] {separator};
+        public ConfigurationKeyComparer(string separator) => _keyDelimiter = separator[0];
 
-        private readonly string[] _keyDelimiterArray;
-
-        private const char KeyDelimiter = ':';
-
+        private readonly char _keyDelimiter;
 
         /// <summary>
         /// The default instance.
@@ -52,8 +49,8 @@ namespace Microsoft.Extensions.Configuration
             // Compare each part until we get two parts that are not equal
             while (!xSpan.IsEmpty && !ySpan.IsEmpty)
             {
-                int xDelimiterIndex = xSpan.IndexOf(KeyDelimiter);
-                int yDelimiterIndex = ySpan.IndexOf(KeyDelimiter);
+                int xDelimiterIndex = xSpan.IndexOf(_keyDelimiter);
+                int yDelimiterIndex = ySpan.IndexOf(_keyDelimiter);
 
                 int compareResult = Compare(
                     xDelimiterIndex == -1 ? xSpan : xSpan.Slice(0, xDelimiterIndex),
@@ -72,9 +69,9 @@ namespace Microsoft.Extensions.Configuration
 
             return xSpan.IsEmpty ? (ySpan.IsEmpty ? 0 : -1) : 1;
 
-            static ReadOnlySpan<char> SkipAheadOnDelimiter(ReadOnlySpan<char> a)
+            ReadOnlySpan<char> SkipAheadOnDelimiter(ReadOnlySpan<char> a)
             {
-                while (!a.IsEmpty && a[0] == KeyDelimiter)
+                while (!a.IsEmpty && a[0] == _keyDelimiter)
                 {
                     a = a.Slice(1);
                 }
