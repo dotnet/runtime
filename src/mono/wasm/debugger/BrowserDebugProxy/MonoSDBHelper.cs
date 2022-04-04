@@ -2272,21 +2272,19 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             if (valueTypes[valueTypeId].valueTypeProxy != null)
                 return valueTypes[valueTypeId].valueTypeProxy;
-            valueTypes[valueTypeId].valueTypeProxy = new JArray(valueTypes[valueTypeId].json);
 
-            var retDebuggerCmdReader =  await GetTypePropertiesReader(valueTypes[valueTypeId].typeId, token);
-            if (retDebuggerCmdReader == null)
-                return null;
-
-            valueTypes[valueTypeId].valueTypeProxy = new JArray();
-            valueTypes[valueTypeId].valueTypeProxy.AddRange(
+            valueTypes[valueTypeId].valueTypeProxy = new JArray(
                 valueTypes[valueTypeId].json["result"],
                 valueTypes[valueTypeId].json["internalProperties"],
                 valueTypes[valueTypeId].json["privateProperties"]);
 
+            var retDebuggerCmdReader = await GetTypePropertiesReader(valueTypes[valueTypeId].typeId, token);
+            if (retDebuggerCmdReader == null)
+                return null;
+
             var nProperties = retDebuggerCmdReader.ReadInt32();
 
-            for (int i = 0 ; i < nProperties; i++)
+            for (int i = 0; i < nProperties; i++)
             {
                 retDebuggerCmdReader.ReadInt32(); //propertyId
                 string propertyNameStr = retDebuggerCmdReader.ReadString();
@@ -2858,10 +2856,10 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal static class HelperExtensions
     {
-        public static void AddRange(this JArray arr, params JToken[] addedArrays)
+        public static void AddRange(this JArray arr, JArray addedArr)
         {
-            foreach (var addedArray in addedArrays)
-                arr.Merge(addedArray);
+            foreach (var item in addedArr)
+                arr.Add(item);
         }
 
         public static void TryAddRange(this Dictionary<string, JToken> dict, JArray addedArr)
