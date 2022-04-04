@@ -133,14 +133,14 @@ steps:
     displayName: Setup MAUI Project
     workingDirectory: $(Build.SourcesDirectory)
 
-  - script: |
-      chmod -R a+r .
-      # Restore is split out because of https://github.com/dotnet/sdk/issues/21877, can be removed with --no-restore once fixed
-      ../dotnet restore
-      ../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release -r android-arm64 --no-restore --self-contained
-      mv ./bin/Release/net6.0-android/android-arm64/com.companyname.mauitesting-Signed.apk ./MauiAndroidDefault.apk
-    displayName: Build MAUI Android
-    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+  #- script: |
+  #    chmod -R a+r .
+  #    # Restore is split out because of https://github.com/dotnet/sdk/issues/21877, can be removed with --no-restore once fixed
+  #    ../dotnet restore
+  #    ../dotnet publish -bl:MauiAndroid.binlog -f net6.0-android -c Release -r android-arm64 --no-restore --self-contained
+  #    mv ./bin/Release/net6.0-android/android-arm64/com.companyname.mauitesting-Signed.apk ./MauiAndroidDefault.apk
+  #  displayName: Build MAUI Android
+  #  workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
   - script: |
       set -x
@@ -152,15 +152,15 @@ steps:
     displayName:  Clone podcast app
     workingDirectory: $(Build.SourcesDirectory)
 
-  - script: |
-      set -x
-      pwd
-      chmod -R a+r .
-      ../../../dotnet restore Microsoft.NetConf2021.Maui.csproj
-      ../../../dotnet publish Microsoft.NetConf2021.Maui.csproj -bl:MauiPodcastAndroid.binlog -r android-arm64 --self-contained --no-restore -f net6.0-android -c Release
-      mv ./bin/Release/net6.0-android/android-arm64/com.Microsoft.NetConf2021.Maui-Signed.apk $(Build.SourcesDirectory)/MauiTesting/MauiAndroidPodcast.apk
-    displayName: Build MAUI Podcast Android
-    workingDirectory:  $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile
+  #- script: |
+  #    set -x
+  #    pwd
+  #    chmod -R a+r .
+  #    ../../../dotnet restore Microsoft.NetConf2021.Maui.csproj
+  #    ../../../dotnet publish Microsoft.NetConf2021.Maui.csproj -bl:MauiPodcastAndroid.binlog -r android-arm64 --self-contained --no-restore -f net6.0-android -c Release
+  #    mv ./bin/Release/net6.0-android/android-arm64/com.Microsoft.NetConf2021.Maui-Signed.apk $(Build.SourcesDirectory)/MauiTesting/MauiAndroidPodcast.apk
+  #  displayName: Build MAUI Podcast Android
+  #  workingDirectory:  $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile
 
     # This step pulls the product version from the used Microsoft.Maui.dll file properties and saves it for upload with the maui test counter.
     # We pull from this file as we did not find another place to reliably get the version information pre or post build.
@@ -172,12 +172,18 @@ steps:
     displayName: Get and Save MAUI Version
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
-  - script: |
-      chmod -R a+r .
-      ../dotnet publish -bl:MauiMacCatalyst.binlog -f net6.0-maccatalyst -c Release
-      mv ./bin/Release/net6.0-maccatalyst/maccatalyst-x64/MauiTesting.app ./MauiMacCatalystDefault.app
-    displayName: Build MAUI MacCatalyst
+  - powershell: |
+      Format-Hex MauiTesting.csproj
+    name: getHex
+    displayName: Hex thing
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+
+  #- script: |
+  #    chmod -R a+r .
+  #    ../dotnet publish -bl:MauiMacCatalyst.binlog -f net6.0-maccatalyst -c Release
+  #    mv ./bin/Release/net6.0-maccatalyst/maccatalyst-x64/MauiTesting.app ./MauiMacCatalystDefault.app
+  #  displayName: Build MAUI MacCatalyst
+  #  workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
   - script: |
       chmod -R a+r .
@@ -185,7 +191,7 @@ steps:
       cp MauiTesting.csproj MauiTesting.csproj.bak
       echo sed -i'' -e 's/\([>;]\)net[0-9]\+\.[0-9]-maccatalyst\([;<]\)/\1\2/g' MauiTesting.csproj
       sed -i'' -e 's/\([>;]\)net[0-9]\+\.[0-9]-maccatalyst\([;<]\)/\1\2/g' MauiTesting.csproj
-      cat -vET MauiTesting.csproj
+      cat MauiTesting.csproj
 
       echo sed -i'' -e 's/\\([>;]\\)net[0-9]\\+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g' MauiTesting.csproj
       sed -i'' -e 's/\\([>;]\\)net[0-9]\\+\\.[0-9]-maccatalyst\\([;<]\\)/\\1\\2/g' MauiTesting.csproj
