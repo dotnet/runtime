@@ -8,7 +8,7 @@
          CS0618: Mono.Cecil uses a number of other obsolete types
          CS0649: Mono.Cecil.Binary.ExportTable has some unused fields
     -->
-    <NoWarn>$(NoWarn),CS0618,CS0649,SYSLIB0003</NoWarn>
+    <NoWarn>$(NoWarn),CS0618,CS0649,SYSLIB0003,SYSLIB0037</NoWarn>
     <!-- the analyzers don't like Mono.Cecil either -->
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
