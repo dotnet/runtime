@@ -2070,6 +2070,18 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 unreached();
         }
     }
+    else if ((intrin.id == NI_AdvSimd_LoadVector128) || (intrin.id == NI_AdvSimd_LoadVector64))
+    {
+        assert(intrin.numOperands == 1);
+        assert(HWIntrinsicInfo::lookupCategory(intrin.id) == HW_Category_MemoryLoad);
+
+        GenTree* addr = node->Op(1);
+        if (TryCreateAddrMode(addr, true, node) && IsSafeToContainMem(node, addr))
+        {
+            assert(addr->OperIs(GT_LEA));
+            MakeSrcContained(node, addr);
+        }
+    }
 }
 #endif // FEATURE_HW_INTRINSICS
 
