@@ -245,7 +245,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             case var _ when url.StartsWith("wasm://", StringComparison.Ordinal):
                             case var _ when url.EndsWith(".wasm", StringComparison.Ordinal):
                                 {
-                                    Log("verbose", $"ignoring wasm: Debugger.scriptParsed {url}");
+                                    logger.LogTrace($"ignoring wasm: Debugger.scriptParsed {url}");
                                     return true;
                                 }
                         }
