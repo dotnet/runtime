@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace System
+namespace System.Numerics
 {
     /// <summary>Defines an integer type that is represented in a base-2 format.</summary>
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
@@ -10,6 +10,12 @@ namespace System
           IShiftOperators<TSelf, TSelf>
         where TSelf : IBinaryInteger<TSelf>
     {
+        /// <summary>Computes the quotient and remainder of two values.</summary>
+        /// <param name="left">The value which <paramref name="right" /> divides.</param>
+        /// <param name="right">The value which divides <paramref name="left" />.</param>
+        /// <returns>The quotient and remainder of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
+        static abstract (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right);
+
         /// <summary>Computes the number of leading zeros in a value.</summary>
         /// <param name="value">The value whose leading zeroes are to be counted.</param>
         /// <returns>The number of leading zeros in <paramref name="value" />.</returns>
