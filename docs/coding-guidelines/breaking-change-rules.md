@@ -45,7 +45,6 @@ Breaking Change Rules
 
 * Changing the precision of a numerical return value
 
-
 ### Exceptions
 &#10003; **Allowed**
 * Throwing a more derived exception than an existing exception
