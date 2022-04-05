@@ -166,6 +166,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/830", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GetCustomAttributesData()
         {
             MemberInfo[] m = typeof(MemberInfoTests).GetMember("SampleClass");
