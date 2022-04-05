@@ -297,6 +297,7 @@ struct Native
         }
 
         [Fact]
+        [OuterLoop]
         public async Task InOutAttributes_Forwarded_To_ForwardedParameter()
         {
             string source = @"
@@ -340,6 +341,7 @@ partial class C
         }
 
         [Fact]
+        [OuterLoop]
         public async Task MarshalAsAttribute_Forwarded_To_ForwardedParameter()
         {
             string source = @"
@@ -369,6 +371,7 @@ partial class C
         }
 
         [Fact]
+        [OuterLoop]
         public async Task MarshalAsAttribute_Forwarded_To_ForwardedParameter_Array()
         {
             string source = @"
