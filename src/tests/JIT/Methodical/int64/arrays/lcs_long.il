@@ -18,9 +18,9 @@
 }
 .assembly extern xunit.core {}
 // MVID: {856A09FD-A814-4ED7-B594-E4AFD3850D67}
-.namespace JitTest
+.namespace JitTest_lcs_long_arrays_il
 {
-  .class private auto ansi LCS
+  .class public auto ansi LCS
          extends ['mscorlib']System.Object
   {
     .field private static literal int32 RANK = int32(0x00000004)
@@ -128,7 +128,7 @@
       IL_0064:  ldarg.0
       IL_0065:  ldarg.1
       IL_0066:  ldarg.2
-      IL_0067:  call       class System.String JitTest.LCS::buildLCS(int64[0...,0...,0...,0...],
+      IL_0067:  call       class System.String JitTest_lcs_long_arrays_il.LCS::buildLCS(int64[0...,0...,0...,0...],
                                                                      wchar[],
                                                                      int64[])
       IL_006c:  ldarg.1
@@ -168,7 +168,7 @@
       IL_009e:  ldarg.0
       IL_009f:  ldarg.1
       IL_00a0:  ldarg.2
-      IL_00a1:  call       class System.String JitTest.LCS::buildLCS(int64[0...,0...,0...,0...],
+      IL_00a1:  call       class System.String JitTest_lcs_long_arrays_il.LCS::buildLCS(int64[0...,0...,0...,0...],
                                                                      wchar[],
                                                                      int64[])
       IL_00a6:  stloc.s    V_4
@@ -605,7 +605,7 @@
       IL_01d6:  ret
     } // end of method 'LCS::findLCS'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -737,7 +737,7 @@
       IL_00a3:  ldloc.s    V_5
       IL_00a5:  ldloc.2
       IL_00a6:  ldloc.1
-      IL_00a7:  call       void JitTest.LCS::findLCS(int64[0...,0...,0...,0...],
+      IL_00a7:  call       void JitTest_lcs_long_arrays_il.LCS::findLCS(int64[0...,0...,0...,0...],
                                                      int64[0...,0...,0...,0...],
                                                      wchar[][],
                                                      int64[])
@@ -776,7 +776,7 @@
       IL_00da:  ldc.i4.0
       IL_00db:  ldelem.ref
       IL_00dc:  ldloc.1
-      IL_00dd:  call       class System.String JitTest.LCS::buildLCS(int64[0...,0...,0...,0...],
+      IL_00dd:  call       class System.String JitTest_lcs_long_arrays_il.LCS::buildLCS(int64[0...,0...,0...,0...],
                                                                      wchar[],
                                                                      int64[])
       IL_00e2:  call       bool ['mscorlib']System.String::Equals(class System.String,
@@ -811,6 +811,6 @@
 
   } // end of class 'LCS'
 
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_lcs_long_arrays_il'
 
 //*********** DISASSEMBLY COMPLETE ***********************
