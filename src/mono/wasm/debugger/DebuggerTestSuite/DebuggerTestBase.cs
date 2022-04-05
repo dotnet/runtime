@@ -245,7 +245,6 @@ namespace DebuggerTests
             cli = insp.Client;
             scripts = SubscribeToScripts(insp);
             Func<string, ILogger<TestHarnessProxy>, Task<string>> extractConnUrl = ExtractConnUrl;
-            Console.WriteLine(InitParms());
             startTask = TestHarnessProxy.Start(GetBrowserPath(), DebuggerTestAppPath, driver, InitParms(), UrlToRemoteDebugging(), extractConnUrl);
         }
 

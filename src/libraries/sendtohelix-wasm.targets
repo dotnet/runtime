@@ -203,7 +203,6 @@
         <!-- FIXME: workaround for https://github.com/dotnet/runtime/issues/62660 -->
         <PreCommands Condition="'$(OS)' == 'Windows_NT'">set TEST_ARGS=--filter &quot;FullyQualifiedName~%(Identity)&amp;Category^!=windows-failing&amp;Category^!=failing&quot;</PreCommands>
         <PreCommands Condition="'$(OS)' != 'Windows_NT'">export TEST_ARGS=&quot;--filter FullyQualifiedName~%(Identity)&amp;Category!=linux-failing&amp;Category!=failing&quot;</PreCommands>
-
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
@@ -245,7 +244,8 @@
       <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
     </DownloadFile>
     <Exec Command="tar -xf $(_DownloadedFile) -C $(FirefoxForHelixPayload)"/>
-    <Exec Command='echo "user_pref(\"devtools.chrome.enabled\", true);\nuser_pref(\"devtools.debugger.remote-enabled\", true);\nuser_pref(\"devtools.debugger.prompt-connection\", false);" > $(FirefoxForHelixPayload)/prefs.js'/>
+    <Exec Command="mkdir $(FirefoxForHelixPayload)/profile"/>
+    <Exec Command='echo "user_pref(\"devtools.chrome.enabled\", true);\nuser_pref(\"devtools.debugger.remote-enabled\", true);\nuser_pref(\"devtools.debugger.prompt-connection\", false);" > $(FirefoxForHelixPayload)/profile/prefs.js'/>
     <Exec Command="rm $(_DownloadedFile)"/>
     <Exec Command="cd $(TestArchiveRoot); zip -r firefox.zip firefox"/>
     <Exec Command="rm -rf $(FirefoxForHelixPayload)"/>

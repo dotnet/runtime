@@ -157,7 +157,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 #else
                 var ideSocket = await context.WebSockets.AcceptWebSocketAsync();
                 var proxyFirefox = new FirefoxProxyServer(proxyLoggerFactory, 6000);
-                await proxyFirefox.RunForTests(9500, ideSocket);
+                await proxyFirefox.RunForTests(6002, ideSocket);
+                await Task.Delay(1000);
 #endif
             }
             catch (Exception e)
@@ -212,8 +213,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     try
                     {
                         var psi = new ProcessStartInfo();
-
                         psi.Arguments = $"{options.BrowserParms}{devToolsUrl.Port} http://{TestHarnessProxy.Endpoint.Authority}/{options.PagePath}";
+                        Console.WriteLine("olha os argumentos - " + psi.Arguments);                        
                         psi.UseShellExecute = false;
                         psi.FileName = options.BrowserPath;
                         psi.RedirectStandardError = true;

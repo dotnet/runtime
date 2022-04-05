@@ -64,21 +64,11 @@ public class DebuggerTestFirefox : DebuggerTestBase
 
     internal override string InitParms()
     {
-        if (File.Exists("/usr/lib/x86_64-linux-gnu/libdbus-glib-1.so.2"))
-            Console.WriteLine("/usr/lib/x86_64-linux-gnu/libdbus-glib-1.so.2 FOUND");
-        else 
-        {
-            Console.WriteLine("/usr/lib/x86_64-linux-gnu/libdbus-glib-1.so.2 NOT FOUND");
-            string[] files = Directory.GetFiles(@"/usr/lib/x86_64-linux-gnu", "");
-            foreach (var file in files)
-            {
-                Console.WriteLine(file);
-            }
-        }
         string baseDir = Path.GetDirectoryName(GetBrowserPath());
-        Console.WriteLine("searching for - "  + Path.Combine(baseDir, "..", "prefs.js"));
-        if (File.Exists(Path.Combine(baseDir, "..", "prefs.js")))
-            return $"-profile \"{Path.Combine(baseDir, "..")}\" -headless -private -start-debugger-server ";
+        if (File.Exists("/tmp/profile/prefs.js"))
+            return $"-profile \"/tmp/profile\" -headless -private -start-debugger-server ";
+        if (File.Exists(Path.Combine(baseDir, "..", "profile", "prefs.js")))
+            return $"-profile \"{Path.Combine(baseDir, "..", "profile")}\" -headless -private -start-debugger-server ";
         return $"-headless -private -start-debugger-server ";
     }
 

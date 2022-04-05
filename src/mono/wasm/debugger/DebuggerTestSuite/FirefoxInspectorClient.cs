@@ -50,8 +50,7 @@ class FirefoxInspectorClient : InspectorClient
 
         await ConnectWithMainLoops(uri, HandleMessage, token);
         proxyConnection = new TcpClient();
-        proxyConnection.Connect("127.0.0.1", 9500);
-        //await Task.Delay(1000);
+        proxyConnection.Connect("127.0.0.1", 6002);
         connectToProxy.TrySetResult();
     }
 
