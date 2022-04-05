@@ -1034,6 +1034,19 @@ TEST(mono_field_get_flags_works)
     CHECK_EQUAL(FIELD_ATTRIBUTE_FAMILY | FIELD_ATTRIBUTE_NOT_SERIALIZED, mono_field_get_flags(field3));
 }
 
+TEST(mono_class_get_field_from_name_base_class_works)
+{
+    MonoClass* klass = GetClassHelper(kTestDLLNameSpace, "DerivedClassWithFields");
+    // Derived class checks
+    GET_AND_CHECK(field3, mono_class_get_field_from_name(klass, "a"));
+    GET_AND_CHECK(field4, mono_class_get_field_from_name(klass, "b"));
+    GET_AND_CHECK(field5, mono_class_get_field_from_name(klass, "c"));
+    // Base class checks
+    GET_AND_CHECK(field0, mono_class_get_field_from_name(klass, "x"));
+    GET_AND_CHECK(field1, mono_class_get_field_from_name(klass, "y"));
+    GET_AND_CHECK(field2, mono_class_get_field_from_name(klass, "z"));
+}
+
 TEST(mono_class_get_methods_retrieves_all_methods)
 {
     MonoClass* klass = GetClassHelper(kTestDLLNameSpace, "TestClassWithMethods");

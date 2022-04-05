@@ -264,6 +264,20 @@ namespace TestDll
             g.i = 46;
         }
     }
+
+    public class BaseClassWithFields
+    {
+        public int x;
+        private int y;
+        private static int z;
+    }
+
+    public class DerivedClassWithFields : BaseClassWithFields
+    {
+        public int a;
+        private int b;
+        private static int c;
+    }
     
     public class TestException : Exception
     {

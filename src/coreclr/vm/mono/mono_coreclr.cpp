@@ -524,17 +524,22 @@ extern "C" EXPORT_API MonoClassField* EXPORT_CC mono_class_get_field_from_name(M
     }
     CONTRACTL_END;
 
-    MonoClass_clr* mt = reinterpret_cast<MonoClass_clr*>(klass);
-
-    ApproxFieldDescIterator fieldDescIterator(mt, ApproxFieldDescIterator::ALL_FIELDS);
-    FieldDesc* pField;
-
-    while ((pField = fieldDescIterator.Next()) != NULL)
+    while (klass)
     {
-        if(strcmp(pField->GetName(), name) == 0)
+        MonoClass_clr* mt = reinterpret_cast<MonoClass_clr*>(klass);
+
+        ApproxFieldDescIterator fieldDescIterator(mt, ApproxFieldDescIterator::ALL_FIELDS);
+        FieldDesc* pField;
+
+        while ((pField = fieldDescIterator.Next()) != NULL)
         {
-            return (MonoClassField*)pField;
+            if(strcmp(pField->GetName(), name) == 0)
+            {
+                return (MonoClassField*)pField;
+            }
         }
+
+        klass = mono_class_get_parent(klass);
     }
 
     return NULL;
