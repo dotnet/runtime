@@ -13,7 +13,17 @@ namespace ILCompiler
     {
         public override bool IsBlocked(MetadataType type) => !(type is EcmaType);
 
-        public override bool IsBlocked(FieldDesc field) => !(field is EcmaField);
+        public override bool IsBlocked(FieldDesc field)
+        {
+            if (field is not EcmaField ecmaField)
+                return true;
+
+            // Avoid exposing the MethodTable field
+            if (ecmaField.OwningType.IsObject)
+                return true;
+
+            return false;
+        }
 
         private MetadataType _arrayOfTType;
         private MetadataType InitializeArrayOfTType(TypeSystemEntity contextEntity)
@@ -34,12 +44,21 @@ namespace ILCompiler
         {
             if (method is EcmaMethod ecmaMethod)
             {
+                TypeDesc owningType = ecmaMethod.OwningType;
+
                 // Methods on Array`1<T> are implementation details that implement the generic interfaces on
                 // arrays. They should not generate metadata or be reflection invokable.
                 // We can get rid of this special casing if we make these methods stop being regular EcmaMethods
                 // with Array<T> as their owning type
-                if (ecmaMethod.OwningType == GetArrayOfTType(ecmaMethod))
+                if (owningType == GetArrayOfTType(ecmaMethod))
                     return true;
+
+                // Do not expose any of our internal details
+                if (owningType.IsObject)
+                {
+                    return method.Name is not ".ctor" and not "Equals" and not "Finalize" and not "GetHashCode"
+                        and not "GetType" and not "MemberwiseClone" and not "ReferenceEquals" and not "ToString";
+                }
 
                 return false;
             }
