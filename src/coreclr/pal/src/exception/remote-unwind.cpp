@@ -1502,7 +1502,7 @@ StepWithCompactEncodingFrameless(const libunwindInfo* info, compact_unwind_encod
         }
         switch (registers[i]) {
             case UNWIND_X86_64_REG_RBX:
-                context->Rbp = reg;
+                context->Rbx = reg;
                 break;
             case UNWIND_X86_64_REG_R12:
                 context->R12 = reg;
