@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization.Metadata
     /// <summary>
     /// Provides JSON serialization-related metadata about a type.
     /// </summary>
-    internal class ReflectionJsonTypeInfo<T> : JsonTypeInfo<T>
+    internal sealed class ReflectionJsonTypeInfo<T> : JsonTypeInfo<T>
     {
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         internal ReflectionJsonTypeInfo(JsonSerializerOptions options)

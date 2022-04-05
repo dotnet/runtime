@@ -46,6 +46,8 @@ namespace System.Text.Json
                 JsonTypeInfo.ValidateType(type, null, null, options);
 
                 MethodInfo methodInfo = typeof(JsonSerializerOptions).GetMethod(nameof(CreateReflectionJsonTypeInfo), BindingFlags.NonPublic | BindingFlags.Instance)!;
+                // Some of the validation is done during construction (i.e. validity of JsonConverter, inner types etc.)
+                // therefore we need to unwrap TargetInvocationException for better user experience
 #if NETCOREAPP
                 return (JsonTypeInfo)methodInfo.MakeGenericMethod(type).Invoke(options, BindingFlags.NonPublic | BindingFlags.DoNotWrapExceptions, null, null, null)!;
 #else
@@ -64,7 +66,6 @@ namespace System.Text.Json
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         private JsonTypeInfo<T> CreateReflectionJsonTypeInfo<T>()
         {
-            // We do not use Activator.CreateInstance because it will wrap exception if constructor throws it
             return new ReflectionJsonTypeInfo<T>(this);
         }
 
