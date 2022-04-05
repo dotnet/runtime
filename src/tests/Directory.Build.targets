@@ -221,10 +221,11 @@
           BeforeTargets="Build">
 
     <ItemGroup Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
-      <OutOfProcessMarkers Include="$(OutDir)/../**/*.OutOfProcessTest" />
+      <OutOfProcessTestMarkers Include="$(OutDir)/../**/*.OutOfProcessTest" />
+      <OutOfProcessTestFolders Include="$([MSBuild]::NormalizePath('%(OutOfProcessTestMarkers.RootDir)%(OutOfProcessTestMarkers.Directory)'))" />
       <MergedWrapperReferenceFolders Include="@(ProjectReference->'$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)/..', '$(OutDir)/..'))/%(ProjectReference.FileName)')" />
       <!-- Don't copy out-of-process test components to the merged wrapper output folder -->
-      <MergedWrapperReferenceFolders Remove="%(OutOfProcessMarkers.RootDir)%(OutOfProcessMarkers.Directory)" />
+      <MergedWrapperReferenceFolders Remove="@(OutOfProcessTestFolders)" />
       <!-- For merged project wrappers, include native libraries in all project references -->
       <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(LibSuffix)" />
     </ItemGroup>
