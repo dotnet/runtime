@@ -1,4 +1,4 @@
-// Copyright (c) .NET Foundation and contributors. All rights reserved.
+﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -1390,10 +1390,46 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				MethodWithGenericWhichRequiresMethods<TypeWithMethodWithRequires> ();
 			}
 
+			static void TestLocalFunctionInIteratorLocalFunction ()
+			{
+				IteratorLocalFunction ();
+
+				IEnumerable<int> IteratorLocalFunction ()
+				{
+					yield return 0;
+					LocalFunction ();
+					yield return 1;
+
+					[ExpectedWarning ("IL2026", "--MethodWithRequires--")]
+					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+					void LocalFunction () => MethodWithRequires ();
+				}
+			}
+
+			static void TestLocalFunctionCalledFromIteratorLocalFunctionAndMethod ()
+			{
+				IteratorLocalFunction ();
+
+				IEnumerable<int> IteratorLocalFunction ()
+				{
+					yield return 0;
+					LocalFunction ();
+					yield return 1;
+				}
+
+				[ExpectedWarning ("IL2026", "--MethodWithRequires--")]
+				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+				void LocalFunction () => MethodWithRequires ();
+			}
+
 			public static void Test ()
 			{
 				TestIteratorLocalFunctionInAsync ();
 				TestDynamicallyAccessedMethodViaGenericMethodParameterInIterator ();
+				TestLocalFunctionInIteratorLocalFunction ();
+				TestLocalFunctionCalledFromIteratorLocalFunctionAndMethod ();
 			}
 		}
 
@@ -1567,6 +1603,54 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				yield return 0;
 			}
 
+			[ExpectedWarning ("IL2026", "--IteratorLocalFunction--")]
+			[ExpectedWarning ("IL3002", "--IteratorLocalFunction--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "--IteratorLocalFunction--", ProducedBy = ProducedBy.Analyzer)]
+			static void TestLocalFunctionInIteratorLocalFunction ()
+			{
+				IteratorLocalFunction ();
+
+				[RequiresUnreferencedCode ("--IteratorLocalFunction--")]
+				[RequiresAssemblyFiles ("--IteratorLocalFunction--")]
+				[RequiresDynamicCode ("--IteratorLocalFunction--")]
+				IEnumerable<int> IteratorLocalFunction ()
+				{
+					yield return 0;
+					LocalFunction ();
+					MethodWithRequires ();
+					yield return 1;
+
+					// Trimmer doesn't try to associate LocalFunction with IteratorLocalFunction
+					[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = ProducedBy.Trimmer)]
+					void LocalFunction () => MethodWithRequires ();
+				}
+			}
+
+			[ExpectedWarning ("IL2026", "--IteratorLocalFunction--")]
+			[ExpectedWarning ("IL3002", "--IteratorLocalFunction--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "--IteratorLocalFunction--", ProducedBy = ProducedBy.Analyzer)]
+			static void TestLocalFunctionCalledFromIteratorLocalFunctionAndMethod ()
+			{
+				IteratorLocalFunction ();
+				LocalFunction ();
+
+				[RequiresUnreferencedCode ("--IteratorLocalFunction--")]
+				[RequiresAssemblyFiles ("--IteratorLocalFunction--")]
+				[RequiresDynamicCode ("--IteratorLocalFunction--")]
+				IEnumerable<int> IteratorLocalFunction ()
+				{
+					yield return 0;
+					LocalFunction ();
+					MethodWithRequires ();
+					yield return 1;
+				}
+
+				[ExpectedWarning ("IL2026", "--MethodWithRequires--")]
+				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+				void LocalFunction () => MethodWithRequires ();
+			}
+
 			[UnconditionalSuppressMessage ("Trimming", "IL2026")]
 			[UnconditionalSuppressMessage ("SingleFile", "IL3002")]
 			[UnconditionalSuppressMessage ("AOT", "IL3050")]
@@ -1583,6 +1667,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				TestIteratorLocalFunctionInAsync ();
 				TestIteratorLocalFunctionInAsyncWithoutInner ();
 				TestDynamicallyAccessedMethodViaGenericMethodParameterInIterator ();
+				TestLocalFunctionInIteratorLocalFunction ();
+				TestLocalFunctionCalledFromIteratorLocalFunctionAndMethod ();
 			}
 		}
 

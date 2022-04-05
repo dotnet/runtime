@@ -175,6 +175,7 @@ namespace ILLink.Shared
 		DynamicallyAccessedMembersOnTypeReferencesMemberWithDynamicallyAccessedMembers = 2114,
 		DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers = 2115,
 		RequiresUnreferencedCodeOnStaticConstructor = 2116,
+		MethodsAreAssociatedWithUserMethod = 2117,
 
 		// Single-file diagnostic ids.
 		AvoidAssemblyLocationInSingleFile = 3000,

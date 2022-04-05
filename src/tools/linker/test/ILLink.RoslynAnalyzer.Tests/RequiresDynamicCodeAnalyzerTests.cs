@@ -123,13 +123,13 @@ public class E
 ";
 
 			await VerifyRequiresDynamicCodeCodeFix (test, fixtest, new[] {
-				// /0/Test0.cs(9,17): warning IL2117: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
+				// /0/Test0.cs(9,17): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
 				VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(9, 17, 9, 21).WithArguments("C.M1()", " message.", ""),
-				// /0/Test0.cs(13,27): warning IL2117: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
+				// /0/Test0.cs(13,27): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
 				VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(13, 27, 13, 33).WithArguments("C.M1()", " message.", ""),
-				// /0/Test0.cs(17,31): warning IL2117: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
+				// /0/Test0.cs(17,31): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
 				VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(17, 31, 17, 37).WithArguments("C.M1()", " message.", ""),
-				// /0/Test0.cs(24,31): warning IL2117: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
+				// /0/Test0.cs(24,31): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
 				VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(24, 31, 24, 37).WithArguments("C.M1()", " message.", "")
 			}, new[] {
 				// /0/Test0.cs(27,10): error CS7036: There is no argument given that corresponds to the required formal parameter 'message' of 'RequiresDynamicCodeAttribute.RequiresDynamicCodeAttribute(string)'
@@ -176,7 +176,7 @@ public class C
 				src,
 				fix,
 				baselineExpected: new[] {
-					// /0/Test0.cs(12,22): warning IL2117: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
+					// /0/Test0.cs(12,22): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
 					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(12, 22, 12, 26).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
@@ -221,7 +221,7 @@ public class C
 				src,
 				fix,
 				baselineExpected: new[] {
-					// /0/Test0.cs(12,28): warning IL2117: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
+					// /0/Test0.cs(12,28): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
 					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(12, 28, 12, 32).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> (),
@@ -262,7 +262,7 @@ public class C
 				src,
 				fix,
 				baselineExpected: new[] {
-					// /0/Test0.cs(10,19): warning IL2117: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
+					// /0/Test0.cs(10,19): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
 					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(10, 19, 10, 23).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: new[] {
@@ -301,11 +301,11 @@ public class C
 				src,
 				fix,
 				baselineExpected: new[] {
-					// /0/Test0.cs(10,15): warning IL2117: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
+					// /0/Test0.cs(10,15): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
 					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(10, 15, 10, 19).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: new[] {
-					// /0/Test0.cs(10,15): warning IL2117: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
+					// /0/Test0.cs(10,15): warning IL3050: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
 					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(10, 15, 10, 19).WithArguments("C.M1()", " message.", "")
 				});
 		}

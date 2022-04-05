@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -1064,6 +1064,12 @@
   </data>
   <data name="RequiresUnreferencedCodeOnStaticConstructorMessage" xml:space="preserve">
     <value>'RequiresUnreferencedCodeAttribute' cannot be placed directly on static constructor '{0}', consider placing 'RequiresUnreferencedCodeAttribute' on the type declaration instead.</value>
+  </data>
+  <data name="MethodsAreAssociatedWithUserMethodTitle" xml:space="preserve">
+    <value>Trimmer currently can't correctly handle if the same compiler generated lambda or local function is associated with two different methods.</value>
+  </data>
+  <data name="MethodsAreAssociatedWithUserMethodMessage" xml:space="preserve">
+    <value>Methods '{0}' and '{1}' are both associated with lambda or local function '{2}'. This is currently unsupported and may lead to incorrectly reported warnings.</value>
   </data>
   <data name="AvoidAssemblyLocationInSingleFileTitle" xml:space="preserve">
     <value>Avoid accessing Assembly file path when publishing as a single file</value>
