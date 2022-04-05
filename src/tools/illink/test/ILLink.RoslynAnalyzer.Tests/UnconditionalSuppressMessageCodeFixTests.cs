@@ -184,7 +184,7 @@ public class C
 				test,
 				fixtest,
 				baselineExpected: new[] {
-				// /0/Test0.cs(7,17): warning IL2117: Members annotated with 'RequiresDynamicCodeAttribute' require dynamic access otherwise can break functionality when trimming application code. message.
+				// /0/Test0.cs(7,17): warning IL3050: Members annotated with 'RequiresDynamicCodeAttribute' require dynamic access otherwise can break functionality when trimming application code. message.
 				VerifyCSUSMwithRDC.Diagnostic (DiagnosticId.RequiresDynamicCode).WithSpan (7, 17, 7, 21).WithArguments ("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());

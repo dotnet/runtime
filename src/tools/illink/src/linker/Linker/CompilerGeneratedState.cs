@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -45,15 +46,22 @@ namespace Mono.Linker
 			if (!_typesWithPopulatedCache.Add (type))
 				return;
 
-			var callGraph = new CallGraph ();
+			var callGraph = new CompilerGeneratedCallGraph ();
 			var callingMethods = new HashSet<MethodDefinition> ();
 
 			void ProcessMethod (MethodDefinition method)
 			{
+				bool isStateMachineMember = CompilerGeneratedNames.IsStateMachineType (method.DeclaringType.Name);
 				if (!CompilerGeneratedNames.IsLambdaOrLocalFunction (method.Name)) {
-					// If it's not a nested function, track as an entry point to the call graph.
-					var added = callingMethods.Add (method);
-					Debug.Assert (added);
+					if (!isStateMachineMember) {
+						// If it's not a nested function, track as an entry point to the call graph.
+						var added = callingMethods.Add (method);
+						Debug.Assert (added);
+					}
+				} else {
+					// We don't expect lambdas or local functions to be emitted directly into
+					// state machine types.
+					Debug.Assert (!isStateMachineMember);
 				}
 
 				// Discover calls or references to lambdas or local functions. This includes
@@ -70,7 +78,11 @@ namespace Mono.Linker
 						if (!CompilerGeneratedNames.IsLambdaOrLocalFunction (lambdaOrLocalFunction.Name))
 							continue;
 
-						callGraph.TrackCall (method, lambdaOrLocalFunction);
+						if (isStateMachineMember) {
+							callGraph.TrackCall (method.DeclaringType, lambdaOrLocalFunction);
+						} else {
+							callGraph.TrackCall (method, lambdaOrLocalFunction);
+						}
 					}
 				}
 
@@ -92,6 +104,7 @@ namespace Mono.Linker
 						Debug.Assert (stateMachineType.DeclaringType == type ||
 							(CompilerGeneratedNames.IsGeneratedMemberName (stateMachineType.DeclaringType.Name) &&
 							 stateMachineType.DeclaringType.DeclaringType == type));
+						callGraph.TrackCall (method, stateMachineType);
 						if (!_compilerGeneratedTypeToUserCodeMethod.TryAdd (stateMachineType, method)) {
 							var alreadyAssociatedMethod = _compilerGeneratedTypeToUserCodeMethod[stateMachineType];
 							_context.LogWarning (new MessageOrigin (method), DiagnosticId.MethodsAreAssociatedWithStateMachine, method.GetDisplayName (), alreadyAssociatedMethod.GetDisplayName (), stateMachineType.GetDisplayName ());
@@ -129,9 +142,27 @@ namespace Mono.Linker
 			// code or its referenced nested functions. There is no reliable way to determine from
 			// IL which user code an unused nested function belongs to.
 			foreach (var userDefinedMethod in callingMethods) {
-				foreach (var nestedFunction in callGraph.GetReachableMethods (userDefinedMethod)) {
-					Debug.Assert (CompilerGeneratedNames.IsLambdaOrLocalFunction (nestedFunction.Name));
-					_compilerGeneratedMethodToUserCodeMethod.Add (nestedFunction, userDefinedMethod);
+				foreach (var compilerGeneratedMember in callGraph.GetReachableMembers (userDefinedMethod)) {
+					switch (compilerGeneratedMember) {
+					case MethodDefinition nestedFunction:
+						Debug.Assert (CompilerGeneratedNames.IsLambdaOrLocalFunction (nestedFunction.Name));
+						// Nested functions get suppressions from the user method only.
+						if (!_compilerGeneratedMethodToUserCodeMethod.TryAdd (nestedFunction, userDefinedMethod)) {
+							var alreadyAssociatedMethod = _compilerGeneratedMethodToUserCodeMethod[nestedFunction];
+							_context.LogWarning (new MessageOrigin (userDefinedMethod), DiagnosticId.MethodsAreAssociatedWithUserMethod, userDefinedMethod.GetDisplayName (), alreadyAssociatedMethod.GetDisplayName (), nestedFunction.GetDisplayName ());
+						}
+						break;
+					case TypeDefinition stateMachineType:
+						// Types in the call graph are always state machine types
+						// For those all their methods are not tracked explicitly in the call graph; instead, they
+						// are represented by the state machine type itself.
+						// We are already tracking the association of the state machine type to the user code method
+						// above, so no need to track it here.
+						Debug.Assert (CompilerGeneratedNames.IsStateMachineType (stateMachineType.Name));
+						break;
+					default:
+						throw new InvalidOperationException ();
+					}
 				}
 			}
 		}

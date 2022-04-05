@@ -1827,6 +1827,37 @@ void TestMethod()
   }
   ```
 
+#### `IL2117`: Trim analysis: Methods 'method1' and 'method2' are both associated with lambda or local function 'method'. This is currently unsupported and may lead to incorrectly reported warnings.
+
+- Trimmer currently can't correctly handle if the same compiler generated lambda or local function is associated with two different methods. We don't know of any C# patterns which would cause this problem, but it is possible to write code like this in IL.
+
+  Only a meta-sample:
+
+  ```C#
+  [RequiresUnreferencedCode ("")] // This should suppress all warnings from the method
+  void UserDefinedMethod()
+  {
+      // Uses the compiler-generated local function method
+      // The IL2026 from the local function should be suppressed in this case
+  }
+
+  // IL2107: Methods 'UserDefinedMethod' and 'SecondUserDefinedMethod' are both associated with state machine type '<compiler_generated_state_machine>_type'.
+  [RequiresUnreferencedCode ("")] // This should suppress all warnings from the method
+  void SecondUserDefinedMethod()
+  {
+      // Uses the compiler-generated local function method
+      // The IL2026 from the local function should be suppressed in this case
+  }
+
+  internal static void <UserDefinedMethod>g__LocalFunction|0_0()
+  {
+      // Compiler-generated method emitted for a local function.
+      // This should only ever be called from one user-defined method.
+  }
+
+  ```
+
+
 ## Single-File Warning Codes
 
 #### `IL3000`: 'member' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'
