@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.DirectoryServices.Tests;
 using System.Globalization;
@@ -475,10 +476,27 @@ namespace System.DirectoryServices.Protocols.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsLdapConfigurationExist))]
-        public void TestCompareRequest()
+        public static IEnumerable<object[]> TestCompareRequestTheory_TestData()
         {
-            var encoder = new UTF8Encoding();
+            yield return new object[] { "input", "input", ResultCode.CompareTrue };
+            yield return new object[] { "input", Encoding.UTF8.GetBytes("input"), ResultCode.CompareTrue };
+
+            yield return new object[] { "input", "false", ResultCode.CompareFalse };
+            yield return new object[] { "input", new byte[] { 1, 2, 3, 4, 5 }, ResultCode.CompareFalse };
+
+            yield return new object[] { "http://example.com/", "http://example.com/", ResultCode.CompareTrue };
+            yield return new object[] { "http://example.com/", new Uri("http://example.com/"), ResultCode.CompareTrue };
+            yield return new object[] { "http://example.com/", Encoding.UTF8.GetBytes("http://example.com/"), ResultCode.CompareTrue };
+
+            yield return new object[] { "http://example.com/", "http://false/", ResultCode.CompareFalse };
+            yield return new object[] { "http://example.com/", new Uri("http://false/"), ResultCode.CompareFalse };
+            yield return new object[] { "http://example.com/", Encoding.UTF8.GetBytes("http://false/"), ResultCode.CompareFalse };
+        }
+
+        [ConditionalTheory(nameof(IsLdapConfigurationExist))]
+        [MemberData(nameof(TestCompareRequestTheory_TestData))]
+        public void TestCompareRequestTheory(object value, object assertion, ResultCode compareResult)
+        {
             using (LdapConnection connection = GetConnection())
             {
                 string ouName = "ProtocolsGroup10";
@@ -489,27 +507,33 @@ namespace System.DirectoryServices.Protocols.Tests
 
                 string dn = rdn + "," + LdapConfiguration.Configuration.SearchDn;
 
-                // positive case 
-                var response = connection.SendRequest(new CompareRequest(dn, "ou", ouName));
+                // set description to value
+                var mod = new ModifyRequest(dn, DirectoryAttributeOperation.Replace, "description", value);
+                var response = connection.SendRequest(mod);
+                Assert.Equal(ResultCode.Success, response.ResultCode);
+
+                // compare description to assertion
+                var cmp = new CompareRequest(dn, new DirectoryAttribute("description", assertion));
+                response = connection.SendRequest(cmp);
+                // assert compare result
+                Assert.Equal(compareResult, response.ResultCode);
+
+                // compare description to value
+                cmp = new CompareRequest(dn, new DirectoryAttribute("description", value));
+                response = connection.SendRequest(cmp);
+                // compare result always true
                 Assert.Equal(ResultCode.CompareTrue, response.ResultCode);
+            }
+        }
 
-                // positive case 
-                response = connection.SendRequest(new CompareRequest(dn, "ou", encoder.GetBytes(ouName)));
-                Assert.Equal(ResultCode.CompareTrue, response.ResultCode);
-
-                // negative case ProtocolsGroup10 != NoMatch
-                response = connection.SendRequest(new CompareRequest(dn, "ou", "NoMatch"));
-                Assert.Equal(ResultCode.CompareFalse, response.ResultCode);
-
-                // negative case ProtocolsGroup10 != NoMatch
-                response = connection.SendRequest(new CompareRequest(dn, "ou", encoder.GetBytes("NoMatch")));
-                Assert.Equal(ResultCode.CompareFalse, response.ResultCode);
-
-                // negative case ou=NotFound does not exist
-                Assert.Throws<DirectoryOperationException>(() => connection.SendRequest(new CompareRequest("ou=NotFound," + LdapConfiguration.Configuration.SearchDn, "ou", "NotFound")));
-
-                // negative case ou=NotFound does not exist
-                Assert.Throws<DirectoryOperationException>(() => connection.SendRequest(new CompareRequest("ou=NotFound," + LdapConfiguration.Configuration.SearchDn, "ou", encoder.GetBytes("NotFound"))));
+        [ConditionalFact(nameof(IsLdapConfigurationExist))]
+        public void TestCompareRequest()
+        {
+            using (LdapConnection connection = GetConnection())
+            {
+                // negative case: ou=NotFound does not exist
+                var cmp = new CompareRequest("ou=NotFound," + LdapConfiguration.Configuration.SearchDn, "ou", "NotFound");
+                Assert.Throws<DirectoryOperationException>(() => connection.SendRequest(cmp));
             }
         }
 
@@ -625,7 +649,7 @@ namespace System.DirectoryServices.Protocols.Tests
                 }
             }
         }
-        
+
         private void DeleteAttribute(LdapConnection connection, string entryDn, string attributeName)
         {
             string dn = entryDn + "," + LdapConfiguration.Configuration.SearchDn;
