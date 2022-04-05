@@ -221,7 +221,7 @@ namespace Microsoft.Extensions.Configuration.Test
 
             builder.Add(new TestConfigurationSource(provider));
 
-            // Reading configuration will block on provider.TryRead() or profvider.GetChildKeys().
+            // Reading configuration will block on provider.TryRead() or provider.GetChildKeys().
             var readTask = Task.Run(() => concurrentReadAction(config));
             await provider.ReadStartedTask;
 

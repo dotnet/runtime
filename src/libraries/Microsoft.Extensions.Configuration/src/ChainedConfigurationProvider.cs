@@ -31,6 +31,11 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
+        /// The chained configuration.
+        /// </summary>
+        public IConfiguration Configuration => _config;
+
+        /// <summary>
         /// Tries to get a configuration value for the specified key.
         /// </summary>
         /// <param name="key">The key.</param>
