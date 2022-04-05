@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Logging.Console
             string name!!,
             ConsoleLoggerProcessor loggerProcessor,
             ConsoleFormatter formatter,
-            IExternalScopeProvider scopeProvider,
+            IExternalScopeProvider? scopeProvider,
             ConsoleLoggerOptions options)
         {
             _name = name;
@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Logging.Console
         }
 
         internal ConsoleFormatter Formatter { get; set; }
-        internal IExternalScopeProvider ScopeProvider { get; set; }
+        internal IExternalScopeProvider? ScopeProvider { get; set; }
         internal ConsoleLoggerOptions Options { get; set; }
 
         [ThreadStatic]
