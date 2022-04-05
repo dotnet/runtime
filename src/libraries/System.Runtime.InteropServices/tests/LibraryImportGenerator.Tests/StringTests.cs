@@ -375,11 +375,10 @@ namespace LibraryImportGenerator.IntegrationTests
 
         [Theory]
         [MemberData(nameof(UnicodeStrings))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void AnsiStringMarshalledAsExpected(string value)
         {
-            int expectedLen = value != null
-                ? OperatingSystem.IsWindows() ? GetLengthAnsi(value) : Encoding.UTF8.GetByteCount(value)
-                : -1;
+            int expectedLen = value != null ? GetLengthAnsi(value) : -1;
 
             Assert.Equal(expectedLen, NativeExportsNE.LPStr.ReturnLength(value));
             Assert.Equal(expectedLen, NativeExportsNE.LPStr.ReturnLength_IgnoreStringMarshalling(value));
@@ -387,9 +386,10 @@ namespace LibraryImportGenerator.IntegrationTests
 
         [Theory]
         [MemberData(nameof(UnicodeStrings))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void AnsiStringReturn(string value)
         {
-            string expected = OperatingSystem.IsWindows() ? ReverseAnsi(value) : ReverseBytes(value, Encoding.UTF8);
+            string expected = ReverseAnsi(value);
 
             Assert.Equal(expected, NativeExportsNE.LPStr.Reverse_Return(value));
 
@@ -400,10 +400,11 @@ namespace LibraryImportGenerator.IntegrationTests
 
         [Theory]
         [MemberData(nameof(UnicodeStrings))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void AnsiStringByRef(string value)
         {
             string refValue = value;
-            string expected = OperatingSystem.IsWindows() ? ReverseAnsi(value) : ReverseBytes(value, Encoding.UTF8);
+            string expected = ReverseAnsi(value);
 
             NativeExportsNE.LPStr.Reverse_In(in refValue);
             Assert.Equal(value, refValue); // Should not be updated when using 'in'

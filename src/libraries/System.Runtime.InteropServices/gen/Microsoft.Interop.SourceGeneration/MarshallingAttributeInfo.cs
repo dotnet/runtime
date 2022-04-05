@@ -90,6 +90,7 @@ namespace Microsoft.Interop
         UnmanagedType UnmanagedType,
         CharEncoding CharEncoding) : MarshallingInfoStringSupport(CharEncoding)
     {
+        internal const UnmanagedType UnmanagedType_LPUTF8Str = (UnmanagedType)0x30;
     }
 
     /// <summary>
@@ -486,6 +487,7 @@ namespace Microsoft.Interop
             {
                 _diagnostics.ReportConfigurationNotSupported(attrData, nameof(UnmanagedType), unmanagedType.ToString());
             }
+
             bool isArrayType = unmanagedType == UnmanagedType.LPArray || unmanagedType == UnmanagedType.ByValArray;
             UnmanagedType elementUnmanagedType = (UnmanagedType)SizeAndParamIndexInfo.UnspecifiedConstSize;
             SizeAndParamIndexInfo arraySizeInfo = SizeAndParamIndexInfo.Unspecified;
@@ -547,7 +549,9 @@ namespace Microsoft.Interop
                 MarshallingInfo elementMarshallingInfo = NoMarshallingInfo.Instance;
                 if (elementUnmanagedType != (UnmanagedType)SizeAndParamIndexInfo.UnspecifiedConstSize)
                 {
-                    elementMarshallingInfo = new MarshalAsInfo(elementUnmanagedType, _defaultInfo.CharEncoding);
+                    elementMarshallingInfo = elementType.SpecialType == SpecialType.System_String
+                        ? CreateStringMarshallingInfo(elementType, elementUnmanagedType, attrData)
+                        : new MarshalAsInfo(elementUnmanagedType, _defaultInfo.CharEncoding);
                 }
                 else
                 {
@@ -556,6 +560,11 @@ namespace Microsoft.Interop
                 }
 
                 return CreateArrayMarshallingInfo(elementType, arraySizeInfo, elementMarshallingInfo);
+            }
+
+            if (type.SpecialType == SpecialType.System_String)
+            {
+                return CreateStringMarshallingInfo(type, unmanagedType, attrData);
             }
 
             return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
@@ -729,17 +738,28 @@ namespace Microsoft.Interop
             // If the type is a character or string then pass on these details.
             if (type.SpecialType == SpecialType.System_Char || type.SpecialType == SpecialType.System_String)
             {
-                if (_defaultInfo.CharEncoding == CharEncoding.Custom && _defaultInfo.StringMarshallingCustomType is not null)
-                {
-                    AttributeData attrData = _contextSymbol is IMethodSymbol
-                        ? _contextSymbol.GetAttributes().First(a => a.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
-                        : default;
-                    marshallingInfo = CreateNativeMarshallingInfo(type, _defaultInfo.StringMarshallingCustomType, attrData, true, indirectionLevel, parsedCountInfo, useSiteAttributes, inspectedElements, ref maxIndirectionDepthUsed);
-                    return true;
-                }
-
                 if (_defaultInfo.CharEncoding != CharEncoding.Undefined)
                 {
+                    if (_defaultInfo.CharEncoding == CharEncoding.Custom)
+                    {
+                        if (_defaultInfo.StringMarshallingCustomType is not null)
+                        {
+                            AttributeData attrData = _contextSymbol is IMethodSymbol
+                                ? _contextSymbol.GetAttributes().First(a => a.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
+                                : default;
+                            marshallingInfo = CreateNativeMarshallingInfo(type, _defaultInfo.StringMarshallingCustomType, attrData, true, indirectionLevel, parsedCountInfo, useSiteAttributes, inspectedElements, ref maxIndirectionDepthUsed);
+                            return true;
+                        }
+                    }
+                    else if (type.SpecialType == SpecialType.System_String)
+                    {
+                        AttributeData attrData = _contextSymbol is IMethodSymbol
+                            ? _contextSymbol.GetAttributes().First(a => a.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
+                            : default;
+                        marshallingInfo = CreateStringMarshallingInfo(type, _defaultInfo.CharEncoding, default);
+                        return true;
+                    }
+
                     marshallingInfo = new MarshallingInfoStringSupport(_defaultInfo.CharEncoding);
                     return true;
                 }
@@ -804,6 +824,52 @@ namespace Microsoft.Interop
                 ElementCountInfo: countInfo,
                 ElementType: ManagedTypeInfo.CreateTypeInfoForTypeSymbol(elementType),
                 ElementMarshallingInfo: elementMarshallingInfo);
+        }
+
+        private MarshallingInfo CreateStringMarshallingInfo(
+            ITypeSymbol type,
+            UnmanagedType unmanagedType,
+            AttributeData attrData)
+        {
+            CharEncoding charEncoding = unmanagedType switch
+            {
+                UnmanagedType.LPStr => CharEncoding.Ansi,
+                UnmanagedType.LPTStr or UnmanagedType.LPWStr => CharEncoding.Utf16,
+                MarshalAsInfo.UnmanagedType_LPUTF8Str => CharEncoding.Utf8,
+                _ => CharEncoding.Undefined
+            };
+            if (charEncoding == CharEncoding.Undefined)
+                return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
+
+            return CreateStringMarshallingInfo(type, charEncoding, attrData);
+        }
+
+        private MarshallingInfo CreateStringMarshallingInfo(
+            ITypeSymbol type,
+            CharEncoding charEncoding,
+            AttributeData attrData)
+        {
+            string? marshallerName = charEncoding switch
+            {
+                CharEncoding.Ansi => TypeNames.AnsiStringMarshaller,
+                CharEncoding.Utf16 => TypeNames.Utf16StringMarshaller,
+                CharEncoding.Utf8 => TypeNames.Utf8StringMarshaller,
+                _ => throw new InvalidOperationException()
+            };
+            INamedTypeSymbol? stringMarshaller = _compilation.GetTypeByMetadataName(marshallerName);
+            if (stringMarshaller is null)
+                return new MissingSupportMarshallingInfo();
+
+            var (_, _, customTypeMarshallerData) = ManualTypeMarshallingHelper.GetMarshallerShapeInfo(stringMarshaller);
+            Debug.Assert(customTypeMarshallerData is not null);
+
+            return CreateNativeMarshallingInfoForValue(
+                type,
+                stringMarshaller,
+                attrData,
+                customTypeMarshallerData.Value,
+                allowPinningManagedType: charEncoding == CharEncoding.Utf16,
+                useDefaultMarshalling: false);
         }
 
         private MarshallingInfo GetBlittableMarshallingInfo(ITypeSymbol type)

@@ -16,10 +16,22 @@ namespace System.Runtime.InteropServices
         private byte* allocated;
         private Span<byte> span;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AnsiStringMarshaller"/>.
+        /// </summary>
+        /// <param name="str">The string to marshal.</param>
         public AnsiStringMarshaller(string str)
             : this(str, default(Span<byte>))
         { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AnsiStringMarshaller"/>.
+        /// </summary>
+        /// <param name="str">The string to marshal.</param>
+        /// <param name="buffer">Buffer that may be used for marshalling.</param>
+        /// <remarks>
+        /// <seealso cref="CustomTypeMarshallerFeatures.CallerAllocatedBuffer"/>
+        /// </remarks>
         public AnsiStringMarshaller(string str, Span<byte> buffer)
         {
             allocated = null;
@@ -41,12 +53,37 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        /// <summary>
+        /// Returns the native value representing the string.
+        /// </summary>
+        /// <remarks>
+        /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
+        /// </remarks>
         public byte* ToNativeValue() => allocated != null ? allocated : (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
 
+        /// <summary>
+        /// Sets the native value representing the string.
+        /// </summary>
+        /// <param name="value">The native value.</param>
+        /// <remarks>
+        /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
+        /// </remarks>
         public void FromNativeValue(byte* value) => allocated = value;
 
+        /// <summary>
+        /// Returns the managed string.
+        /// </summary>
+        /// <remarks>
+        /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
+        /// </remarks>
         public string? ToManaged() => allocated == null ? null : new string((sbyte*)allocated);
 
+        /// <summary>
+        /// Frees native resources.
+        /// </summary>
+        /// <remarks>
+        /// <seealso cref="CustomTypeMarshallerFeatures.UnmanagedResources"/>
+        /// </remarks>
         public void FreeNative() => Marshal.FreeCoTaskMem((IntPtr)allocated);
     }
 }

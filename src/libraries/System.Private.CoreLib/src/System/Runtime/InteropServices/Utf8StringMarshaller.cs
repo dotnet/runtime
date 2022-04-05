@@ -25,10 +25,22 @@ namespace System.Runtime.InteropServices
         // maximum number of bytes per 'char' is 3.
         private const int MaxByteCountPerChar = 3;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Utf8StringMarshaller"/>.
+        /// </summary>
+        /// <param name="str">The string to marshal.</param>
         public Utf8StringMarshaller(string str)
             : this(str, default(Span<byte>))
         { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Utf8StringMarshaller"/>.
+        /// </summary>
+        /// <param name="str">The string to marshal.</param>
+        /// <param name="buffer">Buffer that may be used for marshalling.</param>
+        /// <remarks>
+        /// <seealso cref="CustomTypeMarshallerFeatures.CallerAllocatedBuffer"/>
+        /// </remarks>
         public Utf8StringMarshaller(string str, Span<byte> buffer)
         {
             allocated = null;
@@ -51,12 +63,37 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        /// <summary>
+        /// Returns the native value representing the string.
+        /// </summary>
+        /// <remarks>
+        /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
+        /// </remarks>
         public byte* ToNativeValue() => allocated != null ? allocated : (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
 
+        /// <summary>
+        /// Sets the native value representing the string.
+        /// </summary>
+        /// <param name="value">The native value.</param>
+        /// <remarks>
+        /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
+        /// </remarks>
         public void FromNativeValue(byte* value) => allocated = value;
 
+        /// <summary>
+        /// Returns the managed string.
+        /// </summary>
+        /// <remarks>
+        /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
+        /// </remarks>
         public string? ToManaged() => allocated == null ? null : Marshal.PtrToStringUTF8((IntPtr)allocated);
 
+        /// <summary>
+        /// Frees native resources.
+        /// </summary>
+        /// <remarks>
+        /// <seealso cref="CustomTypeMarshallerFeatures.UnmanagedResources"/>
+        /// </remarks>
         public void FreeNative()
         {
             if (allocated != null)

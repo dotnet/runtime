@@ -57,6 +57,7 @@ When marshalling as [ANSI](https://docs.microsoft.com/windows/win32/intl/code-pa
   - No optimization for stack allocation will be performed. Marshalling will always allocate through `AllocCoTaskMem`.
 
 The p/invoke source generator does not provide an equivalent to using `CharSet.Auto` in the built-in system. If platform-dependent behaviour is desired, it is left to the user to define different p/invokes with different marshalling configurations.
+Similarly, `UnmanagedType.LPStr` will only mean ANSI rather than ANSI on Windows and UTF-8 on non-Windows. `UnmanagedType.LPUTF8Str` or `StringMarshalling.Utf8` can be used for UTF-8 and it is left to the user to define different p/invokes if platform-dependent behaviour is desired.
 
 ### `bool` marshalling
 
