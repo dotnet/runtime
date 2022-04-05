@@ -229,9 +229,22 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public int Int2 { get; }
         }
 
-        public class SemiImmutableType
+        public class SemiImmutableClass
         {
-            public SemiImmutableType(string color, int length)
+            public SemiImmutableClass(string color, int length)
+            {
+                Color = color;
+                Length = length;
+            }
+
+            public string Color { get; }
+            public int Length { get; }
+            public decimal Thickness { get; set; }
+        }
+
+        public class SemiImmutableClassWithInit
+        {
+            public SemiImmutableClassWithInit(string color, int length)
             {
                 Color = color;
                 Length = length;
@@ -1217,7 +1230,26 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            var options = config.Get<SemiImmutableType>();
+            var options = config.Get<SemiImmutableClass>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+            Assert.Equal(1.23m, options.Thickness);
+        }
+
+        [Fact]
+        public void CanBindSemiImmutableClassWithInit()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+                {"Thickness", "1.23"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<SemiImmutableClassWithInit>();
             Assert.Equal(42, options.Length);
             Assert.Equal("Green", options.Color);
             Assert.Equal(1.23m, options.Thickness);
