@@ -193,6 +193,18 @@ steps:
       sed -i'' -E -e 's/([>;])net[0-9]+\.[0-9]+-maccatalyst([<;])/\1\2/g' MauiTesting.csproj
       cat MauiTesting.csproj
 
+      echo "sed -i'' -E -e 's/\([>;]\)net[0-9]+\.[0-9]+-maccatalyst\([<;]\)/\1\2/g' MauiTesting.csproj"
+      sed -i'' -E -e 's/([>;])net[0-9]+\.[0-9]+-maccatalyst([<;])/\1\2/g' MauiTesting.csproj
+      cat MauiTesting.csproj
+
+      echo "sed -i'' -E -e 's/([>;])net[0-9]\.[0-9]-maccatalyst([<;])/\1\2/g' MauiTesting.csproj"
+      sed -i'' -E -e 's/([>;])net[0-9]+\.[0-9]+-maccatalyst([<;])/\1\2/g' MauiTesting.csproj
+      cat MauiTesting.csproj
+
+      echo "sed -i'' -E -e 's/\([>;]\)net[0-9]\.[0-9]-maccatalyst\([<;]\)/\1\2/g' MauiTesting.csproj"
+      sed -i'' -E -e 's/([>;])net[0-9]+\.[0-9]+-maccatalyst([<;])/\1\2/g' MauiTesting.csproj
+      cat MauiTesting.csproj
+
       ls -aR
       ../dotnet publish -bl:MauiiOS.binlog -f net6.0-ios --self-contained -r ios-arm64 -c Release /p:_RequireCodeSigning=false
       mv ./bin/Release/net6.0-ios/ios-arm64/publish/MauiTesting.ipa ./MauiiOSDefault.ipa
