@@ -1,6 +1,13 @@
 <Project>
-  <ItemGroup>
+  <PropertyGroup>
+    <!--<WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>-->
+    <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != ''">true</WasmUseEMSDK_PATH>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(WasmUseEMSDK_PATH)' != 'true'">
     <PackageReference Condition="$([MSBuild]::IsOSPlatform('osx'))" Include="Microsoft.NET.Runtime.Emscripten.3.1.7.Transport.Internal.osx-x64" PrivateAssets="all" Version="$(MicrosoftNETRuntimeEmscriptenVersion)" GeneratePathProperty="true" />
     <PackageReference Condition="$([MSBuild]::IsOSPlatform('windows'))" Include="Microsoft.NET.Runtime.Emscripten.3.1.7.Transport.Internal.win-x64" PrivateAssets="all" Version="$(MicrosoftNETRuntimeEmscriptenVersion)" GeneratePathProperty="true" />
   </ItemGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)wasm/build/EmSdkRepo.Defaults.props" Condition="'$(WasmUseEMSDK_PATH)' == 'true'" />
 </Project>
