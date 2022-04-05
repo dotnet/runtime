@@ -129,7 +129,7 @@ partial class C
 
         [Theory]
         [MemberData(nameof(GetDownlevelTargetFrameworks))]
-        [OuterLoop]
+        [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task SkipLocalsInitOnDownlevelTargetFrameworks(TestTargetFramework targetFramework, bool expectSkipLocalsInit)
         {
             string source = $@"

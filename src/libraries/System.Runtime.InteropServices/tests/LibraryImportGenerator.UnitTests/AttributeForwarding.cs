@@ -297,7 +297,7 @@ struct Native
         }
 
         [Fact]
-        [OuterLoop]
+        [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task InOutAttributes_Forwarded_To_ForwardedParameter()
         {
             string source = @"
@@ -341,7 +341,7 @@ partial class C
         }
 
         [Fact]
-        [OuterLoop]
+        [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task MarshalAsAttribute_Forwarded_To_ForwardedParameter()
         {
             string source = @"
@@ -371,7 +371,7 @@ partial class C
         }
 
         [Fact]
-        [OuterLoop]
+        [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task MarshalAsAttribute_Forwarded_To_ForwardedParameter_Array()
         {
             string source = @"
