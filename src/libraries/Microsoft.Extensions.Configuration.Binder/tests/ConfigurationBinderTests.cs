@@ -114,18 +114,14 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
         public class ClassWithInAndOutAndRefParameters
         {
-            public ClassWithInAndOutAndRefParameters(in string color, int length)
-            {
-                Color = color;
-                Length = length;
-            }
-
+            // will not choose because ref parameters are not considered
             public ClassWithInAndOutAndRefParameters(in string color, ref int length)
             {
                 Color = color;
                 Length = length;
             }
 
+            // will not choose this one because out parameters are not considered
             public ClassWithInAndOutAndRefParameters(in string color, int length, out string colorUpperCase)
             {
                 Color = color;
@@ -133,6 +129,14 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 colorUpperCase = color.ToUpper();
             }
 
+            // WILL choose this one; in parameters are considered
+            public ClassWithInAndOutAndRefParameters(in string color, int length)
+            {
+                Color = color;
+                Length = length;
+            }
+
+            // will not choose this one as it contains ref and out parameters
             public ClassWithInAndOutAndRefParameters(in string color, int length, out string colorUpperCase, ref int alternativeLength)
             {
                 Color = color;

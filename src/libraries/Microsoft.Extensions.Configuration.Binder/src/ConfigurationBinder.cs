@@ -443,28 +443,12 @@ namespace Microsoft.Extensions.Configuration
                 for (int index = 0; index < constructors.Length; index++)
                 {
                     ConstructorInfo constructor = constructors[index];
-
                     ParameterInfo[] constructorParameters = constructor.GetParameters();
 
-                    bool canUse = true;
-
-                    foreach (ParameterInfo p in constructorParameters)
+                    if (!CanBindToTheseConstructorParameters(constructorParameters))
                     {
-                        if (p.IsOut)
-                        {
-                            canUse = false;
-                            break;
-                        }
-
-                        // `in` is OK, but filter out `ref`
-                        if (!p.IsIn && p.ParameterType.IsByRef)
-                        {
-                            canUse = false;
-                            break;
-                        }
+                        continue;
                     }
-
-                    if (!canUse) continue;
 
                     if (chosenParameters is null || constructorParameters.Length > chosenParameters.Length)
                     {
@@ -497,6 +481,19 @@ namespace Microsoft.Extensions.Configuration
             }
 
             return instance ?? throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type));
+        }
+
+        private static bool CanBindToTheseConstructorParameters(ParameterInfo[] constructorParameters)
+        {
+            foreach (ParameterInfo p in constructorParameters)
+            {
+                if (p.IsOut) return false;
+
+                // `in` is OK, but filter out `ref`
+                if (!p.IsIn && p.ParameterType.IsByRef) return false;
+            }
+
+            return true;
         }
 
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
