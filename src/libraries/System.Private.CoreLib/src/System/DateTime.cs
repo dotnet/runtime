@@ -61,7 +61,9 @@ namespace System
           ISubtractionOperators<DateTime, DateTime, TimeSpan>
     {
         // Number of 100ns ticks per time unit
-        private const long TicksPerMillisecond = 10000;
+        private const long NanosecondsPerTick = 100;
+        private const long TicksPerMicrosecond = 10;
+        private const long TicksPerMillisecond = TicksPerMicrosecond * 1000;
         private const long TicksPerSecond = TicksPerMillisecond * 1000;
         private const long TicksPerMinute = TicksPerSecond * 60;
         private const long TicksPerHour = TicksPerMinute * 60;
@@ -189,12 +191,78 @@ namespace System
             _dateData = DateToTicks(year, month, day);
         }
 
+        public DateTime(int year, int month, int day, DateTimeKind kind)
+            : this(year, month, day, 0, 0, 0, kind)
+        {
+        }
+
         // Constructs a DateTime from a given year, month, and day for
         // the specified calendar. The
         // time-of-day of the resulting DateTime is always midnight.
-        //
         public DateTime(int year, int month, int day, Calendar calendar)
             : this(year, month, day, 0, 0, 0, calendar)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified year, month, day, hour, minute, second,
+        /// millisecond, and Coordinated Universal Time (UTC) or local time for the specified calendar.
+        /// </summary>
+        /// <param name="year">The year (1 through the number of years in <paramref name="calendar"/>).</param>
+        /// <param name="month">The month (1 through the number of months in <paramref name="calendar"/>).</param>
+        /// <param name="day">The day (1 through the number of days in <paramref name="month"/>).</param>
+        /// <param name="hour">The hours (0 through 23).</param>
+        /// <param name="minute">The minutes (0 through 59).</param>
+        /// <param name="second">The seconds (0 through 59).</param>
+        /// <param name="millisecond">The milliseconds (0 through 999).</param>
+        /// <param name="calendar">The calendar that is used to interpret <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/>.</param>
+        /// <param name="kind">
+        /// One of the enumeration values that indicates whether <paramref name="year"/>, <paramref name="month"/>, <paramref name="day"/>,
+        /// <paramref name="hour"/>, <paramref name="minute"/>, <paramref name="second"/>, and <paramref name="millisecond"/>
+        /// specify a local time, Coordinated Universal Time (UTC), or neither.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="calendar"/> is <see langword="null"/>
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="year"/> is not in the range supported by <paramref name="calendar"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="month"/> is less than 1 or greater than the number of months in <paramref name="calendar"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="day"/> is less than 1 or greater than the number of days in <paramref name="month"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="hour"/> is less than 0 or greater than 23.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="minute"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="second"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="millisecond"/> is less than 0 or greater than 999.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="kind"/> is not one of the <see cref="DateTimeKind"/> values.
+        /// </exception>
+        /// <remarks>
+        /// The allowable values for <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/> parameters
+        /// depend on the <paramref name="calendar"/> parameter. An exception is thrown if the specified date and time cannot
+        /// be expressed using <paramref name="calendar"/>.
+        ///
+        /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
+        /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
+        /// </remarks>
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar!!, DateTimeKind kind)
+            : this(year, month, day, hour, minute, second, millisecond, 0, calendar, kind)
         {
         }
 
@@ -251,77 +319,360 @@ namespace System
 
         // Constructs a DateTime from a given year, month, day, hour,
         // minute, and second.
-        //
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond)
+            : this(year, month, day, hour, minute, second, millisecond, 0)
         {
-            if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
-
-            if (second != 60 || !s_systemSupportsLeapSeconds)
-            {
-                ulong ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
-                ticks += (uint)millisecond * (uint)TicksPerMillisecond;
-                Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");
-                _dateData = ticks;
-            }
-            else
-            {
-                // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new DateTime(year, month, day, hour, minute, 59, millisecond);
-                ValidateLeapSecond();
-            }
         }
 
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, DateTimeKind kind)
+            : this(year, month, day, hour, minute, second, millisecond, 0, kind)
         {
-            if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
-            if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
-
-            if (second != 60 || !s_systemSupportsLeapSeconds)
-            {
-                ulong ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
-                ticks += (uint)millisecond * (uint)TicksPerMillisecond;
-                Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");
-                _dateData = ticks | ((ulong)kind << KindShift);
-            }
-            else
-            {
-                // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new DateTime(year, month, day, hour, minute, 59, millisecond, kind);
-                ValidateLeapSecond();
-            }
         }
 
-        // Constructs a DateTime from a given year, month, day, hour,
-        // minute, and second for the specified calendar.
-        //
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified year, month, day, hour, minute, second,
+        /// millisecond, and Coordinated Universal Time (UTC) or local time for the specified calendar.
+        /// </summary>
+        /// <param name="year">The year (1 through the number of years in <paramref name="calendar"/>).</param>
+        /// <param name="month">The month (1 through the number of months in <paramref name="calendar"/>).</param>
+        /// <param name="day">The day (1 through the number of days in <paramref name="month"/>).</param>
+        /// <param name="hour">The hours (0 through 23).</param>
+        /// <param name="minute">The minutes (0 through 59).</param>
+        /// <param name="second">The seconds (0 through 59).</param>
+        /// <param name="millisecond">The milliseconds (0 through 999).</param>
+        /// <param name="calendar">The calendar that is used to interpret <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/>.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="calendar"/> is <see langword="null"/>
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="year"/> is not in the range supported by <paramref name="calendar"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="month"/> is less than 1 or greater than the number of months in <paramref name="calendar"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="day"/> is less than 1 or greater than the number of days in <paramref name="month"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="hour"/> is less than 0 or greater than 23.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="minute"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="second"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="millisecond"/> is less than 0 or greater than 999.
+        /// </exception>
+        /// <remarks>
+        /// The allowable values for <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/> parameters
+        /// depend on the <paramref name="calendar"/> parameter. An exception is thrown if the specified date and time cannot
+        /// be expressed using <paramref name="calendar"/>.
+        ///
+        /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
+        /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
+        /// </remarks>
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar!!)
+            : this(year, month, day, hour, minute, second, millisecond, 0, calendar)
         {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified year, month, day, hour, minute, second,
+        /// millisecond, and Coordinated Universal Time (UTC) or local time for the specified calendar.
+        /// </summary>
+        /// <param name="year">The year (1 through 9999).</param>
+        /// <param name="month">The month (1 through 12).</param>
+        /// <param name="day">The day (1 through the number of days in <paramref name="month"/>).</param>
+        /// <param name="hour">The hours (0 through 23).</param>
+        /// <param name="minute">The minutes (0 through 59).</param>
+        /// <param name="second">The seconds (0 through 59).</param>
+        /// <param name="millisecond">The milliseconds (0 through 999).</param>
+        /// <param name="microsecond">The milliseconds (0 through 900).</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="year"/> is less than 1 or greater than 9999.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="month"/> is less than 1 or greater than 12.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="day"/> is less than 1 or greater than the number of days in <paramref name="month"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="hour"/> is less than 0 or greater than 23.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="minute"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="second"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="millisecond"/> is less than 0 or greater than 999.
+        /// -or-
+        ///
+        /// <paramref name="microsecond"/> is less than 0 or greater than 900.
+        /// </exception>
+        /// <remarks>
+        /// This constructor interprets <paramref name="year"/>, <paramref name="month"/> and <paramref name="day"/> as a year, month and day
+        /// in the Gregorian calendar. To instantiate a <see cref="DateTime"/> value by using the year, month and day in another calendar, call
+        /// the <see cref="DateTime(int, int, int, int, int, int, int, int, Calendar)"/> constructor.
+        ///
+        /// The <see cref="Kind"/> property is initialized to <see cref="DateTimeKind.Unspecified"/>.
+        ///
+        /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
+        /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
+        /// </remarks>
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond)
+        {
+            if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
+
             if (second != 60 || !s_systemSupportsLeapSeconds)
             {
-                _dateData = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond).UTicks;
+                _dateData = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second, millisecond, microsecond);
             }
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new DateTime(year, month, day, hour, minute, 59, millisecond, calendar);
+                this = new DateTime(year, month, day, hour, minute, 59, millisecond, microsecond);
                 ValidateLeapSecond();
             }
         }
 
-        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar!!, DateTimeKind kind)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified year, month, day, hour, minute, second,
+        /// millisecond, and Coordinated Universal Time (UTC) or local time for the specified calendar.
+        /// </summary>
+        /// <param name="year">The year (1 through 9999).</param>
+        /// <param name="month">The month (1 through 12).</param>
+        /// <param name="day">The day (1 through the number of days in <paramref name="month"/>).</param>
+        /// <param name="hour">The hours (0 through 23).</param>
+        /// <param name="minute">The minutes (0 through 59).</param>
+        /// <param name="second">The seconds (0 through 59).</param>
+        /// <param name="millisecond">The milliseconds (0 through 999).</param>
+        /// <param name="microsecond">The milliseconds (0 through 900).</param>
+        /// <param name="kind">
+        /// One of the enumeration values that indicates whether <paramref name="year"/>, <paramref name="month"/>, <paramref name="day"/>,
+        /// <paramref name="hour"/>, <paramref name="minute"/>, <paramref name="second"/>, and <paramref name="millisecond"/>
+        /// specify a local time, Coordinated Universal Time (UTC), or neither.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="year"/> is less than 1 or greater than 9999.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="month"/> is less than 1 or greater than 12.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="day"/> is less than 1 or greater than the number of days in <paramref name="month"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="hour"/> is less than 0 or greater than 23.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="minute"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="second"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="millisecond"/> is less than 0 or greater than 999.
+        /// -or-
+        ///
+        /// <paramref name="microsecond"/> is less than 0 or greater than 900.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="kind"/> is not one of the <see cref="DateTimeKind"/> values.
+        /// </exception>
+        /// <remarks>
+        /// This constructor interprets <paramref name="year"/>, <paramref name="month"/> and <paramref name="day"/> as a year, month and day
+        /// in the Gregorian calendar. To instantiate a <see cref="DateTime"/> value by using the year, month and day in another calendar, call
+        /// the <see cref="DateTime(int, int, int, int, int, int, int, int, Calendar, DateTimeKind)"/> constructor.
+        ///
+        /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
+        /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
+        /// </remarks>
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, DateTimeKind kind)
         {
             if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
 
             if (second != 60 || !s_systemSupportsLeapSeconds)
             {
-                ulong ticks = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond).UTicks;
+                _dateData = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second, millisecond, microsecond);
+            }
+            else
+            {
+                // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
+                this = new DateTime(year, month, day, hour, minute, 59, millisecond, microsecond, kind);
+                ValidateLeapSecond();
+            }
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified year, month, day, hour, minute, second,
+        /// millisecond, and Coordinated Universal Time (UTC) or local time for the specified calendar.
+        /// </summary>
+        /// <param name="year">The year (1 through the number of years in <paramref name="calendar"/>).</param>
+        /// <param name="month">The month (1 through the number of months in <paramref name="calendar"/>).</param>
+        /// <param name="day">The day (1 through the number of days in <paramref name="month"/>).</param>
+        /// <param name="hour">The hours (0 through 23).</param>
+        /// <param name="minute">The minutes (0 through 59).</param>
+        /// <param name="second">The seconds (0 through 59).</param>
+        /// <param name="millisecond">The milliseconds (0 through 999).</param>
+        /// <param name="microsecond">The milliseconds (0 through 900).</param>
+        /// <param name="calendar">The calendar that is used to interpret <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/>.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="calendar"/> is <see langword="null"/>
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="year"/> is not in the range supported by <paramref name="calendar"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="month"/> is less than 1 or greater than the number of months in <paramref name="calendar"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="day"/> is less than 1 or greater than the number of days in <paramref name="month"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="hour"/> is less than 0 or greater than 23.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="minute"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="second"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="millisecond"/> is less than 0 or greater than 999.
+        /// -or-
+        ///
+        /// <paramref name="microsecond"/> is less than 0 or greater than 900.
+        /// </exception>
+        /// <remarks>
+        /// The allowable values for <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/> parameters
+        /// depend on the <paramref name="calendar"/> parameter. An exception is thrown if the specified date and time cannot
+        /// be expressed using <paramref name="calendar"/>.
+        ///
+        /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
+        /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
+        /// </remarks>
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, Calendar calendar!!)
+        {
+            if (second != 60 || !s_systemSupportsLeapSeconds)
+            {
+                var dateTime = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond);
+                dateTime = dateTime.AddMicroseconds(microsecond);
+                _dateData = dateTime.UTicks;
+            }
+            else
+            {
+                // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
+                this = new DateTime(year, month, day, hour, minute, 59, millisecond, microsecond, calendar);
+                ValidateLeapSecond();
+            }
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified year, month, day, hour, minute, second,
+        /// millisecond, and Coordinated Universal Time (UTC) or local time for the specified calendar.
+        /// </summary>
+        /// <param name="year">The year (1 through the number of years in <paramref name="calendar"/>).</param>
+        /// <param name="month">The month (1 through the number of months in <paramref name="calendar"/>).</param>
+        /// <param name="day">The day (1 through the number of days in <paramref name="month"/>).</param>
+        /// <param name="hour">The hours (0 through 23).</param>
+        /// <param name="minute">The minutes (0 through 59).</param>
+        /// <param name="second">The seconds (0 through 59).</param>
+        /// <param name="millisecond">The milliseconds (0 through 999).</param>
+        /// <param name="microsecond">The milliseconds (0 through 900).</param>
+        /// <param name="calendar">The calendar that is used to interpret <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/>.</param>
+        /// <param name="kind">
+        /// One of the enumeration values that indicates whether <paramref name="year"/>, <paramref name="month"/>, <paramref name="day"/>,
+        /// <paramref name="hour"/>, <paramref name="minute"/>, <paramref name="second"/>, and <paramref name="millisecond"/>
+        /// specify a local time, Coordinated Universal Time (UTC), or neither.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="calendar"/> is <see langword="null"/>
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="year"/> is not in the range supported by <paramref name="calendar"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="month"/> is less than 1 or greater than the number of months in <paramref name="calendar"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="day"/> is less than 1 or greater than the number of days in <paramref name="month"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="hour"/> is less than 0 or greater than 23.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="minute"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="second"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="millisecond"/> is less than 0 or greater than 999.
+        /// -or-
+        ///
+        /// <paramref name="microsecond"/> is less than 0 or greater than 900.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="kind"/> is not one of the <see cref="DateTimeKind"/> values.
+        /// </exception>
+        /// <remarks>
+        /// The allowable values for <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/> parameters
+        /// depend on the <paramref name="calendar"/> parameter. An exception is thrown if the specified date and time cannot
+        /// be expressed using <paramref name="calendar"/>.
+        ///
+        /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
+        /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
+        /// </remarks>
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, Calendar calendar!!, DateTimeKind kind)
+        {
+            if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
+            if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
+
+            if (second != 60 || !s_systemSupportsLeapSeconds)
+            {
+                var dateTime = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond);
+                dateTime = dateTime.AddMicroseconds(microsecond);
+                ulong ticks = dateTime.UTicks;
                 _dateData = ticks | ((ulong)kind << KindShift);
             }
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new DateTime(year, month, day, hour, minute, 59, millisecond, calendar, kind);
+                this = new DateTime(year, month, day, hour, minute, 59, millisecond, microsecond, calendar, kind);
                 ValidateLeapSecond();
             }
         }
@@ -420,6 +771,43 @@ namespace System
         public DateTime AddMilliseconds(double value)
         {
             return Add(value, 1);
+        }
+
+        /// <summary>
+        /// Returns a new <see cref="DateTime"/> that adds the specified number of microseconds to the value of this instance.
+        /// </summary>
+        /// <param name="value">
+        /// A number of whole and fractional microseconds.
+        /// The <paramref name="value"/> parameter can be negative or positive.
+        /// Note that this value is rounded to the nearest integer.
+        /// </param>
+        /// <returns>
+        /// An object whose value is the sum of the date and time represented
+        /// by this instance and the number of microseconds represented by <paramref name="value"/>.
+        /// </returns>
+        /// <remarks>
+        /// This method does not change the value of this <see cref="DateTime"/>. Instead, it returns a new <see cref="DateTime"/>
+        /// whose value is the result of this operation.
+        ///
+        /// The fractional part of value is the fractional part of a microsecond.
+        /// For example, 4.5 is equivalent to 4 microseconds and 50 ticks, where one microseconds = 10 ticks.
+        ///
+        /// The value parameter is rounded to the nearest integer.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The resulting <see cref="DateTime"/> is less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>.
+        /// </exception>
+        public DateTime AddMicroseconds(double value)
+        {
+            int ticks = (int)(value * TicksPerMicrosecond);
+            if (ticks is < 0 or > 900)
+            {
+                ThrowOutOfRange();
+            }
+
+            return AddTicks(ticks);
+
+            static void ThrowOutOfRange() => throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_AddValue);
         }
 
         // Returns the DateTime resulting from adding a fractional number of
@@ -619,6 +1007,19 @@ namespace System
             if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
 
             ticks += (uint)millisecond * (uint)TicksPerMillisecond;
+
+            Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");
+
+            return ticks;
+        }
+
+        internal static ulong TimeToTicks(int hour, int minute, int second, int millisecond, int microsecond)
+        {
+            ulong ticks = TimeToTicks(hour, minute, second, millisecond);
+
+            if ((uint)microsecond >= 999) ThrowMillisecondOutOfRange();
+
+            ticks += (uint)microsecond * (uint)TicksPerMicrosecond;
 
             Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");
 
@@ -1017,6 +1418,16 @@ namespace System
         // is an integer between 0 and 999.
         //
         public int Millisecond => (int)((UTicks / TicksPerMillisecond) % 1000);
+
+        /// <summary>
+        /// The microseconds component, expressed as a value between 0 and 999.
+        /// </summary>
+        public int Microsecond => (int)(UTicks / TicksPerMicrosecond);
+
+        /// <summary>
+        /// The nanoseconds component, expressed as a value between 0 and 900.
+        /// </summary>
+        public int Nanosecond => (int)(UTicks * NanosecondsPerTick);
 
         // Returns the minute part of this DateTime. The returned value is
         // an integer between 0 and 59.

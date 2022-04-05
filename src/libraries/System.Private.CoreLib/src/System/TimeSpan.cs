@@ -45,7 +45,11 @@ namespace System
           IUnaryNegationOperators<TimeSpan, TimeSpan>,
           IUnaryPlusOperators<TimeSpan, TimeSpan>
     {
-        public const long TicksPerMillisecond = 10000;
+        public const long NanosecondsPerTick = 100;
+
+        public const long TicksPerMicrosecond = 10;
+
+        public const long TicksPerMillisecond = TicksPerMicrosecond * 1000;
 
         public const long TicksPerSecond = TicksPerMillisecond * 1000;   // 10,000,000
 
@@ -87,12 +91,33 @@ namespace System
         {
         }
 
-        public TimeSpan(int days, int hours, int minutes, int seconds, int milliseconds)
+        public TimeSpan(int days, int hours, int minutes, int seconds, int milliseconds) :
+            this(days, hours, minutes, seconds, milliseconds, 0) {}
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// days, hours, minutes, seconds, and milliseconds.
+        /// </summary>
+        /// <param name="days">Number of days.</param>
+        /// <param name="hours">Number of hours.</param>
+        /// <param name="minutes">Number of minutes.</param>
+        /// <param name="seconds">Number of seconds.</param>
+        /// <param name="milliseconds">Number of milliseconds.</param>
+        /// <param name="microseconds">Number of microseconds.</param>
+        /// <remarks>
+        /// The specified <paramref name="days"/>, <paramref name="hours"/>, <paramref name="minutes"/>, <paramref name="seconds"/>
+        /// <paramref name="milliseconds"/> and <paramref name="microseconds"/> are converted to ticks, and that value initializes this instance.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public TimeSpan(int days, int hours, int minutes, int seconds, int milliseconds, int microseconds)
         {
             long totalMilliSeconds = ((long)days * 3600 * 24 + (long)hours * 3600 + (long)minutes * 60 + seconds) * 1000 + milliseconds;
             if (totalMilliSeconds > MaxMilliSeconds || totalMilliSeconds < MinMilliSeconds)
                 ThrowHelper.ThrowArgumentOutOfRange_TimeSpanTooLong();
             _ticks = (long)totalMilliSeconds * TicksPerMillisecond;
+            _ticks += microseconds * TicksPerMicrosecond;
         }
 
         public long Ticks => _ticks;
@@ -102,6 +127,24 @@ namespace System
         public int Hours => (int)((_ticks / TicksPerHour) % 24);
 
         public int Milliseconds => (int)((_ticks / TicksPerMillisecond) % 1000);
+
+        /// <summary>
+        /// Gets the microseconds component of the time interval represented by the current <see cref="TimeSpan"/> structure.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="Microseconds"/> property represents whole microseconds, whereas the
+        /// <see cref="TotalMicroseconds"/> property represents whole and fractional microseconds.
+        /// </remarks>
+        public int Microseconds => (int)(_ticks / TicksPerMicrosecond);
+
+        /// <summary>
+        /// Gets the nanoseconds component of the time interval represented by the current <see cref="TimeSpan"/> structure.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="Nanoseconds"/> property represents whole nanoseconds, whereas the
+        /// <see cref="TotalNanoseconds"/> property represents whole and fractional nanoseconds.
+        /// </remarks>
+        public int Nanoseconds => (int)(_ticks * NanosecondsPerTick);
 
         public int Minutes => (int)((_ticks / TicksPerMinute) % 60);
 
@@ -125,6 +168,30 @@ namespace System
                 return temp;
             }
         }
+
+        /// <summary>
+        /// Gets the value of the current <see cref="TimeSpan"/> structure expressed in whole and fractional microseconds.
+        /// </summary>
+        /// <remarks>
+        /// This property converts the value of this instance from ticks to microseconds.
+        /// This number might include whole and fractional microseconds.
+        ///
+        /// The <see cref="TotalMicroseconds"/> property represents whole and fractional microseconds,
+        /// whereas the <see cref="Microseconds"/> property represents whole microseconds.
+        /// </remarks>
+        public double TotalMicroseconds => (double)_ticks / TicksPerMicrosecond;
+
+        /// <summary>
+        /// Gets the value of the current <see cref="TimeSpan"/> structure expressed in whole and fractional nanoseconds.
+        /// </summary>
+        /// <remarks>
+        /// This property converts the value of this instance from ticks to nanoseconds.
+        /// This number might include whole and fractional nanoseconds.
+        ///
+        /// The <see cref="TotalNanoseconds"/> property represents whole and fractional nanoseconds,
+        /// whereas the <see cref="Nanoseconds"/> property represents whole nanoseconds.
+        /// </remarks>
+        public double TotalNanoseconds => (double)_ticks * NanosecondsPerTick;
 
         public double TotalMinutes => (double)_ticks / TicksPerMinute;
 
@@ -232,6 +299,11 @@ namespace System
         public static TimeSpan FromMilliseconds(double value)
         {
             return Interval(value, TicksPerMillisecond);
+        }
+
+        public static TimeSpan FromMicroseconds(double value)
+        {
+            return Interval(value, TicksPerMicrosecond);
         }
 
         public static TimeSpan FromMinutes(double value)
