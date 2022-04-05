@@ -305,6 +305,7 @@ namespace LibraryImportGenerator.UnitTests
 
         [Theory]
         [MemberData(nameof(CodeSnippetsToValidateFallbackForwarder))]
+        [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task ValidateSnippetsFallbackForwarder(string source, TestTargetFramework targetFramework, bool expectFallbackForwarder)
         {
             Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
