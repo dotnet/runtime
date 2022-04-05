@@ -160,16 +160,8 @@ public class TestFilter
         string? testExclusionListArg = arguments.FirstOrDefault(arg => arg.StartsWith("--exclusion-list="));
         if (testExclusionListArg is not null)
         {
-            string[] excludedTests = Encoding.Unicode.GetString(Convert.FromBase64String(testExclusionListArg.Substring("--exclusion-list=".Length))).Split(';');
-            output.UnionWith(excludedTests);
-        }
-        
-        // Try reading the exclusion list as a base64-encoded semicolon-delimited string as an environment variable.
-        string? testExclusionList = Environment.GetEnvironmentVariable("TestExclusionList");
-        if (testExclusionList is not null)
-        {
-            string[] excludedTests = Encoding.Unicode.GetString(Convert.FromBase64String(testExclusionList)).Split(';');
-            output.UnionWith(excludedTests);
+            string testExclusionListPathFromCommandLine = testExclusionListArg.Substring("--exclusion-list=".Length);
+            output.UnionWith(File.ReadAllLines(testExclusionListPathFromCommandLine));
         }
 
         // Try reading the exclusion list as a line-delimited file.
