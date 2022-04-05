@@ -16,7 +16,7 @@ Breaking Change Rules
 
 ## Behavioral Changes
 
-### Method, Property, Field, Parameter and Return Values
+### Property, Field, Parameter and Return Values
 &#10003; **Allowed**
 * Increasing the range of accepted values for a property or parameter if the member _is not_ `virtual`
 
@@ -44,10 +44,6 @@ Breaking Change Rules
 * Changing the value of an enum member
 
 * Changing the precision of a numerical return value
-
-* Removing a call to a `virtual`/`abstract` member
-
-    Note that this includes removing any finalizer whose body was to call a `virtual Dispose(false)`.
 
 
 ### Exceptions
@@ -117,6 +113,10 @@ Breaking Change Rules
 * Firing an existing event when it was never fired before
 
 * Changing the number of times given events are called
+
+* Removing a call to a `virtual`/`abstract` member
+
+    Note that this includes removing any finalizer whose body was to call a `virtual Dispose(false)`.
 
 ## Source and Binary Compatibility Changes
 
