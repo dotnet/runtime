@@ -1398,6 +1398,8 @@ public:
 
     typedef const Entry::Key_t key_t;
     static const bool s_supports_remove = false;
+    static const bool s_EnableAutomaticGrowth = false;
+    static const bool s_UseVolatileStoreWithBarrierDuringAdd = true;
 
     static key_t GetKey(element_t e)
     {
@@ -1436,35 +1438,98 @@ public:
     static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e == 0; }
 };
 
+class CleanupDuringGC
+{
+    static CrstStatic _cleanupListCrst;
+    static CleanupDuringGC* dead;
+public:
+    static void Init();
+    static void Reclaim();
+    static void AddToList(CleanupDuringGC* newItem);
+
+    CleanupDuringGC *next = nullptr;
+    virtual ~CleanupDuringGC() {}
+};
+
 template<class EntryType>
 class FastTable
 {
-    SHash< EntryHashTraits<EntryType> > _shash;
+    typedef SHash< EntryHashTraits<EntryType>> SHashType;
+
+    struct SHashWithCleanup : public CleanupDuringGC
+    {
+        SHashType _hash;
+    };
+
+    // Make SHash a pointer here, so that we can 
+    SHashWithCleanup *_pshash;
     Crst _hashLock;
 public:
-    FastTable() : _hashLock(CrstLeafLock, CRST_UNSAFE_COOPGC) { LIMITED_METHOD_CONTRACT; }
+    FastTable() : _pshash(nullptr), _hashLock(CrstLeafLock, CRST_UNSAFE_COOPGC)
+    {
+        LIMITED_METHOD_CONTRACT;
+        VolatileStore(&_pshash, new SHashWithCleanup());
+    }
+
     ~FastTable() { LIMITED_METHOD_CONTRACT; }
 
     //find the requested entry (keys of prober), if not there return CALL_STUB_EMPTY_ENTRY
     size_t Find(Entry::Key_t key)
     {
         static_assert_no_msg(0 == CALL_STUB_EMPTY_ENTRY);
-        return _shash.Lookup(key);
+        auto shash = VolatileLoadWithoutBarrier(&_pshash);
+        // This SHash lookup is not done under a lock, and follows a careful set of rules for when 
+        return shash->_hash.Lookup(key);
     }
     //add the entry, if it is not already there.  Probe is used to search.
     //Return the entry actually containted (existing or added)
     size_t FindOrAdd(size_t entry, Entry::Key_t key)
     {
-        ForbidSuspendThreadHolder suspend;
-        CrstHolder ch(&_hashLock);
-        _ASSERTE(key.keyA == EntryHashTraits<EntryType>::GetKey(entry).keyA);
-        _ASSERTE(key.keyB == EntryHashTraits<EntryType>::GetKey(entry).keyB);
-        size_t lookupResult1 = _shash.Lookup(key);
-        if (lookupResult1 != 0)
-            return lookupResult1;
+        SHashWithCleanup *oldSHash = nullptr;
+        size_t result = 0;
 
-        _shash.Add(entry);
-        return entry;
+        do
+        {
+            ForbidSuspendThreadHolder suspend;
+            CrstHolder ch(&_hashLock);
+            _ASSERTE(key.keyA == EntryHashTraits<EntryType>::GetKey(entry).keyA);
+            _ASSERTE(key.keyB == EntryHashTraits<EntryType>::GetKey(entry).keyB);
+            size_t lookupResult1 = _pshash->_hash.Lookup(key);
+            if (lookupResult1 != 0)
+            {
+                result = lookupResult1;
+                break;
+            }
+
+            if (_pshash->_hash.GetCount() == _pshash->_hash.GetCapacity())
+            {
+                // Since we can't grow a SHash in place and maintain lock-free access
+                // Build a new SHash, and then drop it in.
+                // 
+
+                NewHolder<SHashWithCleanup> newHash = new SHashWithCleanup();
+
+                newHash->_hash.Reallocate(_pshash->_hash.ExpectedNewSize());
+                for (auto cur = _pshash->_hash.Begin(), end = _pshash->_hash.End();
+                    (cur != end); cur++)
+                {
+                    newHash->_hash.AddNonAsynchronous(*cur);
+                }
+                // At this point the newHash is a complete copy of the old hash
+                // And the store cannot fail.
+                oldSHash = _pshash;
+                VolatileStore(&_pshash, newHash.Extract());
+            }
+            _pshash->_hash.Add(entry);
+            result = entry;
+        } while(0);
+
+        if (oldSHash != nullptr)
+        {
+            CleanupDuringGC::AddToList(oldSHash);
+        }
+
+        return result;
     }
 };
 #ifdef _MSC_VER

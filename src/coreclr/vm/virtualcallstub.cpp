@@ -103,6 +103,9 @@ UINT32 STUB_COLLIDE_WRITE_PCT = 100;
 UINT32 STUB_COLLIDE_MONO_PCT  =   0;
 #endif // STUB_LOGGING
 
+CleanupDuringGC* CleanupDuringGC::dead = NULL;    //linked list of the abandoned buckets
+CrstStatic CleanupDuringGC::_cleanupListCrst;
+
 DispatchCache *g_resolveCache = NULL;    //cache of dispatch stubs for in line lookup by resolve stubs.
 
 size_t g_dispatch_cache_chain_success_counter = CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT;
@@ -492,6 +495,10 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     //
 
     m_indCellLock.Init(CrstVSDIndirectionCellLock, CRST_UNSAFE_ANYMODE);
+
+    // Init CleanupDuringGCList infrastructure used by BucketTables
+    CleanupDuringGC::Init();
+
 
     //
     // Now allocate all BucketTables
@@ -912,6 +919,9 @@ void VirtualCallStubManager::ReclaimAll()
     of an app domain stub heap at this point, and make any patches to existing stubs that are
     not being unload so that they nolonger refer to any of the unloaded app domains code or types
     */
+
+    //reclaim space of abandoned hash tables
+    CleanupDuringGC::Reclaim();
 
     VirtualCallStubManagerIterator it =
         VirtualCallStubManagerManager::GlobalManager()->IterateVirtualCallStubManagers();
@@ -2947,6 +2957,85 @@ void VirtualCallStubManager::LogStats()
     stats.stub_space = 0;
     stats.cache_entry_counter = 0;
     stats.cache_entry_space = 0;
+}
+
+void CleanupDuringGC::Init()
+{
+    WRAPPER_NO_CONTRACT;
+    _cleanupListCrst.Init(CrstLeafLock, CRST_UNSAFE_COOPGC);
+
+}
+
+void CleanupDuringGC::AddToList(CleanupDuringGC* pNewItem)
+{
+    if (pNewItem == nullptr)
+        return;
+
+    ForbidSuspendThreadHolder suspend;
+    CrstHolder ch(&_cleanupListCrst);
+
+    // Link the old onto the "to be reclaimed" list.
+    // Use the dead link field of the abandoned buckets to form the list
+    pNewItem->next = dead;
+    dead = pNewItem;
+}
+
+void CleanupDuringGC::Reclaim()
+{
+
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        FORBID_FAULT;
+    }
+    CONTRACTL_END
+
+    // This may have a race with other threads, but the worst case here is that
+    // we defer the cleanup until the next GC, which is acceptable.
+    if (dead == nullptr)
+        return;
+
+    CleanupDuringGC* list;
+    {
+        ForbidSuspendThreadHolder suspend;
+        CrstHolder ch(&_cleanupListCrst);
+
+        list = dead;
+
+        //see if there is anything to do.
+        //We ignore the race, since we will just pick them up on the next go around
+        if (list == NULL) return;
+
+        // Remove the list from the global variable.
+        // After this is done, there is no reason to remain locked
+        dead = nullptr;
+    }
+
+#ifdef _DEBUG
+    // Validate correctness of the list
+    CleanupDuringGC *curr = list;
+    while (curr)
+    {
+        CleanupDuringGC *next = curr->next;
+        size_t i = 0;
+        while (next)
+        {
+            next = next->next;
+            _ASSERTE(curr != next); // Make sure we don't have duplicates
+            _ASSERTE(i++ < SIZE_T_MAX/4); // This just makes sure we don't have a cycle
+        }
+        curr = curr->next;
+    }
+#endif // _DEBUG
+
+    //we now have the list off by ourself, so we can just walk and cleanup
+    while (list)
+    {
+        CleanupDuringGC* next = list->next;
+        delete list;
+        list = next;
+    }
 }
 
 DispatchCache::DispatchCache()

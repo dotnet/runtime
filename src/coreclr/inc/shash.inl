@@ -4,6 +4,8 @@
 #ifndef _SHASH_INL_
 #define _SHASH_INL_
 
+#include "volatile.h"
+
 // Many SHash functions do not throw on their own, but may propagate an exception
 // from Hash, Equals, or GetKey.
 #define NOTHROW_UNLESS_TRAITS_THROWS     if (TRAITS::s_NoThrow) NOTHROW; else THROWS
@@ -72,6 +74,7 @@ typename SHash<TRAITS>::element_t SHash<TRAITS>::Lookup(key_t key) const
     CONTRACT_END;
 
     const element_t *pRet = Lookup(m_table, m_tableSize, key);
+    // No need for LoadFromTable, as pRet is fully validated as useable by the time we get here
     RETURN ((pRet != NULL) ? (*pRet) : TRAITS::Null());
 }
 
@@ -110,6 +113,25 @@ void SHash<TRAITS>::Add(const element_t & element)
 }
 
 template <typename TRAITS>
+void SHash<TRAITS>::AddNonAsynchronous(const element_t & element)
+{
+    CONTRACT_VOID
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        INSTANCE_CHECK;
+        POSTCONDITION(TRAITS::Equals(TRAITS::GetKey(element), TRAITS::GetKey(*LookupPtr(TRAITS::GetKey(element)))));
+    }
+    CONTRACT_END;
+
+    CheckGrowth();
+
+    Add_GrowthCheckedNonAsynchronous(element);
+
+    RETURN;
+}
+
+template <typename TRAITS>
 BOOL SHash<TRAITS>::AddNoThrow(const element_t & element)
 {
     CONTRACT(BOOL)
@@ -143,6 +165,25 @@ void SHash<TRAITS>::Add_GrowthChecked(const element_t & element)
     CONTRACT_END;
 
     if (Add(m_table, m_tableSize, element))
+        m_tableOccupied++;
+    m_tableCount++;
+
+    RETURN;
+}
+
+template <typename TRAITS>
+void SHash<TRAITS>::Add_GrowthCheckedNonAsynchronous(const element_t & element)
+{
+    CONTRACT_VOID
+    {
+        NOTHROW_UNLESS_TRAITS_THROWS;
+        GC_NOTRIGGER;
+        INSTANCE_CHECK;
+        POSTCONDITION(TRAITS::Equals(TRAITS::GetKey(element), TRAITS::GetKey(*LookupPtr(TRAITS::GetKey(element)))));
+    }
+    CONTRACT_END;
+
+    if (AddForGrow(m_table, m_tableSize, element))
         m_tableOccupied++;
     m_tableCount++;
 
@@ -345,8 +386,15 @@ BOOL SHash<TRAITS>::CheckGrowth()
 
     if (m_tableOccupied == m_tableMax)
     {
-        Grow();
-        RETURN TRUE;
+        if (TRAITS::s_EnableAutomaticGrowth)
+        {
+            Grow();
+            RETURN TRUE;
+        }
+        else
+        {
+            ThrowOutOfMemory();
+        }
     }
 
     RETURN FALSE;
@@ -368,7 +416,10 @@ BOOL SHash<TRAITS>::CheckGrowthNoThrow()
     BOOL result = TRUE;
     if (m_tableOccupied == m_tableMax)
     {
-        result = GrowNoThrow();
+        if (TRAITS::s_EnableAutomaticGrowth)
+            result = GrowNoThrow();
+        else
+            result = FALSE;
     }
 
     RETURN result;
@@ -468,6 +519,30 @@ SHash<TRAITS>::Grow_OnlyAllocateNewTableNoThrow(count_t * pcNewSize)
 }
 
 template <typename TRAITS>
+typename SHash<TRAITS>::count_t SHash<TRAITS>::ExpectedNewSize() const
+{
+    CONTRACT(count_t)
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        INSTANCE_CHECK;
+    }
+    CONTRACT_END;
+
+    count_t newSize = (count_t) (m_tableCount
+                                 * TRAITS::s_growth_factor_numerator / TRAITS::s_growth_factor_denominator
+                                 * TRAITS::s_density_factor_denominator / TRAITS::s_density_factor_numerator);
+    if (newSize < TRAITS::s_minimum_allocation)
+        newSize = TRAITS::s_minimum_allocation;
+
+    // handle potential overflow
+    if (newSize < m_tableCount)
+        ThrowOutOfMemory();
+
+    RETURN newSize;
+}
+
+template <typename TRAITS>
 void SHash<TRAITS>::Reallocate(count_t requestedSize)
 {
     CONTRACT_VOID
@@ -494,7 +569,8 @@ void SHash<TRAITS>::ForEach(Functor &functor)
 
     for (count_t i = 0; i < m_tableSize; i++)
     {
-        element_t element = m_table[i];
+        element_t element;
+        LoadFromTable(m_table, i, &element);
         if (!TRAITS::IsNull(element) && !TRAITS::IsDeleted(element))
         {
             functor(element);
@@ -588,7 +664,7 @@ SHash<TRAITS>::ReplaceTable(element_t * newTable, count_t newTableSize)
     {
         const element_t & cur = (*i);
         if (!TRAITS::IsNull(cur) && !TRAITS::IsDeleted(cur))
-            Add(newTable, newTableSize, cur);
+            AddForGrow(newTable, newTableSize, cur);
     }
 
     m_table = PTR_element_t(newTable);
@@ -639,15 +715,31 @@ const typename SHash<TRAITS>::element_t * SHash<TRAITS>::Lookup(PTR_element_t ta
 
     while (TRUE)
     {
-        element_t& current = table[index];
-
-        if (TRAITS::IsNull(current))
-            RETURN NULL;
-
-        if (!TRAITS::IsDeleted(current)
-            && TRAITS::Equals(key, TRAITS::GetKey(current)))
+        if (sizeof(element_t) == sizeof(void*) && TRAITS::s_UseVolatileStoreWithBarrierDuringAdd)
         {
-            RETURN &current;
+            element_t current;
+            LoadFromTable(table, index, &current);
+            if (TRAITS::IsNull(current))
+                RETURN NULL;
+
+            if (!TRAITS::IsDeleted(current)
+                && TRAITS::Equals(key, TRAITS::GetKey(current)))
+            {
+                RETURN &table[index];
+            }
+        }
+        else
+        {
+            element_t& current = table[index];
+
+            if (TRAITS::IsNull(current))
+                RETURN NULL;
+
+            if (!TRAITS::IsDeleted(current)
+                && TRAITS::Equals(key, TRAITS::GetKey(current)))
+            {
+                RETURN &current;
+            }
         }
 
         if (increment == 0)
@@ -682,12 +774,58 @@ BOOL SHash<TRAITS>::Add(element_t * table, count_t tableSize, const element_t & 
 
         if (TRAITS::IsNull(current))
         {
+            StoreToTable(table, index, element);
+            RETURN TRUE;
+        }
+
+        if (TRAITS::IsDeleted(current))
+        {
+            StoreToTable(table, index, element);
+            RETURN FALSE;
+        }
+
+        if (increment == 0)
+            increment = (hash % (tableSize-1)) + 1;
+
+        index += increment;
+        if (index >= tableSize)
+            index -= tableSize;
+    }
+}
+
+template <typename TRAITS>
+BOOL SHash<TRAITS>::AddForGrow(element_t * table, count_t tableSize, const element_t & element)
+{
+    CONTRACT(BOOL)
+    {
+        NOTHROW_UNLESS_TRAITS_THROWS;
+        GC_NOTRIGGER;
+        POSTCONDITION(TRAITS::Equals(TRAITS::GetKey(element), TRAITS::GetKey(*Lookup(table, tableSize, TRAITS::GetKey(element)))));
+    }
+    CONTRACT_END;
+
+    key_t key = TRAITS::GetKey(element);
+
+    count_t hash = TRAITS::Hash(key);
+    count_t index = hash % tableSize;
+    count_t increment = 0; // delay computation
+
+    while (TRUE)
+    {
+        element_t & current = table[index];
+
+        if (TRAITS::IsNull(current))
+        {
+            // Do not use StoreToTable, as we want to avoid the barrier in the grow scenario, which cannot occur while
+            // Lookups may be happening.
             table[index] = element;
             RETURN TRUE;
         }
 
         if (TRAITS::IsDeleted(current))
         {
+            // Do not use StoreToTable, as we want to avoid the barrier in the grow scenario, which cannot occur while
+            // Lookups may be happening.
             table[index] = element;
             RETURN FALSE;
         }
@@ -726,6 +864,7 @@ void SHash<TRAITS>::AddOrReplace(element_t *table, count_t tableSize, const elem
 
         if (TRAITS::IsNull(current))
         {
+            // Do not use StoreToTable, AddOrReplace is not permitted during lock free usage
             table[index] = element;
             m_tableCount++;
             m_tableOccupied++;
@@ -733,6 +872,7 @@ void SHash<TRAITS>::AddOrReplace(element_t *table, count_t tableSize, const elem
         }
         else if (TRAITS::Equals(key, TRAITS::GetKey(current)))
         {
+            // Do not use StoreToTable, AddOrReplace is not permitted during lock free usage
             table[index] = element;
             RETURN;
         }
@@ -764,6 +904,7 @@ void SHash<TRAITS>::Remove(element_t *table, count_t tableSize, key_t key)
 
     while (TRUE)
     {
+        // Remove is not asynchronous with any other operation, so we do not use LoadFromTable
         element_t& current = table[index];
 
         if (TRAITS::IsNull(current))
@@ -772,6 +913,7 @@ void SHash<TRAITS>::Remove(element_t *table, count_t tableSize, key_t key)
         if (!TRAITS::IsDeleted(current)
             && TRAITS::Equals(key, TRAITS::GetKey(current)))
         {
+            // Remove is not asynchronous with any other operation, so we do not use StoreToTable
             table[index] = TRAITS::Deleted();
             m_tableCount--;
             RETURN;

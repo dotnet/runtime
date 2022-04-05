@@ -17,10 +17,19 @@
 // Synchronization requirements depend on use.  There are several properties to take into account:
 //
 // - Lookups may be asynchronous with each other
-// - Lookups must be exclusive with Add operations
-//    (@todo: this can be remedied by delaying destruction of old tables during reallocation, e.g. during GC)
-// - Remove operations may be asynchronous with Lookup/Add, unless elements are also deallocated. (In which
-//    case full synchronization is required)
+// - Lookups must be exclusive with Add operations UNLESS
+//    - Element_t is pointer sized AND
+//    - s_DestructPerEntryCleanupAction is false. AND
+//    - s_UseVolatileStoreWithBarrierDuringAdd is true AND
+//    - The implementation of TRAITS::GetKey only requires a VolatileStore to be used during storing of the
+//      element to be safe to use AND
+//    - The table is known not to grow during the Add operation. The internal table will grow if and only if
+//       GetCapacity() == GetCount()
+// - Iteration is exclusive with Add and Remove operations
+// - Iteration may be asynchronous with Lookup operations
+// - Add operations are exclusive with other Add operations
+// - Remove operations are exclusive with all other operations
+// - AddOrReplace is exclusive with all other operations.
 
 // Common "gotchas":
 // - The Add method never replaces an element. The new element will be added even if an element with the same
@@ -94,6 +103,11 @@
 //
 // s_DestructPerEntryCleanupAction              Set to true if OnDestructPerEntryCleanupAction has non-empty implementation.
 //
+// s_UseVolatileStoreWithBarrierDuringAdd       Set to true to allow for limited asynchronous use of Lookup operations
+//
+// s_EnableAutomaticGrowth                      Set to true to allow growth using Add operations. This feature exists to makeit simpler to safely use
+//                                              it simpler to safely use SHash in lock-free mode.
+//
 // DefaultHashTraits provides defaults for seldomly customized values in traits classes.
 
 template < typename ELEMENT >
@@ -118,11 +132,17 @@ class DefaultSHashTraits
 
     static ELEMENT Null() { return (ELEMENT)(TADDR)0; }
     static ELEMENT Deleted() { return (ELEMENT)(TADDR)-1; }
+    template<typename ACTUAL_COUNT_T>
+    static ELEMENT ReadElementFromTable(ELEMENT* table, ACTUAL_COUNT_T index) { return table[index]; }
+    template<typename ACTUAL_COUNT_T>
+    static void WriteElementToTable(ELEMENT* table, ACTUAL_COUNT_T index, const ELEMENT& value) { table[index] = value; }
     static bool IsNull(const ELEMENT &e) { return e == (ELEMENT)(TADDR)0; }
     static bool IsDeleted(const ELEMENT &e) { return e == (ELEMENT)(TADDR)-1; }
 
     static inline void OnDestructPerEntryCleanupAction(const ELEMENT& e) { /* Do nothing */ }
     static const bool s_DestructPerEntryCleanupAction = false;
+    static const bool s_UseVolatileStoreWithBarrierDuringAdd = false;
+    static const bool s_EnableAutomaticGrowth = true;
 
     static const bool s_NoThrow = true;
 
@@ -135,6 +155,15 @@ class DefaultSHashTraits
 };
 
 // Hash table class definition
+
+template <bool is_true, class Type = void>
+class shash_enable_if {};
+
+template<class Type>
+class shash_enable_if<true, Type> { public: typedef Type type; };
+
+template< bool B, class T = void >
+using shash_enable_if_t = typename shash_enable_if<B,T>::type;
 
 template <typename TRAITS>
 class EMPTY_BASES_DECL SHash : public TRAITS
@@ -182,6 +211,7 @@ class EMPTY_BASES_DECL SHash : public TRAITS
 
     void Add(const element_t &element);
 
+
     // NoThrow version of Add. Returns TRUE if element was added, FALSE otherwise.
     BOOL AddNoThrow(const element_t &element);
 
@@ -192,6 +222,11 @@ class EMPTY_BASES_DECL SHash : public TRAITS
 
     // NoThrow version of AddOrReplace. Returns TRUE if element was added/replaced, FALSE otherwise.
     BOOL AddOrReplaceNoThrow(const element_t &element);
+
+    // Add an element to the hash table.  This will never replace an element; multiple
+    // elements may be stored with the same key.  This Add operations is never safe
+    // asynchronous with any other operation.
+    void AddNonAsynchronous(const element_t &element);
 
     // Remove the first element matching the key from the hash table.
 
@@ -233,6 +268,11 @@ class EMPTY_BASES_DECL SHash : public TRAITS
 
     void Grow();
 
+
+    // If the table were to Grow() what newTableSize would be passed to Reallocate
+    // This operation may throw if it overflows.
+    count_t ExpectedNewSize() const;
+
     // Reallocates a hash table to a specific size.  The size must be big enough
     // to hold all elements in the table appropriately.
     //
@@ -253,6 +293,30 @@ class EMPTY_BASES_DECL SHash : public TRAITS
     template<typename Functor> void ForEach(Functor &functor);
 
   private:
+
+    template<class shash_element_type>
+    static shash_enable_if_t<sizeof(shash_element_type) == sizeof(void*) && TRAITS::s_UseVolatileStoreWithBarrierDuringAdd> LoadFromTable(PTR_element_t table, count_t index, shash_element_type *result)
+    {
+        *result = VolatileLoadWithoutBarrier(&table[index]);
+    }
+
+    template<class shash_element_type>
+    static shash_enable_if_t<!(sizeof(shash_element_type) == sizeof(void*) && TRAITS::s_UseVolatileStoreWithBarrierDuringAdd)> LoadFromTable(PTR_element_t table, count_t index, shash_element_type *result)
+    {
+        *result = table[index];
+    }
+
+    template<class shash_element_type>
+    static shash_enable_if_t<sizeof(shash_element_type) == sizeof(void*) && TRAITS::s_UseVolatileStoreWithBarrierDuringAdd> StoreToTable(shash_element_type* table, count_t index, const shash_element_type &value)
+    {
+        VolatileStore(&table[index], value);
+    }
+
+    template<class shash_element_type>
+    static shash_enable_if_t<!(sizeof(shash_element_type) == sizeof(void*) && TRAITS::s_UseVolatileStoreWithBarrierDuringAdd)> StoreToTable(shash_element_type* table, count_t index, const shash_element_type &value)
+    {
+        table[index] = value;
+    }
 
     // NoThrow version of Grow function. Returns FALSE on failure.
     BOOL GrowNoThrow();
@@ -294,11 +358,24 @@ class EMPTY_BASES_DECL SHash : public TRAITS
     // elements may be stored with the same key.
     void Add_GrowthChecked(const element_t & element);
 
+    // Utility function that does not call code:CheckGrowth.
+    // Add an element to the hash table.  This will never replace an element; multiple
+    // elements may be stored with the same key.  This Add operations is never safe
+    // asynchronous with any other operation.
+    void Add_GrowthCheckedNonAsynchronous(const element_t & element);
+
     // Utility function to add a new element to the hash table.  Note that
     // it is perfectly fine for the element to be a duplicate - if so it
     // is added an additional time. Returns TRUE if a new empty spot was used;
     // FALSE if an existing deleted slot.
     static BOOL Add(element_t *table, count_t tableSize, const element_t &element);
+
+    // Utility function to add a new element to the hash table.  Note that
+    // it is perfectly fine for the element to be a duplicate - if so it
+    // is added an additional time. Returns TRUE if a new empty spot was used;
+    // FALSE if an existing deleted slot.  This Add operations is never safe
+    // asynchronous with any other operation.
+    static BOOL AddForGrow(element_t *table, count_t tableSize, const element_t &element);
 
     // Utility function to add a new element to the hash table, if no element with the same key
     // is already there. Otherwise, it will replace the existing element. This has the effect of
