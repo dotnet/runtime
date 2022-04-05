@@ -166,7 +166,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public int Length { get; }
         }
 
-        public struct ReadonlyStructTypeOptions
+        public readonly struct ReadonlyStructTypeOptions
         {
             public ReadonlyStructTypeOptions(string color, int length)
             {
