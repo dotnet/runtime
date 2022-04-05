@@ -400,7 +400,9 @@ The major changes are:
 
 * Interfaces are now allowed to have instance methods (both virtual and non-virtual). Previously we only allowed abstract virtual methods.
   * Interfaces obviously still can't have instance fields.
+  * Interfaces may also define static virtual methods (either as abstract or by directly providing the default implementation in the declaration).
 * Interface methods are allowed to MethodImpl other interface methods the interface _requires_ (but we require the `MethodImpl`s to be final to keep things simple) - i.e. an interface is allowed to provide (or override) an implementation of another interface's method
+  (instance or static virtual).
 
 This list of changes to the specification doesn't attempt to be an exhaustive list - there are many places within the spec that mention interfaces being just contracts that don't define implementation. This list should be complete enough to list places where interesting _implementation differences_ happen.
 
@@ -417,6 +419,7 @@ TODO: since we now allow protected/internal members on interfaces, do we need to
 
 **Section** "I.8.9.5 Class type definition" [Note: the section on type initializers within the spec only seems to apply to object types and value types, not to interfaces, but the CLR has historically supported running .cctors when accessing static members of interfaces and the spec does mention interface type initializers as well. We might want to move the part about type initializers out of the section. End note.] The semantics of when and what triggers the execution of type initialization methods will be updated so that we support the strict semantic of type initializers when executing instance methods on interfaces (strict semantic currently only covers accessing static methods on interfaces):
 Bullet 4 "If not marked BeforeFieldInit", item "c" is amended to include instance methods on interfaces, in addition to the existing value types.
+Initialization of interfaces before executing the first static virtual method seems already covered in item "b".
 
 **Section** "II.12 Semantics of interfaces" is extended to allow instance methods on interfaces.
 
@@ -431,7 +434,8 @@ The algorithm is amended as follows:
   * The original step 4 is moved after the following steps:
     * Create an empty list of candidate implementations of the interface method.
     * If the interface method itself is not abstract, add it to the list.
-    * Apply all MethodImpls specified in the list of interfaces implicitly implemented by the runtime class of the instance through which the interface method is invoked and add the methods to the list.
+    * For instance methods, apply all MethodImpls specified in the list of interfaces implicitly implemented by the runtime class of the instance through which the interface method is invoked and add the methods to the list.
+    * For static virtual methods, apply all MethodImpls specified in the list of interfaces implicitly implemented by the type used in the `constrained.` prefix of the `call` / `ldftn` instruction and add the methods to the list.
     * Go over the owning types of each of the candidate methods in the list. If the owning type is less concrete than some other type in the list (there is another method in the list whose owning type requires the less concrete type), remove it from the list.
     * If there's more than one method in the list, throw AmbiguousImplementationException
     * If there's exactly one method in the list and the method is not abstract, call that method
@@ -439,6 +443,8 @@ The algorithm is amended as follows:
     * If there's no method in the list and the interface is variant, repeat the above algorithm, looking for a variant match. Return the first variant match provided by a most specific interface.
 
 **Section** "III.2.1 constrained. prefix" the paragraph starting with "This last case can only occur when method was defined on `System.Object`, `System.ValueType`, or `System.Enum`" is extended to also cover default interface method implementation. In the case the interface method implementation is provided by an interface, the implicit boxing becomes _observable_ to the program.
+
+**Section** "III.3.41 ldftn" is extended to allow throwing `AmbiguousImplementationException` if the implementation of the static virtual interface method resolves at runtime to more than one default interface method. It's also extended to specify throwing `EntryPointNotFoundException` if the default interface implementation is abstract.
 
 **Section** "III.4.2 callvirt" is extended to allow throwing `AmbiguousImplementationException` if the implementation of the interface method resolves at runtime to more than one default interface method. It's also extended to specify throwing `EntryPointNotFoundException` if the default interface implementation is abstract.
 
@@ -455,10 +461,11 @@ https://www.ecma-international.org/publications-and-standards/standards/ecma-335
 
 (Add second paragraph)
 
-Static interface methods may be marked as virtual. Valid object types implementing such interfaces may provide implementations
+Static interface methods may be marked as virtual. They can be either marked as abstract or directly define a default implementation
+as part of the method declaration. Types implementing such interfaces (including derived interfaces) may provide implementations
 for these methods by means of Method Implementations (II.15.1.4). Polymorphic behavior of calls to these methods is facilitated
-by the constrained. call IL instruction where the constrained. prefix specifies the type to use for lookup of the static interface
-method.
+by the `constrained.` `call` / `ldftn` IL instruction where the `constrained.` prefix specifies the type to use for lookup of the
+static interface method.
 
 ### II.9.7, Validity of member signatures
 
@@ -535,6 +542,13 @@ or static method actually implemented directly on the type.
 Interfaces may define static virtual methods that get resolved at runtime based on actual types involved.
 
 ### II.12.2 Implementing virtual methods on interfaces
+
+(Add a new bullet under the second bullet in the bulleted list below the first paragraph by mentioning
+that classes can implement abstract static virtual methods by implementing a derived interface providing
+the default implementation for the abstract static virtual method):
+
+* Inheritance of an existing default implementation from an implemented interface derived from
+  the interface declaring the abstract static virtual method.
 
 (Edit 8th paragraph at page 158, the first unindented one below the bullet list, by
 basically clarifying that "public virtual methods" only refer to "public virtual instance methods"):
