@@ -194,15 +194,15 @@ steps:
       cat MauiTesting.csproj
 
       echo "sed -i'' -E -e 's/\([>;]\)net[0-9]+\.[0-9]+-maccatalyst\([<;]\)/\1\2/g' MauiTesting.csproj"
-      sed -i'' -E -e 's/([>;])net[0-9]+\.[0-9]+-maccatalyst([<;])/\1\2/g' MauiTesting.csproj
+      sed -i'' -E -e 's/\([>;]\)net[0-9]+\.[0-9]+-maccatalyst\([<;]\)/\1\2/g' MauiTesting.csproj
       cat MauiTesting.csproj
 
       echo "sed -i'' -E -e 's/([>;])net[0-9]\.[0-9]-maccatalyst([<;])/\1\2/g' MauiTesting.csproj"
-      sed -i'' -E -e 's/([>;])net[0-9]+\.[0-9]+-maccatalyst([<;])/\1\2/g' MauiTesting.csproj
+      sed -i'' -E -e 's/([>;])net[0-9]\.[0-9]-maccatalyst([<;])/\1\2/g' MauiTesting.csproj
       cat MauiTesting.csproj
 
       echo "sed -i'' -E -e 's/\([>;]\)net[0-9]\.[0-9]-maccatalyst\([<;]\)/\1\2/g' MauiTesting.csproj"
-      sed -i'' -E -e 's/([>;])net[0-9]+\.[0-9]+-maccatalyst([<;])/\1\2/g' MauiTesting.csproj
+      sed -i'' -E -e 's/\([>;]\)net[0-9]+\.[0-9]+-maccatalyst\([<;]\)/\1\2/g' MauiTesting.csproj
       cat MauiTesting.csproj
 
       ls -aR
