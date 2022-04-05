@@ -73,7 +73,7 @@ Troublesome APIs:
     - `public static implicit operator ReadOnlySpan<T>(ArraySegment<T> segment);`
     - `public static implicit operator ReadOnlySpan<T>(T[]? array);`
 
-A new `GenericParameterAttributes` value will be defined which also represents metadata defined in the `CorGenericParamAttr` enumeration. Space is provided between the existing constraints group to permit constraint growth while keeping the bit-mask contiguous.
+A new `GenericParameterAttributes` value will be defined which also represents metadata defined in the `CorGenericParamAttr` enumeration.
 
 ```diff
 namespace System.Reflection
@@ -81,7 +81,7 @@ namespace System.Reflection
     [Flags]
     public enum GenericParameterAttributes
     {
-+        AcceptByRefLike = 0x0100
++        AcceptByRefLike = 0x0020
     }
 }
 ```
@@ -89,7 +89,7 @@ namespace System.Reflection
 ```diff
 typedef enum CorGenericParamAttr
 {
-+   gpAcceptByRefLike = 0x0100 // type argument can be ByRefLike
++   gpAcceptByRefLike = 0x0020 // type argument can be ByRefLike
 } CorGenericParamAttr;
 ```
 
