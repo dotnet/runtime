@@ -164,8 +164,22 @@ namespace System.Text.RegularExpressions.Generator
             if (rm.Tree.Culture != null)
             {
                 // If the RegexTree has Culture set, then we need to emit the _textInfo field that should be used at match time for casing operations.
+                // Instead of just using the culture set on the tree, we use it to check which behavior corresponds to the culture, and based on that we
+                // create a TextInfo based on a well-known culture that has the same behavior. This is done in order to ensure that the culture being used at
+                // runtime will be supported no matter where the code ends up running.
                 writer.WriteLine($"        /// <summary>TextInfo that will be used for Backreference case comparisons.</summary>");
-                writer.WriteLine($"        private readonly TextInfo _textInfo = CultureInfo.GetCultureInfo({Literal(rm.Tree.Culture.Name)}).TextInfo;");
+                switch (RegexCaseEquivalences.GetRegexBehavior(rm.Tree.Culture))
+                {
+                    case RegexCaseBehavior.Invariant:
+                        writer.WriteLine($"        private readonly TextInfo _textInfo = CultureInfo.InvariantCulture.TextInfo;");
+                        break;
+                    case RegexCaseBehavior.NonTurkish:
+                        writer.WriteLine($"        private readonly TextInfo _textInfo = CultureInfo.GetCultureInfo(\"en-US\").TextInfo;");
+                        break;
+                    case RegexCaseBehavior.Turkish:
+                        writer.WriteLine($"        private readonly TextInfo _textInfo = CultureInfo.GetCultureInfo(\"tr-TR\").TextInfo;");
+                        break;
+                }
                 writer.WriteLine();
             }
             writer.WriteLine($"        /// <summary>Scan the <paramref name=\"inputSpan\"/> starting from base.runtextstart for the next match.</summary>");

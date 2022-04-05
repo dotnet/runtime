@@ -1342,7 +1342,10 @@ namespace System.Text.RegularExpressions
                     case ('F', 'f'): case ('f', 'F'): return "\0\x0004\0FGfg";
                     case ('G', 'g'): case ('g', 'G'): return "\0\x0004\0GHgh";
                     case ('H', 'h'): case ('h', 'H'): return "\0\x0004\0HIhi";
+                    // 'I' and 'i' are missing since depending on the cultuure they may
+                    // have additional mappings.
                     case ('J', 'j'): case ('j', 'J'): return "\0\x0004\0JKjk";
+                    // 'K' and 'k' are missing since their mapping also includes Kelvin K.
                     case ('L', 'l'): case ('l', 'L'): return "\0\x0004\0LMlm";
                     case ('M', 'm'): case ('m', 'M'): return "\0\x0004\0MNmn";
                     case ('N', 'n'): case ('n', 'N'): return "\0\x0004\0NOno";

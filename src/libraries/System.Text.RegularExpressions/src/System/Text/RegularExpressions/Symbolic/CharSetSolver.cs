@@ -31,7 +31,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Make a character predicate for the given character c.
         /// </summary>
-        public BDD CharConstraint(char c, bool ignoreCase = false, string? culture = null)
+        public BDD CharConstraint(char c)
         {
             // individual character BDDs are always fixed
             BDD[] charPredTable = _charPredTable;
@@ -60,13 +60,12 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>
         /// Make a character set of all the characters in the interval from c to d.
-        /// If ignoreCase is true ignore cases for upper and lower case characters by including both versions.
         /// </summary>
-        public BDD RangeConstraint(char c, char d, bool ignoreCase = false, string? culture = null)
+        public BDD RangeConstraint(char c, char d)
         {
             if (c == d)
             {
-                return CharConstraint(c, ignoreCase, culture);
+                return CharConstraint(c);
             }
 
             return CreateSetFromRange(c, d, 15);

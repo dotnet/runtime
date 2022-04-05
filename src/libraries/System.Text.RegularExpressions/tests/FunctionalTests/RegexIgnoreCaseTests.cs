@@ -31,7 +31,7 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> Characters_With_Common_Lowercase_Match_Data()
         {
-            foreach (var culture in new[] { "", "en-us", "tr-TR" })
+            foreach (string culture in new[] { "", "en-us", "tr-TR" })
             {
                 if (PlatformDetection.IsBrowser && culture != "") // Browser runs in Invariant mode, so only test Invariant in that case.
                     continue;
@@ -51,7 +51,7 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> Characters_With_Common_Lowercase_Match_Backreference_Data()
         {
-            foreach (var culture in new[] { "", "en-us", "tr-TR" })
+            foreach (string culture in new[] { "", "en-us", "tr-TR" })
             {
                 if (PlatformDetection.IsBrowser && culture != "") // Browser runs in Invariant mode, so only test Invariant in that case.
                     continue;
@@ -83,7 +83,7 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> EnginesThatSupportBackreferences()
         {
-            foreach(var engine in RegexHelpers.AvailableEngines)
+            foreach(RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 if (engine == RegexEngine.NonBacktracking) // Nonbacktracking engine doesn't yet support backreferences.
                     continue;
@@ -96,12 +96,12 @@ namespace System.Text.RegularExpressions.Tests
         public async Task IgnoreCase_Behavior_Is_Constant(RegexEngine engine)
         {
             Regex regex;
-            using (_ = new ThreadCultureChange("en-US"))
+            using (new ThreadCultureChange("en-US"))
             {
                 regex = await RegexHelpers.GetRegexAsync(engine, @"(i)\1", RegexOptions.IgnoreCase);
             }
 
-            using (_ = new ThreadCultureChange("tr-TR"))
+            using (new ThreadCultureChange("tr-TR"))
             {
                 // tr-TR culture doesn't consider 'I' and 'i' to be equal in ignore case, but en-US culture does.
                 // This test will validate that the backreference will use en-US culture even when current culture is
@@ -139,11 +139,12 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (CultureInfo culture in CultureInfo.GetCultures(CultureTypes.AllCultures))
             {
-                using (_ = new ThreadCultureChange(culture))
+                using (new ThreadCultureChange(culture))
                 {
                     // This test will try to emit code that looks like: textInfo = CultureInfo.GetCultureInfo(CurrentCulture.Name).TextInfo
                     // so we will validate in this test that we are able to do that for all cultures and that GetCultureInfo returns a valid Culture.
-                    _ = await RegexHelpers.GetRegexAsync(RegexEngine.SourceGenerated, @"(.)\1", RegexOptions.IgnoreCase);
+                    Regex r = await RegexHelpers.GetRegexAsync(RegexEngine.SourceGenerated, @"(.)\1", RegexOptions.IgnoreCase);
+                    Assert.True(r.IsMatch("Aa"));
                 }
             }
         }
@@ -155,21 +156,18 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(Unicode_IgnoreCase_TestData))]
         public async Task Unicode_IgnoreCase_Tests(RegexEngine engine, string culture, RegexOptions options)
         {
-            var testCases = GetPatternAndInputsForCulture(culture);
+            IEnumerable<(string, string)> testCases = GetPatternAndInputsForCulture(culture);
 
-            foreach ((string pattern, string input) in testCases)
+            foreach ((string c, string lowerC) in testCases)
             {
-
-                if ((options & RegexOptions.CultureInvariant) == 0)
+                using (ThreadCultureChange cultureChange = (options & RegexOptions.CultureInvariant) == 0 ?
+                    new ThreadCultureChange(culture) : null)
                 {
-                    using var _ = new ThreadCultureChange(culture);
-                    await ValidateMatch(pattern, input);
-                    await ValidateMatch(input, pattern);
-                }
-                else
-                {
-                    await ValidateMatch(pattern, input);
-                    await ValidateMatch(input, pattern);
+                    // We validate that there is no case where c.ToLower() == lowerC and c.ToLower() != lowerC.ToLower()
+                    // given this would create inconsistencies with the way we handle case-insensitive backreference comparisons.
+                    Assert.Equal(CultureInfo.GetCultureInfo(culture).TextInfo.ToLower(lowerC), lowerC);
+                    await ValidateMatch(c, lowerC);
+                    await ValidateMatch(lowerC, c);
                 }
             }
 
@@ -181,12 +179,12 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.True(regex.IsMatch(input));
             }
 
-            IEnumerable<(string, string)> GetPatternAndInputsForCulture(string culture)
+            static IEnumerable<(string, string)> GetPatternAndInputsForCulture(string culture)
             {
                 TextInfo textInfo = string.IsNullOrEmpty(culture) ? CultureInfo.InvariantCulture.TextInfo
                     : CultureInfo.GetCultureInfo(culture).TextInfo;
 
-                for (int i = 0; i < 0x1_0000; i++)
+                for (int i = 0; i <= char.MaxValue; i++)
                 {
                     char c = (char)i;
                     char lowerC = textInfo.ToLower(c);
@@ -204,10 +202,6 @@ namespace System.Text.RegularExpressions.Tests
             {
                 foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
                 {
-                    // Source generated engine does not support setting different culutres yet.
-                    if (engine == RegexEngine.SourceGenerated && !string.IsNullOrEmpty(culture))
-                        continue;
-
                     yield return new object[] { engine, culture, RegexOptions.None};
                     if (string.IsNullOrEmpty(culture))
                     {
