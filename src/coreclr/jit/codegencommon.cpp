@@ -4003,7 +4003,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             noway_assert(varDsc->lvIsParam && varDsc->lvIsRegArg);
 #ifdef TARGET_X86
             // On x86 we don't enregister args that are not pointer sized.
-            noway_assert(genTypeSize(varDsc->GetActualRegisterType()) == TARGET_POINTER_SIZE);
+            noway_assert(genTypeSize(varDsc->GetStackSlotHomeType()) == TARGET_POINTER_SIZE);
 #endif // TARGET_X86
 
             noway_assert(varDsc->lvIsInReg() && !regArgTab[argNum].circular);
@@ -4297,7 +4297,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
         regNumber regNum = varDsc->GetArgInitReg();
         assert(regNum != REG_STK);
 
-        var_types regType = varDsc->GetActualRegisterType();
+        var_types regType = varDsc->GetStackSlotHomeType();
 
         GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);
         regSet.verifyRegUsed(regNum);
@@ -4840,7 +4840,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 
         // Note we are always reading from the tier0 frame here
         //
-        const var_types lclTyp  = varDsc->GetActualRegisterType();
+        const var_types lclTyp  = varDsc->GetStackSlotHomeType();
         const emitAttr  size    = emitTypeSize(lclTyp);
         const int       stkOffs = patchpointInfo->Offset(lclNum) + fieldOffset;
 
