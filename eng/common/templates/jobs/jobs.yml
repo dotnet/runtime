@@ -7,7 +7,7 @@ parameters:
 
   # Optional: Enable publishing using release pipelines
   enablePublishUsingPipelines: false
-  
+
   graphFileGeneration:
     # Optional: Enable generating the graph files at the end of the build
     enabled: false
