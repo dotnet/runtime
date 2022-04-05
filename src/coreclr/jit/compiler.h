@@ -1125,7 +1125,7 @@ public:
 
     var_types GetRegisterType() const;
 
-    var_types GetActualRegisterType() const;
+    var_types GetStackSlotHomeType() const;
 
     bool IsEnregisterableType() const
     {
