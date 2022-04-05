@@ -33,7 +33,7 @@ namespace System.Collections.Generic
             Span<int> span = _span;
             return
                 bitArrayIndex < (uint)span.Length &&
-                (span[(int)bitArrayIndex] & ((int)((uint)bitPosition % IntSize))) != 0;
+                (span[(int)bitArrayIndex] & (1 << ((int)((uint)bitPosition % IntSize)))) != 0;
         }
 
         /// <summary>How many ints must be allocated to represent n bits. Returns (n+31)/32, but avoids overflow.</summary>
