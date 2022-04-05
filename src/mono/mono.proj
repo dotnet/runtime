@@ -392,6 +392,9 @@
     <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'">
       <_MonoRunInitCompiler>false</_MonoRunInitCompiler>
     </PropertyGroup>
+    <ItemGroup Condition="'$(TargetsLinuxBionic)' == 'true'">
+      <_MonoCPPFLAGS Include="-DANDROID_FORCE_ICU_DATA_DIR" />
+    </ItemGroup>
     <ItemGroup Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'">
       <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(ANDROID_NDK_ROOT)/build/cmake/android.toolchain.cmake"/>
       <_MonoCMakeArgs Include="-DANDROID_NDK=$(ANDROID_NDK_ROOT)"/>
