@@ -232,7 +232,9 @@ namespace System.Runtime.CompilerServices
         internal static unsafe ushort GetElementSize(this Array array)
         {
             Debug.Assert(ObjectHasComponentSize(array));
-            return GetMethodTable(array)->ComponentSize;
+            ushort componentSize = GetMethodTable(array)->ComponentSize;
+            GC.KeepAlive(array); // Keep MethodTable alive
+            return componentSize;
         }
 
         // Returns pointer to the multi-dimensional array bounds.
