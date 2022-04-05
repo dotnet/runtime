@@ -727,9 +727,7 @@ namespace Microsoft.Extensions.Configuration
         {
             string parameterName = property.Name!;
 
-            var propertyBindingPoint = new BindingPoint(
-                initialValueProvider: () => config.GetSection(parameterName).Value,
-                isReadOnly: false);
+            var propertyBindingPoint = new BindingPoint(initialValue: config.GetSection(parameterName).Value, isReadOnly: false);
 
             BindInstance(
                 property.ParameterType,
