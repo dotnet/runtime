@@ -437,28 +437,54 @@ namespace Microsoft.Extensions.Configuration
                 }
 
                 // find the biggest constructor so that we can bind to the most parameters
-                ParameterInfo[] parameters = constructors[0].GetParameters();
+                ParameterInfo[]? parameters = null;
 
                 int indexOfChosenConstructor = 0;
 
-                for (int index = 1; index < constructors.Length; index++)
+                for (int index = 0; index < constructors.Length; index++)
                 {
-                    ParameterInfo[] constructorParameters = constructors[index].GetParameters();
-                    if (constructorParameters.Length > parameters.Length)
+                    ConstructorInfo constructor = constructors[index];
+
+                    ParameterInfo[] constructorParameters = constructor.GetParameters();
+
+                    bool canUse = true;
+
+                    foreach (ParameterInfo p in constructorParameters)
+                    {
+                        if (p.IsOut)
+                        {
+                            canUse = false;
+                            break;
+                        }
+
+                        // `in` is OK, but filter out `ref`
+                        if (!p.IsIn && p.ParameterType.IsByRef)
+                        {
+                            canUse = false;
+                            break;
+                        }
+                    }
+
+                    if (!canUse) continue;
+
+                    if (parameters is null || constructorParameters.Length > parameters?.Length)
                     {
                         parameters = constructorParameters;
                         indexOfChosenConstructor = index;
                     }
                 }
 
-                object?[] parameterValues = new object?[parameters.Length];
-
-                for (int index = 0; index < parameters.Length; index++)
+                if (parameters != null)
                 {
-                    parameterValues[index] = GetParameterValue(parameters[index], config, options);
-                }
+                    object?[] parameterValues = new object?[parameters.Length];
 
-                return constructors[indexOfChosenConstructor].Invoke(parameterValues);
+                    for (int index = 0; index < parameters.Length; index++)
+                    {
+                        parameterValues[index] = GetParameterValue(parameters[index], config, options);
+                    }
+
+                    return constructors[indexOfChosenConstructor].Invoke(parameterValues);
+                }
             }
 
             object? instance;

@@ -112,6 +112,39 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public IConfigurationSection DerivedSection { get; set; }
         }
 
+        public class ClassWithInAndOutAndRefParameters
+        {
+            public ClassWithInAndOutAndRefParameters(in string color, int length)
+            {
+                Color = color;
+                Length = length;
+            }
+
+            public ClassWithInAndOutAndRefParameters(in string color, ref int length)
+            {
+                Color = color;
+                Length = length;
+            }
+
+            public ClassWithInAndOutAndRefParameters(in string color, int length, out string colorUpperCase)
+            {
+                Color = color;
+                Length = length;
+                colorUpperCase = color.ToUpper();
+            }
+
+            public ClassWithInAndOutAndRefParameters(in string color, int length, out string colorUpperCase, ref int alternativeLength)
+            {
+                Color = color;
+                Length = length < 100 ? length : alternativeLength;
+                colorUpperCase = color.ToUpper();
+            }
+
+
+            public string Color { get; }
+            public int Length { get; }
+        }
+
         public record RecordTypeOptions(string Color, int Length);
 
         public record struct RecordStructTypeOptions(string Color, int Length);
@@ -1088,6 +1121,23 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var config = configurationBuilder.Build();
 
             var options = config.Get<ImmutableLengthAndColorClass>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+        }
+
+        [Fact]
+        public void CanBindImmutableClassAndSkipsConstructorsWithOutAndRefParameters()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ClassWithInAndOutAndRefParameters>();
             Assert.Equal(42, options.Length);
             Assert.Equal("Green", options.Color);
         }
