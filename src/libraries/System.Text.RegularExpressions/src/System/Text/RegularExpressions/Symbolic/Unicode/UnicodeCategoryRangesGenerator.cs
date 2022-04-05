@@ -32,6 +32,8 @@ $@"// Licensed to the .NET Foundation under one or more agreements.
 // This is a programmatically generated file from Regex.GenerateUnicodeTables.
 // It provides serialized BDD Unicode category definitions for System.Environment.Version = {Environment.Version}
 
+using System.Globalization;
+
 namespace {namespacename}
 {{
     internal static class {classname}
@@ -61,31 +63,38 @@ namespace {namespacename}
                     whitespace.Add(i);
             }
 
+            CharSetSolver bddb = CharSetSolver.Instance;
+
+            sw.WriteLine("        /// <summary>Serialized BDD representation of the set of all whitespace characters.</summary>");
+            sw.Write($"        public static ReadOnlySpan<byte> SerializedWhitespaceBDD => ");
+            WriteByteArrayInitSyntax(sw, bddb.CreateBddForIntRanges(whitespace.ranges).SerializeToBytes());
+            sw.WriteLine(";");
+
             //generate bdd reprs for each of the category ranges
             BDD[] catBDDs = new BDD[catMap.Count];
-            CharSetSolver bddb = CharSetSolver.Instance;
             for (int c = 0; c < catBDDs.Length; c++)
                 catBDDs[c] = bddb.CreateBddForIntRanges(catMap[(UnicodeCategory)c].ranges);
 
-            BDD whitespaceBdd = bddb.CreateBddForIntRanges(whitespace.ranges);
-
-            sw.WriteLine("        /// <summary>Serialized BDD representations of all the Unicode categories.</summary>");
-            sw.WriteLine("        public static readonly byte[][] AllCategoriesSerializedBDD = new byte[][]");
-            sw.WriteLine("        {");
+            sw.WriteLine();
+            sw.WriteLine("        /// <summary>Gets the serialized BDD representations of any defined UnicodeCategory.</summary>");
+            sw.WriteLine("        public static ReadOnlySpan<byte> GetSerializedCategory(UnicodeCategory category) =>");
+            sw.WriteLine("            (int)category switch");
+            sw.WriteLine("            {");
             for (int i = 0; i < catBDDs.Length; i++)
             {
-                sw.WriteLine("            // {0}({1}):", (UnicodeCategory)i, i);
-                sw.Write("            ");
-                WriteByteArrayInitSyntax(sw, catBDDs[i].SerializeToBytes());
-                sw.WriteLine(",");
+                sw.WriteLine($"                {i} => SerializedCategory{i}_{(UnicodeCategory)i},");
             }
-            sw.WriteLine("        };");
-            sw.WriteLine();
+            sw.WriteLine($"                _ => default,");
+            sw.WriteLine("            };");
 
-            sw.WriteLine("        /// <summary>Serialized BDD representation of the set of all whitespace characters.</summary>");
-            sw.Write($"        public static readonly byte[] WhitespaceSerializedBDD = ");
-            WriteByteArrayInitSyntax(sw, whitespaceBdd.SerializeToBytes());
-            sw.WriteLine(";");
+            for (int i = 0; i < catBDDs.Length; i++)
+            {
+                sw.WriteLine();
+                sw.WriteLine($"        /// <summary>Serialized BDD representation of the set of all characters in UnicodeCategory.{(UnicodeCategory)i}.</summary>");
+                sw.Write($"        private static ReadOnlySpan<byte> SerializedCategory{i}_{(UnicodeCategory)i} => ");
+                WriteByteArrayInitSyntax(sw, catBDDs[i].SerializeToBytes());
+                sw.WriteLine(";");
+            }
         }
 
         public static void WriteInt64ArrayInitSyntax(StreamWriter sw, long[] values)

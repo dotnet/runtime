@@ -34,13 +34,13 @@ namespace System.Text.RegularExpressions.Symbolic.Unicode
         /// <summary>Gets a <see cref="BDD"/> that represents the specified <see cref="UnicodeCategory"/>.</summary>
         public static BDD GetCategory(UnicodeCategory category) =>
             Volatile.Read(ref s_categories[(int)category]) ??
-            Interlocked.CompareExchange(ref s_categories[(int)category], BDD.Deserialize(UnicodeCategoryRanges.AllCategoriesSerializedBDD[(int)category], CharSetSolver.Instance), null) ??
+            Interlocked.CompareExchange(ref s_categories[(int)category], BDD.Deserialize(UnicodeCategoryRanges.GetSerializedCategory(category), CharSetSolver.Instance), null) ??
             s_categories[(int)category]!;
 
         /// <summary>Gets a <see cref="BDD"/> that represents the \s character class.</summary>
         public static BDD WhiteSpace =>
             s_whiteSpace ??
-            Interlocked.CompareExchange(ref s_whiteSpace, BDD.Deserialize(UnicodeCategoryRanges.WhitespaceSerializedBDD, CharSetSolver.Instance), null) ??
+            Interlocked.CompareExchange(ref s_whiteSpace, BDD.Deserialize(UnicodeCategoryRanges.SerializedWhitespaceBDD, CharSetSolver.Instance), null) ??
             s_whiteSpace;
 
         /// <summary>Gets a <see cref="BDD"/> that represents the \w character class.</summary>
