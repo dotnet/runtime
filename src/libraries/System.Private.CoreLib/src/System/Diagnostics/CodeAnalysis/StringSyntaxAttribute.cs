@@ -41,7 +41,7 @@ namespace System.Diagnostics.CodeAnalysis
         public const string CompositeFormat = nameof(CompositeFormat);
 
         /// <summary>The syntax identifier for strings containing date format specifiers.</summary>
-        public const string DateFormat = nameof(DateFormat);
+        public const string DateOnlyFormat = nameof(DateOnlyFormat);
 
         /// <summary>The syntax identifier for strings containing date and time format specifiers.</summary>
         public const string DateTimeFormat = nameof(DateTimeFormat);
@@ -62,7 +62,7 @@ namespace System.Diagnostics.CodeAnalysis
         public const string Regex = nameof(Regex);
 
         /// <summary>The syntax identifier for strings containing time format specifiers.</summary>
-        public const string TimeFormat = nameof(TimeFormat);
+        public const string TimeOnlyFormat = nameof(TimeOnlyFormat);
 
         /// <summary>The syntax identifier for strings containing <see cref="TimeSpan"/> format specifiers.</summary>
         public const string TimeSpanFormat = nameof(TimeSpanFormat);
