@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -816,6 +815,38 @@ namespace System.Net.Quic.Tests
                             waitForAbortTcs.SetException(ex);
                         }
                     };
+                });
+        }
+
+
+        [Fact]
+        public async Task WriteAsync_LocalAbort_Throws()
+        {
+            if (IsMockProvider)
+            {
+                // Mock provider does not support aborting pending writes via AbortWrite
+                return;
+            }
+
+            const int ExpectedErrorCode = 0xfffffff;
+
+            TaskCompletionSource waitForAbortTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await RunBidirectionalClientServer(
+                clientStream =>
+                {
+                    return Task.CompletedTask;
+                },
+                async serverStream =>
+                {
+                    // It may happen, that the WriteAsync call finishes early (before the AbortWrite 
+                    // below), and we hit a check on the next iteration of the WriteForever.
+                    // But in most cases it will still exercise aborting the outstanding write task.
+
+                    var writeTask = WriteForever(serverStream, 1024 * 1024);
+                    serverStream.AbortWrite(ExpectedErrorCode);
+
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => writeTask.WaitAsync(TimeSpan.FromSeconds(3)));
                 });
         }
 

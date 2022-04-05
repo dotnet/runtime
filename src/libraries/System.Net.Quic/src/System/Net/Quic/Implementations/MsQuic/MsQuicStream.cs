@@ -606,9 +606,15 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
             bool shouldComplete = false;
+            bool shouldCompleteSends = false;
 
             lock (_state)
             {
+                if (_state.SendState == SendState.None || _state.SendState == SendState.Pending)
+                {
+                    shouldCompleteSends = true;
+                }
+
                 if (_state.SendState < SendState.Aborted)
                 {
                     _state.SendState = SendState.Aborted;
@@ -624,6 +630,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (shouldComplete)
             {
                 _state.ShutdownWriteCompletionSource.SetException(
+                    ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException("Write was aborted.")));
+            }
+
+            if (shouldCompleteSends)
+            {
+                _state.SendResettableCompletionSource.CompleteException(
                     ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException("Write was aborted.")));
             }
 

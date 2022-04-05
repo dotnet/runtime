@@ -29,19 +29,19 @@ namespace System
         public const short MinValue = unchecked((short)0x8000);
 
         /// <summary>Represents the additive identity (0).</summary>
-        public const short AdditiveIdentity = 0;
+        private const short AdditiveIdentity = 0;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        public const short MultiplicativeIdentity = 1;
+        private const short MultiplicativeIdentity = 1;
 
         /// <summary>Represents the number one (1).</summary>
-        public const short One = 1;
+        private const short One = 1;
 
         /// <summary>Represents the number zero (0).</summary>
-        public const short Zero = 0;
+        private const short Zero = 0;
 
         /// <summary>Represents the number negative one (-1).</summary>
-        public const short NegativeOne = -1;
+        private const short NegativeOne = -1;
 
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
@@ -320,6 +320,9 @@ namespace System
         // IBinaryInteger
         //
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
+        public static (short Quotient, short Remainder) DivRem(short left, short right) => Math.DivRem(left, right);
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         public static short LeadingZeroCount(short value) => (short)(BitOperations.LeadingZeroCount((ushort)value) - 16);
 
@@ -462,21 +465,38 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.One" />
-        static short INumber<short>.One => One;
-
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
-        static short INumber<short>.Zero => Zero;
-
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
         public static short Abs(short value) => Math.Abs(value);
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static short Clamp(short value, short min, short max) => Math.Clamp(value, min, max);
 
-        /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        public static short CopySign(short value, short sign)
+        {
+            short absValue = value;
+
+            if (absValue < 0)
+            {
+                absValue = (short)(-absValue);
+            }
+
+            if (sign >= 0)
+            {
+                if (absValue < 0)
+                {
+                    Math.ThrowNegateTwosCompOverflow();
+                }
+
+                return absValue;
+            }
+
+            return (short)(-absValue);
+        }
+
+        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static short Create<TOther>(TOther value)
+        public static short CreateChecked<TOther>(TOther value)
             where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
@@ -695,17 +715,77 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.DivRem(TSelf, TSelf)" />
-        public static (short Quotient, short Remainder) DivRem(short left, short right) => Math.DivRem(left, right);
+        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        public static bool IsNegative(short value) => value < 0;
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static short Max(short x, short y) => Math.Max(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static short MaxMagnitude(short x, short y)
+        {
+            short absX = x;
+
+            if (absX < 0)
+            {
+                absX = (short)(-absX);
+
+                if (absX < 0)
+                {
+                    return x;
+                }
+            }
+
+            short absY = y;
+
+            if (absY < 0)
+            {
+                absY = (short)(-absY);
+
+                if (absY < 0)
+                {
+                    return y;
+                }
+            }
+
+            return (absX >= absY) ? x : y;
+        }
+
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static short Min(short x, short y) => Math.Min(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static short MinMagnitude(short x, short y)
+        {
+            short absX = x;
+
+            if (absX < 0)
+            {
+                absX = (short)(-absX);
+
+                if (absX < 0)
+                {
+                    return y;
+                }
+            }
+
+            short absY = y;
+
+            if (absY < 0)
+            {
+                absY = (short)(-absY);
+
+                if (absY < 0)
+                {
+                    return x;
+                }
+            }
+
+            return (absX <= absY) ? x : y;
+        }
+
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static short Sign(short value) => (short)Math.Sign(value);
+        public static int Sign(short value) => Math.Sign(value);
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -879,7 +959,17 @@ namespace System
         }
 
         //
-        // IParseable
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static short INumberBase<short>.One => One;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static short INumberBase<short>.Zero => Zero;
+
+        //
+        // IParsable
         //
 
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out short result) => TryParse(s, NumberStyles.Integer, provider, out result);
@@ -905,13 +995,13 @@ namespace System
         static short ISignedNumber<short>.NegativeOne => NegativeOne;
 
         //
-        // ISpanParseable
+        // ISpanParsable
         //
 
-        /// <inheritdoc cref="ISpanParseable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
         public static short Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, NumberStyles.Integer, provider);
 
-        /// <inheritdoc cref="ISpanParseable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out short result) => TryParse(s, NumberStyles.Integer, provider, out result);
 
         //
@@ -940,8 +1030,5 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static short IUnaryPlusOperators<short, short>.operator +(short value) => (short)(+value);
-
-        // /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_CheckedUnaryPlus(TSelf)" />
-        // static short IUnaryPlusOperators<short, short>.operator checked +(short value) => checked((short)(+value));
     }
 }

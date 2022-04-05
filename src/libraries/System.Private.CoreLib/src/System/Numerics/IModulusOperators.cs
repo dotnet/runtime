@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace System
+namespace System.Numerics
 {
     /// <summary>Defines a mechanism for computing the modulus or remainder of two values.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
