@@ -1435,6 +1435,16 @@ emit_memset (EmitContext *ctx, LLVMBuilderRef builder, LLVMValueRef v, LLVMValue
 	LLVMBuildCall (builder, get_intrins (ctx, INTRINS_MEMSET), args, aindex, "");
 }
 
+static LLVMValueRef
+mono_llvm_build_load (LLVMBuilderRef builder, LLVMTypeRef type, LLVMValueRef PointerVal,
+					  const char *Name, gboolean is_volatile)
+{
+	LLVMValueRef v = type ? LLVMBuildLoad2 (builder, type, PointerVal, Name) : LLVMBuildLoad (builder, PointerVal, Name);
+	if (is_volatile)
+		LLVMSetVolatile (v, TRUE);
+	return v;
+}
+
 /*
  * emit_volatile_load:
  *
@@ -1450,7 +1460,7 @@ emit_volatile_load (EmitContext *ctx, int vreg)
 	// register on arm64 (x15), and llvm might keep the value in that register
 	// even through the register is marked as 'reserved' inside llvm.
 
-	v = mono_llvm_build_load (ctx->builder, ctx->addresses [vreg], "", TRUE);
+	v = mono_llvm_build_load (ctx->builder, NULL, ctx->addresses [vreg], "", TRUE);
 	t = ctx->vreg_cli_types [vreg];
 	if (t && !m_type_is_byref (t)) {
 		/*
@@ -2487,7 +2497,7 @@ emit_load (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, in
 	if (barrier != LLVM_BARRIER_NONE)
 		res = mono_llvm_build_atomic_load (*builder_ref, addr, name, is_volatile, size, barrier);
 	else
-		res = mono_llvm_build_load (*builder_ref, addr, name, is_volatile);
+		res = mono_llvm_build_load (*builder_ref, NULL, addr, name, is_volatile);
 
 	return res;
 }
@@ -2986,7 +2996,7 @@ emit_get_method (MonoLLVMModule *module)
 		indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 		indexes [1] = LLVMGetParam (func, 0);
 		LLVMValueRef addr = LLVMBuildGEP (builder, base, indexes, 2, "");
-		LLVMValueRef res = mono_llvm_build_load (builder, addr, "", FALSE);
+		LLVMValueRef res = mono_llvm_build_load (builder, NULL, addr, "", FALSE);
 		LLVMBuildRet (builder, res);
 
 		LLVMBasicBlockRef default_bb = LLVMAppendBasicBlock (func, "DEFAULT");
@@ -3219,7 +3229,7 @@ emit_init_aotconst (MonoLLVMModule *module)
 	LLVMValueRef indexes [2];
 	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 	indexes [1] = LLVMGetParam (func, 0);
-	LLVMValueRef aotconst_addr = LLVMBuildLoad (builder, LLVMBuildGEP (builder, aotconsts, indexes, 2, ""), "");
+	LLVMValueRef aotconst_addr = LLVMBuildLoad2 (builder, aotconst_addr_type, LLVMBuildGEP2 (builder, aotconst_arr_type, aotconsts, indexes, 2, ""), "");
 	LLVMBuildStore (builder, LLVMBuildIntToPtr (builder, LLVMGetParam (func, 1), module->ptr_type, ""), aotconst_addr);
 	LLVMBuildBr (builder, exit_bb);
 
@@ -4452,7 +4462,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		if (!ctx->imt_rgctx_loc)
 			ctx->imt_rgctx_loc = build_alloca_llvm_type (ctx, ctx->module->ptr_type, TARGET_SIZEOF_VOID_P);
 		LLVMBuildStore (builder, convert (ctx, ctx->values [call->rgctx_arg_reg], ctx->module->ptr_type), ctx->imt_rgctx_loc);
-		args [cinfo->rgctx_arg_pindex] = mono_llvm_build_load (builder, ctx->imt_rgctx_loc, "", TRUE);
+		args [cinfo->rgctx_arg_pindex] = mono_llvm_build_load (builder, ctx->module->ptr_type, ctx->imt_rgctx_loc, "", TRUE);
 #else
 		args [cinfo->rgctx_arg_pindex] = convert (ctx, values [call->rgctx_arg_reg], ctx->module->ptr_type);
 #endif
@@ -4465,7 +4475,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		if (!ctx->imt_rgctx_loc)
 			ctx->imt_rgctx_loc = build_alloca_llvm_type (ctx, ctx->module->ptr_type, TARGET_SIZEOF_VOID_P);
 		LLVMBuildStore (builder, convert (ctx, ctx->values [call->imt_arg_reg], ctx->module->ptr_type), ctx->imt_rgctx_loc);
-		args [cinfo->imt_arg_pindex] = mono_llvm_build_load (builder, ctx->imt_rgctx_loc, "", TRUE);
+		args [cinfo->imt_arg_pindex] = mono_llvm_build_load (builder, ctx->module->ptr_type, ctx->imt_rgctx_loc, "", TRUE);
 #else
 		args [cinfo->imt_arg_pindex] = convert (ctx, values [call->imt_arg_reg], ctx->module->ptr_type);
 #endif
@@ -4961,9 +4971,10 @@ emit_llvmonly_landing_pad (EmitContext *ctx, int group_index, int group_size)
 
 		/* The ret value is in il_state_ret, copy it to the memory pointed to by the vret arg */
 		ret_type = type_to_llvm_type (ctx, ctx->sig->ret);
+		addr = convert (ctx, ctx->il_state_ret, LLVMPointerType (ret_type, 0));
 		indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-		gep = LLVMBuildGEP (builder, addr, indexes, 1, "");
-		retval = convert (ctx, LLVMBuildLoad (builder, gep, ""), ret_type);
+		gep = LLVMBuildGEP2 (builder, ret_type, addr, indexes, 1, "");
+		retval = LLVMBuildLoad2 (builder, ret_type, gep, "");
 
 		LLVMBuildStore (builder, retval, convert (ctx, ret_addr, LLVMPointerType (ret_type, 0)));
 		LLVMBuildRetVoid (builder);
@@ -5608,7 +5619,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			cbb = gen_bb (ctx, "CONT_LONG_BB");
 			LLVMBasicBlockRef dummy_bb = gen_bb (ctx, "CONT_LONG_BB_DUMMY");
 
-			LLVMValueRef load = mono_llvm_build_load (builder, ctx->long_bb_break_var, "", TRUE);
+			LLVMValueRef load = mono_llvm_build_load (builder, i4_t, ctx->long_bb_break_var, "", TRUE);
 			/*
 			 * The long_bb_break_var is initialized to 0 in the prolog, so this branch will always go to 'cbb'
 			 * but llvm doesn't know that, so the branch is not going to be eliminated.
@@ -7270,7 +7281,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			 * if (!*sreg1)
 			 *   mono_threads_state_poll ();
 			 */
-			val = mono_llvm_build_load (builder, convert (ctx, lhs, LLVMPointerType (IntPtrType (), 0)), "", TRUE);
+			val = mono_llvm_build_load (builder, IntPtrType (), convert (ctx, lhs, LLVMPointerType (IntPtrType (), 0)), "", TRUE);
 			cmp = LLVMBuildICmp (builder, LLVMIntEQ, val, LLVMConstNull (LLVMTypeOf (val)), "");
 			poll_bb = gen_bb (ctx, "POLL_BB");
 			cont_bb = gen_bb (ctx, "CONT_BB");
@@ -8437,7 +8448,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_SSE_MOVSS: {
 			LLVMValueRef addr = convert (ctx, lhs, LLVMPointerType (LLVMFloatType (), 0));
-			LLVMValueRef val = mono_llvm_build_load (builder, addr, "", FALSE);
+			LLVMValueRef val = mono_llvm_build_load (builder, LLVMFloatType (), addr, "", FALSE);
 			values [ins->dreg] = LLVMBuildInsertElement (builder, LLVMConstNull (type_to_sse_type (ins->inst_c1)), val, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
 			break;
 		}
@@ -8473,8 +8484,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef addr = rhs;
 			LLVMValueRef addr1 = convert (ctx, addr, LLVMPointerType (t, 0));
 			LLVMValueRef addr2 = convert (ctx, LLVMBuildAdd (builder, convert (ctx, addr, IntPtrType ()), convert (ctx, LLVMConstInt (LLVMInt32Type (), size, FALSE), IntPtrType ()), ""), LLVMPointerType (t, 0));
-			LLVMValueRef val1 = mono_llvm_build_load (builder, addr1, "", FALSE);
-			LLVMValueRef val2 = mono_llvm_build_load (builder, addr2, "", FALSE);
+			LLVMValueRef val1 = mono_llvm_build_load (builder, t, addr1, "", FALSE);
+			LLVMValueRef val2 = mono_llvm_build_load (builder, t, addr2, "", FALSE);
 			int index1, index2;
 
 			index1 = high ? 2: 0;
@@ -8487,7 +8498,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_SSE2_MOVHPD_LOAD: {
 			LLVMTypeRef t = LLVMDoubleType ();
 			LLVMValueRef addr = convert (ctx, rhs, LLVMPointerType (t, 0));
-			LLVMValueRef val = mono_llvm_build_load (builder, addr, "", FALSE);
+			LLVMValueRef val = mono_llvm_build_load (builder, t, addr, "", FALSE);
 			int index = ins->opcode == OP_SSE2_MOVHPD_LOAD ? 1 : 0;
 			values [ins->dreg] = LLVMBuildInsertElement (builder, lhs, val, const_int32 (index), "");
 			break;
