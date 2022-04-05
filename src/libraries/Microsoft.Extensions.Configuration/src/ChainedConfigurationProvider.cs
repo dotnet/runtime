@@ -21,12 +21,12 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="source">The source configuration.</param>
         public ChainedConfigurationProvider(ChainedConfigurationSource source!!)
         {
-            if (source.Configuration == null)
+            var configuration = source.Configuration;
+            if (configuration  == null)
             {
                 throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "source.Configuration"), nameof(source));
             }
-
-            _config = source.Configuration;
+            _config = configuration;
             _shouldDisposeConfig = source.ShouldDisposeConfiguration;
         }
 
