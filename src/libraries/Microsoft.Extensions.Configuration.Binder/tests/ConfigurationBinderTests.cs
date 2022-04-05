@@ -152,6 +152,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         public record RecordTypeOptions(string Color, int Length);
 
         public record struct RecordStructTypeOptions(string Color, int Length);
+        public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);
 
         public struct StructTypeOptions
         {
@@ -1319,6 +1320,23 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var config = configurationBuilder.Build();
 
             var options = config.Get<RecordStructTypeOptions>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+        }
+
+        [Fact]
+        public void CanBindReadonlyRecordStructOptions()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ReadonlyRecordStructTypeOptions>();
             Assert.Equal(42, options.Length);
             Assert.Equal("Green", options.Color);
         }
