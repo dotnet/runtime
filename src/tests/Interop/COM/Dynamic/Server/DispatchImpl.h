@@ -27,7 +27,7 @@ protected:
 
 private:
     ComSmartPtr<ITypeLib> _typeLib;
-    ComSmartPtr < ITypeInfo> _typeInfo;
+    ComSmartPtr<ITypeInfo> _typeInfo;
     void *_instance;
 };
 
