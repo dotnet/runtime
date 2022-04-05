@@ -194,13 +194,9 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
                 }
             }
 
-            // Most locals have their own stack slots of a least 4 bytes in
-            // size. Use a wider store in that case. The exceptions are
-            // (dependently) promoted struct fields and small parameters passed
-            // on stack on macOS arm64 ABI.
             // TODO-CQ: if the field is promoted independently shouldn't we
             // also be able to do this?
-            if (!varDsc->lvIsStructField && (!varDsc->lvIsParam || varDsc->lvIsRegArg || !compMacOsArm64Abi()))
+            if (!varDsc->lvIsStructField && (varDsc->GetStackSlotHomeType() == TYP_INT))
             {
                 storeLoc->gtType = TYP_INT;
                 con->SetIconValue(ival);
