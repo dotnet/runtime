@@ -41,6 +41,7 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationUnreferencedCodeMessage)]
         public static ValueTask<TValue?> DeserializeAsync<TValue>(
             Stream utf8Json!!,
             JsonSerializerOptions? options = null,
@@ -71,6 +72,7 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationUnreferencedCodeMessage)]
         public static TValue? Deserialize<TValue>(
             Stream utf8Json!!,
             JsonSerializerOptions? options = null)
@@ -102,6 +104,7 @@ namespace System.Text.Json
         /// for <paramref name="returnType"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationUnreferencedCodeMessage)]
         public static ValueTask<object?> DeserializeAsync(
             Stream utf8Json!!,
             Type returnType!!,
@@ -133,6 +136,7 @@ namespace System.Text.Json
         /// for <paramref name="returnType"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationUnreferencedCodeMessage)]
         public static object? Deserialize(
             Stream utf8Json!!,
             Type returnType!!,
@@ -281,6 +285,7 @@ namespace System.Text.Json
         /// <paramref name="utf8Json"/> is <see langword="null"/>.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationUnreferencedCodeMessage)]
         public static IAsyncEnumerable<TValue?> DeserializeAsyncEnumerable<TValue>(
             Stream utf8Json!!,
             JsonSerializerOptions? options = null,
@@ -295,6 +300,7 @@ namespace System.Text.Json
             return CreateAsyncEnumerableDeserializer(utf8Json, options, cancellationToken);
 
             [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+            [RequiresDynamicCode(SerializationUnreferencedCodeMessage)]
             static async IAsyncEnumerable<TValue> CreateAsyncEnumerableDeserializer(
                 Stream utf8Json,
                 JsonSerializerOptions options,
@@ -333,6 +339,7 @@ namespace System.Text.Json
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "Workaround for https://github.com/mono/linker/issues/1416. All usages are marked as unsafe.")]
+        [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.", Justification = "<Pending>")]
         private static JsonTypeInfo CreateQueueJsonTypeInfo<TValue>(JsonConverter queueConverter, JsonSerializerOptions queueOptions) =>
                 new JsonTypeInfo(typeof(Queue<TValue>), queueConverter, queueOptions);
 
@@ -542,6 +549,7 @@ namespace System.Text.Json
         }
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationUnreferencedCodeMessage)]
         private static TValue? ReadAllUsingOptions<TValue>(
             Stream utf8Json,
             Type returnType,

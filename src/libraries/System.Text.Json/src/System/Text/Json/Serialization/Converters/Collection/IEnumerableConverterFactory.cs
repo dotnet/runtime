@@ -21,6 +21,7 @@ namespace System.Text.Json.Serialization.Converters
         private static readonly IListConverter<IList> s_converterForIList = new IListConverter<IList>();
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         public IEnumerableConverterFactory() { }
 
         public override bool CanConvert(Type typeToConvert)
@@ -30,6 +31,7 @@ namespace System.Text.Json.Serialization.Converters
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.", Justification = "<Pending>")]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             Type converterType;

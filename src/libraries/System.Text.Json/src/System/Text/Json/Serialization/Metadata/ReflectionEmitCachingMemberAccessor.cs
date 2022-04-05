@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #if NETFRAMEWORK || NETCOREAPP
@@ -8,6 +8,11 @@ using System.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
+#if NETCOREAPP
+    [RequiresDynamicCode("Runtime code generation is not available for Aot form factor")]
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3051:RequiresDynamicCode",
+            Justification = "Suppressing base type warnings")]
+#endif
     internal sealed partial class ReflectionEmitCachingMemberAccessor : MemberAccessor
     {
         private static readonly ReflectionEmitMemberAccessor s_sourceAccessor = new();
@@ -35,6 +40,7 @@ namespace System.Text.Json.Serialization.Metadata
             => s_cache.GetOrAdd((nameof(CreateFieldSetter), typeof(TProperty), fieldInfo), static key => s_sourceAccessor.CreateFieldSetter<TProperty>((FieldInfo)key.member!));
 
         [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
+        [RequiresDynamicCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public override Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection> CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>()
             => s_cache.GetOrAdd((nameof(CreateImmutableDictionaryCreateRangeDelegate), typeof((TCollection, TKey, TValue)), null),
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
@@ -44,6 +50,7 @@ namespace System.Text.Json.Serialization.Metadata
 #pragma warning restore IL2026
 
         [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
+        [RequiresDynamicCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public override Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TCollection, TElement>()
             => s_cache.GetOrAdd((nameof(CreateImmutableEnumerableCreateRangeDelegate), typeof((TCollection, TElement)), null),
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
@@ -11,10 +11,12 @@ namespace System.Text.Json.Nodes
     internal sealed partial class JsonValueNotTrimmable<TValue> : JsonValue<TValue>
     {
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         public JsonValueNotTrimmable(TValue value, JsonNodeOptions? options = null) : base(value, options) { }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The ctor is marked with RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.", Justification = "<Pending>")]
         public override void WriteTo(Utf8JsonWriter writer!!, JsonSerializerOptions? options = null)
         {
             JsonSerializer.Serialize(writer, _value, options);

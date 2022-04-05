@@ -555,6 +555,8 @@ namespace System.Text.Json
         // The cached value used to determine if ReferenceHandler should use Preserve or IgnoreCycles semanitcs or None of them.
         internal ReferenceHandlingStrategy ReferenceHandlingStrategy = ReferenceHandlingStrategy.None;
 
+        [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+            Justification = "Aot code will not be enabled under this feature swtich")]
         internal MemberAccessor MemberAccessorStrategy
         {
             get
@@ -587,6 +589,7 @@ namespace System.Text.Json
         /// <seealso cref="InitializeForReflectionSerializer"/> must be checked before calling.
         /// </summary>
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         internal void InitializeForReflectionSerializer()
         {
             RootReflectionSerializerDependencies();
