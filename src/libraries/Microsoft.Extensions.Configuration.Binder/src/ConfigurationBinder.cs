@@ -437,9 +437,8 @@ namespace Microsoft.Extensions.Configuration
                 }
 
                 // find the biggest constructor so that we can bind to the most parameters
-                ParameterInfo[]? parameters = null;
-
-                int indexOfChosenConstructor = 0;
+                ParameterInfo[]? chosenParameters = null;
+                ConstructorInfo? chosenConstructor = null;
 
                 for (int index = 0; index < constructors.Length; index++)
                 {
@@ -467,23 +466,23 @@ namespace Microsoft.Extensions.Configuration
 
                     if (!canUse) continue;
 
-                    if (parameters is null || constructorParameters.Length > parameters?.Length)
+                    if (chosenParameters is null || constructorParameters.Length > chosenParameters.Length)
                     {
-                        parameters = constructorParameters;
-                        indexOfChosenConstructor = index;
+                        chosenParameters = constructorParameters;
+                        chosenConstructor = constructor;
                     }
                 }
 
-                if (parameters != null)
+                if (chosenParameters != null && chosenConstructor != null)
                 {
-                    object?[] parameterValues = new object?[parameters.Length];
+                    object?[] parameterValues = new object?[chosenParameters.Length];
 
-                    for (int index = 0; index < parameters.Length; index++)
+                    for (int index = 0; index < chosenParameters.Length; index++)
                     {
-                        parameterValues[index] = GetParameterValue(parameters[index], config, options);
+                        parameterValues[index] = GetParameterValue(chosenParameters[index], config, options);
                     }
 
-                    return constructors[indexOfChosenConstructor].Invoke(parameterValues);
+                    return chosenConstructor.Invoke(parameterValues);
                 }
             }
 
