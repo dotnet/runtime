@@ -12,7 +12,7 @@ JSVU=$(HOME)/.jsvu
 CHROMEDRIVER?=$(HOME)/.chromedriver
 GECKODRIVER?=$(HOME)/.geckodriver
 
-EMSDK_PATH=$(TOP)/-set-in-mk-
+#EMSDK_PATH=$(TOP)/-set-in-mk-
 CONFIG?=Release
 BINDIR?=$(TOP)/artifacts/bin
 OBJDIR?=$(TOP)/artifacts/obj

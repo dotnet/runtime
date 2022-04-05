@@ -44,6 +44,8 @@ source "$__RepoRootDir"/eng/native/build-commons.sh
 # Set cross build
 
 if [[ "$__TargetArch" == wasm ]]; then
+    cp $__RepoRootDir/emwrapper.sh $__artifactsDir/obj
+    #source "$__RepoRootDir/emwrapper.sh"
     source "$__artifactsDir/obj/emwrapper.sh"
     #if [[ -z "$EMSDK_PATH" ]]; then
         #echo "Error: You need to set the EMSDK_PATH environment variable pointing to the emscripten SDK root."
