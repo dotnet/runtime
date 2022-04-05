@@ -7,7 +7,6 @@ using Xunit;
 
 namespace System.Tests
 {
-    [RequiresPreviewFeaturesAttribute]
     public class UInt16Tests_GenericMath
     {
         [Fact]
@@ -37,13 +36,13 @@ namespace System.Tests
         [Fact]
         public static void OneTest()
         {
-            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.One);
+            Assert.Equal((ushort)0x0001, NumberBaseHelper<ushort>.One);
         }
 
         [Fact]
         public static void ZeroTest()
         {
-            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.Zero);
+            Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.Zero);
         }
 
         [Fact]
@@ -297,134 +296,134 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void CreateFromByteTest()
+        public static void CreateCheckedFromByteTest()
         {
-            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.Create<byte>(0x00));
-            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Create<byte>(0x01));
-            Assert.Equal((ushort)0x007F, NumberHelper<ushort>.Create<byte>(0x7F));
-            Assert.Equal((ushort)0x0080, NumberHelper<ushort>.Create<byte>(0x80));
-            Assert.Equal((ushort)0x00FF, NumberHelper<ushort>.Create<byte>(0xFF));
+            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.CreateChecked<byte>(0x00));
+            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.CreateChecked<byte>(0x01));
+            Assert.Equal((ushort)0x007F, NumberHelper<ushort>.CreateChecked<byte>(0x7F));
+            Assert.Equal((ushort)0x0080, NumberHelper<ushort>.CreateChecked<byte>(0x80));
+            Assert.Equal((ushort)0x00FF, NumberHelper<ushort>.CreateChecked<byte>(0xFF));
         }
 
         [Fact]
-        public static void CreateFromCharTest()
+        public static void CreateCheckedFromCharTest()
         {
-            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.Create<char>((char)0x0000));
-            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Create<char>((char)0x0001));
-            Assert.Equal((ushort)0x7FFF, NumberHelper<ushort>.Create<char>((char)0x7FFF));
-            Assert.Equal((ushort)0x8000, NumberHelper<ushort>.Create<char>((char)0x8000));
-            Assert.Equal((ushort)0xFFFF, NumberHelper<ushort>.Create<char>((char)0xFFFF));
+            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.CreateChecked<char>((char)0x0000));
+            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.CreateChecked<char>((char)0x0001));
+            Assert.Equal((ushort)0x7FFF, NumberHelper<ushort>.CreateChecked<char>((char)0x7FFF));
+            Assert.Equal((ushort)0x8000, NumberHelper<ushort>.CreateChecked<char>((char)0x8000));
+            Assert.Equal((ushort)0xFFFF, NumberHelper<ushort>.CreateChecked<char>((char)0xFFFF));
         }
 
         [Fact]
-        public static void CreateFromInt16Test()
+        public static void CreateCheckedFromInt16Test()
         {
-            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.Create<short>(0x0000));
-            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Create<short>(0x0001));
-            Assert.Equal((ushort)0x7FFF, NumberHelper<ushort>.Create<short>(0x7FFF));
-            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<short>(unchecked((short)0x8000)));
-            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<short>(unchecked((short)0xFFFF)));
+            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.CreateChecked<short>(0x0000));
+            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.CreateChecked<short>(0x0001));
+            Assert.Equal((ushort)0x7FFF, NumberHelper<ushort>.CreateChecked<short>(0x7FFF));
+            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<short>(unchecked((short)0x8000)));
+            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<short>(unchecked((short)0xFFFF)));
         }
 
         [Fact]
-        public static void CreateFromInt32Test()
+        public static void CreateCheckedFromInt32Test()
         {
-            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.Create<int>(0x00000000));
-            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Create<int>(0x00000001));
-            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<int>(0x7FFFFFFF));
-            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<int>(unchecked((int)0x80000000)));
-            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<int>(unchecked((int)0xFFFFFFFF)));
+            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.CreateChecked<int>(0x00000000));
+            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.CreateChecked<int>(0x00000001));
+            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<int>(0x7FFFFFFF));
+            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<int>(unchecked((int)0x80000000)));
+            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<int>(unchecked((int)0xFFFFFFFF)));
         }
 
         [Fact]
-        public static void CreateFromInt64Test()
+        public static void CreateCheckedFromInt64Test()
         {
-            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.Create<long>(0x0000000000000000));
-            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Create<long>(0x0000000000000001));
-            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<long>(0x7FFFFFFFFFFFFFFF));
-            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<long>(unchecked((long)0x8000000000000000)));
-            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<long>(unchecked((long)0xFFFFFFFFFFFFFFFF)));
+            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.CreateChecked<long>(0x0000000000000000));
+            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.CreateChecked<long>(0x0000000000000001));
+            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<long>(0x7FFFFFFFFFFFFFFF));
+            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<long>(unchecked((long)0x8000000000000000)));
+            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<long>(unchecked((long)0xFFFFFFFFFFFFFFFF)));
         }
 
         [Fact]
-        public static void CreateFromIntPtrTest()
+        public static void CreateCheckedFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.Equal((ushort)0x0000, NumberHelper<ushort>.Create<nint>(unchecked((nint)0x0000000000000000)));
-                Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Create<nint>(unchecked((nint)0x0000000000000001)));
-                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<nint>(unchecked((nint)0x7FFFFFFFFFFFFFFF)));
-                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<nint>(unchecked((nint)0x8000000000000000)));
-                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<nint>(unchecked((nint)0xFFFFFFFFFFFFFFFF)));
+                Assert.Equal((ushort)0x0000, NumberHelper<ushort>.CreateChecked<nint>(unchecked((nint)0x0000000000000000)));
+                Assert.Equal((ushort)0x0001, NumberHelper<ushort>.CreateChecked<nint>(unchecked((nint)0x0000000000000001)));
+                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<nint>(unchecked((nint)0x7FFFFFFFFFFFFFFF)));
+                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<nint>(unchecked((nint)0x8000000000000000)));
+                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<nint>(unchecked((nint)0xFFFFFFFFFFFFFFFF)));
             }
             else
             {
-                Assert.Equal((ushort)0x0000, NumberHelper<ushort>.Create<nint>((nint)0x00000000));
-                Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Create<nint>((nint)0x00000001));
-                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<nint>((nint)0x7FFFFFFF));
-                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<nint>(unchecked((nint)0x80000000)));
-                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<nint>(unchecked((nint)0xFFFFFFFF)));
+                Assert.Equal((ushort)0x0000, NumberHelper<ushort>.CreateChecked<nint>((nint)0x00000000));
+                Assert.Equal((ushort)0x0001, NumberHelper<ushort>.CreateChecked<nint>((nint)0x00000001));
+                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<nint>((nint)0x7FFFFFFF));
+                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<nint>(unchecked((nint)0x80000000)));
+                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<nint>(unchecked((nint)0xFFFFFFFF)));
             }
         }
 
         [Fact]
-        public static void CreateFromSByteTest()
+        public static void CreateCheckedFromSByteTest()
         {
-            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.Create<sbyte>(0x00));
-            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Create<sbyte>(0x01));
-            Assert.Equal((ushort)0x007F, NumberHelper<ushort>.Create<sbyte>(0x7F));
-            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<sbyte>(unchecked((sbyte)0x80)));
-            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<sbyte>(unchecked((sbyte)0xFF)));
+            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.CreateChecked<sbyte>(0x00));
+            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.CreateChecked<sbyte>(0x01));
+            Assert.Equal((ushort)0x007F, NumberHelper<ushort>.CreateChecked<sbyte>(0x7F));
+            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<sbyte>(unchecked((sbyte)0x80)));
+            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<sbyte>(unchecked((sbyte)0xFF)));
         }
 
         [Fact]
-        public static void CreateFromUInt16Test()
+        public static void CreateCheckedFromUInt16Test()
         {
-            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.Create<ushort>(0x0000));
-            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Create<ushort>(0x0001));
-            Assert.Equal((ushort)0x7FFF, NumberHelper<ushort>.Create<ushort>(0x7FFF));
-            Assert.Equal((ushort)0x8000, NumberHelper<ushort>.Create<ushort>(0x8000));
-            Assert.Equal((ushort)0xFFFF, NumberHelper<ushort>.Create<ushort>(0xFFFF));
+            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.CreateChecked<ushort>(0x0000));
+            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.CreateChecked<ushort>(0x0001));
+            Assert.Equal((ushort)0x7FFF, NumberHelper<ushort>.CreateChecked<ushort>(0x7FFF));
+            Assert.Equal((ushort)0x8000, NumberHelper<ushort>.CreateChecked<ushort>(0x8000));
+            Assert.Equal((ushort)0xFFFF, NumberHelper<ushort>.CreateChecked<ushort>(0xFFFF));
         }
 
         [Fact]
-        public static void CreateFromUInt32Test()
+        public static void CreateCheckedFromUInt32Test()
         {
-            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.Create<uint>(0x00000000));
-            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Create<uint>(0x00000001));
-            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<uint>(0x7FFFFFFF));
-            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<uint>(0x80000000));
-            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<uint>(0xFFFFFFFF));
+            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.CreateChecked<uint>(0x00000000));
+            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.CreateChecked<uint>(0x00000001));
+            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<uint>(0x7FFFFFFF));
+            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<uint>(0x80000000));
+            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<uint>(0xFFFFFFFF));
         }
 
         [Fact]
-        public static void CreateFromUInt64Test()
+        public static void CreateCheckedFromUInt64Test()
         {
-            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.Create<ulong>(0x0000000000000000));
-            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Create<ulong>(0x0000000000000001));
-            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<ulong>(0x7FFFFFFFFFFFFFFF));
-            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<ulong>(0x8000000000000000));
-            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<ulong>(0xFFFFFFFFFFFFFFFF));
+            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.CreateChecked<ulong>(0x0000000000000000));
+            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.CreateChecked<ulong>(0x0000000000000001));
+            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<ulong>(0x7FFFFFFFFFFFFFFF));
+            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<ulong>(0x8000000000000000));
+            Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<ulong>(0xFFFFFFFFFFFFFFFF));
         }
 
         [Fact]
-        public static void CreateFromUIntPtrTest()
+        public static void CreateCheckedFromUIntPtrTest()
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.Equal((ushort)0x0000, NumberHelper<ushort>.Create<nuint>(unchecked((nuint)0x0000000000000000)));
-                Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Create<nuint>(unchecked((nuint)0x0000000000000001)));
-                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<nuint>(unchecked((nuint)0x7FFFFFFFFFFFFFFF)));
-                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<nuint>(unchecked((nuint)0x8000000000000000)));
-                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<nuint>(unchecked((nuint)0xFFFFFFFFFFFFFFFF)));
+                Assert.Equal((ushort)0x0000, NumberHelper<ushort>.CreateChecked<nuint>(unchecked((nuint)0x0000000000000000)));
+                Assert.Equal((ushort)0x0001, NumberHelper<ushort>.CreateChecked<nuint>(unchecked((nuint)0x0000000000000001)));
+                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<nuint>(unchecked((nuint)0x7FFFFFFFFFFFFFFF)));
+                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<nuint>(unchecked((nuint)0x8000000000000000)));
+                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<nuint>(unchecked((nuint)0xFFFFFFFFFFFFFFFF)));
             }
             else
             {
-                Assert.Equal((ushort)0x0000, NumberHelper<ushort>.Create<nuint>((nuint)0x00000000));
-                Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Create<nuint>((nuint)0x00000001));
-                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<nuint>((nuint)0x7FFFFFFF));
-                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<nuint>((nuint)0x80000000));
-                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.Create<nuint>((nuint)0xFFFFFFFF));
+                Assert.Equal((ushort)0x0000, NumberHelper<ushort>.CreateChecked<nuint>((nuint)0x00000000));
+                Assert.Equal((ushort)0x0001, NumberHelper<ushort>.CreateChecked<nuint>((nuint)0x00000001));
+                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<nuint>((nuint)0x7FFFFFFF));
+                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<nuint>((nuint)0x80000000));
+                Assert.Throws<OverflowException>(() => NumberHelper<ushort>.CreateChecked<nuint>((nuint)0xFFFFFFFF));
             }
         }
 
@@ -695,11 +694,11 @@ namespace System.Tests
         [Fact]
         public static void DivRemTest()
         {
-            Assert.Equal(((ushort)0x0000, (ushort)0x0000), NumberHelper<ushort>.DivRem((ushort)0x0000, (ushort)2));
-            Assert.Equal(((ushort)0x0000, (ushort)0x0001), NumberHelper<ushort>.DivRem((ushort)0x0001, (ushort)2));
-            Assert.Equal(((ushort)0x3FFF, (ushort)0x0001), NumberHelper<ushort>.DivRem((ushort)0x7FFF, (ushort)2));
-            Assert.Equal(((ushort)0x4000, (ushort)0x0000), NumberHelper<ushort>.DivRem((ushort)0x8000, (ushort)2));
-            Assert.Equal(((ushort)0x7FFF, (ushort)0x0001), NumberHelper<ushort>.DivRem((ushort)0xFFFF, (ushort)2));
+            Assert.Equal(((ushort)0x0000, (ushort)0x0000), BinaryIntegerHelper<ushort>.DivRem((ushort)0x0000, (ushort)2));
+            Assert.Equal(((ushort)0x0000, (ushort)0x0001), BinaryIntegerHelper<ushort>.DivRem((ushort)0x0001, (ushort)2));
+            Assert.Equal(((ushort)0x3FFF, (ushort)0x0001), BinaryIntegerHelper<ushort>.DivRem((ushort)0x7FFF, (ushort)2));
+            Assert.Equal(((ushort)0x4000, (ushort)0x0000), BinaryIntegerHelper<ushort>.DivRem((ushort)0x8000, (ushort)2));
+            Assert.Equal(((ushort)0x7FFF, (ushort)0x0001), BinaryIntegerHelper<ushort>.DivRem((ushort)0xFFFF, (ushort)2));
         }
 
         [Fact]
@@ -725,11 +724,11 @@ namespace System.Tests
         [Fact]
         public static void SignTest()
         {
-            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.Sign((ushort)0x0000));
-            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Sign((ushort)0x0001));
-            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Sign((ushort)0x7FFF));
-            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Sign((ushort)0x8000));
-            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Sign((ushort)0xFFFF));
+            Assert.Equal(0, NumberHelper<ushort>.Sign((ushort)0x0000));
+            Assert.Equal(1, NumberHelper<ushort>.Sign((ushort)0x0001));
+            Assert.Equal(1, NumberHelper<ushort>.Sign((ushort)0x7FFF));
+            Assert.Equal(1, NumberHelper<ushort>.Sign((ushort)0x8000));
+            Assert.Equal(1, NumberHelper<ushort>.Sign((ushort)0xFFFF));
         }
 
         [Fact]
@@ -1063,9 +1062,9 @@ namespace System.Tests
             // Default style and provider
             if ((style == NumberStyles.Integer) && (provider is null))
             {
-                Assert.True(ParseableHelper<ushort>.TryParse(value, provider, out result));
+                Assert.True(ParsableHelper<ushort>.TryParse(value, provider, out result));
                 Assert.Equal(expected, result);
-                Assert.Equal(expected, ParseableHelper<ushort>.Parse(value, provider));
+                Assert.Equal(expected, ParsableHelper<ushort>.Parse(value, provider));
             }
 
             // Default provider
@@ -1082,7 +1081,7 @@ namespace System.Tests
             // Default style
             if (style == NumberStyles.Integer)
             {
-                Assert.Equal(expected, ParseableHelper<ushort>.Parse(value, provider));
+                Assert.Equal(expected, ParsableHelper<ushort>.Parse(value, provider));
             }
 
             // Full overloads
@@ -1100,9 +1099,9 @@ namespace System.Tests
             // Default style and provider
             if ((style == NumberStyles.Integer) && (provider is null))
             {
-                Assert.False(ParseableHelper<ushort>.TryParse(value, provider, out result));
+                Assert.False(ParsableHelper<ushort>.TryParse(value, provider, out result));
                 Assert.Equal(default(ushort), result);
-                Assert.Throws(exceptionType, () => ParseableHelper<ushort>.Parse(value, provider));
+                Assert.Throws(exceptionType, () => ParsableHelper<ushort>.Parse(value, provider));
             }
 
             // Default provider
@@ -1119,7 +1118,7 @@ namespace System.Tests
             // Default style
             if (style == NumberStyles.Integer)
             {
-                Assert.Throws(exceptionType, () => ParseableHelper<ushort>.Parse(value, provider));
+                Assert.Throws(exceptionType, () => ParsableHelper<ushort>.Parse(value, provider));
             }
 
             // Full overloads
@@ -1137,7 +1136,7 @@ namespace System.Tests
             // Default style and provider
             if ((style == NumberStyles.Integer) && (provider is null))
             {
-                Assert.True(SpanParseableHelper<ushort>.TryParse(value.AsSpan(offset, count), provider, out result));
+                Assert.True(SpanParsableHelper<ushort>.TryParse(value.AsSpan(offset, count), provider, out result));
                 Assert.Equal(expected, result);
             }
 
@@ -1161,7 +1160,7 @@ namespace System.Tests
             // Default style and provider
             if ((style == NumberStyles.Integer) && (provider is null))
             {
-                Assert.False(SpanParseableHelper<ushort>.TryParse(value.AsSpan(), provider, out result));
+                Assert.False(SpanParsableHelper<ushort>.TryParse(value.AsSpan(), provider, out result));
                 Assert.Equal(default(ushort), result);
             }
 

@@ -61,7 +61,7 @@ namespace System
                 value = (short)-value;
                 if (value < 0)
                 {
-                    ThrowAbsOverflow();
+                    ThrowNegateTwosCompOverflow();
                 }
             }
             return value;
@@ -75,7 +75,7 @@ namespace System
                 value = -value;
                 if (value < 0)
                 {
-                    ThrowAbsOverflow();
+                    ThrowNegateTwosCompOverflow();
                 }
             }
             return value;
@@ -89,7 +89,7 @@ namespace System
                 value = -value;
                 if (value < 0)
                 {
-                    ThrowAbsOverflow();
+                    ThrowNegateTwosCompOverflow();
                 }
             }
             return value;
@@ -106,7 +106,7 @@ namespace System
                 value = -value;
                 if (value < 0)
                 {
-                    ThrowAbsOverflow();
+                    ThrowNegateTwosCompOverflow();
                 }
             }
             return value;
@@ -121,7 +121,7 @@ namespace System
                 value = (sbyte)-value;
                 if (value < 0)
                 {
-                    ThrowAbsOverflow();
+                    ThrowNegateTwosCompOverflow();
                 }
             }
             return value;
@@ -155,7 +155,7 @@ namespace System
 
         [DoesNotReturn]
         [StackTraceHidden]
-        private static void ThrowAbsOverflow()
+        internal static void ThrowNegateTwosCompOverflow()
         {
             throw new OverflowException(SR.Overflow_NegateTwosCompNum);
         }
