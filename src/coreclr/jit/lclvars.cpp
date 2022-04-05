@@ -3821,8 +3821,8 @@ var_types LclVarDsc::GetRegisterType() const
 
 //------------------------------------------------------------------------
 // GetStackSlotHomeType:
-//   Get the canonical type of the stack slot that this register local is using
-//   when stored on the stack.
+//   Get the canonical type of the stack slot that this enregistrable local is
+//   using when stored on the stack.
 //
 // Return Value:
 //   TYP_UNDEF if the layout is not enregistrable. Otherwise returns the type
