@@ -356,6 +356,7 @@ HRESULT RegMeta::AddInterfaceImpl(      // Return hresult.
     HRESULT             hr;
     InterfaceImplRec    *pRec;
     RID                 ii;
+    bool                fIsTableVirtualSortValid;
 
     LOCKWRITE();
     hr = ImportHelper::FindInterfaceImpl(&(m_pStgdb->m_MiniMd), td, tkInterface, (mdInterfaceImpl *)&ii);
@@ -363,7 +364,7 @@ HRESULT RegMeta::AddInterfaceImpl(      // Return hresult.
         goto ErrExit;
     
     // Get the state of InterfaceImpl table's VirtualSort
-    bool fIsTableVirtualSortValid = m_pStgdb->m_MiniMd.IsTableVirtualSorted(TBL_InterfaceImpl);
+    fIsTableVirtualSortValid = m_pStgdb->m_MiniMd.IsTableVirtualSorted(TBL_InterfaceImpl);
     IfFailGo(m_pStgdb->m_MiniMd.AddInterfaceImplRecord(&pRec, &ii));
     IfFailGo(m_pStgdb->m_MiniMd.PutToken( TBL_InterfaceImpl, InterfaceImplRec::COL_Class, pRec, td));
     IfFailGo(m_pStgdb->m_MiniMd.PutToken( TBL_InterfaceImpl, InterfaceImplRec::COL_Interface, pRec, tkInterface));

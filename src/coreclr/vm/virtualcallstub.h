@@ -1015,25 +1015,10 @@ extern UINT32 STUB_COLLIDE_MONO_PCT;
 #define STUB_COLLIDE_MONO_PCT     0
 #endif // !STUB_LOGGING
 
-#define TERRIBLE_VSD_LOGGING
 //#define PRIME_SIZE_VSD_BUCKET_TABLE
-//#define PRIME_SIZE_VSD_FASTTABLE
-#define ACTUALLY_CHECK_ISFULL
-//#define ROBINHOOD_VSD_HASHING
 //#define XXHASH_HASH_FUNCTION_FASTTABLE
-//#define _32_BIT_HASH_SHIFT_ON_64BIT
-#define _32BIT_SHIFT_APPROACH
-#define LOAD_FACTOR_80
 
-#ifdef _32_BIT_HASH_SHIFT_ON_64BIT
-#ifdef TARGET_64BIT
-#define CALL_STUB_BIT_SHIFT 32
-#else
 #define CALL_STUB_BIT_SHIFT 16
-#endif
-#else
-#define CALL_STUB_BIT_SHIFT 16
-#endif
 
 
 //size and mask of the cache used by resolve stubs
@@ -1049,29 +1034,9 @@ extern UINT32 STUB_COLLIDE_MONO_PCT;
 #else
 #define CALL_STUB_MIN_BUCKETS 32
 #endif
-#define CALL_STUB_MIN_ENTRIES 4
-//this is so that the very first growth will jump from 4 to 32 entries, then double from there.
-#define CALL_STUB_SECONDARY_ENTRIES 8
-#define CALL_STUB_GROWTH_FACTOR 2
-#ifdef LOAD_FACTOR_80
-#define CALL_STUB_LOAD_FACTOR 80
-#else
-#define CALL_STUB_LOAD_FACTOR 90
-#endif
+
 #define CALL_STUB_HASH_CONST1 1327
 #define CALL_STUB_HASH_CONST2 43627
-#define LARGE_PRIME 7199369
-#ifdef PRIME_SIZE_VSD_FASTTABLE
-//internal layout of fasttable=size,count,entries....
-#define CALL_STUB_TABLESIZE_INDEX 0
-#endif
-#ifndef PRIME_SIZE_VSD_BUCKET_TABLE
-//internal layout of buckets=size-1,count,entries....
-#define CALL_STUB_MASK_INDEX 0
-#endif
-#define CALL_STUB_COUNT_INDEX 1
-#define CALL_STUB_DEAD_LINK 2
-#define CALL_STUB_FIRST_INDEX 3
 //marker entries in cache and hash tables
 #define CALL_STUB_EMPTY_ENTRY   0
 // number of successes for a chained element before it gets moved to the front
@@ -1417,7 +1382,7 @@ public:
 #ifndef XXHASH_HASH_FUNCTION_FASTTABLE
         size_t keyAAdjusted = k.keyA;
         size_t keyBAdjusted = k.keyB;
-#ifdef _32BIT_SHIFT_APPROACH
+#ifdef TARGET_64BIT
         keyAAdjusted ^= keyAAdjusted >> 32;
         keyBAdjusted ^= keyBAdjusted >> 32;
 #endif
@@ -1605,7 +1570,7 @@ private:
 
         size_t keyAAdjusted = key.keyA;
         size_t keyBAdjusted = key.keyB;
-#ifdef _32BIT_SHIFT_APPROACH
+#ifdef TARGET_64BIT
         keyAAdjusted ^= keyAAdjusted >> 32;
         keyBAdjusted ^= keyBAdjusted >> 32;
 #endif
