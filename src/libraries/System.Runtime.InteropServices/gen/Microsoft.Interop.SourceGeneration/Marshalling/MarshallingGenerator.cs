@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
@@ -160,5 +161,7 @@ namespace Microsoft.Interop
         /// [Optional] Specific reason marshalling of the supplied type isn't supported.
         /// </summary>
         public string? NotSupportedDetails { get; init; }
+
+        public ImmutableDictionary<string, string>? DiagnosticProperties { get; init; }
     }
 }
