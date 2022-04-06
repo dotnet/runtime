@@ -235,6 +235,21 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="GeneratePreExecutionTestScript"
+          BeforeTargets="GenerateRunScript"
+          Condition="@(PreExecutionTestCommand->Count()) > 0">
+
+    <PropertyGroup>
+      <PreExecutionTestScript Condition="'$(PreExecutionTestScript)' == '' and '$(OS)' == 'Windows_NT'">$(IntermediateOutputPath)$(MSBuildProjectName).preexec.cmd</PreExecutionTestScript>
+      <PreExecutionTestScript Condition="'$(PreExecutionTestScript)' == '' and '$(OS)' != 'Windows_NT'">$(IntermediateOutputPath)$(MSbuildProjectName).preexec.sh</PreExecutionTestScript>
+    </PropertyGroup>
+
+    <WriteLinesToFile Lines="@(PreExecutionTestCommand)"
+                      File="$(PreExecutionTestScript)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+  </Target>
+
   <Import Project="$(MSBuildThisFileDirectory)workloads-testing.targets" />
 
   <Target Name="PublishTestAsSelfContained"

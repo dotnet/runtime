@@ -91,3 +91,18 @@ echo ----- end %DATE% %TIME% ----- exit code %EXIT_CODE% -----------------------
 echo XHarness artifacts: %XHARNESS_OUT%
 
 exit /b %EXIT_CODE%
+
+REM Functions
+:SetEnvVars
+if [%TEST_USING_WORKLOADS%] == [true] (
+    set "PATH=%BASE_DIR%\dotnet-workload;%PATH%"
+    set SDK_HAS_WORKLOAD_INSTALLED=true
+    set "SDK_FOR_WORKLOAD_TESTING_PATH=%BASE_DIR%\dotnet-workload"
+    set "AppRefDir=%BASE_DIR%\microsoft.netcore.app.ref"
+) else (
+    set "PATH=%BASE_DIR%\sdk-no-workload;%PATH%"
+    set SDK_HAS_WORKLOAD_INSTALLED=false
+    set "SDK_FOR_WORKLOAD_TESTING_PATH=%BASE_DIR%\sdk-no-workload"
+    set "WasmBuildSupportDir=%BASE_DIR%\build"
+)
+EXIT /b 0

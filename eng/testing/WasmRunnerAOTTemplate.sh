@@ -4,6 +4,7 @@
 [[SetCommands]]
 [[SetCommandsEcho]]
 
+
 EXECUTION_DIR=$(dirname $0)
 if [[ -n "$3" ]]; then
 	SCENARIO=$3
@@ -38,6 +39,7 @@ if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 		else
 			JS_ENGINE="--engine=V8"
 		fi
+
 	fi
 
 	if [[ -z "$MAIN_JS" ]]; then
@@ -52,6 +54,28 @@ fi
 if [[ -z "$XHARNESS_ARGS" ]]; then
 	XHARNESS_ARGS="$JS_ENGINE $JS_ENGINE_ARGS $MAIN_JS"
 fi
+
+function set_env_vars()
+{
+	if [ "x$TEST_USING_WORKLOADS" = "xtrue" ]; then
+		export DOTNET_ROOT=$BASE_DIR/dotnet-workload
+		export PATH=$DOTNET_ROOT:$PATH
+        export DOTNET_HOST_PATH=$DOTNET_ROOT/dotnet
+		export SDK_HAS_WORKLOAD_INSTALLED=true
+		export SDK_FOR_WORKLOAD_TESTING_PATH=$BASE_DIR/dotnet-workload
+		export AppRefDir=$BASE_DIR/microsoft.netcore.app.ref
+	elif [[ -n "$HELIX_WORKITEM_UPLOAD_ROOT" ]]; then
+		export WasmBuildSupportDir=$BASE_DIR/build
+	else
+		export DOTNET_ROOT=$BASE_DIR/dotnet-workload
+		export PATH=$DOTNET_ROOT:$PATH
+        export DOTNET_HOST_PATH=$DOTNET_ROOT/dotnet
+		export SDK_HAS_WORKLOAD_INSTALLED=false
+		export SDK_FOR_WORKLOAD_TESTING_PATH=$BASE_DIR/sdk-no-workload
+	fi
+    export MSBuildExtensionsPath=
+    export MSBuildSDKsPath=
+}
 
 echo EXECUTION_DIR=$EXECUTION_DIR
 echo SCENARIO=$SCENARIO
@@ -70,7 +94,14 @@ function _buildAOTFunc()
 	local binLog=$2
 	shift 2
 
-	time dotnet msbuild $projectFile /bl:$binLog $*
+    echo "running"
+    export MSBuildExtensionsPath=
+    export MSBuildSdksPath=
+    set
+    which dotnet
+    echo $PATH
+
+	time $DOTNET_ROOT/dotnet msbuild $projectFile /bl:$binLog $*
 	local buildExitCode=$?
 
 	echo "\n** Performance summary for the build **\n"
@@ -88,13 +119,12 @@ function _buildAOTFunc()
 	echo
 	echo
 
-    if [[ $buildExitCode -ne 0 ]]; then
-        return 9100 # aot build failure
-    fi
+	if [[ $buildExitCode -ne 0 ]]; then
+		return 9100 # aot build failure
+	fi
 
 	return 0
 }
-
 
 pushd $EXECUTION_DIR
 

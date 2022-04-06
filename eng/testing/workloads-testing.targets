@@ -2,7 +2,8 @@
 
   <PropertyGroup Condition="'$(TestUsingWorkloads)' == 'true'">
     <!-- for non-ci builds, we install the sdk when tests are run -->
-    <InstallWorkloadForTesting Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(ArchiveTests)' == 'true'">true</InstallWorkloadForTesting>
+    <InstallWorkloadForTesting Condition="('$(ContinuousIntegrationBuild)' == 'true' and '$(ArchiveTests)' == 'true')
+                                          or ('$(BuildAOTTestsOnHelix)' == 'true' and '$(TestUsingWorkloads)' == 'true')">true</InstallWorkloadForTesting>
   </PropertyGroup>
 
   <Target Name="ProvisionSdkForWorkloadTesting"

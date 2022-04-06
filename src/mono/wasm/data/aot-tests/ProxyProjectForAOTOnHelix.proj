@@ -1,9 +1,10 @@
-<Project DefaultTargets="BundleTestWasmApp">
-  <Import Project="Directory.Build.props" />
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="Restore;BundleTestWasmApp">
+  <!--<Import Project="Directory.Build.props" />-->
   <PropertyGroup>
     <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' != ''">$([MSBuild]::NormalizeDirectory($(HELIX_WORKITEM_ROOT), 'wasm_build'))</TestRootDir>
     <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', 'wasm_build'))</TestRootDir>
 
+    <IsWasmProject>true</IsWasmProject>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
     <RunAOTCompilationAfterBuild>true</RunAOTCompilationAfterBuild>
     <OriginalPublishDir>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'publish'))</OriginalPublishDir>
@@ -14,14 +15,16 @@
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
     <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
     <WasmNativeStrip>false</WasmNativeStrip>
-    <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+    <WasmGenerateAppBundle>true</WasmGenerateAppBundle>
+    <!--<WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>-->
 
     <_PropsFile>$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props</_PropsFile>
   </PropertyGroup>
 
   <Import Project="$(_PropsFile)" />
 
-  <Target Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
+  <!--<Target Name="BundleTestWasmApp" DependsOnTargets="ProcessFrameworkReferences;ResolveRuntimePackAssets;PrepareForWasmBuildApp;WasmBuildApp" />-->
+  <Target Name="BundleTestWasmApp" DependsOnTargets="ResolveReferences;PrepareForWasmBuildApp;WasmBuildApp" />
 
   <Target Name="PrepareForWasmBuildApp">
     <Message Text="** Building a proxy for the original test project, to AOT on helix. In order to do that, this recreates the original inputs for the *wasm* part of the build. See $(MSBuildThisFileFullPath), and $(_PropsFile). **"
@@ -52,5 +55,5 @@
       <WasmFilesToIncludeInFileSystem Include="@(_SatelliteAssembliesForVFS)" />
     </ItemGroup>
   </Target>
-  <Import Project="Directory.Build.targets" />
+  <!--<Import Project="Directory.Build.targets" />-->
 </Project>

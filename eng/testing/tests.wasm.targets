@@ -79,6 +79,26 @@
     <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">%HARNESS_RUNNER% $(_XHarnessArgs) %XHARNESS_ARGS% %WasmXHarnessArgs%  -- $(WasmXHarnessMonoArgs) %WasmXHarnessMonoArgs% $(_AppArgs) %WasmTestAppArgs%</RunScriptCommand>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
+    <!-- TEST_USING_WORKLOADS - this is set per helix job, in sendtohelixhelp.proj -->
+    <PreExecutionTestCommand Condition="'$(WindowsShell)' != 'true'" Include="export BASE_DIR=%24{HELIX_CORRELATION_PAYLOAD}" />
+    <PreExecutionTestCommand Condition="'$(WindowsShell)' == 'true'" Include="set BASE_DIR=%HELIX_CORRELATION_PAYLOAD%" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
+    <PreExecutionTestCommand Condition="'$(WindowsShell)' != 'true'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
+    <PreExecutionTestCommand Condition="'$(WindowsShell)' == 'true'" Include="set TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
+
+    <PreExecutionTestCommand Condition="'$(WindowsShell)' != 'true'" Include="export BASE_DIR=$(ArtifactsBinDir)" />
+    <PreExecutionTestCommand Condition="'$(WindowsShell)' == 'true'" Include="set BASE_DIR=$(ArtifactsBinDir)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
+    <PreExecutionTestCommand Condition="'$(BrowserHost)' != 'windows'" Include="set_env_vars" />
+    <PreExecutionTestCommand Condition="'$(BrowserHost)' != 'windows'" Include="set" />
+    <PreExecutionTestCommand Condition="'$(BrowserHost)' == 'windows'" Include="CALL :SetEnvVars" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
     <_AOTBuildCommand Condition="'$(BrowserHost)' != 'windows'">_buildAOTFunc publish/ProxyProjectForAOTOnHelix.proj $XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
     <_AOTBuildCommand Condition="'$(BrowserHost)' == 'windows'">dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj /bl:%XHARNESS_OUT%/AOTBuild.binlog</_AOTBuildCommand>
@@ -179,6 +199,7 @@
       <_WasmPropertyNames Include="_WasmDevel" />
       <_WasmPropertyNames Include="_WasmStrictVersionMatch" />
       <_WasmPropertyNames Include="WasmEmitSymbolMap" />
+      <_WasmPropertyNames Include="TestUsingWorkloads" />
 
       <_WasmPropertiesToPass
         Include="$(%(_WasmPropertyNames.Identity))"
