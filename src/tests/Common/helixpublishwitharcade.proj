@@ -336,7 +336,6 @@
     <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="@(HelixCommandLines)" />
   </Target>
 
-  <!-- We need to get a Base64 representation of the test exclusion list for mobile platforms -->
   <Target Name="GetTestExclusionList" Returns="@(FilteredTestExclusionList)" Condition="'$(TargetsMobile)' == 'true'">
     <ItemGroup>
       <_ExcludeListProject Include="$(RepoRoot)src/tests/issues.targets">
