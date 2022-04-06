@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.Cose.Tests
             byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash);
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
 
-            Assert.Throws<ArgumentNullException>(() => msg.Verify(DefaultKey, null!));
+            Assert.Throws<ArgumentNullException>("content", () => msg.Verify(DefaultKey, null!));
         }
 
         [Fact]
@@ -131,8 +131,8 @@ namespace System.Security.Cryptography.Cose.Tests
             byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash);
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
 
-            Assert.Throws<ArgumentNullException>(() => msg.Verify(null!));
-            Assert.Throws<ArgumentNullException>(() => msg.Verify(null!, s_sampleContent));
+            Assert.Throws<ArgumentNullException>("key", () => msg.Verify(null!));
+            Assert.Throws<ArgumentNullException>("key", () => msg.Verify(null!, s_sampleContent));
         }
 
         [Fact]

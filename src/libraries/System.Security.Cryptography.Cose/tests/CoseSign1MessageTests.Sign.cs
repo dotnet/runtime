@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void SignWithNullContent()
         {
-            Assert.Throws<ArgumentNullException>(() => Sign(null!, DefaultKey, DefaultHash));
+            Assert.Throws<ArgumentNullException>("content", () => Sign(null!, DefaultKey, DefaultHash));
         }
 
         [Theory]
@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void SignWithNullKey()
         {
-            Assert.Throws<ArgumentNullException>(() => Sign(s_sampleContent, null!, DefaultHash));
+            Assert.Throws<ArgumentNullException>("key", () => Sign(s_sampleContent, null!, DefaultHash));
         }
 
         [Fact]
