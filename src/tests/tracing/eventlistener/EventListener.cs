@@ -68,7 +68,7 @@ namespace Tracing.Tests
     class EventPipeSmoke
     {
         private static int messageIterations = 100;
-        private static readonly DateTime ThePast = DateTime.Now;
+        private static readonly DateTime ThePast = DateTime.UtcNow;
 
         static int Main(string[] args)
         {
