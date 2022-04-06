@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.Build.NoTargets">
+  <Import Project="$(MonoProjectRoot)emscripten.targets" />
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.RunWithEmSdkEnv" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
@@ -25,7 +26,7 @@
     <Error Condition="'$(TargetOS)' != 'Browser'" Text="Expected TargetOS==Browser, got '$(TargetOS)'"/>
   </Target>
 
-  <Import Project="$(MonoProjectRoot)emscripten.targets" />
+  <!--<Import Project="$(MonoProjectRoot)emscripten.targets" />-->
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
