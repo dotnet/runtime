@@ -168,11 +168,11 @@
   <data name="Sign1SignUnsupportedHashAlgorithm" xml:space="preserve">
     <value>Unsuppoerted hash algorithm '{0}'.</value>
   </data>
-  <data name="Sign1SignUnsupportedKey" xml:space="preserve">
-    <value>Unsupported key '{0}'.</value>
-  </data>
   <data name="Sign1UnknownCoseAlgorithm" xml:space="preserve">
     <value>COSE algorithm '{0}' is unknown.</value>
+  </data>
+  <data name="Sign1UnsupportedKey" xml:space="preserve">
+    <value>Unsupported key '{0}'.</value>
   </data>
   <data name="Sign1VerifyAlgHeaderWasIncorrect" xml:space="preserve">
     <value>Algorithm header CBOR type was incorrect, expected int or tstr.</value>
