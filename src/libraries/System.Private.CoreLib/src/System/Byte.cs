@@ -301,7 +301,7 @@ namespace System
         static byte IAdditionOperators<byte, byte, byte>.operator +(byte left, byte right) => (byte)(left + right);
 
         // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_CheckedAddition(TSelf, TOther)" />
-        // static byte IAdditionOperators<byte, byte, byte>.operator checked +(byte left, byte right) => checked((byte)(left + right));
+        static byte IAdditionOperators<byte, byte, byte>.operator checked +(byte left, byte right) => checked((byte)(left + right));
 
         //
         // IAdditiveIdentity
@@ -382,7 +382,7 @@ namespace System
         static byte IDecrementOperators<byte>.operator --(byte value) => --value;
 
         // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_CheckedDecrement(TSelf)" />
-        // static byte IDecrementOperators<byte>.operator checked --(byte value) => checked(--value);
+        static byte IDecrementOperators<byte>.operator checked --(byte value) => checked(--value);
 
         //
         // IDivisionOperators
@@ -392,7 +392,7 @@ namespace System
         static byte IDivisionOperators<byte, byte, byte>.operator /(byte left, byte right) => (byte)(left / right);
 
         // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        // static byte IDivisionOperators<byte, byte, byte>.operator checked /(byte left, byte right) => checked((byte)(left / right));
+        static byte IDivisionOperators<byte, byte, byte>.operator checked /(byte left, byte right) => checked((byte)(left / right));
 
         //
         // IEqualityOperators
@@ -412,7 +412,7 @@ namespace System
         static byte IIncrementOperators<byte>.operator ++(byte value) => ++value;
 
         // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
-        // static byte IIncrementOperators<byte>.operator checked ++(byte value) => checked(++value);
+        static byte IIncrementOperators<byte>.operator checked ++(byte value) => checked(++value);
 
         //
         // IMinMaxValue
@@ -446,7 +446,7 @@ namespace System
         static byte IMultiplyOperators<byte, byte, byte>.operator *(byte left, byte right) => (byte)(left * right);
 
         // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        // static byte IMultiplyOperators<byte, byte, byte>.operator checked *(byte left, byte right) => checked((byte)(left * right));
+        static byte IMultiplyOperators<byte, byte, byte>.operator checked *(byte left, byte right) => checked((byte)(left * right));
 
         //
         // INumber
@@ -938,7 +938,7 @@ namespace System
         static byte ISubtractionOperators<byte, byte, byte>.operator -(byte left, byte right) => (byte)(left - right);
 
         // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        // static byte ISubtractionOperators<byte, byte, byte>.operator checked -(byte left, byte right) => checked((byte)(left - right));
+        static byte ISubtractionOperators<byte, byte, byte>.operator checked -(byte left, byte right) => checked((byte)(left - right));
 
         //
         // IUnaryNegationOperators
@@ -948,7 +948,7 @@ namespace System
         static byte IUnaryNegationOperators<byte, byte>.operator -(byte value) => (byte)(-value);
 
         // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        // static byte IUnaryNegationOperators<byte, byte>.operator checked -(byte value) => checked((byte)(-value));
+        static byte IUnaryNegationOperators<byte, byte>.operator checked -(byte value) => checked((byte)(-value));
 
         //
         // IUnaryPlusOperators

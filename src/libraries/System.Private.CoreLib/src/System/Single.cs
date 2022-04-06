@@ -487,7 +487,7 @@ namespace System
         static float IAdditionOperators<float, float, float>.operator +(float left, float right) => left + right;
 
         // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        // static float IAdditionOperators<float, float, float>.operator checked +(float left, float right) => checked(left + right);
+        static float IAdditionOperators<float, float, float>.operator checked +(float left, float right) => left + right;
 
         //
         // IAdditiveIdentity
@@ -556,7 +556,7 @@ namespace System
         static float IDecrementOperators<float>.operator --(float value) => --value;
 
         // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
-        // static float IDecrementOperators<float>.operator checked --(float value) => checked(--value);
+        static float IDecrementOperators<float>.operator checked --(float value) => --value;
 
         //
         // IDivisionOperators
@@ -566,7 +566,7 @@ namespace System
         static float IDivisionOperators<float, float, float>.operator /(float left, float right) => left / right;
 
         // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        // static float IDivisionOperators<float, float, float>.operator checked /(float left, float right) => checked(left / right);
+        static float IDivisionOperators<float, float, float>.operator checked /(float left, float right) => left / right;
 
         //
         // IExponentialFunctions
@@ -712,7 +712,7 @@ namespace System
         static float IIncrementOperators<float>.operator ++(float value) => ++value;
 
         // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
-        // static float IIncrementOperators<float>.operator checked ++(float value) => checked(++value);
+        static float IIncrementOperators<float>.operator checked ++(float value) => ++value;
 
         //
         // ILogarithmicFunctions
@@ -767,10 +767,10 @@ namespace System
         //
 
         /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
-        static float IMultiplyOperators<float, float, float>.operator *(float left, float right) => (float)(left * right);
+        static float IMultiplyOperators<float, float, float>.operator *(float left, float right) => left * right;
 
         // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        // static float IMultiplyOperators<float, float, float>.operator checked *(float left, float right) => checked((float)(left * right));
+        static float IMultiplyOperators<float, float, float>.operator checked *(float left, float right) => left * right;
 
         //
         // INumber
@@ -1148,10 +1148,10 @@ namespace System
         //
 
         /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
-        static float ISubtractionOperators<float, float, float>.operator -(float left, float right) => (float)(left - right);
+        static float ISubtractionOperators<float, float, float>.operator -(float left, float right) => left - right;
 
         // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        // static float ISubtractionOperators<float, float, float>.operator checked -(float left, float right) => checked((float)(left - right));
+        static float ISubtractionOperators<float, float, float>.operator checked -(float left, float right) => left - right;
 
         //
         // ITrigonometricFunctions
@@ -1207,10 +1207,10 @@ namespace System
         //
 
         /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
-        static float IUnaryNegationOperators<float, float>.operator -(float value) => (float)(-value);
+        static float IUnaryNegationOperators<float, float>.operator -(float value) => -value;
 
         // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        // static float IUnaryNegationOperators<float, float>.operator checked -(float value) => checked((float)(-value));
+        static float IUnaryNegationOperators<float, float>.operator checked -(float value) => -value;
 
         //
         // IUnaryPlusOperators

@@ -263,7 +263,7 @@ namespace System
         static nuint IAdditionOperators<nuint, nuint, nuint>.operator +(nuint left, nuint right) => (nuint)(left + right);
 
         // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        // static nuint IAdditionOperators<nuint, nuint, nuint>.operator checked +(nuint left, nuint right) => checked((nuint)(left + right));
+        static nuint IAdditionOperators<nuint, nuint, nuint>.operator checked +(nuint left, nuint right) => checked((nuint)(left + right));
 
         //
         // IAdditiveIdentity
@@ -414,7 +414,7 @@ namespace System
         static nuint IDecrementOperators<nuint>.operator --(nuint value) => --value;
 
         // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
-        // static nuint IDecrementOperators<nuint>.operator checked --(nuint value) => checked(--value);
+        static nuint IDecrementOperators<nuint>.operator checked --(nuint value) => checked(--value);
 
         //
         // IDivisionOperators
@@ -424,7 +424,7 @@ namespace System
         static nuint IDivisionOperators<nuint, nuint, nuint>.operator /(nuint left, nuint right) => left / right;
 
         // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        // static nuint IDivisionOperators<nuint, nuint, nuint>.operator checked /(nuint left, nuint right) => checked(left / right);
+        static nuint IDivisionOperators<nuint, nuint, nuint>.operator checked /(nuint left, nuint right) => checked(left / right);
 
         //
         // IIncrementOperators
@@ -434,7 +434,7 @@ namespace System
         static nuint IIncrementOperators<nuint>.operator ++(nuint value) => ++value;
 
         // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
-        // static nuint IIncrementOperators<nuint>.operator checked ++(nuint value) => checked(++value);
+        static nuint IIncrementOperators<nuint>.operator checked ++(nuint value) => checked(++value);
 
         //
         // IMinMaxValue
@@ -468,7 +468,7 @@ namespace System
         static nuint IMultiplyOperators<nuint, nuint, nuint>.operator *(nuint left, nuint right) => left * right;
 
         // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        // static nuint IMultiplyOperators<nuint, nuint, nuint>.operator checked *(nuint left, nuint right) => checked(left * right);
+        static nuint IMultiplyOperators<nuint, nuint, nuint>.operator checked *(nuint left, nuint right) => checked(left * right);
 
         //
         // INumber
@@ -901,7 +901,7 @@ namespace System
         static nuint ISubtractionOperators<nuint, nuint, nuint>.operator -(nuint left, nuint right) => left - right;
 
         // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        // static nuint ISubtractionOperators<nuint, nuint, nuint>.operator checked -(nuint left, nuint right) => checked(left - right);
+        static nuint ISubtractionOperators<nuint, nuint, nuint>.operator checked -(nuint left, nuint right) => checked(left - right);
 
         //
         // IUnaryNegationOperators
@@ -911,7 +911,7 @@ namespace System
         static nuint IUnaryNegationOperators<nuint, nuint>.operator -(nuint value) => (nuint)0 - value;
 
         // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        // static nuint IUnaryNegationOperators<nuint, nuint>.operator checked -(nuint value) => checked((nuint)0 - value);
+        static nuint IUnaryNegationOperators<nuint, nuint>.operator checked -(nuint value) => checked((nuint)0 - value);
 
         //
         // IUnaryPlusOperators

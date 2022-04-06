@@ -307,7 +307,7 @@ namespace System
         static short IAdditionOperators<short, short, short>.operator +(short left, short right) => (short)(left + right);
 
         // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        // static short IAdditionOperators<short, short, short>.operator checked +(short left, short right) => checked((short)(left + right));
+        static short IAdditionOperators<short, short, short>.operator checked +(short left, short right) => checked((short)(left + right));
 
         //
         // IAdditiveIdentity
@@ -395,7 +395,7 @@ namespace System
         static short IDecrementOperators<short>.operator --(short value) => --value;
 
         // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
-        // static short IDecrementOperators<short>.operator checked --(short value) => checked(--value);
+        static short IDecrementOperators<short>.operator checked --(short value) => checked(--value);
 
         //
         // IDivisionOperators
@@ -405,7 +405,7 @@ namespace System
         static short IDivisionOperators<short, short, short>.operator /(short left, short right) => (short)(left / right);
 
         // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        // static short IDivisionOperators<short, short, short>.operator checked /(short left, short right) => checked((short)(left / right));
+        static short IDivisionOperators<short, short, short>.operator checked /(short left, short right) => checked((short)(left / right));
 
         //
         // IEqualityOperators
@@ -425,7 +425,7 @@ namespace System
         static short IIncrementOperators<short>.operator ++(short value) => ++value;
 
         // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
-        // static short IIncrementOperators<short>.operator checked ++(short value) => checked(++value);
+        static short IIncrementOperators<short>.operator checked ++(short value) => checked(++value);
 
         //
         // IMinMaxValue
@@ -459,7 +459,7 @@ namespace System
         static short IMultiplyOperators<short, short, short>.operator *(short left, short right) => (short)(left * right);
 
         // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        // static short IMultiplyOperators<short, short, short>.operator checked *(short left, short right) => checked((short)(left * right));
+        static short IMultiplyOperators<short, short, short>.operator checked *(short left, short right) => checked((short)(left * right));
 
         //
         // INumber
@@ -1012,7 +1012,7 @@ namespace System
         static short ISubtractionOperators<short, short, short>.operator -(short left, short right) => (short)(left - right);
 
         // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        // static short ISubtractionOperators<short, short, short>.operator checked -(short left, short right) => checked((short)(left - right));
+        static short ISubtractionOperators<short, short, short>.operator checked -(short left, short right) => checked((short)(left - right));
 
         //
         // IUnaryNegationOperators
@@ -1022,7 +1022,7 @@ namespace System
         static short IUnaryNegationOperators<short, short>.operator -(short value) => (short)(-value);
 
         // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        // static short IUnaryNegationOperators<short, short>.operator checked -(short value) => checked((short)(-value));
+        static short IUnaryNegationOperators<short, short>.operator checked -(short value) => checked((short)(-value));
 
         //
         // IUnaryPlusOperators

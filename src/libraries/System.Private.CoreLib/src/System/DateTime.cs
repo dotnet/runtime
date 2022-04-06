@@ -1512,7 +1512,7 @@ namespace System
         //
 
         // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        // static DateTime IAdditionOperators<DateTime, TimeSpan, DateTime>.operator checked +(DateTime left, TimeSpan right) => checked(left + right);
+        static DateTime IAdditionOperators<DateTime, TimeSpan, DateTime>.operator checked +(DateTime left, TimeSpan right) => left + right;
 
         //
         // IAdditiveIdentity
@@ -1551,9 +1551,9 @@ namespace System
         //
 
         // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        // static DateTime ISubtractionOperators<DateTime, TimeSpan, DateTime>.operator checked -(DateTime left, TimeSpan right) => checked(left - right);
+        static DateTime ISubtractionOperators<DateTime, TimeSpan, DateTime>.operator checked -(DateTime left, TimeSpan right) => left - right;
 
         // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        // static TimeSpan ISubtractionOperators<DateTime, DateTime, TimeSpan>.operator checked -(DateTime left, DateTime right) => checked(left - right);
+        static TimeSpan ISubtractionOperators<DateTime, DateTime, TimeSpan>.operator checked -(DateTime left, DateTime right) => left - right;
     }
 }

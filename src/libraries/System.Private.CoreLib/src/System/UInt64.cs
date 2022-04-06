@@ -280,7 +280,7 @@ namespace System
         static ulong IAdditionOperators<ulong, ulong, ulong>.operator +(ulong left, ulong right) => left + right;
 
         // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        // static ulong IAdditionOperators<ulong, ulong, ulong>.operator checked +(ulong left, ulong right) => checked(left + right);
+        static ulong IAdditionOperators<ulong, ulong, ulong>.operator checked +(ulong left, ulong right) => checked(left + right);
 
         //
         // IAdditiveIdentity
@@ -361,7 +361,7 @@ namespace System
         static ulong IDecrementOperators<ulong>.operator --(ulong value) => --value;
 
         // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
-        // static ulong IDecrementOperators<ulong>.operator checked --(ulong value) => checked(--value);
+        static ulong IDecrementOperators<ulong>.operator checked --(ulong value) => checked(--value);
 
         //
         // IDivisionOperators
@@ -371,7 +371,7 @@ namespace System
         static ulong IDivisionOperators<ulong, ulong, ulong>.operator /(ulong left, ulong right) => left / right;
 
         // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        // static ulong IDivisionOperators<ulong, ulong, ulong>.operator checked /(ulong left, ulong right) => checked(left / right);
+        static ulong IDivisionOperators<ulong, ulong, ulong>.operator checked /(ulong left, ulong right) => checked(left / right);
 
         //
         // IEqualityOperators
@@ -391,7 +391,7 @@ namespace System
         static ulong IIncrementOperators<ulong>.operator ++(ulong value) => ++value;
 
         // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
-        // static ulong IIncrementOperators<ulong>.operator checked ++(ulong value) => checked(++value);
+        static ulong IIncrementOperators<ulong>.operator checked ++(ulong value) => checked(++value);
 
         //
         // IMinMaxValue
@@ -425,7 +425,7 @@ namespace System
         static ulong IMultiplyOperators<ulong, ulong, ulong>.operator *(ulong left, ulong right) => left * right;
 
         // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        // static ulong IMultiplyOperators<ulong, ulong, ulong>.operator checked *(ulong left, ulong right) => checked(left * right);
+        static ulong IMultiplyOperators<ulong, ulong, ulong>.operator checked *(ulong left, ulong right) => checked(left * right);
 
         //
         // INumber
@@ -867,7 +867,7 @@ namespace System
         static ulong ISubtractionOperators<ulong, ulong, ulong>.operator -(ulong left, ulong right) => left - right;
 
         // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        // static ulong ISubtractionOperators<ulong, ulong, ulong>.operator checked -(ulong left, ulong right) => checked(left - right);
+        static ulong ISubtractionOperators<ulong, ulong, ulong>.operator checked -(ulong left, ulong right) => checked(left - right);
 
         //
         // IUnaryNegationOperators
@@ -877,7 +877,7 @@ namespace System
         static ulong IUnaryNegationOperators<ulong, ulong>.operator -(ulong value) => 0UL - value;
 
         // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        // static ulong IUnaryNegationOperators<ulong, ulong>.operator checked -(ulong value) => checked(0UL - value);
+        static ulong IUnaryNegationOperators<ulong, ulong>.operator checked -(ulong value) => checked(0UL - value);
 
         //
         // IUnaryPlusOperators
