@@ -35,6 +35,11 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(ReadWrite_Success_Large_MemberData))]
         public override Task ReadWrite_Success_Large(ReadWriteMode mode, int writeSize, bool startWithFlush) => base.ReadWrite_Success_Large(mode, writeSize, startWithFlush);
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/66694", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        [Fact]
+        public override Task ReadAsync_CancelPendingTask_ThrowsCancellationException() =>
+            base.ReadAsync_CancelPendingTask_ThrowsCancellationException();
+
         [Fact]
         public static void Ctor()
         {
