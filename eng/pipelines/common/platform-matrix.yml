@@ -292,7 +292,7 @@ jobs:
 
 # WebAssembly
 
-- ${{ if containsValue(parameters.platforms, 'Browser_wasm') }}:
+- ${{ if or(containsValue(parameters.platforms, 'Browser_wasm'),containsValue(parameters.platforms, 'Browser_wasm_firefox'))  }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
