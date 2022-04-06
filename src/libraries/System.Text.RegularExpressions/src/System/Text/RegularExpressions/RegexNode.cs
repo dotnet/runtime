@@ -885,6 +885,20 @@ namespace System.Text.RegularExpressions
                     RegexNodeKind.Notonelazy;
             }
 
+            // Normalize some well-known sets
+            switch (Str)
+            {
+                // Different ways of saying "match anything"
+                case RegexCharClass.WordNotWordClass:
+                case RegexCharClass.NotWordWordClass:
+                case RegexCharClass.DigitNotDigitClass:
+                case RegexCharClass.NotDigitDigitClass:
+                case RegexCharClass.SpaceNotSpaceClass:
+                case RegexCharClass.NotSpaceSpaceClass:
+                    Str = RegexCharClass.AnyClass;
+                    break;
+            }
+
             return this;
         }
 

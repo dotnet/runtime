@@ -340,7 +340,7 @@ namespace System.Text.RegularExpressions.Generator
                 // empty, it's helpful as a learning exposition tool.
                 writer.WriteLine("// The pattern never matches anything.");
             }
-            else if (root.Kind is RegexNodeKind.Multi or RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set && (root.Options & RegexOptions.IgnoreCase) == 0)
+            else if (root.Kind is RegexNodeKind.Multi or RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set)
             {
                 // If the whole expression is just one or more characters, we can rely on the FindOptimizations spitting out
                 // an IndexOf that will find the exact sequence or not, and we don't need to do additional checking beyond that.
@@ -3776,14 +3776,16 @@ namespace System.Text.RegularExpressions.Generator
             // but that call is relatively expensive.  Before we fall back to it, we try to optimize
             // some common cases for which we can do much better, such as known character classes
             // for which we can call a dedicated method, or a fast-path for ASCII using a lookup table.
+            // In some cases, multiple optimizations are possible for a given character class: the checks
+            // in this method are generally ordered from fastest / simplest to slowest / most complex so
+            // that we get the best optimization for a given char class.
 
             // First, see if the char class is a built-in one for which there's a better function
             // we can just call directly.
             switch (charClass)
             {
                 case RegexCharClass.AnyClass:
-                    // ideally this could just be "return true;", but we need to evaluate the expression for its side effects
-                    return $"({chExpr} {(negate ? "<" : ">=")} 0)"; // a char is unsigned and thus won't ever be negative
+                    return negate ? "false" : "true"; // This assumes chExpr never has side effects.
 
                 case RegexCharClass.DigitClass:
                 case RegexCharClass.NotDigitClass:
@@ -3811,60 +3813,127 @@ namespace System.Text.RegularExpressions.Generator
                     $"(((uint){chExpr}) - {Literal(lowInclusive)} {(negate ? ">" : "<=")} (uint)({Literal(highInclusive)} - {Literal(lowInclusive)}))";
             }
 
-            // Next if the character class contains nothing but a single Unicode category, we can calle char.GetUnicodeCategory and
+            // Next, if the character class contains nothing but Unicode categories, we can call char.GetUnicodeCategory and
             // compare against it.  It has a fast-lookup path for ASCII, so is as good or better than any lookup we'd generate (plus
-            // we get smaller code), and it's what we'd do for the fallback (which we get to avoid generating) as part of CharInClass.
-            if (RegexCharClass.TryGetSingleUnicodeCategory(charClass, out UnicodeCategory category, out bool negated))
+            // we get smaller code), and it's what we'd do for the fallback (which we get to avoid generating) as part of CharInClass,
+            // but without the optimizations the C# compiler will provide for switches.
+            Span<UnicodeCategory> categories = stackalloc UnicodeCategory[30]; // number of UnicodeCategory values (though it's unheard of to have a set with all of them)
+            if (RegexCharClass.TryGetOnlyCategories(charClass, categories, out int numCategories, out bool negated))
             {
+                // TODO https://github.com/dotnet/roslyn/issues/58246: Use pattern matching instead of switch once C# code gen quality improves.
                 negate ^= negated;
-                return $"(char.GetUnicodeCategory({chExpr}) {(negate ? "!=" : "==")} UnicodeCategory.{category})";
+                return numCategories == 1 ?
+                    $"(char.GetUnicodeCategory({chExpr}) {(negate ? "!=" : "==")} UnicodeCategory.{categories[0]})" :
+                    $"(char.GetUnicodeCategory({chExpr}) switch {{ {string.Join(" or ", categories.Slice(0, numCategories).ToArray().Select(c => $"UnicodeCategory.{c}"))} => {(negate ? "false" : "true")}, _ => {(negate ? "true" : "false")} }})";
             }
 
             // Next, if there's only 2 or 3 chars in the set (fairly common due to the sets we create for prefixes),
             // it may be cheaper and smaller to compare against each than it is to use a lookup table.  We can also special-case
             // the very common case with case insensitivity of two characters next to each other being the upper and lowercase
             // ASCII variants of each other, in which case we can use bit manipulation to avoid a comparison.
-            if (!RegexCharClass.IsNegated(charClass))
+            Span<char> setChars = stackalloc char[3];
+            int mask;
+            switch (RegexCharClass.GetSetChars(charClass, setChars))
             {
-                Span<char> setChars = stackalloc char[3];
-                int mask;
-                switch (RegexCharClass.GetSetChars(charClass, setChars))
-                {
-                    case 2:
-                        if (RegexCharClass.DifferByOneBit(setChars[0], setChars[1], out mask))
-                        {
-                            return $"(({chExpr} | 0x{mask:X}) {(negate ? "!=" : "==")} {Literal((char)(setChars[1] | mask))})";
-                        }
-                        additionalDeclarations.Add("char ch;");
-                        return negate ?
-                            $"(((ch = {chExpr}) != {Literal(setChars[0])}) & (ch != {Literal(setChars[1])}))" :
-                            $"(((ch = {chExpr}) == {Literal(setChars[0])}) | (ch == {Literal(setChars[1])}))";
+                case 2:
+                    negate ^= RegexCharClass.IsNegated(charClass);
+                    if (RegexCharClass.DifferByOneBit(setChars[0], setChars[1], out mask))
+                    {
+                        return $"(({chExpr} | 0x{mask:X}) {(negate ? "!=" : "==")} {Literal((char)(setChars[1] | mask))})";
+                    }
+                    additionalDeclarations.Add("char ch;");
+                    return negate ?
+                        $"(((ch = {chExpr}) != {Literal(setChars[0])}) & (ch != {Literal(setChars[1])}))" :
+                        $"(((ch = {chExpr}) == {Literal(setChars[0])}) | (ch == {Literal(setChars[1])}))";
 
-                    case 3:
-                        additionalDeclarations.Add("char ch;");
-                        return (negate, RegexCharClass.DifferByOneBit(setChars[0], setChars[1], out mask)) switch
-                        {
-                            (false, false) => $"(((ch = {chExpr}) == {Literal(setChars[0])}) | (ch == {Literal(setChars[1])}) | (ch == {Literal(setChars[2])}))",
-                            (true,  false) => $"(((ch = {chExpr}) != {Literal(setChars[0])}) & (ch != {Literal(setChars[1])}) & (ch != {Literal(setChars[2])}))",
-                            (false, true)  => $"((((ch = {chExpr}) | 0x{mask:X}) == {Literal((char)(setChars[1] | mask))}) | (ch == {Literal(setChars[2])}))",
-                            (true,  true)  => $"((((ch = {chExpr}) | 0x{mask:X}) != {Literal((char)(setChars[1] | mask))}) & (ch != {Literal(setChars[2])}))",
-                        };
+                case 3:
+                    negate ^= RegexCharClass.IsNegated(charClass);
+                    additionalDeclarations.Add("char ch;");
+                    return (negate, RegexCharClass.DifferByOneBit(setChars[0], setChars[1], out mask)) switch
+                    {
+                        (false, false) => $"(((ch = {chExpr}) == {Literal(setChars[0])}) | (ch == {Literal(setChars[1])}) | (ch == {Literal(setChars[2])}))",
+                        (true,  false) => $"(((ch = {chExpr}) != {Literal(setChars[0])}) & (ch != {Literal(setChars[1])}) & (ch != {Literal(setChars[2])}))",
+                        (false, true)  => $"((((ch = {chExpr}) | 0x{mask:X}) == {Literal((char)(setChars[1] | mask))}) | (ch == {Literal(setChars[2])}))",
+                        (true,  true)  => $"((((ch = {chExpr}) | 0x{mask:X}) != {Literal((char)(setChars[1] | mask))}) & (ch != {Literal(setChars[2])}))",
+                    };
+            }
+
+            // Next, handle simple sets of two ASCII letter ranges that are cased versions of each other, e.g. [A-Za-z].
+            // This can be implemented as if it were a single range, with an additional bitwise operation.
+            if (RegexCharClass.TryGetDoubleRange(charClass, out (char LowInclusive, char HighInclusive) rangeLower, out (char LowInclusive, char HighInclusive) rangeUpper) &&
+                RegexCharClass.IsAsciiLetter(rangeUpper.LowInclusive) &&
+                RegexCharClass.IsAsciiLetter(rangeUpper.HighInclusive) &&
+                (rangeLower.LowInclusive | 0x20) == rangeUpper.LowInclusive &&
+                (rangeLower.HighInclusive | 0x20) == rangeUpper.HighInclusive)
+            {
+                Debug.Assert(rangeLower.LowInclusive != rangeUpper.LowInclusive);
+                negate ^= RegexCharClass.IsNegated(charClass);
+                return $"((uint)(({chExpr} | 0x20) - {Literal(rangeUpper.LowInclusive)}) {(negate ? ">" : "<=")} (uint)({Literal(rangeUpper.HighInclusive)} - {Literal(rangeUpper.LowInclusive)}))";
+            }
+
+            // Analyze the character set more to determine what code to generate.
+            RegexCharClass.CharClassAnalysisResults analysis = RegexCharClass.Analyze(charClass);
+
+            // Next, handle sets where the high - low + 1 range is <= 64.  In that case, we can emit
+            // a branchless lookup in a ulong that does not rely on loading any objects (e.g. the string-based
+            // lookup we use later).  This nicely handles common sets like [0-9A-Fa-f], [0-9a-f], [A-Za-z], etc.
+            if (analysis.OnlyRanges && (analysis.UpperBoundExclusiveIfOnlyRanges - analysis.LowerBoundInclusiveIfOnlyRanges) <= 64)
+            {
+                additionalDeclarations.Add("ulong charMinusLow;");
+
+                // Create the 64-bit value with 1s at indices corresponding to every character in the set,
+                // where the bit is computed to be the char value minus the lower bound starting from
+                // most significant bit downwards.
+                bool negatedClass = RegexCharClass.IsNegated(charClass);
+                ulong bitmap = 0;
+                for (int i = analysis.LowerBoundInclusiveIfOnlyRanges; i < analysis.UpperBoundExclusiveIfOnlyRanges; i++)
+                {
+                    if (RegexCharClass.CharInClass((char)i, charClass) ^ negatedClass)
+                    {
+                        bitmap |= (1ul << (63 - (i - analysis.LowerBoundInclusiveIfOnlyRanges)));
+                    }
                 }
+
+                // To determine whether a character is in the set, we subtract the lowest char (casting to
+                // uint to account for any smaller values); this subtraction happens before the result is
+                // zero-extended to ulong, meaning that `charMinusLow` will always have upper 32 bits equal to 0.
+                // We then left shift the constant with this offset, and apply a bitmask that has the highest
+                // bit set (the sign bit) if and only if `chExpr` is in the [low, low + 64) range.
+                // Then we only need to check whether this final result is less than 0: this will only be
+                // the case if both `charMinusLow` was in fact the index of a set bit in the constant, and also
+                // `chExpr` was in the allowed range (this ensures that false positive bit shifts are ignored).
+                negate ^= negatedClass;
+                return $"((long)((0x{bitmap:X}UL << (int)(charMinusLow = (uint){chExpr} - {Literal((char)analysis.LowerBoundInclusiveIfOnlyRanges)})) & (charMinusLow - 64)) {(negate ? ">=" : "<")} 0)";
             }
 
             // All options after this point require a ch local.
             additionalDeclarations.Add("char ch;");
 
-            // Analyze the character set more to determine what code to generate.
-            RegexCharClass.CharClassAnalysisResults analysis = RegexCharClass.Analyze(charClass);
+            // Next, handle simple sets of two ranges, e.g. [\p{IsGreek}\p{IsGreekExtended}].
+            if (RegexCharClass.TryGetDoubleRange(charClass, out (char LowInclusive, char HighInclusive) range0, out (char LowInclusive, char HighInclusive) range1))
+            {
+                negate ^= RegexCharClass.IsNegated(charClass);
+
+                string range0Clause = range0.LowInclusive == range0.HighInclusive ?
+                    $"((ch = {chExpr}) {(negate ? "!=" : "==")} {Literal(range0.LowInclusive)})" :
+                    $"((uint)((ch = {chExpr}) - {Literal(range0.LowInclusive)}) {(negate ? ">" : "<=")} (uint)({Literal(range0.HighInclusive)} - {Literal(range0.LowInclusive)}))";
+
+                string range1Clause = range1.LowInclusive == range1.HighInclusive ?
+                    $"(ch {(negate ? "!=" : "==")} {Literal(range1.LowInclusive)})" :
+                    $"((uint)(ch - {Literal(range1.LowInclusive)}) {(negate ? ">" : "<=")} (uint)({Literal(range1.HighInclusive)} - {Literal(range1.LowInclusive)}))";
+
+                return negate ?
+                    $"({range0Clause} & {range1Clause})" :
+                    $"({range0Clause} | {range1Clause})";
+            }
 
             if (analysis.ContainsNoAscii)
             {
                 // We determined that the character class contains only non-ASCII,
-                // for example if the class were [\p{IsGreek}\p{IsGreekExtended}], which is
-                // the same as [\u0370-\u03FF\u1F00-1FFF]. (In the future, we could possibly
-                // extend the analysis to produce a known lower-bound and compare against
-                // that rather than always using 128 as the pivot point.)
+                // for example if the class were [\u1000-\u2000\u3000-\u4000\u5000-\u6000].
+                // (In the future, we could possibly extend the analysis to produce a known
+                // lower-bound and compare against that rather than always using 128 as the
+                // pivot point.)
                 return negate ?
                     $"((ch = {chExpr}) < 128 || !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
                     $"((ch = {chExpr}) >= 128 && RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
@@ -3912,19 +3981,18 @@ namespace System.Text.RegularExpressions.Generator
 
             if (analysis.ContainsOnlyAscii)
             {
-                // We know that all inputs that could match are ASCII, for example if the
-                // character class were [A-Za-z0-9], so since the ch is now known to be >= 128, we
-                // can just fail the comparison.
+                // If all inputs that could match are ASCII, we only need the lookup table, guarded
+                // by a check for the upper bound (which serves both to limit for what characters
+                // we need to access the lookup table and to bounds check the lookup table access).
                 return negate ?
-                    $"((ch = {chExpr}) >= {Literal((char)analysis.UpperBoundExclusiveIfContainsOnlyAscii)} || ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) == 0)" :
-                    $"((ch = {chExpr}) < {Literal((char)analysis.UpperBoundExclusiveIfContainsOnlyAscii)} && ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0)";
+                    $"((ch = {chExpr}) >= {Literal((char)analysis.UpperBoundExclusiveIfOnlyRanges)} || ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) == 0)" :
+                    $"((ch = {chExpr}) < {Literal((char)analysis.UpperBoundExclusiveIfOnlyRanges)} && ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0)";
             }
 
             if (analysis.AllNonAsciiContained)
             {
-                // We know that all non-ASCII inputs match, for example if the character
-                // class were [^\r\n], so since we just determined the ch to be >= 128, we can just
-                // give back success.
+                // If every non-ASCII value is considered a match, we can immediately succeed for any
+                // non-ASCII inputs, and access the lookup table for the rest.
                 return negate ?
                     $"((ch = {chExpr}) < 128 && ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) == 0)" :
                     $"((ch = {chExpr}) >= 128 || ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0)";
@@ -3932,7 +4000,8 @@ namespace System.Text.RegularExpressions.Generator
 
             // We know that the whole class wasn't ASCII, and we don't know anything about the non-ASCII
             // characters other than that some might be included, for example if the character class
-            // were [\w\d], so since ch >= 128, we need to fall back to calling CharInClass.
+            // were [\w\d], so if ch >= 128, we need to fall back to calling CharInClass, otherwise use
+            // the lookup table.
             return negate ?
                 $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) == 0 : !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
                 $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0 : RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
