@@ -55,7 +55,11 @@ namespace System
         // >= Windows 10 20H1 Update
         public static bool IsWindows10Version2004OrGreater => IsWindowsVersionOrLater(10, 0, 19041);
 
-        public static bool IsWindows10Version2004Build19573OrGreater => IsWindowsVersionOrLater(10, 0, 19573);
+        // WinHTTP update
+        public static bool IsWindows10Version19573OrGreater => IsWindowsVersionOrLater(10, 0, 19573);
+
+        // Windows Server 2022
+        public static bool IsWindows10Version20348OrGreater => IsWindowsVersionOrLater(10, 0, 20348);
 
         // Windows 11 aka 21H2
         public static bool IsWindows10Version22000OrGreater => IsWindowsVersionOrLater(10, 0, 22000);

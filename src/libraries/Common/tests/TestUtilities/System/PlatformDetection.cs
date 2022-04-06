@@ -194,7 +194,7 @@ namespace System
                 {
                     return true;
                 }
-                
+
                 return OpenSslVersion.Major == 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2);
             }
 
@@ -341,7 +341,7 @@ namespace System
 
         private static bool GetProtocolSupportFromWindowsRegistry(SslProtocols protocol, bool defaultProtocolSupport)
         {
-            string registryProtocolName = protocol switch 
+            string registryProtocolName = protocol switch
             {
 #pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
                 SslProtocols.Ssl3 => "SSL 3.0",
@@ -391,7 +391,7 @@ namespace System
 #pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Ssl3, ssl3DefaultSupport);
 #pragma warning restore CS0618
-                
+
             }
 
             return (IsOSX || (IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
@@ -418,7 +418,7 @@ namespace System
             if (IsOSXLike || IsAndroid)
             {
                 return true;
-            } 
+            }
             if (IsWindows)
             {
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls, true);
@@ -429,7 +429,7 @@ namespace System
 
         private static bool GetTls11Support()
         {
-            // on Windows, macOS, and Android TLS1.0/1.1 are supported.            
+            // on Windows, macOS, and Android TLS1.0/1.1 are supported.
             if (IsWindows)
             {
                 // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
@@ -462,7 +462,7 @@ namespace System
                 // assume no if positive entry is missing on older Windows
                 // Latest insider builds have TLS 1.3 enabled by default.
                 // The build number is approximation.
-                bool defaultProtocolSupport = IsWindows10Version2004Build19573OrGreater;
+                bool defaultProtocolSupport = IsWindows10Version20348OrGreater;
 
 #if NETFRAMEWORK
                 return false;
