@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Configuration
         public ChainedConfigurationProvider(ChainedConfigurationSource source!!)
         {
             var configuration = source.Configuration;
-            if (configuration  == null)
+            if (configuration == null)
             {
                 throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "source.Configuration"), nameof(source));
             }
@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// The chained configuration.
+        /// Gets the chained configuration.
         /// </summary>
         public IConfiguration Configuration => _config;
 
