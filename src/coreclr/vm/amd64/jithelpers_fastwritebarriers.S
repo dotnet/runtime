@@ -213,6 +213,80 @@ LEAF_END_MARKED JIT_WriteBarrier_SVR64, _TEXT
 
 #endif
 
+        .balign 8
+LEAF_ENTRY JIT_WriteBarrier_Region64, _TEXT
+
+        // Do the move into the GC .  It is correct to take an AV here, the EH code
+        // figures out that this came from a WriteBarrier and correctly maps it back
+        // to the managed method which called the WriteBarrier (see setup in
+        // InitializeExceptionHandling, vm\exceptionhandling.cpp).
+        mov     [rdi], rsi
+
+        mov     r8, rdi
+
+PATCH_LABEL JIT_WriteBarrier_Region64_Patch_Label_RegionToGeneration
+        movabs  rax, 0xF0F0F0F0F0F0F0F0
+
+PATCH_LABEL JIT_WriteBarrier_Region64_Patch_Label_RegionShrDest
+        shr     rdi, 0x16 // compute region index
+
+        // Check whether the region we're storing into is gen 0 - nothing to do in this case
+        cmp     byte ptr [rdi + rax], 0
+        jne     NotGen0_Region64
+        REPRET
+
+        NOP_2_BYTE // padding for alignment of constant
+
+    NotGen0_Region64:
+PATCH_LABEL JIT_WriteBarrier_Region64_Patch_Label_Lower
+        movabs  r9, 0xF0F0F0F0F0F0F0F0
+        cmp     rsi, r9
+        jae     NotLow_Region64
+        ret
+    NotLow_Region64:
+PATCH_LABEL JIT_WriteBarrier_Region64_Patch_Label_Upper
+        movabs  r9, 0xF0F0F0F0F0F0F0F0
+        cmp     rsi, r9
+        jb      NotHigh_Region64
+        REPRET
+    NotHigh_Region64:
+PATCH_LABEL JIT_WriteBarrier_Region64_Patch_Label_RegionShrSrc
+        shr     rsi, 0x16 // compute region index
+        mov     dl, [rsi + rax]
+        cmp     dl, [rdi + rax]
+        jb      IsOldToYoung_Region64
+        REPRET
+        nop
+
+    IsOldToYoung_Region64:
+PATCH_LABEL JIT_WriteBarrier_Region64_Patch_Label_CardTable
+        movabs  rax, 0xF0F0F0F0F0F0F0F0
+
+        mov     ecx, r8d
+        shr     r8, 0xB
+        shr     ecx, 8
+        and     ecx, 7
+        mov     dl, 1
+        shl     dl, cl
+        test    byte ptr [r8 + rax], dl
+        je      UpdateCardTable_Region64
+        REPRET
+
+    UpdateCardTable_Region64:
+        lock or byte ptr [r8 + rax], dl
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+PATCH_LABEL JIT_WriteBarrier_Region64_Patch_Label_CardBundleTable
+        movabs  rax, 0xF0F0F0F0F0F0F0F0
+        shr     r8, 0x0A
+        cmp     byte ptr [r8 + rax], 0xFF
+        jne     UpdateCardBundleTable_Region64
+        REPRET
+
+    UpdateCardBundleTable_Region64:
+        mov     byte ptr [r8 + rax], 0xFF
+#endif
+        ret
+LEAF_END_MARKED JIT_WriteBarrier_Region64, _TEXT
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
@@ -457,4 +531,89 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_SVR64_PatchLabel_CardBundleTable
 LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_SVR64, _TEXT
 
 #endif
+        .balign 8
+LEAF_ENTRY JIT_WriteBarrier_WriteWatch_Region64, _TEXT
+
+        // Do the move into the GC .  It is correct to take an AV here, the EH code
+        // figures out that this came from a WriteBarrier and correctly maps it back
+        // to the managed method which called the WriteBarrier (see setup in
+        // InitializeExceptionHandling, vm\exceptionhandling.cpp).
+        mov     [rdi], rsi
+
+        // Update the write watch table if necessary
+        mov     rax, rdi
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_Region64_Patch_Label_WriteWatchTable
+        movabs  r8, 0xF0F0F0F0F0F0F0F0
+        shr     rax, 0x0C // SoftwareWriteWatch::AddressToTableByteIndexShift
+        add     rax, r8
+        mov     r8, rdi
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_Region64_Patch_Label_RegionShrDest
+        shr     rdi, 0x16 // compute region index
+        cmp     byte ptr [rax], 0x0
+        jne     CheckGen0_WriteWatch_Region64
+        mov     byte ptr [rax], 0xFF
+    CheckGen0_WriteWatch_Region64:
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_Region64_Patch_Label_RegionToGeneration
+        mov     rax, 0xF0F0F0F0F0F0F0F0
+
+        // Check whether the region we're storing into is gen 0 - nothing to do in this case
+        cmp     byte ptr [rdi + rax], 0
+        jne     NotGen0_WriteWatch_Region64
+        REPRET
+
+        NOP_2_BYTE // padding for alignment of constant
+        NOP_2_BYTE // padding for alignment of constant
+        NOP_2_BYTE // padding for alignment of constant
+
+    NotGen0_WriteWatch_Region64:
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_Region64_Patch_Label_Lower
+        movabs  r9, 0xF0F0F0F0F0F0F0F0
+        cmp     rsi, r9
+        jae     NotLow_WriteWatch_Region64
+        ret
+    NotLow_WriteWatch_Region64:
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_Region64_Patch_Label_Upper
+        mov     r9, 0xF0F0F0F0F0F0F0F0
+        cmp     rsi, r9
+        jb      NotHigh_WriteWatch_Region64
+        REPRET
+    NotHigh_WriteWatch_Region64:
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_Region64_Patch_Label_RegionShrSrc
+        shr     rsi, 0x16 // compute region index
+        mov     dl, [rsi + rax]
+        cmp     dl, [rdi + rax]
+        jb      IsOldToYoung_WriteWatch_Region64
+        REPRET
+        nop
+
+    IsOldToYoung_WriteWatch_Region64:
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_Region64_Patch_Label_CardTable
+        mov     rax, 0xF0F0F0F0F0F0F0F0
+
+        mov     ecx, r8d
+        shr     r8, 0xB
+        shr     ecx, 8
+        and     ecx, 7
+        mov     dl, 1
+        shl     dl, cl
+        test    byte ptr [r8 + rax], dl
+        je      UpdateCardTable_WriteWatch_Region64
+        REPRET
+
+    UpdateCardTable_WriteWatch_Region64:
+        lock or byte ptr [r8 + rax], dl
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+PATCH_LABEL JIT_WriteBarrier_WriteWatch_Region64_Patch_Label_CardBundleTable
+        mov     rax, 0xF0F0F0F0F0F0F0F0
+        shr     r8, 0x0A
+        cmp     byte ptr [r8 + rax], 0xFF
+        jne     UpdateCardBundleTable_WriteWatch_Region64
+        REPRET
+
+    UpdateCardBundleTable_WriteWatch_Region64:
+        mov     byte ptr [r8 + rax], 0xFF
+#endif
+        ret
+LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_Region64, _TEXT
+
 #endif
