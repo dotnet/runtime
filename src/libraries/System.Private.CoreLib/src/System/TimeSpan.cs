@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
@@ -39,7 +40,7 @@ namespace System
           IMinMaxValue<TimeSpan>,
           IMultiplyOperators<TimeSpan, double, TimeSpan>,
           IMultiplicativeIdentity<TimeSpan, double>,
-          ISpanParseable<TimeSpan>,
+          ISpanParsable<TimeSpan>,
           ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>,
           IUnaryNegationOperators<TimeSpan, TimeSpan>,
           IUnaryPlusOperators<TimeSpan, TimeSpan>
@@ -526,7 +527,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
-        public static TimeSpan AdditiveIdentity => default;
+        static TimeSpan IAdditiveIdentity<TimeSpan, TimeSpan>.AdditiveIdentity => default;
 
         //
         // IDivisionOperators
@@ -551,7 +552,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
-        public static double MultiplicativeIdentity => 1.0;
+        static double IMultiplicativeIdentity<TimeSpan, double>.MultiplicativeIdentity => 1.0;
 
         //
         // IMultiplyOperators
@@ -573,11 +574,5 @@ namespace System
 
         // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
         // static TimeSpan IUnaryNegationOperators<TimeSpan, TimeSpan>.operator checked -(TimeSpan value) => checked(-value);
-
-        //
-        // IUnaryPlusOperators
-        //
-
-        // static checked TimeSpan IUnaryPlusOperators<TimeSpan, TimeSpan>.operator +(TimeSpan value) => checked(+value);
     }
 }

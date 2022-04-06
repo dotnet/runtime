@@ -24,12 +24,12 @@
       </trans-unit>
       <trans-unit id="CollectionNativeTypeMustHaveRequiredShapeDescription">
         <source>A native type with the 'GenericContiguousCollectionMarshallerAttribute' must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</source>
-        <target state="new">A native type with the 'GenericContiguousCollectionMarshallerAttribute' must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</target>
+        <target state="translated">Un type natif avec «GenericContiguousCollectionMarshallerAttribute» doit avoir au moins l’une des deux méthodes de marshaling, ainsi qu’une propriété «ManagedValues» de type «Span&lt;T&gt;» pour certains «T» et une propriété «NativeValueStorage» de type «Span&lt;byte&gt;» pour activer le marshaling du type managé.</target>
         <note />
       </trans-unit>
       <trans-unit id="CollectionNativeTypeMustHaveRequiredShapeMessage">
         <source>The native type '{0}' must be a value type and have a constructor that takes two parameters, one of type '{1}' and an 'int', or have a parameterless instance method named 'ToManaged' that returns '{1}' as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;'</source>
-        <target state="new">The native type '{0}' must be a value type and have a constructor that takes two parameters, one of type '{1}' and an 'int', or have a parameterless instance method named 'ToManaged' that returns '{1}' as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;'</target>
+        <target state="translated">Le type natif «{0}» doit être un type valeur et avoir un constructeur qui accepte deux paramètres, un de type «{1}» et un «int», ou une méthode d’instance sans paramètre nommée «ToManaged» qui retourne des «{1}' ainsi qu’une propriété «ManagedValues» de type «Span&lt;T&gt;» pour un «T' et une propriété «NativeValueStorage' de type «Span&lt;byte&gt;»</target>
         <note />
       </trans-unit>
       <trans-unit id="CollectionSizeParamTypeMustBeIntegral">

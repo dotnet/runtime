@@ -5319,6 +5319,12 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     {
         return false;
     }
+
+    if (((scale | offset) > 0) && parent->OperIsHWIntrinsic())
+    {
+        // For now we only support unscaled indices for SIMD loads
+        return false;
+    }
 #endif
 
     if (scale == 0)

@@ -338,7 +338,7 @@ namespace System.Reflection
             }
 
             StackAllocedArguments stackArgs = default;
-            Span<object?> arguments = CheckArguments(ref stackArgs, new ReadOnlySpan<object?>(ref parameter, 1), binder, invokeAttr, culture, sig.Arguments);
+            Span<object?> arguments = CheckArguments(ref stackArgs, new ReadOnlySpan<object?>(in parameter), binder, invokeAttr, culture, sig.Arguments);
 
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             return RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, constructor: false, wrapExceptions);

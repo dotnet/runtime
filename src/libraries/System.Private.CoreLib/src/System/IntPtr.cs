@@ -284,6 +284,9 @@ namespace System
         // IBinaryInteger
         //
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
+        static (nint Quotient, nint Remainder) IBinaryInteger<nint>.DivRem(nint left, nint right) => Math.DivRem(left, right);
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         static nint IBinaryInteger<nint>.LeadingZeroCount(nint value)
         {
@@ -474,21 +477,38 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.One" />
-        static nint INumber<nint>.One => 1;
-
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
-        static nint INumber<nint>.Zero => 0;
-
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
         static nint INumber<nint>.Abs(nint value) => Math.Abs(value);
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         static nint INumber<nint>.Clamp(nint value, nint min, nint max) => Math.Clamp(value, min, max);
 
-        /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        static nint INumber<nint>.CopySign(nint value, nint sign)
+        {
+            nint absValue = value;
+
+            if (absValue < 0)
+            {
+                absValue = -absValue;
+            }
+
+            if (sign >= 0)
+            {
+                if (absValue < 0)
+                {
+                    Math.ThrowNegateTwosCompOverflow();
+                }
+
+                return absValue;
+            }
+
+            return -absValue;
+        }
+
+        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nint INumber<nint>.Create<TOther>(TOther value)
+        static nint INumber<nint>.CreateChecked<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -698,17 +718,77 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.DivRem(TSelf, TSelf)" />
-        static (nint Quotient, nint Remainder) INumber<nint>.DivRem(nint left, nint right) => Math.DivRem(left, right);
+        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        static bool INumber<nint>.IsNegative(nint value) => value < 0;
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         static nint INumber<nint>.Max(nint x, nint y) => Math.Max(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        static nint INumber<nint>.MaxMagnitude(nint x, nint y)
+        {
+            nint absX = x;
+
+            if (absX < 0)
+            {
+                absX = -absX;
+
+                if (absX < 0)
+                {
+                    return x;
+                }
+            }
+
+            nint absY = y;
+
+            if (absY < 0)
+            {
+                absY = -absY;
+
+                if (absY < 0)
+                {
+                    return y;
+                }
+            }
+
+            return (absX >= absY) ? x : y;
+        }
+
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         static nint INumber<nint>.Min(nint x, nint y) => Math.Min(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        static nint INumber<nint>.MinMagnitude(nint x, nint y)
+        {
+            nint absX = x;
+
+            if (absX < 0)
+            {
+                absX = -absX;
+
+                if (absX < 0)
+                {
+                    return y;
+                }
+            }
+
+            nint absY = y;
+
+            if (absY < 0)
+            {
+                absY = -absY;
+
+                if (absY < 0)
+                {
+                    return x;
+                }
+            }
+
+            return (absX <= absY) ? x : y;
+        }
+
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        static nint INumber<nint>.Sign(nint value) => Math.Sign(value);
+        static int INumber<nint>.Sign(nint value) => Math.Sign(value);
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -849,6 +929,16 @@ namespace System
         }
 
         //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static nint INumberBase<nint>.One => 1;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static nint INumberBase<nint>.Zero => 0;
+
+        //
         // IShiftOperators
         //
 
@@ -894,8 +984,5 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static nint IUnaryPlusOperators<nint, nint>.operator +(nint value) => +value;
-
-        // /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_CheckedUnaryPlus(TSelf)" />
-        // static nint IUnaryPlusOperators<nint, nint>.operator checked +(nint value) => checked(+value);
     }
 }

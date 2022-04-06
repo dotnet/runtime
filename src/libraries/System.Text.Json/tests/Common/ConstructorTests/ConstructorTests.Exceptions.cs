@@ -78,7 +78,7 @@ namespace System.Text.Json.Serialization.Tests
 
             string exStr = ex.ToString();
             Assert.Contains("System.Text.Json.Serialization.Tests.ConstructorTests+Employee", exStr);
-            Assert.Contains("$.$id", exStr);
+            Assert.Contains("$.Manager.$ref", exStr);
         }
 
         public class Employee
@@ -107,10 +107,8 @@ namespace System.Text.Json.Serialization.Tests
 
             var options = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve };
 
-            NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<Employee>(json, options));
-            string exStr = ex.ToString();
-            Assert.Contains("System.Text.Json.Serialization.Tests.ConstructorTests+Employee", exStr);
-            Assert.Contains("$.$random", exStr);
+            JsonException ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Employee>(json, options));
+            Assert.Equal("$.$random", ex.Path);
         }
 
         [Fact]

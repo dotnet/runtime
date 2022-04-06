@@ -7563,7 +7563,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         // assert should hold.
         assert(varDsc->GetRegNum() != REG_STK);
         assert(varDsc->TypeGet() != TYP_STRUCT);
-        var_types storeType = genActualType(varDsc->TypeGet());
+        var_types storeType = varDsc->GetStackSlotHomeType();
         emitAttr  storeSize = emitActualTypeSize(storeType);
 
         GetEmitter()->emitIns_S_R(ins_Store(storeType), storeSize, varDsc->GetRegNum(), varNum, 0);
