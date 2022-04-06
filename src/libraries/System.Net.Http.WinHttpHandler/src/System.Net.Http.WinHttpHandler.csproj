@@ -9,7 +9,6 @@
 
 Commonly Used Types:
 System.Net.Http.WinHttpHandler</PackageDescription>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <ServicingVersion>1</ServicingVersion>
   </PropertyGroup>
 
