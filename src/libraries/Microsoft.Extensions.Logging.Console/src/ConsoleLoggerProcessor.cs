@@ -17,8 +17,8 @@ namespace Microsoft.Extensions.Logging.Console
         private readonly BlockingCollection<LogMessageEntry> _messageQueue = new BlockingCollection<LogMessageEntry>(_maxQueuedMessages);
         private readonly Thread _outputThread;
 
-        public IConsole Console;
-        public IConsole ErrorConsole;
+        public IConsole Console { get; }
+        public IConsole ErrorConsole { get; }
 
         public ConsoleLoggerProcessor(IConsole console, IConsole errorConsole)
         {
