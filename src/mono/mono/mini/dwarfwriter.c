@@ -1341,7 +1341,7 @@ token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 			cmethod = mono_get_method_checked (m_class_get_image (method->klass), token, NULL, NULL, error);
 			if (!cmethod)
 				g_error ("Could not load method due to %s", mono_error_get_message (error)); /* FIXME don't swallow the error */
-			mono_error_cleanup (error);
+			mono_error_assert_ok (error);
 		}
 		desc = mono_method_full_name (cmethod, TRUE);
 		res = g_strdup_printf ("<%s>", desc);

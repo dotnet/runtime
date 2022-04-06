@@ -1869,7 +1869,6 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 
 				// If the slot is still empty, look in all the inherited virtual methods...
 				if ((vtable [im_slot] == NULL) && klass->parent != NULL) {
-					parent = klass->parent;
 					// Reverse order, so that last added methods are preferred
 					for (cm_index = parent->vtable_size - 1; cm_index >= 0; cm_index--) {
 						cm = parent->vtable [cm_index];

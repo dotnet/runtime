@@ -3709,7 +3709,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 				ji->data.method = mono_get_method_checked (ref.image, ref.token, NULL, NULL, error);
 				if (!ji->data.method)
 					g_error ("AOT Runtime could not load method due to %s", mono_error_get_message (error)); /* FIXME don't swallow the error */
-				mono_error_cleanup (error);
+				mono_error_assert_ok (error);
 			}
 			g_assert (ji->data.method);
 			mono_class_init_internal (ji->data.method->klass);
