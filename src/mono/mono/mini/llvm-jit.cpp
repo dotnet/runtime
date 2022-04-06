@@ -34,12 +34,8 @@
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
 #include "llvm/Transforms/Scalar.h"
-
 #include "llvm/CodeGen/BuiltinGCs.h"
-
-#if LLVM_API_VERSION >= 1100
 #include "llvm/InitializePasses.h"
-#endif
 
 #include <cstdlib>
 
@@ -186,21 +182,12 @@ init_function_pass_manager (legacy::FunctionPassManager &fpm)
 	fpm.doInitialization();
 }
 
-#if LLVM_API_VERSION >= 1100
 using symbol_t = const llvm::StringRef;
 static inline std::string
 to_str (symbol_t s)
 {
 	return s.str ();
 }
-#else
-using symbol_t = const std::string &;
-static inline const std::string &
-to_str (symbol_t s)
-{
-	return s;
-}
-#endif
 
 struct MonoLLVMJIT {
 	std::shared_ptr<MonoLLVMMemoryManager> mmgr;
