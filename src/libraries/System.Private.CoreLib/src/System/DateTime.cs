@@ -1530,7 +1530,7 @@ namespace System
         /// <summary>
         /// The nanoseconds component, expressed as a value between 0 and 900.
         /// </summary>
-        public int Nanosecond => (int)(UTicks * NanosecondsPerTick);
+        public int Nanosecond => (int)(UTicks % NanosecondsPerTick) * 100;
 
         // Returns the minute part of this DateTime. The returned value is
         // an integer between 0 and 59.
