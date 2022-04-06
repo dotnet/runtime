@@ -9076,20 +9076,35 @@ void emitter::emitStackKillArgs(BYTE* addr, unsigned count, unsigned char callIn
 /*****************************************************************************
  *  A helper for recording a relocation with the EE.
  */
-void emitter::emitRecordRelocation(void* location,            /* IN */
-                                   void* target,              /* IN */
-                                   WORD  fRelocType,          /* IN */
-                                   WORD  slotNum /* = 0 */,   /* IN */
-                                   INT32 addlDelta /* = 0 */) /* IN */
+
+#ifdef DEBUG
+
+void emitter::emitRecordRelocationHelp(void*       location,            /* IN */
+                                       void*       target,              /* IN */
+                                       uint16_t    fRelocType,          /* IN */
+                                       const char* relocTypeName,       /* IN */
+                                       int32_t     addlDelta /* = 0 */) /* IN */
+
+#else // !DEBUG
+
+void emitter::emitRecordRelocation(void*    location,            /* IN */
+                                   void*    target,              /* IN */
+                                   uint16_t fRelocType,          /* IN */
+                                   int32_t  addlDelta /* = 0 */) /* IN */
+
+#endif // !DEBUG
 {
-    assert(slotNum == 0); // It is unused on all supported platforms.
+    void* locationRW = (BYTE*)location + writeableOffset;
+
+    JITDUMP("recordRelocation: %p (rw: %p) => %p, type %u (%s), delta %d\n", dspPtr(location), dspPtr(locationRW),
+            dspPtr(target), fRelocType, relocTypeName, addlDelta);
 
     // If we're an unmatched altjit, don't tell the VM anything. We still record the relocation for
     // late disassembly; maybe we'll need it?
     if (emitComp->info.compMatchedVM)
     {
-        void* locationRW = (BYTE*)location + writeableOffset;
-        emitCmpHandle->recordRelocation(location, locationRW, target, fRelocType, slotNum, addlDelta);
+        // slotNum is unused on all supported platforms.
+        emitCmpHandle->recordRelocation(location, locationRW, target, fRelocType, /* slotNum */ 0, addlDelta);
     }
 #if defined(LATE_DISASM)
     codeGen->getDisAssembler().disRecordRelocation((size_t)location, (size_t)target);
