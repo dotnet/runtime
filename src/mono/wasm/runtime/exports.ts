@@ -152,6 +152,8 @@ const BINDING = {
      */
     conv_string_rooted: conv_string_root,
 
+    mono_obj_array_new_ref: cwraps.mono_wasm_obj_array_new_ref,
+    mono_obj_array_set_ref: cwraps.mono_wasm_obj_array_set_ref,
     js_string_to_mono_string_root,
     js_typed_array_to_array_root,
     js_to_mono_obj_root,
