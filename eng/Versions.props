@@ -27,22 +27,30 @@
     We pin these versions as we need to match them exactly for any scenarios that run Roslyn on .NET Framework, like Visual Studio.
   -->
   <PropertyGroup>
+    <!-- Compatibility with VS 16.11/.NET SDK 5.0.4xx -->
     <MicrosoftCodeAnalysisVersion_3_11>3.11.0</MicrosoftCodeAnalysisVersion_3_11>
+    <!-- Compatibility with VS 17.0/.NET SDK 6.0.1xx  -->
     <MicrosoftCodeAnalysisVersion_4_0>4.0.1</MicrosoftCodeAnalysisVersion_4_0>
+    <!-- Compatibility with VS 17.X/.NET SDK 7.0.1xx -->
+    <!--
+      This version is a moving target until we ship.
+      It should never go ahead of the Roslyn version included in the SDK version in dotnet/arcade's global.json to avoid causing breaks in product construction.
+    -->
+    <MicrosoftCodeAnalysisVersion_4_X>4.2.0-2.final</MicrosoftCodeAnalysisVersion_4_X>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Code analysis dependencies -->
     <MicrosoftCodeAnalysisAnalyzersVersion>3.3.3</MicrosoftCodeAnalysisAnalyzersVersion>
-    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.2.0-2.22128.1</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
-    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.2.0-2.22128.1</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
-    <MicrosoftCodeAnalysisCSharpVersion>4.2.0-2.22128.1</MicrosoftCodeAnalysisCSharpVersion>
+    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.2.0-2.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
+    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.2.0-2.final</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
+    <MicrosoftCodeAnalysisCSharpVersion>4.2.0-2.final</MicrosoftCodeAnalysisCSharpVersion>
     <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.22180.6</MicrosoftCodeAnalysisNetAnalyzersVersion>
-    <MicrosoftCodeAnalysisVersion>4.2.0-2.22128.1</MicrosoftCodeAnalysisVersion>
+    <MicrosoftCodeAnalysisVersion>4.2.0-2.final</MicrosoftCodeAnalysisVersion>
     <!--
       TODO: Remove pinned compiler version once arcade supplies runtime with a compiler capable of handling !!
       and has https://github.com/dotnet/roslyn/pull/59776
     -->
-    <MicrosoftNetCompilersToolsetVersion>4.2.0-2.22128.1</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftNetCompilersToolsetVersion>4.2.0-2.final</MicrosoftNetCompilersToolsetVersion>
     <!-- SDK dependencies -->
     <MicrosoftDotNetCompatibilityVersion>2.0.0-alpha.1.21525.11</MicrosoftDotNetCompatibilityVersion>
     <!-- Arcade dependencies -->
