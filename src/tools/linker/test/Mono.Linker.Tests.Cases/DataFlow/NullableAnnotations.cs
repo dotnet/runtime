@@ -56,6 +56,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestGetUnderlyingTypeOnStructs ();
 			TestAnnotationsOnNullableKeepsMembersOnUnderlyingType ();
 			TestGetUnderlyingTypeOfCreatedNullableOnStructs ();
+			TestGetUnderlyingTypeOnEmptyInput ();
 			ImproperMakeGenericTypeDoesntWarn ();
 			MakeGenericTypeWithUnknownValue (new object[2] { 1, 2 });
 		}
@@ -190,6 +191,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			MakeGenericNullableOfUnannotatedParameterRequiresPublicProperties (typeof (TestType));
 			MakeGenericNullableOfUnannotatedGenericParameterRequiresPublicProperties<TestType> ();
 			NullableOfUnannotatedGenericParameterRequiresPublicProperties<TestType> ();
+		}
+
+		[Kept]
+		static void TestGetUnderlyingTypeOnEmptyInput ()
+		{
+			Type t = null;
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle); // This throws at runtime, data flow will track the result as empty value set
+																  // No warning - since there's no value on input
+			Nullable.GetUnderlyingType (noValue).RequiresPublicProperties ();
 		}
 
 

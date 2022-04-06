@@ -124,13 +124,18 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public override MultiValue VisitFieldReference (IFieldReferenceOperation fieldRef, StateValue state)
 		{
-			if (fieldRef.Field.Type.IsTypeInterestingForDataflow ()) {
-				var field = fieldRef.Field;
-				if (field.Name is "Empty" && field.ContainingType.HasName ("System.String"))
+			var field = fieldRef.Field;
+			switch (field.Name) {
+			case "EmptyTypes" when field.ContainingType.IsTypeOf ("System", "Type"): {
+					return ArrayValue.Create (0);
+				}
+			case "Empty" when field.ContainingType.IsTypeOf ("System", "String"): {
 					return new KnownStringValue (string.Empty);
-
-				return new FieldValue (fieldRef.Field);
+				}
 			}
+
+			if (fieldRef.Field.Type.IsTypeInterestingForDataflow ())
+				return new FieldValue (fieldRef.Field);
 
 			return TopValue;
 		}
@@ -235,11 +240,20 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			var diagnosticContext = DiagnosticContext.CreateDisabled ();
 			var handleCallAction = new HandleCallAction (diagnosticContext, Context.OwningSymbol, operation);
-			if (!handleCallAction.Invoke (new MethodProxy (calledMethod), instance, arguments, out MultiValue methodReturnValue)) {
-				if (!calledMethod.ReturnsVoid && calledMethod.ReturnType.IsTypeInterestingForDataflow ())
-					methodReturnValue = new MethodReturnValue (calledMethod);
-				else
-					methodReturnValue = TopValue;
+			if (!handleCallAction.Invoke (new MethodProxy (calledMethod), instance, arguments, out MultiValue methodReturnValue, out var intrinsicId)) {
+				switch (intrinsicId) {
+				case IntrinsicId.Array_Empty:
+					methodReturnValue = ArrayValue.Create (0);
+					break;
+
+				default:
+					if (!calledMethod.ReturnsVoid && calledMethod.ReturnType.IsTypeInterestingForDataflow ())
+						methodReturnValue = new MethodReturnValue (calledMethod);
+					else
+						methodReturnValue = TopValue;
+
+					break;
+				}
 			}
 
 			TrimAnalysisPatterns.Add (new TrimAnalysisMethodCallPattern (

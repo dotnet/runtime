@@ -540,9 +540,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				typeof (DerivedWithRequiresOnBaseWithoutRequires).RequiresPublicConstructors ();
 			}
 
-			[ExpectedWarning ("IL2026", "BaseWithRequires.BaseWithRequires()", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithRequires.DerivedWithRequiresOnBaseWithRequires()", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithoutRequires.DerivedWithRequiresOnBaseWithoutRequires()", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "BaseWithRequires.BaseWithRequires()")]
+			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithRequires.DerivedWithRequiresOnBaseWithRequires()")]
+			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithoutRequires.DerivedWithRequiresOnBaseWithoutRequires()")]
 			static void TestDirectReflectionAccess ()
 			{
 				typeof (BaseWithRequires).GetConstructor (Type.EmptyTypes);

@@ -31,8 +31,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		[Fact]
 		public Task ConstructorUsedViaReflection ()
 		{
-			// https://github.com/dotnet/linker/issues/2578
-			return RunTest (allowMissingWarnings: true);
+			return RunTest ();
 		}
 
 		[Fact]

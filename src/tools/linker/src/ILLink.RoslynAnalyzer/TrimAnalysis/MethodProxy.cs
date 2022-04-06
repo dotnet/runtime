@@ -20,7 +20,7 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		internal partial bool HasParameters () => Method.Parameters.Length > 0;
 
-		internal partial bool HasParametersCount (int parameterCount) => Method.Parameters.Length == parameterCount;
+		internal partial int GetParametersCount () => Method.Parameters.Length;
 
 		internal partial bool HasParameterOfType (int parameterIndex, string fullTypeName)
 			=> Method.Parameters.Length > parameterIndex && IsTypeOf (Method.Parameters[parameterIndex].Type, fullTypeName);

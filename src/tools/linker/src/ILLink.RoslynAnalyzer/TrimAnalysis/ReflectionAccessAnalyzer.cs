@@ -59,6 +59,18 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				GetReflectionAccessDiagnosticsForProperty (diagnosticContext, prop);
 		}
 
+		internal void GetReflectionAccessDiagnosticsForConstructorsOnType (in DiagnosticContext diagnosticContext, ITypeSymbol typeSymbol, BindingFlags? bindingFlags)
+		{
+			foreach (var c in typeSymbol.GetConstructorsOnType (filter: null, bindingFlags: bindingFlags))
+				GetReflectionAccessDiagnosticsForMethod (diagnosticContext, c);
+		}
+
+		internal void GetReflectionAccessDiagnosticsForPublicParameterlessConstructor (in DiagnosticContext diagnosticContext, ITypeSymbol typeSymbol)
+		{
+			foreach (var c in typeSymbol.GetConstructorsOnType (filter: m => (m.DeclaredAccessibility == Accessibility.Public) && m.Parameters.Length == 0))
+				GetReflectionAccessDiagnosticsForMethod (diagnosticContext, c);
+		}
+
 		static void ReportRequiresUnreferencedCodeDiagnostic (in DiagnosticContext diagnosticContext, AttributeData requiresAttributeData, ISymbol member)
 		{
 			var message = RequiresUnreferencedCodeUtils.GetMessageFromAttribute (requiresAttributeData);

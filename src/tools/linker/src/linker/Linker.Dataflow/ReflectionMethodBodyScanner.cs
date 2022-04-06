@@ -300,14 +300,15 @@ namespace Mono.Linker.Dataflow
 			case IntrinsicId.Nullable_GetUnderlyingType:
 			case IntrinsicId.Expression_Property when calledMethod.HasParameterOfType (1, "System.Reflection.MethodInfo"):
 			case var fieldOrPropertyInstrinsic when fieldOrPropertyInstrinsic == IntrinsicId.Expression_Field || fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property:
-			case IntrinsicId.Type_get_BaseType: {
+			case IntrinsicId.Type_get_BaseType:
+			case IntrinsicId.Type_GetConstructor: {
 					var instanceValue = MultiValueLattice.Top;
 					IReadOnlyList<MultiValue> parameterValues = methodParams;
 					if (calledMethodDefinition.HasImplicitThis ()) {
 						instanceValue = methodParams[0];
 						parameterValues = parameterValues.Skip (1).ToImmutableList ();
 					}
-					return handleCallAction.Invoke (calledMethodDefinition, instanceValue, parameterValues, out methodReturnValue);
+					return handleCallAction.Invoke (calledMethodDefinition, instanceValue, parameterValues, out methodReturnValue, out _);
 				}
 
 			case IntrinsicId.TypeDelegator_Ctor: {
@@ -569,52 +570,6 @@ namespace Mono.Linker.Dataflow
 						}
 					}
 
-				}
-				break;
-
-			//
-			// GetConstructor (Type[])
-			// GetConstructor (BindingFlags, Type[])
-			// GetConstructor (BindingFlags, Binder, Type[], ParameterModifier [])
-			// GetConstructor (BindingFlags, Binder, CallingConventions, Type[], ParameterModifier [])
-			//
-			case IntrinsicId.Type_GetConstructor: {
-					var parameters = calledMethod.Parameters;
-					BindingFlags? bindingFlags;
-					if (parameters.Count > 1 && calledMethod.Parameters[0].ParameterType.Name == "BindingFlags")
-						bindingFlags = GetBindingFlagsFromValue (methodParams[1]);
-					else
-						// Assume a default value for BindingFlags for methods that don't use BindingFlags as a parameter
-						bindingFlags = BindingFlags.Public | BindingFlags.Instance;
-
-					int? ctorParameterCount = parameters.Count switch {
-						1 => (methodParams[1].AsSingleValue () as ArrayValue)?.Size.AsConstInt (),
-						2 => (methodParams[2].AsSingleValue () as ArrayValue)?.Size.AsConstInt (),
-						4 => (methodParams[3].AsSingleValue () as ArrayValue)?.Size.AsConstInt (),
-						5 => (methodParams[4].AsSingleValue () as ArrayValue)?.Size.AsConstInt (),
-						_ => null,
-					};
-
-					// Go over all types we've seen
-					foreach (var value in methodParams[0]) {
-						if (value is SystemTypeValue systemTypeValue && !BindingFlagsAreUnsupported (bindingFlags)) {
-							if (HasBindingFlag (bindingFlags, BindingFlags.Public) && !HasBindingFlag (bindingFlags, BindingFlags.NonPublic)
-								&& ctorParameterCount == 0) {
-								MarkConstructorsOnType (analysisContext, systemTypeValue.RepresentedType.Type, m => m.IsPublic && m.Parameters.Count == 0, bindingFlags);
-							} else {
-								MarkConstructorsOnType (analysisContext, systemTypeValue.RepresentedType.Type, null, bindingFlags);
-							}
-						} else {
-							// Otherwise fall back to the bitfield requirements
-							var requiredMemberTypes = GetDynamicallyAccessedMemberTypesFromBindingFlagsForConstructors (bindingFlags);
-							// We can scope down the public constructors requirement if we know the number of parameters is 0
-							if (requiredMemberTypes == DynamicallyAccessedMemberTypes.PublicConstructors && ctorParameterCount == 0)
-								requiredMemberTypes = DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
-
-							var targetValue = GetMethodParameterValue (calledMethodDefinition, 0, requiredMemberTypes);
-							RequireDynamicallyAccessedMembers (analysisContext, value, targetValue);
-						}
-					}
 				}
 				break;
 
@@ -1041,12 +996,6 @@ namespace Mono.Linker.Dataflow
 			requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
 		}
 
-		static BindingFlags? GetBindingFlagsFromValue (in MultiValue parameter) => HandleCallAction.GetBindingFlagsFromValue (parameter);
-
-		static bool BindingFlagsAreUnsupported (BindingFlags? bindingFlags) => HandleCallAction.BindingFlagsAreUnsupported (bindingFlags);
-
-		static bool HasBindingFlag (BindingFlags? bindingFlags, BindingFlags? search) => HandleCallAction.HasBindingFlag (bindingFlags, search);
-
 		internal void MarkTypeForDynamicallyAccessedMembers (in AnalysisContext analysisContext, TypeDefinition typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, DependencyKind dependencyKind, bool declaredOnly = false)
 		{
 			foreach (var member in typeDefinition.GetDynamicallyAccessedMembers (_context, requiredMemberTypes, declaredOnly)) {
@@ -1104,7 +1053,7 @@ namespace Mono.Linker.Dataflow
 			_markStep.MarkInterfaceImplementation (interfaceImplementation, null, new DependencyInfo (dependencyKind, analysisContext.Origin.Provider));
 		}
 
-		void MarkConstructorsOnType (in AnalysisContext analysisContext, TypeDefinition type, Func<MethodDefinition, bool>? filter, BindingFlags? bindingFlags = null)
+		internal void MarkConstructorsOnType (in AnalysisContext analysisContext, TypeDefinition type, Func<MethodDefinition, bool>? filter, BindingFlags? bindingFlags = null)
 		{
 			foreach (var ctor in type.GetConstructorsOnType (filter, bindingFlags))
 				MarkMethod (analysisContext, ctor);

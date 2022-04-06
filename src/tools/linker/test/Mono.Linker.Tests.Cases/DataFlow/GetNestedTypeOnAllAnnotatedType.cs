@@ -25,9 +25,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestWithUnknownBindingFlags (BindingFlags.Public, typeof (TestType));
 			TestUnsupportedBindingFlags (typeof (TestType));
 			TestWithNull ();
+			TestWithEmptyInput ();
 			TestIfElse (1, typeof (TestType), typeof (TestType));
 			TestSwitchAllValid (1, typeof (TestType));
 			TestOnKnownTypeOnly ();
+			TestOnKnownTypeWithNullName ();
+			TestOnKnownTypeWithUnknownName ("noname");
+			TestWithKnownTypeAndNameWhichDoesntExist ();
 		}
 
 		static void TestOnAllAnnotatedParameter ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type parentType)
@@ -68,6 +72,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			nestedType.RequiresAll ();
 		}
 
+		static void TestWithEmptyInput ()
+		{
+			Type t = null;
+			Type noValue = Type.GetTypeFromHandle (t.TypeHandle); // Throws at runtime -> tracked as empty value set
+			noValue.GetNestedType (nameof (TestType.NestedType)).RequiresAll (); // No warning - empty input
+		}
+
 		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll))]
 		static void TestIfElse (int number, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type parentWithAll, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicNestedTypes)] Type parentWithoutAll)
 		{
@@ -96,6 +107,24 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static void TestOnKnownTypeOnly ()
 		{
 			typeof (TestType).GetNestedType (nameof (TestType.NestedType)).RequiresAll ();
+		}
+
+		static void TestOnKnownTypeWithNullName ()
+		{
+			typeof (TestType).GetNestedType (null).RequiresAll ();
+		}
+
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll))]
+		static void TestOnKnownTypeWithUnknownName (string name)
+		{
+			// WARN - we will preserve the nested type, but not as a whole, just the type itself, so it can't fullfil the All annotation
+			typeof (TestType).GetNestedType (name).RequiresAll ();
+		}
+
+		static void TestWithKnownTypeAndNameWhichDoesntExist ()
+		{
+			// Should not warn since we can statically determine that GetNestedType will return null so there's no problem with trimming
+			typeof (TestType).GetNestedType ("NonExisting").RequiresAll ();
 		}
 
 		class TestType

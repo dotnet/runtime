@@ -91,6 +91,12 @@ namespace ILLink.Shared.TrimAnalysis
 		private partial void MarkPropertiesOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
 			=> _reflectionMethodBodyScanner.MarkPropertiesOnTypeHierarchy (_analysisContext, type.Type, p => p.Name == name, bindingFlags);
 
+		private partial void MarkPublicParameterlessConstructorOnType (TypeProxy type)
+			=> _reflectionMethodBodyScanner.MarkConstructorsOnType (_analysisContext, type.Type, m => m.IsPublic && m.Parameters.Count == 0);
+
+		private partial void MarkConstructorsOnType (TypeProxy type, BindingFlags? bindingFlags)
+			=> _reflectionMethodBodyScanner.MarkConstructorsOnType (_analysisContext, type.Type, null, bindingFlags);
+
 		private partial void MarkMethod (MethodProxy method)
 			=> _reflectionMethodBodyScanner.MarkMethod (_analysisContext, method.Method);
 

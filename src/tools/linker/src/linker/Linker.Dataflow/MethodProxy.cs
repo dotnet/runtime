@@ -22,7 +22,7 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		internal partial bool HasParameters () => Method.HasParameters;
 
-		internal partial bool HasParametersCount (int parameterCount) => Method.Parameters.Count == parameterCount;
+		internal partial int GetParametersCount () => Method.Parameters.Count;
 
 		internal partial bool HasParameterOfType (int parameterIndex, string fullTypeName) => Method.HasParameterOfType (parameterIndex, fullTypeName);
 
