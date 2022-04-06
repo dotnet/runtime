@@ -103,7 +103,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				break;
 			case IPropertyReferenceOperation propertyRef:
 				// A property assignment is really a call to the property setter.
-				var setMethod = propertyRef.Property.SetMethod!;
+				var setMethod = propertyRef.Property.SetMethod;
+				if (setMethod == null) {
+					// This can happen in a constructor - there it is possible to assign to a property
+					// without a setter. This turns into an assignment to the compiler-generated backing field.
+					// To match the linker, this should warn about the compiler-generated backing field.
+					// For now, just don't warn.
+					break;
+				}
 				TValue instanceValue = Visit (propertyRef.Instance, state);
 				// The return value of a property set expression is the value,
 				// even though a property setter has no return value.
