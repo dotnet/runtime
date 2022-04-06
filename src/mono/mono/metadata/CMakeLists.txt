@@ -95,6 +95,8 @@ set(metadata_common_sources
     marshal-legacy.h
     marshal-internals.h
     marshal-noilgen.c
+    marshal-shared.h
+    marshal-shared.c
     mempool.c
     mempool.h
     mempool-internals.h
