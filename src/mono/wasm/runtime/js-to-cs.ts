@@ -86,9 +86,6 @@ export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, s
             }
 
             cwraps.mono_wasm_box_primitive_ref(box_class, runtimeHelpers._box_buffer, 8, result.address);
-
-            if (!result.value)
-                throw new Error(`Boxing failed for ${js_obj}`);
             return;
         }
         case typeof js_obj === "string":
@@ -132,11 +129,13 @@ function _extract_mono_obj_root(should_add_in_flight: boolean, js_obj: any, resu
 
         // It's possible the managed object corresponding to this JS object was collected,
         //  in which case we need to make a new one.
+        // FIXME: This check is not thread safe
         if (!result.value) {
             delete js_obj[cs_owned_js_handle_symbol];
         }
     }
 
+    // FIXME: This check is not thread safe
     if (!result.value) {
         // Obtain the JS -> C# type mapping.
         const wasm_type = js_obj[wasm_type_symbol];
