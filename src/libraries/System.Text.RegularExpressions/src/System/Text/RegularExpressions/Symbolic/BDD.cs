@@ -5,12 +5,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Numerics;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>
-    /// Represents nodes in a Binary Decision Diagram (BDD), which compactly represent sets of integers and allows for fast
-    /// querying of whether an integer is in the set, and if so, what value it maps to (typically True or False).
+    /// Represents nodes in a Binary Decision Diagram (BDD), which compactly represent sets of integers and allow for fast
+    /// querying of whether an integer is in the set (and if so, what value it maps to, typically True or False).
     /// </summary>
     /// <remarks>
     /// All non-leaf nodes have an Ordinal, which indicates the position of the bit the node relates to (0 for the least significant
@@ -19,7 +20,7 @@ namespace System.Text.RegularExpressions.Symbolic
     /// the bits of the integer leads to the True leaf. This class also supports multi-terminal BDDs (MTBDD), i.e. ones where
     /// the leaves are something other than True or False, which are used for representing classifiers.
     /// </remarks>
-    internal sealed class BDD : IComparable<BDD>
+    internal sealed class BDD : IComparable<BDD>, IEquatable<BDD>
     {
         /// <summary>
         /// The ordinal for the True special value.
@@ -63,30 +64,10 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         private readonly int _hashcode;
 
-#if DEBUG // used only for serialization, which is debug-only
-        /// <summary>
-        /// Representation of False for serialization.
-        /// </summary>
-        private static readonly long[] s_falseRepresentation = new long[] { 0 };
-
-        /// <summary>
-        /// Representation of True for serialization.
-        /// </summary>
-        private static readonly long[] s_trueRepresentation = new long[] { 1 };
-
-        /// <summary>
-        /// Representation of False for compact serialization of BDDs.
-        /// </summary>
-        private static readonly byte[] s_falseRepresentationCompact = new byte[] { 0 };
-
-        /// <summary>
-        /// Representation of True for compact serialization of BDDs.
-        /// </summary>
-        private static readonly byte[] s_trueRepresentationCompact = new byte[] { 1 };
-#endif
-
         internal BDD(int ordinal, BDD? one, BDD? zero)
         {
+            Debug.Assert((one is null) == (zero is null), "Neither or both children should be null.");
+
             One = one;
             Zero = zero;
             Ordinal = ordinal;
@@ -107,14 +88,8 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             get
             {
-                if (One is null)
-                {
-                    Debug.Assert(Zero is null);
-                    return true;
-                }
-
-                Debug.Assert(Zero is not null);
-                return false;
+                Debug.Assert((One is null) == (Zero is null));
+                return One is null;
             }
         }
 
@@ -141,7 +116,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 return 0;
 
             // starting from all 0, bits will be flipped to 1 as necessary
-            ulong res = 0;
+            ulong result = 0;
 
             // follow the minimum path throught the branches to a True leaf
             while (!set.IsLeaf)
@@ -149,7 +124,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 if (set.Zero.IsEmpty) //the bit must be set to 1
                 {
                     // the bit must be set to 1 when the zero branch is False
-                    res |= (ulong)1 << set.Ordinal;
+                    result |= (ulong)1 << set.Ordinal;
                     // if zero is empty then by the way BDDs are constructed one is not
                     set = set.One;
                 }
@@ -160,20 +135,18 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
             }
 
-            return res;
+            return result;
         }
 
-        /// <summary>
-        /// O(1) operation that returns the precomputed hashcode.
-        /// </summary>
+        /// <summary>Gets a hashcode for the BDD.</summary>
         public override int GetHashCode() => _hashcode;
 
-        /// <summary>
-        /// A shallow equality check that holds if ordinals are identical and one's are identical and zero's are identical.
-        /// This equality is used in the _bddCache lookup.
-        /// </summary>
-        public override bool Equals(object? obj) =>
-            obj is BDD bdd &&
+        /// <summary>A shallow equality check that holds if ordinals are identical and one's are identical and zero's are identical.</summary>
+        public override bool Equals(object? obj) => Equals(obj as BDD);
+
+        /// <summary>A shallow equality check that holds if ordinals are identical and one's are identical and zero's are identical.</summary>
+        public bool Equals(BDD? bdd) =>
+            bdd is not null &&
             (this == bdd || (Ordinal == bdd.Ordinal && One == bdd.One && Zero == bdd.Zero));
 
         #region Serialization
@@ -189,10 +162,10 @@ namespace System.Text.RegularExpressions.Symbolic
         public long[] Serialize()
         {
             if (IsEmpty)
-                return s_falseRepresentation;
+                return new long[] { 0 };
 
             if (IsFull)
-                return s_trueRepresentation;
+                return new long[] { 1 };
 
             if (IsLeaf)
                 return new long[] { 0, 0, -Ordinal };
@@ -218,9 +191,9 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             // Reserve space for all nodes plus 2 extra: index 0 and 1 are reserved for False and True
-            long[] res = new long[nodes.Length + 2];
-            res[0] = ordinal_bits;
-            res[1] = node_bits;
+            long[] result = new long[nodes.Length + 2];
+            result[0] = ordinal_bits;
+            result[1] = node_bits;
 
             //use the following bit layout
             BitLayout(ordinal_bits, node_bits, out int zero_node_shift, out int one_node_shift, out int ordinal_shift);
@@ -243,17 +216,17 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     // This is MTBDD leaf. Negating it should make it less than or equal to zero, as True and False are
                     // excluded here and MTBDD Ordinals are required to be non-negative.
-                    res[i + 2] = -node.Ordinal;
+                    result[i + 2] = -node.Ordinal;
                 }
                 else
                 {
                     // Combine ordinal and child identifiers according to the bit layout
                     long v = (((long)node.Ordinal) << ordinal_shift) | (idmap[node.One] << one_node_shift) | (idmap[node.Zero] << zero_node_shift);
                     Debug.Assert(v >= 0);
-                    res[i + 2] = v; // children ids are well-defined due to the topological order of nodes
+                    result[i + 2] = v; // children ids are well-defined due to the topological order of nodes
                 }
             }
-            return res;
+            return result;
         }
 
         /// <summary>
@@ -325,10 +298,10 @@ namespace System.Text.RegularExpressions.Symbolic
         public byte[] SerializeToBytes()
         {
             if (IsEmpty)
-                return s_falseRepresentationCompact;
+                return new byte[] { 0 };
 
             if (IsFull)
-                return s_trueRepresentationCompact;
+                return new byte[] { 1 };
 
             // in other cases make use of the general serializer to long[]
             long[] serialized = Serialize();
@@ -348,14 +321,14 @@ namespace System.Text.RegularExpressions.Symbolic
             // the result will contain k as the first element and the number of serialized elements times k
             byte[] result = new byte[(k * serialized.Length) + 1];
             result[0] = (byte)k;
-            for (int i=0; i < serialized.Length; i += 1)
+            for (int i = 0; i < serialized.Length; i += 1)
             {
-                long serialized_i = serialized[i];
                 // add the serialized longs as k-byte subsequences
+                long serialized_i = serialized[i];
                 for (int j = 1; j <= k; j++)
                 {
                     result[(i * k) + j] = (byte)serialized_i;
-                    serialized_i = serialized_i >> 8;
+                    serialized_i >>= 8;
                 }
             }
             return result;
@@ -365,7 +338,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Recreates a BDD from a byte array that has been created using SerializeToBytes.
         /// </summary>
-        public static BDD Deserialize(ReadOnlySpan<byte> bytes, BDDAlgebra algebra)
+        public static BDD Deserialize(ReadOnlySpan<byte> bytes)
         {
             if (bytes.Length == 1)
             {
@@ -408,7 +381,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 // the BDD nodes for the children are guaranteed to exist already
                 // because of the topological order they were serialized by
                 Debug.Assert(oneId < i && zeroId < i);
-                nodes[i] = algebra.GetOrCreateBDD(ord, nodes[oneId], nodes[zeroId]);
+                Debug.Assert(nodes[oneId] is not null);
+                Debug.Assert(nodes[zeroId] is not null);
+                nodes[i] = new BDD(ord, nodes[oneId], nodes[zeroId]);
             }
 
             //the result is the last BDD in the nodes array
@@ -447,22 +422,15 @@ namespace System.Text.RegularExpressions.Symbolic
         /// else returns the MTBDD terminal number that is reached.
         /// If this is a nonterminal, Find does not care about input bits &gt; Ordinal.
         /// </summary>
-        public int Find(int input) =>
-            IsLeaf ? Ordinal :
-            (input & (1 << Ordinal)) == 0 ? Zero.Find(input) :
-            One.Find(input);
-
-        /// <summary>
-        /// Finds the terminal for the input in a Multi-Terminal-BDD.
-        /// Bits of the input are used to determine the path in the BDD.
-        /// Returns -1 if False is reached and 0 if True is reached,
-        /// else returns the MTBDD terminal number that is reached.
-        /// If this is a nonterminal, Find does not care about input bits &gt; Ordinal.
-        /// </summary>
-        public int Find(ulong input) =>
-            IsLeaf ? Ordinal :
-            (input & ((ulong)1 << Ordinal)) == 0 ? Zero.Find(input) :
-            One.Find(input);
+        public int Find(int input)
+        {
+            BDD bdd = this;
+            while (!bdd.IsLeaf)
+            {
+                bdd = (input & (1 << bdd.Ordinal)) == 0 ? bdd.Zero : bdd.One;
+            }
+            return bdd.Ordinal;
+        }
 
         /// <summary>
         /// Assumes BDD is not MTBDD and returns true iff it contains the input.
