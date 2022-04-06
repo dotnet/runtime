@@ -2,8 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <EnableDefaultItems>true</EnableDefaultItems>
-    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>
     <CLSCompliant>false</CLSCompliant>
     <Nullable>enable</Nullable>
@@ -12,7 +10,6 @@
     <DefineConstants>$(DefineConstants);REGEXGENERATOR</DefineConstants>
     <IsNETCoreAppAnalyzer>true</IsNETCoreAppAnalyzer>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
-    <IsPackable>false</IsPackable>
     <LangVersion>Preview</LangVersion>
   </PropertyGroup>
 

@@ -10,7 +10,7 @@
   <Import Project="System.Text.Json.SourceGeneration.targets" />
 
   <ItemGroup>
-    <Compile Include="JsonSourceGenerator.Roslyn4.0.cs" />
+    <Compile Remove="JsonSourceGenerator.Roslyn3.11.cs" />
   </ItemGroup>
 
 </Project>
