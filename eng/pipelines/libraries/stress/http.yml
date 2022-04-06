@@ -57,6 +57,7 @@ jobs:
       export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
       docker-compose up --abort-on-container-exit --no-color
+    timeoutInMinutes: 35 # In case the HTTP/3.0 run hangs, we timeout shortly after the expected 30 minute run
     displayName: Run HttpStress - HTTP 3.0
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
@@ -79,6 +80,11 @@ jobs:
       docker-compose up --abort-on-container-exit --no-color
     displayName: Run HttpStress - HTTP 1.1
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+
+  - bash: |
+      sudo chown -R $(id -u):$(id -g) $(Build.ArtifactStagingDirectory)/dumps
+    displayName: Own shared dumps and files
+    condition: failed()
 
   - publish: $(Build.ArtifactStagingDirectory)/dumps
     artifact: DumpsLinux

@@ -41,9 +41,11 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override bool ConstructorIsParameterized => Converter.ConstructorIsParameterized;
 
-        public JsonMetadataServicesConverter(Func<JsonConverter<T>> converterCreator, ConverterStrategy converterStrategy)
+        internal override bool CanHaveMetadata => Converter.CanHaveMetadata;
+
+        public JsonMetadataServicesConverter(Func<JsonConverter<T>> converterCreator!!, ConverterStrategy converterStrategy)
         {
-            _converterCreator = converterCreator ?? throw new ArgumentNullException(nameof(converterCreator));
+            _converterCreator = converterCreator;
             _converterStrategy = converterStrategy;
         }
 
@@ -76,7 +78,7 @@ namespace System.Text.Json.Serialization.Converters
             if (!state.SupportContinuation &&
                 jsonTypeInfo is JsonTypeInfo<T> info &&
                 info.SerializeHandler != null &&
-                info.Options._context?.CanUseSerializationLogic == true)
+                info.Options.JsonSerializerContext?.CanUseSerializationLogic == true)
             {
                 info.SerializeHandler(writer, value);
                 return true;
@@ -89,5 +91,8 @@ namespace System.Text.Json.Serialization.Converters
 
             return Converter.OnTryWrite(writer, value, options, ref state);
         }
+
+        internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
+            => Converter.ConfigureJsonTypeInfo(jsonTypeInfo, options);
     }
 }

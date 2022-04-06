@@ -35,7 +35,7 @@ namespace System.Net.Http.Headers
         }
 
         public HttpHeaderValueCollection<string> AcceptRanges =>
-            GetSpecializedCollection(AcceptRangesSlot, static thisRef => new HttpHeaderValueCollection<string>(KnownHeaders.AcceptRanges.Descriptor, thisRef, HeaderUtilities.TokenValidator));
+            GetSpecializedCollection(AcceptRangesSlot, static thisRef => new HttpHeaderValueCollection<string>(KnownHeaders.AcceptRanges.Descriptor, thisRef));
 
         public TimeSpan? Age
         {
@@ -45,13 +45,13 @@ namespace System.Net.Http.Headers
 
         public EntityTagHeaderValue? ETag
         {
-            get { return (EntityTagHeaderValue?)GetParsedValues(KnownHeaders.ETag.Descriptor); }
+            get { return (EntityTagHeaderValue?)GetSingleParsedValue(KnownHeaders.ETag.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ETag.Descriptor, value); }
         }
 
         public Uri? Location
         {
-            get { return (Uri?)GetParsedValues(KnownHeaders.Location.Descriptor); }
+            get { return (Uri?)GetSingleParsedValue(KnownHeaders.Location.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.Location.Descriptor, value); }
         }
 
@@ -60,7 +60,7 @@ namespace System.Net.Http.Headers
 
         public RetryConditionHeaderValue? RetryAfter
         {
-            get { return (RetryConditionHeaderValue?)GetParsedValues(KnownHeaders.RetryAfter.Descriptor); }
+            get { return (RetryConditionHeaderValue?)GetSingleParsedValue(KnownHeaders.RetryAfter.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.RetryAfter.Descriptor, value); }
         }
 
@@ -68,7 +68,7 @@ namespace System.Net.Http.Headers
             GetSpecializedCollection(ServerSlot, static thisRef => new HttpHeaderValueCollection<ProductInfoHeaderValue>(KnownHeaders.Server.Descriptor, thisRef));
 
         public HttpHeaderValueCollection<string> Vary =>
-            GetSpecializedCollection(VarySlot, static thisRef => new HttpHeaderValueCollection<string>(KnownHeaders.Vary.Descriptor, thisRef, HeaderUtilities.TokenValidator));
+            GetSpecializedCollection(VarySlot, static thisRef => new HttpHeaderValueCollection<string>(KnownHeaders.Vary.Descriptor, thisRef));
 
         public HttpHeaderValueCollection<AuthenticationHeaderValue> WwwAuthenticate =>
             GetSpecializedCollection(WwwAuthenticateSlot, static thisRef => new HttpHeaderValueCollection<AuthenticationHeaderValue>(KnownHeaders.WWWAuthenticate.Descriptor, thisRef));

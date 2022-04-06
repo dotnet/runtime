@@ -17,7 +17,7 @@
     the targeting and runtimepack before the test runners which consume that asset are built.
   -->
   <ItemGroup>
-    <ExternalsProject Include="externals.csproj" />
+    <ExternalsProject Include="externals.csproj" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''" />
     <ProjectReference Include="@(ExternalsProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
 
     <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'"/>

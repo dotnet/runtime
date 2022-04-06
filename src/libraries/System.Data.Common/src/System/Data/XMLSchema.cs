@@ -513,7 +513,7 @@ namespace System.Data
             }
         }
 
-        private bool HasAttributes(XmlSchemaObjectCollection attributes)
+        private static bool HasAttributes(XmlSchemaObjectCollection attributes)
         {
             foreach (XmlSchemaObject so in attributes)
             {
@@ -574,7 +574,7 @@ namespace System.Data
             return true;
         }
 
-        private int DatasetElementCount(XmlSchemaObjectCollection elements)
+        private static int DatasetElementCount(XmlSchemaObjectCollection elements)
         {
             int nCount = 0;
             foreach (XmlSchemaElement XmlElement in elements)
@@ -916,7 +916,7 @@ namespace System.Data
                         el.MaxOccurs = pt.MaxOccurs;
 
 
-                    DataTable? child = null;
+                    DataTable? child;
                     // to decide if element is our table, we need to match both name and ns
                     // 286043 - SQL BU Defect Tracking
                     if (((el.Name == null) && (el.RefName.Name == table.EncodedTableName && el.RefName.Namespace == table.Namespace)) ||
@@ -1144,7 +1144,7 @@ namespace System.Data
             _complexTypes.Remove(ct);
         }
 
-        internal XmlSchemaParticle? GetParticle(XmlSchemaComplexType ct)
+        internal static XmlSchemaParticle? GetParticle(XmlSchemaComplexType ct)
         {
             if (ct.ContentModel != null)
             {
@@ -1173,7 +1173,7 @@ namespace System.Data
             }
         }
 
-        internal DataColumn FindField(DataTable table, string field)
+        internal static DataColumn FindField(DataTable table, string field)
         {
             bool attribute = false;
             string colName = field;
@@ -1200,7 +1200,7 @@ namespace System.Data
             return col;
         }
 
-        internal DataColumn[] BuildKey(XmlSchemaIdentityConstraint keyNode, DataTable table)
+        internal static DataColumn[] BuildKey(XmlSchemaIdentityConstraint keyNode, DataTable table)
         {
             ArrayList keyColumns = new ArrayList();
 
@@ -1215,7 +1215,7 @@ namespace System.Data
             return key;
         }
 
-        internal bool GetBooleanAttribute(XmlSchemaAnnotated element, string attrName, bool defVal)
+        internal static bool GetBooleanAttribute(XmlSchemaAnnotated element, string attrName, bool defVal)
         {
             string? value = GetMsdataAttribute(element, attrName);
             if (value == null || value.Length == 0)
@@ -1234,7 +1234,7 @@ namespace System.Data
             throw ExceptionBuilder.InvalidAttributeValue(attrName, value);
         }
 
-        internal string GetStringAttribute(XmlSchemaAnnotated element, string attrName, string defVal)
+        internal static string GetStringAttribute(XmlSchemaAnnotated element, string attrName, string defVal)
         {
             string? value = GetMsdataAttribute(element, attrName);
             if (value == null || value.Length == 0)
@@ -1340,7 +1340,7 @@ namespace System.Data
                     if (fKey[0].Table!.DataSet!.Relations[iExisting].RelationName != relName)
                         iExisting = -1;
                 }
-                DataRelation? relation = null;
+                DataRelation? relation;
                 if (iExisting < 0)
                 {
                     relation = new DataRelation(relName, pKey, fKey);
@@ -1390,7 +1390,7 @@ namespace System.Data
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleConstraint(XmlSchemaIdentityConstraint keyNode)
         {
-            string? name = null;
+            string? name;
 
             name = XmlConvert.DecodeName(keyNode.Name);
             if (name == null || name.Length == 0)
@@ -1533,7 +1533,7 @@ namespace System.Data
         }
 
 
-        internal string GetInstanceName(XmlSchemaAnnotated node)
+        internal static string GetInstanceName(XmlSchemaAnnotated node)
         {
             string? instanceName = null;
 
@@ -1964,7 +1964,7 @@ namespace System.Data
                 return;
             }
 
-            Type? type = null;
+            Type? type;
             SimpleType? xsdType = null;
 
             //            if (typeNode.QualifiedName.Namespace != Keywords.XSDNS) { // this means UDSimpleType
@@ -2101,7 +2101,7 @@ namespace System.Data
             if (FromInference && table.XmlText != null) // backward compatability for inference
                 return;
 
-            Type? type = null;
+            Type? type;
             if (strType == null)
             {
                 return;
@@ -2196,12 +2196,12 @@ namespace System.Data
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleAttributeColumn(XmlSchemaAttribute attrib, DataTable table, bool isBase)
         {
-            Type? type = null;
+            Type? type;
             XmlSchemaAttribute? attr = attrib.Name != null ? attrib : (XmlSchemaAttribute)_attributes![attrib.RefName]!;
 
 
             XmlSchemaAnnotated? typeNode = FindTypeNode(attr);
-            string? strType = null;
+            string? strType;
             SimpleType? xsdType = null;
 
             if (typeNode == null)
@@ -2359,7 +2359,7 @@ namespace System.Data
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleElementColumn(XmlSchemaElement elem, DataTable table, bool isBase)
         {
-            Type? type = null;
+            Type? type;
             XmlSchemaElement? el = elem.Name != null ? elem : (XmlSchemaElement?)_elementsTable![elem.RefName];
 
             if (el == null) // it's possible due to some XSD compiler optimizations
@@ -2773,7 +2773,7 @@ namespace System.Data
         {
             string xpath = key.Selector!.XPath!;
             string[] split = xpath.Split('/');
-            string prefix = string.Empty;
+            string prefix;
 
             string QualifiedTableName = split[split.Length - 1]; //get the last string after '/' and ':'
 
@@ -2790,7 +2790,7 @@ namespace System.Data
             return GetNamespaceFromPrefix(prefix);
         }
 
-        private string GetTableName(XmlSchemaIdentityConstraint key)
+        private static string GetTableName(XmlSchemaIdentityConstraint key)
         {
             string xpath = key.Selector!.XPath!;
             string[] split = xpath.Split('/', ':');

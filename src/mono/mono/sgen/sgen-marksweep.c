@@ -712,7 +712,7 @@ alloc_obj (GCVTable vtable, size_t size, gboolean pinned, gboolean has_reference
 	/* FIXME: assumes object layout */
 	*(GCVTable*)obj = vtable;
 
-	sgen_total_allocated_major += block_obj_sizes [size_index]; 
+	sgen_total_allocated_major += block_obj_sizes [size_index];
 
 	return (GCObject *)obj;
 }
@@ -767,7 +767,7 @@ get_block:
 	*(GCVTable*)obj = vtable;
 
 	/* FIXME is it worth CAS-ing here */
-	sgen_total_allocated_major += block_obj_sizes [size_index]; 
+	sgen_total_allocated_major += block_obj_sizes [size_index];
 
 	return (GCObject *)obj;
 }
@@ -1807,7 +1807,7 @@ static void
 sweep_job_func (void *thread_data_untyped, SgenThreadPoolJob *job)
 {
 	guint32 block_index;
-	guint32 num_blocks = num_major_sections_before_sweep;
+	guint32 num_blocks = (guint32)num_major_sections_before_sweep;
 
 	SGEN_ASSERT (0, sweep_in_progress (), "Sweep thread called with wrong state");
 	SGEN_ASSERT (0, num_blocks <= allocated_blocks.next_slot, "How did we lose blocks?");
@@ -2186,7 +2186,7 @@ major_free_swept_blocks (size_t section_reserve)
 #endif
 
 	{
-		int i, num_empty_blocks_orig, num_blocks, arr_length;
+		size_t i, num_empty_blocks_orig, num_blocks, arr_length;
 		void *block;
 		void **empty_block_arr;
 		void **rebuild_next;
@@ -2661,7 +2661,7 @@ scan_card_table_for_block (MSBlockInfo *block, CardTableScanType scan_type, Scan
 
 			if (small_objects) {
 				HEAVY_STAT (++scanned_objects);
-				scan_func (object, sgen_obj_get_descriptor (object), queue);
+				scan_func (object, sgen_obj_get_descriptor_safe (object), queue);
 			} else {
 				size_t offset = sgen_card_table_get_card_offset (obj, block_start);
 				sgen_cardtable_scan_object (object, block_obj_size, card_base + offset, ctx);

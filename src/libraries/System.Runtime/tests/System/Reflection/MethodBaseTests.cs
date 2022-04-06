@@ -50,7 +50,7 @@ namespace System.Reflection.Tests
             Assert.NotEqual(expected, mb1 != mb2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
         public static void TestMethodBody()
         {
             MethodBase mbase = typeof(MethodBaseTests).GetMethod("MyOtherMethod", BindingFlags.Static | BindingFlags.Public);

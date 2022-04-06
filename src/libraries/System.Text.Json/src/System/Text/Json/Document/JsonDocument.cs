@@ -103,13 +103,8 @@ namespace System.Text.Json
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
-        public void WriteTo(Utf8JsonWriter writer)
+        public void WriteTo(Utf8JsonWriter writer!!)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
             RootElement.WriteTo(writer);
         }
 
@@ -1103,7 +1098,7 @@ namespace System.Text.Json
             }
         }
 
-        private void CheckExpectedType(JsonTokenType expected, JsonTokenType actual)
+        private static void CheckExpectedType(JsonTokenType expected, JsonTokenType actual)
         {
             if (expected != actual)
             {

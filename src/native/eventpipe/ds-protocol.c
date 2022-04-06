@@ -59,6 +59,14 @@ ipc_message_flatten (
 	uint16_t payload_len,
 	ds_ipc_flatten_payload_func flatten_payload);
 
+static
+bool
+ipc_message_try_parse_string_utf16_t_byte_array (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	const uint8_t **string_byte_array,
+	uint32_t *string_byte_array_len);
+
 /*
 * DiagnosticsIpc
 */
@@ -306,6 +314,50 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
+static
+bool
+ipc_message_try_parse_string_utf16_t_byte_array (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	const uint8_t **string_byte_array,
+	uint32_t *string_byte_array_len)
+{
+	EP_ASSERT (buffer != NULL);
+	EP_ASSERT (buffer_len != NULL);
+	EP_ASSERT (string_byte_array != NULL);
+	EP_ASSERT (string_byte_array_len != NULL);
+
+	bool result = false;
+
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, string_byte_array_len));
+	*string_byte_array_len *= sizeof (ep_char16_t);
+
+	if (*string_byte_array_len != 0) {
+		if (*string_byte_array_len > *buffer_len)
+			ep_raise_error ();
+
+		if (((const ep_char16_t *)*buffer) [(*string_byte_array_len / sizeof (ep_char16_t)) - 1] != 0)
+			ep_raise_error ();
+
+		*string_byte_array = *buffer;
+
+	} else {
+		*string_byte_array = NULL;
+	}
+
+	*buffer = *buffer + *string_byte_array_len;
+	*buffer_len = *buffer_len - *string_byte_array_len;
+
+	result = true;
+
+ep_on_exit:
+	return result;
+
+ep_on_error:
+	EP_ASSERT (!result);
+	ep_exit_error_handler ();
+}
+
 DiagnosticsIpcMessage *
 ds_ipc_message_init (DiagnosticsIpcMessage *message)
 {
@@ -383,7 +435,45 @@ ds_ipc_message_try_parse_uint32_t (
 	return result;
 }
 
-// TODO: Strings are in little endian format in buffer.
+bool
+ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	uint8_t **string_byte_array,
+	uint32_t *string_byte_array_len)
+{
+	EP_ASSERT (buffer != NULL);
+	EP_ASSERT (buffer_len != NULL);
+	EP_ASSERT (string_byte_array != NULL);
+	EP_ASSERT (string_byte_array_len != NULL);
+
+	bool result = false;
+
+	const uint8_t *temp_buffer = NULL;
+	uint32_t temp_buffer_len = 0;
+
+	ep_raise_error_if_nok (ipc_message_try_parse_string_utf16_t_byte_array (buffer, buffer_len, (const uint8_t **)&temp_buffer, &temp_buffer_len));
+
+	if (temp_buffer_len != 0) {
+		*string_byte_array = ep_rt_byte_array_alloc (temp_buffer_len);
+		ep_raise_error_if_nok (*string_byte_array != NULL);
+
+		memcpy (*string_byte_array, temp_buffer, temp_buffer_len);
+	} else {
+		*string_byte_array = NULL;
+	}
+
+	*string_byte_array_len = temp_buffer_len;
+	result = true;
+
+ep_on_exit:
+	return result;
+
+ep_on_error:
+	EP_ASSERT (!result);
+	ep_exit_error_handler ();
+}
+
 bool
 ds_ipc_message_try_parse_string_utf16_t (
 	uint8_t **buffer,
@@ -393,36 +483,10 @@ ds_ipc_message_try_parse_string_utf16_t (
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len != NULL);
 	EP_ASSERT (value != NULL);
+	EP_ASSERT (!(((size_t)*buffer) & 0x1));
 
-	bool result = false;
-
-	uint32_t string_len = 0;
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &string_len));
-
-	if (string_len != 0) {
-		if (string_len > (*buffer_len / sizeof (ep_char16_t)))
-			ep_raise_error ();
-
-		if (((const ep_char16_t *)*buffer) [string_len - 1] != 0)
-			ep_raise_error ();
-
-		*value = (ep_char16_t *)*buffer;
-
-	} else {
-		*value = NULL;
-	}
-
-	*buffer = *buffer + (string_len * sizeof (ep_char16_t));
-	*buffer_len = *buffer_len - (string_len * sizeof (ep_char16_t));
-
-	result = true;
-
-ep_on_exit:
-	return result;
-
-ep_on_error:
-	EP_ASSERT (!result);
-	ep_exit_error_handler ();
+	uint32_t string_byte_array_len = 0;
+	return ipc_message_try_parse_string_utf16_t_byte_array (buffer, buffer_len, (const uint8_t **)value, &string_byte_array_len);
 }
 
 bool

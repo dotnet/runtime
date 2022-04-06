@@ -244,9 +244,8 @@ namespace System.Linq.Expressions.Tests
             Assert.NotSame(invoke, new ParameterAndConstantChangingVisitor().Visit(invoke));
         }
 
-#if FEATURE_COMPILE // When we don't have FEATURE_COMPILE we don't have the Reflection.Emit used in the tests.
-
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ClassData(typeof(CompilationTypes))]
         public static void InvokePrivateDelegate(bool useInterpreter)
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
@@ -263,7 +262,8 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(42, invFunc());
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ClassData(typeof(CompilationTypes))]
         public static void InvokePrivateDelegateTypeLambda(bool useInterpreter)
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
@@ -278,7 +278,6 @@ namespace System.Linq.Expressions.Tests
             var invFunc = invLambda.Compile(useInterpreter);
             Assert.Equal(42, invFunc());
         }
-#endif
 
         private delegate void RefIntAction(ref int x);
 

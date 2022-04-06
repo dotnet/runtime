@@ -195,6 +195,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(BN_num_bits) \
     REQUIRED_FUNCTION(BN_set_word) \
     LEGACY_FUNCTION(CRYPTO_add_lock) \
+    REQUIRED_FUNCTION(CRYPTO_get_ex_new_index) \
     LEGACY_FUNCTION(CRYPTO_num_locks) \
     LEGACY_FUNCTION(CRYPTO_set_locking_callback) \
     REQUIRED_FUNCTION(d2i_ASN1_BIT_STRING) \
@@ -270,6 +271,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     LEGACY_FUNCTION(ERR_load_crypto_strings) \
     LIGHTUP_FUNCTION(ERR_new) \
     REQUIRED_FUNCTION(ERR_peek_error) \
+    REQUIRED_FUNCTION(ERR_peek_error_line) \
     REQUIRED_FUNCTION(ERR_peek_last_error) \
     FALLBACK_FUNCTION(ERR_put_error) \
     REQUIRED_FUNCTION(ERR_reason_error_string) \
@@ -297,7 +299,6 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     LEGACY_FUNCTION(EVP_CIPHER_CTX_cleanup) \
     REQUIRED_FUNCTION(EVP_CIPHER_CTX_ctrl) \
     FALLBACK_FUNCTION(EVP_CIPHER_CTX_free) \
-    LIGHTUP_FUNCTION(EVP_CIPHER_CTX_get_original_iv) \
     LEGACY_FUNCTION(EVP_CIPHER_CTX_init) \
     FALLBACK_FUNCTION(EVP_CIPHER_CTX_new) \
     FALLBACK_FUNCTION(EVP_CIPHER_CTX_reset) \
@@ -460,19 +461,24 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     LIGHTUP_FUNCTION(SSL_CIPHER_get_name) \
     LIGHTUP_FUNCTION(SSL_CIPHER_get_version) \
     REQUIRED_FUNCTION(SSL_ctrl) \
+    REQUIRED_FUNCTION(SSL_add_client_CA) \
     REQUIRED_FUNCTION(SSL_set_alpn_protos) \
     REQUIRED_FUNCTION(SSL_set_quiet_shutdown) \
     REQUIRED_FUNCTION(SSL_CTX_check_private_key) \
     FALLBACK_FUNCTION(SSL_CTX_config) \
     REQUIRED_FUNCTION(SSL_CTX_ctrl) \
     REQUIRED_FUNCTION(SSL_CTX_free) \
+    REQUIRED_FUNCTION(SSL_CTX_get_ex_data) \
     FALLBACK_FUNCTION(SSL_is_init_finished) \
     REQUIRED_FUNCTION(SSL_CTX_new) \
+    REQUIRED_FUNCTION(SSL_CTX_sess_set_new_cb) \
+    REQUIRED_FUNCTION(SSL_CTX_sess_set_remove_cb) \
     LIGHTUP_FUNCTION(SSL_CTX_set_alpn_protos) \
     LIGHTUP_FUNCTION(SSL_CTX_set_alpn_select_cb) \
     REQUIRED_FUNCTION(SSL_CTX_set_cipher_list) \
     LIGHTUP_FUNCTION(SSL_CTX_set_ciphersuites) \
     REQUIRED_FUNCTION(SSL_CTX_set_client_cert_cb) \
+    REQUIRED_FUNCTION(SSL_CTX_set_ex_data) \
     REQUIRED_FUNCTION(SSL_CTX_set_quiet_shutdown) \
     FALLBACK_FUNCTION(SSL_CTX_set_options) \
     FALLBACK_FUNCTION(SSL_CTX_set_security_level) \
@@ -489,6 +495,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(SSL_get_finished) \
     REQUIRED_FUNCTION(SSL_get_peer_cert_chain) \
     REQUIRED_FUNCTION(SSL_get_peer_finished) \
+    REQUIRED_FUNCTION(SSL_get_servername) \
     REQUIRED_FUNCTION(SSL_get_SSL_CTX) \
     REQUIRED_FUNCTION(SSL_get_version) \
     LIGHTUP_FUNCTION(SSL_get0_alpn_selected) \
@@ -500,20 +507,30 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(SSL_read) \
     REQUIRED_FUNCTION(SSL_renegotiate) \
     REQUIRED_FUNCTION(SSL_renegotiate_pending) \
+    REQUIRED_FUNCTION(SSL_SESSION_free) \
+    LIGHTUP_FUNCTION(SSL_SESSION_get0_hostname) \
+    LIGHTUP_FUNCTION(SSL_SESSION_set1_hostname) \
     FALLBACK_FUNCTION(SSL_session_reused) \
     REQUIRED_FUNCTION(SSL_set_accept_state) \
     REQUIRED_FUNCTION(SSL_set_bio) \
+    REQUIRED_FUNCTION(SSL_set_cert_cb) \
     REQUIRED_FUNCTION(SSL_set_cipher_list) \
     LIGHTUP_FUNCTION(SSL_set_ciphersuites) \
     REQUIRED_FUNCTION(SSL_set_connect_state) \
     REQUIRED_FUNCTION(SSL_set_ex_data) \
     FALLBACK_FUNCTION(SSL_set_options) \
+    REQUIRED_FUNCTION(SSL_set_session) \
     REQUIRED_FUNCTION(SSL_set_verify) \
     REQUIRED_FUNCTION(SSL_shutdown) \
     LEGACY_FUNCTION(SSL_state) \
     LEGACY_FUNCTION(SSLeay) \
     RENAMED_FUNCTION(TLS_method, SSLv23_method) \
     REQUIRED_FUNCTION(SSL_write) \
+    REQUIRED_FUNCTION(SSL_use_certificate) \
+    REQUIRED_FUNCTION(SSL_use_PrivateKey) \
+    LIGHTUP_FUNCTION(SSL_verify_client_post_handshake) \
+    LIGHTUP_FUNCTION(SSL_set_post_handshake_auth) \
+    REQUIRED_FUNCTION(SSL_version) \
     FALLBACK_FUNCTION(X509_check_host) \
     REQUIRED_FUNCTION(X509_check_purpose) \
     REQUIRED_FUNCTION(X509_cmp_current_time) \
@@ -532,6 +549,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(X509_get_default_cert_dir_env) \
     REQUIRED_FUNCTION(X509_get_default_cert_file) \
     REQUIRED_FUNCTION(X509_get_default_cert_file_env) \
+    REQUIRED_FUNCTION(X509_get_ex_data) \
     REQUIRED_FUNCTION(X509_get_ext) \
     REQUIRED_FUNCTION(X509_get_ext_by_NID) \
     REQUIRED_FUNCTION(X509_get_ext_count) \
@@ -559,6 +577,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(X509_new) \
     REQUIRED_FUNCTION(X509_PUBKEY_get) \
     FALLBACK_FUNCTION(X509_PUBKEY_get0_param) \
+    REQUIRED_FUNCTION(X509_set_ex_data) \
     REQUIRED_FUNCTION(X509_set_pubkey) \
     REQUIRED_FUNCTION(X509_sign) \
     REQUIRED_FUNCTION(X509_subject_name_hash) \
@@ -650,6 +669,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define BN_num_bits BN_num_bits_ptr
 #define BN_set_word BN_set_word_ptr
 #define CRYPTO_add_lock CRYPTO_add_lock_ptr
+#define CRYPTO_get_ex_new_index CRYPTO_get_ex_new_index_ptr
 #define CRYPTO_num_locks CRYPTO_num_locks_ptr
 #define CRYPTO_set_locking_callback CRYPTO_set_locking_callback_ptr
 #define d2i_ASN1_BIT_STRING d2i_ASN1_BIT_STRING_ptr
@@ -725,6 +745,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define ERR_load_crypto_strings ERR_load_crypto_strings_ptr
 #define ERR_new ERR_new_ptr
 #define ERR_peek_error ERR_peek_error_ptr
+#define ERR_peek_error_line ERR_peek_error_line_ptr
 #define ERR_peek_last_error ERR_peek_last_error_ptr
 #define ERR_put_error ERR_put_error_ptr
 #define ERR_reason_error_string ERR_reason_error_string_ptr
@@ -752,7 +773,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_CIPHER_CTX_cleanup EVP_CIPHER_CTX_cleanup_ptr
 #define EVP_CIPHER_CTX_ctrl EVP_CIPHER_CTX_ctrl_ptr
 #define EVP_CIPHER_CTX_free EVP_CIPHER_CTX_free_ptr
-#define EVP_CIPHER_CTX_get_original_iv EVP_CIPHER_CTX_get_original_iv_ptr
 #define EVP_CIPHER_CTX_init EVP_CIPHER_CTX_init_ptr
 #define EVP_CIPHER_CTX_new EVP_CIPHER_CTX_new_ptr
 #define EVP_CIPHER_CTX_reset EVP_CIPHER_CTX_reset_ptr
@@ -917,18 +937,23 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CIPHER_get_name SSL_CIPHER_get_name_ptr
 #define SSL_CIPHER_get_version SSL_CIPHER_get_version_ptr
 #define SSL_ctrl SSL_ctrl_ptr
+#define SSL_add_client_CA SSL_add_client_CA_ptr
 #define SSL_set_alpn_protos SSL_set_alpn_protos_ptr
 #define SSL_set_quiet_shutdown SSL_set_quiet_shutdown_ptr
 #define SSL_CTX_check_private_key SSL_CTX_check_private_key_ptr
 #define SSL_CTX_config SSL_CTX_config_ptr
 #define SSL_CTX_ctrl SSL_CTX_ctrl_ptr
 #define SSL_CTX_free SSL_CTX_free_ptr
+#define SSL_CTX_get_ex_data SSL_CTX_get_ex_data_ptr
 #define SSL_CTX_new SSL_CTX_new_ptr
+#define SSL_CTX_sess_set_new_cb SSL_CTX_sess_set_new_cb_ptr
+#define SSL_CTX_sess_set_remove_cb SSL_CTX_sess_set_remove_cb_ptr
 #define SSL_CTX_set_alpn_protos SSL_CTX_set_alpn_protos_ptr
 #define SSL_CTX_set_alpn_select_cb SSL_CTX_set_alpn_select_cb_ptr
 #define SSL_CTX_set_cipher_list SSL_CTX_set_cipher_list_ptr
 #define SSL_CTX_set_ciphersuites SSL_CTX_set_ciphersuites_ptr
 #define SSL_CTX_set_client_cert_cb SSL_CTX_set_client_cert_cb_ptr
+#define SSL_CTX_set_ex_data SSL_CTX_set_ex_data_ptr
 #define SSL_CTX_set_options SSL_CTX_set_options_ptr
 #define SSL_CTX_set_quiet_shutdown SSL_CTX_set_quiet_shutdown_ptr
 #define SSL_CTX_set_security_level SSL_CTX_set_security_level_ptr
@@ -945,6 +970,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_get_finished SSL_get_finished_ptr
 #define SSL_get_peer_cert_chain SSL_get_peer_cert_chain_ptr
 #define SSL_get_peer_finished SSL_get_peer_finished_ptr
+#define SSL_get_servername SSL_get_servername_ptr
 #define SSL_get_SSL_CTX SSL_get_SSL_CTX_ptr
 #define SSL_get_version SSL_get_version_ptr
 #define SSL_get0_alpn_selected SSL_get0_alpn_selected_ptr
@@ -956,22 +982,31 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_peek SSL_peek_ptr
 #define SSL_state_string_long SSL_state_string_long_ptr
 #define SSL_read SSL_read_ptr
-#define ERR_print_errors_fp ERR_print_errors_fp_ptr
 #define SSL_renegotiate SSL_renegotiate_ptr
 #define SSL_renegotiate_pending SSL_renegotiate_pending_ptr
+#define SSL_SESSION_free SSL_SESSION_free_ptr
+#define SSL_SESSION_get0_hostname SSL_SESSION_get0_hostname_ptr
+#define SSL_SESSION_set1_hostname SSL_SESSION_set1_hostname_ptr
 #define SSL_session_reused SSL_session_reused_ptr
 #define SSL_set_accept_state SSL_set_accept_state_ptr
 #define SSL_set_bio SSL_set_bio_ptr
+#define SSL_set_cert_cb  SSL_set_cert_cb_ptr
 #define SSL_set_cipher_list SSL_set_cipher_list_ptr
 #define SSL_set_ciphersuites SSL_set_ciphersuites_ptr
 #define SSL_set_connect_state SSL_set_connect_state_ptr
 #define SSL_set_ex_data SSL_set_ex_data_ptr
 #define SSL_set_options SSL_set_options_ptr
+#define SSL_set_session SSL_set_session_ptr
 #define SSL_set_verify SSL_set_verify_ptr
 #define SSL_shutdown SSL_shutdown_ptr
 #define SSL_state SSL_state_ptr
 #define SSLeay SSLeay_ptr
 #define SSL_write SSL_write_ptr
+#define SSL_use_certificate SSL_use_certificate_ptr
+#define SSL_use_PrivateKey SSL_use_PrivateKey_ptr
+#define SSL_verify_client_post_handshake SSL_verify_client_post_handshake_ptr
+#define SSL_set_post_handshake_auth SSL_set_post_handshake_auth_ptr
+#define SSL_version SSL_version_ptr
 #define TLS_method TLS_method_ptr
 #define X509_check_host X509_check_host_ptr
 #define X509_check_purpose X509_check_purpose_ptr
@@ -997,6 +1032,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define X509_get_default_cert_dir_env X509_get_default_cert_dir_env_ptr
 #define X509_get_default_cert_file X509_get_default_cert_file_ptr
 #define X509_get_default_cert_file_env X509_get_default_cert_file_env_ptr
+#define X509_get_ex_data X509_get_ex_data_ptr
 #define X509_get_ext X509_get_ext_ptr
 #define X509_get_ext_by_NID X509_get_ext_by_NID_ptr
 #define X509_get_ext_count X509_get_ext_count_ptr
@@ -1018,6 +1054,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define X509_new X509_new_ptr
 #define X509_PUBKEY_get0_param X509_PUBKEY_get0_param_ptr
 #define X509_PUBKEY_get X509_PUBKEY_get_ptr
+#define X509_set_ex_data X509_set_ex_data_ptr
 #define X509_set_pubkey X509_set_pubkey_ptr
 #define X509_subject_name_hash X509_subject_name_hash_ptr
 #define X509_sign X509_sign_ptr

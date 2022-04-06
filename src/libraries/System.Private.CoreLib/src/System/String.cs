@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -11,7 +12,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -62,13 +62,7 @@ namespace System
         [DynamicDependency("Ctor(System.Char[])")]
         public extern String(char[]? value);
 
-#pragma warning disable CA1822 // Mark members as static
-
-        private
-#if !CORECLR
-        static
-#endif
-        string Ctor(char[]? value)
+        private static string Ctor(char[]? value)
         {
             if (value == null || value.Length == 0)
                 return Empty;
@@ -87,15 +81,8 @@ namespace System
         [DynamicDependency("Ctor(System.Char[],System.Int32,System.Int32)")]
         public extern String(char[] value, int startIndex, int length);
 
-        private
-#if !CORECLR
-        static
-#endif
-        string Ctor(char[] value, int startIndex, int length)
+        private static string Ctor(char[] value!!, int startIndex, int length)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             if (startIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
 
@@ -123,11 +110,7 @@ namespace System
         [DynamicDependency("Ctor(System.Char*)")]
         public extern unsafe String(char* value);
 
-        private
-#if !CORECLR
-        static
-#endif
-        unsafe string Ctor(char* ptr)
+        private static unsafe string Ctor(char* ptr)
         {
             if (ptr == null)
                 return Empty;
@@ -151,11 +134,7 @@ namespace System
         [DynamicDependency("Ctor(System.Char*,System.Int32,System.Int32)")]
         public extern unsafe String(char* value, int startIndex, int length);
 
-        private
-#if !CORECLR
-        static
-#endif
-        unsafe string Ctor(char* ptr, int startIndex, int length)
+        private static unsafe string Ctor(char* ptr, int startIndex, int length)
         {
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
@@ -190,11 +169,7 @@ namespace System
         [DynamicDependency("Ctor(System.SByte*)")]
         public extern unsafe String(sbyte* value);
 
-        private
-#if !CORECLR
-        static
-#endif
-        unsafe string Ctor(sbyte* value)
+        private static unsafe string Ctor(sbyte* value)
         {
             byte* pb = (byte*)value;
             if (pb == null)
@@ -210,11 +185,7 @@ namespace System
         [DynamicDependency("Ctor(System.SByte*,System.Int32,System.Int32)")]
         public extern unsafe String(sbyte* value, int startIndex, int length);
 
-        private
-#if !CORECLR
-        static
-#endif
-        unsafe string Ctor(sbyte* value, int startIndex, int length)
+        private static unsafe string Ctor(sbyte* value, int startIndex, int length)
         {
             if (startIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
@@ -227,7 +198,7 @@ namespace System
                 if (length == 0)
                     return Empty;
 
-                throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.Throw(nameof(value));
             }
 
             byte* pStart = (byte*)(value + startIndex);
@@ -271,11 +242,7 @@ namespace System
         [DynamicDependency("Ctor(System.SByte*,System.Int32,System.Int32,System.Text.Encoding)")]
         public extern unsafe String(sbyte* value, int startIndex, int length, Encoding enc);
 
-        private
-#if !CORECLR
-        static
-#endif
-        unsafe string Ctor(sbyte* value, int startIndex, int length, Encoding? enc)
+        private static unsafe string Ctor(sbyte* value, int startIndex, int length, Encoding? enc)
         {
             if (enc == null)
                 return new string(value, startIndex, length);
@@ -291,7 +258,7 @@ namespace System
                 if (length == 0)
                     return Empty;
 
-                throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.Throw(nameof(value));
             }
 
             byte* pStart = (byte*)(value + startIndex);
@@ -307,11 +274,7 @@ namespace System
         [DynamicDependency("Ctor(System.Char,System.Int32)")]
         public extern String(char c, int count);
 
-        private
-#if !CORECLR
-        static
-#endif
-        string Ctor(char c, int count)
+        private static string Ctor(char c, int count)
         {
             if (count <= 0)
             {
@@ -332,11 +295,7 @@ namespace System
         [DynamicDependency("Ctor(System.ReadOnlySpan{System.Char})")]
         public extern String(ReadOnlySpan<char> value);
 
-        private
-#if !CORECLR
-        static
-#endif
-        unsafe string Ctor(ReadOnlySpan<char> value)
+        private static unsafe string Ctor(ReadOnlySpan<char> value)
         {
             if (value.Length == 0)
                 return Empty;
@@ -346,13 +305,8 @@ namespace System
             return result;
         }
 
-#pragma warning restore CA1822
-
-        public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
+        public static string Create<TState>(int length, TState state, SpanAction<char, TState> action!!)
         {
-            if (action == null)
-                throw new ArgumentNullException(nameof(action));
-
             if (length <= 0)
             {
                 if (length == 0)
@@ -380,6 +334,7 @@ namespace System
         public static string Create(IFormatProvider? provider, Span<char> initialBuffer, [InterpolatedStringHandlerArgument("provider", "initialBuffer")] ref DefaultInterpolatedStringHandler handler) =>
             handler.ToStringAndClear();
 
+        [Intrinsic] // When input is a string literal
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator ReadOnlySpan<char>(string? value) =>
             value != null ? new ReadOnlySpan<char>(ref value.GetRawStringData(), value.Length) : default;
@@ -411,11 +366,10 @@ namespace System
             return this;
         }
 
-        public static unsafe string Copy(string str)
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("This API should not be used to create mutable strings. See https://go.microsoft.com/fwlink/?linkid=2084035 for alternatives.")]
+        public static unsafe string Copy(string str!!)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
-
             string result = FastAllocateString(str.Length);
 
             Buffer.Memmove(
@@ -431,10 +385,8 @@ namespace System
         // sourceIndex + count - 1 to the character array buffer, beginning
         // at destinationIndex.
         //
-        public unsafe void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
+        public unsafe void CopyTo(int sourceIndex, char[] destination!!, int destinationIndex, int count)
         {
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
             if (sourceIndex < 0)
@@ -458,7 +410,7 @@ namespace System
         {
             if ((uint)Length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination._pointer.Value, ref _firstChar, (uint)Length);
+                Buffer.Memmove(ref destination._reference.Value, ref _firstChar, (uint)Length);
             }
             else
             {
@@ -475,7 +427,7 @@ namespace System
             bool retVal = false;
             if ((uint)Length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination._pointer.Value, ref _firstChar, (uint)Length);
+                Buffer.Memmove(ref destination._reference.Value, ref _firstChar, (uint)Length);
                 retVal = true;
             }
             return retVal;

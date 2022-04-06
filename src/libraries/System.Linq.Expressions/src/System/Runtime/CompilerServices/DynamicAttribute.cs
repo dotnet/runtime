@@ -42,13 +42,8 @@ namespace System.Runtime.CompilerServices
         /// normally, in which case the appropriate attribute specification should
         /// use a <c>transformFlags</c> value of <c>{ false, true, false }</c>.
         /// </remarks>
-        public DynamicAttribute(bool[] transformFlags)
+        public DynamicAttribute(bool[] transformFlags!!)
         {
-            if (transformFlags == null)
-            {
-                throw new ArgumentNullException(nameof(transformFlags));
-            }
-
             _transformFlags = transformFlags;
         }
 

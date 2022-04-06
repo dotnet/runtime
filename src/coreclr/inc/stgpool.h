@@ -203,7 +203,7 @@ public:
     __checkReturn
     inline HRESULT GetString(
                     UINT32  nIndex,
-        __deref_out LPCSTR *pszString)
+        _Outptr_ LPCSTR *pszString)
     {
         HRESULT hr;
 
@@ -239,7 +239,7 @@ public:
     __checkReturn
     inline HRESULT GetStringReadOnly(
                     UINT32  nIndex,
-        __deref_out LPCSTR *pszString)
+        _Outptr_ LPCSTR *pszString)
     {
         HRESULT hr;
 
@@ -277,7 +277,7 @@ public:
     __checkReturn
     virtual HRESULT GetStringW(                         // Return code.
         ULONG                          iOffset,         // Offset of string in pool.
-        __out_ecount(cchBuffer) LPWSTR szOut,           // Output buffer for string.
+        _Out_writes_(cchBuffer) LPWSTR szOut,           // Output buffer for string.
         int                            cchBuffer);      // Size of output buffer.
 
 //*****************************************************************************

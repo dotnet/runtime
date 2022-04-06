@@ -95,7 +95,7 @@ esac
 CPUName=$(uname -p)
 
 # Some Linux platforms report unknown for platform, but the arch for machine.
-if [ "$CPUName" == "unknown" ]; then
+if [[ "$CPUName" == "unknown" ]]; then
     CPUName=$(uname -m)
 fi
 
@@ -147,7 +147,7 @@ function waitany {
     while true; do
         for (( i=0; i<$maxProcesses; i++ )); do
             pid=${processIds[$i]}
-            if [ -z "$pid" ] || [ "$pid" == "$pidNone" ]; then
+            if [[ -z "$pid" || "$pid" == "$pidNone" ]]; then
                 continue
             fi
             if ! kill -0 $pid 2>/dev/null; then
@@ -167,7 +167,7 @@ function get_available_process_index {
     local i=0
     for (( i=0; i<$maxProcesses; i++ )); do
         pid=${processIds[$i]}
-        if [ -z "$pid" ] || [ "$pid" == "$pidNone" ]; then
+        if [[ -z "$pid" || "$pid" == "$pidNone" ]]; then
             break
         fi
     done
@@ -189,7 +189,7 @@ function finish_test {
     cat ${outputFilePath}
     echo "<<<<<"
 
-    if [ $testScriptExitCode -ne 0 ] ; then
+    if [ $testScriptExitCode -ne 0 ]; then
         failedTests[$countFailedTests]=$testProject
         countFailedTests=$(($countFailedTests+1))
     else
@@ -266,7 +266,7 @@ function summarize_test_run {
     echo "# Failed           : $countFailedTests"
     echo "======================="
 
-    if [ $countFailedTests -gt 0 ] ; then
+    if [ $countFailedTests -gt 0 ]; then
         echo
         echo "===== Failed tests:"
         for (( i=0; i<$countFailedTests; i++ )); do
@@ -336,7 +336,7 @@ run_test()
     ${TimeoutTool}./RunTests.sh --runtime-path "$Runtime" --rsp-file "$ExclusionRspFile"
     exitCode=$?
 
-    if [ $exitCode -ne 0 ] ; then
+    if [ $exitCode -ne 0 ]; then
         echo "error: One or more tests failed while running tests from '$fileNameWithoutExtension'.  Exit code $exitCode."
     fi
 
@@ -346,12 +346,12 @@ run_test()
 
 coreclr_code_coverage()
 {
-    if [ "$OS" != "FreeBSD" ] && [ "$OS" != "Linux" ] && [ "$OS" != "NetBSD" ] && [ "$OS" != "OSX" ]  && [ "$OS" != "SunOS" ] ; then
+    if [[ "$OS" != "FreeBSD" && "$OS" != "Linux" && "$OS" != "NetBSD" && "$OS" != "OSX" && "$OS" != "SunOS" ]]; then
         echo "error: Code Coverage not supported on $OS"
         exit 1
     fi
 
-    if [ "$CoreClrSrc" == "" ] ; then
+    if [[ -z "$CoreClrSrc" ]]; then
         echo "error: Coreclr source files are required to generate code coverage reports"
         echo "Coreclr source files root path can be passed using '--coreclr-src' argument"
         exit 1
@@ -487,26 +487,22 @@ done
 
 # Compute paths to the binaries if they haven't already been computed
 
-if [ "$Runtime" == "" ]
-then
+if [[ -z "$Runtime" ]]; then
     Runtime="$ProjectRoot/bin/testhost/netcoreapp-$OS-$Configuration-$__Arch"
 fi
 
-if [ "$CoreFxTests" == "" ]
-then
+if [[ -z "$CoreFxTests" ]]; then
     CoreFxTests="$ProjectRoot/bin"
 fi
 
 # Check parameters up front for valid values:
 
-if [ ! "$Configuration" == "Debug" ] && [ ! "$Configuration" == "Release" ]
-then
+if [[ "$Configuration" != "Debug" && "$Configuration" != "Release" ]]; then
     echo "error: Configuration should be Debug or Release"
     exit 1
 fi
 
-if [ "$OS" != "FreeBSD" ] && [ "$OS" != "Linux" ] && [ "$OS" != "NetBSD" ] && [ "$OS" != "OSX" ] && [ "$OS" != "SunOS" ]
-then
+if [[ "$OS" != "FreeBSD" && "$OS" != "Linux" && "$OS" != "NetBSD" && "$OS" != "OSX" && "$OS" != "SunOS" ]]; then
     echo "error: OS should be FreeBSD, Linux, NetBSD, OSX or SunOS"
     exit 1
 fi
@@ -514,8 +510,7 @@ fi
 export CORECLR_SERVER_GC="$serverGC"
 export PAL_OUTPUTDEBUGSTRING="1"
 
-if [ "$LANG" == "" ]
-then
+if [[ -z "$LANG" ]]; then
     export LANG="en_US.UTF-8"
 fi
 
@@ -551,15 +546,13 @@ if [ $RunTestSequential -eq 1 ]; then
     maxProcesses=1
 fi
 
-if [ -n "$TestDirFile" ] || [ -n "$TestDir" ]
-then
+if [[ -n "$TestDirFile" || -n "$TestDir" ]]; then
     run_selected_tests
 else
     run_all_tests "$CoreFxTests/tests/"*.Tests
 fi
 
-if [ "$CoreClrCoverage" == "ON" ]
-then
+if [[ "$CoreClrCoverage" == "ON" ]]; then
     coreclr_code_coverage
 fi
 

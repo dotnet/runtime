@@ -101,9 +101,9 @@ namespace System.Xml
 
             set
             {
-                string? tempVersion = null;
-                string? tempEncoding = null;
-                string? tempStandalone = null;
+                string? tempVersion;
+                string? tempEncoding;
+                string? tempStandalone;
                 string orgEncoding = this.Encoding;
                 string orgStandalone = this.Standalone;
                 string? orgVersion = this.Version;
@@ -174,7 +174,7 @@ namespace System.Xml
             // Intentionally do nothing since the node doesn't have children.
         }
 
-        private bool IsValidXmlVersion(string ver)
+        private static bool IsValidXmlVersion(string ver)
         {
             return ver.Length >= 3 && ver[0] == '1' && ver[1] == '.' && XmlCharType.IsOnlyDigits(ver, 2, ver.Length - 2);
         }

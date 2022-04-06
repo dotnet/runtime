@@ -34,12 +34,16 @@ const ep_char8_t* _ep_os_info = "Unknown";
 const ep_char8_t* _ep_arch_info = "x86";
 #elif defined(TARGET_AMD64)
 const ep_char8_t* _ep_arch_info = "x64";
+#elif defined(TARGET_ARMV6)
+const ep_char8_t* _ep_arch_info = "arm32";
 #elif defined(TARGET_ARM)
 const ep_char8_t* _ep_arch_info = "arm32";
 #elif defined(TARGET_ARM64)
 const ep_char8_t* _ep_arch_info = "arm64";
 #elif defined(TARGET_S390X)
 const ep_char8_t* _ep_arch_info = "s390x";
+#elif defined(TARGET_LOONGARCH64)
+const ep_char8_t* _ep_arch_info = "loongarch64";
 #else
 const ep_char8_t* _ep_arch_info = "Unknown";
 #endif

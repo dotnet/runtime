@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Diagnostics
 {
-    public static class Debugger
+    public static partial class Debugger
     {
         // Break causes a breakpoint to be signalled to an attached debugger.  If no debugger
         // is attached, the user is asked if they want to attach a debugger. If yes, then the
@@ -51,8 +51,9 @@ namespace System.Diagnostics
             }
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint="DebugDebugger_Launch")]
-        private static extern bool LaunchInternal();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Launch")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool LaunchInternal();
 
         // Returns whether or not a debugger is attached to the process.
         //
@@ -77,8 +78,8 @@ namespace System.Diagnostics
         // report the message depending on its settings.
         public static void Log(int level, string? category, string? message) => LogInternal(level, category, message);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint="DebugDebugger_Log", CharSet = CharSet.Unicode)]
-        private static extern void LogInternal(int level, string? category, string? message);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Log", StringMarshalling = StringMarshalling.Utf16)]
+        private static partial void LogInternal(int level, string? category, string? message);
 
         // Checks to see if an attached debugger has logging enabled
         //

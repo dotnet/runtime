@@ -207,7 +207,7 @@ namespace System.Data
                     case Tokens.StringConst:
                     case Tokens.Date:
                         ExpressionNode? node = null;
-                        string? str = null;
+                        string? str;
 
                         /* Constants and identifiers: create leaf node */
 
@@ -264,7 +264,6 @@ namespace System.Data
                                 ScanToken(Tokens.Name);
                                 colname = NameNode.ParseName(_text, _start, _pos);
 
-                                opInfo = _ops[_topOperator - 1];
                                 node = new LookupNode(_table, colname, relname);
 
                                 break;
@@ -272,7 +271,6 @@ namespace System.Data
                             case Tokens.Name:
                                 /* Qualify name now for nice error checking */
 
-                                opInfo = _ops[_topOperator - 1];
 
                                 /* Create tree element -                */
                                 // CONSIDER: Check for reserved proc names here
@@ -655,7 +653,7 @@ namespace System.Data
 
         private void BuildExpression(int pri)
         {
-            ExpressionNode? expr = null;
+            ExpressionNode? expr;
 
             Debug.Assert(pri > Operators.priStart && pri <= Operators.priMax, "Invalid priority value");
 
@@ -1193,7 +1191,7 @@ namespace System.Data
         ///     is the character a whitespace character?
         ///     Consider using CharacterInfo().IsWhiteSpace(ch) (System.Globalization)
         /// </summary>
-        private bool IsWhiteSpace(char ch)
+        private static bool IsWhiteSpace(char ch)
         {
             return ch <= 32 && ch != '\0';
         }
@@ -1201,7 +1199,7 @@ namespace System.Data
         /// <summary>
         ///     is the character an alphanumeric?
         /// </summary>
-        private bool IsAlphaNumeric(char ch)
+        private static bool IsAlphaNumeric(char ch)
         {
             //single comparison
             switch (ch)
@@ -1279,7 +1277,7 @@ namespace System.Data
             }
         }
 
-        private bool IsDigit(char ch)
+        private static bool IsDigit(char ch)
         {
             //single comparison
             switch (ch)
@@ -1303,7 +1301,7 @@ namespace System.Data
         /// <summary>
         ///     is the character an alpha?
         /// </summary>
-        private bool IsAlpha(char ch)
+        private static bool IsAlpha(char ch)
         {
             //single comparison
             switch (ch)

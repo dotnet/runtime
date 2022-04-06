@@ -6,7 +6,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <!-- Windows only files -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="BasicEventSourceTest\Harness\EtwListener.cs" />
     <Compile Include="BasicEventSourceTest\TestEventCounter.Etw.cs" />
     <Compile Include="BasicEventSourceTest\TestsWrite.Etw.cs" />

@@ -909,7 +909,7 @@ namespace System.Data.ProviderBase
 
         private DbConnectionInternal? GetFromGeneralPool()
         {
-            DbConnectionInternal? obj = null;
+            DbConnectionInternal? obj;
 
             if (!_stackNew.TryPop(out obj))
             {

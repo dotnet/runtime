@@ -159,7 +159,7 @@ typedef struct MonoSummarizedValueRelation {
  * The bits are handled separately because the same evaluation context could
  * belong to more than one loop, so that each loop would set its bits.
  * After the backtracking, the bits are examined and a decision is taken.
- * 
+ *
  */
 typedef enum {
 	MONO_RELATIONS_EVALUATION_NOT_STARTED = 0,
@@ -333,7 +333,7 @@ typedef struct MonoVariableRelationsEvaluationArea {
  * coming to dominate the running time of abcremoval. By
  * storing the statuses together, we can memset the entire
  * region.
- */ 
+ */
 	MonoRelationsEvaluationStatus *statuses;
 	MonoRelationsEvaluationContext *contexts;
 

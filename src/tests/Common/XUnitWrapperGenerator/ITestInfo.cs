@@ -263,6 +263,46 @@ sealed class OutOfProcessTest : ITestInfo
     private string ExecutionStatement { get; }
 
     public string GenerateTestExecution(ITestReporterWrapper testReporterWrapper) => testReporterWrapper.WrapTestExecutionWithReporting(ExecutionStatement, this);
+
+    public override bool Equals(object obj)
+    {
+        return obj is OutOfProcessTest other
+        && DisplayNameForFiltering == other.DisplayNameForFiltering
+        && ExecutionStatement == other.ExecutionStatement;
+    }
+}
+
+sealed class TestWithCustomDisplayName : ITestInfo
+{
+    private ITestInfo _inner;
+
+    public TestWithCustomDisplayName(ITestInfo inner, string displayName)
+    {
+        _inner = inner;
+        DisplayNameForFiltering = displayName;
+    }
+
+    public string TestNameExpression => $@"""{DisplayNameForFiltering.Replace(@"\", @"\\")}""";
+
+    public string DisplayNameForFiltering { get; }
+
+    public string Method => _inner.Method;
+
+    public string ContainingType => _inner.ContainingType;
+
+    public string GenerateTestExecution(ITestReporterWrapper testReporterWrapper)
+    {
+        ITestReporterWrapper dummyInnerWrapper = new NoTestReporting();
+        string innerExecution = _inner.GenerateTestExecution(dummyInnerWrapper);
+        return testReporterWrapper.WrapTestExecutionWithReporting(innerExecution, this);
+    }
+
+    public override bool Equals(object obj)
+    {
+        return obj is TestWithCustomDisplayName other
+            && _inner.Equals(other._inner)
+            && DisplayNameForFiltering == other.DisplayNameForFiltering;
+    }
 }
 
 sealed class NoTestReporting : ITestReporterWrapper
@@ -274,13 +314,15 @@ sealed class NoTestReporting : ITestReporterWrapper
 
 sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 {
-    private string _summaryLocalIdentifier;
+    private readonly string _summaryLocalIdentifier;
     private readonly string _filterLocalIdentifier;
+    private readonly string _outputRecorderIdentifier;
 
-    public WrapperLibraryTestSummaryReporting(string summaryLocalIdentifier, string filterLocalIdentifier)
+    public WrapperLibraryTestSummaryReporting(string summaryLocalIdentifier, string filterLocalIdentifier, string outputRecorderIdentifier)
     {
         _summaryLocalIdentifier = summaryLocalIdentifier;
         _filterLocalIdentifier = filterLocalIdentifier;
+        _outputRecorderIdentifier = outputRecorderIdentifier;
     }
 
     public string WrapTestExecutionWithReporting(string testExecutionExpression, ITestInfo test)
@@ -289,21 +331,29 @@ sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
         builder.AppendLine($"if ({_filterLocalIdentifier} is null || {_filterLocalIdentifier}.ShouldRunTest(@\"{test.ContainingType}.{test.Method}\", {test.TestNameExpression}))");
         builder.AppendLine("{");
 
-        builder.AppendLine($"TimeSpan testStart = stopwatch.Elapsed;");
+        builder.AppendLine($"System.TimeSpan testStart = stopwatch.Elapsed;");
         builder.AppendLine("try {");
+        builder.AppendLine($"System.Console.WriteLine(\"Running test: {{0}}\", {test.TestNameExpression});");
+        builder.AppendLine($"{_outputRecorderIdentifier}.ResetTestOutput();");
         builder.AppendLine(testExecutionExpression);
-        builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart);");
+        builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart, {_outputRecorderIdentifier}.GetTestOutput());");
+        builder.AppendLine($"System.Console.WriteLine(\"Passed test: {{0}}\", {test.TestNameExpression});");
         builder.AppendLine("}");
         builder.AppendLine("catch (System.Exception ex) {");
-        builder.AppendLine($"{_summaryLocalIdentifier}.ReportFailedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart, ex);");
+        builder.AppendLine($"{_summaryLocalIdentifier}.ReportFailedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart, ex, {_outputRecorderIdentifier}.GetTestOutput());");
+        builder.AppendLine($"System.Console.WriteLine(\"Failed test: {{0}}\", {test.TestNameExpression});");
         builder.AppendLine("}");
 
+        builder.AppendLine("}");
+        builder.AppendLine("else");
+        builder.AppendLine("{");
+        builder.AppendLine(GenerateSkippedTestReporting(test));
         builder.AppendLine("}");
         return builder.ToString();
     }
 
     public string GenerateSkippedTestReporting(ITestInfo skippedTest)
     {
-        return $"{_summaryLocalIdentifier}.ReportSkippedTest({skippedTest.TestNameExpression}, \"{skippedTest.ContainingType}\", \"{skippedTest.Method}\", TimeSpan.Zero, string.Empty);";
+        return $"{_summaryLocalIdentifier}.ReportSkippedTest({skippedTest.TestNameExpression}, \"{skippedTest.ContainingType}\", @\"{skippedTest.Method}\", System.TimeSpan.Zero, string.Empty);";
     }
 }

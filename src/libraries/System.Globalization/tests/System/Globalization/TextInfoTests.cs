@@ -484,7 +484,7 @@ namespace System.Globalization.Tests
         [InlineData("es-ES_tradnl")]
         public void TestAsciiCodePageWithCulturesWithAlternativeSortNames(string cultureName)
         {
-            AssemblyTrademarkAttribute.Equals(1252, CultureInfo.GetCultureInfo(cultureName).TextInfo.ANSICodePage);
+            Assert.Equal(1252, CultureInfo.GetCultureInfo(cultureName).TextInfo.ANSICodePage);
         }
     }
 }

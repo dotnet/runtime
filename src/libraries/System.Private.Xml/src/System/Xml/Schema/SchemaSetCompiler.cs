@@ -905,7 +905,7 @@ namespace System.Xml.Schema
 
         private void CompileSimpleContentExtension(XmlSchemaComplexType complexType, XmlSchemaSimpleContentExtension simpleExtension)
         {
-            XmlSchemaComplexType? baseType = null;
+            XmlSchemaComplexType? baseType;
             if (complexType.Redefined != null && simpleExtension.BaseTypeName == complexType.Redefined.QualifiedName)
             {
                 baseType = (XmlSchemaComplexType)complexType.Redefined;
@@ -946,7 +946,7 @@ namespace System.Xml.Schema
 
         private void CompileSimpleContentRestriction(XmlSchemaComplexType complexType, XmlSchemaSimpleContentRestriction simpleRestriction)
         {
-            XmlSchemaComplexType? baseType = null;
+            XmlSchemaComplexType? baseType;
             XmlSchemaDatatype? datatype = null;
             if (complexType.Redefined != null && simpleRestriction.BaseTypeName == complexType.Redefined.QualifiedName)
             {
@@ -1034,7 +1034,7 @@ namespace System.Xml.Schema
 
         private void CompileComplexContentExtension(XmlSchemaComplexType complexType, XmlSchemaComplexContent complexContent, XmlSchemaComplexContentExtension complexExtension)
         {
-            XmlSchemaComplexType? baseType = null;
+            XmlSchemaComplexType? baseType;
             if (complexType.Redefined != null && complexExtension.BaseTypeName == complexType.Redefined.QualifiedName)
             {
                 baseType = (XmlSchemaComplexType)complexType.Redefined;
@@ -1105,7 +1105,7 @@ namespace System.Xml.Schema
 
         private void CompileComplexContentRestriction(XmlSchemaComplexType complexType, XmlSchemaComplexContent complexContent, XmlSchemaComplexContentRestriction complexRestriction)
         {
-            XmlSchemaComplexType? baseType = null;
+            XmlSchemaComplexType? baseType;
             if (complexType.Redefined != null && complexRestriction.BaseTypeName == complexType.Redefined.QualifiedName)
             {
                 baseType = (XmlSchemaComplexType)complexType.Redefined;
@@ -1479,7 +1479,7 @@ namespace System.Xml.Schema
         }
 
         [return: NotNullIfNotNull("particle")]
-        private XmlSchemaParticle? CannonicalizePointlessRoot(XmlSchemaParticle particle)
+        private static XmlSchemaParticle? CannonicalizePointlessRoot(XmlSchemaParticle particle)
         {
             if (particle == null)
             {
@@ -1966,12 +1966,12 @@ namespace System.Xml.Schema
             return true;
         }
 
-        private bool IsValidOccurrenceRangeRestriction(XmlSchemaParticle derivedParticle, XmlSchemaParticle baseParticle)
+        private static bool IsValidOccurrenceRangeRestriction(XmlSchemaParticle derivedParticle, XmlSchemaParticle baseParticle)
         {
             return IsValidOccurrenceRangeRestriction(derivedParticle.MinOccurs, derivedParticle.MaxOccurs, baseParticle.MinOccurs, baseParticle.MaxOccurs);
         }
 
-        private bool IsValidOccurrenceRangeRestriction(decimal minOccurs, decimal maxOccurs, decimal baseMinOccurs, decimal baseMaxOccurs)
+        private static bool IsValidOccurrenceRangeRestriction(decimal minOccurs, decimal maxOccurs, decimal baseMinOccurs, decimal baseMaxOccurs)
         {
             return (baseMinOccurs <= minOccurs) && (maxOccurs <= baseMaxOccurs);
         }
@@ -1988,8 +1988,8 @@ namespace System.Xml.Schema
 
         private bool IsParticleEmptiable(XmlSchemaParticle particle)
         {
-            decimal minOccurs, maxOccurs;
-            CalculateEffectiveTotalRange(particle, out minOccurs, out maxOccurs);
+            decimal minOccurs;
+            CalculateEffectiveTotalRange(particle, out minOccurs, out _);
             return minOccurs == decimal.Zero;
         }
 
@@ -2076,7 +2076,7 @@ namespace System.Xml.Schema
             _complexTypeStack.Push(complexType);
         }
 
-        private XmlSchemaContentType GetSchemaContentType(XmlSchemaComplexType complexType, XmlSchemaComplexContent? complexContent, XmlSchemaParticle particle)
+        private static XmlSchemaContentType GetSchemaContentType(XmlSchemaComplexType complexType, XmlSchemaComplexContent? complexContent, XmlSchemaParticle particle)
         {
             if ((complexContent != null && complexContent.IsMixed) ||
                 (complexContent == null && complexType.IsMixed))
@@ -2384,7 +2384,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private bool IsProcessContentsRestricted(XmlSchemaComplexType? baseType, XmlSchemaAnyAttribute derivedAttributeWildcard, XmlSchemaAnyAttribute baseAttributeWildcard)
+        private static bool IsProcessContentsRestricted(XmlSchemaComplexType? baseType, XmlSchemaAnyAttribute derivedAttributeWildcard, XmlSchemaAnyAttribute baseAttributeWildcard)
         {
             if (baseType == XmlSchemaComplexType.AnyType)
             {
@@ -2453,7 +2453,7 @@ namespace System.Xml.Schema
                 return;
             }
             xa.IsProcessing = true;
-            SchemaAttDef? decl = null;
+            SchemaAttDef? decl;
             try
             {
                 if (!xa.RefName.IsEmpty)
@@ -2618,7 +2618,7 @@ namespace System.Xml.Schema
             }
 
             xi.IsProcessing = true;
-            CompiledIdentityConstraint? compic = null;
+            CompiledIdentityConstraint? compic;
             try
             {
                 SchemaNamespaceManager xnmgr = new SchemaNamespaceManager(xi);
@@ -3108,7 +3108,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private void CopyPosition(XmlSchemaAnnotated to, XmlSchemaAnnotated from, bool copyParent)
+        private static void CopyPosition(XmlSchemaAnnotated to, XmlSchemaAnnotated from, bool copyParent)
         {
             to.SourceUri = from.SourceUri;
             to.LinePosition = from.LinePosition;
@@ -3120,7 +3120,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private bool IsFixedEqual(SchemaDeclBase baseDecl, SchemaDeclBase derivedDecl)
+        private static bool IsFixedEqual(SchemaDeclBase baseDecl, SchemaDeclBase derivedDecl)
         {
             if (baseDecl.Presence == SchemaDeclBase.Use.Fixed || baseDecl.Presence == SchemaDeclBase.Use.RequiredFixed)
             {

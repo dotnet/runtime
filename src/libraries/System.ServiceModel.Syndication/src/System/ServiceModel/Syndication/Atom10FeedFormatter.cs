@@ -35,12 +35,8 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public Atom10FeedFormatter(Type feedTypeToCreate) : base()
+        public Atom10FeedFormatter(Type feedTypeToCreate!!) : base()
         {
-            if (feedTypeToCreate == null)
-            {
-                throw new ArgumentNullException(nameof(feedTypeToCreate));
-            }
             if (!typeof(SyndicationFeed).IsAssignableFrom(feedTypeToCreate))
             {
                 throw new ArgumentException(SR.Format(SR.InvalidObjectTypePassed, nameof(feedTypeToCreate), nameof(SyndicationFeed)), nameof(feedTypeToCreate));
@@ -70,35 +66,20 @@ namespace System.ServiceModel.Syndication
 
         protected Type FeedType { get; }
 
-        public override bool CanRead(XmlReader reader)
+        public override bool CanRead(XmlReader reader!!)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             return reader.IsStartElement(Atom10Constants.FeedTag, Atom10Constants.Atom10Namespace);
         }
 
         XmlSchema IXmlSerializable.GetSchema() => null;
 
-        void IXmlSerializable.ReadXml(XmlReader reader)
+        void IXmlSerializable.ReadXml(XmlReader reader!!)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             ReadFeed(reader);
         }
 
-        void IXmlSerializable.WriteXml(XmlWriter writer)
+        void IXmlSerializable.WriteXml(XmlWriter writer!!)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
             WriteFeed(writer);
         }
 
@@ -112,13 +93,8 @@ namespace System.ServiceModel.Syndication
             ReadFeed(reader);
         }
 
-        public override void WriteTo(XmlWriter writer)
+        public override void WriteTo(XmlWriter writer!!)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
             writer.WriteStartElement(Atom10Constants.FeedTag, Atom10Constants.Atom10Namespace);
             WriteFeed(writer);
             writer.WriteEndElement();
@@ -378,7 +354,7 @@ namespace System.ServiceModel.Syndication
             return true;
         }
 
-        internal void WriteContentTo(XmlWriter writer, string elementName, SyndicationContent content)
+        internal static void WriteContentTo(XmlWriter writer, string elementName, SyndicationContent content)
         {
             if (content != null)
             {
@@ -386,7 +362,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal void WriteElement(XmlWriter writer, string elementName, string value)
+        internal static void WriteElement(XmlWriter writer, string elementName, string value)
         {
             if (value != null)
             {
@@ -412,7 +388,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal void WriteFeedLastUpdatedTimeTo(XmlWriter writer, DateTimeOffset lastUpdatedTime, bool isRequired)
+        internal static void WriteFeedLastUpdatedTimeTo(XmlWriter writer, DateTimeOffset lastUpdatedTime, bool isRequired)
         {
             if (lastUpdatedTime == DateTimeOffset.MinValue && isRequired)
             {
@@ -447,7 +423,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal void WriteItemLastUpdatedTimeTo(XmlWriter writer, DateTimeOffset lastUpdatedTime)
+        internal static void WriteItemLastUpdatedTimeTo(XmlWriter writer, DateTimeOffset lastUpdatedTime)
         {
             if (lastUpdatedTime == DateTimeOffset.MinValue)
             {
@@ -458,7 +434,7 @@ namespace System.ServiceModel.Syndication
                 AsString(lastUpdatedTime));
         }
 
-        internal void WriteLink(XmlWriter writer, SyndicationLink link, Uri baseUri)
+        internal static void WriteLink(XmlWriter writer, SyndicationLink link, Uri baseUri)
         {
             writer.WriteStartElement(Atom10Constants.LinkTag, Atom10Constants.Atom10Namespace);
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(baseUri, link.BaseUri);
@@ -493,33 +469,15 @@ namespace System.ServiceModel.Syndication
 
         protected override SyndicationFeed CreateFeedInstance() => CreateFeedInstance(FeedType);
 
-        protected virtual SyndicationItem ReadItem(XmlReader reader, SyndicationFeed feed)
+        protected virtual SyndicationItem ReadItem(XmlReader reader!!, SyndicationFeed feed!!)
         {
-            if (feed == null)
-            {
-                throw new ArgumentNullException(nameof(feed));
-            }
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             SyndicationItem item = CreateItem(feed);
             ReadItemFrom(reader, item, feed.BaseUri);
             return item;
         }
 
-        protected virtual IEnumerable<SyndicationItem> ReadItems(XmlReader reader, SyndicationFeed feed, out bool areAllItemsRead)
+        protected virtual IEnumerable<SyndicationItem> ReadItems(XmlReader reader!!, SyndicationFeed feed!!, out bool areAllItemsRead)
         {
-            if (feed == null)
-            {
-                throw new ArgumentNullException(nameof(feed));
-            }
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             NullNotAllowedCollection<SyndicationItem> items = new NullNotAllowedCollection<SyndicationItem>();
             while (reader.IsStartElement(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace))
             {
@@ -603,7 +561,7 @@ namespace System.ServiceModel.Syndication
             return result;
         }
 
-        private string AsString(DateTimeOffset dateTime)
+        private static string AsString(DateTimeOffset dateTime)
         {
             if (dateTime.Offset == TimeSpan.Zero)
             {

@@ -61,7 +61,7 @@ extern LONG __JITfilter(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
 
 extern void debugError(const char* msg, const char* file, unsigned line);
 extern void DECLSPEC_NORETURN badCode();
-extern void DECLSPEC_NORETURN badCode3(const char* msg, const char* msg2, int arg, __in_z const char* file, unsigned line);
+extern void DECLSPEC_NORETURN badCode3(const char* msg, const char* msg2, int arg, _In_z_ const char* file, unsigned line);
 extern void DECLSPEC_NORETURN noWay();
 extern void DECLSPEC_NORETURN implLimitation();
 extern void DECLSPEC_NORETURN NOMEM();

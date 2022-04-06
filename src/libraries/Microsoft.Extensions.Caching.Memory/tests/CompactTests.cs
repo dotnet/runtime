@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Internal;
 using Xunit;
 
@@ -81,6 +83,59 @@ namespace Microsoft.Extensions.Caching.Memory
             cache.Compact(0.90);
             Assert.Equal(1, cache.Count);
             Assert.Equal("value4", cache.Get("key4"));
+        }
+    }
+
+    [Collection(nameof(DisableParallelization))]
+    public class CompactTestsDisableParallelization
+    {
+        /// <summary>
+        /// Tests a race condition in Compact where CacheEntry.LastAccessed is getting updated
+        /// by a different thread than what is doing the Compact, leading to sorting failing.
+        /// 
+        /// See https://github.com/dotnet/runtime/issues/61032.
+        /// </summary>
+        [Fact]
+        public void CompactLastAccessedRaceCondition()
+        {
+            const int numEntries = 100;
+            MemoryCache cache = new MemoryCache(new MemoryCacheOptions());
+            Random random = new Random();
+
+            void FillCache()
+            {
+                for (int i = 0; i < numEntries; i++)
+                {
+                    cache.Set($"key{i}", $"value{i}");
+                }
+            }
+
+            // start a few tasks to access entries in the background
+            Task[] backgroundAccessTasks = new Task[Environment.ProcessorCount];
+            bool done = false;
+
+            for (int i = 0; i < backgroundAccessTasks.Length; i++)
+            {
+                backgroundAccessTasks[i] = Task.Run(async () =>
+                {
+                    while (!done)
+                    {
+                        cache.TryGetValue($"key{random.Next(numEntries)}", out _);
+                        await Task.Yield();
+                    }
+                });
+            }
+
+            for (int i = 0; i < 1000; i++)
+            {
+                FillCache();
+
+                cache.Compact(1);
+            }
+
+            done = true;
+
+            Task.WaitAll(backgroundAccessTasks);
         }
     }
 }

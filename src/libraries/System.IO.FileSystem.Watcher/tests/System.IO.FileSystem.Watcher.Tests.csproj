@@ -1,10 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'tvOS'">true</IgnoreForCI>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -31,12 +31,32 @@
     <!-- Helpers -->
     <Compile Include="Utility\TestFileSystemWatcher.cs" />
     <Compile Include="Utility\FileSystemWatcherTest.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
              Link="Common\System\IO\TempFile.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
              Link="Common\System\IO\TempDirectory.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ReparsePointUtilities.cs"
+             Link="Common\System\IO\ReparsePointUtilities.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs"
+             Link="Common\System\Threading\ThreadTestHelpers.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
+             Link="Common\TestUtilities\System\DisableParallelization.cs" />
+    <Compile Include="$(CommonPath)System\IO\PathInternal.cs"
+             Link="Common\System\IO\PathInternal.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition=" '$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs"
+             Link="Common\System\IO\PathInternal.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs"
+             Link="Common\System\IO\PathInternal.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Linux' or '$(TargetPlatformIdentifier)' == 'OSX'">
     <Compile Include="FileSystemWatcher.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />

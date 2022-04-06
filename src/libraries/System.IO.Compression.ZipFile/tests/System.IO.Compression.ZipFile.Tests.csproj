@@ -1,15 +1,26 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <!-- This doesn't run on V8 shell because https://bugs.chromium.org/p/v8/issues/detail?id=12541 -->
+    <Scenario>WasmTestOnBrowser</Scenario>
+    <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
+    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
+    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="ZipFile.Create.cs" />
     <Compile Include="ZipFile.Extract.cs" />
     <Compile Include="ZipFileExtensions.ZipArchive.Create.cs" />
     <Compile Include="ZipFileExtensions.ZipArchiveEntry.Extract.cs" />
     <Compile Include="ZipFileExtensions.ZipArchive.Extract.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
              Link="Common\System\IO\TempFile.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
@@ -25,7 +36,7 @@
     <Compile Include="$(CommonTestPath)System\IO\Compression\ZipTestHelper.cs"
              Link="Common\System\IO\Compression\ZipTestHelper.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' ">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="ZipFile.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ChMod.cs" Link="Interop\Unix\System.Native\Interop.ChMod.cs" />

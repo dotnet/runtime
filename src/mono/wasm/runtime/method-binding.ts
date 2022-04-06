@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { WasmRoot, WasmRootBuffer, mono_wasm_new_root } from "./roots";
-import { MonoClass, MonoMethod, MonoObject, coerceNull, VoidPtrNull, VoidPtr, MonoType } from "./types";
+import { MonoClass, MonoMethod, MonoObject, coerceNull, VoidPtrNull, MonoType, MarshalType } from "./types";
 import { BINDING, Module, runtimeHelpers } from "./imports";
 import { js_to_mono_enum, _js_to_mono_obj, _js_to_mono_uri } from "./js-to-cs";
 import { js_string_to_mono_string, js_string_to_mono_string_interned } from "./strings";
-import { MarshalType, _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
+import { _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
 import {
     _create_temp_frame,
     getI32, getU32, getF32, getF64,
@@ -16,11 +16,11 @@ import {
     _get_args_root_buffer_for_method_call, _get_buffer_for_method_call,
     _handle_exception_for_call, _teardown_after_call
 } from "./method-calls";
-import cwraps from "./cwraps";
+import cwraps, { wrap_c_function } from "./cwraps";
+import { VoidPtr } from "./types/emscripten";
 
 const primitiveConverters = new Map<string, Converter>();
 const _signature_converters = new Map<string, Converter>();
-const _method_descriptions = new Map<MonoMethod, string>();
 
 
 export function _get_type_name(typePtr: MonoType): string {
@@ -42,11 +42,7 @@ export function _get_class_name(classPtr: MonoClass): string {
 }
 
 export function find_method(klass: MonoClass, name: string, n: number): MonoMethod {
-    const result = cwraps.mono_wasm_assembly_find_method(klass, name, n);
-    if (result) {
-        _method_descriptions.set(result, name);
-    }
-    return result;
+    return cwraps.mono_wasm_assembly_find_method(klass, name, n);
 }
 
 export function get_method(method_name: string): MonoMethod {
@@ -56,7 +52,7 @@ export function get_method(method_name: string): MonoMethod {
     return res;
 }
 
-export function bind_runtime_method(method_name: string, signature: ArgsMarshalString): Function {
+export function bind_runtime_method(method_name: string, signature: string): Function {
     const method = get_method(method_name);
     return mono_bind_method(method, null, signature, "BINDINGS_" + method_name);
 }
@@ -138,7 +134,7 @@ export function _create_primitive_converters(): void {
     result.set("d", { steps: [{ indirect: "double" }], size: 8 });
 }
 
-function _create_converter_for_marshal_string(args_marshal: ArgsMarshalString): Converter {
+function _create_converter_for_marshal_string(args_marshal: string/*ArgsMarshalString*/): Converter {
     const steps = [];
     let size = 0;
     let is_result_definitely_unmarshaled = false,
@@ -183,7 +179,7 @@ function _create_converter_for_marshal_string(args_marshal: ArgsMarshalString): 
     };
 }
 
-function _get_converter_for_marshal_string(args_marshal: ArgsMarshalString): Converter {
+function _get_converter_for_marshal_string(args_marshal: string/*ArgsMarshalString*/): Converter {
     let converter = _signature_converters.get(args_marshal);
     if (!converter) {
         converter = _create_converter_for_marshal_string(args_marshal);
@@ -193,7 +189,7 @@ function _get_converter_for_marshal_string(args_marshal: ArgsMarshalString): Con
     return converter;
 }
 
-export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalString): Converter {
+export function _compile_converter_for_marshal_string(args_marshal: string/*ArgsMarshalString*/): Converter {
     const converter = _get_converter_for_marshal_string(args_marshal);
     if (typeof (converter.args_marshal) !== "string")
         throw new Error("Corrupt converter for '" + args_marshal + "'");
@@ -216,7 +212,7 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
     const closure: any = {
         Module,
         _malloc: Module._malloc,
-        mono_wasm_unbox_rooted: cwraps.mono_wasm_unbox_rooted,
+        mono_wasm_unbox_rooted: wrap_c_function("mono_wasm_unbox_rooted"),
         setI32,
         setU32,
         setF32,
@@ -371,7 +367,7 @@ export function _decide_if_result_is_marshaled(converter: Converter, argc: numbe
     }
 }
 
-export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null, args_marshal: ArgsMarshalString, friendly_name: string): Function {
+export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null, args_marshal: string/*ArgsMarshalString*/, friendly_name: string): Function {
     if (typeof (args_marshal) !== "string")
         throw new Error("args_marshal argument invalid, expected string");
     this_arg = coerceNull(this_arg);
@@ -402,9 +398,9 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
         _get_buffer_for_method_call,
         _handle_exception_for_call,
         _teardown_after_call,
-        mono_wasm_try_unbox_primitive_and_get_type: cwraps.mono_wasm_try_unbox_primitive_and_get_type,
+        mono_wasm_try_unbox_primitive_and_get_type: wrap_c_function("mono_wasm_try_unbox_primitive_and_get_type"),
         _unbox_mono_obj_root_with_known_nonprimitive_type,
-        invoke_method: cwraps.mono_wasm_invoke_method,
+        invoke_method: wrap_c_function("mono_wasm_invoke_method"),
         method,
         this_arg,
         token,
@@ -545,6 +541,9 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
     return result;
 }
 
+/*
+We currently don't use these types because it makes typeScript compiler very slow.
+
 declare const enum ArgsMarshal {
     Int32 = "i", // int32
     Int32Enum = "j", // int32 - Enum with underlying type of int32
@@ -561,15 +560,12 @@ declare const enum ArgsMarshal {
 // to suppress marshaling of the return value, place '!' at the end of args_marshal, i.e. 'ii!' instead of 'ii'
 type _ExtraArgsMarshalOperators = "!" | "";
 
-// TODO make this more efficient so we can add more parameters (currently it only checks up to 4). One option is to add a
-// blank to the ArgsMarshal enum but that doesn't solve the TS limit of number of options in 1 type
-// Take the marshaling enums and convert to all the valid strings for type checking. 
 export type ArgsMarshalString = ""
     | `${ArgsMarshal}${_ExtraArgsMarshalOperators}`
     | `${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`
     | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`
     | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`;
-
+*/
 
 type ConverterStepIndirects = "u32" | "i32" | "float" | "double" | "i64"
 
@@ -582,7 +578,7 @@ export type Converter = {
         size?: number;
     }[];
     size: number;
-    args_marshal?: ArgsMarshalString;
+    args_marshal?: string/*ArgsMarshalString*/;
     is_result_definitely_unmarshaled?: boolean;
     is_result_possibly_unmarshaled?: boolean;
     result_unmarshaled_if_argc?: number;

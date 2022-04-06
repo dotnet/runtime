@@ -107,7 +107,7 @@
 #define CMD_TYPE_GET_VALUE_SIZE MDBGPROT_CMD_TYPE_GET_VALUE_SIZE
 
 #define CMD_METHOD_GET_NAME MDBGPROT_CMD_METHOD_GET_NAME
-#define CMD_METHOD_GET_DECLARING_TYPE MDBGPROT_CMD_METHOD_GET_DECLARING_TYPE 
+#define CMD_METHOD_GET_DECLARING_TYPE MDBGPROT_CMD_METHOD_GET_DECLARING_TYPE
 #define CMD_METHOD_GET_DEBUG_INFO MDBGPROT_CMD_METHOD_GET_DEBUG_INFO
 #define CMD_METHOD_GET_PARAM_INFO MDBGPROT_CMD_METHOD_GET_PARAM_INFO
 #define CMD_METHOD_GET_LOCALS_INFO MDBGPROT_CMD_METHOD_GET_LOCALS_INFO
@@ -263,7 +263,7 @@
 #define FRAME_FLAG_DEBUGGER_INVOKE MDBGPROT_FRAME_FLAG_DEBUGGER_INVOKE
 #define FRAME_FLAG_NATIVE_TRANSITION MDBGPROT_FRAME_FLAG_NATIVE_TRANSITION
 
-/* 
+/*
  * Contains information about an inserted breakpoint.
  */
 typedef struct {
@@ -284,7 +284,7 @@ typedef struct {
 	/* Unique id used in the wire protocol to refer to objects */
 	int id;
 	/*
-	 * A weakref gc handle pointing to the object. The gc handle is used to 
+	 * A weakref gc handle pointing to the object. The gc handle is used to
 	 * detect if the object was garbage collected.
 	 */
 	MonoGCHandle handle;
@@ -403,5 +403,5 @@ void win32_debugger_log(FILE *stream, const gchar *format, ...);
 #define PRINT_MSG(...) g_print (__VA_ARGS__)
 #endif
 
-void 
+void
 mono_de_init(DebuggerEngineCallbacks* cbs);

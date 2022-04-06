@@ -100,12 +100,8 @@ namespace System.Numerics.Tensors
             Buffer.Span[index] = value;
         }
 
-        protected override void CopyTo(T[] array, int arrayIndex)
+        protected override void CopyTo(T[] array!!, int arrayIndex)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
             if (array.Length < arrayIndex + Length)
             {
                 throw new ArgumentException(SR.NumberGreaterThenAvailableSpace, nameof(array));

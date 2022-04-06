@@ -12,6 +12,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="unwind03.cs" />
-    <ProjectReference Include="..\common\common.ilproj" />
+    <ProjectReference Include="..\..\..\common\localloc_common.ilproj" />
   </ItemGroup>
 </Project>

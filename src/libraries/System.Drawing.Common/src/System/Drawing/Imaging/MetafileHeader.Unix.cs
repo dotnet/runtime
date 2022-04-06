@@ -103,7 +103,7 @@ namespace System.Drawing.Imaging
 
         internal MetafileHeader(IntPtr henhmetafile)
         {
-            Marshal.PtrToStructure(henhmetafile, this);
+            Marshal.PtrToStructure<MetafileHeader>(henhmetafile, this);
         }
 
         // methods

@@ -43,6 +43,10 @@
 #define CONST_CAST2(TOTYPE, FROMTYPE, X) ((union { FROMTYPE _q; TOTYPE _nq; }){ ._q = (X) }._nq)
 #define CONST_CAST(TYPE, X) CONST_CAST2(TYPE, const TYPE, (X))
 
+#ifndef __has_attribute
+#define __has_attribute(x) (0)
+#endif
+
 #if __has_attribute(fallthrough)
 #define FALLTHROUGH __attribute__((fallthrough))
 #else
@@ -61,24 +65,6 @@ inline static void SafeStringCopy(char* destination, size_t destinationSize, con
     strlcpy(destination, source, destinationSize);
 #else
     snprintf(destination, destinationSize, "%s", source);
-#endif
-}
-
-/**
- * Abstraction helper method to safely copy strings using strlcpy or strcpy_s
- * or a different safe copy method, depending on the current platform.
- */
-inline static void SafeStringConcat(char* destination, size_t destinationSize, const char* str1, const char* str2)
-{
-    memset(destination, 0, destinationSize);
-#if HAVE_STRCAT_S
-    strcat_s(destination, destinationSize, str1);
-    strcat_s(destination, destinationSize, str2);
-#elif HAVE_STRLCAT
-    strlcat(destination, str1, destinationSize);
-    strlcat(destination, str2, destinationSize);
-#else
-    snprintf(destination, destinationSize, "%s%s", str1, str2);
 #endif
 }
 

@@ -15,13 +15,15 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
+    [ConditionalClass(typeof(QuicTestBase<MockProviderFactory>), nameof(QuicTestBase<MockProviderFactory>.IsSupported))]
     public sealed class MockQuicStreamConformanceTests : QuicStreamConformanceTests
     {
         protected override QuicImplementationProvider Provider => QuicImplementationProviders.Mock;
+        protected override bool BlocksOnZeroByteReads => true;
     }
 
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
-    [Collection("NoParallelTests")]
+    [Collection(nameof(DisableParallelization))]
     public sealed class MsQuicQuicStreamConformanceTests : QuicStreamConformanceTests
     {
         protected override QuicImplementationProvider Provider => QuicImplementationProviders.MsQuic;

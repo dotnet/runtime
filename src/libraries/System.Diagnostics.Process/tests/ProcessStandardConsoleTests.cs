@@ -31,8 +31,8 @@ namespace System.Diagnostics.Tests
                 Assert.True(p.WaitForExit(WaitInMS));
             };
 
-            // Don't test this on Windows containers, as the test is currently failing
-            // cf. https://github.com/dotnet/runtime/issues/42000
+            // Don't test this on Windows containers, as there is a known issue.
+            // See https://github.com/dotnet/runtime/issues/42000 for more details.
             if (!OperatingSystem.IsWindows() || PlatformDetection.IsInContainer)
             {
                 RunWithExpectedCodePage(Encoding.UTF8.CodePage);

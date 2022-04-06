@@ -874,7 +874,7 @@ public:
     //Creates a key with both the namespace and name converted to lowercase and
     //made into a proper namespace-path.
     VOID CreateCanonicallyCasedKey(LPCUTF8 pszNameSpace, LPCUTF8 pszName,
-                                      __out LPUTF8 *ppszOutNameSpace, __out LPUTF8 *ppszOutName);
+                                      _Out_ LPUTF8 *ppszOutNameSpace, _Out_ LPUTF8 *ppszOutName);
 
     static HRESULT FindTypeDefByExportedType(IMDInternalImport *pCTImport,
                                              mdExportedType mdCurrent,

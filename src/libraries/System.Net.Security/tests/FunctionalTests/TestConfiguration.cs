@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.IO;
-using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
@@ -13,7 +11,7 @@ namespace System.Net.Security.Tests
 {
     internal static class TestConfiguration
     {
-        public const int PassingTestTimeoutMilliseconds = 4 * 60 * 1000;
+        public const int PassingTestTimeoutMilliseconds = 1 * 60 * 1000;
         public static TimeSpan PassingTestTimeout => TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds);
 
         public const string Realm = "TEST.COREFX.NET";
@@ -27,8 +25,10 @@ namespace System.Net.Security.Tests
         public const string NtlmUserFilePath = "/var/tmp/ntlm_user_file";
 
         public static bool SupportsNullEncryption { get { return s_supportsNullEncryption.Value; } }
-        public static bool SupportsHandshakeAlerts { get { return OperatingSystem.IsLinux() || OperatingSystem.IsWindows(); } }
+        public static bool SupportsHandshakeAlerts { get { return OperatingSystem.IsLinux() || OperatingSystem.IsWindows() || OperatingSystem.IsFreeBSD(); } }
         public static bool SupportsRenegotiation { get { return (OperatingSystem.IsWindows() && !PlatformDetection.IsWindows7) || ((OperatingSystem.IsLinux() || OperatingSystem.IsFreeBSD()) && PlatformDetection.OpenSslVersion >= new Version(1, 1, 1)); } }
+
+        public static X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
 
         public static Task WhenAllOrAnyFailedWithTimeout(params Task[] tasks)
             => tasks.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
@@ -38,7 +38,21 @@ namespace System.Net.Security.Tests
             // On Windows, null ciphers (no encryption) are supported.
             if (OperatingSystem.IsWindows())
             {
-                return true;
+                if (!PlatformDetection.IsWindows10OrLater)
+                {
+                    // All old versions support null encryption
+                    return true;
+                }
+
+                try
+                {
+                    // New Windows can support null but it may be disabled in Azure images
+                    using (Process p = Process.Start(new ProcessStartInfo("powershell", "-Command Get-TlsCipherSuite") { RedirectStandardOutput = true, RedirectStandardError = true }))
+                    {
+                        return p.StandardOutput.ReadToEnd().Contains("WITH_NULL");
+                    }
+                }
+                catch { return true; }  // assume availability
             }
 
             // On macOS and Android, the null cipher (no encryption) is not supported.

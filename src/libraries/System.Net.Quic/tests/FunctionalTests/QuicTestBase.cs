@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Quic.Implementations;
@@ -167,6 +168,7 @@ namespace System.Net.Quic.Tests
                     if (retry == 0)
                     {
                         Debug.Fail($"ConnectAsync to {clientConnection.RemoteEndPoint} failed with {ex.Message}");
+                        throw ex;
                     }
                 }
             }
@@ -306,12 +308,19 @@ namespace System.Net.Quic.Tests
             return bytesRead;
         }
 
-        internal static async Task<int> WriteForever(QuicStream stream)
+        internal static async Task<int> WriteForever(QuicStream stream, int size = 1)
         {
-            Memory<byte> buffer = new byte[] { 123 };
-            while (true)
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(size);
+            try
             {
-                await stream.WriteAsync(buffer);
+                while (true)
+                {
+                    await stream.WriteAsync(buffer);
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
     }

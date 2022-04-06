@@ -158,7 +158,7 @@ namespace System.Reflection.Metadata.Ecma335
             return BlobHandle.FromOffset(nextIndex);
         }
 
-        internal byte[] GetVirtualBlobBytes(BlobHandle handle, bool unique)
+        internal static byte[] GetVirtualBlobBytes(BlobHandle handle, bool unique)
         {
             BlobHandle.VirtualIndex index = handle.GetVirtualIndex();
             byte[] result = s_virtualValues![(int)index];
@@ -190,7 +190,7 @@ namespace System.Reflection.Metadata.Ecma335
             int separator = blobReader.ReadByte();
             if (separator > 0x7f)
             {
-                throw new BadImageFormatException(SR.Format(SR.InvalidDocumentName, separator));
+                throw new BadImageFormatException(SR.InvalidDocumentName);
             }
 
             var pooledBuilder = PooledStringBuilder.GetInstance();

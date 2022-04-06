@@ -25,22 +25,15 @@ namespace System.DirectoryServices.ActiveDirectory
             _status = (ForestTrustDomainStatus)flag;
             DnsName = Marshal.PtrToStringUni(domainInfo.DNSNameBuffer, domainInfo.DNSNameLength / 2);
             NetBiosName = Marshal.PtrToStringUni(domainInfo.NetBIOSNameBuffer, domainInfo.NetBIOSNameLength / 2);
-            IntPtr ptr = (IntPtr)0;
-            int result = UnsafeNativeMethods.ConvertSidToStringSidW(domainInfo.sid, ref ptr);
-            if (result == 0)
+
+            string sidLocal;
+            global::Interop.BOOL result = global::Interop.Advapi32.ConvertSidToStringSid(domainInfo.sid, out sidLocal);
+            if (result == global::Interop.BOOL.FALSE)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
             }
 
-            try
-            {
-                DomainSid = Marshal.PtrToStringUni(ptr)!;
-            }
-            finally
-            {
-                UnsafeNativeMethods.LocalFree(ptr);
-            }
-
+            DomainSid = sidLocal;
             this.time = time;
         }
 

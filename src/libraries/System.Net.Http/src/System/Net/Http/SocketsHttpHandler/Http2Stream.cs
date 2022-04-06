@@ -18,7 +18,7 @@ namespace System.Net.Http
 {
     internal sealed partial class Http2Connection
     {
-        private sealed class Http2Stream : IValueTaskSource, IHttpHeadersHandler, IHttpTrace
+        private sealed class Http2Stream : IValueTaskSource, IHttpStreamHeadersHandler, IHttpTrace
         {
             private const int InitialStreamBufferSize =
 #if DEBUG
@@ -195,7 +195,7 @@ namespace System.Net.Http
 
                     if (sendRequestContent)
                     {
-                        using var writeStream = new Http2WriteStream(this);
+                        using var writeStream = new Http2WriteStream(this, _request.Content.Headers.ContentLength.GetValueOrDefault(-1));
 
                         if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStart();
 
@@ -212,6 +212,12 @@ namespace System.Net.Http
                             }
 
                             await vt.ConfigureAwait(false);
+                        }
+
+                        if (writeStream.BytesWritten < writeStream.ContentLength)
+                        {
+                            // The number of bytes we actually sent doesn't match the advertised Content-Length
+                            throw new HttpRequestException(SR.Format(SR.net_http_request_content_length_mismatch, writeStream.BytesWritten, writeStream.ContentLength));
                         }
 
                         if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(writeStream.BytesWritten);
@@ -519,7 +525,7 @@ namespace System.Net.Http
                 (KnownHeaders.WWWAuthenticate.Descriptor, Array.Empty<byte>()),
             };
 
-            void IHttpHeadersHandler.OnStaticIndexedHeader(int index)
+            void IHttpStreamHeadersHandler.OnStaticIndexedHeader(int index)
             {
                 Debug.Assert(index >= FirstHPackRequestPseudoHeaderId && index <= LastHPackNormalHeaderId);
 
@@ -542,7 +548,7 @@ namespace System.Net.Http
                 }
             }
 
-            void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
+            void IHttpStreamHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
             {
                 Debug.Assert(index >= FirstHPackRequestPseudoHeaderId && index <= LastHPackNormalHeaderId);
 
@@ -563,6 +569,11 @@ namespace System.Net.Http
 
                     OnHeader(descriptor, value);
                 }
+            }
+
+            void IHttpStreamHeadersHandler.OnDynamicIndexedHeader(int? index, ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
+            {
+                OnHeader(name, value);
             }
 
             private void AdjustHeaderBudget(int amount)
@@ -1040,8 +1051,6 @@ namespace System.Net.Http
 
             private (bool wait, int bytesRead) TryReadFromBuffer(Span<byte> buffer, bool partOfSyncRead = false)
             {
-                Debug.Assert(buffer.Length > 0);
-
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
                 {
@@ -1073,11 +1082,6 @@ namespace System.Net.Http
 
             public int ReadData(Span<byte> buffer, HttpResponseMessage responseMessage)
             {
-                if (buffer.Length == 0)
-                {
-                    return 0;
-                }
-
                 (bool wait, int bytesRead) = TryReadFromBuffer(buffer, partOfSyncRead: true);
                 if (wait)
                 {
@@ -1092,7 +1096,7 @@ namespace System.Net.Http
                 {
                     _windowManager.AdjustWindow(bytesRead, this);
                 }
-                else
+                else if (buffer.Length != 0)
                 {
                     // We've hit EOF.  Pull in from the Http2Stream any trailers that were temporarily stored there.
                     MoveTrailersToResponseMessage(responseMessage);
@@ -1103,11 +1107,6 @@ namespace System.Net.Http
 
             public async ValueTask<int> ReadDataAsync(Memory<byte> buffer, HttpResponseMessage responseMessage, CancellationToken cancellationToken)
             {
-                if (buffer.Length == 0)
-                {
-                    return 0;
-                }
-
                 (bool wait, int bytesRead) = TryReadFromBuffer(buffer.Span);
                 if (wait)
                 {
@@ -1121,7 +1120,7 @@ namespace System.Net.Http
                 {
                     _windowManager.AdjustWindow(bytesRead, this);
                 }
-                else
+                else if (buffer.Length != 0)
                 {
                     // We've hit EOF.  Pull in from the Http2Stream any trailers that were temporarily stored there.
                     MoveTrailersToResponseMessage(responseMessage);
@@ -1518,10 +1517,14 @@ namespace System.Net.Http
 
                 public long BytesWritten { get; private set; }
 
-                public Http2WriteStream(Http2Stream http2Stream)
+                public long ContentLength { get; private set; }
+
+                public Http2WriteStream(Http2Stream http2Stream, long contentLength)
                 {
                     Debug.Assert(http2Stream != null);
+                    Debug.Assert(contentLength >= -1);
                     _http2Stream = http2Stream;
+                    ContentLength = contentLength;
                 }
 
                 protected override void Dispose(bool disposing)
@@ -1545,6 +1548,11 @@ namespace System.Net.Http
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
                 {
                     BytesWritten += buffer.Length;
+
+                    if ((ulong)BytesWritten > (ulong)ContentLength) // If ContentLength == -1, this will always be false
+                    {
+                        return ValueTask.FromException(new HttpRequestException(SR.net_http_content_write_larger_than_content_length));
+                    }
 
                     Http2Stream? http2Stream = _http2Stream;
 

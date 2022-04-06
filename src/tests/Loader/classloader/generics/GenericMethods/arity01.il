@@ -27,7 +27,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module arity01.exe
 // MVID: {076E2FBD-6901-448E-AD54-697AB5AE59C9}
 .imagebase 0x00400000
 .subsystem 0x00000003

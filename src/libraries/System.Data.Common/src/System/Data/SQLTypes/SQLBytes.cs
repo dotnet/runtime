@@ -660,7 +660,7 @@ namespace System.Data.SqlTypes
         {
             CheckIfStreamClosed();
 
-            long lPosition = 0;
+            long lPosition;
 
             switch (origin)
             {

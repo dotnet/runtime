@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -52,7 +53,6 @@ namespace System.IO.Compression
         {
             CheckDeflateStream();
             _deflateStream.Flush();
-            return;
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -109,6 +109,22 @@ namespace System.IO.Compression
         {
             CheckDeflateStream();
             _deflateStream.Write(buffer, offset, count);
+        }
+
+        public override void WriteByte(byte value)
+        {
+            if (GetType() != typeof(GZipStream))
+            {
+                // GZipStream is not sealed, and a derived type may have overridden Write(byte[], int, int) prior
+                // to this WriteByte override being introduced.  In that case, this WriteByte override
+                // should use the behavior of the Write(byte[],int,int) overload.
+                base.WriteByte(value);
+            }
+            else
+            {
+                CheckDeflateStream();
+                _deflateStream.WriteCore(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+            }
         }
 
         public override void Write(ReadOnlySpan<byte> buffer)

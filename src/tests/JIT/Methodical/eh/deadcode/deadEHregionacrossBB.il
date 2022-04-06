@@ -12,14 +12,13 @@
 .assembly extern mscorlib
 {
 }
-.assembly extern common {}
-.assembly test
+.assembly extern eh_common {}
+.assembly 'deadEHregionacrossBB'
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module test.exe
 .imagebase 0x00400000
 .subsystem 0x00000003
 .file alignment 512
@@ -27,27 +26,15 @@
 .class private auto ansi beforefieldinit test
        extends [mscorlib]System.Object
 {
-	.field private static class [common]TestUtil.TestLog testLog
-  	.method private hidebysig specialname rtspecialname static void  .cctor() cil managed
-    {
-      		.maxstack  2
-      		newobj     instance void [common]TestUtil.TestLog::.ctor()
-      		stsfld     class [common]TestUtil.TestLog test::testLog
-      		ret
-    } // end of method test::.cctor
-} // end of class test
+  .field private static class [eh_common]TestUtil.TestLog testLog
+  .method private hidebysig specialname rtspecialname static void  .cctor() cil managed
+  {
+    .maxstack  2
+    newobj     instance void [eh_common]TestUtil.TestLog::.ctor()
+    stsfld     class [eh_common]TestUtil.TestLog test::testLog
+    ret
+  } // end of method test::.cctor
 
-
-
-
-
-
-
-
-
-.class private auto ansi beforefieldinit test
-       extends [mscorlib]System.Object
-{
   .method public hidebysig static int32  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -56,11 +43,11 @@
     .entrypoint
     .maxstack  1
     .locals init (int32 V_0)
-    ldsfld     class [common]TestUtil.TestLog test::testLog
-    callvirt   instance void [common]TestUtil.TestLog::StartRecording()
-    
+    ldsfld     class [eh_common]TestUtil.TestLog test::testLog
+    callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
+
     L:
-    br	IL_0019
+    br  IL_0019
     .try
     {
       IL_0000:  ldstr      "In try"
@@ -73,10 +60,10 @@
          leave.s L
       } finally {
          endfinally
-      } 
+      }
       IL_000a:  leave.s    IL_0019
     }  // end .try
-    catch [mscorlib]System.Object 
+    catch [mscorlib]System.Object
     {
       IL_000c:  pop
       IL_000d:  ldstr      "In catch"
@@ -84,17 +71,17 @@
       IL_0017:  leave.s    IL_0019
 
     }  // end handler
-    IL_0019: 
-		ldsfld     class [common]TestUtil.TestLog test::testLog
-      	callvirt   instance void [common]TestUtil.TestLog::StopRecording()
-      
-      	ldsfld     class [common]TestUtil.TestLog test::testLog
-      	callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
-        
+    IL_0019:
+        ldsfld     class [eh_common]TestUtil.TestLog test::testLog
+        callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
+
+        ldsfld     class [eh_common]TestUtil.TestLog test::testLog
+        callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
+
     IL_0022:  ret
   } // end of method test::Main
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     .maxstack  1
@@ -102,8 +89,4 @@
     IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
     IL_0006:  ret
   } // end of method test::.ctor
-
 } // end of class test
-
-
-

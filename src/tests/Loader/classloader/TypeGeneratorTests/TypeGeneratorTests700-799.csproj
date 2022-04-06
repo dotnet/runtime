@@ -1,0 +1,10 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+    <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="TypeGeneratorTest7??/Generated*.ilproj" />
+    <ProjectReference Include="TestFramework/TestFramework.csproj" />
+  </ItemGroup>
+</Project>

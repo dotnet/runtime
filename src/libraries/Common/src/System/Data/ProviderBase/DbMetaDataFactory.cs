@@ -109,8 +109,8 @@ namespace System.Data.ProviderBase
             DataColumn collectionNameColumn = metaDataCollectionsTable.Columns[_collectionName]!;
 
             DataTable? resultTable = null;
-            DbCommand? command = null;
-            DataTable? schemaTable = null;
+            DbCommand? command;
+            DataTable? schemaTable;
 
             Debug.Assert(requestedCollectionRow != null);
             string sqlCommand = (requestedCollectionRow[populationStringColumn, DataRowVersion.Current] as string)!;
@@ -185,13 +185,12 @@ namespace System.Data.ProviderBase
                 if (reader != null)
                 {
                     reader.Dispose();
-                    reader = null;
                 }
             }
             return resultTable;
         }
 
-        private DataColumn[] FilterColumns(DataTable sourceTable, string[]? hiddenColumnNames, DataColumnCollection destinationColumns)
+        private static DataColumn[] FilterColumns(DataTable sourceTable, string[]? hiddenColumnNames, DataColumnCollection destinationColumns)
         {
             int columnCount = 0;
             foreach (DataColumn sourceColumn in sourceTable.Columns)
@@ -341,8 +340,8 @@ namespace System.Data.ProviderBase
         private string GetParameterName(string neededCollectionName, int neededRestrictionNumber)
         {
 
-            DataTable? restrictionsTable = null;
-            DataColumnCollection? restrictionColumns = null;
+            DataTable? restrictionsTable;
+            DataColumnCollection? restrictionColumns;
             DataColumn? collectionName = null;
             DataColumn? parameterName = null;
             DataColumn? restrictionName = null;
@@ -396,10 +395,10 @@ namespace System.Data.ProviderBase
             DataTable metaDataCollectionsTable = _metaDataCollectionsDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections]!;
             DataColumn populationMechanismColumn = metaDataCollectionsTable.Columns[_populationMechanism]!;
             DataColumn collectionNameColumn = metaDataCollectionsTable.Columns[DbMetaDataColumnNames.CollectionName]!;
-            DataRow? requestedCollectionRow = null;
-            DataTable? requestedSchema = null;
+            DataRow? requestedCollectionRow;
+            DataTable? requestedSchema;
             string[]? hiddenColumns;
-            string? exactCollectionName = null;
+            string? exactCollectionName;
 
             requestedCollectionRow = FindMetaDataCollectionRow(collectionName);
             exactCollectionName = (requestedCollectionRow[collectionNameColumn, DataRowVersion.Current] as string)!;
@@ -466,7 +465,7 @@ namespace System.Data.ProviderBase
             return requestedSchema;
         }
 
-        private bool IncludeThisColumn(DataColumn sourceColumn, string[]? hiddenColumnNames)
+        private static bool IncludeThisColumn(DataColumn sourceColumn, string[]? hiddenColumnNames)
         {
 
             bool result = true;

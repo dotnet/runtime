@@ -63,24 +63,15 @@ void Frame::Log() {
 
     MethodDesc* method = GetFunction();
 
-#ifdef TARGET_X86
-    if (GetVTablePtr() == UMThkCallFrame::GetMethodFrameVPtr())
-        method = ((UMThkCallFrame*) this)->GetUMEntryThunk()->GetMethod();
-#endif
-
     STRESS_LOG3(LF_STUBS, LL_INFO1000000, "STUBS: In Stub with Frame %p assoc Method %pM FrameType = %pV\n", this, method, *((void**) this));
 
     char buff[64];
     const char* frameType;
     if (GetVTablePtr() == PrestubMethodFrame::GetMethodFrameVPtr())
         frameType = "PreStub";
-#ifdef TARGET_X86
-    else if (GetVTablePtr() == UMThkCallFrame::GetMethodFrameVPtr())
-        frameType = "UMThkCallFrame";
-#endif
     else if (GetVTablePtr() == PInvokeCalliFrame::GetMethodFrameVPtr())
     {
-        sprintf_s(buff, COUNTOF(buff), "PInvoke CALLI target" FMT_ADDR,
+        sprintf_s(buff, ARRAY_SIZE(buff), "PInvoke CALLI target" FMT_ADDR,
                   DBG_ADDR(((PInvokeCalliFrame*)this)->GetPInvokeCalliTarget()));
         frameType = buff;
     }
@@ -257,7 +248,7 @@ void Frame::LogFrame(
     {
         _ASSERTE(!"New Frame type needs to be added to FrameTypeName()");
         // Pointer is up to 17chars + vtbl@ = 22 chars
-        sprintf_s(buf, COUNTOF(buf), "vtbl@%p", (VOID *)GetVTablePtr());
+        sprintf_s(buf, ARRAY_SIZE(buf), "vtbl@%p", (VOID *)GetVTablePtr());
         pFrameType = buf;
     }
 
@@ -1269,6 +1260,10 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
 
         MetaSig msig(pSig, cbSigSize, pFunction->GetModule(), &typeContext);
 
+        bool fCtorOfVariableSizedObject = msig.HasThis() && (pFunction->GetMethodTable() == g_pStringClass) && pFunction->IsCtor();
+        if (fCtorOfVariableSizedObject)
+            msig.ClearHasThis();
+
         if (pFunction->RequiresInstArg() && !SuppressParamTypeArg())
             msig.SetHasParamTypeArg();
 
@@ -1599,32 +1594,6 @@ void ComMethodFrame::DoSecondPassHandlerCleanup(Frame * pCurFrame)
 
 #endif // FEATURE_COMINTEROP
 
-
-#ifdef TARGET_X86
-
-PTR_UMEntryThunk UMThkCallFrame::GetUMEntryThunk()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return dac_cast<PTR_UMEntryThunk>(GetDatum());
-}
-
-#ifdef DACCESS_COMPILE
-void UMThkCallFrame::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    WRAPPER_NO_CONTRACT;
-    UnmanagedToManagedFrame::EnumMemoryRegions(flags);
-
-    // Pieces of the UMEntryThunk need to be saved.
-    UMEntryThunk *pThunk = GetUMEntryThunk();
-    DacEnumMemoryRegion(dac_cast<TADDR>(pThunk), sizeof(UMEntryThunk));
-
-    UMThunkMarshInfo *pMarshInfo = pThunk->GetUMThunkMarshInfo();
-    DacEnumMemoryRegion(dac_cast<TADDR>(pMarshInfo), sizeof(UMThunkMarshInfo));
-}
-#endif
-
-#endif // TARGET_X86
-
 #ifndef DACCESS_COMPILE
 
 #if defined(_MSC_VER) && defined(TARGET_X86)
@@ -1948,16 +1917,18 @@ VOID InlinedCallFrame::Init()
 }
 
 
-
+#ifdef FEATURE_COMINTEROP
 void UnmanagedToManagedFrame::ExceptionUnwind()
 {
     WRAPPER_NO_CONTRACT;
 
     AppDomain::ExceptionUnwind(this);
 }
+#endif // FEATURE_COMINTEROP
 
 #endif // !DACCESS_COMPILE
 
+#ifdef FEATURE_COMINTEROP
 PCODE UnmanagedToManagedFrame::GetReturnAddress()
 {
     WRAPPER_NO_CONTRACT;
@@ -1976,6 +1947,7 @@ PCODE UnmanagedToManagedFrame::GetReturnAddress()
         return pRetAddr;
     }
 }
+#endif // FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
 //=================================================================================
@@ -2100,6 +2072,12 @@ void ComputeCallRefMap(MethodDesc* pMD,
     DWORD cbSigSize;
     pMD->GetSig(&pSig, &cbSigSize);
     MetaSig msig(pSig, cbSigSize, pMD->GetModule(), &typeContext);
+
+    bool fCtorOfVariableSizedObject = msig.HasThis() && (pMD->GetMethodTable() == g_pStringClass) && pMD->IsCtor();
+    if (fCtorOfVariableSizedObject)
+    {
+        msig.ClearHasThis();
+    }
 
     //
     // Shared default interface methods (i.e. virtual interface methods with an implementation) require

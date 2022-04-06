@@ -12,9 +12,6 @@ namespace System.Reflection.Metadata
         internal const string DotNetModifiableAssembliesSwitch = "DOTNET_MODIFIABLE_ASSEMBLIES";
         internal const string DotNetModifiableAssembliesValue = "debug";
 
-        [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
-        public class NoParallelTests { }
-
         /// Whether ApplyUpdate is supported by the environment, test configuration, and runtime.
         ///
         /// We need:
@@ -50,7 +47,7 @@ namespace System.Reflection.Metadata
         {
             // check that interpreter is enabled, and the build has hot reload capabilities enabled.
             var isInterp = RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled;
-            return isInterp && HasApplyUpdateCapabilities();
+            return isInterp && !PlatformDetection.IsMonoAOT && HasApplyUpdateCapabilities();
         }
 
         internal static bool HasApplyUpdateCapabilities()
@@ -69,7 +66,7 @@ namespace System.Reflection.Metadata
 
         private static System.Collections.Generic.Dictionary<Assembly, int> assembly_count = new();
 
-        internal static void ApplyUpdate (System.Reflection.Assembly assm)
+        internal static void ApplyUpdate (System.Reflection.Assembly assm, bool usePDB = true)
         {
             int count;
             if (!assembly_count.TryGetValue(assm, out count))
@@ -86,9 +83,13 @@ namespace System.Reflection.Metadata
 
             string dmeta_name = $"{basename}.{count}.dmeta";
             string dil_name = $"{basename}.{count}.dil";
+            string dpdb_name = $"{basename}.{count}.dpdb";
             byte[] dmeta_data = System.IO.File.ReadAllBytes(dmeta_name);
             byte[] dil_data = System.IO.File.ReadAllBytes(dil_name);
-            byte[] dpdb_data = null; // TODO also use the dpdb data
+            byte[] dpdb_data = null;
+
+            if (usePDB)
+                dpdb_data = System.IO.File.ReadAllBytes(dpdb_name);
 
             MetadataUpdater.ApplyUpdate(assm, dmeta_data, dil_data, dpdb_data);
         }
@@ -97,6 +98,20 @@ namespace System.Reflection.Metadata
         {
             options = options ?? new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables.Add(DotNetModifiableAssembliesSwitch, DotNetModifiableAssembliesValue);
+            /* Ask mono to use .dpdb data to generate sequence points even without a debugger attached */
+            if (IsMonoRuntime)
+                AppendEnvironmentVariable(options.StartInfo.EnvironmentVariables, "MONO_DEBUG", "gen-seq-points");
+        }
+
+        private static void AppendEnvironmentVariable(System.Collections.Specialized.StringDictionary env, string key, string addedValue)
+        {
+            if (!env.ContainsKey(key))
+                env.Add(key, addedValue);
+            else
+            {
+                string oldValue = env[key];
+                env[key] = oldValue + "," + addedValue;
+            }
         }
 
         /// Run the given test case, which applies updates to the given assembly.

@@ -73,7 +73,9 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #   define __NR_membarrier  389
 #  elif defined(__aarch64__)
 #   define __NR_membarrier  283
-#  elif
+#  elif defined(__loongarch64)
+#   define __NR_membarrier  283
+#  else
 #   error Unknown architecture
 #  endif
 # endif
@@ -83,7 +85,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <libproc.h>
 #include <sys/sysctl.h>
 #include <sys/posix_sem.h>
-#if defined(HOST_ARM64)
 #include <mach/task.h>
 #include <mach/vm_map.h>
 extern "C"
@@ -101,7 +102,6 @@ extern "C"
         }                                                                   \
     } while (false)
 
-#endif // defined(HOST_ARM64)
 #endif // __APPLE__
 
 #ifdef __NetBSD__
@@ -3134,6 +3134,7 @@ PROCBuildCreateDumpCommandLine(
     char** pprogram,
     char** ppidarg,
     const char* dumpName,
+    const char* logFileName,
     INT dumpType,
     ULONG32 flags)
 {
@@ -3206,6 +3207,12 @@ PROCBuildCreateDumpCommandLine(
     if (flags & GenerateDumpFlagsCrashReportEnabled)
     {
         argv.push_back("--crashreport");
+    }
+
+    if (logFileName != nullptr)
+    {
+        argv.push_back("--logtofile");
+        argv.push_back(logFileName);
     }
 
     argv.push_back(*ppidarg);
@@ -3285,14 +3292,16 @@ Return
 BOOL
 PROCAbortInitialize()
 {
-    CLRConfigNoCache enabledCfg= CLRConfigNoCache::Get("DbgEnableMiniDump", /*noprefix*/ false, &getenv);
+    CLRConfigNoCache enabledCfg = CLRConfigNoCache::Get("DbgEnableMiniDump", /*noprefix*/ false, &getenv);
 
     DWORD enabled = 0;
-    if (enabledCfg.IsSet()
-        && enabledCfg.TryAsInteger(10, enabled)
-        && enabled)
+    if (enabledCfg.IsSet() && enabledCfg.TryAsInteger(10, enabled) && enabled)
     {
         CLRConfigNoCache dmpNameCfg = CLRConfigNoCache::Get("DbgMiniDumpName", /*noprefix*/ false, &getenv);
+        const char* dumpName = dmpNameCfg.IsSet() ? dmpNameCfg.AsString() : nullptr;
+
+        CLRConfigNoCache dmpLogToFileCfg = CLRConfigNoCache::Get("CreateDumpLogToFile", /*noprefix*/ false, &getenv);
+        const char* logFilePath = dmpLogToFileCfg.IsSet() ? dmpLogToFileCfg.AsString() : nullptr;
 
         CLRConfigNoCache dmpTypeCfg = CLRConfigNoCache::Get("DbgMiniDumpType", /*noprefix*/ false, &getenv);
         DWORD dumpType = UndefinedDumpType;
@@ -3306,11 +3315,17 @@ PROCAbortInitialize()
         }
 
         ULONG32 flags = GenerateDumpFlagsNone;
-        CLRConfigNoCache createDumpCfg = CLRConfigNoCache::Get("CreateDumpDiagnostics", /*noprefix*/ false, &getenv);
+        CLRConfigNoCache createDumpDiag = CLRConfigNoCache::Get("CreateDumpDiagnostics", /*noprefix*/ false, &getenv);
         DWORD val = 0;
-        if (createDumpCfg.IsSet() && createDumpCfg.TryAsInteger(10, val) && val == 1)
+        if (createDumpDiag.IsSet() && createDumpDiag.TryAsInteger(10, val) && val == 1)
         {
             flags |= GenerateDumpFlagsLoggingEnabled;
+        }
+        CLRConfigNoCache createDumpVerboseDiag = CLRConfigNoCache::Get("CreateDumpVerboseDiagnostics", /*noprefix*/ false, &getenv);
+        val = 0;
+        if (createDumpVerboseDiag.IsSet() && createDumpVerboseDiag.TryAsInteger(10, val) && val == 1)
+        {
+            flags |= GenerateDumpFlagsVerboseLoggingEnabled;
         }
         CLRConfigNoCache enabldReportCfg = CLRConfigNoCache::Get("EnableCrashReport", /*noprefix*/ false, &getenv);
         val = 0;
@@ -3318,9 +3333,10 @@ PROCAbortInitialize()
         {
             flags |= GenerateDumpFlagsCrashReportEnabled;
         }
+
         char* program = nullptr;
         char* pidarg = nullptr;
-        if (!PROCBuildCreateDumpCommandLine(g_argvCreateDump, &program, &pidarg, dmpNameCfg.AsString(), dumpType, flags))
+        if (!PROCBuildCreateDumpCommandLine(g_argvCreateDump, &program, &pidarg, dumpName, logFilePath, dumpType, flags))
         {
             return FALSE;
         }
@@ -3367,7 +3383,7 @@ PAL_GenerateCoreDump(
     }
     char* program = nullptr;
     char* pidarg = nullptr;
-    BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, dumpType, flags);
+    BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, nullptr, dumpType, flags);
     if (result)
     {
         result = PROCCreateCrashDump(argvCreateDump);
@@ -3486,7 +3502,7 @@ InitializeFlushProcessWriteBuffers()
         }
     }
 
-#if defined(TARGET_OSX) && defined(HOST_ARM64)
+#ifdef TARGET_OSX
     return TRUE;
 #else
     s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
@@ -3516,7 +3532,7 @@ InitializeFlushProcessWriteBuffers()
     }
 
     return status == 0;
-#endif // defined(TARGET_OSX) && defined(HOST_ARM64)
+#endif // TARGET_OSX
 }
 
 #define FATAL_ASSERT(e, msg) \
@@ -3566,7 +3582,7 @@ FlushProcessWriteBuffers()
         status = pthread_mutex_unlock(&flushProcessWriteBuffersMutex);
         FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
-#if defined(TARGET_OSX) && defined(HOST_ARM64)
+#ifdef TARGET_OSX
     else
     {
         mach_msg_type_number_t cThreads;
@@ -3592,7 +3608,7 @@ FlushProcessWriteBuffers()
         machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
         CHECK_MACH("vm_deallocate()", machret);
     }
-#endif // defined(TARGET_OSX) && defined(HOST_ARM64)
+#endif // TARGET_OSX
 }
 
 /*++

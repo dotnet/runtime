@@ -52,7 +52,7 @@ namespace System.Transactions
 
         public int EnterReadLock()
         {
-            int readerIndex = 0;
+            int readerIndex;
             do
             {
                 if (_writerPresent)
@@ -223,7 +223,7 @@ namespace System.Transactions
         internal int Add(InternalTransaction txNew)
         {
             // Tell the runtime that we are modifying global state.
-            int readerIndex = 0;
+            int readerIndex;
 
             readerIndex = _rwLock.EnterReadLock();
             try
@@ -359,7 +359,6 @@ namespace System.Transactions
                     // creating the second BucketSet with remove the backward reference that was created in the
                     // first trip thru the loop.
                     currentBucketSet = lastBucketSet;
-                    lastBucketSet = null;
 
                     // The outer loop will iterate and pick up where we left off.
                 }
@@ -373,7 +372,7 @@ namespace System.Transactions
 
 
         // Remove a transaction from the table.
-        internal void Remove(InternalTransaction tx)
+        internal static void Remove(InternalTransaction tx)
         {
             Debug.Assert(tx._tableBucket != null);
             tx._tableBucket.Remove(tx);
@@ -410,14 +409,14 @@ namespace System.Transactions
             // that point will timeout so once we've found it then it is just a matter of traversing the
             // structure.
             //
-            BucketSet? lastBucketSet = null;
+            BucketSet? lastBucketSet;
             BucketSet currentBucketSet = _headBucketSet; // The list always has a head.
 
             // Acquire a writer lock before checking to see if we should disable the timer.
             // Adding of transactions acquires a reader lock and might insert a new BucketSet.
             // If that races with our check for a BucketSet existing, we may not timeout that
             // transaction that is being added.
-            WeakReference? nextWeakSet = null;
+            WeakReference? nextWeakSet;
             BucketSet? nextBucketSet = null;
 
             nextWeakSet = (WeakReference?)currentBucketSet.nextSetWeak;
@@ -505,7 +504,7 @@ namespace System.Transactions
                 if (abortingSetsWeak == nextWeakSet)
                 {
                     // Yea - now proceed to abort the transactions.
-                    BucketSet? abortingBucketSets = null;
+                    BucketSet? abortingBucketSets;
 
                     do
                     {

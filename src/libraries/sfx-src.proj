@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.Build.Traversal">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <!-- Filter ProjectReferences to build the best matching target framework only. -->
+    <FilterTraversalProjectReferences>true</FilterTraversalProjectReferences>
+  </PropertyGroup>
+
+  <!-- Reference all NetCoreAppCurrent shared framework src projects. -->
+  <ItemGroup>
+    <AnyProject Include="$(MSBuildThisFileDirectory)*\src\*.*proj"
+                Exclude="@(ProjectExclusions);
+                         $(MSBuildThisFileDirectory)*\src\*.shproj" />
+    <NonNetCoreAppProject Include="@(AnyProject)"
+                          Exclude="@(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj');
+                                   Microsoft.VisualBasic.Core\src\Microsoft.VisualBasic.Core.vbproj" />
+    <ProjectReference Include="@(AnyProject);
+                               $(CoreLibProject)"
+                      Exclude="@(NonNetCoreAppProject)" />
+  </ItemGroup>
+
+</Project>

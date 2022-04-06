@@ -11,11 +11,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly array2// as "array2"
+.assembly 'array3'// as "array2"
 {
 }
 .assembly extern xunit.core {}
-.module array2.exe
 // MVID: {1781A471-82F3-4159-8D0F-B3B5A9FF1BB6}
 .namespace JitTest
 {

@@ -630,8 +630,7 @@ namespace System.Xml.Serialization
         }
         internal bool Declares(MemberMapping member, string? parent)
         {
-            StructMapping? m;
-            return (FindDeclaringMapping(member, out m, parent) != null);
+            return (FindDeclaringMapping(member, out _, parent) != null);
         }
 
         internal void SetContentModel(TextAccessor? text, bool hasElements)
@@ -1239,7 +1238,7 @@ namespace System.Xml.Serialization
             if (element.Parent == null || !(element.Parent is XmlSchema))
                 return;
 
-            XmlSchemaObjectTable? elements = null;
+            XmlSchemaObjectTable? elements;
             if (Schema != null && Schema.TargetNamespace == elementNs)
             {
                 XmlSchemas.Preprocess(Schema);
@@ -1265,7 +1264,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private bool Match(XmlSchemaElement e1, XmlSchemaElement e2)
+        private static bool Match(XmlSchemaElement e1, XmlSchemaElement e2)
         {
             if (e1.IsNillable != e2.IsNillable)
                 return false;

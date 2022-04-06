@@ -123,7 +123,7 @@ namespace System.Data
             }
         }
 
-        private int CountNonNSAttributes(XmlNode node)
+        private static int CountNonNSAttributes(XmlNode node)
         {
             int count = 0;
             for (int i = 0; i < node.Attributes!.Count; i++)
@@ -134,7 +134,7 @@ namespace System.Data
             return count;
         }
 
-        private string GetValueForTextOnlyColums(XmlNode? n)
+        private static string GetValueForTextOnlyColums(XmlNode? n)
         {
             string? value = null;
 
@@ -150,7 +150,6 @@ namespace System.Data
                 {
                     // don't use string builder if only one text node exists
                     value = n.Value;
-                    n = n.NextSibling;
                 }
                 else
                 {
@@ -170,7 +169,7 @@ namespace System.Data
             return value;
         }
 
-        private string GetInitialTextFromNodes(ref XmlNode? n)
+        private static string GetInitialTextFromNodes(ref XmlNode? n)
         {
             string? value = null;
 
@@ -204,7 +203,7 @@ namespace System.Data
             return value;
         }
 
-        private DataColumn? GetTextOnlyColumn(DataRow row)
+        private static DataColumn? GetTextOnlyColumn(DataRow row)
         {
             DataColumnCollection columns = row.Table.Columns;
             int cCols = columns.Count;
@@ -237,7 +236,7 @@ namespace System.Data
             return true;
         }
 
-        private bool FExcludedNamespace(string ns)
+        private static bool FExcludedNamespace(string ns)
         {
             return ns.Equals(Keywords.XSD_XMLNS_NS);
         }
@@ -265,7 +264,7 @@ namespace System.Data
                 return false;
         }
 
-        internal bool IsTextLikeNode(XmlNodeType n)
+        internal static bool IsTextLikeNode(XmlNodeType n)
         {
             switch (n)
             {
@@ -283,7 +282,7 @@ namespace System.Data
             }
         }
 
-        internal bool IsTextOnly(DataColumn c)
+        internal static bool IsTextOnly(DataColumn c)
         {
             if (c.ColumnMapping != MappingType.SimpleContent)
                 return false;
@@ -548,7 +547,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        private void SetRowValueFromXmlText(DataRow row, DataColumn col, string xmlText)
+        private static void SetRowValueFromXmlText(DataRow row, DataColumn col, string xmlText)
         {
             row[col] = col.ConvertXmlToObject(xmlText);
         }
@@ -702,7 +701,7 @@ namespace System.Data
             // If table name we have matches dataset
             // name top node could be a DataSet OR a table.
             // It's a table overwise.
-            DataRow? row = null;                                 // Data row we're going to add to this table
+            DataRow? row;                                 // Data row we're going to add to this table
 
             bool matchFound = false;                            // Assume we found no matching elements
 
@@ -880,7 +879,7 @@ namespace System.Data
 
             Debug.Assert(table != null, "Table to be loaded is null on LoadTable() entry");
 
-            DataRow? row = null;                                 // Data row we're going to add to this table
+            DataRow? row;                                 // Data row we're going to add to this table
 
             int entryDepth = _dataReader!.Depth;                  // Store current reader depth so we know when to stop reading
             int entryChild = _childRowsStack!.Count;              // Memorize child stack level on entry

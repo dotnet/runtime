@@ -531,10 +531,6 @@
 #include "safemath.h"
 #include "corerror.h"
 
-#ifndef __in
-#include <specstrings.h>
-#endif
-
 #define DACCESS_TABLE_RESOURCE "COREXTERNALDATAACCESSRESOURCE"
 
 #ifdef PAL_STDCPP_COMPAT
@@ -618,7 +614,6 @@ typedef struct _DacGlobals
 #endif // TARGET_ARM
 
     ULONG fn__ThePreStubPatchLabel;
-    ULONG fn__PrecodeFixupThunk;
 #ifdef FEATURE_COMINTEROP
     ULONG fn__Unknown_AddRef;
     ULONG fn__Unknown_AddRefSpecial;
@@ -650,7 +645,7 @@ extern "C" {
 // These two functions are largely just for marking code
 // that is not fully converted.  DacWarning prints a debug
 // message, while DacNotImpl throws a not-implemented exception.
-void __cdecl DacWarning(__in __in_z char* format, ...);
+void __cdecl DacWarning(_In_ _In_z_ char* format, ...);
 void DacNotImpl(void);
 
 void    DacError(HRESULT err);

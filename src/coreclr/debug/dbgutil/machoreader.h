@@ -37,6 +37,7 @@ public:
 
     bool ReadHeader();
     bool TryLookupSymbol(const char* symbolName, uint64_t* symbolValue);
+    bool TryLookupSymbol(int start, int nsyms, const char* symbolName, uint64_t* symbolValue);
     bool EnumerateSegments();
 
 private:

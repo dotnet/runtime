@@ -1,8 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
+    <!-- Suppressions to avoid ifdefs:
+        CA1845: Use span-based 'string.Concat' and 'AsSpan' instead of 'Substring'
+        CA1846: Prefer 'AsSpan' over 'Substring' when span-based overloads are available -->
+    <NoWarn>$(NoWarn);CA1845;CA1846;IDE0059;CA1822</NoWarn>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
@@ -21,9 +25,10 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.DirectoryServices_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'windows'">SR.DirectoryServices_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\DirectoryServices\ActiveDirectorySecurity.cs" />
     <Compile Include="System\DirectoryServices\AdsVLV.cs" />
     <Compile Include="System\DirectoryServices\AuthenticationTypes.cs" />
@@ -149,9 +154,91 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
     <Compile Include="Interop\NativeMethods.cs" />
     <Compile Include="Interop\SafeNativeMethods.cs" />
     <Compile Include="Interop\UnsafeNativeMethods.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs"
+             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
+             Link="Common\Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOLEAN.cs"
+             Link="Common\Interop\Windows\Interop.BOOLEAN.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="System\Obsoletions.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs"
+             Link="Common\Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.SECURITY_QUALITY_OF_SERVICE.cs"
+             Link="Common\Interop\Windows\Interop.SECURITY_QUALITY_OF_SERVICE.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
+             Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.ADsOpenObject.cs"
+             Link="Common\Interop\Windows\Activeds\Interop.ADsOpenObject.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ConvertSidToStringSid.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.ConvertSidToStringSid.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ConvertStringSidToSid.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.ConvertStringSidToSid.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CopySid.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.CopySid.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EqualDomainSid.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.EqualDomainSid.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetLengthSid.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.GetLengthSid.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetSidIdentifierAuthority.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.GetSidIdentifierAuthority.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetTokenInformation.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.GetTokenInformation.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ImpersonateLoggedOnUser_IntPtr.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.ImpersonateLoggedOnUser_IntPtr.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.IsValidSid.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.IsValidSid.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LogonUser.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.LogonUser.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaClose.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.LsaClose.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaFreeMemory.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.LsaFreeMemory.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaNtStatusToWinError.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.LsaNtStatusToWinError.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaOpenPolicy.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.LsaOpenPolicy.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaQueryInformationPolicy.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.LsaQueryInformationPolicy.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenThreadToken_SafeTokenHandle.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.OpenThreadToken_SafeTokenHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenProcessToken.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.OpenProcessToken.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RevertToSelf.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.RevertToSelf.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.TOKEN_INFORMATION_CLASS.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.TOKEN_INFORMATION_CLASS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentThread.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentThread.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcAddress.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetProcAddress.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibrary.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.LoadLibrary.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs"
+             Link="Common\Interop\Windows\OleAut32\Interop.VariantClear.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtStatus.cs"
+             Link="Common\Interop\Windows\NtDll\Interop.NtStatus.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.TOKENS.cs"
+             Link="Common\Interop\Windows\SspiCli\Interop.TOKENS.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLsaPolicyHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeLsaPolicyHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeTokenHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeTokenHandle.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
@@ -167,6 +254,7 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.IO.FileSystem.AccessControl" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />
@@ -174,6 +262,7 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Claims" />
@@ -185,7 +274,7 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
     <Reference Include="System.Security.Cryptography" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
     <PackageReference Include="System.IO.FileSystem.AccessControl" Version="$(SystemIOFileSystemAccessControlVersion)" />
     <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
     <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />

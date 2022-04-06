@@ -35,7 +35,7 @@ public class TestClass
             return;
         }
     }
-    public static int Main(string[] args)
+    public static int Main()
     {
         new TestClass().Method0();
         return s_s2_16.float_2 == 1.5f ? 100 : 0;

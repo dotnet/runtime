@@ -205,8 +205,7 @@ namespace System.Reflection.Metadata
                 throw new BadImageFormatException(SR.NotEnoughSpaceForVersionString);
             }
 
-            int numberOfBytesRead;
-            versionString = memReader.GetMemoryBlockAt(0, versionStringSize).PeekUtf8NullTerminated(0, null, UTF8Decoder, out numberOfBytesRead, '\0');
+            versionString = memReader.GetMemoryBlockAt(0, versionStringSize).PeekUtf8NullTerminated(0, null, UTF8Decoder, out _, '\0');
             memReader.Offset += versionStringSize;
         }
 
@@ -235,7 +234,7 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Reads stream headers described in ECMA-335 24.2.2 Stream header
         /// </summary>
-        private StreamHeader[] ReadStreamHeaders(ref BlobReader memReader)
+        private static StreamHeader[] ReadStreamHeaders(ref BlobReader memReader)
         {
             // storage header:
             memReader.ReadUInt16();

@@ -23,7 +23,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module SealedTypes.exe
 // MVID: {926F9C9D-6690-45EB-B4DA-12725C405BC3}
 .imagebase 0x00400000
 .file alignment 0x00000200

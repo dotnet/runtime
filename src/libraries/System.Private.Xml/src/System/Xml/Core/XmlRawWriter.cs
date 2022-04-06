@@ -184,13 +184,8 @@ namespace System.Xml
         }
 
         // Override in order to handle Xml simple typed values and to pass resolver for QName values
-        public override void WriteValue(object value)
+        public override void WriteValue(object value!!)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             WriteString(XmlUntypedConverter.Untyped.ToString(value, _resolver));
         }
 

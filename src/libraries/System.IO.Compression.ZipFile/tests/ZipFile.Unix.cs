@@ -1,12 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    public class ZipFile_Unix : ZipFileTestBase
+    public partial class ZipFile_Unix : ZipFileTestBase
     {
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60581", TestPlatforms.iOS | TestPlatforms.tvOS)]
@@ -136,6 +139,42 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.tvOS & ~TestPlatforms.iOS)]
+        public async Task CanZipNamedPipe()
+        {
+            string destPath = Path.Combine(TestDirectory, "dest.zip");
+
+            string subFolderPath = Path.Combine(TestDirectory, "subfolder");
+            string fifoPath = Path.Combine(subFolderPath, "namedPipe");
+            Directory.CreateDirectory(subFolderPath); // mandatory before calling mkfifo
+            Assert.Equal(0, mkfifo(fifoPath, 438 /* 666 in octal */));
+
+            byte[] contentBytes = { 1, 2, 3, 4, 5 };
+
+            await Task.WhenAll(
+                Task.Run(() =>
+                {
+                    using FileStream fs = new (fifoPath, FileMode.Open, FileAccess.Write, FileShare.Read, bufferSize: 0);
+                    foreach (byte content in contentBytes)
+                    {
+                        fs.WriteByte(content);
+                    }
+                }),
+                Task.Run(() =>
+                {
+                    ZipFile.CreateFromDirectory(subFolderPath, destPath);
+
+                    using ZipArchive zippedFolder = ZipFile.OpenRead(destPath);
+                    using Stream unzippedPipe = zippedFolder.Entries.Single().Open();
+
+                    byte[] readBytes = new byte[contentBytes.Length];
+                    Assert.Equal(contentBytes.Length, unzippedPipe.Read(readBytes));
+                    Assert.Equal<byte>(contentBytes, readBytes);
+                    Assert.Equal(0, unzippedPipe.Read(readBytes)); // EOF
+                }));
+        }
+
         private static string GetExpectedPermissions(string expectedPermissions)
         {
             if (string.IsNullOrEmpty(expectedPermissions))
@@ -156,5 +195,8 @@ namespace System.IO.Compression.Tests
 
             return expectedPermissions;
         }
+
+        [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        private static partial int mkfifo(string path, int mode);
     }
 }

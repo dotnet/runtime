@@ -191,19 +191,19 @@ namespace System.IO
         public void DirectoryInfo_Create_NotFound()
         {
             using var tempRootDir = new TempAclDirectory();
-            string dirPath = Path.Combine(tempRootDir.Path, Guid.NewGuid().ToString(), "ParentDoesNotExist");
+            string dirPath = Path.Combine(tempRootDir.GenerateSubItemPath(), "ParentDoesNotExist");
 
             var dirInfo = new DirectoryInfo(dirPath);
             var security = new DirectorySecurity();
             // Fails because the DirectorySecurity lacks any rights to create parent folder
-            Assert.Throws<UnauthorizedAccessException>(() =>  CreateDirectoryWithSecurity(dirInfo, security));
+            Assert.Throws<UnauthorizedAccessException>(() => CreateDirectoryWithSecurity(dirInfo, security));
         }
 
         [Fact]
         public void DirectoryInfo_Create_NotFound_FullControl()
         {
             using var tempRootDir = new TempAclDirectory();
-            string dirPath = Path.Combine(tempRootDir.Path, Guid.NewGuid().ToString(), "ParentDoesNotExist");
+            string dirPath = Path.Combine(tempRootDir.GenerateSubItemPath(), "ParentDoesNotExist");
 
             var dirInfo = new DirectoryInfo(dirPath);
             var security = GetDirectorySecurity(FileSystemRights.FullControl);
@@ -284,156 +284,198 @@ namespace System.IO
         {
             FileInfo info = null;
             var security = new FileSecurity();
-
             Assert.Throws<ArgumentNullException>("fileInfo", () =>
-                CreateFileWithSecurity(info, FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
+                info.Create(FileMode.CreateNew, FileSystemRights.FullControl, FileShare.None, DefaultBufferSize, FileOptions.None, security));
         }
 
         [Fact]
-        public void FileInfo_Create_NullFileSecurity()
-        {
-            var info = new FileInfo("path");
-
-            Assert.Throws<ArgumentNullException>("fileSecurity", () =>
-                CreateFileWithSecurity(info, FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, null));
-        }
-
-        [Fact]
-        public void FileInfo_Create_NotFound()
+        public void FileInfo_Create_DirectoryNotFound()
         {
             using var tempRootDir = new TempAclDirectory();
-            string path = Path.Combine(tempRootDir.Path, Guid.NewGuid().ToString(), "file.txt");
-            var fileInfo = new FileInfo(path);
+            string path = Path.Combine(tempRootDir.GenerateSubItemPath(), "file.txt");
+            var info = new FileInfo(path);
             var security = new FileSecurity();
-
             Assert.Throws<DirectoryNotFoundException>(() =>
-                CreateFileWithSecurity(fileInfo, FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
+                info.Create(FileMode.CreateNew, FileSystemRights.FullControl, FileShare.None, DefaultBufferSize, FileOptions.None, security));
         }
 
         [Theory]
         [InlineData((FileMode)int.MinValue)]
         [InlineData((FileMode)0)]
         [InlineData((FileMode)int.MaxValue)]
-        public void FileInfo_Create_FileSecurity_InvalidFileMode(FileMode invalidMode)
-        {
-            var security = new FileSecurity();
-            var info = new FileInfo("path");
-
-            Assert.Throws<ArgumentOutOfRangeException>("mode", () =>
-                CreateFileWithSecurity(info, invalidMode, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
-        }
+        public void FileInfo_Create_FileSecurity_OutOfRange_FileMode(FileMode invalidMode) =>
+            FileInfo_Create_FileSecurity_ArgumentOutOfRangeException("mode", mode: invalidMode);
 
         [Theory]
         [InlineData((FileShare)(-1))]
         [InlineData((FileShare)int.MaxValue)]
-        public void FileInfo_Create_FileSecurity_InvalidFileShare(FileShare invalidFileShare)
-        {
-            var security = new FileSecurity();
-            var info = new FileInfo("path");
-
-            Assert.Throws<ArgumentOutOfRangeException>("share", () =>
-                CreateFileWithSecurity(info, FileMode.CreateNew, FileSystemRights.WriteData, invalidFileShare, DefaultBufferSize, FileOptions.None, security));
-        }
+        public void FileInfo_Create_FileSecurity_OutOfRange_FileShare(FileShare invalidFileShare) =>
+            FileInfo_Create_FileSecurity_ArgumentOutOfRangeException("share", share: invalidFileShare);
 
         [Theory]
         [InlineData(int.MinValue)]
         [InlineData(0)]
-        public void FileInfo_Create_FileSecurity_InvalidBufferSize(int invalidBufferSize)
-        {
-            var security = new FileSecurity();
-            var info = new FileInfo("path");
+        public void FileInfo_Create_FileSecurity_OutOfRange_BufferSize(int invalidBufferSize) =>
+            FileInfo_Create_FileSecurity_ArgumentOutOfRangeException("bufferSize", bufferSize: invalidBufferSize);
 
-            Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () =>
-                CreateFileWithSecurity(info, FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, invalidBufferSize, FileOptions.None, security));
-        }
+        public static IEnumerable<object[]> WriteModes_ReadRights_ForbiddenCombo_Data() =>
+            from mode in s_writableModes
+            from rights in s_readableRights
+            where
+                // These combinations are allowed, exclude them
+                !(rights == FileSystemRights.CreateFiles &&
+                  (mode == FileMode.Append || mode == FileMode.Create || mode == FileMode.CreateNew))
+            select new object[] { mode, rights };
 
+        // Do not combine writing modes with exclusively read rights
         [Theory]
-        [InlineData(FileMode.Truncate,  FileSystemRights.Read)]
-        [InlineData(FileMode.Truncate,  FileSystemRights.ReadData)]
-        [InlineData(FileMode.CreateNew, FileSystemRights.Read)]
-        [InlineData(FileMode.CreateNew, FileSystemRights.ReadData)]
-        [InlineData(FileMode.Create,    FileSystemRights.Read)]
-        [InlineData(FileMode.Create,    FileSystemRights.ReadData)]
-        [InlineData(FileMode.Append,    FileSystemRights.Read)]
-        [InlineData(FileMode.Append,    FileSystemRights.ReadData)]
-        public void FileInfo_Create_FileSecurity_ForbiddenCombo_FileModeFileSystemSecurity(FileMode mode, FileSystemRights rights)
-        {
-            var security = new FileSecurity();
-            var info = new FileInfo("path");
+        [MemberData(nameof(WriteModes_ReadRights_ForbiddenCombo_Data))]
+        public void FileInfo_Create_FileSecurity_WriteModes_ReadRights_ForbiddenCombo(FileMode mode, FileSystemRights rights) =>
+            FileInfo_Create_FileSecurity_ArgumentException(mode, rights);
 
-            Assert.Throws<ArgumentException>(() =>
-                CreateFileWithSecurity(info, mode, rights, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
-        }
+        public static IEnumerable<object[]> OpenOrCreateMode_ReadRights_AllowedCombo_Data() =>
+            from rights in s_readableRights
+            select new object[] { rights };
+
+        // OpenOrCreate allows using exclusively read rights
+        [Theory]
+        [MemberData(nameof(OpenOrCreateMode_ReadRights_AllowedCombo_Data))]
+        public void FileInfo_Create_FileSecurity_OpenOrCreateMode_ReadRights_AllowedCombo(FileSystemRights rights) =>
+            FileInfo_Create_FileSecurity_Successful(FileMode.OpenOrCreate, rights);
+
+        // Append, Create and CreateNew allow using CreateFiles rights
+        // These combinations were excluded from WriteModes_ReadRights_ForbiddenCombo_Data
+        [Theory]
+        [InlineData(FileMode.Append)]
+        [InlineData(FileMode.Create)]
+        [InlineData(FileMode.CreateNew)]
+        public void FileInfo_Create_FileSecurity_WriteModes_CreateFilesRights_AllowedCombo(FileMode mode) =>
+            FileInfo_Create_FileSecurity_Successful(mode, FileSystemRights.CreateFiles);
+
+        public static IEnumerable<object[]> AppendMode_UnexpectedReadRights_Data() =>
+            from writeRights in s_writableRights
+            from readRights in new[] {
+                FileSystemRights.ExecuteFile,
+                FileSystemRights.ReadAttributes, FileSystemRights.ReadData, FileSystemRights.ReadExtendedAttributes, FileSystemRights.ReadPermissions,
+                FileSystemRights.Read, // Contains ReadAttributes, ReadData, ReadExtendedAttributes, ReadPermissions
+                FileSystemRights.ReadAndExecute, // Contains Read and ExecuteFile
+            }
+            select new object[] { writeRights | readRights };
+
+        // Append is allowed if at least one write permission is provided
+        // But append is disallowed if any read rights are provided
+        [Theory]
+        [MemberData(nameof(AppendMode_UnexpectedReadRights_Data))]
+        public void FileInfo_Create_FileSecurity_AppendMode_UnexpectedReadRights(FileSystemRights rights) =>
+            FileInfo_Create_FileSecurity_ArgumentException(FileMode.Append, rights);
+
+        public static IEnumerable<object[]> AppendMode_OnlyWriteRights_Data() =>
+            from writeRights in s_writableRights
+            select new object[] { writeRights };
+
+        // Append succeeds if only write permissions were provided (no read permissions)
+        [Theory]
+        [MemberData(nameof(AppendMode_OnlyWriteRights_Data))]
+        public void FileInfo_Create_FileSecurity_AppendMode_OnlyWriteRights(FileSystemRights rights) =>
+            FileInfo_Create_FileSecurity_Successful(FileMode.Append, rights);
+
+        public static IEnumerable<object[]> WritableRights_Data() =>
+            from rights in s_writableRights
+            select new object[] { rights };
+
+        // Cannot truncate unless all write rights are provided
+        [Theory]
+        [MemberData(nameof(WritableRights_Data))]
+        public void FileInfo_Create_FileSecurity_TruncateMode_IncompleteWriteRights(FileSystemRights rights) =>
+            FileInfo_Create_FileSecurity_ArgumentException(FileMode.Truncate, rights);
 
         [Fact]
-        public void FileInfo_Create_DefaultFileSecurity()
+        public void FileInfo_Create_FileSecurity_TruncateMode_AllWriteRights_Throws()
         {
+            // Truncate, with all write rights, throws with different messages in each framework:
+            // - In .NET Framework, throws "Could not find file"
+            // - In .NET, throws IOException: "The parameter is incorrect"
+
             var security = new FileSecurity();
-            Verify_FileSecurity_CreateFile(security);
+            var info = new FileInfo(PathGenerator.GenerateTestFileName());
+            Assert.Throws<IOException>(() => info.Create(FileMode.Truncate, FileSystemRights.Write | FileSystemRights.ReadData, FileShare.None, DefaultBufferSize, FileOptions.None, security));
         }
 
-        private void CreateFileWithSecurity(FileInfo info, FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity security)
-        {
-            if (PlatformDetection.IsNetFramework)
-            {
-                FileSystemAclExtensions.Create(info, mode, rights, share, bufferSize, options, security);
-            }
-            else
-            {
-                info.Create(mode, rights, share, bufferSize, options, security);
-            }
-        }
+        public static IEnumerable<object[]> WriteRights_AllArguments_Data() =>
+            from mode in s_writableModes
+            from rights in s_writableRights
+            from share in Enum.GetValues<FileShare>()
+            from options in Enum.GetValues<FileOptions>()
+            where !(rights == FileSystemRights.CreateFiles &&
+                    (mode == FileMode.Append || mode == FileMode.Create || mode == FileMode.CreateNew)) &&
+                  !(mode == FileMode.Truncate && rights != FileSystemRights.Write) &&
+                  (options != FileOptions.Encrypted && // Using FileOptions.Encrypted throws UnauthorizedAccessException when attempting to read the created file
+                  !(options == FileOptions.Asynchronous && !PlatformDetection.IsAsyncFileIOSupported))
+            select new object[] { mode, rights, share, options };
 
         [Theory]
-        // Must have at least one Read, otherwise the TempAclDirectory will fail to delete that item on dispose
-        [MemberData(nameof(RightsToAllow))]
-        public void FileInfo_Create_AllowSpecific_AccessRules(FileSystemRights rights)
-        {
-            using var tempRootDir = new TempAclDirectory();
-            string path = Path.Combine(tempRootDir.Path, "file.txt");
-            var fileInfo = new FileInfo(path);
+        [MemberData(nameof(WriteRights_AllArguments_Data))]
+        public void FileInfo_WriteRights_WithSecurity_Null(FileMode mode, FileSystemRights rights, FileShare share, FileOptions options) =>
+            Verify_FileSecurity_CreateFile(mode, rights, share, DefaultBufferSize, options, expectedSecurity: null); // Null security
 
-            FileSecurity expectedSecurity = GetFileSecurity(rights);
+        [Theory]
+        [MemberData(nameof(WriteRights_AllArguments_Data))]
+        public void FileInfo_WriteRights_WithSecurity_Default(FileMode mode, FileSystemRights rights, FileShare share, FileOptions options) =>
+            Verify_FileSecurity_CreateFile(mode, rights, share, DefaultBufferSize, options, new FileSecurity()); // Default security
 
-            using FileStream stream = fileInfo.Create(
-                FileMode.Create,
-                FileSystemRights.FullControl,
-                FileShare.ReadWrite | FileShare.Delete,
-                DefaultBufferSize,
-                FileOptions.None,
-                expectedSecurity);
+        [Theory]
+        [MemberData(nameof(WriteRights_AllArguments_Data))]
+        public void FileInfo_WriteRights_WithSecurity_Custom(FileMode mode, FileSystemRights rights, FileShare share, FileOptions options) =>
+            Verify_FileSecurity_CreateFile(mode, rights, share, DefaultBufferSize, options, GetFileSecurity(rights)); // Custom security (AccessRule Allow)
 
-            Assert.True(fileInfo.Exists);
-            tempRootDir.CreatedSubfiles.Add(fileInfo);
+        public static IEnumerable<object[]> ReadRights_AllArguments_Data() =>
+            from mode in new[] { FileMode.Create, FileMode.CreateNew, FileMode.OpenOrCreate }
+            from rights in s_readableRights
+            from share in Enum.GetValues<FileShare>()
+            from options in Enum.GetValues<FileOptions>()
+            where options != FileOptions.Encrypted && // Using FileOptions.Encrypted throws UnauthorizedAccessException when attempting to read the created file
+            !(options == FileOptions.Asynchronous && !PlatformDetection.IsAsyncFileIOSupported)
+            select new object[] { mode, rights, share, options };
 
-            var actualInfo = new FileInfo(fileInfo.FullName);
-            FileSecurity actualSecurity = actualInfo.GetAccessControl(AccessControlSections.Access);
-            VerifyAccessSecurity(expectedSecurity, actualSecurity);
-        }
+        [Theory]
+        [MemberData(nameof(ReadRights_AllArguments_Data))]
+        public void FileInfo_ReadRights_WithSecurity_Null(FileMode mode, FileSystemRights rights, FileShare share, FileOptions options) =>
+            // Writable FileModes require at least one write right
+            Verify_FileSecurity_CreateFile(mode, rights | FileSystemRights.WriteData, share, DefaultBufferSize, options, expectedSecurity: null); // Null security
 
+        [Theory]
+        [MemberData(nameof(ReadRights_AllArguments_Data))]
+        public void FileInfo_ReadRights_WithSecurity_Default(FileMode mode, FileSystemRights rights, FileShare share, FileOptions options) =>
+            // Writable FileModes require at least one write right
+            Verify_FileSecurity_CreateFile(mode, rights | FileSystemRights.WriteData, share, DefaultBufferSize, options, new FileSecurity()); // Default security
+
+        [Theory]
+        [MemberData(nameof(ReadRights_AllArguments_Data))]
+        public void FileInfo_ReadRights_WithSecurity_Custom(FileMode mode, FileSystemRights rights, FileShare share, FileOptions options) =>
+            // Writable FileModes require at least one write right
+            Verify_FileSecurity_CreateFile(mode, rights | FileSystemRights.WriteData, share, DefaultBufferSize, options, GetFileSecurity(rights)); // Custom security (AccessRule Allow)
 
         [Theory]
         [MemberData(nameof(RightsToDeny))]
-        public void FileInfo_Create_DenySpecific_AccessRules(FileSystemRights rightsToDeny)
+        public void FileInfo_Create_FileSecurity_DenyAccessRule(FileSystemRights rightsToDeny)
         {
             var expectedSecurity = new FileSecurity();
 
             var identity = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
-            var allowAccessRule = new FileSystemAccessRule(identity, FileSystemRights.Read, AccessControlType.Allow);
-            expectedSecurity.AddAccessRule(allowAccessRule);
 
+            // Add write deny rule
             var denyAccessRule = new FileSystemAccessRule(identity, rightsToDeny, AccessControlType.Deny);
             expectedSecurity.AddAccessRule(denyAccessRule);
 
             using var tempRootDir = new TempAclDirectory();
 
-            string path = Path.Combine(tempRootDir.Path, "file.txt");
+            string path = tempRootDir.GenerateSubItemPath();
             var fileInfo = new FileInfo(path);
 
             using FileStream stream = fileInfo.Create(
-                FileMode.Create,
-                FileSystemRights.FullControl,
-                FileShare.ReadWrite | FileShare.Delete,
+                FileMode.CreateNew,
+                FileSystemRights.Write, // Create expects at least one write right
+                FileShare.None,
                 DefaultBufferSize,
                 FileOptions.None,
                 expectedSecurity);
@@ -451,7 +493,6 @@ namespace System.IO
         #region DirectorySecurity CreateDirectory
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void DirectorySecurity_CreateDirectory_NullSecurity()
         {
             DirectorySecurity security = null;
@@ -474,7 +515,7 @@ namespace System.IO
         public void DirectorySecurity_CreateDirectory_DirectoryAlreadyExists()
         {
             using var tempRootDir = new TempAclDirectory();
-            string path = Path.Combine(tempRootDir.Path, "createMe");
+            string path = tempRootDir.GenerateSubItemPath();
 
             DirectorySecurity expectedSecurity = GetDirectorySecurity(FileSystemRights.FullControl);
             DirectoryInfo dirInfo = expectedSecurity.CreateDirectory(path);
@@ -496,84 +537,137 @@ namespace System.IO
 
         #region Helper methods
 
-        public static IEnumerable<object[]> RightsToDeny()
+        public static IEnumerable<object[]> RightsToDeny() =>
+            from rights in new[] {
+                FileSystemRights.AppendData, // Same as CreateDirectories
+                FileSystemRights.ChangePermissions,
+                FileSystemRights.Delete,
+                FileSystemRights.DeleteSubdirectoriesAndFiles,
+                FileSystemRights.ExecuteFile, // Same as Traverse
+                FileSystemRights.ReadAttributes,
+                FileSystemRights.ReadExtendedAttributes,
+                FileSystemRights.ReadPermissions,
+                FileSystemRights.TakeOwnership,
+                FileSystemRights.Write, // Contains AppendData, WriteData, WriteAttributes, WriteExtendedAttributes
+                FileSystemRights.WriteAttributes,
+                FileSystemRights.WriteData, // Same as CreateFiles
+                FileSystemRights.WriteExtendedAttributes,
+                // Rights that should not be denied:
+                // - Synchronize: CreateFile always requires Synchronize access
+                // - ReadData: Minimum right required to delete a file or directory
+                // - ListDirectory: Equivalent to ReadData
+                // - Modify: Contains ReadData
+                // - Read: Contains ReadData
+                // - ReadAndExecute: Contains ReadData
+                // - FullControl: Contains ReadData and Synchronize
+            }
+            select new object[] { rights };
+
+        public static IEnumerable<object[]> RightsToAllow() =>
+            from rights in new[] {
+                FileSystemRights.AppendData, // Same as CreateDirectories
+                FileSystemRights.ChangePermissions,
+                FileSystemRights.Delete,
+                FileSystemRights.DeleteSubdirectoriesAndFiles,
+                FileSystemRights.ExecuteFile, // Same as Traverse
+                FileSystemRights.Modify, // Contains Read, Write and ReadAndExecute
+                FileSystemRights.Read, // Contains ReadData, ReadPermissions, ReadAttributes, ReadExtendedAttributes
+                FileSystemRights.ReadAndExecute, // Contains Read and ExecuteFile
+                FileSystemRights.ReadAttributes,
+                FileSystemRights.ReadData, // Minimum right required to delete a file or directory. Equivalent to ListDirectory
+                FileSystemRights.ReadExtendedAttributes,
+                FileSystemRights.ReadPermissions,
+                FileSystemRights.Synchronize, // CreateFile always requires Synchronize access
+                FileSystemRights.TakeOwnership,
+                FileSystemRights.Write, // Contains AppendData, WriteData, WriteAttributes, WriteExtendedAttributes
+                FileSystemRights.WriteAttributes,
+                FileSystemRights.WriteData, // Same as CreateFiles
+                FileSystemRights.WriteExtendedAttributes,
+                FileSystemRights.FullControl, // Contains Modify, DeleteSubdirectoriesAndFiles, Delete, ChangePermissions, TakeOwnership, Synchronize
+            }
+            select new object[] { rights };
+
+        private static readonly FileMode[] s_writableModes = new[]
         {
-            yield return new object[] { FileSystemRights.AppendData };
-            yield return new object[] { FileSystemRights.ChangePermissions };
-            // yield return new object[] { FileSystemRights.CreateDirectories }; // CreateDirectories == AppendData
-            yield return new object[] { FileSystemRights.CreateFiles };
-            yield return new object[] { FileSystemRights.Delete };
-            yield return new object[] { FileSystemRights.DeleteSubdirectoriesAndFiles };
-            yield return new object[] { FileSystemRights.ExecuteFile };
-            // yield return new object[] { FileSystemRights.FullControl }; // Contains ReadData, should not deny that
-            // yield return new object[] { FileSystemRights.ListDirectory }; ListDirectory == ReadData
-            // yield return new object[] { FileSystemRights.Modify }; // Contains ReadData, should not deny that
-            // yield return new object[] { FileSystemRights.Read }; // Contains ReadData, should not deny that
-            // yield return new object[] { FileSystemRights.ReadAndExecute }; // Contains ReadData, should not deny that
-            yield return new object[] { FileSystemRights.ReadAttributes };
-            // yield return new object[] { FileSystemRights.ReadData }; // Minimum right required to delete a file or directory
-            yield return new object[] { FileSystemRights.ReadExtendedAttributes };
-            yield return new object[] { FileSystemRights.ReadPermissions };
-            // yield return new object[] { FileSystemRights.Synchronize }; // CreateFile always requires Synchronize access
-            yield return new object[] { FileSystemRights.TakeOwnership };
-            //yield return new object[] { FileSystemRights.Traverse }; // Traverse == ExecuteFile
-            yield return new object[] { FileSystemRights.Write };
-            yield return new object[] { FileSystemRights.WriteAttributes };
-            // yield return new object[] { FileSystemRights.WriteData }; // WriteData == CreateFiles
-            yield return new object[] { FileSystemRights.WriteExtendedAttributes };
+            FileMode.Append,
+            FileMode.Create,
+            FileMode.CreateNew,
+            FileMode.Truncate
+            // Excludes OpenOrCreate because it has a different behavior compared to Create/CreateNew
+        };
+
+        private static readonly FileSystemRights[] s_readableRights = new[]
+        {
+            // Excludes combined rights
+            FileSystemRights.ExecuteFile,
+            FileSystemRights.ReadAttributes,
+            FileSystemRights.ReadData,
+            FileSystemRights.ReadExtendedAttributes,
+            FileSystemRights.ReadPermissions
+        };
+
+        private static readonly FileSystemRights[] s_writableRights = new[]
+        {
+            // Excludes combined rights
+            FileSystemRights.AppendData, // Same as CreateDirectories
+            FileSystemRights.WriteAttributes,
+            FileSystemRights.WriteData,
+            FileSystemRights.WriteExtendedAttributes
+        };
+
+        private void FileInfo_Create_FileSecurity_ArgumentOutOfRangeException(string paramName, FileMode mode = FileMode.CreateNew, FileShare share = FileShare.None, int bufferSize = DefaultBufferSize)
+        {
+            var security = new FileSecurity();
+            var info = new FileInfo(PathGenerator.GenerateTestFileName());
+            Assert.Throws<ArgumentOutOfRangeException>(paramName, () =>
+                info.Create(mode, FileSystemRights.FullControl, share, bufferSize, FileOptions.None, security));
         }
 
-        public static IEnumerable<object[]> RightsToAllow()
+        private void FileInfo_Create_FileSecurity_ArgumentException(FileMode mode, FileSystemRights rights)
         {
-            yield return new object[] { FileSystemRights.AppendData };
-            yield return new object[] { FileSystemRights.ChangePermissions };
-            // yield return new object[] { FileSystemRights.CreateDirectories }; // CreateDirectories == AppendData
-            yield return new object[] { FileSystemRights.CreateFiles };
-            yield return new object[] { FileSystemRights.Delete };
-            yield return new object[] { FileSystemRights.DeleteSubdirectoriesAndFiles };
-            yield return new object[] { FileSystemRights.ExecuteFile };
-            yield return new object[] { FileSystemRights.FullControl };
-            // yield return new object[] { FileSystemRights.ListDirectory }; ListDirectory == ReadData
-            yield return new object[] { FileSystemRights.Modify };
-            yield return new object[] { FileSystemRights.Read };
-            yield return new object[] { FileSystemRights.ReadAndExecute };
-            yield return new object[] { FileSystemRights.ReadAttributes };
-            // yield return new object[] { FileSystemRights.ReadData }; // Minimum right required to delete a file or directory
-            yield return new object[] { FileSystemRights.ReadExtendedAttributes };
-            yield return new object[] { FileSystemRights.ReadPermissions };
-            yield return new object[] { FileSystemRights.Synchronize };
-            yield return new object[] { FileSystemRights.TakeOwnership };
-            // yield return new object[] { FileSystemRights.Traverse }; // Traverse == ExecuteFile
-            yield return new object[] { FileSystemRights.Write };
-            yield return new object[] { FileSystemRights.WriteAttributes };
-            // yield return new object[] { FileSystemRights.WriteData }; // WriteData == CreateFiles
-            yield return new object[] { FileSystemRights.WriteExtendedAttributes };
+            var security = new FileSecurity();
+            var info = new FileInfo(PathGenerator.GenerateTestFileName());
+            Assert.Throws<ArgumentException>(() =>
+                info.Create(mode, rights, FileShare.None, DefaultBufferSize, FileOptions.None, security));
         }
 
-        private void Verify_FileSecurity_CreateFile(FileSecurity expectedSecurity)
+        private void FileInfo_Create_FileSecurity_Successful(FileMode mode, FileSystemRights rights)
         {
-            Verify_FileSecurity_CreateFile(FileMode.Create, FileSystemRights.WriteData, FileShare.Read, DefaultBufferSize, FileOptions.None, expectedSecurity);
+            var security = new FileSecurity();
+            var info = new FileInfo(PathGenerator.GenerateTestFileName());
+            info.Create(mode, rights, FileShare.None, DefaultBufferSize, FileOptions.DeleteOnClose, security).Dispose();
         }
 
         private void Verify_FileSecurity_CreateFile(FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity expectedSecurity)
         {
             using var tempRootDir = new TempAclDirectory();
-            string path = Path.Combine(tempRootDir.Path, "file.txt");
+            string path = tempRootDir.GenerateSubItemPath();
             var fileInfo = new FileInfo(path);
 
-            fileInfo.Create(mode, rights, share, bufferSize, options, expectedSecurity).Dispose();
-            Assert.True(fileInfo.Exists);
-            tempRootDir.CreatedSubfiles.Add(fileInfo);
+            using (FileStream fs = fileInfo.Create(mode, rights, share, bufferSize, options, expectedSecurity))
+            {
+                Assert.True(fileInfo.Exists);
+                tempRootDir.CreatedSubfiles.Add(fileInfo);
 
-            var actualFileInfo = new FileInfo(path);
-            FileSecurity actualSecurity = actualFileInfo.GetAccessControl(AccessControlSections.Access);
-            VerifyAccessSecurity(expectedSecurity, actualSecurity);
+                var actualFileInfo = new FileInfo(path);
+                FileSecurity actualSecurity = actualFileInfo.GetAccessControl();
+
+                if (expectedSecurity != null)
+                {
+                    VerifyAccessSecurity(expectedSecurity, actualSecurity);
+                }
+                else
+                {
+                    int count = actualSecurity.GetAccessRules(includeExplicit: true, includeInherited: false, typeof(SecurityIdentifier)).Count;
+                    Assert.Equal(0, count);
+                }
+            }
         }
 
         private void Verify_DirectorySecurity_CreateDirectory(DirectorySecurity expectedSecurity)
         {
             using var tempRootDir = new TempAclDirectory();
-            string path = Path.Combine(tempRootDir.Path, "createMe");
+            string path = tempRootDir.GenerateSubItemPath();
             DirectoryInfo dirInfo = expectedSecurity.CreateDirectory(path);
             Assert.True(dirInfo.Exists);
             tempRootDir.CreatedSubdirectories.Add(dirInfo);

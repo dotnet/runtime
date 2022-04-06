@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows</TargetFrameworks>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CancelKeyPress.cs" />
@@ -24,10 +24,14 @@
     <Compile Include="TermInfo.cs" />
     <Compile Include="RedirectedStream.cs" />
     <Compile Include="ReadKey.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonTestPath)System\IO\InterceptStreamWriter.cs"
              Link="Common\System\IO\InterceptStreamWriter.cs" />
     <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
              Link="Common\System\ShouldNotBeInvokedException.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
+             Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <Compile Include="WindowAndCursorProps.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -35,10 +39,10 @@
           Link="%(RecursiveDir)%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="ConsoleEncoding.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="CancelKeyPress.Unix.cs" />
     <Compile Include="NonStandardConfiguration.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"

@@ -191,11 +191,38 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     public string? CacheFilePath { get; set; }
 
+    /// <summary>
+    /// Passes additional, custom arguments to --aot
+    /// </summary>
+    public string? AotArguments { get; set; }
+
+    /// <summary>
+    /// Passes temp-path to the AOT compiler
+    /// </summary>
+    public string? TempPath { get; set; }
+
+    /// <summary>
+    /// Passes ld-name to the AOT compiler, for use with UseLLVM=true
+    /// </summary>
+    public string? LdName { get; set; }
+
+    /// <summary>
+    /// Passes ld-flags to the AOT compiler, for use with UseLLVM=true
+    /// </summary>
+    public string? LdFlags { get; set; }
+
+    /// <summary>
+    /// Specify WorkingDirectory for the AOT compiler
+    /// </summary>
+    public string? WorkingDirectory { get; set; }
+
     [Required]
     public string IntermediateOutputPath { get; set; } = string.Empty;
 
     [Output]
     public string[]? FileWrites { get; private set; }
+
+    private static readonly Encoding s_utf8Encoding = new UTF8Encoding(false);
 
     private List<string> _fileWrites = new();
 
@@ -225,7 +252,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             return false;
         }
 
-        if (!Path.IsPathRooted(OutputDir))
+        // A relative path might be used along with WorkingDirectory,
+        // only call Path.GetFullPath() if WorkingDirectory is blank.
+        if (string.IsNullOrEmpty(WorkingDirectory) && !Path.IsPathRooted(OutputDir))
             OutputDir = Path.GetFullPath(OutputDir);
 
         if (!Directory.Exists(OutputDir))
@@ -390,8 +419,34 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             if (BuildEngine is IBuildEngine9 be9)
                 allowedParallelism = be9.RequestCores(allowedParallelism);
 
+            /*
+                From: https://github.com/dotnet/runtime/issues/46146#issuecomment-754021690
+
+                Stephen Toub:
+                "As such, by default ForEach works on a scheme whereby each
+                thread takes one item each time it goes back to the enumerator,
+                and then after a few times of this upgrades to taking two items
+                each time it goes back to the enumerator, and then four, and
+                then eight, and so on. This ammortizes the cost of taking and
+                releasing the lock across multiple items, while still enabling
+                parallelization for enumerables containing just a few items. It
+                does, however, mean that if you've got a case where the body
+                takes a really long time and the work for every item is
+                heterogeneous, you can end up with an imbalance."
+
+                The time taken by individual compile jobs here can vary a
+                lot, depending on various factors like file size. This can
+                create an imbalance, like mentioned above, and we can end up
+                in a situation where one of the partitions has a job that
+                takes very long to execute, by which time other partitions
+                have completed, so some cores are idle.  But the the idle
+                ones won't get any of the remaining jobs, because they are
+                all assigned to that one partition.
+
+                Instead, we want to use work-stealing so jobs can be run by any partition.
+            */
             ParallelLoopResult result = Parallel.ForEach(
-                                            argsList,
+                                            Partitioner.Create(argsList, EnumerablePartitionerOptions.NoBuffering),
                                             new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
                                             (args, state) => PrecompileLibraryParallel(args, state));
 
@@ -411,7 +466,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         return !Log.HasLoggedErrors;
     }
 
-    private bool CheckAllUpToDate(IList<PrecompileArguments> argsList)
+    private static bool CheckAllUpToDate(IList<PrecompileArguments> argsList)
     {
         foreach (var args in argsList)
         {
@@ -669,8 +724,10 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (UseAotDataFile)
         {
             string aotDataFile = Path.ChangeExtension(assembly, ".aotdata");
-            aotArgs.Add($"data-outfile={aotDataFile}");
-            aotAssembly.SetMetadata("AotDataFile", aotDataFile);
+            ProxyFile proxyFile = _cache.NewFile(aotDataFile);
+            proxyFiles.Add(proxyFile);
+            aotArgs.Add($"data-outfile={proxyFile.TempFile}");
+            aotAssembly.SetMetadata("AotDataFile", proxyFile.TargetFile);
         }
 
         if (AotProfilePath?.Length > 0)
@@ -680,6 +737,26 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             {
                 aotArgs.Add($"profile={path}");
             }
+        }
+
+        if (!string.IsNullOrEmpty(AotArguments))
+        {
+            aotArgs.Add(AotArguments);
+        }
+
+        if (!string.IsNullOrEmpty(TempPath))
+        {
+            aotArgs.Add($"temp-path={TempPath}");
+        }
+
+        if (!string.IsNullOrEmpty(LdName))
+        {
+            aotArgs.Add($"ld-name={LdName}");
+        }
+
+        if (!string.IsNullOrEmpty(LdFlags))
+        {
+            aotArgs.Add($"ld-flags={LdFlags}");
         }
 
         // we need to quote the entire --aot arguments here to make sure it is parsed
@@ -694,7 +771,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
         else
         {
-            processArgs.Add('"' + assemblyFilename + '"');
+            if (string.IsNullOrEmpty(WorkingDirectory))
+            {
+                processArgs.Add('"' + assemblyFilename + '"');
+            }
+            else
+            {
+                // If WorkingDirectory is supplied, the caller could be passing in a relative path
+                // Use the original ItemSpec that was passed in.
+                processArgs.Add('"' + assemblyItem.ItemSpec + '"');
+            }
         }
 
         monoPaths = $"{assemblyDir}{Path.PathSeparator}{monoPaths}";
@@ -706,14 +792,14 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         var responseFileContent = string.Join(" ", processArgs);
         var responseFilePath = Path.GetTempFileName();
-        using (var sw = new StreamWriter(responseFilePath, append: false, encoding: new UTF8Encoding(false)))
+        using (var sw = new StreamWriter(responseFilePath, append: false, encoding: s_utf8Encoding))
         {
             sw.WriteLine(responseFileContent);
         }
 
         return new PrecompileArguments(ResponseFilePath: responseFilePath,
                                         EnvironmentVariables: envVariables,
-                                        WorkingDir: assemblyDir,
+                                        WorkingDir: string.IsNullOrEmpty(WorkingDirectory) ? assemblyDir : WorkingDirectory,
                                         AOTAssembly: aotAssembly,
                                         ProxyFiles: proxyFiles);
     }
@@ -741,16 +827,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 StringBuilder envStr = new StringBuilder(string.Empty);
                 foreach (KeyValuePair<string, string> kvp in args.EnvironmentVariables)
                     envStr.Append($"{kvp.Key}={kvp.Value} ");
-                Log.LogMessage(importance, $"{msgPrefix}Exec (with response file contents expanded) in {args.WorkingDir}: {envStr}{CompilerBinaryPath} {File.ReadAllText(args.ResponseFilePath)}");
+                Log.LogMessage(importance, $"{msgPrefix}Exec (with response file contents expanded) in {args.WorkingDir}: {envStr}{CompilerBinaryPath} {File.ReadAllText(args.ResponseFilePath, s_utf8Encoding)}");
             }
-
-            Log.LogMessage(importance, output);
 
             if (exitCode != 0)
             {
-                Log.LogError($"Precompiling failed for {assembly}");
+                Log.LogError($"Precompiling failed for {assembly}.{Environment.NewLine}{output}");
                 return false;
             }
+
+            Log.LogMessage(importance, output);
         }
         catch (Exception ex)
         {

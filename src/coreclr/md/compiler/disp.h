@@ -69,7 +69,7 @@ public:
         IUnknown    **ppIUnk);              // [out] Return interface on success.
 
     STDMETHODIMP GetCORSystemDirectory(     // Return code.
-         __out_ecount (cchBuffer) LPWSTR szBuffer,  // [out] Buffer for the directory name
+         _Out_writes_ (cchBuffer) LPWSTR szBuffer,  // [out] Buffer for the directory name
          DWORD       cchBuffer,             // [in] Size of the buffer
          DWORD*      pchBuffer);            // [OUT] Number of characters returned
 
@@ -88,7 +88,7 @@ public:
         LPCWSTR  szGlobalBin,               // [IN] optional - can be NULL
         LPCWSTR  szAssemblyName,            // [IN] required - this is the assembly you are requesting
         LPCWSTR  szModuleName,              // [IN] required - the name of the module
-        __out_ecount (cchName)LPWSTR szName,// [OUT] buffer - to hold name
+        _Out_writes_ (cchName)LPWSTR szName,// [OUT] buffer - to hold name
         ULONG    cchName,                   // [IN]  the name buffer's size
         ULONG    *pcName);                  // [OUT] the number of characters returend in the buffer
 

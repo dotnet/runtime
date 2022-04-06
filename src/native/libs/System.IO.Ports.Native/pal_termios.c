@@ -52,7 +52,7 @@ enum
     SendQueue = 2,
 };
 
-static int32_t SystemIoPortsNative_TermiosGetStatus(intptr_t handle)
+static int32_t TermiosGetStatus(intptr_t handle)
 {
     int fd = ToFileDescriptor(handle);
     int status = 0;
@@ -66,7 +66,7 @@ static int32_t SystemIoPortsNative_TermiosGetStatus(intptr_t handle)
 
 int32_t SystemIoPortsNative_TermiosGetSignal(intptr_t handle, int32_t signal)
 {
-    int32_t status = SystemIoPortsNative_TermiosGetStatus(handle);
+    int32_t status = TermiosGetStatus(handle);
     if (status == -1)
     {
         return -1;
@@ -91,7 +91,7 @@ int32_t SystemIoPortsNative_TermiosGetSignal(intptr_t handle, int32_t signal)
 
 int32_t SystemIoPortsNative_TermiosGetAllSignals(intptr_t handle)
 {
-    int32_t status = SystemIoPortsNative_TermiosGetStatus(handle);
+    int32_t status = TermiosGetStatus(handle);
     if (status == -1)
     {
         return -1;
@@ -132,7 +132,7 @@ int32_t SystemIoPortsNative_TermiosSetSignal(intptr_t handle, int32_t signal, in
         return -1;
     }
 
-    int status = SystemIoPortsNative_TermiosGetStatus(fd);
+    int status = TermiosGetStatus(fd);
     if (status >= 0)
     {
         if (set)
@@ -149,7 +149,7 @@ int32_t SystemIoPortsNative_TermiosSetSignal(intptr_t handle, int32_t signal, in
     return -1;
 }
 
-static speed_t SystemIoPortsNative_TermiosSpeed2Rate(int speed)
+static speed_t TermiosSpeed2Rate(int speed)
 {
     switch (speed)
     {
@@ -242,7 +242,7 @@ static speed_t SystemIoPortsNative_TermiosSpeed2Rate(int speed)
     return B0;
 }
 
-static int SystemIoPortsNative_TermiosRate2Speed(speed_t brate)
+static int TermiosRate2Speed(speed_t brate)
 {
     switch (brate)
     {
@@ -344,14 +344,14 @@ int32_t SystemIoPortsNative_TermiosGetSpeed(intptr_t handle)
         return  -1;
     }
 
-    return SystemIoPortsNative_TermiosRate2Speed(cfgetispeed(&term));
+    return TermiosRate2Speed(cfgetispeed(&term));
 }
 
 int32_t SystemIoPortsNative_TermiosSetSpeed(intptr_t handle, int32_t speed)
 {
     int fd = ToFileDescriptor(handle);
     struct termios term;
-    speed_t brate = SystemIoPortsNative_TermiosSpeed2Rate(speed);
+    speed_t brate = TermiosSpeed2Rate(speed);
 
     if (brate == B0)
     {
@@ -515,7 +515,7 @@ int32_t SystemIoPortsNative_TermiosReset(intptr_t handle, int32_t speed, int32_t
 
     if (speed)
     {
-        brate = SystemIoPortsNative_TermiosSpeed2Rate(speed);
+        brate = TermiosSpeed2Rate(speed);
         if (brate == B0)
         {
 #if !HAVE_IOSS_H

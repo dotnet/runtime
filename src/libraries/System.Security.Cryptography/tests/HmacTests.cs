@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Test.Cryptography;
 using Xunit;
 
@@ -31,9 +33,122 @@ namespace System.Security.Cryptography.Tests
         protected abstract byte[] HashDataOneShot(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source);
         protected abstract int HashDataOneShot(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination);
         protected abstract bool TryHashDataOneShot(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination, out int written);
+        protected abstract byte[] HashDataOneShot(ReadOnlySpan<byte> key, Stream source);
+        protected abstract byte[] HashDataOneShot(byte[] key, Stream source);
+        protected abstract int HashDataOneShot(ReadOnlySpan<byte> key, Stream source, Span<byte> destination);
+
+        protected abstract ValueTask<int> HashDataOneShotAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            Memory<byte> destination,
+            CancellationToken cancellationToken);
+
+        protected abstract ValueTask<byte[]> HashDataOneShotAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            CancellationToken cancellationToken);
+
+        protected abstract ValueTask<byte[]> HashDataOneShotAsync(
+            byte[] key,
+            Stream source,
+            CancellationToken cancellationToken);
 
         protected abstract int BlockSize { get; }
         protected abstract int MacSize { get; }
+
+        protected void VerifyRepeating(string input, int repeatCount, string hexKey, string output)
+        {
+            byte[] key = ByteUtils.HexToByteArray(hexKey);
+
+            using (Stream stream = new DataRepeatingStream(input, repeatCount))
+            {
+                VerifyHashDataStreamAllocating(key, stream, output, spanKey: true);
+            }
+
+            using (Stream stream = new DataRepeatingStream(input, repeatCount))
+            {
+                VerifyHashDataStreamAllocating(key, stream, output, spanKey: false);
+            }
+
+            using (Stream stream = new DataRepeatingStream(input, repeatCount))
+            {
+                VerifyHashDataStream(key, stream, output);
+            }
+        }
+
+        protected async Task VerifyRepeatingAsync(string input, int repeatCount, string hexKey, string output)
+        {
+            byte[] key = ByteUtils.HexToByteArray(hexKey);
+
+            using (Stream stream = new DataRepeatingStream(input, repeatCount))
+            {
+                await VerifyHashDataStreamAllocatingAsync(key, stream, output, memoryKey: true);
+            }
+
+            using (Stream stream = new DataRepeatingStream(input, repeatCount))
+            {
+                await VerifyHashDataStreamAllocatingAsync(key, stream, output, memoryKey: false);
+            }
+
+            using (Stream stream = new DataRepeatingStream(input, repeatCount))
+            {
+                await VerifyHashDataStreamAsync(key, stream, output);
+            }
+        }
+
+        protected void VerifyHashDataStream(ReadOnlySpan<byte> key, Stream stream, string output)
+        {
+            Span<byte> destination = stackalloc byte[MacSize];
+            byte[] expected = ByteUtils.HexToByteArray(output);
+            int written = HashDataOneShot(key, stream, destination);
+
+            Assert.Equal(MacSize, written);
+            AssertExtensions.SequenceEqual(expected, destination);
+        }
+
+        protected async Task VerifyHashDataStreamAsync(ReadOnlyMemory<byte> key, Stream stream, string output)
+        {
+            Memory<byte> destination = new byte[MacSize];
+            byte[] expected = ByteUtils.HexToByteArray(output);
+            int written = await HashDataOneShotAsync(key, stream, destination, cancellationToken: default);
+
+            Assert.Equal(MacSize, written);
+            AssertExtensions.SequenceEqual(expected, destination.Span);
+        }
+
+        protected void VerifyHashDataStreamAllocating(byte[] key, Stream stream, string output, bool spanKey)
+        {
+            byte[] expected = ByteUtils.HexToByteArray(output);
+            byte[] hmac;
+
+            if (spanKey)
+            {
+                hmac = HashDataOneShot(key.AsSpan(), stream);
+            }
+            else
+            {
+                hmac = HashDataOneShot(key, stream);
+            }
+
+            Assert.Equal(expected, hmac);
+        }
+
+        protected async Task VerifyHashDataStreamAllocatingAsync(byte[] key, Stream stream, string output, bool memoryKey)
+        {
+            byte[] expected = ByteUtils.HexToByteArray(output);
+            byte[] hmac;
+
+            if (memoryKey)
+            {
+                hmac = await HashDataOneShotAsync(new ReadOnlyMemory<byte>(key), stream, cancellationToken: default);
+            }
+            else
+            {
+                hmac = await HashDataOneShotAsync(key, stream, cancellationToken: default);
+            }
+
+            Assert.Equal(expected, hmac);
+        }
 
         protected void VerifyHmac(int testCaseId, byte[] digestBytes)
         {
@@ -385,6 +500,112 @@ namespace System.Security.Cryptography.Tests
                 byte[] oneShot = HashDataOneShot(key, source);
                 Assert.Equal(mac, oneShot);
             }
+        }
+
+        [Fact]
+        public void HashData_Stream_Source_Null()
+        {
+            AssertExtensions.Throws<ArgumentNullException>(
+                "source",
+                () => HashDataOneShot(ReadOnlySpan<byte>.Empty, (Stream)null));
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "source",
+                () => HashDataOneShot(Array.Empty<byte>(), (Stream)null));
+        }
+
+        [Fact]
+        public void HashData_Stream_Source_Null_Async()
+        {
+            AssertExtensions.Throws<ArgumentNullException>(
+                "source",
+                () => HashDataOneShotAsync(ReadOnlyMemory<byte>.Empty, (Stream)null, default));
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "source",
+                () => HashDataOneShotAsync(Array.Empty<byte>(), (Stream)null, default));
+        }
+
+        [Fact]
+        public void HashData_Stream_ByteKey_Null()
+        {
+            AssertExtensions.Throws<ArgumentNullException>(
+                "key",
+                () => HashDataOneShot((byte[])null, Stream.Null));
+        }
+
+        [Fact]
+        public void HashData_Stream_ByteKey_Null_Async()
+        {
+            AssertExtensions.Throws<ArgumentNullException>(
+                "key",
+                () => HashDataOneShotAsync((byte[])null, Stream.Null, default));
+        }
+
+        [Fact]
+        public void HashData_Stream_DestinationTooSmall()
+        {
+            byte[] destination = new byte[MacSize - 1];
+
+            AssertExtensions.Throws<ArgumentException>(
+                "destination",
+                () => HashDataOneShot(Array.Empty<byte>(), Stream.Null, destination));
+            AssertExtensions.FilledWith<byte>(0, destination);
+
+            AssertExtensions.Throws<ArgumentException>(
+                "destination",
+                () => HashDataOneShot(ReadOnlySpan<byte>.Empty, Stream.Null, destination));
+            AssertExtensions.FilledWith<byte>(0, destination);
+        }
+
+        [Fact]
+        public void HashData_Stream_DestinationTooSmall_Async()
+        {
+            byte[] destination = new byte[MacSize - 1];
+
+            AssertExtensions.Throws<ArgumentException>(
+                "destination",
+                () => HashDataOneShotAsync(Array.Empty<byte>(), Stream.Null, destination, default));
+            AssertExtensions.FilledWith<byte>(0, destination);
+
+            AssertExtensions.Throws<ArgumentException>(
+                "destination",
+                () => HashDataOneShotAsync(ReadOnlyMemory<byte>.Empty, Stream.Null, destination, default));
+            AssertExtensions.FilledWith<byte>(0, destination);
+        }
+
+        [Fact]
+        public void HashData_Stream_NotReadable()
+        {
+            AssertExtensions.Throws<ArgumentException>(
+                "source",
+                () => HashDataOneShot(Array.Empty<byte>(), UntouchableStream.Instance));
+
+            AssertExtensions.Throws<ArgumentException>(
+                "source",
+                () => HashDataOneShot(ReadOnlySpan<byte>.Empty, UntouchableStream.Instance));
+        }
+
+        [Fact]
+        public void HashData_Stream_Cancelled()
+        {
+            Memory<byte> buffer = new byte[512 / 8];
+            CancellationToken cancelledToken = new CancellationToken(canceled: true);
+            ValueTask<int> waitable = HashDataOneShotAsync(ReadOnlyMemory<byte>.Empty, Stream.Null, buffer, cancelledToken);
+            Assert.True(waitable.IsCanceled, nameof(waitable.IsCanceled));
+            AssertExtensions.FilledWith<byte>(0, buffer.Span);
+
+            waitable = HashDataOneShotAsync(Array.Empty<byte>(), Stream.Null, buffer, cancelledToken);
+            Assert.True(waitable.IsCanceled, nameof(waitable.IsCanceled));
+            AssertExtensions.FilledWith<byte>(0, buffer.Span);
+        }
+
+        [Fact]
+        public void HashData_Stream_Allocating_Cancelled()
+        {
+            CancellationToken cancelledToken = new CancellationToken(canceled: true);
+            ValueTask<byte[]> waitable = HashDataOneShotAsync(ReadOnlyMemory<byte>.Empty, Stream.Null, cancelledToken);
+            Assert.True(waitable.IsCanceled, nameof(waitable.IsCanceled));
         }
     }
 }

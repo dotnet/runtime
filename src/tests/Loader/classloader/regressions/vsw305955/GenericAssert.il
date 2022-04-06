@@ -15,7 +15,6 @@
 				"Flags=\"SkipVerification\"/>" +
 		"</PermissionSet>"
 }
-.module GenericAssert
 
 .class interface public ContraVariantInterface<-T> { }
 .class public interface StandardInterface { }

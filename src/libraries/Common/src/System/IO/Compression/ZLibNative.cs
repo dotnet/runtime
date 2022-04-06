@@ -197,8 +197,6 @@ namespace System.IO.Compression
             public ZLibStreamHandle()
                 : base(new IntPtr(-1), true)
             {
-                _zStream.Init();
-
                 _initializationState = State.NotInitialized;
                 SetHandle(IntPtr.Zero);
             }
@@ -269,7 +267,7 @@ namespace System.IO.Compression
 
                 fixed (ZStream* stream = &_zStream)
                 {
-                    ErrorCode errC = Interop.zlib.DeflateInit2_(stream, level, CompressionMethod.Deflated, windowBits, memLevel, strategy);
+                    ErrorCode errC = Interop.ZLib.DeflateInit2_(stream, level, CompressionMethod.Deflated, windowBits, memLevel, strategy);
                     _initializationState = State.InitializedForDeflate;
 
                     return errC;
@@ -284,7 +282,7 @@ namespace System.IO.Compression
 
                 fixed (ZStream* stream = &_zStream)
                 {
-                    return Interop.zlib.Deflate(stream, flush);
+                    return Interop.ZLib.Deflate(stream, flush);
                 }
             }
 
@@ -296,7 +294,7 @@ namespace System.IO.Compression
 
                 fixed (ZStream* stream = &_zStream)
                 {
-                    return Interop.zlib.DeflateReset(stream);
+                    return Interop.ZLib.DeflateReset(stream);
                 }
             }
 
@@ -307,7 +305,7 @@ namespace System.IO.Compression
 
                 fixed (ZStream* stream = &_zStream)
                 {
-                    ErrorCode errC = Interop.zlib.DeflateEnd(stream);
+                    ErrorCode errC = Interop.ZLib.DeflateEnd(stream);
                     _initializationState = State.Disposed;
 
                     return errC;
@@ -322,7 +320,7 @@ namespace System.IO.Compression
 
                 fixed (ZStream* stream = &_zStream)
                 {
-                    ErrorCode errC = Interop.zlib.InflateInit2_(stream, windowBits);
+                    ErrorCode errC = Interop.ZLib.InflateInit2_(stream, windowBits);
                     _initializationState = State.InitializedForInflate;
 
                     return errC;
@@ -337,7 +335,7 @@ namespace System.IO.Compression
 
                 fixed (ZStream* stream = &_zStream)
                 {
-                    return Interop.zlib.Inflate(stream, flush);
+                    return Interop.ZLib.Inflate(stream, flush);
                 }
             }
 
@@ -349,7 +347,7 @@ namespace System.IO.Compression
 
                 fixed (ZStream* stream = &_zStream)
                 {
-                    return Interop.zlib.InflateReset(stream);
+                    return Interop.ZLib.InflateReset(stream);
                 }
             }
 
@@ -360,7 +358,7 @@ namespace System.IO.Compression
 
                 fixed (ZStream* stream = &_zStream)
                 {
-                    ErrorCode errC = Interop.zlib.InflateEnd(stream);
+                    ErrorCode errC = Interop.ZLib.InflateEnd(stream);
                     _initializationState = State.Disposed;
 
                     return errC;

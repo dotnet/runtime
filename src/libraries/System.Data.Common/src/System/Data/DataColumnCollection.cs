@@ -359,11 +359,6 @@ namespace System.Data
                 {
                     column.InitializeRecord(record);
                 }
-
-                if (_table.DataSet != null)
-                {
-                    column.OnSetDataSet();
-                }
             }
             catch (Exception e) when (ADP.IsCatchableOrSecurityExceptionType(e))
             {
@@ -566,7 +561,7 @@ namespace System.Data
             // while index events are suspended else the indexes won't be properly maintained.
             // However, all the above checks should catch those participating columns.
             // except when a column is in a DataView RowFilter or Sort clause
-            foreach (Index index in _table.LiveIndexes) { }
+            foreach (Index _ in _table.LiveIndexes) { }
 
             return true;
         }
@@ -723,10 +718,9 @@ namespace System.Data
         {
             int hashcode = _table.GetSpecialHashCode(name);
             int cachedI = -1;
-            DataColumn? column = null;
             for (int i = 0; i < Count; i++)
             {
-                column = (DataColumn)_list[i]!;
+                DataColumn column = (DataColumn)_list[i]!;
                 if ((hashcode == 0 || column._hashCode == 0 || column._hashCode == hashcode) &&
                    NamesEqual(column.ColumnName, name, false, _table.Locale) != 0)
                 {
@@ -770,7 +764,7 @@ namespace System.Data
         /// <summary>
         /// Makes a default name with the given index.  e.g. Column1, Column2, ... Columni
         /// </summary>
-        private string MakeName(int index) => index == 1 ?
+        private static string MakeName(int index) => index == 1 ?
                 "Column1" :
                 "Column" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
 

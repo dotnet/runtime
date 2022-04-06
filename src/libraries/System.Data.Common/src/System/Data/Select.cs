@@ -49,7 +49,7 @@ namespace System.Data
             _recordStates = recordStates;
         }
 
-        private bool IsSupportedOperator(int op)
+        private static bool IsSupportedOperator(int op)
         {
             return ((op >= Operators.EqualTo && op <= Operators.LessOrEqual) || op == Operators.Is || op == Operators.IsNot);
         }
@@ -676,22 +676,22 @@ namespace System.Data
                 StorageType resultType;
                 if (expr._left.IsSqlColumn || expr._right.IsSqlColumn)
                 {
-                    resultType = expr.ResultSqlType(leftType, rightType, isLConst, isRConst, expr._op);
+                    resultType = BinaryNode.ResultSqlType(leftType, rightType, isLConst, isRConst, expr._op);
                 }
                 else
                 {
-                    resultType = expr.ResultType(leftType, rightType, isLConst, isRConst, expr._op);
+                    resultType = BinaryNode.ResultType(leftType, rightType, isLConst, isRConst, expr._op);
                 }
                 if (StorageType.Empty == resultType)
                 {
-                    expr.SetTypeMismatchError(expr._op, vLeft.GetType(), vRight.GetType());
+                    BinaryNode.SetTypeMismatchError(expr._op, vLeft.GetType(), vRight.GetType());
                 }
 
                 // if comparing a Guid column value against a string literal
                 // use InvariantCulture instead of DataTable.Locale because in the Danish related cultures
                 // sorting a Guid as a string has different results than in Invariant and English related cultures.
                 // This fix is restricted to DataTable.Select("GuidColumn = 'string literal'") types of queries
-                NameNode? namedNode = null;
+                NameNode? namedNode;
                 System.Globalization.CompareInfo? comparer =
                     ((isLConst && !isRConst && (leftType == StorageType.String) && (rightType == StorageType.Guid) && (null != (namedNode = expr._right as NameNode)) && (namedNode._column!.DataType == typeof(Guid))) ||
                      (isRConst && !isLConst && (rightType == StorageType.String) && (leftType == StorageType.Guid) && (null != (namedNode = expr._left as NameNode)) && (namedNode._column!.DataType == typeof(Guid))))

@@ -22,11 +22,8 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        public static void WriteGenericNode(XmlNode node, StringBuilder strBuilder, DocPosition docPos, AncestralNamespaceContextManager anc)
+        public static void WriteGenericNode(XmlNode node!!, StringBuilder strBuilder, DocPosition docPos, AncestralNamespaceContextManager anc)
         {
-            if (node == null)
-                throw new ArgumentNullException(nameof(node));
-
             XmlNodeList childNodes = node.ChildNodes;
             foreach (XmlNode childNode in childNodes)
             {
@@ -46,11 +43,8 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        public static void WriteHashGenericNode(XmlNode node, HashAlgorithm hash, DocPosition docPos, AncestralNamespaceContextManager anc)
+        public static void WriteHashGenericNode(XmlNode node!!, HashAlgorithm hash, DocPosition docPos, AncestralNamespaceContextManager anc)
         {
-            if (node == null)
-                throw new ArgumentNullException(nameof(node));
-
             XmlNodeList childNodes = node.ChildNodes;
             foreach (XmlNode childNode in childNodes)
             {

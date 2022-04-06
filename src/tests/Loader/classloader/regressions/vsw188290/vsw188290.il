@@ -17,7 +17,7 @@
            37 E9 11 BE )                                     // 7...
   .ver 2:0:3600:0
 }
-.assembly initialize
+.assembly 'vsw188290'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -28,7 +28,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module initialize.exe
 // MVID: {31E86D7D-808F-4F1C-A755-94B3084C6466}
 .imagebase 0x00400000
 .file alignment 0x00000200

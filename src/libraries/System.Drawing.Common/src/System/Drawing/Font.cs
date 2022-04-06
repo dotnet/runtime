@@ -199,13 +199,8 @@ namespace System.Drawing
         /// <summary>
         /// Returns the height of this Font in the specified graphics context.
         /// </summary>
-        public float GetHeight(Graphics graphics)
+        public float GetHeight(Graphics graphics!!)
         {
-            if (graphics == null)
-            {
-                throw new ArgumentNullException(nameof(graphics));
-            }
-
             float height;
             int status = Gdip.GdipGetFontHeight(new HandleRef(this, NativeFont), new HandleRef(graphics, graphics.NativeGraphics), out height);
             Gdip.CheckStatus(status);
@@ -266,13 +261,8 @@ namespace System.Drawing
         // This is used by SystemFonts when constructing a system Font objects.
         internal void SetSystemFontName(string systemFontName) => _systemFontName = systemFontName;
 
-        public unsafe void ToLogFont(object logFont, Graphics graphics)
+        public unsafe void ToLogFont(object logFont!!, Graphics graphics)
         {
-            if (logFont == null)
-            {
-                throw new ArgumentNullException(nameof(logFont));
-            }
-
             Type type = logFont.GetType();
             int nativeSize = sizeof(Interop.User32.LOGFONT);
             if (Marshal.SizeOf(type) != nativeSize)
@@ -297,13 +287,8 @@ namespace System.Drawing
             }
         }
 
-        private unsafe Interop.User32.LOGFONT ToLogFontInternal(Graphics graphics)
+        private unsafe Interop.User32.LOGFONT ToLogFontInternal(Graphics graphics!!)
         {
-            if (graphics == null)
-            {
-                throw new ArgumentNullException(nameof(graphics));
-            }
-
             Interop.User32.LOGFONT logFont = default;
             Gdip.CheckStatus(Gdip.GdipGetLogFontW(
                 new HandleRef(this, NativeFont), new HandleRef(graphics, graphics.NativeGraphics), ref logFont));

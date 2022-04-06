@@ -92,10 +92,10 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
 }
 
 HRESULT
-ConvertUtf8(__in LPCUTF8 utf8,
+ConvertUtf8(_In_ LPCUTF8 utf8,
             ULONG32 bufLen,
             ULONG32* nameLen,
-            __out_ecount_part_opt(bufLen, *nameLen) PWSTR buffer)
+            _Out_writes_to_opt_(bufLen, *nameLen) PWSTR buffer)
 {
     if (nameLen)
     {
@@ -118,9 +118,9 @@ ConvertUtf8(__in LPCUTF8 utf8,
 }
 
 HRESULT
-AllocUtf8(__in_opt LPCWSTR wstr,
+AllocUtf8(_In_opt_ LPCWSTR wstr,
           ULONG32 srcChars,
-          __deref_out LPUTF8* utf8)
+          _Outptr_ LPUTF8* utf8)
 {
     ULONG32 chars = WszWideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
                                            NULL, 0, NULL, NULL);
@@ -165,7 +165,7 @@ HRESULT
 GetFullClassNameFromMetadata(IMDInternalImport* mdImport,
                              mdTypeDef classToken,
                              ULONG32 bufferChars,
-                             __inout_ecount(bufferChars) LPUTF8 buffer)
+                             _Inout_updates_(bufferChars) LPUTF8 buffer)
 {
     HRESULT hr;
     LPCUTF8 baseName, namespaceName;
@@ -179,7 +179,7 @@ HRESULT
 GetFullMethodNameFromMetadata(IMDInternalImport* mdImport,
                               mdMethodDef methodToken,
                               ULONG32 bufferChars,
-                              __inout_ecount(bufferChars) LPUTF8 buffer)
+                              _Inout_updates_(bufferChars) LPUTF8 buffer)
 {
     HRESULT status;
     HRESULT hr;
@@ -209,15 +209,8 @@ GetFullMethodNameFromMetadata(IMDInternalImport* mdImport,
 
     LPCUTF8 methodName;
     IfFailRet(mdImport->GetNameOfMethodDef(methodToken, &methodName));
-// Review conversion of size_t to ULONG32.
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4267)
-#endif
+
     len = strlen(methodName);
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
     if (len >= bufferChars)
     {
         return E_OUTOFMEMORY;
@@ -228,13 +221,13 @@ GetFullMethodNameFromMetadata(IMDInternalImport* mdImport,
 }
 
 HRESULT
-SplitFullName(__in_z __in PCWSTR fullName,
+SplitFullName(_In_z_ PCWSTR fullName,
               SplitSyntax syntax,
               ULONG32 memberDots,
-              __deref_out_opt LPUTF8* namespaceName,
-              __deref_out_opt LPUTF8* typeName,
-              __deref_out_opt LPUTF8* memberName,
-              __deref_out_opt LPUTF8* params)
+              _Outptr_opt_ LPUTF8* namespaceName,
+              _Outptr_opt_ LPUTF8* typeName,
+              _Outptr_opt_ LPUTF8* memberName,
+              _Outptr_opt_ LPUTF8* params)
 {
     HRESULT status;
     PCWSTR paramsStart, memberStart, memberEnd, typeStart;
@@ -401,7 +394,7 @@ SplitFullName(__in_z __in PCWSTR fullName,
 }
 
 int
-CompareUtf8(__in LPCUTF8 str1, __in LPCUTF8 str2, __in ULONG32 nameFlags)
+CompareUtf8(_In_ LPCUTF8 str1, _In_ LPCUTF8 str2, _In_ ULONG32 nameFlags)
 {
     if (nameFlags & CLRDATA_BYNAME_CASE_INSENSITIVE)
     {
@@ -469,8 +462,8 @@ MetaEnum::End(void)
 
 HRESULT
 MetaEnum::NextToken(mdToken* token,
-                    __deref_opt_out_opt LPCUTF8* namespaceName,
-                    __deref_opt_out_opt LPCUTF8* name)
+                    _Outptr_opt_result_maybenull_ LPCUTF8* namespaceName,
+                    _Outptr_opt_result_maybenull_ LPCUTF8* name)
 {
     HRESULT hr;
     if (!m_mdImport)
@@ -584,8 +577,8 @@ MetaEnum::NextDomainToken(AppDomain** appDomain,
 }
 
 HRESULT
-MetaEnum::NextTokenByName(__in_opt LPCUTF8 namespaceName,
-                          __in_opt LPCUTF8 name,
+MetaEnum::NextTokenByName(_In_opt_ LPCUTF8 namespaceName,
+                          _In_opt_ LPCUTF8 name,
                           ULONG32 nameFlags,
                           mdToken* token)
 {
@@ -617,8 +610,8 @@ MetaEnum::NextTokenByName(__in_opt LPCUTF8 namespaceName,
 }
 
 HRESULT
-MetaEnum::NextDomainTokenByName(__in_opt LPCUTF8 namespaceName,
-                                __in_opt LPCUTF8 name,
+MetaEnum::NextDomainTokenByName(_In_opt_ LPCUTF8 namespaceName,
+                                _In_opt_ LPCUTF8 name,
                                 ULONG32 nameFlags,
                                 AppDomain** appDomain, mdToken* token)
 {
@@ -755,7 +748,7 @@ SplitName::Clear(void)
 }
 
 HRESULT
-SplitName::SplitString(__in_opt PCWSTR fullName)
+SplitName::SplitString(_In_opt_ PCWSTR fullName)
 {
     if (m_syntax == SPLIT_NO_NAME)
     {
@@ -800,7 +793,7 @@ WCHAR* wcrscan(LPCWSTR beg, LPCWSTR end, WCHAR ch)
 // sepName to point to the second '+' character in the string.  When sepName
 // points to the first '+' character this function will return "Outer" in
 // pResult and sepName will point one WCHAR before fullName.
-HRESULT NextEnclosingClasName(LPCWSTR fullName, __deref_inout LPWSTR& sepName, __deref_out LPUTF8 *pResult)
+HRESULT NextEnclosingClasName(LPCWSTR fullName, _Outref_ LPWSTR& sepName, _Outptr_ LPUTF8 *pResult)
 {
     if (sepName < fullName)
     {
@@ -994,7 +987,7 @@ SplitName::FindField(IMDInternalImport* mdInternal)
 }
 
 HRESULT
-SplitName::AllocAndSplitString(__in_opt PCWSTR fullName,
+SplitName::AllocAndSplitString(_In_opt_ PCWSTR fullName,
                                SplitSyntax syntax,
                                ULONG32 nameFlags,
                                ULONG32 memberDots,
@@ -1024,7 +1017,7 @@ SplitName::AllocAndSplitString(__in_opt PCWSTR fullName,
 }
 
 HRESULT
-SplitName::CdStartMethod(__in_opt PCWSTR fullName,
+SplitName::CdStartMethod(_In_opt_ PCWSTR fullName,
                          ULONG32 nameFlags,
                          Module* mod,
                          mdTypeDef typeToken,
@@ -1138,7 +1131,7 @@ SplitName::CdNextDomainMethod(CLRDATA_ENUM* handle,
 }
 
 HRESULT
-SplitName::CdStartField(__in_opt PCWSTR fullName,
+SplitName::CdStartField(_In_opt_ PCWSTR fullName,
                         ULONG32 nameFlags,
                         ULONG32 fieldFlags,
                         IXCLRDataTypeInstance* fromTypeInst,
@@ -1241,7 +1234,7 @@ SplitName::CdNextField(ClrDataAccess* dac,
                        IXCLRDataValue** value,
                        ULONG32 nameBufRetLen,
                        ULONG32* nameLenRet,
-                       __out_ecount_part_opt(nameBufRetLen, *nameLenRet) WCHAR nameBufRet[  ],
+                       _Out_writes_to_opt_(nameBufRetLen, *nameLenRet) WCHAR nameBufRet[  ],
                        IXCLRDataModule** tokenScopeRet,
                        mdFieldDef* tokenRet)
 {
@@ -1419,7 +1412,7 @@ SplitName::CdNextDomainField(ClrDataAccess* dac,
 }
 
 HRESULT
-SplitName::CdStartType(__in_opt PCWSTR fullName,
+SplitName::CdStartType(_In_opt_ PCWSTR fullName,
                        ULONG32 nameFlags,
                        Module* mod,
                        AppDomain* appDomain,
@@ -3290,6 +3283,10 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface11*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface12)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface12*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -3698,7 +3695,7 @@ ClrDataAccess::GetRuntimeNameByAddress(
     /* [in] */ ULONG32 flags,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *symbolLen,
-    /* [size_is][out] */ __out_ecount_opt(bufLen) WCHAR symbolBuf[  ],
+    /* [size_is][out] */ _Out_writes_bytes_opt_(bufLen) WCHAR symbolBuf[  ],
     /* [out] */ CLRDATA_ADDRESS* displacement)
 {
     HRESULT status;
@@ -4317,7 +4314,7 @@ ClrDataAccess::GetDataByAddress(
     /* [in] */ IXCLRDataTask* tlsTask,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ],
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ],
     /* [out] */ IXCLRDataValue **value,
     /* [out] */ CLRDATA_ADDRESS *displacement)
 {
@@ -4384,7 +4381,7 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
     ClrDataModule* pubModule = NULL;
     ClrDataMethodInstance* pubMethodInst = NULL;
     ClrDataExceptionState* pubExState = NULL;
-    GcEvtArgs pubGcEvtArgs;
+    GcEvtArgs pubGcEvtArgs = {};
     ULONG32 notifyType = 0;
     DWORD catcherNativeOffset = 0;
     TADDR nativeCodeLocation = NULL;
@@ -5498,7 +5495,7 @@ HRESULT
 ClrDataAccess::Initialize(void)
 {
     HRESULT hr;
-    CLRDATA_ADDRESS base;
+    CLRDATA_ADDRESS base = { 0 };
 
     //
     // We do not currently support cross-platform
@@ -5642,7 +5639,7 @@ ClrDataAccess::GetFullMethodName(
     IN MethodDesc* methodDesc,
     IN ULONG32 symbolChars,
     OUT ULONG32* symbolLen,
-    __out_ecount_part_opt(symbolChars, *symbolLen) LPWSTR symbol
+    _Out_writes_to_opt_(symbolChars, *symbolLen) LPWSTR symbol
     )
 {
     StackSString s;
@@ -5690,7 +5687,7 @@ ClrDataAccess::GetJitHelperName(
 #define JITHELPER(code,fn,sig) #code,
 #include <jithelpers.h>
     };
-    static_assert_no_msg(COUNTOF(s_rgHelperNames) == CORINFO_HELP_COUNT);
+    static_assert_no_msg(ARRAY_SIZE(s_rgHelperNames) == CORINFO_HELP_COUNT);
 
 #ifdef TARGET_UNIX
     if (!dynamicHelpersOnly)
@@ -5737,7 +5734,7 @@ ClrDataAccess::RawGetMethodName(
     /* [in] */ ULONG32 flags,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *symbolLen,
-    /* [size_is][out] */ __out_ecount_opt(bufLen) WCHAR symbolBuf[  ],
+    /* [size_is][out] */ _Out_writes_bytes_opt_(bufLen) WCHAR symbolBuf[  ],
     /* [out] */ CLRDATA_ADDRESS* displacement)
 {
 #ifdef TARGET_ARM
@@ -5745,7 +5742,7 @@ ClrDataAccess::RawGetMethodName(
     address &= ~THUMB_CODE;
 #endif
 
-    const UINT k_cch64BitHexFormat = COUNTOF("1234567812345678");
+    const UINT k_cch64BitHexFormat = ARRAY_SIZE("1234567812345678");
     HRESULT status;
 
     if (flags != 0)
@@ -5887,7 +5884,7 @@ ClrDataAccess::RawGetMethodName(
         // Printf failed.  Estimate a size that will be at least big enough to hold the name
         if (symbolLen)
         {
-            size_t cchSymbol = COUNTOF(s_wszFormatNameWithStubManager) +
+            size_t cchSymbol = ARRAY_SIZE(s_wszFormatNameWithStubManager) +
                 wcslen(wszStubManagerName) +
                 k_cch64BitHexFormat +
                 1;
@@ -5950,7 +5947,7 @@ NameFromMethodDesc:
         // Printf failed.  Estimate a size that will be at least big enough to hold the name
         if (symbolLen)
         {
-            size_t cchSymbol = COUNTOF(s_wszFormatNameAddressOnly) +
+            size_t cchSymbol = ARRAY_SIZE(s_wszFormatNameAddressOnly) +
                 k_cch64BitHexFormat +
                 1;
 
@@ -6460,12 +6457,12 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
                                              DWORD &dwDataSize,
                                              DWORD &dwRvaHint,
                                              bool  &isNGEN,
-                                             __out_ecount(cchFilePath) LPWSTR wszFilePath,
+                                             _Out_writes_(cchFilePath) LPWSTR wszFilePath,
                                              const DWORD cchFilePath)
 {
     SUPPORTS_DAC_HOST_ONLY;
     PEImage *mdImage = NULL;
-    PEImageLayout   *layout;
+    PEImageLayout   *layout = NULL;
     IMAGE_DATA_DIRECTORY *pDir = NULL;
     COUNT_T uniPathChars = 0;
 
@@ -6524,7 +6521,7 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
 bool ClrDataAccess::GetILImageInfoFromNgenPEFile(PEAssembly *pPEAssembly,
                                                  DWORD &dwTimeStamp,
                                                  DWORD &dwSize,
-                                                 __out_ecount(cchFilePath) LPWSTR wszFilePath,
+                                                 _Out_writes_(cchFilePath) LPWSTR wszFilePath,
                                                  const DWORD cchFilePath)
 {
     SUPPORTS_DAC_HOST_ONLY;
@@ -6541,61 +6538,6 @@ bool ClrDataAccess::GetILImageInfoFromNgenPEFile(PEAssembly *pPEAssembly,
 
     return true;
 }
-
-#if defined(FEATURE_CORESYSTEM)
-/* static */
-// We extract "ni.dll from the NGEN image name to obtain the IL image name.
-// In the end we add given ilExtension.
-// This dependecy is based on Apollo installer behavior.
-bool ClrDataAccess::GetILImageNameFromNgenImage( LPCWSTR ilExtension,
-                                                 __out_ecount(cchFilePath) LPWSTR wszFilePath,
-                                                 const DWORD cchFilePath)
-{
-    if (wszFilePath == NULL || cchFilePath == 0)
-    {
-        return false;
-    }
-
-    _wcslwr_s(wszFilePath, cchFilePath);
-    // Find the "ni.dll" extension.
-    // If none exists use NGEN image name.
-    //
-    const WCHAR* ngenExtension = W("ni.dll");
-
-    if (wcslen(ilExtension) <= wcslen(ngenExtension))
-    {
-        LPWSTR  wszFileExtension = wcsstr(wszFilePath, ngenExtension);
-        if (wszFileExtension != 0)
-        {
-            LPWSTR  wszNextFileExtension = wszFileExtension;
-            // Find last occurrence
-            do
-            {
-                wszFileExtension = wszNextFileExtension;
-                wszNextFileExtension = wcsstr(wszFileExtension + 1, ngenExtension);
-            } while (wszNextFileExtension != 0);
-
-            // Overwrite ni.dll with ilExtension
-            if (!memcpy_s(wszFileExtension,
-                            wcslen(ngenExtension)*sizeof(WCHAR),
-                            ilExtension,
-                            wcslen(ilExtension)*sizeof(WCHAR)))
-            {
-                wszFileExtension[wcslen(ilExtension)] = '\0';
-                return true;
-            }
-        }
-    }
-
-    //Use ngen filename if there is no ".ni"
-    if (wcsstr(wszFilePath, W(".ni")) == 0)
-    {
-        return true;
-    }
-
-    return false;
-}
-#endif // FEATURE_CORESYSTEM
 
 void *
 ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
@@ -6705,7 +6647,6 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
             goto ErrExit;
         }
 
-#if defined(FEATURE_CORESYSTEM)
         const WCHAR* ilExtension = W("dll");
         WCHAR ngenImageName[MAX_LONGPATH] = {0};
         if (wcscpy_s(ngenImageName, ARRAY_SIZE(ngenImageName), uniPath) != 0)
@@ -6716,12 +6657,6 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
         {
             goto ErrExit;
         }
-        // Transform NGEN image name into IL Image name
-        if (!GetILImageNameFromNgenImage(ilExtension, uniPath, ARRAY_SIZE(uniPath)))
-        {
-            goto ErrExit;
-        }
-#endif//FEATURE_CORESYSTEM
 
         // RVA size in ngen image and IL image is the same. Because the only
         // different is in RVA. That is 4 bytes column fixed.
@@ -6942,11 +6877,6 @@ bool ClrDataAccess::TargetConsistencyAssertsEnabled()
     LIMITED_METHOD_DAC_CONTRACT;
     return m_fEnableTargetConsistencyAsserts;
 }
-
-#ifdef FEATURE_CORESYSTEM
-#define ctime_s _ctime32_s
-#define time_t __time32_t
-#endif
 
 //
 // VerifyDlls - Validate that the mscorwks in the target matches this version of mscordacwks
@@ -7503,34 +7433,8 @@ BOOL OutOfProcessExceptionEventGetProcessIdAndThreadId(HANDLE hProcess, HANDLE h
     *pPId = (DWORD)(SIZE_T)hProcess;
     *pThreadId = (DWORD)(SIZE_T)hThread;
 #else
-#if !defined(FEATURE_CORESYSTEM)
-    HMODULE hKernel32 = WszGetModuleHandle(W("kernel32.dll"));
-#else
-	HMODULE hKernel32 = WszGetModuleHandle(W("api-ms-win-core-processthreads-l1-1-1.dll"));
-#endif
-    if (hKernel32 == NULL)
-    {
-        return FALSE;
-    }
-
-    typedef WINBASEAPI DWORD (WINAPI GET_PROCESSID_OF_THREAD)(HANDLE);
-    GET_PROCESSID_OF_THREAD * pGetProcessIdOfThread;
-
-    typedef WINBASEAPI DWORD (WINAPI GET_THREADID)(HANDLE);
-    GET_THREADID * pGetThreadId;
-
-    pGetProcessIdOfThread = (GET_PROCESSID_OF_THREAD *)GetProcAddress(hKernel32, "GetProcessIdOfThread");
-    pGetThreadId = (GET_THREADID *)GetProcAddress(hKernel32, "GetThreadId");
-
-    // OOP callbacks are used on Win7 or later.   We should have having below two APIs available.
-    _ASSERTE((pGetProcessIdOfThread != NULL) && (pGetThreadId != NULL));
-    if ((pGetProcessIdOfThread == NULL) || (pGetThreadId == NULL))
-    {
-        return FALSE;
-    }
-
-    *pPId = (*pGetProcessIdOfThread)(hThread);
-    *pThreadId = (*pGetThreadId)(hThread);
+    *pPId = GetProcessIdOfThread(hThread);
+    *pThreadId = GetThreadId(hThread);
 #endif // TARGET_UNIX
     return TRUE;
 }
@@ -7565,9 +7469,9 @@ typedef struct _WER_RUNTIME_EXCEPTION_INFORMATION
 //    else detailed error code.
 //
 //----------------------------------------------------------------------------
-STDAPI OutOfProcessExceptionEventGetWatsonBucket(__in PDWORD pContext,
-                                                 __in const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
-                                                 __out GenericModeBlock * pGMB)
+STDAPI OutOfProcessExceptionEventGetWatsonBucket(_In_ PDWORD pContext,
+                                                 _In_ const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
+                                                 _Out_ GenericModeBlock * pGMB)
 {
     HANDLE hProcess = pExceptionInformation->hProcess;
     HANDLE hThread  = pExceptionInformation->hThread;
@@ -7656,12 +7560,12 @@ STDAPI OutOfProcessExceptionEventGetWatsonBucket(__in PDWORD pContext,
 //    Since this is called by external modules it's important that we don't let any exceptions leak out (see Win8 95224).
 //
 //----------------------------------------------------------------------------
-STDAPI OutOfProcessExceptionEventCallback(__in PDWORD pContext,
-                                          __in const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
-                                          __out BOOL * pbOwnershipClaimed,
-                                          __out_ecount(*pchSize) PWSTR pwszEventName,
+STDAPI OutOfProcessExceptionEventCallback(_In_ PDWORD pContext,
+                                          _In_ const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
+                                          _Out_ BOOL * pbOwnershipClaimed,
+                                          _Out_writes_(*pchSize) PWSTR pwszEventName,
                                           __inout PDWORD pchSize,
-                                          __out PDWORD pdwSignatureCount)
+                                          _Out_ PDWORD pdwSignatureCount)
 {
     SUPPORTS_DAC_HOST_ONLY;
 
@@ -7748,12 +7652,12 @@ STDAPI OutOfProcessExceptionEventCallback(__in PDWORD pContext,
 //    Since this is called by external modules it's important that we don't let any exceptions leak out (see Win8 95224).
 //
 //----------------------------------------------------------------------------
-STDAPI OutOfProcessExceptionEventSignatureCallback(__in PDWORD pContext,
-                                                   __in const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
-                                                   __in DWORD dwIndex,
-                                                   __out_ecount(*pchName) PWSTR pwszName,
+STDAPI OutOfProcessExceptionEventSignatureCallback(_In_ PDWORD pContext,
+                                                   _In_ const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
+                                                   _In_ DWORD dwIndex,
+                                                   _Out_writes_(*pchName) PWSTR pwszName,
                                                    __inout PDWORD pchName,
-                                                   __out_ecount(*pchValue) PWSTR pwszValue,
+                                                   _Out_writes_(*pchValue) PWSTR pwszValue,
                                                    __inout PDWORD pchValue)
 {
     SUPPORTS_DAC_HOST_ONLY;
@@ -7873,12 +7777,12 @@ STDAPI OutOfProcessExceptionEventSignatureCallback(__in PDWORD pContext,
 //    this function are of the pwszName and pwszValue buffers.
 //
 //----------------------------------------------------------------------------
-STDAPI OutOfProcessExceptionEventDebuggerLaunchCallback(__in PDWORD pContext,
-                                                        __in const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
-                                                        __out BOOL * pbCustomDebuggerNeeded,
-                                                        __out_ecount_opt(*pchSize) PWSTR pwszDebuggerLaunch,
+STDAPI OutOfProcessExceptionEventDebuggerLaunchCallback(_In_ PDWORD pContext,
+                                                        _In_ const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
+                                                        _Out_ BOOL * pbCustomDebuggerNeeded,
+                                                        _Out_writes_opt_(*pchSize) PWSTR pwszDebuggerLaunch,
                                                         __inout PDWORD pchSize,
-                                                        __out BOOL * pbAutoLaunchDebugger)
+                                                        _Out_ BOOL * pbAutoLaunchDebugger)
 {
     SUPPORTS_DAC_HOST_ONLY;
 

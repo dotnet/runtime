@@ -28,17 +28,56 @@ class SimpleRWLock;
 class Crst;
 
 // --------------------------------------------------------------------------------
-// PEImage is a PE file loaded by our "simulated LoadLibrary" mechanism.  A PEImage
-// can be loaded either FLAT (same layout as on disk) or MAPPED (PE sections
-// mapped into virtual addresses.)
+// PEImage is a PE file loaded into memory.
+// 
+// The actual data is represented by PEImageLayout instances which are created on demand.
 //
-// The MAPPED format is currently limited to "IL only" images - this can be checked
-// for via PEDecoder::IsILOnlyImage.
+// Various PEImageLayouts can be classified into two kinds -
+//  - Flat    - the same layout as on disk/array or
+// 
+//  - Loaded  - PE sections are mapped into virtual addresses.
+//              PE relocations are applied.
+//              Native exception handlers are registered with OS (on Windows).
+// 
+// Flat layouts are sufficient for operations that do not require running native code,
+// Anything based on RVA, such as retrieving IL method bodies, is slightly less efficient,
+// since RVA must be translated to file offsets by iterating through section headers.
+// The additional cost is not very high though, since our PEs have only a few sections.
 //
-// NOTE: PEImage will NEVER call LoadLibrary.
-// --------------------------------------------------------------------------------
-
-
+// Loaded layouts are functional supersets of Flat - anything that can be done with Flat
+// can be done with Loaded.
+// 
+// Running native code in the PE (i.e. R2R or IJW scenarios) requires Loaded layout.
+// It is possible to execute R2R assembly from Flat layout in IL mode, but its R2R functionality
+// will be disabled. When R2R is explicitly turned off, Flat is sufficient for any scenario with
+// R2R assemblies.
+// In a case of IJW, the PE must be loaded by the native loader to ensure that native dependencies
+// are resolved.
+// 
+// In some scenarios we create Loaded layouts by manually mapping images into memory.
+// That is particularly true on Unix where we cannot rely on OS loader.
+// Manual creation of layouts is limited to "IL only" images. This can be checked
+// for via `PEDecoder::IsILOnlyImage`
+// NOTE: historically, and somewhat confusingly, R2R PEs are considered IsILOnlyImage for this
+//       purpose. That is true even for composite R2R PEs that do not contain IL.
+// 
+// A PEImage, depending on scenario, may end up creating both Flat and Loaded layouts,
+// thus it has two slots - m_pLayouts[IMAGE_COUNT].
+// 
+// m_pLayouts[IMAGE_FLAT]
+//   When initialized contains a layout that allows operations for which Flat layout is sufficient -
+//   i.e. reading metadata
+// 
+// m_pLayouts[IMAGE_LOADED]
+//   When initialized contains a layout that allows loading/running code.
+// 
+// The layouts can only be unloaded together with the owning PEImage, so if we have Flat and
+// then need Loaded, we can only add one more. Thus we have two slots.
+// 
+// Often the slots refer to the same layout though. That is because if we create Loaded before Flat,
+// we put Loaded into both slots, since it is functionally a superset of Flat.
+// Also for pure-IL assemblies Flat is sufficient for anything, so we may put Flat into both slots.
+//
 
 #define CV_SIGNATURE_RSDS   0x53445352
 
@@ -73,9 +112,9 @@ public:
     ULONG Release();
 
 #ifndef DACCESS_COMPILE
-    static PTR_PEImage LoadFlat(const void *flat, COUNT_T size);
+    static PTR_PEImage CreateFromByteArray(const BYTE* array, COUNT_T size);
 #ifndef TARGET_UNIX
-    static PTR_PEImage LoadImage(HMODULE hMod);
+    static PTR_PEImage CreateFromHMODULE(HMODULE hMod);
 #endif // !TARGET_UNIX
     static PTR_PEImage OpenImage(
         LPCWSTR pPath,
@@ -84,10 +123,6 @@ public:
 
     static PTR_PEImage FindByPath(LPCWSTR pPath, BOOL isInBundle = TRUE);
     void AddToHashMap();
-
-    void   Load();
-    void   LoadNoFile();
-    void   LoadFromMapped();
 #endif
 
     BOOL IsOpened();
@@ -95,22 +130,22 @@ public:
 
     BOOL HasLoadedLayout();
     PTR_PEImageLayout GetLoadedLayout();
+    PTR_PEImageLayout GetFlatLayout();
 
     BOOL  HasPath();
     ULONG GetPathHash();
     const SString& GetPath();
     const SString& GetPathToLoad();
+    LPCWSTR GetPathForErrorMessages() { return GetPath(); }
 
     BOOL IsFile();
     BOOL IsInBundle() const;
-    HANDLE GetFileHandle();
     INT64 GetOffset() const;
     INT64 GetSize() const;
     INT64 GetUncompressedSize() const;
 
-    HRESULT TryOpenFile();
-
-    LPCWSTR GetPathForErrorMessages();
+    HANDLE GetFileHandle();
+    HRESULT TryOpenFile(bool takeLock = false);
 
     void GetMVID(GUID *pMvid);
     BOOL HasV1Metadata();
@@ -147,8 +182,6 @@ public:
     CHECK CheckILFormat();
     CHECK CheckUniqueInstance();
 
-    void VerifyIsAssembly();
-
     void SetModuleFileNameHintForDAC();
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
@@ -161,10 +194,10 @@ private:
     PTR_PEImageLayout GetOrCreateLayoutInternal(DWORD imageLayoutMask);
 
     // Create the mapped layout
-    PTR_PEImageLayout CreateLayoutMapped();
+    PTR_PEImageLayout CreateLoadedLayout(bool throwOnFailure);
 
     // Create the flat layout
-    PTR_PEImageLayout CreateLayoutFlat(BOOL bPermitWriteableSections);
+    PTR_PEImageLayout CreateFlatLayout();
 
     void   SetLayout(DWORD dwLayout, PTR_PEImageLayout pLayout);
 #endif
@@ -284,13 +317,12 @@ private:
     enum
     {
         IMAGE_FLAT=0,
-        IMAGE_MAPPED=1,
-        IMAGE_LOADED=2,
-        IMAGE_COUNT=3
+        IMAGE_LOADED=1,
+        IMAGE_COUNT=2
     };
 
     SimpleRWLock *m_pLayoutLock;
-    PTR_PEImageLayout m_pLayouts[IMAGE_COUNT] ;
+    PTR_PEImageLayout m_pLayouts[IMAGE_COUNT];
 
 #ifdef METADATATRACKER_DATA
     class MetaDataTracker   *m_pMDTracker;

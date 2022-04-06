@@ -49,9 +49,7 @@ namespace System.Net.Security
 
         internal static int EnumeratePackages(out int pkgnum, out SafeFreeContextBuffer pkgArray)
         {
-            int res = -1;
-            SafeFreeContextBuffer_SECURITY? pkgArray_SECURITY = null;
-            res = Interop.SspiCli.EnumerateSecurityPackagesW(out pkgnum, out pkgArray_SECURITY);
+            int res = Interop.SspiCli.EnumerateSecurityPackagesW(out pkgnum, out SafeFreeContextBuffer_SECURITY? pkgArray_SECURITY);
             pkgArray = pkgArray_SECURITY;
 
             if (res != 0)
@@ -173,11 +171,13 @@ namespace System.Net.Security
     {
 #endif
 
+        internal DateTime _expiry;
         internal Interop.SspiCli.CredHandle _handle;    //should be always used as by ref in PInvokes parameters
 
         protected SafeFreeCredentials() : base(IntPtr.Zero, true)
         {
             _handle = default;
+            _expiry = DateTime.MaxValue;
         }
 
         public override bool IsInvalid
@@ -185,13 +185,7 @@ namespace System.Net.Security
             get { return IsClosed || _handle.IsZero; }
         }
 
-#if DEBUG
-        public new IntPtr DangerousGetHandle()
-        {
-            Debug.Fail("This method should never be called for this type");
-            throw NotImplemented.ByDesign;
-        }
-#endif
+        public DateTime Expiry => _expiry;
 
         public static unsafe int AcquireDefaultCredential(
             string package,
@@ -230,11 +224,8 @@ namespace System.Net.Security
             ref SafeSspiAuthDataHandle authdata,
             out SafeFreeCredentials outCredential)
         {
-            int errorCode = -1;
-            long timeStamp;
-
             outCredential = new SafeFreeCredential_SECURITY();
-            errorCode = Interop.SspiCli.AcquireCredentialsHandleW(
+            int errorCode = Interop.SspiCli.AcquireCredentialsHandleW(
                             null,
                             package,
                             (int)intent,
@@ -243,7 +234,7 @@ namespace System.Net.Security
                             null,
                             null,
                             ref outCredential._handle,
-                            out timeStamp);
+                            out _);
 
             if (errorCode != 0)
             {
@@ -260,7 +251,6 @@ namespace System.Net.Security
             out SafeFreeCredentials outCredential)
         {
             int errorCode = -1;
-            long timeStamp;
 
             outCredential = new SafeFreeCredential_SECURITY();
 
@@ -273,7 +263,7 @@ namespace System.Net.Security
                                 null,
                                 null,
                                 ref outCredential._handle,
-                                out timeStamp);
+                                out _);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Verbose(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
 
@@ -354,10 +344,7 @@ namespace System.Net.Security
             ref SecurityBuffer outSecBuffer,
             ref Interop.SspiCli.ContextFlags outFlags)
         {
-            if (inCredentials == null)
-            {
-                throw new ArgumentNullException(nameof(inCredentials));
-            }
+            ArgumentNullException.ThrowIfNull(inCredentials);
 
             Debug.Assert(inSecBuffers.Count <= 3);
             Interop.SspiCli.SecBufferDesc inSecurityBufferDescriptor = new Interop.SspiCli.SecBufferDesc(inSecBuffers.Count);
@@ -671,10 +658,7 @@ namespace System.Net.Security
             ref SecurityBuffer outSecBuffer,
             ref Interop.SspiCli.ContextFlags outFlags)
         {
-            if (inCredentials == null)
-            {
-                throw new ArgumentNullException(nameof(inCredentials));
-            }
+            ArgumentNullException.ThrowIfNull(inCredentials);
 
             Debug.Assert(inSecBuffers.Count <= 3);
             Interop.SspiCli.SecBufferDesc inSecurityBufferDescriptor = new Interop.SspiCli.SecBufferDesc(inSecBuffers.Count);

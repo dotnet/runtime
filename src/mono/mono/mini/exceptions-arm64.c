@@ -59,7 +59,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	/* ip0 = sp */
 	arm_ldrx (code, ARMREG_IP0, ctx_reg, MONO_STRUCT_OFFSET (MonoContext, regs) + (ARMREG_SP * 8));
 	/* Restore sp, ctx is no longer valid */
-	arm_movspx (code, ARMREG_SP, ARMREG_IP0); 
+	arm_movspx (code, ARMREG_SP, ARMREG_IP0);
 	/* Branch to pc */
 	code = mono_arm_emit_brx (code, ARMREG_IP1);
 	/* Not reached */
@@ -166,7 +166,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	return MINI_ADDR_TO_FTNPTR (start);
 }
 
-static gpointer 
+static gpointer
 get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm, gboolean resume_unwind, const char *tramp_name, MonoTrampInfo **info, gboolean aot, gboolean preserve_ips)
 {
 	guint8 *start, *code;
@@ -206,7 +206,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	arm_ldrx (code, ARMREG_IP0, ARMREG_FP, 0);
 	arm_strx (code, ARMREG_IP0, ARMREG_FP, gregs_offset + (ARMREG_FP * 8));
 	arm_addx_imm (code, ARMREG_IP0, ARMREG_FP, frame_size);
-	arm_strx (code, ARMREG_IP0, ARMREG_FP, gregs_offset + (ARMREG_SP * 8));	
+	arm_strx (code, ARMREG_IP0, ARMREG_FP, gregs_offset + (ARMREG_SP * 8));
 	/* Save fregs */
 	for (i = 0; i < num_fregs; ++i)
 		arm_strfpx (code, ARMREG_D8 + i, ARMREG_FP, fregs_offset + (i * 8));
@@ -270,7 +270,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	return MINI_ADDR_TO_FTNPTR (start);
 }
 
-gpointer 
+gpointer
 mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_trampoline (256, FALSE, FALSE, FALSE, FALSE, "throw_exception", info, aot, FALSE);
@@ -288,7 +288,7 @@ mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
 	return get_throw_trampoline (256, FALSE, TRUE, FALSE, FALSE, "rethrow_preserve_exception", info, aot, TRUE);
 }
 
-gpointer 
+gpointer
 mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_trampoline (256, TRUE, FALSE, FALSE, FALSE, "throw_corlib_exception", info, aot, FALSE);
@@ -423,14 +423,14 @@ mono_arm_resume_unwind (gpointer arg, host_mgreg_t pc, host_mgreg_t *int_regs, g
 	mono_resume_unwind (&ctx);
 }
 
-/* 
+/*
  * mono_arch_unwind_frame:
  *
  * See exceptions-amd64.c for docs;
  */
 gboolean
-mono_arch_unwind_frame (MonoJitTlsData *jit_tls, 
-						MonoJitInfo *ji, MonoContext *ctx, 
+mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
+						MonoJitInfo *ji, MonoContext *ctx,
 						MonoContext *new_ctx, MonoLMF **lmf,
 						host_mgreg_t **save_locations,
 						StackFrameInfo *frame)
@@ -550,7 +550,7 @@ mono_arch_handle_exception (void *ctx, gpointer obj)
 	UCONTEXT_REG_R0 (sigctx) = (gsize)obj;
 
 	gpointer addr = (gpointer)handle_signal_exception;
-	UCONTEXT_REG_SET_PC (sigctx, addr);
+	UCONTEXT_REG_SET_PC (sigctx, (guint64)addr);
 	host_mgreg_t sp = UCONTEXT_REG_SP (sigctx) - MONO_ARCH_REDZONE_SIZE;
 	UCONTEXT_REG_SET_SP (sigctx, sp);
 #endif

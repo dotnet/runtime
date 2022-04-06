@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import cwraps from "./cwraps";
-import { GlobalizationMode, VoidPtr } from "./types";
+import { Module } from "./imports";
+import { GlobalizationMode } from "./types";
+import { VoidPtr } from "./types/emscripten";
 
 let num_icu_assets_loaded_successfully = 0;
 
@@ -27,7 +29,7 @@ export function mono_wasm_get_icudt_name(culture: string): string {
 // @globalization_mode is one of "icu", "invariant", or "auto".
 // "auto" will use "icu" if any ICU data archives have been loaded,
 //  otherwise "invariant".
-export function mono_wasm_globalization_init(globalization_mode: GlobalizationMode): void {
+export function mono_wasm_globalization_init(globalization_mode: GlobalizationMode, tracing: boolean): void {
     let invariantMode = false;
 
     if (globalization_mode === "invariant")
@@ -35,13 +37,17 @@ export function mono_wasm_globalization_init(globalization_mode: GlobalizationMo
 
     if (!invariantMode) {
         if (num_icu_assets_loaded_successfully > 0) {
-            console.debug("MONO_WASM: ICU data archive(s) loaded, disabling invariant mode");
+            if (tracing) {
+                console.debug("MONO_WASM: ICU data archive(s) loaded, disabling invariant mode");
+            }
         } else if (globalization_mode !== "icu") {
-            console.debug("MONO_WASM: ICU data archive(s) not loaded, using invariant globalization mode");
+            if (tracing) {
+                console.debug("MONO_WASM: ICU data archive(s) not loaded, using invariant globalization mode");
+            }
             invariantMode = true;
         } else {
             const msg = "invariant globalization mode is inactive and no ICU data archives were loaded";
-            console.error(`MONO_WASM: ERROR: ${msg}`);
+            Module.printErr(`MONO_WASM: ERROR: ${msg}`);
             throw new Error(msg);
         }
     }

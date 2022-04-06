@@ -285,7 +285,7 @@ SCAN_OBJECT_FUNCTION_NAME (GCObject *full_object, SgenDescriptor desc, SgenGrayQ
 #include "sgen-scan-object.h"
 }
 
-#ifdef SCAN_VTYPE_FUNCTION_NAME 
+#ifdef SCAN_VTYPE_FUNCTION_NAME
 static void
 SCAN_VTYPE_FUNCTION_NAME (GCObject *full_object, char *start, SgenDescriptor desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
 {

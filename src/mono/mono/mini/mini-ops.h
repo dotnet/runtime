@@ -290,6 +290,7 @@ MINI_OP(OP_LCONV_TO_I,    "long_conv_to_i", LREG, LREG, NONE)
 MINI_OP(OP_LCONV_TO_OVF_I,"long_conv_to_ovf_i", LREG, LREG, NONE)
 MINI_OP(OP_LCONV_TO_OVF_U,"long_conv_to_ovf_u", LREG, LREG, NONE)
 
+/* inst_exc_name contains the exception name to throw */
 MINI_OP(OP_LADD_OVF,      "long_add_ovf", LREG, LREG, LREG)
 MINI_OP(OP_LADD_OVF_UN,   "long_add_ovf_un", LREG, LREG, LREG)
 MINI_OP(OP_LMUL_OVF,      "long_mul_ovf", LREG, LREG, LREG)
@@ -395,6 +396,8 @@ MINI_OP(OP_ICONV_TO_U1,   "int_conv_to_u1", IREG, IREG, NONE)
 MINI_OP(OP_ICONV_TO_I,    "int_conv_to_i", IREG, IREG, NONE)
 MINI_OP(OP_ICONV_TO_OVF_I,"int_conv_to_ovf_i", IREG, IREG, NONE)
 MINI_OP(OP_ICONV_TO_OVF_U,"int_conv_to_ovf_u", IREG, IREG, NONE)
+
+/* inst_exc_name contains the exception name to throw */
 MINI_OP(OP_IADD_OVF,      "int_add_ovf", IREG, IREG, IREG)
 MINI_OP(OP_IADD_OVF_UN,   "int_add_ovf_un", IREG, IREG, IREG)
 MINI_OP(OP_IMUL_OVF,      "int_mul_ovf", IREG, IREG, IREG)
@@ -583,7 +586,6 @@ MINI_OP(OP_FCGT_UN_MEMBASE,"float_cgt_un_membase", IREG, FREG, IREG)
 MINI_OP(OP_FCLT_MEMBASE,   "float_clt_membase", IREG, FREG, IREG)
 MINI_OP(OP_FCLT_UN_MEMBASE,"float_clt_un_membase", IREG, FREG, IREG)
 
-MINI_OP(OP_FCONV_TO_U,	"float_conv_to_u", IREG, FREG, NONE)
 MINI_OP(OP_CKFINITE, "ckfinite", FREG, FREG, NONE)
 
 /* r4 opcodes: must be in the same order as the matching CEE_ opcodes: ovfops_op_map */
@@ -638,6 +640,11 @@ MINI_OP(OP_FGETLOW32, "float_getlow32", IREG, FREG, NONE)
 MINI_OP(OP_FGETHIGH32, "float_gethigh32", IREG, FREG, NONE)
 
 MINI_OP(OP_JUMP_TABLE, "jump_table", IREG, NONE, NONE)
+
+/* Same as OP_IMUL_OVF_UN, but throws an OutOfMemoryException */
+/* Emulated */
+MINI_OP(OP_IMUL_OVF_UN_OOM,   "int_mul_ovf_un_oom", IREG, IREG, IREG)
+MINI_OP(OP_LMUL_OVF_UN_OOM,   "long_mul_ovf_un_oom", LREG, LREG, LREG)
 
 /* aot compiler */
 MINI_OP(OP_AOTCONST, "aotconst", IREG, NONE, NONE)
@@ -974,7 +981,7 @@ MINI_OP(OP_PMULQ, "pmulq", XREG, XREG, XREG)
 MINI_OP(OP_PMULW_HIGH_UN, "pmulw_high_un", XREG, XREG, XREG)
 MINI_OP(OP_PMULW_HIGH, "pmulw_high", XREG, XREG, XREG)
 
-/*SSE2 Shift ops must have the _reg version right after as code depends on this ordering.*/ 
+/*SSE2 Shift ops must have the _reg version right after as code depends on this ordering.*/
 MINI_OP(OP_PSHRW, "pshrw", XREG, XREG, NONE)
 MINI_OP(OP_PSHRW_REG, "pshrw_reg", XREG, XREG, XREG)
 
@@ -1246,12 +1253,12 @@ MINI_OP(OP_CMOV_LLE_UN, "cmov_lle_un", IREG, IREG, IREG)
 MINI_OP(OP_CMOV_LLT_UN, "cmov_llt_un", IREG, IREG, IREG)
 
 /* Debugging support */
-/* 
+/*
  * Marks the start of the live range of the variable in inst_c0, that is the
  * first instruction where the variable has a value.
  */
 MINI_OP(OP_LIVERANGE_START, "liverange_start", NONE, NONE, NONE)
-/* 
+/*
  * Marks the end of the live range of the variable in inst_c0, that is the
  * first instruction where the variable no longer has a value.
  */
@@ -1616,6 +1623,15 @@ MINI_OP3(OP_ARM64_LD1_INSERT, "arm64_ld1_insert", XREG, IREG, XREG, IREG)
 MINI_OP(OP_ARM64_LD1, "arm64_ld1", XREG, IREG, NONE)
 MINI_OP(OP_ARM64_LD1R, "arm64_ld1r", XREG, IREG, NONE)
 
+/* Loads two consecutive vector (or scalar) values into a pair of
+ * vector registers. Returns a ValueTuple in a vreg. klass must be set to the
+ * MonoClass representing the ValueTuple return type of the op.
+ */
+MINI_OP(OP_ARM64_LDNP, "arm64_ldnp", VREG, IREG, NONE)
+MINI_OP(OP_ARM64_LDNP_SCALAR, "arm64_ldnp_scalar", VREG, IREG, NONE)
+MINI_OP(OP_ARM64_LDP, "arm64_ldp", VREG, IREG, NONE)
+MINI_OP(OP_ARM64_LDP_SCALAR, "arm64_ldp_scalar", VREG, IREG, NONE)
+
 MINI_OP(OP_ARM64_ST1, "arm64_st1", NONE, IREG, XREG)
 MINI_OP(OP_ARM64_SXTL, "arm64_sxtl", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_SXTL2, "arm64_sxtl2", XREG, XREG, NONE)
@@ -1796,7 +1812,7 @@ MINI_OP(OP_ARM64_UADALP, "arm64_uadalp_scalar", XREG, XREG, XREG)
 
 MINI_OP(OP_ARM64_SADDLV, "arm64_saddlv", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_UADDLV, "arm64_uaddlv", XREG, XREG, NONE)
-
+MINI_OP(OP_ARM64_XADDV, "arm64_xaddv", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_XHORIZ, "arm64_xhoriz", XREG, XREG, NONE)
 
 MINI_OP3(OP_ARM64_SABAL, "arm64_sabal", XREG, XREG, XREG, XREG)

@@ -437,23 +437,15 @@ namespace Internal.JitInterface
         CORINFO_GENERICS_CTXT_KEEP_ALIVE = 0x00000100, // Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR
     }
 
-    public enum CorInfoIntrinsics
+    // These are used to detect array methods as NamedIntrinsic in JIT importer,
+    // which otherwise don't have a name.
+    public enum CorInfoArrayIntrinsic
     {
-        CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array
-        CORINFO_INTRINSIC_Array_Address,        // Get the address of an element in an array
-        CORINFO_INTRINSIC_Array_Set,            // Set the value of an element in an array
-        CORINFO_INTRINSIC_InitializeArray,      // initialize an array from static data
-        CORINFO_INTRINSIC_RTH_GetValueInternal,
-        CORINFO_INTRINSIC_Object_GetType,
-        CORINFO_INTRINSIC_StubHelpers_GetStubContext,
-        CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr,
-        CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress,
-        CORINFO_INTRINSIC_ByReference_Ctor,
-        CORINFO_INTRINSIC_ByReference_Value,
-        CORINFO_INTRINSIC_GetRawHandle,
+        GET = 0,
+        SET = 1,
+        ADDRESS = 2,
 
-        CORINFO_INTRINSIC_Count,
-        CORINFO_INTRINSIC_Illegal = -1,         // Not a true intrinsic,
+        ILLEGAL
     }
 
     // Can a value be accessed directly from JITed code.
@@ -504,16 +496,6 @@ namespace Internal.JitInterface
     {
         CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE = 0x00000000, // Type handle comes from the vtable
         CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN  = 0x00000001, // Type handle comes from an ldtoken
-    }
-
-    public enum CorInfoInlineRestrictions
-    {
-        INLINE_RESPECT_BOUNDARY = 0x00000001, // You can inline if there are no calls from the method being inlined
-        INLINE_NO_CALLEE_LDSTR = 0x00000002, // You can inline only if you guarantee that if inlinee does an ldstr
-        // inlinee's module will never see that string (by any means).
-        // This is due to how we implement the NoStringInterningAttribute
-        // (by reusing the fixup table).
-        INLINE_SAME_THIS = 0x00000004, // You can inline only if the callee is on the same this reference as caller
     }
 
     // If you add more values here, keep it in sync with TailCallTypeMap in ..\vm\ClrEtwAll.man
@@ -603,7 +585,6 @@ namespace Internal.JitInterface
         // CORINFO_FLG_UNUSED = 0x04000000,
         CORINFO_FLG_DONT_INLINE = 0x10000000, // The method should not be inlined
         CORINFO_FLG_DONT_INLINE_CALLER = 0x20000000, // The method should not be inlined, nor should its callers. It cannot be tail called.
-        CORINFO_FLG_JIT_INTRINSIC = 0x40000000, // Method is a potential jit intrinsic; verify identity by name check
 
         // These are internal flags that can only be on Classes
         CORINFO_FLG_VALUECLASS = 0x00010000, // is the class a value class
@@ -1343,7 +1324,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_DEBUG_EnC = 3, // We are in Edit-n-Continue mode
         CORJIT_FLAG_DEBUG_INFO = 4, // generate line and local-var info
         CORJIT_FLAG_MIN_OPT = 5, // disable all jit optimizations (not necesarily debuggable code)
-        CORJIT_FLAG_UNUSED1 = 6,
+        CORJIT_FLAG_ENABLE_CFG = 6, // generate CFG enabled code
         CORJIT_FLAG_MCJIT_BACKGROUND = 7, // Calling from multicore JIT background thread, do not call JitComplete
         CORJIT_FLAG_UNUSED2 = 8,
         CORJIT_FLAG_UNUSED3 = 9,
@@ -1352,7 +1333,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_UNUSED6 = 12,
         CORJIT_FLAG_OSR = 13, // Generate alternate version for On Stack Replacement
         CORJIT_FLAG_ALT_JIT = 14, // JIT should consider itself an ALT_JIT
-        CORJIT_FLAG_FEATURE_SIMD = 17,
+        CORJIT_FLAG_UNUSED10 = 17,
         CORJIT_FLAG_MAKEFINALCODE = 18, // Use the final code generator, i.e., not the interpreter.
         CORJIT_FLAG_READYTORUN = 19, // Use version-resilient code generation
         CORJIT_FLAG_PROF_ENTERLEAVE = 20, // Instrument prologues/epilogues

@@ -17,7 +17,7 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 usage()
 {
   echo "Common settings:"
-  echo "  --arch (-a)                     Target platform: x86, x64, arm, armel, arm64, s390x or wasm."
+  echo "  --arch (-a)                     Target platform: x86, x64, arm, armv6, armel, arm64, loongarch64, s390x or wasm."
   echo "                                  [Default: Your machine's architecture.]"
   echo "  --binaryLog (-bl)               Output binary log."
   echo "  --cross                         Optional argument to signify cross compilation."
@@ -166,7 +166,7 @@ while [[ $# > 0 ]]; do
   opt="$(echo "${1/#--/-}" | tr "[:upper:]" "[:lower:]")"
 
   if [[ $firstArgumentChecked -eq 0 && $opt =~ ^[a-zA-Z.+]+$ ]]; then
-    if [ $opt == "help" ]; then
+    if [[ "$opt" == "help" ]]; then
       showSubsetHelp
       exit 0
     fi
@@ -190,7 +190,7 @@ while [[ $# > 0 ]]; do
         exit 0
       else
         passedSubset="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
-        if [ $passedSubset == "help" ]; then
+        if [[ "$passedSubset" == "help" ]]; then
           showSubsetHelp
           exit 0
         fi
@@ -206,12 +206,12 @@ while [[ $# > 0 ]]; do
       fi
       passedArch="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       case "$passedArch" in
-        x64|x86|arm|armel|arm64|s390x|wasm)
+        x64|x86|arm|armv6|armel|arm64|loongarch64|s390x|wasm)
           arch=$passedArch
           ;;
         *)
           echo "Unsupported target architecture '$2'."
-          echo "The allowed values are x86, x64, arm, armel, arm64, s390x, and wasm."
+          echo "The allowed values are x86, x64, arm, armv6, armel, arm64, loongarch64, s390x, and wasm."
           exit 1
           ;;
       esac
@@ -461,7 +461,7 @@ if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
 fi
 
-if [ "$os" = "Browser" ] && [ "$arch" != "wasm" ]; then
+if [[ "$os" == "Browser" && "$arch" != "wasm" ]]; then
     # override default arch for Browser, we only support wasm
     arch=wasm
 fi

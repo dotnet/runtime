@@ -78,7 +78,6 @@ namespace System.Net.Http
                 if (!string.IsNullOrWhiteSpace(proxyHelper.ProxyBypass))
                 {
                     int idx = 0;
-                    int start = 0;
                     string? tmp;
 
                     // Process bypass list for manual setting.
@@ -104,7 +103,7 @@ namespace System.Net.Http
                             idx += 1;
                         }
 
-                        start = idx;
+                        int start = idx;
                         while (idx < proxyHelper.ProxyBypass.Length && proxyHelper.ProxyBypass[idx] != ' ' && proxyHelper.ProxyBypass[idx] != ';' && proxyHelper.ProxyBypass[idx] != ']') { idx += 1; };
 
                         if (idx == start)

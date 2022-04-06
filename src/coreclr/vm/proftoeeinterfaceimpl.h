@@ -213,7 +213,7 @@ public:
         LPCBYTE *    ppBaseLoadAddress,
         ULONG        cchName,
         ULONG *      pcchName,
-        __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[],
+        _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[],
         AssemblyID * pAssemblyId);
 
     COM_METHOD GetModuleMetaData(
@@ -274,14 +274,14 @@ public:
         AppDomainID appDomainId,
         ULONG       cchName,
         ULONG *     pcchName,
-        __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[],
+        _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[],
         ProcessID * pProcessId);
 
     COM_METHOD GetAssemblyInfo(
         AssemblyID    assemblyId,
         ULONG         cchName,
         ULONG *       pcchName,
-        __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[],
+        _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[],
         AppDomainID * pAppDomainId,
         ModuleID    * pModuleId);
 
@@ -472,7 +472,7 @@ public:
                                      USHORT *               pQFEVersion,         // out
                                      ULONG                  cchVersionString,    // in
                                      ULONG  *               pcchVersionString,   // out
-                                     __out_ecount_part_opt(cchVersionString, *pcchVersionString) WCHAR szVersionString[]);  // out
+                                     _Out_writes_to_opt_(cchVersionString, *pcchVersionString) WCHAR szVersionString[]);  // out
 
     COM_METHOD GetThreadStaticAddress2(ClassID classId,             // in
                                        mdFieldDef fieldToken,       // in
@@ -490,7 +490,7 @@ public:
         LPCBYTE *    ppBaseLoadAddress,
         ULONG        cchName,
         ULONG *      pcchName,
-        __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[],
+        _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[],
         AssemblyID * pAssemblyId,
         DWORD *      pdwModuleFlags);
 
@@ -652,7 +652,7 @@ public:
         const WCHAR *szName,
         ULONG       cchValue,
         ULONG       *pcchValue,
-        __out_ecount_part_opt(cchValue, *pcchValue) WCHAR szValue[]);
+        _Out_writes_to_opt_(cchValue, *pcchValue) WCHAR szValue[]);
 
     COM_METHOD SetEnvironmentVariable(
         const WCHAR *szName,
@@ -736,8 +736,8 @@ protected:
 
     HRESULT GetArrayObjectInfoHelper(Object * pObj,
                                      ULONG32 cDimensionSizes,
-                                     __out_ecount(cDimensionSizes) ULONG32 pDimensionSizes[],
-                                     __out_ecount(cDimensionSizes) int pDimensionLowerBounds[],
+                                     _Out_writes_(cDimensionSizes) ULONG32 pDimensionSizes[],
+                                     _Out_writes_(cDimensionSizes) int pDimensionLowerBounds[],
                                      BYTE ** ppData);
 
     DWORD GetModuleFlags(Module * pModule);

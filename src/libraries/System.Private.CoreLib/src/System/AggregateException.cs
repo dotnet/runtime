@@ -51,14 +51,9 @@ namespace System
         /// <param name="innerException">The exception that is the cause of the current exception.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="innerException"/> argument
         /// is null.</exception>
-        public AggregateException(string? message, Exception innerException)
+        public AggregateException(string? message, Exception innerException!!)
             : base(message, innerException)
         {
-            if (innerException == null)
-            {
-                throw new ArgumentNullException(nameof(innerException));
-            }
-
             _innerExceptions = new[] { innerException };
         }
 
@@ -71,7 +66,7 @@ namespace System
         /// is null.</exception>
         /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
-        public AggregateException(IEnumerable<Exception> innerExceptions) :
+        public AggregateException(IEnumerable<Exception> innerExceptions!!) :
             this(SR.AggregateException_ctor_DefaultMessage, innerExceptions)
         {
         }
@@ -85,7 +80,7 @@ namespace System
         /// is null.</exception>
         /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
-        public AggregateException(params Exception[] innerExceptions) :
+        public AggregateException(params Exception[] innerExceptions!!) :
             this(SR.AggregateException_ctor_DefaultMessage, innerExceptions)
         {
         }
@@ -100,8 +95,8 @@ namespace System
         /// is null.</exception>
         /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
-        public AggregateException(string? message, IEnumerable<Exception> innerExceptions)
-            : this(message, innerExceptions == null ? null : new List<Exception>(innerExceptions).ToArray(), cloneExceptions: false)
+        public AggregateException(string? message, IEnumerable<Exception> innerExceptions!!)
+            : this(message, new List<Exception>(innerExceptions).ToArray(), cloneExceptions: false)
         {
         }
 
@@ -115,19 +110,14 @@ namespace System
         /// is null.</exception>
         /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
-        public AggregateException(string? message, params Exception[] innerExceptions) :
+        public AggregateException(string? message, params Exception[] innerExceptions!!) :
             this(message, innerExceptions, cloneExceptions: true)
         {
         }
 
-        private AggregateException(string? message, Exception[]? innerExceptions, bool cloneExceptions) :
-            base(message, innerExceptions?.Length > 0 ? innerExceptions[0] : null)
+        private AggregateException(string? message, Exception[] innerExceptions, bool cloneExceptions) :
+            base(message, innerExceptions.Length > 0 ? innerExceptions[0] : null)
         {
-            if (innerExceptions == null)
-            {
-                throw new ArgumentNullException(nameof(innerExceptions));
-            }
-
             _innerExceptions = cloneExceptions ? new Exception[innerExceptions.Length] : innerExceptions;
 
             for (int i = 0; i < _innerExceptions.Length; i++)
@@ -263,13 +253,8 @@ namespace System
         /// cref="AggregateException"/> was not handled.</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="predicate"/> argument is
         /// null.</exception>
-        public void Handle(Func<Exception, bool> predicate)
+        public void Handle(Func<Exception, bool> predicate!!)
         {
-            if (predicate == null)
-            {
-                throw new ArgumentNullException(nameof(predicate));
-            }
-
             List<Exception>? unhandledExceptions = null;
             for (int i = 0; i < _innerExceptions.Length; i++)
             {

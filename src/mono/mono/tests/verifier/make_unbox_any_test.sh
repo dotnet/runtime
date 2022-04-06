@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -91,7 +91,7 @@ $SED -e "s/INIT_OP/${TEST_INIT}/g"  -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/VALIDITY/
 
 END:
 	ldc.i4.0
-	ret 
+	ret
 }
 
 //EOF

@@ -68,7 +68,7 @@ namespace System.Drawing
         // Note: GDI+ creates singleton font family objects (from the corresponding font file) and reference count them.
         private void CreateFontFamily(string name, FontCollection? fontCollection)
         {
-            IntPtr fontfamily = IntPtr.Zero;
+            IntPtr fontfamily;
             IntPtr nativeFontCollection = (fontCollection == null) ? IntPtr.Zero : fontCollection._nativeFontCollection;
 
             int status = Gdip.GdipCreateFontFamilyFromName(name, new HandleRef(fontCollection, nativeFontCollection), out fontfamily);
@@ -105,7 +105,7 @@ namespace System.Drawing
         /// </summary>
         public FontFamily(GenericFontFamilies genericFamily)
         {
-            IntPtr nativeFamily = IntPtr.Zero;
+            IntPtr nativeFamily;
             int status;
 
             switch (genericFamily)
@@ -204,7 +204,7 @@ namespace System.Drawing
 
         private static IntPtr GetGdipGenericSansSerif()
         {
-            IntPtr nativeFamily = IntPtr.Zero;
+            IntPtr nativeFamily;
             int status = Gdip.GdipGetGenericFontFamilySansSerif(out nativeFamily);
             Gdip.CheckStatus(status);
 
@@ -226,13 +226,8 @@ namespace System.Drawing
         /// graphics context.
         /// </summary>
         [Obsolete("FontFamily.GetFamilies has been deprecated. Use Families instead.")]
-        public static FontFamily[] GetFamilies(Graphics graphics)
+        public static FontFamily[] GetFamilies(Graphics graphics!!)
         {
-            if (graphics == null)
-            {
-                throw new ArgumentNullException(nameof(graphics));
-            }
-
             return new InstalledFontCollection().Families;
         }
 
@@ -253,7 +248,7 @@ namespace System.Drawing
         /// </summary>
         public int GetEmHeight(FontStyle style)
         {
-            int result = 0;
+            int result;
             int status = Gdip.GdipGetEmHeight(new HandleRef(this, NativeFamily), style, out result);
             Gdip.CheckStatus(status);
 
@@ -265,7 +260,7 @@ namespace System.Drawing
         /// </summary>
         public int GetCellAscent(FontStyle style)
         {
-            int result = 0;
+            int result;
             int status = Gdip.GdipGetCellAscent(new HandleRef(this, NativeFamily), style, out result);
             Gdip.CheckStatus(status);
 
@@ -277,7 +272,7 @@ namespace System.Drawing
         /// </summary>
         public int GetCellDescent(FontStyle style)
         {
-            int result = 0;
+            int result;
             int status = Gdip.GdipGetCellDescent(new HandleRef(this, NativeFamily), style, out result);
             Gdip.CheckStatus(status);
 
@@ -290,7 +285,7 @@ namespace System.Drawing
         /// </summary>
         public int GetLineSpacing(FontStyle style)
         {
-            int result = 0;
+            int result;
             int status = Gdip.GdipGetLineSpacing(new HandleRef(this, NativeFamily), style, out result);
             Gdip.CheckStatus(status);
 

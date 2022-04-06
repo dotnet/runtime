@@ -8,7 +8,6 @@ using System.Net.Security;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Threading;
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
 
@@ -44,10 +43,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(options.ClientAuthenticationOptions.CipherSuitesPolicy)));
                 }
 
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 if (options.ClientAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.NoEncryption)
                 {
                     throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(options.ClientAuthenticationOptions.EncryptionPolicy)));
                 }
+#pragma warning restore SYSLIB0040
 
                 if (options.ClientAuthenticationOptions.ClientCertificates != null)
                 {
@@ -82,10 +83,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(serverAuthenticationOptions.CipherSuitesPolicy)));
                 }
 
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 if (serverAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.NoEncryption)
                 {
                     throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(serverAuthenticationOptions.EncryptionPolicy)));
                 }
+#pragma warning restore SYSLIB0040
 
                 if (serverAuthenticationOptions.ClientCertificateRequired)
                 {
@@ -156,9 +159,13 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 ulong ms = (ulong)options.IdleTimeout.Ticks / TimeSpan.TicksPerMillisecond;
                 if (ms > (1ul << 62) - 1) throw new Exception("IdleTimeout is too large (max 2^62-1 milliseconds)");
 
-                settings.IsSetFlags |= QuicSettingsIsSetFlags.IdleTimeoutMs;
                 settings.IdleTimeoutMs = (ulong)options.IdleTimeout.TotalMilliseconds;
             }
+            else
+            {
+                settings.IdleTimeoutMs = 0;
+            }
+            settings.IsSetFlags |= QuicSettingsIsSetFlags.IdleTimeoutMs;
 
             uint status;
             SafeMsQuicConfigurationHandle? configurationHandle;
@@ -240,6 +247,13 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     config.Type = QUIC_CREDENTIAL_TYPE.NONE;
                     status = MsQuicApi.Api.ConfigurationLoadCredentialDelegate(configurationHandle, ref config);
                 }
+
+#if TARGET_WINDOWS
+                if ((Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.AlgorithmMismatch && MsQuicApi.Tls13MayBeDisabled)
+                {
+                    throw new QuicException(SR.net_ssl_app_protocols_invalid, null, (int)status);
+                }
+#endif
 
                 QuicExceptionHelpers.ThrowIfFailed(status, "ConfigurationLoadCredential failed.");
             }

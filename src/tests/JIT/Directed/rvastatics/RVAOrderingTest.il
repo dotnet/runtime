@@ -6,7 +6,6 @@
 .assembly extern System.Runtime.Extensions { }
 .assembly extern System.Console { }
 .assembly RVAOrderingTest { }
-.module RVAOrderingTest.exe
 
 
 // =============== CLASS MEMBERS DECLARATION ===================

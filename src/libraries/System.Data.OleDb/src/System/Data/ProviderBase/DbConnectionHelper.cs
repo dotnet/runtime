@@ -44,7 +44,7 @@ namespace System.Data.OleDb
             }
         }
 
-        internal DbConnectionFactory ConnectionFactory
+        private static DbConnectionFactory ConnectionFactory
         {
             get
             {
@@ -144,10 +144,8 @@ namespace System.Data.OleDb
 
         protected override DbCommand CreateDbCommand()
         {
-            DbCommand? command = null;
-
             DbProviderFactory providerFactory = ConnectionFactory.ProviderFactory;
-            command = providerFactory.CreateCommand()!;
+            DbCommand? command = providerFactory.CreateCommand()!;
             command.Connection = this;
             return command;
         }

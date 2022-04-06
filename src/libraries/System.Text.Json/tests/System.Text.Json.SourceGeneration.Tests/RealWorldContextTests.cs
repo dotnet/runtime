@@ -246,28 +246,28 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             const string Json = "{\"MyEnum\":\"One\"}";
 
-            ClassWithCustomConverterPropertyFactory obj = new()
+            ClassWithCustomConverterFactoryProperty obj = new()
             {
                 MyEnum = SampleEnum.One
             };
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterPropertyFactory));
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterFactoryProperty));
             }
             else
             {
-                string json = JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterPropertyFactory);
+                string json = JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterFactoryProperty);
                 Assert.Equal(Json, json);
             }
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterPropertyFactory));
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterFactoryProperty));
             }
             else
             {
-                obj = JsonSerializer.Deserialize(Json, DefaultContext.ClassWithCustomConverterPropertyFactory);
+                obj = JsonSerializer.Deserialize(Json, DefaultContext.ClassWithCustomConverterFactoryProperty);
                 Assert.Equal(SampleEnum.One, obj.MyEnum);
             }
         }
@@ -277,28 +277,28 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             const string Json = "{\"MyEnum\":\"One\"}";
 
-            StructWithCustomConverterPropertyFactory obj = new()
+            StructWithCustomConverterFactoryProperty obj = new()
             {
                 MyEnum = SampleEnum.One
             };
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterPropertyFactory));
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterFactoryProperty));
             }
             else
             {
-                string json = JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterPropertyFactory);
+                string json = JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterFactoryProperty);
                 Assert.Equal(Json, json);
             }
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterPropertyFactory));
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterFactoryProperty));
             }
             else
             {
-                obj = JsonSerializer.Deserialize(Json, DefaultContext.StructWithCustomConverterPropertyFactory);
+                obj = JsonSerializer.Deserialize(Json, DefaultContext.StructWithCustomConverterFactoryProperty);
                 Assert.Equal(SampleEnum.One, obj.MyEnum);
             }
         }
@@ -396,10 +396,11 @@ namespace System.Text.Json.SourceGeneration.Tests
                 CampaignManagedOrganizerName = "Name FamilyName",
                 CampaignName = "The very new campaign",
                 Description = "The .NET Foundation works with Microsoft and the broader industry to increase the exposure of open source projects in the .NET community and the .NET Foundation. The .NET Foundation provides access to these resources to projects and looks to promote the activities of our communities.",
-                EndDate = DateTime.UtcNow.AddYears(1),
+                EndDate = DateTimeTestHelpers.FixedDateTimeValue.AddYears(1),
                 Name = "Just a name",
                 ImageUrl = "https://www.dotnetfoundation.org/theme/img/carousel/foundation-diagram-content.png",
-                StartDate = DateTime.UtcNow
+                StartDate = DateTimeTestHelpers.FixedDateTimeValue,
+                Offset = TimeSpan.FromHours(2)
             };
         }
 
@@ -459,10 +460,10 @@ namespace System.Text.Json.SourceGeneration.Tests
                         CampaignManagedOrganizerName = "Name FamilyName",
                         CampaignName = "The very new campaign",
                         Description = "The .NET Foundation works with Microsoft and the broader industry to increase the exposure of open source projects in the .NET community and the .NET Foundation. The .NET Foundation provides access to these resources to projects and looks to promote the activities of our communities.",
-                        EndDate = DateTime.UtcNow.AddYears(1),
+                        EndDate = DateTimeTestHelpers.FixedDateTimeValue.AddYears(1),
                         Name = "Just a name",
                         ImageUrl = "https://www.dotnetfoundation.org/theme/img/carousel/foundation-diagram-content.png",
-                        StartDate = DateTime.UtcNow
+                        StartDate = DateTimeTestHelpers.FixedDateTimeValue
                     },
                     count: 20).ToList()
             };
@@ -880,6 +881,45 @@ namespace System.Text.Json.SourceGeneration.Tests
             person = JsonSerializer.Deserialize(json, DefaultContext.NullablePersonStruct);
             Assert.Equal("Jane", person.Value.FirstName);
             Assert.Equal("Doe", person.Value.LastName);
+        }
+
+        [Fact]
+        public void TypeWithValidationAttributes()
+        {
+            var instance = new TypeWithValidationAttributes { Name = "Test Name", Email = "email@test.com" };
+
+            string json = JsonSerializer.Serialize(instance, DefaultContext.TypeWithValidationAttributes);
+            JsonTestHelper.AssertJsonEqual(@"{""Name"":""Test Name"",""Email"":""email@test.com""}", json);
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                // Deserialization not supported in fast path serialization only mode
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, DefaultContext.TypeWithValidationAttributes));
+            }
+            else
+            {
+                instance = JsonSerializer.Deserialize(json, DefaultContext.TypeWithValidationAttributes);
+                Assert.Equal("Test Name", instance.Name);
+                Assert.Equal("email@test.com", instance.Email);
+            }
+        }
+
+        [Fact]
+        public void TypeWithDerivedAttribute()
+        {
+            var instance = new TypeWithDerivedAttribute();
+
+            string json = JsonSerializer.Serialize(instance, DefaultContext.TypeWithDerivedAttribute);
+            JsonTestHelper.AssertJsonEqual(@"{}", json);
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                // Deserialization not supported in fast path serialization only mode
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, DefaultContext.TypeWithDerivedAttribute));
+            }
+            else
+            {
+                instance = JsonSerializer.Deserialize(json, DefaultContext.TypeWithDerivedAttribute);
+                Assert.NotNull(instance);
+            }
         }
     }
 }

@@ -869,7 +869,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return new DomainController(dcContext, dcName);
         }
 
-        private ArrayList GetSites()
+        private unsafe ArrayList GetSites()
         {
             ArrayList sites = new ArrayList();
             int result = 0;
@@ -884,14 +884,17 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 // Get the sites within the forest
                 // call DsListSites
-                IntPtr functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsListSitesW");
-                if (functionPtr == (IntPtr)0)
+                /*DWORD DsListSites(
+                    HANDLE hDs,
+                    PDS_NAME_RESULT* ppSites
+                    );*/
+                var dsListSites = (delegate* unmanaged<IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsListSitesW");
+                if (dsListSites == null)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
                 }
-                NativeMethods.DsListSites dsListSites = (NativeMethods.DsListSites)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(NativeMethods.DsListSites));
 
-                result = dsListSites(dsHandle, out sitesPtr);
+                result = dsListSites(dsHandle, &sitesPtr);
                 if (result == 0)
                 {
                     try
@@ -921,12 +924,11 @@ namespace System.DirectoryServices.ActiveDirectory
                         if (sitesPtr != IntPtr.Zero)
                         {
                             // call DsFreeNameResultW
-                            functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
-                            if (functionPtr == (IntPtr)0)
+                            var dsFreeNameResultW = (delegate* unmanaged<IntPtr, void>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
+                            if (dsFreeNameResultW == null)
                             {
                                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
                             }
-                            UnsafeNativeMethods.DsFreeNameResultW dsFreeNameResultW = (UnsafeNativeMethods.DsFreeNameResultW)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(UnsafeNativeMethods.DsFreeNameResultW));
                             dsFreeNameResultW(sitesPtr);
                         }
                     }

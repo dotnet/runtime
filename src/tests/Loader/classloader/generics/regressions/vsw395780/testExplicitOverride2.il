@@ -24,7 +24,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module testExplicitOverride2.exe
 // MVID: {8B3E6954-BAFA-445B-A5E1-CECA62B7DCE6}
 .imagebase 0x00400000
 .file alignment 0x00000200

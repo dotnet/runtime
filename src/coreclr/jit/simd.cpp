@@ -155,8 +155,6 @@ unsigned Compiler::getSIMDInitTempVarNum(var_types simdType)
 //         product.
 CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes /*= nullptr */)
 {
-    assert(supportSIMDTypes());
-
     if (m_simdHandleCache == nullptr)
     {
         if (impInlineInfo == nullptr)
@@ -299,8 +297,9 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
             WCHAR  className[256] = {0};
             WCHAR* pbuf           = &className[0];
             int    len            = ArrLen(className);
-            info.compCompHnd->appendClassName((char16_t**)&pbuf, &len, typeHnd, true, false, false);
-            noway_assert(pbuf < &className[256]);
+            int    outlen = info.compCompHnd->appendClassName((char16_t**)&pbuf, &len, typeHnd, true, false, false);
+            noway_assert(outlen >= 0);
+            noway_assert((size_t)(outlen + 1) <= ArrLen(className));
             JITDUMP("SIMD Candidate Type %S\n", className);
 
             if (wcsncmp(className, W("System.Numerics."), 16) == 0)
@@ -950,7 +949,6 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
                                                         CorInfoType*          simdBaseJitType,
                                                         unsigned*             sizeBytes)
 {
-    assert(featureSIMD);
     assert(simdBaseJitType != nullptr);
     assert(sizeBytes != nullptr);
 
@@ -1200,10 +1198,6 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
         case SIMDIntrinsicCast:
-        case SIMDIntrinsicConvertToSingle:
-        case SIMDIntrinsicConvertToDouble:
-        case SIMDIntrinsicConvertToInt32:
-        case SIMDIntrinsicConvertToInt64:
             return true;
 
         default:
@@ -1774,11 +1768,11 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
         // The length for boundary check should be the maximum index number which should be
         // (first argument's index number) + (how many array arguments we have) - 1
         // = indexVal + arrayElementsCount - 1
-        unsigned arrayElementsCount  = simdSize / genTypeSize(baseType);
-        checkIndexExpr               = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, indexVal + arrayElementsCount - 1);
-        GenTreeArrLen*    arrLen     = gtNewArrLen(TYP_INT, arrayRef, (int)OFFSETOF__CORINFO_Array__length, compCurBB);
-        GenTreeBoundsChk* arrBndsChk = new (this, GT_ARR_BOUNDS_CHECK)
-            GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, checkIndexExpr, arrLen, SCK_ARG_RNG_EXCPN);
+        unsigned arrayElementsCount = simdSize / genTypeSize(baseType);
+        checkIndexExpr              = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, indexVal + arrayElementsCount - 1);
+        GenTreeArrLen*    arrLen    = gtNewArrLen(TYP_INT, arrayRef, (int)OFFSETOF__CORINFO_Array__length, compCurBB);
+        GenTreeBoundsChk* arrBndsChk =
+            new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(checkIndexExpr, arrLen, SCK_ARG_RNG_EXCPN);
 
         offset += OFFSETOF__CORINFO_Array__data;
         byrefNode = gtNewOperNode(GT_COMMA, arrayRef->TypeGet(), arrBndsChk, gtCloneExpr(arrayRef));
@@ -1802,7 +1796,7 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
 
 void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
 {
-    if (!featureSIMD || opts.OptimizationDisabled())
+    if (opts.OptimizationDisabled())
     {
         return;
     }
@@ -1895,8 +1889,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                                     unsigned              methodFlags,
                                     int                   memberRef)
 {
-    assert(featureSIMD);
-
     // Exit early if we are not in one of the SIMD types.
     if (!isSIMDClass(clsHnd))
     {
@@ -1904,7 +1896,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
     }
 
     // Exit early if the method is not a JIT Intrinsic (which requires the [Intrinsic] attribute).
-    if ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) == 0)
+    if ((methodFlags & CORINFO_FLG_INTRINSIC) == 0)
     {
         return nullptr;
     }
@@ -2189,8 +2181,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
                 GenTreeArrLen* arrLen =
                     gtNewArrLen(TYP_INT, arrayRefForArgRngChk, (int)OFFSETOF__CORINFO_Array__length, compCurBB);
-                argRngChk = new (this, GT_ARR_BOUNDS_CHECK)
-                    GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, arrLen, SCK_ARG_RNG_EXCPN);
+                argRngChk = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(index, arrLen, SCK_ARG_RNG_EXCPN);
                 // Now, clone op3 to create another node for the argChk
                 GenTree* index2 = gtCloneExpr(op3);
                 assert(index != nullptr);
@@ -2210,8 +2201,8 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             }
             GenTreeArrLen* arrLen =
                 gtNewArrLen(TYP_INT, arrayRefForArgChk, (int)OFFSETOF__CORINFO_Array__length, compCurBB);
-            GenTreeBoundsChk* argChk = new (this, GT_ARR_BOUNDS_CHECK)
-                GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, checkIndexExpr, arrLen, op2CheckKind);
+            GenTreeBoundsChk* argChk =
+                new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(checkIndexExpr, arrLen, op2CheckKind);
 
             // Create a GT_COMMA tree for the bounds check(s).
             op2 = gtNewOperNode(GT_COMMA, op2->TypeGet(), argChk, op2);
@@ -2328,28 +2319,11 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
         // Unary operators that take and return a Vector.
         case SIMDIntrinsicCast:
-        case SIMDIntrinsicConvertToSingle:
-        case SIMDIntrinsicConvertToDouble:
-        case SIMDIntrinsicConvertToInt32:
         {
             op1 = impSIMDPopStack(simdType, instMethod);
 
             simdTree = gtNewSIMDNode(simdType, op1, simdIntrinsicID, simdBaseJitType, size);
             retVal   = simdTree;
-        }
-        break;
-
-        case SIMDIntrinsicConvertToInt64:
-        {
-#ifdef TARGET_64BIT
-            op1 = impSIMDPopStack(simdType, instMethod);
-
-            simdTree = gtNewSIMDNode(simdType, op1, simdIntrinsicID, simdBaseJitType, size);
-            retVal   = simdTree;
-#else
-            JITDUMP("SIMD Conversion to Int64 is not supported on this platform\n");
-            return nullptr;
-#endif
         }
         break;
 

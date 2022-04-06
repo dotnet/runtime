@@ -26,7 +26,7 @@ namespace test
             testLog = new TestUtil.TestLog(expectedOut);
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             int[] array = { 1, 2, 3, 4, 5, 6 };
 

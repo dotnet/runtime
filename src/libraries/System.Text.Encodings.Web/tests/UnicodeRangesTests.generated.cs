@@ -32,6 +32,7 @@ namespace System.Text.Unicode.Tests
             new object[] { '\u0800', '\u083F', nameof(UnicodeRanges.Samaritan) },
             new object[] { '\u0840', '\u085F', nameof(UnicodeRanges.Mandaic) },
             new object[] { '\u0860', '\u086F', nameof(UnicodeRanges.SyriacSupplement) },
+            new object[] { '\u0870', '\u089F', nameof(UnicodeRanges.ArabicExtendedB) },
             new object[] { '\u08A0', '\u08FF', nameof(UnicodeRanges.ArabicExtendedA) },
             new object[] { '\u0900', '\u097F', nameof(UnicodeRanges.Devanagari) },
             new object[] { '\u0980', '\u09FF', nameof(UnicodeRanges.Bengali) },

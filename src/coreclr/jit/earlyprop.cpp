@@ -29,58 +29,6 @@ bool Compiler::optDoEarlyPropForBlock(BasicBlock* block)
     return bbHasArrayRef || bbHasNullCheck;
 }
 
-//------------------------------------------------------------------------------
-// getArrayLengthFromAllocation: Return the array length for an array allocation
-//                               helper call.
-//
-// Arguments:
-//    tree           - The array allocation helper call.
-//    block          - tree's basic block.
-//
-// Return Value:
-//    Return the array length node.
-
-GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block))
-{
-    assert(tree != nullptr);
-
-    GenTree* arrayLength = nullptr;
-
-    if (tree->OperGet() == GT_CALL)
-    {
-        GenTreeCall* call = tree->AsCall();
-
-        if (call->gtCallType == CT_HELPER)
-        {
-            if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_DIRECT) ||
-                call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_OBJ) ||
-                call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_VC) ||
-                call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8))
-            {
-                // This is an array allocation site. Grab the array length node.
-                arrayLength = gtArgEntryByArgNum(call, 1)->GetNode();
-            }
-            else if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_READYTORUN_NEWARR_1))
-            {
-                // On arm when compiling on certain platforms for ready to run, a handle will be
-                // inserted before the length. To handle this case, we will grab the last argument
-                // as that's always the length. See fgInitArgInfo for where the handle is inserted.
-                int arrLenArgNum = call->fgArgInfo->ArgCount() - 1;
-                arrayLength      = gtArgEntryByArgNum(call, arrLenArgNum)->GetNode();
-            }
-#ifdef DEBUG
-            if (arrayLength != nullptr)
-            {
-                optCheckFlagsAreSet(OMF_HAS_NEWARRAY, "OMF_HAS_NEWARRAY", BBF_HAS_NEWARRAY, "BBF_HAS_NEWARRAY", tree,
-                                    block);
-            }
-#endif
-        }
-    }
-
-    return arrayLength;
-}
-
 #ifdef DEBUG
 //-----------------------------------------------------------------------------
 // optCheckFlagsAreSet: Check that the method flag and the basic block flag are set.
@@ -110,7 +58,7 @@ void Compiler::optCheckFlagsAreSet(unsigned    methodFlag,
     if ((basicBlock->bbFlags & bbFlag) == 0)
     {
         printf("%s is not set on " FMT_BB " but is required because of the following tree \n", bbFlagStr,
-               compCurBB->bbNum);
+               basicBlock->bbNum);
         gtDispTree(tree);
         assert(false);
     }
@@ -288,13 +236,13 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
                 return nullptr;
             }
 
-            // When replacing GT_ARR_LENGTH nodes with constants we can end up with GT_ARR_BOUNDS_CHECK
+            // When replacing GT_ARR_LENGTH nodes with constants we can end up with GT_BOUNDS_CHECK
             // nodes that have constant operands and thus can be trivially proved to be useless. It's
             // better to remove these range checks here, otherwise they'll pass through assertion prop
             // (creating useless (c1 < c2)-like assertions) and reach RangeCheck where they are finally
             // removed. Common patterns like new int[] { x, y, z } benefit from this.
 
-            if ((tree->gtNext != nullptr) && tree->gtNext->OperIs(GT_ARR_BOUNDS_CHECK))
+            if ((tree->gtNext != nullptr) && tree->gtNext->OperIs(GT_BOUNDS_CHECK))
             {
                 GenTreeBoundsChk* check = tree->gtNext->AsBoundsChk();
 
@@ -342,16 +290,6 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
             assert(tree->gtType == TYP_INT);
             assert((actualConstVal >= 0) && (actualConstVal <= INT32_MAX));
             actualValClone->gtType = tree->gtType;
-        }
-
-        // Propagating a constant into an array index expression requires calling
-        // LabelIndex to update the FieldSeq annotations.  EarlyProp may replace
-        // array length expressions with constants, so check if this is an array
-        // length operator that is part of an array index expression.
-        bool isIndexExpr = (tree->OperGet() == GT_ARR_LENGTH && ((tree->gtFlags & GTF_ARRLEN_ARR_IDX) != 0));
-        if (isIndexExpr)
-        {
-            actualValClone->LabelIndex(this);
         }
 
         // actualValClone has small tree node size, it is safe to use CopyFrom here.
@@ -700,7 +638,7 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
     assert(fgStmtListThreaded);
     while (canRemoveNullCheck && (currentTree != tree) && (currentTree != nullptr))
     {
-        if ((*nullCheckParent == nullptr) && (nullCheckTree->gtGetChildPointer(currentTree) != nullptr))
+        if ((*nullCheckParent == nullptr) && currentTree->TryGetUse(nullCheckTree))
         {
             *nullCheckParent = currentTree;
         }

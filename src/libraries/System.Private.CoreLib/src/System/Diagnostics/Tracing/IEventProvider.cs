@@ -35,7 +35,7 @@ namespace System.Diagnostics.Tracing
             EventProvider.EventData* userData);
 
         // Get or set the per-thread activity ID.
-        int EventActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId);
+        int EventActivityIdControl(Interop.Advapi32.ActivityControl controlCode, ref Guid activityId);
 
         // Define an EventPipeEvent handle.
         unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,

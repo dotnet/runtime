@@ -1676,9 +1676,7 @@ namespace System.Linq.Expressions.Tests
                     }");
         }
 
-#if FEATURE_COMPILE
-
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void Spill_Optimizations_Constant()
         {
             ParameterExpression xs = Expression.Parameter(typeof(int[]));
@@ -1736,7 +1734,7 @@ namespace System.Linq.Expressions.Tests
             );
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void Spill_Optimizations_Default()
         {
             ParameterExpression xs = Expression.Parameter(typeof(int[]));
@@ -1794,7 +1792,7 @@ namespace System.Linq.Expressions.Tests
             );
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void Spill_Optimizations_LiteralField_NotNetFramework()
         {
             Expression<Func<double>> e =
@@ -1842,7 +1840,7 @@ namespace System.Linq.Expressions.Tests
             );
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void Spill_Optimizations_StaticReadOnlyField()
         {
             Expression<Func<string>> e =
@@ -1891,7 +1889,7 @@ namespace System.Linq.Expressions.Tests
             );
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void Spill_Optimizations_RuntimeVariables1()
         {
             ParameterExpression f = Expression.Parameter(typeof(Action<IRuntimeVariables, int>));
@@ -1950,7 +1948,7 @@ namespace System.Linq.Expressions.Tests
             );
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void Spill_Optimizations_RuntimeVariables2()
         {
             ParameterExpression f = Expression.Parameter(typeof(Action<IRuntimeVariables, int>));
@@ -2028,7 +2026,7 @@ namespace System.Linq.Expressions.Tests
             );
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void Spill_Optimizations_NoSpillBeyondSpillSite1()
         {
             ParameterExpression f = Expression.Parameter(typeof(Func<int, int, int, int>));
@@ -2101,7 +2099,7 @@ namespace System.Linq.Expressions.Tests
                 }");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void Spill_Optimizations_NoSpillBeyondSpillSite2()
         {
             ParameterExpression f = Expression.Parameter(typeof(Func<int, int, int, int>));
@@ -2186,8 +2184,6 @@ namespace System.Linq.Expressions.Tests
                   IL_001a: ret
                 }");
         }
-
-#endif
 
         private static void Test(Func<Expression, Expression> factory, Expression arg1)
         {

@@ -31,7 +31,7 @@ usage()
     echo "                                      default: Debug"
     echo "    --os <os>                         OS to run (FreeBSD, Linux, NetBSD, illumos or Solaris)"
     echo "                                      default: detect current OS"
-    echo "    --arch <Architecture>             Architecture to run (x64, arm, armel, x86, arm64)"
+    echo "    --arch <Architecture>             Architecture to run (x64, arm, armel, x86, arm64, loongarch64)"
     echo "                                      default: detect current architecture"
     echo
     echo "Execution options:"
@@ -236,26 +236,22 @@ done
 
 # Compute paths to the binaries if they haven't already been computed
 
-if [ -z "$Runtime" ]
-then
+if [[ -z "$Runtime" ]]; then
     Runtime="$ProjectRoot/artifacts/bin/testhost/netcoreapp-$OS-$Configuration-$__Arch"
 fi
 
-if [ -z "$CoreFxTests" ]
-then
+if [[ -z "$CoreFxTests" ]]; then
     CoreFxTests="$ProjectRoot/artifacts/bin"
 fi
 
 # Check parameters up front for valid values:
 
-if [ "$Configuration" != "Debug" ] && [ "$Configuration" != "Release" ]
-then
+if [[ "$Configuration" != "Debug" && "$Configuration" != "Release" ]]; then
     echo "error: Configuration should be Debug or Release"
     exit 1
 fi
 
-if [ "$OS" != "FreeBSD" ] && [ "$OS" != "Linux" ] && [ "$OS" != "NetBSD" ] && [ "$OS" != "illumos" ] && [ "$OS" != "Solaris" ]
-then
+if [[ "$OS" != "FreeBSD" && "$OS" != "Linux" && "$OS" != "NetBSD" && "$OS" != "illumos" && "$OS" != "Solaris" ]]; then
     echo "error: OS should be FreeBSD, Linux, NetBSD or Linux"
     exit 1
 fi
@@ -263,8 +259,7 @@ fi
 export CORECLR_SERVER_GC="$serverGC"
 export PAL_OUTPUTDEBUGSTRING="1"
 
-if [ -z "$LANG" ]
-then
+if [[ -z "$LANG" ]]; then
     export LANG="en_US.UTF-8"
 fi
 
@@ -281,29 +276,26 @@ ensure_binaries_are_present
 TestsFailed=0
 numberOfProcesses=0
 
-if [ $RunTestSequential -eq 1 ]
-then
+if [[ $RunTestSequential -eq 1 ]]; then
     maxProcesses=1;
 else
     platform="$(uname)"
-    if [ "$platform" = "FreeBSD" ]; then
+    if [[ "$platform" == "FreeBSD" ]]; then
       maxProcesses=$(($(sysctl -n hw.ncpu)+1))
-    if [ "$platform" = "NetBSD" ] || [ "$platform" = "SunOS" ] ; then
+    if [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
       maxProcesses=$(($(getconf NPROCESSORS_ONLN)+1))
     else
       maxProcesses=$(($(getconf _NPROCESSORS_ONLN)+1))
     fi
 fi
 
-if [ -n "$TestDirFile" ] || [ -n "$TestDir" ]
-then
+if [[ -n "$TestDirFile" || -n "$TestDir" ]]; then
     run_selected_tests
 else
     run_all_tests "$CoreFxTests/tests/"*.Tests
 fi
 
-if [ "$TestsFailed" -gt 0 ]
-then
+if [[ "$TestsFailed" -gt 0 ]]; then
     echo "$TestsFailed test(s) failed"
 else
     echo "All tests passed."

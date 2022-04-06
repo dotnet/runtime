@@ -26,7 +26,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module test.exe
 // MVID: {268B9244-26E3-4F41-AE49-5311347AFB4B}
 .imagebase 0x00400000
 .subsystem 0x00000003

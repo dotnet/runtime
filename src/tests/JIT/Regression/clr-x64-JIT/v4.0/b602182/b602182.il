@@ -5,7 +5,7 @@
 
 
 
-.assembly ILGEN_0xad4651aa {}
+.assembly 'b602182' {}
 .assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
 

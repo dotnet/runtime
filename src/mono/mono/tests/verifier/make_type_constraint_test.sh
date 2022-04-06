@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -17,7 +17,7 @@ echo $TEST_FILE
 
 $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/INSTANTIATION/${TEST_INSTANTIATION}/g" -e "s/CONSTRAINTS/${TEST_CONSTRAINTS}/g" -e "s/EXTRA_CODE/${TEST_EXTRA_CODE}/g" > $TEST_FILE <<//EOF
 
-// VALIDITY CIL which breaks the ECMA-335 rules. 
+// VALIDITY CIL which breaks the ECMA-335 rules.
 // this CIL should fail verification by a conforming CLI verifier.
 
 .assembly '${TEST_NAME}_generated'
@@ -34,25 +34,25 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/INSTANTIATION/${TEST_INSTANTIATION
 
 .class interface public auto ansi abstract IFace
 {
-	.method public virtual hidebysig newslot abstract instance default void Tst ()  cil managed 
+	.method public virtual hidebysig newslot abstract instance default void Tst ()  cil managed
 	{
 	}
 }
 
 .class public auto ansi beforefieldinit IFaceImpl extends [mscorlib]System.Object implements IFace
 {
-	.method public hidebysig specialname rtspecialname instance default void '.ctor' () cil managed 
+	.method public hidebysig specialname rtspecialname instance default void '.ctor' () cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void object::'.ctor'()
-		ret 
+		ret
 	}
 
-	.method public final virtual hidebysig newslot instance default void Tst () cil managed 
+	.method public final virtual hidebysig newslot instance default void Tst () cil managed
 	{
 		.maxstack 8
-		ret 
+		ret
 	}
 }
 
@@ -60,45 +60,45 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/INSTANTIATION/${TEST_INSTANTIATION
 
 .class ClassNoDefaultCtor extends [mscorlib]System.Object
 {
-	.method public hidebysig  specialname rtspecialname instance default void .ctor (int32 d) cil managed 
+	.method public hidebysig  specialname rtspecialname instance default void .ctor (int32 d) cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void object::.ctor()
-		ret 
+		ret
 	}
 }
 
 .class abstract AbstractClass extends [mscorlib]System.Object
 {
-	.method public hidebysig  specialname rtspecialname instance default void .ctor () cil managed 
+	.method public hidebysig  specialname rtspecialname instance default void .ctor () cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void object::.ctor()
-		ret 
+		ret
 	}
 }
 
 .class ClassWithDefaultCtorNotVisible extends [mscorlib]System.Object
 {
-	.method private hidebysig  specialname rtspecialname instance default void .ctor () cil managed 
+	.method private hidebysig  specialname rtspecialname instance default void .ctor () cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void object::.ctor()
-		ret 
+		ret
 	}
 }
 
 .class ClassWithDefaultCtor extends [mscorlib]System.Object
 {
-	.method public hidebysig  specialname rtspecialname instance default void .ctor () cil managed 
+	.method public hidebysig  specialname rtspecialname instance default void .ctor () cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void object::.ctor()
-		ret 
+		ret
 	}
 }
 
@@ -121,12 +121,12 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/INSTANTIATION/${TEST_INSTANTIATION
 {
 	.field !T t
 
-	.method public hidebysig  specialname rtspecialname instance default void .ctor () cil managed 
+	.method public hidebysig  specialname rtspecialname instance default void .ctor () cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void object::.ctor()
-		ret 
+		ret
 	}
 
 	.method public void DoStuff() cil managed

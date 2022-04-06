@@ -46,13 +46,9 @@ namespace System.Text
             return GetCharCount(bytes, index, count, false);
         }
 
-        public override unsafe int GetCharCount(byte[] bytes, int index, int count, bool flush)
+        public override unsafe int GetCharCount(byte[] bytes!!, int index, int count, bool flush)
         {
             // Validate Parameters
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes),
-                    SR.ArgumentNull_Array);
-
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -66,13 +62,9 @@ namespace System.Text
                 return GetCharCount(pBytes + index, count, flush);
         }
 
-        public override unsafe int GetCharCount(byte* bytes, int count, bool flush)
+        public override unsafe int GetCharCount(byte* bytes!!, int count, bool flush)
         {
             // Validate parameters
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes),
-                      SR.ArgumentNull_Array);
-
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -92,14 +84,10 @@ namespace System.Text
             return GetChars(bytes, byteIndex, byteCount, chars, charIndex, false);
         }
 
-        public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
-                                             char[] chars, int charIndex, bool flush)
+        public override unsafe int GetChars(byte[] bytes!!, int byteIndex, int byteCount,
+                                            char[] chars!!, int charIndex, bool flush)
         {
             // Validate Parameters
-            if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars),
-                    SR.ArgumentNull_Array);
-
             if (byteIndex < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -122,14 +110,10 @@ namespace System.Text
                                 pChars + charIndex, charCount, flush);
         }
 
-        public override unsafe int GetChars(byte* bytes, int byteCount,
-                                              char* chars, int charCount, bool flush)
+        public override unsafe int GetChars(byte* bytes!!, int byteCount,
+                                            char* chars!!, int charCount, bool flush)
         {
             // Validate parameters
-            if (chars == null || bytes == null)
-                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes),
-                      SR.ArgumentNull_Array);
-
             if (byteCount < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException(byteCount < 0 ? nameof(byteCount) : nameof(charCount),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -145,15 +129,11 @@ namespace System.Text
 
         // This method is used when the output buffer might not be big enough.
         // Just call the pointer version.  (This gets chars)
-        public override unsafe void Convert(byte[] bytes, int byteIndex, int byteCount,
-                                              char[] chars, int charIndex, int charCount, bool flush,
-                                              out int bytesUsed, out int charsUsed, out bool completed)
+        public override unsafe void Convert(byte[] bytes!!, int byteIndex, int byteCount,
+                                            char[] chars!!, int charIndex, int charCount, bool flush,
+                                            out int bytesUsed, out int charsUsed, out bool completed)
         {
             // Validate parameters
-            if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars),
-                      SR.ArgumentNull_Array);
-
             if (byteIndex < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -225,11 +205,11 @@ namespace System.Text
         }
 
         internal ReadOnlySpan<byte> GetLeftoverData() =>
-            MemoryMarshal.AsBytes(new ReadOnlySpan<int>(ref _leftoverBytes, 1)).Slice(0, _leftoverByteCount);
+            MemoryMarshal.AsBytes(new ReadOnlySpan<int>(in _leftoverBytes)).Slice(0, _leftoverByteCount);
 
         internal void SetLeftoverData(ReadOnlySpan<byte> bytes)
         {
-            bytes.CopyTo(MemoryMarshal.AsBytes(new Span<int>(ref _leftoverBytes, 1)));
+            bytes.CopyTo(MemoryMarshal.AsBytes(new Span<int>(ref _leftoverBytes)));
             _leftoverByteCount = bytes.Length;
         }
 

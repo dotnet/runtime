@@ -281,7 +281,7 @@ namespace R2RDump
                 StringBuilder line = new StringBuilder();
                 if (inLeft)
                 {
-                    line.AppendFormat("{0,10}", leftSize);
+                    line.Append($"{leftSize,10}");
                 }
                 else
                 {
@@ -289,7 +289,7 @@ namespace R2RDump
                 }
                 if (inRight)
                 {
-                    line.AppendFormat("{0,11}", rightSize);
+                    line.Append($"{rightSize,11}");
                 }
                 else
                 {
@@ -297,7 +297,7 @@ namespace R2RDump
                 }
                 if (leftSize != rightSize)
                 {
-                    line.AppendFormat("{0,11}", rightSize - leftSize);
+                    line.Append($"{rightSize - leftSize,11}");
                 }
                 else
                 {

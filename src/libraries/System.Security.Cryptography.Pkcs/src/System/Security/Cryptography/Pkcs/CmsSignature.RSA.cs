@@ -91,7 +91,7 @@ namespace System.Security.Cryptography.Pkcs
                 HashAlgorithmName digestAlgorithmName,
                 int digestValueLength);
 
-            private protected bool SignCore(
+            private protected static bool SignCore(
 #if NETCOREAPP || NETSTANDARD2_1
                 ReadOnlySpan<byte> dataHash,
 #else

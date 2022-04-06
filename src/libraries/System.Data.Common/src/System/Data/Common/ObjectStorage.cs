@@ -183,7 +183,7 @@ namespace System.Data.Common
             return _nullValue;
         }
 
-        private Families GetFamily(Type dataType)
+        private static Families GetFamily(Type dataType)
         {
             switch (Type.GetTypeCode(dataType))
             {
@@ -351,7 +351,7 @@ namespace System.Data.Common
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override object ConvertXmlToObject(XmlReader xmlReader, XmlRootAttribute? xmlAttrib)
         {
-            object? retValue = null;
+            object? retValue;
             bool isBaseCLRType = false;
             bool legacyUDT = false; // in 1.0 and 1.1 we used to call ToString on CDT obj. so if we have the same case
             // we need to handle the case when we have column type as object.

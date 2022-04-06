@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libproc
+    internal static partial class @libproc
     {
         // Constants from sys\param.h
         private const int MAXPATHLEN = 1024;
@@ -24,6 +24,9 @@ internal static partial class Interop
 
         // Constants from sys\resource.h
         private const int RUSAGE_INFO_V3 = 3;
+
+        // Constants from sys/errno.h
+        private const int EPERM = 1;
 
         // Defines from proc_info.h
         internal enum ThreadRunState
@@ -107,7 +110,7 @@ internal static partial class Interop
         /// <param name="pBuffer">A pointer to the memory block where the PID array will start</param>
         /// <param name="buffersize">The length of the block of memory allocated for the PID array</param>
         /// <returns>Returns the number of elements (PIDs) in the buffer</returns>
-        [GeneratedDllImport(Interop.Libraries.libproc, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.libproc, SetLastError = true)]
         private static unsafe partial int proc_listallpids(
             int*    pBuffer,
             int     buffersize);
@@ -120,7 +123,14 @@ internal static partial class Interop
         {
             // Get the number of processes currently running to know how much data to allocate
             int numProcesses = proc_listallpids(null, 0);
-            if (numProcesses <= 0)
+            if (numProcesses == 0 && Marshal.GetLastPInvokeError() == EPERM)
+            {
+                // An app running in App Sandbox does not have permissions to list other running processes
+                // and so the `proc_listallpids` function returns 0 and sets errno to 1. As a fallback
+                // we return at least an array with the PID of the current process which we always know.
+                return new[] { Environment.ProcessId };
+            }
+            else if (numProcesses <= 0)
             {
                 throw new Win32Exception(SR.CantGetAllPids);
             }
@@ -166,7 +176,7 @@ internal static partial class Interop
         /// the data is valid. If the sizes do not match then the data is invalid, most likely due
         /// to not having enough permissions to query for the data of that specific process
         /// </returns>
-        [GeneratedDllImport(Interop.Libraries.libproc, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.libproc, SetLastError = true)]
         private static unsafe partial int proc_pidinfo(
             int pid,
             int flavor,
@@ -187,7 +197,7 @@ internal static partial class Interop
         /// the data is valid. If the sizes do not match then the data is invalid, most likely due
         /// to not having enough permissions to query for the data of that specific process
         /// </returns>
-        [GeneratedDllImport(Interop.Libraries.libproc, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.libproc, SetLastError = true)]
         private static unsafe partial int proc_pidinfo(
             int pid,
             int flavor,
@@ -208,7 +218,7 @@ internal static partial class Interop
         /// the data is valid. If the sizes do not match then the data is invalid, most likely due
         /// to not having enough permissions to query for the data of that specific process
         /// </returns>
-        [GeneratedDllImport(Interop.Libraries.libproc, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.libproc, SetLastError = true)]
         private static unsafe partial int proc_pidinfo(
             int pid,
             int flavor,
@@ -307,7 +317,7 @@ internal static partial class Interop
         /// <param name="buffer">A pointer to an allocated block of memory that will be filled with the process path</param>
         /// <param name="bufferSize">The size of the buffer, should be PROC_PIDPATHINFO_MAXSIZE</param>
         /// <returns>Returns the length of the path returned on success</returns>
-        [GeneratedDllImport(Interop.Libraries.libproc, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.libproc, SetLastError = true)]
         private static unsafe partial int proc_pidpath(
             int pid,
             byte* buffer,
@@ -346,7 +356,7 @@ internal static partial class Interop
         /// <param name="flavor">Specifies the type of struct that is passed in to <paramref>buffer</paramref>. Should be RUSAGE_INFO_V3 to specify a rusage_info_v3 struct.</param>
         /// <param name="buffer">A buffer to be filled with rusage_info data</param>
         /// <returns>Returns 0 on success; on fail, -1 and errno is set with the error code</returns>
-        [GeneratedDllImport(Interop.Libraries.libproc, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.libproc, SetLastError = true)]
         private static unsafe partial int proc_pid_rusage(
             int pid,
             int flavor,

@@ -63,11 +63,7 @@ namespace System.Diagnostics
             }
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(Delimiter));
-
-                if (value.Length == 0)
-                    throw new ArgumentException(SR.Format(SR.Generic_ArgCantBeEmptyString, nameof(Delimiter)));
+                ArgumentException.ThrowIfNullOrEmpty(value, nameof(Delimiter));
 
                 lock (this)
                 {
@@ -243,7 +239,7 @@ namespace System.Diagnostics
             Write(sb.ToString());
         }
 
-        private void EscapeMessage(string? message, StringBuilder sb)
+        private static void EscapeMessage(string? message, StringBuilder sb)
         {
             if (!string.IsNullOrEmpty(message))
             {

@@ -1143,7 +1143,7 @@ DbgTransportSession::Message * DbgTransportSession::RemoveMessageFromSendQueue(D
 
 // Check read and optionally write memory access to the specified range of bytes. Used to check
 // ReadProcessMemory and WriteProcessMemory requests.
-HRESULT DbgTransportSession::CheckBufferAccess(__in_ecount(cbBuffer) PBYTE pbBuffer, DWORD cbBuffer, bool fWriteAccess)
+HRESULT DbgTransportSession::CheckBufferAccess(_In_reads_(cbBuffer) PBYTE pbBuffer, DWORD cbBuffer, bool fWriteAccess)
 {
     // check for integer overflow
     if ((pbBuffer + cbBuffer) < pbBuffer)
@@ -2696,11 +2696,6 @@ bool DbgTransportSession::DbgTransportShouldInjectFault(DbgTransportFaultOp eOp,
         if (dwChance < (s_dwFaultInjection & DBG_TRANSPORT_FAULT_RATE_MASK))
         {
             DbgTransportLog(LC_FaultInject, "Injected fault for %s operation", szOpName);
-#if defined(FEATURE_CORESYSTEM)
-        // not supported
-#else
-            WSASetLastError(WSAEFAULT);
-#endif // defined(FEATURE_CORESYSTEM)
             return true;
         }
     }

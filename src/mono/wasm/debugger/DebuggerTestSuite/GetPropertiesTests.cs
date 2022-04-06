@@ -340,7 +340,7 @@ namespace DebuggerTests
         {
             var pause_location = await EvaluateAndCheck(
                "window.setTimeout(function() { invoke_static_method('[debugger-test] TestChild:TestWatchWithInheritance'); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test2.cs", 127, 8,
+                "dotnet://debugger-test.dll/debugger-test2.cs", 128, 8,
                "TestWatchWithInheritance");
             var frame_id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
             var frame_locals = await GetProperties(frame_id);
@@ -350,9 +350,10 @@ namespace DebuggerTests
                 j = TNumber(20),
                 i = TNumber(50),
                 k = TNumber(30),
-                GetJ = TGetter("GetJ"),
-                GetI = TGetter("GetI"),
-                GetK = TGetter("GetK")
+                GetJ = TGetter("GetJ", TNumber(20)),
+                GetI = TGetter("GetI", TNumber(50)),
+                GetK = TGetter("GetK", TNumber(30)),
+                GetD = TGetter("GetD", TDateTime(new DateTime(2020, 7, 6, 5, 4, 3)))
             }, "test_props");
             await EvaluateOnCallFrameAndCheck(frame_id,
                 ($"test.GetJ", TNumber(20)),

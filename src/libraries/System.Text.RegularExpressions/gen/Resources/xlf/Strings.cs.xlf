@@ -47,11 +47,6 @@
         <target state="translated">Cílové pole není dostatečně dlouhé, aby bylo možné zkopírovat všechny položky v kolekci. Zkontrolujte index a délku pole.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ArgumentNull_ArrayWithNullElements">
-        <source>The array cannot contain null elements.</source>
-        <target state="translated">Pole nemůže obsahovat elementy null.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="BeginIndexNotNegative">
         <source>Start index cannot be less than 0 or greater than input length.</source>
         <target state="translated">Počáteční index nemůže být menší než nula nebo větší než délka vstupu.</target>
@@ -123,8 +118,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidLangVersionMessage">
-        <source>C# LangVersion of 10 or greater is required</source>
-        <target state="translated">Je požadována verze jazyku C# LangVersion 10 nebo vyšší.</target>
+        <source>C# LangVersion of 11 or greater is required</source>
+        <target state="translated">Je požadována verze jazyku C# LangVersion 11 nebo vyšší.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidRegexArgumentsMessage">
@@ -150,6 +145,16 @@
       <trans-unit id="LengthNotNegative">
         <source>Length cannot be less than 0 or exceed input length.</source>
         <target state="translated">Délka nemůže být menší než 0 nebo přesáhnout délku vstupu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LimitedSourceGenerationMessage">
+        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</source>
+        <target state="translated">RegexGenerator nemohl vygenerovat úplnou zdrojovou implementaci zadaného regulárního výrazu, protože možnost není podporovaná nebo je regulární výraz příliš složitý.  Implementace bude regulární výraz interpretovat za běhu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LimitedSourceGenerationTitle">
+        <source>RegexGenerator limitation reached.</source>
+        <target state="translated">Dosáhlo se omezení nástroje RegexGenerator.</target>
         <note />
       </trans-unit>
       <trans-unit id="MakeException">
@@ -202,11 +207,6 @@
         <target state="translated">Kolekce je jen pro čtení.</target>
         <note />
       </trans-unit>
-      <trans-unit id="OnlyAllowedOnce">
-        <source>This operation is only allowed once per object.</source>
-        <target state="translated">Tuto operaci lze na objektu provést pouze jednou.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="PlatformNotSupported_CompileToAssembly">
         <source>This platform does not support writing compiled regular expressions to an assembly.</source>
         <target state="translated">Tato platforma nepodporuje zápis zkompilovaných regulárních výrazů do sestavení.</target>
@@ -228,8 +228,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>Regex method must be partial, parameterless, non-generic, and return Regex</source>
-        <target state="translated">Metoda regulárního výrazu musí být částečná, bez parametrů, negenerická a musí vracet regulární výraz.</target>
+        <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
+        <target state="translated">Metoda RegexGenerator musí být částečná, bez parametrů, negenerická, neabstraktní a musí vracet regulární výraz.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReplacementError">
@@ -280,11 +280,6 @@
       <trans-unit id="UnescapedEndingBackslash">
         <source>Illegal \\ at end of pattern.</source>
         <target state="translated">Znak \\ na konci vzorku je neplatný.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="UnexpectedOpcode">
-        <source>Unexpected opcode in regular expression generation: {0}.</source>
-        <target state="translated">Při generování regulárního výrazu byl nalezen neočekávaný operační kód: {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">

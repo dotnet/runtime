@@ -171,6 +171,7 @@ namespace System.DirectoryServices.AccountManagement
     }
     public abstract partial class Principal : System.IDisposable
     {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
         protected Principal() { }
         public System.DirectoryServices.AccountManagement.PrincipalContext Context { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
@@ -186,6 +187,7 @@ namespace System.DirectoryServices.AccountManagement
         public System.Security.Principal.SecurityIdentifier Sid { get { throw null; } }
         public string StructuralObjectClass { get { throw null; } }
         public string UserPrincipalName { get { throw null; } set { } }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
         protected void CheckDisposedOrDeleted() { }
         public void Delete() { }
         public virtual void Dispose() { }
@@ -194,7 +196,9 @@ namespace System.DirectoryServices.AccountManagement
         protected void ExtensionSet(string attribute, object value) { }
         public static System.DirectoryServices.AccountManagement.Principal FindByIdentity(System.DirectoryServices.AccountManagement.PrincipalContext context, System.DirectoryServices.AccountManagement.IdentityType identityType, string identityValue) { throw null; }
         public static System.DirectoryServices.AccountManagement.Principal FindByIdentity(System.DirectoryServices.AccountManagement.PrincipalContext context, string identityValue) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
         protected static System.DirectoryServices.AccountManagement.Principal FindByIdentityWithType(System.DirectoryServices.AccountManagement.PrincipalContext context, System.Type principalType, System.DirectoryServices.AccountManagement.IdentityType identityType, string identityValue) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
         protected static System.DirectoryServices.AccountManagement.Principal FindByIdentityWithType(System.DirectoryServices.AccountManagement.PrincipalContext context, System.Type principalType, string identityValue) { throw null; }
         public System.DirectoryServices.AccountManagement.PrincipalSearchResult<System.DirectoryServices.AccountManagement.Principal> GetGroups() { throw null; }
         public System.DirectoryServices.AccountManagement.PrincipalSearchResult<System.DirectoryServices.AccountManagement.Principal> GetGroups(System.DirectoryServices.AccountManagement.PrincipalContext contextToQuery) { throw null; }

@@ -13,21 +13,20 @@ using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
-    public class SendPacketsAsync
+    [Collection(nameof(DisableParallelization))]
+    public class SendPacketsAsync : IDisposable
     {
         private readonly ITestOutputHelper _log;
 
         private IPAddress _serverAddress = IPAddress.IPv6Loopback;
-        // Accessible directories for UWP app:
-        // C:\Users\<UserName>\AppData\Local\Packages\<ApplicationPackageName>\
-        private string TestFileName = Environment.GetEnvironmentVariable("LocalAppData") + @"\NCLTest.Socket.SendPacketsAsync.testpayload";
-        private static int s_testFileSize = 1024;
 
-        #region Additional test attributes
+        private TempFile _tempFile;
+        private static int s_testFileSize = 1024;
+        private string TestFileName => _tempFile.Path;
 
         public SendPacketsAsync(ITestOutputHelper output)
         {
-            _log = TestLogging.GetInstance();
+            _log = output;
 
             byte[] buffer = new byte[s_testFileSize];
 
@@ -36,22 +35,15 @@ namespace System.Net.Sockets.Tests
                 buffer[i] = (byte)(i % 255);
             }
 
-            try
-            {
-                _log.WriteLine("Creating file {0} with size: {1}", TestFileName, s_testFileSize);
-                using (FileStream fs = new FileStream(TestFileName, FileMode.CreateNew))
-                {
-                    fs.Write(buffer, 0, buffer.Length);
-                }
-            }
-            catch (IOException)
-            {
-                // Test payload file already exists.
-                _log.WriteLine("Payload file exists: {0}", TestFileName);
-            }
+            _tempFile = TempFile.Create(buffer);
+            _log.WriteLine($"Created file {_tempFile.Path} with size: {s_testFileSize}");
         }
 
-        #endregion Additional test attributes
+        public void Dispose()
+        {
+            _tempFile.Dispose();
+        }
+
 
         #region Basic Arguments
 
@@ -527,10 +519,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        public static bool IsNotWindows11 = !PlatformDetection.IsWindows10Version22000OrGreater;
-
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58898")]
-        [ConditionalFact(nameof(IsNotWindows11))]
+        [Fact]
         public void SendPacketsElement_FileStreamLargeOffset_Throws()
         {
             using (var stream = new FileStream(TestFileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true))
@@ -553,8 +542,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58898")]
-        [ConditionalFact(nameof(IsNotWindows11))]
+        [Fact]
         public void SendPacketsElement_FileStreamWithOptions_Success() {
             using (var stream = new FileStream(TestFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, FileOptions.Asynchronous | FileOptions.SequentialScan)) {
                 var element = new SendPacketsElement(stream, 0, s_testFileSize);
@@ -585,8 +573,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58898")]
-        [ConditionalFact(nameof(IsNotWindows11))]
+        [Fact]
         public void SendPacketsElement_FileStreamMultiPartMixed_MultipleFileStreams_Success() {
             using (var stream = new FileStream(TestFileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous))
             using (var stream2 = new FileStream(TestFileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous)) {

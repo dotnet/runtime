@@ -18,7 +18,6 @@
 .assembly gcref2
 {
 }
-.module gcref1.exe
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 
 

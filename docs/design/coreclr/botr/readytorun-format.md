@@ -66,8 +66,9 @@ The limitations of the current format are:
 
 # Structures
 
-The structures and accompanying constants are defined in the [readytorun.h]
-(https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h) header file.
+The structures and accompanying constants are defined in the
+[readytorun.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h)
+header file.
 Basically the entire R2R executable image is addressed through the READYTORUN_HEADER singleton
 pointed to by the well-known export RTR_HEADER in the export section of the native executable
 envelope.
@@ -719,7 +720,6 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_Unbox                     = 0x5A,
     READYTORUN_HELPER_Unbox_Nullable            = 0x5B,
     READYTORUN_HELPER_NewMultiDimArr            = 0x5C,
-    READYTORUN_HELPER_NewMultiDimArr_NonVarArg  = 0x5D,
 
     // Helpers used with generic handle lookup cases
     READYTORUN_HELPER_NewObject                 = 0x60,

@@ -23,33 +23,13 @@ namespace System.Xml.Schema
 
         internal XmlSchemaDatatype() { }
 
-        public virtual object ChangeType(object value, Type targetType)
+        public virtual object ChangeType(object value!!, Type targetType!!)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-            if (targetType == null)
-            {
-                throw new ArgumentNullException(nameof(targetType));
-            }
             return ValueConverter.ChangeType(value, targetType);
         }
 
-        public virtual object ChangeType(object value, Type targetType, IXmlNamespaceResolver namespaceResolver)
+        public virtual object ChangeType(object value!!, Type targetType!!, IXmlNamespaceResolver namespaceResolver!!)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-            if (targetType == null)
-            {
-                throw new ArgumentNullException(nameof(targetType));
-            }
-            if (namespaceResolver == null)
-            {
-                throw new ArgumentNullException(nameof(namespaceResolver));
-            }
             return ValueConverter.ChangeType(value, targetType, namespaceResolver);
         }
 
@@ -129,7 +109,7 @@ namespace System.Xml.Schema
             }
         }
 
-        internal string TypeCodeToString(XmlTypeCode typeCode) =>
+        internal static string TypeCodeToString(XmlTypeCode typeCode) =>
             typeCode switch
             {
                 XmlTypeCode.None => "None",

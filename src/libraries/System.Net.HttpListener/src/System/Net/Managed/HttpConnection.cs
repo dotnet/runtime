@@ -84,7 +84,7 @@ namespace System.Net
             else
             {
 #pragma warning disable CA5359
-                _sslStream = epl.Listener.CreateSslStream(new NetworkStream(sock, false), false, (t, c, ch, e) =>
+                _sslStream = HttpListener.CreateSslStream(new NetworkStream(sock, false), false, (t, c, ch, e) =>
                 {
                     if (c == null)
                     {
@@ -253,7 +253,7 @@ namespace System.Net
         private void OnReadInternal(IAsyncResult ares)
         {
             _timer.Change(Timeout.Infinite, Timeout.Infinite);
-            int nread = -1;
+            int nread;
             try
             {
                 nread = _stream.EndRead(ares);
@@ -376,7 +376,6 @@ namespace System.Net
                     if (_inputState == InputState.RequestLine)
                         continue;
                     _currentLine = null;
-                    ms = null!;
                     return true;
                 }
 
@@ -473,7 +472,7 @@ namespace System.Net
         {
             if (_contextBound)
             {
-                _epl.UnbindContext(_context);
+                HttpEndPointListener.UnbindContext(_context);
                 _contextBound = false;
             }
         }

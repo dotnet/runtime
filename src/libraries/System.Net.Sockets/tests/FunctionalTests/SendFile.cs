@@ -467,7 +467,7 @@ namespace System.Net.Sockets.Tests
 
     // Running all cases of GreaterThan2GBFile_SendsAllBytes in parallel may attempt to allocate Min(ProcessorCount, Subclass_Count) * 2GB of disk space
     // in extreme cases. Some CI machines may run out of disk space if this happens.
-    [Collection(nameof(NoParallelTests))]
+    [Collection(nameof(DisableParallelization))]
     public abstract class SendFile_NonParallel<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
         protected SendFile_NonParallel(ITestOutputHelper output) : base(output)

@@ -166,10 +166,8 @@ namespace System.Xml.Serialization
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
-        public XmlTypeMapping ImportTypeMapping(Type type, XmlRootAttribute? root, string? defaultNamespace)
+        public XmlTypeMapping ImportTypeMapping(Type type!!, XmlRootAttribute? root, string? defaultNamespace)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
             XmlTypeMapping xmlMapping = new XmlTypeMapping(_typeScope, ImportElement(_modelScope.GetTypeModel(type), root, defaultNamespace, new RecursionLimiter()));
             xmlMapping.SetKeyInternal(XmlMapping.GenerateKey(type, root, defaultNamespace));
             xmlMapping.GenerateSerializer = true;
@@ -366,17 +364,17 @@ namespace System.Xml.Serialization
                 throw new InvalidOperationException(SR.Format(SR.XmlCannotReconcileAccessor, accessor.Name, accessor.Namespace, GetMappingName(existing.Mapping!), GetMappingName(accessor.Mapping!)));
         }
 
-        private Exception CreateReflectionException(string context, Exception e)
+        private static Exception CreateReflectionException(string context, Exception e)
         {
             return new InvalidOperationException(SR.Format(SR.XmlReflectionError, context), e);
         }
 
-        private Exception CreateTypeReflectionException(string context, Exception e)
+        private static Exception CreateTypeReflectionException(string context, Exception e)
         {
             return new InvalidOperationException(SR.Format(SR.XmlTypeReflectionError, context), e);
         }
 
-        private Exception CreateMemberReflectionException(FieldModel model, Exception e)
+        private static Exception CreateMemberReflectionException(FieldModel model, Exception e)
         {
             return new InvalidOperationException(SR.Format(model.IsProperty ? SR.XmlPropertyReflectionError : SR.XmlFieldReflectionError, model.Name), e);
         }
@@ -399,7 +397,7 @@ namespace System.Xml.Serialization
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlInvalidDataTypeUsage, dataType, "XmlElementAttribute.DataType"));
                     }
-                    TypeDesc? td = _typeScope.GetTypeDesc(dataType, XmlSchema.Namespace);
+                    TypeDesc? td = TypeScope.GetTypeDesc(dataType, XmlSchema.Namespace);
                     if (td == null)
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlInvalidXsdDataType, dataType, "XmlElementAttribute.DataType", new XmlQualifiedName(dataType, XmlSchema.Namespace).ToString()));
@@ -438,7 +436,7 @@ namespace System.Xml.Serialization
                         if (context != ImportContext.Element) throw UnsupportedException(model.TypeDesc, context);
                         if (model.TypeDesc.IsOptionalValue)
                         {
-                            TypeDesc valueTypeDesc = string.IsNullOrEmpty(dataType) ? model.TypeDesc.BaseTypeDesc! : _typeScope.GetTypeDesc(dataType, XmlSchema.Namespace)!;
+                            TypeDesc valueTypeDesc = string.IsNullOrEmpty(dataType) ? model.TypeDesc.BaseTypeDesc! : TypeScope.GetTypeDesc(dataType, XmlSchema.Namespace)!;
                             string? xsdTypeName = valueTypeDesc.DataType == null ? valueTypeDesc.Name : valueTypeDesc.DataType.Name;
                             TypeMapping? baseMapping = GetTypeMapping(xsdTypeName, ns, valueTypeDesc, _types, null);
                             if (baseMapping == null)
@@ -485,10 +483,7 @@ namespace System.Xml.Serialization
                 // do not validate the schema provider method for wildcard types.
                 return null;
             }
-            else if (provider.MethodName == null)
-            {
-                throw new ArgumentNullException(nameof(provider.MethodName));
-            }
+            ArgumentNullException.ThrowIfNull(provider.MethodName, nameof(provider.MethodName));
             if (!CSharpHelpers.IsValidLanguageIndependentIdentifier(provider.MethodName))
                 throw new ArgumentException(SR.Format(SR.XmlGetSchemaMethodName, provider.MethodName), nameof(provider.MethodName));
 
@@ -515,7 +510,7 @@ namespace System.Xml.Serialization
             }
             if (typeDesc.Kind == TypeKind.Serializable)
             {
-                SerializableMapping? serializableMapping = null;
+                SerializableMapping? serializableMapping;
 
                 // get the schema method info
                 object[] attrs = type.GetCustomAttributes(typeof(XmlSchemaProviderAttribute), false);
@@ -1137,7 +1132,7 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
-        private void CheckContext(TypeDesc typeDesc, ImportContext context)
+        private static void CheckContext(TypeDesc typeDesc, ImportContext context)
         {
             switch (context)
             {
@@ -1157,16 +1152,16 @@ namespace System.Xml.Serialization
             throw UnsupportedException(typeDesc, context);
         }
 
-        private PrimitiveMapping ImportPrimitiveMapping(PrimitiveModel model, ImportContext context, string dataType, bool repeats)
+        private static PrimitiveMapping ImportPrimitiveMapping(PrimitiveModel model, ImportContext context, string dataType, bool repeats)
         {
             PrimitiveMapping mapping = new PrimitiveMapping();
             if (dataType.Length > 0)
             {
-                mapping.TypeDesc = _typeScope.GetTypeDesc(dataType, XmlSchema.Namespace);
+                mapping.TypeDesc = TypeScope.GetTypeDesc(dataType, XmlSchema.Namespace);
                 if (mapping.TypeDesc == null)
                 {
                     // try it as a non-Xsd type
-                    mapping.TypeDesc = _typeScope.GetTypeDesc(dataType, UrtTypes.Namespace);
+                    mapping.TypeDesc = TypeScope.GetTypeDesc(dataType, UrtTypes.Namespace);
                     if (mapping.TypeDesc == null)
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlUdeclaredXsdType, dataType));
@@ -1422,7 +1417,7 @@ namespace System.Xml.Serialization
             return member;
         }
 
-        private Type CheckChoiceIdentifierType(Type type, bool isArrayLike, string identifierName, string memberName)
+        private static Type CheckChoiceIdentifierType(Type type, bool isArrayLike, string identifierName, string memberName)
         {
             if (type.IsArray)
             {
@@ -1447,7 +1442,7 @@ namespace System.Xml.Serialization
             return type;
         }
 
-        private Type GetChoiceIdentifierType(XmlChoiceIdentifierAttribute choice, XmlReflectionMember[] xmlReflectionMembers, bool isArrayLike, string accessorName)
+        private static Type GetChoiceIdentifierType(XmlChoiceIdentifierAttribute choice, XmlReflectionMember[] xmlReflectionMembers, bool isArrayLike, string accessorName)
         {
             for (int i = 0; i < xmlReflectionMembers.Length; i++)
             {
@@ -1461,7 +1456,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GetFieldModel")]
-        private Type GetChoiceIdentifierType(XmlChoiceIdentifierAttribute choice, StructModel structModel, bool isArrayLike, string accessorName)
+        private static Type GetChoiceIdentifierType(XmlChoiceIdentifierAttribute choice, StructModel structModel, bool isArrayLike, string accessorName)
         {
             // check that the choice field exists
 
@@ -2040,7 +2035,7 @@ namespace System.Xml.Serialization
         }
 
 
-        private void CheckTopLevelAttributes(XmlAttributes a, string accessorName)
+        private static void CheckTopLevelAttributes(XmlAttributes a, string accessorName)
         {
             XmlAttributeFlags flags = a.XmlFlags;
 
@@ -2121,7 +2116,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void CheckChoiceIdentifierMapping(EnumMapping choiceMapping)
+        private static void CheckChoiceIdentifierMapping(EnumMapping choiceMapping)
         {
             NameTable ids = new NameTable();
             for (int i = 0; i < choiceMapping.Constants!.Length; i++)
@@ -2140,7 +2135,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private object? GetDefaultValue(TypeDesc fieldTypeDesc, Type t, XmlAttributes a)
+        private static object? GetDefaultValue(TypeDesc fieldTypeDesc, Type t, XmlAttributes a)
         {
             if (a.XmlDefaultValue == null || a.XmlDefaultValue == DBNull.Value) return null;
             if (!(fieldTypeDesc.Kind == TypeKind.Primitive || fieldTypeDesc.Kind == TypeKind.Enum))

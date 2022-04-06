@@ -815,7 +815,7 @@ void CLRException::HandlerState::CleanupTry()
     Exception::HandlerState::CleanupTry();
 }
 
-void CLRException::HandlerState::SetupCatch(INDEBUG_COMMA(__in_z const char * szFile) int lineNum)
+void CLRException::HandlerState::SetupCatch(INDEBUG_COMMA(_In_z_ const char * szFile) int lineNum)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;

@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -30,7 +30,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/CSTOR/${TEST_CSTOR}/g"  -e "s/OPC
   .ver  0:0:0:0
 }
 
-// VALIDITY CIL which breaks the ECMA-335 rules. 
+// VALIDITY CIL which breaks the ECMA-335 rules.
 // this CIL should fail verification by a conforming CLI verifier.
 
 .assembly extern mscorlib
@@ -60,7 +60,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/CSTOR/${TEST_CSTOR}/g"  -e "s/OPC
 	.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void object::.ctor()
 		ret
 	}
@@ -76,7 +76,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/CSTOR/${TEST_CSTOR}/g"  -e "s/OPC
 	.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void object::.ctor()
 		ret
 	}
@@ -90,7 +90,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/CSTOR/${TEST_CSTOR}/g"  -e "s/OPC
 	.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void ClassA::.ctor()
 		ret
 	}
@@ -109,7 +109,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/CSTOR/${TEST_CSTOR}/g"  -e "s/OPC
 	.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void object::.ctor()
 		ret
 	}
@@ -122,7 +122,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/CSTOR/${TEST_CSTOR}/g"  -e "s/OPC
 	.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void Overlapped::.ctor()
 		ret
 	}

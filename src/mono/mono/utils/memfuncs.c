@@ -44,7 +44,7 @@
 
 #if defined(TARGET_WIN32)
 #include <windows.h>
-#endif 
+#endif
 
 #include "memfuncs.h"
 

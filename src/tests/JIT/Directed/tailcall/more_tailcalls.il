@@ -43,7 +43,6 @@
   .hash algorithm 0x00008004
   .ver 1:0:0:0
 }
-.module more_tailcalls.dll
 // MVID: {81332D24-430E-4E25-88E2-383124EB3597}
 .custom instance void [System.Runtime]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000

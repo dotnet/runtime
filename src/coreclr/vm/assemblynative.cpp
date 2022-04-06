@@ -20,7 +20,6 @@
 #include "assemblynative.hpp"
 #include "dllimport.h"
 #include "field.h"
-#include "assemblyname.hpp"
 #include "eeconfig.h"
 #include "interoputil.h"
 #include "frames.h"
@@ -86,9 +85,8 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(QCall::ObjectHandleOnStack
     }
 
     // Initialize spec
-    spec.InitializeSpec(pStackingAllocator,
-                        &assemblyNameRef,
-                        FALSE);
+    spec.InitializeSpec(pStackingAllocator, &assemblyNameRef);
+
     GCPROTECT_END();
 
     spec.SetCodeBase(NULL);
@@ -107,7 +105,7 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(QCall::ObjectHandleOnStack
     {
         // If the requesting assembly has Fallback LoadContext binder available,
         // then set it up in the AssemblySpec.
-        PEAssembly *pRefAssemblyManifestFile = pRefAssembly->GetManifestFile();
+        PEAssembly *pRefAssemblyManifestFile = pRefAssembly->GetPEAssembly();
         spec.SetFallbackBinderForRequestingAssembly(pRefAssemblyManifestFile->GetFallbackBinder());
     }
 
@@ -138,25 +136,12 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
     CONTRACT_END;
 
     Assembly *pLoadedAssembly = NULL;
-
     ReleaseHolder<BINDER_SPACE::Assembly> pAssembly;
-
-    // Force the image to be loaded and mapped so that subsequent loads do not
-    // map a duplicate copy.
-    if (pImage->IsFile())
-    {
-        pImage->Load();
-    }
-    else
-    {
-        pImage->LoadNoFile();
-    }
 
     DWORD dwMessageID = IDS_EE_FILELOAD_ERROR_GENERIC;
 
     // Set the caller's assembly to be CoreLib
     DomainAssembly *pCallersAssembly = SystemDomain::System()->SystemAssembly()->GetDomainAssembly();
-    PEAssembly *pParentAssembly = pCallersAssembly->GetPEAssembly();
 
     // Initialize the AssemblySpec
     AssemblySpec spec;
@@ -182,7 +167,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
         COMPlusThrowHR(COR_E_FILELOAD, dwMessageID, name);
     }
 
-    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pParentAssembly, pAssembly->GetPEImage(), pAssembly));
+    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly->GetPEImage(), pAssembly));
     bindOperation.SetResult(pPEAssembly.GetValue());
 
     DomainAssembly *pDomainAssembly = pCurDomain->LoadDomainAssembly(&spec, pPEAssembly, FILE_LOADED);
@@ -251,11 +236,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(INT_PTR ptrNativeAssembl
     _ASSERTE((ptrAssemblyArray != NULL) && (cbAssemblyArrayLength > 0));
     _ASSERTE((ptrSymbolArray == NULL) || (cbSymbolArrayLength > 0));
 
-    // We must have a flat image stashed away since we need a private
-    // copy of the data which we can verify before doing the mapping.
-    PVOID pAssemblyArray = reinterpret_cast<PVOID>(ptrAssemblyArray);
-
-    PEImageHolder pILImage(PEImage::LoadFlat(pAssemblyArray, (COUNT_T)cbAssemblyArrayLength));
+    PEImageHolder pILImage(PEImage::CreateFromByteArray((BYTE*)ptrAssemblyArray, (COUNT_T)cbAssemblyArrayLength));
 
     // Need to verify that this is a valid CLR assembly.
     if (!pILImage->CheckILFormat())
@@ -287,7 +268,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(INT_PTR ptrNativeAssembl
     // we created above. We need pointer comparison instead of pe image equivalence
     // to avoid mixed binaries/PDB pairs of other images.
     // This applies to both Desktop CLR and CoreCLR, with or without fusion.
-    BOOL fIsSameAssembly = (pLoadedAssembly->GetManifestFile()->GetPEImage() == pILImage);
+    BOOL fIsSameAssembly = (pLoadedAssembly->GetPEAssembly()->GetPEImage() == pILImage);
 
     // Setting the PDB info is only applicable for our original assembly.
     // This applies to both Desktop CLR and CoreCLR, with or without fusion.
@@ -298,7 +279,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(INT_PTR ptrNativeAssembl
         if (ptrSymbolArray != NULL)
         {
             PBYTE pSymbolArray = reinterpret_cast<PBYTE>(ptrSymbolArray);
-            pLoadedAssembly->GetManifestModule()->SetSymbolBytes(pSymbolArray, (DWORD)cbSymbolArrayLength);
+            pLoadedAssembly->GetModule()->SetSymbolBytes(pSymbolArray, (DWORD)cbSymbolArrayLength);
         }
 #endif // DEBUGGING_SUPPORTED
     }
@@ -318,7 +299,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromInMemoryModule(INT_PTR ptrNativ
     _ASSERTE(ptrNativeAssemblyBinder != NULL);
     _ASSERTE(hModule != NULL);
 
-    PEImageHolder pILImage(PEImage::LoadImage((HMODULE)hModule));
+    PEImageHolder pILImage(PEImage::CreateFromHMODULE((HMODULE)hModule));
 
     // Need to verify that this is a valid CLR assembly.
     if (!pILImage->HasCorHeader())
@@ -420,7 +401,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetForwardedType(QCall::AssemblyHandle 
     mdToken mdImpl;
 
     Assembly * pAsm = pAssembly->GetAssembly();
-    Module *pManifestModule = pAsm->GetManifestModule();
+    Module *pManifestModule = pAsm->GetModule();
     IfFailThrow(pManifestModule->GetMDImport()->GetExportedTypeProps(mdtExternalType, &pszNameSpace, &pszClassName, &mdImpl, NULL, NULL));
     if (TypeFromToken(mdImpl) == mdtAssemblyRef)
     {
@@ -630,7 +611,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssem
     HENUMInternalHolder phEnum(pAssembly->GetMDImport());
     phEnum.EnumInit(mdtFile, mdTokenNil);
 
-    InlineSArray<DomainFile *, 8> modules;
+    InlineSArray<DomainAssembly *, 8> modules;
 
     modules.Append(pAssembly);
 
@@ -639,7 +620,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssem
     {
         if (fLoadIfNotFound)
         {
-            DomainFile* pModule = pAssembly->GetModule()->LoadModule(GetAppDomain(), mdFile);
+            DomainAssembly* pModule = pAssembly->GetModule()->LoadModule(GetAppDomain(), mdFile);
             modules.Append(pModule);
         }
     }
@@ -656,7 +637,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssem
 
         for(COUNT_T i = 0; i < modules.GetCount(); i++)
         {
-            DomainFile * pModule = modules[i];
+            DomainAssembly * pModule = modules[i];
 
             OBJECTREF o = pModule->GetExposedModuleObject();
             orModules->SetAt(i, o);
@@ -715,10 +696,10 @@ extern "C" void QCALLTYPE AssemblyNative_GetModule(QCall::AssemblyHandle pAssemb
 
     LPCUTF8 pModuleName = NULL;
 
-    if SUCCEEDED(pAssembly->GetDomainAssembly()->GetModule()->GetScopeName(&pModuleName))
+    if SUCCEEDED(pAssembly->GetModule()->GetScopeName(&pModuleName))
     {
         if (::SString::_stricmp(pModuleName, szModuleName) == 0)
-            pModule = pAssembly->GetDomainAssembly()->GetModule();
+            pModule = pAssembly->GetModule();
     }
 
 
@@ -743,7 +724,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetExportedTypes(QCall::AssemblyHandle 
 
     Assembly * pAsm = pAssembly->GetAssembly();
 
-    IMDInternalImport *pImport = pAsm->GetManifestImport();
+    IMDInternalImport *pImport = pAsm->GetMDImport();
 
     {
         HENUMTypeDefInternalHolder phTDEnum(pImport);
@@ -771,7 +752,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetExportedTypes(QCall::AssemblyHandle 
 
             if (IsTdPublic(dwFlags))
             {
-                TypeHandle typeHnd = ClassLoader::LoadTypeDefThrowing(pAsm->GetManifestModule(), mdTD,
+                TypeHandle typeHnd = ClassLoader::LoadTypeDefThrowing(pAsm->GetModule(), mdTD,
                                                                       ClassLoader::ThrowIfNotFound,
                                                                       ClassLoader::PermitUninstDefOrRef);
                 types.Append(typeHnd);
@@ -819,7 +800,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetExportedTypes(QCall::AssemblyHandle 
                 IsTdPublic(dwFlags))
             {
                 NameHandle typeName(pszNameSpace, pszClassName);
-                typeName.SetTypeToken(pAsm->GetManifestModule(), mdCT);
+                typeName.SetTypeToken(pAsm->GetModule(), mdCT);
                 TypeHandle typeHnd = pAsm->GetLoader()->LoadTypeHandleThrowIfFailed(&typeName);
 
                 types.Append(typeHnd);
@@ -863,7 +844,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetForwardedTypes(QCall::AssemblyHandle
 
     Assembly * pAsm = pAssembly->GetAssembly();
 
-    IMDInternalImport *pImport = pAsm->GetManifestImport();
+    IMDInternalImport *pImport = pAsm->GetMDImport();
 
     // enumerate the ExportedTypes table
     {
@@ -889,7 +870,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetForwardedTypes(QCall::AssemblyHandle
             if ((TypeFromToken(mdImpl) == mdtAssemblyRef) && (mdImpl != mdAssemblyRefNil))
             {
                 NameHandle typeName(pszNameSpace, pszClassName);
-                typeName.SetTypeToken(pAsm->GetManifestModule(), mdCT);
+                typeName.SetTypeToken(pAsm->GetModule(), mdCT);
                 TypeHandle typeHnd = pAsm->GetLoader()->LoadTypeHandleThrowIfFailed(&typeName);
 
                 types.Append(typeHnd);
@@ -995,7 +976,7 @@ FCIMPL1(Object*, AssemblyNative::GetReferencedAssemblies, AssemblyBaseObject * p
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
-    IMDInternalImport *pImport = pAssembly->GetAssembly()->GetManifestImport();
+    IMDInternalImport *pImport = pAssembly->GetAssembly()->GetMDImport();
 
     MethodTable* pAsmNameClass = CoreLibBinder::GetClass(CLASS__ASSEMBLY_NAME);
 
@@ -1122,7 +1103,7 @@ FCIMPL1(ReflectModuleBaseObject *, AssemblyNative::GetInMemoryAssemblyModule, As
 
     DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
 
-    FC_RETURN_MODULE_OBJECT(pAssembly->GetCurrentModule(), refAssembly);
+    FC_RETURN_MODULE_OBJECT(pAssembly->GetModule(), refAssembly);
 }
 FCIMPLEND
 
@@ -1374,7 +1355,7 @@ extern "C" void QCALLTYPE AssemblyNative_ApplyUpdate(
         {
             COMPlusThrow(kNotSupportedException, W("NotSupported_DebuggerAttached"));
         }
-        Module* pModule = assembly->GetDomainAssembly()->GetModule();
+        Module* pModule = assembly->GetModule();
         if (!pModule->IsEditAndContinueEnabled())
         {
             COMPlusThrow(kInvalidOperationException, W("InvalidOperation_AssemblyNotEditable"));

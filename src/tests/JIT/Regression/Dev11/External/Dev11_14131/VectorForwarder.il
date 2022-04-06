@@ -30,7 +30,6 @@
   .ver 4:0:30513:0
 }
 .assembly extern xunit.core {}
-.module VectorForwarder.exe
 // MVID: {040B5898-B7A8-44DE-A50F-3465CCB7870F}
 .imagebase 0x00400000
 .file alignment 0x00000200

@@ -180,7 +180,7 @@ namespace System.Reflection
             StringBuilder sbName = new StringBuilder(Name);
 
             if (IsGenericMethod)
-                sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this, TypeNameFormatFlags.FormatBasic));
+                sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this));
 
             sbName.Append('(');
             RuntimeParameterInfo.FormatParameters(sbName, GetParametersNoCopy(), CallingConvention);
@@ -211,7 +211,7 @@ namespace System.Reflection
                 sbName.Append(Name);
 
                 if (IsGenericMethod)
-                    sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this, TypeNameFormatFlags.FormatBasic));
+                    sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this));
 
                 sbName.Append('(');
                 AppendParameters(ref sbName, GetParameterTypes(), CallingConvention);
@@ -377,7 +377,7 @@ namespace System.Reflection
         private object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> parameters)
         {
             Exception? exc;
-            object? o = null;
+            object? o;
 
             if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
@@ -541,9 +541,8 @@ namespace System.Reflection
         private Attribute GetDllImportAttribute()
         {
             string entryPoint;
-            string? dllName = null;
-            int token = MetadataToken;
-            PInvokeAttributes flags = 0;
+            string? dllName;
+            PInvokeAttributes flags;
 
             GetPInvoke(out flags, out entryPoint, out dllName);
 
@@ -624,8 +623,8 @@ namespace System.Reflection
                 return null;
 
             string entryPoint;
-            string? dllName = null;
-            PInvokeAttributes flags = 0;
+            string? dllName;
+            PInvokeAttributes flags;
 
             GetPInvoke(out flags, out entryPoint, out dllName);
 
@@ -855,7 +854,7 @@ namespace System.Reflection
             }
         }
 
-        private void InvokeClassConstructor()
+        private static void InvokeClassConstructor()
         {
             // [TODO] Mechanism for invoking class constructor
             // See https://github.com/dotnet/runtime/issues/40351
@@ -885,7 +884,7 @@ namespace System.Reflection
         private object? InternalInvoke(object? obj, Span<object?> parameters, bool wrapExceptions)
         {
             Exception exc;
-            object? o = null;
+            object? o;
 
             if (wrapExceptions)
             {

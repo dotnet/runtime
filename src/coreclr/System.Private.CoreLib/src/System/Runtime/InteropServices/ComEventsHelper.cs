@@ -81,6 +81,7 @@
 // means that the problem is already quite complex and we should not be dealing with it - see
 // ComEventsMethod.Invoke
 
+using System.ComponentModel;
 using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
@@ -90,6 +91,7 @@ namespace System.Runtime.InteropServices
     /// raised COM objects.
     /// </summary>
     [SupportedOSPlatform("windows")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static class ComEventsHelper
     {
         /// <summary>

@@ -12,6 +12,6 @@
     <Compile Include="eh13_small.il" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\common\common.ilproj" />
+    <ProjectReference Include="..\..\..\common\localloc_common.ilproj" />
   </ItemGroup>
 </Project>

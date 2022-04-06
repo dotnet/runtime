@@ -13,7 +13,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'lcs'// as "lcs"
+.assembly 'lcs_ldlen'// as "lcs"
 {
 
   //  .custom instance void ['mscorlib']System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -22,7 +22,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'lcs.exe'
 // MVID: {52ED7FCA-78F1-42F6-8DE5-7388302AFAA6}
 .namespace JitTest
 {

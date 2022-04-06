@@ -3,7 +3,6 @@
 
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
-using System.Threading;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -27,8 +26,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(n, f());
         }
 
-#if FEATURE_COMPILE
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void EmitConstantsToIL_NonNullableValueTypes()
         {
             VerifyEmitConstantsToIL((bool)true);
@@ -49,7 +47,7 @@ namespace System.Linq.Expressions.Tests
             VerifyEmitConstantsToIL((decimal)49.95m);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void EmitConstantsToIL_NullableValueTypes()
         {
             VerifyEmitConstantsToIL((bool?)null);
@@ -85,14 +83,14 @@ namespace System.Linq.Expressions.Tests
             VerifyEmitConstantsToIL((DateTime?)null);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void EmitConstantsToIL_ReferenceTypes()
         {
             VerifyEmitConstantsToIL((string)null);
             VerifyEmitConstantsToIL((string)"bar");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void EmitConstantsToIL_Enums()
         {
             VerifyEmitConstantsToIL(ConstantsEnum.A);
@@ -100,21 +98,21 @@ namespace System.Linq.Expressions.Tests
             VerifyEmitConstantsToIL((ConstantsEnum?)ConstantsEnum.A);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void EmitConstantsToIL_ShareReferences()
         {
             var o = new object();
             VerifyEmitConstantsToIL(Expression.Equal(Expression.Constant(o), Expression.Constant(o)), 1, true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void EmitConstantsToIL_LiftedToClosure()
         {
             VerifyEmitConstantsToIL(DateTime.Now, 1);
             VerifyEmitConstantsToIL((DateTime?)DateTime.Now, 1);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void VariableBinder_CatchBlock_Filter1()
         {
             // See https://github.com/dotnet/runtime/issues/18676 for reported issue
@@ -128,7 +126,7 @@ namespace System.Linq.Expressions.Tests
             );
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void VariableBinder_CatchBlock_Filter2()
         {
             // See https://github.com/dotnet/runtime/issues/18676 for reported issue
@@ -142,7 +140,7 @@ namespace System.Linq.Expressions.Tests
             );
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
         public static void VerifyIL_Simple()
         {
@@ -159,7 +157,7 @@ namespace System.Linq.Expressions.Tests
                   }");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
         public static void VerifyIL_Exceptions()
         {
@@ -220,7 +218,7 @@ namespace System.Linq.Expressions.Tests
                   }");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
         public static void VerifyIL_Closure1()
         {
@@ -255,7 +253,7 @@ namespace System.Linq.Expressions.Tests
                 appendInnerLambdas: true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
         public static void VerifyIL_Closure2()
         {
@@ -313,7 +311,7 @@ namespace System.Linq.Expressions.Tests
                 appendInnerLambdas: true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
         public static void VerifyIL_Closure3()
         {
@@ -386,15 +384,15 @@ namespace System.Linq.Expressions.Tests
 
         private static string Normalize(string s)
         {
+            var normalizeRegex = new Regex(@"lambda_method[0-9]*");
+
             Collections.Generic.IEnumerable<string> lines =
                 s
-                .Replace("\r\n", "\n")
-                .Split(new[] { '\n' })
-                .Select(line => line.Trim())
-                .Where(line => line != "" && !line.StartsWith("//"));
+                .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(line => !line.StartsWith("//"))
+                .Select(beforeLambdaUniquifierRemoval => normalizeRegex.Replace(beforeLambdaUniquifierRemoval, "lambda_method"));
 
-            string beforeLambdaUniquifierRemoval = string.Join("\n", lines);
-            return Regex.Replace(beforeLambdaUniquifierRemoval, "lambda_method[0-9]*", "lambda_method");
+            return string.Join("\n", lines);
         }
 
         private static void VerifyEmitConstantsToIL<T>(T value)
@@ -431,7 +429,6 @@ namespace System.Linq.Expressions.Tests
 
             Assert.Throws<InvalidOperationException>(() => e.Compile());
         }
-#endif
     }
 
     public enum ConstantsEnum

@@ -18,17 +18,8 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="changeTokenProducer">Produces the change token.</param>
         /// <param name="changeTokenConsumer">Action called when the token changes.</param>
         /// <returns></returns>
-        public static IDisposable OnChange(Func<IChangeToken?> changeTokenProducer, Action changeTokenConsumer)
+        public static IDisposable OnChange(Func<IChangeToken?> changeTokenProducer!!, Action changeTokenConsumer!!)
         {
-            if (changeTokenProducer == null)
-            {
-                throw new ArgumentNullException(nameof(changeTokenProducer));
-            }
-            if (changeTokenConsumer == null)
-            {
-                throw new ArgumentNullException(nameof(changeTokenConsumer));
-            }
-
             return new ChangeTokenRegistration<Action>(changeTokenProducer, callback => callback(), changeTokenConsumer);
         }
 
@@ -39,17 +30,8 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="changeTokenConsumer">Action called when the token changes.</param>
         /// <param name="state">state for the consumer.</param>
         /// <returns></returns>
-        public static IDisposable OnChange<TState>(Func<IChangeToken?> changeTokenProducer, Action<TState> changeTokenConsumer, TState state)
+        public static IDisposable OnChange<TState>(Func<IChangeToken?> changeTokenProducer!!, Action<TState> changeTokenConsumer!!, TState state)
         {
-            if (changeTokenProducer == null)
-            {
-                throw new ArgumentNullException(nameof(changeTokenProducer));
-            }
-            if (changeTokenConsumer == null)
-            {
-                throw new ArgumentNullException(nameof(changeTokenConsumer));
-            }
-
             return new ChangeTokenRegistration<TState>(changeTokenProducer, changeTokenConsumer, state);
         }
 

@@ -5,12 +5,19 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Numerics, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct BigInteger : ISpanFormattable, IComparable, IComparable<BigInteger>, IEquatable<BigInteger>
+    [TypeForwardedFrom("System.Numerics, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
+    public readonly struct BigInteger
+        : ISpanFormattable,
+          IComparable,
+          IComparable<BigInteger>,
+          IEquatable<BigInteger>
+          // IBinaryInteger<BigInteger>,
+          // ISignedNumber<BigInteger>
     {
         private const uint kuMaskHighBit = unchecked((uint)int.MinValue);
         private const int kcbitUint = 32;
@@ -72,7 +79,7 @@ namespace System.Numerics
             }
             else
             {
-                ulong x = 0;
+                ulong x;
                 if (value < 0)
                 {
                     x = unchecked((ulong)-value);
@@ -148,8 +155,7 @@ namespace System.Numerics
 
             int sign, exp;
             ulong man;
-            bool fFinite;
-            NumericsHelpers.GetDoubleParts(value, out sign, out exp, out man, out fFinite);
+            NumericsHelpers.GetDoubleParts(value, out sign, out exp, out man, out _);
             Debug.Assert(sign == +1 || sign == -1);
 
             if (man == 0)
@@ -250,8 +256,8 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value"></param>
         [CLSCompliant(false)]
-        public BigInteger(byte[] value) :
-            this(new ReadOnlySpan<byte>(value ?? throw new ArgumentNullException(nameof(value))))
+        public BigInteger(byte[] value!!) :
+            this(new ReadOnlySpan<byte>(value))
         {
         }
 
@@ -1542,7 +1548,6 @@ namespace System.Numerics
             else
             {
                 count = msb + 1;
-                buffer = buffer.Slice(0, count);
             }
 
             return count;

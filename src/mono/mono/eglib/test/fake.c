@@ -1,7 +1,7 @@
 /*
  * Fake test allows debugging of the driver itself
  */
- 
+
 #include "test.h"
 
 static RESULT

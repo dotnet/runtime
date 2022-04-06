@@ -3,6 +3,11 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+
+#if TARGET_WINDOWS
+using Microsoft.Win32;
+#endif
+
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
@@ -26,84 +31,65 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             uint status;
 
             SetParamDelegate =
-                Marshal.GetDelegateForFunctionPointer<SetParamDelegate>(
-                    vtable->SetParam);
+                new SetParamDelegate(new DelegateHelper(vtable->SetParam).SetParam);
 
             GetParamDelegate =
-                Marshal.GetDelegateForFunctionPointer<GetParamDelegate>(
-                    vtable->GetParam);
+                new GetParamDelegate(new DelegateHelper(vtable->GetParam).GetParam);
 
             SetCallbackHandlerDelegate =
-                Marshal.GetDelegateForFunctionPointer<SetCallbackHandlerDelegate>(
-                    vtable->SetCallbackHandler);
+                new SetCallbackHandlerDelegate(new DelegateHelper(vtable->SetCallbackHandler).SetCallbackHandler);
 
             RegistrationOpenDelegate =
-                Marshal.GetDelegateForFunctionPointer<RegistrationOpenDelegate>(
-                    vtable->RegistrationOpen);
+                new RegistrationOpenDelegate(new DelegateHelper(vtable->RegistrationOpen).RegistrationOpen);
             RegistrationCloseDelegate =
                 Marshal.GetDelegateForFunctionPointer<RegistrationCloseDelegate>(
                     vtable->RegistrationClose);
 
             ConfigurationOpenDelegate =
-                Marshal.GetDelegateForFunctionPointer<ConfigurationOpenDelegate>(
-                    vtable->ConfigurationOpen);
+                new ConfigurationOpenDelegate(new DelegateHelper(vtable->ConfigurationOpen).ConfigurationOpen);
             ConfigurationCloseDelegate =
                 Marshal.GetDelegateForFunctionPointer<ConfigurationCloseDelegate>(
                     vtable->ConfigurationClose);
             ConfigurationLoadCredentialDelegate =
-                Marshal.GetDelegateForFunctionPointer<ConfigurationLoadCredentialDelegate>(
-                    vtable->ConfigurationLoadCredential);
+                new ConfigurationLoadCredentialDelegate(new DelegateHelper(vtable->ConfigurationLoadCredential).ConfigurationLoadCredential);
 
             ListenerOpenDelegate =
-                Marshal.GetDelegateForFunctionPointer<ListenerOpenDelegate>(
-                    vtable->ListenerOpen);
+                new ListenerOpenDelegate(new DelegateHelper(vtable->ListenerOpen).ListenerOpen);
             ListenerCloseDelegate =
                 Marshal.GetDelegateForFunctionPointer<ListenerCloseDelegate>(
                     vtable->ListenerClose);
             ListenerStartDelegate =
-                Marshal.GetDelegateForFunctionPointer<ListenerStartDelegate>(
-                    vtable->ListenerStart);
+                new ListenerStartDelegate(new DelegateHelper(vtable->ListenerStart).ListenerStart);
             ListenerStopDelegate =
-                Marshal.GetDelegateForFunctionPointer<ListenerStopDelegate>(
-                    vtable->ListenerStop);
+                new ListenerStopDelegate(new DelegateHelper(vtable->ListenerStop).ListenerStop);
 
             ConnectionOpenDelegate =
-                Marshal.GetDelegateForFunctionPointer<ConnectionOpenDelegate>(
-                    vtable->ConnectionOpen);
+                new ConnectionOpenDelegate(new DelegateHelper(vtable->ConnectionOpen).ConnectionOpen);
             ConnectionCloseDelegate =
                 Marshal.GetDelegateForFunctionPointer<ConnectionCloseDelegate>(
                     vtable->ConnectionClose);
             ConnectionSetConfigurationDelegate =
-                Marshal.GetDelegateForFunctionPointer<ConnectionSetConfigurationDelegate>(
-                    vtable->ConnectionSetConfiguration);
+                new ConnectionSetConfigurationDelegate(new DelegateHelper(vtable->ConnectionSetConfiguration).ConnectionSetConfiguration);
             ConnectionShutdownDelegate =
-                Marshal.GetDelegateForFunctionPointer<ConnectionShutdownDelegate>(
-                    vtable->ConnectionShutdown);
+                new ConnectionShutdownDelegate(new DelegateHelper(vtable->ConnectionShutdown).ConnectionShutdown);
             ConnectionStartDelegate =
-                Marshal.GetDelegateForFunctionPointer<ConnectionStartDelegate>(
-                    vtable->ConnectionStart);
+                new ConnectionStartDelegate(new DelegateHelper(vtable->ConnectionStart).ConnectionStart);
 
             StreamOpenDelegate =
-                Marshal.GetDelegateForFunctionPointer<StreamOpenDelegate>(
-                    vtable->StreamOpen);
+                new StreamOpenDelegate(new DelegateHelper(vtable->StreamOpen).StreamOpen);
             StreamCloseDelegate =
                 Marshal.GetDelegateForFunctionPointer<StreamCloseDelegate>(
                     vtable->StreamClose);
             StreamStartDelegate =
-                Marshal.GetDelegateForFunctionPointer<StreamStartDelegate>(
-                    vtable->StreamStart);
+                new StreamStartDelegate(new DelegateHelper(vtable->StreamStart).StreamStart);
             StreamShutdownDelegate =
-                Marshal.GetDelegateForFunctionPointer<StreamShutdownDelegate>(
-                    vtable->StreamShutdown);
+                new StreamShutdownDelegate(new DelegateHelper(vtable->StreamShutdown).StreamShutdown);
             StreamSendDelegate =
-                Marshal.GetDelegateForFunctionPointer<StreamSendDelegate>(
-                    vtable->StreamSend);
+                new StreamSendDelegate(new DelegateHelper(vtable->StreamSend).StreamSend);
             StreamReceiveCompleteDelegate =
-                Marshal.GetDelegateForFunctionPointer<StreamReceiveCompleteDelegate>(
-                    vtable->StreamReceiveComplete);
+                new StreamReceiveCompleteDelegate(new DelegateHelper(vtable->StreamReceiveComplete).StreamReceiveComplete);
             StreamReceiveSetEnabledDelegate =
-                Marshal.GetDelegateForFunctionPointer<StreamReceiveSetEnabledDelegate>(
-                    vtable->StreamReceiveSetEnabled);
+                new StreamReceiveSetEnabledDelegate(new DelegateHelper(vtable->StreamReceiveSetEnabled).StreamReceiveSetEnabled);
 
             var cfg = new RegistrationConfig
             {
@@ -121,30 +107,39 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal static bool IsQuicSupported { get; }
 
-        private const int MsQuicVersion = 1;
+        private const int MsQuicVersion = 2;
+
+        internal static bool Tls13MayBeDisabled { get; }
 
         static MsQuicApi()
         {
-            if (OperatingSystem.IsWindows() && !IsWindowsVersionSupported())
+            if (OperatingSystem.IsWindows())
             {
-                if (NetEventSource.Log.IsEnabled())
+                if (!IsWindowsVersionSupported())
                 {
-                    NetEventSource.Info(null, $"Current Windows version ({Environment.OSVersion}) is not supported by QUIC. Minimal supported version is {MinWindowsVersion}");
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Info(null, $"Current Windows version ({Environment.OSVersion}) is not supported by QUIC. Minimal supported version is {MinWindowsVersion}");
+                    }
+
+                    return;
                 }
 
-                return;
+                Tls13MayBeDisabled = IsTls13Disabled();
             }
 
-            if (NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out IntPtr msQuicHandle) ||
-                NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MsQuicVersion}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle))
+            IntPtr msQuicHandle;
+            if (NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MsQuicVersion}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle) ||
+                NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle))
             {
                 try
                 {
                     if (NativeLibrary.TryGetExport(msQuicHandle, "MsQuicOpenVersion", out IntPtr msQuicOpenVersionAddress))
                     {
-                        delegate* unmanaged[Cdecl]<uint, out NativeApi*, uint> msQuicOpenVersion =
-                            (delegate* unmanaged[Cdecl]<uint, out NativeApi*, uint>)msQuicOpenVersionAddress;
-                        uint status = msQuicOpenVersion(MsQuicVersion, out NativeApi* vtable);
+                        NativeApi* vtable;
+                        delegate* unmanaged[Cdecl]<uint, NativeApi**, uint> msQuicOpenVersion =
+                            (delegate* unmanaged[Cdecl]<uint, NativeApi**, uint>)msQuicOpenVersionAddress;
+                        uint status = msQuicOpenVersion(MsQuicVersion, &vtable);
                         if (MsQuicStatusHelper.SuccessfulStatusCode(status))
                         {
                             IsQuicSupported = true;
@@ -164,6 +159,29 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         private static bool IsWindowsVersionSupported() => OperatingSystem.IsWindowsVersionAtLeast(MinWindowsVersion.Major,
             MinWindowsVersion.Minor, MinWindowsVersion.Build, MinWindowsVersion.Revision);
+
+        private static bool IsTls13Disabled()
+        {
+#if TARGET_WINDOWS
+            string[] SChannelTLS13RegKeys = {
+                @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client",
+                @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server"
+            };
+
+            foreach (var key in SChannelTLS13RegKeys)
+            {
+                using var regKey = Registry.LocalMachine.OpenSubKey(key);
+
+                if (regKey is null) return false;
+
+                if (regKey.GetValue("Enabled") is int enabled && enabled == 0)
+                {
+                    return true;
+                }
+            }
+#endif
+            return false;
+        }
 
         // TODO: Consider updating all of these delegates to instead use function pointers.
         internal RegistrationOpenDelegate RegistrationOpenDelegate { get; }

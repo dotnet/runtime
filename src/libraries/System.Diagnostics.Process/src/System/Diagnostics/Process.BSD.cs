@@ -15,6 +15,7 @@ namespace System.Diagnostics
         /// </summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
             if (processName == null)
@@ -43,7 +44,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets or sets which processors the threads in this process can be scheduled to run on.
         /// </summary>
-        private IntPtr ProcessorAffinityCore
+        private static IntPtr ProcessorAffinityCore
         {
             get
             {

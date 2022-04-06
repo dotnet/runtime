@@ -33,7 +33,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public bool IncludeFullGraphs;
         public int SpgoMinSamples = 50;
         public bool VerboseWarnings;
-        public jittraceoptions JitTraceOptions;
+        public JitTraceOptions JitTraceOptions;
         public double ExcludeEventsBefore;
         public double ExcludeEventsAfter;
         public bool Warnings;
@@ -63,7 +63,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         {
             try
             {
-                return (Verbosity)Enum.Parse(typeof(Verbosity), s);
+                return Enum.Parse<Verbosity>(s);
             }
             catch 
             {
@@ -211,7 +211,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 HelpOption();
             }
 
-            JitTraceOptions = jittraceoptions.none;
+            JitTraceOptions = JitTraceOptions.none;
 #if DEBUG
             // Usage of the jittrace format requires using logic embedded in the runtime repository and isn't suitable for general consumer use at this time
             // Build it in debug and check builds to ensure that it doesn't bitrot, and remains available for use by developers willing to build the repo
@@ -230,14 +230,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 syntax.DefineOption(name: "sorted", value: ref sorted, help: "Generate sorted output.", requireValue: false);
                 if (sorted)
                 {
-                    JitTraceOptions |= jittraceoptions.sorted;
+                    JitTraceOptions |= JitTraceOptions.sorted;
                 }
 
                 bool showtimestamp = false;
                 syntax.DefineOption(name: "showtimestamp", value: ref showtimestamp, help: "Show timestamps in output.", requireValue: false);
                 if (showtimestamp)
                 {
-                    JitTraceOptions |= jittraceoptions.showtimestamp;
+                    JitTraceOptions |= JitTraceOptions.showtimestamp;
                 }
 
                 syntax.DefineOption(name: "includeReadyToRun", value: ref ProcessR2REvents, help: "Include ReadyToRun methods in the trace file.", requireValue: false);

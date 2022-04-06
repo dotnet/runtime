@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -25,7 +25,7 @@ echo $TEST_FILE
 
 $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/OPCODE/${TEST_OP}/g" -e "s/FINALLY/${TEST_FIN}/g" > $TEST_FILE <<//EOF
 
-// VALIDITY CIL which breaks the ECMA-335 rules. 
+// VALIDITY CIL which breaks the ECMA-335 rules.
 // this CIL should fail verification by a conforming CLI verifier.
 
 .assembly '${TEST_NAME}_generated'
@@ -61,7 +61,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/OPCODE/${TEST_OP}/g" -e "s/FINALLY
         .entrypoint
         .maxstack 8
 	.locals init ( int32 V0, native int V1)
- 
+
 	${BRANCH_EXTRA_1}
 	${BRANCH_1}
         ldc.i4 0x7FFFFFFF

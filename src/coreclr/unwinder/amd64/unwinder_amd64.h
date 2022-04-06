@@ -24,43 +24,43 @@ public:
     // Everything below comes from dbghelp.dll.
     //
 
-    static HRESULT VirtualUnwind(__in DWORD HandlerType,
-        __in DWORD64 ImageBase,
-        __in DWORD64 ControlPc,
-        __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    static HRESULT VirtualUnwind(_In_ DWORD HandlerType,
+        _In_ DWORD64 ImageBase,
+        _In_ DWORD64 ControlPc,
+        _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
         __inout PCONTEXT ContextRecord,
-        __out PVOID *HandlerData,
-        __out PDWORD64 EstablisherFrame,
+        _Out_ PVOID *HandlerData,
+        _Out_ PDWORD64 EstablisherFrame,
         __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
-        __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine);
+        _Outptr_opt_result_maybenull_ PEXCEPTION_ROUTINE *HandlerRoutine);
 
 protected:
 
-    static ULONG UnwindOpSlots(__in UNWIND_CODE UnwindCode);
+    static ULONG UnwindOpSlots(_In_ UNWIND_CODE UnwindCode);
 
-    static HRESULT UnwindEpilogue(__in ULONG64 ImageBase,
-                                  __in ULONG64 ControlPc,
-                                  __in ULONG EpilogueOffset,
-                                  __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    static HRESULT UnwindEpilogue(_In_ ULONG64 ImageBase,
+                                  _In_ ULONG64 ControlPc,
+                                  _In_ ULONG EpilogueOffset,
+                                  _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
                                   __inout PCONTEXT ContextRecord,
                                   __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers);
 
-    static HRESULT UnwindPrologue(__in DWORD64 ImageBase,
-                                  __in DWORD64 ControlPc,
-                                  __in DWORD64 FrameBase,
-                                  __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    static HRESULT UnwindPrologue(_In_ DWORD64 ImageBase,
+                                  _In_ DWORD64 ControlPc,
+                                  _In_ DWORD64 FrameBase,
+                                  _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
                                   __inout PCONTEXT ContextRecord,
                                   __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
-                                  __deref_out _PIMAGE_RUNTIME_FUNCTION_ENTRY *FinalFunctionEntry);
+                                  _Outptr_ _PIMAGE_RUNTIME_FUNCTION_ENTRY *FinalFunctionEntry);
 
     static _PIMAGE_RUNTIME_FUNCTION_ENTRY LookupPrimaryFunctionEntry
-        (__in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
-         __in DWORD64 ImageBase);
+        (_In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+         _In_ DWORD64 ImageBase);
 
     static _PIMAGE_RUNTIME_FUNCTION_ENTRY SameFunction
-        (__in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
-         __in DWORD64 ImageBase,
-         __in DWORD64 ControlPc);
+        (_In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+         _In_ DWORD64 ImageBase,
+         _In_ DWORD64 ControlPc);
 
     static UNWIND_INFO * GetUnwindInfo(TADDR taUnwindInfo);
 };

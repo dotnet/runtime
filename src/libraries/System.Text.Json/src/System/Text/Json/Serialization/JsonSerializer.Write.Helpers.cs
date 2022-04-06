@@ -41,7 +41,7 @@ namespace System.Text.Json
 
             if (jsonTypeInfo.HasSerialize &&
                 jsonTypeInfo is JsonTypeInfo<TValue> typedInfo &&
-                typedInfo.Options._context?.CanUseSerializationLogic == true)
+                typedInfo.Options.JsonSerializerContext?.CanUseSerializationLogic == true)
             {
                 Debug.Assert(typedInfo.SerializeHandler != null);
                 typedInfo.SerializeHandler(writer, value);
@@ -59,12 +59,12 @@ namespace System.Text.Json
 
             Debug.Assert(!jsonTypeInfo.HasSerialize ||
                 jsonTypeInfo is not JsonTypeInfo<TValue> ||
-                jsonTypeInfo.Options._context == null ||
-                !jsonTypeInfo.Options._context.CanUseSerializationLogic,
+                jsonTypeInfo.Options.JsonSerializerContext == null ||
+                !jsonTypeInfo.Options.JsonSerializerContext.CanUseSerializationLogic,
                 "Incorrect method called. WriteUsingGeneratedSerializer() should have been called instead.");
 
             WriteStack state = default;
-            state.Initialize(jsonTypeInfo, supportContinuation: false);
+            state.Initialize(jsonTypeInfo, supportContinuation: false, supportAsync: false);
 
             JsonConverter converter = jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
             Debug.Assert(converter != null);
@@ -96,13 +96,8 @@ namespace System.Text.Json
             return type;
         }
 
-        private static Type GetRuntimeTypeAndValidateInputType(object? value, Type inputType)
+        private static Type GetRuntimeTypeAndValidateInputType(object? value, Type inputType!!)
         {
-            if (inputType is null)
-            {
-                throw new ArgumentNullException(nameof(inputType));
-            }
-
             if (value is not null)
             {
                 Type runtimeType = value.GetType();

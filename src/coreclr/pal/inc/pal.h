@@ -94,6 +94,8 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 #define _M_ARM 7
 #elif defined(__aarch64__) && !defined(_M_ARM64)
 #define _M_ARM64 1
+#elif defined(__loongarch64) && !defined(_M_LOONGARCH64)
+#define _M_LOONGARCH64 1
 #elif defined(__s390x__) && !defined(_M_S390X)
 #define _M_S390X 1
 #endif
@@ -106,6 +108,8 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 #define HOST_ARM
 #elif defined(_M_ARM64) && !defined(HOST_ARM64)
 #define HOST_ARM64
+#elif defined(_M_LOONGARCH64) && !defined(HOST_LOONGARCH64)
+#define HOST_LOONGARCH64
 #elif defined(_M_S390X) && !defined(HOST_S390X)
 #define HOST_S390X
 #endif
@@ -345,6 +349,7 @@ typedef __int64 time_t;
 #define PAL_INITIALIZE_DEBUGGER_EXCEPTIONS          0x10
 #define PAL_INITIALIZE_ENSURE_STACK_SIZE            0x20
 #define PAL_INITIALIZE_REGISTER_SIGNALS             0x40
+#define PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL   0x80
 
 // PAL_Initialize() flags
 #define PAL_INITIALIZE                 (PAL_INITIALIZE_SYNC_THREAD | \
@@ -359,7 +364,8 @@ typedef __int64 time_t;
                                         PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER | \
                                         PAL_INITIALIZE_DEBUGGER_EXCEPTIONS | \
                                         PAL_INITIALIZE_ENSURE_STACK_SIZE | \
-                                        PAL_INITIALIZE_REGISTER_SIGNALS)
+                                        PAL_INITIALIZE_REGISTER_SIGNALS | \
+                                        PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL)
 
 typedef DWORD (PALAPI_NOEXPORT *PTHREAD_START_ROUTINE)(LPVOID lpThreadParameter);
 typedef PTHREAD_START_ROUTINE LPTHREAD_START_ROUTINE;
@@ -2202,6 +2208,150 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 } KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
 
+#elif defined(HOST_LOONGARCH64)
+
+//Please refence "src/pal/src/arch/loongarch64/asmconstants.h"
+#define CONTEXT_LOONGARCH64   0x00800000
+
+#define CONTEXT_CONTROL (CONTEXT_LOONGARCH64 | 0x1)
+#define CONTEXT_INTEGER (CONTEXT_LOONGARCH64 | 0x2)
+#define CONTEXT_FLOATING_POINT  (CONTEXT_LOONGARCH64 | 0x4)
+#define CONTEXT_DEBUG_REGISTERS (CONTEXT_LOONGARCH64 | 0x8)
+
+#define CONTEXT_FULL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT)
+
+#define CONTEXT_ALL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS)
+
+#define CONTEXT_EXCEPTION_ACTIVE 0x8000000
+#define CONTEXT_SERVICE_ACTIVE 0x10000000
+#define CONTEXT_EXCEPTION_REQUEST 0x40000000
+#define CONTEXT_EXCEPTION_REPORTING 0x80000000
+
+//
+// This flag is set by the unwinder if it has unwound to a call
+// site, and cleared whenever it unwinds through a trap frame.
+// It is used by language-specific exception handlers to help
+// differentiate exception scopes during dispatching.
+//
+
+#define CONTEXT_UNWOUND_TO_CALL 0x20000000
+
+// begin_ntoshvp
+
+//
+// Specify the number of breakpoints and watchpoints that the OS
+// will track. Architecturally, LOONGARCH64 supports up to 16. In practice,
+// however, almost no one implements more than 4 of each.
+//
+
+#define LOONGARCH64_MAX_BREAKPOINTS     8
+#define LOONGARCH64_MAX_WATCHPOINTS     2
+
+//
+// Context Frame
+//
+//  This frame has a several purposes: 1) it is used as an argument to
+//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
+//  and 3) it is used in the user level thread creation routines.
+//
+//
+// The flags field within this record controls the contents of a CONTEXT
+// record.
+//
+// If the context record is used as an input parameter, then for each
+// portion of the context record controlled by a flag whose value is
+// set, it is assumed that that portion of the context record contains
+// valid context. If the context record is being used to modify a threads
+// context, then only that portion of the threads context is modified.
+//
+// If the context record is used as an output parameter to capture the
+// context of a thread, then only those portions of the thread's context
+// corresponding to set flags will be returned.
+//
+
+typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
+
+    //
+    // Control flags.
+    //
+
+    /* +0x000 */ DWORD ContextFlags;
+
+    //
+    // Integer registers, abi=N64.
+    //
+    DWORD64 R0;
+    DWORD64 Ra;
+    DWORD64 Tp;
+    DWORD64 Sp;
+    DWORD64 A0;//DWORD64 V0;
+    DWORD64 A1;//DWORD64 V1;
+    DWORD64 A2;
+    DWORD64 A3;
+    DWORD64 A4;
+    DWORD64 A5;
+    DWORD64 A6;
+    DWORD64 A7;
+    DWORD64 T0;
+    DWORD64 T1;
+    DWORD64 T2;
+    DWORD64 T3;
+    DWORD64 T4;
+    DWORD64 T5;
+    DWORD64 T6;
+    DWORD64 T7;
+    DWORD64 T8;
+    DWORD64 X0;
+    DWORD64 Fp;
+    DWORD64 S0;
+    DWORD64 S1;
+    DWORD64 S2;
+    DWORD64 S3;
+    DWORD64 S4;
+    DWORD64 S5;
+    DWORD64 S6;
+    DWORD64 S7;
+    DWORD64 S8;
+    DWORD64 Pc;
+
+    //
+    // Floating Point Registers
+    //
+    //TODO: support the SIMD.
+    DWORD64 F[32];
+    DWORD Fcsr;
+} CONTEXT, *PCONTEXT, *LPCONTEXT;
+
+//
+// Nonvolatile context pointer record.
+//
+
+typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
+
+    PDWORD64 S0;
+    PDWORD64 S1;
+    PDWORD64 S2;
+    PDWORD64 S3;
+    PDWORD64 S4;
+    PDWORD64 S5;
+    PDWORD64 S6;
+    PDWORD64 S7;
+    PDWORD64 S8;
+    PDWORD64 Fp;
+    PDWORD64 Tp;
+    PDWORD64 Ra;
+
+    PDWORD64 F24;
+    PDWORD64 F25;
+    PDWORD64 F26;
+    PDWORD64 F27;
+    PDWORD64 F28;
+    PDWORD64 F29;
+    PDWORD64 F30;
+    PDWORD64 F31;
+} KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
+
+
 #elif defined(HOST_S390X)
 
 // There is no context for s390x defined in winnt.h,
@@ -2453,6 +2603,8 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_
 #define PAL_CS_NATIVE_DATA_SIZE 56
 #elif defined(__sun) && defined(__x86_64__)
 #define PAL_CS_NATIVE_DATA_SIZE 48
+#elif defined(__linux__) && defined(__loongarch64)
+#define PAL_CS_NATIVE_DATA_SIZE 96
 #else
 #warning
 #error  PAL_CS_NATIVE_DATA_SIZE is not defined for this architecture
@@ -2740,6 +2892,11 @@ PALAPI
 PAL_GetSymbolModuleBase(PVOID symbol);
 
 PALIMPORT
+int
+PALAPI
+PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destinationBufferEnd);;
+
+PALIMPORT
 LPCSTR
 PALAPI
 PAL_GetLoadLibraryError();
@@ -2836,24 +2993,6 @@ VirtualQuery(
 #define CopyMemory memcpy
 #define FillMemory(Destination,Length,Fill) memset((Destination),(Fill),(Length))
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
-
-#define LMEM_FIXED          0x0000
-#define LMEM_MOVEABLE       0x0002
-#define LMEM_ZEROINIT       0x0040
-#define LPTR                (LMEM_FIXED | LMEM_ZEROINIT)
-
-PALIMPORT
-HLOCAL
-PALAPI
-LocalAlloc(
-       IN UINT uFlags,
-       IN SIZE_T uBytes);
-
-PALIMPORT
-HLOCAL
-PALAPI
-LocalFree(
-      IN HLOCAL hMem);
 
 PALIMPORT
 BOOL
@@ -3250,6 +3389,57 @@ FORCEINLINE void PAL_ArmInterlockedOperationBarrier()
     // prevent that reordering. Code generated for arm32 includes a 'dmb' after 'cbnz', so no issue there at the moment.
     __sync_synchronize();
 #endif // HOST_ARM64
+#ifdef HOST_LOONGARCH64
+    __sync_synchronize();
+#endif
+}
+
+/*++
+Function:
+InterlockedAdd
+
+The InterlockedAdd function adds the value of the specified variable
+with another specified value. The function prevents more than one thread
+from using the same variable simultaneously.
+
+Parameters
+
+lpAddend
+[in/out] Pointer to the variable to add.
+
+lpAddend
+[in] The value to add.
+
+Return Values
+
+The return value is the resulting added value.
+--*/
+EXTERN_C
+PALIMPORT
+inline
+LONG
+PALAPI
+InterlockedAdd(
+    IN OUT LONG volatile *lpAddend,
+    IN LONG value)
+{
+    LONG result = __sync_add_and_fetch(lpAddend, value);
+    PAL_ArmInterlockedOperationBarrier();
+    return result;
+}
+
+EXTERN_C
+PALIMPORT
+inline
+LONGLONG
+PALAPI
+InterlockedAdd64(
+    IN OUT LONGLONG volatile *lpAddend,
+    IN LONGLONG value)
+{
+    LONGLONG result = __sync_add_and_fetch(lpAddend, value);
+    PAL_ArmInterlockedOperationBarrier();
+    return result;
 }
 
 /*++
@@ -3600,6 +3790,8 @@ YieldProcessor()
         "nop");
 #elif defined(HOST_ARM) || defined(HOST_ARM64)
     __asm__ __volatile__( "yield");
+#elif defined(HOST_LOONGARCH64)
+    __asm__ volatile( "dbar 0;  \n");
 #else
     return;
 #endif
@@ -3774,9 +3966,6 @@ typedef POSVERSIONINFOEXA POSVERSIONINFOEX;
 typedef LPOSVERSIONINFOEXA LPOSVERSIONINFOEX;
 #endif
 
-#define IMAGE_FILE_MACHINE_I386              0x014c
-#define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
-
 typedef struct _SYSTEM_INFO {
     WORD wProcessorArchitecture_PAL_Undefined;
     WORD wReserved_PAL_Undefined; // NOTE: diff from winbase.h - no obsolete dwOemId union
@@ -3881,8 +4070,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define wcspbrk       PAL_wcspbrk
 #define wcscmp        PAL_wcscmp
 #define wcsncpy       PAL_wcsncpy
-#define wcstok        PAL_wcstok
-#define wcscspn       PAL_wcscspn
 #define realloc       PAL_realloc
 #define fopen         PAL_fopen
 #define strtok        PAL_strtok
@@ -4072,8 +4259,6 @@ PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcschr(const WCHAR *, WCHAR);
 PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcsrchr(const WCHAR *, WCHAR);
 PALIMPORT WCHAR _WConst_return * __cdecl PAL_wcspbrk(const WCHAR *, const WCHAR *);
 PALIMPORT DLLEXPORT WCHAR _WConst_return * __cdecl PAL_wcsstr(const WCHAR *, const WCHAR *);
-PALIMPORT WCHAR * __cdecl PAL_wcstok(WCHAR *, const WCHAR *);
-PALIMPORT DLLEXPORT size_t __cdecl PAL_wcscspn(const WCHAR *, const WCHAR *);
 PALIMPORT int __cdecl PAL_swprintf(WCHAR *, const WCHAR *, ...);
 PALIMPORT int __cdecl PAL_vswprintf(WCHAR *, const WCHAR *, va_list);
 PALIMPORT int __cdecl PAL_swscanf(const WCHAR *, const WCHAR *, ...);
@@ -4189,6 +4374,7 @@ PALIMPORT double __cdecl sinh(double);
 PALIMPORT double __cdecl sqrt(double);
 PALIMPORT double __cdecl tan(double);
 PALIMPORT double __cdecl tanh(double);
+PALIMPORT double __cdecl trunc(double);
 
 PALIMPORT int __cdecl _finitef(float);
 PALIMPORT int __cdecl _isnanf(float);
@@ -4221,6 +4407,7 @@ PALIMPORT float __cdecl sinhf(float);
 PALIMPORT float __cdecl sqrtf(float);
 PALIMPORT float __cdecl tanf(float);
 PALIMPORT float __cdecl tanhf(float);
+PALIMPORT float __cdecl truncf(float);
 #endif // !PAL_STDCPP_COMPAT
 
 #ifndef PAL_STDCPP_COMPAT
@@ -4849,10 +5036,6 @@ public:
                                             catch (...) {}
 
 #define PAL_CPP_ENDTRY                  }
-
-#ifdef _MSC_VER
-#pragma warning(disable:4611) // interaction between '_setjmp' and C++ object destruction is non-portable
-#endif
 
 #define PAL_TRY_FOR_DLLMAIN(ParamType, paramDef, paramRef, _reason) PAL_TRY(ParamType, paramDef, paramRef)
 

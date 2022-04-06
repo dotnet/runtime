@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
 
@@ -30,9 +31,18 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Can the converter have $id metadata.
         /// </summary>
-        internal virtual bool CanHaveIdMetadata => false;
+        internal virtual bool CanHaveMetadata => false;
 
+        /// <summary>
+        /// The converter supports polymorphic writes; only reserved for System.Object types.
+        /// </summary>
         internal bool CanBePolymorphic { get; set; }
+
+        /// <summary>
+        /// The serializer must read ahead all contents of the next JSON value
+        /// before calling into the converter for deserialization.
+        /// </summary>
+        internal bool RequiresReadAhead { get; set; }
 
         /// <summary>
         /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
@@ -83,10 +93,8 @@ namespace System.Text.Json.Serialization
         /// </summary>
         internal abstract object? ReadCoreAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state);
 
-        // For polymorphic cases, the concrete type to create.
-        internal virtual Type RuntimeType => TypeToConvert;
 
-        internal bool ShouldFlush(Utf8JsonWriter writer, ref WriteStack state)
+        internal static bool ShouldFlush(Utf8JsonWriter writer, ref WriteStack state)
         {
             // If surpassed flush threshold then return false which will flush stream.
             return (state.FlushThreshold > 0 && writer.BytesPending > state.FlushThreshold);
@@ -114,13 +122,15 @@ namespace System.Text.Json.Serialization
 
         internal ConstructorInfo? ConstructorInfo { get; set; }
 
-        internal virtual bool RequiresDynamicMemberAccessors { get; }
-
-        internal virtual void Initialize(JsonSerializerOptions options, JsonTypeInfo? jsonTypeInfo = null) { }
+        /// <summary>
+        /// Used for hooking custom configuration to a newly created associated JsonTypeInfo instance.
+        /// </summary>
+        internal virtual void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options) { }
 
         /// <summary>
-        /// Creates the instance and assigns it to state.Current.ReturnValue.
+        /// Additional reflection-specific configuration required by certain collection converters.
         /// </summary>
-        internal virtual void CreateInstanceForReferenceResolver(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options) { }
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        internal virtual void ConfigureJsonTypeInfoUsingReflection(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options) { }
     }
 }

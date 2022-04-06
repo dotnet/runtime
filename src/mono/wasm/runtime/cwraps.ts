@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import {
-    CharPtr, CharPtrPtr, Int32Ptr,
+    assert,
     MonoArray, MonoAssembly, MonoClass,
     MonoMethod, MonoObject, MonoString,
-    MonoType, VoidPtr
+    MonoType
 } from "./types";
 import { Module } from "./imports";
+import { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr } from "./types/emscripten";
 
 const fn_signatures: [ident: string, returnType: string | null, argTypes?: string[], opts?: any][] = [
     // MONO
@@ -21,13 +22,14 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_parse_runtime_options", null, ["number", "number"]],
     ["mono_wasm_strdup", "number", ["string"]],
     ["mono_background_exec", null, []],
-    ["mono_set_timeout_exec", null, ["number"]],
+    ["mono_set_timeout_exec", null, []],
     ["mono_wasm_load_icu_data", "number", ["number"]],
     ["mono_wasm_get_icudt_name", "string", ["string"]],
     ["mono_wasm_add_assembly", "number", ["string", "number", "number"]],
     ["mono_wasm_add_satellite_assembly", "void", ["string", "string", "number", "number"]],
     ["mono_wasm_load_runtime", null, ["string", "number"]],
     ["mono_wasm_exit", null, ["number"]],
+    ["mono_wasm_change_debugger_log_level", "void", ["number"]],
 
     // BINDING
     ["mono_wasm_get_corlib", "number", []],
@@ -82,12 +84,13 @@ export interface t_Cwraps {
     mono_wasm_strdup(value: string): number;
     mono_wasm_parse_runtime_options(length: number, argv: VoidPtr): void;
     mono_background_exec(): void;
-    mono_set_timeout_exec(id: number): void;
+    mono_set_timeout_exec(): void;
     mono_wasm_load_icu_data(offset: VoidPtr): number;
     mono_wasm_get_icudt_name(name: string): string;
     mono_wasm_add_assembly(name: string, data: VoidPtr, size: number): number;
     mono_wasm_add_satellite_assembly(name: string, culture: string, data: VoidPtr, size: number): void;
     mono_wasm_load_runtime(unused: string, debug_level: number): void;
+    mono_wasm_change_debugger_log_level(value: number): void;
 
     // BINDING
     mono_wasm_get_corlib(): MonoAssembly;
@@ -97,7 +100,7 @@ export interface t_Cwraps {
     mono_wasm_find_corlib_type(namespace: string, name: string): MonoType;
     mono_wasm_assembly_find_type(assembly: MonoAssembly, namespace: string, name: string): MonoType;
     mono_wasm_assembly_find_method(klass: MonoClass, name: string, args: number): MonoMethod;
-    mono_wasm_invoke_method(method: MonoMethod, this_arg: MonoObject, params: VoidPtr, out_exc: MonoObject): MonoObject;
+    mono_wasm_invoke_method(method: MonoMethod, this_arg: MonoObject, params: VoidPtr, out_exc: VoidPtr): MonoObject;
     mono_wasm_string_get_utf8(str: MonoString): CharPtr;
     mono_wasm_string_from_utf16(str: CharPtr, len: number): MonoString;
     mono_wasm_get_obj_type(str: MonoObject): number;
@@ -142,3 +145,11 @@ for (const sig of fn_signatures) {
 }
 
 export default wrapped_c_functions;
+export function wrap_c_function(name: string): Function {
+    const wf: any = wrapped_c_functions;
+    const sig = fn_signatures.find(s => s[0] === name);
+    assert(sig, () => `Function ${name} not found`);
+    const fce = Module.cwrap(sig[0], sig[1], sig[2], sig[3]);
+    wf[sig[0]] = fce;
+    return fce;
+}

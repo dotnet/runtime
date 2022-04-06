@@ -5,6 +5,8 @@
 #include "pal_compiler.h"
 #include "pal_crypto_types.h"
 
+extern int g_x509_ocsp_index;
+
 /*
 These values should be kept in sync with System.Security.Cryptography.X509Certificates.X509RevocationFlag.
 */
@@ -266,11 +268,6 @@ Returns the interior pointer to the "untrusted" certificates collection for this
 PALEXPORT X509Stack* CryptoNative_X509StoreCtxGetSharedUntrusted(X509_STORE_CTX* ctx);
 
 /*
-Returns the interior pointer to the target certificate for an X509 certificate chain
-*/
-PALEXPORT X509* CryptoNative_X509StoreCtxGetTargetCert(X509_STORE_CTX* ctx);
-
-/*
 Shims the X509_STORE_CTX_get_error method.
 */
 PALEXPORT int32_t CryptoNative_X509StoreCtxGetError(X509_STORE_CTX* ctx);
@@ -385,6 +382,11 @@ Build an OCSP request appropriate for the end-entity certificate using the issue
 determined by the chain in storeCtx.
 */
 PALEXPORT OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx, int chainDepth);
+
+/*
+Checks if the target certificate has an appropriate stapled OCSP response.
+*/
+PALEXPORT int32_t CryptoNative_X509ChainHasStapledOcsp(X509_STORE_CTX* storeCtx);
 
 /*
 Determine if the OCSP response is acceptable, and if acceptable report the status and

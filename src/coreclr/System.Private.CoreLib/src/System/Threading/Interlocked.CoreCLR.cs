@@ -4,7 +4,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Threading
 {
@@ -226,8 +225,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void ReadMemoryBarrier();
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "Interlocked_MemoryBarrierProcessWide")]
-        private static extern void _MemoryBarrierProcessWide();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Interlocked_MemoryBarrierProcessWide")]
+        private static partial void _MemoryBarrierProcessWide();
 
         /// <summary>Provides a process-wide memory barrier that ensures that reads and writes from any CPU cannot move across the barrier.</summary>
         public static void MemoryBarrierProcessWide() => _MemoryBarrierProcessWide();

@@ -22,12 +22,8 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public AtomPub10ServiceDocumentFormatter(Type documentTypeToCreate) : base()
+        public AtomPub10ServiceDocumentFormatter(Type documentTypeToCreate!!) : base()
         {
-            if (documentTypeToCreate == null)
-            {
-                throw new ArgumentNullException(nameof(documentTypeToCreate));
-            }
             if (!typeof(ServiceDocument).IsAssignableFrom(documentTypeToCreate))
             {
                 throw new ArgumentException(SR.Format(SR.InvalidObjectTypePassed, nameof(documentTypeToCreate), nameof(ServiceDocument)), nameof(documentTypeToCreate));
@@ -45,34 +41,20 @@ namespace System.ServiceModel.Syndication
 
         public override string Version => App10Constants.Namespace;
 
-        public override bool CanRead(XmlReader reader)
+        public override bool CanRead(XmlReader reader!!)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             return reader.IsStartElement(App10Constants.Service, App10Constants.Namespace);
         }
 
         XmlSchema IXmlSerializable.GetSchema() => null;
 
-        void IXmlSerializable.ReadXml(XmlReader reader)
+        void IXmlSerializable.ReadXml(XmlReader reader!!)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             ReadDocument(reader);
         }
 
-        void IXmlSerializable.WriteXml(XmlWriter writer)
+        void IXmlSerializable.WriteXml(XmlWriter writer!!)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
             if (Document == null)
             {
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
@@ -81,13 +63,8 @@ namespace System.ServiceModel.Syndication
             WriteDocument(writer);
         }
 
-        public override void ReadFrom(XmlReader reader)
+        public override void ReadFrom(XmlReader reader!!)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
             reader.MoveToContent();
             if (!CanRead(reader))
             {
@@ -97,12 +74,8 @@ namespace System.ServiceModel.Syndication
             ReadDocument(reader);
         }
 
-        public override void WriteTo(XmlWriter writer)
+        public override void WriteTo(XmlWriter writer!!)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
             if (Document == null)
             {
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);

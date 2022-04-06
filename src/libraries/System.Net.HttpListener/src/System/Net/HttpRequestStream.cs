@@ -15,9 +15,9 @@ namespace System.Net
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "buffer.Length:" + buffer.Length + " count:" + count + " offset:" + offset);
-
             ValidateBufferArguments(buffer, offset, count);
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "buffer.Length:" + buffer.Length + " count:" + count + " offset:" + offset);
 
             if (count == 0 || _closed)
             {
@@ -29,9 +29,9 @@ namespace System.Net
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "buffer.Length:" + buffer.Length + " count:" + count + " offset:" + offset);
-
             ValidateBufferArguments(buffer, offset, count);
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "buffer.Length:" + buffer.Length + " count:" + count + " offset:" + offset);
 
             return BeginReadCore(buffer, offset, count, callback, state)!;
         }

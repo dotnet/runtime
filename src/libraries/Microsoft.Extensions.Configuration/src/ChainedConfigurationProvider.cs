@@ -19,12 +19,8 @@ namespace Microsoft.Extensions.Configuration
         /// Initialize a new instance from the source configuration.
         /// </summary>
         /// <param name="source">The source configuration.</param>
-        public ChainedConfigurationProvider(ChainedConfigurationSource source)
+        public ChainedConfigurationProvider(ChainedConfigurationSource source!!)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
             if (source.Configuration == null)
             {
                 throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "source.Configuration"), nameof(source));

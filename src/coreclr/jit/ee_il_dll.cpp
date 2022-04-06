@@ -332,23 +332,14 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
 
 #ifdef FEATURE_SIMD
 #if defined(TARGET_XARCH)
-    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD) &&
+    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) &&
         jitFlags.GetInstructionSetFlags().HasInstructionSet(InstructionSet_AVX2))
     {
-        // Since the ISAs can be disabled individually and since they are hierarchical in nature (that is
-        // disabling SSE also disables SSE2 through AVX2), we need to check each ISA in the hierarchy to
-        // ensure that AVX2 is actually supported. Otherwise, we will end up getting asserts downstream.
-        if ((JitConfig.EnableAVX2() != 0) && (JitConfig.EnableAVX() != 0) && (JitConfig.EnableSSE42() != 0) &&
-            (JitConfig.EnableSSE41() != 0) && (JitConfig.EnableSSSE3() != 0) && (JitConfig.EnableSSE3_4() != 0) &&
-            (JitConfig.EnableSSE3() != 0) && (JitConfig.EnableSSE2() != 0) && (JitConfig.EnableSSE() != 0) &&
-            (JitConfig.EnableHWIntrinsic() != 0))
+        if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
         {
-            if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
-            {
-                JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 32\n");
-            }
-            return 32;
+            JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 32\n");
         }
+        return 32;
     }
 #endif // defined(TARGET_XARCH)
     if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
@@ -465,30 +456,36 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
     {
         argSize = genTypeSize(argType);
     }
-    const unsigned argAlignment       = eeGetArgAlignment(argType, (hfaType == TYP_FLOAT));
-    const unsigned argSizeWithPadding = roundUp(argSize, argAlignment);
-    return argSizeWithPadding;
+
+    const unsigned argSizeAlignment = eeGetArgSizeAlignment(argType, (hfaType == TYP_FLOAT));
+    const unsigned alignedArgSize   = roundUp(argSize, argSizeAlignment);
+    return alignedArgSize;
 
 #endif
 }
 
 //------------------------------------------------------------------------
-// eeGetArgAlignment: Return arg passing alignment for the given type.
+// eeGetArgSizeAlignment: Return alignment for an argument size.
 //
 // Arguments:
 //   type - the argument type
 //   isFloatHfa - is it an HFA<float> type
 //
 // Return value:
-//   the required alignment in bytes.
+//   the required argument size alignment in bytes.
 //
 // Notes:
-//   It currently doesn't return smaller than required alignment for arm32 (4 bytes for double and int64)
-//   but it does not lead to issues because its alignment requirements are satisfied in other code parts.
-//   TODO: fix this function and delete the other code that is handling this.
+//   Usually values passed on the stack are aligned to stack slot (i.e. pointer size), except for
+//   on macOS ARM ABI that allows packing multiple args into a single stack slot.
+//
+//   The arg size alignment can be different from the normal alignment. One
+//   example is on arm32 where a struct containing a double and float can
+//   explicitly have size 12 but with alignment 8, in which case the size is
+//   aligned to 4 (the stack slot size) while frame layout must still handle
+//   aligning the argument to 8.
 //
 // static
-unsigned Compiler::eeGetArgAlignment(var_types type, bool isFloatHfa)
+unsigned Compiler::eeGetArgSizeAlignment(var_types type, bool isFloatHfa)
 {
     if (compMacOsArm64Abi())
     {
@@ -1373,6 +1370,8 @@ struct FilterSuperPMIExceptionsParam_ee_il
     CORINFO_CLASS_HANDLE  clazz;
     const char**          classNamePtr;
     const char*           fieldOrMethodOrClassNamePtr;
+    char16_t*             classNameWidePtr;
+    unsigned              classSize;
     EXCEPTION_POINTERS    exceptionPointers;
 };
 
@@ -1482,6 +1481,93 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
 #endif // DEBUG || FEATURE_JIT_METHOD_PERF
 
 #ifdef DEBUG
+
+//------------------------------------------------------------------------
+// eeTryGetClassSize: wraps getClassSize but if doing SuperPMI replay
+// and the value isn't found, use a bogus size.
+//
+// NOTE: This is only allowed for JitDump output.
+//
+// Return value:
+//      Either the actual class size, or (unsigned)-1 if SuperPMI didn't have it.
+//
+unsigned Compiler::eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd)
+{
+    FilterSuperPMIExceptionsParam_ee_il param;
+
+    param.pThis    = this;
+    param.pJitInfo = &info;
+    param.clazz    = clsHnd;
+
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
+            pParam->classSize = pParam->pJitInfo->compCompHnd->getClassSize(pParam->clazz);
+        },
+        &param);
+
+    if (!success)
+    {
+        param.classSize = (unsigned)-1; // Use the maximum unsigned value as the size
+    }
+    return param.classSize;
+}
+
+//------------------------------------------------------------------------
+// eeGetShortClassName: wraps appendClassName to provide functionality
+// similar to getClassName(), but returns a class name that is shortened,
+// not using full assembly info.
+//
+// Arguments:
+//   clsHnd - the class handle to get the type name of
+//
+// Return value:
+//   string class name. Note: unlike eeGetClassName/getClassName, this string is
+//   allocated from the JIT heap, so care should possibly be taken to avoid leaking it.
+//   It returns a char16_t string, since that's what appendClassName returns.
+//
+const char16_t* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
+{
+    FilterSuperPMIExceptionsParam_ee_il param;
+
+    param.pThis    = this;
+    param.pJitInfo = &info;
+    param.clazz    = clsHnd;
+
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
+            int            len        = 0;
+            constexpr bool fNamespace = true;
+            constexpr bool fFullInst  = false;
+            constexpr bool fAssembly  = false;
+
+            // Warning: crossgen2 doesn't fully implement the `appendClassName` API.
+            // We need to pass size zero, get back the actual buffer size required, allocate that space,
+            // and call the API again to get the full string.
+            int cchStrLen = pParam->pJitInfo->compCompHnd->appendClassName(nullptr, &len, pParam->clazz, fNamespace,
+                                                                           fFullInst, fAssembly);
+
+            size_t cchBufLen         = (size_t)cchStrLen + /* null terminator */ 1;
+            pParam->classNameWidePtr = pParam->pThis->getAllocator(CMK_DebugOnly).allocate<char16_t>(cchBufLen);
+            char16_t* pbuf           = pParam->classNameWidePtr;
+            len                      = (int)cchBufLen;
+
+            int cchResultStrLen = pParam->pJitInfo->compCompHnd->appendClassName(&pbuf, &len, pParam->clazz, fNamespace,
+                                                                                 fFullInst, fAssembly);
+            noway_assert(cchStrLen == cchResultStrLen);
+            noway_assert(pParam->classNameWidePtr[cchResultStrLen] == 0);
+        },
+        &param);
+
+    if (!success)
+    {
+        const char16_t substituteClassName[] = u"hackishClassName";
+        size_t         cchLen                = ArrLen(substituteClassName);
+        param.classNameWidePtr               = getAllocator(CMK_DebugOnly).allocate<char16_t>(cchLen);
+        memcpy(param.classNameWidePtr, substituteClassName, cchLen * sizeof(char16_t));
+    }
+
+    return param.classNameWidePtr;
+}
 
 const WCHAR* Compiler::eeGetCPString(size_t strHandle)
 {

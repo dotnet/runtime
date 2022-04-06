@@ -885,7 +885,7 @@ namespace System.Runtime.Serialization
                 Read(xmlReader);
             }
 
-            while ((nodeType = xmlReader.MoveToContent()) != XmlNodeType.EndElement)
+            while (xmlReader.MoveToContent() != XmlNodeType.EndElement)
             {
                 if (xmlReader.EOF)
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile));
@@ -983,7 +983,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private bool IsContentNode(XmlNodeType nodeType)
+        private static bool IsContentNode(XmlNodeType nodeType)
         {
             switch (nodeType)
             {

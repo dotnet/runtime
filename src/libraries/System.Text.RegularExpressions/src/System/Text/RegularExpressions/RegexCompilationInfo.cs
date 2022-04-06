@@ -47,16 +47,7 @@ namespace System.Text.RegularExpressions
             [MemberNotNull(nameof(_name))]
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(Name));
-                }
-
-                if (value.Length == 0)
-                {
-                    throw new ArgumentException(SR.Format(SR.InvalidEmptyArgument, nameof(Name)), nameof(Name));
-                }
-
+                ArgumentException.ThrowIfNullOrEmpty(value, nameof(Name));
                 _name = value;
             }
         }
@@ -65,7 +56,11 @@ namespace System.Text.RegularExpressions
         {
             get => _nspace;
             [MemberNotNull(nameof(_nspace))]
-            set => _nspace = value ?? throw new ArgumentNullException(nameof(Namespace));
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value, nameof(Namespace));
+                _nspace = value;
+            }
         }
 
         public RegexOptions Options { get; set; }
@@ -74,7 +69,11 @@ namespace System.Text.RegularExpressions
         {
             get => _pattern;
             [MemberNotNull(nameof(_pattern))]
-            set => _pattern = value ?? throw new ArgumentNullException(nameof(Pattern));
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value, nameof(Pattern));
+                _pattern = value;
+            }
         }
     }
 }

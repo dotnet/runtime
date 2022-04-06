@@ -240,7 +240,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             return !Log.HasLoggedErrors;
         }
 
-        private void EnsureWritable(string file)
+        private static void EnsureWritable(string file)
         {
             if (File.Exists(file))
             {
@@ -404,8 +404,6 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             var linksElement = new XElement(s_dgmlns + "Links");
             doc.Root.Add(nodesElement);
             doc.Root.Add(linksElement);
-
-            var nodeIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var runtimeDescription in graph.Runtimes.Values)
             {

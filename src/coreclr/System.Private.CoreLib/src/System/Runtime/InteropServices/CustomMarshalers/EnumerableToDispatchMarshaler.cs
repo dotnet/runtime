@@ -32,22 +32,14 @@ namespace System.Runtime.InteropServices.CustomMarshalers
             return -1;
         }
 
-        public IntPtr MarshalManagedToNative(object ManagedObj)
+        public IntPtr MarshalManagedToNative(object ManagedObj!!)
         {
-            if (ManagedObj == null)
-            {
-                throw new ArgumentNullException(nameof(ManagedObj));
-            }
-
             return Marshal.GetComInterfaceForObject<object, IEnumerable>(ManagedObj);
         }
 
         public object MarshalNativeToManaged(IntPtr pNativeData)
         {
-            if (pNativeData == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(pNativeData));
-            }
+            ArgumentNullException.ThrowIfNull(pNativeData);
 
             object comObject = Marshal.GetObjectForIUnknown(pNativeData);
 

@@ -361,13 +361,8 @@ namespace System.Security.AccessControl
 
         #region Constructors
 
-        public Privilege(string privilegeName)
+        public Privilege(string privilegeName!!)
         {
-            if (privilegeName == null)
-            {
-                throw new ArgumentNullException(nameof(privilegeName));
-            }
-
             this.luid = LuidFromPrivilege(privilegeName);
         }
         #endregion

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BaseRateLimiterTests.cs" />
+    <Compile Include="ConcurrencyLimiterTests.cs" />
+    <Compile Include="PartitionedRateLimiterTests.cs" />
+    <Compile Include="TokenBucketRateLimiterTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Threading.RateLimiting.csproj" />
+  </ItemGroup>
+</Project>

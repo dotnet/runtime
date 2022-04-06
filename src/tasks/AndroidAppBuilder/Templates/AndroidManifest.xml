@@ -9,7 +9,7 @@
   <uses-permission a:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
   <application a:label="%PackageName%" 
                a:largeHeap="true">
-    <activity a:name="net.dot.MainActivity">
+    <activity a:name="net.dot.MainActivity" a:exported="true">
       <intent-filter>
         <category a:name="android.intent.category.LAUNCHER"/>
         <action a:name="android.intent.action.MAIN"/>

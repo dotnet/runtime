@@ -205,7 +205,6 @@ namespace System.IO.Tests
         protected override int BufferSize => 10;
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     [SkipOnPlatform(TestPlatforms.Browser, "lots of operations aren't supported on browser")] // copied from StreamConformanceTests base class due to https://github.com/xunit/xunit/issues/2186
     public class UnbufferedAsyncFileStreamStandaloneConformanceTests : FileStreamStandaloneConformanceTests
     {
@@ -218,7 +217,6 @@ namespace System.IO.Tests
 #endif
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     [SkipOnPlatform(TestPlatforms.Browser, "lots of operations aren't supported on browser")] // copied from StreamConformanceTests base class due to https://github.com/xunit/xunit/issues/2186
     public class BufferedAsyncFileStreamStandaloneConformanceTests : FileStreamStandaloneConformanceTests
     {
@@ -252,7 +250,7 @@ namespace System.IO.Tests
     {
         protected override async Task<StreamPair> CreateConnectedStreamsAsync()
         {
-            string name = FileSystemTest.GetNamedPipeServerStreamName();
+            string name = GetNamedPipeServerStreamName();
 
             var server = new NamedPipeServerStream(name, PipeDirection.In);
             var client = new NamedPipeClientStream(".", name, PipeDirection.Out);

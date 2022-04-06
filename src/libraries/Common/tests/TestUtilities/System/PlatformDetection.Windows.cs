@@ -56,7 +56,12 @@ namespace System
         // >= Windows 10 20H1 Update
         public static bool IsWindows10Version2004OrGreater => IsWindowsVersionOrLater(10, 0, 19041);
 
-        public static bool IsWindows10Version2004Build19573OrGreater => IsWindowsVersionOrLater(10, 0, 19573);
+        // WinHTTP update
+        public static bool IsWindows10Version19573OrGreater => IsWindowsVersionOrLater(10, 0, 19573);
+
+        // Windows Server 2022
+        public static bool IsWindows10Version20348OrGreater => IsWindowsVersionOrLater(10, 0, 20348);
+
 
         // Windows 11 aka 21H2
         public static bool IsWindows10Version22000OrGreater => IsWindowsVersionOrLater(10, 0, 22000);
@@ -140,8 +145,9 @@ namespace System
         private const int PRODUCT_HOME_PREMIUM = 0x00000003;
         private const int PRODUCT_HOME_PREMIUM_N = 0x0000001A;
 
-        [DllImport("kernel32.dll", SetLastError = false)]
-        private static extern bool GetProductInfo(
+        [LibraryImport("kernel32.dll", SetLastError = false)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool GetProductInfo(
             int dwOSMajorVersion,
             int dwOSMinorVersion,
             int dwSpMajorVersion,
@@ -149,8 +155,8 @@ namespace System
             out int pdwReturnedProductType
         );
 
-        [DllImport("kernel32.dll", ExactSpelling = true)]
-        private static extern int GetCurrentApplicationUserModelId(ref uint applicationUserModelIdLength, byte[] applicationUserModelId);
+        [LibraryImport("kernel32.dll")]
+        private static partial int GetCurrentApplicationUserModelId(ref uint applicationUserModelIdLength, byte[] applicationUserModelId);
 
         private static volatile Version s_windowsVersionObject;
         internal static Version GetWindowsVersionObject()
@@ -234,6 +240,10 @@ namespace System
                 return s_isInAppContainer == 1;
             }
         }
+
+        public static bool CanRunImpersonatedTests => PlatformDetection.IsNotWindowsNanoServer && PlatformDetection.IsWindowsAndElevated;
+
+        public static bool IsWindowsX86OrX64 => PlatformDetection.IsWindows && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process);
 
         private static int s_isWindowsElevated = -1;
         public static bool IsWindowsAndElevated

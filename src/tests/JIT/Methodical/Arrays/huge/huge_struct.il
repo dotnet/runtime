@@ -19,7 +19,7 @@
            
   
 }
-.assembly 'test'
+.assembly 'huge_struct'
 {
 
 
@@ -27,7 +27,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'test.exe'
 .namespace JitTest
 {
   .class value private auto ansi sealed TestStruct extends [mscorlib]System.ValueType

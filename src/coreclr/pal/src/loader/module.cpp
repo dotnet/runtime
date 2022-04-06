@@ -30,7 +30,6 @@ SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do
 #include "pal/file.h"
 #include "pal/utils.h"
 #include "pal/init.h"
-#include "pal/modulename.h"
 #include "pal/environ.h"
 #include "pal/virtual.h"
 #include "pal/map.hpp"
@@ -46,6 +45,8 @@ SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #include <mach-o/loader.h>
+#else
+#include <link.h>
 #endif // __APPLE__
 
 #include <sys/types.h>
@@ -54,6 +55,8 @@ SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do
 #if HAVE_GNU_LIBNAMES_H
 #include <gnu/lib-names.h>
 #endif
+
+#include <algorithm>
 
 using namespace CorUnix;
 
@@ -338,9 +341,10 @@ GetProcAddress(
         /* if we don't know the module's full name yet, this is our chance to obtain it */
         if (!module->lib_name && module->dl_handle)
         {
-            const char* libName = PAL_dladdr((LPVOID)ProcAddress);
-            if (libName)
+            Dl_info dl_info;
+            if (dladdr((LPVOID)ProcAddress, &dl_info) != 0)
             {
+                const char* libName = dl_info.dli_fname;
                 module->lib_name = UTIL_MBToWC_Alloc(libName, -1);
                 if (nullptr == module->lib_name)
                 {
@@ -351,6 +355,10 @@ GetProcAddress(
                     TRACE("Saving full path of module %p as %s\n",
                           module, libName);
                 }
+            }
+            else
+            {
+                TRACE("GetProcAddress: dladdr() call failed!\n");
             }
         }
     }
@@ -912,6 +920,112 @@ PAL_GetSymbolModuleBase(PVOID symbol)
     PERF_EXIT(PAL_GetPalModuleBase);
     return retval;
 }
+
+struct CopyModuleDataParam
+{
+    uint8_t* destination_buffer_start;
+    uint8_t* destination_buffer_end;
+    uint8_t* module_base;
+    int result;
+};
+
+void handle_image_range(uint8_t* source_start, size_t size, struct CopyModuleDataParam* param)
+{
+    uint8_t* source_end = source_start + size;
+    if (param->destination_buffer_start != NULL)
+    {
+        size_t offset = source_start - param->module_base;
+        uint8_t* destination_start = ((uint8_t*)(param->destination_buffer_start)) + offset;
+        uint8_t* destination_end   = destination_start + size;
+        _ASSERTE(destination_end <= param->destination_buffer_end);
+        if (destination_end <= param->destination_buffer_end)
+        {
+            memcpy(destination_start, source_start, size);
+        }
+    }
+    param->result = std::max(param->result, (int)(source_end - param->module_base));
+}
+
+#ifdef __APPLE__
+PALIMPORT
+int
+PALAPI
+PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destinationBufferEnd)
+{
+    CopyModuleDataParam param;
+    param.module_base = (uint8_t*)moduleBase;
+    param.destination_buffer_start = (uint8_t*)destinationBufferStart;
+    param.destination_buffer_end = (uint8_t*)destinationBufferEnd;
+    uint32_t count = _dyld_image_count();
+    for (uint32_t i = 0; i < count; i++)
+    {
+        const struct mach_header * header = _dyld_get_image_header(i);
+        if (PAL_GetSymbolModuleBase((void*)header) == moduleBase)
+        {
+            intptr_t slide = _dyld_get_image_vmaddr_slide(i);
+
+            struct load_command * cmd = (struct load_command * )((char * ) header + sizeof(struct mach_header));
+            if(header->magic == MH_MAGIC_64)
+            {
+                cmd = (struct load_command*)((char *)header + sizeof(struct mach_header_64));
+            }
+
+            for (uint32_t j = 0; j < header -> ncmds; j++)
+            {
+                if (cmd -> cmd == LC_SEGMENT)
+                {
+                    struct segment_command * seg = (struct segment_command *) cmd;
+                    size_t size = seg->vmsize;
+                    uint8_t* source_start = (uint8_t*)(seg->vmaddr + slide);
+                    handle_image_range(source_start, size, &param);
+                }
+                else if (cmd -> cmd == LC_SEGMENT_64)
+                {
+                    struct segment_command_64 * seg = (struct segment_command_64 * ) cmd;
+                    size_t size = seg->vmsize;
+                    uint8_t* source_start = (uint8_t*)(seg->vmaddr + slide);
+                    handle_image_range(source_start, size, &param);
+                }
+                cmd = (struct load_command*)((uint8_t*)cmd + cmd->cmdsize);
+            }
+        }
+    }
+    return param.result;
+}
+#else
+static int CopyModuleDataCallback(struct dl_phdr_info *info, size_t size, void *data)
+{
+    CopyModuleDataParam* param = (CopyModuleDataParam*)data;
+    if (info->dlpi_addr == (size_t)param->module_base)
+    {
+        for (int j = 0; j < info->dlpi_phnum; j++)
+        {
+            if (info->dlpi_phdr[j].p_type == PT_LOAD)
+            {
+                Elf32_Word size = info->dlpi_phdr[j].p_memsz;
+                uint8_t* source_start = (uint8_t*)(info->dlpi_addr + info->dlpi_phdr[j].p_vaddr);
+                handle_image_range(source_start, size, param);
+            }
+        }
+        return 1;
+    }
+    return 0;
+}
+
+PALIMPORT
+int
+PALAPI
+PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destinationBufferEnd)
+{
+    CopyModuleDataParam param;
+    param.destination_buffer_start = (uint8_t*)destinationBufferStart;
+    param.destination_buffer_end = (uint8_t*)destinationBufferEnd;
+    param.module_base = (uint8_t*)moduleBase;
+    param.result = 0;
+    dl_iterate_phdr(CopyModuleDataCallback, &param);
+    return param.result;
+}
+#endif
 
 /*++
     PAL_GetLoadLibraryError

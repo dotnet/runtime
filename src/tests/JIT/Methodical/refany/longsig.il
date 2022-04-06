@@ -10,11 +10,10 @@
 .assembly extern mscorlib
 {
 }
-.assembly format// as "format"
+.assembly 'longsig'// as "format"
 {
 }
 .assembly extern xunit.core {}
-.module format.exe
 .namespace JitTest
 {
   .class public auto ansi sealed PlatformID

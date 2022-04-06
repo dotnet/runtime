@@ -22,12 +22,8 @@ namespace System.Xml
 
         internal abstract void WriteChars(char[] chars, int index, int count);
 
-        internal void Encode(byte[] buffer, int index, int count)
+        internal void Encode(byte[] buffer!!, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index));

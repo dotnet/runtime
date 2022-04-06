@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
@@ -183,13 +182,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private static bool CheckHostname(X509Certificate2 cert, string targetName)
         {
-            int value = CheckX509Hostname(cert.Handle, targetName, targetName.Length);
+            int value = Interop.Crypto.CheckX509Hostname(cert.Handle, targetName, targetName.Length);
             GC.KeepAlive(cert);
             Assert.InRange(value, 0, 1);
             return value != 0;
         }
-
-        [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "CryptoNative_CheckX509Hostname")]
-        private static extern int CheckX509Hostname(IntPtr x509, string hostname, int cchHostname);
     }
 }

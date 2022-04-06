@@ -24,14 +24,10 @@ namespace System.IO.Pipes
             {
                 throw new NotSupportedException(SR.NotSupported_AnonymousPipeUnidirectional);
             }
-            if (pipeHandleAsString == null)
-            {
-                throw new ArgumentNullException(nameof(pipeHandleAsString));
-            }
+            ArgumentNullException.ThrowIfNull(pipeHandleAsString);
 
             // Initialize SafePipeHandle from String and check if it's valid. First see if it's parseable
-            long result = 0;
-            bool parseable = long.TryParse(pipeHandleAsString, out result);
+            bool parseable = long.TryParse(pipeHandleAsString, out long result);
             if (!parseable)
             {
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(pipeHandleAsString));
@@ -54,10 +50,7 @@ namespace System.IO.Pipes
             {
                 throw new NotSupportedException(SR.NotSupported_AnonymousPipeUnidirectional);
             }
-            if (safePipeHandle == null)
-            {
-                throw new ArgumentNullException(nameof(safePipeHandle));
-            }
+            ArgumentNullException.ThrowIfNull(safePipeHandle);
             if (safePipeHandle.IsInvalid)
             {
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(safePipeHandle));

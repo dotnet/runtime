@@ -51,8 +51,8 @@ public unsafe class Program
             TestUnmanagedCallersOnlyViaUnmanagedCalli();
             TestPInvokeMarkedWithUnmanagedCallersOnly();
 
-            // Exception handling is only supported on Windows.
-            if (TestLibrary.Utilities.IsWindows)
+            // Exception handling is only supported on CoreCLR Windows.
+            if (TestLibrary.Utilities.IsWindows && !TestLibrary.Utilities.IsMonoRuntime)
             {
                 TestUnmanagedCallersOnlyValid_ThrowException();
                 TestUnmanagedCallersOnlyViaUnmanagedCalli_ThrowException();
@@ -205,6 +205,9 @@ public unsafe class Program
         int n = 12345;
         // Try invoking method
         Assert.Throws<InvalidProgramException>(() => { UnmanagedCallersOnlyDll.CallManagedProc((IntPtr)(delegate* unmanaged<bool, int>)&CallbackMethodNonBlittable, n); });
+        Assert.Throws<InvalidProgramException>(() => { UnmanagedCallersOnlyDll.CallManagedProc(UnmanagedCallersOnlyWithByRefs.GetWithByRefFunctionPointer(), n); });
+        Assert.Throws<InvalidProgramException>(() => { UnmanagedCallersOnlyDll.CallManagedProc(UnmanagedCallersOnlyWithByRefs.GetWithByRefInFunctionPointer(), n); });
+        Assert.Throws<InvalidProgramException>(() => { UnmanagedCallersOnlyDll.CallManagedProc(UnmanagedCallersOnlyWithByRefs.GetWithByRefOutFunctionPointer(), n); });
     }
 
     public static void NegativeTest_InstantiatedGenericArguments()

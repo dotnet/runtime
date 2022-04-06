@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -21,7 +21,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/LOAD/${TEST_LOAD}/g"  -e "s/OPCOD
   .ver  0:0:0:0
 }
 
-// VALIDITY CIL which breaks the ECMA-335 rules. 
+// VALIDITY CIL which breaks the ECMA-335 rules.
 // this CIL should fail verification by a conforming CLI verifier.
 
 .assembly extern mscorlib

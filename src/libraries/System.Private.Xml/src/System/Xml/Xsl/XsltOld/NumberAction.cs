@@ -471,7 +471,7 @@ namespace System.Xml.Xsl.XsltOld
             return false;
         }
 
-        private XPathNodeType BasicNodeType(XPathNodeType type)
+        private static XPathNodeType BasicNodeType(XPathNodeType type)
         {
             if (type == XPathNodeType.SignificantWhitespace || type == XPathNodeType.Whitespace)
             {
@@ -653,8 +653,6 @@ namespace System.Xml.Xsl.XsltOld
                         {
                             // 60-based Zodiak numbering begins with two characters
                             seq = NumberingSequence.Zodiac3;
-                            tokLen--;
-                            startLen++;
                         }
                         else
                         {

@@ -7,38 +7,10 @@ using Xunit;
 namespace System.Security.Cryptography.EcDiffieHellman.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64389", TestPlatforms.Windows)]
     public class ECDhKeyFileTests : ECKeyFileTests<ECDiffieHellman>
     {
-        protected override ECDiffieHellman CreateKey()
-        {
-            return ECDiffieHellmanFactory.Create();
-        }
-
-        protected override byte[] ExportECPrivateKey(ECDiffieHellman key)
-        {
-            return key.ExportECPrivateKey();
-        }
-
-        protected override bool TryExportECPrivateKey(ECDiffieHellman key, Span<byte> destination, out int bytesWritten)
-        {
-            return key.TryExportECPrivateKey(destination, out bytesWritten);
-        }
-
-        protected override void ImportECPrivateKey(ECDiffieHellman key, ReadOnlySpan<byte> source, out int bytesRead)
-        {
-            key.ImportECPrivateKey(source, out bytesRead);
-        }
-
-        protected override void ImportParameters(ECDiffieHellman key, ECParameters ecParameters)
-        {
-            key.ImportParameters(ecParameters);
-        }
-
-        protected override ECParameters ExportParameters(ECDiffieHellman key, bool includePrivate)
-        {
-            return key.ExportParameters(includePrivate);
-        }
-
+        protected override ECDiffieHellman CreateKey() => ECDiffieHellmanFactory.Create();
         protected override void Exercise(ECDiffieHellman key) => key.Exercise();
 
         protected override Func<ECDiffieHellman, byte[]> PublicKeyWriteArrayFunc { get; } =

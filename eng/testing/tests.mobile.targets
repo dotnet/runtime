@@ -6,7 +6,7 @@
     <PublishDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true' and '$(IsFunctionalTest)' == 'true'">$(AppBundleRoot)runonly\$(AssemblyName)</PublishDir>
     <BundleDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PublishDir)', 'AppBundle'))</BundleDir>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
-    
+
     <PublishingTestsRun>true</PublishingTestsRun>
     <BundleTestAppTargets>BundleTestAndroidApp</BundleTestAppTargets>
     <PublishTestAsSelfContainedDependsOn>Publish</PublishTestAsSelfContainedDependsOn>
@@ -36,7 +36,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <AdditionalXHarnessArguments>$(Configuration)</AdditionalXHarnessArguments>
     <AdditionalXHarnessArguments Condition="'$(ExpectedExitCode)' != ''">$(AdditionalXHarnessArguments) --expected-exit-code $(ExpectedExitCode)</AdditionalXHarnessArguments>
   </PropertyGroup>
 
@@ -52,12 +51,16 @@
     <AdditionalXHarnessArguments Condition="'$(XUnitClassName)' != ''">$(AdditionalXHarnessArguments) -- -c=$(XUnitClassName)</AdditionalXHarnessArguments>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(XUnitUseRandomizedTestOrderer)' == 'true'">
+    <Compile Include="$(RepoRoot)src\libraries\Common\tests\Tests\RandomizedTestOrderAssemblyInfo.cs" />
+  </ItemGroup>
+
   <UsingTask Condition="'$(RunAOTCompilation)' == 'true'" TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
   <Import Condition="'$(RunAOTCompilation)' == 'true'" Project="$(MonoAOTCompilerDir)MonoAOTCompiler.props" />
 
-  <Import Project="$(MSBuildThisFileDirectory)tests.ioslike.targets" 
+  <Import Project="$(MSBuildThisFileDirectory)tests.ioslike.targets"
           Condition="'$(TargetsAppleMobile)' == 'true'" />
-  <Import Project="$(MSBuildThisFileDirectory)tests.wasm.targets" 
+  <Import Project="$(MSBuildThisFileDirectory)tests.wasm.targets"
           Condition="'$(TargetOS)' == 'Browser'" />
 
   <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
@@ -105,6 +108,19 @@
 
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AndroidTestRunner.dll</MainLibraryFileName>
     </PropertyGroup>
+
+    <ItemGroup>
+      <_AndroidEnv Condition="'$(XUnitSingleThreadedMode)' == 'true'" Include="XUNIT_SINGLE_THREADED">
+        <Value>1</Value>
+      </_AndroidEnv>
+      <_AndroidEnv Condition="'$(XUnitUseRandomizedTestOrderer)' == 'true'" Include="XUNIT_RANDOM_ORDER_SEED">
+        <Value>1883302047</Value>
+      </_AndroidEnv>
+      <_AndroidEnv Condition="'$(XUnitSingleThreadedMode)' == 'true'" Include="XUNIT_VERBOSE">
+        <Value>1</Value>
+      </_AndroidEnv>
+    </ItemGroup>
+
     <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
       <AotInputAssemblies Include="$(PublishDir)\*.dll">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
@@ -137,6 +153,7 @@
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="$(MainLibraryFileName)"
+        EnvironmentVariables="@(_AndroidEnv)"
         ForceAOT="$(RunAOTCompilation)"
         ForceInterpreter="$(MonoForceInterpreter)"
         StripDebugSymbols="False"
@@ -184,7 +201,7 @@
       <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Claims'" />
       <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Permissions'" />
       <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Transactions.Local'" />
-      
+
       <!-- Even though we are trimming the test runner assembly, we want it to be treated
            as a root -->
       <TrimmerRootAssembly
@@ -199,7 +216,8 @@
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"
-          AfterTargets="ComputeResolvedFilesToPublishList">
+          AfterTargets="ComputeResolvedFilesToPublishList"
+          Condition="'$(TestFramework)' == 'xunit'">
     <ItemGroup>
       <_runnerFilesToPublish Include="$(AndroidTestRunnerDir)*" Condition="'$(TargetOS)' == 'Android'" />
       <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'" />
@@ -229,5 +247,5 @@
           DependsOnTargets="InstallWorkloadUsingArtifacts"
           Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 
-  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(SkipImportRepoLinkerTargets)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true'" />
 </Project>

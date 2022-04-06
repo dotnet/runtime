@@ -1,5 +1,6 @@
 <Project>
   <PropertyGroup>
+    <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>
     <PrepareResourcesDependsOn>
       _EmbedILLinkXmls;
       $(PrepareResourcesDependsOn)
@@ -9,7 +10,6 @@
   <PropertyGroup>
     <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">
       $(TargetsTriggeredByCompilation);
-      _SetILLinkTrimAssembly;
       ILLinkTrimAssembly
     </TargetsTriggeredByCompilation>
   </PropertyGroup>
@@ -36,6 +36,8 @@
     <ILLinkSuppressionsXmlFile>$(ILLinkSuppressionsXmlFilePrefix).xml</ILLinkSuppressionsXmlFile>
     <ILLinkSuppressionsConfigurationSpecificXmlFile>$(ILLinkSuppressionsXmlFilePrefix).$(Configuration).xml</ILLinkSuppressionsConfigurationSpecificXmlFile>
     <ILLinkSuppressionsLibraryBuildXmlFile>$(ILLinkSuppressionsXmlFilePrefix).LibraryBuild.xml</ILLinkSuppressionsLibraryBuildXmlFile>
+    <!-- Only run the trim analyzer on libraries which have been annotated. -->
+    <EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == '' And (Exists('$(ILLinkSuppressionsXmlFile)') Or Exists('$(ILLinkSuppressionsConfigurationSpecificXmlFile)'))">false</EnableTrimAnalyzer>
 
     <!-- if building a PDB, tell illink to rewrite the symbols file -->
     <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' and '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
@@ -199,22 +201,21 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_SetILLinkTrimAssembly"
-          Condition="'$(ILLinkTrimAssembly)' == ''"
-          DependsOnTargets="GetBinPlaceTargetFramework">
-    <PropertyGroup>
-      <!-- Currently ILLink cannot handle type projections from Windows.winmd, disable if the project references it -->
-      <ILLinkTrimAssembly Condition="'%(ReferencePath.FileName)%(ReferencePath.Extension)' == 'Windows.winmd'">false</ILLinkTrimAssembly>
-    </PropertyGroup>
-  </Target>
-
-  <!-- ILLink.Tasks arguments common to runs for both individual libraries and for the entire runtime pack -->
-  <Target Name="SetCommonILLinkArgs">
+  <Target Name="PrepareForAssembliesTrim">
+    <!-- ILLink.Tasks arguments common to runs for both individual libraries and for the entire runtime pack -->
     <PropertyGroup>
       <!-- don't remove attributes after build, our tooling is not ready for that -->
       <ILLinkArgs>$(ILLinkArgs) --ignore-link-attributes true</ILLinkArgs>
       <!-- ignore unresolved references -->
       <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
+    </PropertyGroup>
+
+    <!-- When running from Desktop MSBuild, DOTNET_HOST_PATH is not set.
+         In this case, explicitly specify the path to the dotnet host. -->
+    <PropertyGroup Condition="'$(DOTNET_HOST_PATH)' == ''">
+      <!-- This is defined when building in Visual Studio. -->
+      <_DotNetHostDirectory>$(NetCoreRoot)</_DotNetHostDirectory>
+      <_DotNetHostFileName>$([System.IO.Path]::GetFileName('$(DotNetTool)'))</_DotNetHostFileName>
     </PropertyGroup>
   </Target>
 
@@ -225,7 +226,7 @@
   <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="ILLinkTrimAssembly"
           Condition="'$(ILLinkTrimAssembly)' == 'true'"
-          DependsOnTargets="SetCommonILLinkArgs">
+          DependsOnTargets="PrepareForAssembliesTrim">
     <PropertyGroup>
       <!-- default action for assemblies with IsTrimmable attribute -->
       <ILLinkArgs>$(ILLinkArgs) --trim-mode skip</ILLinkArgs>
@@ -236,6 +237,7 @@
       <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
       <!-- pass the non-embedded descriptors xml file on the command line -->
       <ILLinkArgs Condition="'$(ILLinkDescriptorsLibraryBuildXml)' != ''">$(ILLinkArgs) -x "$(ILLinkDescriptorsLibraryBuildXml)"</ILLinkArgs>
+      <ILLinkArgs Condition="'$(ILLinkSubstitutionsLibraryBuildXml)' != ''">$(ILLinkArgs) --substitutions "$(ILLinkSubstitutionsLibraryBuildXml)"</ILLinkArgs>
       <!-- suppress warnings with the following codes:
            IL2008: Could not find type A specified in resource B
            IL2009: Could not find method A in type B specified in resource C
@@ -254,6 +256,7 @@
       <!-- IL2067-IL2091: Unsatisfied DynamicallyAccessedMembers requirements -->
       <LinkerNoWarn>$(LinkerNoWarn);IL2067;IL2068;IL2069;IL2070;IL2071;IL2072;IL2073;IL2074;IL2075;IL2076;IL2077;IL2078;IL2079;IL2080;IL2081;IL2082;IL2083;IL2084;IL2085;IL2086;IL2087;IL2088;IL2089;IL2090;IL2091</LinkerNoWarn>
       <ILLinkArgs>$(ILLinkArgs) --nowarn $(LinkerNoWarn)</ILLinkArgs>
+      <ILLinkArgs Condition="'$(ILLinkDisableIPConstProp)' == 'true'">$(ILLinkArgs) --disable-opt ipconstprop</ILLinkArgs>
     </PropertyGroup>
 
     <MakeDir Directories="$(ILLinkTrimInputPath)" />
@@ -293,21 +296,12 @@
       <ILLinkArgs Condition="@(_DependencyDirectories->Count()) > 0">$(ILLinkArgs) -d @(_DependencyDirectories->'"%(Identity)"', ' -d ')</ILLinkArgs>
     </PropertyGroup>
 
-    <!-- When running from Desktop MSBuild, DOTNET_HOST_PATH is not set.
-         In this case, explicitly specify the path to the dotnet host. -->
-    <PropertyGroup Condition=" '$(DOTNET_HOST_PATH)' == '' ">
-      <!-- This is defined when building in Visual Studio. -->
-      <_DotNetHostDirectory>$(NetCoreRoot)</_DotNetHostDirectory>
-      <_DotNetHostFileName>$([System.IO.Path]::GetFileName('$(DotNetTool)'))</_DotNetHostFileName>
-    </PropertyGroup>
-
     <ILLink AssemblyPaths=""
             RootAssemblyNames="@(ILLinkTrimInputAssembly)"
             OutputDirectory="$(ILLinkTrimOutputPath)"
             ExtraArgs="$(ILLinkArgs)"
             ToolExe="$(_DotNetHostFileName)"
             ToolPath="$(_DotNetHostDirectory)" />
-
   </Target>
 
   <!-- ILLink reporting.

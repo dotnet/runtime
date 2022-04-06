@@ -147,6 +147,7 @@ namespace System.Tests.Types
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/864", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [Fact]
         public void GenericTypeArguments_Get_ReturnsExpected()
         {
@@ -671,7 +672,7 @@ namespace System.Tests.Types
     {
         public override Type CreateType() => typeof(int).MakePointerType();
 
-        public override TypeAttributes Attributes => TypeAttributes.Class;
+        public override TypeAttributes Attributes => TypeAttributes.Public;
 
         public override Type BaseType => null;
 
@@ -688,7 +689,7 @@ namespace System.Tests.Types
     {
         public override Type CreateType() => typeof(int).MakeByRefType();
 
-        public override TypeAttributes Attributes => TypeAttributes.Class;
+        public override TypeAttributes Attributes => TypeAttributes.Public;
 
         public override Type BaseType => null;
 

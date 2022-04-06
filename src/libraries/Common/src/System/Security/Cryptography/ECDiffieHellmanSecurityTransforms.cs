@@ -79,6 +79,11 @@ namespace System.Security.Cryptography
                 return _ecc.ExportParameters(includePrivateParameters, KeySize);
             }
 
+            internal bool TryExportDataKeyParameters(bool includePrivateParameters, ref ECParameters ecParameters)
+            {
+                return _ecc.TryExportDataKeyParameters(includePrivateParameters, KeySize, ref ecParameters);
+            }
+
             public override void ImportParameters(ECParameters parameters)
             {
                 KeySizeValue = _ecc.ImportParameters(parameters);
@@ -116,15 +121,12 @@ namespace System.Security.Cryptography
                 DeriveKeyFromHash(otherPartyPublicKey, HashAlgorithmName.SHA256, null, null);
 
             public override byte[] DeriveKeyFromHash(
-                ECDiffieHellmanPublicKey otherPartyPublicKey,
+                ECDiffieHellmanPublicKey otherPartyPublicKey!!,
                 HashAlgorithmName hashAlgorithm,
                 byte[]? secretPrepend,
                 byte[]? secretAppend)
             {
-                if (otherPartyPublicKey == null)
-                    throw new ArgumentNullException(nameof(otherPartyPublicKey));
-                if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                    throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
                 ThrowIfDisposed();
 
@@ -137,16 +139,13 @@ namespace System.Security.Cryptography
             }
 
             public override byte[] DeriveKeyFromHmac(
-                ECDiffieHellmanPublicKey otherPartyPublicKey,
+                ECDiffieHellmanPublicKey otherPartyPublicKey!!,
                 HashAlgorithmName hashAlgorithm,
                 byte[]? hmacKey,
                 byte[]? secretPrepend,
                 byte[]? secretAppend)
             {
-                if (otherPartyPublicKey == null)
-                    throw new ArgumentNullException(nameof(otherPartyPublicKey));
-                if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                    throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
                 ThrowIfDisposed();
 
@@ -159,16 +158,8 @@ namespace System.Security.Cryptography
                     (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
             }
 
-            public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel,
-                byte[] prfSeed)
+            public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey!!, byte[] prfLabel!!, byte[] prfSeed!!)
             {
-                if (otherPartyPublicKey == null)
-                    throw new ArgumentNullException(nameof(otherPartyPublicKey));
-                if (prfLabel == null)
-                    throw new ArgumentNullException(nameof(prfLabel));
-                if (prfSeed == null)
-                    throw new ArgumentNullException(nameof(prfSeed));
-
                 ThrowIfDisposed();
 
                 return ECDiffieHellmanDerivation.DeriveKeyTls(
@@ -260,7 +251,9 @@ namespace System.Security.Cryptography
                     _ecc.ImportParameters(ecParameters);
                 }
 
+#pragma warning disable 0672 // Member overrides an obsolete member.
                 public override string ToXmlString()
+#pragma warning restore 0672
                 {
                     throw new PlatformNotSupportedException();
                 }
@@ -269,7 +262,9 @@ namespace System.Security.Cryptography
                 /// There is no key blob format for OpenSSL ECDH like there is for Cng ECDH. Instead of allowing
                 /// this to return a potentially confusing empty byte array, we opt to throw instead.
                 /// </summary>
+#pragma warning disable 0672 // Member overrides an obsolete member.
                 public override byte[] ToByteArray()
+#pragma warning restore 0672
                 {
                     throw new PlatformNotSupportedException();
                 }

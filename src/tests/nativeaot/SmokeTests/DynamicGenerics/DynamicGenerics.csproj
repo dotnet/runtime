@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- There's just too many of these warnings -->
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <NoWarn>$(NoWarn);IL3050</NoWarn>
+
+    <!-- Look for MULTIMODULE_BUILD #define for the more specific incompatible parts -->
+    <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <RdXmlFile Include="rd.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="*.cs" />
+    <Compile Include="Internal\*.cs" />
+    <Compile Remove="partial_universal_generics.cs" />
+    <Compile Remove="universal_generics.cs" />
+    <Compile Remove="UniversalConstrainedCalls.cs" />
+    <Compile Remove="fieldlayout.cs" />
+    <Compile Remove="B279085.cs" />
+  </ItemGroup>
+</Project>

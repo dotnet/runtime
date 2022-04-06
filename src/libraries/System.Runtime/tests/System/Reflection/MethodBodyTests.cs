@@ -11,7 +11,7 @@ namespace System.Reflection.Tests
 {
     public static class MethodBodyTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
         public static void Test_MethodBody_ExceptionHandlingClause()
         {
             MethodInfo mi = typeof(MethodBodyTests).GetMethod("MethodBodyExample", BindingFlags.NonPublic | BindingFlags.Static);

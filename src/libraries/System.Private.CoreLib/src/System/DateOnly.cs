@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.Versioning;
 
 namespace System
@@ -11,14 +12,14 @@ namespace System
     /// <summary>
     /// Represents dates with values ranging from January 1, 0001 Anno Domini (Common Era) through December 31, 9999 A.D. (C.E.) in the Gregorian calendar.
     /// </summary>
-    public readonly struct DateOnly : IComparable, IComparable<DateOnly>, IEquatable<DateOnly>, ISpanFormattable
-#if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
-        , IComparisonOperators<DateOnly, DateOnly>,
+    public readonly struct DateOnly
+        : IComparable,
+          IComparable<DateOnly>,
+          IEquatable<DateOnly>,
+          ISpanFormattable,
+          IComparisonOperators<DateOnly, DateOnly>,
           IMinMaxValue<DateOnly>,
-          ISpanParseable<DateOnly>
-#pragma warning restore SA1001, CA2252
-#endif // FEATURE_GENERIC_MATH
+          ISpanParsable<DateOnly>
     {
         private readonly int _dayNumber;
 
@@ -163,6 +164,7 @@ namespace System
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns>true if left is later than right; otherwise, false.</returns>
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(DateOnly left, DateOnly right) => left._dayNumber > right._dayNumber;
 
         /// <summary>
@@ -171,6 +173,7 @@ namespace System
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns>true if left is the same as or later than right; otherwise, false.</returns>
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(DateOnly left, DateOnly right) => left._dayNumber >= right._dayNumber;
 
         /// <summary>
@@ -179,6 +182,7 @@ namespace System
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns>true if left is earlier than right; otherwise, false.</returns>
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(DateOnly left, DateOnly right) => left._dayNumber < right._dayNumber;
 
         /// <summary>
@@ -187,6 +191,7 @@ namespace System
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns>true if left is the same as or earlier than right; otherwise, false.</returns>
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(DateOnly left, DateOnly right) => left._dayNumber <= right._dayNumber;
 
         /// <summary>
@@ -817,86 +822,36 @@ namespace System
                         return DateTimeFormat.TryFormat(GetEquivalentDateTime(), destination, out charsWritten, format, provider);
 
                     default:
-                        charsWritten = 0;
-                        return false;
+                        throw new FormatException(SR.Argument_BadFormatSpecifier);
                 }
             }
 
             if (!DateTimeFormat.IsValidCustomDateFormat(format, throwOnError: false))
             {
-                charsWritten = 0;
-                return false;
+                throw new FormatException(SR.Format(SR.Format_DateTimeOnlyContainsNoneDateParts, format.ToString(), nameof(DateOnly)));
             }
 
             return DateTimeFormat.TryFormat(GetEquivalentDateTime(), destination, out charsWritten, format, provider);
         }
 
-#if FEATURE_GENERIC_MATH
         //
-        // IComparisonOperators
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<DateOnly, DateOnly>.operator <(DateOnly left, DateOnly right)
-            => left < right;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<DateOnly, DateOnly>.operator <=(DateOnly left, DateOnly right)
-            => left <= right;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<DateOnly, DateOnly>.operator >(DateOnly left, DateOnly right)
-            => left > right;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<DateOnly, DateOnly>.operator >=(DateOnly left, DateOnly right)
-            => left >= right;
-
-        //
-        // IEqualityOperators
+        // IParsable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IEqualityOperators<DateOnly, DateOnly>.operator ==(DateOnly left, DateOnly right)
-            => left == right;
+        /// <inheritdoc cref="IParsable{TSelf}.Parse(string, IFormatProvider?)" />
+        public static DateOnly Parse(string s, IFormatProvider? provider) => Parse(s, provider, DateTimeStyles.None);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IEqualityOperators<DateOnly, DateOnly>.operator !=(DateOnly left, DateOnly right)
-            => left != right;
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out DateOnly result) => TryParse(s, provider, DateTimeStyles.None, out result);
 
         //
-        // IMinMaxValue
+        // ISpanParsable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static DateOnly IMinMaxValue<DateOnly>.MinValue => MinValue;
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        public static DateOnly Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, provider, DateTimeStyles.None);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static DateOnly IMinMaxValue<DateOnly>.MaxValue => MaxValue;
-
-        //
-        // IParseable
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static DateOnly IParseable<DateOnly>.Parse(string s, IFormatProvider? provider)
-            => Parse(s, provider, DateTimeStyles.None);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IParseable<DateOnly>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out DateOnly result)
-            => TryParse(s, provider, DateTimeStyles.None, out result);
-
-        //
-        // ISpanParseable
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static DateOnly ISpanParseable<DateOnly>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s, provider, DateTimeStyles.None);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool ISpanParseable<DateOnly>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out DateOnly result)
-            => TryParse(s, provider, DateTimeStyles.None, out result);
-#endif // FEATURE_GENERIC_MATH
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out DateOnly result) => TryParse(s, provider, DateTimeStyles.None, out result);
     }
 }

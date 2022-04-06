@@ -59,6 +59,7 @@ NativeImage::NativeImage(AssemblyBinder *pAssemblyBinder, PEImageLayout *pImageL
     m_pImageLayout = pImageLayout;
     m_fileName = imageFileName;
     m_eagerFixupsHaveRun = false;
+    m_readyToRunCodeDisabled = false;
 }
 
 void NativeImage::Initialize(READYTORUN_HEADER *pHeader, LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker)
@@ -123,7 +124,14 @@ NativeImage *NativeImage::Open(
     if (pExistingImage != nullptr)
     {
         *isNewNativeImage = false;
-        return pExistingImage->GetAssemblyBinder() == pAssemblyBinder ? pExistingImage : nullptr;
+        if (pExistingImage->GetAssemblyBinder() == pAssemblyBinder)
+        {
+            return pExistingImage;
+        }
+        else
+        {
+            return nullptr;
+        }
     }
 
     SString path = componentModule->GetPath();
@@ -150,11 +158,11 @@ NativeImage *NativeImage::Open(
         // Composite r2r PE image is not a part of anyone's identity.
         // We only need it to obtain the native image, which will be cached at AppDomain level.
         PEImageHolder pImage = PEImage::OpenImage(fullPath, MDInternalImport_NoCache, bundleFileLocation);
-        PEImageLayout* mapped = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_MAPPED);
+        PEImageLayout* loaded = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_LOADED);
         // We will let pImage instance be freed after exiting this scope, but we will keep the layout,
         // thus the layout needs an AddRef, or it will be gone together with pImage.
-        mapped->AddRef();
-        peLoadedImage = mapped;
+        loaded->AddRef();
+        peLoadedImage = loaded;
     }
 
     if (peLoadedImage.IsNull())
@@ -241,7 +249,14 @@ NativeImage *NativeImage::Open(
     }
     // Return pre-existing image if it was loaded into the same ALC, null otherwise
     *isNewNativeImage = false;
-    return (pExistingImage->GetAssemblyBinder() == pAssemblyBinder ? pExistingImage : nullptr);
+    if (pExistingImage->GetAssemblyBinder() == pAssemblyBinder)
+    {
+        return pExistingImage;
+    }
+    else
+    {
+        return nullptr;
+    }
 }
 #endif
 
@@ -289,7 +304,7 @@ void NativeImage::CheckAssemblyMvid(Assembly *assembly) const
     }
 
     GUID assemblyMvid;
-    assembly->GetManifestImport()->GetScopeProps(NULL, &assemblyMvid);
+    assembly->GetMDImport()->GetScopeProps(NULL, &assemblyMvid);
 
     const byte *pImageBase = (const BYTE *)m_pImageLayout->GetBase();
     const GUID *componentMvid = (const GUID *)&pImageBase[m_pComponentAssemblyMvids->VirtualAddress] + assemblyNameIndex->Index;

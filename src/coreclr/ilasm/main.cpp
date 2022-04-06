@@ -14,7 +14,7 @@
 #include "strsafe.h"
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS(__FILE__, (expr))
 
-WCHAR* EqualOrColon(__in __nullterminated WCHAR* szArg)
+WCHAR* EqualOrColon(_In_ __nullterminated WCHAR* szArg)
 {
     WCHAR* pchE = wcschr(szArg,L'=');
     WCHAR* pchC = wcschr(szArg,L':');
@@ -33,7 +33,7 @@ extern unsigned int g_uConsoleCP;
 char * g_pszExeFile;
 #endif
 
-void MakeTestFile(__in __nullterminated char* szFileName)
+void MakeTestFile(_In_ __nullterminated char* szFileName)
 {
     if(g_dwTestRepeat)
     {
@@ -55,10 +55,10 @@ void MakeTestFile(__in __nullterminated char* szFileName)
     }
 }
 
-void MakeProperSourceFileName(__in __nullterminated WCHAR* wzOrigName,
+void MakeProperSourceFileName(_In_ __nullterminated WCHAR* wzOrigName,
                               unsigned uCodePage,
-                              __out_ecount(MAX_FILENAME_LENGTH) WCHAR* wzProperName,
-                              __out_ecount(MAX_FILENAME_LENGTH*3) char* szProperName)
+                              _Out_writes_(MAX_FILENAME_LENGTH) WCHAR* wzProperName,
+                              _Out_writes_(MAX_FILENAME_LENGTH*3) char* szProperName)
 {
     wcscpy_s(wzProperName,MAX_FILENAME_LENGTH, wzOrigName);
     size_t j = wcslen(wzProperName);
@@ -76,7 +76,7 @@ void MakeProperSourceFileName(__in __nullterminated WCHAR* wzOrigName,
     WszWideCharToMultiByte(uCodePage,0,wzProperName,-1,szProperName,MAX_FILENAME_LENGTH*3-1,NULL,NULL);
 }
 
-char* FullFileName(__in __nullterminated WCHAR* wzFileName, unsigned uCodePage)
+char* FullFileName(_In_ __nullterminated WCHAR* wzFileName, unsigned uCodePage)
 {
     static WCHAR wzFullPath[MAX_FILENAME_LENGTH];
     WCHAR* pwz;
@@ -102,7 +102,7 @@ WCHAR       wzPdbFilename[MAX_FILENAME_LENGTH];
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif
 
-extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
+extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
 {
     int         i, NumFiles = 0, NumDeltaFiles = 0;
     bool        IsDLL = false;

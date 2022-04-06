@@ -11,14 +11,22 @@ namespace System.IO.Tests
 {
     public class File_GetSetTimes : StaticGetSetTimes
     {
+        protected override bool CanBeReadOnly => true;
+
         // OSX has the limitation of setting upto 2262-04-11T23:47:16 (long.Max) date.
         // 32bit Unix has time_t up to ~ 2038.
         private static bool SupportsLongMaxDateTime => PlatformDetection.IsWindows || (!PlatformDetection.Is32BitProcess && !PlatformDetection.IsOSXLike);
 
-        protected override string GetExistingItem()
+        protected override string GetExistingItem(bool readOnly = false)
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();
+
+            if (readOnly)
+            {
+                File.SetAttributes(path, FileAttributes.ReadOnly);
+            }
+
             return path;
         }
 

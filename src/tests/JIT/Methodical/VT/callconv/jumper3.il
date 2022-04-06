@@ -12,7 +12,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly jumper // as "jumper"
+.assembly 'jumper3' // as "jumper"
 {
 
 
@@ -21,7 +21,6 @@
   
 }
 .assembly extern xunit.core {}
-.module jumper.exe
 // MVID: {2E4A2D77-5614-4325-A9DC-CBB90842669E}
 .namespace MS
 {

@@ -69,7 +69,9 @@ PCSTR GetRegName (UINT32 regnum)
     static CHAR szRegName[16];
     _snprintf_s(szRegName, ARRAY_SIZE(szRegName), sizeof(szRegName), "r%u", regnum);
     return szRegName;
-
+#elif defined(TARGET_LOONGARCH64)
+    assert(!"unimplemented on LOONGARCH yet");
+    return "???";
 #endif
 }
 

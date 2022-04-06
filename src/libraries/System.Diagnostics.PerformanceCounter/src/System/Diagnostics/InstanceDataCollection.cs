@@ -15,10 +15,8 @@ namespace System.Diagnostics
     public class InstanceDataCollection : DictionaryBase
     {
         [Obsolete("This constructor has been deprecated. Use System.Diagnostics.InstanceDataCollectionCollection.get_Item to get an instance of this collection instead.")]
-        public InstanceDataCollection(string counterName)
+        public InstanceDataCollection(string counterName!!)
         {
-            if (counterName == null)
-                throw new ArgumentNullException(nameof(counterName));
             CounterName = counterName;
         }
 
@@ -58,11 +56,8 @@ namespace System.Diagnostics
             Dictionary.Add(objectName, value);
         }
 
-        public bool Contains(string instanceName)
+        public bool Contains(string instanceName!!)
         {
-            if (instanceName == null)
-                throw new ArgumentNullException(nameof(instanceName));
-
             string objectName = instanceName.ToLowerInvariant();
             return Dictionary.Contains(objectName);
         }

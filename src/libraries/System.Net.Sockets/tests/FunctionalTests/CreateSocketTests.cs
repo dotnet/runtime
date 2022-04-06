@@ -541,7 +541,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct nlmsghdr
+        internal struct @nlmsghdr
         {
             internal int nlmsg_len;       /* Length of message including header */
             internal ushort nlmsg_type;   /* Type of message content */
@@ -551,13 +551,13 @@ namespace System.Net.Sockets.Tests
         };
 
         [StructLayout(LayoutKind.Sequential)]
-        private struct nlmsgerr {
+        private struct @nlmsgerr {
             internal int     error;
             internal nlmsghdr msg;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct rtmsg
+        internal unsafe struct @rtmsg
         {
             internal byte rtm_family;
             internal byte rtm_dst_len;

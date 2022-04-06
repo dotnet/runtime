@@ -57,7 +57,7 @@ namespace Microsoft.Win32
 {
     public sealed partial class RegistryKey : MarshalByRefObject, IDisposable
     {
-        private void ClosePerfDataKey()
+        private static void ClosePerfDataKey()
         {
             // System keys should never be closed.  However, we want to call RegCloseKey
             // on HKEY_PERFORMANCE_DATA when called from PerformanceCounter.CloseSharedResources
@@ -588,7 +588,7 @@ namespace Microsoft.Win32
                 case Interop.Advapi32.RegistryValues.REG_BINARY:
                     {
                         byte[] blob = new byte[datasize];
-                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
+                        Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
                         data = blob;
                     }
                     break;
@@ -602,7 +602,7 @@ namespace Microsoft.Win32
                         long blob = 0;
                         Debug.Assert(datasize == 8, "datasize==8");
                         // Here, datasize must be 8 when calling this
-                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
+                        Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
 
                         data = blob;
                     }
@@ -617,7 +617,7 @@ namespace Microsoft.Win32
                         int blob = 0;
                         Debug.Assert(datasize == 4, "datasize==4");
                         // Here, datasize must be four when calling this
-                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
+                        Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
 
                         data = blob;
                     }
@@ -639,7 +639,7 @@ namespace Microsoft.Win32
                         }
                         char[] blob = new char[datasize / 2];
 
-                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
+                        Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
                         if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
                         {
                             data = new string(blob, 0, blob.Length - 1);
@@ -669,7 +669,7 @@ namespace Microsoft.Win32
                         }
                         char[] blob = new char[datasize / 2];
 
-                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
+                        Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
 
                         if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
                         {

@@ -377,10 +377,10 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public XmlQualifiedName ParseTagName(string tagName, int indexPrefixMappings)
         {
-            string prefix, localName, ns;
+            string localName, ns;
 
             // Parse the tagName as a prefix, localName pair and resolve the prefix
-            ParseTagName(tagName, indexPrefixMappings, out prefix, out localName, out ns);
+            ParseTagName(tagName, indexPrefixMappings, out _, out localName, out ns);
             return new XmlQualifiedName(localName, ns);
         }
 
@@ -390,10 +390,10 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public XmlQualifiedName ParseTagName(string tagName, string ns)
         {
-            string prefix, localName;
+            string localName;
 
             // Parse the tagName as a prefix, localName pair
-            ValidateNames.ParseQNameThrow(tagName, out prefix, out localName);
+            ValidateNames.ParseQNameThrow(tagName, out _, out localName);
             return new XmlQualifiedName(localName, ns);
         }
 
@@ -486,7 +486,7 @@ namespace System.Xml.Xsl.Runtime
         /// Convert from the Clr type of "value" to Clr type "destinationType" using V1 Xslt rules.
         /// These rules include converting any Rtf values to Nodes.
         /// </summary>
-        internal object ChangeTypeXsltArgument(XmlQueryType xmlType, object value, Type destinationType)
+        internal static object ChangeTypeXsltArgument(XmlQueryType xmlType, object value, Type destinationType)
         {
             Debug.Assert(XmlILTypeHelper.GetStorageType(xmlType).IsAssignableFrom(value.GetType()),
                          "Values passed to ChangeTypeXsltArgument should be in ILGen's default Clr representation.");
@@ -726,7 +726,7 @@ namespace System.Xml.Xsl.Runtime
             typBase = typBase.Prime;
             for (int i = 0; i < seq.Count; i++)
             {
-                if (!CreateXmlType(seq[0]).IsSubtypeOf(typBase))
+                if (!CreateXmlType(seq[i]).IsSubtypeOf(typBase))
                     return false;
             }
 
@@ -793,7 +793,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Create an XmlQueryType that represents the type of "item".
         /// </summary>
-        private XmlQueryType CreateXmlType(XPathItem item)
+        private static XmlQueryType CreateXmlType(XPathItem item)
         {
             if (item.IsNode)
             {
@@ -872,8 +872,6 @@ namespace System.Xml.Xsl.Runtime
                 return seq;
 
             XmlQueryNodeSequence nodeSeq = (XmlQueryNodeSequence)seq;
-            if (nodeSeq == null)
-                nodeSeq = new XmlQueryNodeSequence(seq);
 
             return nodeSeq.DocOrderDistinct(_docOrderCmp);
         }

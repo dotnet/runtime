@@ -322,7 +322,7 @@ static GCObject **valid_nursery_objects;
 static int valid_nursery_object_count;
 static gboolean broken_heap;
 
-static void 
+static void
 setup_mono_sgen_scan_area_with_callback (GCObject *object, size_t size, void *data)
 {
 	valid_nursery_objects [valid_nursery_object_count++] = object;
@@ -396,7 +396,7 @@ is_valid_object_pointer (char *object)
 {
 	if (sgen_ptr_in_nursery (object))
 		return find_object_in_nursery_dump (object);
-	
+
 	if (sgen_los_is_valid_object (object))
 		return TRUE;
 
@@ -479,7 +479,7 @@ ptr_in_heap (char *object)
 {
 	if (sgen_ptr_in_nursery (object))
 		return TRUE;
-	
+
 	if (sgen_los_is_valid_object (object))
 		return TRUE;
 
@@ -511,7 +511,7 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 			continue;
 		while (start < (char**)info->client_info.info.stack_end) {
 			if (*start >= obj && *start < endobj)
-				SGEN_LOG (0, "Object %p referenced in thread %p (id %p) at %p, stack: %p-%p", obj, info, (gpointer)mono_thread_info_get_tid (info), start, info->client_info.stack_start, info->client_info.info.stack_end);
+				SGEN_LOG (0, "Object %p referenced in thread %p (id %p) at %p, stack: %p-%p", obj, info, (gpointer)(gsize) mono_thread_info_get_tid (info), start, info->client_info.stack_start, info->client_info.info.stack_end);
 			start++;
 		}
 
@@ -519,7 +519,7 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 			mword w = *ctxcurrent;
 
 			if (w >= (mword)obj && w < (mword)obj + size)
-				SGEN_LOG (0, "Object %p referenced in saved reg %d of thread %p (id %p)", obj, (int) (ctxcurrent - ctxstart), info, (gpointer)(gsize)mono_thread_info_get_tid (info));
+				SGEN_LOG (0, "Object %p referenced in saved reg %d of thread %p (id %p)", obj, (int) (ctxcurrent - ctxstart), info, (gpointer)(gsize) mono_thread_info_get_tid (info));
 		}
 	} FOREACH_THREAD_END
 #endif
@@ -966,13 +966,13 @@ check_reference_for_xdomain (GCObject **ptr, GCObject *obj, MonoDomain *domain)
 
 	field = NULL;
 	for (klass = obj->vtable->klass; klass; klass = m_class_get_parent (klass)) {
-		int i;
-
-		int fcount = mono_class_get_field_count (klass);
-		MonoClassField *klass_fields = m_class_get_fields (klass);
-		for (i = 0; i < fcount; ++i) {
-			if (klass_fields[i].offset == offset) {
-				field = &klass_fields[i];
+		gpointer iter = NULL;
+		MonoClassField *cur;
+		while ((cur = mono_class_get_fields_internal (klass, &iter))) {
+			/* metadata-update: there are no domains in .NET */
+			g_assert (!m_field_is_from_update (cur));
+			if (m_field_get_offset (cur) == offset) {
+				field = cur;
 				break;
 			}
 		}
@@ -986,7 +986,7 @@ check_reference_for_xdomain (GCObject **ptr, GCObject *obj, MonoDomain *domain)
 		mono_error_cleanup (error);
 	} else
 		str = NULL;
-	g_print ("xdomain reference in %p (%s.%s) at offset %d (%s) to %p (%s.%s) (%s)  -  pointed to by:\n",
+	g_print ("xdomain reference in %p (%s.%s) at offset %zu (%s) to %p (%s.%s) (%s)  -  pointed to by:\n",
 			obj, m_class_get_name_space (obj->vtable->klass), m_class_get_name (obj->vtable->klass),
 			offset, field ? field->name : "",
 			ref, m_class_get_name_space (ref->vtable->klass), m_class_get_name (ref->vtable->klass), str ? str : "");

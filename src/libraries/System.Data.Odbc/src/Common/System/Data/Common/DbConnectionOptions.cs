@@ -201,7 +201,7 @@ namespace System.Data.Common
             return ConvertValueToIntegratedSecurityInternal((string)value);
         }
 
-        internal bool ConvertValueToIntegratedSecurityInternal(string stringValue)
+        internal static bool ConvertValueToIntegratedSecurityInternal(string stringValue)
         {
             if (CompareInsensitiveInvariant(stringValue, "sspi") || CompareInsensitiveInvariant(stringValue, "true") || CompareInsensitiveInvariant(stringValue, "yes"))
                 return true;
@@ -322,7 +322,7 @@ namespace System.Data.Common
 
         internal string? ExpandDataDirectories(ref string? filename, ref int position)
         {
-            string? value = null;
+            string? value;
             StringBuilder builder = new StringBuilder(_usersConnectionString.Length);
             string? datadir = null;
 

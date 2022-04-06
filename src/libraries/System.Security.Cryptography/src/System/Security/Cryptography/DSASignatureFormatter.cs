@@ -9,19 +9,13 @@ namespace System.Security.Cryptography
 
         public DSASignatureFormatter() { }
 
-        public DSASignatureFormatter(AsymmetricAlgorithm key) : this()
+        public DSASignatureFormatter(AsymmetricAlgorithm key!!) : this()
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-
             _dsaKey = (DSA)key;
         }
 
-        public override void SetKey(AsymmetricAlgorithm key)
+        public override void SetKey(AsymmetricAlgorithm key!!)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-
             _dsaKey = (DSA)key;
         }
 
@@ -34,10 +28,8 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override byte[] CreateSignature(byte[] rgbHash)
+        public override byte[] CreateSignature(byte[] rgbHash!!)
         {
-            if (rgbHash == null)
-                throw new ArgumentNullException(nameof(rgbHash));
             if (_dsaKey == null)
                 throw new CryptographicUnexpectedOperationException(SR.Cryptography_FormatterMissingKey);
 

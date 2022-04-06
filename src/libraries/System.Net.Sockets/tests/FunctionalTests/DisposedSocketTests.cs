@@ -764,7 +764,7 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [Collection(nameof(NoParallelTests))]
+    [Collection(nameof(DisableParallelization))]
     public class DisposedSocketTestsNonParallel
     {
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]

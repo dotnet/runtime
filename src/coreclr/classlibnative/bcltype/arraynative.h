@@ -14,6 +14,7 @@
 #define _ARRAYNATIVE_H_
 
 #include "fcall.h"
+#include "runtimehandles.h"
 
 struct FCALLRuntimeFieldHandle
 {
@@ -31,9 +32,7 @@ public:
     static FCDECL2(FC_BOOL_RET, IsSimpleCopy, ArrayBase* pSrc, ArrayBase* pDst);
     static FCDECL5(void, CopySlow, ArrayBase* pSrc, INT32 iSrcIndex, ArrayBase* pDst, INT32 iDstIndex, INT32 iLength);
 
-    // This method will create a new array of type type, with zero lower
-    // bounds and rank.
-    static FCDECL4(Object*, CreateInstance, void* elementTypeHandle, INT32 rank, INT32* pLengths, INT32* pBounds);
+    static FCDECL4(Object*, CreateInstance, ReflectClassBaseObject* pElementTypeUNSAFE, INT32 rank, INT32* pLengths, INT32* pBounds);
 
     // This method will return a TypedReference to the array element
     static FCDECL2(Object*, GetValue, ArrayBase* refThisUNSAFE, INT_PTR flattenedIndex);
@@ -44,6 +43,10 @@ public:
     // This method will initialize an array from a TypeHandle
     // to a field.
     static FCDECL2_IV(void, InitializeArray, ArrayBase* vArrayRef, FCALLRuntimeFieldHandle structField);
+
+    // This method will acquire data to create a span from a TypeHandle
+    // to a field.
+    static FCDECL3_VVI(void*, GetSpanDataFrom, FCALLRuntimeFieldHandle structField, FCALLRuntimeTypeHandle targetTypeUnsafe, INT32* count);
 
 private:
     // Helper for CreateInstance

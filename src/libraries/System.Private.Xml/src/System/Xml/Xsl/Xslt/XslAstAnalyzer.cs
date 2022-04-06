@@ -83,7 +83,7 @@ namespace System.Xml.Xsl.Xslt
 
                 // NOTE: We do not check for duplicate edges here
                 adjList.Add(v2);
-                if (!TryGetValue(v2, out adjList))
+                if (!TryGetValue(v2, out _))
                 {
                     this[v2] = null;
                 }
@@ -1435,7 +1435,7 @@ namespace System.Xml.Xsl.Xslt
                 {
                     // The scope record is either a namespace declaration or an exclusion namespace
                     Debug.Assert(scoperecord.IsNamespace || scoperecord.ncName == null);
-                    Debug.Assert(!_compiler.IsPhantomNamespace(scoperecord.nsUri!));
+                    Debug.Assert(!Compiler.IsPhantomNamespace(scoperecord.nsUri!));
                     newtemplate.Namespaces = new NsDecl(newtemplate.Namespaces, scoperecord.ncName, scoperecord.nsUri);
                 }
                 else
@@ -1444,7 +1444,7 @@ namespace System.Xml.Xsl.Xslt
                     var variable = scoperecord.value;
 
                     // Skip variables generated during errors
-                    if (_compiler.IsPhantomNamespace(variable.Name!.NamespaceUri))
+                    if (Compiler.IsPhantomNamespace(variable.Name!.NamespaceUri))
                     {
                         continue;
                     }

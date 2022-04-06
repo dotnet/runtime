@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Net.Http.Functional.Tests;
 using Xunit;
+using System.Threading;
 
 namespace System.Net.Test.Common
 {
@@ -304,6 +305,11 @@ namespace System.Net.Test.Common
         public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true)
         {
             await GetOpenRequest().WaitForCancellationAsync(ignoreIncomingData).ConfigureAwait(false);
+        }
+
+        public override Task WaitForCloseAsync(CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
     }
 

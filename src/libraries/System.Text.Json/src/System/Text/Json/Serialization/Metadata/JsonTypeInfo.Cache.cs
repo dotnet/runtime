@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -68,12 +69,10 @@ namespace System.Text.Json.Serialization.Metadata
                 memberType,
                 parentClassType,
                 memberInfo,
-                out Type runtimeType,
                 options);
 
             return CreateProperty(
                 declaredPropertyType: memberType,
-                runtimePropertyType: runtimeType,
                 memberInfo,
                 parentClassType,
                 isVirtual,
@@ -85,7 +84,6 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal static JsonPropertyInfo CreateProperty(
             Type declaredPropertyType,
-            Type? runtimePropertyType,
             MemberInfo? memberInfo,
             Type parentClassType,
             bool isVirtual,
@@ -100,8 +98,7 @@ namespace System.Text.Json.Serialization.Metadata
             jsonPropertyInfo.Initialize(
                 parentClassType,
                 declaredPropertyType,
-                runtimePropertyType,
-                runtimeClassType: converter.ConverterStrategy,
+                converterStrategy: converter.ConverterStrategy,
                 memberInfo,
                 isVirtual,
                 converter,
@@ -118,14 +115,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         internal static JsonPropertyInfo CreatePropertyInfoForTypeInfo(
             Type declaredPropertyType,
-            Type runtimePropertyType,
             JsonConverter converter,
             JsonNumberHandling? numberHandling,
             JsonSerializerOptions options)
         {
             JsonPropertyInfo jsonPropertyInfo = CreateProperty(
                 declaredPropertyType: declaredPropertyType,
-                runtimePropertyType: runtimePropertyType,
                 memberInfo: null, // Not a real property so this is null.
                 parentClassType: ObjectType, // a dummy value (not used)
                 isVirtual: false,
@@ -577,10 +572,17 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void InitializePropCache()
         {
-            Debug.Assert(PropertyCache == null);
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
 
-            JsonSerializerContext? context = Options._context;
+            // Delayed JsonTypeInfo initialization can be invoked by
+            // multiple threads, add a temporary check to avoid contention.
+            // TODO refactor so that metadata initialization is single threaded.
+            if (Volatile.Read(ref PropertyCache) is not null)
+            {
+                return;
+            }
+
+            JsonSerializerContext? context = Options.JsonSerializerContext;
             Debug.Assert(context != null);
 
             JsonPropertyInfo[] array;
@@ -615,8 +617,6 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (jsonPropertyInfo.SrcGen_IsExtensionData)
                 {
-                    // Source generator compile-time type inspection has performed this validation for us.
-                    Debug.Assert(DataExtensionProperty == null);
                     Debug.Assert(IsValidDataExtensionProperty(jsonPropertyInfo));
 
                     DataExtensionProperty = jsonPropertyInfo;
@@ -626,17 +626,24 @@ namespace System.Text.Json.Serialization.Metadata
                 CacheMember(jsonPropertyInfo, propertyCache, ref ignoredMembers);
             }
 
-            // Avoid threading issues by populating a local cache and assigning it to the global cache after completion.
-            PropertyCache = propertyCache;
+            // Populate a local cache and assign it to the global cache after completion.
+            Volatile.Write(ref PropertyCache, propertyCache);
         }
 
         internal void InitializeParameterCache()
         {
-            Debug.Assert(ParameterCache == null);
             Debug.Assert(PropertyCache != null);
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
 
-            JsonSerializerContext? context = Options._context;
+            // Delayed JsonTypeInfo initialization can be invoked by
+            // multiple threads, add a temporary check to avoid contention.
+            // TODO refactor so that metadata initialization is single threaded.
+            if (Volatile.Read(ref ParameterCache) is not null)
+            {
+                return;
+            }
+
+            JsonSerializerContext? context = Options.JsonSerializerContext;
             Debug.Assert(context != null);
 
             JsonParameterInfoValues[] array;

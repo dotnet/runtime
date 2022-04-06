@@ -136,11 +136,8 @@ namespace System.Drawing.Imaging
         // (when using MS GDI+ and IStream we must ensure the stream stays alive for all the life of the Image)
         internal Metafile(IntPtr ptr, Stream stream) => SetNativeImage(ptr);
 
-        public Metafile(Stream stream)
+        public Metafile(Stream stream!!)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
             // With libgdiplus we use a custom API for this, because there's no easy way
             // to get the Stream down to libgdiplus. So, we wrap the stream with a set of delegates.
             GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, seekToOrigin: false);
@@ -255,7 +252,7 @@ namespace System.Drawing.Imaging
 
         public MetafileHeader GetMetafileHeader()
         {
-            IntPtr header = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeader)));
+            IntPtr header = Marshal.AllocHGlobal(Marshal.SizeOf<MetafileHeader>());
             try
             {
                 int status = Gdip.GdipGetMetafileHeaderFromMetafile(nativeImage, header);
@@ -270,7 +267,7 @@ namespace System.Drawing.Imaging
 
         public static MetafileHeader GetMetafileHeader(IntPtr henhmetafile)
         {
-            IntPtr header = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeader)));
+            IntPtr header = Marshal.AllocHGlobal(Marshal.SizeOf<MetafileHeader>());
             try
             {
                 int status = Gdip.GdipGetMetafileHeaderFromEmf(henhmetafile, header);
@@ -288,7 +285,7 @@ namespace System.Drawing.Imaging
             if (stream == null)
                 throw new NullReferenceException(nameof(stream));
 
-            IntPtr header = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeader)));
+            IntPtr header = Marshal.AllocHGlobal(Marshal.SizeOf<MetafileHeader>());
             try
             {
                 // With libgdiplus we use a custom API for this, because there's no easy way
@@ -315,7 +312,7 @@ namespace System.Drawing.Imaging
             // Called in order to emulate exception behavior from .NET Framework related to invalid file paths.
             Path.GetFullPath(fileName);
 
-            IntPtr header = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeader)));
+            IntPtr header = Marshal.AllocHGlobal(Marshal.SizeOf<MetafileHeader>());
             try
             {
                 int status = Gdip.GdipGetMetafileHeaderFromFile(fileName, header);
@@ -330,7 +327,7 @@ namespace System.Drawing.Imaging
 
         public static MetafileHeader GetMetafileHeader(IntPtr hmetafile, WmfPlaceableFileHeader wmfHeader)
         {
-            IntPtr header = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeader)));
+            IntPtr header = Marshal.AllocHGlobal(Marshal.SizeOf<MetafileHeader>());
             try
             {
                 int status = Gdip.GdipGetMetafileHeaderFromEmf(hmetafile, header);

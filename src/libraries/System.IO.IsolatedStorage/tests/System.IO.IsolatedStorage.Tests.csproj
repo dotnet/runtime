@@ -13,11 +13,11 @@
              Link="Internals\Helper.Win32Unix.cs" />
     <Compile Include="System\IO\IsolatedStorage\HelperTests.Win32Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Win32.cs"
              Link="Internals\Helper.Win32.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Unix.cs"
              Link="Internals\Helper.Unix.cs" />
   </ItemGroup>

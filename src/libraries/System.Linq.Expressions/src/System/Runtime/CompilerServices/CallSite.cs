@@ -171,7 +171,7 @@ namespace System.Runtime.CompilerServices
         {
         }
 
-        internal CallSite<T> CreateMatchMaker()
+        internal static CallSite<T> CreateMatchMaker()
         {
             return new CallSite<T>();
         }
@@ -279,24 +279,15 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-#if FEATURE_COMPILE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
             Justification = "UpdateDelegates methods don't have ILLink annotations.")]
-#endif
         internal T MakeUpdateDelegate()
         {
-#if !FEATURE_COMPILE
             Type target = typeof(T);
             MethodInfo invoke = target.GetInvokeMethod();
 
-            s_cachedNoMatch = CreateCustomNoMatchDelegate(invoke);
-            return CreateCustomUpdateDelegate(invoke);
-#else
-            Type target = typeof(T);
-            Type[] args;
-            MethodInfo invoke = target.GetInvokeMethod();
-
-            if (target.IsGenericType && IsSimpleSignature(invoke, out args))
+            if (System.Linq.Expressions.LambdaExpression.CanCompileToIL
+                && target.IsGenericType && IsSimpleSignature(invoke, out Type[] args))
             {
                 MethodInfo? method = null;
                 MethodInfo? noMatchMethod = null;
@@ -326,10 +317,8 @@ namespace System.Runtime.CompilerServices
 
             s_cachedNoMatch = CreateCustomNoMatchDelegate(invoke);
             return CreateCustomUpdateDelegate(invoke);
-#endif
         }
 
-#if FEATURE_COMPILE
         private static bool IsSimpleSignature(MethodInfo invoke, out Type[] sig)
         {
             ParameterInfo[] pis = invoke.GetParametersCached();
@@ -354,7 +343,6 @@ namespace System.Runtime.CompilerServices
             sig = args;
             return supported;
         }
-#endif
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
             Justification = "CallSiteOps methods don't have trimming annotations.")]

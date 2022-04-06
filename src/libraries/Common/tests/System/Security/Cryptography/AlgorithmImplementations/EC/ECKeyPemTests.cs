@@ -8,14 +8,13 @@ using Xunit;
 namespace System.Security.Cryptography.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public abstract class ECKeyPemTests<TAlg> where TAlg : AsymmetricAlgorithm
+    public abstract class ECKeyPemTests<TAlg> where TAlg : ECAlgorithm
     {
         private const string AmbiguousExceptionMarker = "multiple keys";
         private const string EncryptedExceptionMarker = "encrypted key";
         private const string NoPemExceptionMarker = "No supported key";
 
         protected abstract TAlg CreateKey();
-        protected abstract ECParameters ExportParameters(TAlg key, bool includePrivateParameters);
 
         [Fact]
         public void ImportFromPem_NoPem()
@@ -38,7 +37,7 @@ MHcCAQEEIHChLC2xaEXtVv9oz8IaRys/BNfWhRv2NJ8tfVs0UrOKoAoGCCqGSM49
 AwEHoUQDQgAEgQHs5HRkpurXDPaabivT2IaRoyYtIsuk92Ner/JmgKjYoSumHVmS
 NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
 -----END EC PRIVATE KEY-----");
-                ECParameters ecParameters = ExportParameters(key, true);
+                ECParameters ecParameters = key.ExportParameters(true);
                 ECParameters expected = EccTestData.GetNistP256ReferenceKey();
                 EccTestBase.AssertEqual(expected, ecParameters);
             }
@@ -64,7 +63,7 @@ MHcCAQEEIHChLC2xaEXtVv9oz8IaRys/BNfWhRv2NJ8tfVs0UrOKoAoGCCqGSM49
 AwEHoUQDQgAEgQHs5HRkpurXDPaabivT2IaRoyYtIsuk92Ner/JmgKjYoSumHVmS
 NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
 -----END EC PRIVATE KEY-----");
-                ECParameters ecParameters = ExportParameters(key, true);
+                ECParameters ecParameters = key.ExportParameters(true);
                 ECParameters expected = EccTestData.GetNistP256ReferenceKey();
                 EccTestBase.AssertEqual(expected, ecParameters);
             }
@@ -81,7 +80,7 @@ MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgcKEsLbFoRe1W/2jP
 whpHKz8E19aFG/Y0ny19WzRSs4qhRANCAASBAezkdGSm6tcM9ppuK9PYhpGjJi0i
 y6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp
 -----END PRIVATE KEY-----");
-                ECParameters ecParameters = ExportParameters(key, true);
+                ECParameters ecParameters = key.ExportParameters(true);
                 ECParameters expected = EccTestData.GetNistP256ReferenceKey();
                 EccTestBase.AssertEqual(expected, ecParameters);
             }
@@ -107,7 +106,7 @@ MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgcKEsLbFoRe1W/2jP
 whpHKz8E19aFG/Y0ny19WzRSs4qhRANCAASBAezkdGSm6tcM9ppuK9PYhpGjJi0i
 y6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp
 -----END PRIVATE KEY-----");
-                ECParameters ecParameters = ExportParameters(key, true);
+                ECParameters ecParameters = key.ExportParameters(true);
                 ECParameters expected = EccTestData.GetNistP256ReferenceKey();
                 EccTestBase.AssertEqual(expected, ecParameters);
             }
@@ -123,7 +122,7 @@ y6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEgQHs5HRkpurXDPaabivT2IaRoyYt
 Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
 -----END PUBLIC KEY-----");
-                ECParameters ecParameters = ExportParameters(key, false);
+                ECParameters ecParameters = key.ExportParameters(false);
                 ECParameters expected = EccTestData.GetNistP256ReferenceKey();
                 EccTestBase.ComparePublicKey(expected.Q, ecParameters.Q, isEqual: true);
             }
@@ -154,7 +153,7 @@ wggvPj3b2WMXsVWiPr4S1Y/nBA==
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEgQHs5HRkpurXDPaabivT2IaRoyYt
 Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
 -----END PUBLIC KEY-----");
-                ECParameters ecParameters = ExportParameters(key, false);
+                ECParameters ecParameters = key.ExportParameters(false);
                 ECParameters expected = EccTestData.GetNistP256ReferenceKey();
                 EccTestBase.ComparePublicKey(expected.Q, ecParameters.Q, isEqual: true);
             }
@@ -179,7 +178,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEgQHs5HRkpurXDPaabivT2IaRoyYt
 Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
 -----END PUBLIC KEY-----");
-                ECParameters ecParameters = ExportParameters(key, false);
+                ECParameters ecParameters = key.ExportParameters(false);
                 ECParameters expected = EccTestData.GetNistP256ReferenceKey();
                 EccTestBase.ComparePublicKey(expected.Q, ecParameters.Q, isEqual: true);
             }
@@ -198,7 +197,7 @@ $$ I AM NOT A PEM
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEgQHs5HRkpurXDPaabivT2IaRoyYt
 Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
 -----END PUBLIC KEY-----");
-                ECParameters ecParameters = ExportParameters(key, false);
+                ECParameters ecParameters = key.ExportParameters(false);
                 ECParameters expected = EccTestData.GetNistP256ReferenceKey();
                 EccTestBase.ComparePublicKey(expected.Q, ecParameters.Q, isEqual: true);
             }
@@ -324,7 +323,7 @@ opSAJ/pvHONL5kyAJLeNyG9c/mR2qyrP2L9gL0Z5fB9NyPejKTLi0PXMGQWdDTH8
 Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
 -----END ENCRYPTED PRIVATE KEY-----";
                 key.ImportFromEncryptedPem(pem, "test");
-                ECParameters ecParameters = ExportParameters(key, true);
+                ECParameters ecParameters = key.ExportParameters(true);
                 ECParameters expected = EccTestData.GetNistP256ReferenceKey();
                 EccTestBase.AssertEqual(expected, ecParameters);
             }
@@ -345,7 +344,7 @@ aATwwQdUIKVzUZsQctsHPjbriQKKn7GKSyUOikBUNQ+TozojX8/g7JAsl+T9jGM=
 -----END ENCRYPTED PRIVATE KEY-----";
                 byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
                 key.ImportFromEncryptedPem(pem, passwordBytes);
-                ECParameters ecParameters = ExportParameters(key, true);
+                ECParameters ecParameters = key.ExportParameters(true);
                 ECParameters expected = EccTestData.GetNistP256ReferenceKey();
                 EccTestBase.AssertEqual(expected, ecParameters);
             }

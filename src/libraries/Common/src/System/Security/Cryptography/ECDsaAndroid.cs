@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
 {
     internal static partial class ECDsaImplementation
     {
-        public sealed partial class ECDsaAndroid : ECDsa
+        public sealed partial class ECDsaAndroid : ECDsa, IRuntimeAlgorithm
         {
             // secp521r1 maxes out at 139 bytes, so 256 should always be enough
             private const int SignatureStackBufSize = 256;
@@ -79,11 +79,8 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override byte[] SignHash(byte[] hash)
+            public override byte[] SignHash(byte[] hash!!)
             {
-                if (hash == null)
-                    throw new ArgumentNullException(nameof(hash));
-
                 ThrowIfDisposed();
                 SafeEcKeyHandle key = _key.Value;
                 int signatureLength = Interop.AndroidCrypto.EcDsaSize(key);
@@ -187,13 +184,8 @@ namespace System.Security.Cryptography
                 return destination.Slice(0, actualLength);
             }
 
-            public override bool VerifyHash(byte[] hash, byte[] signature)
+            public override bool VerifyHash(byte[] hash!!, byte[] signature!!)
             {
-                if (hash == null)
-                    throw new ArgumentNullException(nameof(hash));
-                if (signature == null)
-                    throw new ArgumentNullException(nameof(signature));
-
                 return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
             }
 
@@ -247,15 +239,6 @@ namespace System.Security.Cryptography
                 int verifyResult = Interop.AndroidCrypto.EcDsaVerify(hash, toVerify, key);
                 return verifyResult == 1;
             }
-
-            protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-                AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
-
-            protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-                AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
-
-            protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-                AsymmetricAlgorithmHelpers.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
 
             protected override void Dispose(bool disposing)
             {

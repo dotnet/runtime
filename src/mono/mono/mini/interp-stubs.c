@@ -114,6 +114,13 @@ stub_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, gpo
 	return FALSE;
 }
 
+static gboolean
+stub_run_clause_with_il_state (gpointer il_state, int clause_index, gpointer handler_ip, gpointer handler_ip_end, MonoObject *ex,
+							   gboolean *filtered, MonoExceptionEnum clause_type)
+{
+	g_assert_not_reached ();
+}
+
 static void
 stub_frame_iter_init (MonoInterpStackIter *iter, gpointer interp_exit_data)
 {
@@ -224,6 +231,26 @@ static gboolean
 stub_sufficient_stack (gsize size)
 {
 	g_assert_not_reached ();
+}
+
+static void
+stub_entry_llvmonly (gpointer res, gpointer *args, gpointer imethod)
+{
+	g_assert_not_reached ();
+}
+
+static gpointer
+stub_get_interp_method (MonoMethod *method, MonoError *error)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+static MonoJitInfo*
+stub_compile_interp_method (MonoMethod *method, MonoError *error)
+{
+	g_assert_not_reached ();
+	return NULL;
 }
 
 #undef MONO_EE_CALLBACK

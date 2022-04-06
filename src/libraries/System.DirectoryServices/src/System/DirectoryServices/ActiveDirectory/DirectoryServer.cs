@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+
+using Microsoft.Win32.SafeHandles;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
@@ -292,15 +293,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal DirectoryContext Context => context;
 
-        internal void CheckConsistencyHelper(IntPtr dsHandle, LoadLibrarySafeHandle libHandle)
+        internal unsafe void CheckConsistencyHelper(IntPtr dsHandle, SafeLibraryHandle libHandle)
         {
             // call DsReplicaConsistencyCheck
-            IntPtr functionPtr = UnsafeNativeMethods.GetProcAddress(libHandle, "DsReplicaConsistencyCheck");
-            if (functionPtr == (IntPtr)0)
+            var replicaConsistencyCheck = (delegate* unmanaged<IntPtr, int, int, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaConsistencyCheck");
+            if (replicaConsistencyCheck == null)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
             }
-            UnsafeNativeMethods.DsReplicaConsistencyCheck replicaConsistencyCheck = (UnsafeNativeMethods.DsReplicaConsistencyCheck)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(UnsafeNativeMethods.DsReplicaConsistencyCheck));
 
             int result = replicaConsistencyCheck(dsHandle, 0, 0);
 
@@ -308,47 +308,52 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw ExceptionHelper.GetExceptionFromErrorCode(result, Name);
         }
 
-        internal IntPtr GetReplicationInfoHelper(IntPtr dsHandle, int type, int secondaryType, string? partition, ref bool advanced, int context, LoadLibrarySafeHandle libHandle)
+        internal unsafe IntPtr GetReplicationInfoHelper(IntPtr dsHandle, int type, int secondaryType, string? partition, ref bool advanced, int context, SafeLibraryHandle libHandle)
         {
             IntPtr info = (IntPtr)0;
             int result = 0;
             bool needToTryAgain = true;
-            IntPtr functionPtr;
 
             // first try to use the DsReplicaGetInfo2W API which does not exist on win2k machine
             // call DsReplicaGetInfo2W
-            functionPtr = UnsafeNativeMethods.GetProcAddress(libHandle, "DsReplicaGetInfo2W");
-            if (functionPtr == (IntPtr)0)
+            var dsReplicaGetInfo2W = (delegate* unmanaged<IntPtr, int, char*, IntPtr, char*, char*, int, int, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaGetInfo2W");
+            if (dsReplicaGetInfo2W == null)
             {
                 // a win2k machine which does not have it.
-                functionPtr = UnsafeNativeMethods.GetProcAddress(libHandle, "DsReplicaGetInfoW");
-                if (functionPtr == (IntPtr)0)
+                var dsReplicaGetInfoW = (delegate* unmanaged<IntPtr, int, char*, IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaGetInfoW");
+                if (dsReplicaGetInfoW == null)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
                 }
-                UnsafeNativeMethods.DsReplicaGetInfoW dsReplicaGetInfoW = (UnsafeNativeMethods.DsReplicaGetInfoW)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(UnsafeNativeMethods.DsReplicaGetInfoW));
-                result = dsReplicaGetInfoW(dsHandle, secondaryType, partition, (IntPtr)0, ref info);
+                fixed (char* partitionPtr = partition)
+                {
+                    result = dsReplicaGetInfoW(dsHandle, secondaryType, partitionPtr, (IntPtr)0, &info);
+                }
                 advanced = false;
                 needToTryAgain = false;
             }
             else
             {
-                UnsafeNativeMethods.DsReplicaGetInfo2W dsReplicaGetInfo2W = (UnsafeNativeMethods.DsReplicaGetInfo2W)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(UnsafeNativeMethods.DsReplicaGetInfo2W));
-                result = dsReplicaGetInfo2W(dsHandle, type, partition, (IntPtr)0, null, null, 0, context, ref info);
+                fixed (char* partitionPtr = partition)
+                {
+                    result = dsReplicaGetInfo2W(dsHandle, type, partitionPtr, (IntPtr)0, null, null, 0, context, &info);
+                }
             }
 
             // check the result
             if (needToTryAgain && result == DS_REPL_NOTSUPPORTED)
             {
                 // this is the case that client is xp/win2k3, dc is win2k
-                functionPtr = UnsafeNativeMethods.GetProcAddress(libHandle, "DsReplicaGetInfoW");
-                if (functionPtr == (IntPtr)0)
+                var dsReplicaGetInfoW = (delegate* unmanaged<IntPtr, int, char*, IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaGetInfoW");
+                if (dsReplicaGetInfoW == null)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
                 }
-                UnsafeNativeMethods.DsReplicaGetInfoW dsReplicaGetInfoW = (UnsafeNativeMethods.DsReplicaGetInfoW)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(UnsafeNativeMethods.DsReplicaGetInfoW));
 
-                result = dsReplicaGetInfoW(dsHandle, secondaryType, partition, (IntPtr)0, ref info);
+                fixed (char* partitionPtr = partition)
+                {
+                    result = dsReplicaGetInfoW(dsHandle, secondaryType, partitionPtr, (IntPtr)0, &info);
+                }
                 advanced = false;
             }
 
@@ -390,7 +395,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return info;
         }
 
-        internal ReplicationCursorCollection ConstructReplicationCursors(IntPtr dsHandle, bool advanced, IntPtr info, string partition, DirectoryServer server, LoadLibrarySafeHandle libHandle)
+        internal ReplicationCursorCollection ConstructReplicationCursors(IntPtr dsHandle, bool advanced, IntPtr info, string partition, DirectoryServer server, SafeLibraryHandle libHandle)
         {
             int context = 0;
             int count = 0;
@@ -455,7 +460,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return collection;
         }
 
-        internal ReplicationOperationInformation ConstructPendingOperations(IntPtr info, DirectoryServer server, LoadLibrarySafeHandle libHandle)
+        internal ReplicationOperationInformation ConstructPendingOperations(IntPtr info, DirectoryServer server, SafeLibraryHandle libHandle)
         {
             ReplicationOperationInformation replicationInfo = new ReplicationOperationInformation();
             ReplicationOperationCollection collection = new ReplicationOperationCollection(server);
@@ -484,7 +489,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return replicationInfo;
         }
 
-        internal ReplicationNeighborCollection ConstructNeighbors(IntPtr info, DirectoryServer server, LoadLibrarySafeHandle libHandle)
+        internal ReplicationNeighborCollection ConstructNeighbors(IntPtr info, DirectoryServer server, SafeLibraryHandle libHandle)
         {
             ReplicationNeighborCollection collection = new ReplicationNeighborCollection(server);
             int count = 0;
@@ -508,7 +513,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return collection;
         }
 
-        internal ReplicationFailureCollection ConstructFailures(IntPtr info, DirectoryServer server, LoadLibrarySafeHandle libHandle)
+        internal ReplicationFailureCollection ConstructFailures(IntPtr info, DirectoryServer server, SafeLibraryHandle libHandle)
         {
             ReplicationFailureCollection collection = new ReplicationFailureCollection(server);
             int count = 0;
@@ -531,7 +536,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return collection;
         }
 
-        internal ActiveDirectoryReplicationMetadata ConstructMetaData(bool advanced, IntPtr info, DirectoryServer server, LoadLibrarySafeHandle libHandle)
+        internal ActiveDirectoryReplicationMetadata ConstructMetaData(bool advanced, IntPtr info, DirectoryServer server, SafeLibraryHandle libHandle)
         {
             ActiveDirectoryReplicationMetadata collection = new ActiveDirectoryReplicationMetadata(server);
             int count = 0;
@@ -633,7 +638,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal void SyncReplicaAllHelper(IntPtr handle, SyncReplicaFromAllServersCallback syncAllFunctionPointer, string partition, SyncFromAllServersOptions option, SyncUpdateCallback? callback, LoadLibrarySafeHandle libHandle)
+        internal unsafe void SyncReplicaAllHelper(IntPtr handle, SyncReplicaFromAllServersCallback syncAllCallback, string partition, SyncFromAllServersOptions option, SyncUpdateCallback? callback, SafeLibraryHandle libHandle)
         {
             IntPtr errorInfo = (IntPtr)0;
 
@@ -642,14 +647,19 @@ namespace System.DirectoryServices.ActiveDirectory
 
             // we want to return the dn instead of DNS guid
             // call DsReplicaSyncAllW
-            IntPtr functionPtr = UnsafeNativeMethods.GetProcAddress(libHandle, "DsReplicaSyncAllW");
-            if (functionPtr == (IntPtr)0)
+            var dsReplicaSyncAllW = (delegate* unmanaged<IntPtr, char*, int, IntPtr, IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaSyncAllW");
+            if (dsReplicaSyncAllW == null)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
             }
-            UnsafeNativeMethods.DsReplicaSyncAllW dsReplicaSyncAllW = (UnsafeNativeMethods.DsReplicaSyncAllW)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(UnsafeNativeMethods.DsReplicaSyncAllW));
 
-            int result = dsReplicaSyncAllW(handle, partition, (int)option | DS_REPSYNCALL_ID_SERVERS_BY_DN, syncAllFunctionPointer, (IntPtr)0, ref errorInfo);
+            int result;
+            fixed (char* partitionPtr = partition)
+            {
+                IntPtr syncAllFunctionPointer = Marshal.GetFunctionPointerForDelegate(syncAllCallback);
+                result = dsReplicaSyncAllW(handle, partitionPtr, (int)option | DS_REPSYNCALL_ID_SERVERS_BY_DN, syncAllFunctionPointer, (IntPtr)0, &errorInfo);
+                GC.KeepAlive(syncAllCallback);
+            }
 
             try
             {
@@ -673,27 +683,25 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 // release the memory
                 if (errorInfo != (IntPtr)0)
-                    UnsafeNativeMethods.LocalFree(errorInfo);
+                    global::Interop.Kernel32.LocalFree(errorInfo);
             }
         }
 
-        private void FreeReplicaInfo(DS_REPL_INFO_TYPE type, IntPtr value, LoadLibrarySafeHandle libHandle)
+        private unsafe void FreeReplicaInfo(DS_REPL_INFO_TYPE type, IntPtr value, SafeLibraryHandle libHandle)
         {
             if (value != (IntPtr)0)
             {
                 // call DsReplicaFreeInfo
-                IntPtr functionPtr = UnsafeNativeMethods.GetProcAddress(libHandle, "DsReplicaFreeInfo");
-                if (functionPtr == (IntPtr)0)
+                var dsReplicaFreeInfo = (delegate* unmanaged<int, IntPtr, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaFreeInfo");
+                if (dsReplicaFreeInfo == null)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
                 }
-                UnsafeNativeMethods.DsReplicaFreeInfo dsReplicaFreeInfo = (UnsafeNativeMethods.DsReplicaFreeInfo)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(UnsafeNativeMethods.DsReplicaFreeInfo));
-
                 dsReplicaFreeInfo((int)type, value);
             }
         }
 
-        internal void SyncReplicaHelper(IntPtr dsHandle, bool isADAM, string partition, string? sourceServer, int option, LoadLibrarySafeHandle libHandle)
+        internal unsafe void SyncReplicaHelper(IntPtr dsHandle, bool isADAM, string partition, string? sourceServer, int option, SafeLibraryHandle libHandle)
         {
             int structSize = Marshal.SizeOf(typeof(Guid));
             IntPtr unmanagedGuid = (IntPtr)0;
@@ -722,30 +730,32 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 // call DsReplicaSyncW
-                IntPtr functionPtr = UnsafeNativeMethods.GetProcAddress(libHandle, "DsReplicaSyncW");
-                if (functionPtr == (IntPtr)0)
+                var dsReplicaSyncW = (delegate* unmanaged<IntPtr, char*, IntPtr, int, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaSyncW");
+                if (dsReplicaSyncW == null)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
                 }
-                UnsafeNativeMethods.DsReplicaSyncW dsReplicaSyncW = (UnsafeNativeMethods.DsReplicaSyncW)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(UnsafeNativeMethods.DsReplicaSyncW));
 
-                int result = dsReplicaSyncW(dsHandle, partition, unmanagedGuid, (int)option);
-
-                // check the result
-                if (result != 0)
+                fixed (char* partitionPtr = partition)
                 {
-                    if (!Partitions.Contains(partition))
-                        throw new ArgumentException(SR.ServerNotAReplica, nameof(partition));
+                    int result = dsReplicaSyncW(dsHandle, partitionPtr, unmanagedGuid, (int)option);
 
-                    string? serverDownName = null;
-                    // this is the error returned when the server that we want to sync from is down
-                    if (result == ExceptionHelper.RPC_S_SERVER_UNAVAILABLE)
-                        serverDownName = sourceServer;
-                    // this is the error returned when the server that we want to get synced is down
-                    else if (result == ExceptionHelper.RPC_S_CALL_FAILED)
-                        serverDownName = Name;
+                    // check the result
+                    if (result != 0)
+                    {
+                        if (!Partitions.Contains(partition))
+                            throw new ArgumentException(SR.ServerNotAReplica, nameof(partition));
 
-                    throw ExceptionHelper.GetExceptionFromErrorCode(result, serverDownName);
+                        string? serverDownName = null;
+                        // this is the error returned when the server that we want to sync from is down
+                        if (result == ExceptionHelper.RPC_S_SERVER_UNAVAILABLE)
+                            serverDownName = sourceServer;
+                        // this is the error returned when the server that we want to get synced is down
+                        else if (result == ExceptionHelper.RPC_S_CALL_FAILED)
+                            serverDownName = Name;
+
+                        throw ExceptionHelper.GetExceptionFromErrorCode(result, serverDownName);
+                    }
                 }
             }
             finally

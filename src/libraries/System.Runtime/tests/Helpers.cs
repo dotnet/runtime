@@ -10,9 +10,6 @@ using Xunit.Abstractions;
 
 namespace System.Tests
 {
-    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
-    public partial class NoParallelTests { }
-
     public static class Helpers
     {
         private static Type s_refEmitType;

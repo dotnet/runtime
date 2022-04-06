@@ -34,10 +34,10 @@ namespace ILCompiler
             byte[] src = Encoding.UTF8.GetBytes(name);
             for (int i = 0; i < src.Length; i += 2)
             {
-                hash1 = unchecked(hash1 + RotateLeft(hash1, 5)) ^ src[i];
+                hash1 = unchecked(hash1 + RotateLeft(hash1, 5)) ^ (int)unchecked((sbyte)src[i]);
                 if (i + 1 < src.Length)
                 {
-                    hash2 = unchecked(hash2 + RotateLeft(hash2, 5)) ^ src[i + 1];
+                    hash2 = unchecked(hash2 + RotateLeft(hash2, 5)) ^ (int)unchecked((sbyte)src[i + 1]);
                 }
                 else
                 {

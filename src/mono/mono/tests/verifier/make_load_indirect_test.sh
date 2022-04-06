@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -55,7 +55,7 @@ $SED -e "s/TYPE/${TEST_TYPE}/g"  -e "s/OP/${TEST_OP}/g" > $TEST_FILE <<//EOF
 	OP
 	stloc.0
 	ldc.i4.0
-	ret 
+	ret
 }
 
 //EOF

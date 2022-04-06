@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -12,7 +12,7 @@ TEST_POS_1=$4
 TEST_POS_2=$5
 TEST_TYPE_0=$6
 
-if [ "x$TEST_TYPE_0" = "x" ] ; then
+if [ "x$TEST_TYPE_0" = "x" ]; then
 	TEST_TYPE_0="int32";
 fi
 
@@ -21,7 +21,7 @@ echo $TEST_FILE
 TEST_TYPE1=`echo $TEST_TYPE1 | $SED -s 's/&/\\\&/'`
 $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE_0/${TEST_TYPE_0}/g"> $TEST_FILE <<//EOF
 
-// VALIDITY CIL which breaks the ECMA-335 rules. 
+// VALIDITY CIL which breaks the ECMA-335 rules.
 // this CIL should fail verification by a conforming CLI verifier.
 
 .assembly '${TEST_NAME}_generated'
@@ -36,10 +36,10 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE_0/${TEST_TYPE_0}/g"> $TEST_FI
     .field [${TEST_POS_1}] public object objVal
 	.field [${TEST_POS_2}] public int32 intVal2
 
-	.method public hidebysig  specialname  rtspecialname instance default void '.ctor' ()  cil managed 
+	.method public hidebysig  specialname  rtspecialname instance default void '.ctor' ()  cil managed
 	{
 		.maxstack 8
-		ret 
+		ret
     }
 }
 

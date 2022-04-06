@@ -131,6 +131,10 @@ enum insFlags : uint32_t
     // Avx
     INS_Flags_IsDstDstSrcAVXInstruction = 1 << 25,
     INS_Flags_IsDstSrcSrcAVXInstruction = 1 << 26,
+    
+    // w and s bits
+    INS_FLAGS_Has_Wbit = 1 << 27,
+    INS_FLAGS_Has_Sbit = 1 << 28,
 
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00,
@@ -321,7 +325,6 @@ enum emitAttr : unsigned
 #define EA_ATTR(x)                  ((emitAttr)(x))
 #define EA_SIZE(x)                  ((emitAttr)(((unsigned)(x)) &  EA_SIZE_MASK))
 #define EA_SIZE_IN_BYTES(x)         ((UNATIVE_OFFSET)(EA_SIZE(x)))
-#define EA_SET_SIZE(x, sz)          ((emitAttr)((((unsigned)(x)) & ~EA_SIZE_MASK) | (sz)))
 #define EA_SET_FLG(x, flg)          ((emitAttr)(((unsigned)(x)) | (flg)))
 #define EA_REMOVE_FLG(x, flg)       ((emitAttr)(((unsigned)(x)) & ~(flg)))
 #define EA_4BYTE_DSP_RELOC          (EA_SET_FLG(EA_4BYTE, EA_DSP_RELOC_FLG))
@@ -335,8 +338,6 @@ enum emitAttr : unsigned
 #define EA_IS_CNS_RELOC(x)          ((((unsigned)(x)) & ((unsigned)EA_CNS_RELOC_FLG)) != 0)
 #define EA_IS_RELOC(x)              (EA_IS_DSP_RELOC(x) || EA_IS_CNS_RELOC(x))
 #define EA_TYPE(x)                  ((emitAttr)(((unsigned)(x)) & ~(EA_OFFSET_FLG | EA_DSP_RELOC_FLG | EA_CNS_RELOC_FLG)))
-
-#define EmitSize(x)                 (EA_ATTR(genTypeSize(TypeGet(x))))
 
 // clang-format on
 

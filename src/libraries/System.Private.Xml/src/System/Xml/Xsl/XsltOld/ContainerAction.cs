@@ -44,7 +44,7 @@ namespace System.Xml.Xsl.XsltOld
             throw new NotImplementedException();
         }
 
-        internal void CompileStylesheetAttributes(Compiler compiler)
+        internal static void CompileStylesheetAttributes(Compiler compiler)
         {
             NavigatorInput input = compiler.Input;
             string element = input.LocalName;
@@ -109,7 +109,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        internal void CompileSingleTemplate(Compiler compiler)
+        internal static void CompileSingleTemplate(Compiler compiler)
         {
             NavigatorInput input = compiler.Input;
 
@@ -266,7 +266,7 @@ namespace System.Xml.Xsl.XsltOld
             CheckEmpty(compiler);
         }
 
-        internal void CompileNamespaceAlias(Compiler compiler)
+        internal static void CompileNamespaceAlias(Compiler compiler)
         {
             NavigatorInput input = compiler.Input;
             string element = input.LocalName;
@@ -311,7 +311,7 @@ namespace System.Xml.Xsl.XsltOld
             compiler.AddNamespaceAlias(namespace1!, new NamespaceInfo(prefix2, namespace2, compiler.Stylesheetid));
         }
 
-        internal void CompileKey(Compiler compiler)
+        internal static void CompileKey(Compiler compiler)
         {
             NavigatorInput input = compiler.Input;
             string element = input.LocalName;
@@ -362,7 +362,7 @@ namespace System.Xml.Xsl.XsltOld
             compiler.InsertKey(Name!, MatchKey, UseKey);
         }
 
-        protected void CompileDecimalFormat(Compiler compiler)
+        protected static void CompileDecimalFormat(Compiler compiler)
         {
             NumberFormatInfo info = new NumberFormatInfo();
             DecimalFormat format = new DecimalFormat(info, '#', '0', ';');
@@ -443,7 +443,7 @@ namespace System.Xml.Xsl.XsltOld
             CheckEmpty(compiler);
         }
 
-        internal bool CheckAttribute(bool valid, Compiler compiler)
+        internal static bool CheckAttribute(bool valid, Compiler compiler)
         {
             if (!valid)
             {
@@ -456,7 +456,7 @@ namespace System.Xml.Xsl.XsltOld
             return true;
         }
 
-        protected void CompileSpace(Compiler compiler, bool preserve)
+        protected static void CompileSpace(Compiler compiler, bool preserve)
         {
             string value = compiler.GetSingleAttribute(compiler.Input.Atoms.Elements);
             string[] elements = XmlConvert.SplitString(value);
@@ -468,7 +468,7 @@ namespace System.Xml.Xsl.XsltOld
             CheckEmpty(compiler);
         }
 
-        private double NameTest(string name)
+        private static double NameTest(string name)
         {
             if (name == "*")
             {
@@ -485,8 +485,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             else
             {
-                string prefix, localname;
-                PrefixQName.ParseQualifiedName(name, out prefix, out localname);
+                PrefixQName.ParseQualifiedName(name, out _, out _);
                 return 0;
             }
         }
@@ -673,7 +672,7 @@ namespace System.Xml.Xsl.XsltOld
         private void CompileInstruction(Compiler compiler)
         {
             NavigatorInput input = compiler.Input;
-            CompiledAction? action = null;
+            CompiledAction? action;
 
             Debug.Assert(Ref.Equal(input.NamespaceURI, input.Atoms.UriXsl));
 
@@ -892,7 +891,7 @@ namespace System.Xml.Xsl.XsltOld
             lastCopyCodeAction.AddEvents(copyEvents);
         }
 
-        private void AddScript(Compiler compiler)
+        private static void AddScript(Compiler compiler)
         {
             NavigatorInput input = compiler.Input;
 
