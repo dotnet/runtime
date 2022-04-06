@@ -58,8 +58,7 @@ class FirefoxInspectorClient : InspectorClient
             }
             catch (Exception)
             {
-                Console.WriteLine("retrying...");
-                Thread.Sleep(1000);
+                await Task.Delay(1000);
             }
         }
         connectToProxy.TrySetResult();
