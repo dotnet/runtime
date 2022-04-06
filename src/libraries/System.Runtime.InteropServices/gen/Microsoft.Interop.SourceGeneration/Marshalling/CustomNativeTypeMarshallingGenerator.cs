@@ -28,9 +28,9 @@ namespace Microsoft.Interop
             return target is TargetFramework.Net && version.Major >= 6;
         }
 
-        public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
+        public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
-            return _nativeTypeMarshaller.AsArgument(info, context);
+            return info.IsByRef ? ValueBoundaryBehavior.AddressOfNativeIdentifier : ValueBoundaryBehavior.NativeIdentifier;
         }
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
@@ -38,13 +38,9 @@ namespace Microsoft.Interop
             return _nativeTypeMarshaller.AsNativeType(info);
         }
 
-        public ParameterSyntax AsParameter(TypePositionInfo info)
+        public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info)
         {
-            TypeSyntax type = info.IsByRef
-                ? PointerType(AsNativeType(info))
-                : AsNativeType(info);
-            return Parameter(Identifier(info.InstanceIdentifier))
-                .WithType(type);
+            return info.IsByRef ? SignatureBehavior.PointerToNativeType : SignatureBehavior.NativeType;
         }
 
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)

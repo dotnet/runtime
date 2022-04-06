@@ -14,7 +14,6 @@
 #include "handle.h"
 #include "marshal.h"
 #include "monitor.h"
-#include "mono-perfcounters.h"
 #include <mono/metadata/object-forward.h>
 #include "object-internals.h"
 #include <mono/metadata/reflection.h>
@@ -22,7 +21,6 @@
 #include "mono/utils/mono-digest.h"
 #include "mono/utils/mono-forward-internal.h"
 #include "w32event.h"
-#include "w32file.h"
 #include "mono/utils/mono-proclib.h"
 
 /* From MonoProperty.cs */

@@ -13,7 +13,7 @@ import corebindings from "./corebindings";
 import cwraps from "./cwraps";
 import { get_js_owned_object_by_gc_handle_ref, js_owned_gc_handle_symbol, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, _js_owned_object_finalized, _js_owned_object_registry, _lookup_js_owned_object, _register_js_owned_object, _use_finalization_registry } from "./gc-handles";
 import { mono_method_get_call_signature_ref, call_method_ref, wrap_error_root } from "./method-calls";
-import { _js_to_mono_obj_root } from "./js-to-cs";
+import { js_to_mono_obj_root } from "./js-to-cs";
 import { _are_promises_supported, _create_cancelable_promise } from "./cancelable-promise";
 import { getU32, getI32, getF32, getF64 } from "./memory";
 import { Int32Ptr, VoidPtr } from "./types/emscripten";
@@ -28,7 +28,7 @@ export function unbox_mono_obj(mono_obj: MonoObject): any {
 
     const root = mono_wasm_new_root(mono_obj);
     try {
-        return _unbox_mono_obj_root(root);
+        return unbox_mono_obj_root(root);
     } finally {
         root.release();
     }
@@ -71,7 +71,7 @@ function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<a
         case MarshalType.ARRAY_UINT:
         case MarshalType.ARRAY_FLOAT:
         case MarshalType.ARRAY_DOUBLE:
-            throw new Error("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
+            throw new Error("Marshaling of primitive arrays are not supported.");
         case <MarshalType>20: // clr .NET DateTime
             return new Date(corebindings._get_date_value_ref(root.address));
         case <MarshalType>21: // clr .NET DateTimeOffset
@@ -101,7 +101,8 @@ export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot
     return _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root, type, typePtr, unbox_buffer);
 }
 
-export function _unbox_mono_obj_root(root: WasmRoot<any>): any {
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function unbox_mono_obj_root(root: WasmRoot<any>): any {
     if (root.value === 0)
         return undefined;
 
@@ -130,13 +131,14 @@ export function _unbox_mono_obj_root(root: WasmRoot<any>): any {
     }
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function mono_array_to_js_array(mono_array: MonoArray): any[] | null {
     if (mono_array === MonoArrayNull)
         return null;
 
     const arrayRoot = mono_wasm_new_root(mono_array);
     try {
-        return _mono_array_root_to_js_array(arrayRoot);
+        return mono_array_root_to_js_array(arrayRoot);
     } finally {
         arrayRoot.release();
     }
@@ -146,7 +148,8 @@ function is_nested_array_ref(ele: WasmRoot<MonoObject>) {
     return corebindings._is_simple_array_ref(ele.address);
 }
 
-export function _mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>): any[] | null {
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>): any[] | null {
     if (arrayRoot.value === MonoArrayNull)
         return null;
 
@@ -162,9 +165,9 @@ export function _mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>): an
             cwraps.mono_wasm_array_get_ref(arrayAddress, i, elemAddress);
 
             if (is_nested_array_ref(elemRoot))
-                res[i] = _mono_array_root_to_js_array(<any>elemRoot);
+                res[i] = mono_array_root_to_js_array(<any>elemRoot);
             else
-                res[i] = _unbox_mono_obj_root(elemRoot);
+                res[i] = unbox_mono_obj_root(elemRoot);
         }
         return res;
     } finally {
@@ -235,8 +238,8 @@ export function _wrap_delegate_gc_handle_as_function(gc_handle: GCHandle, after_
     return result;
 }
 
-export function mono_wasm_create_cs_owned_object_ref(core_name: MonoStringRef, args: MonoArray, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
-    const argsRoot = mono_wasm_new_root(args),
+export function mono_wasm_create_cs_owned_object_ref(core_name: MonoStringRef, args: MonoObjectRef, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    const argsRoot = mono_wasm_new_external_root<MonoArray>(args),
         nameRoot = mono_wasm_new_external_root<MonoString>(core_name),
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
@@ -253,7 +256,7 @@ export function mono_wasm_create_cs_owned_object_ref(core_name: MonoStringRef, a
         }
 
         try {
-            const js_args = _mono_array_root_to_js_array(argsRoot);
+            const js_args = mono_array_root_to_js_array(argsRoot);
 
             // This is all experimental !!!!!!
             const allocator = function (constructor: Function, js_args: any[] | null) {
@@ -272,7 +275,7 @@ export function mono_wasm_create_cs_owned_object_ref(core_name: MonoStringRef, a
             const js_handle = mono_wasm_get_js_handle(js_obj);
             // returns boxed js_handle int, because on exception we need to return String on same method signature
             // here we don't have anything to in-flight reference, as the JSObject doesn't exist yet
-            _js_to_mono_obj_root(false, js_handle, resultRoot);
+            js_to_mono_obj_root(js_handle, resultRoot, false);
         } catch (ex) {
             wrap_error_root(is_exception, ex, resultRoot);
             return;

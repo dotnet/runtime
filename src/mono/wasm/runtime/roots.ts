@@ -224,7 +224,7 @@ export class WasmRootBuffer {
     get(index: number): ManagedPointer {
         this._check_in_range(index);
         const offset = this.get_address_32(index);
-        return <any>Module.HEAP32[offset];
+        return <any>Module.HEAPU32[offset];
     }
 
     set(index: number, value: ManagedPointer): ManagedPointer {
@@ -239,11 +239,12 @@ export class WasmRootBuffer {
     }
 
     _unsafe_get(index: number): number {
-        return Module.HEAP32[this.__offset32 + index];
+        return Module.HEAPU32[this.__offset32 + index];
     }
 
     _unsafe_set(index: number, value: ManagedPointer | NativePointer): void {
-        Module.HEAP32[this.__offset32 + index] = <any>value;
+        const address = <any>this.__offset + index;
+        cwraps.mono_wasm_write_managed_pointer_unsafe(<VoidPtr><any>address, <ManagedPointer>value);
     }
 
     clear(): void {

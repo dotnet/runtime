@@ -10,13 +10,10 @@ namespace System.Text.RegularExpressions.Symbolic
     internal interface ICharAlgebra<T> : IBooleanAlgebra<T>
     {
         /// <summary>
-        /// Make a constraint describing a singleton set containing the character c, or
-        /// a set containing also the upper and lowercase versions of c if caseInsensitive is true.
+        /// Make a constraint describing a singleton set containing the character c.
         /// </summary>
-        /// <param name="caseInsensitive">if true include both the uppercase and the lowercase versions of the given character</param>
         /// <param name="c">the given character</param>
-        /// <param name="culture">given culture, if null then the current culture is assumed</param>
-        T CharConstraint(char c, bool caseInsensitive = false, string? culture = null);
+        T CharConstraint(char c);
 
         /// <summary>
         /// Make a term that encodes the given character set.

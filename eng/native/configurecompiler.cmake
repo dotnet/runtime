@@ -78,6 +78,11 @@ if (MSVC)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /PDBCOMPRESS")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:1572864")
 
+  if(EXISTS ${CLR_SOURCELINK_FILE_PATH})
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /sourcelink:${CLR_SOURCELINK_FILE_PATH}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /sourcelink:${CLR_SOURCELINK_FILE_PATH}")
+  endif(EXISTS ${CLR_SOURCELINK_FILE_PATH})
+
   # Checked build specific flags
   add_linker_flag(/INCREMENTAL:NO CHECKED) # prevent "warning LNK4075: ignoring '/INCREMENTAL' due to '/OPT:REF' specification"
   add_linker_flag(/OPT:REF CHECKED)
@@ -599,10 +604,7 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4459>) # declaration of 'identifier' hides global declaration
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4463>) # overflow; assigning value to bit-field that can only hold values from low_value to high_value
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4505>) # unreferenced function with internal linkage has been removed
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4611>) # interaction between 'function' and C++ object destruction is non-portable
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4701>) # potentially uninitialized local variable 'var' used
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4702>) # unreachable code
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4703>) # potentially uninitialized local pointer variable 'var' used
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4706>) # assignment within conditional expression
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4733>) # Inline asm assigning to 'FS:0' : handler not registered as safe handler
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4815>) # 'var': zero-sized array in stack object will have no elements (unless the object is an aggregate that has been aggregate initialized)

@@ -109,7 +109,7 @@ namespace System.Xml.Schema
             }
         }
 
-        internal string TypeCodeToString(XmlTypeCode typeCode) =>
+        internal static string TypeCodeToString(XmlTypeCode typeCode) =>
             typeCode switch
             {
                 XmlTypeCode.None => "None",

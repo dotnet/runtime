@@ -142,7 +142,7 @@ namespace System.Diagnostics
             return _list.GetEnumerator();
         }
 
-        internal void InitializeListener(TraceListener listener!!)
+        internal static void InitializeListener(TraceListener listener!!)
         {
             listener.IndentSize = TraceInternal.IndentSize;
             listener.IndentLevel = TraceInternal.IndentLevel;

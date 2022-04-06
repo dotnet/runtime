@@ -13,6 +13,8 @@
 #include <mono/metadata/object.h>
 #include <mono/jit/jit.h>
 
+#include "gc-common.h"
+
 //JS funcs
 extern MonoObject* mono_wasm_invoke_js_with_args (int js_handle, MonoString *method, MonoArray *args, int *is_exception);
 extern void mono_wasm_get_object_property_ref (int js_handle, MonoString **propertyName, int *is_exception, MonoObject **result);
@@ -21,7 +23,7 @@ extern void mono_wasm_set_object_property_ref (int js_handle, MonoString **prope
 extern void mono_wasm_set_by_index_ref (int js_handle, int property_index, MonoObject **value, int *is_exception, MonoObject **result);
 extern void mono_wasm_get_global_object_ref (MonoString **global_name, int *is_exception, MonoObject **result);
 extern void mono_wasm_release_cs_owned_object (int js_handle);
-extern void mono_wasm_create_cs_owned_object_ref (MonoString **core_name, MonoArray *args, int *is_exception, MonoObject** result);
+extern void mono_wasm_create_cs_owned_object_ref (MonoString **core_name, MonoArray **args, int *is_exception, MonoObject** result);
 extern void mono_wasm_typed_array_to_array_ref (int js_handle, int *is_exception, MonoObject **result);
 extern void mono_wasm_typed_array_copy_to_ref (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception, MonoObject** result);
 extern void mono_wasm_typed_array_from_ref (int ptr, int begin, int end, int bytes_per_element, int type, int *is_exception, MonoObject** result);
@@ -67,6 +69,7 @@ void core_initialize_internals ()
 // Float32Array		| float		| float
 // Float64Array		| double	| double
 // typed array marshalling
+// Keep in sync with driver.c
 #define MARSHAL_ARRAY_BYTE 10
 #define MARSHAL_ARRAY_UBYTE 11
 #define MARSHAL_ARRAY_UBYTE_C 12 // alias of MARSHAL_ARRAY_UBYTE
@@ -78,9 +81,10 @@ void core_initialize_internals ()
 #define MARSHAL_ARRAY_DOUBLE 18
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_typed_array_new_ref (char *arr, int length, int size, int type, MonoArray **result)
+mono_wasm_typed_array_new_ref (char *arr, int length, int size, int type, PPVOLATILE(MonoArray) result)
 {
-	MonoClass * volatile typeClass = mono_get_byte_class(); // default is Byte
+	MONO_ENTER_GC_UNSAFE;
+	MonoClass * typeClass = mono_get_byte_class(); // default is Byte
 	switch (type) {
 	case MARSHAL_ARRAY_BYTE:
 		typeClass = mono_get_sbyte_class();
@@ -103,48 +107,62 @@ mono_wasm_typed_array_new_ref (char *arr, int length, int size, int type, MonoAr
 	case MARSHAL_ARRAY_DOUBLE:
 		typeClass = mono_get_double_class();
 		break;
+	case MARSHAL_ARRAY_UBYTE:
+	case MARSHAL_ARRAY_UBYTE_C:
+		typeClass = mono_get_byte_class();
+		break;
 	default:
 		printf ("Invalid marshal type %d in mono_wasm_typed_array_new", type);
 		abort();
 	}
 
-	MonoArray * volatile buffer;
+	PVOLATILE(MonoArray) buffer;
 
 	buffer = mono_array_new (mono_get_root_domain(), typeClass, length);
 	memcpy(mono_array_addr_with_size(buffer, sizeof(char), 0), arr, length * size);
 
-	mono_gc_wbarrier_generic_store_atomic(result, (MonoObject *)buffer);
+	store_volatile((PPVOLATILE(MonoObject))result, (MonoObject *)buffer);
+	MONO_EXIT_GC_UNSAFE;
 }
 
 // TODO: Remove - no longer used? If not, convert to ref
 EMSCRIPTEN_KEEPALIVE int
-mono_wasm_unbox_enum (MonoObject *obj)
+mono_wasm_unbox_enum (PVOLATILE(MonoObject) obj)
 {
 	if (!obj)
 		return 0;
 
-	MonoType * volatile type = mono_class_get_type (mono_object_get_class(obj));
+	int result = 0;
+	MONO_ENTER_GC_UNSAFE;
+	PVOLATILE(MonoType) type = mono_class_get_type (mono_object_get_class(obj));
 
-	void * volatile ptr = mono_object_unbox (obj);
+	PVOLATILE(void) ptr = mono_object_unbox (obj);
 	switch (mono_type_get_type(mono_type_get_underlying_type (type))) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
-		return *(unsigned char*)ptr;
+		result = *(unsigned char*)ptr;
+		break;
 	case MONO_TYPE_I2:
-		return *(short*)ptr;
+		result = *(short*)ptr;
+		break;
 	case MONO_TYPE_U2:
-		return *(unsigned short*)ptr;
+		result = *(unsigned short*)ptr;
+		break;
 	case MONO_TYPE_I4:
-		return *(int*)ptr;
+		result = *(int*)ptr;
+		break;
 	case MONO_TYPE_U4:
-		return *(unsigned int*)ptr;
+		result = *(unsigned int*)ptr;
+		break;
 	// WASM doesn't support returning longs to JS
 	// case MONO_TYPE_I8:
 	// case MONO_TYPE_U8:
 	default:
 		printf ("Invalid type %d to mono_unbox_enum\n", mono_type_get_type(mono_type_get_underlying_type (type)));
-		return 0;
+		break;
 	}
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 

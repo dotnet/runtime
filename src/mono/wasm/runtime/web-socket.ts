@@ -6,7 +6,7 @@ import { setI32 } from "./memory";
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
 import { PromiseControl, _create_cancelable_promise } from "./cancelable-promise";
-import { _mono_array_root_to_js_array, _wrap_delegate_root_as_function } from "./cs-to-js";
+import { mono_array_root_to_js_array, _wrap_delegate_root_as_function } from "./cs-to-js";
 import { mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle } from "./gc-handles";
 import { _wrap_js_thenable_as_task_root } from "./js-to-cs";
 import { wrap_error_root } from "./method-calls";
@@ -43,7 +43,7 @@ export function mono_wasm_web_socket_open_ref(uri_address: MonoObjectRef, subPro
             return;
         }
 
-        const js_subs = _mono_array_root_to_js_array(sub_root);
+        const js_subs = mono_array_root_to_js_array(sub_root);
 
         const js_on_close = _wrap_delegate_root_as_function(on_close_root)!;
 
@@ -356,7 +356,7 @@ function _mono_wasm_web_socket_on_message(ws: WebSocketExtension, event: Message
         });
     }
     if (promise_queue.getLength() && event_queue.getLength() > 1) {
-        throw new Error("ERR20: Invalid WS state");// assert
+        throw new Error("ERR21: Invalid WS state");// assert
     }
     while (promise_queue.getLength() && event_queue.getLength()) {
         const promise_control = promise_queue.dequeue()!;

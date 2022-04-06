@@ -1580,7 +1580,7 @@ namespace System.Xml
             }
         }
 
-        private void CheckBuffer(Array buffer!!, int index, int count)
+        private static void CheckBuffer(Array buffer!!, int index, int count)
         {
             if (count < 0)
             {

@@ -245,6 +245,9 @@ asm_writer_emit_symbol_type (MonoImageWriter *acfg, const char *name, gboolean f
 static void
 asm_writer_emit_symbol_type (MonoImageWriter *acfg, const char *name, gboolean func, gboolean global)
 {
+#if defined(TARGET_ASM_APPLE)
+	asm_writer_emit_unset_mode (acfg);
+#else
 	const char *stype;
 
 	if (func)
@@ -253,13 +256,11 @@ asm_writer_emit_symbol_type (MonoImageWriter *acfg, const char *name, gboolean f
 		stype = "object";
 
 	asm_writer_emit_unset_mode (acfg);
-
-#if defined(TARGET_ASM_APPLE)
-
-#elif defined(TARGET_ARM)
+#if defined(TARGET_ARM)
 	fprintf (acfg->fp, "\t.type %s,#%s\n", name, stype);
 #else
 	fprintf (acfg->fp, "\t.type %s,@%s\n", name, stype);
+#endif
 #endif
 }
 #endif /* TARGET_WIN32 */

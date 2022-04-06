@@ -54,13 +54,12 @@ export class StringDecoder {
             isInterned = getI32(pIsInterned);
 
         if (pLengthBytes && pChars) {
-            if (
-                isInterned &&
-                interned_string_table.has(root.value) //TODO remove 2x lookup
-            ) {
+            if (isInterned) {
                 result = interned_string_table.get(root.value)!;
                 // console.log(`intern table cache hit ${mono_string} ${result.length}`);
-            } else {
+            }
+
+            if (!isInterned || !result) {
                 result = this.decode(<any>pChars, <any>pChars + lengthBytes);
                 if (isInterned) {
                     // console.log("interned", mono_string, result.length);
@@ -95,7 +94,7 @@ export class StringDecoder {
 }
 
 const interned_string_table = new Map<MonoString, string>();
-const interned_js_string_table = new Map<string, MonoString>();
+export const interned_js_string_table = new Map<string, MonoString>();
 let _empty_string_ptr: MonoString = <any>0;
 const _interned_string_full_root_buffers = [];
 let _interned_string_current_root_buffer: WasmRootBuffer | null = null;

@@ -10,20 +10,20 @@ echo %__MsgPrefix%Starting Build at %TIME%
 set __ThisScriptFull="%~f0"
 
 :: Note that the msbuild project files (specifically, dir.proj) will use the following variables, if set:
-::      __BuildArch         -- default: x64
+::      __TargetArch        -- default: x64
 ::      __BuildType         -- default: Debug
 ::      __TargetOS          -- default: windows
 ::      __ProjectDir        -- default: directory of the dir.props file
 ::      __RepoRootDir       -- default: directory two levels above the dir.props file
 ::      __RootBinDir        -- default: %__RepoRootDir%\artifacts\
-::      __BinDir            -- default: %__RootBinDir%\obj\coreclr\%__TargetOS%.%__BuildArch.%__BuildType%\
+::      __BinDir            -- default: %__RootBinDir%\obj\coreclr\%__TargetOS%.%__TargetArch.%__BuildType%\
 ::      __IntermediatesDir
 ::      __PackagesBinDir    -- default: %__BinDir%\.nuget
 ::
 :: Thus, these variables are not simply internal to this script!
 
 :: Set the default arguments for build
-set __BuildArch=x64
+set __TargetArch=x64
 set __BuildType=Debug
 set __TargetOS=windows
 
@@ -38,10 +38,10 @@ set "__RootBinDir=%__RepoRootDir%\artifacts"
 
 set __BuildAll=
 
-set __BuildArchX64=0
-set __BuildArchX86=0
-set __BuildArchArm=0
-set __BuildArchArm64=0
+set __TargetArchX64=0
+set __TargetArchX86=0
+set __TargetArchArm=0
+set __TargetArchArm64=0
 
 set __BuildTypeDebug=0
 set __BuildTypeChecked=0
@@ -50,7 +50,6 @@ set __BuildTypeRelease=0
 set __PgoInstrument=0
 set __PgoOptimize=0
 set __EnforcePgo=0
-set __IbcTuning=
 set __ConsoleLoggingParameters=/clp:ForceNoAlign;Summary
 
 REM __PassThroughArgs is a set of things that will be passed through to nested calls to build.cmd
@@ -62,12 +61,9 @@ set "__remainingArgs=%*"
 set __UnprocessedBuildArgs=
 
 set __BuildNative=1
-set __BuildCrossArchNative=0
-set __SkipCrossArchNative=0
 set __RestoreOptData=1
-set __CrossArch=
-set __CrossArch2=
-set __CrossOS=0
+set __HostArch=
+set __HostArch2=
 set __PgoOptDataPath=
 set __CMakeArgs=
 set __Ninja=1
@@ -86,10 +82,10 @@ if /i "%1" == "-help"  goto Usage
 if /i "%1" == "--help" goto Usage
 
 if /i "%1" == "-all"                 (set __BuildAll=1&shift&goto Arg_Loop)
-if /i "%1" == "-x64"                 (set __BuildArchX64=1&shift&goto Arg_Loop)
-if /i "%1" == "-x86"                 (set __BuildArchX86=1&shift&goto Arg_Loop)
-if /i "%1" == "-arm"                 (set __BuildArchArm=1&shift&goto Arg_Loop)
-if /i "%1" == "-arm64"               (set __BuildArchArm64=1&shift&goto Arg_Loop)
+if /i "%1" == "-x64"                 (set __TargetArchX64=1&shift&goto Arg_Loop)
+if /i "%1" == "-x86"                 (set __TargetArchX86=1&shift&goto Arg_Loop)
+if /i "%1" == "-arm"                 (set __TargetArchArm=1&shift&goto Arg_Loop)
+if /i "%1" == "-arm64"               (set __TargetArchArm64=1&shift&goto Arg_Loop)
 
 if /i "%1" == "-debug"               (set __BuildTypeDebug=1&shift&goto Arg_Loop)
 if /i "%1" == "-checked"             (set __BuildTypeChecked=1&shift&goto Arg_Loop)
@@ -100,10 +96,10 @@ if /i "%1" == "-ci"                  (set __ArcadeScriptArgs="-ci"&set __ErrMsgP
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
 if /i "%1" == "all"                 (set __BuildAll=1&shift&goto Arg_Loop)
-if /i "%1" == "x64"                 (set __BuildArchX64=1&shift&goto Arg_Loop)
-if /i "%1" == "x86"                 (set __BuildArchX86=1&shift&goto Arg_Loop)
-if /i "%1" == "arm"                 (set __BuildArchArm=1&shift&goto Arg_Loop)
-if /i "%1" == "arm64"               (set __BuildArchArm64=1&shift&goto Arg_Loop)
+if /i "%1" == "x64"                 (set __TargetArchX64=1&shift&goto Arg_Loop)
+if /i "%1" == "x86"                 (set __TargetArchX86=1&shift&goto Arg_Loop)
+if /i "%1" == "arm"                 (set __TargetArchArm=1&shift&goto Arg_Loop)
+if /i "%1" == "arm64"               (set __TargetArchArm64=1&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"               (set __BuildTypeDebug=1&shift&goto Arg_Loop)
 if /i "%1" == "checked"             (set __BuildTypeChecked=1&shift&goto Arg_Loop)
@@ -128,14 +124,13 @@ if [!__PassThroughArgs!]==[] (
     set "__PassThroughArgs=%__PassThroughArgs% %1"
 )
 
-if /i "%1" == "-alpinedac"           (set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __CrossOS=1&set __TargetOS=alpine&shift&goto Arg_Loop)
-if /i "%1" == "-linuxdac"            (set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __CrossOS=1&set __TargetOS=Linux&shift&goto Arg_Loop)
+if /i "%1" == "-hostarch"            (set __HostArch=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-os"                  (set __TargetOS=%2&shift&shift&goto Arg_Loop)
 
-if /i "%1" == "-cmakeargs"           (set __CMakeArgs=%2 %__CMakeArgs%&set "__remainingArgs=!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
+if /i "%1" == "-cmakeargs"           (set __CMakeArgs=%2 %__CMakeArgs%&set __remainingArgs="!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
 if /i "%1" == "-configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&shift&goto Arg_Loop)
 if /i "%1" == "-skipconfigure"       (set __SkipConfigure=1&shift&goto Arg_Loop)
 if /i "%1" == "-skipnative"          (set __BuildNative=0&shift&goto Arg_Loop)
-if /i "%1" == "-skipcrossarchnative" (set __SkipCrossArchNative=1&shift&goto Arg_Loop)
 REM -ninja is a no-op option since Ninja is now the default generator on Windows.
 if /i "%1" == "-ninja"               (shift&goto Arg_Loop)
 if /i "%1" == "-msbuild"             (set __Ninja=0&shift&goto Arg_Loop)
@@ -149,7 +144,6 @@ REM don't add more, use the - syntax instead
 if /i "%1" == "configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&shift&goto Arg_Loop)
 if /i "%1" == "skipconfigure"       (set __SkipConfigure=1&shift&goto Arg_Loop)
 if /i "%1" == "skipnative"          (set __BuildNative=0&shift&goto Arg_Loop)
-if /i "%1" == "skipcrossarchnative" (set __SkipCrossArchNative=1&shift&goto Arg_Loop)
 if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&shift&goto Arg_Loop)
 if /i "%1" == "enforcepgo"          (set __EnforcePgo=1&shift&goto Arg_Loop)
 
@@ -167,8 +161,8 @@ if defined VCINSTALLDIR (
 
 if defined __BuildAll goto BuildAll
 
-set /A __TotalSpecifiedBuildArch=__BuildArchX64 + __BuildArchX86 + __BuildArchArm + __BuildArchArm64
-if %__TotalSpecifiedBuildArch% GTR 1 (
+set /A __TotalSpecifiedTargetArch=__TargetArchX64 + __TargetArchX86 + __TargetArchArm + __TargetArchArm64
+if %__TotalSpecifiedTargetArch% GTR 1 (
     echo Error: more than one build architecture specified, but "all" not specified.
     goto Usage
 )
@@ -176,20 +170,11 @@ if %__TotalSpecifiedBuildArch% GTR 1 (
 set __ProcessorArch=%PROCESSOR_ARCHITEW6432%
 if "%__ProcessorArch%"=="" set __ProcessorArch=%PROCESSOR_ARCHITECTURE%
 
-if %__BuildArchX64%==1      set __BuildArch=x64
-if %__BuildArchX86%==1 (
-    set __BuildArch=x86
-    if /i "%__CrossOS%" NEQ "1" set __CrossArch=x64
-)
-if %__BuildArchArm%==1 (
-    set __BuildArch=arm
-    set __CrossArch=x86
-    if /i "%__CrossOS%" NEQ "1" set __CrossArch2=x64
-)
-if %__BuildArchArm64%==1 (
-    set __BuildArch=arm64
-    if /i not "%__ProcessorArch%"=="ARM64" set __CrossArch=x64
-)
+if %__TargetArchX64%==1   set __TargetArch=x64
+if %__TargetArchX86%==1   set __TargetArch=x86
+if %__TargetArchArm%==1   set __TargetArch=arm
+if %__TargetArchArm64%==1 set __TargetArch=arm64
+if "%__HostArch%" == "" set __HostArch=%__TargetArch%
 
 set /A __TotalSpecifiedBuildType=__BuildTypeDebug + __BuildTypeChecked + __BuildTypeRelease
 if %__TotalSpecifiedBuildType% GTR 1 (
@@ -202,29 +187,13 @@ if %__BuildTypeChecked%==1  set __BuildType=Checked
 if %__BuildTypeRelease%==1  set __BuildType=Release
 
 if %__EnforcePgo%==1 (
-    if %__BuildArchArm%==1 (
+    if %__TargetArchArm%==1 (
         echo NOTICE: enforcepgo does nothing on arm architecture
         set __EnforcePgo=0
     )
-    if %__BuildArchArm64%==1 (
+    if %__TargetArchArm64%==1 (
         echo NOTICE: enforcepgo does nothing on arm64 architecture
         set __EnforcePgo=0
-    )
-)
-
-REM Determine if this is a cross-arch build. Only do cross-arch build if we're also building native.
-
-if %__SkipCrossArchNative% EQU 0 (
-    if %__BuildNative% EQU 1 (
-        if /i "%__BuildArch%"=="arm64" (
-            if defined __CrossArch set __BuildCrossArchNative=1
-        )
-        if /i "%__BuildArch%"=="arm" (
-            set __BuildCrossArchNative=1
-        )
-        if /i "%__BuildArch%"=="x86" (
-            set __BuildCrossArchNative=1
-        )
     )
 )
 
@@ -235,20 +204,17 @@ if NOT "%__BuildType%"=="Release" (
     set __PgoOptimize=0
 )
 
-set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOS%.%__BuildArch%.%__BuildType%"
-set "__IntermediatesDir=%__RootBinDir%\obj\coreclr\%__TargetOS%.%__BuildArch%.%__BuildType%"
+set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOS%.%__TargetArch%.%__BuildType%"
+set "__IntermediatesDir=%__RootBinDir%\obj\coreclr\%__TargetOS%.%__TargetArch%.%__BuildType%"
 set "__LogsDir=%__RootBinDir%\log\!__BuildType!"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 set "__ArtifactsIntermediatesDir=%__RepoRootDir%\artifacts\obj\coreclr\"
 if "%__Ninja%"=="0" (set "__IntermediatesDir=%__IntermediatesDir%\ide")
 set "__PackagesBinDir=%__BinDir%\.nuget"
-set "__CrossComponentBinDir=%__BinDir%"
-set "__CrossCompIntermediatesDir=%__IntermediatesDir%\crossgen"
-set "__CrossComp2IntermediatesDir=%__IntermediatesDir%\crossgen_2"
 
 
-if NOT "%__CrossArch%" == "" set __CrossComponentBinDir=%__CrossComponentBinDir%\%__CrossArch%
-if NOT "%__CrossArch2%" == "" set __CrossComponent2BinDir=%__BinDir%\%__CrossArch2%
+if NOT "%__HostArch%" == "%__TargetArch%" set __BinDir=%__BinDir%\%__HostArch%
+if NOT "%__HostArch%" == "%__TargetArch%" set __IntermediatesDir=%__IntermediatesDir%\%__HostArch%
 
 REM Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
 set "__CMakeBinDir=%__BinDir%"
@@ -271,7 +237,7 @@ REM Set the remaining variables based upon the determined build configuration
 
 echo %__MsgPrefix%Checking prerequisites
 
-if %__BuildNative%==0 if %__BuildCrossArchNative%==0 goto SkipLocateCMake
+if %__BuildNative%==0 goto SkipLocateCMake
 
 REM Eval the output from set-cmake-path.ps1
 for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__RepoRootDir%\eng\native\set-cmake-path.ps1"""') do %%a
@@ -308,7 +274,7 @@ REM ===
 REM =========================================================================================
 
 set __IntermediatesIncDir=%__IntermediatesDir%\src\inc
-set __IntermediatesEventingDir=%__ArtifactsIntermediatesDir%\Eventing\%__BuildArch%\%__BuildType%
+set __IntermediatesEventingDir=%__ArtifactsIntermediatesDir%\Eventing\%__TargetArch%\%__BuildType%
 
 REM Find python and set it to the variable PYTHON
 set _C=-c "import sys; sys.stdout.write(sys.executable)"
@@ -348,172 +314,17 @@ for /f "delims=" %%a in ("-%__RequestedBuildComponents%-") do (
     if not "!string:-spmi-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! spmi
     )
+    if not "!string:-crosscomponents-=!"=="!string!" (
+        set __CMakeTarget=!__CMakeTarget! crosscomponents
+    )
 )
-if [!__CMakeTarget!] == [] (
+if "!__CMakeTarget!" == "" (
     set __CMakeTarget=install
 )
 
 REM =========================================================================================
 REM ===
-REM === Build Cross-Architecture Native Components (if applicable)
-REM ===
-REM =========================================================================================
-
-if %__BuildCrossArchNative% EQU 1 (
-    REM Scope environment changes start {
-    setlocal
-
-    echo %__MsgPrefix%Commencing build of cross architecture native components for %__TargetOS%.%__BuildArch%.%__BuildType%
-
-    REM Set the environment for the cross-arch native build
-    set __VCBuildArch=x86_amd64
-    if /i "%__CrossArch%" == "x86" ( set __VCBuildArch=x86 )
-
-    echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
-    call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
-    @if defined _echo @echo on
-
-    if not exist "%__CrossCompIntermediatesDir%" md "%__CrossCompIntermediatesDir%"
-    if defined __SkipConfigure goto SkipConfigureCrossBuild
-
-    set __CMakeBinDir=%__CrossComponentBinDir%
-    set "__CMakeBinDir=!__CMakeBinDir:\=/!"
-
-    if %__Ninja% EQU 1 (
-        set __ExtraCmakeArgs="-DCMAKE_BUILD_TYPE=!__BuildType!"
-    )
-
-    set __ExtraCmakeArgs=!__ExtraCmakeArgs! "-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=0" %__CMakeArgs%
-    call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__CrossCompIntermediatesDir%" %__VSVersion% %__CrossArch% !__ExtraCmakeArgs!
-
-    if not !errorlevel! == 0 (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate cross architecture native component build project %__CrossArch%!
-        goto ExitWithError
-    )
-    @if defined _echo @echo on
-
-:SkipConfigureCrossBuild
-    if not exist "%__CrossCompIntermediatesDir%\CMakeCache.txt" (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: unable to find generated cross architecture native component build project %__CrossArch%!
-        goto ExitWithError
-    )
-
-    if defined __ConfigureOnly goto SkipCrossCompBuild
-
-    set __BuildLogRootName=Cross
-    set "__BuildLog="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.log""
-    set "__BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn""
-    set "__BuildErr="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.err""
-    set "__BinLog="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog""
-    set "__MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!"
-    set "__MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!"
-    set "__MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!"
-    set "__MsbuildBinLog=/bl:!__BinLog!"
-    set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog! !__ConsoleLoggingParameters!"
-
-    set __CmakeBuildToolArgs=
-
-    if %__Ninja% EQU 1 (
-        set __CmakeBuildToolArgs=
-    ) else (
-        REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-        set __CmakeBuildToolArgs=/nologo /m !__Logging!
-    )
-
-    "%CMakePath%" --build %__CrossCompIntermediatesDir% --target crosscomponents --config %__BuildType% -- !__CmakeBuildToolArgs!
-
-    if not !errorlevel! == 0 (
-        set __exitCode=!errorlevel!
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: cross-arch components build failed. Refer to the build log files for details.
-        echo     !__BuildLog!
-        echo     !__BuildWrn!
-        echo     !__BuildErr!
-        goto ExitWithCode
-    )
-:SkipCrossCompBuild
-    REM } Scope environment changes end
-    endlocal
-
-    if NOT "%__CrossArch2%" == "" (
-        REM Scope environment changes start {
-        setlocal
-
-        echo %__MsgPrefix%Commencing build of cross architecture native components for %__TargetOS%.%__BuildArch%.%__BuildType% hosted on %__CrossArch2%
-
-        if /i "%__CrossArch2%" == "x86" ( set __VCBuildArch=x86 )
-        if /i "%__CrossArch2%" == "x64" ( set __VCBuildArch=x86_amd64 )
-
-        echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
-        call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
-        @if defined _echo @echo on
-
-        if not exist "%__CrossComp2IntermediatesDir%" md "%__CrossComp2IntermediatesDir%"
-        if defined __SkipConfigure goto SkipConfigureCrossBuild2
-
-        set __CMakeBinDir="%__CrossComponent2BinDir%"
-        set "__CMakeBinDir=!__CMakeBinDir:\=/!"
-
-        if %__Ninja% EQU 1 (
-            set __ExtraCmakeArgs="-DCMAKE_BUILD_TYPE=!__BuildType!"
-        )
-
-        set __ExtraCmakeArgs=!__ExtraCmakeArgs! "-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=0" "-DCMAKE_SYSTEM_VERSION=10.0" %__CMakeArgs%
-        call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__CrossComp2IntermediatesDir%" %__VSVersion% %__CrossArch2% !__ExtraCmakeArgs!
-
-        if not !errorlevel! == 0 (
-            echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate cross architecture native component build project %__CrossArch2%!
-            goto ExitWithError
-        )
-
-        set __VCBuildArch=x86_amd64
-        if /i "%__CrossArch%" == "x86" ( set __VCBuildArch=x86 )
-        @if defined _echo @echo on
-
-        if not exist "%__CrossComp2IntermediatesDir%\CMakeCache.txt" (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: unable to find generated cross architecture native component build project %__CrossArch2%!
-            goto ExitWithError
-        )
-
-:SkipConfigureCrossBuild2
-        set __BuildLogRootName=Cross2
-        set "__BuildLog=%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.log"
-        set "__BuildWrn=%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn"
-        set "__BuildErr=%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.err"
-        set "__BinLog=%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog"
-        set "__MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!"
-        set "__MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!"
-        set "__MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!"
-        set "__MsbuildBinLog=/bl:!__BinLog!"
-        set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog! !__ConsoleLoggingParameters!"
-
-        set __CmakeBuildToolArgs=
-
-        if %__Ninja% EQU 1 (
-            set __CmakeBuildToolArgs=
-        ) else (
-            REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-            set __CmakeBuildToolArgs=/nologo /m !__Logging!
-        )
-
-        "%CMakePath%" --build %__CrossComp2IntermediatesDir% --target crosscomponents --config %__BuildType% -- !__CmakeBuildToolArgs!
-
-        if not !errorlevel! == 0 (
-            set __exitCode=!errorlevel!
-            echo %__ErrMsgPrefix%%__MsgPrefix%Error: cross-arch components build failed. Refer to the build log files for details.
-            echo     !__BuildLog!
-            echo     !__BuildWrn!
-            echo     !__BuildErr!
-            goto ExitWithCode
-        )
-:SkipCrossCompBuild2
-        REM } Scope environment changes end
-        endlocal
-    )
-)
-
-REM =========================================================================================
-REM ===
-REM === Build the CLR VM
+REM === Build Native assets including CLR runtime
 REM ===
 REM =========================================================================================
 
@@ -521,24 +332,20 @@ if %__BuildNative% EQU 1 (
     REM Scope environment changes start {
     setlocal
 
-    echo %__MsgPrefix%Commencing build of native components for %__TargetOS%.%__BuildArch%.%__BuildType%
+    echo %__MsgPrefix%Commencing build of native components for %__TargetOS%.%__TargetArch%.%__BuildType%
 
     REM Set the environment for the native build
-    set __VCBuildArch=amd64
-    if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
-    if /i "%__BuildArch%" == "arm" (
-        set __VCBuildArch=x86_arm
-        set ___CrossBuildDefine="-DCLR_CMAKE_CROSS_ARCH=1" "-DCLR_CMAKE_CROSS_HOST_ARCH=%__CrossArch%"
+    set __VCTargetArch=amd64
+    if /i "%__HostArch%" == "x86" ( set __VCTargetArch=x86 )
+    if /i "%__HostArch%" == "arm" (
+        set __VCTargetArch=x86_arm
     )
-    if /i "%__BuildArch%" == "arm64" (
-        set __VCBuildArch=x86_arm64
-        if defined __CrossArch (
-            set ___CrossBuildDefine="-DCLR_CMAKE_CROSS_ARCH=1" "-DCLR_CMAKE_CROSS_HOST_ARCH=%__CrossArch%"
-        )
+    if /i "%__HostArch%" == "arm64" (
+        set __VCTargetArch=x86_arm64
     )
 
-    echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
-    call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
+    echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCTargetArch!
+    call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCTargetArch!
     @if defined _echo @echo on
 
     if defined __SkipConfigure goto SkipConfigure
@@ -549,8 +356,9 @@ if %__BuildNative% EQU 1 (
         set __ExtraCmakeArgs="-DCMAKE_BUILD_TYPE=!__BuildType!"
     )
 
-    set __ExtraCmakeArgs=!__ExtraCmakeArgs! !___CrossBuildDefine! "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" %__CMakeArgs%
-    call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
+    set __ExtraCmakeArgs=!__ExtraCmakeArgs! "-DCLR_CMAKE_TARGET_ARCH=%__TargetArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" %__CMakeArgs%
+    echo Calling "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__HostArch% !__ExtraCmakeArgs!
+    call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__HostArch% !__ExtraCmakeArgs!
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
         goto ExitWithError
@@ -567,10 +375,10 @@ if %__BuildNative% EQU 1 (
     if defined __ConfigureOnly goto SkipNativeBuild
 
     set __BuildLogRootName=CoreCLR
-    set "__BuildLog="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.log""
-    set "__BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn""
-    set "__BuildErr="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.err""
-    set "__BinLog="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog""
+    set "__BuildLog="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__TargetArch%__%__BuildType%__%__HostArch%.log""
+    set "__BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__TargetArch%__%__BuildType%__%__HostArch%.wrn""
+    set "__BuildErr="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__TargetArch%__%__BuildType%__%__HostArch%.err""
+    set "__BinLog="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__TargetArch%__%__BuildType%__%__HostArch%.binlog""
     set "__MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!"
     set "__MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!"
     set "__MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!"
@@ -597,23 +405,6 @@ if %__BuildNative% EQU 1 (
         goto ExitWithCode
     )
 
-    if /i "%__BuildArch%" == "arm64" goto SkipCopyUcrt
-
-    if not defined UCRTVersion (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Please install Windows 10 SDK.
-        goto ExitWithError
-    )
-
-    set "__UCRTDir=%UniversalCRTSdkDir%Redist\%UCRTVersion%\ucrt\DLLs\%__BuildArch%\"
-
-    xcopy /Y/I/E/D/F "!__UCRTDir!*.dll" "%__BinDir%\Redist\ucrt\DLLs\%__BuildArch%"
-    if not !errorlevel! == 0 (
-        set __exitCode=!errorlevel!
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to copy the Universal CRT to the artifacts directory.
-        goto ExitWithCode
-    )
-
-:SkipCopyUcrt
     if %__EnforcePgo% EQU 1 (
         set PgoCheckCmd="!PYTHON!" "!__ProjectDir!\scripts\pgocheck.py" "!__BinDir!\coreclr.dll" "!__BinDir!\clrjit.dll"
         echo !PgoCheckCmd!
@@ -649,20 +440,20 @@ REM ============================================================================
 
 :BuildAll
 
-set __BuildArchList=
+set __TargetArchList=
 
-set /A __TotalSpecifiedBuildArch=__BuildArchX64 + __BuildArchX86 + __BuildArchArm + __BuildArchArm64
-if %__TotalSpecifiedBuildArch% EQU 0 (
+set /A __TotalSpecifiedTargetArch=__TargetArchX64 + __TargetArchX86 + __TargetArchArm + __TargetArchArm64
+if %__TotalSpecifiedTargetArch% EQU 0 (
     REM Nothing specified means we want to build all architectures.
-    set __BuildArchList=x64 x86 arm arm64
+    set __TargetArchList=x64 x86 arm arm64
 )
 
 REM Otherwise, add all the specified architectures to the list.
 
-if %__BuildArchX64%==1      set __BuildArchList=%__BuildArchList% x64
-if %__BuildArchX86%==1      set __BuildArchList=%__BuildArchList% x86
-if %__BuildArchArm%==1      set __BuildArchList=%__BuildArchList% arm
-if %__BuildArchArm64%==1    set __BuildArchList=%__BuildArchList% arm64
+if %__TargetArchX64%==1      set __TargetArchList=%__TargetArchList% x64
+if %__TargetArchX86%==1      set __TargetArchList=%__TargetArchList% x86
+if %__TargetArchArm%==1      set __TargetArchList=%__TargetArchList% arm
+if %__TargetArchArm64%==1    set __TargetArchList=%__TargetArchList% arm64
 
 set __BuildTypeList=
 
@@ -683,7 +474,7 @@ set __AllBuildSuccess=true
 set __BuildResultFile=%TEMP%\build-all-summary-%RANDOM%.txt
 if exist %__BuildResultFile% del /f /q %__BuildResultFile%
 
-for %%i in (%__BuildArchList%) do (
+for %%i in (%__TargetArchList%) do (
     for %%j in (%__BuildTypeList%) do (
         call :BuildOne %%i %%j
     )
@@ -703,13 +494,13 @@ REM This code is unreachable, but leaving it nonetheless, just in case things ch
 exit /b 99
 
 :BuildOne
-set __BuildArch=%1
+set __TargetArch=%1
 set __BuildType=%2
-set __NextCmd=call %__ThisScriptFull% %__BuildArch% %__BuildType% %__PassThroughArgs%
+set __NextCmd=call %__ThisScriptFull% %__TargetArch% %__BuildType% %__PassThroughArgs%
 echo %__MsgPrefix%Invoking: %__NextCmd%
 %__NextCmd%
 if not !errorlevel! == 0 (
-    echo %__MsgPrefix%    %__BuildArch% %__BuildType% %__PassThroughArgs% >> %__BuildResultFile%
+    echo %__MsgPrefix%    %__TargetArch% %__BuildType% %__PassThroughArgs% >> %__BuildResultFile%
     set __AllBuildSuccess=false
 )
 exit /b 0
@@ -755,7 +546,6 @@ echo -cmakeargs: user-settable additional arguments passed to CMake.
 echo -configureonly: skip all builds; only run CMake ^(default: CMake and builds are run^)
 echo -skipconfigure: skip CMake ^(default: CMake is run^)
 echo -skipnative: skip building native components ^(default: native components are built^).
-echo -skipcrossarchnative: skip building cross-architecture native components ^(default: components are built^).
 echo.
 echo Examples:
 echo     build-runtime

@@ -17,46 +17,46 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object CompileFunction(string str, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object InvokeJSWithArgs(int jsHandle, string method, object?[] parms, out int exceptionalResult);
+        internal static extern object InvokeJSWithArgs(IntPtr jsHandle, string method, object?[] parms, out int exceptionalResult);
         // FIXME: All of these signatures need to be object? in various places and not object, but the nullability
         //  warnings will take me hours and hours to fix so I'm not doing that right now since they're already broken
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void GetObjectPropertyRef(int jsHandle, in string propertyName, out int exceptionalResult, out object result);
+        internal static extern void GetObjectPropertyRef(IntPtr jsHandle, in string propertyName, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void SetObjectPropertyRef(int jsHandle, in string propertyName, in object? value, bool createIfNotExists, bool hasOwnProperty, out int exceptionalResult, out object result);
+        internal static extern void SetObjectPropertyRef(IntPtr jsHandle, in string propertyName, in object? value, bool createIfNotExists, bool hasOwnProperty, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void GetByIndexRef(int jsHandle, int index, out int exceptionalResult, out object result);
+        internal static extern void GetByIndexRef(IntPtr jsHandle, int index, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void SetByIndexRef(int jsHandle, int index, in object? value, out int exceptionalResult, out object result);
+        internal static extern void SetByIndexRef(IntPtr jsHandle, int index, in object? value, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void GetGlobalObjectRef(in string? globalName, out int exceptionalResult, out object result);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void ReleaseCSOwnedObject(int jsHandle);
+        internal static extern void TypedArrayToArrayRef(IntPtr jsHandle, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void CreateCSOwnedObjectRef(in string className, object[] parms, out int exceptionalResult, out object result);
+        internal static extern void ReleaseCSOwnedObject(IntPtr jsHandle);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void TypedArrayToArrayRef(int jsHandle, out int exceptionalResult, out object result);
+        internal static extern void CreateCSOwnedObjectRef(in string className, in object[] parms, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void TypedArrayCopyToRef(int jsHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult, out object result);
+        internal static extern void TypedArrayCopyToRef(IntPtr jsHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void TypedArrayFromRef(int arrayPtr, int begin, int end, int bytesPerElement, int type, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void TypedArrayCopyFromRef(int jsHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult, out object result);
+        internal static extern void TypedArrayCopyFromRef(IntPtr jsHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult, out object result);
 
         // FIXME: Why are these IntPtr?
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void WebSocketSend(int webSocketJSHandle, IntPtr messagePtr, int offset, int length, int messageType, bool endOfMessage, out int promiseJSHandle, out int exceptionalResult, out object result);
+        internal static extern void WebSocketSend(IntPtr webSocketJSHandle, IntPtr messagePtr, int offset, int length, int messageType, bool endOfMessage, out IntPtr promiseJSHandle, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void WebSocketReceive(int webSocketJSHandle, IntPtr bufferPtr, int offset, int length, IntPtr responsePtr, out int promiseJSHandle, out int exceptionalResult, out object result);
+        internal static extern void WebSocketReceive(IntPtr webSocketJSHandle, IntPtr bufferPtr, int offset, int length, IntPtr responsePtr, out IntPtr promiseJSHandle, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void WebSocketOpenRef(in string uri, in object[]? subProtocols, in Delegate onClosed, out int webSocketJSHandle, out int promiseJSHandle, out int exceptionalResult, out object result);
+        internal static extern void WebSocketOpenRef(in string uri, in object[]? subProtocols, in Delegate onClosed, out IntPtr webSocketJSHandle, out IntPtr promiseJSHandle, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void WebSocketAbort(int webSocketJSHandle, out int exceptionalResult, out string result);
+        internal static extern void WebSocketAbort(IntPtr webSocketJSHandle, out int exceptionalResult, out string result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void WebSocketCloseRef(int webSocketJSHandle, int code, in string? reason, bool waitForCloseReceived, out int promiseJSHandle, out int exceptionalResult, out object result);
+        internal static extern void WebSocketCloseRef(IntPtr webSocketJSHandle, int code, in string? reason, bool waitForCloseReceived, out IntPtr promiseJSHandle, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern string CancelPromise(int promiseJSHandle, out int exceptionalResult);
+        internal static extern string CancelPromise(IntPtr promiseJSHandle, out int exceptionalResult);
 
         // / <summary>
         // / Execute the provided string in the JavaScript context

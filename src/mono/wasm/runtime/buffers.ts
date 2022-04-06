@@ -5,7 +5,7 @@ import { JSHandle, MonoArray, MonoObject, MonoObjectRef } from "./types";
 import { Module } from "./imports";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { wrap_error_root } from "./method-calls";
-import { _js_to_mono_obj_root } from "./js-to-cs";
+import { js_to_mono_obj_root } from "./js-to-cs";
 import { Int32Ptr, TypedArray, VoidPtr } from "./types/emscripten";
 import { mono_wasm_new_external_root } from "./roots";
 
@@ -147,7 +147,7 @@ export function mono_wasm_typed_array_copy_to_ref(js_handle: JSHandle, pinned_ar
         const res = typedarray_copy_to(js_obj, pinned_array, begin, end, bytes_per_element);
         // FIXME: We should just return an int
         // returns num_of_bytes boxed
-        _js_to_mono_obj_root(false, res, resultRoot);
+        js_to_mono_obj_root(res, resultRoot, false);
     } catch (exc) {
         wrap_error_root(is_exception, String(exc), resultRoot);
     } finally {
@@ -161,7 +161,7 @@ export function mono_wasm_typed_array_from_ref(pinned_array: MonoArray, begin: n
     try {
         const res = typed_array_from(pinned_array, begin, end, bytes_per_element, type);
         // returns JS typed array like Int8Array, to be wraped with JSObject proxy
-        _js_to_mono_obj_root(true, res, resultRoot);
+        js_to_mono_obj_root(res, resultRoot, true);
     } catch (exc) {
         wrap_error_root(is_exception, String(exc), resultRoot);
     } finally {
@@ -181,7 +181,7 @@ export function mono_wasm_typed_array_copy_from_ref(js_handle: JSHandle, pinned_
         const res = typedarray_copy_from(js_obj, pinned_array, begin, end, bytes_per_element);
         // FIXME: We should just return an int
         // returns num_of_bytes boxed
-        _js_to_mono_obj_root(false, res, resultRoot);
+        js_to_mono_obj_root(res, resultRoot, false);
     } catch (exc) {
         wrap_error_root(is_exception, String(exc), resultRoot);
     } finally {

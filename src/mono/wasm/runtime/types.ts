@@ -54,8 +54,10 @@ export const MonoObjectRefNull: MonoObjectRef = <MonoObjectRef><any>0;
 export const MonoStringRefNull: MonoStringRef = <MonoStringRef><any>0;
 export const JSHandleDisposed: JSHandle = <JSHandle><any>-1;
 export const JSHandleNull: JSHandle = <JSHandle><any>0;
+export const GCHandleNull: GCHandle = <GCHandle><any>0;
 export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
 export const CharPtrNull: CharPtr = <CharPtr><any>0;
+export const NativePointerNull: NativePointer = <NativePointer><any>0;
 
 export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | null | undefined): T {
     return (<any>ptr | <any>0) as any;
@@ -183,6 +185,7 @@ export type DotnetModuleConfig = {
     onDotnetReady?: () => void;
 
     imports?: DotnetModuleConfigImports;
+    exports?: string[];
 } & Partial<EmscriptenModule>
 
 export type DotnetModuleConfigImports = {
@@ -205,9 +208,13 @@ export type DotnetModuleConfigImports = {
     url?: any;
 }
 
-export function assert(condition: unknown, messsage: string): asserts condition {
+export function assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
     if (!condition) {
-        throw new Error(`Assert failed: ${messsage}`);
+        const message = typeof messageFactory === "string"
+            ? messageFactory
+            : messageFactory();
+        console.error(`Assert failed: ${message}`);
+        throw new Error(`Assert failed: ${message}`);
     }
 }
 

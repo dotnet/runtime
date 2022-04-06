@@ -3,17 +3,11 @@
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    public interface IJSObject
-    {
-        int JSHandle { get; }
-        int Length { get; }
-    }
-
     /// <summary>
     ///   JSObjects are wrappers for a native JavaScript object, and
     ///   they retain a reference to the JavaScript object for the lifetime of this C# object.
     /// </summary>
-    public partial class JSObject : IJSObject, IDisposable
+    public partial class JSObject : IDisposable
     {
         /// <summary>
         ///   Invoke a named method of the object, or throws a JSException on error.
@@ -96,16 +90,6 @@ namespace System.Runtime.InteropServices.JavaScript
             Interop.Runtime.SetObjectPropertyRef(JSHandle, name, in value, createIfNotExists, hasOwnProperty, out int exception, out object res);
             if (exception != 0)
                 throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}'): {res}");
-        }
-
-        /// <summary>
-        /// Gets or sets the length.
-        /// </summary>
-        /// <value>The length.</value>
-        public int Length
-        {
-            get => Convert.ToInt32(GetObjectProperty("length"));
-            set => SetObjectProperty("length", value, false);
         }
 
         /// <summary>

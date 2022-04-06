@@ -5,7 +5,7 @@ import ProductVersion from "consts:productVersion";
 import Configuration from "consts:configuration";
 
 import {
-    mono_wasm_new_root, mono_wasm_release_roots,
+    mono_wasm_new_root, mono_wasm_release_roots, mono_wasm_new_external_root,
     mono_wasm_new_root_buffer
 } from "./roots";
 import {
@@ -38,10 +38,10 @@ import {
 } from "./startup";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
-import { conv_string, conv_string_root, js_string_to_mono_string, mono_intern_string } from "./strings";
-import { js_to_mono_obj, js_typed_array_to_array, mono_wasm_typed_array_to_array_ref } from "./js-to-cs";
+import { conv_string, conv_string_root, js_string_to_mono_string, js_string_to_mono_string_root, mono_intern_string } from "./strings";
+import { js_to_mono_obj, js_typed_array_to_array, mono_wasm_typed_array_to_array_ref, js_to_mono_obj_root, js_typed_array_to_array_root } from "./js-to-cs";
 import {
-    mono_array_to_js_array, mono_wasm_create_cs_owned_object_ref, unbox_mono_obj
+    mono_array_to_js_array, mono_wasm_create_cs_owned_object_ref, unbox_mono_obj, unbox_mono_obj_root, mono_array_root_to_js_array
 } from "./cs-to-js";
 import {
     call_static_method, mono_bind_static_method, mono_call_assembly_entry_point,
@@ -79,6 +79,7 @@ const MONO = {
     mono_load_runtime_and_bcl_args,
     mono_wasm_new_root_buffer,
     mono_wasm_new_root,
+    mono_wasm_new_external_root,
     mono_wasm_release_roots,
     mono_run_main,
     mono_run_main_and_exit,
@@ -126,18 +127,42 @@ const BINDING = {
      * @deprecated Not GC or thread safe
      */
     js_string_to_mono_string,
+    /**
+     * @deprecated Not GC or thread safe
+     */
     js_typed_array_to_array,
-    js_to_mono_obj,
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_array_to_js_array,
+    /**
+     * @deprecated Not GC or thread safe
+     */
+    js_to_mono_obj,
+    /**
+     * @deprecated Not GC or thread safe
+     */
     conv_string,
+    /**
+     * @deprecated Not GC or thread safe
+     */
+    unbox_mono_obj,
     /**
      * @deprecated Renamed to conv_string_root
      */
     conv_string_rooted: conv_string_root,
+
+    mono_obj_array_new_ref: cwraps.mono_wasm_obj_array_new_ref,
+    mono_obj_array_set_ref: cwraps.mono_wasm_obj_array_set_ref,
+    js_string_to_mono_string_root,
+    js_typed_array_to_array_root,
+    js_to_mono_obj_root,
     conv_string_root,
+    unbox_mono_obj_root,
+    mono_array_root_to_js_array,
+
     bind_static_method: mono_bind_static_method,
     call_assembly_entry_point: mono_call_assembly_entry_point,
-    unbox_mono_obj,
 };
 export type BINDINGType = typeof BINDING;
 

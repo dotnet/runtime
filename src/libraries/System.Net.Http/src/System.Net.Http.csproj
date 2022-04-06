@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WindowsRID>win</WindowsRID>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -83,6 +83,7 @@
     <Compile Include="System\Net\Http\Headers\CacheControlHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\ContentDispositionHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\ContentRangeHeaderValue.cs" />
+    <Compile Include="System\Net\Http\Headers\CookieHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\DateHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\EntityTagHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\GenericHeaderParser.cs" />
@@ -557,8 +558,6 @@
              Link="Common\System\Net\HttpStatusDescription.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs"
              Link="Common\System\Net\Http\HttpHandlerDefaults.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\TlsCertificateExtensions.cs"
-             Link="Common\System\Net\Http\TlsCertificateExtensions" />
     <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.cs"
              Link="Common\System\Net\Security\CertificateHelper.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.Unix.cs"

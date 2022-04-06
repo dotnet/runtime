@@ -1160,7 +1160,7 @@ namespace System.Transactions
             public const EventKeywords TraceDistributed = (EventKeywords)0x0004;
         }
 
-        private void SetActivityId(string str)
+        private static void SetActivityId(string str)
         {
             Guid guid = Guid.Empty;
 

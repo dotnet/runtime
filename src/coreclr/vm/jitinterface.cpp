@@ -2089,7 +2089,7 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    unsigned result;
+    unsigned result = 0;
 
     JIT_TO_EE_TRANSITION();
 
@@ -2364,13 +2364,6 @@ CORINFO_METHOD_HANDLE CEEInfo::GetDelegateCtor(
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
-
-    if (isVerifyOnly())
-    {
-        // No sense going through the optimized case just for verification and it can cause issues parsing
-        // uninstantiated generic signatures.
-        return methHnd;
-    }
 
     CORINFO_METHOD_HANDLE result = NULL;
 
@@ -2697,9 +2690,6 @@ void CEEInfo::ScanToken(Module * pModule, CORINFO_RESOLVED_TOKEN * pResolvedToke
     if (pModule->IsSystem())
         return;
 
-    if (isVerifyOnly())
-        return;
-
     //
     // Scan method instantiation
     //
@@ -2883,10 +2873,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pResultLookup));
     } CONTRACTL_END;
-
-
-    // We should never get here when we are only verifying
-    _ASSERTE(!isVerifyOnly());
 
     pResultLookup->lookupKind.needsRuntimeLookup = true;
     pResultLookup->lookupKind.runtimeLookupFlags = 0;
@@ -3356,12 +3342,12 @@ const char* CEEInfo::getHelperName (CorInfoHelpFunc ftnNum)
 
 
 /*********************************************************************/
-int CEEInfo::appendClassName(_Outptr_result_buffer_(*pnBufLen) char16_t** ppBuf,
-                             int* pnBufLen,
-                             CORINFO_CLASS_HANDLE    clsHnd,
-                             bool fNamespace,
-                             bool fFullInst,
-                             bool fAssembly)
+int CEEInfo::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char16_t**   ppBuf,
+                             int*                                               pnBufLen,
+                             CORINFO_CLASS_HANDLE                               clsHnd,
+                             bool                                               fNamespace,
+                             bool                                               fFullInst,
+                             bool                                               fAssembly)
 {
     CONTRACTL {
         MODE_PREEMPTIVE;
@@ -3383,14 +3369,24 @@ int CEEInfo::appendClassName(_Outptr_result_buffer_(*pnBufLen) char16_t** ppBuf,
     nLen = (int)wcslen(szString);
     if (*pnBufLen > 0)
     {
-    wcscpy_s((WCHAR*)*ppBuf, *pnBufLen, szString );
-    (*ppBuf)[(*pnBufLen) - 1] = W('\0');
-    (*ppBuf) += nLen;
-    (*pnBufLen) -= nLen;
+        // Copy as much as will fit.
+        WCHAR* pBuf = (WCHAR*)*ppBuf;
+        int nLenToCopy = min(*pnBufLen, nLen + /* null terminator */ 1);
+        for (int i = 0; i < nLenToCopy - 1; i++)
+        {
+            pBuf[i] = szString[i];
+        }
+        pBuf[nLenToCopy - 1] = 0; // null terminate the string if it wasn't already
+
+        // Update the buffer pointer and buffer size pointer based on the amount actually copied.
+        // Don't include the null terminator. `*ppBuf` will point at the added null terminator.
+        (*ppBuf) += nLenToCopy - 1;
+        (*pnBufLen) -= nLenToCopy - 1;
     }
 
     EE_TO_JIT_TRANSITION();
 
+    // Return the actual length of the string, not including the null terminator.
     return nLen;
 }
 
@@ -3690,13 +3686,6 @@ CorInfoInitClassResult CEEInfo::initClass(
 
     JIT_TO_EE_TRANSITION();
     {
-
-    // Do not bother figuring out the initialization if we are only verifying the method.
-    if (isVerifyOnly())
-    {
-        result = CORINFO_INITCLASS_NOT_REQUIRED;
-        goto exit;
-    }
 
     FieldDesc * pFD = (FieldDesc *)field;
     _ASSERTE(pFD == NULL || pFD->IsStatic());
@@ -5173,7 +5162,7 @@ void CEEInfo::getCallInfo(
         {
             BYTE * indcell = NULL;
 
-            if (!(flags & CORINFO_CALLINFO_KINDONLY) && !isVerifyOnly())
+            if (!(flags & CORINFO_CALLINFO_KINDONLY))
             {
                 // We shouldn't be using GetLoaderAllocator here because for LCG, we need to get the
                 // VirtualCallStubManager from where the stub will be used.
@@ -5826,9 +5815,6 @@ CorInfoHelpFunc CEEInfo::getCastingHelper(CORINFO_RESOLVED_TOKEN * pResolvedToke
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    if (isVerifyOnly())
-        return fThrowing ? CORINFO_HELP_CHKCASTANY : CORINFO_HELP_ISINSTANCEOFANY;
-
     CorInfoHelpFunc result = CORINFO_HELP_UNDEF;
 
     JIT_TO_EE_TRANSITION();
@@ -5983,6 +5969,7 @@ bool CEEInfo::getReadyToRunHelper(
 /***********************************************************************/
 void CEEInfo::getReadyToRunDelegateCtorHelper(
         CORINFO_RESOLVED_TOKEN * pTargetMethod,
+        mdToken                  targetConstraint,
         CORINFO_CLASS_HANDLE     delegateType,
         CORINFO_LOOKUP *   pLookup
         )
@@ -9006,19 +8993,26 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
     // Resolve methodImpl.
     ftn = ftn->GetMethodTable()->MapMethodDeclToMethodImpl(ftn);
 
-    ret = (void *)ftn->TryGetMultiCallableAddrOfCode(accessFlags);
-
-    // TryGetMultiCallableAddrOfCode returns NULL if indirect access is desired
-    if (ret == NULL)
+    if (!ftn->IsFCall() && ftn->IsVersionableWithPrecode() && (ftn->GetPrecodeType() == PRECODE_FIXUP) && !ftn->IsPointingToStableNativeCode())
     {
-        // should never get here for EnC methods or if interception via remoting stub is required
-        _ASSERTE(!ftn->IsEnCMethod());
-
-        ret = (void *)ftn->GetAddrOfSlot();
-
+        ret = ((FixupPrecode*)ftn->GetOrCreatePrecode())->GetTargetSlot();
         accessType = IAT_PVALUE;
     }
+    else
+    {
+        ret = (void *)ftn->TryGetMultiCallableAddrOfCode(accessFlags);
 
+        // TryGetMultiCallableAddrOfCode returns NULL if indirect access is desired
+        if (ret == NULL)
+        {
+            // should never get here for EnC methods or if interception via remoting stub is required
+            _ASSERTE(!ftn->IsEnCMethod());
+
+            ret = (void *)ftn->GetAddrOfSlot();
+
+            accessType = IAT_PVALUE;
+        }
+    }
 
 #if defined(FEATURE_GDBJIT)
     CalledMethod * pCM = new CalledMethod(orig_ftn, ret, m_pCalledMethods);
@@ -9448,7 +9442,7 @@ CorInfoTypeWithMod CEEInfo::getArgType (
 
     case ELEMENT_TYPE_PTR:
         // Load the type eagerly under debugger to make the eval work
-        if (!isVerifyOnly() && CORDisableJITOptimizations(pModule->GetDebuggerInfoBits()))
+        if (CORDisableJITOptimizations(pModule->GetDebuggerInfoBits()))
         {
             // NOTE: in some IJW cases, when the type pointed at is unmanaged,
             // the GetTypeHandle may fail, because there is no TypeDef for such type.
@@ -11126,6 +11120,23 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
         }
 #endif
 
+        if (dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFINTERFACE ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFANY ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFARRAY ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFCLASS ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTANY ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTARRAY ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTINTERFACE ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTCLASS ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTCLASS_SPECIAL ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_UNBOX)
+        {
+            Precode* pPrecode = Precode::GetPrecodeFromEntryPoint((PCODE)hlpDynamicFuncTable[dynamicFtnNum].pfnHelper);
+            _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
+            *ppIndirection = ((FixupPrecode*)pPrecode)->GetTargetSlot();
+            return NULL;
+        }
+
         pfnHelper = hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
 
 #ifdef _PREFAST_
@@ -11963,7 +11974,7 @@ bool CEEJitInfo::doesFieldBelongToClass(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLA
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    bool result;
+    bool result = false;
 
     JIT_TO_EE_TRANSITION();
 
@@ -12084,12 +12095,6 @@ void* CEEJitInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
     if (ppIndirection != NULL)
         *ppIndirection = NULL;
 
-    // Do not bother with initialization if we are only verifying the method.
-    if (isVerifyOnly())
-    {
-        return (void *)0x10;
-    }
-
     JIT_TO_EE_TRANSITION();
 
     FieldDesc* field = (FieldDesc*) fieldHnd;
@@ -12138,12 +12143,6 @@ CORINFO_CLASS_HANDLE CEEJitInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE
     if (pIsSpeculative != NULL)
     {
         *pIsSpeculative = true;
-    }
-
-    // Only examine the field's value if we are producing jitted code.
-    if (isVerifyOnly())
-    {
-        return result;
     }
 
     JIT_TO_EE_TRANSITION();
@@ -12728,7 +12727,6 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         // If we're doing an "import_only" compilation, it's for verification, so don't interpret.
         // (We assume that importation is completely architecture-independent, or at least nearly so.)
         if (FAILED(ret) &&
-            !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) &&
             (forceInterpreter || !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE)))
         {
             if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
@@ -12753,7 +12751,6 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         // If we're doing an "import_only" compilation, it's for verification, so don't interpret.
         // (We assume that importation is completely architecture-independent, or at least nearly so.)
         if (FAILED(ret) &&
-            !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) &&
             (forceInterpreter || !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE)))
         {
             if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
@@ -12778,7 +12775,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     // If the JIT fails we keep the IL around and will
     // try reJIT the same IL.  VSW 525059
     //
-    if (SUCCEEDED(ret) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) && !((CEEJitInfo*)comp)->JitAgain())
+    if (SUCCEEDED(ret) && !((CEEJitInfo*)comp)->JitAgain())
     {
         ((CEEJitInfo*)comp)->CompressDebugInfo();
 
@@ -12938,14 +12935,6 @@ CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags)
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE);
     }
 
-    if (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY))
-    {
-        // If we are only verifying the method, dont need any debug info and this
-        // prevents getVars()/getBoundaries() from being called unnecessarily.
-        flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
-        flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE);
-    }
-
     return flags;
 }
 
@@ -12963,10 +12952,7 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
     //
     // Get CPU specific flags
     //
-    if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY))
-    {
-        flags.Add(ExecutionManager::GetEEJitManager()->GetCPUCompileFlags());
-    }
+    flags.Add(ExecutionManager::GetEEJitManager()->GetCPUCompileFlags());
 
     //
     // Find the debugger and profiler related flags
@@ -13191,12 +13177,8 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     getMethodInfoHelper(ftn, ftnHnd, ILHeader, &methodInfo);
 
-    // If it's generic then we can only enter through an instantiated md (unless we're just verifying it)
-    _ASSERTE(flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) || !ftn->IsGenericMethodDefinition());
-
-    // If it's an instance method then it must not be entered from a generic class
-    _ASSERTE(flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) || ftn->IsStatic() ||
-             ftn->GetNumGenericClassArgs() == 0 || ftn->HasClassInstantiation());
+    // If it's generic then we can only enter through an instantiated md
+    _ASSERTE(!ftn->IsGenericMethodDefinition());
 
     // method attributes and signature are consistant
     _ASSERTE(!!ftn->IsStatic() == ((methodInfo.args.callConv & CORINFO_CALLCONV_HASTHIS) == 0));
@@ -13233,8 +13215,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     for (;;)
     {
-        CEEJitInfo jitInfo(ftn, ILHeader, jitMgr, flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY),
-            !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
+        CEEJitInfo jitInfo(ftn, ILHeader, jitMgr, !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
 
 #if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
 #ifdef TARGET_AMD64
@@ -13313,8 +13294,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #ifdef PERF_TRACK_METHOD_JITTIMES
             //Because we're not calling QPC enough.  I'm not going to track times if we're just importing.
             LARGE_INTEGER methodJitTimeStart = {0};
-            if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY))
-                QueryPerformanceCounter (&methodJitTimeStart);
+            QueryPerformanceCounter (&methodJitTimeStart);
 
 #endif
             LOG((LF_CORDB, LL_EVERYTHING, "Calling invokeCompileMethod...\n"));
@@ -13339,7 +13319,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #ifdef PERF_TRACK_METHOD_JITTIMES
             //store the time in the string buffer.  Module name and token are unique enough.  Also, do not
             //capture importing time, just actual compilation time.
-            if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY))
             {
                 LARGE_INTEGER methodJitTimeStop;
                 QueryPerformanceCounter(&methodJitTimeStop);
@@ -13366,8 +13345,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             // Note: if we're only importing (ie, verifying/
             // checking to make sure we could JIT, but not actually generating code (
             // eg, for inlining), then DON'T TELL THE DEBUGGER about this.
-            if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) &&
-                !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND)
+            if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND)
 #ifdef FEATURE_STACK_SAMPLING
                 && !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND)
 #endif // FEATURE_STACK_SAMPLING
@@ -13390,12 +13368,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         {
             jitInfo.BackoutJitData(jitMgr);
             ThrowExceptionForJit(res);
-        }
-
-        if (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY))
-        {
-            // We are done
-            break;
         }
 
         if (!nativeEntry)
@@ -14566,9 +14538,7 @@ InfoAccessType CEEInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd,
 InfoAccessType CEEInfo::emptyStringLiteral(void ** ppValue)
 {
     LIMITED_METHOD_CONTRACT;
-    _ASSERTE(isVerifyOnly());
-    *ppValue = (void *)0x10;
-    return IAT_PVALUE;
+    UNREACHABLE();      // only called on derived class.
 }
 
 void* CEEInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
@@ -14584,12 +14554,6 @@ void* CEEInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
 
     if (ppIndirection != NULL)
         *ppIndirection = NULL;
-
-    // Do not bother with initialization if we are only verifying the method.
-    if (isVerifyOnly())
-    {
-        return (void *)0x10;
-    }
 
     JIT_TO_EE_TRANSITION();
 
@@ -14608,10 +14572,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fi
                                                          bool* pIsSpeculative)
 {
     LIMITED_METHOD_CONTRACT;
-    _ASSERTE(isVerifyOnly());
-    if (pIsSpeculative != NULL)
-        *pIsSpeculative = true;
-    return NULL;
+    UNREACHABLE();      // only called on derived class.
 }
 
 void* CEEInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,

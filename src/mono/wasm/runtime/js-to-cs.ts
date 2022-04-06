@@ -44,7 +44,7 @@ export function _js_to_mono_uri_root(should_add_in_flight: boolean, js_obj: any,
 export function js_to_mono_obj(js_obj: any): MonoObject {
     const temp = mono_wasm_new_root<MonoObject>();
     try {
-        _js_to_mono_obj_root(false, js_obj, temp);
+        js_to_mono_obj_root(js_obj, temp, false);
         return temp.value;
     } finally {
         temp.release();
@@ -58,7 +58,7 @@ export function js_to_mono_obj(js_obj: any): MonoObject {
 export function _js_to_mono_obj_unsafe(should_add_in_flight: boolean, js_obj: any): MonoObject {
     const temp = mono_wasm_new_root<MonoObject>();
     try {
-        _js_to_mono_obj_root(should_add_in_flight, js_obj, temp);
+        js_to_mono_obj_root(js_obj, temp, should_add_in_flight);
         return temp.value;
     } finally {
         temp.release();
@@ -66,7 +66,7 @@ export function _js_to_mono_obj_unsafe(should_add_in_flight: boolean, js_obj: an
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function _js_to_mono_obj_root(should_add_in_flight: boolean, js_obj: any, result: WasmRoot<MonoObject>): void {
+export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, should_add_in_flight: boolean): void {
     switch (true) {
         case js_obj === null:
         case typeof js_obj === "undefined":
@@ -86,9 +86,6 @@ export function _js_to_mono_obj_root(should_add_in_flight: boolean, js_obj: any,
             }
 
             cwraps.mono_wasm_box_primitive_ref(box_class, runtimeHelpers._box_buffer, 8, result.address);
-
-            if (!result.value)
-                throw new Error(`Boxing failed for ${js_obj}`);
             return;
         }
         case typeof js_obj === "string":
@@ -132,11 +129,13 @@ function _extract_mono_obj_root(should_add_in_flight: boolean, js_obj: any, resu
 
         // It's possible the managed object corresponding to this JS object was collected,
         //  in which case we need to make a new one.
+        // FIXME: This check is not thread safe
         if (!result.value) {
             delete js_obj[cs_owned_js_handle_symbol];
         }
     }
 
+    // FIXME: This check is not thread safe
     if (!result.value) {
         // Obtain the JS -> C# type mapping.
         const wasm_type = js_obj[wasm_type_symbol];
@@ -158,7 +157,7 @@ function js_typedarray_to_heap(typedArray: TypedArray) {
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function js_typed_array_to_array_ref(js_obj: any, result: WasmRoot<MonoArray>): void {
+export function js_typed_array_to_array_root(js_obj: any, result: WasmRoot<MonoArray>): void {
     // JavaScript typed arrays are array-like objects and provide a mechanism for accessing
     // raw binary data. (...) To achieve maximum flexibility and efficiency, JavaScript typed arrays
     // split the implementation into buffers and views. A buffer (implemented by the ArrayBuffer object)
@@ -185,7 +184,7 @@ export function js_typed_array_to_array_ref(js_obj: any, result: WasmRoot<MonoAr
 export function js_typed_array_to_array(js_obj: any): MonoArray {
     const temp = mono_wasm_new_root<MonoArray>();
     try {
-        js_typed_array_to_array_ref(js_obj, temp);
+        js_typed_array_to_array_root(js_obj, temp);
         return temp.value;
     } finally {
         temp.release();
@@ -216,7 +215,7 @@ export function js_array_to_mono_array(js_array: any[], asString: boolean, shoul
             if (asString)
                 obj = obj.toString();
 
-            _js_to_mono_obj_root(should_add_in_flight, obj, elemRoot);
+            js_to_mono_obj_root(obj, elemRoot, should_add_in_flight);
             cwraps.mono_wasm_obj_array_set_ref(arrayAddress, i, elemAddress);
         }
 

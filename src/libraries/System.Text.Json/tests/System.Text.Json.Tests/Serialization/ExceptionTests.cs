@@ -458,7 +458,7 @@ namespace System.Text.Json.Serialization.Tests
                 JsonSerializer.Serialize(new ClassWithPropertyToClassWithInvalidArray()));
 
             Assert.Contains(typeof(int[,]).ToString(), ex.Message);
-            Assert.Contains(typeof(ClassWithPropertyToClassWithInvalidArray).ToString(), ex.Message);
+            Assert.Contains(typeof(ClassWithInvalidArray).ToString(), ex.Message);
             Assert.Contains("Path: $.Inner.", ex.Message);
 
             // The original exception contains the type.

@@ -594,7 +594,7 @@ namespace Internal.JitInterface
         CORINFO_FLG_ARRAY = 0x00080000, // class is an array class (initialized differently)
         CORINFO_FLG_OVERLAPPING_FIELDS = 0x00100000, // struct or class has fields that overlap (aka union)
         CORINFO_FLG_INTERFACE = 0x00200000, // it is an interface
-        CORINFO_FLG_DONT_DIG_FIELDS = 0x00400000, // don't try to ask about fields outside of AOT compilation version bubble
+        CORINFO_FLG_DONT_PROMOTE = 0x00400000, // don't try to promote fieds of types outside of AOT compilation version bubble
         CORINFO_FLG_CUSTOMLAYOUT = 0x00800000, // does this struct have custom layout?
         CORINFO_FLG_CONTAINS_GC_PTR = 0x01000000, // does the class contain a gc ptr ?
         CORINFO_FLG_DELEGATE = 0x02000000, // is this a subclass of delegate or multicast delegate ?
@@ -1333,7 +1333,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_UNUSED6 = 12,
         CORJIT_FLAG_OSR = 13, // Generate alternate version for On Stack Replacement
         CORJIT_FLAG_ALT_JIT = 14, // JIT should consider itself an ALT_JIT
-        CORJIT_FLAG_FEATURE_SIMD = 17,
+        CORJIT_FLAG_UNUSED10 = 17,
         CORJIT_FLAG_MAKEFINALCODE = 18, // Use the final code generator, i.e., not the interpreter.
         CORJIT_FLAG_READYTORUN = 19, // Use version-resilient code generation
         CORJIT_FLAG_PROF_ENTERLEAVE = 20, // Instrument prologues/epilogues

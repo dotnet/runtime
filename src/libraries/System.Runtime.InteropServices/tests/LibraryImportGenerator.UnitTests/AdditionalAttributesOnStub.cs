@@ -31,6 +31,7 @@ struct S
 {
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s) { }
@@ -82,6 +83,7 @@ struct S
 {
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s) { }
@@ -127,6 +129,7 @@ partial class C
 
         [Theory]
         [MemberData(nameof(GetDownlevelTargetFrameworks))]
+        [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task SkipLocalsInitOnDownlevelTargetFrameworks(TestTargetFramework targetFramework, bool expectSkipLocalsInit)
         {
             string source = $@"
@@ -172,6 +175,7 @@ struct S
 {
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s) { }
@@ -204,6 +208,7 @@ struct S
 {
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s) { }
@@ -236,6 +241,7 @@ struct S
 {
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s) { }

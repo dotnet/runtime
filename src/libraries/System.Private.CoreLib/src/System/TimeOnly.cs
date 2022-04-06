@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Globalization;
 using System.Runtime.Versioning;
 
@@ -18,7 +19,7 @@ namespace System
           ISpanFormattable,
           IComparisonOperators<TimeOnly, TimeOnly>,
           IMinMaxValue<TimeOnly>,
-          ISpanParseable<TimeOnly>,
+          ISpanParsable<TimeOnly>,
           ISubtractionOperators<TimeOnly, TimeOnly, TimeSpan>
     {
         // represent the number of ticks map to the time of the day. 1 ticks = 100-nanosecond in time measurements.
@@ -33,11 +34,13 @@ namespace System
         /// <summary>
         /// Represents the smallest possible value of TimeOnly.
         /// </summary>
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static TimeOnly MinValue => new TimeOnly((ulong)MinTimeTicks);
 
         /// <summary>
         /// Represents the largest possible value of TimeOnly.
         /// </summary>
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static TimeOnly MaxValue => new TimeOnly((ulong)MaxTimeTicks);
 
         /// <summary>
@@ -204,6 +207,7 @@ namespace System
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns>true if left and right represent the same time; otherwise, false.</returns>
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
         public static bool operator ==(TimeOnly left, TimeOnly right) => left._ticks == right._ticks;
 
         /// <summary>
@@ -212,6 +216,7 @@ namespace System
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns>true if left and right do not represent the same time; otherwise, false.</returns>
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
         public static bool operator !=(TimeOnly left, TimeOnly right) => left._ticks != right._ticks;
 
         /// <summary>
@@ -220,6 +225,7 @@ namespace System
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns>true if left is later than right; otherwise, false.</returns>
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(TimeOnly left, TimeOnly right) => left._ticks > right._ticks;
 
         /// <summary>
@@ -228,6 +234,7 @@ namespace System
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns>true if left is the same as or later than right; otherwise, false.</returns>
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(TimeOnly left, TimeOnly right) => left._ticks >= right._ticks;
 
         /// <summary>
@@ -236,6 +243,7 @@ namespace System
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns>true if left is earlier than right; otherwise, false.</returns>
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(TimeOnly left, TimeOnly right) => left._ticks < right._ticks;
 
         /// <summary>
@@ -244,6 +252,7 @@ namespace System
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns>true if left is the same as or earlier than right; otherwise, false.</returns>
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(TimeOnly left, TimeOnly right) => left._ticks <= right._ticks;
 
         /// <summary>
@@ -343,6 +352,7 @@ namespace System
         /// <param name="provider">An object that supplies culture-specific format information about s.</param>
         /// <param name="style">A bitwise combination of enumeration values that indicates the permitted format of s. A typical value to specify is None.</param>
         /// <returns>An object that is equivalent to the time contained in s, as specified by provider and styles.</returns>
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
         public static TimeOnly Parse(ReadOnlySpan<char> s, IFormatProvider? provider = default, DateTimeStyles style = DateTimeStyles.None)
         {
             ParseFailureKind result = TryParseInternal(s, provider, style, out TimeOnly timeOnly);
@@ -491,6 +501,7 @@ namespace System
         /// <param name="style">A bitwise combination of enumeration values that indicates the permitted format of s. A typical value to specify is None.</param>
         /// <param name="result">When this method returns, contains the TimeOnly value equivalent to the time contained in s, if the conversion succeeded, or MinValue if the conversion failed. The conversion fails if the s parameter is empty string, or does not contain a valid string representation of a date. This parameter is passed uninitialized.</param>
         /// <returns>true if the s parameter was converted successfully; otherwise, false.</returns>
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result) =>
                             TryParseInternal(s, provider, style, out result) == ParseFailureKind.None;
         private static ParseFailureKind TryParseInternal(ReadOnlySpan<char> s, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result)
@@ -905,63 +916,21 @@ namespace System
         }
 
         //
-        // IComparisonOperators
+        // IParsable
         //
 
-        static bool IComparisonOperators<TimeOnly, TimeOnly>.operator <(TimeOnly left, TimeOnly right)
-            => left < right;
+        public static TimeOnly Parse(string s, IFormatProvider? provider) => Parse(s, provider, DateTimeStyles.None);
 
-        static bool IComparisonOperators<TimeOnly, TimeOnly>.operator <=(TimeOnly left, TimeOnly right)
-            => left <= right;
-
-        static bool IComparisonOperators<TimeOnly, TimeOnly>.operator >(TimeOnly left, TimeOnly right)
-            => left > right;
-
-        static bool IComparisonOperators<TimeOnly, TimeOnly>.operator >=(TimeOnly left, TimeOnly right)
-            => left >= right;
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out TimeOnly result) => TryParse(s, provider, DateTimeStyles.None, out result);
 
         //
-        // IEqualityOperators
+        // ISpanParsable
         //
 
-        static bool IEqualityOperators<TimeOnly, TimeOnly>.operator ==(TimeOnly left, TimeOnly right)
-            => left == right;
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        public static TimeOnly Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, provider, DateTimeStyles.None);
 
-        static bool IEqualityOperators<TimeOnly, TimeOnly>.operator !=(TimeOnly left, TimeOnly right)
-            => left != right;
-
-        //
-        // IParseable
-        //
-
-        static TimeOnly IParseable<TimeOnly>.Parse(string s, IFormatProvider? provider)
-            => Parse(s, provider, DateTimeStyles.None);
-
-        static bool IParseable<TimeOnly>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out TimeOnly result)
-            => TryParse(s, provider, DateTimeStyles.None, out result);
-
-        //
-        // ISpanParseable
-        //
-
-        static TimeOnly ISpanParseable<TimeOnly>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s, provider, DateTimeStyles.None);
-
-        static bool ISpanParseable<TimeOnly>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out TimeOnly result)
-            => TryParse(s, provider, DateTimeStyles.None, out result);
-
-        //
-        // ISubtractionOperators
-        //
-
-        static TimeSpan ISubtractionOperators<TimeOnly, TimeOnly, TimeSpan>.operator -(TimeOnly left, TimeOnly right)
-            => left - right;
-
-        // static checked TimeSpan ISubtractionOperators<TimeOnly, TimeOnly, TimeSpan>.operator -(TimeOnly left, TimeOnly right)
-        //     => checked(left - right);
-
-        static TimeOnly IMinMaxValue<TimeOnly>.MinValue => MinValue;
-
-        static TimeOnly IMinMaxValue<TimeOnly>.MaxValue => MaxValue;
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out TimeOnly result) => TryParse(s, provider, DateTimeStyles.None, out result);
     }
 }

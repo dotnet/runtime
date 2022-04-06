@@ -4,7 +4,7 @@
 import { WasmRoot, WasmRootBuffer, mono_wasm_new_root } from "./roots";
 import { MonoClass, MonoMethod, MonoObject, VoidPtrNull, MonoType, MarshalType } from "./types";
 import { BINDING, Module, runtimeHelpers } from "./imports";
-import { js_to_mono_enum, _js_to_mono_obj_root, _js_to_mono_uri_root } from "./js-to-cs";
+import { js_to_mono_enum, js_to_mono_obj_root, _js_to_mono_uri_root } from "./js-to-cs";
 import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "./strings";
 import { _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
 import {
@@ -16,12 +16,11 @@ import {
     _get_args_root_buffer_for_method_call, _get_buffer_for_method_call,
     _handle_exception_for_call, _teardown_after_call
 } from "./method-calls";
-import cwraps from "./cwraps";
+import cwraps, { wrap_c_function } from "./cwraps";
 import { VoidPtr } from "./types/emscripten";
 
 const primitiveConverters = new Map<string, Converter>();
 const _signature_converters = new Map<string, Converter>();
-const _method_descriptions = new Map<MonoMethod, string>();
 
 
 export function _get_type_name(typePtr: MonoType): string {
@@ -43,11 +42,7 @@ export function _get_class_name(classPtr: MonoClass): string {
 }
 
 export function find_method(klass: MonoClass, name: string, n: number): MonoMethod {
-    const result = cwraps.mono_wasm_assembly_find_method(klass, name, n);
-    if (result) {
-        _method_descriptions.set(result, name);
-    }
-    return result;
+    return cwraps.mono_wasm_assembly_find_method(klass, name, n);
 }
 
 export function get_method(method_name: string): MonoMethod {
@@ -127,10 +122,10 @@ export function _create_primitive_converters(): void {
     // note we also bind first argument to false for both _js_to_mono_obj and _js_to_mono_uri,
     // because we will root the reference, so we don't need in-flight reference
     // also as those are callback arguments and we don't have platform code which would release the in-flight reference on C# end
-    result.set("o", { steps: [{ convert_root: _js_to_mono_obj_root.bind(BINDING, false) }], size: 0, needs_root: true });
+    result.set("o", { steps: [{ convert_root: js_to_mono_obj_root.bind(BINDING) }], size: 0, needs_root: true });
     result.set("u", { steps: [{ convert_root: _js_to_mono_uri_root.bind(BINDING, false) }], size: 0, needs_root: true });
     // ref object aka T&&
-    result.set("R", { steps: [{ convert_root: _js_to_mono_obj_root.bind(BINDING, false), byref: true }], size: 0, needs_root: true });
+    result.set("R", { steps: [{ convert_root: js_to_mono_obj_root.bind(BINDING), byref: true }], size: 0, needs_root: true });
 
     // result.set ('k', { steps: [{ convert: js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
     result.set("j", { steps: [{ convert: js_to_mono_enum.bind(BINDING), indirect: "i32" }], size: 8 });
@@ -419,9 +414,9 @@ export function mono_bind_method(method: MonoMethod, this_arg: null, args_marsha
         _get_buffer_for_method_call,
         _handle_exception_for_call,
         _teardown_after_call,
-        mono_wasm_try_unbox_primitive_and_get_type_ref: cwraps.mono_wasm_try_unbox_primitive_and_get_type_ref,
+        mono_wasm_try_unbox_primitive_and_get_type_ref: wrap_c_function("mono_wasm_try_unbox_primitive_and_get_type_ref"),
         _unbox_mono_obj_root_with_known_nonprimitive_type,
-        invoke_method_ref: cwraps.mono_wasm_invoke_method_ref,
+        invoke_method_ref: wrap_c_function("mono_wasm_invoke_method_ref"),
         method,
         token,
         unbox_buffer,

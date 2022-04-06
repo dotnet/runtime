@@ -341,11 +341,11 @@ namespace ILCompiler.DependencyAnalysis
                     if (nativeDebugDirectoryEntryNode is not null)
                     {
                         Debug.Assert(_generatePdbFile);
-                        // Compute MD5 hash of the output image and store that in the native DebugDirectory entry
-                        using (var md5Hash = MD5.Create())
+                        // Compute hash of the output image and store that in the native DebugDirectory entry
+                        using (var hashAlgorithm = SHA256.Create())
                         {
                             peStream.Seek(0, SeekOrigin.Begin);
-                            byte[] hash = md5Hash.ComputeHash(peStream);
+                            byte[] hash = hashAlgorithm.ComputeHash(peStream);
                             byte[] rsdsEntry = nativeDebugDirectoryEntryNode.GenerateRSDSEntryData(hash);
 
                             int offsetToUpdate = r2rPeBuilder.GetSymbolFilePosition(nativeDebugDirectoryEntryNode);

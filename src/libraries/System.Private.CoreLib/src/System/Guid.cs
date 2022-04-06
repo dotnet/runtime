@@ -23,7 +23,7 @@ namespace System
           IComparable<Guid>,
           IEquatable<Guid>,
           IComparisonOperators<Guid, Guid>,
-          ISpanParseable<Guid>
+          ISpanParsable<Guid>
     {
         public static readonly Guid Empty;
 
@@ -385,7 +385,7 @@ namespace System
                 return false;
             }
 
-            Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result, 1));
+            Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result));
             int invalidIfNegative = 0;
             bytes[0] = DecodeByte(guidString[6],   guidString[7],  ref invalidIfNegative);
             bytes[1] = DecodeByte(guidString[4],   guidString[5],  ref invalidIfNegative);
@@ -471,7 +471,7 @@ namespace System
                 return false;
             }
 
-            Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result, 1));
+            Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result));
             int invalidIfNegative = 0;
             bytes[0] = DecodeByte(guidString[6], guidString[7], ref invalidIfNegative);
             bytes[1] = DecodeByte(guidString[4], guidString[5], ref invalidIfNegative);
@@ -1221,7 +1221,8 @@ namespace System
         // IComparisonOperators
         //
 
-        static bool IComparisonOperators<Guid, Guid>.operator <(Guid left, Guid right)
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        public static bool operator <(Guid left, Guid right)
         {
             if (left._a != right._a)
             {
@@ -1281,7 +1282,8 @@ namespace System
             return false;
         }
 
-        static bool IComparisonOperators<Guid, Guid>.operator <=(Guid left, Guid right)
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        public static bool operator <=(Guid left, Guid right)
         {
             if (left._a != right._a)
             {
@@ -1341,7 +1343,8 @@ namespace System
             return true;
         }
 
-        static bool IComparisonOperators<Guid, Guid>.operator >(Guid left, Guid right)
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        public static bool operator >(Guid left, Guid right)
         {
             if (left._a != right._a)
             {
@@ -1401,7 +1404,8 @@ namespace System
             return false;
         }
 
-        static bool IComparisonOperators<Guid, Guid>.operator >=(Guid left, Guid right)
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        public static bool operator >=(Guid left, Guid right)
         {
             if (left._a != right._a)
             {
@@ -1462,33 +1466,23 @@ namespace System
         }
 
         //
-        // IEqualityOperators
+        // IParsable
         //
 
-        static bool IEqualityOperators<Guid, Guid>.operator ==(Guid left, Guid right)
-            => left == right;
+        /// <inheritdoc cref="IParsable{TSelf}.Parse(string, IFormatProvider?)" />
+        public static Guid Parse(string s, IFormatProvider? provider) => Parse(s);
 
-        static bool IEqualityOperators<Guid, Guid>.operator !=(Guid left, Guid right)
-            => left != right;
-
-        //
-        // IParseable
-        //
-
-        static Guid IParseable<Guid>.Parse(string s, IFormatProvider? provider)
-            => Parse(s);
-
-        static bool IParseable<Guid>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Guid result)
-            => TryParse(s, out result);
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Guid result) => TryParse(s, out result);
 
         //
-        // ISpanParseable
+        // ISpanParsable
         //
 
-        static Guid ISpanParseable<Guid>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s);
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        public static Guid Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
 
-        static bool ISpanParseable<Guid>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Guid result)
-            => TryParse(s, out result);
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Guid result) => TryParse(s, out result);
     }
 }
