@@ -292,7 +292,7 @@ jobs:
 
 # WebAssembly
 
-- ${{ if or(containsValue(parameters.platforms, 'Browser_wasm'),containsValue(parameters.platforms, 'Browser_wasm_firefox'))  }}:
+- ${{ if containsValue(parameters.platforms, 'Browser_wasm')  }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
@@ -302,6 +302,30 @@ jobs:
       archType: wasm
       targetRid: browser-wasm
       platform: Browser_wasm
+      container:
+        image: ubuntu-18.04-webassembly-20220329135503-af466c5
+        registry: mcr
+      jobParameters:
+        hostedOs: Linux
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# WebAssembly
+
+- ${{ if containsValue(parameters.platforms, 'Browser_wasm_firefox')  }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Browser
+      archType: wasm
+      targetRid: browser-wasm
+      platform: Browser_wasm_firefox
       container:
         image: ubuntu-18.04-webassembly-20220329135503-af466c5
         registry: mcr
