@@ -89,7 +89,7 @@ static GenTreeHWIntrinsic* CreateConstVector(Compiler* comp, var_types simdType,
     if (simdType == TYP_SIMD32)
     {
         ssize_t fourLongs[4];
-        CopyMemory(fourLongs, cns, sizeof(ssize_t) * 4);
+        memcpy(fourLongs, cns, sizeof(ssize_t) * 4);
 
         GenTree* long1 = comp->gtNewIconNode(fourLongs[0], TYP_LONG);
         GenTree* long2 = comp->gtNewIconNode(fourLongs[1], TYP_LONG);
@@ -100,7 +100,7 @@ static GenTreeHWIntrinsic* CreateConstVector(Compiler* comp, var_types simdType,
 #endif // TARGET_XARCH
 
     ssize_t twoLongs[2];
-    CopyMemory(twoLongs, cns, sizeof(ssize_t) * 2);
+    memcpy(twoLongs, cns, sizeof(ssize_t) * 2);
 
     assert(simdType == TYP_SIMD16);
     GenTree* long1 = comp->gtNewIconNode(twoLongs[0], TYP_LONG);
@@ -173,7 +173,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     WCHAR cnsValue[maxPossibleLength]    = {};
     WCHAR toLowerMask[maxPossibleLength] = {};
 
-    CopyMemory((UINT8*)cnsValue, (UINT8*)cns, len * sizeof(WCHAR));
+    memcpy((UINT8*)cnsValue, (UINT8*)cns, len * sizeof(WCHAR));
 
     if ((cmpMode == OrdinalIgnoreCase) && !ConvertToLowerCase(cnsValue, toLowerMask, len))
     {
