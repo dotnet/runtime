@@ -21,6 +21,8 @@ namespace ILLink.Shared.TrimAnalysis
 			return result;
 		}
 
+		public static MultiValue Create (int size) => Create (new ConstIntValue (size));
+
 		ArrayValue (SingleValue size)
 		{
 			Size = size;

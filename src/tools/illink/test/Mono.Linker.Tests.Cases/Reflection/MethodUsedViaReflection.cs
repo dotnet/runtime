@@ -286,7 +286,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			{
 				private static void Known () { }
 
-				[Kept] // Currently this is kept as we don't have a special case for null constant (not worth it)
 				public void AlsoKnown () { }
 			}
 
@@ -833,33 +832,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 		}
 
-		[Kept]
-		public static int OnlyCalledViaReflection ()
+		public static int Unused ()
 		{
 			return 42;
-		}
-
-		private static int PrivateMethod ()
-		{
-			return 42;
-		}
-
-		[Kept]
-		public int OnlyCalledViaReflection (int foo)
-		{
-			return 43;
-		}
-
-		// This one will not be kept as we're only ever ask for public methods of this name
-		int OnlyCalledViaReflection (int foo, int bar)
-		{
-			return 44;
-		}
-
-		[Kept]
-		public static int OnlyCalledViaReflection (int foo, int bar, int baz)
-		{
-			return 45;
 		}
 	}
 }

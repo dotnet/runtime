@@ -22,7 +22,7 @@ namespace ILLink.Shared.TrimAnalysis
 		readonly DiagnosticContext _diagnosticContext;
 		readonly RequireDynamicallyAccessedMembersAction _requireDynamicallyAccessedMembersAction;
 
-		public bool Invoke (MethodProxy calledMethod, MultiValue instanceValue, IReadOnlyList<MultiValue> argumentValues, out MultiValue methodReturnValue)
+		public bool Invoke (MethodProxy calledMethod, MultiValue instanceValue, IReadOnlyList<MultiValue> argumentValues, out MultiValue methodReturnValue, out IntrinsicId intrinsicId)
 		{
 			MultiValue? returnValue = null;
 
@@ -30,7 +30,8 @@ namespace ILLink.Shared.TrimAnalysis
 			DynamicallyAccessedMemberTypes returnValueDynamicallyAccessedMemberTypes = requiresDataFlowAnalysis ?
 				GetReturnValueAnnotation (calledMethod) : 0;
 
-			switch (Intrinsics.GetIntrinsicIdForMethod (calledMethod)) {
+			intrinsicId = Intrinsics.GetIntrinsicIdForMethod (calledMethod);
+			switch (intrinsicId) {
 			case IntrinsicId.IntrospectionExtensions_GetTypeInfo:
 				Debug.Assert (instanceValue.IsEmpty ());
 				Debug.Assert (argumentValues.Count == 1);
@@ -105,9 +106,14 @@ namespace ILLink.Shared.TrimAnalysis
 							_ => GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes)
 						});
 					else
-						returnValue ??= MultiValueLattice.Top;
+						AddReturnValue (MultiValueLattice.Top);
 				}
 				break;
+
+			case IntrinsicId.Array_Empty:
+				// Array.Empty<T> must for now be handled by the specific implementation since it requires instantiated generic method handling
+				methodReturnValue = MultiValueLattice.Top;
+				return false;
 
 			//
 			// GetInterface (String)
@@ -124,7 +130,7 @@ namespace ILLink.Shared.TrimAnalysis
 						foreach (var interfaceName in argumentValues[0]) {
 							if (interfaceName == NullValue.Instance) {
 								// Throws on null string, so no return value.
-								returnValue ??= MultiValueLattice.Top;
+								AddReturnValue (MultiValueLattice.Top);
 							} else if (interfaceName is KnownStringValue stringValue && stringValue.Contents.Length == 0) {
 								AddReturnValue (NullValue.Instance);
 							} else {
@@ -167,7 +173,7 @@ namespace ILLink.Shared.TrimAnalysis
 							AddReturnValue (valueWithDynamicallyAccessedMembers);
 						} else if (value == NullValue.Instance) {
 							// NullReferenceException, no return value.
-							returnValue ??= MultiValueLattice.Top;
+							AddReturnValue (MultiValueLattice.Top);
 						} else {
 							AddReturnValue (UnknownValue.Instance);
 						}
@@ -181,6 +187,11 @@ namespace ILLink.Shared.TrimAnalysis
 			// RunClassConstructor (RuntimeTypeHandle type)
 			//
 			case IntrinsicId.RuntimeHelpers_RunClassConstructor:
+				if (argumentValues[0].IsEmpty ()) {
+					returnValue = MultiValueLattice.Top;
+					break;
+				}
+
 				foreach (var typeHandleValue in argumentValues[0]) {
 					if (typeHandleValue is RuntimeTypeHandleValue runtimeTypeHandleValue) {
 						MarkStaticConstructor (runtimeTypeHandleValue.RepresentedType);
@@ -260,6 +271,11 @@ namespace ILLink.Shared.TrimAnalysis
 				&& calledMethod.HasParameterOfType (0, "System.String")
 				&& !calledMethod.IsStatic (): {
 
+					if (instanceValue.IsEmpty () || argumentValues[0].IsEmpty ()) {
+						returnValue = MultiValueLattice.Top;
+						break;
+					}
+
 					BindingFlags? bindingFlags;
 					if (calledMethod.HasParameterOfType (1, "System.Reflection.BindingFlags"))
 						bindingFlags = GetBindingFlagsFromValue (argumentValues[1]);
@@ -310,6 +326,11 @@ namespace ILLink.Shared.TrimAnalysis
 			// GetMember (String, MemberTypes, BindingFlags)
 			//
 			case IntrinsicId.Type_GetMember: {
+					if (instanceValue.IsEmpty ()) {
+						returnValue = MultiValueLattice.Top;
+						break;
+					}
+
 					BindingFlags? bindingFlags;
 					if (calledMethod.HasParametersCount (1)) {
 						// Assume a default value for BindingFlags for methods that don't use BindingFlags as a parameter
@@ -357,6 +378,11 @@ namespace ILLink.Shared.TrimAnalysis
 			// GetMethod (string, int, BindingFlags, Binder?, CallingConventions, Type[], ParameterModifier[]?)
 			//
 			case IntrinsicId.Type_GetMethod: {
+					if (instanceValue.IsEmpty () || argumentValues[0].IsEmpty ()) {
+						returnValue = MultiValueLattice.Top;
+						break;
+					}
+
 					BindingFlags? bindingFlags;
 					if (calledMethod.HasParameterOfType (1, "System.Reflection.BindingFlags"))
 						bindingFlags = GetBindingFlagsFromValue (argumentValues[1]);
@@ -371,16 +397,25 @@ namespace ILLink.Shared.TrimAnalysis
 						if (value is SystemTypeValue systemTypeValue) {
 							foreach (var stringParam in argumentValues[0]) {
 								if (stringParam is KnownStringValue stringValue && !BindingFlagsAreUnsupported (bindingFlags)) {
+									AddReturnValue (MultiValueLattice.Top); ; // Initialize return value (so that it's not autofilled if there are no matching methods)
 									foreach (var methodValue in ProcessGetMethodByName (systemTypeValue.RepresentedType, stringValue.Contents, bindingFlags))
 										AddReturnValue (methodValue);
+								} else if (stringParam is NullValue) {
+									// GetMethod(null) throws - so track empty value set as its result
+									AddReturnValue (MultiValueLattice.Top);
 								} else {
 									// Otherwise fall back to the bitfield requirements
 									_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+									AddReturnValue (GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes));
 								}
 							}
+						} else if (value is NullValue) {
+							// null.GetMethod(...) throws - so track empty value set as its result
+							AddReturnValue (MultiValueLattice.Top);
 						} else {
 							// Otherwise fall back to the bitfield requirements
 							_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+							AddReturnValue (GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes));
 						}
 					}
 				}
@@ -391,6 +426,11 @@ namespace ILLink.Shared.TrimAnalysis
 			// GetNestedType (string, BindingFlags)
 			//
 			case IntrinsicId.Type_GetNestedType: {
+					if (instanceValue.IsEmpty () || argumentValues[0].IsEmpty ()) {
+						returnValue = MultiValueLattice.Top;
+						break;
+					}
+
 					BindingFlags? bindingFlags;
 					if (calledMethod.HasParameterOfType (1, "System.Reflection.BindingFlags"))
 						bindingFlags = GetBindingFlagsFromValue (argumentValues[1]);
@@ -399,45 +439,42 @@ namespace ILLink.Shared.TrimAnalysis
 						bindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
 
 					var targetValue = GetMethodThisParameterValue (calledMethod, GetDynamicallyAccessedMemberTypesFromBindingFlagsForNestedTypes (bindingFlags));
-					bool everyParentTypeHasAll = true;
 					foreach (var value in instanceValue) {
 						if (value is SystemTypeValue systemTypeValue) {
 							foreach (var stringParam in argumentValues[0]) {
 								if (stringParam is KnownStringValue stringValue && !BindingFlagsAreUnsupported (bindingFlags)) {
+									AddReturnValue (MultiValueLattice.Top);
 									foreach (var nestedTypeValue in GetNestedTypesOnType (systemTypeValue.RepresentedType, stringValue.Contents, bindingFlags)) {
 										MarkType (nestedTypeValue.RepresentedType);
 										AddReturnValue (nestedTypeValue);
 									}
+								} else if (stringParam is NullValue) {
+									AddReturnValue (MultiValueLattice.Top);
 								} else {
 									// Otherwise fall back to the bitfield requirements
 									_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+
+									// We only applied the annotation based on binding flags, so we will keep the necessary types
+									// but we will not keep anything on them. So the return value has no known annotations on it
+									AddReturnValue (GetMethodReturnValue (calledMethod, DynamicallyAccessedMemberTypes.None));
 								}
 							}
+						} else if (value is NullValue) {
+							// null.GetNestedType(..) throws - so track empty value set
+							AddReturnValue (MultiValueLattice.Top);
 						} else {
 							// Otherwise fall back to the bitfield requirements
 							_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
-						}
 
-						if (value is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers) {
-							if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.All)
-								everyParentTypeHasAll = false;
-						} else if (!(value is NullValue || value is SystemTypeValue)) {
-							// Known Type values are always OK - either they're fully resolved above and thus the return value
-							// is set to the known resolved type, or if they're not resolved, they won't exist at runtime
-							// and will cause exceptions - and thus don't introduce new requirements on marking.
-							// nulls are intentionally ignored as they will lead to exceptions at runtime
-							// and thus don't introduce new requirements on marking.
-							everyParentTypeHasAll = false;
+							// If the input is an annotated value which has All - we can propagate that to the return value
+							// since All applies recursively to all nested type (see MarkStep.MarkEntireType).
+							// Otherwise we only mark the nested type itself, nothing on it, so the return value has no annotation on it.
+							if (value is ValueWithDynamicallyAccessedMembers { DynamicallyAccessedMemberTypes: DynamicallyAccessedMemberTypes.All })
+								AddReturnValue (GetMethodReturnValue (calledMethod, DynamicallyAccessedMemberTypes.All));
+							else
+								AddReturnValue (GetMethodReturnValue (calledMethod, DynamicallyAccessedMemberTypes.None));
 						}
 					}
-
-					// If the parent type (all the possible values) has DynamicallyAccessedMemberTypes.All it means its nested types are also fully marked
-					// (see MarkStep.MarkEntireType - it will recursively mark entire type on nested types). In that case we can annotate
-					// the returned type (the nested type) with DynamicallyAccessedMemberTypes.All as well.
-					// Note it's OK to blindly overwrite any potential annotation on the return value from the method definition
-					// since DynamicallyAccessedMemberTypes.All is a superset of any other annotation.
-					if (everyParentTypeHasAll && returnValue == null)
-						returnValue = GetMethodReturnValue (calledMethod, DynamicallyAccessedMemberTypes.All);
 				}
 				break;
 
@@ -453,6 +490,11 @@ namespace ILLink.Shared.TrimAnalysis
 				|| getRuntimeMember == IntrinsicId.RuntimeReflectionExtensions_GetRuntimeField
 				|| getRuntimeMember == IntrinsicId.RuntimeReflectionExtensions_GetRuntimeMethod
 				|| getRuntimeMember == IntrinsicId.RuntimeReflectionExtensions_GetRuntimeProperty: {
+
+					if (argumentValues[0].IsEmpty () || argumentValues[1].IsEmpty ()) {
+						returnValue = MultiValueLattice.Top;
+						break;
+					}
 
 					BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
 					DynamicallyAccessedMemberTypes requiredMemberTypes = getRuntimeMember switch {
@@ -477,6 +519,7 @@ namespace ILLink.Shared.TrimAnalysis
 										MarkFieldsOnTypeHierarchy (systemTypeValue.RepresentedType, stringValue.Contents, bindingFlags);
 										break;
 									case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeMethod:
+										AddReturnValue (MultiValueLattice.Top); // Initialize return value (so that it's not autofilled if there are no matching methods)
 										foreach (var methodValue in ProcessGetMethodByName (systemTypeValue.RepresentedType, stringValue.Contents, bindingFlags))
 											AddReturnValue (methodValue);
 										break;
@@ -486,12 +529,20 @@ namespace ILLink.Shared.TrimAnalysis
 									default:
 										throw new ArgumentException ($"Error processing reflection call '{calledMethod.GetDisplayName ()}' inside {GetContainingSymbolDisplayName ()}. Unexpected member kind.");
 									}
+								} else if (stringParam is NullValue) {
+									// GetRuntimeMethod(type, null) throws - so track empty value set as its result
+									AddReturnValue (MultiValueLattice.Top);
 								} else {
 									_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+									AddReturnValue (GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes));
 								}
 							}
+						} else if (value is NullValue) {
+							// GetRuntimeMethod(null, ...) throws - so track empty value set as its result
+							AddReturnValue (MultiValueLattice.Top);
 						} else {
 							_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+							AddReturnValue (GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes));
 						}
 					}
 				}
@@ -503,6 +554,11 @@ namespace ILLink.Shared.TrimAnalysis
 			// static Property (Expression, MethodInfo)
 			//
 			case IntrinsicId.Expression_Property when calledMethod.HasParameterOfType (1, "System.Reflection.MethodInfo"): {
+					if (argumentValues[1].IsEmpty ()) {
+						returnValue = MultiValueLattice.Top;
+						break;
+					}
+
 					foreach (var value in argumentValues[1]) {
 						if (value is SystemReflectionMethodBaseValue methodBaseValue) {
 							// We have one of the accessors for the property. The Expression.Property will in this case search
@@ -533,6 +589,11 @@ namespace ILLink.Shared.TrimAnalysis
 						? DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties
 						: DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields;
 
+					if (argumentValues[1].IsEmpty () || argumentValues[2].IsEmpty ()) {
+						returnValue = MultiValueLattice.Top;
+						break;
+					}
+
 					var targetValue = GetMethodParameterValue (calledMethod, 1, memberTypes);
 					foreach (var value in argumentValues[1]) {
 						if (value is SystemTypeValue systemTypeValue) {
@@ -558,6 +619,11 @@ namespace ILLink.Shared.TrimAnalysis
 				break;
 
 			case IntrinsicId.Nullable_GetUnderlyingType:
+				if (argumentValues[0].IsEmpty ()) {
+					returnValue = MultiValueLattice.Top;
+					break;
+				}
+
 				foreach (var singlevalue in argumentValues[0].AsEnumerable ()) {
 					AddReturnValue (singlevalue switch {
 						SystemTypeValue systemType => systemType,
@@ -570,6 +636,11 @@ namespace ILLink.Shared.TrimAnalysis
 				break;
 
 			case IntrinsicId.Type_MakeGenericType:
+				if (instanceValue.IsEmpty () || argumentValues[0].IsEmpty ()) {
+					returnValue = MultiValueLattice.Top;
+					break;
+				}
+
 				// Contains part of the analysis done in the Linker, but is not complete
 				// instanceValue here is like argumentValues[0] in linker
 				foreach (var value in instanceValue) {
@@ -655,11 +726,61 @@ namespace ILLink.Shared.TrimAnalysis
 								AddReturnValue (GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes));
 						} else if (value == NullValue.Instance) {
 							// Ignore nulls - null.BaseType will fail at runtime, but it has no effect on static analysis
-							returnValue ??= MultiValueLattice.Top;
+							AddReturnValue (MultiValueLattice.Top);
 							continue;
 						} else {
 							// Unknown input - propagate a return value without any annotation - we know it's a Type but we know nothing about it
 							AddReturnValue (GetMethodReturnValue (calledMethod, returnValueDynamicallyAccessedMemberTypes));
+						}
+					}
+				}
+				break;
+
+			//
+			// GetConstructor (Type[])
+			// GetConstructor (BindingFlags, Type[])
+			// GetConstructor (BindingFlags, Binder, Type[], ParameterModifier [])
+			// GetConstructor (BindingFlags, Binder, CallingConventions, Type[], ParameterModifier [])
+			//
+			case IntrinsicId.Type_GetConstructor: {
+					if (instanceValue.IsEmpty ()) {
+						returnValue = MultiValueLattice.Top;
+						break;
+					}
+
+					BindingFlags? bindingFlags;
+					if (calledMethod.HasParameterOfType (0, "System.Reflection.BindingFlags"))
+						bindingFlags = GetBindingFlagsFromValue (argumentValues[0]);
+					else
+						// Assume a default value for BindingFlags for methods that don't use BindingFlags as a parameter
+						bindingFlags = BindingFlags.Public | BindingFlags.Instance;
+
+					int? ctorParameterCount = calledMethod.GetParametersCount () switch {
+						1 => (argumentValues[0].AsSingleValue () as ArrayValue)?.Size.AsConstInt (),
+						2 => (argumentValues[1].AsSingleValue () as ArrayValue)?.Size.AsConstInt (),
+						4 => (argumentValues[2].AsSingleValue () as ArrayValue)?.Size.AsConstInt (),
+						5 => (argumentValues[3].AsSingleValue () as ArrayValue)?.Size.AsConstInt (),
+						_ => null,
+					};
+
+					// Go over all types we've seen
+					foreach (var value in instanceValue) {
+						if (value is SystemTypeValue systemTypeValue && !BindingFlagsAreUnsupported (bindingFlags)) {
+							if (HasBindingFlag (bindingFlags, BindingFlags.Public) && !HasBindingFlag (bindingFlags, BindingFlags.NonPublic)
+								&& ctorParameterCount == 0) {
+								MarkPublicParameterlessConstructorOnType (systemTypeValue.RepresentedType);
+							} else {
+								MarkConstructorsOnType (systemTypeValue.RepresentedType, bindingFlags);
+							}
+						} else {
+							// Otherwise fall back to the bitfield requirements
+							var requiredMemberTypes = GetDynamicallyAccessedMemberTypesFromBindingFlagsForConstructors (bindingFlags);
+							// We can scope down the public constructors requirement if we know the number of parameters is 0
+							if (requiredMemberTypes == DynamicallyAccessedMemberTypes.PublicConstructors && ctorParameterCount == 0)
+								requiredMemberTypes = DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
+
+							var targetValue = GetMethodThisParameterValue (calledMethod, requiredMemberTypes);
+							_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
 						}
 					}
 				}
@@ -820,6 +941,10 @@ namespace ILLink.Shared.TrimAnalysis
 		private partial void MarkFieldsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags);
 
 		private partial void MarkPropertiesOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags);
+
+		private partial void MarkPublicParameterlessConstructorOnType (TypeProxy type);
+
+		private partial void MarkConstructorsOnType (TypeProxy type, BindingFlags? bindingFlags);
 
 		private partial void MarkMethod (MethodProxy method);
 

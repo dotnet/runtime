@@ -85,6 +85,12 @@ namespace ILLink.Shared.TrimAnalysis
 		private partial void MarkPropertiesOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
 			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForPropertiesOnTypeHierarchy (_diagnosticContext, type.Type, name, bindingFlags);
 
+		private partial void MarkPublicParameterlessConstructorOnType (TypeProxy type)
+			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForPublicParameterlessConstructor (_diagnosticContext, type.Type);
+
+		private partial void MarkConstructorsOnType (TypeProxy type, BindingFlags? bindingFlags)
+			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForConstructorsOnType (_diagnosticContext, type.Type, bindingFlags);
+
 		private partial void MarkMethod (MethodProxy method)
 			=> ReflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForMethod (_diagnosticContext, method.Method);
 
