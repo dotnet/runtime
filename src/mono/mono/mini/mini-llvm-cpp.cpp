@@ -135,10 +135,25 @@ mono_llvm_build_aligned_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
 }
 
 LLVMValueRef 
-mono_llvm_build_store (LLVMBuilderRef builder, LLVMValueRef Val, LLVMValueRef PointerVal,
-					  gboolean is_volatile, BarrierKind barrier)
+mono_llvm_build_aligned_store (LLVMBuilderRef builder, LLVMValueRef Val, LLVMValueRef PointerVal,
+							   gboolean is_volatile, int alignment)
 {
-	StoreInst *ins = unwrap(builder)->CreateStore(unwrap(Val), unwrap(PointerVal), is_volatile);
+	StoreInst *ins;
+
+	ins = unwrap(builder)->CreateStore(unwrap(Val), unwrap(PointerVal), is_volatile);
+	ins->setAlignment (to_align (alignment));
+
+	return wrap (ins);
+}
+
+LLVMValueRef
+mono_llvm_build_atomic_store (LLVMBuilderRef builder, LLVMValueRef Val, LLVMValueRef PointerVal,
+							  BarrierKind barrier, int alignment)
+{
+	StoreInst *ins;
+
+	ins = unwrap(builder)->CreateStore(unwrap(Val), unwrap(PointerVal), false);
+	ins->setAlignment (to_align (alignment));
 
 	switch (barrier) {
 	case LLVM_BARRIER_NONE:
@@ -153,18 +168,6 @@ mono_llvm_build_store (LLVMBuilderRef builder, LLVMValueRef Val, LLVMValueRef Po
 		g_assert_not_reached ();
 		break;
 	}
-
-	return wrap(ins);
-}
-
-LLVMValueRef 
-mono_llvm_build_aligned_store (LLVMBuilderRef builder, LLVMValueRef Val, LLVMValueRef PointerVal,
-							   gboolean is_volatile, int alignment)
-{
-	StoreInst *ins;
-
-	ins = unwrap(builder)->CreateStore(unwrap(Val), unwrap(PointerVal), is_volatile);
-	ins->setAlignment (to_align (alignment));
 
 	return wrap (ins);
 }
