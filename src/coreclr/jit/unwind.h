@@ -79,6 +79,32 @@ protected:
     {
     }
 
+// TODO: How do we get the ability to access uwiComp without error on Clang?
+#if defined(DEBUG) && !defined(__GNUC__)
+
+    template <typename T>
+    T dspPtr(T p)
+    {
+        return uwiComp->dspPtr(p);
+    }
+
+    template <typename T>
+    T dspOffset(T o)
+    {
+        return uwiComp->dspOffset(o);
+    }
+
+    static const char* dspBool(bool b)
+    {
+        return (b) ? "true" : "false";
+    }
+
+#endif // DEBUG
+
+    //
+    // Data
+    //
+
     Compiler* uwiComp;
 };
 
