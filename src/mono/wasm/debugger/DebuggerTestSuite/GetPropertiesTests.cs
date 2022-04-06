@@ -24,6 +24,9 @@ namespace DebuggerTests
                 {"_dateTime",                       (TDateTime(new DateTime(2020, 7, 6, 5, 4, 3)), true)},
                 {"_DTProp",                         (TGetter("_DTProp"), true)},
 
+                // internal
+                {"b",                               (TBool(true), true)},
+
                 // own public
                 {"a",                               (TNumber(4), true)},
                 {"DateTime",                        (TGetter("DateTime"), true)},
@@ -126,6 +129,9 @@ namespace DebuggerTests
                 {"_stringField",            (TString("CloneableStruct#_stringField"), true)},
                 {"_dateTime",               (TDateTime(new DateTime(2020, 7, 6, 5, 4, 3 + 3)), true)},
                 {"_DTProp",                 (TGetter("_DTProp"), true)},
+                
+                // internal
+                {"b",                       (TBool(true), true)},
 
                 // own public
                 {"a",                       (TNumber(4), true)},
@@ -401,5 +407,97 @@ namespace DebuggerTests
             }
         }
 
+        public static TheoryData<Dictionary<string, JObject>, Dictionary<string, JObject>, Dictionary<string, JObject>, string> ClassGetPropertiesByProtectionLevels()
+        {
+            var data = new TheoryData<Dictionary<string, JObject>, Dictionary<string, JObject>, Dictionary<string, JObject>, string>();
+            // object DerivedClass:
+            var public_props = new Dictionary<string, JObject>()
+            {
+                {"_DTProp",                         TGetter("_DTProp")}, // private:  should not be here, is a property
+
+                //  own
+                {"a",                               TNumber(4)},
+                {"DateTime",                        TGetter("DateTime")},
+                // {"AutoStringProperty",              TString("DerivedClass#AutoStringProperty")}, // should be here
+                {"FirstName",                       TGetter("FirstName")},
+                // {"DateTimeForOverride",             TGetter("DateTimeForOverride")}, // should be here
+
+                // {"StringPropertyForOverrideWithAutoProperty", TString("DerivedClass#StringPropertyForOverrideWithAutoProperty")}, // should be here
+                {"Base_AutoStringPropertyForOverrideWithField", TString("DerivedClass#Base_AutoStringPropertyForOverrideWithField")},
+                {"Base_GetterForOverrideWithField",             TString("DerivedClass#Base_GetterForOverrideWithField")},
+                {"BaseBase_MemberForOverride",                  TString("DerivedClass#BaseBase_MemberForOverride")},
+
+                {"_base_dateTime",                  TGetter("_base_dateTime")}, // private:  should not be here
+
+                // inherited public - should be here!
+                // {"Base_AutoStringProperty",       TString("base#Base_AutoStringProperty")}, // should be here
+
+                {"LastName",                        TGetter("LastName")}
+            };
+
+            var internal_protected_props = new Dictionary<string, JObject>(){
+                // internal
+                {"b",                               TBool(true)},
+                // inherited protected
+                {"base_num",                        TNumber(5)}
+            };
+            
+            var private_props = new Dictionary<string, JObject>(){
+                {"_stringField",                    TString("DerivedClass#_stringField")},
+                {"_dateTime",                       TDateTime(new DateTime(2020, 7, 6, 5, 4, 3))},
+                {"AutoStringProperty",              TString("DerivedClass#AutoStringProperty")}, // public: should not be here
+                {"StringPropertyForOverrideWithAutoProperty", TString("DerivedClass#StringPropertyForOverrideWithAutoProperty")}, // public: should not be here
+                {"_base_name",                      TString("private_name")},
+                {"Base_AutoStringProperty",         TString("base#Base_AutoStringProperty")}, // public: should not be here
+                {"DateTimeForOverride",             TGetter("DateTimeForOverride")} // public: should not be here
+            };
+            // data.Add(public_props, internal_protected_props, private_props, "DerivedClass");
+
+            // structure CloneableStruct:
+            public_props = new Dictionary<string, JObject>()
+            {
+                {"_DTProp",                 TGetter("_DTProp")}, // private: should not be here
+
+                // own
+                {"a",                       TNumber(4)},
+                {"DateTime",                TGetter("DateTime")},
+                // {"AutoStringProperty",      TString("CloneableStruct#AutoStringProperty")}, // should be here
+                {"FirstName",               TGetter("FirstName")},
+                {"LastName",                TGetter("LastName")}
+            };
+            internal_protected_props = new Dictionary<string, JObject>()
+            {
+                // internal
+                {"b",                       TBool(true)}
+            };
+            private_props = new Dictionary<string, JObject>()
+            {
+                {"_stringField",            TString("CloneableStruct#_stringField")},
+                {"_dateTime",               TDateTime(new DateTime(2020, 7, 6, 5, 4, 3 + 3))},
+                // {"_DTProp",                 TGetter("_DTProp")}, // should be here
+
+                {"AutoStringProperty",      TString("CloneableStruct#AutoStringProperty")} // public: should not be here
+            };
+            data.Add(public_props, internal_protected_props, private_props, "CloneableStruct");
+            return data;
+        }
+        
+        [Theory]
+        [MemberData(nameof(ClassGetPropertiesByProtectionLevels))]
+        public async Task PropertiesSortedByProtectionLevel(
+            Dictionary<string, JObject> expectedPublic, Dictionary<string, JObject> expectedProtInter, Dictionary<string, JObject> expectedPriv, string entryMethod) =>  
+            await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.GetPropertiesTests.{entryMethod}", "InstanceMethod", 1, "InstanceMethod",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.GetPropertiesTests.{entryMethod}:run'); }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                var (obj, _) = await EvaluateOnCallFrame(id, "this");
+                var (pub, internalAndProtected, priv) = await GetPropertiesSortedByProtectionLevels(obj["objectId"]?.Value<string>());
+
+                await CheckProps(pub, expectedPublic, "public");
+                await CheckProps(internalAndProtected, expectedProtInter, "internalAndProtected");
+                await CheckProps(priv, expectedPriv, "private");
+           });
     }
 }

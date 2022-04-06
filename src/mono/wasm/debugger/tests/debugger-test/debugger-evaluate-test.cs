@@ -823,44 +823,6 @@ namespace DebuggerTests
         }
     }
 
-    public static class EvaluateProtectionLevels
-    {
-        public class TestClass
-        {
-            public string fieldPublic = "public";
-            private string fieldPrivate = "private";
-            internal string fieldInternal = "internal";
-            protected string fieldProtected = "protected";
-
-            public TestClass()
-            {
-                var a = fieldPrivate;
-            }
-        }
-
-        public struct TestStruct
-        {
-            public string fieldPublic = "public";
-            private string fieldPrivate = "private";
-            internal string fieldInternal = "internal";
-
-            public TestStruct()
-            {
-                var a = fieldPrivate;
-            }
-        }
-
-        public static void EvaluateClass()
-        {
-            var test = new TestClass();
-        }
-
-        public static void EvaluateStruct()
-        {
-            var test = new TestStruct();
-        }
-    }
-
     public static class StructureGetters
     {
         public struct Point

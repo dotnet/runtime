@@ -64,6 +64,8 @@ namespace DebuggerTests.GetPropertiesTests
         private DateTime _dateTime = new DateTime(2020, 7, 6, 5, 4, 3);
         private DateTime _DTProp => new DateTime(2200, 5, 6, 7, 8, 9);
 
+        internal bool b = true;
+        
         public int a;
         public DateTime DateTime => _DTProp.AddMinutes(10);
         public string AutoStringProperty { get; set; }
@@ -116,6 +118,8 @@ namespace DebuggerTests.GetPropertiesTests
         private string _stringField;
         private DateTime _dateTime;
         private DateTime _DTProp => new DateTime(2200, 5, 6, 7, 8, 9);
+
+        internal bool b = true;
 
         public int a;
         public DateTime DateTime => _DTProp.AddMinutes(10);

@@ -997,33 +997,6 @@ namespace DebuggerTests
                    ("a.valueToCheck", TNumber(20)));
            });
 
-        [Theory]
-        [InlineData("EvaluateClass", true)]
-        [InlineData("EvaluateStruct", false)]
-        public async Task EvaluateProtectionLevels(string entryMethod, bool hasProtectedLevel) =>  await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateProtectionLevels", entryMethod, 2, entryMethod,
-            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateProtectionLevels:{entryMethod}'); }})",
-            wait_for_event_fn: async (pause_location) =>
-            {
-                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                var (obj, _) = await EvaluateOnCallFrame(id, "test");
-                var (pub, internalAndProtected, priv) = await GetPropertiesSortedByProtectionLevels(obj["objectId"]?.Value<string>());
-                
-                Assert.True(pub[0] != null);
-                Assert.Equal(pub[0]["value"]["value"], "public");
-
-                Assert.True(internalAndProtected[0] != null);
-                Assert.Equal(internalAndProtected[0]["value"]["value"], "internal");
-                if (hasProtectedLevel)
-                {
-                    Assert.True(internalAndProtected[1] != null);
-                    Assert.Equal(internalAndProtected[1]["value"]["value"], "protected");
-                }
-                Assert.True(priv[0] != null);
-                Assert.Equal(priv[0]["value"]["value"], "private");
-
-            });
-
         [Fact]
         public async Task StructureGetters() =>  await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.StructureGetters", "Evaluate", 2, "Evaluate",
