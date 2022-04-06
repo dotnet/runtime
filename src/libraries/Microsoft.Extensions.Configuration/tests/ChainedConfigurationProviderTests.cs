@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using Castle.Core.Internal;
 using Microsoft.Extensions.Configuration.Memory;
 using Xunit;
 
