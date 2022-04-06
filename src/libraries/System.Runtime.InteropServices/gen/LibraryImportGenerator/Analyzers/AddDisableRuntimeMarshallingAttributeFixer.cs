@@ -48,7 +48,7 @@ namespace Microsoft.Interop.Analyzers
             }
         }
 
-        private async Task<Solution> AddDisableRuntimeMarshallingAttributeApplicationToProject(Project project, CancellationToken cancellationToken)
+        private static async Task<Solution> AddDisableRuntimeMarshallingAttributeApplicationToProject(Project project, CancellationToken cancellationToken)
         {
             Document? assemblyInfo = project.Documents.FirstOrDefault(IsPropertiesAssemblyInfo);
 
