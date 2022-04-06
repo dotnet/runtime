@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
     <GCStressIncompatible>true</GCStressIncompatible>
     <NoWarn>$(NoWarn);xUnit1013</NoWarn>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>pdbonly</DebugType>

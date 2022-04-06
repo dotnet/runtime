@@ -12,15 +12,12 @@ namespace System.Text.RegularExpressions
     {
         /// <summary>True if the input should be processed right-to-left rather than left-to-right.</summary>
         private readonly bool _rightToLeft;
-        /// <summary>Provides the ToLower routine for lowercasing characters.</summary>
-        private readonly TextInfo _textInfo;
         /// <summary>Lookup table used for optimizing ASCII when doing set queries.</summary>
         private readonly uint[]?[]? _asciiLookups;
 
-        public RegexFindOptimizations(RegexNode root, RegexOptions options, CultureInfo culture)
+        public RegexFindOptimizations(RegexNode root, RegexOptions options)
         {
             _rightToLeft = (options & RegexOptions.RightToLeft) != 0;
-            _textInfo = culture.TextInfo;
 
             MinRequiredLength = root.ComputeMinLength();
 
@@ -80,14 +77,14 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            // If there's a leading case-sensitive substring, just use IndexOf and inherit all of its optimizations.
-            string caseSensitivePrefix = RegexPrefixAnalyzer.FindCaseSensitivePrefix(root);
-            if (caseSensitivePrefix.Length > 1)
+            // If there's a leading substring, just use IndexOf and inherit all of its optimizations.
+            string prefix = RegexPrefixAnalyzer.FindPrefix(root);
+            if (prefix.Length > 1)
             {
-                LeadingCaseSensitivePrefix = caseSensitivePrefix;
+                LeadingPrefix = prefix;
                 FindMode = _rightToLeft ?
-                    FindNextStartingPositionMode.LeadingPrefix_RightToLeft_CaseSensitive :
-                    FindNextStartingPositionMode.LeadingPrefix_LeftToRight_CaseSensitive;
+                    FindNextStartingPositionMode.LeadingPrefix_RightToLeft :
+                    FindNextStartingPositionMode.LeadingPrefix_LeftToRight;
                 return;
             }
 
@@ -107,14 +104,14 @@ namespace System.Text.RegularExpressions
             if (_rightToLeft)
             {
                 // Determine a set for anything that can possibly start the expression.
-                if (RegexPrefixAnalyzer.FindFirstCharClass(root, culture) is (string CharClass, bool CaseInsensitive) set)
+                if (RegexPrefixAnalyzer.FindFirstCharClass(root) is string charClass)
                 {
                     // See if the set is limited to holding only a few characters.
                     Span<char> scratch = stackalloc char[5]; // max optimized by IndexOfAny today
                     int scratchCount;
                     char[]? chars = null;
-                    if (!RegexCharClass.IsNegated(set.CharClass) &&
-                        (scratchCount = RegexCharClass.GetSetChars(set.CharClass, scratch)) > 0)
+                    if (!RegexCharClass.IsNegated(charClass) &&
+                        (scratchCount = RegexCharClass.GetSetChars(charClass, scratch)) > 0)
                     {
                         chars = scratch.Slice(0, scratchCount).ToArray();
                     }
@@ -125,20 +122,16 @@ namespace System.Text.RegularExpressions
                         // The set contains one and only one character, meaning every match starts
                         // with the same literal value (potentially case-insensitive). Search for that.
                         FixedDistanceLiteral = (chars[0], 0);
-                        FindMode = set.CaseInsensitive ?
-                            FindNextStartingPositionMode.LeadingLiteral_RightToLeft_CaseInsensitive :
-                            FindNextStartingPositionMode.LeadingLiteral_RightToLeft_CaseSensitive;
+                        FindMode = FindNextStartingPositionMode.LeadingLiteral_RightToLeft;
                     }
                     else
                     {
                         // The set may match multiple characters.  Search for that.
-                        FixedDistanceSets = new List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)>()
+                        FixedDistanceSets = new List<(char[]? Chars, string Set, int Distance)>()
                         {
-                            (chars, set.CharClass, 0, set.CaseInsensitive)
+                            (chars, charClass, 0)
                         };
-                        FindMode = set.CaseInsensitive ?
-                            FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseInsensitive :
-                            FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseSensitive;
+                        FindMode = FindNextStartingPositionMode.LeadingSet_RightToLeft;
                         _asciiLookups = new uint[1][];
                     }
                 }
@@ -152,7 +145,7 @@ namespace System.Text.RegularExpressions
             (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? literalAfterLoop = RegexPrefixAnalyzer.FindLiteralFollowingLeadingLoop(root);
 
             // Build up a list of all of the sets that are a fixed distance from the start of the expression.
-            List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)>? fixedDistanceSets = RegexPrefixAnalyzer.FindFixedDistanceSets(root, culture, thorough: !interpreter);
+            List<(char[]? Chars, string Set, int Distance)>? fixedDistanceSets = RegexPrefixAnalyzer.FindFixedDistanceSets(root, thorough: !interpreter);
             Debug.Assert(fixedDistanceSets is null || fixedDistanceSets.Count != 0);
 
             // If we got such sets, we'll likely use them.  However, if the best of them is something that doesn't support a vectorized
@@ -168,9 +161,7 @@ namespace System.Text.RegularExpressions
                     fixedDistanceSets[0].Chars is { Length: 1 })
                 {
                     FixedDistanceLiteral = (fixedDistanceSets[0].Chars![0], fixedDistanceSets[0].Distance);
-                    FindMode = fixedDistanceSets[0].CaseInsensitive ?
-                        FindNextStartingPositionMode.FixedLiteral_LeftToRight_CaseInsensitive :
-                        FindNextStartingPositionMode.FixedLiteral_LeftToRight_CaseSensitive;
+                    FindMode = FindNextStartingPositionMode.FixedLiteral_LeftToRight;
                 }
                 else
                 {
@@ -184,13 +175,8 @@ namespace System.Text.RegularExpressions
 
                     // Store the sets, and compute which mode to use.
                     FixedDistanceSets = fixedDistanceSets;
-                    FindMode = (fixedDistanceSets.Count == 1 && fixedDistanceSets[0].Distance == 0, fixedDistanceSets[0].CaseInsensitive) switch
-                    {
-                        (true, true) => FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseInsensitive,
-                        (true, false) => FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseSensitive,
-                        (false, true) => FindNextStartingPositionMode.FixedSets_LeftToRight_CaseInsensitive,
-                        (false, false) => FindNextStartingPositionMode.FixedSets_LeftToRight_CaseSensitive,
-                    };
+                    FindMode = (fixedDistanceSets.Count == 1 && fixedDistanceSets[0].Distance == 0) ? FindNextStartingPositionMode.LeadingSet_LeftToRight
+                        : FindNextStartingPositionMode.FixedSets_LeftToRight;
                     _asciiLookups = new uint[fixedDistanceSets.Count][];
                 }
                 return;
@@ -199,7 +185,7 @@ namespace System.Text.RegularExpressions
             // If we found a literal we can search for after a leading set loop, use it.
             if (literalAfterLoop is not null)
             {
-                FindMode = FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight_CaseSensitive;
+                FindMode = FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight;
                 LiteralAfterLoop = literalAfterLoop;
                 _asciiLookups = new uint[1][];
                 return;
@@ -227,14 +213,14 @@ namespace System.Text.RegularExpressions
         public int? MaxPossibleLength { get; }
 
         /// <summary>Gets the leading prefix.  May be an empty string.</summary>
-        public string LeadingCaseSensitivePrefix { get; } = string.Empty;
+        public string LeadingPrefix { get; } = string.Empty;
 
         /// <summary>When in fixed distance literal mode, gets the literal and how far it is from the start of the pattern.</summary>
         public (char Literal, int Distance) FixedDistanceLiteral { get; }
 
         /// <summary>When in fixed distance set mode, gets the set and how far it is from the start of the pattern.</summary>
         /// <remarks>The case-insensitivity of the 0th entry will always match the mode selected, but subsequent entries may not.</remarks>
-        public List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)>? FixedDistanceSets { get; }
+        public List<(char[]? Chars, string Set, int Distance)>? FixedDistanceSets { get; }
 
         /// <summary>When in literal after set loop node, gets the literal to search for and the RegexNode representing the leading loop.</summary>
         public (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? LiteralAfterLoop { get; }
@@ -393,9 +379,9 @@ namespace System.Text.RegularExpressions
 
                 // There's a case-sensitive prefix.  Search for it with ordinal IndexOf.
 
-                case FindNextStartingPositionMode.LeadingPrefix_LeftToRight_CaseSensitive:
+                case FindNextStartingPositionMode.LeadingPrefix_LeftToRight:
                     {
-                        int i = textSpan.Slice(pos).IndexOf(LeadingCaseSensitivePrefix.AsSpan());
+                        int i = textSpan.Slice(pos).IndexOf(LeadingPrefix.AsSpan());
                         if (i >= 0)
                         {
                             pos += i;
@@ -406,12 +392,12 @@ namespace System.Text.RegularExpressions
                         return false;
                     }
 
-                case FindNextStartingPositionMode.LeadingPrefix_RightToLeft_CaseSensitive:
+                case FindNextStartingPositionMode.LeadingPrefix_RightToLeft:
                     {
-                        int i = textSpan.Slice(0, pos).LastIndexOf(LeadingCaseSensitivePrefix.AsSpan());
+                        int i = textSpan.Slice(0, pos).LastIndexOf(LeadingPrefix.AsSpan());
                         if (i >= 0)
                         {
-                            pos = i + LeadingCaseSensitivePrefix.Length;
+                            pos = i + LeadingPrefix.Length;
                             return true;
                         }
 
@@ -421,7 +407,7 @@ namespace System.Text.RegularExpressions
 
                 // There's a literal at the beginning of the pattern.  Search for it.
 
-                case FindNextStartingPositionMode.LeadingLiteral_RightToLeft_CaseSensitive:
+                case FindNextStartingPositionMode.LeadingLiteral_RightToLeft:
                     {
                         int i = textSpan.Slice(0, pos).LastIndexOf(FixedDistanceLiteral.Literal);
                         if (i >= 0)
@@ -434,30 +420,11 @@ namespace System.Text.RegularExpressions
                         return false;
                     }
 
-                case FindNextStartingPositionMode.LeadingLiteral_RightToLeft_CaseInsensitive:
-                    {
-                        char ch = FixedDistanceLiteral.Literal;
-                        TextInfo ti = _textInfo;
-
-                        ReadOnlySpan<char> span = textSpan.Slice(0, pos);
-                        for (int i = span.Length - 1; i >= 0; i--)
-                        {
-                            if (ti.ToLower(span[i]) == ch)
-                            {
-                                pos = i + 1;
-                                return true;
-                            }
-                        }
-
-                        pos = 0;
-                        return false;
-                    }
-
                 // There's a set at the beginning of the pattern.  Search for it.
 
-                case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseSensitive:
+                case FindNextStartingPositionMode.LeadingSet_LeftToRight:
                     {
-                        (char[]? chars, string set, _, _) = FixedDistanceSets![0];
+                        (char[]? chars, string set, _) = FixedDistanceSets![0];
 
                         ReadOnlySpan<char> span = textSpan.Slice(pos);
                         if (chars is not null)
@@ -486,27 +453,7 @@ namespace System.Text.RegularExpressions
                         return false;
                     }
 
-                case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseInsensitive:
-                    {
-                        ref uint[]? startingAsciiLookup = ref _asciiLookups![0];
-                        string set = FixedDistanceSets![0].Set;
-                        TextInfo ti = _textInfo;
-
-                        ReadOnlySpan<char> span = textSpan.Slice(pos);
-                        for (int i = 0; i < span.Length; i++)
-                        {
-                            if (RegexCharClass.CharInClass(ti.ToLower(span[i]), set, ref startingAsciiLookup))
-                            {
-                                pos += i;
-                                return true;
-                            }
-                        }
-
-                        pos = textSpan.Length;
-                        return false;
-                    }
-
-                case FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseSensitive:
+                case FindNextStartingPositionMode.LeadingSet_RightToLeft:
                     {
                         ref uint[]? startingAsciiLookup = ref _asciiLookups![0];
                         string set = FixedDistanceSets![0].Set;
@@ -525,29 +472,9 @@ namespace System.Text.RegularExpressions
                         return false;
                     }
 
-                case FindNextStartingPositionMode.LeadingSet_RightToLeft_CaseInsensitive:
-                    {
-                        ref uint[]? startingAsciiLookup = ref _asciiLookups![0];
-                        string set = FixedDistanceSets![0].Set;
-                        TextInfo ti = _textInfo;
-
-                        ReadOnlySpan<char> span = textSpan.Slice(0, pos);
-                        for (int i = span.Length - 1; i >= 0; i--)
-                        {
-                            if (RegexCharClass.CharInClass(ti.ToLower(span[i]), set, ref startingAsciiLookup))
-                            {
-                                pos = i + 1;
-                                return true;
-                            }
-                        }
-
-                        pos = 0;
-                        return false;
-                    }
-
                 // There's a literal at a fixed offset from the beginning of the pattern.  Search for it.
 
-                case FindNextStartingPositionMode.FixedLiteral_LeftToRight_CaseSensitive:
+                case FindNextStartingPositionMode.FixedLiteral_LeftToRight:
                     {
                         Debug.Assert(FixedDistanceLiteral.Distance <= MinRequiredLength);
 
@@ -562,33 +489,12 @@ namespace System.Text.RegularExpressions
                         return false;
                     }
 
-                case FindNextStartingPositionMode.FixedLiteral_LeftToRight_CaseInsensitive:
-                    {
-                        Debug.Assert(FixedDistanceLiteral.Distance <= MinRequiredLength);
-
-                        char ch = FixedDistanceLiteral.Literal;
-                        TextInfo ti = _textInfo;
-
-                        ReadOnlySpan<char> span = textSpan.Slice(pos + FixedDistanceLiteral.Distance);
-                        for (int i = 0; i < span.Length; i++)
-                        {
-                            if (ti.ToLower(span[i]) == ch)
-                            {
-                                pos += i;
-                                return true;
-                            }
-                        }
-
-                        pos = textSpan.Length;
-                        return false;
-                    }
-
                 // There are one or more sets at fixed offsets from the start of the pattern.
 
-                case FindNextStartingPositionMode.FixedSets_LeftToRight_CaseSensitive:
+                case FindNextStartingPositionMode.FixedSets_LeftToRight:
                     {
-                        List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)> sets = FixedDistanceSets!;
-                        (char[]? primaryChars, string primarySet, int primaryDistance, _) = sets[0];
+                        List<(char[]? Chars, string Set, int Distance)> sets = FixedDistanceSets!;
+                        (char[]? primaryChars, string primarySet, int primaryDistance) = sets[0];
                         int endMinusRequiredLength = textSpan.Length - Math.Max(1, MinRequiredLength);
 
                         if (primaryChars is not null)
@@ -612,9 +518,9 @@ namespace System.Text.RegularExpressions
 
                                 for (int i = 1; i < sets.Count; i++)
                                 {
-                                    (_, string nextSet, int nextDistance, bool nextCaseInsensitive) = sets[i];
+                                    (_, string nextSet, int nextDistance) = sets[i];
                                     char c = textSpan[inputPosition + nextDistance];
-                                    if (!RegexCharClass.CharInClass(nextCaseInsensitive ? _textInfo.ToLower(c) : c, nextSet, ref _asciiLookups![i]))
+                                    if (!RegexCharClass.CharInClass(c, nextSet, ref _asciiLookups![i]))
                                     {
                                         goto Bumpalong;
                                     }
@@ -640,9 +546,9 @@ namespace System.Text.RegularExpressions
 
                                 for (int i = 1; i < sets.Count; i++)
                                 {
-                                    (_, string nextSet, int nextDistance, bool nextCaseInsensitive) = sets[i];
+                                    (_, string nextSet, int nextDistance) = sets[i];
                                     c = textSpan[inputPosition + nextDistance];
-                                    if (!RegexCharClass.CharInClass(nextCaseInsensitive ? _textInfo.ToLower(c) : c, nextSet, ref _asciiLookups![i]))
+                                    if (!RegexCharClass.CharInClass(c, nextSet, ref _asciiLookups![i]))
                                     {
                                         goto Bumpalong;
                                     }
@@ -659,45 +565,8 @@ namespace System.Text.RegularExpressions
                         return false;
                     }
 
-                case FindNextStartingPositionMode.FixedSets_LeftToRight_CaseInsensitive:
-                    {
-                        List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)> sets = FixedDistanceSets!;
-                        (_, string primarySet, int primaryDistance, _) = sets[0];
-
-                        int endMinusRequiredLength = textSpan.Length - Math.Max(1, MinRequiredLength);
-                        TextInfo ti = _textInfo;
-                        ref uint[]? startingAsciiLookup = ref _asciiLookups![0];
-
-                        for (int inputPosition = pos; inputPosition <= endMinusRequiredLength; inputPosition++)
-                        {
-                            char c = textSpan[inputPosition + primaryDistance];
-                            if (!RegexCharClass.CharInClass(ti.ToLower(c), primarySet, ref startingAsciiLookup))
-                            {
-                                goto Bumpalong;
-                            }
-
-                            for (int i = 1; i < sets.Count; i++)
-                            {
-                                (_, string nextSet, int nextDistance, bool nextCaseInsensitive) = sets[i];
-                                c = textSpan[inputPosition + nextDistance];
-                                if (!RegexCharClass.CharInClass(nextCaseInsensitive ? _textInfo.ToLower(c) : c, nextSet, ref _asciiLookups![i]))
-                                {
-                                    goto Bumpalong;
-                                }
-                            }
-
-                            pos = inputPosition;
-                            return true;
-
-                        Bumpalong:;
-                        }
-
-                        pos = textSpan.Length;
-                        return false;
-                    }
-
                 // There's a literal after a leading set loop.  Find the literal, then walk backwards through the loop to find the starting position.
-                case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight_CaseSensitive:
+                case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight:
                     {
                         Debug.Assert(LiteralAfterLoop is not null);
                         (RegexNode loopNode, (char Char, string? String, char[]? Chars) literal) = LiteralAfterLoop.GetValueOrDefault();
@@ -779,37 +648,27 @@ namespace System.Text.RegularExpressions
         /// <summary>An "endz" anchor at the end of the pattern, with the pattern always matching a fixed-length expression.</summary>
         TrailingAnchor_FixedLength_LeftToRight_EndZ,
 
-        /// <summary>A case-sensitive multi-character substring at the beginning of the pattern.</summary>
-        LeadingPrefix_LeftToRight_CaseSensitive,
-        /// <summary>A case-sensitive multi-character substring at the beginning of the right-to-left pattern.</summary>
-        LeadingPrefix_RightToLeft_CaseSensitive,
+        /// <summary>A multi-character substring at the beginning of the pattern.</summary>
+        LeadingPrefix_LeftToRight,
+        /// <summary>A multi-character substring at the beginning of the right-to-left pattern.</summary>
+        LeadingPrefix_RightToLeft,
 
-        /// <summary>A case-sensitive set starting the pattern.</summary>
-        LeadingSet_LeftToRight_CaseSensitive,
-        /// <summary>A case-insensitive set starting the pattern.</summary>
-        LeadingSet_LeftToRight_CaseInsensitive,
-        /// <summary>A case-sensitive set starting the right-to-left pattern.</summary>
-        LeadingSet_RightToLeft_CaseSensitive,
-        /// <summary>A case-insensitive set starting the right-to-left pattern.</summary>
-        LeadingSet_RightToLeft_CaseInsensitive,
+        /// <summary>A set starting the pattern.</summary>
+        LeadingSet_LeftToRight,
+        /// <summary>A set starting the right-to-left pattern.</summary>
+        LeadingSet_RightToLeft,
 
-        /// <summary>A case-sensitive single character at a fixed distance from the start of the right-to-left pattern.</summary>
-        LeadingLiteral_RightToLeft_CaseSensitive,
-        /// <summary>A case-insensitive single character at a fixed distance from the start of the right-to-left pattern.</summary>
-        LeadingLiteral_RightToLeft_CaseInsensitive,
+        /// <summary>A single character at a fixed distance from the start of the right-to-left pattern.</summary>
+        LeadingLiteral_RightToLeft,
 
-        /// <summary>A case-sensitive single character at a fixed distance from the start of the pattern.</summary>
-        FixedLiteral_LeftToRight_CaseSensitive,
-        /// <summary>A case-insensitive single character at a fixed distance from the start of the pattern.</summary>
-        FixedLiteral_LeftToRight_CaseInsensitive,
+        /// <summary>A single character at a fixed distance from the start of the pattern.</summary>
+        FixedLiteral_LeftToRight,
 
-        /// <summary>One or more sets at a fixed distance from the start of the pattern.  At least the first set is case-sensitive.</summary>
-        FixedSets_LeftToRight_CaseSensitive,
-        /// <summary>One or more sets at a fixed distance from the start of the pattern.  At least the first set is case-insensitive.</summary>
-        FixedSets_LeftToRight_CaseInsensitive,
+        /// <summary>One or more sets at a fixed distance from the start of the pattern.</summary>
+        FixedSets_LeftToRight,
 
-        /// <summary>A literal after a non-overlapping set loop at the start of the pattern.  The literal is case-sensitive.</summary>
-        LiteralAfterLoop_LeftToRight_CaseSensitive,
+        /// <summary>A literal after a non-overlapping set loop at the start of the pattern.</summary>
+        LiteralAfterLoop_LeftToRight,
 
         /// <summary>Nothing to search for. Nop.</summary>
         NoSearch,

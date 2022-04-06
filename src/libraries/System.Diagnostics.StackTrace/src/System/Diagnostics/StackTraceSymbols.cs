@@ -123,14 +123,20 @@ namespace System.Diagnostics
                 return null;
             }
 
-            // The ConditionalWeakTable's GetValue + callback will atomically create the cache entry for us
-            // so we are protected from multiple threads racing to get/create the same MetadataReaderProvider
-            MetadataReaderProvider? provider = _metadataCache.GetValue(assembly, (assembly) =>
+            MetadataReaderProvider? provider;
+            while (!_metadataCache.TryGetValue(assembly, out provider))
             {
-                return (inMemoryPdbAddress != IntPtr.Zero) ?
-                            TryOpenReaderForInMemoryPdb(inMemoryPdbAddress, inMemoryPdbSize) :
-                            TryOpenReaderFromAssemblyFile(assemblyPath!, loadedPeAddress, loadedPeSize, isFileLayout);
-            });
+                provider = inMemoryPdbAddress != IntPtr.Zero ?
+                    TryOpenReaderForInMemoryPdb(inMemoryPdbAddress, inMemoryPdbSize) :
+                    TryOpenReaderFromAssemblyFile(assemblyPath!, loadedPeAddress, loadedPeSize, isFileLayout);
+
+                if (_metadataCache.TryAdd(assembly, provider))
+                {
+                    break;
+                }
+
+                provider?.Dispose();
+            }
 
             // The reader has already been open, so this doesn't throw.
             return provider?.GetMetadataReader();

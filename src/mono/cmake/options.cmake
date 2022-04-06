@@ -17,8 +17,6 @@ option (DISABLE_JIT "Disable the JIT, only full-aot mode or interpreter will be 
 option (DISABLE_INTERPRETER "Disable the interpreter.")
 option (DISABLE_SIMD "Disable SIMD intrinsics related optimizations.")
 option (DISABLE_DEBUGGER_AGENT "Disable Soft Debugger Agent.")
-option (DISABLE_PERFCOUNTERS "Disable Performance Counters.")
-option (DISABLE_SHARED_PERFCOUNTERS "Disable shared perfcounters.")
 option (DISABLE_LLDB "Disable support code for the LLDB plugin.")
 option (DISABLE_ASSERT_MESSAGES "Disable assertion messages.")
 option (DISABLE_SGEN_MAJOR_MARKSWEEP_CONC "Disable concurrent gc support in SGEN.")

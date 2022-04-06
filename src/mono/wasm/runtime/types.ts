@@ -16,6 +16,9 @@ export interface MonoObject extends ManagedPointer {
 export interface MonoString extends MonoObject {
     __brand: "MonoString"
 }
+export interface MonoInternedString extends MonoString {
+    __brandString: "MonoInternedString"
+}
 export interface MonoClass extends MonoObject {
     __brand: "MonoClass"
 }
@@ -31,6 +34,15 @@ export interface MonoArray extends MonoObject {
 export interface MonoAssembly extends MonoObject {
     __brand: "MonoAssembly"
 }
+// Pointer to a MonoObject* (i.e. the address of a root)
+export interface MonoObjectRef extends ManagedPointer {
+    __brandMonoObjectRef: "MonoObjectRef"
+}
+// This exists for signature clarity, we need it to be structurally equivalent
+//  so that anything requiring MonoObjectRef will work
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface MonoStringRef extends MonoObjectRef {
+}
 export const MonoMethodNull: MonoMethod = <MonoMethod><any>0;
 export const MonoObjectNull: MonoObject = <MonoObject><any>0;
 export const MonoArrayNull: MonoArray = <MonoArray><any>0;
@@ -38,10 +50,14 @@ export const MonoAssemblyNull: MonoAssembly = <MonoAssembly><any>0;
 export const MonoClassNull: MonoClass = <MonoClass><any>0;
 export const MonoTypeNull: MonoType = <MonoType><any>0;
 export const MonoStringNull: MonoString = <MonoString><any>0;
+export const MonoObjectRefNull: MonoObjectRef = <MonoObjectRef><any>0;
+export const MonoStringRefNull: MonoStringRef = <MonoStringRef><any>0;
 export const JSHandleDisposed: JSHandle = <JSHandle><any>-1;
 export const JSHandleNull: JSHandle = <JSHandle><any>0;
+export const GCHandleNull: GCHandle = <GCHandle><any>0;
 export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
 export const CharPtrNull: CharPtr = <CharPtr><any>0;
+export const NativePointerNull: NativePointer = <NativePointer><any>0;
 
 export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | null | undefined): T {
     return (<any>ptr | <any>0) as any;
@@ -113,7 +129,7 @@ export const enum AssetBehaviours {
 }
 
 export type RuntimeHelpers = {
-    get_call_sig: MonoMethod;
+    get_call_sig_ref: MonoMethod;
     runtime_namespace: string;
     runtime_classname: string;
     wasm_runtime_class: MonoClass;
@@ -124,6 +140,9 @@ export type RuntimeHelpers = {
 
     _box_buffer: VoidPtr;
     _unbox_buffer: VoidPtr;
+    _box_root: any;
+    // A WasmRoot that is guaranteed to contain 0
+    _null_root: any;
     _class_int32: MonoClass;
     _class_uint32: MonoClass;
     _class_double: MonoClass;
@@ -166,6 +185,7 @@ export type DotnetModuleConfig = {
     onDotnetReady?: () => void;
 
     imports?: DotnetModuleConfigImports;
+    exports?: string[];
 } & Partial<EmscriptenModule>
 
 export type DotnetModuleConfigImports = {
@@ -188,9 +208,13 @@ export type DotnetModuleConfigImports = {
     url?: any;
 }
 
-export function assert(condition: unknown, messsage: string): asserts condition {
+export function assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
     if (!condition) {
-        throw new Error(`Assert failed: ${messsage}`);
+        const message = typeof messageFactory === "string"
+            ? messageFactory
+            : messageFactory();
+        console.error(`Assert failed: ${message}`);
+        throw new Error(`Assert failed: ${message}`);
     }
 }
 

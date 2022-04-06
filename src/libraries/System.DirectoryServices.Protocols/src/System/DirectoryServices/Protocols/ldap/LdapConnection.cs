@@ -17,7 +17,7 @@ namespace System.DirectoryServices.Protocols
     internal delegate DirectoryResponse GetLdapResponseCallback(int messageId, LdapOperation operation, ResultAll resultType, TimeSpan requestTimeout, bool exceptionOnTimeOut);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    internal delegate bool QUERYCLIENTCERT(IntPtr Connection, IntPtr trusted_CAs, ref IntPtr certificateHandle);
+    internal unsafe delegate Interop.BOOL QUERYCLIENTCERT(IntPtr Connection, IntPtr trusted_CAs, IntPtr* certificateHandle);
 
     public partial class LdapConnection : DirectoryConnection, IDisposable
     {
@@ -63,7 +63,7 @@ namespace System.DirectoryServices.Protocols
         {
         }
 
-        public LdapConnection(LdapDirectoryIdentifier identifier, NetworkCredential credential, AuthType authType)
+        public unsafe LdapConnection(LdapDirectoryIdentifier identifier, NetworkCredential credential, AuthType authType)
         {
             _directoryIdentifier = identifier;
             _directoryCredential = (credential != null) ? new NetworkCredential(credential.UserName, credential.Password, credential.Domain) : null;
@@ -86,7 +86,7 @@ namespace System.DirectoryServices.Protocols
             _clientCertificateRoutine = new QUERYCLIENTCERT(ProcessClientCertificate);
         }
 
-        internal LdapConnection(LdapDirectoryIdentifier identifier, NetworkCredential credential, AuthType authType, IntPtr handle)
+        internal unsafe LdapConnection(LdapDirectoryIdentifier identifier, NetworkCredential credential, AuthType authType, IntPtr handle)
         {
             _directoryIdentifier = identifier;
             _needDispose = false;
@@ -919,19 +919,19 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        private bool ProcessClientCertificate(IntPtr ldapHandle, IntPtr CAs, ref IntPtr certificate)
+        private unsafe Interop.BOOL ProcessClientCertificate(IntPtr ldapHandle, IntPtr CAs, IntPtr* certificate)
         {
             int count = ClientCertificates == null ? 0 : ClientCertificates.Count;
             if (count == 0 && SessionOptions._clientCertificateDelegate == null)
             {
-                return false;
+                return Interop.BOOL.FALSE;
             }
 
             // If the user specify certificate through property and not though option, we don't need to check the certificate authority.
             if (SessionOptions._clientCertificateDelegate == null)
             {
-                certificate = ClientCertificates[0].Handle;
-                return true;
+                *certificate = ClientCertificates[0].Handle;
+                return Interop.BOOL.TRUE;
             }
 
             // Processing the certificate authority.
@@ -965,12 +965,12 @@ namespace System.DirectoryServices.Protocols
             X509Certificate cert = SessionOptions._clientCertificateDelegate(this, certAuthorities);
             if (cert != null)
             {
-                certificate = cert.Handle;
-                return true;
+                *certificate = cert.Handle;
+                return Interop.BOOL.TRUE;
             }
 
-            certificate = IntPtr.Zero;
-            return false;
+            *certificate = IntPtr.Zero;
+            return Interop.BOOL.FALSE;
         }
 
         private void Connect()

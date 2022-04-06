@@ -188,12 +188,14 @@ namespace DebuggerTests
                 {
                     string line = FormatConsoleAPICalled(args);
                     _logger.LogInformation(line);
-                    if (DetectAndFailOnAssertions && line.Contains("console.error: * Assertion at"))
+                    if (DetectAndFailOnAssertions &&
+                            (line.Contains("console.error: [MONO]") || line.Contains("console.warning: [MONO]")))
                     {
                         args["__forMethod"] = method;
-                        Client.Fail(new ArgumentException($"Assertion detected in the messages: {line}{Environment.NewLine}{args}"));
+                        Client.Fail(new ArgumentException($"Unexpected runtime error/warning message detected: {line}{Environment.NewLine}{args}"));
                         return;
                     }
+
                     break;
                 }
                 case "Inspector.detached":

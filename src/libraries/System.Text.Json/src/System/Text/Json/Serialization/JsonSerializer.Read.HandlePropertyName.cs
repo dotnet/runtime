@@ -82,7 +82,7 @@ namespace System.Text.Json
                 unescapedPropertyName = propertyName;
             }
 
-            if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
+            if (state.CanContainMetadata)
             {
                 if (propertyName.Length > 0 && propertyName[0] == '$')
                 {

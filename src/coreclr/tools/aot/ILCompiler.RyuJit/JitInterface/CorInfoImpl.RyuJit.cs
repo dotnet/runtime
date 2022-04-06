@@ -352,7 +352,7 @@ namespace Internal.JitInterface
             return true;
         }
 
-        private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_LOOKUP pLookup)
+        private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_LOOKUP pLookup)
         {
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
@@ -361,17 +361,58 @@ namespace Internal.JitInterface
                 MemoryHelper.FillMemory((byte*)tmp, 0xcc, sizeof(CORINFO_LOOKUP));
 #endif
 
-            MethodDesc targetMethod = HandleToObject(pTargetMethod.hMethod);
+            MethodDesc expectedTargetMethod = HandleToObject(pTargetMethod.hMethod);
             TypeDesc delegateTypeDesc = HandleToObject(delegateType);
 
-            if (targetMethod.IsSharedByGenericInstantiations)
+            MethodDesc targetMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pTargetMethod);
+
+            // If this was a constrained+ldftn sequence, we need to resolve the constraint
+            TypeDesc constrainedType = null;
+            if (targetConstraint != 0)
             {
-                // If the method is not exact, fetch it as a runtime determined method.
-                targetMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pTargetMethod);
+                // Should really only be here for static virtuals since constrained ldftn is not allowed elsewhere.
+                Debug.Assert(targetMethod.IsVirtual && targetMethod.Signature.IsStatic
+                    && pTargetMethod.tokenType != CorInfoTokenKind.CORINFO_TOKENKIND_Ldvirtftn);
+
+                var methodIL = HandleToObject(pTargetMethod.tokenScope);
+                var typeOrMethodContext = (pTargetMethod.tokenContext == contextFromMethodBeingCompiled()) ?
+                    MethodBeingCompiled : HandleToObject((IntPtr)pTargetMethod.tokenContext);
+                var canonConstrainedType = (TypeDesc)ResolveTokenInScope(methodIL, typeOrMethodContext, targetConstraint);
+                TypeDesc interfaceType = HandleToObject(pTargetMethod.hClass);
+                var interfaceMethod = (MethodDesc)ResolveTokenInScope(methodIL, typeOrMethodContext, pTargetMethod.token);
+                constrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(methodIL, typeOrMethodContext, targetConstraint);
+
+                MethodDesc directMethod = canonConstrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(interfaceType, interfaceMethod, out bool forceRuntimeLookup);
+                if (directMethod != null)
+                {
+                    // We resolved on a canonical form of the valuetype. Now find the method on the runtime determined form.
+                    Debug.Assert(directMethod.OwningType.IsValueType);
+                    Debug.Assert(!forceRuntimeLookup);
+
+                    MethodDesc targetOfLookup;
+                    if (constrainedType.IsRuntimeDeterminedType)
+                        targetOfLookup = _compilation.TypeSystemContext.GetMethodForRuntimeDeterminedType(directMethod.GetTypicalMethodDefinition(), (RuntimeDeterminedType)constrainedType);
+                    else if (constrainedType.HasInstantiation)
+                        targetOfLookup = _compilation.TypeSystemContext.GetMethodForInstantiatedType(directMethod.GetTypicalMethodDefinition(), (InstantiatedType)constrainedType);
+                    else
+                        targetOfLookup = directMethod.GetMethodDefinition();
+
+                    if (targetOfLookup.HasInstantiation)
+                        targetOfLookup = targetOfLookup.MakeInstantiatedMethod(targetMethod.Instantiation);
+
+                    targetMethod = targetOfLookup;
+
+                    // We resolved the constraint
+                    constrainedType = null;
+                }
             }
 
+            // We better come up with the same method that getCallInfo came up with, with the only difference being
+            // that our targetMethod is RuntimeDetermined.
+            Debug.Assert(expectedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) == targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
+
             bool isLdvirtftn = pTargetMethod.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldvirtftn;
-            DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(delegateTypeDesc, targetMethod, isLdvirtftn);
+            DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(delegateTypeDesc, targetMethod, constrainedType, isLdvirtftn);
 
             if (delegateInfo.NeedsRuntimeLookup)
             {
@@ -1262,44 +1303,7 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowBadImageFormatException();
             }
 
-            if (directCall && !allowInstParam && targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
-            {
-                // JIT needs a single address to call this method but the method needs a hidden argument.
-                // We need a fat function pointer for this that captures both things.
-                targetIsFatFunctionPointer = true;
-
-                // JIT won't expect fat function pointers unless this is e.g. delegate creation
-                Debug.Assert((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0);
-
-                pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
-
-                if (pResult->exactContextNeedsRuntimeLookup)
-                {
-                    pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = 0;
-                    pResult->codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-
-                    // Do not bother computing the runtime lookup if we are inlining. The JIT is going
-                    // to abort the inlining attempt anyway.
-                    if (pResolvedToken.tokenContext == contextFromMethodBeingCompiled())
-                    {
-                        MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
-                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(GetRuntimeDeterminedObjectForToken(ref pResolvedToken));
-                    }
-                    else
-                    {
-                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
-                    }
-                }
-                else
-                {
-                    pResult->codePointerOrStubLookup.constLookup =
-                        CreateConstLookupToSymbol(_compilation.NodeFactory.FatFunctionPointer(targetMethod));
-                }
-            }
-            else if (directCall && resolvedConstraint && pResult->exactContextNeedsRuntimeLookup)
+            if (directCall && resolvedConstraint && pResult->exactContextNeedsRuntimeLookup)
             {
                 // We want to do a direct call to a shared method on a valuetype. We need to provide
                 // a generic context, but the JitInterface doesn't provide a way for us to do it from here.
@@ -1346,6 +1350,43 @@ namespace Internal.JitInterface
 
                 targetIsFatFunctionPointer = true;
                 useFatCallTransform = true;
+            }
+            else if (directCall && !allowInstParam && targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
+            {
+                // JIT needs a single address to call this method but the method needs a hidden argument.
+                // We need a fat function pointer for this that captures both things.
+                targetIsFatFunctionPointer = true;
+
+                // JIT won't expect fat function pointers unless this is e.g. delegate creation
+                Debug.Assert((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0);
+
+                pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
+
+                if (pResult->exactContextNeedsRuntimeLookup)
+                {
+                    pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
+                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = 0;
+                    pResult->codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
+
+                    // Do not bother computing the runtime lookup if we are inlining. The JIT is going
+                    // to abort the inlining attempt anyway.
+                    if (pResolvedToken.tokenContext == contextFromMethodBeingCompiled())
+                    {
+                        MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
+                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(GetRuntimeDeterminedObjectForToken(ref pResolvedToken));
+                    }
+                    else
+                    {
+                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
+                    }
+                }
+                else
+                {
+                    pResult->codePointerOrStubLookup.constLookup =
+                        CreateConstLookupToSymbol(_compilation.NodeFactory.FatFunctionPointer(targetMethod));
+                }
             }
             else if (directCall)
             {
