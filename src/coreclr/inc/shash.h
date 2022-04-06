@@ -201,7 +201,7 @@ class EMPTY_BASES_DECL SHash : public TRAITS
 
     // Pointer-based flavor to replace an existing element (allows efficient access to tables of structures)
 
-    void ReplacePtr(const element_t *elementPtr, const element_t &newElement);
+    void ReplacePtr(const element_t *elementPtr, const element_t &newElement, bool invokeCleanupAction = true);
 
     // Add an element to the hash table.  This will never replace an element; multiple
     // elements may be stored with the same key.

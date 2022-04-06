@@ -418,6 +418,7 @@ void CrossLoaderAllocatorHash<TRAITS>::Add(TKey key, TValue value, LoaderAllocat
             {
                 if (hashKeyToTrackers != NULL)
                 {
+                    delete hashKeyToTrackers->_laLocalKeyValueStore;
                     hashKeyToTrackers->_laLocalKeyValueStore = keyValueStore;
                 }
                 else
@@ -437,10 +438,12 @@ void CrossLoaderAllocatorHash<TRAITS>::Add(TKey key, TValue value, LoaderAllocat
         if (hashKeyToTrackers == NULL)
         {
             // Nothing has yet caused the trackers proxy object to be setup. Create it now, and update the keyToTrackersHash.
-            // Don't need to use the holder here since there's no allocation before it's put into the hash table.
+            // Don't need to use the holder here since there's no allocation before it's put into the hash table. The previous
+            // element was the key-value store, and should not be deleted because its lifetime is being assigned to the new
+            // LAHashKeyToTrackers, so replace the element without cleanup.
             hashKeyToTrackers = new LAHashKeyToTrackers(keyValueStore);
             hashKeyEntry = hashKeyToTrackers;
-            keyToTrackersHash.ReplacePtr(hashKeyEntryPtr, hashKeyEntry);
+            keyToTrackersHash.ReplacePtr(hashKeyEntryPtr, hashKeyEntry, false /* invokeCleanupAction */);
         }
 
         // Must add it to the cross LA structure

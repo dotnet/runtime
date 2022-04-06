@@ -101,7 +101,7 @@ const typename SHash<TRAITS>::element_t * SHash<TRAITS>::LookupPtr(key_t key) co
 }
 
 template <typename TRAITS>
-void SHash<TRAITS>::ReplacePtr(const element_t *elementPtr, const element_t &newElement)
+void SHash<TRAITS>::ReplacePtr(const element_t *elementPtr, const element_t &newElement, bool invokeCleanupAction)
 {
     CONTRACT_VOID
     {
@@ -112,14 +112,13 @@ void SHash<TRAITS>::ReplacePtr(const element_t *elementPtr, const element_t &new
         PRECONDITION(elementPtr < m_table + m_tableSize);
         PRECONDITION(!TRAITS::IsNull(*elementPtr));
         PRECONDITION(!TRAITS::IsDeleted(*elementPtr));
-        PRECONDITION(elementPtr == LookupPtr(TRAITS::GetKey(*elementPtr)));
         PRECONDITION(!TRAITS::IsNull(newElement));
         PRECONDITION(!TRAITS::IsDeleted(newElement));
         PRECONDITION(TRAITS::Equals(TRAITS::GetKey(newElement), TRAITS::GetKey(*elementPtr)));
     }
     CONTRACT_END;
 
-    if (TRAITS::s_RemovePerEntryCleanupAction)
+    if (TRAITS::s_RemovePerEntryCleanupAction && invokeCleanupAction)
     {
         TRAITS::OnRemovePerEntryCleanupAction(*elementPtr);
     }
