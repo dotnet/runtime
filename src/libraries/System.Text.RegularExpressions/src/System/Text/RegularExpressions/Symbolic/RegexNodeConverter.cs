@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions.Symbolic.Unicode;
 using System.Threading;
 
 namespace System.Text.RegularExpressions.Symbolic
