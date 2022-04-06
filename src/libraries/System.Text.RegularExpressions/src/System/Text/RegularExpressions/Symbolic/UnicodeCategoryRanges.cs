@@ -6,7 +6,7 @@
 
 using System.Globalization;
 
-namespace System.Text.RegularExpressions.Symbolic.Unicode
+namespace System.Text.RegularExpressions.Symbolic
 {
     internal static class UnicodeCategoryRanges
     {

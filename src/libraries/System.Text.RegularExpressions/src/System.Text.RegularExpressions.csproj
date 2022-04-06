@@ -85,9 +85,9 @@
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexSet.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\TransitionRegex.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\TransitionRegexKind.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\UnicodeCategoryRanges.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\UnicodeCategoryRangesGenerator.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\UnicodeCategoryTheory.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\UnicodeCategoryConditions.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\UnicodeCategoryRanges.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\UnicodeCategoryRangesGenerator.cs" />
     <!-- Common or Common-branched source files -->
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs" Link="Common\System\NotImplemented.cs" />

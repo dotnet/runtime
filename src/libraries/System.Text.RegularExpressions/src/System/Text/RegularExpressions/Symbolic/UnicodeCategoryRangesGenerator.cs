@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 
-namespace System.Text.RegularExpressions.Symbolic.Unicode
+namespace System.Text.RegularExpressions.Symbolic
 {
 #if DEBUG
     /// <summary>Utility for generating unicode category ranges and corresponing binary decision diagrams.</summary>
@@ -38,14 +38,6 @@ namespace {namespacename}
 {{
     internal static class {classname}
     {{");
-            WriteSerializedBDDs(sw);
-            sw.WriteLine($@"    }}
-}}");
-        }
-
-        private static void WriteSerializedBDDs(StreamWriter sw)
-        {
-            int maxChar = 0xFFFF;
             var catMap = new Dictionary<UnicodeCategory, Ranges>();
             foreach (UnicodeCategory c in Enum.GetValues<UnicodeCategory>())
             {
@@ -54,26 +46,29 @@ namespace {namespacename}
 
             Ranges whitespace = new Ranges();
             Regex whitespaceRegex = new(@"\s");
-            for (int i = 0; i <= maxChar; i++)
+            for (int i = 0; i <= char.MaxValue; i++)
             {
                 char ch = (char)i;
                 catMap[char.GetUnicodeCategory(ch)].Add(i);
-
                 if (whitespaceRegex.IsMatch(ch.ToString()))
+                {
                     whitespace.Add(i);
+                }
             }
 
-            CharSetSolver bddb = CharSetSolver.Instance;
+            CharSetSolver charSetSolver = CharSetSolver.Instance;
 
             sw.WriteLine("        /// <summary>Serialized BDD representation of the set of all whitespace characters.</summary>");
             sw.Write($"        public static ReadOnlySpan<byte> SerializedWhitespaceBDD => ");
-            WriteByteArrayInitSyntax(sw, bddb.CreateBddForIntRanges(whitespace.ranges).SerializeToBytes());
+            WriteByteArrayInitSyntax(sw, charSetSolver.CreateBddForIntRanges(whitespace.ranges).SerializeToBytes());
             sw.WriteLine(";");
 
-            //generate bdd reprs for each of the category ranges
+            // Generate a BDD representation of each UnicodeCategory.
             BDD[] catBDDs = new BDD[catMap.Count];
             for (int c = 0; c < catBDDs.Length; c++)
-                catBDDs[c] = bddb.CreateBddForIntRanges(catMap[(UnicodeCategory)c].ranges);
+            {
+                catBDDs[c] = charSetSolver.CreateBddForIntRanges(catMap[(UnicodeCategory)c].ranges);
+            }
 
             sw.WriteLine();
             sw.WriteLine("        /// <summary>Gets the serialized BDD representations of any defined UnicodeCategory.</summary>");
@@ -95,26 +90,19 @@ namespace {namespacename}
                 WriteByteArrayInitSyntax(sw, catBDDs[i].SerializeToBytes());
                 sw.WriteLine(";");
             }
-        }
 
-        public static void WriteInt64ArrayInitSyntax(StreamWriter sw, long[] values)
-        {
-            sw.Write("new long[] {");
-            for (int i = 0; i < values.Length; i++)
-            {
-                sw.Write($" 0x{values[i]:X}, ");
-            }
-            sw.Write("}");
-        }
+            sw.WriteLine($@"    }}
+}}");
 
-        public static void WriteByteArrayInitSyntax(StreamWriter sw, byte[] values)
-        {
-            sw.Write("new byte[] {");
-            for (int i = 0; i < values.Length; i++)
+            static void WriteByteArrayInitSyntax(StreamWriter sw, byte[] values)
             {
-                sw.Write($" 0x{values[i]:X}, ");
+                sw.Write("new byte[] {");
+                for (int i = 0; i < values.Length; i++)
+                {
+                    sw.Write($" 0x{values[i]:X},");
+                }
+                sw.Write(" }");
             }
-            sw.Write("}");
         }
     }
 

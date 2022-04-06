@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.RegularExpressions.Symbolic;
-using System.Text.RegularExpressions.Symbolic.Unicode;
 
 namespace System.Text.RegularExpressions
 {
@@ -50,7 +49,7 @@ namespace System.Text.RegularExpressions
         [ExcludeFromCodeCoverage(Justification = "Debug only")]
         internal static void GenerateUnicodeTables(string path)
         {
-            UnicodeCategoryRangesGenerator.Generate("System.Text.RegularExpressions.Symbolic.Unicode", "UnicodeCategoryRanges", path);
+            UnicodeCategoryRangesGenerator.Generate("System.Text.RegularExpressions.Symbolic", "UnicodeCategoryRanges", path);
         }
 
         /// <summary>

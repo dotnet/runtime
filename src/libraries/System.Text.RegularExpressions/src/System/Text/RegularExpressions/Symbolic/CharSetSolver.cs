@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Globalization;
-using System.Text.RegularExpressions.Symbolic.Unicode;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
