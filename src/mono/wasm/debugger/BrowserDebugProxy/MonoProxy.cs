@@ -245,7 +245,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             case var _ when url.StartsWith("wasm://", StringComparison.Ordinal):
                             case var _ when url.EndsWith(".wasm", StringComparison.Ordinal):
                                 {
-                                    Log("verbose", $"ignoring wasm: Debugger.scriptParsed {url}");
+                                    logger.LogTrace($"ignoring wasm: Debugger.scriptParsed {url}");
                                     return true;
                                 }
                         }
@@ -761,7 +761,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return resValType switch
                         {
                             null => ValueOrError<JToken>.WithError($"Could not get properties for {objectId}"),
-                            _    => ValueOrError<JToken>.WithValue(resValType)
+                            _    => ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = resValType }) : resValType)
                         };
                     }
                     case "array":

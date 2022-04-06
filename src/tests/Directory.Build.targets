@@ -114,21 +114,6 @@
     <SkipImportILTargets Condition="'$(CLRTestBuildAllTargets)' != '' And '$(CLRTestNeedTarget)' != '$(CLRTestBuildAllTargets)'">true</SkipImportILTargets>
   </PropertyGroup>
 
-  <Target Name="CopyMergedWrapperReferences"
-      Condition="'$(IsMergedTestRunnerAssembly)' == 'true'"
-      AfterTargets="Build"
-      BeforeTargets="CopyNativeProjectBinaries">
-    <ItemGroup>
-      <MergedWrapperReferenceFolders Include="@(ProjectReference->'$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)/..', '$(OutDir)/..'))/%(ProjectReference.FileName)')" />
-      <!-- For merged project wrappers, include native libraries in all project references -->
-      <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(LibSuffix)" />
-    </ItemGroup>
-    <Copy SourceFiles="@(MergedWrapperReferenceFiles)"
-        DestinationFiles="@(MergedWrapperReferenceFiles->'$(OutDir)/%(FileName)%(Extension)')"
-        SkipUnchangedFiles="true"
-        />
-  </Target>
-
   <Target Name="CopyNativeProjectBinaries" Condition="'$(_CopyNativeProjectBinaries)' == 'true'">
     <ItemGroup Condition="'$(UseVisualStudioNativeBinariesLayout)' == 'true'">
       <NativeProjectBinaries Include="$(NativeProjectOutputFolder)\*.*" />
@@ -225,9 +210,26 @@
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyNativeProjectBinaries" Properties="NativeProjectOutputFolder=%(NativeProjectOutputFoldersToCopy.Identity)" Condition="'@(NativeProjectReference)' != ''" />
 
+    <MSBuild Projects="@(ProjectReference)"
+        Targets="CopyAllNativeProjectReferenceBinaries"
+        Condition="'$(IsMergedTestRunnerAssembly)' == 'true'"
+        BuildInParallel="true" />
   </Target>
 
-  <Target Name="CopyAllNativeProjectReferenceBinaries" DependsOnTargets="ResolveCMakeNativeProjectReference;ConsolidateNativeProjectReference" />
+  <Target Name="CopyAllNativeProjectReferenceBinaries"
+          DependsOnTargets="ResolveCMakeNativeProjectReference;ConsolidateNativeProjectReference">
+
+    <ItemGroup Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
+      <MergedWrapperReferenceFolders Include="@(ProjectReference->'$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)/..', '$(OutDir)/..'))/%(ProjectReference.FileName)')" />
+      <!-- For merged project wrappers, include native libraries in all project references -->
+      <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(LibSuffix)" />
+    </ItemGroup>
+    <Copy SourceFiles="@(MergedWrapperReferenceFiles)"
+        DestinationFiles="@(MergedWrapperReferenceFiles->'$(OutDir)/%(FileName)%(Extension)')"
+        SkipUnchangedFiles="true"
+        Condition="'@(MergedWrapperReferenceFiles)' != ''"
+        />
+  </Target>
 
   <!-- Build shell or command scripts whenever we copy native binaries -->
   <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.Execute.targets" />
@@ -259,20 +261,40 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="AfterBuild">
+  <Target Name="GenerateMarkerFiles" BeforeTargets="AssignTargetPaths">
+    <ItemGroup>
+      <Content Include="$(AssemblyName).reflect.xml" Condition="Exists('$(AssemblyName).reflect.xml')" CopyToOutputDirectory="PreserveNewest" />
+      <MarkerFile Include="$(IntermediateOutputPath)\$(MSBuildProjectName).MergedTestAssembly" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
+      <MarkerFile Include="$(IntermediateOutputPath)\$(AssemblyName).NoMonoAot" Condition="'$(MonoAotIncompatible)' == 'true'" />
+      <Content Include="@(MarkerFile)" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
      <Copy SourceFiles="$(AssemblyName).reflect.xml"
            DestinationFolder="$(OutputPath)"
        Condition="Exists('$(AssemblyName).reflect.xml')"/>
 
     <WriteLinesToFile
         Condition="'$(IsMergedTestRunnerAssembly)' == 'true'"
-        File="$(OutputPath)\$(MSBuildProjectName).MergedTestAssembly"
-        Lines="MergedTestAssembly" />
+        File="$(IntermediateOutputPath)\$(MSBuildProjectName).MergedTestAssembly"
+        Lines="MergedTestAssembly"
+        Overwrite="true"
+        WriteOnlyWhenDifferent="true" />
 
+
+    <WriteLinesToFile
+        Condition="'$(MonoAotIncompatible)' == 'true'"
+        File="$(IntermediateOutputPath)\$(AssemblyName).NoMonoAot"
+        Lines="NoMonoAot"
+        Overwrite="true"
+        WriteOnlyWhenDifferent="true" />
+  
+    <!-- We don't want the out-of-process test marker file to be included in referencing projects, so we don't include it as content. -->
     <WriteLinesToFile
         Condition="'$(RequiresProcessIsolation)' == 'true' and '$(BuildAsStandalone)' != 'true'"
         File="$(OutputPath)\$(MSBuildProjectName).OutOfProcessTest"
-        Lines="OutOfProcessTest" />
+        Lines="OutOfProcessTest"
+        Overwrite="true"
+        WriteOnlyWhenDifferent="true" />
   </Target>
 
   <PropertyGroup>
