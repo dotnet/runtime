@@ -1264,9 +1264,9 @@ namespace System.Net.Quic.Implementations.MsQuic
         private static uint HandleEventSendComplete(State state, ref StreamEvent evt)
         {
             StreamEventDataSendComplete sendCompleteEvent = evt.Data.SendComplete;
-            bool canceled = sendCompleteEvent.Canceled != 0;
 
             bool complete = false;
+            Exception? abortException = null;
 
             lock (state)
             {
@@ -1276,9 +1276,18 @@ namespace System.Net.Quic.Implementations.MsQuic
                     complete = true;
                 }
 
-                if (canceled)
+                if (sendCompleteEvent.Canceled != 0)
                 {
                     state.SendState = SendState.Aborted;
+
+                    //
+                    // There are multiple reasons the send could have been cancelled:
+                    //   - Connection was aborted (either by transport or peer) => error-code already provided on the connection-level event
+                    //   - Stream's receive side was aborted by peer => already handled by HandleEventPeerRecvAborted
+                    //     and we will not set the exception due to complete == false
+                    //   - Stream's send side was aborted locally => no connection-level abort code and we return QuicOperationAbortException
+                    //
+                    abortException = ThrowHelper.GetConnectionAbortedException(state.ConnectionState.AbortErrorCode);
                 }
             }
 
@@ -1286,14 +1295,14 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 CleanupSendState(state);
 
-                if (!canceled)
+                if (abortException == null)
                 {
                     state.SendResettableCompletionSource.Complete(MsQuicStatusCodes.Success);
                 }
                 else
                 {
                     state.SendResettableCompletionSource.CompleteException(
-                        ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException("Write was canceled")));
+                        ExceptionDispatchInfo.SetCurrentStackTrace(abortException));
                 }
             }
 
