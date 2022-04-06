@@ -4,9 +4,7 @@
     <NoWarn>$(NoWarn);SYSLIB0021;SYSLIB0022</NoWarn>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="System.Security.Cryptography.Algorithms.Forwards.cs" />
-  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Security.Cryptography\ref\System.Security.Cryptography.csproj" />

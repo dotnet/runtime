@@ -5,21 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Microsoft.Extensions.Logging.EventSource.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\ref\Microsoft.Extensions.Logging.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\ref\Microsoft.Extensions.Logging.Abstractions.csproj" />
   </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.Tracing\ref\System.Diagnostics.Tracing.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.Runtime" />
-  </ItemGroup>
-
 </Project>

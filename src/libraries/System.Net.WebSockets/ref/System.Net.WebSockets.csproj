@@ -3,9 +3,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="System.Net.WebSockets.cs" />
-  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\Microsoft.Win32.Primitives\ref\Microsoft.Win32.Primitives.csproj" />
     <ProjectReference Include="..\..\System.Collections.Specialized\ref\System.Collections.Specialized.csproj" />

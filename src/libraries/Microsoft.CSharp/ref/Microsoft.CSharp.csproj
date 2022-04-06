@@ -3,9 +3,6 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="Microsoft.CSharp.cs" />
-  </ItemGroup>
   
   <ItemGroup>
     <ProjectReference Include="..\..\System.Linq\ref\System.Linq.csproj" />

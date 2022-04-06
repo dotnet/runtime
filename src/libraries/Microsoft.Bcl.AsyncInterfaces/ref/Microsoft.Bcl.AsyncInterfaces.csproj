@@ -1,13 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);netstandard2.1</TargetFrameworks>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.1'">
-    <Compile Include="Microsoft.Bcl.AsyncInterfaces.cs" />
+
+  <ItemGroup>
+    <Compile Include="Microsoft.Bcl.AsyncInterfaces.cs" Condition="'$(TargetFramework)' != 'netstandard2.1'" />
+    <Compile Include="Microsoft.Bcl.AsyncInterfaces.Forwards.cs" Condition="'$(TargetFramework)' == 'netstandard2.1'" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
-    <Compile Include="Microsoft.Bcl.AsyncInterfaces.Forwards.cs" />
-  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.1'">
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
   </ItemGroup>
