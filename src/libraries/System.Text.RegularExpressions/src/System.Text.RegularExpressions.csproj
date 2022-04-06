@@ -24,8 +24,10 @@
     <Compile Include="System\Text\RegularExpressions\Regex.Replace.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Split.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Timeout.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexCaseBehavior.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexCaseEquivalences.Data.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexCaseEquivalences.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCharClass.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexCharClass.MappingTable.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCompilationInfo.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexFindOptimizations.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexGeneratorAttribute.cs" />
@@ -83,10 +85,6 @@
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexSet.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\TransitionRegex.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\TransitionRegexKind.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\GeneratorHelper.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\IgnoreCaseRelation.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\IgnoreCaseRelationGenerator.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\IgnoreCaseTransformer.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\UnicodeCategoryRanges.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\UnicodeCategoryRangesGenerator.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\Unicode\UnicodeCategoryTheory.cs" />

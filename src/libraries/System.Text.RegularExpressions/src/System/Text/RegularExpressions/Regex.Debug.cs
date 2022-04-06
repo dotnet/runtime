@@ -44,13 +44,12 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Generates two files IgnoreCaseRelation.cs and UnicodeCategoryRanges.cs for the namespace System.Text.RegularExpressions.Symbolic.Unicode
+        /// Generates UnicodeCategoryRanges.cs for the namespace System.Text.RegularExpressions.Symbolic.Unicode
         /// in the given directory path. Only avaliable in DEBUG mode.
         /// </summary>
         [ExcludeFromCodeCoverage(Justification = "Debug only")]
         internal static void GenerateUnicodeTables(string path)
         {
-            IgnoreCaseRelationGenerator.Generate("System.Text.RegularExpressions.Symbolic.Unicode", "IgnoreCaseRelation", path);
             UnicodeCategoryRangesGenerator.Generate("System.Text.RegularExpressions.Symbolic.Unicode", "UnicodeCategoryRanges", path);
         }
 

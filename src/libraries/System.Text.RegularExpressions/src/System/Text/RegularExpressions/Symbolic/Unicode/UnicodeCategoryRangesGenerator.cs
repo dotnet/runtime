@@ -76,7 +76,7 @@ namespace {namespacename}
             {
                 sw.WriteLine("            // {0}({1}):", (UnicodeCategory)i, i);
                 sw.Write("            ");
-                GeneratorHelper.WriteByteArrayInitSyntax(sw, catBDDs[i].SerializeToBytes());
+                WriteByteArrayInitSyntax(sw, catBDDs[i].SerializeToBytes());
                 sw.WriteLine(",");
             }
             sw.WriteLine("        };");
@@ -84,8 +84,28 @@ namespace {namespacename}
 
             sw.WriteLine("        /// <summary>Serialized BDD representation of the set of all whitespace characters.</summary>");
             sw.Write($"        public static readonly byte[] WhitespaceSerializedBDD = ");
-            GeneratorHelper.WriteByteArrayInitSyntax(sw, whitespaceBdd.SerializeToBytes());
+            WriteByteArrayInitSyntax(sw, whitespaceBdd.SerializeToBytes());
             sw.WriteLine(";");
+        }
+
+        public static void WriteInt64ArrayInitSyntax(StreamWriter sw, long[] values)
+        {
+            sw.Write("new long[] {");
+            for (int i = 0; i < values.Length; i++)
+            {
+                sw.Write($" 0x{values[i]:X}, ");
+            }
+            sw.Write("}");
+        }
+
+        public static void WriteByteArrayInitSyntax(StreamWriter sw, byte[] values)
+        {
+            sw.Write("new byte[] {");
+            for (int i = 0; i < values.Length; i++)
+            {
+                sw.Write($" 0x{values[i]:X}, ");
+            }
+            sw.Write("}");
         }
     }
 

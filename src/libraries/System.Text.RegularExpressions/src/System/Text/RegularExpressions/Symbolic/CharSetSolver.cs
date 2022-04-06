@@ -16,7 +16,6 @@ namespace System.Text.RegularExpressions.Symbolic
     {
         /// <summary>BDDs for all ASCII characters for fast lookup.</summary>
         private readonly BDD[] _charPredTable = new BDD[128];
-        private readonly IgnoreCaseTransformer _ignoreCase;
         internal readonly BDD _nonAscii;
 
         /// <summary>Initialize the solver.</summary>
@@ -24,7 +23,6 @@ namespace System.Text.RegularExpressions.Symbolic
         private CharSetSolver()
         {
             _nonAscii = CreateCharSetFromRange('\x80', '\uFFFF');
-            _ignoreCase = new IgnoreCaseTransformer(this); // do this last in ctor, as IgnoreCaseTransform's ctor uses `this`
         }
 
         /// <summary>Singleton instance of <see cref="CharSetSolver"/>.</summary>
@@ -33,20 +31,13 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Make a character predicate for the given character c.
         /// </summary>
-        public BDD CharConstraint(char c, bool ignoreCase = false, string? culture = null)
+        public BDD CharConstraint(char c)
         {
-            if (ignoreCase)
-            {
-                return _ignoreCase.Apply(c, culture);
-            }
-            else
-            {
-                // individual character BDDs are always fixed
-                BDD[] charPredTable = _charPredTable;
-                return c < charPredTable.Length ?
-                    charPredTable[c] ??= CreateBDDFromChar(c) :
-                    CreateBDDFromChar(c);
-            }
+            // individual character BDDs are always fixed
+            BDD[] charPredTable = _charPredTable;
+            return c < charPredTable.Length ?
+                charPredTable[c] ??= CreateBDDFromChar(c) :
+                CreateBDDFromChar(c);
         }
 
         private BDD CreateBDDFromChar(ushort c)
@@ -69,22 +60,15 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>
         /// Make a character set of all the characters in the interval from c to d.
-        /// If ignoreCase is true ignore cases for upper and lower case characters by including both versions.
         /// </summary>
-        public BDD RangeConstraint(char c, char d, bool ignoreCase = false, string? culture = null)
+        public BDD RangeConstraint(char c, char d)
         {
             if (c == d)
             {
-                return CharConstraint(c, ignoreCase, culture);
+                return CharConstraint(c);
             }
 
-            BDD res = CreateSetFromRange(c, d, 15);
-            if (ignoreCase)
-            {
-                res = _ignoreCase.Apply(res, culture);
-            }
-
-            return res;
+            return CreateSetFromRange(c, d, 15);
         }
 
 #if DEBUG

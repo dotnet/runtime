@@ -53,10 +53,10 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Singletons and multis
 
                 case RegexNodeKind.One:
-                    return _builder.CreateSingleton(CharSetSolver.Instance.CharConstraint(node.Ch, (node.Options & RegexOptions.IgnoreCase) != 0, _culture.Name));
+                    return _builder.CreateSingleton(CharSetSolver.Instance.CharConstraint(node.Ch));
 
                 case RegexNodeKind.Notone:
-                    return _builder.CreateSingleton(CharSetSolver.Instance.Not(CharSetSolver.Instance.CharConstraint(node.Ch, (node.Options & RegexOptions.IgnoreCase) != 0, _culture.Name)));
+                    return _builder.CreateSingleton(CharSetSolver.Instance.Not(CharSetSolver.Instance.CharConstraint(node.Ch)));
 
                 case RegexNodeKind.Set:
                     return ConvertSet(node);
@@ -70,7 +70,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         var nodes = new SymbolicRegexNode<BDD>[str.Length];
                         for (int i = 0; i < nodes.Length; i++)
                         {
-                            nodes[i] = _builder.CreateSingleton(CharSetSolver.Instance.CharConstraint(str[i], ignoreCase, _culture.Name));
+                            nodes[i] = _builder.CreateSingleton(CharSetSolver.Instance.CharConstraint(str[i]));
                         }
                         return _builder.CreateConcat(nodes, tryCreateFixedLengthMarker);
                     }
@@ -108,7 +108,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         // Create a BDD that represents the character, then create a loop around it.
                         bool ignoreCase = (node.Options & RegexOptions.IgnoreCase) != 0;
-                        BDD bdd = CharSetSolver.Instance.CharConstraint(node.Ch, ignoreCase, _culture.Name);
+                        BDD bdd = CharSetSolver.Instance.CharConstraint(node.Ch);
                         if (node.IsNotoneFamily)
                         {
                             bdd = CharSetSolver.Instance.Not(bdd);
@@ -323,7 +323,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     foreach ((char first, char last) in ranges)
                     {
-                        BDD bdd = CharSetSolver.Instance.RangeConstraint(first, last, ignoreCase, _culture.Name);
+                        BDD bdd = CharSetSolver.Instance.RangeConstraint(first, last);
                         if (negate)
                         {
                             bdd = CharSetSolver.Instance.Not(bdd);

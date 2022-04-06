@@ -417,10 +417,10 @@ namespace System.Text.RegularExpressions
         private void AddCategory(string category) => EnsureCategories().Append(category);
 
         /// <summary>
-        /// Adds to the class any lowercase versions of characters already
+        /// Adds to the class any case-equivalence versions of characters already
         /// in the class. Used for case-insensitivity.
         /// </summary>
-        public void AddLowercase(CultureInfo culture)
+        public void AddCaseEquivalences(CultureInfo culture)
         {
             List<(char First, char Last)>? rangeList = _rangelist;
             if (rangeList != null)
@@ -431,12 +431,17 @@ namespace System.Text.RegularExpressions
                     (char First, char Last) range = rangeList[i];
                     if (range.First == range.Last)
                     {
-                        char lower = culture.TextInfo.ToLower(range.First);
-                        rangeList[i] = (lower, lower);
+                        if (RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(range.First, culture, out ReadOnlySpan<char> equivalences))
+                        {
+                            foreach (char equivalence in equivalences)
+                            {
+                                AddChar(equivalence);
+                            }
+                        }
                     }
                     else
                     {
-                        AddLowercaseRange(range.First, range.Last);
+                        AddCaseEquivalenceRange(range.First, range.Last, culture);
                     }
                 }
             }
@@ -446,69 +451,16 @@ namespace System.Text.RegularExpressions
         /// For a single range that's in the set, adds any additional ranges
         /// necessary to ensure that lowercase equivalents are also included.
         /// </summary>
-        private void AddLowercaseRange(char chMin, char chMax)
+        private void AddCaseEquivalenceRange(char chMin, char chMax, CultureInfo culture)
         {
-            int i = 0;
-
-            for (int iMax = s_lcTable.Length; i < iMax;)
+            for (int i = chMin; i <= chMax; i++)
             {
-                int iMid = (i + iMax) >> 1;
-                if (s_lcTable[iMid].ChMax < chMin)
+                if (RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior((char)i, culture, out ReadOnlySpan<char> equivalences))
                 {
-                    i = iMid + 1;
-                }
-                else
-                {
-                    iMax = iMid;
-                }
-            }
-
-            if (i >= s_lcTable.Length)
-            {
-                return;
-            }
-
-            char chMinT, chMaxT;
-            LowerCaseMapping lc;
-
-            for (; i < s_lcTable.Length && (lc = s_lcTable[i]).ChMin <= chMax; i++)
-            {
-                if ((chMinT = lc.ChMin) < chMin)
-                {
-                    chMinT = chMin;
-                }
-
-                if ((chMaxT = lc.ChMax) > chMax)
-                {
-                    chMaxT = chMax;
-                }
-
-                switch (lc.LcOp)
-                {
-                    case LowercaseSet:
-                        chMinT = (char)lc.Data;
-                        chMaxT = (char)lc.Data;
-                        break;
-
-                    case LowercaseAdd:
-                        chMinT += (char)lc.Data;
-                        chMaxT += (char)lc.Data;
-                        break;
-
-                    case LowercaseBor:
-                        chMinT |= (char)1;
-                        chMaxT |= (char)1;
-                        break;
-
-                    case LowercaseBad:
-                        chMinT += (char)(chMinT & 1);
-                        chMaxT += (char)(chMaxT & 1);
-                        break;
-                }
-
-                if (chMinT < chMin || chMaxT > chMax)
-                {
-                    AddRange(chMinT, chMaxT);
+                    foreach (char equivalence in equivalences)
+                    {
+                        AddChar(equivalence);
+                    }
                 }
             }
         }
@@ -1356,158 +1308,13 @@ namespace System.Text.RegularExpressions
             return ranges;
         }
 
-        #region Perf workaround until https://github.com/dotnet/runtime/issues/61048 and https://github.com/dotnet/runtime/issues/59492 are addressed
-        // TODO: https://github.com/dotnet/runtime/issues/61048
-        // The below functionality needs to be removed/replaced/generalized.  The goal is to avoid relying on
-        // ToLower and culture-based operation at match time, and instead be able to compute at construction
-        // time case folding equivalence classes that let us determine up-front the set of characters considered
-        // valid for a match.  For now, we do this just for ASCII, and for anything else fall back to the
-        // pre-existing mechanism whereby a culture is used at construction time to ToLower and then one is
-        // used at match time to ToLower.  We also skip 'i' and 'I', as the casing of those varies across culture
-        // whereas every other ASCII value's casing is stable across culture.  We could hardcode the values for
-        // when an invariant vs tr/az culture vs any other culture is used, and we likely will, but for now doing
-        // so would be a breaking change, as in doing so we'd be relying only on the culture present at the time
-        // of construction rather than the one at the time of match.  That will be resolved with
-        // https://github.com/dotnet/runtime/issues/59492.
-
-        /// <summary>Creates a set string for a single character, optionally factoring in case-insensitivity.</summary>
+        /// <summary>Creates a set string for a single character.</summary>
         /// <param name="c">The character for which to create the set.</param>
-        /// <param name="caseInsensitive">null if case-sensitive; non-null if case-insensitive, in which case it's the culture to use.</param>
-        /// <param name="resultIsCaseInsensitive">false if the caller should strip out RegexOptions.IgnoreCase because it's now fully represented by the set; otherwise, true.</param>
         /// <returns>The create set string.</returns>
-        public static string OneToStringClass(char c, CultureInfo? caseInsensitive, out bool resultIsCaseInsensitive)
-        {
-            var vsb = new ValueStringBuilder(stackalloc char[4]);
+        public static string OneToStringClass(char c)
+            => CharsToStringClass(stackalloc char[1] { c });
 
-            if (caseInsensitive is null)
-            {
-                resultIsCaseInsensitive = false;
-                vsb.Append(c);
-            }
-            else if (c < 128 && (c | 0x20) != 'i')
-            {
-                resultIsCaseInsensitive = false;
-                switch (c)
-                {
-                    // These are the same in all cultures.  As with the rest of this support, we can generalize this
-                    // once we fix the aforementioned casing issues, e.g. by lazily populating an interning cache
-                    // rather than hardcoding the strings for these values, once almost all values will be the same
-                    // regardless of culture.
-                    case 'A': case 'a': return "\0\x0004\0ABab";
-                    case 'B': case 'b': return "\0\x0004\0BCbc";
-                    case 'C': case 'c': return "\0\x0004\0CDcd";
-                    case 'D': case 'd': return "\0\x0004\0DEde";
-                    case 'E': case 'e': return "\0\x0004\0EFef";
-                    case 'F': case 'f': return "\0\x0004\0FGfg";
-                    case 'G': case 'g': return "\0\x0004\0GHgh";
-                    case 'H': case 'h': return "\0\x0004\0HIhi";
-                    // allow 'i' to fall through
-                    case 'J': case 'j': return "\0\x0004\0JKjk";
-                    case 'K': case 'k': return "\0\x0006\0KLkl\u212A\u212B";
-                    case 'L': case 'l': return "\0\x0004\0LMlm";
-                    case 'M': case 'm': return "\0\x0004\0MNmn";
-                    case 'N': case 'n': return "\0\x0004\0NOno";
-                    case 'O': case 'o': return "\0\x0004\0OPop";
-                    case 'P': case 'p': return "\0\x0004\0PQpq";
-                    case 'Q': case 'q': return "\0\x0004\0QRqr";
-                    case 'R': case 'r': return "\0\x0004\0RSrs";
-                    case 'S': case 's': return "\0\x0004\0STst";
-                    case 'T': case 't': return "\0\x0004\0TUtu";
-                    case 'U': case 'u': return "\0\x0004\0UVuv";
-                    case 'V': case 'v': return "\0\x0004\0VWvw";
-                    case 'W': case 'w': return "\0\x0004\0WXwx";
-                    case 'X': case 'x': return "\0\x0004\0XYxy";
-                    case 'Y': case 'y': return "\0\x0004\0YZyz";
-                    case 'Z': case 'z': return "\0\x0004\0Z[z{";
-
-                    // All the ASCII !ParticipatesInCaseConversion
-                    case '\u0000': return "\0\u0002\0\u0000\u0001";
-                    case '\u0001': return "\0\u0002\0\u0001\u0002";
-                    case '\u0002': return "\0\u0002\0\u0002\u0003";
-                    case '\u0003': return "\0\u0002\0\u0003\u0004";
-                    case '\u0004': return "\0\u0002\0\u0004\u0005";
-                    case '\u0005': return "\0\u0002\0\u0005\u0006";
-                    case '\u0006': return "\0\u0002\0\u0006\u0007";
-                    case '\u0007': return "\0\u0002\0\u0007\u0008";
-                    case '\u0008': return "\0\u0002\0\u0008\u0009";
-                    case '\u0009': return "\0\u0002\0\u0009\u000A";
-                    case '\u000A': return "\0\u0002\0\u000A\u000B";
-                    case '\u000B': return "\0\u0002\0\u000B\u000C";
-                    case '\u000C': return "\0\u0002\0\u000C\u000D";
-                    case '\u000D': return "\0\u0002\0\u000D\u000E";
-                    case '\u000E': return "\0\u0002\0\u000E\u000F";
-                    case '\u000F': return "\0\u0002\0\u000F\u0010";
-                    case '\u0010': return "\0\u0002\0\u0010\u0011";
-                    case '\u0011': return "\0\u0002\0\u0011\u0012";
-                    case '\u0012': return "\0\u0002\0\u0012\u0013";
-                    case '\u0013': return "\0\u0002\0\u0013\u0014";
-                    case '\u0014': return "\0\u0002\0\u0014\u0015";
-                    case '\u0015': return "\0\u0002\0\u0015\u0016";
-                    case '\u0016': return "\0\u0002\0\u0016\u0017";
-                    case '\u0017': return "\0\u0002\0\u0017\u0018";
-                    case '\u0018': return "\0\u0002\0\u0018\u0019";
-                    case '\u0019': return "\0\u0002\0\u0019\u001A";
-                    case '\u001A': return "\0\u0002\0\u001A\u001B";
-                    case '\u001B': return "\0\u0002\0\u001B\u001C";
-                    case '\u001C': return "\0\u0002\0\u001C\u001D";
-                    case '\u001D': return "\0\u0002\0\u001D\u001E";
-                    case '\u001E': return "\0\u0002\0\u001E\u001F";
-                    case '\u001F': return "\0\u0002\0\u001F\u0020";
-                    case '\u0020': return "\0\u0002\0\u0020\u0021";
-                    case '\u0021': return "\0\u0002\0\u0021\u0022";
-                    case '\u0022': return "\0\u0002\0\u0022\u0023";
-                    case '\u0023': return "\0\u0002\0\u0023\u0024";
-                    case '\u0025': return "\0\u0002\0\u0025\u0026";
-                    case '\u0026': return "\0\u0002\0\u0026\u0027";
-                    case '\u0027': return "\0\u0002\0\u0027\u0028";
-                    case '\u0028': return "\0\u0002\0\u0028\u0029";
-                    case '\u0029': return "\0\u0002\0\u0029\u002A";
-                    case '\u002A': return "\0\u0002\0\u002A\u002B";
-                    case '\u002C': return "\0\u0002\0\u002C\u002D";
-                    case '\u002D': return "\0\u0002\0\u002D\u002E";
-                    case '\u002E': return "\0\u0002\0\u002E\u002F";
-                    case '\u002F': return "\0\u0002\0\u002F\u0030";
-                    case '\u0030': return "\0\u0002\0\u0030\u0031";
-                    case '\u0031': return "\0\u0002\0\u0031\u0032";
-                    case '\u0032': return "\0\u0002\0\u0032\u0033";
-                    case '\u0033': return "\0\u0002\0\u0033\u0034";
-                    case '\u0034': return "\0\u0002\0\u0034\u0035";
-                    case '\u0035': return "\0\u0002\0\u0035\u0036";
-                    case '\u0036': return "\0\u0002\0\u0036\u0037";
-                    case '\u0037': return "\0\u0002\0\u0037\u0038";
-                    case '\u0038': return "\0\u0002\0\u0038\u0039";
-                    case '\u0039': return "\0\u0002\0\u0039\u003A";
-                    case '\u003A': return "\0\u0002\0\u003A\u003B";
-                    case '\u003B': return "\0\u0002\0\u003B\u003C";
-                    case '\u003F': return "\0\u0002\0\u003F\u0040";
-                    case '\u0040': return "\0\u0002\0\u0040\u0041";
-                    case '\u005B': return "\0\u0002\0\u005B\u005C";
-                    case '\u005C': return "\0\u0002\0\u005C\u005D";
-                    case '\u005D': return "\0\u0002\0\u005D\u005E";
-                    case '\u005F': return "\0\u0002\0\u005F\u0060";
-                    case '\u007B': return "\0\u0002\0\u007B\u007C";
-                    case '\u007D': return "\0\u0002\0\u007D\u007E";
-                    case '\u007F': return "\0\u0002\0\u007F\u0080";
-                }
-                AddAsciiCharIgnoreCaseEquivalence(c, ref vsb, caseInsensitive);
-            }
-            else if (!ParticipatesInCaseConversion(c))
-            {
-                resultIsCaseInsensitive = false;
-                vsb.Append(c);
-            }
-            else
-            {
-                resultIsCaseInsensitive = true;
-                vsb.Append(char.ToLower(c, caseInsensitive));
-            }
-
-            string result = CharsToStringClass(vsb.AsSpan());
-            vsb.Dispose();
-            return result;
-        }
-
-        private static unsafe string CharsToStringClass(ReadOnlySpan<char> chars)
+        internal static unsafe string CharsToStringClass(ReadOnlySpan<char> chars)
         {
 #if DEBUG
             // Make sure they're all sorted with no duplicates
@@ -1521,6 +1328,40 @@ namespace System.Text.RegularExpressions
             if (chars.Length == 0)
             {
                 return EmptyClass;
+            }
+
+            if (chars.Length == 2)
+            {
+                switch (chars[0], chars[1])
+                {
+                    case ('A', 'a'): case ('a', 'A'): return "\0\x0004\0ABab";
+                    case ('B', 'b'): case ('b', 'B'): return "\0\x0004\0BCbc";
+                    case ('C', 'c'): case ('c', 'C'): return "\0\x0004\0CDcd";
+                    case ('D', 'd'): case ('d', 'D'): return "\0\x0004\0DEde";
+                    case ('E', 'e'): case ('e', 'E'): return "\0\x0004\0EFef";
+                    case ('F', 'f'): case ('f', 'F'): return "\0\x0004\0FGfg";
+                    case ('G', 'g'): case ('g', 'G'): return "\0\x0004\0GHgh";
+                    case ('H', 'h'): case ('h', 'H'): return "\0\x0004\0HIhi";
+                    // 'I' and 'i' are missing since depending on the cultuure they may
+                    // have additional mappings.
+                    case ('J', 'j'): case ('j', 'J'): return "\0\x0004\0JKjk";
+                    // 'K' and 'k' are missing since their mapping also includes Kelvin K.
+                    case ('L', 'l'): case ('l', 'L'): return "\0\x0004\0LMlm";
+                    case ('M', 'm'): case ('m', 'M'): return "\0\x0004\0MNmn";
+                    case ('N', 'n'): case ('n', 'N'): return "\0\x0004\0NOno";
+                    case ('O', 'o'): case ('o', 'O'): return "\0\x0004\0OPop";
+                    case ('P', 'p'): case ('p', 'P'): return "\0\x0004\0PQpq";
+                    case ('Q', 'q'): case ('q', 'Q'): return "\0\x0004\0QRqr";
+                    case ('R', 'r'): case ('r', 'R'): return "\0\x0004\0RSrs";
+                    case ('S', 's'): case ('s', 'S'): return "\0\x0004\0STst";
+                    case ('T', 't'): case ('t', 'T'): return "\0\x0004\0TUtu";
+                    case ('U', 'u'): case ('u', 'U'): return "\0\x0004\0UVuv";
+                    case ('V', 'v'): case ('v', 'V'): return "\0\x0004\0VWvw";
+                    case ('W', 'w'): case ('w', 'W'): return "\0\x0004\0WXwx";
+                    case ('X', 'x'): case ('x', 'X'): return "\0\x0004\0XYxy";
+                    case ('Y', 'y'): case ('y', 'Y'): return "\0\x0004\0YZyz";
+                    case ('Z', 'z'): case ('z', 'Z'): return "\0\x0004\0Z[z{";
+                }
             }
 
             // Count how many characters there actually are.  All but the very last possible
@@ -1563,90 +1404,19 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>Tries to create from a RegexOptions.IgnoreCase set string a new set string that can be used without RegexOptions.IgnoreCase.</summary>
-        /// <param name="set">The original set string from a RegexOptions.IgnoreCase node.</param>
-        /// <param name="culture">The culture in use.</param>
-        /// <returns>A new set string if one could be created.</returns>
-        public static string? MakeCaseSensitiveIfPossible(string set, CultureInfo culture)
-        {
-            if (IsNegated(set))
-            {
-                return null;
-            }
-
-            // We'll eventually need a more robust way to do this for any set.  For now, we iterate through each character
-            // in the set, and to avoid spending lots of time doing so, we limit the number of characters.  This approach also
-            // limits the structure of the sets allowed, e.g. they can't be negated, can't use subtraction, etc.
-            Span<char> setChars = stackalloc char[64]; // arbitary limit chosen to include common groupings like all ASCII letters and digits
-
-            // Try to get the set's characters.
-            int setCharsCount = GetSetChars(set, setChars);
-            if (setCharsCount == 0)
-            {
-                return null;
-            }
-
-            // Enumerate all the characters and add all characters that form their case folding equivalence class.
-            var rcc = new RegexCharClass();
-            var vsb = new ValueStringBuilder(stackalloc char[4]);
-            foreach (char c in setChars.Slice(0, setCharsCount))
-            {
-                if (c >= 128 || c == 'i' || c == 'I')
-                {
-                    return null;
-                }
-
-                vsb.Length = 0;
-                AddAsciiCharIgnoreCaseEquivalence(c, ref vsb, culture);
-                foreach (char v in vsb.AsSpan())
-                {
-                    rcc.AddChar(v);
-                }
-            }
-
-            // Return the constructed class.
-            return rcc.ToStringClass();
-        }
-
-        private static void AddAsciiCharIgnoreCaseEquivalence(char c, ref ValueStringBuilder vsb, CultureInfo culture)
-        {
-            Debug.Assert(c < 128, $"Expected ASCII, got {(int)c}");
-            Debug.Assert(c != 'i' && c != 'I', "'i' currently doesn't work correctly in all cultures");
-
-            char upper = char.ToUpper(c, culture);
-            char lower = char.ToLower(c, culture);
-
-            if (upper < lower)
-            {
-                vsb.Append(upper);
-            }
-            vsb.Append(lower);
-            if (upper > lower)
-            {
-                vsb.Append(upper);
-            }
-
-            if (c == 'k' || c == 'K')
-            {
-                vsb.Append((char)0x212A); // kelvin sign
-            }
-        }
-        #endregion
-
         /// <summary>
         /// Constructs the string representation of the class.
         /// </summary>
-        public string ToStringClass(RegexOptions options = RegexOptions.None)
+        public string ToStringClass()
         {
-            bool isNonBacktracking = (options & RegexOptions.NonBacktracking) != 0;
             var vsb = new ValueStringBuilder(stackalloc char[256]);
-            ToStringClass(isNonBacktracking, ref vsb);
+            ToStringClass(ref vsb);
             return vsb.ToString();
         }
 
-        private void ToStringClass(bool isNonBacktracking, ref ValueStringBuilder vsb)
+        private void ToStringClass(ref ValueStringBuilder vsb)
         {
-            Canonicalize(isNonBacktracking);
+            Canonicalize();
 
             int initialLength = vsb.Length;
             int categoriesLength = _categories?.Length ?? 0;
@@ -1684,13 +1454,13 @@ namespace System.Text.RegularExpressions
             }
 
             // Append a subtractor if there is one.
-            _subtractor?.ToStringClass(isNonBacktracking, ref vsb);
+            _subtractor?.ToStringClass(ref vsb);
         }
 
         /// <summary>
         /// Logic to reduce a character class to a unique, sorted form.
         /// </summary>
-        private void Canonicalize(bool isNonBacktracking)
+        private void Canonicalize()
         {
             List<(char First, char Last)>? rangelist = _rangelist;
             if (rangelist != null)
@@ -1747,13 +1517,7 @@ namespace System.Text.RegularExpressions
                 // If the class now represents a single negated range, but does so by including every
                 // other character, invert it to produce a normalized form with a single range.  This
                 // is valuable for subsequent optimizations in most of the engines.
-                // TODO: https://github.com/dotnet/runtime/issues/61048. The special-casing for NonBacktracking
-                // can be deleted once this issue is addressed.  The special-casing exists because NonBacktracking
-                // is on a different casing plan than the other engines and doesn't use ToLower on each input
-                // character at match time; this in turn can highlight differences between sets and their inverted
-                // versions of themselves, e.g. a difference between [0-AC-\uFFFF] and [^B].
-                if (!isNonBacktracking &&
-                    !_negate &&
+                if (!_negate &&
                     _subtractor is null &&
                     (_categories is null || _categories.Length == 0))
                 {
