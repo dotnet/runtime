@@ -62,48 +62,6 @@ char *mono_method_get_full_name (MonoMethod *method);
 
 static void mono_wasm_init_finalizer_thread (void);
 
-// ?????????????
-
-#define gpointer void*
-
-MONO_API MONO_RT_EXTERNAL_ONLY gpointer
-mono_threads_enter_gc_unsafe_region (gpointer* stackdata);
-
-MONO_API MONO_RT_EXTERNAL_ONLY void
-mono_threads_exit_gc_unsafe_region (gpointer cookie, gpointer* stackdata);
-
-MONO_API MONO_RT_EXTERNAL_ONLY void
-mono_threads_assert_gc_unsafe_region (void);
-
-MONO_API MONO_RT_EXTERNAL_ONLY gpointer
-mono_threads_enter_gc_safe_region (gpointer *stackdata);
-
-MONO_API MONO_RT_EXTERNAL_ONLY void
-mono_threads_exit_gc_safe_region (gpointer cookie, gpointer *stackdata);
-
-MONO_API void
-mono_threads_assert_gc_safe_region (void);
-#define MONO_ENTER_GC_UNSAFE	\
-	do {	\
-		gpointer __dummy;	\
-		gpointer __gc_unsafe_cookie = mono_threads_enter_gc_unsafe_region (&__dummy)	\
-
-#define MONO_EXIT_GC_UNSAFE	\
-		mono_threads_exit_gc_unsafe_region	(__gc_unsafe_cookie, &__dummy);	\
-	} while (0)
-
-#define MONO_ENTER_GC_SAFE	\
-	do {	\
-		gpointer __dummy;	\
-		gpointer __gc_safe_cookie = mono_threads_enter_gc_safe_region (&__dummy)	\
-
-#define MONO_EXIT_GC_SAFE	\
-		mono_threads_exit_gc_safe_region (__gc_safe_cookie, &__dummy);	\
-	} while (0)
-
-// ?????????????????
-
-
 #define MARSHAL_TYPE_NULL 0
 #define MARSHAL_TYPE_INT 1
 #define MARSHAL_TYPE_FP64 2
