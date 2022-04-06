@@ -101,7 +101,7 @@ jobs:
 - template: /eng/pipelines/common/templates/wasm-debugger-tests-firefox.yml
   parameters:
     platforms:
-      - Browser_wasm
+      - Browser_wasm_firefox
     alwaysRun: ${{ variables.isRollingBuild }}
 
 #
