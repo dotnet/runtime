@@ -74,7 +74,7 @@ namespace System.IO
             _endIndex += charLen;
         }
 
-        internal unsafe int ReadStdin(byte* buffer, int bufferSize)
+        internal static unsafe int ReadStdin(byte* buffer, int bufferSize)
         {
             int result = Interop.CheckIo(Interop.Sys.ReadStdin(buffer, bufferSize));
             Debug.Assert(result >= 0 && result <= bufferSize); // may be 0 if hits EOL
@@ -300,7 +300,7 @@ namespace System.IO
                 (c == ConsolePal.s_veolCharacter || c == ConsolePal.s_veol2Character || c == ConsolePal.s_veofCharacter);
         }
 
-        internal ConsoleKey GetKeyFromCharValue(char x, out bool isShift, out bool isCtrl)
+        internal static ConsoleKey GetKeyFromCharValue(char x, out bool isShift, out bool isCtrl)
         {
             isShift = false;
             isCtrl = false;
@@ -492,6 +492,6 @@ namespace System.IO
         }
 
         /// <summary>Gets whether there's input waiting on stdin.</summary>
-        internal bool StdinReady { get { return Interop.Sys.StdinReady(); } }
+        internal static bool StdinReady => Interop.Sys.StdinReady();
     }
 }

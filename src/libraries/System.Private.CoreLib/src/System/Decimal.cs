@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -66,8 +67,8 @@ namespace System
           IEquatable<decimal>,
           ISerializable,
           IDeserializationCallback,
-          IMinMaxValue<decimal>,
-          ISignedNumber<decimal>
+          IFloatingPoint<decimal>,
+          IMinMaxValue<decimal>
     {
         // Sign mask for the flags field. A value of zero in this bit indicates a
         // positive Decimal value, and a value of one in this bit indicates a
@@ -103,13 +104,13 @@ namespace System
         public const decimal MinValue = -79228162514264337593543950335m;
 
         /// <summary>Represents the additive identity (0).</summary>
-        public const decimal AdditiveIdentity = 0m;
+        private const decimal AdditiveIdentity = 0m;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        public const decimal MultiplicativeIdentity = 1m;
+        private const decimal MultiplicativeIdentity = 1m;
 
         /// <summary>Represents the number negative one (-1).</summary>
-        public const decimal NegativeOne = -1m;
+        private const decimal NegativeOne = -1m;
 
         // The lo, mid, hi, and flags fields contain the representation of the
         // Decimal value. The lo, mid, and hi fields contain the 96-bit integer
@@ -664,8 +665,6 @@ namespace System
             return d;
         }
 
-        internal static int Sign(in decimal d) => (d.Low64 | d.High) == 0 ? 0 : (d._flags >> 31) | 1;
-
         // Subtracts two Decimal values.
         //
         public static decimal Subtract(decimal d1, decimal d2)
@@ -753,7 +752,7 @@ namespace System
             if ((d.High | d.Mid) == 0)
             {
                 int i = (int)d.Low;
-                if (!d.IsNegative)
+                if (!IsNegative(d))
                 {
                     if (i >= 0) return i;
                 }
@@ -776,7 +775,7 @@ namespace System
             if (d.High == 0)
             {
                 long l = (long)d.Low64;
-                if (!d.IsNegative)
+                if (!IsNegative(d))
                 {
                     if (l >= 0) return l;
                 }
@@ -821,7 +820,7 @@ namespace System
             if ((d.High| d.Mid) == 0)
             {
                 uint i = d.Low;
-                if (!d.IsNegative || i == 0)
+                if (!IsNegative(d) || i == 0)
                     return i;
             }
             throw new OverflowException(SR.Overflow_UInt32);
@@ -838,7 +837,7 @@ namespace System
             if (d.High == 0)
             {
                 ulong l = d.Low64;
-                if (!d.IsNegative || l == 0)
+                if (!IsNegative(d) || l == 0)
                     return l;
             }
             throw new OverflowException(SR.Overflow_UInt64);
@@ -1142,21 +1141,24 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.One" />
-        static decimal INumber<decimal>.One => One;
-
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
-        static decimal INumber<decimal>.Zero => Zero;
-
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
         public static decimal Abs(decimal value)
         {
             return new decimal(in value, value._flags & ~SignMask);
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
+        public static decimal Clamp(decimal value, decimal min, decimal max) => Math.Clamp(value, min, max);
+
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        public static decimal CopySign(decimal value, decimal sign)
+        {
+            return new decimal(in value, (value._flags & ~SignMask) | (sign._flags & SignMask));
+        }
+
+        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static decimal Create<TOther>(TOther value)
+        public static decimal CreateChecked<TOther>(TOther value)
             where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
@@ -1358,11 +1360,8 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
-        public static decimal Clamp(decimal value, decimal min, decimal max) => Math.Clamp(value, min, max);
-
-        /// <inheritdoc cref="INumber{TSelf}.DivRem(TSelf, TSelf)" />
-        public static (decimal Quotient, decimal Remainder) DivRem(decimal left, decimal right) => (left / right, left % right);
+        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        public static bool IsNegative(decimal value) => value._flags < 0;
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static decimal Max(decimal x, decimal y)
@@ -1370,14 +1369,20 @@ namespace System
             return DecCalc.VarDecCmp(in x, in y) >= 0 ? x : y;
         }
 
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static decimal MaxMagnitude(decimal x, decimal y) => (Abs(x) >= Abs(y)) ? x : y;
+
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static decimal Min(decimal x, decimal y)
         {
             return DecCalc.VarDecCmp(in x, in y) < 0 ? x : y;
         }
 
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static decimal MinMagnitude(decimal x, decimal y) => (Abs(x) <= Abs(y)) ? x : y;
+
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        static decimal INumber<decimal>.Sign(decimal value) => Math.Sign(value);
+        public static int Sign(decimal d) => (d.Low64 | d.High) == 0 ? 0 : (d._flags >> 31) | 1;
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1463,7 +1468,17 @@ namespace System
         }
 
         //
-        // IParseable
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static decimal INumberBase<decimal>.One => One;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static decimal INumberBase<decimal>.Zero => Zero;
+
+        //
+        // IParsable
         //
 
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out decimal result) => TryParse(s, NumberStyles.Number, provider, out result);
@@ -1476,13 +1491,13 @@ namespace System
         static decimal ISignedNumber<decimal>.NegativeOne => NegativeOne;
 
         //
-        // ISpanParseable
+        // ISpanParsable
         //
 
-        /// <inheritdoc cref="ISpanParseable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
         public static decimal Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, NumberStyles.Number, provider);
 
-        /// <inheritdoc cref="ISpanParseable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out decimal result) => TryParse(s, NumberStyles.Number, provider, out result);
 
         //
@@ -1498,12 +1513,5 @@ namespace System
 
         // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
         // static decimal IUnaryNegationOperators<decimal, decimal>.operator checked -(decimal value) => checked(-value);
-
-        //
-        // IUnaryPlusOperators
-        //
-
-        // /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_CheckedUnaryPlus(TSelf)" />
-        // static decimal IUnaryPlusOperators<decimal, decimal>.operator checked +(decimal value) => checked(+value);
     }
 }

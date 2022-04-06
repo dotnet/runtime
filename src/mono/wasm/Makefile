@@ -38,7 +38,7 @@ EMCC=source $(EMSDK_PATH)/emsdk_env.sh 2>/dev/null && emcc
 	cd $(EMSDK_LOCAL_PATH) && git checkout $(EMSCRIPTEN_VERSION)
 	cd $(EMSDK_LOCAL_PATH) && ./emsdk install $(EMSCRIPTEN_VERSION)
 	cd $(EMSDK_LOCAL_PATH) && ./emsdk activate $(EMSCRIPTEN_VERSION)
-	python ./sanitize.py $(EMSDK_PATH)
+	python3 ./sanitize.py $(EMSDK_PATH)
 	touch $@
 
 provision-wasm: .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION)

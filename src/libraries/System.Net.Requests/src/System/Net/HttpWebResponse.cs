@@ -373,6 +373,6 @@ namespace System.Net
             }
         }
 
-        private string GetHeaderValueAsString(IEnumerable<string> values) => string.Join(", ", values);
+        private static string GetHeaderValueAsString(IEnumerable<string> values) => string.Join(", ", values);
     }
 }

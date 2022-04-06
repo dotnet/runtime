@@ -15,7 +15,11 @@ namespace System.Text.Json.Serialization.Tests
         public CollectionTestsDynamic_AsyncStream() : base(JsonSerializerWrapper.AsyncStreamSerializer) { }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/66687")]
+    public sealed partial class CollectionTestsDynamic_AsyncStreamWithSmallBuffer : CollectionTests
+    {
+        public CollectionTestsDynamic_AsyncStreamWithSmallBuffer() : base(JsonSerializerWrapper.AsyncStreamSerializerWithSmallBuffer) { }
+    }
+
     public sealed partial class CollectionTestsDynamic_SyncStream : CollectionTests
     {
         public CollectionTestsDynamic_SyncStream() : base(JsonSerializerWrapper.SyncStreamSerializer) { }

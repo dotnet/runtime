@@ -69,7 +69,7 @@ ThreadInfo::GetRegistersWithPTrace()
     struct iovec gpRegsVec = { &m_gpRegisters, sizeof(m_gpRegisters) };
     if (ptrace((__ptrace_request)PTRACE_GETREGSET, m_tid, NT_PRSTATUS, &gpRegsVec) == -1)
     {
-        fprintf(stderr, "ptrace(PTRACE_GETREGSET, %d, NT_PRSTATUS) FAILED %d (%s)\n", m_tid, errno, strerror(errno));
+        printf_error("ptrace(PTRACE_GETREGSET, %d, NT_PRSTATUS) FAILED %d (%s)\n", m_tid, errno, strerror(errno));
         return false;
     }
     assert(sizeof(m_gpRegisters) == gpRegsVec.iov_len);
@@ -80,7 +80,7 @@ ThreadInfo::GetRegistersWithPTrace()
 #if defined(__arm__)
         // Some aarch64 kernels may not support NT_FPREGSET for arm processes. We treat this failure as non-fatal.
 #else
-        fprintf(stderr, "ptrace(PTRACE_GETREGSET, %d, NT_FPREGSET) FAILED %d (%s)\n", m_tid, errno, strerror(errno));
+        printf_error("ptrace(PTRACE_GETREGSET, %d, NT_FPREGSET) FAILED %d (%s)\n", m_tid, errno, strerror(errno));
         return false;
 #endif
     }
@@ -89,7 +89,7 @@ ThreadInfo::GetRegistersWithPTrace()
 #if defined(__i386__)
     if (ptrace((__ptrace_request)PTRACE_GETFPXREGS, m_tid, nullptr, &m_fpxRegisters) == -1)
     {
-        fprintf(stderr, "ptrace(GETFPXREGS, %d) FAILED %d (%s)\n", m_tid, errno, strerror(errno));
+        printf_error("ptrace(GETFPXREGS, %d) FAILED %d (%s)\n", m_tid, errno, strerror(errno));
         return false;
     }
 #elif defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
@@ -100,7 +100,7 @@ ThreadInfo::GetRegistersWithPTrace()
 
     if (ptrace((__ptrace_request)PTRACE_GETVFPREGS, m_tid, nullptr, &m_vfpRegisters) == -1)
     {
-        fprintf(stderr, "ptrace(PTRACE_GETVFPREGS, %d) FAILED %d (%s)\n", m_tid, errno, strerror(errno));
+        printf_error("ptrace(PTRACE_GETVFPREGS, %d) FAILED %d (%s)\n", m_tid, errno, strerror(errno));
         return false;
     }
 #endif

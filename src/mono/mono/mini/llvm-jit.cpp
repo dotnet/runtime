@@ -34,12 +34,8 @@
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
 #include "llvm/Transforms/Scalar.h"
-
 #include "llvm/CodeGen/BuiltinGCs.h"
-
-#if LLVM_API_VERSION >= 1100
 #include "llvm/InitializePasses.h"
-#endif
 
 #include <cstdlib>
 
@@ -186,21 +182,12 @@ init_function_pass_manager (legacy::FunctionPassManager &fpm)
 	fpm.doInitialization();
 }
 
-#if LLVM_API_VERSION >= 1100
 using symbol_t = const llvm::StringRef;
 static inline std::string
 to_str (symbol_t s)
 {
 	return s.str ();
 }
-#else
-using symbol_t = const std::string &;
-static inline const std::string &
-to_str (symbol_t s)
-{
-	return s;
-}
-#endif
 
 struct MonoLLVMJIT {
 	std::shared_ptr<MonoLLVMMemoryManager> mmgr;
@@ -247,15 +234,19 @@ struct MonoLLVMJIT {
 			if (namestr == "___bzero") {
 				return JITSymbol{(uint64_t)(gssize)(void*)bzero, flags};
 			}
+			ERROR_DECL (error);
 			auto namebuf = namestr.c_str ();
-			auto current = mono_dl_open (NULL, 0, NULL);
+			auto current = mono_dl_open (NULL, 0, error);
+			mono_error_cleanup (error);
 			g_assert (current);
 			auto name = namebuf[0] == '_' ? namebuf + 1 : namebuf;
 			void *sym = nullptr;
-			auto err = mono_dl_symbol (current, name, &sym);
+			error_init_reuse (error);
+			sym = mono_dl_symbol (current, name, error);
 			if (!sym) {
-				outs () << "R: " << namestr << " " << err << "\n";
+				outs () << "R: " << namestr << " " << mono_error_get_message_without_fields (error) << "\n";
 			}
+			mono_error_cleanup (error);
 			assert (sym);
 			return JITSymbol{(uint64_t)(gssize)sym, flags};
 		};

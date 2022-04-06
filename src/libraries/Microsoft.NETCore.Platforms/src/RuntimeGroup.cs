@@ -264,7 +264,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             }
         }
 
-        private bool IsNullOrRoot(string rid)
+        private static bool IsNullOrRoot(string rid)
         {
             return rid == null || rid == rootRID;
         }

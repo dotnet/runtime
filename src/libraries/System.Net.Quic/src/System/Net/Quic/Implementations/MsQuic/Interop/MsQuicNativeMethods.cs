@@ -51,38 +51,30 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal IntPtr DatagramSend;
         }
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint SetContextDelegate(
             SafeHandle handle,
             IntPtr context);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate IntPtr GetContextDelegate(
             SafeHandle handle);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate void SetCallbackHandlerDelegate(
             SafeHandle handle,
             Delegate del,
             IntPtr context);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint SetParamDelegate(
             SafeHandle handle,
-            QUIC_PARAM_LEVEL level,
             uint param,
             uint bufferLength,
             byte* buffer);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint GetParamDelegate(
             SafeHandle handle,
-            QUIC_PARAM_LEVEL level,
             uint param,
             ref uint bufferLength,
             byte* buffer);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint RegistrationOpenDelegate(
             ref RegistrationConfig config,
             out SafeMsQuicRegistrationHandle registrationContext);
@@ -126,7 +118,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
         }
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ConfigurationOpenDelegate(
             SafeMsQuicRegistrationHandle registrationContext,
             QuicBuffer* alpnBuffers,
@@ -140,7 +131,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate void ConfigurationCloseDelegate(
             IntPtr configuration);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ConfigurationLoadCredentialDelegate(
             SafeMsQuicConfigurationHandle configuration,
             ref CredentialConfig credConfig);
@@ -170,6 +160,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal ulong MaxBytesPerKey;
             internal ulong HandshakeIdleTimeoutMs;
             internal ulong IdleTimeoutMs;
+            internal ulong MtuDiscoverySearchCompleteTimeoutUs;
             internal uint TlsClientMaxSendBuffer;
             internal uint TlsServerMaxSendBuffer;
             internal uint StreamRecvWindowDefault;
@@ -183,47 +174,52 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal uint MaxAckDelayMs;
             internal uint DisconnectTimeoutMs;
             internal uint KeepAliveIntervalMs;
+            internal ushort CongestionControlAlgorithm; // QUIC_CONGESTION_CONTROL_ALGORITHM
             internal ushort PeerBidiStreamCount;
             internal ushort PeerUnidiStreamCount;
-            internal ushort RetryMemoryLimit;              // Global only
-            internal ushort LoadBalancingMode;             // Global only
-            internal byte MaxOperationsPerDrain;
+            internal ushort MaxBindingStatelessOperations;
+            internal ushort StatelessOperationExpirationMs;
+            internal ushort MinimumMtu;
+            internal ushort MaximumMtu;
             internal QuicSettingsEnabledFlagsFlags EnabledFlags;
-            internal uint* DesiredVersionsList;
-            internal uint DesiredVersionsListLength;
+            internal byte MaxOperationsPerDrain;
+            internal byte MtuDiscoveryMissingProbeCount;
         }
 
         [Flags]
         internal enum QuicSettingsIsSetFlags : ulong
         {
-            MaxBytesPerKey = 1 << 0,
-            HandshakeIdleTimeoutMs = 1 << 1,
-            IdleTimeoutMs = 1 << 2,
-            TlsClientMaxSendBuffer = 1 << 3,
-            TlsServerMaxSendBuffer = 1 << 4,
-            StreamRecvWindowDefault = 1 << 5,
-            StreamRecvBufferDefault = 1 << 6,
-            ConnFlowControlWindow = 1 << 7,
-            MaxWorkerQueueDelayUs = 1 << 8,
-            MaxStatelessOperations = 1 << 9,
-            InitialWindowPackets = 1 << 10,
-            SendIdleTimeoutMs = 1 << 11,
-            InitialRttMs = 1 << 12,
-            MaxAckDelayMs = 1 << 13,
-            DisconnectTimeoutMs = 1 << 14,
-            KeepAliveIntervalMs = 1 << 15,
-            PeerBidiStreamCount = 1 << 16,
-            PeerUnidiStreamCount = 1 << 17,
-            RetryMemoryLimit = 1 << 18,
-            LoadBalancingMode = 1 << 19,
-            MaxOperationsPerDrain = 1 << 20,
-            SendBufferingEnabled = 1 << 21,
-            PacingEnabled = 1 << 22,
-            MigrationEnabled = 1 << 23,
-            DatagramReceiveEnabled = 1 << 24,
-            ServerResumptionLevel = 1 << 25,
-            DesiredVersionsList = 1 << 26,
-            VersionNegotiationExtEnabled = 1 << 27,
+            MaxBytesPerKey = 1UL << 0,
+            HandshakeIdleTimeoutMs = 1UL << 1,
+            IdleTimeoutMs = 1UL << 2,
+            MtuDiscoverySearchCompleteTimeoutUs = 1UL << 3,
+            TlsClientMaxSendBuffer = 1UL << 4,
+            TlsServerMaxSendBuffer = 1UL << 5,
+            StreamRecvWindowDefault = 1UL << 6,
+            StreamRecvBufferDefault = 1UL << 7,
+            ConnFlowControlWindow = 1UL << 8,
+            MaxWorkerQueueDelayUs = 1UL << 9,
+            MaxStatelessOperations = 1UL << 10,
+            InitialWindowPackets = 1UL << 11,
+            SendIdleTimeoutMs = 1UL << 12,
+            InitialRttMs = 1UL << 13,
+            MaxAckDelayMs = 1UL << 14,
+            DisconnectTimeoutMs = 1UL << 15,
+            KeepAliveIntervalMs = 1UL << 16,
+            CongestionControlAlgorithm = 1UL << 17,
+            PeerBidiStreamCount = 1UL << 18,
+            PeerUnidiStreamCount = 1UL << 19,
+            MaxBindingStatelessOperations = 1UL << 20,
+            StatelessOperationExpirationMs = 1UL << 21,
+            MinimumMtu = 1UL << 22,
+            MaximumMtu = 1UL << 23,
+            SendBufferingEnabled = 1UL << 24,
+            PacingEnabled = 1UL << 25,
+            MigrationEnabled = 1UL << 26,
+            DatagramReceiveEnabled = 1UL << 27,
+            ServerResumptionLevel = 1UL << 28,
+            MaxOperationsPerDrain = 1UL << 29,
+            MtuDiscoveryMissingProbeCount = 1UL << 31,
         }
 
         [Flags]
@@ -250,6 +246,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal IntPtr Reserved; // Currently unused
             // TODO: define delegate for AsyncHandler and make proper use of it.
             internal IntPtr AsyncHandler;
+            internal QUIC_ALLOWED_CIPHER_SUITE_FLAGS AllowedCipherSuites;
 
             [CustomTypeMarshaller(typeof(CredentialConfig), Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
             [StructLayout(LayoutKind.Sequential)]
@@ -262,6 +259,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 internal IntPtr Principal;
                 internal IntPtr Reserved;
                 internal IntPtr AsyncHandler;
+                internal QUIC_ALLOWED_CIPHER_SUITE_FLAGS AllowedCipherSuites;
 
                 public Native(CredentialConfig managed)
                 {
@@ -271,6 +269,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     Principal = Marshal.StringToCoTaskMemUTF8(managed.Principal);
                     Reserved = managed.Reserved;
                     AsyncHandler = managed.AsyncHandler;
+                    AllowedCipherSuites = managed.AllowedCipherSuites;
                 }
 
                 public CredentialConfig ToManaged()
@@ -282,7 +281,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                         Certificate = Certificate,
                         Principal = Marshal.PtrToStringUTF8(Principal)!,
                         Reserved = Reserved,
-                        AsyncHandler = AsyncHandler
+                        AsyncHandler = AsyncHandler,
+                        AllowedCipherSuites = AllowedCipherSuites
                     };
                 }
 
@@ -416,7 +416,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             IntPtr context,
             ListenerEvent* evt);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ListenerOpenDelegate(
            SafeMsQuicRegistrationHandle registration,
            ListenerCallbackDelegate handler,
@@ -427,14 +426,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate void ListenerCloseDelegate(
             IntPtr listener);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ListenerStartDelegate(
             SafeMsQuicListenerHandle listener,
             QuicBuffer* alpnBuffers,
             uint alpnBufferCount,
-            ref SOCKADDR_INET localAddress);
+            byte* localAddress);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate void ListenerStopDelegate(
             SafeMsQuicListenerHandle listener);
 
@@ -558,7 +555,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             ConnectionEvent* connectionEvent);
 
         // TODO: order is Open, Close, Shutdown, Start, SetConfiguration, SendResumptionTicket
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ConnectionOpenDelegate(
             SafeMsQuicRegistrationHandle registration,
             ConnectionCallbackDelegate handler,
@@ -569,12 +565,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate void ConnectionCloseDelegate(
             IntPtr connection);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ConnectionSetConfigurationDelegate(
             SafeMsQuicConnectionHandle connection,
             SafeMsQuicConfigurationHandle configuration);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ConnectionStartDelegate(
             SafeMsQuicConnectionHandle connection,
             SafeMsQuicConfigurationHandle configuration,
@@ -583,13 +577,20 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             string serverName,
             ushort serverPort);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate void ConnectionShutdownDelegate(
             SafeMsQuicConnectionHandle connection,
             QUIC_CONNECTION_SHUTDOWN_FLAGS flags,
             long errorCode);
 
         // TODO: missing SendResumptionTicket
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct StreamEventDataStartComplete
+        {
+            internal uint Status;
+            internal ulong Id;
+            internal byte PeerAccepted;
+        };
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct StreamEventDataReceive
@@ -635,7 +636,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Explicit)]
         internal struct StreamEventDataUnion
         {
-            // TODO: missing START_COMPLETE
+            [FieldOffset(0)]
+            internal StreamEventDataStartComplete StartComplete;
+
             [FieldOffset(0)]
             internal StreamEventDataReceive Receive;
 
@@ -664,55 +667,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal StreamEventDataUnion Data;
         }
 
-        // TODO: rename to C#-like
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct SOCKADDR_IN
-        {
-#if SOCKADDR_HAS_LENGTH
-            internal byte sin_len;
-#endif
-            internal QUIC_ADDRESS_FAMILY sin_family;
-            internal ushort sin_port;
-            internal fixed byte sin_addr[4];
-        }
-
-        // TODO: rename to C#-like
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct SOCKADDR_IN6
-        {
-#if SOCKADDR_HAS_LENGTH
-            internal byte sin6_len;
-#endif
-            internal QUIC_ADDRESS_FAMILY sin6_family;
-            internal ushort sin6_port;
-            internal uint sin6_flowinfo;
-            internal fixed byte sin6_addr[16];
-            internal uint sin6_scope_id;
-        }
-
-        // TODO: rename to C#-like
-        [StructLayout(LayoutKind.Explicit)]
-        internal struct SOCKADDR_INET
-        {
-            [FieldOffset(0)]
-            internal SOCKADDR_IN Ipv4;
-            [FieldOffset(0)]
-            internal SOCKADDR_IN6 Ipv6;
-#if SOCKADDR_HAS_LENGTH
-            [FieldOffset(1)]
-#else
-            [FieldOffset(0)]
-#endif
-            internal QUIC_ADDRESS_FAMILY si_family;
-        }
-
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamCallbackDelegate(
             IntPtr stream,
             IntPtr context,
             StreamEvent* streamEvent);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamOpenDelegate(
             SafeMsQuicConnectionHandle connection,
             QUIC_STREAM_OPEN_FLAGS flags,
@@ -720,7 +680,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             IntPtr context,
             out SafeMsQuicStreamHandle stream);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamStartDelegate(
             SafeMsQuicStreamHandle stream,
             QUIC_STREAM_START_FLAGS flags);
@@ -729,13 +688,11 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate void StreamCloseDelegate(
             IntPtr stream);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamShutdownDelegate(
             SafeMsQuicStreamHandle stream,
             QUIC_STREAM_SHUTDOWN_FLAGS flags,
             long errorCode);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamSendDelegate(
             SafeMsQuicStreamHandle stream,
             QuicBuffer* buffers,
@@ -743,15 +700,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             QUIC_SEND_FLAGS flags,
             IntPtr clientSendContext);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal delegate uint StreamReceiveCompleteDelegate(
+        internal delegate void StreamReceiveCompleteDelegate(
             SafeMsQuicStreamHandle stream,
             ulong bufferLength);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamReceiveSetEnabledDelegate(
             SafeMsQuicStreamHandle stream,
-            [MarshalAs(UnmanagedType.U1)]
             bool enabled);
 
         [StructLayout(LayoutKind.Sequential)]
@@ -841,7 +795,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     //
                     handle.DangerousAddRef(ref handle__addRefd);
                     IntPtr __handle_gen_native = handle.DangerousGetHandle();
-                    __del_gen_native__marshaller = new(del);
+                    __del_gen_native__marshaller = new AnyDelegateMarshaller(del);
                     IntPtr __del_gen_native = __del_gen_native__marshaller.Value;
                     ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, void>)_functionPointer)(__handle_gen_native, __del_gen_native, context);
                 }
@@ -855,7 +809,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     __del_gen_native__marshaller.FreeNative();
                 }
             }
-            internal uint SetParam(SafeHandle handle, QUIC_PARAM_LEVEL level, uint param, uint bufferLength, byte* buffer)
+            internal uint SetParam(SafeHandle handle, uint param, uint bufferLength, byte* buffer)
             {
                 uint __retVal;
                 //
@@ -869,7 +823,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     //
                     handle.DangerousAddRef(ref handle__addRefd);
                     IntPtr __handle_gen_native = handle.DangerousGetHandle();
-                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, QUIC_PARAM_LEVEL, uint, uint, byte*, uint>)_functionPointer)(__handle_gen_native, level, param, bufferLength, buffer);
+                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, uint, uint, byte*, uint>)_functionPointer)(__handle_gen_native, param, bufferLength, buffer);
                 }
                 finally
                 {
@@ -882,7 +836,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
                 return __retVal;
             }
-            internal uint GetParam(SafeHandle handle, QUIC_PARAM_LEVEL level, uint param, ref uint bufferLength, byte* buffer)
+            internal uint GetParam(SafeHandle handle, uint param, ref uint bufferLength, byte* buffer)
             {
                 IntPtr __handle_gen_native = default;
                 uint __retVal;
@@ -899,7 +853,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     __handle_gen_native = handle.DangerousGetHandle();
                     fixed (uint* __bufferLength_gen_native = &bufferLength)
                     {
-                        __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, QUIC_PARAM_LEVEL, uint, uint*, byte*, uint>)_functionPointer)(__handle_gen_native, level, param, __bufferLength_gen_native, buffer);
+                        __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, uint, uint*, byte*, uint>)_functionPointer)(__handle_gen_native, param, __bufferLength_gen_native, buffer);
                     }
                 }
                 finally
@@ -929,7 +883,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     //
                     // Marshal
                     //
-                    __config_gen_native = new(config);
+                    __config_gen_native = new RegistrationConfig.Native(config);
                     __retVal = ((delegate* unmanaged[Cdecl]<RegistrationConfig.Native*, IntPtr*, uint>)_functionPointer)(&__config_gen_native, &__registrationContext_gen_native);
                     __invokeSucceeded = true;
                     //
@@ -1017,7 +971,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     //
                     configuration.DangerousAddRef(ref configuration__addRefd);
                     IntPtr __configuration_gen_native = configuration.DangerousGetHandle();
-                    __credConfig_gen_native = new(credConfig);
+                    __credConfig_gen_native = new CredentialConfig.Native(credConfig);
                     __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, CredentialConfig.Native*, uint>)_functionPointer)(__configuration_gen_native, &__credConfig_gen_native);
                     //
                     // Unmarshal
@@ -1083,9 +1037,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
                 return __retVal;
             }
-            internal uint ListenerStart(SafeMsQuicListenerHandle listener, QuicBuffer* alpnBuffers, uint alpnBufferCount, ref SOCKADDR_INET localAddress)
+            internal uint ListenerStart(SafeMsQuicListenerHandle listener, QuicBuffer* alpnBuffers, uint alpnBufferCount, byte* localAddress)
             {
-                IntPtr __listener_gen_native = default;
+                IntPtr __listener_gen_native;
                 uint __retVal;
                 //
                 // Setup
@@ -1098,10 +1052,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     //
                     listener.DangerousAddRef(ref listener__addRefd);
                     __listener_gen_native = listener.DangerousGetHandle();
-                    fixed (SOCKADDR_INET* __localAddress_gen_native = &localAddress)
-                    {
-                        __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, QuicBuffer*, uint, SOCKADDR_INET*, uint>)_functionPointer)(__listener_gen_native, alpnBuffers, alpnBufferCount, __localAddress_gen_native);
-                    }
+                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, QuicBuffer*, uint, byte*, uint>)_functionPointer)(__listener_gen_native, alpnBuffers, alpnBufferCount, localAddress);
                 }
                 finally
                 {
@@ -1429,9 +1380,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
                 return __retVal;
             }
-            internal uint StreamReceiveComplete(SafeMsQuicStreamHandle stream, ulong bufferLength)
+            internal void StreamReceiveComplete(SafeMsQuicStreamHandle stream, ulong bufferLength)
             {
-                uint __retVal;
                 //
                 // Setup
                 //
@@ -1443,7 +1393,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     //
                     stream.DangerousAddRef(ref stream__addRefd);
                     IntPtr __stream_gen_native = stream.DangerousGetHandle();
-                    __retVal = ((delegate* unmanaged[Cdecl]<IntPtr, ulong, uint>)_functionPointer)(__stream_gen_native, bufferLength);
+                    ((delegate* unmanaged[Cdecl]<IntPtr, ulong, void>)_functionPointer)(__stream_gen_native, bufferLength);
                 }
                 finally
                 {
@@ -1453,8 +1403,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     if (stream__addRefd)
                         stream.DangerousRelease();
                 }
-
-                return __retVal;
             }
             internal uint StreamReceiveSetEnabled(SafeMsQuicStreamHandle stream, bool enabled)
             {

@@ -373,17 +373,22 @@ namespace System.Text.Json.Serialization.Tests
             RunAsCollectionElementTest(JsonNumberTestData.Floats);
             RunAsCollectionElementTest(JsonNumberTestData.Doubles);
             RunAsCollectionElementTest(JsonNumberTestData.Decimals);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableBytes);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableSBytes);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableShorts);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableInts);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableLongs);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableUShorts);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableUInts);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableULongs);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableFloats);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableDoubles);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableDecimals);
+
+            // https://github.com/dotnet/runtime/issues/66220
+            if (!PlatformDetection.IsAppleMobile)
+            {
+                RunAsCollectionElementTest(JsonNumberTestData.NullableBytes);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableSBytes);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableShorts);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableInts);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableLongs);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableUShorts);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableUInts);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableULongs);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableFloats);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableDoubles);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableDecimals);
+            }
         }
 
         private static void RunAsCollectionElementTest<T>(List<T> numbers)
@@ -1767,7 +1772,7 @@ namespace System.Text.Json.Serialization.Tests
                 Converters = { new AdaptableInt32Converter() }
             };
 
-            obj = new() { Prop = new List<int>() { 1 } };
+            obj = new PlainClassWithList() { Prop = new List<int>() { 1 } };
             json = JsonSerializer.Serialize(obj, options);
             Assert.Equal("{\"Prop\":[101]}", json);
 
@@ -1775,13 +1780,13 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(1, obj.Prop[0]);
 
             // Then with strings
-            options = new()
+            options = new JsonSerializerOptions()
             {
                 NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString,
                 Converters = { new AdaptableInt32Converter() }
             };
 
-            obj = new() { Prop = new List<int>() { 1 } };
+            obj = new PlainClassWithList() { Prop = new List<int>() { 1 } };
             json = JsonSerializer.Serialize(obj, options);
             Assert.Equal("{\"Prop\":[\"101\"]}", json);
 

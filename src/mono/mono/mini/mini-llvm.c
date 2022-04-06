@@ -49,7 +49,7 @@
 #define TARGET_WIN32_MSVC
 #endif
 
-#if LLVM_API_VERSION < 900
+#if LLVM_API_VERSION < 1100
 #error "The version of the mono llvm repository is too old."
 #endif
 
@@ -3659,10 +3659,6 @@ emit_method_init (EmitContext *ctx)
 			args [nargs ++] = convert (ctx, ctx->this_arg, ObjRefType ());
 			subtype = AOT_INIT_METHOD_GSHARED_THIS;
 		}
-		break;
-	case MONO_RGCTX_ACCESS_VTABLE:
-		args [nargs ++] = convert (ctx, ctx->rgctx_arg, IntPtrType ());
-		subtype = AOT_INIT_METHOD_GSHARED_VTABLE;
 		break;
 	case MONO_RGCTX_ACCESS_THIS:
 		args [nargs ++] = convert (ctx, ctx->this_arg, ObjRefType ());

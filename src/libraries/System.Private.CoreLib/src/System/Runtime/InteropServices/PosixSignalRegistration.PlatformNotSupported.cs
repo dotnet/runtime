@@ -13,6 +13,6 @@ namespace System.Runtime.InteropServices
         private static PosixSignalRegistration Register(PosixSignal signal, Action<PosixSignalContext> handler) =>
             throw new PlatformNotSupportedException();
 
-        private void Unregister() { }
+        partial void Unregister();
     }
 }

@@ -459,14 +459,14 @@ namespace Microsoft.Interop
                 if (libraryImportData.StringMarshalling == StringMarshalling.Custom && libraryImportData.StringMarshallingCustomType is null)
                 {
                     generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
-                        generatedDllImportAttr, symbol.Name, Resources.InvalidStringMarshallingConfigurationMissingCustomType);
+                        generatedDllImportAttr, symbol.Name, SR.InvalidStringMarshallingConfigurationMissingCustomType);
                 }
 
                 // User specified something other than StringMarshalling.Custom while specifying StringMarshallingCustomType
                 if (libraryImportData.StringMarshalling != StringMarshalling.Custom && libraryImportData.StringMarshallingCustomType is not null)
                 {
                     generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
-                        generatedDllImportAttr, symbol.Name, Resources.InvalidStringMarshallingConfigurationNotCustom);
+                        generatedDllImportAttr, symbol.Name, SR.InvalidStringMarshallingConfigurationNotCustom);
                 }
             }
 

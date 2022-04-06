@@ -57,11 +57,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public ulong Or(ulong predicate1, ulong predicate2) => predicate1 | predicate2;
 
-        public ulong CharConstraint(char c, bool caseInsensitive = false, string? culture = null)
-        {
-            Debug.Assert(!caseInsensitive);
-            return ((ulong)1) << _classifier.GetMintermID(c);
-        }
+        public ulong CharConstraint(char c) => ((ulong)1) << _classifier.GetMintermID(c);
 
         /// <summary>
         /// Assumes that set is a union of some minterms (or empty).

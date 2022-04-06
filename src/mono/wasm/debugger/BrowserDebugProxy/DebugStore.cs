@@ -1210,7 +1210,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             public Task<byte[][]> Data { get; set; }
         }
 
-        public IEnumerable<MethodInfo> EnC(AssemblyInfo asm, byte[] meta_data, byte[] pdb_data)
+        public static IEnumerable<MethodInfo> EnC(AssemblyInfo asm, byte[] meta_data, byte[] pdb_data)
         {
             asm.EnC(meta_data, pdb_data);
             foreach (var method in asm.Methods)
@@ -1229,7 +1229,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             catch (Exception e)
             {
-                logger.LogDebug($"Failed to load assembly: ({e.Message})");
+                logger.LogError($"Failed to load assembly: ({e.Message})");
                 yield break;
             }
 
@@ -1292,7 +1292,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 catch (Exception e)
                 {
-                    logger.LogDebug($"Failed to load {step.Url} ({e.Message})");
+                    logger.LogError($"Failed to load {step.Url} ({e.Message})");
                 }
                 if (assembly == null)
                     continue;
@@ -1365,7 +1365,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return res;
         }
 
-        public IEnumerable<SourceLocation> FindBreakpointLocations(SourceLocation start, SourceLocation end, MethodInfo method)
+        public static IEnumerable<SourceLocation> FindBreakpointLocations(SourceLocation start, SourceLocation end, MethodInfo method)
         {
             if (!method.HasSequencePoints)
                 yield break;

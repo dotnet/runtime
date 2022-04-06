@@ -37,6 +37,16 @@ namespace System.Security.Cryptography.Cose.Tests
             PS512 = -39
         }
 
+        public enum CoseAlgorithm
+        {
+            ES256 = -7,
+            ES384 = -35,
+            ES512 = -36,
+            PS256 = -37,
+            PS384 = -38,
+            PS512 = -39
+        }
+
         public enum ContentTestCase
         {
             Empty,
@@ -53,19 +63,19 @@ namespace System.Security.Cryptography.Cose.Tests
                 _ => throw new InvalidOperationException()
             };
 
-        internal static CoseHeaderMap GetHeaderMapWithAlgorithm(int algorithm = (int)ECDsaAlgorithm.ES256)
+        internal static CoseHeaderMap GetHeaderMapWithAlgorithm(CoseAlgorithm algorithm = CoseAlgorithm.ES256)
         {
             var protectedHeaders = new CoseHeaderMap();
-            protectedHeaders.SetValue(CoseHeaderLabel.Algorithm, algorithm);
+            protectedHeaders.SetValue(CoseHeaderLabel.Algorithm, (int)algorithm);
             return protectedHeaders;
         }
 
         internal static CoseHeaderMap GetEmptyHeaderMap() => new CoseHeaderMap();
 
-        internal static List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> GetExpectedProtectedHeaders(int algorithm = (int)ECDsaAlgorithm.ES256)
+        internal static List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> GetExpectedProtectedHeaders(CoseAlgorithm algorithm)
         {
             var l = new List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>();
-            AddEncoded(l, CoseHeaderLabel.Algorithm, algorithm);
+            AddEncoded(l, CoseHeaderLabel.Algorithm, (int)algorithm);
 
             return l;
         }
@@ -76,6 +86,13 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             var writer = new CborWriter();
             writer.WriteInt32(value);
+            list.Add((label, writer.Encode()));
+        }
+
+        internal static void AddEncoded(List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> list, CoseHeaderLabel label, string value)
+        {
+            var writer = new CborWriter();
+            writer.WriteTextString(value);
             list.Add((label, writer.Encode()));
         }
 
@@ -91,33 +108,34 @@ namespace System.Security.Cryptography.Cose.Tests
         }
 
         internal static void AssertSign1Message(
-            byte[] encodedMsg,
-            byte[]? expectedContent,
+            ReadOnlySpan<byte> encodedMsg,
+            ReadOnlySpan<byte> expectedContent,
             AsymmetricAlgorithm signingKey,
+            CoseAlgorithm algorithm,
             List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedProtectedHeaders = null,
-            List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedUnprotectedHeaders = null)
+            List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedUnprotectedHeaders = null,
+            bool expectedDetachedContent = false)
         {
-            Assert.NotNull(encodedMsg);
-            var reader = new CborReader(encodedMsg);
+            var reader = new CborReader(encodedMsg.ToArray());
 
             // Start
             Assert.Equal((CborTag)18, reader.ReadTag());
             Assert.Equal(4, reader.ReadStartArray());
 
             // Protected headers
-            AssertSign1ProtectedHeaders(reader.ReadByteString(), expectedProtectedHeaders ?? GetExpectedProtectedHeaders());
+            AssertSign1ProtectedHeaders(reader.ReadByteString(), expectedProtectedHeaders ?? GetExpectedProtectedHeaders(algorithm));
 
             // Unprotected headers
             AssertSign1Headers(reader, expectedUnprotectedHeaders ?? GetEmptyExpectedHeaders());
 
             // Content
-            if (expectedContent != null)
+            if (expectedDetachedContent)
             {
-                AssertExtensions.SequenceEqual(expectedContent, reader.ReadByteString());
+                reader.ReadNull();
             }
             else
             {
-                reader.ReadNull();
+                AssertExtensions.SequenceEqual(expectedContent, reader.ReadByteString());
             }
 
             // Signature
@@ -132,11 +150,25 @@ namespace System.Security.Cryptography.Cose.Tests
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
             if (signingKey is ECDsa ecdsa)
             {
-                Assert.True(msg.Verify(ecdsa), "msg.Verify(ecdsa)");
+                if (expectedDetachedContent)
+                {
+                    Assert.True(msg.Verify(ecdsa, expectedContent), "msg.Verify(ecdsa, content)");
+                }
+                else
+                {
+                    Assert.True(msg.Verify(ecdsa), "msg.Verify(ecdsa)");
+                }
             }
             else if (signingKey is RSA rsa)
             {
-                Assert.True(msg.Verify(rsa), "msg.Verify(rsa)");
+                if (expectedDetachedContent)
+                {
+                    Assert.True(msg.Verify(rsa, expectedContent), "msg.Verify(rsa, content)");
+                }
+                else
+                {
+                    Assert.True(msg.Verify(rsa), "msg.Verify(rsa)");
+                }
             }
             else
             {
@@ -222,9 +254,6 @@ namespace System.Security.Cryptography.Cose.Tests
         internal static ECDsa DefaultKey => ES256;
         internal static HashAlgorithmName DefaultHash { get; } = GetHashAlgorithmNameFromCoseAlgorithm((int)ECDsaAlgorithm.ES256);
 
-        internal static readonly ThreadStaticECDsaDictionary ECDsaKeys = new(true);
-        internal static readonly ThreadStaticECDsaDictionary ECDsaKeysWithoutPrivateKey = new(false);
-
         [ThreadStatic]
         internal static RSA? t_rsaKey;
         [ThreadStatic]
@@ -235,7 +264,7 @@ namespace System.Security.Cryptography.Cose.Tests
 
         private static ECParameters CreateECParameters(string curveFriendlyName, string base64UrlQx, string base64UrlQy, string base64UrlPrivateKey)
         {
-            return new()
+            return new ECParameters()
             {
                 Curve = ECCurve.CreateFromFriendlyName(curveFriendlyName),
                 Q = new ECPoint
@@ -280,22 +309,28 @@ namespace System.Security.Cryptography.Cose.Tests
             return RSA.Create(rsaParameters);
         }
 
-        internal class ThreadStaticECDsaDictionary: Dictionary<ECDsaAlgorithm, ECDsa>
+        internal static (T Key, HashAlgorithmName Hash) GetKeyHashPair<T>(CoseAlgorithm algorithm, bool useNonPrivateKey = false)
         {
-            private bool _includePrivateKeys;
-            public ThreadStaticECDsaDictionary(bool includePrivateKeys)
+            return algorithm switch
             {
-                _includePrivateKeys = includePrivateKeys;
-            }
-            public new ECDsa this[ECDsaAlgorithm key]
+                CoseAlgorithm.ES256 => (GetKey(ES256, ES256WithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA256),
+                CoseAlgorithm.ES384 => (GetKey(ES384, ES384WithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA384),
+                CoseAlgorithm.ES512 => (GetKey(ES512, ES512WithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA512),
+                CoseAlgorithm.PS256 => (GetKey(RSAKey, RSAKeyWithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA256),
+                CoseAlgorithm.PS384 => (GetKey(RSAKey, RSAKeyWithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA384),
+                CoseAlgorithm.PS512 => (GetKey(RSAKey, RSAKeyWithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA512),
+                _ => throw new InvalidOperationException()
+            };
+
+
+            T GetKey(AsymmetricAlgorithm privateKey, AsymmetricAlgorithm nonPrivateKey, bool useNonPrivateKey)
             {
-                get => key switch
+                if (privateKey is T privateKeyAsT && nonPrivateKey is T nonPrivateKeyAsT)
                 {
-                    ECDsaAlgorithm.ES256 => _includePrivateKeys ? ES256 : ES256WithoutPrivateKey,
-                    ECDsaAlgorithm.ES384 => _includePrivateKeys ? ES384 : ES384WithoutPrivateKey,
-                    ECDsaAlgorithm.ES512 => _includePrivateKeys ? ES512 : ES512WithoutPrivateKey,
-                    _ => throw new InvalidOperationException()
-                };
+                    return useNonPrivateKey ? nonPrivateKeyAsT : privateKeyAsT;
+                }
+
+                throw new InvalidOperationException($"Specified algorithm {algorithm} doesn't match the type {typeof(T)}");
             }
         }
     }

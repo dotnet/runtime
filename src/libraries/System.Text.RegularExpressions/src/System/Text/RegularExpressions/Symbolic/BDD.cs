@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
@@ -364,7 +365,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Recreates a BDD from a byte array that has been created using SerializeToBytes.
         /// </summary>
-        public static BDD Deserialize(byte[] bytes, BDDAlgebra algebra)
+        public static BDD Deserialize(ReadOnlySpan<byte> bytes, BDDAlgebra algebra)
         {
             if (bytes.Length == 1)
             {
@@ -372,28 +373,17 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             // here bytes represents an array of longs with k = the number of bytes used per long
-            int k = (int)bytes[0];
-
-            // gets the i'th element from the underlying array of longs represented by bytes
-            long Get(int i)
-            {
-                long l = 0;
-                for (int j = k; j > 0; j--)
-                {
-                    l = (l << 8) | bytes[(k * i) + j];
-                }
-                return l;
-            }
+            int bytesPerLong = bytes[0];
 
             // n is the total nr of longs that corresponds also to the total number of BDD nodes needed
-            int n = (bytes.Length - 1) / k;
+            int n = (bytes.Length - 1) / bytesPerLong;
 
             // make sure the represented nr of longs divides precisely without remainder
-            Debug.Assert((bytes.Length - 1) % k == 0);
+            Debug.Assert((bytes.Length - 1) % bytesPerLong == 0);
 
             // the number of bits used for ordinals and node identifiers are stored in the first two longs
-            int ordinal_bits = (int)Get(0);
-            int node_bits = (int)Get(1);
+            int ordinal_bits = (int)Get(bytesPerLong, bytes, 0);
+            int node_bits = (int)Get(bytesPerLong, bytes, 1);
 
             // create bit masks for the sizes of ordinals and node identifiers
             long ordinal_mask = (1 << ordinal_bits) - 1;
@@ -408,7 +398,7 @@ namespace System.Text.RegularExpressions.Symbolic
             for (int i = 2; i < n; i++)
             {
                 // represents the triple (ordinal, one, zero)
-                long arc = Get(i);
+                long arc = Get(bytesPerLong, bytes, i);
 
                 // reconstruct the ordinal and child identifiers for a non-terminal
                 int ord = (int)((arc >> ordinal_shift) & ordinal_mask);
@@ -423,6 +413,19 @@ namespace System.Text.RegularExpressions.Symbolic
 
             //the result is the last BDD in the nodes array
             return nodes[n - 1];
+
+            // Gets the i'th element from the underlying array of longs represented by bytes
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static long Get(int bytesPerLong, ReadOnlySpan<byte> bytes, int i)
+            {
+                ulong value = 0;
+                for (int j = bytesPerLong; j > 0; j--)
+                {
+                    value = (value << 8) | bytes[(bytesPerLong * i) + j];
+                }
+
+                return (long)value;
+            }
         }
 
         /// <summary>

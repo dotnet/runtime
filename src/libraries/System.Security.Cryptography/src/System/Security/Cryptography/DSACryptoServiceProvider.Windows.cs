@@ -322,7 +322,7 @@ namespace System.Security.Cryptography
         /// This method helps Acquire the default CSP and avoids the need for static SafeProvHandle
         /// in CapiHelper class
         /// </summary>
-        private SafeProvHandle AcquireSafeProviderHandle()
+        private static SafeProvHandle AcquireSafeProviderHandle()
         {
             SafeProvHandle safeProvHandle;
             CapiHelper.AcquireCsp(new CspParameters(CapiHelper.DefaultDssProviderType), out safeProvHandle);

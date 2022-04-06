@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Runtime.InteropServices;
@@ -58,7 +59,7 @@ namespace Microsoft.Interop
                 UnmanagedBlittableMarshallingInfo or NativeMarshallingAttributeInfo when !Options.RuntimeMarshallingDisabled =>
                     throw new MarshallingNotSupportedException(info, context)
                     {
-                        NotSupportedDetails = Resources.RuntimeMarshallingMustBeDisabled,
+                        NotSupportedDetails = SR.RuntimeMarshallingMustBeDisabled,
                         DiagnosticProperties = AddDisableRuntimeMarshallingAttributeProperties
                     },
                 GeneratedNativeMarshallingAttributeInfo => s_forwarder,
@@ -78,7 +79,7 @@ namespace Microsoft.Interop
                 CountElementCountInfo(TypePositionInfo elementInfo) => CheckedExpression(SyntaxKind.CheckedExpression, GetExpressionForParam(elementInfo)),
                 _ => throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = Resources.ArraySizeMustBeSpecified
+                    NotSupportedDetails = SR.ArraySizeMustBeSpecified
                 },
             };
 
@@ -108,7 +109,7 @@ namespace Microsoft.Interop
                     {
                         throw new MarshallingNotSupportedException(info, context)
                         {
-                            NotSupportedDetails = Resources.CollectionSizeParamTypeMustBeIntegral
+                            NotSupportedDetails = SR.CollectionSizeParamTypeMustBeIntegral
                         };
                     }
                 }
@@ -117,7 +118,7 @@ namespace Microsoft.Interop
                 {
                     throw new MarshallingNotSupportedException(info, context)
                     {
-                        NotSupportedDetails = Resources.CollectionSizeParamTypeMustBeIntegral
+                        NotSupportedDetails = SR.CollectionSizeParamTypeMustBeIntegral
                     };
                 }
 
@@ -169,7 +170,7 @@ namespace Microsoft.Interop
                 {
                     throw new MarshallingNotSupportedException(info, context);
                 }
-                marshallingStrategy = new StackallocOptimizationMarshalling(marshallingStrategy, marshalInfo.BufferSize.Value);
+                marshallingStrategy = new StackallocOptimizationMarshalling(marshallingStrategy, marshalInfo.BufferElementType.Syntax, marshalInfo.BufferSize.Value);
             }
 
             if ((marshalInfo.MarshallingFeatures & CustomTypeMarshallerFeatures.UnmanagedResources) != 0)
@@ -198,7 +199,7 @@ namespace Microsoft.Interop
             return marshallingGenerator;
         }
 
-        private void ValidateCustomNativeTypeMarshallingSupported(TypePositionInfo info, StubCodeContext context, NativeMarshallingAttributeInfo marshalInfo)
+        private static void ValidateCustomNativeTypeMarshallingSupported(TypePositionInfo info, StubCodeContext context, NativeMarshallingAttributeInfo marshalInfo)
         {
             // The marshalling method for this type doesn't support marshalling from native to managed,
             // but our scenario requires marshalling from native to managed.
@@ -207,7 +208,7 @@ namespace Microsoft.Interop
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingNativeToManagedUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
+                    NotSupportedDetails = string.Format(SR.CustomTypeMarshallingNativeToManagedUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
                 };
             }
             // The marshalling method for this type doesn't support marshalling from managed to native by value,
@@ -220,7 +221,7 @@ namespace Microsoft.Interop
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
+                    NotSupportedDetails = string.Format(SR.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
                 };
             }
             // The marshalling method for this type doesn't support marshalling from managed to native by reference,
@@ -232,7 +233,7 @@ namespace Microsoft.Interop
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
+                    NotSupportedDetails = string.Format(SR.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
                 };
             }
             // The marshalling method for this type doesn't support marshalling from managed to native by reference,
@@ -244,12 +245,12 @@ namespace Microsoft.Interop
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
+                    NotSupportedDetails = string.Format(SR.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
                 };
             }
         }
 
-        private ICustomNativeTypeMarshallingStrategy DecorateWithTwoStageMarshallingStrategy(NativeMarshallingAttributeInfo marshalInfo, ICustomNativeTypeMarshallingStrategy nativeTypeMarshaller)
+        private static ICustomNativeTypeMarshallingStrategy DecorateWithTwoStageMarshallingStrategy(NativeMarshallingAttributeInfo marshalInfo, ICustomNativeTypeMarshallingStrategy nativeTypeMarshaller)
         {
             TypeSyntax valuePropertyTypeSyntax = marshalInfo.NativeValueType!.Syntax;
 

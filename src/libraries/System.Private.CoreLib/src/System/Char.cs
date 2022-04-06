@@ -1082,6 +1082,9 @@ namespace System
         // IBinaryInteger
         //
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
+        public static (char Quotient, char Remainder) DivRem(char left, char right) => ((char, char))Math.DivRem(left, right);
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         public static char LeadingZeroCount(char value) => (char)(BitOperations.LeadingZeroCount(value) - 16);
 
@@ -1217,21 +1220,18 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.One" />
-        static char INumber<char>.One => (char)1;
-
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
-        static char INumber<char>.Zero => (char)0;
-
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        public static char Abs(char value) => value;
+        static char INumber<char>.Abs(char value) => value;
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static char Clamp(char value, char min, char max) => (char)Math.Clamp(value, min, max);
 
-        /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        static char INumber<char>.CopySign(char value, char sign) => value;
+
+        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static char Create<TOther>(TOther value)
+        public static char CreateChecked<TOther>(TOther value)
             where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
@@ -1450,17 +1450,23 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.DivRem(TSelf, TSelf)" />
-        public static (char Quotient, char Remainder) DivRem(char left, char right) => ((char, char))Math.DivRem(left, right);
+        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        static bool INumber<char>.IsNegative(char value) => false;
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static char Max(char x, char y) => (char)Math.Max(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        static char INumber<char>.MaxMagnitude(char x, char y) => Max(x, y);
+
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static char Min(char x, char y) => (char)Math.Min(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        static char INumber<char>.MinMagnitude(char x, char y) => Min(x, y);
+
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static char Sign(char value) => (char)((value == 0) ? 0 : 1);
+        public static int Sign(char value) => (value == 0) ? 0 : 1;
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1666,12 +1672,22 @@ namespace System
         }
 
         //
-        // IParseable
+        // INumberBase
         //
 
-        static char IParseable<char>.Parse(string s, IFormatProvider? provider) => Parse(s);
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static char INumberBase<char>.One => (char)1;
 
-        static bool IParseable<char>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out char result) => TryParse(s, out result);
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static char INumberBase<char>.Zero => (char)0;
+
+        //
+        // IParsable
+        //
+
+        static char IParsable<char>.Parse(string s, IFormatProvider? provider) => Parse(s);
+
+        static bool IParsable<char>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
         //
         // IShiftOperators
@@ -1687,10 +1703,10 @@ namespace System
         // static char IShiftOperators<char, char>.operator >>>(char value, int shiftAmount) => (char)(value >> shiftAmount);
 
         //
-        // ISpanParseable
+        // ISpanParsable
         //
 
-        static char ISpanParseable<char>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+        static char ISpanParsable<char>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
         {
             if (s.Length != 1)
             {
@@ -1699,7 +1715,7 @@ namespace System
             return s[0];
         }
 
-        static bool ISpanParseable<char>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out char result)
+        static bool ISpanParsable<char>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out char result)
         {
             if (s.Length != 1)
             {
@@ -1736,8 +1752,5 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static char IUnaryPlusOperators<char, char>.operator +(char value) => (char)(+value);
-
-        // /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_CheckedUnaryPlus(TSelf)" />
-        // static byte IUnaryPlusOperators<char, char>.operator checked +(byte value) => checked((char)(+value));
     }
 }

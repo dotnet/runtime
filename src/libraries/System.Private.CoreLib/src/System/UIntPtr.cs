@@ -276,6 +276,9 @@ namespace System
         // IBinaryInteger
         //
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
+        static (nuint Quotient, nuint Remainder) IBinaryInteger<nuint>.DivRem(nuint left, nuint right) => Math.DivRem(left, right);
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         static nuint IBinaryInteger<nuint>.LeadingZeroCount(nuint value)
         {
@@ -471,21 +474,18 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.One" />
-        static nuint INumber<nuint>.One => 1;
-
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
-        static nuint INumber<nuint>.Zero => 0;
-
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
         static nuint INumber<nuint>.Abs(nuint value) => value;
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         static nuint INumber<nuint>.Clamp(nuint value, nuint min, nuint max) => Math.Clamp(value, min, max);
 
-        /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        static nuint INumber<nuint>.CopySign(nuint value, nuint sign) => value;
+
+        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nuint INumber<nuint>.Create<TOther>(TOther value)
+        static nuint INumber<nuint>.CreateChecked<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -698,17 +698,23 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.DivRem(TSelf, TSelf)" />
-        static (nuint Quotient, nuint Remainder) INumber<nuint>.DivRem(nuint left, nuint right) => Math.DivRem(left, right);
+        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        static bool INumber<nuint>.IsNegative(nuint value) => false;
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         static nuint INumber<nuint>.Max(nuint x, nuint y) => Math.Max(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        static nuint INumber<nuint>.MaxMagnitude(nuint x, nuint y) => Math.Max(x, y);
+
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         static nuint INumber<nuint>.Min(nuint x, nuint y) => Math.Min(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        static nuint INumber<nuint>.MinMagnitude(nuint x, nuint y) => Math.Min(x, y);
+
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        static nuint INumber<nuint>.Sign(nuint value) => (nuint)((value == 0) ? 0 : 1);
+        static int INumber<nuint>.Sign(nuint value) => (value == 0) ? 0 : 1;
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -865,6 +871,16 @@ namespace System
         }
 
         //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static nuint INumberBase<nuint>.One => 1;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static nuint INumberBase<nuint>.Zero => 0;
+
+        //
         // IShiftOperators
         //
 
@@ -903,8 +919,5 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static nuint IUnaryPlusOperators<nuint, nuint>.operator +(nuint value) => +value;
-
-        // /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_CheckedUnaryPlus(TSelf)" />
-        // static nuint IUnaryPlusOperators<nuint, nuint>.operator checked +(nuint value) => checked(+value);
     }
 }
