@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <PublishTrimmed>true</PublishTrimmed>
+
+    <WasmNativeWorkload>true</WasmNativeWorkload>
+   <TargetFramework>net7.0</TargetFramework>
+     <_PacksDir>$(MSBuildToolsPath)\..\..\packs\</_PacksDir>
+   </PropertyGroup>
+
+   <!--<Import Project="$(MSBuildToolsPath)\..\..\sdk-manifests\7.0.100\**\*.targets" />-->
+
+   <PropertyGroup>
+     <!--<MicrosoftNetCoreAppRuntimePackDir>$(_PacksDir)Microsoft.NETCore.App.Runtime.Mono.browser-wasm\$(RuntimePackInWorkloadVersion)\</MicrosoftNetCoreAppRuntimePackDir>-->
+     <!--<_MonoRuntimeComponentManifestJsonFilePath>$(MicrosoftNetCoreAppRuntimePackDir)\runtimes\browser-wasm\build\RuntimeComponentManifest.json</_MonoRuntimeComponentManifestJsonFilePath>-->
+   </PropertyGroup>
+</Project>
