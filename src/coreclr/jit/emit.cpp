@@ -6556,7 +6556,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #ifdef DEBUG
         if (emitComp->opts.disAsm || emitComp->verbose)
         {
-            printf("\t\t\t\t\t\t;; bbWeight=%s PerfScore %.2f", refCntWtd2str(ig->igWeight), ig->igPerfScore);
+            printf("\t\t\t\t\t\t;; size=%d bbWeight=%s PerfScore %.2f", ig->igSize, refCntWtd2str(ig->igWeight),
+                   ig->igPerfScore);
         }
         *instrCount += ig->igInsCnt;
 #endif // DEBUG

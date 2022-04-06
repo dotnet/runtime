@@ -3778,7 +3778,7 @@ main_loop:
 						del_imethod = mono_interp_get_imethod (mono_marshal_get_native_wrapper (del_imethod->method, FALSE, FALSE), error);
 						mono_error_assert_ok (error);
 						del->interp_invoke_impl = del_imethod;
-					} else if (del_imethod->method->flags & METHOD_ATTRIBUTE_VIRTUAL && !del->target && !m_class_is_valuetype (del_imethod->method->klass)) {
+					} else if ((m_method_is_virtual (del_imethod->method) && !m_method_is_static (del_imethod->method)) && !del->target && !m_class_is_valuetype (del_imethod->method->klass)) {
 						// 'this' is passed dynamically, we need to recompute the target method
 						// with each call
 						del_imethod = get_virtual_method (del_imethod, LOCAL_VAR (call_args_offset + MINT_STACK_SLOT_SIZE, MonoObject*)->vtable);
@@ -5291,7 +5291,9 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDOBJ_VT) {
 			guint16 size = ip [3];
-			memcpy (locals + ip [1], LOCAL_VAR (ip [2], gpointer), size);
+			gpointer srcAddr = LOCAL_VAR (ip [2], gpointer);
+			NULL_CHECK (srcAddr);
+			memcpy (locals + ip [1], srcAddr, size);
 			ip += 4;
 			MINT_IN_BREAK;
 		}

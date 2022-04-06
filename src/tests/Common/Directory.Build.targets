@@ -191,4 +191,7 @@
 
   </Target>
 
+  <!-- At this point Common test dependencies don't have any native components -->
+  <Target Name="CopyAllNativeProjectReferenceBinaries" />
+
 </Project>

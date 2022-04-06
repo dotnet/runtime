@@ -791,6 +791,7 @@ namespace System.Text.Json.Serialization.Tests
         [ActiveIssue("Too many dynamically generated serializable types to manually add to a serialization context.")]
 #endif
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/66220", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task NestedDictionariesRoundtrip()
         {
             JsonSerializerOptions options = new JsonSerializerOptions();

@@ -196,13 +196,8 @@ namespace System.Runtime.InteropServices
                     new ConditionalWeakTable<Assembly, DllImportResolver>(), null);
             }
 
-            try
+            if (!s_nativeDllResolveMap.TryAdd(assembly, resolver))
             {
-                s_nativeDllResolveMap.Add(assembly, resolver);
-            }
-            catch (ArgumentException)
-            {
-                // ConditionalWeakTable throws ArgumentException if the Key already exists
                 throw new InvalidOperationException(SR.InvalidOperation_CannotRegisterSecondResolver);
             }
         }

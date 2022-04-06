@@ -11,7 +11,7 @@ initTargetDistroRid()
         passedRootfsDir="$ROOTFS_DIR"
     fi
 
-    initDistroRidGlobal "$__TargetOS" "$__BuildArch" "$__PortableBuild" "$passedRootfsDir"
+    initDistroRidGlobal "$__TargetOS" "$__TargetArch" "$__PortableBuild" "$passedRootfsDir"
 }
 
 setup_dirs()
@@ -53,7 +53,7 @@ build_native()
     fi
 
     targetOS="$1"
-    platformArch="$2"
+    hostArch="$2"
     cmakeDir="$3"
     intermediatesDir="$4"
     target="$5"
@@ -61,15 +61,15 @@ build_native()
     message="$7"
 
     # All set to commence the build
-    echo "Commencing build of \"$target\" target in \"$message\" for $__TargetOS.$__BuildArch.$__BuildType in $intermediatesDir"
+    echo "Commencing build of \"$target\" target in \"$message\" for $__TargetOS.$__TargetArch.$__BuildType in $intermediatesDir"
 
     if [[ "$targetOS" == OSX || "$targetOS" == MacCatalyst ]]; then
-        if [[ "$platformArch" == x64 ]]; then
+        if [[ "$hostArch" == x64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
-        elif [[ "$platformArch" == arm64 ]]; then
+        elif [[ "$hostArch" == arm64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
         else
-            echo "Error: Unknown OSX architecture $platformArch."
+            echo "Error: Unknown OSX architecture $hostArch."
             exit 1
         fi
     fi
@@ -90,16 +90,16 @@ build_native()
         # Don't try to set CC/CXX in init-compiler.sh - it's handled in android.toolchain.cmake already
         __Compiler="default"
 
-        if [[ "$platformArch" == x64 ]]; then
+        if [[ "$hostArch" == x64 ]]; then
             cmakeArgs="-DANDROID_ABI=x86_64 $cmakeArgs"
-        elif [[ "$platformArch" == x86 ]]; then
+        elif [[ "$hostArch" == x86 ]]; then
             cmakeArgs="-DANDROID_ABI=x86 $cmakeArgs"
-        elif [[ "$platformArch" == arm64 ]]; then
+        elif [[ "$hostArch" == arm64 ]]; then
             cmakeArgs="-DANDROID_ABI=arm64-v8a $cmakeArgs"
-        elif [[ "$platformArch" == arm ]]; then
+        elif [[ "$hostArch" == arm ]]; then
             cmakeArgs="-DANDROID_ABI=armeabi-v7a $cmakeArgs"
         else
-            echo "Error: Unknown Android architecture $platformArch."
+            echo "Error: Unknown Android architecture $hostArch."
             exit 1
         fi
     fi
@@ -117,7 +117,7 @@ build_native()
             scan_build=scan-build
         fi
 
-        nextCommand="\"$__RepoRootDir/eng/native/gen-buildsys.sh\" \"$cmakeDir\" \"$intermediatesDir\" $platformArch $__Compiler $__BuildType \"$generator\" $scan_build $cmakeArgs"
+        nextCommand="\"$__RepoRootDir/eng/native/gen-buildsys.sh\" \"$cmakeDir\" \"$intermediatesDir\" $hostArch $__Compiler $__BuildType \"$generator\" $scan_build $cmakeArgs"
         echo "Invoking $nextCommand"
         eval $nextCommand
 
@@ -228,8 +228,7 @@ usage()
 
 source "$__RepoRootDir/eng/native/init-os-and-arch.sh"
 
-__BuildArch=$arch
-__HostArch=$arch
+__TargetArch=$arch
 __TargetOS=$os
 __HostOS=$os
 __BuildOS=$os
@@ -267,19 +266,19 @@ while :; do
             ;;
 
         arm|-arm)
-            __BuildArch=arm
+            __TargetArch=arm
             ;;
 
         armv6|-armv6)
-            __BuildArch=armv6
+            __TargetArch=armv6
             ;;
 
         arm64|-arm64)
-            __BuildArch=arm64
+            __TargetArch=arm64
             ;;
 
         armel|-armel)
-            __BuildArch=armel
+            __TargetArch=armel
             ;;
 
         bindir|-bindir)
@@ -374,23 +373,23 @@ while :; do
             ;;
 
         x86|-x86)
-            __BuildArch=x86
+            __TargetArch=x86
             ;;
 
         x64|-x64)
-            __BuildArch=x64
+            __TargetArch=x64
             ;;
 
         loongarch64|-loongarch64)
-            __BuildArch=loongarch64
+            __TargetArch=loongarch64
             ;;
 
         s390x|-s390x)
-            __BuildArch=s390x
+            __TargetArch=s390x
             ;;
 
         wasm|-wasm)
-            __BuildArch=wasm
+            __TargetArch=wasm
             ;;
 
         os|-os)
@@ -399,6 +398,16 @@ while :; do
                 shift
             else
                 echo "ERROR: 'os' requires a non-empty option argument"
+                exit 1
+            fi
+            ;;
+
+        hostarch|-hostarch)
+            if [[ -n "$2" ]]; then
+                __HostArch="$2"
+                shift
+            else
+                echo "ERROR: 'hostarch' requires a non-empty option argument"
                 exit 1
             fi
             ;;
@@ -415,7 +424,11 @@ while :; do
     shift
 done
 
-__CommonMSBuildArgs="/p:TargetArchitecture=$__BuildArch /p:Configuration=$__BuildType /p:TargetOS=$__TargetOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
+if [[ -z "$__HostArch" ]]; then
+    __HostArch=$__TargetArch
+fi
+
+__CommonMSBuildArgs="/p:TargetArchitecture=$__TargetArch /p:Configuration=$__BuildType /p:TargetOS=$__TargetOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
 
 # Configure environment if we are doing a verbose build
 if [[ "$__VerboseBuild" == 1 ]]; then
@@ -428,7 +441,7 @@ if [[ "$__PortableBuild" == 0 ]]; then
     __CommonMSBuildArgs="$__CommonMSBuildArgs /p:PortableBuild=false"
 fi
 
-if [[ "$__BuildArch" == wasm ]]; then
+if [[ "$__TargetArch" == wasm ]]; then
     # nothing to do here
     true
 elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
@@ -450,7 +463,7 @@ if [[ "$__CrossBuild" == 1 ]]; then
     export CROSSCOMPILE
     # Darwin that doesn't use rootfs
     if [[ -z "$ROOTFS_DIR" && "$platform" != "Darwin" ]]; then
-        ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__BuildArch"
+        ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__TargetArch"
         export ROOTFS_DIR
     fi
 fi

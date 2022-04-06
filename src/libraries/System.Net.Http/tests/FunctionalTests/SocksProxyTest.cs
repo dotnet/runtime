@@ -104,8 +104,8 @@ namespace System.Net.Http.Functional.Tests
             HttpRequestMessage request = CreateRequest(HttpMethod.Get, new Uri($"http://{host}/"), UseVersion, exactVersion: true);
 
             // SocksException is not public
-            var ex = await Assert.ThrowsAnyAsync<HttpRequestException>(() => client.SendAsync(TestAsync, request));
-            var innerException = ex.InnerException;
+            var exception = await Assert.ThrowsAnyAsync<HttpRequestException>(() => client.SendAsync(TestAsync, request));
+            var innerException = exception.InnerException;
             Assert.Equal(exceptionMessage, innerException.Message);
             Assert.Equal("SocksException", innerException.GetType().Name);
 
@@ -113,7 +113,10 @@ namespace System.Net.Http.Functional.Tests
             {
                 await proxy.DisposeAsync();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+            }
         }
     }
 

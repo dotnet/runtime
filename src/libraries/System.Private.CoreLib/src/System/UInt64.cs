@@ -30,16 +30,16 @@ namespace System
         public const ulong MinValue = 0x0;
 
         /// <summary>Represents the additive identity (0).</summary>
-        public const ulong AdditiveIdentity = 0;
+        private const ulong AdditiveIdentity = 0;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        public const ulong MultiplicativeIdentity = 1;
+        private const ulong MultiplicativeIdentity = 1;
 
         /// <summary>Represents the number one (1).</summary>
-        public const ulong One = 1;
+        private const ulong One = 1;
 
         /// <summary>Represents the number zero (0).</summary>
-        public const ulong Zero = 0;
+        private const ulong Zero = 0;
 
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
@@ -293,6 +293,9 @@ namespace System
         // IBinaryInteger
         //
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
+        public static (ulong Quotient, ulong Remainder) DivRem(ulong left, ulong right) => Math.DivRem(left, right);
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         public static ulong LeadingZeroCount(ulong value) => (ulong)BitOperations.LeadingZeroCount(value);
 
@@ -428,21 +431,18 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.One" />
-        static ulong INumber<ulong>.One => One;
-
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
-        static ulong INumber<ulong>.Zero => Zero;
-
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        public static ulong Abs(ulong value) => value;
+        static ulong INumber<ulong>.Abs(ulong value) => value;
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static ulong Clamp(ulong value, ulong min, ulong max) => Math.Clamp(value, min, max);
 
-        /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        static ulong INumber<ulong>.CopySign(ulong value, ulong sign) => value;
+
+        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ulong Create<TOther>(TOther value)
+        public static ulong CreateChecked<TOther>(TOther value)
             where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
@@ -655,17 +655,23 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.DivRem(TSelf, TSelf)" />
-        public static (ulong Quotient, ulong Remainder) DivRem(ulong left, ulong right) => Math.DivRem(left, right);
+        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        static bool INumber<ulong>.IsNegative(ulong value) => false;
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static ulong Max(ulong x, ulong y) => Math.Max(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        static ulong INumber<ulong>.MaxMagnitude(ulong x, ulong y) => Max(x, y);
+
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static ulong Min(ulong x, ulong y) => Math.Min(x, y);
 
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        static ulong INumber<ulong>.MinMagnitude(ulong x, ulong y) => Min(x, y);
+
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static ulong Sign(ulong value) => (ulong)((value == 0) ? 0 : 1);
+        public static int Sign(ulong value) => (value == 0) ? 0 : 1;
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -815,7 +821,17 @@ namespace System
         }
 
         //
-        // IParseable
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static ulong INumberBase<ulong>.One => One;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static ulong INumberBase<ulong>.Zero => Zero;
+
+        //
+        // IParsable
         //
 
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out ulong result) => TryParse(s, NumberStyles.Integer, provider, out result);
@@ -834,13 +850,13 @@ namespace System
         // static ulong IShiftOperators<ulong, ulong>.operator >>>(ulong value, int shiftAmount) => value >> (int)shiftAmount;
 
         //
-        // ISpanParseable
+        // ISpanParsable
         //
 
-        /// <inheritdoc cref="ISpanParseable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
         public static ulong Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, NumberStyles.Integer, provider);
 
-        /// <inheritdoc cref="ISpanParseable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out ulong result) => TryParse(s, NumberStyles.Integer, provider, out result);
 
         //
@@ -869,8 +885,5 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static ulong IUnaryPlusOperators<ulong, ulong>.operator +(ulong value) => +value;
-
-        // /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_CheckedUnaryPlus(TSelf)" />
-        // static ulong IUnaryPlusOperators<ulong, ulong>.operator checked +(ulong value) => checked(+value);
     }
 }

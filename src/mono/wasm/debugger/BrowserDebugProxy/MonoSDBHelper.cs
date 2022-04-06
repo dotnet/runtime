@@ -1601,13 +1601,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             return await CreateJObjectForVariableValue(retDebuggerCmdReader, varName, false, -1, false, token);
         }
 
-        public async Task<JObject> InvokeMethodInObject(int objectId, int methodId, string varName, CancellationToken token)
+        public async Task<JObject> InvokeMethodInObject(DotnetObjectId objectId, int methodId, string varName, CancellationToken token)
         {
-            valueTypes.TryGetValue(objectId, out var valueType);
-            if (valueType != null)
+            if (objectId.IsValueType && valueTypes.TryGetValue(objectId.Value, out var valueType))
                 return await InvokeMethod(valueType.valueTypeBuffer, methodId, varName, token);
             using var commandParamsObjWriter = new MonoBinaryWriter();
-            commandParamsObjWriter.Write(ElementType.Class, objectId);
+            commandParamsObjWriter.Write(ElementType.Class, objectId.Value);
             return await InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, varName, token);
         }
 
@@ -2205,13 +2204,15 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<JArray> GetValueTypeValues(int valueTypeId, bool accessorPropertiesOnly, CancellationToken token)
         {
-            if (valueTypes[valueTypeId].valueTypeJsonProps == null)
+            if (!valueTypes.TryGetValue(valueTypeId, out ValueTypeClass valueType))
+                return null;
+            if (valueType.valueTypeJsonProps == null)
             {
-                valueTypes[valueTypeId].valueTypeJsonProps = await GetPropertiesValuesOfValueType(valueTypeId, token);
+                valueType.valueTypeJsonProps = await GetPropertiesValuesOfValueType(valueTypeId, token);
             }
             if (accessorPropertiesOnly)
-                return valueTypes[valueTypeId].valueTypeJsonProps;
-            var ret = new JArray(valueTypes[valueTypeId].valueTypeJson.Union(valueTypes[valueTypeId].valueTypeJsonProps));
+                return valueType.valueTypeJsonProps;
+            var ret = new JArray(valueType.valueTypeJson.Union(valueType.valueTypeJsonProps));
             return ret;
         }
 
@@ -2655,7 +2656,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         case DebuggerBrowsableState.RootHidden:
                             DotnetObjectId rootObjId;
                             DotnetObjectId.TryParse(p["get"]["objectId"].Value<string>(), out rootObjId);
-                            var rootObject = await InvokeMethodInObject(rootObjId.Value, rootObjId.SubValue, propName, token);
+                            var rootObject = await InvokeMethodInObject(rootObjId, rootObjId.SubValue, propName, token);
                             await AppendRootHiddenChildren(rootObject, regularProps);
                             break;
                         case DebuggerBrowsableState.Collapsed:

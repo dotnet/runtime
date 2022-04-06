@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Cbor;
 using System.Runtime.Versioning;
@@ -11,70 +12,100 @@ namespace System.Security.Cryptography.Cose
     {
         private const string SigStructureCoxtextSign1 = "Signature1";
         private const int Sign1ArrayLegth = 4;
+        private byte[]? _toBeSigned;
 
         internal CoseSign1Message(CoseHeaderMap protectedHeader, CoseHeaderMap unprotectedHeader, byte[]? content, byte[] signature, byte[] protectedHeaderAsBstr)
             : base(protectedHeader, unprotectedHeader, content, signature, protectedHeaderAsBstr) { }
 
         [UnsupportedOSPlatform("browser")]
         public static byte[] Sign(byte[] content!!, ECDsa key!!, HashAlgorithmName hashAlgorithm, bool isDetached = false)
-        {
-            byte[] encodedProtectedHeader = CreateEncodedProtectedHeader(KeyType.ECDsa, hashAlgorithm);
-            byte[] toBeSigned = CreateToBeSigned(SigStructureCoxtextSign1, encodedProtectedHeader, content);
-            byte[] signature = SignWithECDsa(key, toBeSigned, hashAlgorithm);
-            return SignCore(encodedProtectedHeader, GetEmptyCborMap(), signature, content, isDetached);
-        }
+            => SignCore(content.AsSpan(), key, hashAlgorithm, KeyType.ECDsa, null, null, isDetached);
 
         [UnsupportedOSPlatform("browser")]
         public static byte[] Sign(byte[] content!!, RSA key!!, HashAlgorithmName hashAlgorithm, bool isDetached = false)
-        {
-            byte[] encodedProtectedHeader = CreateEncodedProtectedHeader(KeyType.RSA, hashAlgorithm);
-            byte[] toBeSigned = CreateToBeSigned(SigStructureCoxtextSign1, encodedProtectedHeader, content);
-            byte[] signature = SignWithRSA(key, toBeSigned, hashAlgorithm);
-            return SignCore(encodedProtectedHeader, GetEmptyCborMap(), signature, content, isDetached);
-        }
+            => SignCore(content.AsSpan(), key, hashAlgorithm, KeyType.RSA, null, null, isDetached);
 
         [UnsupportedOSPlatform("browser")]
         public static byte[] Sign(byte[] content!!, AsymmetricAlgorithm key!!, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false)
+            => SignCore(content.AsSpan(), key, hashAlgorithm, GetKeyType(key), protectedHeaders, unprotectedHeaders, isDetached);
+
+        [UnsupportedOSPlatform("browser")]
+        public static byte[] Sign(ReadOnlySpan<byte> content, AsymmetricAlgorithm key!!, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false)
+            => SignCore(content, key, hashAlgorithm, GetKeyType(key), protectedHeaders, unprotectedHeaders, isDetached);
+
+        [UnsupportedOSPlatform("browser")]
+        internal static byte[] SignCore(ReadOnlySpan<byte> content, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, KeyType keyType, CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders, bool isDetached)
         {
-            KeyType keyType = key switch
+            ValidateBeforeSign(protectedHeaders, unprotectedHeaders, keyType, hashAlgorithm, out int? algHeaderValueToSlip);
+
+            int expectedSize = ComputeEncodedSize(protectedHeaders, unprotectedHeaders, algHeaderValueToSlip, content.Length, isDetached, key.KeySize, keyType);
+            byte[] buffer = new byte[expectedSize];
+
+            int bytesWritten = CreateCoseSign1Message(content, buffer, key, hashAlgorithm, protectedHeaders, unprotectedHeaders, isDetached, algHeaderValueToSlip, keyType);
+            Debug.Assert(expectedSize == bytesWritten);
+
+            return buffer;
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        public static bool TrySign(
+            ReadOnlySpan<byte> content,
+            Span<byte> destination,
+            AsymmetricAlgorithm key!!,
+            HashAlgorithmName hashAlgorithm,
+            out int bytesWritten,
+            CoseHeaderMap? protectedHeaders = null,
+            CoseHeaderMap? unprotectedHeaders = null,
+            bool isDetached = false)
+        {
+            KeyType keyType = GetKeyType(key);
+            ValidateBeforeSign(protectedHeaders, unprotectedHeaders, keyType, hashAlgorithm, out int? algHeaderValueToSlip);
+
+            int expectedSize = ComputeEncodedSize(protectedHeaders, unprotectedHeaders, algHeaderValueToSlip, content.Length, isDetached, key.KeySize, keyType);
+            if (expectedSize > destination.Length)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            bytesWritten = CreateCoseSign1Message(content, destination, key, hashAlgorithm, protectedHeaders, unprotectedHeaders, isDetached, algHeaderValueToSlip, keyType);
+            Debug.Assert(expectedSize == bytesWritten);
+
+            return true;
+        }
+
+        internal static KeyType GetKeyType(AsymmetricAlgorithm key)
+        {
+            return key switch
             {
                 ECDsa => KeyType.ECDsa,
                 RSA => KeyType.RSA,
                 _ => throw new CryptographicException(SR.Format(SR.Sign1SignUnsupportedKey, key.GetType()))
             };
-
-            ThrowIfDuplicateLabels(protectedHeaders, unprotectedHeaders);
-
-            int? algHeaderValueToSlip = ValidateOrSlipAlgorithmHeader(protectedHeaders, unprotectedHeaders, keyType, hashAlgorithm);
-
-            byte[] encodedProtetedHeaders = CoseHeaderMap.Encode(protectedHeaders, mustReturnEmptyBstrIfEmpty: true, algHeaderValueToSlip);
-            byte[] toBeSigned = CreateToBeSigned(SigStructureCoxtextSign1, encodedProtetedHeaders, content);
-
-            byte[] signature;
-            if (keyType == KeyType.ECDsa)
-            {
-                signature = SignWithECDsa((ECDsa)key, toBeSigned, hashAlgorithm);
-            }
-            else
-            {
-                signature = SignWithRSA((RSA)key, toBeSigned, hashAlgorithm);
-            }
-
-            return SignCore(encodedProtetedHeaders, CoseHeaderMap.Encode(unprotectedHeaders), signature, content, isDetached);
         }
 
-        private static byte[] SignCore(
-            ReadOnlySpan<byte> encodedProtectedHeader,
-            ReadOnlySpan<byte> encodedUnprotectedHeader,
-            ReadOnlySpan<byte> signature,
-            ReadOnlySpan<byte> content,
-            bool isDetached)
+        internal static void ValidateBeforeSign(CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders, KeyType keyType, HashAlgorithmName hashAlgorithm, out int? algHeaderValueToSlip)
+        {
+            ThrowIfDuplicateLabels(protectedHeaders, unprotectedHeaders);
+            algHeaderValueToSlip = ValidateOrSlipAlgorithmHeader(protectedHeaders, unprotectedHeaders, keyType, hashAlgorithm);
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        internal static int CreateCoseSign1Message(ReadOnlySpan<byte> content, Span<byte> buffer, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders, bool isDetached, int? algHeaderValueToSlip, KeyType keyType)
         {
             var writer = new CborWriter();
             writer.WriteTag(Sign1Tag);
             writer.WriteStartArray(Sign1ArrayLegth);
-            writer.WriteByteString(encodedProtectedHeader);
-            writer.WriteEncodedValue(encodedUnprotectedHeader);
+
+            int protectedMapBytesWritten = CoseHeaderMap.Encode(protectedHeaders, buffer, true, algHeaderValueToSlip);
+            ReadOnlySpan<byte> encodedProtectedHeaders = buffer.Slice(0, protectedMapBytesWritten);
+            // We're going to use the encoded protected headers again after this step (for the toBeSigned construction),
+            // so don't overwrite them yet.
+            writer.WriteByteString(encodedProtectedHeaders);
+
+            int unprotectedMapBytesWritten = CoseHeaderMap.Encode(unprotectedHeaders, buffer.Slice(protectedMapBytesWritten));
+            ReadOnlySpan<byte> encodedUnprotectedHeaders = buffer.Slice(protectedMapBytesWritten, unprotectedMapBytesWritten);
+            writer.WriteEncodedValue(encodedUnprotectedHeaders);
 
             if (isDetached)
             {
@@ -85,36 +116,84 @@ namespace System.Security.Cryptography.Cose
                 writer.WriteByteString(content);
             }
 
-            writer.WriteByteString(signature);
+            int expectedToBeSignedSize = ComputeToBeSignedEncodedSize(SigStructureCoxtextSign1, encodedProtectedHeaders, content);
+
+            Span<byte> toBeSignedBuffer = buffer;
+            byte[]? rentedToBeSignedBuffer = null;
+            int signatureBytesWritten;
+
+            // It is possible for toBeSigned to be bigger than the COSE message length that we used to determine the size of our buffer.
+            // we rent a bigger buffer if that's the case.
+            if (buffer.Length < expectedToBeSignedSize)
+            {
+                rentedToBeSignedBuffer = ArrayPool<byte>.Shared.Rent(expectedToBeSignedSize);
+                toBeSignedBuffer = rentedToBeSignedBuffer;
+            }
+
+            try
+            {
+                int toBeSignedBytesWritten = CreateToBeSigned(SigStructureCoxtextSign1, encodedProtectedHeaders, content, toBeSignedBuffer);
+                ReadOnlySpan<byte> encodedToBeSigned = buffer.Slice(0, toBeSignedBytesWritten);
+
+                if (keyType == KeyType.ECDsa)
+                {
+                    signatureBytesWritten = SignWithECDsa((ECDsa)key, encodedToBeSigned, hashAlgorithm, buffer);
+                }
+                else
+                {
+                    Debug.Assert(keyType == KeyType.RSA);
+                    signatureBytesWritten = SignWithRSA((RSA)key, encodedToBeSigned, hashAlgorithm, buffer);
+                }
+            }
+            finally
+            {
+                if (rentedToBeSignedBuffer != null)
+                {
+                    ArrayPool<byte>.Shared.Return(rentedToBeSignedBuffer, clearArray: true);
+                }
+            }
+
+            writer.WriteByteString(buffer.Slice(0, signatureBytesWritten));
+
             writer.WriteEndArray();
 
-            return writer.Encode();
+            return writer.Encode(buffer);
         }
 
         [UnsupportedOSPlatform("browser")]
-        private static byte[] SignWithECDsa(ECDsa key, byte[] data, HashAlgorithmName hashAlgorithm)
-            => key.SignData(data, hashAlgorithm);
-
-        [UnsupportedOSPlatform("browser")]
-        private static byte[] SignWithRSA(RSA key, byte[] data, HashAlgorithmName hashAlgorithm)
-            => key.SignData(data, hashAlgorithm, RSASignaturePadding.Pss);
-
-        internal static byte[] CreateEncodedProtectedHeader(KeyType algType, HashAlgorithmName hashAlgorithm)
+        private static int SignWithECDsa(ECDsa key, ReadOnlySpan<byte> data, HashAlgorithmName hashAlgorithm, Span<byte> destination)
         {
-            var writer = new CborWriter();
-            writer.WriteStartMap(1);
-            writer.WriteInt32(KnownHeaders.Alg);
-            writer.WriteInt32(GetCoseAlgorithmHeaderFromKeyTypeAndHashAlgorithm(algType, hashAlgorithm));
-            writer.WriteEndMap();
-            return writer.Encode();
+#if NETSTANDARD2_0 || NETFRAMEWORK
+            byte[] signature = key.SignData(data.ToArray(), hashAlgorithm);
+            signature.CopyTo(destination);
+            return signature.Length;
+#else
+            if (!key.TrySignData(data, destination, hashAlgorithm, out int bytesWritten))
+            {
+                Debug.Fail("TrySignData failed with a pre-calculated destination");
+                throw new CryptographicException();
+            }
+
+            return bytesWritten;
+#endif
         }
 
-        private static byte[] GetEmptyCborMap()
+        [UnsupportedOSPlatform("browser")]
+        private static int SignWithRSA(RSA key, ReadOnlySpan<byte> data, HashAlgorithmName hashAlgorithm, Span<byte> destination)
         {
-            var writer = new CborWriter();
-            writer.WriteStartMap(0);
-            writer.WriteEndMap();
-            return writer.Encode();
+#if NETSTANDARD2_0 || NETFRAMEWORK
+            byte[] signature = key.SignData(data.ToArray(), hashAlgorithm, RSASignaturePadding.Pss);
+            signature.CopyTo(destination);
+            return signature.Length;
+#else
+            if (!key.TrySignData(data, destination, hashAlgorithm, RSASignaturePadding.Pss, out int bytesWritten))
+            {
+                Debug.Fail("TrySignData failed with a pre-calculated destination");
+                throw new CryptographicException();
+            }
+
+            return bytesWritten;
+#endif
         }
 
         [UnsupportedOSPlatform("browser")]
@@ -158,7 +237,35 @@ namespace System.Security.Cryptography.Cose
             }
 
             alg = nullableAlg.Value;
-            toBeSigned = CreateToBeSigned(SigStructureCoxtextSign1, _protectedHeaderAsBstr, content);
+
+            if (_content == null)
+            {
+                // Never cache toBeSigned if the message has detached content since the passed-in content can be different in each call.
+                toBeSigned = CreateToBeSignedForVerify(content);
+            }
+            else if (_toBeSigned == null)
+            {
+                toBeSigned = _toBeSigned = CreateToBeSignedForVerify(content);
+            }
+            else
+            {
+                toBeSigned = _toBeSigned;
+            }
+
+            byte[] CreateToBeSignedForVerify(ReadOnlySpan<byte> content)
+            {
+                byte[] rentedbuffer = ArrayPool<byte>.Shared.Rent(ComputeToBeSignedEncodedSize(SigStructureCoxtextSign1, _protectedHeaderAsBstr, content));
+                try
+                {
+                    Span<byte> buffer = rentedbuffer;
+                    int bytesWritten = CreateToBeSigned(SigStructureCoxtextSign1, _protectedHeaderAsBstr, content, buffer);
+                    return buffer.Slice(0, bytesWritten).ToArray();
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(rentedbuffer, clearArray: true);
+                }
+            }
         }
 
         private static ReadOnlyMemory<byte> GetCoseAlgorithmFromProtectedHeaders(CoseHeaderMap protectedHeaders)
@@ -310,6 +417,41 @@ namespace System.Security.Cryptography.Cose
             {
                 throw new NotSupportedException(SR.Sign1VerifyCriticalAndCounterSignNotSupported);
             }
+        }
+
+        private static int ComputeEncodedSize(CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders, int? algHeaderValueToSlip, int contentLength, bool isDetached, int keySize, KeyType keyType)
+        {
+            // tag + array(4) + encoded protected header map + unprotected header map + content + signature.
+            const int SizeOfTag = 1;
+            const int SizeOfNull = 1;
+
+            int encodedSize = SizeOfTag + SizeOfArrayOfFour +
+                CoseHelpers.GetByteStringEncodedSize(CoseHeaderMap.ComputeEncodedSize(protectedHeaders, algHeaderValueToSlip)) +
+                CoseHeaderMap.ComputeEncodedSize(unprotectedHeaders);
+
+            if (isDetached)
+            {
+                encodedSize += SizeOfNull;
+            }
+            else
+            {
+                encodedSize += CoseHelpers.GetByteStringEncodedSize(contentLength);
+            }
+
+            int signatureSize;
+            if (keyType == KeyType.ECDsa)
+            {
+                signatureSize = 2 * ((keySize + 7) / 8);
+            }
+            else // RSA
+            {
+                Debug.Assert(keyType == KeyType.RSA);
+                signatureSize = (keySize + 7) / 8;
+            }
+
+            encodedSize += CoseHelpers.GetByteStringEncodedSize(signatureSize);
+
+            return encodedSize;
         }
     }
 }

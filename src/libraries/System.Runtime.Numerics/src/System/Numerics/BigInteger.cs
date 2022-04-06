@@ -5,12 +5,19 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Numerics, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct BigInteger : ISpanFormattable, IComparable, IComparable<BigInteger>, IEquatable<BigInteger>
+    [TypeForwardedFrom("System.Numerics, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
+    public readonly struct BigInteger
+        : ISpanFormattable,
+          IComparable,
+          IComparable<BigInteger>,
+          IEquatable<BigInteger>
+          // IBinaryInteger<BigInteger>,
+          // ISignedNumber<BigInteger>
     {
         private const uint kuMaskHighBit = unchecked((uint)int.MinValue);
         private const int kcbitUint = 32;

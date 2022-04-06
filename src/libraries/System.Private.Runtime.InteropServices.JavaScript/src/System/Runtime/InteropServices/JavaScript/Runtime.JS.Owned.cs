@@ -10,13 +10,13 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         private static object JSOwnedObjectLock = new object();
         // we use this to maintain identity of GCHandle for a managed object
-        private static Dictionary<object, int> GCHandleFromJSOwnedObject = new Dictionary<object, int>();
+        private static Dictionary<object, IntPtr> GCHandleFromJSOwnedObject = new Dictionary<object, IntPtr>(ReferenceEqualityComparer.Instance);
 
 
-        public static object GetJSOwnedObjectByGCHandle(int gcHandle)
+        public static void GetJSOwnedObjectByGCHandleRef(int gcHandle, out object result)
         {
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
-            return h.Target!;
+            result = h.Target!;
         }
 
         // A JSOwnedObject is a managed object with its lifetime controlled by javascript.
@@ -26,18 +26,18 @@ namespace System.Runtime.InteropServices.JavaScript
         //  strong references, allowing the managed object to be collected.
         // This ensures that things like delegates and promises will never 'go away' while JS
         //  is expecting to be able to invoke or await them.
-        public static int GetJSOwnedObjectGCHandle(object obj)
+        public static IntPtr GetJSOwnedObjectGCHandleRef(in object obj)
         {
             if (obj == null)
-                return 0;
+                return IntPtr.Zero;
 
-            int result;
+            IntPtr result;
             lock (JSOwnedObjectLock)
             {
                 if (GCHandleFromJSOwnedObject.TryGetValue(obj, out result))
                     return result;
 
-                result = (int)(IntPtr)GCHandle.Alloc(obj, GCHandleType.Normal);
+                result = (IntPtr)GCHandle.Alloc(obj, GCHandleType.Normal);
                 GCHandleFromJSOwnedObject[obj] = result;
                 return result;
             }
@@ -55,13 +55,13 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static int CreateTaskSource()
+        public static IntPtr CreateTaskSource()
         {
             var tcs = new TaskCompletionSource<object>();
-            return GetJSOwnedObjectGCHandle(tcs);
+            return GetJSOwnedObjectGCHandleRef(tcs);
         }
 
-        public static void SetTaskSourceResult(int tcsGCHandle, object result)
+        public static void SetTaskSourceResultRef(int tcsGCHandle, in object result)
         {
             GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
             // this is JS owned Normal handle. We always have a Target
@@ -77,21 +77,25 @@ namespace System.Runtime.InteropServices.JavaScript
             tcs.SetException(new JSException(reason));
         }
 
-        public static object GetTaskSourceTask(int tcsGCHandle)
+        public static void GetTaskSourceTaskRef(int tcsGCHandle, out object result)
         {
             GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
             // this is JS owned Normal handle. We always have a Target
             TaskCompletionSource<object> tcs = (TaskCompletionSource<object>)handle.Target!;
-            return tcs.Task;
+            result = tcs.Task;
         }
 
-        public static object TaskFromResult(object? obj)
+        public static void TaskFromResultRef(in object? obj, out object result)
         {
-            return Task.FromResult(obj);
+            result = Task.FromResult(obj);
         }
 
-        public static void SetupJSContinuation(Task task, JSObject continuationObj)
+        public static void SetupJSContinuationRef(in Task _task, JSObject continuationObj)
         {
+            // HACK: Attempting to use the in-param will produce CS1628, so we make a temporary copy
+            //  on the stack that can be captured by our local functions below
+            var task = _task;
+
             if (task.IsCompleted)
                 Complete();
             else

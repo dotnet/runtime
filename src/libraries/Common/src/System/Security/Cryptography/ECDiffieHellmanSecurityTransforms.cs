@@ -262,7 +262,9 @@ namespace System.Security.Cryptography
                 /// There is no key blob format for OpenSSL ECDH like there is for Cng ECDH. Instead of allowing
                 /// this to return a potentially confusing empty byte array, we opt to throw instead.
                 /// </summary>
+#pragma warning disable 0672 // Member overrides an obsolete member.
                 public override byte[] ToByteArray()
+#pragma warning restore 0672
                 {
                     throw new PlatformNotSupportedException();
                 }

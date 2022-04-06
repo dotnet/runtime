@@ -595,7 +595,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             break;
 
         case GT_BOX:
-            // GT_BOX at this level just passes through so get rid of it
+        case GT_ARR_ADDR:
+            // BOX/ARR_ADDR at this level are just NOPs.
             use.ReplaceWith(node->gtGetOp1());
             BlockRange().Remove(node);
             break;
