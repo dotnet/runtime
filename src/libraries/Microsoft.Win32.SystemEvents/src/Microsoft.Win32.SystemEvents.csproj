@@ -5,7 +5,6 @@
 
 Commonly Used Types:
 Microsoft.Win32.SystemEvents</PackageDescription>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <ServicingVersion>1</ServicingVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
