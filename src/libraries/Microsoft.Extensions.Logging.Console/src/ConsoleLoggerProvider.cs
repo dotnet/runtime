@@ -47,7 +47,8 @@ namespace Microsoft.Extensions.Logging.Console
             ReloadLoggerOptions(options.CurrentValue);
             _optionsReloadToken = _options.OnChange(ReloadLoggerOptions);
 
-            IConsole? console, errorConsole = null;
+            IConsole? console;
+            IConsole? errorConsole;
             if (DoesConsoleSupportAnsi())
             {
                 console = new AnsiLogConsole();
