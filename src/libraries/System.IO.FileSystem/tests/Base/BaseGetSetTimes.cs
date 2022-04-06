@@ -28,6 +28,8 @@ namespace System.IO.Tests
 
         protected abstract T CreateSymlink(string path, string pathToTarget);
 
+        protected virtual bool SettingPropertiesUpdatesLink => true;
+
         protected T CreateSymlinkToItem(T item)
         {
             // Creates a Symlink to 'item' (target may or may not exist)
@@ -103,8 +105,12 @@ namespace System.IO.Tests
         [PlatformSpecific(~TestPlatforms.Browser)] // Browser is excluded as it doesn't support symlinks
         [InlineData(false)]
         [InlineData(true)]
-        public void SettingUpdatesPropertiesOnSymlink(bool targetExists)
+        public void SettingPropertiesOnSymlink(bool targetExists)
         {
+            if (!SettingPropertiesUpdatesLink)
+            {
+                return;
+            }
             // This test is in this class since it needs all of the time functions.
             // This test makes sure that the times are set on the symlink itself.
             // It is needed as on OSX for example, the default for most APIs is

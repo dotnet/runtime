@@ -8,11 +8,16 @@ namespace System.IO.Tests
 {
     public sealed class File_GetSetTimes_SafeFileHandle : File_GetSetTimes
     {
-        private static SafeFileHandle OpenFileHandle(string path) => File.OpenHandle(
-            path,
-            FileMode.OpenOrCreate,
-            FileAccess.ReadWrite,
-            FileShare.ReadWrite);
+        private static SafeFileHandle OpenFileHandle(string path) =>
+            File.OpenHandle(
+                path,
+                FileMode.OpenOrCreate,
+                FileAccess.ReadWrite,
+                FileShare.ReadWrite);
+
+        protected override bool CanBeReadOnly => false;
+
+        protected override bool SettingPropertiesUpdatesLink => false;
 
         protected override void SetCreationTime(string path, DateTime creationTime)
         {
@@ -84,11 +89,6 @@ namespace System.IO.Tests
         {
             using var fileHandle = OpenFileHandle(path);
             return File.GetLastWriteTimeUtc(fileHandle);
-        }
-
-        protected override void SettingUpdatesPropertiesCore(string item)
-        {
-            // Override `SettingUpdatesPropertiesCore`, because SafeFileHandles are not able to do this
         }
     }
 }
