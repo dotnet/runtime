@@ -35,7 +35,6 @@ namespace Microsoft.Extensions.Logging.Test
             var loggerBuilder = services.AddLogging(builder =>
             {
                 callbackCalled = true;
-                Assert.Same(services, builder.Services);
             });
 
             Assert.True(callbackCalled);
