@@ -115,7 +115,20 @@
     <Exec Condition="'$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'" Command="chmod +x $(RunScriptOutputPath)" />
     <Copy Condition="$(OutputRid.StartsWith('linux-bionic'))" SourceFiles="$(InnerRunScriptInputPath)" DestinationFiles="$(InnerRunScriptOutputPath)" />
     <Exec Condition="$(OutputRid.StartsWith('linux-bionic'))" Command="chmod +x $(InnerRunScriptOutputPath)" />
-    <WriteLinesToFile Condition="$(OutputRid.StartsWith('linux-bionic'))" File="$(InnerRunEnvOutputPath)" Overwrite="true" Lines="ASSEMBLY_NAME=$(AssemblyName).dll" Encoding="ascii"/>
+
+    <PropertyGroup Condition="$(OutputRid.StartsWith('linux-bionic'))">
+      <_AndroidArchitecture Condition="'$(TargetArchitecture)' == 'x64'">x86_64</_AndroidArchitecture>
+      <_AndroidArchitecture Condition="'$(TargetArchitecture)' == 'x86'">x86</_AndroidArchitecture>
+      <_AndroidArchitecture Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</_AndroidArchitecture>
+      <_AndroidArchitecture Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</_AndroidArchitecture>
+      <_BionicTestEnv>
+ASSEMBLY_NAME=$(AssemblyName).dll
+TEST_ARCH=$(_AndroidArchitecture)
+      </_BionicTestEnv>
+    </PropertyGroup>
+
+    <WriteLinesToFile Condition="$(OutputRid.StartsWith('linux-bionic'))" File="$(InnerRunEnvOutputPath)" Overwrite="true" Lines="$(_BionicTestEnv)" Encoding="ascii">
+    </WriteLinesToFile>
   </Target>
 
   <Target Name="RunTests">

@@ -44,6 +44,7 @@ $HARNESS_RUNNER android-headless test                \
     --test-path="$EXECUTION_DIR" \
     --runtime-folder="$RUNTIME_PATH" \
     --test-assembly="$ASSEMBLY_NAME" \
+    --device-arch="$TEST_ARCH" \
     --test-script="$TEST_SCRIPT" \
     --output-directory="$XHARNESS_OUT" \
     --timeout=1800 -v \
