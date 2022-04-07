@@ -18,7 +18,7 @@ BINDIR?=$(TOP)/artifacts/bin
 OBJDIR?=$(TOP)/artifacts/obj
 _MSBUILD_WASM_BUILD_ARGS=/p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG)
 XHARNESS_BROWSER?=chrome
-HELIX_TARGET_QUEUE?=Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-webassembly-20220329135503-af466c5
+HELIX_TARGET_QUEUE?=Ubuntu.1804.Amd64.Open
 
 all: build-all
 
