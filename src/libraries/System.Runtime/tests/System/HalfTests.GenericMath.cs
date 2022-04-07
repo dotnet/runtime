@@ -7,7 +7,6 @@ using Xunit;
 
 namespace System.Tests
 {
-    [RequiresPreviewFeaturesAttribute]
     public class HalfTests_GenericMath
     {
         [Theory]

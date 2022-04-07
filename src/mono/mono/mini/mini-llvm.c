@@ -49,7 +49,7 @@
 #define TARGET_WIN32_MSVC
 #endif
 
-#if LLVM_API_VERSION < 900
+#if LLVM_API_VERSION < 1100
 #error "The version of the mono llvm repository is too old."
 #endif
 

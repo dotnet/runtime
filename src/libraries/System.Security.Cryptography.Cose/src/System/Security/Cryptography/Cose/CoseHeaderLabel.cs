@@ -24,11 +24,13 @@ namespace System.Security.Cryptography.Cose
 
         internal int LabelAsInt32 { get; }
         internal string? LabelAsString { get; }
+        internal int EncodedSize { get; }
 
         public CoseHeaderLabel(int label)
         {
             this = default;
             LabelAsInt32 = label;
+            EncodedSize = CoseHelpers.GetIntegerEncodedSize(label);
         }
 
         public CoseHeaderLabel(string label)
@@ -40,6 +42,7 @@ namespace System.Security.Cryptography.Cose
 
             this = default;
             LabelAsString = label;
+            EncodedSize = CoseHelpers.GetTextStringEncodedSize(label);
         }
 
         public bool Equals(CoseHeaderLabel other)

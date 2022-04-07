@@ -194,7 +194,7 @@ namespace System.IO
                     buffer = rented;
                 }
 
-                int actualByteCount = _encoding.GetBytes(MemoryMarshal.CreateReadOnlySpan(ref ch, 1), buffer);
+                int actualByteCount = _encoding.GetBytes(new ReadOnlySpan<char>(in ch), buffer);
                 OutStream.Write(buffer.Slice(0, actualByteCount));
 
                 if (rented != null)

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { AllAssetEntryTypes, assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol } from "./types";
+import { AllAssetEntryTypes, assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol, MonoObject } from "./types";
 import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
@@ -17,6 +17,7 @@ import { mono_on_abort } from "./run";
 import { initialize_marshalers_to_cs } from "./marshal-to-cs";
 import { KnownTypes } from "./marshal";
 import { initialize_marshalers_to_js } from "./marshal-to-js";
+import { mono_wasm_new_root } from "./roots";
 
 export let runtime_is_initialized_resolve: Function;
 export let runtime_is_initialized_reject: Function;
@@ -281,7 +282,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
 
         const moduleExt = Module as DotnetModule;
 
-        if(!Module.disableDotnet6Compatibility && Module.exports){
+        if (!Module.disableDotnet6Compatibility && Module.exports) {
             // Export emscripten defined in module through EXPORTED_RUNTIME_METHODS
             // Useful to export IDBFS or other similar types generally exposed as 
             // global types when emscripten is not modularized.
@@ -289,10 +290,10 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
                 const exportName = Module.exports[i];
                 const exportValue = (<any>Module)[exportName];
 
-                if(exportValue) {
+                if (exportValue) {
                     globalThisAny[exportName] = exportValue;
                 }
-                else{
+                else {
                     console.warn(`MONO_WASM: The exported symbol ${exportName} could not be found in the emscripten module`);
                 }
             }
@@ -419,9 +420,9 @@ export function bindings_lazy_init(): void {
     if (!runtimeHelpers.wasm_runtime_class)
         throw "Can't find " + binding_fqn_class + " class";
 
-    runtimeHelpers.get_call_sig = get_method("GetCallSignature");
-    if (!runtimeHelpers.get_call_sig)
-        throw "Can't find GetCallSignature method";
+    runtimeHelpers.get_call_sig_ref = get_method("GetCallSignatureRef");
+    if (!runtimeHelpers.get_call_sig_ref)
+        throw "Can't find GetCallSignatureRef method";
 
     runtimeHelpers._class_ijs_object = cwraps.mono_wasm_assembly_find_class(binding_module, runtimeHelpers.runtime_namespace, "IJSObject");
     runtimeHelpers._class_js_exception = cwraps.mono_wasm_assembly_find_class(binding_module, runtimeHelpers.runtime_namespace, "JSException");
@@ -449,6 +450,9 @@ export function bindings_lazy_init(): void {
     initialize_marshalers_to_cs();
 
     _create_primitive_converters();
+
+    runtimeHelpers._box_root = mono_wasm_new_root<MonoObject>();
+    runtimeHelpers._null_root = mono_wasm_new_root<MonoObject>();
 }
 
 // Initializes the runtime and loads assemblies, debug information, and other files.

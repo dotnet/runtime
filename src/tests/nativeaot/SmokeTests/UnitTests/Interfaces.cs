@@ -495,6 +495,13 @@ public class Interfaces
 
         class Foo<T> : IFoo<T> { }
 
+        class Base : IFoo
+        {
+            int IFoo.GetNumber() => 100;
+        }
+
+        class Derived : Base, IBar { }
+
         public static void Run()
         {
             Console.WriteLine("Testing default interface methods...");
@@ -506,6 +513,9 @@ public class Interfaces
                 throw new Exception();
 
             if (((IFoo)new Baz()).GetNumber() != 100)
+                throw new Exception();
+
+            if (((IFoo)new Derived()).GetNumber() != 100)
                 throw new Exception();
 
             if (((IFoo<object>)new Foo<object>()).GetInterfaceType() != typeof(IFoo<object>))

@@ -1076,7 +1076,9 @@ typedef enum {
 	/* The InterpMethod for a method */
 	MONO_RGCTX_INFO_INTERP_METHOD                 = 35,
 	/* The llvmonly interp entry for a method */
-	MONO_RGCTX_INFO_LLVMONLY_INTERP_ENTRY         = 36
+	MONO_RGCTX_INFO_LLVMONLY_INTERP_ENTRY         = 36,
+	/* Same as VIRT_METHOD_CODE, but resolve MonoMethod* instead of code */
+	MONO_RGCTX_INFO_VIRT_METHOD                   = 37
 } MonoRgctxInfoType;
 
 /* How an rgctx is passed to a method */

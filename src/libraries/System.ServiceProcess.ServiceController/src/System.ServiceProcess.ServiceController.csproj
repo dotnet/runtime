@@ -102,10 +102,6 @@ System.ServiceProcess.ServiceType</PackageDescription>
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
-    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
-    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.ServiceProcess" />
   </ItemGroup>

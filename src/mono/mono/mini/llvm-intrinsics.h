@@ -90,11 +90,7 @@ INTRINS_OVR(CTLZ_I32, ctlz, Generic, LLVMInt32Type ())
 INTRINS_OVR(CTLZ_I64, ctlz, Generic, LLVMInt64Type ())
 INTRINS_OVR(CTTZ_I32, cttz, Generic, LLVMInt32Type ())
 INTRINS_OVR(CTTZ_I64, cttz, Generic, LLVMInt64Type ())
-#if LLVM_API_VERSION >= 1000
 INTRINS_OVR(PREFETCH, prefetch, Generic, LLVMPointerType (i1_t, 0))
-#else
-INTRINS(PREFETCH, prefetch, Generic)
-#endif
 INTRINS(BZHI_I32, x86_bmi_bzhi_32, X86)
 INTRINS(BZHI_I64, x86_bmi_bzhi_64, X86)
 INTRINS(BEXTR_I32, x86_bmi_bextr_32, X86)

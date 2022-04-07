@@ -343,7 +343,7 @@ namespace System.Resources
 
             char c = Type.Delimiter;
             string resourceName = nameSpace != null && name != null ?
-                string.Concat(nameSpace, new ReadOnlySpan<char>(ref c, 1), name) :
+                string.Concat(nameSpace, new ReadOnlySpan<char>(in c), name) :
                 string.Concat(nameSpace, name);
 
             string? canonicalName = null;

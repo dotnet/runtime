@@ -2,14 +2,15 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
+  hostArchType: ''
 
 steps:
   # Always build the crossdac, that way we know in CI/PR if things break to build.
   - ${{ if and(eq(parameters.osGroup, 'windows'), notin(parameters.archType, 'x86')) }}:
-    - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -linuxdac -ninja $(officialBuildIdArg)
+    - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch ${{ parameters.hostArchType }} -ci -os Linux -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" -ninja $(officialBuildIdArg) -component crosscomponents
       displayName: Build Cross OS Linux DAC for Windows
 
-    - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -alpinedac -ninja $(officialBuildIdArg)
+    - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch ${{ parameters.hostArchType }} -ci -os alpine -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" -ninja $(officialBuildIdArg) -component crosscomponents
       displayName: Build Cross OS Linux-musl DAC for Windows
 
     - task: CopyFiles@2
