@@ -307,6 +307,7 @@ namespace System.Text.Json
 
         private static TValue? ReadFromSpan<TValue>(ReadOnlySpan<char> json, JsonTypeInfo jsonTypeInfo)
         {
+            jsonTypeInfo.EnsureConfigured();
             byte[]? tempArray = null;
 
             // For performance, avoid obtaining actual byte count unless memory usage is higher than the threshold.

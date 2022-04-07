@@ -1138,14 +1138,12 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Represents a set of routines for operating over a <see cref="CurrentState"/>.</summary>
         private interface IStateHandler
         {
-#pragma warning disable CA2252 // This API requires opting into preview features
             public static abstract bool StartsWithLineAnchor(ref CurrentState state);
             public static abstract bool IsNullable(ref CurrentState state, uint nextCharKind);
             public static abstract bool IsDeadend(ref CurrentState state);
             public static abstract int FixedLength(ref CurrentState state);
             public static abstract bool IsInitialState(ref CurrentState state);
             public static abstract bool TakeTransition(SymbolicRegexBuilder<TSetType> builder, ref CurrentState state, int mintermId);
-#pragma warning restore CA2252 // This API requires opting into preview features
         }
 
         /// <summary>An <see cref="IStateHandler"/> for operating over <see cref="CurrentState"/> instances configured as DFA states.</summary>

@@ -34,7 +34,17 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         DEFER_CERTIFICATE_VALIDATION = 0x00000020, // Schannel only currently.
         REQUIRE_CLIENT_AUTHENTICATION = 0x00000040, // Schannel only currently.
         USE_TLS_BUILTIN_CERTIFICATE_VALIDATION = 0x00000080,
+        SET_ALLOWED_CIPHER_SUITES = 0x00002000,
         USE_PORTABLE_CERTIFICATES = 0x00004000,
+    }
+
+    [Flags]
+    internal enum QUIC_ALLOWED_CIPHER_SUITE_FLAGS : uint
+    {
+        NONE = 0x0,
+        AES_128_GCM_SHA256 = 0x1,
+        AES_256_GCM_SHA384 = 0x2,
+        CHACHA20_POLY1305_SHA256 = 0x4,
     }
 
     internal enum QUIC_CERTIFICATE_HASH_STORE_FLAGS

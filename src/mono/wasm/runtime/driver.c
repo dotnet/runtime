@@ -29,6 +29,7 @@
 #include <mono/jit/mono-private-unstable.h>
 
 #include "pinvoke.h"
+#include "gc-common.h"
 
 #ifdef CORE_BINDINGS
 void core_initialize_internals ();
@@ -41,7 +42,7 @@ extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *ca
 
 void mono_wasm_enable_debugging (int);
 
-int mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType *type);
+static int _marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType *type);
 
 int mono_wasm_register_root (char *start, size_t size, const char *name);
 void mono_wasm_deregister_root (char *addr);
@@ -159,13 +160,19 @@ void  mono_gc_deregister_root (char* addr);
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_register_root (char *start, size_t size, const char *name)
 {
-	return mono_gc_register_root (start, size, (MonoGCDescriptor)NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "mono_wasm_register_root");
+	int result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_gc_register_root (start, size, (MonoGCDescriptor)NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "mono_wasm_register_root");
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
-EMSCRIPTEN_KEEPALIVE void 
+EMSCRIPTEN_KEEPALIVE void
 mono_wasm_deregister_root (char *addr)
 {
+	MONO_ENTER_GC_UNSAFE;
 	mono_gc_deregister_root (addr);
+	MONO_EXIT_GC_UNSAFE;
 }
 
 #ifdef DRIVER_GEN
@@ -382,6 +389,9 @@ icall_table_lookup_symbol (void *func)
 void*
 get_native_to_interp (MonoMethod *method, void *extra_arg)
 {
+	void *addr;
+
+	MONO_ENTER_GC_UNSAFE;
 	MonoClass *klass = mono_method_get_class (method);
 	MonoImage *image = mono_class_get_image (klass);
 	MonoAssembly *assembly = mono_image_get_assembly (image);
@@ -400,7 +410,8 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 			key [i] = '_';
 	}
 
-	void *addr = wasm_dl_get_native_to_interp (key, extra_arg);
+	addr = wasm_dl_get_native_to_interp (key, extra_arg);
+	MONO_EXIT_GC_UNSAFE;
 	return addr;
 }
 
@@ -582,72 +593,109 @@ mono_wasm_assembly_load (const char *name)
 EMSCRIPTEN_KEEPALIVE MonoAssembly*
 mono_wasm_get_corlib ()
 {
-	return mono_image_get_assembly (mono_get_corlib());
+	MonoAssembly* result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_image_get_assembly (mono_get_corlib());
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE MonoClass*
 mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, const char *name)
 {
 	assert (assembly);
-	return mono_class_from_name (mono_assembly_get_image (assembly), namespace, name);
+	MonoClass *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_class_from_name (mono_assembly_get_image (assembly), namespace, name);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE MonoMethod*
 mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
 {
 	assert (klass);
-	return mono_class_get_method_from_name (klass, name, arguments);
+	MonoMethod* result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_class_get_method_from_name (klass, name, arguments);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE MonoMethod*
-mono_wasm_get_delegate_invoke (MonoObject *delegate)
+mono_wasm_get_delegate_invoke_ref (MonoObject **delegate)
 {
-	return mono_get_delegate_invoke(mono_object_get_class (delegate));
+	MonoMethod * result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_get_delegate_invoke(mono_object_get_class (*delegate));
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
-EMSCRIPTEN_KEEPALIVE MonoObject*
-mono_wasm_box_primitive (MonoClass *klass, void *value, int value_size)
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_box_primitive_ref (MonoClass *klass, void *value, int value_size, PPVOLATILE(MonoObject) result)
 {
 	assert (klass);
 
+	MONO_ENTER_GC_UNSAFE;
 	MonoType *type = mono_class_get_type (klass);
 	int alignment;
-	if (mono_type_size (type, &alignment) > value_size)
-		return NULL;
 
-	// TODO: use mono_value_box_checked and propagate error out
-	return mono_value_box (root_domain, klass, value);
+	if (mono_type_size (type, &alignment) <= value_size)
+		// TODO: use mono_value_box_checked and propagate error out
+		store_volatile(result, mono_value_box (root_domain, klass, value));
+
+	MONO_EXIT_GC_UNSAFE;
 }
 
-EMSCRIPTEN_KEEPALIVE MonoObject*
-mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[], MonoObject **out_exc)
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void *params[], MonoObject **_out_exc, MonoObject **out_result)
 {
-	MonoObject *exc = NULL;
-	MonoObject *res;
-
+	PPVOLATILE(MonoObject) out_exc = _out_exc;
+	PVOLATILE(MonoObject) temp_exc = NULL;
 	if (out_exc)
 		*out_exc = NULL;
-	res = mono_runtime_invoke (method, this_arg, params, &exc);
-	if (exc) {
-		if (out_exc)
-			*out_exc = exc;
+	else
+		out_exc = &temp_exc;
 
-		MonoObject *exc2 = NULL;
-		res = (MonoObject*)mono_object_to_string (exc, &exc2);
-		if (exc2)
-			res = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
-		return res;
+	MONO_ENTER_GC_UNSAFE;
+	if (out_result) {
+		*out_result = NULL;
+		PVOLATILE(MonoObject) invoke_result = mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, (MonoObject **)out_exc);
+		store_volatile(out_result, invoke_result);
+	} else {
+		mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, (MonoObject **)out_exc);
 	}
 
-	MonoMethodSignature *sig = mono_method_signature (method);
-	MonoType *type = mono_signature_get_return_type (sig);
-	// If the method return type is void return null
-	// This gets around a memory access crash when the result return a value when
-	// a void method is invoked.
-	if (mono_type_get_type (type) == MONO_TYPE_VOID)
-		return NULL;
+	if (*out_exc && out_result) {
+		PVOLATILE(MonoObject) exc2 = NULL;
+		store_volatile(out_result, (MonoObject*)mono_object_to_string (*out_exc, (MonoObject **)&exc2));
+		if (exc2)
+			store_volatile(out_result, (MonoObject*)mono_string_new (root_domain, "Exception Double Fault"));
+	}
+	MONO_EXIT_GC_UNSAFE;
+}
 
-	return res;
+// deprecated
+MonoObject*
+mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[], MonoObject **out_exc)
+{
+	PVOLATILE(MonoObject) result = NULL;
+	mono_wasm_invoke_method_ref (method, &this_arg, params, out_exc, (MonoObject **)&result);
+
+	if (result) {
+		MONO_ENTER_GC_UNSAFE;
+		MonoMethodSignature *sig = mono_method_signature (method);
+		MonoType *type = mono_signature_get_return_type (sig);
+		// If the method return type is void return null
+		// This gets around a memory access crash when the result return a value when
+		// a void method is invoked.
+		if (mono_type_get_type (type) == MONO_TYPE_VOID)
+			result = NULL;
+		MONO_EXIT_GC_UNSAFE;
+	}
+
+	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE MonoMethod*
@@ -656,10 +704,11 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 	MonoImage *image;
 	MonoMethod *method;
 
+	MONO_ENTER_GC_UNSAFE;
 	image = mono_assembly_get_image (assembly);
 	uint32_t entry = mono_image_get_entry_point (image);
 	if (!entry)
-		return NULL;
+		goto end;
 
 	mono_domain_ensure_entry_assembly (root_domain, assembly);
 	method = mono_get_method (image, entry, NULL);
@@ -676,7 +725,7 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 		int name_length = strlen (name);
 
 		if ((*name != '<') || (name [name_length - 1] != '>'))
-			return method;
+			goto end;
 
 		MonoClass *klass = mono_method_get_class (method);
 		assert(klass);
@@ -688,7 +737,8 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 		MonoMethod *async_method = mono_class_get_method_from_name (klass, async_name, mono_signature_get_param_count (sig));
 		if (async_method != NULL) {
 			free (async_name);
-			return async_method;
+			method = async_method;
+			goto end;
 		}
 
 		// look for "Name" by trimming the first and last character of "<Name>"
@@ -697,35 +747,48 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 
 		free (async_name);
 		if (async_method != NULL)
-			return async_method;
+			method = async_method;
 	}
+
+	end:
+	MONO_EXIT_GC_UNSAFE;
 	return method;
 }
 
+// TODO: ref
 EMSCRIPTEN_KEEPALIVE char *
 mono_wasm_string_get_utf8 (MonoString *str)
 {
-	return mono_string_to_utf8 (str); //XXX JS is responsible for freeing this
+	char * result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_string_to_utf8 (str); //XXX JS is responsible for freeing this
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE MonoString *
 mono_wasm_string_from_js (const char *str)
 {
+	PVOLATILE(MonoString) result = NULL;
+	MONO_ENTER_GC_UNSAFE;
 	if (str)
-		return mono_string_new (root_domain, str);
-	else
-		return NULL;
+		result = mono_string_new (root_domain, str);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
-EMSCRIPTEN_KEEPALIVE MonoString *
-mono_wasm_string_from_utf16 (const mono_unichar2 * chars, int length)
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_string_from_utf16_ref (const mono_unichar2 * chars, int length, MonoString **result)
 {
 	assert (length >= 0);
 
-	if (chars)
-		return mono_string_new_utf16 (root_domain, chars, length);
-	else
-		return NULL;
+	MONO_ENTER_GC_UNSAFE;
+	if (chars) {
+		mono_gc_wbarrier_generic_store_atomic(result, (MonoObject *)mono_string_new_utf16 (root_domain, chars, length));
+	} else {
+		mono_gc_wbarrier_generic_store_atomic(result, NULL);
+	}
+	MONO_EXIT_GC_UNSAFE;
 }
 
 static int
@@ -734,18 +797,20 @@ class_is_task (MonoClass *klass)
 	if (!klass)
 		return 0;
 
+	int result;
+	MONO_ENTER_GC_UNSAFE;
 	if (!task_class && !resolved_task_class) {
 		task_class = mono_class_from_name (mono_get_corlib(), "System.Threading.Tasks", "Task");
 		resolved_task_class = 1;
 	}
 
-	if (task_class && (klass == task_class || mono_class_is_subclass_of(klass, task_class, 0)))
-		return 1;
-
-	return 0;
+	result = task_class && (klass == task_class || mono_class_is_subclass_of(klass, task_class, 0));
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
-MonoClass* mono_get_uri_class(MonoException** exc)
+static MonoClass*
+_get_uri_class(MonoException** exc)
 {
 	MonoAssembly* assembly = mono_wasm_assembly_load ("System");
 	if (!assembly)
@@ -754,8 +819,10 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 	return klass;
 }
 
-void mono_wasm_ensure_classes_resolved ()
+static void
+_ensure_classes_resolved ()
 {
+	MONO_ENTER_GC_UNSAFE;
 	if (!datetime_class && !resolved_datetime_class) {
 		datetime_class = mono_class_from_name (mono_get_corlib(), "System", "DateTime");
 		resolved_datetime_class = 1;
@@ -765,8 +832,8 @@ void mono_wasm_ensure_classes_resolved ()
 		resolved_datetimeoffset_class = 1;
 	}
 	if (!uri_class && !resolved_uri_class) {
-		MonoException** exc = NULL;
-		uri_class = mono_get_uri_class(exc);
+		PVOLATILE(MonoException) exc = NULL;
+		uri_class = _get_uri_class((MonoException **)&exc);
 		resolved_uri_class = 1;
 	}
 	if (!safehandle_class && !resolved_safehandle_class) {
@@ -777,10 +844,12 @@ void mono_wasm_ensure_classes_resolved ()
 		voidtaskresult_class = mono_class_from_name (mono_get_corlib(), "System.Threading.Tasks", "VoidTaskResult");
 		resolved_voidtaskresult_class = 1;
 	}
+	MONO_EXIT_GC_UNSAFE;
 }
 
-int
-mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType *type)
+// This must be run inside a GC unsafe region
+static int
+_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType *type)
 {
 	switch (mono_type) {
 	// case MONO_TYPE_CHAR: prob should be done not as a number?
@@ -843,7 +912,7 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 		}
 	}
 	default:
-		mono_wasm_ensure_classes_resolved ();
+		_ensure_classes_resolved ();
 
 		if (klass) {
 		if (klass == datetime_class)
@@ -870,6 +939,7 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 	}
 }
 
+// FIXME: Ref
 EMSCRIPTEN_KEEPALIVE MonoClass *
 mono_wasm_get_obj_class (MonoObject *obj)
 {
@@ -879,52 +949,49 @@ mono_wasm_get_obj_class (MonoObject *obj)
 	return mono_object_get_class (obj);
 }
 
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_get_obj_type (MonoObject *obj)
+// This code runs inside a gc unsafe region
+static int
+_wasm_get_obj_type_ref_impl (PPVOLATILE(MonoObject) obj)
 {
-	if (!obj)
+	if (!obj || !*obj)
 		return 0;
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
-	MonoClass *klass = mono_object_get_class (obj);
+	MonoClass *klass = mono_object_get_class (*obj);
 	if (!klass)
 		return MARSHAL_ERROR_NULL_CLASS_POINTER;
 	if ((klass == mono_get_string_class ()) &&
-		mono_string_instance_is_interned ((MonoString *)obj))
+		mono_string_instance_is_interned ((MonoString *)*obj))
 		return MARSHAL_TYPE_STRING_INTERNED;
 
 	MonoType *type = mono_class_get_type (klass);
 	if (!type)
 		return MARSHAL_ERROR_NULL_TYPE_POINTER;
-	obj = NULL;
 
 	int mono_type = mono_type_get_type (type);
 
-	return mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
+	return _marshal_type_from_mono_type (mono_type, klass, type);
 }
 
+// FIXME: Ref
 EMSCRIPTEN_KEEPALIVE int
-mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int result_capacity)
+mono_wasm_get_obj_type (MonoObject *obj)
 {
+	int result;
+	MONO_ENTER_GC_UNSAFE;
+	result = _wasm_get_obj_type_ref_impl(&obj);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
+// This code runs inside a gc unsafe region
+static int
+_mono_wasm_try_unbox_primitive_and_get_type_ref_impl (PVOLATILE(MonoObject) obj, void *result, int result_capacity) {
 	void **resultP = result;
 	int *resultI = result;
 	int64_t *resultL = result;
 	float *resultF = result;
 	double *resultD = result;
-
-	if (result_capacity >= sizeof (int64_t))
-		*resultL = 0;
-	else if (result_capacity >= sizeof (int))
-		*resultI = 0;
-
-	if (!result)
-		return MARSHAL_ERROR_BUFFER_TOO_SMALL;
-
-	if (result_capacity < 16)
-		return MARSHAL_ERROR_BUFFER_TOO_SMALL;
-
-	if (!obj)
-		return MARSHAL_TYPE_NULL;
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
@@ -956,7 +1023,7 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 		if (mono_type_generic_inst_is_valuetype (type))
 			mono_type = MONO_TYPE_VALUETYPE;
 	}
-	
+
 	// FIXME: We would prefer to unbox once here but it will fail if the value isn't unboxable
 
 	switch (mono_type) {
@@ -1004,7 +1071,7 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 
 				// Check whether this struct has special-case marshaling
 				// FIXME: Do we need to null out obj before this?
-				int marshal_type = mono_wasm_marshal_type_from_mono_type (mono_type, klass, original_type);
+				int marshal_type = _marshal_type_from_mono_type (mono_type, klass, original_type);
 				if (marshal_type != MARSHAL_TYPE_VT)
 					return marshal_type;
 
@@ -1028,20 +1095,46 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 			// HACK: Store the class pointer into the result buffer so our caller doesn't
 			//  have to call back into the native runtime later to get it
 			*resultP = type;
-			obj = NULL;
-			int fallbackResultType = mono_wasm_marshal_type_from_mono_type (mono_type, klass, original_type);
+			int fallbackResultType = _marshal_type_from_mono_type (mono_type, klass, original_type);
 			assert (fallbackResultType != MARSHAL_TYPE_VT);
 			return fallbackResultType;
 	}
 
 	// We successfully performed a fast unboxing here so use the type information
 	//  matching what we unboxed (i.e. an enum's underlying type instead of its type)
-	obj = NULL;
-	int resultType = mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
+	int resultType = _marshal_type_from_mono_type (mono_type, klass, type);
 	assert (resultType != MARSHAL_TYPE_VT);
 	return resultType;
 }
 
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_try_unbox_primitive_and_get_type_ref (MonoObject **objRef, void *result, int result_capacity)
+{
+	if (!result)
+		return MARSHAL_ERROR_BUFFER_TOO_SMALL;
+
+	int retval;
+	int *resultI = result;
+	int64_t *resultL = result;
+
+	if (result_capacity >= sizeof (int64_t))
+		*resultL = 0;
+	else if (result_capacity >= sizeof (int))
+		*resultI = 0;
+
+	if (result_capacity < 16)
+		return MARSHAL_ERROR_BUFFER_TOO_SMALL;
+
+	if (!objRef || !(*objRef))
+		return MARSHAL_TYPE_NULL;
+
+	MONO_ENTER_GC_UNSAFE;
+	retval = _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (*objRef, result, result_capacity);
+	MONO_EXIT_GC_UNSAFE;
+	return retval;
+}
+
+// FIXME: Ref
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_array_length (MonoArray *array)
 {
@@ -1054,10 +1147,29 @@ mono_wasm_array_get (MonoArray *array, int idx)
 	return mono_array_get (array, MonoObject*, idx);
 }
 
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_array_get_ref (MonoArray **array, int idx, MonoObject **result)
+{
+	MONO_ENTER_GC_UNSAFE;
+	mono_gc_wbarrier_generic_store_atomic(result, mono_array_get (*array, MonoObject*, idx));
+	MONO_EXIT_GC_UNSAFE;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_obj_array_new_ref (int size, MonoArray **result)
+{
+	MONO_ENTER_GC_UNSAFE;
+	mono_gc_wbarrier_generic_store_atomic(result, (MonoObject *)mono_array_new (root_domain, mono_get_object_class (), size));
+	MONO_EXIT_GC_UNSAFE;
+}
+
+// Deprecated
 EMSCRIPTEN_KEEPALIVE MonoArray*
 mono_wasm_obj_array_new (int size)
 {
-	return mono_array_new (root_domain, mono_get_object_class (), size);
+	PVOLATILE(MonoArray) result = NULL;
+	mono_wasm_obj_array_new_ref(size, (MonoArray **)&result);
+	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -1066,10 +1178,20 @@ mono_wasm_obj_array_set (MonoArray *array, int idx, MonoObject *obj)
 	mono_array_setref (array, idx, obj);
 }
 
-EMSCRIPTEN_KEEPALIVE MonoArray*
-mono_wasm_string_array_new (int size)
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_obj_array_set_ref (MonoArray **array, int idx, MonoObject **obj)
 {
-	return mono_array_new (root_domain, mono_get_string_class (), size);
+	MONO_ENTER_GC_UNSAFE;
+	mono_array_setref (*array, idx, *obj);
+	MONO_EXIT_GC_UNSAFE;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_string_array_new_ref (int size, MonoArray **result)
+{
+	MONO_ENTER_GC_UNSAFE;
+	mono_gc_wbarrier_generic_store_atomic(result, (MonoObject *)mono_array_new (root_domain, mono_get_string_class (), size));
+	MONO_EXIT_GC_UNSAFE;
 }
 
 EMSCRIPTEN_KEEPALIVE int
@@ -1108,33 +1230,42 @@ mono_wasm_enable_on_demand_gc (int enable)
 	mono_wasm_enable_gc = enable ? 1 : 0;
 }
 
-EMSCRIPTEN_KEEPALIVE MonoString *
-mono_wasm_intern_string (MonoString *string)
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_intern_string_ref (MonoString **string)
 {
-	return mono_string_intern (string);
+	MONO_ENTER_GC_UNSAFE;
+	mono_gc_wbarrier_generic_store_atomic(string, (MonoObject *)mono_string_intern (*string));
+	MONO_EXIT_GC_UNSAFE;
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_string_get_data (
-	MonoString *string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
+mono_wasm_string_get_data_ref (
+	MonoString **string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
 ) {
-	if (!string) {
+	MONO_ENTER_GC_UNSAFE;
+	if (!string || !(*string)) {
 		if (outChars)
 			*outChars = 0;
 		if (outLengthBytes)
 			*outLengthBytes = 0;
 		if (outIsInterned)
 			*outIsInterned = 1;
-		return;
+	} else {
+		if (outChars)
+			*outChars = mono_string_chars (*string);
+		if (outLengthBytes)
+			*outLengthBytes = mono_string_length (*string) * 2;
+		if (outIsInterned)
+			*outIsInterned = mono_string_instance_is_interned (*string);
 	}
+	MONO_EXIT_GC_UNSAFE;
+}
 
-	if (outChars)
-		*outChars = mono_string_chars (string);
-	if (outLengthBytes)
-		*outLengthBytes = mono_string_length (string) * 2;
-	if (outIsInterned)
-		*outIsInterned = mono_string_instance_is_interned (string);
-	return;
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_string_get_data (
+	MonoString *string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
+) {
+	mono_wasm_string_get_data_ref(&string, outChars, outLengthBytes, outIsInterned);
 }
 
 EMSCRIPTEN_KEEPALIVE MonoType *
@@ -1142,7 +1273,11 @@ mono_wasm_class_get_type (MonoClass *klass)
 {
 	if (!klass)
 		return NULL;
-	return mono_class_get_type (klass);
+	MonoType *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_class_get_type (klass);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE MonoClass *
@@ -1150,15 +1285,11 @@ mono_wasm_type_get_class (MonoType *type)
 {
 	if (!type)
 		return NULL;
-	return mono_type_get_class (type);
-}
-
-EMSCRIPTEN_KEEPALIVE void *
-mono_wasm_unbox_rooted (MonoObject *obj)
-{
-	if (!obj)
-		return NULL;
-	return mono_object_unbox (obj);
+	MonoClass *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_type_get_class (type);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE char *
@@ -1169,6 +1300,16 @@ mono_wasm_get_type_name (MonoType * typePtr) {
 EMSCRIPTEN_KEEPALIVE char *
 mono_wasm_get_type_aqn (MonoType * typePtr) {
 	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_write_managed_pointer_unsafe (PPVOLATILE(MonoObject) destination, PVOLATILE(MonoObject) source) {
+	store_volatile(destination, source);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_copy_managed_pointer (PPVOLATILE(MonoObject) destination, PPVOLATILE(MonoObject) source) {
+	copy_volatile(destination, source);
 }
 
 #ifdef ENABLE_AOT_PROFILER
