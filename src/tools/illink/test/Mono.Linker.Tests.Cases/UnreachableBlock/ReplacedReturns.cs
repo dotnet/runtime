@@ -33,7 +33,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
+			"ldc.i4.1",
 			"pop",
 			"call System.Void System.Console::WriteLine()",
 			"ldc.i4.1",
@@ -51,11 +51,11 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
+			"ldc.i4.1",
 			"pop",
 			"call System.Void System.Console::WriteLine()",
 			"ldc.i4.0",
-			"ret"
+			"ret",
 			})]
 		static bool Test2 ()
 		{
@@ -69,11 +69,11 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
+			"ldc.i4.1",
 			"pop",
 			"ldsfld System.DateTime System.DateTime::MinValue",
 			"call System.Void System.Console::WriteLine()",
-			"ret"
+			"ret",
 			})]
 		static DateTime Test3 ()
 		{
@@ -88,7 +88,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
+			"ldc.i4.1",
 			"pop",
 			"ldsfld System.DateTime System.DateTime::MinValue",
 			"call System.Void System.Console::WriteLine()",
@@ -109,7 +109,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
+			"ldc.i4.1",
 			"pop",
 			"ldsfld System.DateTime System.DateTime::MinValue",
 			"pop",
@@ -134,15 +134,15 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			".try",
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
+			"ldc.i4.1",
 			"pop",
 			"call System.Void System.Console::WriteLine()",
-			"leave.s il_16",
+			"leave.s il_12",
 			".endtry",
 			".catch",
 			"pop",
 			"call System.Void System.Console::WriteLine()",
-			"leave.s il_15",
+			"leave.s il_11",
 			".endcatch",
 			"ret",
 			"ret",
@@ -167,20 +167,20 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			".try",
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
+			"ldc.i4.1",
 			"pop",
 			"call System.Void System.Console::WriteLine()",
 			"ldc.i4.1",
 			"conv.i8",
 			"stloc.0",
-			"leave.s il_16",
+			"leave.s il_12",
 			".endtry",
 			".catch",
 			"pop",
 			"ldc.i4.2",
 			"conv.i8",
 			"stloc.0",
-			"leave.s il_16",
+			"leave.s il_12",
 			".endcatch",
 			"ldloc.0",
 			"ret",
@@ -204,18 +204,18 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"ldc.i4.0",
 			"stloc.0",
 			".try",
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
+			"ldc.i4.1",
 			"pop",
 			"call System.Void System.Console::WriteLine()",
 			"ldc.i4.1",
 			"stloc.1",
-			"leave.s il_1c",
+			"leave.s il_18",
 			".endtry",
 			".catch",
 			"pop",
 			"ldloc.0",
 			"call System.Void System.Console::WriteLine(System.Int32)",
-			"leave.s il_1a",
+			"leave.s il_16",
 			".endcatch",
 			"ldc.i4.3",
 			"ret",
@@ -243,7 +243,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedLocalsSequence (new string[0])]
 		[ExpectedInstructionSequence (new[] {
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
+			"ldc.i4.1",
 			"pop",
 			"call System.Void System.Console::WriteLine()",
 			"ret"
@@ -263,14 +263,14 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			".try",
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
+			"ldc.i4.1",
 			"pop",
 			"call System.Void System.Console::WriteLine()",
-			"leave.s il_10",
+			"leave.s il_c",
 			".endtry",
 			".catch",
 			"pop",
-			"leave.s il_10",
+			"leave.s il_c",
 			".endcatch",
 			"ret",
 		})]
@@ -290,7 +290,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			}
 		}
 
-		[Kept]
 		static bool AlwaysTrue ()
 		{
 			return true;

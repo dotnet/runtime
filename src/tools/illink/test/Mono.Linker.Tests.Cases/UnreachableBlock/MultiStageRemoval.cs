@@ -30,8 +30,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 				NeverReached_2 ();
 		}
 
-		[Kept]
-		[ExpectBodyModified]
 		static int TestProperty_int ()
 		{
 			if (Prop > 5) {
@@ -41,8 +39,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			return 0;
 		}
 
-		[Kept]
-		[ExpectBodyModified]
 		static int TestProperty_bool_twice ()
 		{
 			if (PropBool) {
@@ -55,17 +51,13 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			return 0;
 		}
 
-		[Kept]
 		static int Prop {
-			[Kept]
 			get {
 				return 9;
 			}
 		}
 
-		[Kept]
 		static bool PropBool {
-			[Kept]
 			get {
 				return true;
 			}

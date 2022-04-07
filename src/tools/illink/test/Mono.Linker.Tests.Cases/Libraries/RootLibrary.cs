@@ -137,8 +137,7 @@ namespace Mono.Linker.Tests.Cases.Libraries
 		[Kept]
 		public class SubstitutionsTest
 		{
-			[Kept]
-			private static bool FalseProp { [Kept] get { return false; } }
+			private static bool FalseProp { get { return false; } }
 
 			[Kept]
 			[ExpectBodyModified]

@@ -15,77 +15,25 @@ namespace Mono.Linker.Steps
 {
 	//
 	// Evaluates simple properties or methods for constant expressions and
-	// then uses this information to remove unreachable conditional blocks. It does
-	// not do any inlining-like code changes.
+	// then uses this information to remove unreachable conditional blocks and
+	// inline collected constants.
 	//
 	public class UnreachableBlocksOptimizer
 	{
 		readonly LinkContext _context;
+		readonly Dictionary<MethodDefinition, MethodResult?> _cache_method_results = new (2048);
+		readonly Stack<MethodDefinition> _resursion_guard = new ();
+
 		MethodDefinition? IntPtrSize, UIntPtrSize;
-
-		readonly struct ProcessingNode
-		{
-			public ProcessingNode (MethodDefinition method, int lastAttemptStackVersion)
-			{
-				Method = method;
-				LastAttemptStackVersion = lastAttemptStackVersion;
-			}
-
-			public ProcessingNode (in ProcessingNode other, int newLastAttempStackVersion)
-			{
-				Method = other.Method;
-				LastAttemptStackVersion = newLastAttempStackVersion;
-			}
-
-			public readonly MethodDefinition Method;
-			public readonly int LastAttemptStackVersion;
-		}
-
-		// Stack of method nodes which are currently being processed.
-		// Implemented as linked list to allow easy referal to nodes and efficient moving of nodes within the list.
-		// The top of the stack is the first item in the list.
-		readonly LinkedList<ProcessingNode> _processingStack;
-
-		// Each time an item is added or removed from the processing stack this value is incremented.
-		// Moving items in the stack doesn't increment.
-		// This is used to track loops - if there are two methods which have dependencies on each other
-		// the processing needs to detect that and mark at least one of them as nonconst (regardless of the method's body)
-		// to break the loop.
-		// This is done by storing the version of the stack on each method node when that method is processed,
-		// if we get around to process the method again and the version of the stack didn't change, then there's a loop
-		// (nothing changed in the stack - order is unimportant, as such no new information has been added and so
-		// we can't resolve the situation with just the info at hand).
-		int _processingStackVersion;
-
-		// Just a fast lookup from method to the node on the stack. This is needed to be able to quickly
-		// access the node and move it to the top of the stack.
-		readonly Dictionary<MethodDefinition, LinkedListNode<ProcessingNode>> _processingMethods;
-
-		// Stores results of method processing. This state is kept forever to avoid reprocessing of methods.
-		// If method is not in the dictionary it has not yet been processed.
-		// The value in this dictionary can be
-		//   - ProcessedUnchangedSentinel - method has been processed and nothing was changed on it - its value is unknown
-		//   - NonConstSentinel - method has been processed and the return value is not a const
-		//   - Instruction instance - method has been processed and it has a constant return value (the value of the instruction)
-		// Note: ProcessedUnchangedSentinel is used as an optimization. running constant value analysis on a method is relatively expensive
-		// and so we delay it and only do it for methods where the value is asked for (or in case of changed methods upfront due to implementation detailds)
-		readonly Dictionary<MethodDefinition, Instruction> _processedMethods;
-		static readonly Instruction ProcessedUnchangedSentinel = Instruction.Create (OpCodes.Ldstr, "ProcessedUnchangedSentinel");
-		static readonly Instruction NonConstSentinel = Instruction.Create (OpCodes.Ldstr, "NonConstSentinel");
 
 		public UnreachableBlocksOptimizer (LinkContext context)
 		{
 			_context = context;
-
-			_processingStack = new LinkedList<ProcessingNode> ();
-			_processingMethods = new Dictionary<MethodDefinition, LinkedListNode<ProcessingNode>> ();
-			_processedMethods = new Dictionary<MethodDefinition, Instruction> ();
 		}
 
 		/// <summary>
-		/// Processes the specified and method and perform all branch removal optimizations on it.
+		/// Processes the specified method and perform all branch removal optimizations on it.
 		/// When this returns it's guaranteed that the method has been optimized (if possible).
-		/// It may optimize other methods as well - those are remembered for future reuse.
 		/// </summary>
 		/// <param name="method">The method to process</param>
 		public void ProcessMethod (MethodDefinition method)
@@ -96,16 +44,30 @@ namespace Mono.Linker.Steps
 			if (_context.Annotations.GetAction (method.Module.Assembly) != AssemblyAction.Link)
 				return;
 
-			Debug.Assert (_processingStack.Count == 0 && _processingMethods.Count == 0);
-			_processingStackVersion = 0;
+			var reducer = new BodyReducer (method.Body, _context);
 
-			if (!_processedMethods.ContainsKey (method)) {
-				AddMethodForProcessing (method);
+			//
+			// If no external dependency can be extracted into constant there won't be
+			// anything to optimize in the method
+			//
+			if (!reducer.ApplyTemporaryInlining (this))
+				return;
 
-				ProcessStack ();
-			}
+			//
+			// This is the main step which evaluates if any expression can
+			// produce folded branches. When it finds them the unreachable
+			// branch is removed.
+			//
+			if (reducer.RewriteBody ())
+				_context.LogMessage ($"Reduced '{reducer.InstructionsReplaced}' instructions in conditional branches for [{method.DeclaringType.Module.Assembly.Name}] method '{method.GetDisplayName ()}'.");
 
-			Debug.Assert (_processedMethods.ContainsKey (method));
+			//
+			// Note: The inliner cannot run before reducer rewrites body as it
+			// would require another recomputing offsets due to instructions replacement
+			// done by inliner
+			//
+			var inliner = new CallInliner (method.Body, this);
+			inliner.RewriteBody ();
 		}
 
 		static bool IsMethodSupported (MethodDefinition method)
@@ -125,152 +87,109 @@ namespace Mono.Linker.Steps
 			return true;
 		}
 
-		void AddMethodForProcessing (MethodDefinition method)
+		static bool HasJumpIntoTargetRange (Collection<Instruction> instructions, int firstInstr, int lastInstr, Func<Instruction, int>? mapping = null)
 		{
-			Debug.Assert (!_processedMethods.ContainsKey (method));
-
-			var processingNode = new ProcessingNode (method, -1);
-
-			var stackNode = _processingStack.AddFirst (processingNode);
-			_processingMethods.Add (method, stackNode);
-			_processingStackVersion++;
-		}
-
-		void StoreMethodAsProcessedAndRemoveFromQueue (LinkedListNode<ProcessingNode> stackNode, Instruction methodValue)
-		{
-			Debug.Assert (stackNode.List == _processingStack);
-			Debug.Assert (methodValue != null);
-
-			var method = stackNode.Value.Method;
-			_processingMethods.Remove (method);
-			_processingStack.Remove (stackNode);
-			_processingStackVersion++;
-
-			_processedMethods[method] = methodValue;
-		}
-
-		void ProcessStack ()
-		{
-			while (_processingStack.Count > 0) {
-				var stackNode = _processingStack.First!;
-				var method = stackNode.Value.Method;
-
-				bool treatUnprocessedDependenciesAsNonConst = false;
-				if (stackNode.Value.LastAttemptStackVersion == _processingStackVersion) {
-					// Loop was detected - the stack hasn't changed since the last time we tried to process this method
-					// as such there's no way to resolve the situation (running the code below would produce the exact same result).
-
-					// Observation:
-					//   All nodes on the stack which have `LastAttemptStackVersion` equal to `processingStackVersion` are part of the loop
-					//   meaning removing any of them should break the loop and allow to make progress.
-					//   There might be other methods in between these which don't have the current version but are dependencies of some of the method
-					//   in the loop.
-					//   If we don't process these, then we might miss constants and branches to remove. See the doc
-					//   `constant-propagation-and-branch-removal.md` in this repo for more details and a sample.
-
-					// To fix this go over the stack and find the "oldest" node with the current version - the "oldest" node which
-					// is part of the loop:
-					LinkedListNode<ProcessingNode>? lastNodeWithCurrentVersion = null;
-					var candidateNodeToMoveToTop = _processingStack.Last;
-					bool foundNodesWithNonCurrentVersion = false;
-					while (candidateNodeToMoveToTop != stackNode) {
-						var previousNode = candidateNodeToMoveToTop!.Previous;
-
-						if (candidateNodeToMoveToTop.Value.LastAttemptStackVersion == _processingStackVersion) {
-							lastNodeWithCurrentVersion = candidateNodeToMoveToTop;
-						} else if (lastNodeWithCurrentVersion != null) {
-							// We've found the "oldest" node with current version and the current node is not of that version
-							// so it's older version. Move this node to the top of the stack.
-							_processingStack.Remove (candidateNodeToMoveToTop);
-							_processingStack.AddFirst (candidateNodeToMoveToTop);
-							foundNodesWithNonCurrentVersion = true;
+			foreach (var instr in instructions) {
+				switch (instr.OpCode.FlowControl) {
+				case FlowControl.Branch:
+				case FlowControl.Cond_Branch:
+					if (instr.Operand is Instruction target) {
+						int index = mapping == null ? instructions.IndexOf (target) : mapping (target);
+						if (index >= firstInstr && index <= lastInstr)
+							return true;
+					} else {
+						foreach (var rtarget in (Instruction[]) instr.Operand) {
+							int index = mapping == null ? instructions.IndexOf (rtarget) : mapping (rtarget);
+							if (index >= firstInstr && index <= lastInstr)
+								return true;
 						}
-
-						candidateNodeToMoveToTop = previousNode;
 					}
 
-					// There should be at least 2 nodes with the latest version to form a loop
-					Debug.Assert (lastNodeWithCurrentVersion != stackNode);
-
-					// If any node was found which was not of current version (and moved to the top of the stack), move on to processing
-					// the stack - this will give a chance for these methods to be processed. It doesn't break the loop and we should come back here
-					// again due to the same loop as before, but now with more nodes processed (hopefully all of the dependencies of the nodes in the loop).
-					// In the worst case all of those nodes will become part of the loop - in which case we will move on to break the loop anyway.
-					if (foundNodesWithNonCurrentVersion) {
-						continue;
-					}
-
-					// No such node was found -> we only have nodes in the loop now, so we have to break the loop.
-					// We do this by processing it with special flag which will make it ignore any unprocessed dependencies
-					// treating them as non-const. These should only be nodes in the loop.
-					treatUnprocessedDependenciesAsNonConst = true;
+					break;
 				}
-
-				stackNode.Value = new ProcessingNode (stackNode.Value, _processingStackVersion);
-
-				if (!IsMethodSupported (method)) {
-					StoreMethodAsProcessedAndRemoveFromQueue (stackNode, ProcessedUnchangedSentinel);
-					continue;
-				}
-
-				var reducer = new BodyReducer (method.Body, _context);
-
-				//
-				// Temporarily inlines any calls which return contant expression.
-				// If it needs to know the result of analysis of other methods and those has not been processed yet
-				// it will still scan the entire body, but we will rerun the full processing one more time later.
-				//
-				if (!TryInlineBodyDependencies (ref reducer, treatUnprocessedDependenciesAsNonConst, out bool changed)) {
-					// Method has unprocessed dependencies - so back off and try again later
-					// Leave it in the stack on its current position.
-					// It should not be on the first position anymore:
-					//   - There are unprocessed dependencies
-					//   - Those should be moved to the top of the stack above this method
-					Debug.Assert (_processingStack.First != stackNode);
-					continue;
-				}
-
-				if (!changed) {
-					// All dependencies are processed and there were no const values found. There's nothing to optimize.
-					// Mark the method as processed - without computing the const value of it (we don't know if it's going to be needed)
-					StoreMethodAsProcessedAndRemoveFromQueue (stackNode, ProcessedUnchangedSentinel);
-					continue;
-				}
-
-				// The method has been modified due to constant propagation - we will optimize it.
-
-				//
-				// This is the main step which evaluates if inlined calls can
-				// produce folded branches. When it finds them the unreachable
-				// branch is replaced with nops.
-				//
-				if (reducer.RewriteBody ())
-					_context.LogMessage ($"Reduced '{reducer.InstructionsReplaced}' instructions in conditional branches for [{method.DeclaringType.Module.Assembly.Name}] method '{method.GetDisplayName ()}'.");
-
-				// Even if the rewriter doesn't find any branches to fold the inlining above may have changed the method enough
-				// such that we can now deduce its return value.
-
-				if (method.ReturnType.MetadataType == MetadataType.Void) {
-					// Method is fully processed and can't be const (since it doesn't return value) - so mark it as processed without const value
-					StoreMethodAsProcessedAndRemoveFromQueue (stackNode, NonConstSentinel);
-					continue;
-				}
-
-				//
-				// Run the analyzer in case body change rewrote it to constant expression
-				// Note that we have to run it always (even if we may not need the result ever) since it depends on the temporary inlining above
-				// Otherwise we would have to remember the inlined code along with the method.
-				//
-				StoreMethodAsProcessedAndRemoveFromQueue (
-					stackNode,
-					AnalyzeMethodForConstantResult (method, reducer.FoldedInstructions) ?? NonConstSentinel);
 			}
 
-			Debug.Assert (_processingMethods.Count == 0);
+			return false;
 		}
 
-		Instruction? AnalyzeMethodForConstantResult (MethodDefinition method, Collection<Instruction>? instructions)
+		static bool IsSideEffectFreeLoad (Instruction instr)
 		{
+			switch (instr.OpCode.Code) {
+			case Code.Ldarg:
+			case Code.Ldloc:
+			case Code.Ldloc_0:
+			case Code.Ldloc_1:
+			case Code.Ldloc_2:
+			case Code.Ldloc_3:
+			case Code.Ldloc_S:
+			case Code.Ldc_I4_0:
+			case Code.Ldc_I4_1:
+			case Code.Ldc_I4_2:
+			case Code.Ldc_I4_3:
+			case Code.Ldc_I4_4:
+			case Code.Ldc_I4_5:
+			case Code.Ldc_I4_6:
+			case Code.Ldc_I4_7:
+			case Code.Ldc_I4_8:
+			case Code.Ldc_I4:
+			case Code.Ldc_I4_S:
+			case Code.Ldc_I4_M1:
+			case Code.Ldc_I8:
+			case Code.Ldc_R4:
+			case Code.Ldc_R8:
+			case Code.Ldnull:
+			case Code.Ldstr:
+				return true;
+			}
+
+			return false;
+		}
+
+		static bool IsComparisonAlwaysTrue (OpCode opCode, int left, int right)
+		{
+			switch (opCode.Code) {
+			case Code.Beq:
+			case Code.Beq_S:
+			case Code.Ceq:
+				return left == right;
+			case Code.Bne_Un:
+			case Code.Bne_Un_S:
+				return left != right;
+			case Code.Bge:
+			case Code.Bge_S:
+				return left >= right;
+			case Code.Bge_Un:
+			case Code.Bge_Un_S:
+				return (uint) left >= (uint) right;
+			case Code.Bgt:
+			case Code.Bgt_S:
+			case Code.Cgt:
+				return left > right;
+			case Code.Bgt_Un:
+			case Code.Bgt_Un_S:
+				return (uint) left > (uint) right;
+			case Code.Ble:
+			case Code.Ble_S:
+				return left <= right;
+			case Code.Ble_Un:
+			case Code.Ble_Un_S:
+				return (uint) left <= (uint) right;
+			case Code.Blt:
+			case Code.Blt_S:
+			case Code.Clt:
+				return left < right;
+			case Code.Blt_Un:
+			case Code.Blt_Un_S:
+				return (uint) left < (uint) right;
+			}
+
+			throw new NotImplementedException (opCode.ToString ());
+		}
+
+		MethodResult? AnalyzeMethodForConstantResult (in CalleePayload callee, Stack<MethodDefinition> callStack)
+		{
+			MethodDefinition method = callee.Method;
+
 			if (method.ReturnType.MetadataType == MetadataType.Void)
 				return null;
 
@@ -281,7 +200,8 @@ namespace Mono.Linker.Steps
 			case MethodAction.ConvertToThrow:
 				return null;
 			case MethodAction.ConvertToStub:
-				return CodeRewriterStep.CreateConstantResultInstruction (_context, method);
+				Instruction? constant = CodeRewriterStep.CreateConstantResultInstruction (_context, method);
+				return constant == null ? null : new MethodResult (constant, true);
 			}
 
 			if (method.IsIntrinsic () || method.NoInlining)
@@ -290,178 +210,201 @@ namespace Mono.Linker.Steps
 			if (!_context.IsOptimizationEnabled (CodeOptimizations.IPConstantPropagation, method))
 				return null;
 
-			var analyzer = new ConstantExpressionMethodAnalyzer (_context, method, instructions ?? method.Body.Instructions);
-			if (analyzer.Analyze ()) {
-				return analyzer.Result;
+			var analyzer = new ConstantExpressionMethodAnalyzer (this);
+			if (analyzer.Analyze (callee, callStack)) {
+				return new MethodResult (analyzer.Result, analyzer.SideEffectFreeResult);
 			}
 
 			return null;
 		}
 
-		/// <summary>
-		/// Determines if a method has constant return value. If the method has not yet been processed it makes sure
-		/// it is on the stack for processing and returns without a result.
-		/// </summary>
-		/// <param name="method">The method to determine result for</param>
-		/// <param name="constantResultInstruction">If successfull and the method returns a constant value this will be set to the
-		/// instruction with the constant value. If successfulll and the method doesn't have a constant value this is set to null.</param>
-		/// <returns>
-		/// true - if the method was analyzed and result is known
-		///   constantResultInstruction is set to an instance if the method returns a constant, otherwise it's set to null
-		/// false - if the method has not yet been analyzed and the caller should retry later
-		/// </returns>
-		bool TryGetConstantResultForMethod (MethodDefinition method, out Instruction? constantResultInstruction)
+
+		//
+		// Return expression with a value when method implementation can be
+		// interpreted during trimming
+		//
+		MethodResult? TryGetMethodCallResult (in CalleePayload callee)
 		{
-			if (!_processedMethods.TryGetValue (method, out Instruction? methodValue)) {
-				if (_processingMethods.TryGetValue (method, out var stackNode)) {
-					// Method is already in the stack - not yet processed
-					// Move it to the top of the stack
-					_processingStack.Remove (stackNode);
-					_processingStack.AddFirst (stackNode);
-
-					// Note that stack version is not changing - we're just postponing work, not resolving anything.
-					// There's no result available for this method, so return false.
-					constantResultInstruction = null;
-					return false;
-				}
-
-				// Method is not yet in the stack - add it there
-				AddMethodForProcessing (method);
-				constantResultInstruction = null;
-				return false;
-			}
-
-			if (methodValue == ProcessedUnchangedSentinel) {
-				// Method has been processed and no changes has been made to it.
-				// Also its value has not been needed yet. Now we need to know if it's constant, so run the analyzer on it
-				var result = AnalyzeMethodForConstantResult (method, instructions: null);
-				Debug.Assert (result is Instruction || result == null);
-				_processedMethods[method] = result ?? NonConstSentinel;
-				constantResultInstruction = result;
-			} else if (methodValue == NonConstSentinel) {
-				// Method was processed and found to not have a constant value
-				constantResultInstruction = null;
-			} else {
-				// Method was already processed and found to have a constant value
-				constantResultInstruction = methodValue;
-			}
-
-			return true;
+			_resursion_guard.Clear ();
+			return TryGetMethodCallResult (callee, _resursion_guard);
 		}
 
-		bool TryInlineBodyDependencies (ref BodyReducer reducer, bool treatUnprocessedDependenciesAsNonConst, out bool changed)
+		MethodResult? TryGetMethodCallResult (in CalleePayload callee, Stack<MethodDefinition> callStack)
 		{
-			changed = false;
-			bool hasUnprocessedDependencies = false;
-			var instructions = reducer.Body.Instructions;
-			Instruction? targetResult;
+			MethodResult? value;
 
-			for (int i = 0; i < instructions.Count; ++i) {
-				var instr = instructions[i];
-				switch (instr.OpCode.Code) {
+			MethodDefinition method = callee.Method;
+			if (!method.HasParameters || callee.HasUnknownArguments) {
+				if (!_cache_method_results.TryGetValue (method, out value) && !IsDeepStack (callStack)) {
+					value = AnalyzeMethodForConstantResult (callee, callStack);
+					_cache_method_results.Add (method, value);
+				}
 
-				case Code.Call:
-				case Code.Callvirt:
-					var md = _context.TryResolve ((MethodReference) instr.Operand);
-					if (md == null)
-						break;
+				return value;
+			}
 
-					if (md.CallingConvention == MethodCallingConvention.VarArg)
-						break;
+			return AnalyzeMethodForConstantResult (callee, callStack);
 
-					bool explicitlyAnnotated = _context.Annotations.GetAction (md) == MethodAction.ConvertToStub;
+			static bool IsDeepStack (Stack<MethodDefinition> callStack) => callStack.Count > 100;
+		}
 
-					// Allow inlining results of instance methods which are explicitly annotated
-					// but don't allow inling results of any other instance method.
-					// See https://github.com/dotnet/linker/issues/1243 for discussion as to why.
-					// Also explicitly prevent inlining results of virtual methods.
-					if (!md.IsStatic &&
-						(md.IsVirtual || !explicitlyAnnotated))
-						break;
+		Instruction? GetSizeOfResult (TypeReference type)
+		{
+			MethodDefinition? sizeOfImpl = null;
 
-					if (md == reducer.Body.Method) {
-						// Special case for direct recursion - simply assume non-const value
-						// since we can't tell.
-						break;
-					}
+			//
+			// sizeof (IntPtr) and sizeof (UIntPtr) are just aliases for IntPtr.Size and UIntPtr.Size
+			// which are simple static properties commonly overwritten. Instead of forcing C# code style
+			// we handle both via static get_Size method
+			//
+			if (type.MetadataType == MetadataType.UIntPtr) {
+				sizeOfImpl = (UIntPtrSize ??= FindSizeMethod (_context.TryResolve (type)));
+			} else if (type.MetadataType == MetadataType.IntPtr) {
+				sizeOfImpl = (IntPtrSize ??= FindSizeMethod (_context.TryResolve (type)));
+			}
 
-					if (!TryGetConstantResultForMethod (md, out targetResult)) {
-						if (!treatUnprocessedDependenciesAsNonConst)
-							hasUnprocessedDependencies = true;
-						break;
-					}
+			if (sizeOfImpl == null)
+				return null;
 
-					if (targetResult == null || hasUnprocessedDependencies) {
-						// Even if const is detected, there's no point in rewriting anything
-						// if we've found unprocessed dependency since the results of this scan will
-						// be thrown away (we back off and wait for the unprocessed dependency to be processed first).
-						break;
-					}
+			return TryGetMethodCallResult (new CalleePayload (sizeOfImpl, Array.Empty<Instruction> ()))?.Instruction;
+		}
 
-					//
-					// Do simple arguments stack removal by replacing argument expressions with nops to hide
-					// them for the constant evaluator. For cases which require full stack understanding the
-					// logic won't work and will leave more opcodes on the stack and constant won't be propagated
-					//
-					int depth = md.Parameters.Count;
-					if (!md.IsStatic)
-						++depth;
+		static Instruction? EvaluateIntrinsicCall (MethodReference method, Instruction[] arguments)
+		{
+			//
+			// In theory any pure method could be executed via reflection but
+			// that would require loading all code path dependencies.
+			// For now we handle only few methods that help with core framework trimming
+			//
+			object? left, right;
+			if (method.DeclaringType.MetadataType == MetadataType.String) {
+				switch (method.Name) {
+				case "op_Equality":
+				case "op_Inequality":
+				case "Concat":
+					if (arguments.Length != 2)
+						return null;
 
-					if (depth != 0)
-						reducer.RewriteToNop (i - 1, depth);
+					if (!GetConstantValue (arguments[0], out left) ||
+						!GetConstantValue (arguments[1], out right))
+						return null;
 
-					reducer.Rewrite (i, targetResult);
-					changed = true;
-					break;
+					if (left is string sleft && right is string sright) {
+						if (method.Name.Length == 6) // Concat case
+							return Instruction.Create (OpCodes.Ldstr, string.Concat (sleft, sright));
 
-				case Code.Ldsfld:
-					var ftarget = (FieldReference) instr.Operand;
-					var field = _context.TryResolve (ftarget);
-					if (field == null)
-						break;
-
-					if (_context.Annotations.TryGetFieldUserValue (field, out object? value)) {
-						targetResult = CodeRewriterStep.CreateConstantResultInstruction (_context, field.FieldType, value);
-						if (targetResult == null)
-							break;
-						reducer.Rewrite (i, targetResult);
-						changed = true;
-					}
-					break;
-
-				case Code.Sizeof:
-					//
-					// sizeof (IntPtr) and sizeof (UIntPtr) are just aliases for IntPtr.Size and UIntPtr.Size
-					// which are simple static properties commonly overwritten. Instead of forcing C# code style
-					// we handle both via static Size property
-					//
-					MethodDefinition? sizeOfImpl = null;
-
-					var operand = (TypeReference) instr.Operand;
-					if (operand.MetadataType == MetadataType.UIntPtr) {
-						sizeOfImpl = (UIntPtrSize ??= FindSizeMethod (_context.TryResolve (operand)));
-					} else if (operand.MetadataType == MetadataType.IntPtr) {
-						sizeOfImpl = (IntPtrSize ??= FindSizeMethod (_context.TryResolve (operand)));
-					}
-
-					if (sizeOfImpl != null) {
-						if (!TryGetConstantResultForMethod (sizeOfImpl, out targetResult)) {
-							if (!treatUnprocessedDependenciesAsNonConst)
-								hasUnprocessedDependencies = true;
-							break;
-						} else if (targetResult == null || hasUnprocessedDependencies) {
-							break;
-						}
-
-						reducer.Rewrite (i, targetResult);
-						changed = true;
+						bool result = method.Name.Length == 11 ? sleft == sright : sleft != sright;
+						return Instruction.Create (OpCodes.Ldc_I4, result ? 1 : 0); // op_Equality / op_Inequality
 					}
 
 					break;
 				}
 			}
 
-			return !hasUnprocessedDependencies;
+			return null;
+		}
+
+		static Instruction[]? GetArgumentsOnStack (MethodDefinition method, Collection<Instruction> instructions, int index)
+		{
+			if (!method.HasParameters)
+				return Array.Empty<Instruction> ();
+
+			Instruction[]? result = null;
+			for (int i = method.Parameters.Count, pos = 0; i != 0; --i, ++pos) {
+				Instruction instr = instructions[index - i];
+				if (!IsConstantValue (instr))
+					return null;
+
+				if (result == null)
+					result = new Instruction[method.Parameters.Count];
+
+				result[pos] = instr;
+			}
+
+			if (result != null && HasJumpIntoTargetRange (instructions, index - method.Parameters.Count + 1, index))
+				return null;
+
+			return result;
+
+			static bool IsConstantValue (Instruction instr)
+			{
+				switch (instr.OpCode.Code) {
+				case Code.Ldc_I4_0:
+				case Code.Ldc_I4_1:
+				case Code.Ldc_I4_2:
+				case Code.Ldc_I4_3:
+				case Code.Ldc_I4_4:
+				case Code.Ldc_I4_5:
+				case Code.Ldc_I4_6:
+				case Code.Ldc_I4_7:
+				case Code.Ldc_I4_8:
+				case Code.Ldc_I4:
+				case Code.Ldc_I4_S:
+				case Code.Ldc_I4_M1:
+				case Code.Ldc_I8:
+				case Code.Ldc_R4:
+				case Code.Ldc_R8:
+				case Code.Ldnull:
+				case Code.Ldstr:
+					return true;
+				}
+
+				return false;
+			}
+		}
+
+		static bool GetConstantValue (Instruction instruction, out object? value)
+		{
+			switch (instruction.OpCode.Code) {
+			case Code.Ldc_I4_0:
+				value = 0;
+				return true;
+			case Code.Ldc_I4_1:
+				value = 1;
+				return true;
+			case Code.Ldc_I4_2:
+				value = 2;
+				return true;
+			case Code.Ldc_I4_3:
+				value = 3;
+				return true;
+			case Code.Ldc_I4_4:
+				value = 4;
+				return true;
+			case Code.Ldc_I4_5:
+				value = 5;
+				return true;
+			case Code.Ldc_I4_6:
+				value = 6;
+				return true;
+			case Code.Ldc_I4_7:
+				value = 7;
+				return true;
+			case Code.Ldc_I4_8:
+				value = 8;
+				return true;
+			case Code.Ldc_I4_M1:
+				value = -1;
+				return true;
+			case Code.Ldc_I4:
+				value = (int) instruction.Operand;
+				return true;
+			case Code.Ldc_I4_S:
+				value = (int) (sbyte) instruction.Operand;
+				return true;
+			case Code.Ldc_I8:
+				value = (long) instruction.Operand;
+				return true;
+			case Code.Ldstr:
+				value = (string) instruction.Operand;
+				return true;
+			case Code.Ldnull:
+				value = null;
+				return true;
+			default:
+				value = null;
+				return false;
+			}
 		}
 
 		static MethodDefinition? FindSizeMethod (TypeDefinition? type)
@@ -470,6 +413,120 @@ namespace Mono.Linker.Steps
 				return null;
 
 			return type.Methods.First (l => !l.HasParameters && l.IsStatic && l.Name == "get_Size");
+		}
+
+		readonly struct CallInliner
+		{
+			readonly MethodBody body;
+			readonly UnreachableBlocksOptimizer optimizer;
+
+			public CallInliner (MethodBody body, UnreachableBlocksOptimizer optimizer)
+			{
+				this.body = body;
+				this.optimizer = optimizer;
+			}
+
+			public bool RewriteBody ()
+			{
+				bool changed = false;
+				LinkerILProcessor processor = body.GetLinkerILProcessor ();
+				Collection<Instruction> instrs = body.Instructions;
+
+				for (int i = 0; i < body.Instructions.Count; ++i) {
+					Instruction instr = instrs[i];
+					switch (instr.OpCode.Code) {
+
+					case Code.Call:
+					case Code.Callvirt:
+						MethodDefinition? md = optimizer._context.TryResolve ((MethodReference) instr.Operand);
+						if (md == null)
+							continue;
+
+						if (md.IsVirtual)
+							continue;
+
+						if (md.CallingConvention == MethodCallingConvention.VarArg)
+							break;
+
+						if (md.NoInlining)
+							break;
+
+						var cpl = new CalleePayload (md, GetArgumentsOnStack (md, body.Instructions, i));
+						MethodResult? call_result = optimizer.TryGetMethodCallResult (cpl);
+						if (call_result is not MethodResult result)
+							break;
+
+						if (!result.IsSideEffectFree)
+							break;
+
+						TypeDefinition methodType = md.DeclaringType;
+						if (methodType != body.Method.DeclaringType && !methodType.IsBeforeFieldInit) {
+							//
+							// Figuring out at this point if the explicit static ctor will be used is hard
+							//
+							optimizer._context.LogMessage ($"Cannot inline result of '{md.GetDisplayName ()}' call due to presence of static constructor");
+							break;
+						}
+
+						if (!md.IsStatic) {
+							if (!md.HasParameters && CanInlineInstanceCall (instrs, i)) {
+								processor.Replace (i - 1, Instruction.Create (OpCodes.Nop));
+								processor.Replace (i, result.GetPrototype ()!);
+								changed = true;
+							}
+
+							continue;
+						}
+
+						if (md.HasParameters) {
+							if (!IsCalledWithoutSideEffects (md, instrs, i))
+								continue;
+
+							for (int p = 1; p <= md.Parameters.Count; ++p) {
+								processor.Replace (i - p, Instruction.Create (OpCodes.Nop));
+							}
+						}
+
+						processor.Replace (i, result.GetPrototype ());
+						changed = true;
+						continue;
+
+					case Code.Sizeof:
+						var operand = (TypeReference) instr.Operand;
+						Instruction? value = optimizer.GetSizeOfResult (operand);
+						if (value != null) {
+							processor.Replace (i, value.GetPrototype ());
+							changed = true;
+						}
+
+						continue;
+					}
+				}
+
+				return changed;
+			}
+
+			bool CanInlineInstanceCall (Collection<Instruction> instructions, int index)
+			{
+				//
+				// Instance methods called on `this` have no side-effects
+				//
+				if (instructions[index - 1].OpCode.Code == Code.Ldarg_0)
+					return !body.Method.IsStatic;
+
+				// More cases can be added later
+				return false;
+			}
+
+			static bool IsCalledWithoutSideEffects (MethodDefinition method, Collection<Instruction> instructions, int index)
+			{
+				for (int i = 1; i <= method.Parameters.Count; ++i) {
+					if (!IsSideEffectFreeLoad (instructions[index - i]))
+						return false;
+				}
+
+				return true;
+			}
 		}
 
 		struct BodyReducer
@@ -498,14 +555,21 @@ namespace Mono.Linker.Steps
 
 			public int InstructionsReplaced { get; set; }
 
-			public Collection<Instruction>? FoldedInstructions { get; private set; }
+			Collection<Instruction>? FoldedInstructions { get; set; }
+
+			[MemberNotNull ("FoldedInstructions")]
+			[MemberNotNull ("mapping")]
+			void InitializeFoldedInstruction ()
+			{
+				FoldedInstructions = new Collection<Instruction> (Body.Instructions);
+				mapping = new Dictionary<Instruction, int> ();
+			}
 
 			public void Rewrite (int index, Instruction newInstruction)
 			{
-				if (FoldedInstructions == null) {
-					FoldedInstructions = new Collection<Instruction> (Body.Instructions);
-					mapping = new Dictionary<Instruction, int> ();
-				}
+				if (FoldedInstructions == null)
+					InitializeFoldedInstruction ();
+
 				Debug.Assert (mapping != null);
 
 				// Tracks mapping for replaced instructions for easier
@@ -526,10 +590,8 @@ namespace Mono.Linker.Steps
 
 			public void RewriteToNop (int index, int stackDepth)
 			{
-				if (FoldedInstructions == null) {
-					FoldedInstructions = new Collection<Instruction> (Body.Instructions);
-					mapping = new Dictionary<Instruction, int> ();
-				}
+				if (FoldedInstructions == null)
+					InitializeFoldedInstruction ();
 
 				int start_index;
 				for (start_index = index; start_index >= 0 && stackDepth > 0; --start_index) {
@@ -642,7 +704,7 @@ namespace Mono.Linker.Steps
 			public bool RewriteBody ()
 			{
 				if (FoldedInstructions == null)
-					return false;
+					InitializeFoldedInstruction ();
 
 				if (!RemoveConditions ())
 					return false;
@@ -652,10 +714,7 @@ namespace Mono.Linker.Steps
 					return false;
 
 				var bodySweeper = new BodySweeper (Body, reachableInstrs, unreachableEH, context);
-				if (!bodySweeper.Initialize ()) {
-					context.LogMessage ($"Unreachable IL reduction is not supported for method '{Body.Method.GetDisplayName ()}'.");
-					return false;
-				}
+				bodySweeper.Initialize ();
 
 				bodySweeper.Process (conditionInstrsToRemove, out var nopInstructions);
 				InstructionsReplaced = bodySweeper.InstructionsReplaced;
@@ -674,6 +733,80 @@ namespace Mono.Linker.Steps
 				}
 
 				return true;
+			}
+
+			public bool ApplyTemporaryInlining (in UnreachableBlocksOptimizer optimizer)
+			{
+				bool changed = false;
+				var instructions = Body.Instructions;
+				Instruction? targetResult;
+
+				for (int i = 0; i < instructions.Count; ++i) {
+					var instr = instructions[i];
+					switch (instr.OpCode.Code) {
+
+					case Code.Call:
+					case Code.Callvirt:
+						var md = context.TryResolve ((MethodReference) instr.Operand);
+						if (md == null)
+							break;
+
+						// Not supported
+						if (md.IsVirtual || md.CallingConvention == MethodCallingConvention.VarArg)
+							break;
+
+						Instruction[]? args = GetArgumentsOnStack (md, FoldedInstructions ?? instructions, i);
+						targetResult = args?.Length > 0 && md.IsStatic ? EvaluateIntrinsicCall (md, args) : null;
+
+						if (targetResult == null)
+							targetResult = optimizer.TryGetMethodCallResult (new CalleePayload (md, args))?.Instruction;
+
+						if (targetResult == null)
+							break;
+
+						//
+						// Do simple arguments stack removal by replacing argument expressions with nops. For cases
+						// that require full stack understanding the logic won't work and will leave more opcodes
+						// on the stack and constant won't be propagated
+						//
+						int depth = args?.Length ?? 0;
+						if (!md.IsStatic)
+							++depth;
+
+						if (depth != 0)
+							RewriteToNop (i - 1, depth);
+
+						Rewrite (i, targetResult);
+						changed = true;
+						break;
+
+					case Code.Ldsfld:
+						var ftarget = (FieldReference) instr.Operand;
+						var field = context.TryResolve (ftarget);
+						if (field == null)
+							break;
+
+						if (context.Annotations.TryGetFieldUserValue (field, out object? value)) {
+							targetResult = CodeRewriterStep.CreateConstantResultInstruction (context, field.FieldType, value);
+							if (targetResult == null)
+								break;
+							Rewrite (i, targetResult);
+							changed = true;
+						}
+						break;
+
+					case Code.Sizeof:
+						var operand = (TypeReference) instr.Operand;
+						targetResult = optimizer.GetSizeOfResult (operand);
+						if (targetResult != null) {
+							Rewrite (i, targetResult);
+							changed = true;
+						}
+						break;
+					}
+				}
+
+				return changed;
 			}
 
 			void RemoveUnreachableInstructions (BitArray reachable)
@@ -963,57 +1096,6 @@ namespace Mono.Linker.Steps
 					GetConstantValue (FoldedInstructions[index - 1], out right);
 			}
 
-			static bool GetConstantValue (Instruction instruction, out object? value)
-			{
-				switch (instruction.OpCode.Code) {
-				case Code.Ldc_I4_0:
-					value = 0;
-					return true;
-				case Code.Ldc_I4_1:
-					value = 1;
-					return true;
-				case Code.Ldc_I4_2:
-					value = 2;
-					return true;
-				case Code.Ldc_I4_3:
-					value = 3;
-					return true;
-				case Code.Ldc_I4_4:
-					value = 4;
-					return true;
-				case Code.Ldc_I4_5:
-					value = 5;
-					return true;
-				case Code.Ldc_I4_6:
-					value = 6;
-					return true;
-				case Code.Ldc_I4_7:
-					value = 7;
-					return true;
-				case Code.Ldc_I4_8:
-					value = 8;
-					return true;
-				case Code.Ldc_I4_M1:
-					value = -1;
-					return true;
-				case Code.Ldc_I4:
-					value = (int) instruction.Operand;
-					return true;
-				case Code.Ldc_I4_S:
-					value = (int) (sbyte) instruction.Operand;
-					return true;
-				case Code.Ldc_I8:
-					value = (long) instruction.Operand;
-					return true;
-				case Code.Ldnull:
-					value = null;
-					return true;
-				default:
-					value = null;
-					return false;
-				}
-			}
-
 			static bool IsPairedStlocLdloc (Instruction first, Instruction second)
 			{
 				switch (first.OpCode.Code) {
@@ -1036,47 +1118,6 @@ namespace Mono.Linker.Steps
 				return false;
 			}
 
-			static bool IsComparisonAlwaysTrue (OpCode opCode, int left, int right)
-			{
-				switch (opCode.Code) {
-				case Code.Beq:
-				case Code.Beq_S:
-				case Code.Ceq:
-					return left == right;
-				case Code.Bne_Un:
-				case Code.Bne_Un_S:
-					return left != right;
-				case Code.Bge:
-				case Code.Bge_S:
-					return left >= right;
-				case Code.Bge_Un:
-				case Code.Bge_Un_S:
-					return (uint) left >= (uint) right;
-				case Code.Bgt:
-				case Code.Bgt_S:
-				case Code.Cgt:
-					return left > right;
-				case Code.Bgt_Un:
-				case Code.Bgt_Un_S:
-					return (uint) left > (uint) right;
-				case Code.Ble:
-				case Code.Ble_S:
-					return left <= right;
-				case Code.Ble_Un:
-				case Code.Ble_Un_S:
-					return (uint) left <= (uint) right;
-				case Code.Blt:
-				case Code.Blt_S:
-				case Code.Clt:
-					return left < right;
-				case Code.Blt_Un:
-				case Code.Blt_Un_S:
-					return (uint) left < (uint) right;
-				}
-
-				throw new NotImplementedException (opCode.ToString ());
-			}
-
 			static bool IsConstantBranch (OpCode opCode, int operand)
 			{
 				switch (opCode.Code) {
@@ -1094,27 +1135,7 @@ namespace Mono.Linker.Steps
 			bool IsJumpTargetRange (int firstInstr, int lastInstr)
 			{
 				Debug.Assert (FoldedInstructions != null);
-				foreach (var instr in FoldedInstructions) {
-					switch (instr.OpCode.FlowControl) {
-					case FlowControl.Branch:
-					case FlowControl.Cond_Branch:
-						if (instr.Operand is Instruction target) {
-							var index = GetInstructionIndex (target);
-							if (index >= firstInstr && index <= lastInstr)
-								return true;
-						} else {
-							foreach (var rtarget in (Instruction[]) instr.Operand) {
-								var index = GetInstructionIndex (rtarget);
-								if (index >= firstInstr && index <= lastInstr)
-									return true;
-							}
-						}
-
-						break;
-					}
-				}
-
-				return false;
+				return HasJumpIntoTargetRange (FoldedInstructions, firstInstr, lastInstr, GetInstructionIndex);
 			}
 		}
 
@@ -1145,7 +1166,7 @@ namespace Mono.Linker.Steps
 
 			public int InstructionsReplaced { get; set; }
 
-			public bool Initialize ()
+			public void Initialize ()
 			{
 				var instrs = body.Instructions;
 
@@ -1172,7 +1193,6 @@ namespace Mono.Linker.Steps
 				}
 
 				ilprocessor = body.GetLinkerILProcessor ();
-				return true;
 			}
 
 			public void Process (List<int>? conditionInstrsToRemove, out List<Instruction>? sentinelNops)
@@ -1335,81 +1355,62 @@ namespace Mono.Linker.Steps
 
 				return null;
 			}
-
-			static bool IsSideEffectFreeLoad (Instruction instr)
-			{
-				switch (instr.OpCode.Code) {
-				case Code.Ldarg:
-				case Code.Ldloc:
-				case Code.Ldloc_0:
-				case Code.Ldloc_1:
-				case Code.Ldloc_2:
-				case Code.Ldloc_3:
-				case Code.Ldloc_S:
-				case Code.Ldc_I4_0:
-				case Code.Ldc_I4_1:
-				case Code.Ldc_I4_2:
-				case Code.Ldc_I4_3:
-				case Code.Ldc_I4_4:
-				case Code.Ldc_I4_5:
-				case Code.Ldc_I4_6:
-				case Code.Ldc_I4_7:
-				case Code.Ldc_I4_8:
-				case Code.Ldc_I4:
-				case Code.Ldc_I4_S:
-				case Code.Ldc_I4_M1:
-				case Code.Ldc_I8:
-				case Code.Ldc_R4:
-				case Code.Ldc_R8:
-				case Code.Ldnull:
-				case Code.Ldstr:
-					return true;
-				}
-
-				return false;
-			}
 		}
 
 		struct ConstantExpressionMethodAnalyzer
 		{
-			readonly MethodDefinition method;
-			readonly Collection<Instruction> instructions;
 			readonly LinkContext context;
+			readonly UnreachableBlocksOptimizer optimizer;
 
 			Stack<Instruction>? stack_instr;
 			Dictionary<int, Instruction>? locals;
 
-			public ConstantExpressionMethodAnalyzer (LinkContext context, MethodDefinition method)
+			public ConstantExpressionMethodAnalyzer (UnreachableBlocksOptimizer optimizer)
 			{
-				this.context = context;
-				this.method = method;
-				instructions = method.Body.Instructions;
+				this.optimizer = optimizer;
+				this.context = optimizer._context;
 				stack_instr = null;
 				locals = null;
 				Result = null;
+				SideEffectFreeResult = true;
 			}
 
-			public ConstantExpressionMethodAnalyzer (LinkContext context, MethodDefinition method, Collection<Instruction> instructions)
-				: this (context, method)
-			{
-				this.instructions = instructions;
-			}
-
+			//
+			// Single expression that is representing the evaluation result with the specific
+			// callee arguments
+			//
 			public Instruction? Result { get; private set; }
 
+			//
+			// Returns true when the method evaluation with specific arguments does not cause
+			// any observable side effect (e.g. possible NRE, field access, etc)
+			//
+			public bool SideEffectFreeResult { get; private set; }
+
 			[MemberNotNullWhen (true, "Result")]
-			public bool Analyze ()
+			public bool Analyze (in CalleePayload callee, Stack<MethodDefinition> callStack)
 			{
-				var body = method.Body;
-				if (body.HasExceptionHandlers)
-					return false;
+				MethodDefinition method = callee.Method;
+				Instruction[]? arguments = callee.Arguments;
+				Collection<Instruction> instructions = callee.Method.Body.Instructions;
+				MethodBody body = method.Body;
 
 				VariableReference vr;
 				Instruction? jmpTarget = null;
 				Instruction? linstr;
+				object? left, right, operand;
 
-				foreach (var instr in instructions) {
+				//
+				// We could implement a full-blown interpreter here but for now, it handles
+				// cases used in runtime libraries
+				//
+				for (int i = 0; i < instructions.Count; ++i) {
+					var instr = instructions[i];
+
 					if (jmpTarget != null) {
+						//
+						// Handles both backward and forward jumps
+						//
 						if (instr != jmpTarget)
 							continue;
 
@@ -1418,17 +1419,71 @@ namespace Mono.Linker.Steps
 
 					switch (instr.OpCode.Code) {
 					case Code.Nop:
+					case Code.Volatile:
 						continue;
 					case Code.Pop:
-						if (stack_instr == null)
-							Debug.Fail ("Invalid IL?");
-						stack_instr.Pop ();
+						Debug.Assert (stack_instr != null, "invalid il?");
+						stack_instr?.Pop ();
 						continue;
 
 					case Code.Br_S:
 					case Code.Br:
 						jmpTarget = (Instruction) instr.Operand;
 						continue;
+
+					case Code.Brfalse_S:
+					case Code.Brfalse: {
+							if (!GetOperandConstantValue (out operand))
+								return false;
+
+							if (operand is int oint) {
+								if (oint == 0)
+									jmpTarget = (Instruction) instr.Operand;
+
+								continue;
+							}
+
+							return false;
+						}
+
+					case Code.Brtrue_S:
+					case Code.Brtrue: {
+							if (!GetOperandConstantValue (out operand))
+								return false;
+
+							if (operand is int oint) {
+								if (oint == 1)
+									jmpTarget = (Instruction) instr.Operand;
+
+								continue;
+							}
+
+							return false;
+						}
+
+					case Code.Beq:
+					case Code.Beq_S:
+					case Code.Bne_Un:
+					case Code.Bne_Un_S:
+					case Code.Bge:
+					case Code.Bge_S:
+					case Code.Bge_Un:
+					case Code.Bge_Un_S:
+					case Code.Bgt:
+					case Code.Bgt_S:
+					case Code.Bgt_Un:
+					case Code.Bgt_Un_S:
+					case Code.Ble:
+					case Code.Ble_S:
+					case Code.Ble_Un:
+					case Code.Ble_Un_S:
+					case Code.Blt:
+					case Code.Blt_S:
+					case Code.Blt_Un:
+					case Code.Blt_Un_S:
+						if (EvaluateConditionalJump (instr, out jmpTarget))
+							continue;
+						return false;
 
 					case Code.Ldc_I4:
 					case Code.Ldc_I4_S:
@@ -1504,8 +1559,154 @@ namespace Mono.Linker.Steps
 						StoreToLocals (vr.Index);
 						continue;
 
-					// TODO: handle simple conversions
-					//case Code.Conv_I:
+					case Code.Ldarg_0:
+						if (!method.IsStatic) {
+							PushOnStack (instr);
+							continue;
+						}
+
+						linstr = GetArgumentValue (arguments, 0);
+						if (linstr == null)
+							return false;
+
+						PushOnStack (linstr);
+						continue;
+
+					case Code.Ldarg_1:
+						if (!method.IsStatic)
+							return false;
+
+						linstr = GetArgumentValue (arguments, 1);
+						if (linstr == null)
+							return false;
+
+						PushOnStack (linstr);
+						continue;
+
+					case Code.Ldsfld: {
+							var ftarget = (FieldReference) instr.Operand;
+							FieldDefinition? field = context.TryResolve (ftarget);
+							if (field == null)
+								return false;
+
+							if (context.Annotations.TryGetFieldUserValue (field, out object? value)) {
+								linstr = CodeRewriterStep.CreateConstantResultInstruction (context, field.FieldType, value);
+								if (linstr == null)
+									return false;
+							} else {
+								SideEffectFreeResult = false;
+								linstr = instr;
+							}
+
+							PushOnStack (linstr);
+							continue;
+						}
+
+					case Code.Ceq: {
+							if (!GetOperandsConstantValues (out right, out left))
+								return false;
+
+							if (left is int lint && right is int rint) {
+								PushOnStack (Instruction.Create (OpCodes.Ldc_I4, lint == rint ? 1 : 0));
+								continue;
+							}
+
+							if (left is long llong && right is long rlong) {
+								PushOnStack (Instruction.Create (OpCodes.Ldc_I4, llong == rlong ? 1 : 0));
+								continue;
+							}
+
+							return false;
+						}
+
+					case Code.Conv_I8: {
+							if (!GetOperandConstantValue (out operand))
+								return false;
+
+							if (operand is int oint) {
+								PushOnStack (Instruction.Create (OpCodes.Ldc_I8, (long) oint));
+								continue;
+							}
+
+							// TODO: Handle more types
+							return false;
+						}
+
+					case Code.Call:
+					case Code.Callvirt: {
+							MethodReference mr = (MethodReference) instr.Operand;
+							MethodDefinition? md = optimizer._context.TryResolve (mr);
+							if (md == null || md == method)
+								return false;
+
+							if (md.IsVirtual)
+								return false;
+
+							Instruction[]? args;
+							if (!md.HasParameters) {
+								args = Array.Empty<Instruction> ();
+							} else {
+								//
+								// Don't need to check for ref/out because ldloca like instructions are not supported
+								//
+								args = GetArgumentsOnStack (md);
+								if (args == null)
+									return false;
+							}
+
+							if (md.ReturnType.MetadataType == MetadataType.Void) {
+								// For now consider all void methods as side-effect causing
+								SideEffectFreeResult = false;
+								continue;
+							}
+
+							if (!md.IsStatic && !CanEvaluateInstanceMethodCall (method))
+								return false;
+
+							//
+							// Evaluate known framework methods
+							//
+							if (args.Length > 0) {
+								linstr = EvaluateIntrinsicCall (md, args);
+								if (linstr != null) {
+									PushOnStack (linstr);
+									continue;
+								}
+							}
+
+							//
+							// Guard against stack overflow on recursive calls. This could be turned into
+							// a warning if we check arguments too
+							//
+							if (callStack.Contains (md))
+								return false;
+
+							callStack.Push (method);
+							MethodResult? call_result = optimizer.TryGetMethodCallResult (new CalleePayload (md, args), callStack);
+							if (!callStack.TryPop (out _))
+								return false;
+
+							if (call_result is MethodResult result) {
+								if (!result.IsSideEffectFree)
+									SideEffectFreeResult = false;
+
+								PushOnStack (result.Instruction);
+								continue;
+							}
+
+							return false;
+						}
+
+					case Code.Sizeof: {
+							var type = (TypeReference) instr.Operand;
+							linstr = optimizer.GetSizeOfResult (type);
+							if (linstr != null) {
+								PushOnStack (linstr);
+								continue;
+							}
+
+							return false;
+						}
 
 					case Code.Ret:
 						if (ConvertStackToResult ())
@@ -1517,6 +1718,45 @@ namespace Mono.Linker.Steps
 					return false;
 				}
 
+				return false;
+			}
+
+			bool CanEvaluateInstanceMethodCall (MethodDefinition context)
+			{
+				if (stack_instr == null || !stack_instr.TryPop (out Instruction? instr))
+					return false;
+
+				switch (instr.OpCode.Code) {
+				case Code.Ldarg_0:
+					if (!context.IsStatic)
+						return true;
+
+					goto default;
+				default:
+					// We are not inlining hence can evaluate anything and decide later
+					// how to handle sitation when the result is not deterministic
+					SideEffectFreeResult = false;
+					return true;
+				}
+			}
+
+			bool EvaluateConditionalJump (Instruction instr, out Instruction? target)
+			{
+				if (!GetOperandsConstantValues (out object? right, out object? left)) {
+					target = null;
+					return false;
+				}
+
+				if (left is int lint && right is int rint) {
+					if (IsComparisonAlwaysTrue (instr.OpCode, lint, rint))
+						target = (Instruction) instr.Operand;
+					else
+						target = null;
+
+					return true;
+				}
+
+				target = null;
 				return false;
 			}
 
@@ -1554,6 +1794,28 @@ namespace Mono.Linker.Steps
 				return false;
 			}
 
+			static Instruction? GetArgumentValue (Instruction[]? arguments, int index)
+			{
+				if (arguments == null)
+					return null;
+
+				return index < arguments.Length ? arguments[index] : null;
+			}
+
+			Instruction[]? GetArgumentsOnStack (MethodDefinition method)
+			{
+				int length = method.Parameters.Count;
+				Debug.Assert (length != 0);
+				if (stack_instr?.Count < length)
+					return null;
+
+				var result = new Instruction[length];
+				while (length != 0)
+					result[--length] = stack_instr!.Pop ();
+
+				return result;
+			}
+
 			Instruction? GetLocalsValue (int index, MethodBody body)
 			{
 				if (locals != null && locals.TryGetValue (index, out Instruction? instruction))
@@ -1564,6 +1826,58 @@ namespace Mono.Linker.Steps
 
 				// local variables don't need to be explicitly initialized
 				return CodeRewriterStep.CreateConstantResultInstruction (context, body.Variables[index].VariableType);
+			}
+
+			bool GetOperandConstantValue ([NotNullWhen (true)] out object? value)
+			{
+				if (stack_instr == null) {
+					value = null;
+					return false;
+				}
+
+				Instruction? instr;
+				if (!stack_instr.TryPop (out instr)) {
+					value = null;
+					return false;
+				}
+
+				return GetConstantValue (instr, out value);
+			}
+
+			bool GetOperandsConstantValues ([NotNullWhen (true)] out object? left, [NotNullWhen (true)] out object? right)
+			{
+				if (stack_instr == null) {
+					left = right = null;
+					return false;
+				}
+
+				Instruction? instr;
+				if (!stack_instr.TryPop (out instr)) {
+					left = right = null;
+					return false;
+				}
+
+				if (instr == null) {
+					left = right = null;
+					return false;
+				}
+
+				if (!GetConstantValue (instr, out left)) {
+					left = right = null;
+					return false;
+				}
+
+				if (!stack_instr.TryPop (out instr)) {
+					left = right = null;
+					return false;
+				}
+
+				if (instr is null) {
+					left = right = null;
+					return false;
+				}
+
+				return GetConstantValue (instr, out right);
 			}
 
 			void PushOnStack (Instruction instruction)
@@ -1583,6 +1897,16 @@ namespace Mono.Linker.Steps
 					Debug.Fail ("Invalid IL?");
 				locals[index] = stack_instr.Pop ();
 			}
+		}
+
+		readonly record struct CalleePayload (MethodDefinition Method, Instruction[]? Arguments = null)
+		{
+			public bool HasUnknownArguments => Arguments is null;
+		}
+
+		readonly record struct MethodResult (Instruction Instruction, bool IsSideEffectFree)
+		{
+			public Instruction GetPrototype () => Instruction.GetPrototype ();
 		}
 	}
 }

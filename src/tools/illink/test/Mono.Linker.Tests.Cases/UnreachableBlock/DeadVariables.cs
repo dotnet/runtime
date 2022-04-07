@@ -65,9 +65,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			return 2;
 		}
 
-		[Kept]
 		static bool AlwaysTrue {
-			[Kept]
 			get {
 				return true;
 			}

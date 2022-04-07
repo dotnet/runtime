@@ -27,9 +27,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call System.Int32 Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_Prop()",
 			"ldc.i4.3",
-			"beq.s il_8",
+			"ldc.i4.3",
+			"beq.s il_4",
 			"ret",
 			})]
 		static void TestProperty_int_1 ()
@@ -41,8 +41,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			"ldc.i4.3",
-			"call System.Int32 Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_Prop()",
-			"beq.s il_8",
+			"ldc.i4.3",
+			"beq.s il_4",
 			"ret"
 			})]
 		static void TestProperty_int_2 ()
@@ -56,12 +56,13 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call System.Int32 Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_Prop()",
+			"ldc.i4.3",
 			"ldc.i4.5",
-			"ble.s il_8",
+			"ble.s il_4",
 			"ldc.i4.0",
 			"ret"
 			})]
+		[System.Runtime.CompilerServices.MethodImpl (System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
 		static int TestProperty_int_3 ()
 		{
 			if (Prop > 5 && TestProperty_int_3 () == 0) {
@@ -73,7 +74,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call System.Int32 Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_Prop()",
+			"ldc.i4.3",
 			"pop",
 			"ldloca.s",
 			"initobj System.Nullable`1<System.Int64>",
@@ -90,8 +91,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_PropBool()",
-			"brfalse.s il_7",
+			"ldc.i4.0",
+			"brfalse.s il_3",
 			"ret"
 			})]
 		static void TestProperty_bool_1 ()
@@ -105,9 +106,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_PropBool()",
-			"brfalse.s il_7",
-			"ret"
+			"ldc.i4.0",
+			"brfalse.s il_3",
+			"ret",
 			})]
 		static void TestProperty_bool_2 ()
 		{
@@ -118,9 +119,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_PropBool()",
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_PropBool()",
-			"beq.s il_c",
+			"ldc.i4.0",
+			"ldc.i4.0",
+			"beq.s il_4",
 			"ret"
 			})]
 		static void TestProperty_bool_3 ()
@@ -133,7 +134,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			"br.s il_2",
-			"call Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty/TestEnum Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_PropEnum()",
+			"ldc.i4.1",
 			"pop",
 			"ret",
 			})]
@@ -146,8 +147,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call System.String Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_PropNull()",
-			"brfalse.s il_7",
+			"ldnull",
+			"brfalse.s il_3",
 			"ret"
 			})]
 		static void TestProperty_null_1 ()
@@ -204,48 +205,36 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 				NeverReached_1 ();
 		}
 
-		[Kept]
 		static int Prop {
-			[Kept]
 			get {
 				int i = 3;
 				return i;
 			}
 		}
 
-		[Kept]
 		static bool PropBool {
-			[Kept]
 			get {
 				return false;
 			}
 		}
 
-		[Kept]
 		static TestEnum PropEnum {
-			[Kept]
 			get {
 				return TestEnum.B;
 			}
 		}
 
-		[Kept]
 		static string PropNull {
-			[Kept]
 			get {
 				return null;
 			}
 		}
 
-		[Kept]
 		static int PropInt {
-			[Kept]
 			get => 10;
 		}
 
-		[Kept]
 		static uint PropUInt {
-			[Kept]
 			get => 10;
 		}
 
@@ -253,16 +242,10 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		{
 		}
 
-		[Kept]
-		[KeptMember ("value__")]
-		[KeptBaseType (typeof (Enum))]
 		enum TestEnum
 		{
-			[Kept]
 			A = 0,
-			[Kept]
 			B = 1,
-			[Kept]
 			C = 2
 		}
 

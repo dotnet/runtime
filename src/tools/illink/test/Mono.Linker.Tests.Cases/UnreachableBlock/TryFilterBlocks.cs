@@ -17,20 +17,20 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			".try",
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.TryFilterBlocks::get_Prop()",
-			"brfalse.s il_7",
+			"ldc.i4.0",
+			"brfalse.s il_3",
 			"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.TryFilterBlocks::Reached_1()",
-			"leave.s il_1c",
+			"leave.s il_14",
 			".endtry",
 			".filter",
 			"pop",
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.TryFilterBlocks::Log()",
+			"ldc.i4.0",
 			"ldc.i4.0",
 			"cgt.un",
 			"endfilter",
 			".catch",
 			"pop",
-			"leave.s il_1c",
+			"leave.s il_14",
 			".endcatch",
 			"ldc.i4.2",
 			"ret",
@@ -52,19 +52,19 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[ExpectedInstructionSequence (new[] {
 			".try",
 			"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.TryFilterBlocks::Reached_2()",
-			"leave.s il_18",
+			"leave.s il_14",
 			".endtry",
 			".filter",
 			"pop",
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.TryFilterBlocks::Log()",
-			"brfalse.s il_f",
+			"ldc.i4.0",
+			"brfalse.s il_b",
 			"ldc.i4.0",
 			"ldc.i4.0",
 			"cgt.un",
 			"endfilter",
 			".catch",
 			"pop",
-			"leave.s il_18",
+			"leave.s il_14",
 			".endcatch",
 			"ldc.i4.3",
 			"ret",
@@ -79,15 +79,12 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			return 3;
 		}
 
-		[Kept]
 		static bool Prop {
-			[Kept]
 			get {
 				return false;
 			}
 		}
 
-		[Kept]
 		static bool Log () => false;
 
 		[Kept]

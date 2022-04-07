@@ -24,20 +24,20 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"nop",
 			"ldarg.0",
 			"isinst System.Type",
-			"brtrue.s il_19",
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ComplexConditions::get_IsDynamicCodeSupported()",
+			"brtrue.s il_15",
+			"ldc.i4.1",
 			"pop",
 			"ldarg.0",
 			"pop",
 			"ldnull",
 			"ldnull",
 			"cgt.un",
-			"br.s il_17",
-			"br.s il_1a",
+			"br.s il_13",
+			"br.s il_16",
 			"ldc.i4.1",
 			"stloc.0",
 			"ldloc.0",
-			"brfalse.s il_24",
+			"brfalse.s il_20",
 			"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.ComplexConditions::Reached_1()",
 			"nop",
 			"ret",
@@ -55,7 +55,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 #else
 		[ExpectedInstructionSequence (new[] {
 			"nop",
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ComplexConditions::get_IsDynamicCodeSupported()",
+			"ldc.i4.1",
 			"stloc.1",
 			"ldloc.1",
 			"pop",
@@ -63,15 +63,15 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"stloc.0",
 			"ldarg.0",
 			"ldc.i4.2",
-			"beq.s il_15",
+			"beq.s il_11",
 			"ldarg.0",
 			"ldc.i4.3",
 			"ceq",
-			"br.s il_16",
+			"br.s il_12",
 			"ldc.i4.1",
 			"stloc.2",
 			"ldloc.2",
-			"brfalse.s il_20",
+			"brfalse.s il_1c",
 			"newobj System.Void System.ArgumentException::.ctor()",
 			"throw",
 			"newobj System.Void System.ApplicationException::.ctor()",
@@ -90,9 +90,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			throw new ApplicationException ();
 		}
 
-		[Kept]
 		static bool IsDynamicCodeSupported {
-			[Kept]
 			get {
 				return true;
 			}

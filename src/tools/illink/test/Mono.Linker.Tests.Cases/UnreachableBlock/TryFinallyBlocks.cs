@@ -19,9 +19,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		{
 			[Kept]
 			[ExpectedInstructionSequence (new[] {
-				"call System.Int32 Mono.Linker.Tests.Cases.UnreachableBlock.TryFinallyBlocks/TryFinallyInConstantProperty::get_Prop()",
 				"ldc.i4.3",
-				"beq.s il_8",
+				"ldc.i4.3",
+				"beq.s il_4",
 				"ret"
 			})]
 			public static void Test ()
@@ -30,9 +30,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 					Unreached_1 ();
 			}
 
-			[Kept]
 			static int Prop {
-				[Kept]
 				get {
 					try {
 						return 3;
@@ -51,7 +49,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		{
 			[Kept]
 			[ExpectedInstructionSequence (new[] {
-				"call System.Int32 Mono.Linker.Tests.Cases.UnreachableBlock.TryFinallyBlocks/TryFinallyInRemovedBranch::get_Prop()",
+				"ldc.i4.0",
 				"pop",
 				"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.TryFinallyBlocks/TryFinallyInRemovedBranch::Reached()",
 				"ret",
@@ -65,8 +63,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 				}
 			}
 
-			[Kept]
-			static int Prop { [Kept] get => 0; }
+			static int Prop { get => 0; }
 
 			[Kept]
 			static void Reached () { }
@@ -80,11 +77,11 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		{
 			[Kept]
 			[ExpectedInstructionSequence (new[] {
-				"call System.Int32 Mono.Linker.Tests.Cases.UnreachableBlock.TryFinallyBlocks/TryFinallyInKeptBranchBeforeRemovedBranch::get_Prop()",
+				"ldc.i4.0",
 				"pop",
 				".try",
 				"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.TryFinallyBlocks/TryFinallyInKeptBranchBeforeRemovedBranch::Reached()",
-				"leave.s il_13",
+				"leave.s il_f",
 				".endtry",
 				".catch",
 				"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.TryFinallyBlocks/TryFinallyInKeptBranchBeforeRemovedBranch::Reached_2()",
@@ -101,8 +98,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 				}
 			}
 
-			[Kept]
-			static int Prop { [Kept] get => 0; }
+			static int Prop { get => 0; }
 
 			[Kept]
 			static void Reached () { }

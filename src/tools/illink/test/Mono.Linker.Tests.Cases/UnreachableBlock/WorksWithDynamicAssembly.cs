@@ -9,17 +9,15 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
 	[SetupCompileBefore ("library.dll", new string[] { "Dependencies/ReferencedAssemblyWithUnreachableBlocks.cs" },
 		addAsReference: false, additionalArguments: "/optimize+", compilerToUse: "csc")]
-	[KeptMemberInAssembly ("library.dll", "Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies.AssemblyWithUnreachableBlocks",
-		new string[] { ".ctor()", "TestProperty()", "get_PropBool()" })]
 	[RemovedMemberInAssembly ("library.dll", "Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies.AssemblyWithUnreachableBlocks",
 		new string[] { "NeverReached()" })]
 	[ExpectedInstructionSequenceOnMemberInAssembly ("library.dll",
 		"Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies.AssemblyWithUnreachableBlocks",
 		"TestProperty()",
 		new string[] {
-			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies.AssemblyWithUnreachableBlocks::get_PropBool()",
-			"brfalse.s il_7",
-			"ret"
+			"ldc.i4.0",
+			"brfalse.s il_3",
+			"ret",
 		})]
 	[Kept]
 	public class WorksWithDynamicAssembly
