@@ -45,10 +45,8 @@
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.targets"
           Condition="'$(NativeAotSupported)' == 'true' and '$(RunningPublish)' == 'true'" />
 
-  <!-- Somehow TargetFramework is getting set to something else in source build and it is breaking restore.
-       Reset it here-->
-  <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-  </PropertyGroup>
+  <Target Name="DeleteAssetsJson" Condition="'$(DotNetBuildFromSource)' == 'true'">
+    <Delete Files="$(ProjectAssetsFile)" />
+  </Target>
 
 </Project>
