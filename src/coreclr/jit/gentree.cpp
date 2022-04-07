@@ -13440,7 +13440,10 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                         break;
 
                     case GT_BSWAP16:
-                        i1 = ((i1 >> 8) & 0xFF) | ((i1 << 8) & 0xFF00);
+                        // Semantics of bswap16 is to swap lower 2 bytes, but
+                        // leaver upper 2 bytes alone (with a cast inserted as
+                        // necessary during import).
+                        i1 = (i1 & 0xFFFF0000) | ((i1 >> 8) & 0xFF) | ((i1 << 8) & 0xFF00);
                         break;
 
                     case GT_CAST:

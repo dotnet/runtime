@@ -562,7 +562,8 @@ T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0)
                 UINT16 v0_unsigned = UINT16(v0);
 
                 v0_unsigned = ((v0_unsigned >> 8) & 0xFF) | ((v0_unsigned << 8) & 0xFF00);
-                return T(v0_unsigned);
+                // Swap 2 lower bytes, leave rest alone
+                return (v0 & ~T(0xFFFF)) | T(v0_unsigned);
             }
 
             case GT_BSWAP:
