@@ -7,10 +7,10 @@ parameters:
 steps:
   # Always build the crossdac, that way we know in CI/PR if things break to build.
   - ${{ if and(eq(parameters.osGroup, 'windows'), notin(parameters.archType, 'x86')) }}:
-    - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch ${{ parameters.hostArchType }} -ci -os Linux -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" -ninja $(officialBuildIdArg) -component crosscomponents
+    - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) ${{ parameters.archType }} -hostarch ${{ parameters.hostArchType }} -ci -os Linux -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" -ninja $(officialBuildIdArg) -component crosscomponents
       displayName: Build Cross OS Linux DAC for Windows
 
-    - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch ${{ parameters.hostArchType }} -ci -os alpine -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" -ninja $(officialBuildIdArg) -component crosscomponents
+    - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) ${{ parameters.archType }} -hostarch ${{ parameters.hostArchType }} -ci -os alpine -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" -ninja $(officialBuildIdArg) -component crosscomponents
       displayName: Build Cross OS Linux-musl DAC for Windows
 
     - powershell: |
@@ -21,7 +21,7 @@ steps:
             [Parameter(Mandatory)][string]$targetDir
           )
 
-          if ('$(archType)' -ne '${{ parameters.hostArchType }}')
+          if ('${{ parameters.archType }}' -ne '${{ parameters.hostArchType }}')
           {
             $crossDacDir = Join-Path $crossDacDir -ChildPath '${{ parameters.hostArchType }}'
           }
