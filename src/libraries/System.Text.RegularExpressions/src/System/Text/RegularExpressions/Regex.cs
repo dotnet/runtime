@@ -403,7 +403,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Internal worker which will scan the passed in span <paramref name="input"/> for a match. Used by public APIs.</summary>
-        internal Match? RunSingleMatch(ReadOnlySpan<char> input, int startat)
+        internal Match? RunSingleMatch(bool quick, int prevlen, ReadOnlySpan<char> input, int startat)
         {
             // startat parameter is always either 0 or input.Length since public API for IsMatch doesn't have an overload
             // that takes in startat.
@@ -413,13 +413,36 @@ namespace System.Text.RegularExpressions
             try
             {
                 runner.InitializeTimeout(internalMatchTimeout);
-                runner.InitializeForScan(this, input, startat, quick: true);
+                runner.InitializeForScan(this, input, startat, quick);
+
+                int stoppos = RightToLeft ? 0 : input.Length;
+
+                // If previous match was empty or failed, advance by one before matching.
+                if (prevlen == 0)
+                {
+                    if (runner.runtextstart == stoppos)
+                    {
+                        return RegularExpressions.Match.Empty;
+                    }
+
+                    runner.runtextpos += RightToLeft ? -1 : 1;
+                }
 
                 runner.Scan(input);
 
                 // If runmatch is null it means that an override of Scan didn't implement it correctly, so we will
                 // let this null ref since there are lots of ways where you can end up in a erroneous state.
-                return runner.runmatch!.FoundMatch ? null : RegularExpressions.Match.Empty;
+                if (runner.runmatch!.FoundMatch)
+                {
+                    if (quick)
+                    {
+                        return null;
+                    }
+                    runner.runmatch.Tidy(runner.runtextpos, 0);
+                    return runner.runmatch;
+                }
+
+                return RegularExpressions.Match.Empty;
             }
             finally
             {
