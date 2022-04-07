@@ -20,8 +20,8 @@
     <PublishTrimmed>true</PublishTrimmed>
 
     <WasmNativeWorkload>true</WasmNativeWorkload>
-   <TargetFramework>net7.0</TargetFramework>
-     <_PacksDir>$(MSBuildToolsPath)\..\..\packs\</_PacksDir>
+   <TargetFramework>net6.0</TargetFramework>
+     <!--<_PacksDir>$(MSBuildToolsPath)\..\..\packs\</_PacksDir>-->
    </PropertyGroup>
 
    <!--<Import Project="$(MSBuildToolsPath)\..\..\sdk-manifests\7.0.100\**\*.targets" />-->

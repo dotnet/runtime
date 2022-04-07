@@ -4,7 +4,7 @@
     <PublishTrimmed>true</PublishTrimmed>
 
     <WasmNativeWorkload>true</WasmNativeWorkload>
-   <TargetFramework>net7.0</TargetFramework>
+   <TargetFramework>net6.0</TargetFramework>
      <_PacksDir>$(MSBuildToolsPath)\..\..\packs\</_PacksDir>
    </PropertyGroup>
 

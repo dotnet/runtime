@@ -99,9 +99,6 @@ if [%TEST_USING_WORKLOADS%] == [true] (
     set SDK_HAS_WORKLOAD_INSTALLED=true
     set "AppRefDir=%BASE_DIR%\microsoft.netcore.app.ref"
 ) else (
-    set "DOTNET_ROOT=%BASE_DIR%\sdk-no-workload"
-    set SDK_HAS_WORKLOAD_INSTALLED=false
-    set "WasmBuildSupportDir=%BASE_DIR%\build"
 )
 set "PATH=%DOTNET_ROOT%;%PATH%"
 set "SDK_FOR_WORKLOAD_TESTING_PATH=%DOTNET_ROOT"

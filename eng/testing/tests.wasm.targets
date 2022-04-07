@@ -93,7 +93,7 @@
     <PreExecutionTestCommand Condition="'$(WindowsShell)' == 'true'" Include="set BASE_DIR=$(ArtifactsBinDir)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
+  <ItemGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true' and '$(TestUsingWorkloads)' == 'true'">
     <PreExecutionTestCommand Condition="'$(BrowserHost)' != 'windows'" Include="set_env_vars" />
     <PreExecutionTestCommand Condition="'$(BrowserHost)' != 'windows'" Include="set" />
     <PreExecutionTestCommand Condition="'$(BrowserHost)' == 'windows'" Include="CALL :SetEnvVars" />
