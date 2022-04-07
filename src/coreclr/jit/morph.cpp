@@ -5436,6 +5436,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         }
 
         GenTreeBoundsChk* arrBndsChk = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(index, arrLen, SCK_RNGCHK_FAIL);
+        arrBndsChk->gtInxType        = elemTyp;
 
         bndsChk = arrBndsChk;
 
@@ -6231,7 +6232,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             // should be unified to always use the IND(<address>) form.
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_X86)
             bool preferIndir = true;
 #else  // !TARGET_64BIT
             bool preferIndir = isBoxedStatic;

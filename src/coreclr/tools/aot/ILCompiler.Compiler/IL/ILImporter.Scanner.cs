@@ -263,6 +263,8 @@ namespace Internal.IL
             var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
+            _compilation.TypeSystemContext.EnsureLoadableMethod(method);
+
             _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, method);
 
             if (method.IsRawPInvoke())
@@ -827,12 +829,27 @@ namespace Internal.IL
         private void ImportRefAnyVal(int token)
         {
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRefAny), "refanyval");
+            ImportTypedRefOperationDependencies(token, "refanyval");
         }
 
         private void ImportMkRefAny(int token)
         {
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.TypeHandleToRuntimeType), "mkrefany");
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.TypeHandleToRuntimeTypeHandle), "mkrefany");
+            ImportTypedRefOperationDependencies(token, "mkrefany");
+        }
+
+        private void ImportTypedRefOperationDependencies(int token, string reason)
+        {
+            var type = (TypeDesc)_methodIL.GetObject(token);
+            if (type.IsRuntimeDeterminedSubtype)
+            {
+                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), reason);
+            }
+            else
+            {
+                _dependencies.Add(_factory.ConstructedTypeSymbol(type), reason);
+            }
         }
 
         private void ImportLdToken(int token)

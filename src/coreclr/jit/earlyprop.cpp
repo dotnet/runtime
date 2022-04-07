@@ -29,58 +29,6 @@ bool Compiler::optDoEarlyPropForBlock(BasicBlock* block)
     return bbHasArrayRef || bbHasNullCheck;
 }
 
-//------------------------------------------------------------------------------
-// getArrayLengthFromAllocation: Return the array length for an array allocation
-//                               helper call.
-//
-// Arguments:
-//    tree           - The array allocation helper call.
-//    block          - tree's basic block.
-//
-// Return Value:
-//    Return the array length node.
-
-GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block))
-{
-    assert(tree != nullptr);
-
-    GenTree* arrayLength = nullptr;
-
-    if (tree->OperGet() == GT_CALL)
-    {
-        GenTreeCall* call = tree->AsCall();
-
-        if (call->gtCallType == CT_HELPER)
-        {
-            if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_DIRECT) ||
-                call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_OBJ) ||
-                call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_VC) ||
-                call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8))
-            {
-                // This is an array allocation site. Grab the array length node.
-                arrayLength = gtArgEntryByArgNum(call, 1)->GetNode();
-            }
-            else if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_READYTORUN_NEWARR_1))
-            {
-                // On arm when compiling on certain platforms for ready to run, a handle will be
-                // inserted before the length. To handle this case, we will grab the last argument
-                // as that's always the length. See fgInitArgInfo for where the handle is inserted.
-                int arrLenArgNum = call->fgArgInfo->ArgCount() - 1;
-                arrayLength      = gtArgEntryByArgNum(call, arrLenArgNum)->GetNode();
-            }
-#ifdef DEBUG
-            if (arrayLength != nullptr)
-            {
-                optCheckFlagsAreSet(OMF_HAS_NEWARRAY, "OMF_HAS_NEWARRAY", BBF_HAS_NEWARRAY, "BBF_HAS_NEWARRAY", tree,
-                                    block);
-            }
-#endif
-        }
-    }
-
-    return arrayLength;
-}
-
 #ifdef DEBUG
 //-----------------------------------------------------------------------------
 // optCheckFlagsAreSet: Check that the method flag and the basic block flag are set.

@@ -23,7 +23,7 @@ namespace System
           IComparable<Guid>,
           IEquatable<Guid>,
           IComparisonOperators<Guid, Guid>,
-          ISpanParseable<Guid>
+          ISpanParsable<Guid>
     {
         public static readonly Guid Empty;
 
@@ -385,7 +385,7 @@ namespace System
                 return false;
             }
 
-            Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result, 1));
+            Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result));
             int invalidIfNegative = 0;
             bytes[0] = DecodeByte(guidString[6],   guidString[7],  ref invalidIfNegative);
             bytes[1] = DecodeByte(guidString[4],   guidString[5],  ref invalidIfNegative);
@@ -471,7 +471,7 @@ namespace System
                 return false;
             }
 
-            Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result, 1));
+            Span<byte> bytes = MemoryMarshal.AsBytes(new Span<GuidResult>(ref result));
             int invalidIfNegative = 0;
             bytes[0] = DecodeByte(guidString[6], guidString[7], ref invalidIfNegative);
             bytes[1] = DecodeByte(guidString[4], guidString[5], ref invalidIfNegative);
@@ -1466,23 +1466,23 @@ namespace System
         }
 
         //
-        // IParseable
+        // IParsable
         //
 
-        /// <inheritdoc cref="IParseable{TSelf}.Parse(string, IFormatProvider?)" />
+        /// <inheritdoc cref="IParsable{TSelf}.Parse(string, IFormatProvider?)" />
         public static Guid Parse(string s, IFormatProvider? provider) => Parse(s);
 
-        /// <inheritdoc cref="IParseable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Guid result) => TryParse(s, out result);
 
         //
-        // ISpanParseable
+        // ISpanParsable
         //
 
-        /// <inheritdoc cref="ISpanParseable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
         public static Guid Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
 
-        /// <inheritdoc cref="ISpanParseable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Guid result) => TryParse(s, out result);
     }
 }

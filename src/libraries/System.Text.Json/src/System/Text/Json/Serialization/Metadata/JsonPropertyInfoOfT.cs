@@ -114,7 +114,7 @@ namespace System.Text.Json.Serialization.Metadata
             PropertyTypeCanBeNull = PropertyType.CanBeNull();
             _propertyTypeEqualsTypeToConvert = typeof(T) == PropertyType;
 
-            GetPolicies(ignoreCondition, parentTypeNumberHandling);
+            GetPolicies(ignoreCondition);
         }
 
         internal void InitializeForSourceGen(JsonSerializerOptions options, JsonPropertyInfoValues<T> propertyInfo)
@@ -184,8 +184,7 @@ namespace System.Text.Json.Serialization.Metadata
                 _propertyTypeEqualsTypeToConvert = ConverterBase.TypeToConvert == typeof(T);
                 ConverterStrategy = Converter!.ConverterStrategy;
                 DetermineIgnoreCondition(IgnoreCondition);
-                // TODO: this method needs to also take the number handling option for the declaring type.
-                DetermineNumberHandlingForProperty(propertyInfo.NumberHandling, declaringTypeNumberHandling: null);
+                NumberHandling = propertyInfo.NumberHandling;
                 DetermineSerializationCapabilities(IgnoreCondition);
             }
         }

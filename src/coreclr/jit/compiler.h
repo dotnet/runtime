@@ -1125,7 +1125,7 @@ public:
 
     var_types GetRegisterType() const;
 
-    var_types GetActualRegisterType() const;
+    var_types GetStackSlotHomeType() const;
 
     bool IsEnregisterableType() const
     {
@@ -4154,6 +4154,8 @@ public:
         void PromoteStructVar(unsigned lclNum);
         void SortStructFields();
 
+        bool CanConstructAndPromoteField(lvaStructPromotionInfo* structPromotionInfo);
+
         lvaStructFieldInfo GetFieldInfo(CORINFO_FIELD_HANDLE fieldHnd, BYTE ordinal);
         bool TryPromoteStructField(lvaStructFieldInfo& outerFieldInfo);
 
@@ -4639,7 +4641,7 @@ public:
                                            CORINFO_LOOKUP_KIND*    pGenericLookupKind = nullptr);
 
     bool impIsCastHelperEligibleForClassProbe(GenTree* tree);
-    bool impIsCastHelperMayHaveProfileData(GenTree* tree);
+    bool impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper);
 
     GenTree* impCastClassOrIsInstToTree(
         GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, IL_OFFSET ilOffset);
@@ -8088,8 +8090,9 @@ public:
     };
 
     bool optIsStackLocalInvariant(unsigned loopNum, unsigned lclNum);
-    bool optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum);
-    bool optReconstructArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum);
+    bool optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
+    bool optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
+    bool optReconstructArrIndex(GenTree* tree, ArrIndex* result);
     bool optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* context);
     static fgWalkPreFn optCanOptimizeByLoopCloningVisitor;
     fgWalkResult optCanOptimizeByLoopCloning(GenTree* tree, LoopCloneVisitorInfo* info);

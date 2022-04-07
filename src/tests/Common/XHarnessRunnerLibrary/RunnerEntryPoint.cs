@@ -16,6 +16,11 @@ public static class RunnerEntryPoint
         string? filter,
         HashSet<string> testExclusionList)
     {
+        // If an exclusion list is passed as a filter, treat it as though no filter is provided here.
+        if (filter?.StartsWith("--exclusion-list=") == true)
+        {
+            filter = null;
+        }
         ApplicationEntryPoint? entryPoint = null;
         if (OperatingSystem.IsAndroid())
         {
@@ -36,6 +41,12 @@ public static class RunnerEntryPoint
         bool anyFailedTests = false;
         entryPoint.TestsCompleted += (o, e) => anyFailedTests = e.FailedTests > 0;
         await entryPoint.RunAsync();
+
+        if (OperatingSystem.IsBrowser())
+        {
+            // Browser expects all xharness processes to exit with 0, even in case of failure
+            return 0;
+        }
         return anyFailedTests ? 1 : 0;
     }
 
@@ -65,7 +76,7 @@ public static class RunnerEntryPoint
         protected override bool IsXunit => true;
         protected override TestRunner GetTestRunner(LogWriter logWriter)
         {
-            var runner = new GeneratedTestRunner(logWriter, _runTestsCallback, _assemblyName, _testExclusionList);
+            var runner = new GeneratedTestRunner(logWriter, _runTestsCallback, _assemblyName, _testExclusionList, writeBase64TestResults: true);
             if (_methodNameToRun is not null)
             {
                 runner.SkipMethod(_methodNameToRun, isExcluded: false);
@@ -103,7 +114,7 @@ public static class RunnerEntryPoint
         protected override bool IsXunit => true;
         protected override TestRunner GetTestRunner(LogWriter logWriter)
         {
-            var runner = new GeneratedTestRunner(logWriter, _runTestsCallback, _assemblyName, _testExclusionList);
+            var runner = new GeneratedTestRunner(logWriter, _runTestsCallback, _assemblyName, _testExclusionList, writeBase64TestResults: false);
             if (_methodNameToRun is not null)
             {
                 runner.SkipMethod(_methodNameToRun, isExcluded: false);
@@ -151,7 +162,7 @@ public static class RunnerEntryPoint
         protected override bool IsXunit => true;
         protected override TestRunner GetTestRunner(LogWriter logWriter)
         {
-            var runner = new GeneratedTestRunner(logWriter, _runTestsCallback, _assemblyName, _testExclusionList);
+            var runner = new GeneratedTestRunner(logWriter, _runTestsCallback, _assemblyName, _testExclusionList, writeBase64TestResults: true);
             if (_methodNameToRun is not null)
             {
                 runner.SkipMethod(_methodNameToRun, isExcluded: false);

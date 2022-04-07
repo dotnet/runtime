@@ -16,57 +16,6 @@ namespace LibraryImportGenerator.UnitTests
 {
     public class Diagnostics
     {
-        [Theory]
-        [InlineData(TestTargetFramework.Framework)]
-        [InlineData(TestTargetFramework.Core)]
-        [InlineData(TestTargetFramework.Standard)]
-        [InlineData(TestTargetFramework.Net5)]
-        public async Task TargetFrameworkNotSupported_NoDiagnostic(TestTargetFramework targetFramework)
-        {
-            string source = $@"
-using System.Runtime.InteropServices;
-{CodeSnippets.LibraryImportAttributeDeclaration}
-partial class Test
-{{
-    [LibraryImport(""DoesNotExist"")]
-    public static partial void Method();
-}}
-";
-            Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
-
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
-            Assert.Empty(generatorDiags);
-
-            var newCompDiags = newComp.GetDiagnostics();
-            Assert.Empty(newCompDiags);
-        }
-
-        [Theory]
-        [InlineData(TestTargetFramework.Framework)]
-        [InlineData(TestTargetFramework.Core)]
-        [InlineData(TestTargetFramework.Standard)]
-        [InlineData(TestTargetFramework.Net5)]
-        public async Task TargetFrameworkNotSupported_NoLibraryImport_NoDiagnostic(TestTargetFramework targetFramework)
-        {
-            string source = @"
-using System.Runtime.InteropServices;
-partial class Test
-{
-    [DllImport(""DoesNotExist"")]
-    public static extern void Method();
-}
-";
-            Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
-
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
-            Assert.Empty(generatorDiags);
-
-            var newCompDiags = newComp.GetDiagnostics();
-            Assert.Empty(newCompDiags);
-        }
-
         [Fact]
         public async Task ParameterTypeNotSupported_ReportsDiagnostic()
         {

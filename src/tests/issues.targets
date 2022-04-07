@@ -230,6 +230,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_590771/DevDiv_590771/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_35821/GitHub_35821/*">
+            <Issue>https://github.com/dotnet/runtime/issues/66921</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_56953/Runtime_56953/*">
             <Issue>https://github.com/dotnet/runtime/issues/57515</Issue>
         </ExcludeList>
@@ -336,6 +339,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NativeClients/Primitives/*">
             <Issue>https://github.com/dotnet/runtime/issues/11360</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NativeClients/Dispatch/*">
+            <Issue>https://github.com/dotnet/runtime/issues/11360</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/Lifetime/*">
             <Issue>https://github.com/dotnet/runtime/issues/11360</Issue>
         </ExcludeList>
@@ -356,6 +362,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/ConsumeNETServer/ConsumeNETServer/*">
             <Issue>https://github.com/dotnet/runtime/issues/11360</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/CopyConstructorMarshaler/CopyConstructorMarshaler/*">
+            <Issue>https://github.com/dotnet/runtime/issues/67372</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/ThisCall/ThisCallTest/*">
             <Issue>Native member function calling conventions not supported on Windows ARM32.</Issue>
@@ -3992,4 +4001,12 @@
             <Issue>mobile and wasm don't support tests with native libraries.  wasm also needs static linking</Issue>
         </ExcludeList>
     </ItemGroup>
+
+    <Target Name="GetFilteredExcludeList" Returns="@(FilteredExcludeList)">
+        <ItemGroup>
+            <FilteredExcludeList
+                Include="$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.FullPath)'))"
+                Condition="'%(ExcludeList.Extension)' == '.dll'" />
+      </ItemGroup>
+    </Target>
 </Project>
