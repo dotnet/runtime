@@ -57,7 +57,7 @@ namespace System.IO.Tests
             public DateTimeKind Kind => Item3;
         }
 
-        protected virtual void SettingUpdatesPropertiesCore(T item)
+        protected virtual void SettingUpdatesPropertiesCore(T item, bool isLink)
         {
             Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
             {
@@ -66,18 +66,22 @@ namespace System.IO.Tests
                 DateTime dt = new DateTime(2014, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, function.Kind);
                 function.Setter(item, dt);
                 DateTime result = function.Getter(item);
-                Assert.Equal(dt, result);
-                Assert.Equal(dt.ToLocalTime(), result.ToLocalTime());
+                
+                if (!isLink || SettingPropertiesUpdatesLink)
+                {
+                    Assert.Equal(dt, result);
+                    Assert.Equal(dt.ToLocalTime(), result.ToLocalTime());
 
-                // File and Directory UTC APIs treat a DateTimeKind.Unspecified as UTC whereas
-                // ToUniversalTime treats it as local.
-                if (function.Kind == DateTimeKind.Unspecified)
-                {
-                    Assert.Equal(dt, result.ToUniversalTime());
-                }
-                else
-                {
-                    Assert.Equal(dt.ToUniversalTime(), result.ToUniversalTime());
+                    // File and Directory UTC APIs treat a DateTimeKind.Unspecified as UTC whereas
+                    // ToUniversalTime treats it as local.
+                    if (function.Kind == DateTimeKind.Unspecified)
+                    {
+                        Assert.Equal(dt, result.ToUniversalTime());
+                    }
+                    else
+                    {
+                        Assert.Equal(dt.ToUniversalTime(), result.ToUniversalTime());
+                    }
                 }
             });
         }
@@ -86,7 +90,7 @@ namespace System.IO.Tests
         public void SettingUpdatesProperties()
         {
             T item = GetExistingItem();
-            SettingUpdatesPropertiesCore(item);
+            SettingUpdatesPropertiesCore(item, false);
         }
 
         [Fact]
@@ -98,7 +102,7 @@ namespace System.IO.Tests
             }
 
             T item = GetExistingItem(readOnly: true);
-            SettingUpdatesPropertiesCore(item);
+            SettingUpdatesPropertiesCore(item, false);
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
@@ -107,10 +111,6 @@ namespace System.IO.Tests
         [InlineData(true)]
         public void SettingPropertiesOnSymlink(bool targetExists)
         {
-            if (!SettingPropertiesUpdatesLink)
-            {
-                return;
-            }
             // This test is in this class since it needs all of the time functions.
             // This test makes sure that the times are set on the symlink itself.
             // It is needed as on OSX for example, the default for most APIs is
@@ -126,7 +126,7 @@ namespace System.IO.Tests
             T link = CreateSymlinkToItem(target);
             if (!targetExists)
             {
-                SettingUpdatesPropertiesCore(link);
+                SettingUpdatesPropertiesCore(link, true);
             }
             else
             {
@@ -134,7 +134,7 @@ namespace System.IO.Tests
                 IEnumerable<TimeFunction> timeFunctions = TimeFunctions(requiresRoundtripping: true);
                 DateTime[] initialTimes = timeFunctions.Select((funcs) => funcs.Getter(target)).ToArray();
 
-                SettingUpdatesPropertiesCore(link);
+                SettingUpdatesPropertiesCore(link, true);
 
                 // Ensure that we have the latest times.
                 if (target is FileSystemInfo fsi)
@@ -144,7 +144,14 @@ namespace System.IO.Tests
 
                 // Ensure the target's times haven't changed.
                 DateTime[] updatedTimes = timeFunctions.Select((funcs) => funcs.Getter(target)).ToArray();
-                Assert.Equal(initialTimes, updatedTimes);
+                if (SettingPropertiesUpdatesLink)
+                {
+                    Assert.Equal(initialTimes, updatedTimes);
+                }
+                else
+                {
+                    Assert.NotEqual(initialTimes, updatedTimes);
+                }
             }
         }
 
