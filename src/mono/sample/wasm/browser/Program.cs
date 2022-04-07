@@ -5,6 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Threading;
+using System.Runtime.Versioning;
 
 namespace Sample
 {
@@ -16,6 +17,7 @@ namespace Sample
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [SupportedOSPlatform("browser")] // ask the analyzer to warn if we use APIs not supported on browser-wasm
         public static int TestMeaning()
         {
             List<int> myList = new List<int>{ 1, 2, 3, 4 };

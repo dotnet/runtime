@@ -24,5 +24,11 @@
     <_SampleProject>Wasm.Browser.CJS.Sample.csproj</_SampleProject>
   </PropertyGroup>
 
+  <!-- set the condition to false and you will get a CA1416 error about the call to Thread.Start from a browser-wasm project -->
+  <ItemGroup Condition="true">
+    <!-- it's a reference assembly, but the project system doesn't know that - include it during compilation, but don't publish it -->
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Threading.Thread.WebAssembly.Threading\ref\System.Threading.Thread.WebAssembly.Threading.csproj" IncludeAssets="compile" Private="false" />
+  </ItemGroup>
+
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
 </Project>

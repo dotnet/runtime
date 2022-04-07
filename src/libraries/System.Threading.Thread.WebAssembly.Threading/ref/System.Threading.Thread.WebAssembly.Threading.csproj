@@ -16,7 +16,8 @@
     <!-- Place this assembly in the nuget ref folder -->
     <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
     <DefineConstants>$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
-    <IsPackable>true</IsPackable>
+    <!-- XXX FIXME: if I set this to true, then the PackageReference to this file in Wasm.Browser.CJS.Sample.csproj fails during nuget restore while looking for a nuget for this file.  why??? -->
+    <IsPackable Condition="false">true</IsPackable>
     <PackageDescription>Exposes Threading APIs from System.Runtime for WebAssembly projects</PackageDescription>
     <PackageId>$(MSBuildProjectName)</PackageId>
   </PropertyGroup>
