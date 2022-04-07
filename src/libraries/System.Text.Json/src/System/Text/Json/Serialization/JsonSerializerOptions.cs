@@ -600,21 +600,22 @@ namespace System.Text.Json
         private JsonTypeInfo GetJsonTypeInfoFromContextOrCreate(Type type)
         {
             JsonTypeInfo? info = _serializerContext?.GetTypeInfo(type);
-            if (info != null)
+            if (info == null && IsInitializedForReflectionSerializer)
             {
-                return info;
+                Debug.Assert(
+                    s_typeInfoCreationFunc != null,
+                    "Reflection-based JsonTypeInfo creator should be initialized if IsInitializedForReflectionSerializer is true.");
+                info = s_typeInfoCreationFunc(type, this);
             }
 
-            if (!IsInitializedForReflectionSerializer)
+            if (info == null)
             {
                 ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type);
                 return null!;
             }
 
-            Debug.Assert(
-                s_typeInfoCreationFunc != null,
-                "Reflection-based JsonTypeInfo creator should be initialized if IsInitializedForReflectionSerializer is true.");
-            return s_typeInfoCreationFunc(type, this);
+            info.EnsureConfigured();
+            return info;
         }
 
         internal JsonDocumentOptions GetDocumentOptions()

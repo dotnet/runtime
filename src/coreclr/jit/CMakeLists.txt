@@ -11,6 +11,10 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_
   add_compile_options(-Wno-error)
 endif()
 
+if (MSVC)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/permissive->)
+endif()
+
 function(create_standalone_jit)
 
   set(oneValueArgs TARGET OS ARCH)

@@ -70,7 +70,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <returns>A <see cref="JsonTypeInfo{T}"/> instance representing the class or struct.</returns>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonTypeInfo<T> CreateObjectInfo<T>(JsonSerializerOptions options!!, JsonObjectInfoValues<T> objectInfo!!) where T : notnull
-            => new JsonTypeInfoInternal<T>(options, objectInfo);
+            => new SourceGenJsonTypeInfo<T>(options, objectInfo);
 
         /// <summary>
         /// Creates metadata for a primitive or a type with a custom converter.
@@ -80,9 +80,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonTypeInfo<T> CreateValueInfo<T>(JsonSerializerOptions options, JsonConverter converter)
         {
-            JsonTypeInfo<T> info = new JsonTypeInfoInternal<T>(converter, options);
+            JsonTypeInfo<T> info = new SourceGenJsonTypeInfo<T>(converter, options);
             info.PropertyInfoForTypeInfo = CreateJsonPropertyInfoForClassInfo(typeof(T), info, converter, options);
-            converter.ConfigureJsonTypeInfo(info, options);
             return info;
         }
 

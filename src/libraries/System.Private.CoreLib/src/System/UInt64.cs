@@ -106,17 +106,17 @@ namespace System
             return Number.UInt64ToDecStr(m_value, -1);
         }
 
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return Number.FormatUInt64(m_value, format, null);
         }
 
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return Number.FormatUInt64(m_value, format, provider);
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatUInt64(m_value, format, provider, destination, out charsWritten);
         }

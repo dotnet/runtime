@@ -23,7 +23,7 @@ namespace System.Text.RegularExpressions.Tests
 
         public RegexExperiment(ITestOutputHelper output) => _output = output;
 
-        public static bool Enabled => true;
+        public static bool Enabled => false;
 
         /// <summary>Temporary local output directory for experiment results.</summary>
         private static readonly string s_tmpWorkingDir = Path.GetTempPath();
