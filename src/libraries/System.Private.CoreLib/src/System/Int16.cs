@@ -405,7 +405,7 @@ namespace System
         static short IDivisionOperators<short, short, short>.operator /(short left, short right) => (short)(left / right);
 
         // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static short IDivisionOperators<short, short, short>.operator checked /(short left, short right) => checked((short)(left / right));
+        static short IDivisionOperators<short, short, short>.operator checked /(short left, short right) => (short)(left / right);
 
         //
         // IEqualityOperators

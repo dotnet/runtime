@@ -392,7 +392,7 @@ namespace System
         static byte IDivisionOperators<byte, byte, byte>.operator /(byte left, byte right) => (byte)(left / right);
 
         // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static byte IDivisionOperators<byte, byte, byte>.operator checked /(byte left, byte right) => checked((byte)(left / right));
+        static byte IDivisionOperators<byte, byte, byte>.operator checked /(byte left, byte right) => (byte)(left / right);
 
         //
         // IEqualityOperators

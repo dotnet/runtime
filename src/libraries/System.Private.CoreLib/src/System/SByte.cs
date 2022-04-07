@@ -413,7 +413,7 @@ namespace System
         static sbyte IDivisionOperators<sbyte, sbyte, sbyte>.operator /(sbyte left, sbyte right) => (sbyte)(left / right);
 
         // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static sbyte IDivisionOperators<sbyte, sbyte, sbyte>.operator checked /(sbyte left, sbyte right) => checked((sbyte)(left / right));
+        static sbyte IDivisionOperators<sbyte, sbyte, sbyte>.operator checked /(sbyte left, sbyte right) => (sbyte)(left / right);
 
         //
         // IEqualityOperators

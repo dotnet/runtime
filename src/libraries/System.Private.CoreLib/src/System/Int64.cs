@@ -384,7 +384,7 @@ namespace System
         static long IDivisionOperators<long, long, long>.operator /(long left, long right) => left / right;
 
         // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static long IDivisionOperators<long, long, long>.operator checked /(long left, long right) => checked(left / right);
+        static long IDivisionOperators<long, long, long>.operator checked /(long left, long right) => left / right;
 
         //
         // IEqualityOperators

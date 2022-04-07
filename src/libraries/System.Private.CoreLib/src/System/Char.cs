@@ -1160,7 +1160,7 @@ namespace System
         static char IDivisionOperators<char, char, char>.operator /(char left, char right) => (char)(left / right);
 
         // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static char IDivisionOperators<char, char, char>.operator checked /(char left, char right) => checked((char)(left / right));
+        static char IDivisionOperators<char, char, char>.operator checked /(char left, char right) => (char)(left / right);
 
         //
         // IEqualityOperators
