@@ -4429,11 +4429,6 @@ inline void* __cdecl operator new[](size_t sz, Compiler* compiler, CompMemKind c
     return compiler->getAllocator(cmk).allocate<char>(sz);
 }
 
-inline void* __cdecl operator new(size_t sz, void* p, const jitstd::placement_t& /* syntax_difference */)
-{
-    return p;
-}
-
 /*****************************************************************************/
 
 #ifdef DEBUG
