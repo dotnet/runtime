@@ -6,99 +6,99 @@ using System.Diagnostics;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
-    /// <summary>Provides an <see cref="ICharAlgebra{Int64}"/> over bit vectors up to 64 bits in length.</summary>
-    internal sealed class UInt64Algebra : ICharAlgebra<ulong>
+    /// <summary>Provides an <see cref="ISolver{Int64}"/> over bit vectors up to 64 bits in length.</summary>
+    internal sealed class UInt64Solver : ISolver<ulong>
     {
         private readonly BDD[] _minterms;
         private readonly MintermGenerator<ulong> _mintermGenerator;
         internal readonly MintermClassifier _classifier;
 
-        public UInt64Algebra(BDD[] minterms)
+        public UInt64Solver(BDD[] minterms, CharSetSolver solver)
         {
             Debug.Assert(minterms.Length <= 64);
 
             _minterms = minterms;
 
             _mintermGenerator = new MintermGenerator<ulong>(this);
-            _classifier = new MintermClassifier(minterms);
+            _classifier = new MintermClassifier(minterms, solver);
 
-            True = minterms.Length == 64 ? ulong.MaxValue : ulong.MaxValue >> (64 - minterms.Length);
+            Full = minterms.Length == 64 ? ulong.MaxValue : ulong.MaxValue >> (64 - minterms.Length);
         }
 
-        public ulong False => 0;
+        public ulong Empty => 0;
 
-        public ulong True { get; }
+        public ulong Full { get; }
 
-        public bool AreEquivalent(ulong predicate1, ulong predicate2) => predicate1 == predicate2;
+        public bool IsFull(ulong set) => set == Full;
+
+        public bool IsEmpty(ulong set) => set == 0;
 
         public List<ulong> GenerateMinterms(HashSet<ulong> constraints) => _mintermGenerator.GenerateMinterms(constraints);
 
-        public bool IsSatisfiable(ulong predicate) => predicate != 0;
+        public ulong And(ulong set1, ulong set2) => set1 & set2;
 
-        public ulong And(ulong predicate1, ulong predicate2) => predicate1 & predicate2;
+        public ulong Not(ulong set) => Full & ~set; //NOTE: must filter off unused bits
 
-        public ulong Not(ulong predicate) => True & ~predicate; //NOTE: must filter off unused bits
-
-        public ulong Or(ReadOnlySpan<ulong> predicates)
+        public ulong Or(ReadOnlySpan<ulong> sets)
         {
-            ulong res = 0;
-            foreach (ulong p in predicates)
+            ulong result = 0;
+            foreach (ulong p in sets)
             {
-                res |= p;
-                if (res == True)
+                result |= p;
+                if (result == Full)
                 {
                     // Short circuit the evaluation once all bits are set, as nothing can change after this point.
                     break;
                 }
             }
 
-            return res;
+            return result;
         }
 
-        public ulong Or(ulong predicate1, ulong predicate2) => predicate1 | predicate2;
+        public ulong Or(ulong set1, ulong set2) => set1 | set2;
 
-        public ulong CharConstraint(char c) => ((ulong)1) << _classifier.GetMintermID(c);
+        public ulong CreateFromChar(char c) => ((ulong)1) << _classifier.GetMintermID(c);
 
         /// <summary>
         /// Assumes that set is a union of some minterms (or empty).
         /// If null then 0 is returned.
         /// </summary>
-        public ulong ConvertFromCharSet(BDDAlgebra alg, BDD set)
+        public ulong ConvertFromBDD(BDD set, CharSetSolver solver)
         {
             BDD[] partition = _minterms;
 
-            ulong res = 0;
+            ulong result = 0;
             for (int i = 0; i < partition.Length; i++)
             {
                 // Set the i'th bit if the i'th minterm is in the set.
-                if (alg.IsSatisfiable(alg.And(partition[i], set)))
+                if (!solver.IsEmpty(solver.And(partition[i], set)))
                 {
-                    res |= (ulong)1 << i;
+                    result |= (ulong)1 << i;
                 }
             }
 
-            return res;
+            return result;
         }
 
-        public BDD ConvertToCharSet(ulong pred)
+        public BDD ConvertToBDD(ulong set, CharSetSolver solver)
         {
             BDD[] partition = _minterms;
 
             // the result will be the union of all minterms in the set
-            BDD res = BDD.False;
-            if (pred != 0)
+            BDD result = BDD.False;
+            if (set != 0)
             {
                 for (int i = 0; i < partition.Length; i++)
                 {
                     // include the i'th minterm in the union if the i'th bit is set
-                    if ((pred & ((ulong)1 << i)) != 0)
+                    if ((set & ((ulong)1 << i)) != 0)
                     {
-                        res = CharSetSolver.Instance.Or(res, partition[i]);
+                        result = solver.Or(result, partition[i]);
                     }
                 }
             }
 
-            return res;
+            return result;
         }
 
         /// <summary>
@@ -116,6 +116,6 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Pretty print the bitvector bv as the character set it represents.</summary>
-        public string PrettyPrint(ulong bv) => CharSetSolver.Instance.PrettyPrint(ConvertToCharSet(bv));
+        public string PrettyPrint(ulong bv, CharSetSolver solver) => solver.PrettyPrint(ConvertToBDD(bv, solver));
     }
 }

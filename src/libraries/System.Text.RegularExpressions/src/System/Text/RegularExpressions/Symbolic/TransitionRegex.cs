@@ -10,25 +10,25 @@ using System.Threading;
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>Represents a symbolic derivative created from a symbolic regex without using minterms</summary>
-    internal sealed class TransitionRegex<S> where S : notnull
+    internal sealed class TransitionRegex<TSet> where TSet : IComparable<TSet>
     {
-        public readonly SymbolicRegexBuilder<S> _builder;
+        public readonly SymbolicRegexBuilder<TSet> _builder;
         public readonly TransitionRegexKind _kind;
-        public readonly S? _test;
-        public readonly TransitionRegex<S>? _first;
-        public readonly TransitionRegex<S>? _second;
-        public readonly SymbolicRegexNode<S>? _node;
+        public readonly TSet? _test;
+        public readonly TransitionRegex<TSet>? _first;
+        public readonly TransitionRegex<TSet>? _second;
+        public readonly SymbolicRegexNode<TSet>? _node;
         public readonly DerivativeEffect? _effect;
 
-        private TransitionRegex(SymbolicRegexBuilder<S> builder, TransitionRegexKind kind, S? test, TransitionRegex<S>? first, TransitionRegex<S>? second, SymbolicRegexNode<S>? node, DerivativeEffect? effect)
+        private TransitionRegex(SymbolicRegexBuilder<TSet> builder, TransitionRegexKind kind, TSet? test, TransitionRegex<TSet>? first, TransitionRegex<TSet>? second, SymbolicRegexNode<TSet>? node, DerivativeEffect? effect)
         {
             Debug.Assert(builder is not null);
             Debug.Assert(
-                kind is TransitionRegexKind.Leaf && node is not null && Equals(test, default(S)) && first is null && second is null && effect is null ||
-                kind is TransitionRegexKind.Conditional && test is not null && first is not null && second is not null && node is null && effect is null ||
-                kind is TransitionRegexKind.Union && Equals(test, default(S)) && first is not null && second is not null && node is null && effect is null ||
-                kind is TransitionRegexKind.Lookaround && Equals(test, default(S)) && first is not null && second is not null && node is not null && effect is null ||
-                kind is TransitionRegexKind.Effect && Equals(test, default(S)) && first is not null && second is null && node is null && effect is not null);
+                (kind is TransitionRegexKind.Leaf && node is not null && Equals(test, default(TSet)) && first is null && second is null && effect is null) ||
+                (kind is TransitionRegexKind.Conditional && test is not null && first is not null && second is not null && node is null && effect is null) ||
+                (kind is TransitionRegexKind.Union && Equals(test, default(TSet)) && first is not null && second is not null && node is null && effect is null) ||
+                (kind is TransitionRegexKind.Lookaround && Equals(test, default(TSet)) && first is not null && second is not null && node is not null && effect is null) ||
+                (kind is TransitionRegexKind.Effect && Equals(test, default(TSet)) && first is not null && second is null && node is null && effect is not null));
 
             _builder = builder;
             _kind = kind;
@@ -39,11 +39,11 @@ namespace System.Text.RegularExpressions.Symbolic
             _effect = effect;
         }
 
-        private static TransitionRegex<S> GetOrCreate(SymbolicRegexBuilder<S> builder, TransitionRegexKind kind, S? test, TransitionRegex<S>? one, TransitionRegex<S>? two, SymbolicRegexNode<S>? node, DerivativeEffect? effect = null)
+        private static TransitionRegex<TSet> GetOrCreate(SymbolicRegexBuilder<TSet> builder, TransitionRegexKind kind, TSet? test, TransitionRegex<TSet>? one, TransitionRegex<TSet>? two, SymbolicRegexNode<TSet>? node, DerivativeEffect? effect = null)
         {
             // Keep transition regexes internalized using the builder
-            ref TransitionRegex<S>? tr = ref CollectionsMarshal.GetValueRefOrAddDefault(builder._trCache, (kind, test, one, two, node, effect), out _);
-            return tr ??= new TransitionRegex<S>(builder, kind, test, one, two, node, effect);
+            ref TransitionRegex<TSet>? tr = ref CollectionsMarshal.GetValueRefOrAddDefault(builder._trCache, (kind, test, one, two, node, effect), out _);
+            return tr ??= new TransitionRegex<TSet>(builder, kind, test, one, two, node, effect);
         }
 
         public bool IsNothing
@@ -75,7 +75,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Complement of transition regex</summary>
-        public TransitionRegex<S> Complement()
+        public TransitionRegex<TSet> Complement()
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
@@ -87,7 +87,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 case TransitionRegexKind.Leaf:
                     // Complement is propagated to the leaf
                     Debug.Assert(_node is not null);
-                    return GetOrCreate(_builder, _kind, default(S), null, null, _node._builder.Not(_node));
+                    return GetOrCreate(_builder, _kind, default(TSet), null, null, _node._builder.Not(_node));
 
                 case TransitionRegexKind.Union:
                     // Apply deMorgan's laws
@@ -101,11 +101,11 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        public static TransitionRegex<S> Leaf(SymbolicRegexNode<S> node) =>
-            GetOrCreate(node._builder, TransitionRegexKind.Leaf, default(S), null, null, node);
+        public static TransitionRegex<TSet> Leaf(SymbolicRegexNode<TSet> node) =>
+            GetOrCreate(node._builder, TransitionRegexKind.Leaf, default(TSet), null, null, node);
 
         /// <summary>Concatenate a node at the end of this transition regex</summary>
-        public TransitionRegex<S> Concat(SymbolicRegexNode<S> node)
+        public TransitionRegex<TSet> Concat(SymbolicRegexNode<TSet> node)
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
@@ -116,11 +116,11 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 case TransitionRegexKind.Leaf:
                     Debug.Assert(_node is not null);
-                    return GetOrCreate(_builder, _kind, default(S), null, null, _node._builder.CreateConcat(_node, node));
+                    return GetOrCreate(_builder, _kind, default(TSet), null, null, _node._builder.CreateConcat(_node, node));
 
                 case TransitionRegexKind.Effect:
                     Debug.Assert(_first is not null);
-                    return GetOrCreate(_builder, _kind, default(S), _first.Concat(node), null, null, _effect);
+                    return GetOrCreate(_builder, _kind, default(TSet), _first.Concat(node), null, null, _effect);
 
                 default:
                     // All other three cases are disjunctive and obey the same laws of propagation of complement
@@ -130,7 +130,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Intersection of transition regexes</summary>
-        public static TransitionRegex<S> Intersect(TransitionRegex<S> one, TransitionRegex<S> two)
+        public static TransitionRegex<TSet> Intersect(TransitionRegex<TSet> one, TransitionRegex<TSet> two)
         {
             // Apply standard simplifications
 
@@ -146,40 +146,40 @@ namespace System.Text.RegularExpressions.Symbolic
                 return two;
             }
 
-            return one.IntersectWith(two, one._builder._solver.True);
+            return one.IntersectWith(two, one._builder._solver.Full);
         }
 
-        private TransitionRegex<S> IntersectWith(TransitionRegex<S> that, S pathIn)
+        private TransitionRegex<TSet> IntersectWith(TransitionRegex<TSet> that, TSet pathIn)
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
                 return StackHelper.CallOnEmptyStack(IntersectWith, that, pathIn);
             }
 
-            Debug.Assert(_builder._solver.IsSatisfiable(pathIn));
+            Debug.Assert(!_builder._solver.IsEmpty(pathIn));
 
 #region Conditional
             // Intersect when this is a Conditional
             if (_kind == TransitionRegexKind.Conditional)
             {
                 Debug.Assert(_test is not null && _first is not null && _second is not null);
-                S thenPath = _builder._solver.And(pathIn, _test);
-                S elsePath = _builder._solver.And(pathIn, _builder._solver.Not(_test));
+                TSet thenPath = _builder._solver.And(pathIn, _test);
+                TSet elsePath = _builder._solver.And(pathIn, _builder._solver.Not(_test));
 
-                if (!_builder._solver.IsSatisfiable(thenPath))
+                if (_builder._solver.IsEmpty(thenPath))
                 {
                     // then case being infeasible implies that elsePath must be satisfiable
                     return _second.IntersectWith(that, elsePath);
                 }
 
-                if (!_builder._solver.IsSatisfiable(elsePath))
+                if (_builder._solver.IsEmpty(elsePath))
                 {
                     // else case is infeasible
                     return _first.IntersectWith(that, thenPath);
                 }
 
-                TransitionRegex<S> thencase = _first.IntersectWith(that, thenPath);
-                TransitionRegex<S> elsecase = _second.IntersectWith(that, elsePath);
+                TransitionRegex<TSet> thencase = _first.IntersectWith(that, thenPath);
+                TransitionRegex<TSet> elsecase = _second.IntersectWith(that, elsePath);
                 if (thencase == elsecase)
                 {
                     // Both branches result in the same thing, so the test can be omitted
@@ -232,7 +232,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Union of transition regexes</summary>
-        public static TransitionRegex<S> Union(TransitionRegex<S> one, TransitionRegex<S> two)
+        public static TransitionRegex<TSet> Union(TransitionRegex<TSet> one, TransitionRegex<TSet> two)
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
@@ -268,20 +268,20 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
             }
 
-            return GetOrCreate(one._builder, TransitionRegexKind.Union, default(S), one, two, null);
+            return GetOrCreate(one._builder, TransitionRegexKind.Union, default(TSet), one, two, null);
         }
 
-        public static TransitionRegex<S> Conditional(S test, TransitionRegex<S> thencase, TransitionRegex<S> elsecase) =>
-            (thencase == elsecase || thencase._builder._solver.True.Equals(test)) ? thencase :
-            thencase._builder._solver.False.Equals(test) ? elsecase :
+        public static TransitionRegex<TSet> Conditional(TSet test, TransitionRegex<TSet> thencase, TransitionRegex<TSet> elsecase) =>
+            (thencase == elsecase || thencase._builder._solver.Full.Equals(test)) ? thencase :
+            thencase._builder._solver.Empty.Equals(test) ? elsecase :
             GetOrCreate(thencase._builder, TransitionRegexKind.Conditional, test, thencase, elsecase, null);
 
-        public static TransitionRegex<S> Lookaround(SymbolicRegexNode<S> nullabilityTest, TransitionRegex<S> thencase, TransitionRegex<S> elsecase) =>
-            (thencase == elsecase) ? thencase : GetOrCreate(thencase._builder, TransitionRegexKind.Lookaround, default(S), thencase, elsecase, nullabilityTest);
+        public static TransitionRegex<TSet> Lookaround(SymbolicRegexNode<TSet> nullabilityTest, TransitionRegex<TSet> thencase, TransitionRegex<TSet> elsecase) =>
+            (thencase == elsecase) ? thencase : GetOrCreate(thencase._builder, TransitionRegexKind.Lookaround, default(TSet), thencase, elsecase, nullabilityTest);
 
-        public static TransitionRegex<S> Effect(TransitionRegex<S> child, DerivativeEffect effect) =>
+        public static TransitionRegex<TSet> Effect(TransitionRegex<TSet> child, DerivativeEffect effect) =>
             child.IsNothing ? child :
-            GetOrCreate(child._builder, TransitionRegexKind.Effect, default(S), child, null, null, effect);
+            GetOrCreate(child._builder, TransitionRegexKind.Effect, default(TSet), child, null, null, effect);
 
         public override string ToString() =>
             _kind switch
@@ -298,7 +298,7 @@ namespace System.Text.RegularExpressions.Symbolic
             };
 
         /// <summary>Enumerates all the paths in this transition regex excluding dead-end paths</summary>
-        public IEnumerable<(S, SymbolicRegexNode<S>?, SymbolicRegexNode<S>)> EnumeratePaths(S pathCondition)
+        public IEnumerable<(TSet, SymbolicRegexNode<TSet>?, SymbolicRegexNode<TSet>)> EnumeratePaths(TSet pathCondition)
         {
             switch (_kind)
             {
@@ -313,11 +313,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 case TransitionRegexKind.Union:
                     Debug.Assert(_first is not null && _second is not null);
-                    foreach ((S, SymbolicRegexNode<S>?, SymbolicRegexNode<S>) path in _first.EnumeratePaths(pathCondition))
+                    foreach ((TSet, SymbolicRegexNode<TSet>?, SymbolicRegexNode<TSet>) path in _first.EnumeratePaths(pathCondition))
                     {
                         yield return path;
                     }
-                    foreach ((S, SymbolicRegexNode<S>?, SymbolicRegexNode<S>) path in _second.EnumeratePaths(pathCondition))
+                    foreach ((TSet, SymbolicRegexNode<TSet>?, SymbolicRegexNode<TSet>) path in _second.EnumeratePaths(pathCondition))
                     {
                         yield return path;
                     }
@@ -325,11 +325,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 case TransitionRegexKind.Conditional:
                     Debug.Assert(_test is not null && _first is not null && _second is not null);
-                    foreach ((S, SymbolicRegexNode<S>?, SymbolicRegexNode<S>) path in _first.EnumeratePaths(_builder._solver.And(pathCondition, _test)))
+                    foreach ((TSet, SymbolicRegexNode<TSet>?, SymbolicRegexNode<TSet>) path in _first.EnumeratePaths(_builder._solver.And(pathCondition, _test)))
                     {
                         yield return path;
                     }
-                    foreach ((S, SymbolicRegexNode<S>?, SymbolicRegexNode<S>) path in _second.EnumeratePaths(_builder._solver.And(pathCondition, _builder._solver.Not(_test))))
+                    foreach ((TSet, SymbolicRegexNode<TSet>?, SymbolicRegexNode<TSet>) path in _second.EnumeratePaths(_builder._solver.And(pathCondition, _builder._solver.Not(_test))))
                     {
                         yield return path;
                     }
@@ -337,19 +337,19 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 default:
                     Debug.Assert(_kind is TransitionRegexKind.Lookaround && _node is not null && _first is not null && _second is not null);
-                    foreach ((S, SymbolicRegexNode<S>?, SymbolicRegexNode<S>) path in _first.EnumeratePaths(pathCondition))
+                    foreach ((TSet, SymbolicRegexNode<TSet>?, SymbolicRegexNode<TSet>) path in _first.EnumeratePaths(pathCondition))
                     {
-                        SymbolicRegexNode<S> nullabilityTest = _node;
+                        SymbolicRegexNode<TSet> nullabilityTest = _node;
                         if (path.Item2 is not null)
                         {
                             nullabilityTest = _builder.And(path.Item2, nullabilityTest);
                         }
                         yield return (path.Item1, nullabilityTest, path.Item3);
                     }
-                    foreach ((S, SymbolicRegexNode<S>?, SymbolicRegexNode<S>) path in _second.EnumeratePaths(pathCondition))
+                    foreach ((TSet, SymbolicRegexNode<TSet>?, SymbolicRegexNode<TSet>) path in _second.EnumeratePaths(pathCondition))
                     {
                         // Complement the nullability test
-                        SymbolicRegexNode<S> nullabilityTest = _builder.Not(_node);
+                        SymbolicRegexNode<TSet> nullabilityTest = _builder.Not(_node);
                         if (path.Item2 is not null)
                         {
                             nullabilityTest = _builder.And(path.Item2, nullabilityTest);

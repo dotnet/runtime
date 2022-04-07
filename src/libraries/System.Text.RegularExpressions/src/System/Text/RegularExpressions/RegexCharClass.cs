@@ -1737,6 +1737,17 @@ namespace System.Text.RegularExpressions
             int setLength = set[SetLengthIndex];
             int categoryLength = set[CategoryLengthIndex];
             int endPosition = SetStartIndex + setLength + categoryLength;
+            bool negated = IsNegated(set);
+
+            // Special-case of set of a single character to output that character.
+            if (!negated && // no negation
+                categoryLength == 0 && // no categories
+                endPosition >= set.Length && // no subtraction
+                setLength == 2 && // don't bother handling the case of the single character being 0xFFFF, in which case setLength would be 1
+                set[SetStartIndex] + 1 == set[SetStartIndex + 1])
+            {
+                return DescribeChar(set[SetStartIndex]);
+            }
 
             var desc = new StringBuilder();
 
@@ -1746,7 +1757,7 @@ namespace System.Text.RegularExpressions
             char ch1;
             char ch2;
 
-            if (IsNegated(set))
+            if (negated)
             {
                 desc.Append('^');
             }
