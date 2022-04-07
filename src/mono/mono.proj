@@ -93,6 +93,7 @@
     <Error Condition="'$(TargetsiOSSimulator)' == 'true' and '$(TargetsiOS)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'x86' and '$(Platform)' != 'arm64'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
     <Error Condition="('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and !$([MSBuild]::IsOSPlatform('OSX'))" Text="Error: $(TargetOS) can only be built on macOS." />
     <Error Condition="'$(TargetsAndroid)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'x86' and '$(Platform)' != 'arm64' and '$(Platform)' != 'arm'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
+    <Error Condition="'$(TargetsBrowser)' == 'true' and '$(EMSDK_PATH)' == '' and '$(SkipMonoCrossJitConfigure)' != 'true' '$(WasmUseEMSDK_PATH)' == 'true'" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
     <Error Condition="'$(TargetsAndroid)' == 'true' and '$(ANDROID_NDK_ROOT)' == '' and '$(SkipMonoCrossJitConfigure)' != 'true'" Text="Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root." />
     <Error Condition="'$(HostOS)' == 'windows' and ('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Text="Error: Mono runtime for $(TargetOS) can't be built on Windows." />
 
@@ -129,31 +130,31 @@
   <!-- Sets up emscripten if you don't have the EMSDK_PATH env variable set -->
   <Target Name="ProvisionEmscripten"
           Condition="'$(ShouldProvisionEmscripten)' == 'true' and '$(SkipMonoCrossJitConfigure)' != 'true'">
-    <!--<ReadLinesFromFile File="$(MSBuildThisFileDirectory)\wasm\emscripten-version.txt">-->
-      <!--<Output TaskParameter="Lines" ItemName="_VersionLines" />-->
-    <!--</ReadLinesFromFile>-->
+    <ReadLinesFromFile File="$(MSBuildThisFileDirectory)\wasm\emscripten-version.txt">
+      <Output TaskParameter="Lines" ItemName="_VersionLines" />
+    </ReadLinesFromFile>
 
-    <!--<PropertyGroup>-->
-      <!--<EmsdkExt Condition="'$(HostOS)' != 'windows'">.sh</EmsdkExt>-->
-      <!--<EmsdkExt Condition="'$(HostOS)' == 'windows'">.ps1</EmsdkExt>-->
-      <!--<EMSDK_PATH>$(ProvisionEmscriptenDir)</EMSDK_PATH>-->
-      <!--<WasmLocalPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wasm'))</WasmLocalPath>-->
-      <!--<EmsdkLocalPath>emsdk</EmsdkLocalPath>-->
-      <!--<EmscriptenVersion>%(_VersionLines.Identity)</EmscriptenVersion>-->
+    <PropertyGroup>
+      <EmsdkExt Condition="'$(HostOS)' != 'windows'">.sh</EmsdkExt>
+      <EmsdkExt Condition="'$(HostOS)' == 'windows'">.ps1</EmsdkExt>
+      <EMSDK_PATH>$(ProvisionEmscriptenDir)</EMSDK_PATH>
+      <WasmLocalPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wasm'))</WasmLocalPath>
+      <EmsdkLocalPath>emsdk</EmsdkLocalPath>
+      <EmscriptenVersion>%(_VersionLines.Identity)</EmscriptenVersion>
 
-      <!--<InstallCmd>./emsdk$(EmsdkExt) install $(EmscriptenVersion)</InstallCmd>-->
-      <!--<ActivateCmd>./emsdk$(EmsdkExt) activate $(EmscriptenVersion)</ActivateCmd>-->
-      <!--<InstallCmd Condition="'$(HostOS)' == 'windows'">powershell -NonInteractive -command &quot;&amp; $(InstallCmd); Exit $LastExitCode &quot;</InstallCmd>-->
-      <!--<ActivateCmd Condition="'$(HostOS)' == 'windows'">powershell -NonInteractive -command &quot;&amp; $(ActivateCmd); Exit $LastExitCode &quot;</ActivateCmd>-->
-    <!--</PropertyGroup>-->
+      <InstallCmd>./emsdk$(EmsdkExt) install $(EmscriptenVersion)</InstallCmd>
+      <ActivateCmd>./emsdk$(EmsdkExt) activate $(EmscriptenVersion)</ActivateCmd>
+      <InstallCmd Condition="'$(HostOS)' == 'windows'">powershell -NonInteractive -command &quot;&amp; $(InstallCmd); Exit $LastExitCode &quot;</InstallCmd>
+      <ActivateCmd Condition="'$(HostOS)' == 'windows'">powershell -NonInteractive -command &quot;&amp; $(ActivateCmd); Exit $LastExitCode &quot;</ActivateCmd>
+    </PropertyGroup>
 
-    <!--<RemoveDir Directories="$(EMSDK_PATH)" />-->
-    <!--<Exec Command="git clone https://github.com/emscripten-core/emsdk.git emsdk"-->
-          <!--WorkingDirectory="$(WasmLocalPath)"-->
-          <!--IgnoreStandardErrorWarningFormat="true" />-->
-    <!--<Exec Command="git checkout $(EmscriptenVersion) &amp;&amp; $(InstallCmd) &amp;&amp; $(ActivateCmd)"-->
-          <!--WorkingDirectory="$(EMSDK_PATH)"-->
-          <!--IgnoreStandardErrorWarningFormat="true" />-->
+    <RemoveDir Directories="$(EMSDK_PATH)" />
+    <Exec Command="git clone https://github.com/emscripten-core/emsdk.git emsdk"
+          WorkingDirectory="$(WasmLocalPath)"
+          IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="git checkout $(EmscriptenVersion) &amp;&amp; $(InstallCmd) &amp;&amp; $(ActivateCmd)"
+          WorkingDirectory="$(EMSDK_PATH)"
+          IgnoreStandardErrorWarningFormat="true" />
   </Target>
 
   <!-- Copy Mono runtime bits to $(Destination) -->

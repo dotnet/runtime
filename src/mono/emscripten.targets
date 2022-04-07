@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <!--<WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>-->
-    <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != ''">true</WasmUseEMSDK_PATH>
+    <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != ''">false</WasmUseEMSDK_PATH>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(WasmUseEMSDK_PATH)' != 'true'">

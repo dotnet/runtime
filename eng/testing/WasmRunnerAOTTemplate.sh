@@ -39,7 +39,6 @@ if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 		else
 			JS_ENGINE="--engine=V8"
 		fi
-
 	fi
 
 	if [[ -z "$MAIN_JS" ]]; then
