@@ -300,17 +300,17 @@ namespace System
             return Number.FormatSingle(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return Number.FormatSingle(m_value, format, NumberFormatInfo.CurrentInfo);
         }
 
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return Number.FormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }

@@ -472,7 +472,7 @@ namespace System
         /// <summary>
         /// Returns a string representation of the current value using the specified <paramref name="format"/>.
         /// </summary>
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return Number.FormatHalf(this, format, NumberFormatInfo.CurrentInfo);
         }
@@ -488,7 +488,7 @@ namespace System
         /// <summary>
         /// Returns a string representation of the current value using the specified <paramref name="format"/> and <paramref name="provider"/>.
         /// </summary>
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return Number.FormatHalf(this, format, NumberFormatInfo.GetInstance(provider));
         }
@@ -501,7 +501,7 @@ namespace System
         /// <param name="format">A span containing the characters that represent a standard or custom format string that defines the acceptable format for <paramref name="destination"/>.</param>
         /// <param name="provider">An optional object that supplies culture-specific formatting information for <paramref name="destination"/>.</param>
         /// <returns></returns>
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatHalf(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
