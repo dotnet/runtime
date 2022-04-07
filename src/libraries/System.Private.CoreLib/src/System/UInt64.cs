@@ -279,7 +279,7 @@ namespace System
         /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
         static ulong IAdditionOperators<ulong, ulong, ulong>.operator +(ulong left, ulong right) => left + right;
 
-        // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
         static ulong IAdditionOperators<ulong, ulong, ulong>.operator checked +(ulong left, ulong right) => checked(left + right);
 
         //
@@ -360,7 +360,7 @@ namespace System
         /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         static ulong IDecrementOperators<ulong>.operator --(ulong value) => --value;
 
-        // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         static ulong IDecrementOperators<ulong>.operator checked --(ulong value) => checked(--value);
 
         //
@@ -370,7 +370,7 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         static ulong IDivisionOperators<ulong, ulong, ulong>.operator /(ulong left, ulong right) => left / right;
 
-        // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
         static ulong IDivisionOperators<ulong, ulong, ulong>.operator checked /(ulong left, ulong right) => left / right;
 
         //
@@ -390,7 +390,7 @@ namespace System
         /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
         static ulong IIncrementOperators<ulong>.operator ++(ulong value) => ++value;
 
-        // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
         static ulong IIncrementOperators<ulong>.operator checked ++(ulong value) => checked(++value);
 
         //
@@ -424,7 +424,7 @@ namespace System
         /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
         static ulong IMultiplyOperators<ulong, ulong, ulong>.operator *(ulong left, ulong right) => left * right;
 
-        // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
         static ulong IMultiplyOperators<ulong, ulong, ulong>.operator checked *(ulong left, ulong right) => checked(left * right);
 
         //
@@ -846,7 +846,7 @@ namespace System
         /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
         static ulong IShiftOperators<ulong, ulong>.operator >>(ulong value, int shiftAmount) => value >> (int)shiftAmount;
 
-        // /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
         // static ulong IShiftOperators<ulong, ulong>.operator >>>(ulong value, int shiftAmount) => value >> (int)shiftAmount;
 
         //
@@ -866,7 +866,7 @@ namespace System
         /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
         static ulong ISubtractionOperators<ulong, ulong, ulong>.operator -(ulong left, ulong right) => left - right;
 
-        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
         static ulong ISubtractionOperators<ulong, ulong, ulong>.operator checked -(ulong left, ulong right) => checked(left - right);
 
         //
@@ -876,7 +876,7 @@ namespace System
         /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
         static ulong IUnaryNegationOperators<ulong, ulong>.operator -(ulong value) => 0UL - value;
 
-        // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
         static ulong IUnaryNegationOperators<ulong, ulong>.operator checked -(ulong value) => checked(0UL - value);
 
         //

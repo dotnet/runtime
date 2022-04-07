@@ -491,7 +491,7 @@ namespace System
         /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
         static double IAdditionOperators<double, double, double>.operator +(double left, double right) => left + right;
 
-        // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
         static double IAdditionOperators<double, double, double>.operator checked +(double left, double right) => left + right;
 
         //
@@ -560,7 +560,7 @@ namespace System
         /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         static double IDecrementOperators<double>.operator --(double value) => --value;
 
-        // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_CheckedDecrement(TSelf)" />
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_CheckedDecrement(TSelf)" />
         static double IDecrementOperators<double>.operator checked --(double value) => --value;
 
         //
@@ -570,7 +570,7 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         static double IDivisionOperators<double, double, double>.operator /(double left, double right) => left / right;
 
-        // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
         static double IDivisionOperators<double, double, double>.operator checked /(double left, double right) => left / right;
 
         //
@@ -580,19 +580,19 @@ namespace System
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
         public static double Exp(double x) => Math.Exp(x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
         // public static double ExpM1(double x) => Math.ExpM1(x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
         // public static double Exp2(double x) => Math.Exp2(x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
         // public static double Exp2M1(double x) => Math.Exp2M1(x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
         // public static double Exp10(double x) => Math.Exp10(x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
         // public static double Exp10M1(double x) => Math.Exp10M1(x);
 
         //
@@ -672,19 +672,19 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
         public static double ScaleB(double x, int n) => Math.ScaleB(x, n);
 
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Compound(TSelf, TSelf)" />
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Compound(TSelf, TSelf)" />
         // public static double Compound(double x, double n) => Math.Compound(x, n);
 
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
         // public static double MaxMagnitudeNumber(double x, double y) => Math.MaxMagnitudeNumber(x, y);
 
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxNumber(TSelf, TSelf)" />
         // public static double MaxNumber(double x, double y) => Math.MaxNumber(x, y);
 
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         // public static double MinMagnitudeNumber(double x, double y) => Math.MinMagnitudeNumber(x, y);
 
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinNumber(TSelf, TSelf)" />
         // public static double MinNumber(double x, double y) => Math.MinNumber(x, y);
 
         //
@@ -716,7 +716,7 @@ namespace System
         /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
         static double IIncrementOperators<double>.operator ++(double value) => ++value;
 
-        // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
         static double IIncrementOperators<double>.operator checked ++(double value) => ++value;
 
         //
@@ -732,13 +732,13 @@ namespace System
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
         public static double Log10(double x) => Math.Log10(x);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
         // public static double LogP1(double x) => Math.LogP1(x);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
         // public static double Log2P1(double x) => Math.Log2P1(x);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
         // public static double Log10P1(double x) => Math.Log10P1(x);
 
         //
@@ -774,7 +774,7 @@ namespace System
         /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
         static double IMultiplyOperators<double, double, double>.operator *(double left, double right) => left * right;
 
-        // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
         static double IMultiplyOperators<double, double, double>.operator checked *(double left, double right) => left * right;
 
         //
@@ -1122,13 +1122,13 @@ namespace System
         /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
         public static double Cbrt(double x) => Math.Cbrt(x);
 
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
         // public static double Hypot(double x, double y) => Math.Hypot(x, y);
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static double Sqrt(double x) => Math.Sqrt(x);
 
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, TSelf)" />
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, TSelf)" />
         // public static double Root(double x, double n) => Math.Root(x, n);
 
         //
@@ -1155,7 +1155,7 @@ namespace System
         /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
         static double ISubtractionOperators<double, double, double>.operator -(double left, double right) => left - right;
 
-        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
         static double ISubtractionOperators<double, double, double>.operator checked -(double left, double right) => left - right;
 
         //
@@ -1186,25 +1186,25 @@ namespace System
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
         public static double Tan(double x) => Math.Tan(x);
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
         // public static double AcosPi(double x) => Math.AcosPi(x);
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
         // public static double AsinPi(double x) => Math.AsinPi(x);
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
         // public static double AtanPi(double x) => Math.AtanPi(x);
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf)" />
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf)" />
         // public static double Atan2Pi(double y, double x) => Math.Atan2Pi(y, x);
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
         // public static double CosPi(double x) => Math.CosPi(x);
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
         // public static double SinPi(double x) => Math.SinPi(x, y);
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
         // public static double TanPi(double x) => Math.TanPi(x, y);
 
         //
@@ -1214,7 +1214,7 @@ namespace System
         /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
         static double IUnaryNegationOperators<double, double>.operator -(double value) => -value;
 
-        // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
         static double IUnaryNegationOperators<double, double>.operator checked -(double value) => -value;
 
         //

@@ -294,7 +294,7 @@ namespace System
         /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
         static ushort IAdditionOperators<ushort, ushort, ushort>.operator +(ushort left, ushort right) => (ushort)(left + right);
 
-        // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
         static ushort IAdditionOperators<ushort, ushort, ushort>.operator checked +(ushort left, ushort right) => checked((ushort)(left + right));
 
         //
@@ -375,7 +375,7 @@ namespace System
         /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         static ushort IDecrementOperators<ushort>.operator --(ushort value) => --value;
 
-        // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         static ushort IDecrementOperators<ushort>.operator checked --(ushort value) => checked(--value);
 
         //
@@ -385,7 +385,7 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         static ushort IDivisionOperators<ushort, ushort, ushort>.operator /(ushort left, ushort right) => (ushort)(left / right);
 
-        // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
         static ushort IDivisionOperators<ushort, ushort, ushort>.operator checked /(ushort left, ushort right) => (ushort)(left / right);
 
         //
@@ -405,7 +405,7 @@ namespace System
         /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
         static ushort IIncrementOperators<ushort>.operator ++(ushort value) => ++value;
 
-        // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
         static ushort IIncrementOperators<ushort>.operator checked ++(ushort value) => checked(++value);
 
         //
@@ -439,7 +439,7 @@ namespace System
         /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
         static ushort IMultiplyOperators<ushort, ushort, ushort>.operator *(ushort left, ushort right) => (ushort)(left * right);
 
-        // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
         static ushort IMultiplyOperators<ushort, ushort, ushort>.operator checked *(ushort left, ushort right) => checked((ushort)(left * right));
 
         //
@@ -891,7 +891,7 @@ namespace System
         /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
         static ushort IShiftOperators<ushort, ushort>.operator >>(ushort value, int shiftAmount) => (ushort)(value >> shiftAmount);
 
-        // /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
         // static ushort IShiftOperators<ushort, ushort>.operator >>>(ushort value, int shiftAmount) => (ushort)(value >> shiftAmount);
 
         //
@@ -911,7 +911,7 @@ namespace System
         /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
         static ushort ISubtractionOperators<ushort, ushort, ushort>.operator -(ushort left, ushort right) => (ushort)(left - right);
 
-        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
         static ushort ISubtractionOperators<ushort, ushort, ushort>.operator checked -(ushort left, ushort right) => checked((ushort)(left - right));
 
         //
@@ -921,7 +921,7 @@ namespace System
         /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
         static ushort IUnaryNegationOperators<ushort, ushort>.operator -(ushort value) => (ushort)(-value);
 
-        // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
         static ushort IUnaryNegationOperators<ushort, ushort>.operator checked -(ushort value) => checked((ushort)(-value));
 
         //

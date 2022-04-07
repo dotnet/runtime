@@ -937,7 +937,7 @@ namespace System
         // ISubtractionOperators
         //
 
-        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
         static TimeSpan ISubtractionOperators<TimeOnly, TimeOnly, TimeSpan>.operator checked -(TimeOnly left, TimeOnly right) => left - right;
     }
 }

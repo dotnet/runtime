@@ -486,7 +486,7 @@ namespace System
         /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
         static float IAdditionOperators<float, float, float>.operator +(float left, float right) => left + right;
 
-        // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
         static float IAdditionOperators<float, float, float>.operator checked +(float left, float right) => left + right;
 
         //
@@ -555,7 +555,7 @@ namespace System
         /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         static float IDecrementOperators<float>.operator --(float value) => --value;
 
-        // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         static float IDecrementOperators<float>.operator checked --(float value) => --value;
 
         //
@@ -565,7 +565,7 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         static float IDivisionOperators<float, float, float>.operator /(float left, float right) => left / right;
 
-        // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
         static float IDivisionOperators<float, float, float>.operator checked /(float left, float right) => left / right;
 
         //
@@ -575,19 +575,19 @@ namespace System
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
         public static float Exp(float x) => MathF.Exp(x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
         // public static float ExpM1(float x) => MathF.ExpM1(x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
         // public static float Exp2(float x) => MathF.Exp2(x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
         // public static float Exp2M1(float x) => MathF.Exp2M1(x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
         // public static float Exp10(float x) => MathF.Exp10(x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
         // public static float Exp10M1(float x) => MathF.Exp10M1(x);
 
         //
@@ -667,19 +667,19 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
         public static float ScaleB(float x, int n) => MathF.ScaleB(x, n);
 
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Compound(TSelf, TSelf)" />
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Compound(TSelf, TSelf)" />
         // public static float Compound(float x, float n) => MathF.Compound(x, n);
 
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
         // public static float MaxMagnitudeNumber(float x, float y) => MathF.MaxMagnitudeNumber(x, y);
 
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxNumber(TSelf, TSelf)" />
         // public static float MaxNumber(float x, float y) => MathF.MaxNumber(x, y);
 
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         // public static float MinMagnitudeNumber(float x, float y) => MathF.MinMagnitudeNumber(x, y);
 
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinNumber(TSelf, TSelf)" />
         // public static float MinNumber(float x, float y) => MathF.MinNumber(x, y);
 
         //
@@ -711,7 +711,7 @@ namespace System
         /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
         static float IIncrementOperators<float>.operator ++(float value) => ++value;
 
-        // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
         static float IIncrementOperators<float>.operator checked ++(float value) => ++value;
 
         //
@@ -727,13 +727,13 @@ namespace System
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
         public static float Log10(float x) => MathF.Log10(x);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
         // public static float LogP1(float x) => MathF.LogP1(x);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
         // public static float Log2P1(float x) => MathF.Log2P1(x);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
         // public static float Log10P1(float x) => MathF.Log10P1(x);
 
         //
@@ -769,7 +769,7 @@ namespace System
         /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
         static float IMultiplyOperators<float, float, float>.operator *(float left, float right) => left * right;
 
-        // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
         static float IMultiplyOperators<float, float, float>.operator checked *(float left, float right) => left * right;
 
         //
@@ -1117,13 +1117,13 @@ namespace System
         /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
         public static float Cbrt(float x) => MathF.Cbrt(x);
 
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
         // public static float Hypot(float x, float y) => MathF.Hypot(x, y);
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static float Sqrt(float x) => MathF.Sqrt(x);
 
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, TSelf)" />
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, TSelf)" />
         // public static float Root(float x, float n) => MathF.Root(x, n);
 
         //
@@ -1150,7 +1150,7 @@ namespace System
         /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
         static float ISubtractionOperators<float, float, float>.operator -(float left, float right) => left - right;
 
-        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
         static float ISubtractionOperators<float, float, float>.operator checked -(float left, float right) => left - right;
 
         //
@@ -1181,25 +1181,25 @@ namespace System
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
         public static float Tan(float x) => MathF.Tan(x);
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
         // public static float AcosPi(float x) => MathF.AcosPi(x);
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
         // public static float AsinPi(float x) => MathF.AsinPi(x);
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
         // public static float AtanPi(float x) => MathF.AtanPi(x);
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf)" />
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf)" />
         // public static float Atan2Pi(float y, float x) => MathF.Atan2Pi(y, x);
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
         // public static float CosPi(float x) => MathF.CosPi(x);
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
         // public static float SinPi(float x) => MathF.SinPi(x, y);
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
         // public static float TanPi(float x) => MathF.TanPi(x, y);
 
         //
@@ -1209,7 +1209,7 @@ namespace System
         /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
         static float IUnaryNegationOperators<float, float>.operator -(float value) => -value;
 
-        // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
         static float IUnaryNegationOperators<float, float>.operator checked -(float value) => -value;
 
         //
