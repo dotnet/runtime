@@ -170,10 +170,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 o = JObject.FromObject(new
                 {
-                    result = JObject.FromObject(new
+                    result = new
                     {
                         value = ret
-                    })
+                    }
                 });
             }
             else if (obj["result"] is JObject && obj["result"]?["type"]?.Value<string>() == "object")
@@ -182,30 +182,30 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     o = JObject.FromObject(new
                     {
-                        result = JObject.FromObject(new
+                        result = new
                         {
                             value = obj["result"]["preview"]["items"]
-                        })
+                        }
                     });
                 }
                 else if (obj["result"]?["preview"] != null)
                 {
                     o = JObject.FromObject(new
                     {
-                        result = JObject.FromObject(new
+                        result = new
                         {
                             value = obj["result"]?["preview"]?["ownProperties"]?["value"]
-                        })
+                        }
                     });
                 }
                 else
                 {
                     o = JObject.FromObject(new
                     {
-                        result = JObject.FromObject(new
+                        result = new
                         {
                             value = obj["result"]
-                        })
+                        }
                     });
                 }
             }
@@ -213,22 +213,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 o = JObject.FromObject(new
                 {
-                    result = JObject.FromObject(new
+                    result = new
                     {
                         value = obj["result"],
                         type = obj["resultType"],
                         description = obj["resultDescription"]
-                    })
+                    }
                 });
             }
             else
             {
                 o = JObject.FromObject(new
                 {
-                    result = JObject.FromObject(new
+                    result = new
                     {
                         value = obj
-                    })
+                    }
                 });
             }
             bool resultHasError = obj["hasException"] != null && obj["hasException"].Value<bool>();
