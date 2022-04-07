@@ -8,6 +8,8 @@ namespace System.Security.Cryptography.Cose
 {
     public readonly partial struct CoseHeaderLabel : System.IEquatable<System.Security.Cryptography.Cose.CoseHeaderLabel>
     {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public CoseHeaderLabel(int label) { throw null; }
         public CoseHeaderLabel(string label) { throw null; }
         public static System.Security.Cryptography.Cose.CoseHeaderLabel Algorithm { get { throw null; } }
@@ -42,6 +44,8 @@ namespace System.Security.Cryptography.Cose
         public bool TryGetEncodedValue(System.Security.Cryptography.Cose.CoseHeaderLabel label, out System.ReadOnlyMemory<byte> encodedValue) { throw null; }
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<(System.Security.Cryptography.Cose.CoseHeaderLabel Label, System.ReadOnlyMemory<byte> EncodedValue)>, System.Collections.IEnumerator, System.IDisposable
         {
+            private object _dummy;
+            private int _dummyPrimitive;
             public readonly (System.Security.Cryptography.Cose.CoseHeaderLabel Label, System.ReadOnlyMemory<byte> EncodedValue) Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
