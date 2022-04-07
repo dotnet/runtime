@@ -97,6 +97,7 @@ namespace System
         internal const long MinTicks = 0;
         internal const long MaxTicks = DaysTo10000 * TicksPerDay - 1;
         private const long MaxMillis = (long)DaysTo10000 * MillisPerDay;
+        private const long MaxMicroseconds = MaxMillis * MicrosecondsPerMillisecond;
 
         internal const long UnixEpochTicks = DaysTo1970 * TicksPerDay;
         private const long FileTimeOffset = DaysTo1601 * TicksPerDay;
@@ -902,8 +903,8 @@ namespace System
         /// </exception>
         public DateTime AddMicroseconds(double value)
         {
-            int ticks = (int)(value * TicksPerMicrosecond);
-            if (ticks is < 0 or > 900)
+            long ticks = checked((long)(value * TicksPerMicrosecond));
+            if (value is < 0 or >= MaxMicroseconds)
             {
                 ThrowOutOfRange();
             }
