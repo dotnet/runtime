@@ -454,7 +454,7 @@ CodeGenInterface::siVarLoc::siVarLoc(const LclVarDsc* varDsc, regNumber baseReg,
 {
     if (varDsc->lvIsInReg())
     {
-        var_types regType = genActualType(varDsc->GetActualRegisterType());
+        var_types regType = genActualType(varDsc->GetRegisterType());
         siFillRegisterVarLoc(varDsc, regType, baseReg, offset, isFramePointerUsed);
     }
     else

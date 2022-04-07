@@ -499,6 +499,17 @@ namespace System
                 throw new XunitException($"Expected: {expected1} || {expected2}{Environment.NewLine}Actual: {value}");
         }
 
+        /// <summary>
+        /// Compares two strings, logs entire content if they are not equal.
+        /// </summary>
+        public static void Equal(string expected, string actual)
+        {
+            if (!expected.Equals(actual))
+            {
+                throw new AssertActualExpectedException(expected, actual, "Provided strings were not equal!");
+            }
+        }
+
         public delegate void AssertThrowsActionReadOnly<T>(ReadOnlySpan<T> span);
 
         public delegate void AssertThrowsAction<T>(Span<T> span);

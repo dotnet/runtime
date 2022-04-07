@@ -9741,7 +9741,20 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
     LclVarDsc* const varDsc = lvaGetDesc(varNum);
 
 #ifdef DEBUG
-    if (!opts.IsOSR())
+    if (opts.IsOSR())
+    {
+        if (varDsc->lvIsOSRLocal)
+        {
+            // Sanity check for promoted fields of OSR locals.
+            //
+            if (varNum >= info.compLocalsCount)
+            {
+                assert(varDsc->lvIsStructField);
+                assert(varDsc->lvParentLcl < info.compLocalsCount);
+            }
+        }
+    }
+    else
     {
         assert(!varDsc->lvIsOSRLocal);
     }
