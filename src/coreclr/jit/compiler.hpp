@@ -4419,19 +4419,14 @@ void GenTree::VisitBinOpOperands(TVisitor visitor)
  *  not zero-initialized and can contain data from a prior allocation lifetime.
  */
 
-inline void* __cdecl operator new(size_t sz, Compiler* compiler, CompMemKind cmk)
+inline void* operator new(size_t sz, Compiler* compiler, CompMemKind cmk)
 {
     return compiler->getAllocator(cmk).allocate<char>(sz);
 }
 
-inline void* __cdecl operator new[](size_t sz, Compiler* compiler, CompMemKind cmk)
+inline void* operator new[](size_t sz, Compiler* compiler, CompMemKind cmk)
 {
     return compiler->getAllocator(cmk).allocate<char>(sz);
-}
-
-inline void* __cdecl operator new(size_t sz, void* p, const jitstd::placement_t& /* syntax_difference */)
-{
-    return p;
 }
 
 /*****************************************************************************/
@@ -4480,9 +4475,9 @@ inline static bool StructHasCustomLayout(DWORD attribs)
     return ((attribs & CORINFO_FLG_CUSTOMLAYOUT) != 0);
 }
 
-inline static bool StructHasNoPromotionFlagSet(DWORD attribs)
+inline static bool StructHasDontDigFieldsFlagSet(DWORD attribs)
 {
-    return ((attribs & CORINFO_FLG_DONT_PROMOTE) != 0);
+    return ((attribs & CORINFO_FLG_DONT_DIG_FIELDS) != 0);
 }
 
 //------------------------------------------------------------------------------

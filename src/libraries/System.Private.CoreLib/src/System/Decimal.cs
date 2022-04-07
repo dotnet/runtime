@@ -444,7 +444,7 @@ namespace System
             return Number.FormatDecimal(this, null, NumberFormatInfo.CurrentInfo);
         }
 
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return Number.FormatDecimal(this, format, NumberFormatInfo.CurrentInfo);
         }
@@ -454,12 +454,12 @@ namespace System
             return Number.FormatDecimal(this, null, NumberFormatInfo.GetInstance(provider));
         }
 
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return Number.FormatDecimal(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatDecimal(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
