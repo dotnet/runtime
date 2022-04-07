@@ -5360,10 +5360,9 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="action"/> parameter was null.
         /// </exception>
-        public static Task Run(Action action,TaskCreationOptions taskCreationOptions = TaskCreationOptions.DenyChildAttach)
+        public static Task Run(Action action, TaskCreationOptions taskCreationOptions = TaskCreationOptions.DenyChildAttach)
         {
-            return Task.InternalStartNew(null, action, null, default, TaskScheduler.Default,
-                    taskCreationOptions, InternalTaskOptions.None);
+            return Task.InternalStartNew(null, action, null, default, TaskScheduler.Default, taskCreationOptions, InternalTaskOptions.None);
         }
 
         /// <summary>
@@ -5379,10 +5378,9 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ObjectDisposedException">
         /// The CancellationTokenSource associated with <paramref name="cancellationToken"/> was disposed.
         /// </exception>
-        public static Task Run(Action action, CancellationToken cancellationToken,TaskCreationOptions taskCreationOptions= TaskCreationOptions.DenyChildAttach)
+        public static Task Run(Action action, CancellationToken cancellationToken, TaskCreationOptions taskCreationOptions= TaskCreationOptions.DenyChildAttach)
         {
-            return Task.InternalStartNew(null, action, null, cancellationToken, TaskScheduler.Default,
-                    taskCreationOptions, InternalTaskOptions.None);
+            return Task.InternalStartNew(null, action, null, cancellationToken, TaskScheduler.Default, taskCreationOptions, InternalTaskOptions.None);
         }
 
         /// <summary>
@@ -5394,10 +5392,9 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="function"/> parameter was null.
         /// </exception>
-        public static Task<TResult> Run<TResult>(Func<TResult> function,TaskCreationOptions taskCreationOptions= TaskCreationOptions.DenyChildAttach)
+        public static Task<TResult> Run<TResult>(Func<TResult> function, TaskCreationOptions taskCreationOptions= TaskCreationOptions.DenyChildAttach)
         {
-            return Task<TResult>.StartNew(null, function, default,
-                    taskCreationOptions, InternalTaskOptions.None, TaskScheduler.Default);
+            return Task<TResult>.StartNew(null, function, default, taskCreationOptions, InternalTaskOptions.None, TaskScheduler.Default);
         }
 
         /// <summary>
@@ -5413,10 +5410,9 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ObjectDisposedException">
         /// The CancellationTokenSource associated with <paramref name="cancellationToken"/> was disposed.
         /// </exception>
-        public static Task<TResult> Run<TResult>(Func<TResult> function, CancellationToken cancellationToken,TaskCreationOptions taskCreationOptions= TaskCreationOptions.DenyChildAttach)
+        public static Task<TResult> Run<TResult>(Func<TResult> function, CancellationToken cancellationToken, TaskCreationOptions taskCreationOptions= TaskCreationOptions.DenyChildAttach)
         {
-            return Task<TResult>.StartNew(null, function, cancellationToken,
-                    taskCreationOptions, InternalTaskOptions.None, TaskScheduler.Default);
+            return Task<TResult>.StartNew(null, function, cancellationToken, taskCreationOptions, InternalTaskOptions.None, TaskScheduler.Default);
         }
 
         /// <summary>
@@ -5429,9 +5425,9 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="function"/> parameter was null.
         /// </exception>
-        public static Task Run(Func<Task?> function,TaskCreationOptions taskCreationOptions = TaskCreationOptions.DenyChildAttach)
+        public static Task Run(Func<Task?> function, TaskCreationOptions taskCreationOptions = TaskCreationOptions.DenyChildAttach)
         {
-            return Run(function, default,taskCreationOptions);
+            return Run(function, default, taskCreationOptions);
         }
 
         /// <summary>
@@ -5448,7 +5444,7 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ObjectDisposedException">
         /// The CancellationTokenSource associated with <paramref name="cancellationToken"/> was disposed.
         /// </exception>
-        public static Task Run(Func<Task?> function, CancellationToken cancellationToken,TaskCreationOptions taskCreationOptions = TaskCreationOptions.DenyChildAttach)
+        public static Task Run(Func<Task?> function, CancellationToken cancellationToken, TaskCreationOptions taskCreationOptions = TaskCreationOptions.DenyChildAttach)
         {
             // Check arguments
             if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
@@ -5478,9 +5474,9 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="function"/> parameter was null.
         /// </exception>
-        public static Task<TResult> Run<TResult>(Func<Task<TResult>?> function,TaskCreationOptions taskCreationOptions = TaskCreationOptions.DenyChildAttach)
+        public static Task<TResult> Run<TResult>(Func<Task<TResult>?> function, TaskCreationOptions taskCreationOptions = TaskCreationOptions.DenyChildAttach)
         {
-            return Run(function, default,taskCreationOptions);
+            return Run(function, default, taskCreationOptions);
         }
 
         /// <summary>
@@ -5495,7 +5491,7 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="function"/> parameter was null.
         /// </exception>
-        public static Task<TResult> Run<TResult>(Func<Task<TResult>?> function, CancellationToken cancellationToken,TaskCreationOptions taskCreationOptions = TaskCreationOptions.DenyChildAttach)
+        public static Task<TResult> Run<TResult>(Func<Task<TResult>?> function, CancellationToken cancellationToken, TaskCreationOptions taskCreationOptions = TaskCreationOptions.DenyChildAttach)
         {
             // Check arguments
             if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
@@ -5505,7 +5501,7 @@ namespace System.Threading.Tasks
                 return Task.FromCanceled<TResult>(cancellationToken);
 
             // Kick off initial Task, which will call the user-supplied function and yield a Task.
-            Task<Task<TResult>?> task1 = Task<Task<TResult>?>.Factory.StartNew(function, cancellationToken,taskCreationOptions, TaskScheduler.Default);
+            Task<Task<TResult>?> task1 = Task<Task<TResult>?>.Factory.StartNew(function, cancellationToken, taskCreationOptions, TaskScheduler.Default);
 
             // Create a promise-style Task to be used as a proxy for the operation
             // Set lookForOce == true so that unwrap logic can be on the lookout for OCEs thrown as faults from task1, to support in-delegate cancellation.
