@@ -399,7 +399,7 @@ namespace System
         //
         // Uri(string, UriKind);
         //
-        public Uri([StringSyntax(StringSyntaxAttribute.Uri)] string uriString!!, UriKind uriKind)
+        public Uri([StringSyntax(StringSyntaxAttribute.Uri, "uriKind")] string uriString!!, UriKind uriKind)
         {
             CreateThis(uriString, false, uriKind);
             DebugSetLeftCtor();

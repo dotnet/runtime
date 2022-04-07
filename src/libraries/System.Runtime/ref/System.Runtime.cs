@@ -5799,7 +5799,7 @@ namespace System
         [System.ObsoleteAttribute("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(string) instead.")]
         public Uri([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")]string uriString, bool dontEscape) { }
         public Uri([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")]string uriString, in System.UriCreationOptions creationOptions) { }
-        public Uri([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uriString, System.UriKind uriKind) { }
+        public Uri([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri", "uriKind")] string uriString, System.UriKind uriKind) { }
         public Uri(System.Uri baseUri, string? relativeUri) { }
         [System.ObsoleteAttribute("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(Uri, string) instead.")]
         public Uri(System.Uri baseUri, string? relativeUri, bool dontEscape) { }
