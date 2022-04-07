@@ -31,7 +31,9 @@ namespace System.Security.Cryptography
                 throw new PlatformNotSupportedException();
             }
 
+#pragma warning disable 0672 // Member overrides an obsolete member.
             public override byte[] ToByteArray()
+#pragma warning restore 0672
             {
                 throw new PlatformNotSupportedException();
             }

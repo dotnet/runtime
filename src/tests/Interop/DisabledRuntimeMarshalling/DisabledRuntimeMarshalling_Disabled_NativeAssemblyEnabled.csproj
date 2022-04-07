@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PInvokeAssemblyMarshallingEnabled/*.cs" />

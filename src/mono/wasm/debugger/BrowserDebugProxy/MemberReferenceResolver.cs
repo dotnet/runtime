@@ -360,7 +360,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             case "object":
                                 var typeIds = await context.SdbAgent.GetTypeIdFromObject(objectId.Value, true, token);
                                 int methodId = await context.SdbAgent.GetMethodIdByName(typeIds[0], "ToArray", token);
-                                var toArrayRetMethod = await context.SdbAgent.InvokeMethodInObject(objectId.Value, methodId, elementAccess.Expression.ToString(), token);
+                                var toArrayRetMethod = await context.SdbAgent.InvokeMethodInObject(objectId, methodId, elementAccess.Expression.ToString(), token);
                                 rootObject = await GetValueFromObject(toArrayRetMethod, token);
                                 DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId arrayObjectId);
                                 rootObject["value"] = await context.SdbAgent.GetArrayValues(arrayObjectId.Value, token);

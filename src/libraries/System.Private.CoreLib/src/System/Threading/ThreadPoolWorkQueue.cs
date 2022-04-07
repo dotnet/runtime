@@ -1450,67 +1450,6 @@ namespace System.Threading
             }
         }
 
-        internal static IEnumerable<object> GetLocallyQueuedWorkItems()
-        {
-            ThreadPoolWorkQueue.WorkStealingQueue? wsq = ThreadPoolWorkQueueThreadLocals.threadLocals?.workStealingQueue;
-            if (wsq != null && wsq.m_array != null)
-            {
-                object?[] items = wsq.m_array;
-                for (int i = 0; i < items.Length; i++)
-                {
-                    object? item = items[i];
-                    if (item != null)
-                        yield return item;
-                }
-            }
-        }
-
-        internal static IEnumerable<object> GetGloballyQueuedWorkItems()
-        {
-            // Enumerate high-priority queue
-            foreach (object workItem in s_workQueue.highPriorityWorkItems)
-            {
-                yield return workItem;
-            }
-
-            // Enumerate global queue
-            foreach (object workItem in s_workQueue.workItems)
-            {
-                yield return workItem;
-            }
-        }
-
-        private static object[] ToObjectArray(IEnumerable<object> workitems)
-        {
-            int i = 0;
-            foreach (object item in workitems)
-            {
-                i++;
-            }
-
-            object[] result = new object[i];
-            i = 0;
-            foreach (object item in workitems)
-            {
-                if (i < result.Length) // just in case someone calls us while the queues are in motion
-                    result[i] = item;
-                i++;
-            }
-
-            return result;
-        }
-
-        // This is the method the debugger will actually call, if it ends up calling
-        // into ThreadPool directly.  Tests can use this to simulate a debugger, as well.
-        internal static object[] GetQueuedWorkItemsForDebugger() =>
-            ToObjectArray(GetQueuedWorkItems());
-
-        internal static object[] GetGloballyQueuedWorkItemsForDebugger() =>
-            ToObjectArray(GetGloballyQueuedWorkItems());
-
-        internal static object[] GetLocallyQueuedWorkItemsForDebugger() =>
-            ToObjectArray(GetLocallyQueuedWorkItems());
-
         /// <summary>
         /// Gets the number of work items that are currently queued to be processed.
         /// </summary>

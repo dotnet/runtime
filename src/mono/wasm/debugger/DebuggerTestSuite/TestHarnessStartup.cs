@@ -143,7 +143,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 var proxyLoggerFactory = LoggerFactory.Create(
                     builder => builder
-                        .AddFile(logFilePath, minimumLevel: LogLevel.Information)
+                        .AddFile(logFilePath, minimumLevel: LogLevel.Debug)
                         .AddFilter(null, LogLevel.Trace));
 
 #if RUN_IN_CHROME

@@ -3225,19 +3225,8 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
             }
             else
             {
-                bool isArrIndex = ((tree->gtFlags & GTF_VAR_ARR_INDEX) != 0);
-
                 assert(varTypeIsIntegralOrI(tree));
-
                 newTree->BashToConst(curAssertion->op2.u1.iconVal, genActualType(tree));
-
-                // If we're doing an array index address, assume any constant propagated contributes to the index.
-                if (isArrIndex)
-                {
-                    newTree->AsIntCon()->gtFieldSeq =
-                        GetFieldSeqStore()->CreateSingleton(FieldSeqStore::ConstantIndexPseudoField);
-                }
-                newTree->gtFlags &= ~GTF_VAR_ARR_INDEX;
             }
             break;
 

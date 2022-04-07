@@ -110,7 +110,7 @@ namespace System.Globalization
 
         public static bool IsSortable(char ch)
         {
-            return IsSortable(MemoryMarshal.CreateReadOnlySpan(ref ch, 1));
+            return IsSortable(new ReadOnlySpan<char>(in ch));
         }
 
         public static bool IsSortable(string text!!)
@@ -785,7 +785,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return IndexOf(source, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
+            return IndexOf(source, new ReadOnlySpan<char>(in value), options);
         }
 
         public int IndexOf(string source, string value, CompareOptions options)
@@ -865,7 +865,7 @@ namespace System.Globalization
                 }
             }
 
-            int result = IndexOf(sourceSpan, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
+            int result = IndexOf(sourceSpan, new ReadOnlySpan<char>(in value), options);
             if (result >= 0)
             {
                 result += startIndex;
@@ -1118,7 +1118,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return LastIndexOf(source, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
+            return LastIndexOf(source, new ReadOnlySpan<char>(in value), options);
         }
 
         public int LastIndexOf(string source, string value, CompareOptions options)
@@ -1213,7 +1213,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
-            int retVal = LastIndexOf(sourceSpan, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
+            int retVal = LastIndexOf(sourceSpan, new ReadOnlySpan<char>(in value), options);
             if (retVal >= 0)
             {
                 retVal += startIndex;

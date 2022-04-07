@@ -19,8 +19,4 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
-    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-  </ItemGroup>
-
 </Project>

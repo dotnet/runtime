@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Logging.Console
     {
         public ConsoleFormatterOptions() { }
         public bool IncludeScopes { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)]
+        [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("DateTimeFormat")]
         public string TimestampFormat { get { throw null; } set { } }
         public bool UseUtcTimestamp { get { throw null; } set { } }
     }

@@ -42,6 +42,12 @@ namespace TestLibrary
             }
         }
 
+        public static bool OutOfProcessTestsSupported =>
+            !OperatingSystem.IsIOS()
+            && !OperatingSystem.IsTvOS()
+            && !OperatingSystem.IsAndroid()
+            && !OperatingSystem.IsBrowser();
+
         public static void RunOutOfProcessTest(string basePath, string assemblyPath)
         {
             int ret = -100;

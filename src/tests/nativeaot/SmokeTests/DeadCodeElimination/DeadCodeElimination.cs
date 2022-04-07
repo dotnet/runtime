@@ -16,6 +16,7 @@ class Program
         TestAbstractTypeNeverDerivedVirtualsOptimization.Run();
         TestAbstractNeverDerivedWithDevirtualizedCall.Run();
         TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall.Run();
+        TestUnusedDefaultInterfaceMethod.Run();
 
         return 100;
     }
@@ -184,6 +185,38 @@ class Program
             // This optimization got disabled, but if it ever gets re-enabled, this test
             // will ensure we don't reintroduce the old bugs (this was a compiler crash).
             //ThrowIfPresent(typeof(TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall), nameof(UnreferencedType1));
+        }
+    }
+
+    class TestUnusedDefaultInterfaceMethod
+    {
+        interface IFoo<T>
+        {
+            void DoSomething();
+        }
+
+        interface IBar<T> : IFoo<T>
+        {
+            void IFoo<T>.DoSomething()
+            {
+                Activator.CreateInstance(typeof(NeverReferenced));
+            }
+        }
+
+        class NeverReferenced { }
+
+        class SomeInstance : IBar<object>
+        {
+            void IFoo<object>.DoSomething() { }
+        }
+
+        static IFoo<object> s_instance = new SomeInstance();
+
+        public static void Run()
+        {
+            s_instance.DoSomething();
+
+            ThrowIfPresent(typeof(TestUnusedDefaultInterfaceMethod), nameof(NeverReferenced));
         }
     }
 

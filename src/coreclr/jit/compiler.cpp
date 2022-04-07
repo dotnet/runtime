@@ -1916,7 +1916,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_blockToEHPreds     = nullptr;
     m_fieldSeqStore      = nullptr;
     m_zeroOffsetFieldMap = nullptr;
-    m_arrayInfoMap       = nullptr;
     m_refAnyClass        = nullptr;
     for (MemoryKind memoryKind : allMemoryKinds())
     {
@@ -9161,10 +9160,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[VAR_DEATH]");
                 }
-                if (tree->gtFlags & GTF_VAR_ARR_INDEX)
-                {
-                    chars += printf("[VAR_ARR_INDEX]");
-                }
 #if defined(DEBUG)
                 if (tree->gtDebugFlags & GTF_DEBUG_VAR_CSE_REF)
                 {
@@ -9310,8 +9305,14 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 }
                 break;
 
-            case GT_CNS_INT:
+            case GT_ARR_ADDR:
+                if (tree->gtFlags & GTF_ARR_ADDR_NONNULL)
+                {
+                    chars += printf("[ARR_ADDR_NONNULL]");
+                }
+                break;
 
+            case GT_CNS_INT:
             {
                 GenTreeFlags handleKind = (tree->gtFlags & GTF_ICON_HDL_MASK);
 

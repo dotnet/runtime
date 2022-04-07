@@ -2,7 +2,7 @@
   <PropertyGroup>
     <_workItemTimeout Condition="'$(Scenario)' == 'BuildWasmApps' and '$(_workItemTimeout)' == ''">01:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">01:00:00</_workItemTimeout>
-    <_workItemTimeout Condition="'$(Scenario)' == 'WasmDebuggerTests'">00:10:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(Scenario)' == 'WasmDebuggerTests'">00:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == 'WasmTestOnBrowser' and '$(BrowserHost)' == 'windows'">00:45:00</_workItemTimeout>
 
     <IsWasmDebuggerTests Condition="'$(Scenario)' == 'WasmDebuggerTests'">true</IsWasmDebuggerTests>

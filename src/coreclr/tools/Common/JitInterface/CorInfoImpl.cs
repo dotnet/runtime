@@ -1934,14 +1934,21 @@ namespace Internal.JitInterface
             if (pnBufLen > 0)
             {
                 char* buffer = *ppBuf;
-                for (int i = 0; i < Math.Min(name.Length, pnBufLen); i++)
+                int lengthToCopy = Math.Min(name.Length, pnBufLen);
+                for (int i = 0; i < lengthToCopy; i++)
                     buffer[i] = name[i];
                 if (name.Length < pnBufLen)
+                {
                     buffer[name.Length] = (char)0;
+                }
                 else
+                {
                     buffer[pnBufLen - 1] = (char)0;
-                pnBufLen -= length;
-                *ppBuf = buffer + length;
+                    lengthToCopy -= 1;
+                }
+
+                pnBufLen -= lengthToCopy;
+                *ppBuf = buffer + lengthToCopy;
             }
 
             return length;
@@ -2034,7 +2041,7 @@ namespace Internal.JitInterface
             if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
             {
                 // Prevent the JIT from drilling into types outside of the current versioning bubble
-                result |= CorInfoFlag.CORINFO_FLG_DONT_PROMOTE;
+                result |= CorInfoFlag.CORINFO_FLG_DONT_DIG_FIELDS;
                 result &= ~CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
             }
 #endif
