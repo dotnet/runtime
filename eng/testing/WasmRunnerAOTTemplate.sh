@@ -60,18 +60,16 @@ function set_env_vars()
 	if [ "x$TEST_USING_WORKLOADS" = "xtrue" ]; then
 		export DOTNET_ROOT=$BASE_DIR/dotnet-workload
 		export PATH=$DOTNET_ROOT:$PATH
-        export DOTNET_HOST_PATH=$DOTNET_ROOT/dotnet
 		export SDK_HAS_WORKLOAD_INSTALLED=true
-		export SDK_FOR_WORKLOAD_TESTING_PATH=$BASE_DIR/dotnet-workload
+		export SDK_FOR_WORKLOAD_TESTING_PATH=$DOTNET_ROOT
 		export AppRefDir=$BASE_DIR/microsoft.netcore.app.ref
 	elif [[ -n "$HELIX_WORKITEM_UPLOAD_ROOT" ]]; then
 		export WasmBuildSupportDir=$BASE_DIR/build
 	else
 		export DOTNET_ROOT=$BASE_DIR/dotnet-workload
 		export PATH=$DOTNET_ROOT:$PATH
-        export DOTNET_HOST_PATH=$DOTNET_ROOT/dotnet
 		export SDK_HAS_WORKLOAD_INSTALLED=false
-		export SDK_FOR_WORKLOAD_TESTING_PATH=$BASE_DIR/sdk-no-workload
+		export SDK_FOR_WORKLOAD_TESTING_PATH=$DOTNET_ROOT
 	fi
     export MSBuildExtensionsPath=
     export MSBuildSDKsPath=
@@ -101,7 +99,7 @@ function _buildAOTFunc()
     which dotnet
     echo $PATH
 
-	time $DOTNET_ROOT/dotnet msbuild $projectFile /bl:$binLog $*
+	time dotnet msbuild $projectFile /bl:$binLog $*
 	local buildExitCode=$?
 
 	echo "\n** Performance summary for the build **\n"
