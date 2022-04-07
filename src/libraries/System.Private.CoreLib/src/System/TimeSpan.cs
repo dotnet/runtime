@@ -180,7 +180,7 @@ namespace System
         /// The <see cref="Nanoseconds"/> property represents whole nanoseconds, whereas the
         /// <see cref="TotalNanoseconds"/> property represents whole and fractional nanoseconds.
         /// </remarks>
-        public int Nanoseconds => (int)((_ticks * NanosecondsPerTick) % 1000);
+        public int Nanoseconds => (int)((_ticks % TicksPerMicrosecond) % 100);
 
         public int Minutes => (int)((_ticks / TicksPerMinute) % 60);
 
