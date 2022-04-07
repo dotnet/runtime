@@ -52,7 +52,9 @@
       <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT' and '$(RunInFirefox)'=='1'"
                          Include="echo 'user_pref(&quot;devtools.debugger.remote-enabled&quot;, true)%3B' >> /tmp/profile/prefs.js" />                         
       <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT' and '$(RunInFirefox)'=='1'"
-                         Include="echo 'user_pref(&quot;devtools.debugger.prompt-connection&quot;, false)%3B' >> /tmp/profile/prefs.js" /> 
+                         Include="echo 'user_pref(&quot;devtools.debugger.prompt-connection&quot;, false)%3B' >> /tmp/profile/prefs.js" />
+      <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT' and '$(RunInFirefox)'=='1'"
+                         Include="update-alternatives --install /usr/bin/python python /usr/bin/python3 1" />
     </ItemGroup>
 
     <PropertyGroup>
