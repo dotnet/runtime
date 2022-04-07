@@ -5355,14 +5355,15 @@ namespace System.Threading.Tasks
         /// Queues the specified work to run on the ThreadPool and returns a Task handle for that work.
         /// </summary>
         /// <param name="action">The work to execute asynchronously</param>
+        /// <param name="taskCreationOptions">The work to flags that control optional behavior for the creation and execution of tasks.</param>
         /// <returns>A Task that represents the work queued to execute in the ThreadPool.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="action"/> parameter was null.
         /// </exception>
-        public static Task Run(Action action)
+        public static Task Run(Action action,TaskCreationOptions taskCreationOptions = TaskCreationOptions.DenyChildAttach)
         {
             return Task.InternalStartNew(null, action, null, default, TaskScheduler.Default,
-                TaskCreationOptions.DenyChildAttach, InternalTaskOptions.None);
+                    taskCreationOptions, InternalTaskOptions.None);
         }
 
         /// <summary>
@@ -5370,6 +5371,7 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <param name="action">The work to execute asynchronously</param>
         /// <param name="cancellationToken">A cancellation token that should be used to cancel the work</param>
+        /// <param name="taskCreationOptions">The work to flags that control optional behavior for the creation and execution of tasks.</param>
         /// <returns>A Task that represents the work queued to execute in the ThreadPool.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="action"/> parameter was null.
@@ -5377,24 +5379,25 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ObjectDisposedException">
         /// The CancellationTokenSource associated with <paramref name="cancellationToken"/> was disposed.
         /// </exception>
-        public static Task Run(Action action, CancellationToken cancellationToken)
+        public static Task Run(Action action, CancellationToken cancellationToken,TaskCreationOptions taskCreationOptions= TaskCreationOptions.DenyChildAttach)
         {
             return Task.InternalStartNew(null, action, null, cancellationToken, TaskScheduler.Default,
-                TaskCreationOptions.DenyChildAttach, InternalTaskOptions.None);
+                    taskCreationOptions, InternalTaskOptions.None);
         }
 
         /// <summary>
         /// Queues the specified work to run on the ThreadPool and returns a Task(TResult) handle for that work.
         /// </summary>
         /// <param name="function">The work to execute asynchronously</param>
+        /// <param name="taskCreationOptions">The work to flags that control optional behavior for the creation and execution of tasks.</param>
         /// <returns>A Task(TResult) that represents the work queued to execute in the ThreadPool.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="function"/> parameter was null.
         /// </exception>
-        public static Task<TResult> Run<TResult>(Func<TResult> function)
+        public static Task<TResult> Run<TResult>(Func<TResult> function,TaskCreationOptions taskCreationOptions= TaskCreationOptions.DenyChildAttach)
         {
             return Task<TResult>.StartNew(null, function, default,
-                TaskCreationOptions.DenyChildAttach, InternalTaskOptions.None, TaskScheduler.Default);
+                    taskCreationOptions, InternalTaskOptions.None, TaskScheduler.Default);
         }
 
         /// <summary>
@@ -5402,6 +5405,7 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <param name="function">The work to execute asynchronously</param>
         /// <param name="cancellationToken">A cancellation token that should be used to cancel the work</param>
+        /// <param name="taskCreationOptions">The work to flags that control optional behavior for the creation and execution of tasks.</param>
         /// <returns>A Task(TResult) that represents the work queued to execute in the ThreadPool.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="function"/> parameter was null.
@@ -5409,10 +5413,10 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ObjectDisposedException">
         /// The CancellationTokenSource associated with <paramref name="cancellationToken"/> was disposed.
         /// </exception>
-        public static Task<TResult> Run<TResult>(Func<TResult> function, CancellationToken cancellationToken)
+        public static Task<TResult> Run<TResult>(Func<TResult> function, CancellationToken cancellationToken,TaskCreationOptions taskCreationOptions= TaskCreationOptions.DenyChildAttach)
         {
             return Task<TResult>.StartNew(null, function, cancellationToken,
-                TaskCreationOptions.DenyChildAttach, InternalTaskOptions.None, TaskScheduler.Default);
+                    taskCreationOptions, InternalTaskOptions.None, TaskScheduler.Default);
         }
 
         /// <summary>
@@ -5420,13 +5424,14 @@ namespace System.Threading.Tasks
         /// Task returned by <paramref name="function"/>.
         /// </summary>
         /// <param name="function">The work to execute asynchronously</param>
+        /// <param name="taskCreationOptions">The work to flags that control optional behavior for the creation and execution of tasks.</param>
         /// <returns>A Task that represents a proxy for the Task returned by <paramref name="function"/>.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="function"/> parameter was null.
         /// </exception>
-        public static Task Run(Func<Task?> function)
+        public static Task Run(Func<Task?> function,TaskCreationOptions taskCreationOptions = TaskCreationOptions.DenyChildAttach)
         {
-            return Run(function, default);
+            return Run(function, default,taskCreationOptions);
         }
 
         /// <summary>
@@ -5435,6 +5440,7 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <param name="function">The work to execute asynchronously</param>
         /// <param name="cancellationToken">A cancellation token that should be used to cancel the work</param>
+        /// <param name="taskCreationOptions">The work to flags that control optional behavior for the creation and execution of tasks.</param>
         /// <returns>A Task that represents a proxy for the Task returned by <paramref name="function"/>.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="function"/> parameter was null.
@@ -5442,7 +5448,7 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ObjectDisposedException">
         /// The CancellationTokenSource associated with <paramref name="cancellationToken"/> was disposed.
         /// </exception>
-        public static Task Run(Func<Task?> function, CancellationToken cancellationToken)
+        public static Task Run(Func<Task?> function, CancellationToken cancellationToken,TaskCreationOptions taskCreationOptions = TaskCreationOptions.DenyChildAttach)
         {
             // Check arguments
             if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
@@ -5452,7 +5458,7 @@ namespace System.Threading.Tasks
                 return Task.FromCanceled(cancellationToken);
 
             // Kick off initial Task, which will call the user-supplied function and yield a Task.
-            Task<Task?> task1 = Task<Task?>.Factory.StartNew(function, cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            Task<Task?> task1 = Task<Task?>.Factory.StartNew(function, cancellationToken, taskCreationOptions, TaskScheduler.Default);
 
             // Create a promise-style Task to be used as a proxy for the operation
             // Set lookForOce == true so that unwrap logic can be on the lookout for OCEs thrown as faults from task1, to support in-delegate cancellation.
@@ -5467,13 +5473,14 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <typeparam name="TResult">The type of the result returned by the proxy Task.</typeparam>
         /// <param name="function">The work to execute asynchronously</param>
+        /// <param name="taskCreationOptions">The work to flags that control optional behavior for the creation and execution of tasks.</param>
         /// <returns>A Task(TResult) that represents a proxy for the Task(TResult) returned by <paramref name="function"/>.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="function"/> parameter was null.
         /// </exception>
-        public static Task<TResult> Run<TResult>(Func<Task<TResult>?> function)
+        public static Task<TResult> Run<TResult>(Func<Task<TResult>?> function,TaskCreationOptions taskCreationOptions = TaskCreationOptions.DenyChildAttach)
         {
-            return Run(function, default);
+            return Run(function, default,taskCreationOptions);
         }
 
         /// <summary>
@@ -5483,11 +5490,12 @@ namespace System.Threading.Tasks
         /// <typeparam name="TResult">The type of the result returned by the proxy Task.</typeparam>
         /// <param name="function">The work to execute asynchronously</param>
         /// <param name="cancellationToken">A cancellation token that should be used to cancel the work</param>
+        /// <param name="taskCreationOptions">The work to flags that control optional behavior for the creation and execution of tasks.</param>
         /// <returns>A Task(TResult) that represents a proxy for the Task(TResult) returned by <paramref name="function"/>.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="function"/> parameter was null.
         /// </exception>
-        public static Task<TResult> Run<TResult>(Func<Task<TResult>?> function, CancellationToken cancellationToken)
+        public static Task<TResult> Run<TResult>(Func<Task<TResult>?> function, CancellationToken cancellationToken,TaskCreationOptions taskCreationOptions = TaskCreationOptions.DenyChildAttach)
         {
             // Check arguments
             if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
@@ -5497,7 +5505,7 @@ namespace System.Threading.Tasks
                 return Task.FromCanceled<TResult>(cancellationToken);
 
             // Kick off initial Task, which will call the user-supplied function and yield a Task.
-            Task<Task<TResult>?> task1 = Task<Task<TResult>?>.Factory.StartNew(function, cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            Task<Task<TResult>?> task1 = Task<Task<TResult>?>.Factory.StartNew(function, cancellationToken,taskCreationOptions, TaskScheduler.Default);
 
             // Create a promise-style Task to be used as a proxy for the operation
             // Set lookForOce == true so that unwrap logic can be on the lookout for OCEs thrown as faults from task1, to support in-delegate cancellation.
